@@ -1,7 +1,5 @@
 import numpy as np
 
-# TODO there is probably a bug in this connectivity
-
 # periodic
 #
 # 0v---0e-- 1v---3e-- 2v---6e-- 0v
@@ -21,6 +19,28 @@ import numpy as np
 # |      \  |      \  |      \
 # 0v       1v         2v        0v
 
+cell_to_edge_table = np.asarray(
+    [
+        [0, 1, 5],
+        [3, 4, 8],
+        [6, 7, 2],
+        [1, 2, 9],
+        [4, 5, 12],
+        [7, 8, 15],
+        [9, 10, 14],
+        [12, 13, 17],
+        [15, 16, 11],
+        [10, 11, 18],
+        [13, 14, 21],
+        [16, 17, 24],
+        [18, 19, 23],
+        [21, 22, 26],
+        [24, 25, 20],
+        [19, 20, 0],
+        [22, 23, 3],
+        [25, 26, 6],
+    ]
+)
 
 diamond_arr = np.asarray(
     [
@@ -56,3 +76,6 @@ diamond_arr = np.asarray(
 
 n_vertices = 9
 n_edges = 27
+
+n_cells = 18
+n_c2e = 3
