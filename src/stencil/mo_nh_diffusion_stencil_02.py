@@ -26,13 +26,13 @@ def mo_nh_diffusion_stencil_div_numpy(
 
         # stencil without sparse field multiplication
         @stencil
-        def mo_nh_diffusion_stencil_02(vn: Field[Edge, K], div: Field[Cell, K]):
+        def mo_nh_diffusion_stencil_02(vn: Field[Edge, K], geofac_div: Field[Cell > Edge], div: Field[Cell, K]):
             with domain.upward.across[nudging:halo]:
-                div = sum_over(Cell > Edge, vn) # computation over all edge values of a cell
+                div = sum_over(Cell > Edge, vn*geofac_div) # computation over all edge values of a cell
     """
     geofac_div = np.expand_dims(geofac_div, axis=-1)
     vn_geofac = vn[c2e] * geofac_div
-    div = np.sum(vn_geofac, axis=1)
+    div = np.sum(vn_geofac, axis=1)  # sum along EdgeDim
     return div
 
 
@@ -42,7 +42,7 @@ def mo_nh_diffusion_stencil_kh_c_numpy(
     e_bln_c_s: np.array,
     diff_multfac_smag: np.array,
 ):
-    """
+    """Numpy implementation of mo_nh_diffusion_stencil_02.py dusk stencil.
 
     Note:
         Dusk implementation is the following
@@ -51,7 +51,6 @@ def mo_nh_diffusion_stencil_kh_c_numpy(
         def mo_nh_diffusion_stencil_02(kh_smag_ec: Field[Edge, K], e_bln_c_s: Field[Cell > Edge], diff_multfac_smag: Field[K], kh_c: Field[Cell, K]):
         with domain.upward.across[nudging:halo]:
             kh_c = sum_over(Cell > Edge, kh_smag_ec*e_bln_c_s)/diff_multfac_smag
-
     """
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     diff_multfac_smag = np.expand_dims(diff_multfac_smag, axis=-1)

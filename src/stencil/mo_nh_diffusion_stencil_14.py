@@ -26,16 +26,16 @@ def mo_nh_diffusion_stencil_z_temp_numpy(
             with domain.upward.across[nudging:halo]:
                 z_temp = sum_over(Cell > Edge, z_nabla2_e*geofac_div)
     """
-    # TODO: add KDimension
-    z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=-1)
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=1)   # sum along EdgeDim
     return z_temp
 
 
 def mo_nh_diffusion_stencil_z_temp_gt4py(
-    c2e: np.array, z_nabla2_e: np.array, geofac_div: np.array
+    c2e: np.array, z_nabla2_e: np.array, geofac_div: np.array, out_arr: np.array
 ) -> np.array:
     """GT4PY implementation of mo_nh_diffusion_stencil_02.py dusk stencil."""
-    # TODO: add KDimension
+    KDim = Dimension("K")
     EdgeDim = Dimension("Edge")
     CellDim = Dimension("Cell")
     C2EDim = Dimension("C2E", True)  # special local dim
@@ -43,22 +43,22 @@ def mo_nh_diffusion_stencil_z_temp_gt4py(
     C2E = FieldOffset("C2E", source=EdgeDim, target=(CellDim, C2EDim))
     C2E_offset_provider = NeighborTableOffsetProvider(c2e, CellDim, EdgeDim, 3)
 
-    z_nabla2_e_field = np_as_located_field(EdgeDim)(z_nabla2_e)
+    z_nabla2_e_field = np_as_located_field(EdgeDim, KDim)(z_nabla2_e)
     geofac_div_field = np_as_located_field(CellDim, C2EDim)(geofac_div)
-    out_field = np_as_located_field(CellDim)(np.zeros(shape=(c2e.shape[0],)))
+    out_field = np_as_located_field(CellDim, KDim)(out_arr)
 
     @field_operator
     def sum_cell_edge_neighbors(
-        z_nabla2_e: Field[[EdgeDim], float32],
+        z_nabla2_e: Field[[EdgeDim, KDim], float32],
         geofac_div: Field[[CellDim, C2EDim], float32],
-    ) -> Field[[CellDim], float32]:
+    ) -> Field[[CellDim, KDim], float32]:
         return neighbor_sum(z_nabla2_e(C2E) * geofac_div, axis=C2EDim)
 
     @program
     def exec_stencil(
-        z_nabla2_e: Field[[EdgeDim], float32],
+        z_nabla2_e: Field[[EdgeDim, KDim], float32],
         geofac_div: Field[[CellDim, C2EDim], float32],
-        out: Field[[CellDim], float32],
+        out: Field[[CellDim, KDim], float32],
     ):
         sum_cell_edge_neighbors(z_nabla2_e, geofac_div, out=out)
 
