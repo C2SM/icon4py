@@ -3,13 +3,13 @@ from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import (
     Dimension,
     Field,
-    float32,
     FieldOffset,
+    float32,
     neighbor_sum,
 )
 from functional.iterator.embedded import (
-    np_as_located_field,
     NeighborTableOffsetProvider,
+    np_as_located_field,
 )
 
 
@@ -27,7 +27,7 @@ def mo_nh_diffusion_stencil_z_temp_numpy(
                 z_temp = sum_over(Cell > Edge, z_nabla2_e*geofac_div)
     """
     geofac_div = np.expand_dims(geofac_div, axis=-1)
-    z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=1)   # sum along EdgeDim
+    z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=1)  # sum along EdgeDim
     return z_temp
 
 

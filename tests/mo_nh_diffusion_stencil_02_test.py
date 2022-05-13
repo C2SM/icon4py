@@ -1,12 +1,12 @@
 import numpy as np
 
-from src.stencil.mo_nh_diffusion_stencil_02 import (
+from src.icon4py.stencil.mo_nh_diffusion_stencil_02 import (
     mo_nh_diffusion_stencil_div_numpy,
     mo_nh_diffusion_stencil_div_gt4py,
     mo_nh_diffusion_stencil_kh_c_numpy,
     mo_nh_diffusion_stencil_kh_c_gt4py,
 )
-from src.utils import add_kdim, get_cell_to_k_table
+from src.icon4py.utils import add_kdim, get_cell_to_k_table
 from .simple_mesh import cell_to_edge_table, n_edges
 
 k = 10

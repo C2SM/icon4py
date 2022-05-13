@@ -3,13 +3,13 @@ from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import (
     Dimension,
     Field,
-    float32,
     FieldOffset,
+    float32,
     neighbor_sum,
 )
 from functional.iterator.embedded import (
-    np_as_located_field,
     NeighborTableOffsetProvider,
+    np_as_located_field,
 )
 
 
