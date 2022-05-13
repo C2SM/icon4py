@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.mo_nh_diffusion_stencil_14 import (
+from src.stencil.mo_nh_diffusion_stencil_14 import (
     mo_nh_diffusion_stencil_z_temp_numpy,
     mo_nh_diffusion_stencil_z_temp_gt4py,
 )
