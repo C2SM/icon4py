@@ -7,8 +7,7 @@ class Utils:
     @staticmethod
     def assert_equality(out: Field, ref: np.array):
         out = np.asarray(out)
-        truth_arr = np.isclose(out, ref).flatten()
-        assert all(truth_arr)
+        assert np.allclose(out, ref)
 
 
 @pytest.fixture

@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 from functional.iterator.embedded import (
     np_as_located_field,
@@ -9,7 +10,7 @@ from src.icon4py.stencil.mo_nh_diffusion_stencil_14 import mo_nh_diffusion_stenc
 from src.icon4py.utils import add_kdim
 from .simple_mesh import cell_to_edge_table, n_edges
 
-K_VALUE = 10
+K_LEVELS = list(range(1, 3, 12))
 C2E_SHAPE = cell_to_edge_table.shape
 
 
@@ -21,10 +22,11 @@ def mo_nh_diffusion_stencil_14_numpy(
     return z_temp
 
 
-def test_mo_nh_diffusion_stencil_14(utils):
-    z_nabla2_e = add_kdim(np.random.randn(n_edges), K_VALUE)
+@pytest.mark.parametrize("k_level", K_LEVELS)
+def test_mo_nh_diffusion_stencil_14(utils, k_level):
+    z_nabla2_e = add_kdim(np.random.randn(n_edges), k_level)
     geofac_div = np.random.randn(*C2E_SHAPE)
-    out_arr = add_kdim(np.zeros(shape=(C2E_SHAPE[0],)), K_VALUE)
+    out_arr = add_kdim(np.zeros(shape=(C2E_SHAPE[0],)), k_level)
 
     z_nabla2_e_field = np_as_located_field(EdgeDim, KDim)(z_nabla2_e)
     geofac_div_field = np_as_located_field(CellDim, C2EDim)(geofac_div)
