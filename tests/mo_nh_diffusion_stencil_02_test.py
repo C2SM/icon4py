@@ -23,7 +23,7 @@ def mo_nh_diffusion_stencil_02_div_numpy(
 ) -> np.array:
     geofac_div = np.expand_dims(geofac_div, axis=-1)
     vn_geofac = vn[c2e] * geofac_div
-    div = np.sum(vn_geofac, axis=1)
+    div = np.sum(vn_geofac, axis=1)  # sum along edge dimension
     return div
 
 
@@ -36,7 +36,7 @@ def mo_nh_diffusion_stencil_02_khc_numpy(
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     diff_multfac_smag = np.expand_dims(diff_multfac_smag, axis=-1)
     mul = kh_smag_ec[c2e] * e_bln_c_s
-    summed = np.sum(mul, axis=1)
+    summed = np.sum(mul, axis=1)  # sum along edge dimension
     kh_c = summed / diff_multfac_smag
     return kh_c
 
