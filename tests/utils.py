@@ -1,4 +1,18 @@
 import numpy as np
+import pytest
+from functional.iterator.embedded import np_as_located_field
+
+
+def random_field(mesh, *dims):
+    return np_as_located_field(*dims)(
+        np.random.randn(*map(lambda x: mesh.size[x], dims))
+    )
+
+
+def zero_field(mesh, *dims):
+    return np_as_located_field(*dims)(
+        np.zeros(shape=tuple(map(lambda x: mesh.size[x], dims)))
+    )
 
 
 def add_kdim(arr: np.array, k: int) -> np.array:
