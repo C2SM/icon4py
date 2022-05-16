@@ -5,7 +5,7 @@ from functional.iterator.embedded import (
 
 from src.icon4py.dimension import KDim, EdgeDim, CellDim, C2EDim
 from src.icon4py.stencil.mo_nh_diffusion_stencil_14 import mo_nh_diffusion_stencil_14
-from src.icon4py.utils import add_kdim
+from .utils import add_kdim
 from .simple_mesh import SimpleMesh
 
 

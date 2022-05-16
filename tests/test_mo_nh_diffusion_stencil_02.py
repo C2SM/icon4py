@@ -6,7 +6,7 @@ from src.icon4py.stencil.mo_nh_diffusion_stencil_02 import (
     mo_nh_diffusion_stencil_02_div,
     mo_nh_diffusion_stencil_02_khc,
 )
-from src.icon4py.utils import add_kdim, get_cell_to_k_table
+from .utils import add_kdim, get_cell_to_k_table
 from .simple_mesh import SimpleMesh
 
 
