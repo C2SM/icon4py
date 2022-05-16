@@ -10,7 +10,7 @@ from src.icon4py.stencil.mo_nh_diffusion_stencil_14 import mo_nh_diffusion_stenc
 from src.icon4py.utils import add_kdim
 from .simple_mesh import cell_to_edge_table, n_edges
 
-K_LEVELS = list(range(1, 3, 12))
+K_LEVELS = list(range(1, 12, 3))
 C2E_SHAPE = cell_to_edge_table.shape
 
 
