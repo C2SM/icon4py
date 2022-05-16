@@ -1,9 +1,5 @@
 import numpy as np
-import pytest
-from functional.iterator.embedded import (
-    np_as_located_field,
-    NeighborTableOffsetProvider,
-)
+from functional.iterator.embedded import np_as_located_field
 
 from src.icon4py.dimension import KDim, EdgeDim, CellDim, C2EDim
 from src.icon4py.stencil.mo_nh_diffusion_stencil_02 import (
@@ -11,10 +7,7 @@ from src.icon4py.stencil.mo_nh_diffusion_stencil_02 import (
     mo_nh_diffusion_stencil_02_khc,
 )
 from src.icon4py.utils import add_kdim, get_cell_to_k_table
-from .simple_mesh import cell_to_edge_table, n_edges
-
-K_LEVELS = list(range(1, 12, 3))
-C2E_SHAPE = cell_to_edge_table.shape
+from .simple_mesh import SimpleMesh
 
 
 def mo_nh_diffusion_stencil_02_div_numpy(
@@ -42,57 +35,53 @@ def mo_nh_diffusion_stencil_02_khc_numpy(
     return kh_c
 
 
-@pytest.mark.parametrize("k_level", K_LEVELS)
-def test_mo_nh_diffusion_stencil_02_div(utils, k_level):
-    vn = add_kdim(np.random.randn(n_edges), k_level)
-    geofac_div = np.random.randn(*C2E_SHAPE)
-    out_arr = add_kdim(np.zeros(shape=(C2E_SHAPE[0],)), k_level)
+def test_mo_nh_diffusion_stencil_02_div():
+    mesh = SimpleMesh()
+
+    vn = add_kdim(np.random.randn(mesh.n_edges), mesh.k_level)
+    geofac_div = np.random.randn(mesh.n_cells, mesh.n_c2e)
+    out_arr = add_kdim(np.zeros(shape=(mesh.n_cells,)), mesh.k_level)
 
     vn_field = np_as_located_field(EdgeDim, KDim)(vn)
     geofac_div_field = np_as_located_field(CellDim, C2EDim)(geofac_div)
     out_field = np_as_located_field(CellDim, KDim)(out_arr)
 
-    C2E_offset_provider = NeighborTableOffsetProvider(
-        cell_to_edge_table, CellDim, EdgeDim, 3
-    )
-
-    ref = mo_nh_diffusion_stencil_02_div_numpy(cell_to_edge_table, vn, geofac_div)
+    ref = mo_nh_diffusion_stencil_02_div_numpy(mesh.c2e, vn, geofac_div)
     mo_nh_diffusion_stencil_02_div(
         vn_field,
         geofac_div_field,
         out_field,
-        offset_provider={"C2E": C2E_offset_provider},
+        offset_provider={"C2E": mesh.get_c2e_offset_provider()},
     )
-    utils.assert_equality(out_field, ref)
+    assert np.allclose(out_field, ref)
 
 
-@pytest.mark.parametrize("k_level", K_LEVELS)
-def test_mo_nh_diffusion_stencil_02_khc(utils, k_level):
-    kh_smag_ec = add_kdim(np.random.randn(n_edges), k_level)
-    e_bln_c_s = np.random.randn(*C2E_SHAPE)
-    diff_multfac_smag = np.asarray([k_level] * C2E_SHAPE[0])
-    c2k = get_cell_to_k_table(diff_multfac_smag, k_level)
-    out_arr = add_kdim(np.zeros(shape=(C2E_SHAPE[0],)), k_level)
+def test_mo_nh_diffusion_stencil_02_khc():
+    mesh = SimpleMesh()
+
+    kh_smag_ec = add_kdim(np.random.randn(mesh.n_edges), mesh.k_level)
+    e_bln_c_s = np.random.randn(mesh.n_cells, mesh.n_c2e)
+    diff_multfac_smag = np.asarray([mesh.k_level] * mesh.n_cells)
+    c2k = get_cell_to_k_table(diff_multfac_smag, mesh.k_level)
+    out_arr = add_kdim(np.zeros(shape=(mesh.n_cells,)), mesh.k_level)
 
     kh_smag_ec_field = np_as_located_field(EdgeDim, KDim)(kh_smag_ec)
     e_bln_c_s_field = np_as_located_field(CellDim, C2EDim)(e_bln_c_s)
     diff_multfac_smag_field = np_as_located_field(KDim)(diff_multfac_smag)
     out_field = np_as_located_field(CellDim, KDim)(out_arr)
 
-    C2E_offset_provider = NeighborTableOffsetProvider(
-        cell_to_edge_table, CellDim, EdgeDim, 3
-    )
-    C2K_offset_provider = NeighborTableOffsetProvider(c2k, CellDim, KDim, k_level)
-
     ref = mo_nh_diffusion_stencil_02_khc_numpy(
-        cell_to_edge_table, kh_smag_ec, e_bln_c_s, diff_multfac_smag
+        mesh.c2e, kh_smag_ec, e_bln_c_s, diff_multfac_smag
     )
     mo_nh_diffusion_stencil_02_khc(
         kh_smag_ec_field,
         e_bln_c_s_field,
         diff_multfac_smag_field,
         out_field,
-        offset_provider={"C2E": C2E_offset_provider, "C2K": C2K_offset_provider},
+        offset_provider={
+            "C2E": mesh.get_c2e_offset_provider(),
+            "C2K": mesh.get_c2k_offset_provider(c2k),
+        },
     )
 
-    utils.assert_equality(out_field, ref)
+    assert np.allclose(out_field, ref)
