@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from functional.iterator.embedded import np_as_located_field
 
 

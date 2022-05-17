@@ -96,7 +96,7 @@ class SimpleMesh:
         self.n_edges = 27
         self.n_vertices = 9
         self.k_level = k_level
-        self.sizes = {
+        self.size = {
             CellDim: self.n_cells,
             EdgeDim: self.n_edges,
             C2EDim: self.n_c2e,
