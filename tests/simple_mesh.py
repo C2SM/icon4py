@@ -5,7 +5,7 @@ from functional.iterator.embedded import (
     NeighborTableOffsetProvider,
 )
 
-from src.icon4py.dimension import EdgeDim, CellDim
+from src.icon4py.dimension import C2EDim, EdgeDim, CellDim, KDim
 
 
 # periodic
@@ -96,6 +96,12 @@ class SimpleMesh:
         self.n_edges = 27
         self.n_vertices = 9
         self.k_level = k_level
+        self.sizes = {
+            CellDim: self.n_cells,
+            EdgeDim: self.n_edges,
+            C2EDim: self.n_c2e,
+            KDim: self.k_level,
+        }
 
     def get_c2e_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.c2e, CellDim, EdgeDim, self.n_c2e)

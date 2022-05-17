@@ -6,7 +6,7 @@ from src.icon4py.stencil.mo_nh_diffusion_stencil_02 import (
     mo_nh_diffusion_stencil_02_div,
     mo_nh_diffusion_stencil_02_khc,
 )
-from .utils import add_kdim, get_cell_to_k_table
+from .utils import add_kdim, get_cell_to_k_table, random_field, zero_field
 from .simple_mesh import SimpleMesh
 
 
@@ -38,22 +38,20 @@ def mo_nh_diffusion_stencil_02_khc_numpy(
 def test_mo_nh_diffusion_stencil_02_div():
     mesh = SimpleMesh()
 
-    vn = add_kdim(np.random.randn(mesh.n_edges), mesh.k_level)
-    geofac_div = np.random.randn(mesh.n_cells, mesh.n_c2e)
-    out_arr = add_kdim(np.zeros(shape=(mesh.n_cells,)), mesh.k_level)
+    vn = random_field(mesh, EdgeDim, KDim)
+    geofac_div = random_field(mesh, CellDim, C2EDim)
+    out = zero_field(mesh, CellDim, KDim)
 
-    vn_field = np_as_located_field(EdgeDim, KDim)(vn)
-    geofac_div_field = np_as_located_field(CellDim, C2EDim)(geofac_div)
-    out_field = np_as_located_field(CellDim, KDim)(out_arr)
-
-    ref = mo_nh_diffusion_stencil_02_div_numpy(mesh.c2e, vn, geofac_div)
+    ref = mo_nh_diffusion_stencil_02_div_numpy(
+        mesh.c2e, np.asarray(vn), np.asarray(geofac_div)
+    )
     mo_nh_diffusion_stencil_02_div(
-        vn_field,
-        geofac_div_field,
-        out_field,
+        vn,
+        geofac_div,
+        out,
         offset_provider={"C2E": mesh.get_c2e_offset_provider()},
     )
-    assert np.allclose(out_field, ref)
+    assert np.allclose(out, ref)
 
 
 def test_mo_nh_diffusion_stencil_02_khc():
