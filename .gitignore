@@ -1,0 +1,121 @@
+### Custom ####
+_build
+_local
+
+### GT4Py ####
+.gt_cache/
+
+# DaCe
+.dacecache
+*.sdfg
+.dace.conf
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build*/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# type checkers
+.mypy_cache/
+.pytype
+.pyre
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Sphinx documentation
+docs/_build/
+
+# mkdocs documentation
+/site
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Environments
+.env*
+.venv*
+*.env
+*.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Rope project settings
+.ropeproject
+
+### Editors ###
+# Pycharm project settings
+.idea/
+
+# VSCode project settings
+.vscode/
+
+# SublimeText project settings
+*.sublime-project
+*.sublime-workspace
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# SpaceVim altfiles settings
+.project_alt.json
+
+### Others ###
+.obsidian
