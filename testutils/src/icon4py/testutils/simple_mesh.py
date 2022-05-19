@@ -5,7 +5,7 @@ from functional.iterator.embedded import (
     NeighborTableOffsetProvider,
 )
 
-from src.icon4py.dimension import C2EDim, EdgeDim, CellDim, KDim
+from icon4py.common.dimension import C2EDim, EdgeDim, CellDim, KDim
 
 
 # periodic

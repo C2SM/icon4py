@@ -1,9 +1,9 @@
 import numpy as np
 
-from src.icon4py.dimension import KDim, EdgeDim, CellDim, C2EDim
-from src.icon4py.stencil.mo_nh_diffusion_stencil_14 import mo_nh_diffusion_stencil_14
-from .simple_mesh import SimpleMesh
-from .utils import random_field, zero_field
+from icon4py.common.dimension import KDim, EdgeDim, CellDim, C2EDim
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_14 import mo_nh_diffusion_stencil_14
+from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.simple_mesh import SimpleMesh
 
 
 def mo_nh_diffusion_stencil_14_numpy(

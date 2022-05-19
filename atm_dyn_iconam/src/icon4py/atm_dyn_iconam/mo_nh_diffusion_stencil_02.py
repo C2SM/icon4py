@@ -5,7 +5,7 @@ from functional.ffront.fbuiltins import (
     neighbor_sum,
 )
 
-from src.icon4py.dimension import KDim, EdgeDim, CellDim, C2EDim, C2E, C2K
+from icon4py.common.dimension import KDim, EdgeDim, CellDim, C2EDim, C2E, C2K
 
 
 @field_operator
