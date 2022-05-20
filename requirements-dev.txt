@@ -1,0 +1,9 @@
+-e atm_dyn_iconam
+-e common
+-e pyutils
+-e testutils
+pytest>=6.1
+pytest-cache>=1.0
+pytest-cov>=2.8
+pytest-factoryboy>=2.0
+pytest-xdist[psutil]>=2.2
