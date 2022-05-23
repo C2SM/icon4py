@@ -11,12 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+"""Periodic triangular mesh for testing GT4Py vs NumPy reference."""
+
 from dataclasses import dataclass
 
 import numpy as np
 from functional.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+
 
 # periodic
 #
@@ -39,7 +42,7 @@ from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 
 
 @dataclass
-class SimpleMeshData:
+class _SimpleMeshData:
     c2e_table = np.asarray(
         [
             [0, 1, 5],
@@ -99,8 +102,8 @@ class SimpleMesh:
     _DEFAULT_K_LEVEL = 10
 
     def __init__(self, k_level: int = _DEFAULT_K_LEVEL):
-        self.diamond_arr = SimpleMeshData.diamond_table
-        self.c2e = SimpleMeshData.c2e_table
+        self.diamond_arr = _SimpleMeshData.diamond_table
+        self.c2e = _SimpleMeshData.c2e_table
         self.n_cells = self.c2e.shape[0]
         self.n_c2e = self.c2e.shape[1]
         self.n_edges = 27

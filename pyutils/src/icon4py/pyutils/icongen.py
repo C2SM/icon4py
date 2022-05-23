@@ -21,6 +21,7 @@ from functional.ffront import itir_makers as im
 from functional.ffront.decorator import Program, program
 from functional.iterator.backends.gtfn.gtfn_backend import generate
 
+
 _FIELDINFO = namedtuple("_FIELDINFO", ["field", "inp", "out"])
 
 

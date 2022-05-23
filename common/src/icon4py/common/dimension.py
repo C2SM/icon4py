@@ -13,6 +13,7 @@
 
 from functional.ffront.fbuiltins import Dimension, FieldOffset
 
+
 KDim = Dimension("K")
 EdgeDim = Dimension("Edge")
 CellDim = Dimension("Cell")
