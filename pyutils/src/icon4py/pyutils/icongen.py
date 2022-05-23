@@ -1,34 +1,35 @@
-# GT4Py Project - GridTools Framework
+# ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2014-2021, ETH Zurich
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is part of the GT4Py project and the GridTools framework.
-# GT4Py is free software: you can redistribute it and/or modify it under
+# This file is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the
 # Free Software Foundation, either version 3 of the License, or any later
 # version. See the LICENSE.txt file at the top-level directory of this
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
 """Utilities for generating icon stencils."""
 import pathlib
 from collections import namedtuple
 
 import click
 import tabulate
-
-from functional.ffront.decorator import Program, program
 from functional.ffront import itir_makers as im
+from functional.ffront.decorator import Program, program
 from functional.iterator.backends.gtfn.gtfn_backend import generate
-
 
 _FIELDINFO = namedtuple("_FIELDINFO", ["field", "inp", "out"])
 
 
 def get_fieldinfo(fvprog: Program) -> dict[str, _FIELDINFO]:
     """Extract and format the in/out fields from a Program."""
-    fields = {field.id: _FIELDINFO(field, True, False) for field in fvprog.past_node.body[0].args}
+    fields = {
+        field.id: _FIELDINFO(field, True, False)
+        for field in fvprog.past_node.body[0].args
+    }
     for field in [fvprog.past_node.body[0].kwargs["out"]]:
         if field.id in fields:
             fields[field.id] = _FIELDINFO(fields[field.id].field, True, True)
@@ -77,7 +78,9 @@ def generate_cli(fencil_function):
     )
     @click.option(
         "--output-metadata",
-        type=click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
+        type=click.Path(
+            exists=False, dir_okay=False, resolve_path=True, path_type=pathlib.Path
+        ),
     )
     def cli(output_metadata):
         fvprog = gtfn_program(fencil_function)

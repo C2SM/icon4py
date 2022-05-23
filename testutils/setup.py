@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Icon4Py - Icon inspired code in Python and GT4Py
+# ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
@@ -12,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 
 from setuptools import Command, setup
 
