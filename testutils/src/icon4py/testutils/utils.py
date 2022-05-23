@@ -28,7 +28,7 @@ def zero_field(mesh, *dims):
 
 
 def get_cell_to_k_table(k_arr, k):
-    """Creates cell to k table based on an input array and k value.
+    """Create cell to k table based on an input array and k value.
 
     Args:
         k_arr: 1D input array holding k values.
