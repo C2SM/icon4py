@@ -27,6 +27,7 @@ _FIELDINFO = namedtuple("_FIELDINFO", ["field", "inp", "out"])
 
 def get_fieldinfo(fvprog: Program) -> dict[str, _FIELDINFO]:
     """Extract and format the in/out fields from a Program."""
+    assert len(fvprog.past_node.body) == 1
     fields = {
         field.id: _FIELDINFO(field, True, False)
         for field in fvprog.past_node.body[0].args
