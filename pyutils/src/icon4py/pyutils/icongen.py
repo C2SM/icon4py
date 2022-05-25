@@ -12,13 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """Utilities for generating icon stencils."""
+import importlib
 import pathlib
 from collections import namedtuple
 
 import click
 import tabulate
+from functional.ffront import common_types as ct
 from functional.ffront import itir_makers as im
-from functional.ffront.decorator import Program, program
+from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator.backends.gtfn.gtfn_backend import generate
 
 
@@ -53,24 +55,31 @@ def format_io_string(fieldinfo: _FIELDINFO) -> str:
 def tabulate_fields(fvprog: Program, **kwargs) -> str:
     """Format in/out field information from a program as a string table."""
     fieldinfos = get_fieldinfo(fvprog)
-    table = [
-        {"name": name, "type": info.field.type, "io": format_io_string(info)}
-        for name, info in fieldinfos.items()
-    ]
+    table = []
+    for name, info in fieldinfos.items():
+        display_type = info.field.type
+        if not isinstance(info.field.type, ct.FieldType):
+            display_type = ct.FieldType(dims=[], dtype=info.field.type)
+        table.append({"name": name, "type": display_type, "io": format_io_string(info)})
     kwargs.setdefault("tablefmt", "plain")
     return tabulate.tabulate(table, **kwargs)
 
 
 def gtfn_program(fencil_function) -> Program:
     fvprog = program(fencil_function, backend="gtfn")
+    adapt_program_gtfn(fvprog)
+    return fvprog
+
+
+def adapt_program_gtfn(fvprog):
     fvprog.itir.params.append(im.sym("domain_"))
     fvprog.itir.closures[0].domain = im.ref("domain_")
     return fvprog
 
 
-def generate_cpp_code(fvprog) -> str:
+def generate_cpp_code(fvprog, **kwargs) -> str:
     """Generate C++ code using the GTFN backend."""
-    return generate(fvprog.itir, grid_type="unstructured")
+    return generate(fvprog.itir, grid_type="unstructured", **kwargs)
 
 
 def generate_cli(fencil_function):
@@ -86,7 +95,44 @@ def generate_cli(fencil_function):
     )
     def cli(output_metadata):
         fvprog = gtfn_program(fencil_function)
-        output_metadata.write_text(tabulate_fields(fvprog))
+        if output_metadata:
+            output_metadata.write_text(tabulate_fields(fvprog))
         click.echo(generate_cpp_code(fvprog))
 
     return cli
+
+
+@click.command(
+    "icon4pygen",
+)
+@click.option(
+    "--output-metadata",
+    type=click.Path(
+        exists=False, dir_okay=False, resolve_path=True, path_type=pathlib.Path
+    ),
+    help="file path for optional metadata output",
+)
+@click.argument("fencil", type=str)
+def icongen_main(output_metadata, fencil):
+    """
+    Generate metadata and C++ code for an icon4py fencil.
+
+    A fencil may be specified as <module>:<member>, where <module> is the
+    dotted name of the containing module and <member> is the name of the fencil.
+    """
+    module_name, member_name = fencil.split(":")
+    fencil = getattr(importlib.import_module(module_name), member_name)
+
+    fvprog = None
+    match fencil:
+        case Program():
+            fvprog = fencil.with_backend("gtfn")
+        case FieldOperator():
+            fvprog = fencil.with_backend("gtfn").as_program()
+        case _:
+            fvprog = program(fencil, backend="gtfn")
+
+    fvprog = adapt_program_gtfn(fvprog)
+    if output_metadata:
+        output_metadata.write_text(tabulate_fields(fvprog))
+    click.echo(generate_cpp_code(fvprog))
