@@ -14,20 +14,18 @@
 from dataclasses import dataclass
 
 import numpy as np
-from functional.iterator.embedded import (
-    NeighborTableOffsetProvider,
-)
+from functional.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import (
+    C2E2CODim,
+    C2EDim,
+    CellDim,
     E2C2EDim,
     E2C2EODim,
-    C2EDim,
-    C2E2CODim,
+    EdgeDim,
+    KDim,
     V2CDim,
     V2EDim,
-    EdgeDim,
-    CellDim,
-    KDim,
     VertexDim,
 )
 
@@ -308,4 +306,3 @@ class SimpleMesh:
 
     def get_v2e_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.v2e, VertexDim, EdgeDim, self.n_v2e)
-

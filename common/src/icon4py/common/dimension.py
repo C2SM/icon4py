@@ -11,10 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.fbuiltins import (
-    Dimension,
-    FieldOffset,
-)
+from functional.ffront.fbuiltins import Dimension, FieldOffset
+
 
 KDim = Dimension("K")
 EdgeDim = Dimension("Edge")
