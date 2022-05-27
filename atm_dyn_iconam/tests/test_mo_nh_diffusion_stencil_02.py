@@ -19,7 +19,7 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import (
 )
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import get_cell_to_k_table, random_field, zero_field
+from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_nh_diffusion_stencil_02_div_numpy(

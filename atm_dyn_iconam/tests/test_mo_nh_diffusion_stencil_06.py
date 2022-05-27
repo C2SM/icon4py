@@ -13,7 +13,9 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_06 import mo_nh_diffusion_stencil_06
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_06 import (
+    mo_nh_diffusion_stencil_06,
+)
 from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field

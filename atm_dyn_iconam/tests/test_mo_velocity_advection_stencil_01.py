@@ -13,7 +13,9 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import mo_velocity_advection_stencil_01
+from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
+    mo_velocity_advection_stencil_01,
+)
 from icon4py.common.dimension import E2C2EDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field

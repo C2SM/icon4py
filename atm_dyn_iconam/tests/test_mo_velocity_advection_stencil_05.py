@@ -18,7 +18,7 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_05 import (
     mo_velocity_advection_stencil_05_z_kin_hor_e,
     mo_velocity_advection_stencil_05_z_vt_ie,
 )
-from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
