@@ -12,9 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float32, neighbor_sum
+from functional.ffront.fbuiltins import (
+    Field,
+    float32,
+    neighbor_sum,
+)
 
-from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import KDim, EdgeDim, CellDim, C2EDim, C2E
 
 
 @field_operator
@@ -22,13 +26,14 @@ def _mo_nh_diffusion_stencil_14(
     z_nabla2_e: Field[[EdgeDim, KDim], float32],
     geofac_div: Field[[CellDim, C2EDim], float32],
 ) -> Field[[CellDim, KDim], float32]:
-    return neighbor_sum(z_nabla2_e(C2E) * geofac_div, axis=C2EDim)
+    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div, axis=C2EDim)
+    return z_temp
 
 
 @program
 def mo_nh_diffusion_stencil_14(
     z_nabla2_e: Field[[EdgeDim, KDim], float32],
     geofac_div: Field[[CellDim, C2EDim], float32],
-    out: Field[[CellDim, KDim], float32],
+    z_temp: Field[[CellDim, KDim], float32],
 ):
-    _mo_nh_diffusion_stencil_14(z_nabla2_e, geofac_div, out=out)
+    _mo_nh_diffusion_stencil_14(z_nabla2_e, geofac_div, out=z_temp)

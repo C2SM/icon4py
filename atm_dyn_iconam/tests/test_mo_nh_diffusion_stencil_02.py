@@ -74,8 +74,6 @@ def test_mo_nh_diffusion_stencil_02_khc():
     diff_multfac_smag = random_field(mesh, CellDim)
     out = zero_field(mesh, CellDim, KDim)
 
-    c2k = get_cell_to_k_table(diff_multfac_smag, mesh.k_level)
-
     ref = mo_nh_diffusion_stencil_02_khc_numpy(
         mesh.c2e,
         np.asarray(kh_smag_ec),
@@ -89,7 +87,6 @@ def test_mo_nh_diffusion_stencil_02_khc():
         out,
         offset_provider={
             "C2E": mesh.get_c2e_offset_provider(),
-            "C2K": mesh.get_c2k_offset_provider(c2k),
         },
     )
     assert np.allclose(out, ref)
