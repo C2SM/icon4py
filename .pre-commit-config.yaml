@@ -39,6 +39,7 @@ repos:
   rev: v5.10.1
   hooks:
   - id: isort
+    args: ["--profile", "black", --line-length=72]
 
 - repo: https://gitlab.com/PyCQA/flake8
   rev: 4.0.1
