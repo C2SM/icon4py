@@ -113,7 +113,7 @@ def generate_cli(fencil_function):
     help="file path for optional metadata output",
 )
 @click.argument("fencil", type=str)
-def icongen_main(output_metadata, fencil):
+def main(output_metadata, fencil):
     """
     Generate metadata and C++ code for an icon4py fencil.
 
