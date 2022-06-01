@@ -12,17 +12,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float32
+from functional.ffront.fbuiltins import Field, float
 
 from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_velocity_advection_stencil_12() -> Field[[CellDim, KDim], float32]:
-    z_w_con_c = float32(0.0)
+def _mo_velocity_advection_stencil_12() -> Field[[CellDim, KDim], float]:
+    z_w_con_c = float(0.0)
     return z_w_con_c
 
 
 @program
-def mo_velocity_advection_stencil_12(z_w_con_c: Field[[CellDim, KDim], float32]):
+def mo_velocity_advection_stencil_12(z_w_con_c: Field[[CellDim, KDim], float]):
     _mo_velocity_advection_stencil_12(out=z_w_con_c)

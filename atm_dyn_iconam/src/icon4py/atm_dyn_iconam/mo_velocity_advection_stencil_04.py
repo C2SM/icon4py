@@ -12,29 +12,29 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float32
+from functional.ffront.fbuiltins import Field, float
 
 from icon4py.common.dimension import EdgeDim, KDim
 
 
 @field_operator
 def _mo_velocity_advection_stencil_04(
-    vn: Field[[EdgeDim, KDim], float32],
-    ddxn_z_full: Field[[EdgeDim, KDim], float32],
-    ddxt_z_full: Field[[EdgeDim, KDim], float32],
-    vt: Field[[EdgeDim, KDim], float32],
-) -> Field[[EdgeDim, KDim], float32]:
+    vn: Field[[EdgeDim, KDim], float],
+    ddxn_z_full: Field[[EdgeDim, KDim], float],
+    ddxt_z_full: Field[[EdgeDim, KDim], float],
+    vt: Field[[EdgeDim, KDim], float],
+) -> Field[[EdgeDim, KDim], float]:
     z_w_concorr_me = vn * ddxn_z_full + vt * ddxt_z_full
     return z_w_concorr_me
 
 
 @program
 def mo_velocity_advection_stencil_04(
-    vn: Field[[EdgeDim, KDim], float32],
-    ddxn_z_full: Field[[EdgeDim, KDim], float32],
-    ddxt_z_full: Field[[EdgeDim, KDim], float32],
-    vt: Field[[EdgeDim, KDim], float32],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float32],
+    vn: Field[[EdgeDim, KDim], float],
+    ddxn_z_full: Field[[EdgeDim, KDim], float],
+    ddxt_z_full: Field[[EdgeDim, KDim], float],
+    vt: Field[[EdgeDim, KDim], float],
+    z_w_concorr_me: Field[[EdgeDim, KDim], float],
 ):
     _mo_velocity_advection_stencil_04(
         vn, ddxn_z_full, ddxt_z_full, vt, out=z_w_concorr_me

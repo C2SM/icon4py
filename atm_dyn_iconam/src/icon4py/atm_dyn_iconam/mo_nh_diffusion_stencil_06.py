@@ -12,29 +12,29 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float32
+from functional.ffront.fbuiltins import Field, float
 
 from icon4py.common.dimension import EdgeDim, KDim
 
 
 # TODO: globals not yet implemented.
-fac_bdy_diff = float32(5.0)
+fac_bdy_diff = float(5.0)
 
 
 @field_operator
 def _mo_nh_diffusion_stencil_06(
-    z_nabla2_e: Field[[EdgeDim, KDim], float32],
-    area_edge: Field[[EdgeDim], float32],
-    vn: Field[[EdgeDim, KDim], float32],
-) -> Field[[EdgeDim, KDim], float32]:
-    vn = vn + (z_nabla2_e * area_edge * float32(5.0))
+    z_nabla2_e: Field[[EdgeDim, KDim], float],
+    area_edge: Field[[EdgeDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    vn = vn + (z_nabla2_e * area_edge * float(5.0))
     return vn
 
 
 @program
 def mo_nh_diffusion_stencil_06(
-    z_nabla2_e: Field[[EdgeDim, KDim], float32],
-    area_edge: Field[[EdgeDim], float32],
-    vn: Field[[EdgeDim, KDim], float32],
+    z_nabla2_e: Field[[EdgeDim, KDim], float],
+    area_edge: Field[[EdgeDim], float],
+    vn: Field[[EdgeDim, KDim], float],
 ):
     _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, out=vn)

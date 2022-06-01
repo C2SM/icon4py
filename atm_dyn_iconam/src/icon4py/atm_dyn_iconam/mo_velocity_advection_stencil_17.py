@@ -12,25 +12,25 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float32, neighbor_sum
+from functional.ffront.fbuiltins import Field, float, neighbor_sum
 
 from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
 def _mo_velocity_advection_stencil_17(
-    z_v_grad_w: Field[[EdgeDim, KDim], float32],
-    e_bln_c_s: Field[[CellDim, C2EDim], float32],
-    ddt_w_adv: Field[[CellDim, KDim], float32],
-) -> Field[[CellDim, KDim], float32]:
+    z_v_grad_w: Field[[EdgeDim, KDim], float],
+    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    ddt_w_adv: Field[[CellDim, KDim], float],
+) -> Field[[CellDim, KDim], float]:
     ddt_w_adv = ddt_w_adv + neighbor_sum(e_bln_c_s * z_v_grad_w(C2E), axis=C2EDim)
     return ddt_w_adv
 
 
 @program
 def mo_velocity_advection_stencil_17(
-    e_bln_c_s: Field[[CellDim, C2EDim], float32],
-    z_v_grad_w: Field[[EdgeDim, KDim], float32],
-    ddt_w_adv: Field[[CellDim, KDim], float32],
+    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    z_v_grad_w: Field[[EdgeDim, KDim], float],
+    ddt_w_adv: Field[[CellDim, KDim], float],
 ):
     _mo_velocity_advection_stencil_17(z_v_grad_w, e_bln_c_s, ddt_w_adv, out=ddt_w_adv)
