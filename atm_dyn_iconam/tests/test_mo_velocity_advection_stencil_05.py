@@ -13,7 +13,9 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_05 import mo_velocity_advection_stencil_05
+from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_05 import (
+    mo_velocity_advection_stencil_05,
+)
 from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
@@ -51,7 +53,9 @@ def test_mo_velocity_advection_stencil_05():
     z_vt_ie = zero_field(mesh, EdgeDim, KDim)
     z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
 
-    vn_ie_ref, z_vt_ie_ref, z_kin_hor_e_ref = mo_velocity_advection_stencil_05_numpy(np.asarray(vn), np.asarray(vt))
+    vn_ie_ref, z_vt_ie_ref, z_kin_hor_e_ref = mo_velocity_advection_stencil_05_numpy(
+        np.asarray(vn), np.asarray(vt)
+    )
 
     mo_velocity_advection_stencil_05(
         vn,
