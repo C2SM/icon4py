@@ -1,0 +1,25 @@
+[run]
+branch = True
+source_pkgs =
+    atm_dyn_iconam
+
+[paths]
+source =
+    atm_dyn_iconam/src
+    .tox/py*/lib/python3.*/site-packages/
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == .__main__.:
+
+ignore_errors = True
+
+[html]
+directory = coverage_html
