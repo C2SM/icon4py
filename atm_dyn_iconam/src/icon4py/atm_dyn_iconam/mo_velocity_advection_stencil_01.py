@@ -14,22 +14,22 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, float, neighbor_sum
 
-from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import E2C2E, E2C2EDim, EdgeDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_14(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div, axis=C2EDim)
-    return z_temp
+def _mo_velocity_advection_stencil_01(
+    vn: Field[[EdgeDim, KDim], float],
+    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    vt = neighbor_sum(vn(E2C2E) * rbf_vec_coeff_e, axis=E2C2EDim)
+    return vt
 
 
 @program
-def mo_nh_diffusion_stencil_14(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
-    z_temp: Field[[CellDim, KDim], float],
+def mo_velocity_advection_stencil_01(
+    vn: Field[[EdgeDim, KDim], float],
+    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
+    vt: Field[[EdgeDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_14(z_nabla2_e, geofac_div, out=z_temp)
+    _mo_velocity_advection_stencil_01(vn, rbf_vec_coeff_e, out=vt)

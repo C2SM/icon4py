@@ -14,12 +14,11 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import (
-    mo_nh_diffusion_stencil_02_div,
-    mo_nh_diffusion_stencil_02_khc,
+    mo_nh_diffusion_stencil_02,
 )
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import get_cell_to_k_table, random_field, zero_field
+from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_nh_diffusion_stencil_02_div_numpy(
@@ -47,49 +46,53 @@ def mo_nh_diffusion_stencil_02_khc_numpy(
     return kh_c
 
 
-def test_mo_nh_diffusion_stencil_02_div():
+def mo_nh_diffusion_stencil_02_numpy(
+    c2e: np.array,
+    kh_smag_ec: np.array,
+    vn: np.array,
+    e_bln_c_s: np.array,
+    geofac_div: np.array,
+    diff_multfac_smag: np.array,
+):
+    kh_c = mo_nh_diffusion_stencil_02_khc_numpy(
+        c2e, kh_smag_ec, e_bln_c_s, diff_multfac_smag
+    )
+    div = mo_nh_diffusion_stencil_02_div_numpy(c2e, vn, geofac_div)
+    return div, kh_c
+
+
+def test_mo_nh_diffusion_stencil_02():
     mesh = SimpleMesh()
 
     vn = random_field(mesh, EdgeDim, KDim)
     geofac_div = random_field(mesh, CellDim, C2EDim)
-    out = zero_field(mesh, CellDim, KDim)
-
-    ref = mo_nh_diffusion_stencil_02_div_numpy(
-        mesh.c2e, np.asarray(vn), np.asarray(geofac_div)
-    )
-    mo_nh_diffusion_stencil_02_div(
-        vn,
-        geofac_div,
-        out,
-        offset_provider={"C2E": mesh.get_c2e_offset_provider()},
-    )
-    assert np.allclose(out, ref)
-
-
-def test_mo_nh_diffusion_stencil_02_khc():
-    mesh = SimpleMesh()
-
     kh_smag_ec = random_field(mesh, EdgeDim, KDim)
     e_bln_c_s = random_field(mesh, CellDim, C2EDim)
     diff_multfac_smag = random_field(mesh, CellDim)
-    out = zero_field(mesh, CellDim, KDim)
 
-    c2k = get_cell_to_k_table(diff_multfac_smag, mesh.k_level)
+    kh_c = zero_field(mesh, CellDim, KDim)
+    div = zero_field(mesh, CellDim, KDim)
 
-    ref = mo_nh_diffusion_stencil_02_khc_numpy(
+    div_ref, kh_c_ref = mo_nh_diffusion_stencil_02_numpy(
         mesh.c2e,
         np.asarray(kh_smag_ec),
+        np.asarray(vn),
         np.asarray(e_bln_c_s),
+        np.asarray(geofac_div),
         np.asarray(diff_multfac_smag),
     )
-    mo_nh_diffusion_stencil_02_khc(
+
+    mo_nh_diffusion_stencil_02(
         kh_smag_ec,
+        vn,
         e_bln_c_s,
+        geofac_div,
         diff_multfac_smag,
-        out,
+        kh_c,
+        div,
         offset_provider={
             "C2E": mesh.get_c2e_offset_provider(),
-            "C2K": mesh.get_c2k_offset_provider(c2k),
         },
     )
-    assert np.allclose(out, ref)
+    assert np.allclose(kh_c, kh_c_ref)
+    assert np.allclose(div, div_ref)
