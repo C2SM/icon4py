@@ -12,24 +12,27 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float, neighbor_sum
+from functional.ffront.fbuiltins import Field, float
 
-from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import EdgeDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_14(
+def _mo_nh_diffusion_stencil_06(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div, axis=C2EDim)
-    return z_temp
+    area_edge: Field[[EdgeDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    fac_bdy_diff: float,
+) -> Field[[EdgeDim, KDim], float]:
+    vn = vn + (z_nabla2_e * area_edge * fac_bdy_diff)
+    return vn
 
 
 @program
-def mo_nh_diffusion_stencil_14(
+def mo_nh_diffusion_stencil_06(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
-    z_temp: Field[[CellDim, KDim], float],
+    area_edge: Field[[EdgeDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    fac_bdy_diff: float,
 ):
-    _mo_nh_diffusion_stencil_14(z_nabla2_e, geofac_div, out=z_temp)
+    _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, fac_bdy_diff, out=vn)

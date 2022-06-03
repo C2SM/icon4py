@@ -14,22 +14,30 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, float, neighbor_sum
 
-from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import (
+    V2C,
+    CellDim,
+    KDim,
+    V2CDim,
+    VertexDim,
+)
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_14(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div, axis=C2EDim)
-    return z_temp
+def _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+    p_cell_in: Field[[CellDim, KDim], float],
+    c_intp: Field[[VertexDim, V2CDim], float],
+) -> Field[[VertexDim, KDim], float]:
+    p_vert_out = neighbor_sum(c_intp * p_cell_in(V2C), axis=V2CDim)
+    return p_vert_out
 
 
 @program
-def mo_nh_diffusion_stencil_14(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
-    z_temp: Field[[CellDim, KDim], float],
+def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+    p_cell_in: Field[[CellDim, KDim], float],
+    c_intp: Field[[VertexDim, V2CDim], float],
+    p_vert_out: Field[[VertexDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_14(z_nabla2_e, geofac_div, out=z_temp)
+    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+        p_cell_in, c_intp, out=p_vert_out
+    )
