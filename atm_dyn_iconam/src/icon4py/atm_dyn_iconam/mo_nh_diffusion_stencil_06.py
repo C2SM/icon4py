@@ -17,17 +17,14 @@ from functional.ffront.fbuiltins import Field, float
 from icon4py.common.dimension import EdgeDim, KDim
 
 
-# TODO: globals not yet implemented.
-fac_bdy_diff = float(5.0)
-
-
 @field_operator
 def _mo_nh_diffusion_stencil_06(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     area_edge: Field[[EdgeDim], float],
     vn: Field[[EdgeDim, KDim], float],
+    fac_bdy_diff: float,
 ) -> Field[[EdgeDim, KDim], float]:
-    vn = vn + (z_nabla2_e * area_edge * float(5.0))
+    vn = vn + (z_nabla2_e * area_edge * fac_bdy_diff)
     return vn
 
 
@@ -36,5 +33,6 @@ def mo_nh_diffusion_stencil_06(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     area_edge: Field[[EdgeDim], float],
     vn: Field[[EdgeDim, KDim], float],
+    fac_bdy_diff: float,
 ):
-    _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, out=vn)
+    _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, fac_bdy_diff, out=vn)

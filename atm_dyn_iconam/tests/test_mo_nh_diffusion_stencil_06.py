@@ -21,11 +21,8 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-fac_bdydiff_v = np.float32(5.0)
-
-
 def mo_nh_diffusion_stencil_06_numpy(
-    z_nabla2_e: np.array, area_edge: np.array, vn: np.array
+    z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
 ) -> np.array:
     area_edge = np.expand_dims(area_edge, axis=-1)
     vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
@@ -35,12 +32,15 @@ def mo_nh_diffusion_stencil_06_numpy(
 def test_mo_nh_diffusion_stencil_06():
     mesh = SimpleMesh()
 
+    fac_bdydiff_v = np.float64(5.0)
     z_nabla2_e = random_field(mesh, EdgeDim, KDim)
     area_edge = random_field(mesh, EdgeDim)
     vn = random_field(mesh, EdgeDim, KDim)
 
     ref = mo_nh_diffusion_stencil_06_numpy(
-        np.asarray(z_nabla2_e), np.asarray(area_edge), np.asarray(vn)
+        np.asarray(z_nabla2_e), np.asarray(area_edge), np.asarray(vn), fac_bdydiff_v
     )
-    mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, offset_provider={})
+    mo_nh_diffusion_stencil_06(
+        z_nabla2_e, area_edge, vn, fac_bdydiff_v, offset_provider={}
+    )
     assert np.allclose(vn, ref)
