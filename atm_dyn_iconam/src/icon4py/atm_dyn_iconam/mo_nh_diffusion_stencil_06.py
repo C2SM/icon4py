@@ -22,9 +22,9 @@ def _mo_nh_diffusion_stencil_06(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     area_edge: Field[[EdgeDim], float],
     vn: Field[[EdgeDim, KDim], float],
-    fac_bdy_diff_v: float,
+    fac_bdydiff_v: float,
 ) -> Field[[EdgeDim, KDim], float]:
-    vn = vn + (z_nabla2_e * area_edge * fac_bdy_diff_v)
+    vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
     return vn
 
 
@@ -33,6 +33,6 @@ def mo_nh_diffusion_stencil_06(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     area_edge: Field[[EdgeDim], float],
     vn: Field[[EdgeDim, KDim], float],
-    fac_bdy_diff_v: float,
+    fac_bdydiff_v: float,
 ):
-    _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, fac_bdy_diff_v, out=vn)
+    _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, fac_bdydiff_v, out=vn)
