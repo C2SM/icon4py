@@ -40,9 +40,9 @@ def mo_solve_nonhydro_stencil_24(
     ddt_vn_phy: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
+    vn_nnew: Field[[EdgeDim, KDim], float],
     dtime: float,
     cpd: float,
-    vn_nnew: Field[[EdgeDim, KDim], float],
 ):
     _mo_solve_nonhydro_stencil_24(
         vn_nnow,

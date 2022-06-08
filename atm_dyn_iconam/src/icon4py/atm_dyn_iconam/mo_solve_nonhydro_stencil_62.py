@@ -31,7 +31,7 @@ def _mo_solve_nonhydro_stencil_62(
 def mo_solve_nonhydro_stencil_62(
     w_now: Field[[CellDim, KDim], float],
     grf_tend_w: Field[[CellDim, KDim], float],
-    dtime: float,
     w_new: Field[[CellDim, KDim], float],
+    dtime: float,
 ):
     _mo_solve_nonhydro_stencil_62(w_now, grf_tend_w, dtime, out=w_new)

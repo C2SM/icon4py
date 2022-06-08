@@ -39,7 +39,7 @@ def mo_solve_nonhydro_stencil_24_numpy(
 def test_mo_solve_nonhydro_stencil_24():
     mesh = SimpleMesh()
 
-    dtime, cpd = float(10.0), float(10.0)
+    dtime, cpd = np.float64(10.0), np.float64(10.0)
     vn_nnow = random_field(mesh, EdgeDim, KDim)
     ddt_vn_adv_ntl1 = random_field(mesh, EdgeDim, KDim)
     ddt_vn_phy = random_field(mesh, EdgeDim, KDim)
@@ -62,9 +62,9 @@ def test_mo_solve_nonhydro_stencil_24():
         ddt_vn_phy,
         z_theta_v_e,
         z_gradh_exner,
+        vn_nnew,
         dtime,
         cpd,
-        vn_nnew,
         offset_provider={},
     )
     assert np.allclose(vn_nnew, ref)

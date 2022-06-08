@@ -44,7 +44,7 @@ def mo_solve_nonhydro_stencil_65_numpy(
 def test_mo_solve_nonhydro_stencil_65():
     mesh = SimpleMesh()
 
-    r_nsubsteps = float(10.0)
+    r_nsubsteps = np.float64(10.0)
     rho_ic = random_field(mesh, CellDim, KDim)
     vwind_expl_wgt = random_field(mesh, CellDim)
     vwind_impl_wgt = random_field(mesh, CellDim)
