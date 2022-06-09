@@ -26,6 +26,8 @@ from icon4py.common.dimension import (
     KDim,
     V2CDim,
     V2EDim,
+    E2CDim,
+    E2VDim,    
     VertexDim,
 )
 
@@ -81,6 +83,38 @@ class SimpleMeshData:
             [11, 14],
             [14, 17],
             [13, 17],
+        ]
+    )
+
+    e2v_table = np.asarray(
+        [
+            [0, 1],
+            [0, 4],
+            [0, 3],
+            [1, 2],
+            [1, 5],
+            [1, 4],
+            [2, 0],
+            [2, 3],
+            [2, 5],
+            [3, 4],
+            [3, 7],
+            [3, 6],
+            [4, 5],
+            [4, 8],
+            [4, 7],
+            [5, 3],
+            [5, 6],
+            [5, 8],
+            [6, 7],
+            [6, 1],
+            [6, 0],
+            [7, 8],
+            [7, 2],
+            [7, 1],
+            [8, 6],
+            [8, 0],
+            [8, 2]
         ]
     )
 
@@ -260,12 +294,16 @@ class SimpleMesh:
 
     def __init__(self, k_level: int = _DEFAULT_K_LEVEL):
         self.diamond_arr = SimpleMeshData.diamond_table
-        self.c2e = SimpleMeshData.c2e_table
+        self.e2c = SimpleMeshData.e2c_table        
+        self.e2v = SimpleMeshData.e2v_table        
+        self.c2e = SimpleMeshData.c2e_table        
         self.c2e2cO = SimpleMeshData.c2e2cO_table
         self.e2c2eO = SimpleMeshData.e2c2eO_table
         self.e2c2e = SimpleMeshData.e2c2e_table
         self.v2c = SimpleMeshData.v2c_table
         self.v2e = SimpleMeshData.v2e_table
+        self.n_e2c = self.e2c.shape[1]
+        self.n_e2v = self.e2v.shape[1]
         self.n_c2e = self.c2e.shape[1]
         self.n_c2e2cO = self.c2e2cO.shape[1]
         self.n_e2c2eO = self.e2c2eO.shape[1]
@@ -279,6 +317,8 @@ class SimpleMesh:
         self.size = {
             CellDim: self.n_cells,
             EdgeDim: self.n_edges,
+            E2VDim: self.n_e2v,            
+            E2CDim: self.n_e2c,
             C2EDim: self.n_c2e,
             C2E2CODim: self.n_c2e2cO,
             E2C2EODim: self.n_e2c2eO,
@@ -306,3 +346,10 @@ class SimpleMesh:
 
     def get_v2e_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.v2e, VertexDim, EdgeDim, self.n_v2e)
+
+    def get_e2c_offset_provider(self) -> NeighborTableOffsetProvider:
+        return NeighborTableOffsetProvider(self.e2c, EdgeDim, CellDim, self.n_e2c)
+
+    def get_e2v_offset_provider(self) -> NeighborTableOffsetProvider:
+        return NeighborTableOffsetProvider(self.e2v, EdgeDim, VertexDim, self.n_e2v)
+
