@@ -32,12 +32,10 @@ def mo_velocity_advection_stencil_07_numpy(
     
     red_w = np.zeros((num_edge,nlev))
     red_z_w_v = np.zeros((num_edge,nlev))
-    for k in range(0, nlev):
-        for e_iter in range(0, num_edge):
-            red_w[e_iter,k] = w[e2c[e_iter][0],k] - w[e2c[e_iter][1],k]
-    for k in range(0, nlev):
-        for e_iter in range(0, num_edge):
-            red_z_w_v[e_iter,k] = z_w_v[e2v[e_iter][0],k] - z_w_v[e2v[e_iter][1],k]
+    for e_iter in range(0, num_edge):
+        red_w[e_iter,:] = w[e2c[e_iter][0],:] - w[e2c[e_iter][1],:]
+    for e_iter in range(0, num_edge):
+        red_z_w_v[e_iter,:] = z_w_v[e2v[e_iter][0],:] - z_w_v[e2v[e_iter][1],:]
 
     z_v_grad_w = vn_ie*inv_dual_edge_length*red_w + \
                 z_vt_ie*inv_primal_edge_length*tangent_orientation*red_z_w_v
