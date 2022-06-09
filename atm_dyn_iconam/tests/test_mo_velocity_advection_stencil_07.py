@@ -22,15 +22,25 @@ from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_velocity_advection_stencil_07_numpy(
-    e2c: np.array, e2v: np.array, vn_ie: np.array, inv_dual_edge_length: np.array,
+    nlev: int, num_edge: int, e2c: np.array, e2v: np.array, vn_ie: np.array, inv_dual_edge_length: np.array,
     w: np.array, z_vt_ie: np.array, inv_primal_edge_length: np.array,
     tangent_orientation: np.array, z_w_v: np.array
 ):
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
     tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
-    z_v_grad_w = vn_ie*inv_dual_edge_length*np.sum(z_w_v[e2v], axis=1) + \
-                z_vt_ie*inv_primal_edge_length*tangent_orientation*np.sum(z_w_v[e2v], axis=1)
+    
+    red_w = np.zeros((num_edge,nlev))
+    red_z_w_v = np.zeros((num_edge,nlev))
+    for k in range(0, nlev):
+        for e_iter in range(0, num_edge):
+            red_w[e_iter,k] = w[e2c[e_iter][0],k] - w[e2c[e_iter][1],k]
+    for k in range(0, nlev):
+        for e_iter in range(0, num_edge):
+            red_z_w_v[e_iter,k] = z_w_v[e2v[e_iter][0],k] - z_w_v[e2v[e_iter][1],k]
+
+    z_v_grad_w = vn_ie*inv_dual_edge_length*red_w + \
+                z_vt_ie*inv_primal_edge_length*tangent_orientation*red_z_w_v
     return z_v_grad_w
 
 
@@ -47,6 +57,8 @@ def test_mo_velocity_advection_stencil_07():
     z_v_grad_w = zero_field(mesh, EdgeDim, KDim)
     
     ref = mo_velocity_advection_stencil_07_numpy(
+        mesh.k_level,
+        mesh.n_edges,
         mesh.e2c,
         mesh.e2v,
         np.asarray(vn_ie),
@@ -69,3 +81,6 @@ def test_mo_velocity_advection_stencil_07():
         offset_provider={"E2C": mesh.get_e2c_offset_provider(), "E2V": mesh.get_e2v_offset_provider()},
     )
     assert np.allclose(z_v_grad_w, ref)
+
+if __name__ == '__main__':
+    test_mo_velocity_advection_stencil_07()
