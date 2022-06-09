@@ -1,8 +1,0 @@
-vn_nnow          Field[[Edge, K], dtype=float64]  in
-ddt_vn_adv_ntl1  Field[[Edge, K], dtype=float64]  in
-ddt_vn_phy       Field[[Edge, K], dtype=float64]  in
-z_theta_v_e      Field[[Edge, K], dtype=float64]  in
-z_gradh_exner    Field[[Edge, K], dtype=float64]  in
-vn_nnew          Field[[Edge, K], dtype=float64]  inout
-dtime            Field[[], dtype=float64]         in
-cpd              Field[[], dtype=float64]         in
