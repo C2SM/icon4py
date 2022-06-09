@@ -35,7 +35,7 @@ def get_fieldinfo(fvprog: Program) -> dict[str, _FIELDINFO]:
     }
 
     for out_field in [fvprog.past_node.body[0].kwargs["out"]]:
-        if out_field.id in fields:
+        if out_field.id in fvprog.past_node.body[0].args:
             fields[out_field.id] = _FIELDINFO(fields[out_field.id].field, True, True)
         else:
             fields[out_field.id] = _FIELDINFO(out_field, False, True)
@@ -137,7 +137,3 @@ def main(output_metadata, fencil):
     if output_metadata:
         output_metadata.write_text(tabulate_fields(fvprog))
     click.echo(generate_cpp_code(fvprog))
-
-
-if __name__ == "__main__":
-    main()
