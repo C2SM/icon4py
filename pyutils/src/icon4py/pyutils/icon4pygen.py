@@ -31,14 +31,15 @@ def get_fieldinfo(fvprog: Program) -> dict[str, _FIELDINFO]:
     """Extract and format the in/out fields from a Program."""
     assert len(fvprog.past_node.body) == 1
     fields = {
-        field.id: _FIELDINFO(field, True, False)
-        for field in fvprog.past_node.body[0].args
+        field.id: _FIELDINFO(field, True, False) for field in fvprog.past_node.params
     }
-    for field in [fvprog.past_node.body[0].kwargs["out"]]:
-        if field.id in fields:
-            fields[field.id] = _FIELDINFO(fields[field.id].field, True, True)
+
+    for out_field in [fvprog.past_node.body[0].kwargs["out"]]:
+        if out_field.id in fields:
+            fields[out_field.id] = _FIELDINFO(fields[out_field.id].field, True, True)
         else:
-            fields[field.id] = _FIELDINFO(field, False, True)
+            fields[out_field.id] = _FIELDINFO(out_field, False, True)
+
     return fields
 
 
@@ -136,3 +137,7 @@ def main(output_metadata, fencil):
     if output_metadata:
         output_metadata.write_text(tabulate_fields(fvprog))
     click.echo(generate_cpp_code(fvprog))
+
+
+if __name__ == "__main__":
+    main()
