@@ -20,6 +20,8 @@ from typing import Union
 import click
 import tabulate
 from functional.ffront import common_types as ct
+from functional.ffront import program_ast as past
+from functional.iterator import ir as itir
 from functional.ffront import itir_makers as im
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator.backends.gtfn.gtfn_backend import generate
@@ -55,8 +57,27 @@ def format_io_string(fieldinfo: _FIELDINFO) -> str:
     return iostring
 
 
+def scan_for_chains(fvprog: Program) -> list[str]:
+    all_types = fvprog.past_node.iter_tree().if_isinstance(past.Symbol).getattr("type")
+    all_field_types = [
+        symbol_type
+        for symbol_type in all_types
+        if isinstance(symbol_type, ct.FieldType)
+    ]
+    all_dims = set(i for j in all_field_types for i in j.dims)
+    all_offset_labels = (
+        fvprog.itir.iter_tree()
+        .if_isinstance(itir.OffsetLiteral)
+        .getattr("value")
+        .to_list()
+    )
+    all_dim_labels = [dim.value for dim in all_dims if dim.local == True]
+    return set(all_offset_labels + all_dim_labels)
+
+
 def tabulate_fields(fvprog: Program, **kwargs) -> str:
     """Format in/out field information from a program as a string table."""
+    chains = scan_for_chains(fvprog)
     fieldinfos = get_fieldinfo(fvprog)
     table = []
     for name, info in fieldinfos.items():
@@ -65,7 +86,11 @@ def tabulate_fields(fvprog: Program, **kwargs) -> str:
             display_type = ct.FieldType(dims=[], dtype=info.field.type)
         table.append({"name": name, "type": display_type, "io": format_io_string(info)})
     kwargs.setdefault("tablefmt", "plain")
-    return tabulate.tabulate(table, **kwargs)
+    return (
+        ", ".join([chain for chain in chains])
+        + "\n"
+        + tabulate.tabulate(table, **kwargs)
+    )
 
 
 def gtfn_program(fencil_function) -> Program:
