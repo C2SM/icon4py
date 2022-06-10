@@ -20,10 +20,10 @@ from typing import Union
 import click
 import tabulate
 from functional.ffront import common_types as ct
-from functional.ffront import program_ast as past
-from functional.iterator import ir as itir
 from functional.ffront import itir_makers as im
+from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
+from functional.iterator import ir as itir
 from functional.iterator.backends.gtfn.gtfn_backend import generate
 
 from icon4py.pyutils.exceptions import MultipleFieldOperatorException
@@ -71,7 +71,7 @@ def scan_for_chains(fvprog: Program) -> list[str]:
         .getattr("value")
         .to_list()
     )
-    all_dim_labels = [dim.value for dim in all_dims if dim.local == True]
+    all_dim_labels = [dim.value for dim in all_dims if dim.local]
     return set(all_offset_labels + all_dim_labels)
 
 
