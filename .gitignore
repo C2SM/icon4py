@@ -1,6 +1,7 @@
 ### Custom ####
 _build
 _local
+_external_src
 
 ### GT4Py ####
 .gt_cache/
