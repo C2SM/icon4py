@@ -40,9 +40,9 @@ def mo_velocity_advection_stencil_07_numpy(
 
     red_w = np.zeros((num_edge, nlev))
     red_z_w_v = np.zeros((num_edge, nlev))
-    for e_iter in range(0, num_edge):
+    for e_iter in range(num_edge):
         red_w[e_iter, :] = w[e2c[e_iter][0], :] - w[e2c[e_iter][1], :]
-    for e_iter in range(0, num_edge):
+    for e_iter in range(num_edge):
         red_z_w_v[e_iter, :] = z_w_v[e2v[e_iter][0], :] - z_w_v[e2v[e_iter][1], :]
 
     z_v_grad_w = (
@@ -92,7 +92,3 @@ def test_mo_velocity_advection_stencil_07():
         },
     )
     assert np.allclose(z_v_grad_w, ref)
-
-
-if __name__ == "__main__":
-    test_mo_velocity_advection_stencil_07()
