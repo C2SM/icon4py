@@ -10,7 +10,7 @@ Each directory contains Python packages of ICON components or utility packages t
 
 ## Installation instructions
 
-We recommend to install all packages at once by using the provided `requirements-dev.txt` file in the root of the repository.
+We recommend to install all packages at once by using the provided `requirements.txt` or `requirements-dev.txt` files in the root of the repository.
 
 For example by using the following set of instructions:
 
@@ -26,9 +26,22 @@ python3.10 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade wheel
 
-# Install the all ICON4Py packages and its dependencies
+# Install all the ICON4Py packages and its dependencies
 pip install -r requirements-dev.txt
 
 # Finally, check that everything works
 pytest -v
 ```
+
+For advanced development tasks involving changes in external dependencies, you can tell `pip` to use a specific folder as base path for checked out sources: `.gitignore`):
+
+```bash
+# Install all the ICON4Py packages.
+# External dependencies would be checked out at './_external_src'
+pip install --src _external_src -r requirements-dev.txt
+
+# Check that everything works (skipping external tests)
+pytest --ignore _external_src -v
+```
+
+For convenience, `./_external_src` has been added to the repository `.gitignore`.
