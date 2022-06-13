@@ -33,7 +33,7 @@ pip install -r requirements-dev.txt
 pytest -v
 ```
 
-For advanced development tasks involving changes in external dependencies, you can tell `pip` to use a specific folder as base path for checked out sources: `.gitignore`):
+For advanced development tasks involving changes in external dependencies, you can tell `pip` to use a specific folder as base path for checked out sources:
 
 ```bash
 # Install all the ICON4Py packages.
