@@ -30,9 +30,9 @@ def mo_nh_diffusion_stencil_13_numpy(
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
     theta_v_e2c = theta_v[e2c]
-    theta_v_iter = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
+    theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
-    z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_iter
+    z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
     return z_nabla2_e
 
 
