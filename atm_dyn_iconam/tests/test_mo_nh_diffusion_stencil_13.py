@@ -50,6 +50,7 @@ def test_mo_nh_diffusion_stencil_13():
         np.asarray(inv_dual_edge_length),
         np.asarray(theta_v),
     )
+
     mo_nh_diffusion_stencil_13(
         kh_smag_e,
         inv_dual_edge_length,
