@@ -17,10 +17,7 @@ import pytest
 from click.testing import CliRunner
 
 from icon4py.pyutils.icon4pygen import main
-
-
-def get_module_path(module, stencil_name) -> str:
-    return f"icon4py.{module}.{stencil_name}:{stencil_name}"
+from icon4py.testutils.utils import get_stencil_module_path
 
 
 @pytest.fixture
@@ -36,42 +33,38 @@ using namespace fn;
 using namespace literals;"""
 
 
-def test_codegen_single_fo(cli):
-    stencil_name = "mo_nh_diffusion_stencil_06"
-    module_path = get_module_path("atm_dyn_iconam", stencil_name)
+@pytest.mark.parametrize(
+    ("stencil_module", "stencil_name"),
+    [
+        ("atm_dyn_iconam", "mo_velocity_advection_stencil_05"),
+        ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
+        ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
+    ],
+)
+def test_codegen_single_and_multiple_field_operator(cli, stencil_module, stencil_name):
+    module_path = get_stencil_module_path(stencil_module, stencil_name)
     result = cli.invoke(main, [module_path])
     assert result.exit_code == 0
     assert CPP_HEADERS in result.output
 
 
-# TODO: mark parametrise with different stencils.
-def test_codegen_multiple_fo(cli):
-    stencil_name = "mo_velocity_advection_stencil_05"
-    module_path = get_module_path("atm_dyn_iconam", stencil_name)
-    result = cli.invoke(main, [module_path])
-    assert result.exit_code == 0
-    assert CPP_HEADERS in result.output
-
-
-# TODO: mark parametrise with different stencils.
-def test_metadatagen_multiple_fo(cli):
-    stencil_name = "mo_velocity_advection_stencil_05"
+@pytest.mark.parametrize(
+    ("stencil_module", "stencil_name"),
+    [
+        ("atm_dyn_iconam", "mo_velocity_advection_stencil_05"),
+        ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
+        ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
+    ],
+)
+def test_metadatagen_single_and_multiple_field_operator(
+    cli, stencil_module, stencil_name
+):
     fname = f"{stencil_name}.dat"
-    module_path = get_module_path("atm_dyn_iconam", stencil_name)
+    module_path = get_stencil_module_path(stencil_module, stencil_name)
 
     with cli.isolated_filesystem():
         result = cli.invoke(
             main, [module_path, "--output-metadata", f"{stencil_name}.dat"]
         )
         assert result.exit_code == 0
-        assert fname in os.listdir(os.getcwd())
-
-
-def test_metadatagen_single_fo(cli):
-    stencil_name = "mo_nh_diffusion_stencil_06"
-    fname = f"{stencil_name}.dat"
-    module_path = get_module_path("atm_dyn_iconam", stencil_name)
-    with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, "--output-metadata", fname])
-        assert result.exit_code == 0
-        assert fname in os.listdir(os.getcwd())
+        assert fname in os.listdir(os.getcwd()) and os.path.getsize(fname) > 0

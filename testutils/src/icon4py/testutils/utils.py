@@ -40,3 +40,7 @@ def get_cell_to_k_table(k_arr, k):
     # creating cell to k table
     c2k = np.expand_dims(k_arr, axis=-1)
     return np.repeat(c2k[:], k, axis=-1)
+
+
+def get_stencil_module_path(module, stencil_name) -> str:
+    return f"icon4py.{module}.{stencil_name}:{stencil_name}"
