@@ -15,6 +15,7 @@
 import importlib
 import pathlib
 from collections import namedtuple
+from typing import Union
 
 import click
 import tabulate
@@ -22,6 +23,8 @@ from functional.ffront import common_types as ct
 from functional.ffront import itir_makers as im
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator.backends.gtfn.gtfn_backend import generate
+
+from icon4py.pyutils.exceptions import MultipleFieldOperatorException
 
 
 _FIELDINFO = namedtuple("_FIELDINFO", ["field", "inp", "out"])
@@ -33,14 +36,12 @@ def get_fieldinfo(fvprog: Program) -> dict[str, _FIELDINFO]:
         field.id: _FIELDINFO(field, True, False) for field in fvprog.past_node.params
     }
 
-    for node in fvprog.past_node.body:
-        for out_field in [node.kwargs["out"]]:
-            if out_field.id in fvprog.past_node.body[0].args:
-                fields[out_field.id] = _FIELDINFO(
-                    fields[out_field.id].field, True, True
-                )
-            else:
-                fields[out_field.id] = _FIELDINFO(out_field, False, True)
+    for out_field in [fvprog.past_node.body[0].kwargs["out"]]:
+        if out_field.id in [arg.id for arg in fvprog.past_node.body[0].args]:
+            fields[out_field.id] = _FIELDINFO(fields[out_field.id].field, True, True)
+        else:
+            fields[out_field.id] = _FIELDINFO(out_field, False, True)
+
     return fields
 
 
@@ -84,6 +85,12 @@ def generate_cpp_code(fvprog, **kwargs) -> str:
     return generate(fvprog.itir, grid_type="unstructured", **kwargs)
 
 
+def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
+    module_name, member_name = fencil.split(":")
+    fencil = getattr(importlib.import_module(module_name), member_name)
+    return fencil
+
+
 def generate_cli(fencil_function):
     @click.command(
         fencil_function.__name__,
@@ -122,8 +129,7 @@ def main(output_metadata, fencil):
     A fencil may be specified as <module>:<member>, where <module> is the
     dotted name of the containing module and <member> is the name of the fencil.
     """
-    module_name, member_name = fencil.split(":")
-    fencil = getattr(importlib.import_module(module_name), member_name)
+    fencil = import_fencil(fencil)
 
     fvprog = None
     match fencil:
@@ -133,6 +139,9 @@ def main(output_metadata, fencil):
             fvprog = fencil.with_backend("gtfn").as_program()
         case _:
             fvprog = program(fencil, backend="gtfn")
+
+    if len(fvprog.past_node.body) > 1:
+        raise MultipleFieldOperatorException()
 
     fvprog = adapt_program_gtfn(fvprog)
     if output_metadata:

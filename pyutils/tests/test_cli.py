@@ -16,6 +16,7 @@ import os
 import pytest
 from click.testing import CliRunner
 
+from icon4py.pyutils.exceptions import MultipleFieldOperatorException
 from icon4py.pyutils.icon4pygen import main
 from icon4py.testutils.utils import get_stencil_module_path
 
@@ -36,12 +37,11 @@ using namespace literals;"""
 @pytest.mark.parametrize(
     ("stencil_module", "stencil_name"),
     [
-        ("atm_dyn_iconam", "mo_velocity_advection_stencil_05"),
         ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
         ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
     ],
 )
-def test_codegen_single_and_multiple_field_operator(cli, stencil_module, stencil_name):
+def test_codegen(cli, stencil_module, stencil_name):
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     result = cli.invoke(main, [module_path])
     assert result.exit_code == 0
@@ -51,14 +51,11 @@ def test_codegen_single_and_multiple_field_operator(cli, stencil_module, stencil
 @pytest.mark.parametrize(
     ("stencil_module", "stencil_name"),
     [
-        ("atm_dyn_iconam", "mo_velocity_advection_stencil_05"),
         ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
         ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
     ],
 )
-def test_metadatagen_single_and_multiple_field_operator(
-    cli, stencil_module, stencil_name
-):
+def test_metadatagen(cli, stencil_module, stencil_name):
     fname = f"{stencil_name}.dat"
     module_path = get_stencil_module_path(stencil_module, stencil_name)
 
@@ -68,3 +65,19 @@ def test_metadatagen_single_and_multiple_field_operator(
         )
         assert result.exit_code == 0
         assert fname in os.listdir(os.getcwd()) and os.path.getsize(fname) > 0
+
+
+def test_invalid_module_path(cli):
+    module_path = get_stencil_module_path("some_module", "foo")
+    result = cli.invoke(main, [module_path])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, ModuleNotFoundError)
+
+
+def test_multiple_field_operator_stencil(cli):
+    module_path = get_stencil_module_path(
+        "atm_dyn_iconam", "mo_velocity_advection_stencil_05"
+    )
+    result = cli.invoke(main, [module_path])
+    assert result.exit_code == 1
+    assert isinstance(result.exception, MultipleFieldOperatorException)
