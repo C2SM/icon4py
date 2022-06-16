@@ -28,7 +28,6 @@ def _mo_solve_nonhydro_stencil_27(
 
     scal_divdamp = broadcast(scal_divdamp, (EdgeDim, KDim))
     bdy_divdamp = broadcast(bdy_divdamp, (EdgeDim, KDim))
-    nudgecoeff_e = broadcast(nudgecoeff_e, (EdgeDim, KDim))
     vn = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn
     return vn
 
