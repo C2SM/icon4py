@@ -1,14 +1,32 @@
+# Coverage configuration
+# Reference documentation: https://coverage.readthedocs.io/
+
 [run]
 branch = True
 source_pkgs =
-    atm_dyn_iconam
+    icon4py
 
 [paths]
-source =
-    atm_dyn_iconam/src
-    .tox/py*/lib/python3.*/site-packages/
+atm_dyn_iconam_sources =
+    atm_dyn_iconam/src/icon4py/atm_dyn_iconam/
+    .tox/py*/lib/python3.*/site-packages/icon4py/atm_dyn_iconam/
+
+common_sources =
+    common/src/icon4py/common/
+    .tox/py*/lib/python3.*/site-packages/icon4py/common/
+
+pyutils_sources =
+    pyutils/src/icon4py/pyutils/
+    .tox/py*/lib/python3.*/site-packages/icon4py/pyutils/
+
+testutils_sources =
+    testutils/src/icon4py/testutils/
+    .tox/py*/lib/python3.*/site-packages/icon4py/testutils/
 
 [report]
+ignore_errors = True
+show_missing = True
+
 # Regexes for lines to exclude from consideration
 exclude_lines =
     # Don't complain if tests don't hit defensive assertion code:
@@ -19,7 +37,5 @@ exclude_lines =
     if 0:
     if __name__ == .__main__.:
 
-ignore_errors = True
-
 [html]
-directory = coverage_html
+directory = _reports/coverage_html
