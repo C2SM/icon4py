@@ -14,8 +14,8 @@
 """Utilities for generating icon stencils."""
 import importlib
 import pathlib
-from types import SimpleNamespace
 from collections import namedtuple
+from types import SimpleNamespace
 from typing import Union
 
 import click
@@ -26,9 +26,11 @@ from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 from functional.iterator.backends.gtfn.gtfn_backend import generate
+
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.pyutils.icochainsize import ico_chain_size
 from icon4py.pyutils.exceptions import MultipleFieldOperatorException
+from icon4py.pyutils.icochainsize import IcoChainSize
+
 
 _FIELDINFO = namedtuple("_FIELDINFO", ["field", "inp", "out"])
 
@@ -59,7 +61,9 @@ def format_io_string(fieldinfo: _FIELDINFO) -> str:
 
 
 def scan_for_chains(fvprog: Program) -> list[str]:
-    all_types = fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
+    all_types = (
+        fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
+    )
     all_field_types = [
         symbol_type
         for symbol_type in all_types
@@ -75,6 +79,7 @@ def scan_for_chains(fvprog: Program) -> list[str]:
     all_dim_labels = [dim.value for dim in all_dims if dim.local]
     return set(all_offset_labels + all_dim_labels)
 
+
 def provide_offset(chain) -> SimpleNamespace:
     location_chain = []
     for letter in chain:
@@ -84,7 +89,9 @@ def provide_offset(chain) -> SimpleNamespace:
             location_chain.append(EdgeDim)
         elif letter == "V":
             location_chain.append(VertexDim)
-    return SimpleNamespace(max_neighbors=ico_chain_size(location_chain), has_skip_values=True)
+    return SimpleNamespace(
+        max_neighbors=IcoChainSize.get(location_chain), has_skip_values=True
+    )
 
 
 def tabulate_fields(fvprog: Program, chains, **kwargs) -> str:
@@ -115,9 +122,12 @@ def adapt_program_gtfn(fvprog):
     fvprog.itir.closures[0].domain = im.ref("domain_")
     return fvprog
 
+
 def generate_cpp_code(fvprog, offset_provider, **kwargs) -> str:
     """Generate C++ code using the GTFN backend."""
-    return generate(fvprog.itir, grid_type="unstructured", offset_provider=offset_provider, **kwargs)
+    return generate(
+        fvprog.itir, grid_type="unstructured", offset_provider=offset_provider, **kwargs
+    )
 
 
 def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
