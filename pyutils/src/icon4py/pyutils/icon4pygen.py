@@ -14,20 +14,22 @@
 """Utilities for generating icon stencils."""
 import importlib
 import pathlib
+from types import SimpleNamespace
 from collections import namedtuple
 from typing import Union
 
 import click
 import tabulate
+import sys
 from functional.ffront import common_types as ct
 from functional.ffront import itir_makers as im
 from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 from functional.iterator.backends.gtfn.gtfn_backend import generate
-
+from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.pyutils.icochainsize import ico_chain_size
 from icon4py.pyutils.exceptions import MultipleFieldOperatorException
-
 
 _FIELDINFO = namedtuple("_FIELDINFO", ["field", "inp", "out"])
 
@@ -58,7 +60,7 @@ def format_io_string(fieldinfo: _FIELDINFO) -> str:
 
 
 def scan_for_chains(fvprog: Program) -> list[str]:
-    all_types = fvprog.past_node.iter_tree().if_isinstance(past.Symbol).getattr("type")
+    all_types = fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
     all_field_types = [
         symbol_type
         for symbol_type in all_types
@@ -66,7 +68,7 @@ def scan_for_chains(fvprog: Program) -> list[str]:
     ]
     all_dims = set(i for j in all_field_types for i in j.dims)
     all_offset_labels = (
-        fvprog.itir.iter_tree()
+        fvprog.itir.pre_walk_values()
         .if_isinstance(itir.OffsetLiteral)
         .getattr("value")
         .to_list()
@@ -74,10 +76,20 @@ def scan_for_chains(fvprog: Program) -> list[str]:
     all_dim_labels = [dim.value for dim in all_dims if dim.local]
     return set(all_offset_labels + all_dim_labels)
 
+def provide_offset(chain) -> SimpleNamespace:
+    location_chain = []
+    for letter in chain:
+        if letter == "C":
+            location_chain.append(CellDim)
+        elif letter == "E":
+            location_chain.append(EdgeDim)
+        elif letter == "V":
+            location_chain.append(VertexDim)
+    return SimpleNamespace(max_neighbors=ico_chain_size(location_chain), has_skip_values=True)
 
-def tabulate_fields(fvprog: Program, **kwargs) -> str:
+
+def tabulate_fields(fvprog: Program, chains, **kwargs) -> str:
     """Format in/out field information from a program as a string table."""
-    chains = scan_for_chains(fvprog)
     fieldinfos = get_fieldinfo(fvprog)
     table = []
     for name, info in fieldinfos.items():
@@ -104,10 +116,9 @@ def adapt_program_gtfn(fvprog):
     fvprog.itir.closures[0].domain = im.ref("domain_")
     return fvprog
 
-
-def generate_cpp_code(fvprog, **kwargs) -> str:
+def generate_cpp_code(fvprog, offset_provider, **kwargs) -> str:
     """Generate C++ code using the GTFN backend."""
-    return generate(fvprog.itir, grid_type="unstructured", **kwargs)
+    return generate(fvprog.itir, grid_type="unstructured", offset_provider=offset_provider, **kwargs)
 
 
 def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
@@ -129,9 +140,15 @@ def generate_cli(fencil_function):
     )
     def cli(output_metadata):
         fvprog = gtfn_program(fencil_function)
+        chains = scan_for_chains(fvprog)
+        offsets = {}
+        for chain in chains:
+            print(chain, file=sys.stderr)
+            print(provide_offset(chain), file=sys.stderr)
+            offsets[chain] = provide_offset(chain)
         if output_metadata:
-            output_metadata.write_text(tabulate_fields(fvprog))
-        click.echo(generate_cpp_code(fvprog))
+            output_metadata.write_text(tabulate_fields(fvprog, chains))
+        click.echo(generate_cpp_code(fvprog, offsets))
 
     return cli
 
@@ -169,6 +186,12 @@ def main(output_metadata, fencil):
         raise MultipleFieldOperatorException()
 
     fvprog = adapt_program_gtfn(fvprog)
+    chains = scan_for_chains(fvprog)
+    offsets = {}
+    for chain in chains:
+        print(chain, file=sys.stderr)
+        print(provide_offset(chain), file=sys.stderr)
+        offsets[chain] = provide_offset(chain)
     if output_metadata:
-        output_metadata.write_text(tabulate_fields(fvprog))
-    click.echo(generate_cpp_code(fvprog))
+        output_metadata.write_text(tabulate_fields(fvprog, chains))
+    click.echo(generate_cpp_code(fvprog, offsets))
