@@ -19,6 +19,7 @@ import pytest
 from icon4py.pyutils.icon4pygen import (
     adapt_program_gtfn,
     import_fencil,
+    scan_for_chains,
     tabulate_fields,
 )
 from icon4py.testutils.utils import get_stencil_module_path
@@ -27,15 +28,22 @@ from icon4py.testutils.utils import get_stencil_module_path
 def get_tabulated_fields(stencil_module: str, stencil_name: str) -> str:
     fencil = import_fencil(get_stencil_module_path(stencil_module, stencil_name))
     fvprog = adapt_program_gtfn(fencil.with_backend("gtfn"))
-    return tabulate_fields(fvprog)
+    chains = scan_for_chains(fvprog)
+    return tabulate_fields(fvprog, chains)
 
 
 def parse_tabulated(tabulated: str, col: str) -> List[str]:
     tabulated_list = [re.split(r"\s\s+", line) for line in tabulated.splitlines()]
+    offsets = tabulated_list.pop(0)
+
     parsed = [
         dict(zip(["name", "type", "io"], tabulated_list[i]))
         for i in range(len(tabulated_list))
     ]
+
+    if col == "offsets":
+        return offsets
+
     return [arg[col] for arg in parsed]
 
 
@@ -43,6 +51,7 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
     (
         "stencil_module",
         "stencil_name",
+        "exp_offsets",
         "exp_names",
         "exp_types",
         "exp_in",
@@ -53,6 +62,7 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
         (
             "atm_dyn_iconam",
             "mo_nh_diffusion_stencil_14",
+            ["C2E"],
             ["z_nabla2_e", "geofac_div", "z_temp"],
             [
                 "Field[[Edge, K], dtype=float64]",
@@ -66,6 +76,7 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
         (
             "atm_dyn_iconam",
             "mo_solve_nonhydro_stencil_29",
+            [""],
             ["grf_tend_vn", "vn_now", "vn_new", "dtime"],
             [
                 "Field[[Edge, K], dtype=float64]",
@@ -80,6 +91,7 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
         (
             "atm_dyn_iconam",
             "mo_nh_diffusion_stencil_06",
+            [""],
             ["z_nabla2_e", "area_edge", "vn", "fac_bdydiff_v"],
             [
                 "Field[[Edge, K], dtype=float64]",
@@ -94,13 +106,22 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
     ],
 )
 def test_tabulation(
-    stencil_module, stencil_name, exp_names, exp_types, exp_in, exp_out, exp_inout
+    stencil_module,
+    stencil_name,
+    exp_offsets,
+    exp_names,
+    exp_types,
+    exp_in,
+    exp_out,
+    exp_inout,
 ):
     tabulated = get_tabulated_fields(stencil_module, stencil_name)
     parsed_names = parse_tabulated(tabulated, "name")
     parsed_types = parse_tabulated(tabulated, "type")
     parsed_io = parse_tabulated(tabulated, "io")
+    parsed_offsets = parse_tabulated(tabulated, "offsets")
 
+    assert parsed_offsets == exp_offsets
     assert parsed_names == exp_names
     assert parsed_types == exp_types
     assert (

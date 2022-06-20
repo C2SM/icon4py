@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import os
+import re
 
 import pytest
 from click.testing import CliRunner
@@ -26,12 +27,7 @@ def cli():
     return CliRunner()
 
 
-CPP_HEADERS = """#include <gridtools/fn/unstructured.hpp>
-
-namespace generated {
-using namespace gridtools;
-using namespace fn;
-using namespace literals;"""
+CODEGEN_PATTERNS = {"includes": "#include <.*>", "namespaces": "using .*;"}
 
 
 @pytest.mark.parametrize(
@@ -45,7 +41,9 @@ def test_codegen(cli, stencil_module, stencil_name):
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     result = cli.invoke(main, [module_path])
     assert result.exit_code == 0
-    assert CPP_HEADERS in result.output
+    for _, pattern in CODEGEN_PATTERNS.items():
+        matches = re.findall(pattern, result.output, re.MULTILINE)
+        assert matches
 
 
 @pytest.mark.parametrize(
