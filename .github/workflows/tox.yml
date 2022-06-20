@@ -1,4 +1,4 @@
-name: Tests
+name: Tox
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
     - main
 
 jobs:
-  build:
+  tox-tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -17,14 +17,25 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        python -m pip install --upgrade --upgrade-strategy eager -r requirements-dev.txt
-    - name: Test
+
+    - name: Test with tox
       run: |
-        python -m pytest 
+        pyversion_no_dot="${{ matrix.python-version }}"
+        pyversion_no_dot="${pyversion_no_dot/./}"
+        pip install tox clang-format
+        tox -r -e py${pyversion_no_dot}
+
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v2
+      with:
+        name: code-coverage-report
+        path: _reports/coverage_html/
