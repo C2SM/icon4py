@@ -14,24 +14,29 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import EdgeDim, KDim
+from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_29(
-    grf_tend_vn: Field[[EdgeDim, KDim], float],
-    vn_now: Field[[EdgeDim, KDim], float],
-    dtime: float,
+def _mo_nh_diffusion_stencil_13(
+    kh_smag_e: Field[[EdgeDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    theta_v: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    vn_new = vn_now + dtime * grf_tend_vn
-    return vn_new
+    z_nabla2_e = kh_smag_e * inv_dual_edge_length * (theta_v(E2C[1]) - theta_v(E2C[0]))
+    return z_nabla2_e
 
 
 @program
-def mo_solve_nonhydro_stencil_29(
-    grf_tend_vn: Field[[EdgeDim, KDim], float],
-    vn_now: Field[[EdgeDim, KDim], float],
-    vn_new: Field[[EdgeDim, KDim], float],
-    dtime: float,
+def mo_nh_diffusion_stencil_13(
+    kh_smag_e: Field[[EdgeDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    z_nabla2_e: Field[[EdgeDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_29(grf_tend_vn, vn_now, dtime, out=vn_new)
+    _mo_nh_diffusion_stencil_13(
+        kh_smag_e,
+        inv_dual_edge_length,
+        theta_v,
+        out=z_nabla2_e,
+    )

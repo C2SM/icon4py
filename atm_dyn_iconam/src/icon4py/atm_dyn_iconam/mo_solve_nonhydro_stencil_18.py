@@ -14,15 +14,28 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _mo_velocity_advection_stencil_12() -> Field[[CellDim, KDim], float]:
-    z_w_con_c = float(0.0)
-    return z_w_con_c
+def _mo_solve_nonhydro_stencil_18(
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    z_exner_ex_pr: Field[[CellDim, KDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    z_gradh_exner = inv_dual_edge_length * (
+        z_exner_ex_pr(E2C[1]) - z_exner_ex_pr(E2C[0])
+    )
+    return z_gradh_exner
 
 
 @program
-def mo_velocity_advection_stencil_12(z_w_con_c: Field[[CellDim, KDim], float]):
-    _mo_velocity_advection_stencil_12(out=z_w_con_c)
+def mo_solve_nonhydro_stencil_18(
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    z_exner_ex_pr: Field[[CellDim, KDim], float],
+    z_gradh_exner: Field[[EdgeDim, KDim], float],
+):
+    _mo_solve_nonhydro_stencil_18(
+        inv_dual_edge_length,
+        z_exner_ex_pr,
+        out=z_gradh_exner,
+    )

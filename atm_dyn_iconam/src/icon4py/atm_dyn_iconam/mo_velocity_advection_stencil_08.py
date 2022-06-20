@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float, neighbor_sum
+from functional.ffront.fbuiltins import Field, neighbor_sum
 
 from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 

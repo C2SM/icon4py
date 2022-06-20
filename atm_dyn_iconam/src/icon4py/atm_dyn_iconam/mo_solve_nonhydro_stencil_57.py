@@ -18,11 +18,11 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_velocity_advection_stencil_12() -> Field[[CellDim, KDim], float]:
-    z_w_con_c = float(0.0)
-    return z_w_con_c
+def _mo_solve_nonhydro_stencil_57() -> Field[[CellDim, KDim], float]:
+    mass_flx_ic = float(0.0)
+    return mass_flx_ic
 
 
 @program
-def mo_velocity_advection_stencil_12(z_w_con_c: Field[[CellDim, KDim], float]):
-    _mo_velocity_advection_stencil_12(out=z_w_con_c)
+def mo_solve_nonhydro_stencil_57(mass_flx_ic: Field[[CellDim, KDim], float]):
+    _mo_solve_nonhydro_stencil_57(out=mass_flx_ic)

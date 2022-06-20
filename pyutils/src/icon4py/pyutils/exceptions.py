@@ -11,18 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import CellDim, KDim
-
-
-@field_operator
-def _mo_velocity_advection_stencil_12() -> Field[[CellDim, KDim], float]:
-    z_w_con_c = float(0.0)
-    return z_w_con_c
-
-
-@program
-def mo_velocity_advection_stencil_12(z_w_con_c: Field[[CellDim, KDim], float]):
-    _mo_velocity_advection_stencil_12(out=z_w_con_c)
+class MultipleFieldOperatorException(Exception):
+    def __init___(self, stencil_name):
+        Exception.__init__(
+            self,
+            f"{stencil_name} is currently not supported as it contains multiple field operators.",
+        )
