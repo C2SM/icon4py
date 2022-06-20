@@ -33,6 +33,19 @@ pip install -r requirements-dev.txt
 pytest -v
 ```
 
+Alternatively, you can use `tox` to reduce the number of manual steps:
+
+```bash
+# Clone the repository
+git clone git@github.com:C2SM/icon4py.git
+cd icon4py
+
+# Use tox to create and set up a development environment (usually at `.venv`)
+tox -e dev --devenv .venv 
+```
+
+### Installation with editable external sources
+
 For advanced development tasks involving changes in external dependencies, you can tell `pip` to use a specific folder as base path for checked out sources:
 
 ```bash
@@ -45,3 +58,26 @@ pytest --ignore _external_src -v
 ```
 
 For convenience, `./_external_src` has been added to the repository `.gitignore`.
+
+### Installation of specific subpackages
+
+In case you only want to install a specific subpackage, use the actual subpackage `requirements.txt` or `requirements-dev.txt` files.
+
+For example:
+
+```bash
+# Clone the repository
+git clone git@github.com:C2SM/icon4py.git
+cd icon4py
+
+# Create a (Python 3.10) virtual environment (usually at `.venv`)
+python3.10 -m venv .venv
+
+# Activate the virtual environment and make sure that 'wheel' is installed
+source .venv/bin/activate
+pip install --upgrade wheel
+
+# Install a specific ICON4Py subpackage and its dependencies
+cd _SUBPACKAGE_  # where _SUBPACKAGE_ in atm_dyn_iconam | common | pyutils | testutils | ...
+pip install -r requirements-dev.txt
+```
