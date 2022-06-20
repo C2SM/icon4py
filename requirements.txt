@@ -1,0 +1,7 @@
+-r base-requirements.txt
+
+# Concretized dependencies in local repo
+./common
+./pyutils
+./testutils
+./atm_dyn_iconam
