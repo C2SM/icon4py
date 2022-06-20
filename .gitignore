@@ -1,6 +1,7 @@
 ### Custom ####
 _build
 _local
+_reports
 
 ### GT4Py ####
 .gt_cache/

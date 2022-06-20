@@ -19,3 +19,4 @@ pytest-cov>=2.8
 pytest-factoryboy>=2.0
 pytest-xdist[psutil]>=2.2
 setuptools>=40.8.0
+tox >= 3.25
