@@ -222,4 +222,6 @@ class IcoChainSize:
             previous_locations = current_locations
             previous_location_type = current_location_type
 
+        if chain[0] == chain[-1]:
+            return len(previous_locations) - 1
         return len(previous_locations)

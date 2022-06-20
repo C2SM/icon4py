@@ -89,6 +89,9 @@ def provide_offset(chain) -> SimpleNamespace:
             location_chain.append(EdgeDim)
         elif letter == "V":
             location_chain.append(VertexDim)
+        elif letter == "O":
+            # Origin is handled by IcoChainSize
+            pass
     return SimpleNamespace(
         max_neighbors=IcoChainSize.get(location_chain), has_skip_values=True
     )
