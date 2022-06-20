@@ -20,7 +20,6 @@ from typing import Union
 
 import click
 import tabulate
-import sys
 from functional.ffront import common_types as ct
 from functional.ffront import itir_makers as im
 from functional.ffront import program_ast as past
@@ -143,8 +142,6 @@ def generate_cli(fencil_function):
         chains = scan_for_chains(fvprog)
         offsets = {}
         for chain in chains:
-            print(chain, file=sys.stderr)
-            print(provide_offset(chain), file=sys.stderr)
             offsets[chain] = provide_offset(chain)
         if output_metadata:
             output_metadata.write_text(tabulate_fields(fvprog, chains))
@@ -189,8 +186,6 @@ def main(output_metadata, fencil):
     chains = scan_for_chains(fvprog)
     offsets = {}
     for chain in chains:
-        print(chain, file=sys.stderr)
-        print(provide_offset(chain), file=sys.stderr)
         offsets[chain] = provide_offset(chain)
     if output_metadata:
         output_metadata.write_text(tabulate_fields(fvprog, chains))
