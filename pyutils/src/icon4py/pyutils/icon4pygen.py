@@ -84,7 +84,7 @@ def scan_for_chains(fvprog: Program) -> list[str]:
     return set(all_offset_labels + all_dim_labels)
 
 
-def provide_offset(chain) -> SimpleNamespace:
+def provide_offset(chain: str) -> SimpleNamespace:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
