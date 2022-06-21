@@ -28,7 +28,10 @@ from functional.iterator import ir as itir
 from functional.iterator.backends.gtfn.gtfn_backend import generate
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.pyutils.exceptions import MultipleFieldOperatorException
+from icon4py.pyutils.exceptions import (
+    InvalidConnectivityException,
+    MultipleFieldOperatorException,
+)
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
@@ -61,6 +64,7 @@ def format_io_string(fieldinfo: _FIELDINFO) -> str:
 
 
 def scan_for_chains(fvprog: Program) -> list[str]:
+    """Scan PAST node for connectivities and return a set of all connectivity chains."""
     all_types = (
         fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
     )
@@ -81,6 +85,12 @@ def scan_for_chains(fvprog: Program) -> list[str]:
 
 
 def provide_offset(chain) -> SimpleNamespace:
+    """Build an offset provider based on connectivity chain string.
+
+    Connectivity strings must contain one of the following connectivity type identifiers:
+    C (cell), E (Edge), V (Vertex) and be separated by a '2' e.g. 'E2V'. In cases where
+    the origin is included such as 'E2C2EO', the origin handling is done by IcoChainSize.
+    """
     location_chain = []
     for letter in chain:
         if letter == "C":
@@ -89,16 +99,17 @@ def provide_offset(chain) -> SimpleNamespace:
             location_chain.append(EdgeDim)
         elif letter == "V":
             location_chain.append(VertexDim)
-        elif letter == "O":
-            # Origin is handled by IcoChainSize
+        elif letter in ["2", "O"]:
             pass
+        else:
+            raise InvalidConnectivityException(location_chain)
     return SimpleNamespace(
         max_neighbors=IcoChainSize.get(location_chain), has_skip_values=True
     )
 
 
-def tabulate_fields(fvprog: Program, chains, **kwargs) -> str:
-    """Format in/out field information from a program as a string table."""
+def format_metadata(fvprog: Program, chains, **kwargs) -> str:
+    """Format in/out field and connectivity information from a program as a string table."""
     fieldinfos = get_fieldinfo(fvprog)
     table = []
     for name, info in fieldinfos.items():
@@ -139,30 +150,6 @@ def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
     return fencil
 
 
-def generate_cli(fencil_function):
-    @click.command(
-        fencil_function.__name__,
-        help=f"Generate metadata and C++ code for {fencil_function.__name__}",
-    )
-    @click.option(
-        "--output-metadata",
-        type=click.Path(
-            exists=False, dir_okay=False, resolve_path=True, path_type=pathlib.Path
-        ),
-    )
-    def cli(output_metadata):
-        fvprog = gtfn_program(fencil_function)
-        chains = scan_for_chains(fvprog)
-        offsets = {}
-        for chain in chains:
-            offsets[chain] = provide_offset(chain)
-        if output_metadata:
-            output_metadata.write_text(tabulate_fields(fvprog, chains))
-        click.echo(generate_cpp_code(fvprog, offsets))
-
-    return cli
-
-
 @click.command(
     "icon4pygen",
 )
@@ -201,5 +188,5 @@ def main(output_metadata, fencil):
     for chain in chains:
         offsets[chain] = provide_offset(chain)
     if output_metadata:
-        output_metadata.write_text(tabulate_fields(fvprog, chains))
+        output_metadata.write_text(format_metadata(fvprog, chains))
     click.echo(generate_cpp_code(fvprog, offsets))

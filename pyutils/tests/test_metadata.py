@@ -18,18 +18,18 @@ import pytest
 
 from icon4py.pyutils.icon4pygen import (
     adapt_program_gtfn,
+    format_metadata,
     import_fencil,
     scan_for_chains,
-    tabulate_fields,
 )
 from icon4py.testutils.utils import get_stencil_module_path
 
 
-def get_tabulated_fields(stencil_module: str, stencil_name: str) -> str:
+def get_stencil_metadata(stencil_module: str, stencil_name: str) -> str:
     fencil = import_fencil(get_stencil_module_path(stencil_module, stencil_name))
     fvprog = adapt_program_gtfn(fencil.with_backend("gtfn"))
     chains = scan_for_chains(fvprog)
-    return tabulate_fields(fvprog, chains)
+    return format_metadata(fvprog, chains)
 
 
 def parse_tabulated(tabulated: str, col: str) -> List[str]:
@@ -115,7 +115,7 @@ def test_tabulation(
     exp_out,
     exp_inout,
 ):
-    tabulated = get_tabulated_fields(stencil_module, stencil_name)
+    tabulated = get_stencil_metadata(stencil_module, stencil_name)
     parsed_names = parse_tabulated(tabulated, "name")
     parsed_types = parse_tabulated(tabulated, "type")
     parsed_io = parse_tabulated(tabulated, "io")

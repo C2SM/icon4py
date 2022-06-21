@@ -13,6 +13,7 @@
 
 import pytest
 
+from icon4py.pyutils.exceptions import InvalidConnectivityException
 from icon4py.pyutils.icon4pygen import provide_offset
 
 
@@ -51,3 +52,8 @@ from icon4py.pyutils.icon4pygen import provide_offset
 def test_chainsize_neighbors(chain, expected):
     actual = provide_offset(chain)
     assert actual.max_neighbors == expected
+
+
+def test_unsupported_connectivity_type():
+    with pytest.raises(InvalidConnectivityException):
+        provide_offset("E2X")
