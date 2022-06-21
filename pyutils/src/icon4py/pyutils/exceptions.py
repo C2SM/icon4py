@@ -23,9 +23,8 @@ class MultipleFieldOperatorException(Exception):
 
 
 class InvalidConnectivityException(Exception):
-    class MultipleFieldOperatorException(Exception):
-        def __init___(self, location_chain: List[str]):
-            Exception.__init__(
-                self,
-                f"Connectivity identifier must be one of [C, E, V, O], provided: {location_chain}",
-            )
+    def __init___(self, location_chain: List[str]):
+        Exception.__init__(
+            self,
+            f"Connectivity identifier must be one of [C, E, V, O], provided: {location_chain}",
+        )
