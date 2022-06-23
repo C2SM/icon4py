@@ -34,3 +34,6 @@ rst-roles=
     py:attr, attr,
     py:exc, exc,
     py:obj, obj,
+
+per-file-ignores =
+    pyutils/src/icon4py/pyutils/icochainsize.py:E800

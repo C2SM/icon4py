@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import os
+import re
 
 import pytest
 from click.testing import CliRunner
@@ -26,35 +27,25 @@ def cli():
     return CliRunner()
 
 
-CPP_HEADERS = """#include <gridtools/fn/unstructured.hpp>
+CODEGEN_PATTERNS = {"includes": "#include <.*>", "namespaces": "using .*;"}
+STENCILS_TO_TEST = [
+    ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
+    ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
+    ("atm_dyn_iconam", "mo_velocity_advection_stencil_07"),
+]
 
-namespace generated {
-using namespace gridtools;
-using namespace fn;
-using namespace literals;"""
 
-
-@pytest.mark.parametrize(
-    ("stencil_module", "stencil_name"),
-    [
-        ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
-        ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
-    ],
-)
+@pytest.mark.parametrize(("stencil_module", "stencil_name"), STENCILS_TO_TEST)
 def test_codegen(cli, stencil_module, stencil_name):
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     result = cli.invoke(main, [module_path])
     assert result.exit_code == 0
-    assert CPP_HEADERS in result.output
+    for _, pattern in CODEGEN_PATTERNS.items():
+        matches = re.findall(pattern, result.output, re.MULTILINE)
+        assert matches
 
 
-@pytest.mark.parametrize(
-    ("stencil_module", "stencil_name"),
-    [
-        ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
-        ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
-    ],
-)
+@pytest.mark.parametrize(("stencil_module", "stencil_name"), STENCILS_TO_TEST)
 def test_metadatagen(cli, stencil_module, stencil_name):
     fname = f"{stencil_name}.dat"
     module_path = get_stencil_module_path(stencil_module, stencil_name)
