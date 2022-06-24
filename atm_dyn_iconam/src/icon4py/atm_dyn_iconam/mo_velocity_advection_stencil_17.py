@@ -19,8 +19,8 @@ from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 
 @field_operator
 def _mo_velocity_advection_stencil_17(
-    z_v_grad_w: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
+    z_v_grad_w: Field[[EdgeDim, KDim], float],
     ddt_w_adv: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
     ddt_w_adv = ddt_w_adv + neighbor_sum(e_bln_c_s * z_v_grad_w(C2E), axis=C2EDim)
@@ -33,4 +33,4 @@ def mo_velocity_advection_stencil_17(
     z_v_grad_w: Field[[EdgeDim, KDim], float],
     ddt_w_adv: Field[[CellDim, KDim], float],
 ):
-    _mo_velocity_advection_stencil_17(z_v_grad_w, e_bln_c_s, ddt_w_adv, out=ddt_w_adv)
+    _mo_velocity_advection_stencil_17(e_bln_c_s, z_v_grad_w, ddt_w_adv, out=ddt_w_adv)
