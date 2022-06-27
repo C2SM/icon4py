@@ -17,6 +17,7 @@ import numpy as np
 from functional.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import (
+    C2E2CDim,
     C2E2CODim,
     C2EDim,
     CellDim,
@@ -288,6 +289,29 @@ class SimpleMeshData:
         ]
     )
 
+    c2e2c_table = np.asarray(
+        [
+            [15, 4, 3],
+            [16, 5, 4],
+            [17, 3, 5],
+            [0, 6, 2],
+            [1, 7, 0],
+            [2, 8, 1],
+            [3, 10, 9],
+            [4, 11, 10],
+            [5, 9, 11],
+            [6, 12, 8],
+            [7, 13, 6],
+            [8, 14, 7],
+            [9, 16, 15],
+            [10, 17, 16],
+            [11, 15, 17],
+            [12, 0, 14],
+            [13, 1, 12],
+            [14, 2, 13],
+        ]
+    )
+
 
 class SimpleMesh:
     _DEFAULT_K_LEVEL = 10
@@ -298,6 +322,7 @@ class SimpleMesh:
         self.e2v = SimpleMeshData.e2v_table
         self.c2e = SimpleMeshData.c2e_table
         self.c2e2cO = SimpleMeshData.c2e2cO_table
+        self.c2e2c = SimpleMeshData.c2e2c_table
         self.e2c2eO = SimpleMeshData.e2c2eO_table
         self.e2c2e = SimpleMeshData.e2c2e_table
         self.v2c = SimpleMeshData.v2c_table
@@ -306,6 +331,7 @@ class SimpleMesh:
         self.n_e2v = self.e2v.shape[1]
         self.n_c2e = self.c2e.shape[1]
         self.n_c2e2cO = self.c2e2cO.shape[1]
+        self.n_c2e2c = self.c2e2c.shape[1]
         self.n_e2c2eO = self.e2c2eO.shape[1]
         self.n_e2c2e = self.e2c2e.shape[1]
         self.n_v2c = self.v2c.shape[1]
@@ -321,6 +347,7 @@ class SimpleMesh:
             E2CDim: self.n_e2c,
             C2EDim: self.n_c2e,
             C2E2CODim: self.n_c2e2cO,
+            C2E2CDim: self.n_c2e2c,
             E2C2EODim: self.n_e2c2eO,
             E2C2EDim: self.n_e2c2e,
             V2CDim: self.n_v2c,
@@ -334,6 +361,9 @@ class SimpleMesh:
 
     def get_c2e2cO_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.c2e2cO, CellDim, CellDim, self.n_c2e2cO)
+
+    def get_c2e2c_offset_provider(self) -> NeighborTableOffsetProvider:
+        return NeighborTableOffsetProvider(self.c2e2c, CellDim, CellDim, self.n_c2e2c)
 
     def get_e2c2eO_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.e2c2eO, EdgeDim, EdgeDim, self.n_e2c2eO)
