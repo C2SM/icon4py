@@ -28,7 +28,7 @@ def _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     p_cell_in: Field[[CellDim, KDim], float],
     c_intp: Field[[VertexDim, V2CDim], float],
 ) -> Field[[VertexDim, KDim], float]:
-    p_vert_out = neighbor_sum(c_intp * p_cell_in(V2C), axis=V2CDim)
+    p_vert_out = neighbor_sum(p_cell_in(V2C) * c_intp, axis=V2CDim)
     return p_vert_out
 
 
