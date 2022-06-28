@@ -22,7 +22,7 @@ def _mo_solve_nonhydro_stencil_25(
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
     z_graddiv_vn: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    z_graddiv2_vn = neighbor_sum(geofac_grdiv * z_graddiv_vn(E2C2EO), axis=E2C2EODim)
+    z_graddiv2_vn = neighbor_sum(z_graddiv_vn(E2C2EO) * geofac_grdiv, axis=E2C2EODim)
     return z_graddiv2_vn
 
 

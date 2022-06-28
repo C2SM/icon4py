@@ -23,7 +23,7 @@ def _mo_velocity_advection_stencil_17(
     z_v_grad_w: Field[[EdgeDim, KDim], float],
     ddt_w_adv: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    ddt_w_adv = ddt_w_adv + neighbor_sum(e_bln_c_s * z_v_grad_w(C2E), axis=C2EDim)
+    ddt_w_adv = ddt_w_adv + neighbor_sum(z_v_grad_w(C2E) * e_bln_c_s, axis=C2EDim)
     return ddt_w_adv
 
 

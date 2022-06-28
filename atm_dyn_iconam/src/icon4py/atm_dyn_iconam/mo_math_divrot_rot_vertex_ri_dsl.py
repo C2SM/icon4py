@@ -28,7 +28,7 @@ def _mo_math_divrot_rot_vertex_ri_dsl(
     vec_e: Field[[EdgeDim, KDim], float],
     geofac_rot: Field[[VertexDim, V2EDim], float],
 ) -> Field[[VertexDim, KDim], float]:
-    rot_vec = neighbor_sum(geofac_rot * vec_e(V2E), axis=V2EDim)
+    rot_vec = neighbor_sum(vec_e(V2E) * geofac_rot, axis=V2EDim)
     return rot_vec
 
 
