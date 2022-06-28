@@ -22,7 +22,7 @@ def _mo_velocity_advection_stencil_08(
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    z_ekinh = neighbor_sum(e_bln_c_s * z_kin_hor_e(C2E), axis=C2EDim)
+    z_ekinh = neighbor_sum(z_kin_hor_e(C2E) * e_bln_c_s, axis=C2EDim)
     return z_ekinh
 
 

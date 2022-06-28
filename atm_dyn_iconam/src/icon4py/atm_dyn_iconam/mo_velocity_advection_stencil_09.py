@@ -22,7 +22,7 @@ def _mo_velocity_advection_stencil_09(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    z_w_concorr_mc = neighbor_sum(e_bln_c_s * z_w_concorr_me(C2E), axis=C2EDim)
+    z_w_concorr_mc = neighbor_sum(z_w_concorr_me(C2E) * e_bln_c_s, axis=C2EDim)
     return z_w_concorr_mc
 
 
