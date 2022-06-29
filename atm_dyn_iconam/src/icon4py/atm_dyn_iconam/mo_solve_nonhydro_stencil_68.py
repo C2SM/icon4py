@@ -11,18 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# TODO: conditionals not yet implemented.
-
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, where
 
 from icon4py.common.dimension import CellDim, KDim
 
 
-# TODO: check if the return is ok for the else as well as how the if statement is evaluating to True
 @field_operator
 def _mo_solve_nonhydro_stencil_68(
-    mask_prog_halo_c: Field[[CellDim], float],
+    mask_prog_halo_c: Field[[CellDim], bool],
     rho_now: Field[[CellDim, KDim], float],
     theta_v_now: Field[[CellDim, KDim], float],
     exner_new: Field[[CellDim, KDim], float],
@@ -35,7 +32,7 @@ def _mo_solve_nonhydro_stencil_68(
         mask_prog_halo_c,
         rho_now
         * theta_v_now
-        * ((exner_new / exner_now - 1) * cvd_o_rd + 1.0)
+        * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0)
         / rho_new,
         theta_v_new,
     )
@@ -44,7 +41,7 @@ def _mo_solve_nonhydro_stencil_68(
 
 @program
 def mo_solve_nonhydro_stencil_68(
-    mask_prog_halo_c: Field[[CellDim], float],
+    mask_prog_halo_c: Field[[CellDim], bool],
     rho_now: Field[[CellDim, KDim], float],
     theta_v_now: Field[[CellDim, KDim], float],
     exner_new: Field[[CellDim, KDim], float],
