@@ -24,15 +24,14 @@ from icon4py.testutils.utils import random_field, zero_field
 def mo_nh_diffusion_stencil_11_numpy(
     c2e2c: np.array, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff
 ) -> np.array:
-
     tdiff = theta_v - np.sum(theta_v[c2e2c], axis=1) / 3
     trefdiff = theta_ref_mc - np.sum(theta_ref_mc[c2e2c], axis=1) / 3
 
-    if tdiff - trefdiff < thresh_tdiff and trefdiff < 0:
-        enh_diffu_3d = (thresh_tdiff - tdiff + trefdiff) * 5e-4
-    else:
-        num_rows, num_cols = theta_v.shape
-        enh_diffu_3d = np.full((num_rows, num_cols), -1.7976931348623157e308)
+    enh_diffu_3d = np.where(
+        ((tdiff - trefdiff) < thresh_tdiff) & (trefdiff < 0),
+        (thresh_tdiff - tdiff + trefdiff) * 5e-4,
+        -1.7976931348623157e308,
+    )
 
     return enh_diffu_3d
 
