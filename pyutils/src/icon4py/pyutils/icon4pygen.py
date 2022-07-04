@@ -20,12 +20,11 @@ from typing import Union
 
 import click
 import tabulate
+from functional.fencil_processors.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
-from functional.ffront import itir_makers as im
 from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
-from functional.iterator.backends.gtfn.gtfn_backend import generate
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.pyutils.exceptions import (
@@ -125,18 +124,6 @@ def format_metadata(fvprog: Program, chains, **kwargs) -> str:
     )
 
 
-def gtfn_program(fencil_function) -> Program:
-    fvprog = program(fencil_function, backend="gtfn")
-    adapt_program_gtfn(fvprog)
-    return fvprog
-
-
-def adapt_program_gtfn(fvprog):
-    fvprog.itir.params.append(im.sym("domain_"))
-    fvprog.itir.closures[0].domain = im.ref("domain_")
-    return fvprog
-
-
 def generate_cpp_code(fvprog, offset_provider, **kwargs) -> str:
     """Generate C++ code using the GTFN backend."""
     return generate(
@@ -173,16 +160,16 @@ def main(output_metadata, fencil):
     fvprog = None
     match fencil:
         case Program():
-            fvprog = fencil.with_backend("gtfn")
+            fvprog = fencil
         case FieldOperator():
-            fvprog = fencil.with_backend("gtfn").as_program()
+            fvprog = fencil.as_program()
         case _:
-            fvprog = program(fencil, backend="gtfn")
+            fvprog = program(fencil)
 
     if len(fvprog.past_node.body) > 1:
         raise MultipleFieldOperatorException()
 
-    fvprog = adapt_program_gtfn(fvprog)
+    fvprog = fvprog
     chains = scan_for_chains(fvprog)
     offsets = {}
     for chain in chains:
