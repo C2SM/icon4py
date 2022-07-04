@@ -37,7 +37,7 @@ def mo_solve_nonhydro_stencil_07_z_rth_pr_2_numpy(
 
 def mo_solve_nonhydro_stencil_07_numpy(
     rho: np.array, rho_ref_mc: np.array, theta_v: np.array, theta_ref_mc: np.array
-) -> np.array:
+):
     z_rth_pr_1 = mo_solve_nonhydro_stencil_07_z_rth_pr_1_numpy(rho, rho_ref_mc)
     z_rth_pr_2 = mo_solve_nonhydro_stencil_07_z_rth_pr_2_numpy(theta_v, theta_ref_mc)
     return z_rth_pr_1, z_rth_pr_2
