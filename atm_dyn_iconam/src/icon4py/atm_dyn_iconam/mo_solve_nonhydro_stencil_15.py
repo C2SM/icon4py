@@ -12,39 +12,39 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float32
+from functional.ffront.fbuiltins import Field, float
 
 from icon4py.common.dimension import EdgeDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_15_z_rho_e() -> Field[[EdgeDim, KDim], float32]:
-    z_rho_e = float32(0.0)
+def _mo_solve_nonhydro_stencil_15_z_rho_e() -> Field[[EdgeDim, KDim], float]:
+    z_rho_e = float(0.0)
     return z_rho_e
 
 
 @program
-def mo_solve_nonhydro_stencil_15_z_rho_e(z_rho_e: Field[[EdgeDim, KDim], float32]):
+def mo_solve_nonhydro_stencil_15_z_rho_e(z_rho_e: Field[[EdgeDim, KDim], float]):
     _mo_solve_nonhydro_stencil_15_z_rho_e(out=z_rho_e)
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_15_z_theta_v_e() -> Field[[EdgeDim, KDim], float32]:
-    z_theta_v_e = float32(0.0)
+def _mo_solve_nonhydro_stencil_15_z_theta_v_e() -> Field[[EdgeDim, KDim], float]:
+    z_theta_v_e = float(0.0)
     return z_theta_v_e
 
 
 @program
 def mo_solve_nonhydro_stencil_15_z_theta_v_e(
-    z_theta_v_e: Field[[EdgeDim, KDim], float32]
+    z_theta_v_e: Field[[EdgeDim, KDim], float]
 ):
     _mo_solve_nonhydro_stencil_15_z_theta_v_e(out=z_theta_v_e)
 
 
 @program
 def mo_solve_nonhydro_stencil_15(
-    z_rho_e: Field[[EdgeDim, KDim], float32],
-    z_theta_v_e: Field[[EdgeDim, KDim], float32],
+    z_rho_e: Field[[EdgeDim, KDim], float],
+    z_theta_v_e: Field[[EdgeDim, KDim], float],
 ):
     _mo_solve_nonhydro_stencil_15_z_rho_e(out=z_rho_e)
     _mo_solve_nonhydro_stencil_15_z_theta_v_e(out=z_theta_v_e)
