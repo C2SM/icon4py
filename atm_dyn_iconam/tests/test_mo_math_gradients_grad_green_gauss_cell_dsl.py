@@ -14,10 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
-    mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u,
-    mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v,
-    mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u,
-    mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v,
+    mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -56,26 +53,73 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v_numpy(
     return p_grad_2_v
 
 
+def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
+    c2e2cO: np.array,
+    p_ccpr1: np.array,
+    p_ccpr2: np.array,
+    geofac_grg_x: np.array,
+    geofac_grg_y: np.array,
+) -> np.array:
+    p_grad_1_u = mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u_numpy(
+        c2e2cO,
+        p_ccpr1,
+        geofac_grg_x,
+    )
+    p_grad_1_v = mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v_numpy(
+        c2e2cO,
+        p_ccpr1,
+        geofac_grg_y,
+    )
+    p_grad_2_u = mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u_numpy(
+        c2e2cO,
+        p_ccpr2,
+        geofac_grg_x,
+    )
+    p_grad_2_v = mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v_numpy(
+        c2e2cO,
+        p_ccpr2,
+        geofac_grg_y,
+    )
+    return p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v
+
+
 def test_mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v_numpy():
     mesh = SimpleMesh()
 
-    p_ccpr = random_field(mesh, CellDim, KDim)
-    geofac_grg = random_field(mesh, CellDim, C2E2CODim)
-    out = zero_field(mesh, CellDim, KDim)
+    p_ccpr1 = random_field(mesh, CellDim, KDim)
+    p_ccpr2 = random_field(mesh, CellDim, KDim)
+    geofac_grg_x = random_field(mesh, CellDim, C2E2CODim)
+    geofac_grg_y = random_field(mesh, CellDim, C2E2CODim)
+    p_grad_1_u = zero_field(mesh, CellDim, KDim)
+    p_grad_1_v = zero_field(mesh, CellDim, KDim)
+    p_grad_2_u = zero_field(mesh, CellDim, KDim)
+    p_grad_2_v = zero_field(mesh, CellDim, KDim)
 
-    stencil_funcs = {
-        mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u_numpy: mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u,
-        mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v_numpy: mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v,
-        mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u_numpy: mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u,
-        mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v_numpy: mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v,
-    }
+    (
+        p_grad_1_u_ref,
+        p_grad_1_v_ref,
+        p_grad_2_u_ref,
+        p_grad_2_v_ref,
+    ) = mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
+        mesh.c2e2cO,
+        np.asarray(p_ccpr1),
+        np.asarray(p_ccpr2),
+        np.asarray(geofac_grg_x),
+        np.asarray(geofac_grg_y),
+    )
 
-    for ref_func, func in stencil_funcs.items():
-        ref = ref_func(mesh.c2e2cO, np.asarray(p_ccpr), np.asarray(geofac_grg))
-        func(
-            p_ccpr,
-            geofac_grg,
-            out,
-            offset_provider={"C2E2CO": mesh.get_c2e2cO_offset_provider()},
-        )
-        assert np.allclose(out, ref)
+    mo_math_gradients_grad_green_gauss_cell_dsl(
+        p_grad_1_u,
+        p_grad_1_v,
+        p_grad_2_u,
+        p_grad_2_v,
+        p_ccpr1,
+        p_ccpr2,
+        geofac_grg_x,
+        geofac_grg_y,
+        offset_provider={"C2E2CO": mesh.get_c2e2cO_offset_provider()},
+    )
+    assert np.allclose(p_grad_1_u_ref, p_grad_1_u)
+    assert np.allclose(p_grad_1_v_ref, p_grad_1_v)
+    assert np.allclose(p_grad_2_u_ref, p_grad_2_u)
+    assert np.allclose(p_grad_2_v_ref, p_grad_2_v)

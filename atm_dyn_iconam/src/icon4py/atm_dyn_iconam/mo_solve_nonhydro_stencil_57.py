@@ -19,7 +19,7 @@ from icon4py.common.dimension import CellDim, KDim
 
 @field_operator
 def _mo_solve_nonhydro_stencil_57() -> Field[[CellDim, KDim], float]:
-    mass_flx_ic = float(0.0)
+    mass_flx_ic = 0.0
     return mass_flx_ic
 
 

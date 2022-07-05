@@ -19,7 +19,7 @@ from icon4py.common.dimension import CellDim, KDim
 
 @field_operator
 def _mo_solve_nonhydro_stencil_01_z_rth_pr_1() -> Field[[CellDim, KDim], float]:
-    z_rth_pr_1 = float(0.0)
+    z_rth_pr_1 = 0.0
     return z_rth_pr_1
 
 
@@ -30,7 +30,7 @@ def mo_solve_nonhydro_stencil_01_z_rth_pr_1(z_rth_pr_1: Field[[CellDim, KDim], f
 
 @field_operator
 def _mo_solve_nonhydro_stencil_01_z_rth_pr_2() -> Field[[CellDim, KDim], float]:
-    z_rth_pr_2 = float(0.0)
+    z_rth_pr_2 = 0.0
     return z_rth_pr_2
 
 

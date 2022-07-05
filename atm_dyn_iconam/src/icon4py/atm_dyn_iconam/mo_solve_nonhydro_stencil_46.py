@@ -19,7 +19,7 @@ from icon4py.common.dimension import CellDim, KDim
 
 @field_operator
 def _mo_solve_nonhydro_stencil_46_w_nnew() -> Field[[CellDim, KDim], float]:
-    w_nnew = float(0.0)
+    w_nnew = 0.0
     return w_nnew
 
 
@@ -30,7 +30,7 @@ def mo_solve_nonhydro_stencil_46_w_nnew(w_nnew: Field[[CellDim, KDim], float]):
 
 @field_operator
 def _mo_solve_nonhydro_stencil_46_z_contr_w_fl_l() -> Field[[CellDim, KDim], float]:
-    z_contr_w_fl_l = float(0.0)
+    z_contr_w_fl_l = 0.0
     return z_contr_w_fl_l
 
 

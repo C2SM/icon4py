@@ -54,7 +54,7 @@ def _mo_solve_nonhydro_stencil_37_z_kin_hor_e(
     vn: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    z_kin_hor_e = float(0.5) * (vn * vn + vt * vt)
+    z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
     return z_kin_hor_e
 
 

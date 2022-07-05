@@ -19,7 +19,7 @@ from icon4py.common.dimension import CellDim, KDim
 
 @field_operator
 def _mo_solve_nonhydro_stencil_45() -> Field[[CellDim, KDim], float]:
-    z_alpha = float(0.0)
+    z_alpha = 0.0
     return z_alpha
 
 

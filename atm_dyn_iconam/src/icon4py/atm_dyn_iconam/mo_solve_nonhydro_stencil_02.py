@@ -24,7 +24,7 @@ def _mo_solve_nonhydro_stencil_02_z_exner_ex_pr(
     exner_ref_mc: Field[[CellDim, KDim], float],
     exner_pr: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    z_exner_ex_pr = (float(1.0) + exner_exfac) * (
+    z_exner_ex_pr = (1.0 + exner_exfac) * (
         exner - exner_ref_mc
     ) - exner_exfac * exner_pr
     return z_exner_ex_pr

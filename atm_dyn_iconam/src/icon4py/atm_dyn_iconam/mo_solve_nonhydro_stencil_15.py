@@ -19,7 +19,7 @@ from icon4py.common.dimension import EdgeDim, KDim
 
 @field_operator
 def _mo_solve_nonhydro_stencil_15_z_rho_e() -> Field[[EdgeDim, KDim], float]:
-    z_rho_e = float(0.0)
+    z_rho_e = 0.0
     return z_rho_e
 
 
@@ -30,7 +30,7 @@ def mo_solve_nonhydro_stencil_15_z_rho_e(z_rho_e: Field[[EdgeDim, KDim], float])
 
 @field_operator
 def _mo_solve_nonhydro_stencil_15_z_theta_v_e() -> Field[[EdgeDim, KDim], float]:
-    z_theta_v_e = float(0.0)
+    z_theta_v_e = 0.0
     return z_theta_v_e
 
 

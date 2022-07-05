@@ -11,12 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Tuple
+
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_61 import (
-    mo_solve_nonhydro_stencil_61_exner_new,
-    mo_solve_nonhydro_stencil_61_rho_new,
-    mo_solve_nonhydro_stencil_61_w_new,
+    mo_solve_nonhydro_stencil_61,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -44,21 +44,59 @@ def mo_solve_nonhydro_stencil_61_w_new_numpy(
     return w_new
 
 
+def mo_solve_nonhydro_stencil_61_numpy(
+    rho_now: np.array,
+    grf_tend_rho: np.array,
+    theta_v_now: np.array,
+    grf_tend_thv: np.array,
+    w_now: np.array,
+    grf_tend_w: np.array,
+    dtime: float,
+) -> Tuple[np.array]:
+    rho_new = mo_solve_nonhydro_stencil_61_rho_new_numpy(rho_now, grf_tend_rho, dtime)
+    exner_new = mo_solve_nonhydro_stencil_61_exner_new_numpy(
+        theta_v_now, grf_tend_thv, dtime
+    )
+    w_new = mo_solve_nonhydro_stencil_61_w_new_numpy(w_now, grf_tend_w, dtime)
+    return rho_new, exner_new, w_new
+
+
 def test_mo_solve_nonhydro_stencil_61():
     mesh = SimpleMesh()
 
-    a = random_field(mesh, CellDim, KDim)
-    b = random_field(mesh, CellDim, KDim)
-    out = zero_field(mesh, CellDim, KDim)
+    rho_now = random_field(mesh, CellDim, KDim)
+    grf_tend_rho = random_field(mesh, CellDim, KDim)
+    theta_v_now = random_field(mesh, CellDim, KDim)
+    grf_tend_thv = random_field(mesh, CellDim, KDim)
+    w_now = random_field(mesh, CellDim, KDim)
+    grf_tend_w = random_field(mesh, CellDim, KDim)
     dtime = 5.0
+    rho_new = zero_field(mesh, CellDim, KDim)
+    exner_new = zero_field(mesh, CellDim, KDim)
+    w_new = zero_field(mesh, CellDim, KDim)
 
-    stencil_funcs = {
-        mo_solve_nonhydro_stencil_61_rho_new_numpy: mo_solve_nonhydro_stencil_61_rho_new,
-        mo_solve_nonhydro_stencil_61_exner_new_numpy: mo_solve_nonhydro_stencil_61_exner_new,
-        mo_solve_nonhydro_stencil_61_w_new_numpy: mo_solve_nonhydro_stencil_61_w_new,
-    }
-
-    for ref_func, func in stencil_funcs.items():
-        ref = ref_func(np.asarray(a), np.asarray(b), dtime)
-        func(a, b, out, dtime, offset_provider={})
-        assert np.allclose(out, ref)
+    rho_new_ref, exner_new_ref, w_new_ref = mo_solve_nonhydro_stencil_61_numpy(
+        np.asarray(rho_now),
+        np.asarray(grf_tend_rho),
+        np.asarray(theta_v_now),
+        np.asarray(grf_tend_thv),
+        np.asarray(w_now),
+        np.asarray(grf_tend_w),
+        dtime,
+    )
+    mo_solve_nonhydro_stencil_61(
+        rho_now,
+        grf_tend_rho,
+        theta_v_now,
+        grf_tend_thv,
+        w_now,
+        grf_tend_w,
+        rho_new,
+        exner_new,
+        w_new,
+        dtime,
+        offset_provider={},
+    )
+    assert np.allclose(rho_new, rho_new_ref)
+    assert np.allclose(exner_new, exner_new_ref)
+    assert np.allclose(w_new, w_new_ref)

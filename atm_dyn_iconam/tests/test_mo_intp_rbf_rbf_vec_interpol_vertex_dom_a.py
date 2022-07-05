@@ -14,8 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex_dom_a import (
-    mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u,
-    mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v,
+    mo_intp_rbf_rbf_vec_interpol_vertex_dom_a,
 )
 from icon4py.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -42,25 +41,38 @@ def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u_numpy(
     return p_u_out
 
 
+def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_numpy(
+    v2e: np.array, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array
+) -> np.array:
+    p_v_out = mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v_numpy(
+        v2e, p_e_in, ptr_coeff_1
+    )
+    p_u_out = mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u_numpy(
+        v2e, p_e_in, ptr_coeff_2
+    )
+    return p_v_out, p_u_out
+
+
 def test_mo_intp_rbf_rbf_vec_interpol_vertex_dom_a():
     mesh = SimpleMesh()
 
     p_e_in = random_field(mesh, EdgeDim, KDim)
-    ptr_coeff = random_field(mesh, VertexDim, V2EDim)
-    out = zero_field(mesh, VertexDim, KDim)
+    ptr_coeff_1 = random_field(mesh, VertexDim, V2EDim)
+    ptr_coeff_2 = random_field(mesh, VertexDim, V2EDim)
+    p_v_out = zero_field(mesh, VertexDim, KDim)
+    p_u_out = zero_field(mesh, VertexDim, KDim)
 
-    stencil_funcs = {
-        mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u_numpy: mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u,
-        mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v_numpy: mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v,
-    }
+    p_v_out_ref, p_u_out_ref = mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_numpy(
+        mesh.v2e, np.asarray(p_e_in), np.asarray(ptr_coeff_1), np.asarray(ptr_coeff_2)
+    )
+    mo_intp_rbf_rbf_vec_interpol_vertex_dom_a(
+        p_e_in,
+        ptr_coeff_1,
+        ptr_coeff_2,
+        p_v_out,
+        p_u_out,
+        offset_provider={"V2E": mesh.get_v2e_offset_provider()},
+    )
 
-    for ref_func, func in stencil_funcs.items():
-        ref = ref_func(mesh.v2e, np.asarray(p_e_in), np.asarray(ptr_coeff))
-        func(
-            p_e_in,
-            ptr_coeff,
-            out,
-            offset_provider={"V2E": mesh.get_v2e_offset_provider()},
-        )
-
-    assert np.allclose(out, ref)
+    assert np.allclose(p_v_out, p_v_out_ref)
+    assert np.allclose(p_u_out, p_u_out_ref)
