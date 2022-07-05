@@ -88,10 +88,10 @@ def test_mo_solve_nonhydro_stencil_42():
     w_concorr_c = random_field(mesh, CellDim, KDim)
     vwind_expl_wgt = random_field(mesh, CellDim)
     z_contr_w_fl_l = zero_field(mesh, CellDim, KDim)
-    dtime = np.float64(5.0)
-    wgt_nnow_vel = np.float64(8.0)
-    wgt_nnew_vel = np.float64(9.0)
-    cpd = np.float64(10.0)
+    dtime = 5.0
+    wgt_nnow_vel = 8.0
+    wgt_nnew_vel = 9.0
+    cpd = 10.0
 
     z_w_expl_ref, z_contr_w_fl_l_ref = mo_solve_nonhydro_stencil_42_numpy(
         np.asarray(w_nnow),
