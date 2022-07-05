@@ -21,18 +21,36 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
+def mo_nh_diffusion_stencil_16_theta_v_numpy(
+    z_temp: np.array,
+    area: np.array,
+    theta_v: np.array,
+) -> np.array:
+    area = np.expand_dims(area, axis=0)
+    theta_v = theta_v + (area * z_temp)
+    return theta_v
+
+
+def mo_nh_diffusion_stencil_16_exner_numpy(
+    theta_v: np.array,
+    exner: np.array,
+    rd_o_cvd,
+) -> np.array:
+    z_theta = theta_v
+    exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
+    return exner
+
+
 def mo_nh_diffusion_stencil_16_numpy(
     z_temp: np.array,
     area: np.array,
     theta_v: np.array,
     exner: np.array,
     rd_o_cvd,
-) -> np.array:
-    area = np.expand_dims(area, axis=0)
-    z_theta = theta_v
-    theta_v = theta_v + (area * z_temp)
-    exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
-    return exner
+):
+    theta_v = mo_nh_diffusion_stencil_16_theta_v_numpy(z_temp, area, theta_v)
+    exner = mo_nh_diffusion_stencil_16_exner_numpy(theta_v, exner, rd_o_cvd)
+    return theta_v, exner
 
 
 def test_mo_nh_diffusion_stencil_16():
@@ -44,7 +62,7 @@ def test_mo_nh_diffusion_stencil_16():
     exner = random_field(mesh, CellDim, KDim)
     rd_o_cvd = np.float64(5.0)
 
-    ref = mo_nh_diffusion_stencil_16_numpy(
+    theta_v_ref, exner_ref = mo_nh_diffusion_stencil_16_numpy(
         np.asarray(z_temp),
         np.asarray(area),
         np.asarray(theta_v),
@@ -59,4 +77,5 @@ def test_mo_nh_diffusion_stencil_16():
         rd_o_cvd,
         offset_provider={},
     )
-    assert np.allclose(exner, ref)
+    assert np.allclose(theta_v, theta_v_ref)
+    assert np.allclose(exner, exner_ref)
