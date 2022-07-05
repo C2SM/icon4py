@@ -31,7 +31,7 @@ def mo_solve_nonhydro_stencil_62_numpy(
 def test_mo_solve_nonhydro_stencil_62():
     mesh = SimpleMesh()
 
-    dtime = np.float64(10.0)
+    dtime = 10.0
     w_now = random_field(mesh, CellDim, KDim)
     grf_tend_w = random_field(mesh, CellDim, KDim)
     w_new = zero_field(mesh, CellDim, KDim)

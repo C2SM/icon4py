@@ -44,7 +44,7 @@ def test_mo_nh_diffusion_stencil_09():
     z_nabla2_c = random_field(mesh, CellDim, KDim)
     geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
     w = random_field(mesh, CellDim, KDim)
-    diff_multfac_w = np.float64(5.0)
+    diff_multfac_w = 5.0
 
     ref = mo_nh_diffusion_stencil_09_numpy(
         mesh.c2e2cO,

@@ -55,7 +55,7 @@ def test_mo_solve_nonhydro_stencil_68():
     exner_now = random_field(mesh, CellDim, KDim)
     rho_new = random_field(mesh, CellDim, KDim)
     theta_v_new = random_field(mesh, CellDim, KDim)
-    cvd_o_rd = np.float64(10.0)
+    cvd_o_rd = 10.0
 
     ref = mo_solve_nonhydro_stencil_68_numpy(
         np.asarray(mask_prog_halo_c),
