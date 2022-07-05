@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float
+from functional.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -25,28 +25,12 @@ def _mo_solve_nonhydro_stencil_37_vn_ie(
     return vn_ie
 
 
-@program
-def mo_solve_nonhydro_stencil_37_vn_ie(
-    vn: Field[[EdgeDim, KDim], float],
-    out: Field[[EdgeDim, KDim], float],
-):
-    _mo_solve_nonhydro_stencil_37_vn_ie(vn, out=out)
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_37_z_vt_ie(
     vt: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
     z_vt_ie = vt
     return z_vt_ie
-
-
-@program
-def mo_solve_nonhydro_stencil_37_z_vt_ie(
-    vt: Field[[EdgeDim, KDim], float],
-    out: Field[[EdgeDim, KDim], float],
-):
-    _mo_solve_nonhydro_stencil_37_z_vt_ie(vt, out=out)
 
 
 @field_operator
@@ -56,15 +40,6 @@ def _mo_solve_nonhydro_stencil_37_z_kin_hor_e(
 ) -> Field[[EdgeDim, KDim], float]:
     z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
     return z_kin_hor_e
-
-
-@program
-def mo_solve_nonhydro_stencil_37_z_kin_hor_e(
-    vn: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    out: Field[[EdgeDim, KDim], float],
-):
-    _mo_solve_nonhydro_stencil_37_z_kin_hor_e(vn, vt, out=out)
 
 
 @program

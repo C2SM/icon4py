@@ -27,16 +27,6 @@ def _mo_solve_nonhydro_stencil_61_rho_new(
     return rho_new
 
 
-@program
-def mo_solve_nonhydro_stencil_61_rho_new(
-    rho_now: Field[[CellDim, KDim], float],
-    grf_tend_rho: Field[[CellDim, KDim], float],
-    rho_new: Field[[CellDim, KDim], float],
-    dtime: float,
-):
-    _mo_solve_nonhydro_stencil_61_rho_new(rho_now, grf_tend_rho, dtime, out=rho_new)
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_61_exner_new(
     theta_v_now: Field[[CellDim, KDim], float],
@@ -47,18 +37,6 @@ def _mo_solve_nonhydro_stencil_61_exner_new(
     return exner_new
 
 
-@program
-def mo_solve_nonhydro_stencil_61_exner_new(
-    theta_v_now: Field[[CellDim, KDim], float],
-    grf_tend_thv: Field[[CellDim, KDim], float],
-    exner_new: Field[[CellDim, KDim], float],
-    dtime: float,
-):
-    _mo_solve_nonhydro_stencil_61_exner_new(
-        theta_v_now, grf_tend_thv, dtime, out=exner_new
-    )
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_61_w_new(
     w_now: Field[[CellDim, KDim], float],
@@ -67,16 +45,6 @@ def _mo_solve_nonhydro_stencil_61_w_new(
 ) -> Field[[CellDim, KDim], float]:
     w_new = w_now + dtime * grf_tend_w
     return w_new
-
-
-@program
-def mo_solve_nonhydro_stencil_61_w_new(
-    w_now: Field[[CellDim, KDim], float],
-    grf_tend_w: Field[[CellDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    dtime: float,
-):
-    _mo_solve_nonhydro_stencil_61_w_new(w_now, grf_tend_w, dtime, out=w_new)
 
 
 @program

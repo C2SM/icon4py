@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float
+from functional.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -27,15 +27,6 @@ def _mo_solve_nonhydro_stencil_34_vn_traj(
     return vn_traj
 
 
-@program
-def mo_solve_nonhydro_stencil_34_vn_traj(
-    z_vn_avg: Field[[EdgeDim, KDim], float],
-    vn_traj: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: float,
-):
-    _mo_solve_nonhydro_stencil_34_vn_traj(z_vn_avg, vn_traj, r_nsubsteps, out=vn_traj)
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_34_mass_flx_me(
     mass_fl_e: Field[[EdgeDim, KDim], float],
@@ -44,17 +35,6 @@ def _mo_solve_nonhydro_stencil_34_mass_flx_me(
 ) -> Field[[EdgeDim, KDim], float]:
     mass_flx_me = mass_flx_me + r_nsubsteps * mass_fl_e
     return mass_flx_me
-
-
-@program
-def mo_solve_nonhydro_stencil_34_mass_flx_me(
-    mass_fl_e: Field[[EdgeDim, KDim], float],
-    mass_flx_me: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: float,
-):
-    _mo_solve_nonhydro_stencil_34_mass_flx_me(
-        mass_fl_e, mass_flx_me, r_nsubsteps, out=mass_flx_me
-    )
 
 
 @program

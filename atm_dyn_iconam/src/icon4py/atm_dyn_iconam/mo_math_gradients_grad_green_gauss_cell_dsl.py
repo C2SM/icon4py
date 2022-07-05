@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float, neighbor_sum
+from functional.ffront.fbuiltins import Field, neighbor_sum
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
@@ -26,17 +26,6 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u(
     return p_grad_1_u
 
 
-@program
-def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u(
-    p_ccpr1: Field[[CellDim, KDim], float],
-    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
-    p_grad_1_u: Field[[CellDim, KDim], float],
-):
-    _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u(
-        p_ccpr1, geofac_grg_x, out=p_grad_1_u
-    )
-
-
 @field_operator
 def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v(
     p_ccpr1: Field[[CellDim, KDim], float],
@@ -44,17 +33,6 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v(
 ) -> Field[[CellDim, KDim], float]:
     p_grad_1_v = neighbor_sum(p_ccpr1(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
     return p_grad_1_v
-
-
-@program
-def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v(
-    p_ccpr1: Field[[CellDim, KDim], float],
-    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
-    p_grad_1_v: Field[[CellDim, KDim], float],
-):
-    _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v(
-        p_ccpr1, geofac_grg_y, out=p_grad_1_v
-    )
 
 
 @field_operator
@@ -66,17 +44,6 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u(
     return p_grad_2_u
 
 
-@program
-def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u(
-    p_ccpr2: Field[[CellDim, KDim], float],
-    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
-    p_grad_2_u: Field[[CellDim, KDim], float],
-):
-    _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u(
-        p_ccpr2, geofac_grg_x, out=p_grad_2_u
-    )
-
-
 @field_operator
 def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v(
     p_ccpr2: Field[[CellDim, KDim], float],
@@ -84,17 +51,6 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v(
 ) -> Field[[CellDim, KDim], float]:
     p_grad_2_v = neighbor_sum(p_ccpr2(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
     return p_grad_2_v
-
-
-@program
-def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v(
-    p_ccpr2: Field[[CellDim, KDim], float],
-    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
-    p_grad_2_v: Field[[CellDim, KDim], float],
-):
-    _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v(
-        p_ccpr2, geofac_grg_y, out=p_grad_2_v
-    )
 
 
 @program

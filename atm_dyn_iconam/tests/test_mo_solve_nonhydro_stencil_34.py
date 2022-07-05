@@ -11,11 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Tuple
+
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_34 import (
-    mo_solve_nonhydro_stencil_34_mass_flx_me,
-    mo_solve_nonhydro_stencil_34_vn_traj,
+    mo_solve_nonhydro_stencil_34,
 )
 from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -29,25 +30,6 @@ def mo_solve_nonhydro_stencil_34_vn_traj_numpy(
     return vn_traj
 
 
-def test_mo_solve_nonhydro_stencil_34_vn_traj():
-    mesh = SimpleMesh()
-
-    z_vn_avg = random_field(mesh, EdgeDim, KDim)
-    vn_traj = random_field(mesh, EdgeDim, KDim)
-    r_nsubsteps = 9.0
-
-    ref = mo_solve_nonhydro_stencil_34_vn_traj_numpy(
-        np.asarray(z_vn_avg), np.asarray(vn_traj), r_nsubsteps
-    )
-    mo_solve_nonhydro_stencil_34_vn_traj(
-        z_vn_avg,
-        vn_traj,
-        r_nsubsteps,
-        offset_provider={},
-    )
-    assert np.allclose(vn_traj, ref)
-
-
 def mo_solve_nonhydro_stencil_34_mass_flx_me_numpy(
     mass_fl_e: np.array, mass_flx_me: np.array, r_nsubsteps: float
 ) -> np.array:
@@ -55,20 +37,44 @@ def mo_solve_nonhydro_stencil_34_mass_flx_me_numpy(
     return mass_flx_me
 
 
-def test_mo_solve_nonhydro_stencil_34_mass_flx_me():
+def mo_solve_nonhydro_stencil_34_numpy(
+    z_vn_avg: np.array,
+    mass_fl_e: np.array,
+    vn_traj: np.array,
+    mass_flx_me: np.array,
+    r_nsubsteps: float,
+) -> Tuple[np.array]:
+    vn_traj = mo_solve_nonhydro_stencil_34_vn_traj_numpy(z_vn_avg, vn_traj, r_nsubsteps)
+    mass_flx_me = mo_solve_nonhydro_stencil_34_mass_flx_me_numpy(
+        mass_fl_e, mass_flx_me, r_nsubsteps
+    )
+    return vn_traj, mass_flx_me
+
+
+def test_mo_solve_nonhydro_stencil_34():
     mesh = SimpleMesh()
 
     mass_fl_e = random_field(mesh, EdgeDim, KDim)
     mass_flx_me = random_field(mesh, EdgeDim, KDim)
+    z_vn_avg = random_field(mesh, EdgeDim, KDim)
+    vn_traj = random_field(mesh, EdgeDim, KDim)
     r_nsubsteps = 9.0
 
-    ref = mo_solve_nonhydro_stencil_34_mass_flx_me_numpy(
-        np.asarray(mass_fl_e), np.asarray(mass_flx_me), r_nsubsteps
+    vn_traj_ref, mass_flx_me_ref = mo_solve_nonhydro_stencil_34_numpy(
+        np.asarray(z_vn_avg),
+        np.asarray(mass_fl_e),
+        np.asarray(vn_traj),
+        np.asarray(mass_flx_me),
+        r_nsubsteps,
     )
-    mo_solve_nonhydro_stencil_34_mass_flx_me(
+
+    mo_solve_nonhydro_stencil_34(
+        z_vn_avg,
         mass_fl_e,
+        vn_traj,
         mass_flx_me,
         r_nsubsteps,
         offset_provider={},
     )
-    assert np.allclose(mass_flx_me, ref)
+    assert np.allclose(vn_traj_ref, vn_traj)
+    assert np.allclose(mass_flx_me_ref, mass_flx_me)

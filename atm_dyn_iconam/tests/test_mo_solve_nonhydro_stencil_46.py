@@ -11,11 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Tuple
+
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_46 import (
-    mo_solve_nonhydro_stencil_46_w_nnew,
-    mo_solve_nonhydro_stencil_46_z_contr_w_fl_l,
+    mo_solve_nonhydro_stencil_46,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -27,19 +28,6 @@ def mo_solve_nonhydro_stencil_46_w_nnew_numpy(w_nnew: np.array) -> np.array:
     return w_nnew
 
 
-def test_mo_solve_nonhydro_stencil_46_w_nnew():
-    mesh = SimpleMesh()
-
-    w_nnew = zero_field(mesh, CellDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_46_w_nnew_numpy(np.asarray(w_nnew))
-    mo_solve_nonhydro_stencil_46_w_nnew(
-        w_nnew,
-        offset_provider={},
-    )
-    assert np.allclose(w_nnew, ref)
-
-
 def mo_solve_nonhydro_stencil_46_z_contr_w_fl_l_numpy(
     z_contr_w_fl_l: np.array,
 ) -> np.array:
@@ -47,14 +35,28 @@ def mo_solve_nonhydro_stencil_46_z_contr_w_fl_l_numpy(
     return z_contr_w_fl_l
 
 
+def mo_solve_nonhydro_stencil_46_numpy(
+    w_nnew: np.array,
+    z_contr_w_fl_l: np.array,
+) -> Tuple[np.array]:
+    w_nnew = mo_solve_nonhydro_stencil_46_w_nnew_numpy(w_nnew)
+    z_contr_w_fl_l = mo_solve_nonhydro_stencil_46_z_contr_w_fl_l_numpy(z_contr_w_fl_l)
+    return w_nnew, z_contr_w_fl_l
+
+
 def test_mo_solve_nonhydro_stencil_46_z_contr_w_fl_l():
     mesh = SimpleMesh()
 
     z_contr_w_fl_l = zero_field(mesh, CellDim, KDim)
+    w_nnew = zero_field(mesh, CellDim, KDim)
 
-    ref = mo_solve_nonhydro_stencil_46_z_contr_w_fl_l_numpy(np.asarray(z_contr_w_fl_l))
-    mo_solve_nonhydro_stencil_46_z_contr_w_fl_l(
+    w_nnew_ref, z_contr_w_fl_l_ref = mo_solve_nonhydro_stencil_46_numpy(
+        np.asarray(w_nnew), np.asarray(z_contr_w_fl_l)
+    )
+    mo_solve_nonhydro_stencil_46(
+        w_nnew,
         z_contr_w_fl_l,
         offset_provider={},
     )
-    assert np.allclose(z_contr_w_fl_l, ref)
+    assert np.allclose(w_nnew_ref, w_nnew)
+    assert np.allclose(z_contr_w_fl_l_ref, z_contr_w_fl_l)

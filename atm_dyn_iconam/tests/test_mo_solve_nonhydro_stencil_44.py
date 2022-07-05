@@ -11,11 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Tuple
+
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_44 import (
-    mo_solve_nonhydro_stencil_44_z_alpha,
-    mo_solve_nonhydro_stencil_44_z_beta,
+    mo_solve_nonhydro_stencil_44,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -35,42 +36,6 @@ def mo_solve_nonhydro_stencil_44_z_beta_numpy(
     return z_beta
 
 
-def test_mo_solve_nonhydro_stencil_44_z_beta():
-    mesh = SimpleMesh()
-
-    exner_nnow = random_field(mesh, CellDim, KDim)
-    rho_nnow = random_field(mesh, CellDim, KDim)
-    theta_v_nnow = random_field(mesh, CellDim, KDim)
-    inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-    z_beta = zero_field(mesh, CellDim, KDim)
-    dtime = 10.0
-    rd = 5.0
-    cvd = 3.0
-
-    ref = mo_solve_nonhydro_stencil_44_z_beta_numpy(
-        np.asarray(exner_nnow),
-        np.asarray(rho_nnow),
-        np.asarray(theta_v_nnow),
-        np.asarray(inv_ddqz_z_full),
-        dtime,
-        rd,
-        cvd,
-    )
-
-    mo_solve_nonhydro_stencil_44_z_beta(
-        z_beta,
-        exner_nnow,
-        rho_nnow,
-        theta_v_nnow,
-        inv_ddqz_z_full,
-        dtime,
-        rd,
-        cvd,
-        offset_provider={},
-    )
-    assert np.allclose(z_beta, ref)
-
-
 def mo_solve_nonhydro_stencil_44_z_alpha_numpy(
     vwind_impl_wgt: np.array, theta_v_ic: np.array, rho_ic: np.array
 ) -> np.array:
@@ -79,18 +44,70 @@ def mo_solve_nonhydro_stencil_44_z_alpha_numpy(
     return z_alpha
 
 
+def mo_solve_nonhydro_stencil_44_numpy(
+    exner_nnow: np.array,
+    rho_nnow: np.array,
+    theta_v_nnow: np.array,
+    inv_ddqz_z_full: np.array,
+    vwind_impl_wgt: np.array,
+    theta_v_ic: np.array,
+    rho_ic: np.array,
+    dtime: float,
+    rd: float,
+    cvd: float,
+) -> Tuple[np.array]:
+    z_beta = mo_solve_nonhydro_stencil_44_z_beta_numpy(
+        exner_nnow, rho_nnow, theta_v_nnow, inv_ddqz_z_full, dtime, rd, cvd
+    )
+    z_alpha = mo_solve_nonhydro_stencil_44_z_alpha_numpy(
+        vwind_impl_wgt, theta_v_ic, rho_ic
+    )
+    return z_beta, z_alpha
+
+
 def test_mo_solve_nonhydro_stencil_44_z_alpha():
     mesh = SimpleMesh()
 
+    exner_nnow = random_field(mesh, CellDim, KDim)
+    rho_nnow = random_field(mesh, CellDim, KDim)
+    theta_v_nnow = random_field(mesh, CellDim, KDim)
+    inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
     vwind_impl_wgt = random_field(mesh, CellDim)
     theta_v_ic = random_field(mesh, CellDim, KDim)
     rho_ic = random_field(mesh, CellDim, KDim)
     z_alpha = zero_field(mesh, CellDim, KDim)
+    z_beta = zero_field(mesh, CellDim, KDim)
+    dtime = 10.0
+    rd = 5.0
+    cvd = 3.0
 
-    ref = mo_solve_nonhydro_stencil_44_z_alpha_numpy(
-        np.asarray(vwind_impl_wgt), np.asarray(theta_v_ic), np.asarray(rho_ic)
+    z_beta_ref, z_alpha_ref = mo_solve_nonhydro_stencil_44_numpy(
+        np.asarray(exner_nnow),
+        np.asarray(rho_nnow),
+        np.asarray(theta_v_nnow),
+        np.asarray(inv_ddqz_z_full),
+        np.asarray(vwind_impl_wgt),
+        np.asarray(theta_v_ic),
+        np.asarray(rho_ic),
+        dtime,
+        rd,
+        cvd,
     )
-    mo_solve_nonhydro_stencil_44_z_alpha(
-        z_alpha, vwind_impl_wgt, theta_v_ic, rho_ic, offset_provider={}
+
+    mo_solve_nonhydro_stencil_44(
+        z_beta,
+        exner_nnow,
+        rho_nnow,
+        theta_v_nnow,
+        inv_ddqz_z_full,
+        z_alpha,
+        vwind_impl_wgt,
+        theta_v_ic,
+        rho_ic,
+        dtime,
+        rd,
+        cvd,
+        offset_provider={},
     )
-    assert np.allclose(z_alpha, ref)
+    assert np.allclose(z_beta_ref, z_beta)
+    assert np.allclose(z_alpha_ref, z_alpha)

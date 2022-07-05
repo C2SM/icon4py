@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float
+from functional.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -31,22 +31,6 @@ def _mo_solve_nonhydro_stencil_44_z_beta(
     return z_beta
 
 
-@program
-def mo_solve_nonhydro_stencil_44_z_beta(
-    z_beta: Field[[CellDim, KDim], float],
-    exner_nnow: Field[[CellDim, KDim], float],
-    rho_nnow: Field[[CellDim, KDim], float],
-    theta_v_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    dtime: float,
-    rd: float,
-    cvd: float,
-):
-    _mo_solve_nonhydro_stencil_44_z_beta(
-        exner_nnow, rho_nnow, theta_v_nnow, inv_ddqz_z_full, dtime, rd, cvd, out=z_beta
-    )
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_44_z_alpha(
     vwind_impl_wgt: Field[[CellDim], float],
@@ -58,17 +42,6 @@ def _mo_solve_nonhydro_stencil_44_z_alpha(
 
 
 @program
-def mo_solve_nonhydro_stencil_44_z_alpha(
-    z_alpha: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-):
-    _mo_solve_nonhydro_stencil_44_z_alpha(
-        vwind_impl_wgt, theta_v_ic, rho_ic, out=z_alpha
-    )
-
-
 def mo_solve_nonhydro_stencil_44(
     z_beta: Field[[CellDim, KDim], float],
     exner_nnow: Field[[CellDim, KDim], float],

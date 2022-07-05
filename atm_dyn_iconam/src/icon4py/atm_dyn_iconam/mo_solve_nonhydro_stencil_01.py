@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float
+from functional.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -23,20 +23,10 @@ def _mo_solve_nonhydro_stencil_01_z_rth_pr_1() -> Field[[CellDim, KDim], float]:
     return z_rth_pr_1
 
 
-@program
-def mo_solve_nonhydro_stencil_01_z_rth_pr_1(z_rth_pr_1: Field[[CellDim, KDim], float]):
-    _mo_solve_nonhydro_stencil_01_z_rth_pr_1(out=z_rth_pr_1)
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_01_z_rth_pr_2() -> Field[[CellDim, KDim], float]:
     z_rth_pr_2 = 0.0
     return z_rth_pr_2
-
-
-@program
-def mo_solve_nonhydro_stencil_01_z_rth_pr_2(z_rth_pr_2: Field[[CellDim, KDim], float]):
-    _mo_solve_nonhydro_stencil_01_z_rth_pr_2(out=z_rth_pr_2)
 
 
 @program

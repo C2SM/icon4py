@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float
+from functional.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -30,19 +30,6 @@ def _mo_solve_nonhydro_stencil_02_z_exner_ex_pr(
     return z_exner_ex_pr
 
 
-@program
-def mo_solve_nonhydro_stencil_02_z_exner_ex_pr(
-    exner_exfac: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-):
-    _mo_solve_nonhydro_stencil_02_z_exner_ex_pr(
-        exner_exfac, exner, exner_ref_mc, exner_pr, out=z_exner_ex_pr
-    )
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_02_exner_pr(
     exner: Field[[CellDim, KDim], float],
@@ -50,15 +37,6 @@ def _mo_solve_nonhydro_stencil_02_exner_pr(
 ) -> Field[[CellDim, KDim], float]:
     exner_pr = exner - exner_ref_mc
     return exner_pr
-
-
-@program
-def mo_solve_nonhydro_stencil_02_exner_pr(
-    exner: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-):
-    _mo_solve_nonhydro_stencil_02_exner_pr(exner, exner_ref_mc, out=exner_pr)
 
 
 @program

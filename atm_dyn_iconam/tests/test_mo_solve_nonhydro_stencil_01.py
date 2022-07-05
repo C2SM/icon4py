@@ -11,15 +11,16 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Tuple
+
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_01 import (
-    mo_solve_nonhydro_stencil_01_z_rth_pr_1,
-    mo_solve_nonhydro_stencil_01_z_rth_pr_2,
+    mo_solve_nonhydro_stencil_01,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import random_field
 
 
 def mo_solve_nonhydro_stencil_01_z_rth_pr_1_numpy(z_rth_pr_1: np.array) -> np.array:
@@ -27,34 +28,33 @@ def mo_solve_nonhydro_stencil_01_z_rth_pr_1_numpy(z_rth_pr_1: np.array) -> np.ar
     return z_rth_pr_1
 
 
-def test_mo_solve_nonhydro_stencil_01_z_rth_pr_1():
-    mesh = SimpleMesh()
-
-    z_rth_pr_1 = random_field(mesh, CellDim, KDim)
-    z_rth_pr_1_out = zero_field(mesh, CellDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_01_z_rth_pr_1_numpy(np.asarray(z_rth_pr_1))
-    mo_solve_nonhydro_stencil_01_z_rth_pr_1(
-        z_rth_pr_1_out,
-        offset_provider={},
-    )
-    assert np.allclose(z_rth_pr_1_out, ref)
-
-
 def mo_solve_nonhydro_stencil_01_z_rth_pr_2_numpy(z_rth_pr_2: np.array) -> np.array:
     z_rth_pr_2 = np.zeros_like(z_rth_pr_2)
     return z_rth_pr_2
 
 
+def mo_solve_nonhydro_stencil_01_numpy(
+    z_rth_pr_1: np.array,
+    z_rth_pr_2: np.array,
+) -> Tuple[np.array]:
+    z_rth_pr_1 = mo_solve_nonhydro_stencil_01_z_rth_pr_1_numpy(z_rth_pr_1)
+    z_rth_pr_2 = mo_solve_nonhydro_stencil_01_z_rth_pr_2_numpy(z_rth_pr_2)
+    return z_rth_pr_1, z_rth_pr_2
+
+
 def test_mo_solve_nonhydro_stencil_01_z_rth_pr_2():
     mesh = SimpleMesh()
 
+    z_rth_pr_1 = random_field(mesh, CellDim, KDim)
     z_rth_pr_2 = random_field(mesh, CellDim, KDim)
-    z_rth_pr_2_out = zero_field(mesh, CellDim, KDim)
 
-    ref = mo_solve_nonhydro_stencil_01_z_rth_pr_1_numpy(np.asarray(z_rth_pr_2))
-    mo_solve_nonhydro_stencil_01_z_rth_pr_2(
-        z_rth_pr_2_out,
+    z_rth_pr_1_ref, z_rth_pr_2_ref = mo_solve_nonhydro_stencil_01_numpy(
+        z_rth_pr_1, z_rth_pr_2
+    )
+    mo_solve_nonhydro_stencil_01(
+        z_rth_pr_1,
+        z_rth_pr_2,
         offset_provider={},
     )
-    assert np.allclose(z_rth_pr_2_out, ref)
+    assert np.allclose(z_rth_pr_1, z_rth_pr_1_ref)
+    assert np.allclose(z_rth_pr_2, z_rth_pr_2_ref)

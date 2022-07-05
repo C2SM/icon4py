@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, float, neighbor_sum
+from functional.ffront.fbuiltins import Field, neighbor_sum
 
 from icon4py.common.dimension import (
     V2E,
@@ -32,15 +32,6 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u(
     return p_u_out
 
 
-@program
-def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u(
-    p_e_in: Field[[EdgeDim, KDim], float],
-    ptr_coeff_1: Field[[VertexDim, V2EDim], float],
-    p_u_out: Field[[VertexDim, KDim], float],
-):
-    _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u(p_e_in, ptr_coeff_1, out=p_u_out)
-
-
 @field_operator
 def _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v(
     p_e_in: Field[[EdgeDim, KDim], float],
@@ -48,15 +39,6 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v(
 ) -> Field[[VertexDim, KDim], float]:
     p_v_out = neighbor_sum(p_e_in(V2E) * ptr_coeff_2, axis=V2EDim)
     return p_v_out
-
-
-@program
-def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v(
-    p_e_in: Field[[EdgeDim, KDim], float],
-    ptr_coeff_2: Field[[VertexDim, V2EDim], float],
-    p_v_out: Field[[VertexDim, KDim], float],
-):
-    _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v(p_e_in, ptr_coeff_2, out=p_v_out)
 
 
 @program
