@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Tuple
 
 import numpy as np
 
@@ -36,7 +37,7 @@ def mo_solve_nonhydro_stencil_47_z_contr_w_fl_l_numpy(
 def mo_solve_nonhydro_stencil_47_numpy(
     w_concorr_c: np.array,
     z_contr_w_fl_l: np.array,
-):
+) -> Tuple[np.array]:
     w_nnew = mo_solve_nonhydro_stencil_47_w_nnew_numpy(w_concorr_c)
     z_contr_w_fl_l = mo_solve_nonhydro_stencil_47_z_contr_w_fl_l_numpy(z_contr_w_fl_l)
     return w_nnew, z_contr_w_fl_l

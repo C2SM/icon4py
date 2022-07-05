@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Tuple
 
 import numpy as np
 
@@ -39,7 +40,7 @@ def mo_solve_nonhydro_stencil_41_z_flxdiv_theta_numpy(
 
 def mo_solve_nonhydro_stencil_41_numpy(
     c2e: np.array, geofac_div: np.array, mass_fl_e: np.array, z_theta_v_fl_e: np.array
-):
+) -> Tuple[np.array]:
     z_flxdiv_mass = mo_solve_nonhydro_stencil_41_z_flxdiv_mass_numpy(
         c2e, geofac_div, mass_fl_e
     )

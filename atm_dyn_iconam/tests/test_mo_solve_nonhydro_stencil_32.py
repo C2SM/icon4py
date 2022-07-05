@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Tuple
 
 import numpy as np
 
@@ -40,7 +41,7 @@ def mo_solve_nonhydro_stencil_32_numpy(
     z_vn_avg: np.array,
     ddqz_z_full_e: np.array,
     z_theta_v_e: np.array,
-):
+) -> Tuple[np.array]:
     mass_fl_e = mo_solve_nonhydro_stencil_32_mass_fl_e_numpy(
         z_rho_e, z_vn_avg, ddqz_z_full_e
     )

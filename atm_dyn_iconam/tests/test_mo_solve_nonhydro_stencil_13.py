@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Tuple
 
 import numpy as np
 
@@ -37,7 +38,7 @@ def mo_solve_nonhydro_stencil_13_z_rth_pr_2_numpy(
 
 def mo_solve_nonhydro_stencil_13_numpy(
     rho: np.array, rho_ref_mc: np.array, theta_v: np.array, theta_ref_mc: np.array
-):
+) -> Tuple[np.array]:
     z_rth_pr_1 = mo_solve_nonhydro_stencil_13_z_rth_pr_1_numpy(rho, rho_ref_mc)
     z_rth_pr_2 = mo_solve_nonhydro_stencil_13_z_rth_pr_2_numpy(theta_v, theta_ref_mc)
     return z_rth_pr_1, z_rth_pr_2

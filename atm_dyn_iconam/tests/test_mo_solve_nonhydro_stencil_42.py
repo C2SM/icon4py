@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Tuple
 
 import numpy as np
 
@@ -59,7 +60,7 @@ def mo_solve_nonhydro_stencil_42_numpy(
     wgt_nnow_vel,
     wgt_nnew_vel,
     cpd,
-):
+) -> Tuple[np.array]:
     z_w_expl = mo_solve_nonhydro_stencil_42_z_w_expl_numpy(
         w_nnow,
         ddt_w_adv_ntl1,
