@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Tuple
+
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
@@ -59,7 +61,7 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
     p_ccpr2: np.array,
     geofac_grg_x: np.array,
     geofac_grg_y: np.array,
-) -> np.array:
+) -> Tuple[np.array]:
     p_grad_1_u = mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u_numpy(
         c2e2cO,
         p_ccpr1,

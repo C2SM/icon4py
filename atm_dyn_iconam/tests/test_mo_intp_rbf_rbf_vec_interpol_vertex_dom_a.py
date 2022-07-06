@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Tuple
+
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex_dom_a import (
@@ -43,7 +45,7 @@ def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u_numpy(
 
 def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_numpy(
     v2e: np.array, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array
-) -> np.array:
+) -> Tuple[np.array]:
     p_v_out = mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v_numpy(
         v2e, p_e_in, ptr_coeff_1
     )

@@ -28,7 +28,7 @@ def mo_nh_diffusion_stencil_09_numpy(
     geofac_n2s: np.array,
     w: np.array,
     diff_multfac_w,
-):
+) -> np.array:
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     area = np.expand_dims(area, axis=-1)
     w = w - diff_multfac_w * area * area * np.sum(

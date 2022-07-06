@@ -25,21 +25,21 @@ from icon4py.testutils.utils import random_field, zero_field
 
 def mo_solve_nonhydro_stencil_61_rho_new_numpy(
     rho_now: np.array, grf_tend_rho: np.array, dtime: float
-):
+) -> np.array:
     rho_new = rho_now + dtime * grf_tend_rho
     return rho_new
 
 
 def mo_solve_nonhydro_stencil_61_exner_new_numpy(
     theta_v_now: np.array, grf_tend_thv: np.array, dtime: float
-):
+) -> np.array:
     exner_new = theta_v_now + dtime * grf_tend_thv
     return exner_new
 
 
 def mo_solve_nonhydro_stencil_61_w_new_numpy(
     w_now: np.array, grf_tend_w: np.array, dtime: float
-):
+) -> np.array:
     w_new = w_now + dtime * grf_tend_w
     return w_new
 

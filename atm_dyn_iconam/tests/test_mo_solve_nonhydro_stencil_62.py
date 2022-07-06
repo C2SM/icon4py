@@ -23,7 +23,7 @@ from icon4py.testutils.utils import random_field, zero_field
 
 def mo_solve_nonhydro_stencil_62_numpy(
     w_now: np.array, grf_tend_w: np.array, dtime: float
-):
+) -> np.array:
     w_new = w_now + dtime * grf_tend_w
     return w_new
 
