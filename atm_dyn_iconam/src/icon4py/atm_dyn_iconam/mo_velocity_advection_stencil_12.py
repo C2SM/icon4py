@@ -19,7 +19,7 @@ from icon4py.common.dimension import CellDim, KDim
 
 @field_operator
 def _mo_velocity_advection_stencil_12() -> Field[[CellDim, KDim], float]:
-    z_w_con_c = float(0.0)
+    z_w_con_c = 0.0
     return z_w_con_c
 
 

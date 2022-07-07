@@ -28,7 +28,7 @@ def mo_solve_nonhydro_stencil_19_numpy(
     ddxn_z_full: np.array,
     c_lin_e: np.array,
     z_dexner_dz_c_1: np.array,
-):
+) -> np.array:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
     c_lin_e = np.expand_dims(c_lin_e, axis=-1)
 

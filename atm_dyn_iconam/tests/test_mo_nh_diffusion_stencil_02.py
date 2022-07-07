@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Tuple
+
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import (
@@ -53,7 +55,7 @@ def mo_nh_diffusion_stencil_02_numpy(
     e_bln_c_s: np.array,
     geofac_div: np.array,
     diff_multfac_smag: np.array,
-):
+) -> Tuple[np.array]:
     kh_c = mo_nh_diffusion_stencil_02_khc_numpy(
         c2e, kh_smag_ec, e_bln_c_s, diff_multfac_smag
     )

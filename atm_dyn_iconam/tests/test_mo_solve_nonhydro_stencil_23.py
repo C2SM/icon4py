@@ -52,10 +52,10 @@ def test_mo_solve_nonhydro_stencil_23():
     z_theta_v_e = random_field(mesh, EdgeDim, KDim)
     z_gradh_exner = random_field(mesh, EdgeDim, KDim)
     vn_nnew = zero_field(mesh, EdgeDim, KDim)
-    dtime = np.float64(5.0)
-    wgt_nnow_vel = np.float64(8.0)
-    wgt_nnew_vel = np.float64(7.0)
-    cpd = np.float64(2.0)
+    dtime = 5.0
+    wgt_nnow_vel = 8.0
+    wgt_nnew_vel = 7.0
+    cpd = 2.0
 
     ref = mo_solve_nonhydro_stencil_23_numpy(
         np.asarray(vn_nnow),
