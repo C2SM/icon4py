@@ -12,8 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Tuple
 
-from typing import Tuple
-
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_05 import (
