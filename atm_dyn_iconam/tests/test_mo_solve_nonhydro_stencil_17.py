@@ -28,7 +28,7 @@ def mo_solve_nonhydro_stencil_17_numpy(
     inv_dual_edge_length: np.array,
     z_dwdz_dd: np.array,
     z_graddiv_vn: np.array,
-):
+) -> np.array:
     scalfac_dd3d = np.expand_dims(scalfac_dd3d, axis=0)
     hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)

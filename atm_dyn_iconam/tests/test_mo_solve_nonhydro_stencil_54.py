@@ -26,7 +26,7 @@ def mo_solve_nonhydro_stencil_54_numpy(
 ) -> np.array:
     z_raylfac = np.expand_dims(z_raylfac, axis=0)
     w_1 = np.expand_dims(w_1, axis=-1)
-    w = z_raylfac * w + (float(1.0) - z_raylfac) * w_1
+    w = z_raylfac * w + (1.0 - z_raylfac) * w_1
     return w
 
 

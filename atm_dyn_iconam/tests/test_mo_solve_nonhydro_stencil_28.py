@@ -33,7 +33,7 @@ def test_mo_solve_nonhydro_stencil_28():
 
     vn_incr = random_field(mesh, EdgeDim, KDim)
     vn = random_field(mesh, EdgeDim, KDim)
-    iau_wgt_dyn = np.float64(5.0)
+    iau_wgt_dyn = 5.0
 
     ref = mo_solve_nonhydro_stencil_28_numpy(
         np.asarray(vn_incr), np.asarray(vn), iau_wgt_dyn

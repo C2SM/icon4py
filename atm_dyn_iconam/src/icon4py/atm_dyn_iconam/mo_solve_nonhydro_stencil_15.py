@@ -14,19 +14,25 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.common.dimension import EdgeDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_03() -> Field[[CellDim, KDim], float]:
-    z_exner_ex_pr = 0.0
-    return z_exner_ex_pr
+def _mo_solve_nonhydro_stencil_15_z_rho_e() -> Field[[EdgeDim, KDim], float]:
+    z_rho_e = 0.0
+    return z_rho_e
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_15_z_theta_v_e() -> Field[[EdgeDim, KDim], float]:
+    z_theta_v_e = 0.0
+    return z_theta_v_e
 
 
 @program
-def mo_solve_nonhydro_stencil_03(
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
+def mo_solve_nonhydro_stencil_15(
+    z_rho_e: Field[[EdgeDim, KDim], float],
+    z_theta_v_e: Field[[EdgeDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_03(
-        out=z_exner_ex_pr,
-    )
+    _mo_solve_nonhydro_stencil_15_z_rho_e(out=z_rho_e)
+    _mo_solve_nonhydro_stencil_15_z_theta_v_e(out=z_theta_v_e)

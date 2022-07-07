@@ -17,7 +17,6 @@ from typing import List
 import pytest
 
 from icon4py.pyutils.icon4pygen import (
-    adapt_program_gtfn,
     format_metadata,
     import_fencil,
     scan_for_chains,
@@ -26,8 +25,7 @@ from icon4py.testutils.utils import get_stencil_module_path
 
 
 def get_stencil_metadata(stencil_module: str, stencil_name: str) -> str:
-    fencil = import_fencil(get_stencil_module_path(stencil_module, stencil_name))
-    fvprog = adapt_program_gtfn(fencil.with_backend("gtfn"))
+    fvprog = import_fencil(get_stencil_module_path(stencil_module, stencil_name))
     chains = scan_for_chains(fvprog)
     return format_metadata(fvprog, chains)
 
