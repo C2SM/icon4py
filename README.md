@@ -23,7 +23,6 @@ tox -e dev --devenv .venv
 # Activate the virtual environment and check that everything works
 source .venv/bin/activate
 pytest -v
-
 ```
 
 If you want to proceed manually, you should install all packages at once by using the provided `requirements.txt` or `requirements-dev.txt` files in the root of the repository. For example:
@@ -47,7 +46,6 @@ pip install --src _external_src -r requirements-dev.txt
 # Finally, check that everything works
 pytest -v
 ```
-
 
 The `--src _external_src` option tells `pip` to use a specific folder as base path for checked out sources, which is very convenient for development tasks involving changes in external dependencies like `gt4py`. For convenience, `./_external_src` has already been added to the repository `.gitignore`.
 
