@@ -88,10 +88,11 @@ def provide_offset(chain: str) -> SimpleNamespace:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
-    C (cell), E (Edge), V (Vertex) and be separated by a '2' e.g. 'E2V'. In cases where
-    the origin is included such as 'E2C2EO', the origin handling is done by IcoChainSize.
+    C (cell), E (Edge), V (Vertex) and be separated by a '2' e.g. 'E2V'. If the origin is to
+    be included, the string should terminate with O (uppercase o)
     """
     location_chain = []
+    include_center = False
     for letter in chain:
         if letter == "C":
             location_chain.append(CellDim)
@@ -99,12 +100,15 @@ def provide_offset(chain: str) -> SimpleNamespace:
             location_chain.append(EdgeDim)
         elif letter == "V":
             location_chain.append(VertexDim)
-        elif letter in ["2", "O"]:
+        elif letter == "O":
+            include_center = True
+        elif letter == "2":
             pass
         else:
             raise InvalidConnectivityException(location_chain)
     return SimpleNamespace(
-        max_neighbors=IcoChainSize.get(location_chain), has_skip_values=True
+        max_neighbors=IcoChainSize.get(location_chain) + include_center,
+        has_skip_values=True,
     )
 
 
