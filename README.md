@@ -47,7 +47,7 @@ pip install --src _external_src -r requirements-dev.txt
 pytest -v
 ```
 
-The `--src _external_src` option tells `pip` to use a specific folder as base path for checked out sources, which is very convenient for development tasks involving changes in external dependencies like `gt4py`. For convenience, `./_external_src` has already been added to the repository `.gitignore`.
+The `--src _external_src` option tells `pip` to use a specific folder as base path for checked out sources, which is very convenient for development tasks involving changes in external dependencies like `gt4py`. For convenience, `./_external_src` has been already added to the repository `.gitignore`.
 
 
 ### Installation of specific subpackages
