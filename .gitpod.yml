@@ -1,5 +1,5 @@
-# All installation needs to be user installations, otherwise it's not preserved on restarts
-# except pre-commit which doesn't work with PIP_USER=yes (therefore the alias)
+# Only /workspace folder is preserved on restarts, therefore both the Python
+# virtual environment and pre-commit caches have to be installed there
 image:
   file: .gitpod.Dockerfile
 tasks:
