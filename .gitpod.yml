@@ -3,7 +3,7 @@
 image:
   file: .gitpod.Dockerfile
 tasks:
-- name: Setup venv
+- name: Setup venv and dev tools
   before: |
     mkdir -p ~/.cache
     mkdir -p /workspace/.caches/pre-commit
