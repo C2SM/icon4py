@@ -7,8 +7,7 @@ tasks:
     ln -s /workspace/.caches/pre-commit  ~/.cache/pre-commit
   init: |
     pip install --upgrade pip setuptools wheel
-    pip install --src _external_src -r requirements-dev.txt
-    PYENV_PYTHON_VERSION=$(python --version | cut -d ' ' -f 2)
-    cp ~/.pyenv/versions/${PYENV_PYTHON_VERSION}/lib/python${PYENV_PYTHON_VERSION:0:3}/site-packages/easy-install.pth /workspace/.pip-modules/lib/python${PYENV_PYTHON_VERSION:0:3}/site-packages/
-    cp ~/.pyenv/versions/${PYENV_PYTHON_VERSION}/lib/python${PYENV_PYTHON_VERSION:0:3}/site-packages/*.egg-link /workspace/.pip-modules/lib/python${PYENV_PYTHON_VERSION:0:3}/site-packages/
+    pip install --user -r requirements-dev.txt
     pre-commit install --install-hooks
+  env:
+    PIP_SRC: _external_src
