@@ -3,7 +3,8 @@
 image:
   file: .gitpod.Dockerfile
 tasks:
-- before: |
+- name: Setup venv
+  before: |
     mkdir -p ~/.cache
     mkdir -p /workspace/.caches/pre-commit
     ln -s /workspace/.caches/pre-commit  ~/.cache/pre-commit
@@ -13,6 +14,8 @@ tasks:
     pip install --upgrade pip setuptools wheel
     pip install -r requirements-dev.txt
     pre-commit install --install-hooks
+    deactivate
+  command: source .venv/bin/activate
   env:
     PIP_SRC: _external_src
 vscode:
