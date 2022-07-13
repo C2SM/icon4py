@@ -20,5 +20,5 @@ tasks:
     PIP_SRC: _external_src
 vscode:
   extensions:
-    - ms-python.python
-    - genuitecllc.codetogether
+  - ms-python.python
+  - genuitecllc.codetogether
