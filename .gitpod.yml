@@ -1,0 +1,15 @@
+# All installation needs to be user installations, otherwise it's not preserved on restarts
+# except pre-commit which doesn't work with PIP_USER=yes (therefore the alias)
+image:
+  file: .gitpod.Dockerfile
+tasks:
+- before: |
+    mkdir -p ~/.cache
+    mkdir -p /workspace/.caches/pre-commit
+    ln -s /workspace/.caches/pre-commit  ~/.cache/pre-commit
+  init: |
+    pip install --upgrade pip setuptools wheel
+    pip install -r requirements-dev.txt
+    pre-commit install --install-hooks
+  env:
+    PIP_SRC: _external_src
