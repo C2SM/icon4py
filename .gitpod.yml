@@ -9,7 +9,7 @@ tasks:
     mkdir -p /workspace/.caches/pre-commit
     ln -s /workspace/.caches/pre-commit  ~/.cache/pre-commit
     mkdir .vscode
-    ln -s .gitpod/.vscode/* .vscode/
+    cp .gitpod/.vscode/* .vscode/
   init: |
     python -m venv .venv
     source .venv/bin/activate
