@@ -8,9 +8,9 @@ tasks:
     mkdir -p ~/.cache
     mkdir -p /workspace/.caches/pre-commit
     ln -s /workspace/.caches/pre-commit  ~/.cache/pre-commit
+  init: |
     mkdir .vscode
     cp .gitpod/.vscode/* .vscode/
-  init: |
     python -m venv .venv
     source .venv/bin/activate
     pip install --upgrade pip setuptools wheel
