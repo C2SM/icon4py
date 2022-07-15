@@ -51,5 +51,5 @@ def get_cell_to_k_table(k_arr, k):
     return np.repeat(c2k[:], k, axis=-1)
 
 
-def get_stencil_module_path(module, stencil_name) -> str:
+def get_stencil_module_path(module: str, stencil_name: str) -> str:
     return f"icon4py.{module}.{stencil_name}:{stencil_name}"
