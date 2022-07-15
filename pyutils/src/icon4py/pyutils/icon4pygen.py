@@ -14,9 +14,9 @@
 """Utilities for generating icon stencils."""
 import importlib
 import pathlib
-from collections import namedtuple
+import collections
 from types import SimpleNamespace
-from typing import Union
+from typing import Any, Union
 
 import click
 import tabulate
@@ -35,7 +35,7 @@ from icon4py.pyutils.exceptions import (
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
-_FIELDINFO = namedtuple("_FIELDINFO", ["field", "inp", "out"])
+_FIELDINFO = collections.namedtuple("_FIELDINFO", ["field", "inp", "out"])
 
 
 def get_fieldinfo(fvprog: Program) -> dict[str, _FIELDINFO]:
@@ -63,7 +63,7 @@ def format_io_string(fieldinfo: _FIELDINFO) -> str:
     return iostring
 
 
-def scan_for_chains(fvprog: Program) -> list[str]:
+def scan_for_chains(fvprog: Program) -> set[str]:
     """Scan PAST node for connectivities and return a set of all connectivity chains."""
     all_types = (
         fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
@@ -112,7 +112,9 @@ def provide_offset(chain: str) -> SimpleNamespace:
     )
 
 
-def format_metadata(fvprog: Program, chains, **kwargs) -> str:
+def format_metadata(
+    fvprog: Program, chains: collections.abc.Sequence[str], **kwargs: Any
+) -> str:
     """Format in/out field and connectivity information from a program as a string table."""
     fieldinfos = get_fieldinfo(fvprog)
     table = []
@@ -135,13 +137,13 @@ def gtfn_program(fencil_function) -> Program:
     return fvprog
 
 
-def adapt_program_gtfn(fvprog):
+def adapt_program_gtfn(fvprog: Program) -> Program:
     fvprog.itir.params.append(im.sym("domain_"))
     fvprog.itir.closures[0].domain = im.ref("domain_")
     return fvprog
 
 
-def generate_cpp_code(fvprog, offset_provider, **kwargs) -> str:
+def generate_cpp_code(fvprog: Program, offset_provider: dict, **kwargs: Any) -> str:
     """Generate C++ code using the GTFN backend."""
     return generate(
         fvprog.itir, grid_type="unstructured", offset_provider=offset_provider, **kwargs
@@ -165,7 +167,7 @@ def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
     help="file path for optional metadata output",
 )
 @click.argument("fencil", type=str)
-def main(output_metadata, fencil):
+def main(output_metadata, fencil: str):
     """
     Generate metadata and C++ code for an icon4py fencil.
 

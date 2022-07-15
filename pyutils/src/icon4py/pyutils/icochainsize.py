@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, TypeAlias
 
 from functional.common import Dimension
 
@@ -121,7 +121,11 @@ class Connection:
     end: Dimension
 
 
-def vertex_to_edge(vertex: Tuple[int]) -> Tuple[Tuple[int]]:
+Coord3D: TypeAlias = Tuple[int, int, int]
+Cell6: TypeAlias = Tuple[Coord3D, Coord3D, Coord3D, Coord3D, Coord3D, Coord3D]
+
+
+def vertex_to_edge(vertex: Coord3D) -> Cell6:
     (x, y, _) = vertex
     return (
         (x, y, 0),
@@ -133,7 +137,7 @@ def vertex_to_edge(vertex: Tuple[int]) -> Tuple[Tuple[int]]:
     )
 
 
-def vertex_to_cell(vertex: Tuple[int]) -> Tuple[Tuple[int]]:
+def vertex_to_cell(vertex: Coord3D) -> Cell6:
     (x, y, _) = vertex
     return (
         (x, y, 0),
@@ -145,7 +149,7 @@ def vertex_to_cell(vertex: Tuple[int]) -> Tuple[Tuple[int]]:
     )
 
 
-def edge_to_vertex(edge: Tuple[int]) -> Tuple[Tuple[int]]:
+def edge_to_vertex(edge: Coord3D) -> Tuple[Coord3D, Coord3D]:
     (x, y, e) = edge
     if e == 0:
         return (x, y, 0), (x + 1, y, 0)
@@ -157,7 +161,7 @@ def edge_to_vertex(edge: Tuple[int]) -> Tuple[Tuple[int]]:
         raise Exception("Invalid edge type")
 
 
-def edge_to_cell(edge: Tuple[int]) -> Tuple[Tuple[int]]:
+def edge_to_cell(edge: Coord3D) -> Tuple[Coord3D, Coord3D]:
     (x, y, e) = edge
     if e == 0:
         return ((x, y, 0), (x, y - 1, 1))
@@ -169,7 +173,7 @@ def edge_to_cell(edge: Tuple[int]) -> Tuple[Tuple[int]]:
         raise Exception("Invalid edge type")
 
 
-def cell_to_vertex(cell: Tuple[int]) -> Tuple[Tuple[int]]:
+def cell_to_vertex(cell: Coord3D) -> Tuple[Coord3D, Coord3D, Coord3D]:
     (x, y, c) = cell
     if c == 0:
         return ((x, y, 0), (x + 1, y, 0), (x, y + 1, 0))
@@ -179,7 +183,7 @@ def cell_to_vertex(cell: Tuple[int]) -> Tuple[Tuple[int]]:
         raise Exception("Invalid edge type")
 
 
-def cell_to_edge(cell: Tuple[int]) -> Tuple[Tuple[int]]:
+def cell_to_edge(cell: Coord3D) -> Tuple[Coord3D, Coord3D, Coord3D]:
     (x, y, c) = cell
     if c == 0:
         return ((x, y, 0), (x, y, 1), (x, y, 2))
@@ -200,7 +204,7 @@ class IcoChainSize:
     }
 
     @classmethod
-    def get(cls, chain: List[Dimension]):
+    def get(cls, chain: List[Dimension]) -> int:
         previous_location_type = chain[0]
         previous_locations = {(0, 0, 0)}
 

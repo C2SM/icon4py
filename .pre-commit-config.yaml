@@ -122,7 +122,6 @@ repos:
       hooks:
           - id: mypy
             name: mypy static type checker
-            stages: [manual]
             args: [--install-types, --non-interactive]
             exclude: |
                 (?x)(
