@@ -80,7 +80,7 @@ def scan_for_chains(fvprog: Program) -> list[str]:
         .getattr("value")
         .to_list()
     )
-    all_dim_labels = [dim.value for dim in all_dims.local]
+    all_dim_labels = [dim.value for dim in all_dims if dim.local]
     return set(all_offset_labels + all_dim_labels)
 
 
