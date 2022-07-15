@@ -1,5 +1,5 @@
 [![Open in Gitpod](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod)](https://gitpod.io/#https://github.com/C2SM/icon4py)
-  
+
 # ICON4Py
 
 ## Description
@@ -50,7 +50,6 @@ pytest -v
 ```
 
 The `--src _external_src` option tells `pip` to use a specific folder as base path for checked out sources, which is very convenient for development tasks involving changes in external dependencies like `gt4py`. For convenience, `./_external_src` has been already added to the repository `.gitignore`.
-
 
 ### Installation of specific subpackages
 

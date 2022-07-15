@@ -1,29 +1,29 @@
 # Only /workspace folder is preserved on restarts, therefore both the Python
 # virtual environment and pre-commit caches have to be installed there
 image:
-  file: .gitpod.Dockerfile
+   file: .gitpod.Dockerfile
 tasks:
-- name: Setup venv and dev tools
-  before: |
-    mkdir -p ~/.cache
-    mkdir -p /workspace/.caches/pre-commit
-    ln -s /workspace/.caches/pre-commit  ~/.cache/pre-commit
-  init: |
-    mkdir .vscode
-    cp .gitpod/.vscode/* .vscode/
-    python -m venv .venv
-    source .venv/bin/activate
-    pip install --upgrade pip setuptools wheel
-    pip install -r requirements-dev.txt
-    pre-commit install --install-hooks
-    deactivate
-  command: source .venv/bin/activate
-  env:
-    PIP_SRC: _external_src
+   - name: Setup venv and dev tools
+     before: |
+        mkdir -p ~/.cache
+        mkdir -p /workspace/.caches/pre-commit
+        ln -s /workspace/.caches/pre-commit  ~/.cache/pre-commit
+     init: |
+        mkdir .vscode
+        cp .gitpod/.vscode/* .vscode/
+        python -m venv .venv
+        source .venv/bin/activate
+        pip install --upgrade pip setuptools wheel
+        pip install -r requirements-dev.txt
+        pre-commit install --install-hooks
+        deactivate
+     command: source .venv/bin/activate
+     env:
+        PIP_SRC: _external_src
 vscode:
-  extensions:
-  - ms-python.python
-  - ms-toolsai.jupyter
-  - ms-toolsai.jupyter-keymap
-  - ms-toolsai.jupyter-renderers
-  - genuitecllc.codetogether
+   extensions:
+      - ms-python.python
+      - ms-toolsai.jupyter
+      - ms-toolsai.jupyter-keymap
+      - ms-toolsai.jupyter-renderers
+      - genuitecllc.codetogether
