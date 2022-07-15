@@ -22,7 +22,7 @@ def random_mask(mesh, *dims, numeric=False):
     np.random.shuffle(arr)
     arr = np.reshape(arr, newshape=shape)
     if numeric:
-        arr = arr.astype("float")
+        arr = arr.astype("int")
     return np_as_located_field(*dims)(arr)
 
 
