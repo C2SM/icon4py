@@ -42,17 +42,17 @@ def mo_velocity_advection_stencil_18_numpy(
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
 
     difcoef = np.where(
-        (levelmask == 1.0) & (cfl_clipping == 1.0) & (owner_mask == 1.0),
+        (levelmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
         scalfac_exdiff
         * np.minimum(
             0.85 - cfl_w_limit * dtime,
             np.abs(z_w_con_c) * dtime / ddqz_z_half - cfl_w_limit * dtime,
         ),
-        0.0,
+        0,
     )
 
     ddt_w_adv = np.where(
-        (levelmask == 1.0) & (cfl_clipping == 1.0) & (owner_mask == 1.0),
+        (levelmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
         ddt_w_adv + difcoef * area * np.sum(w[c2e2c0] * geofac_n2s, axis=1),
         ddt_w_adv,
     )
@@ -72,9 +72,9 @@ def test_mo_velocity_advection_stencil_18():
     geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
     w = random_field(mesh, CellDim, KDim)
     ddt_w_adv = random_field(mesh, CellDim, KDim)
-    scalfac_exdiff = np.float64(10.0)
-    cfl_w_limit = np.float64(3.0)
-    dtime = np.float64(2.0)
+    scalfac_exdiff = 10.0
+    cfl_w_limit = 3.0
+    dtime = 2.0
 
     ref = mo_velocity_advection_stencil_18_numpy(
         mesh.c2e2cO,
