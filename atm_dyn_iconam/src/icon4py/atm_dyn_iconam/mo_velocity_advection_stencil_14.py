@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, abs, where
+from functional.ffront.fbuiltins import Field, where
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -40,14 +40,14 @@ def _mo_velocity_advection_stencil_14_cfl_clipping(
     z_w_con_c: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
 ) -> Field[[CellDim, KDim], float]:
-    cfl_clipping = where(abs(z_w_con_c) > cfl_w_limit * ddqz_z_half, 1.0, 0.0)
+    cfl_clipping = where(z_w_con_c > cfl_w_limit * ddqz_z_half, 1.0, 0.0)
     return cfl_clipping
 
 
 @field_operator
 def _mo_velocity_advection_stencil_14_pre_levelmask(
     cfl_clipping: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+) -> Field[[CellDim, KDim], bool]:
     pre_levelmask = where(cfl_clipping == 1.0, 1.0, 0.0)
     return pre_levelmask
 
@@ -68,7 +68,7 @@ def mo_velocity_advection_stencil_14(
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
     cfl_clipping: Field[[CellDim, KDim], float],
-    pre_levelmask: Field[[CellDim, KDim], float],
+    pre_levelmask: Field[[CellDim, KDim], bool],
     vcfl: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
     dtime: float,
