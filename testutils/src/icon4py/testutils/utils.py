@@ -15,12 +15,14 @@ import numpy as np
 from functional.iterator.embedded import np_as_located_field
 
 
-def random_mask(mesh, *dims):
+def random_mask(mesh, *dims, numeric=False):
     shape = tuple(map(lambda x: mesh.size[x], dims))
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
     np.random.shuffle(arr)
     arr = np.reshape(arr, newshape=shape)
+    if numeric:
+        arr = arr.astype("float")
     return np_as_located_field(*dims)(arr)
 
 
