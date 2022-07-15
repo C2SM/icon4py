@@ -32,7 +32,7 @@ def mo_velocity_advection_stencil_14_z_w_con_c_numpy(
         (cfl_clipping == 1.0) & (vcfl < -0.85), -0.85 * ddqz_z_half / dtime, z_w_con_c
     )
     z_w_con_c = np.where(
-        (cfl_clipping == 1.0) & (vcfl > -0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c
+        (cfl_clipping == 1.0) & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c
     )
     return z_w_con_c
 
