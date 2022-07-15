@@ -20,6 +20,7 @@ from typing import Union
 
 import click
 import tabulate
+from functional.common import DimensionKind
 from functional.fencil_processors.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
@@ -79,7 +80,7 @@ def scan_for_chains(fvprog: Program) -> list[str]:
         .getattr("value")
         .to_list()
     )
-    all_dim_labels = [dim.value for dim in all_dims if dim.local]
+    all_dim_labels = [dim.value for dim in all_dims if dim.kind == DimensionKind.LOCAL]
     return set(all_offset_labels + all_dim_labels)
 
 
