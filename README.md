@@ -19,8 +19,8 @@ We recommend to use [tox](https://tox.wiki/en/latest/) for the automatic install
 git clone git@github.com:C2SM/icon4py.git
 cd icon4py
 
-# Use tox to create and set up a development environment (usually at `.venv`)
-tox -e dev --devenv .venv
+# Use tox to create and set up a development environment (usually at `.venv`) in verbose mode
+tox -vv -e dev --devenv .venv
 
 # Activate the virtual environment and check that everything works
 source .venv/bin/activate
@@ -76,11 +76,11 @@ pip install -r requirements-dev.txt
 
 ## Development instructions
 
-After following the installation instructions above using the development requirements (`*-dev.txt` files), an *editable* installation of all the packages will be active in the virtual environment. In this mode, code changes are immediately visible since source files are imported directly by the Python interpreter.
+After following the installation instructions above using the development requirements (`*-dev.txt` files), an _editable_ installation of all the packages will be active in the virtual environment. In this mode, code changes are immediately visible since source files are imported directly by the Python interpreter.
 
 ### Code quality checks
 
-[pre-commit](https://pre-commit.com/) is used to run several linting and checking tools. It should always be executed locally before opening a pull request. `pre-commit` can also be installed as a *git hook* to automatically check the staged changes before committing:
+[pre-commit](https://pre-commit.com/) is used to run several linting and checking tools. It should always be executed locally before opening a pull request. `pre-commit` can also be installed as a _git hook_ to automatically check the staged changes before committing:
 
 ```bash
 # Install pre-commit as a git hook and set up all the tools
@@ -88,6 +88,7 @@ pre-commit install --install-hooks
 ```
 
 Or it can be executed on demand from the command line:
+
 ```bash
 # Check only the staged changes
 pre-commit run
@@ -95,7 +96,7 @@ pre-commit run
 # Check all the files in the repository
 pre-commit run -a
 
-# Run only some of the tools (e.g. mypy) 
+# Run only some of the tools (e.g. mypy)
 pre-commit run mypy -a
 ```
 
@@ -113,7 +114,7 @@ pytest -v path/to/test/folder
 
 Nonetheless, we also recommended to use `tox` to run the complete test suite:
 
-```bash    
+```bash
 # Run test suite in the default environment
 tox
 
