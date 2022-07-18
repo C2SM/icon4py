@@ -35,25 +35,25 @@ from icon4py.pyutils.exceptions import (
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
-_FIELDINFO = collections.namedtuple("_FIELDINFO", ["field", "inp", "out"])
+_FieldInfo = collections.namedtuple("_FieldInfo", ["field", "inp", "out"])
 
 
-def get_fieldinfo(fvprog: Program) -> dict[str, _FIELDINFO]:
+def get_fieldinfo(fvprog: Program) -> dict[str, _FieldInfo]:
     """Extract and format the in/out fields from a Program."""
     fields = {
-        field.id: _FIELDINFO(field, True, False) for field in fvprog.past_node.params
+        field.id: _FieldInfo(field, True, False) for field in fvprog.past_node.params
     }
 
     for out_field in [fvprog.past_node.body[0].kwargs["out"]]:
         if out_field.id in [arg.id for arg in fvprog.past_node.body[0].args]:
-            fields[out_field.id] = _FIELDINFO(fields[out_field.id].field, True, True)
+            fields[out_field.id] = _FieldInfo(fields[out_field.id].field, True, True)
         else:
-            fields[out_field.id] = _FIELDINFO(out_field, False, True)
+            fields[out_field.id] = _FieldInfo(out_field, False, True)
 
     return fields
 
 
-def format_io_string(fieldinfo: _FIELDINFO) -> str:
+def format_io_string(fieldinfo: _FieldInfo) -> str:
     """Format the output for the "io" column: in/inout/out."""
     iostring = ""
     if fieldinfo.inp:
@@ -174,16 +174,16 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     A fencil may be specified as <module>:<member>, where <module> is the
     dotted name of the containing module and <member> is the name of the fencil.
     """
-    fencil = import_fencil(fencil)
+    imported_fencil = import_fencil(fencil)
 
-    fvprog = None
-    match fencil:
+    # fvprog = None
+    match imported_fencil:
         case Program():
-            fvprog = fencil.with_backend("gtfn")
+            fvprog = imported_fencil.with_backend("gtfn")
         case FieldOperator():
-            fvprog = fencil.with_backend("gtfn").as_program()
+            fvprog = imported_fencil.with_backend("gtfn").as_program()
         case _:
-            fvprog = program(fencil, backend="gtfn")
+            fvprog = program(imported_fencil, backend="gtfn")
 
     if len(fvprog.past_node.body) > 1:
         raise MultipleFieldOperatorException()
