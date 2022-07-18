@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, where
+from functional.ffront.fbuiltins import Field, abs, where
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -40,7 +40,7 @@ def _mo_velocity_advection_stencil_14_cfl_clipping(
     z_w_con_c: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
 ) -> Field[[CellDim, KDim], float]:
-    cfl_clipping = where(z_w_con_c > cfl_w_limit * ddqz_z_half, 1.0, 0.0)
+    cfl_clipping = where(abs(z_w_con_c) > cfl_w_limit * ddqz_z_half, 1.0, 0.0)
     return cfl_clipping
 
 
