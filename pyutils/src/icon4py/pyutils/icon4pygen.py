@@ -12,10 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """Utilities for generating icon stencils."""
+import collections
 import importlib
 import pathlib
-import collections
-from types import SimpleNamespace
+import types
 from typing import Any, Union
 
 import click
@@ -84,7 +84,7 @@ def scan_for_chains(fvprog: Program) -> set[str]:
     return set(all_offset_labels + all_dim_labels)
 
 
-def provide_offset(chain: str) -> SimpleNamespace:
+def provide_offset(chain: str) -> types.SimpleNamespace:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -106,14 +106,14 @@ def provide_offset(chain: str) -> SimpleNamespace:
             pass
         else:
             raise InvalidConnectivityException(location_chain)
-    return SimpleNamespace(
+    return types.SimpleNamespace(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
         has_skip_values=True,
     )
 
 
 def format_metadata(
-    fvprog: Program, chains: collections.abc.Sequence[str], **kwargs: Any
+    fvprog: Program, chains: collections.abc.Iterable[str], **kwargs: Any
 ) -> str:
     """Format in/out field and connectivity information from a program as a string table."""
     fieldinfos = get_fieldinfo(fvprog)
@@ -131,7 +131,7 @@ def format_metadata(
     )
 
 
-def gtfn_program(fencil_function) -> Program:
+def gtfn_program(fencil_function: types.FunctionType) -> Program:
     fvprog = program(fencil_function, backend="gtfn")
     adapt_program_gtfn(fvprog)
     return fvprog
@@ -167,7 +167,7 @@ def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
     help="file path for optional metadata output",
 )
 @click.argument("fencil", type=str)
-def main(output_metadata, fencil: str):
+def main(output_metadata: pathlib.Path, fencil: str) -> None:
     """
     Generate metadata and C++ code for an icon4py fencil.
 

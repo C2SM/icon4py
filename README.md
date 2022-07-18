@@ -8,11 +8,11 @@ ICON4Py contains Python (GT4Py) implementations of ICON (inspired) components fo
 
 ## Project structure
 
-Each directory contains Python packages of ICON components or utility packages that are deployable on its own. As these packages are not available from a package repository (yet), location of dependencies within this repository have to be provided explicitly, e.g. by installing the dependencies first. See [Installation instructions](#installation-instructions)
+Each directory contains Python packages of ICON components or utility packages that are deployable on its own. As these packages are not available from a package repository (yet), location of dependencies within this repository have to be provided explicitly, e.g. by installing the dependencies first. See [Installation instructions](#installation-instructions).
 
 ## Installation instructions
 
-We recommend to use `tox` for the automatic installation of all packages in development mode in a single step:
+We recommend to use [tox](https://tox.wiki/en/latest/) for the automatic installation of all packages in development mode in a single step:
 
 ```bash
 # Clone the repository
@@ -73,3 +73,52 @@ pip install --upgrade wheel
 cd _SUBPACKAGE_  # where _SUBPACKAGE_ in atm_dyn_iconam | common | pyutils | testutils | ...
 pip install -r requirements-dev.txt
 ```
+
+## Development instructions
+
+After following the installation instructions above using the development requirements (`*-dev.txt` files), an *editable* installation of all the packages will be active in the virtual environment. In this mode, code changes are immediately visible since source files are imported directly by the Python interpreter.
+
+### Code quality checks
+
+[pre-commit](https://pre-commit.com/) is used to run several linting and checking tools. It should always be executed locally before opening a pull request. `pre-commit` can also be installed as a *git hook* to automatically check the staged changes before committing:
+
+```bash
+# Install pre-commit as a git hook and set up all the tools
+pre-commit install --install-hooks
+```
+
+Or it can be executed on demand from the command line:
+```bash
+# Check only the staged changes
+pre-commit run
+
+# Check all the files in the repository
+pre-commit run -a
+
+# Run only some of the tools (e.g. mypy) 
+pre-commit run mypy -a
+```
+
+### Testing
+
+[pytest](https://pytest.org/) is used for testing and it also comes with a command tool to easily run tests:
+
+```bash
+# Run all tests (verbose mode)
+pytest -v
+
+# Run only tests in `path/to/test/folder`
+pytest -v path/to/test/folder
+```
+
+Nonetheless, we also recommended to use `tox` to run the complete test suite:
+
+```bash    
+# Run test suite in the default environment
+tox
+
+# Run test suite in a specific environment (use `tox -a` to see list of envs)
+tox -e py310
+```
+
+The default `tox` environment is configured to generate HTML test coverage reports in `_reports/coverage_html/`.

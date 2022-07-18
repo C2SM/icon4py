@@ -121,11 +121,11 @@ class Connection:
     end: Dimension
 
 
-Coord3D: TypeAlias = Tuple[int, int, int]
-Cell6: TypeAlias = Tuple[Coord3D, Coord3D, Coord3D, Coord3D, Coord3D, Coord3D]
+Position: TypeAlias = Tuple[int, int, int]
+HexCell: TypeAlias = Tuple[Position, Position, Position, Position, Position, Position]
 
 
-def vertex_to_edge(vertex: Coord3D) -> Cell6:
+def vertex_to_edge(vertex: Position) -> HexCell:
     (x, y, _) = vertex
     return (
         (x, y, 0),
@@ -137,7 +137,7 @@ def vertex_to_edge(vertex: Coord3D) -> Cell6:
     )
 
 
-def vertex_to_cell(vertex: Coord3D) -> Cell6:
+def vertex_to_cell(vertex: Position) -> HexCell:
     (x, y, _) = vertex
     return (
         (x, y, 0),
@@ -149,7 +149,7 @@ def vertex_to_cell(vertex: Coord3D) -> Cell6:
     )
 
 
-def edge_to_vertex(edge: Coord3D) -> Tuple[Coord3D, Coord3D]:
+def edge_to_vertex(edge: Position) -> Tuple[Position, Position]:
     (x, y, e) = edge
     if e == 0:
         return (x, y, 0), (x + 1, y, 0)
@@ -161,7 +161,7 @@ def edge_to_vertex(edge: Coord3D) -> Tuple[Coord3D, Coord3D]:
         raise Exception("Invalid edge type")
 
 
-def edge_to_cell(edge: Coord3D) -> Tuple[Coord3D, Coord3D]:
+def edge_to_cell(edge: Position) -> Tuple[Position, Position]:
     (x, y, e) = edge
     if e == 0:
         return ((x, y, 0), (x, y - 1, 1))
@@ -173,7 +173,7 @@ def edge_to_cell(edge: Coord3D) -> Tuple[Coord3D, Coord3D]:
         raise Exception("Invalid edge type")
 
 
-def cell_to_vertex(cell: Coord3D) -> Tuple[Coord3D, Coord3D, Coord3D]:
+def cell_to_vertex(cell: Position) -> Tuple[Position, Position, Position]:
     (x, y, c) = cell
     if c == 0:
         return ((x, y, 0), (x + 1, y, 0), (x, y + 1, 0))
@@ -183,7 +183,7 @@ def cell_to_vertex(cell: Coord3D) -> Tuple[Coord3D, Coord3D, Coord3D]:
         raise Exception("Invalid edge type")
 
 
-def cell_to_edge(cell: Coord3D) -> Tuple[Coord3D, Coord3D, Coord3D]:
+def cell_to_edge(cell: Position) -> Tuple[Position, Position, Position]:
     (x, y, c) = cell
     if c == 0:
         return ((x, y, 0), (x, y, 1), (x, y, 2))
