@@ -51,7 +51,7 @@ def test_mo_nh_diffusion_stencil_05():
     diff_multfac_vn = random_field(mesh, KDim)
     nudgecoeff_e = random_field(mesh, EdgeDim)
     vn = random_field(mesh, EdgeDim, KDim)
-    nudgezone_diff = np.float(9.0)
+    nudgezone_diff = 9.0
 
     vn_ref = mo_nh_diffusion_stencil_05_numpy(
         np.asarray(area_edge),

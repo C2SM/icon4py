@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Tuple
 
 import numpy as np
 
@@ -18,7 +19,11 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_14 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import (
+    random_field,
+    random_mask,
+    zero_field,
+)
 
 
 def mo_velocity_advection_stencil_14_z_w_con_c_numpy(
@@ -44,7 +49,7 @@ def mo_velocity_advection_stencil_14_cfl_clipping_numpy(
 ) -> np.array:
     num_rows, num_cols = z_w_con_c.shape
     cfl_clipping = np.where(
-        z_w_con_c > cfl_w_limit * ddqz_z_half,
+        np.abs(z_w_con_c) > cfl_w_limit * ddqz_z_half,
         np.ones([num_rows, num_cols]),
         np.zeros_like(z_w_con_c),
     )
@@ -76,7 +81,7 @@ def mo_velocity_advection_stencil_14_numpy(
     z_w_con_c: np.array,
     cfl_w_limit,
     dtime,
-):
+) -> Tuple[np.array]:
     cfl_clipping = mo_velocity_advection_stencil_14_cfl_clipping_numpy(
         ddqz_z_half, z_w_con_c, cfl_w_limit
     )
@@ -95,12 +100,12 @@ def test_mo_velocity_advection_stencil_14():
 
     ddqz_z_half = random_field(mesh, CellDim, KDim)
     z_w_con_c = random_field(mesh, CellDim, KDim)
-    cfl_clipping = random_field(mesh, CellDim, KDim)
+    cfl_clipping = random_mask(mesh, CellDim, KDim, numeric=True)
 
     pre_levelmask = zero_field(mesh, CellDim, KDim)
     vcfl = zero_field(mesh, CellDim, KDim)
-    cfl_w_limit = np.float(5.0)
-    dtime = np.float(9.0)
+    cfl_w_limit = 5.0
+    dtime = 9.0
 
     (
         cfl_clipping_ref,
