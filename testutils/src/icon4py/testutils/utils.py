@@ -26,9 +26,11 @@ def random_mask(mesh, *dims, numeric=False):
     return np_as_located_field(*dims)(arr)
 
 
-def random_field(mesh, *dims):
+def random_field(mesh, *dims, low=-1, high=1):
     return np_as_located_field(*dims)(
-        np.random.randn(*map(lambda x: mesh.size[x], dims))
+        np.random.default_rng().uniform(
+            low=low, high=high, size=tuple(map(lambda x: mesh.size[x], dims))
+        )
     )
 
 
