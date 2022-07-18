@@ -176,7 +176,6 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     """
     imported_fencil = import_fencil(fencil)
 
-    # fvprog = None
     match imported_fencil:
         case Program():
             fvprog = imported_fencil.with_backend("gtfn")
