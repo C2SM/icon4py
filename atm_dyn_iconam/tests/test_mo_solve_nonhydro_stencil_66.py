@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Tuple
+
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_66 import (
@@ -52,9 +54,8 @@ def mo_solve_nonhydro_stencil_66_numpy(
     exner: np.array,
     rd_o_cvd: float,
     rd_o_p0ref: float,
-) -> np.array:
+) -> Tuple[np.array]:
     bdy_halo_c = np.expand_dims(bdy_halo_c, axis=-1)
-
     theta_v = np.where(bdy_halo_c == 1.0, exner, theta_v)
     exner = np.where(
         bdy_halo_c == 1.0, np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * exner)), exner

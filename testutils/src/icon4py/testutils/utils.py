@@ -26,7 +26,19 @@ def random_mask(mesh, *dims, numeric=False):
     return np_as_located_field(*dims)(arr)
 
 
-def random_field(mesh, *dims, low=-1, high=1):
+def random_field(mesh, *dims, low: float = -1.0, high: float = 1.0):
+    """Initialize a LocatedField with random values between a lower and
+       higher bound, using a uniform random distribution.
+
+    Args:
+        mesh: SimpleMesh object
+        dims: Iterable of mesh dimensions
+        low: lower bound of random values
+        high: higher bound of random values
+
+    Returns:
+        LocatedField with random values
+    """
     return np_as_located_field(*dims)(
         np.random.default_rng().uniform(
             low=low, high=high, size=tuple(map(lambda x: mesh.size[x], dims))
