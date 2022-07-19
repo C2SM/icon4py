@@ -18,20 +18,35 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_13_z_rth_pr_1(
-    rho: Field[[CellDim, KDim], float], rho_ref_mc: Field[[CellDim, KDim], float]
-) -> Field[[CellDim, KDim], float]:
+def _mo_solve_nonhydro_stencil_13(
+    rho: Field[[CellDim, KDim], float],
+    rho_ref_mc: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    theta_ref_mc: Field[[CellDim, KDim], float],
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_rth_pr_1 = rho - rho_ref_mc
-    return z_rth_pr_1
+    z_rth_pr_2 = theta_v - theta_ref_mc
+    return z_rth_pr_1, z_rth_pr_2
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_13_z_rth_pr_1(
+    rho: Field[[CellDim, KDim], float],
+    rho_ref_mc: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    theta_ref_mc: Field[[CellDim, KDim], float],
+) -> Field[[CellDim, KDim], float]:
+    return _mo_solve_nonhydro_stencil_13(rho, rho_ref_mc, theta_v, theta_ref_mc)[0]
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_13_z_rth_pr_2(
+    rho: Field[[CellDim, KDim], float],
+    rho_ref_mc: Field[[CellDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    z_rth_pr_2 = theta_v - theta_ref_mc
-    return z_rth_pr_2
+    return _mo_solve_nonhydro_stencil_13(rho, rho_ref_mc, theta_v, theta_ref_mc)[1]
 
 
 @program

@@ -18,39 +18,70 @@ from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
+def _mo_math_gradients_grad_green_gauss_cell_dsl(
+    p_ccpr1: Field[[CellDim, KDim], float],
+    p_ccpr2: Field[[CellDim, KDim], float],
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
+    p_grad_1_u = neighbor_sum(p_ccpr1(C2E2CO) * geofac_grg_x, axis=C2E2CODim)
+    p_grad_1_v = neighbor_sum(p_ccpr1(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
+    p_grad_2_u = neighbor_sum(p_ccpr2(C2E2CO) * geofac_grg_x, axis=C2E2CODim)
+    p_grad_2_v = neighbor_sum(p_ccpr2(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
+    return p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v
+
+
+@field_operator
 def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u(
     p_ccpr1: Field[[CellDim, KDim], float],
+    p_ccpr2: Field[[CellDim, KDim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
 ) -> Field[[CellDim, KDim], float]:
-    p_grad_1_u = neighbor_sum(p_ccpr1(C2E2CO) * geofac_grg_x, axis=C2E2CODim)
-    return p_grad_1_u
+    return _mo_math_gradients_grad_green_gauss_cell_dsl(
+        p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y
+    )[0]
 
 
 @field_operator
 def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v(
     p_ccpr1: Field[[CellDim, KDim], float],
+    p_ccpr2: Field[[CellDim, KDim], float],
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
 ) -> Field[[CellDim, KDim], float]:
-    p_grad_1_v = neighbor_sum(p_ccpr1(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
-    return p_grad_1_v
+    return _mo_math_gradients_grad_green_gauss_cell_dsl(
+        p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y
+    )[1]
 
 
 @field_operator
 def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u(
+    p_ccpr1: Field[[CellDim, KDim], float],
     p_ccpr2: Field[[CellDim, KDim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
 ) -> Field[[CellDim, KDim], float]:
-    p_grad_2_u = neighbor_sum(p_ccpr2(C2E2CO) * geofac_grg_x, axis=C2E2CODim)
-    return p_grad_2_u
+    return _mo_math_gradients_grad_green_gauss_cell_dsl(
+        p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y
+    )[2]
 
 
 @field_operator
 def _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v(
+    p_ccpr1: Field[[CellDim, KDim], float],
     p_ccpr2: Field[[CellDim, KDim], float],
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
 ) -> Field[[CellDim, KDim], float]:
-    p_grad_2_v = neighbor_sum(p_ccpr2(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
-    return p_grad_2_v
+    return _mo_math_gradients_grad_green_gauss_cell_dsl(
+        p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y
+    )[3]
 
 
 @program
@@ -65,14 +96,14 @@ def mo_math_gradients_grad_green_gauss_cell_dsl(
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
 ):
     _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u(
-        p_ccpr1, geofac_grg_x, out=p_grad_1_u
+        p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y, out=p_grad_1_u
     )
     _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v(
-        p_ccpr1, geofac_grg_y, out=p_grad_1_v
+        p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y, out=p_grad_1_v
     )
     _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u(
-        p_ccpr2, geofac_grg_x, out=p_grad_2_u
+        p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y, out=p_grad_2_u
     )
     _mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v(
-        p_ccpr2, geofac_grg_y, out=p_grad_2_v
+        p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y, out=p_grad_2_v
     )

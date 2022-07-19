@@ -18,21 +18,32 @@ from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
+def _mo_nh_diffusion_stencil_08(
+    w: Field[[CellDim, KDim], float],
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    dwdx = neighbor_sum(geofac_grg_x * w(C2E2CO), axis=C2E2CODim)
+    dwdy = neighbor_sum(geofac_grg_y * w(C2E2CO), axis=C2E2CODim)
+    return dwdx, dwdy
+
+
+@field_operator
 def _mo_nh_diffusion_stencil_08_dwdx(
     w: Field[[CellDim, KDim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
 ) -> Field[[CellDim, KDim], float]:
-    dwdx = neighbor_sum(geofac_grg_x * w(C2E2CO), axis=C2E2CODim)
-    return dwdx
+    return _mo_nh_diffusion_stencil_08(w, geofac_grg_x, geofac_grg_y)[0]
 
 
 @field_operator
 def _mo_nh_diffusion_stencil_08_dwdy(
     w: Field[[CellDim, KDim], float],
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
 ) -> Field[[CellDim, KDim], float]:
-    dwdy = neighbor_sum(geofac_grg_y * w(C2E2CO), axis=C2E2CODim)
-    return dwdy
+    return _mo_nh_diffusion_stencil_08(w, geofac_grg_x, geofac_grg_y)[1]
 
 
 @program
@@ -43,5 +54,5 @@ def mo_nh_diffusion_stencil_08(
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_08_dwdx(w, geofac_grg_x, out=dwdx)
-    _mo_nh_diffusion_stencil_08_dwdy(w, geofac_grg_y, out=dwdy)
+    _mo_nh_diffusion_stencil_08_dwdx(w, geofac_grg_x, geofac_grg_y, out=dwdx)
+    _mo_nh_diffusion_stencil_08_dwdy(w, geofac_grg_x, geofac_grg_y, out=dwdy)
