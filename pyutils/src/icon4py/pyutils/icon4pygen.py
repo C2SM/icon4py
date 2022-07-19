@@ -108,7 +108,7 @@ def provide_offset(chain: str) -> SimpleNamespace:
             raise InvalidConnectivityException(location_chain)
     return SimpleNamespace(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
-        has_skip_values=True,
+        has_skip_values=False,
     )
 
 
