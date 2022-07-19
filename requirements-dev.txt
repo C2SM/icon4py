@@ -2,6 +2,8 @@
 
 # Concretized dependencies in local repo
 -e ./common
+-e ./shared
 -e ./pyutils
 -e ./testutils
 -e ./atm_dyn_iconam
+-e ./atm_phy_schemes
