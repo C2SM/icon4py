@@ -28,12 +28,12 @@ def _mo_solve_nonhydro_stencil_01() -> tuple[
 
 @field_operator
 def _mo_solve_nonhydro_stencil_01_z_rth_pr_1() -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_01[0]
+    return _mo_solve_nonhydro_stencil_01()[0]
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_01_z_rth_pr_2() -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_01[1]
+    return _mo_solve_nonhydro_stencil_01()[1]
 
 
 @program
