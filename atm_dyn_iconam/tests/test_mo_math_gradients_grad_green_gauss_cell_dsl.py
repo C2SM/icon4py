@@ -25,7 +25,7 @@ from icon4py.testutils.utils import random_field, zero_field
 
 def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u_numpy(
     c2ec2o: np.array, p_ccpr1: np.array, geofac_grg_x
-):
+) -> np.array:
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
     p_grad_1_u = np.sum(geofac_grg_x * p_ccpr1[c2ec2o], axis=1)
     return p_grad_1_u
@@ -33,7 +33,7 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u_numpy(
 
 def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v_numpy(
     c2ec2o: np.array, p_ccpr1: np.array, geofac_grg_y
-):
+) -> np.array:
     geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
     p_grad_1_v = np.sum(geofac_grg_y * p_ccpr1[c2ec2o], axis=1)
     return p_grad_1_v
@@ -41,7 +41,7 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v_numpy(
 
 def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u_numpy(
     c2ec2o: np.array, p_ccpr2: np.array, geofac_grg_x
-):
+) -> np.array:
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
     p_grad_2_u = np.sum(geofac_grg_x * p_ccpr2[c2ec2o], axis=1)
     return p_grad_2_u
@@ -49,7 +49,7 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u_numpy(
 
 def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v_numpy(
     c2ec2o: np.array, p_ccpr2: np.array, geofac_grg_y
-):
+) -> np.array:
     geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
     p_grad_2_v = np.sum(geofac_grg_y * p_ccpr2[c2ec2o], axis=1)
     return p_grad_2_v

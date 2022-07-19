@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Tuple
 
 import numpy as np
 
@@ -46,7 +47,7 @@ def mo_intp_rbf_rbf_vec_interpol_vertex_dom_b_numpy(
     p_e_in: np.array,
     ptr_coeff_1: np.array,
     ptr_coeff_2: np.array,
-):
+) -> Tuple[np.array]:
     p_v_out = mo_intp_rbf_rbf_vec_interpol_vertex_dom_b_p_v_numpy(
         v2e, p_e_in, ptr_coeff_1
     )

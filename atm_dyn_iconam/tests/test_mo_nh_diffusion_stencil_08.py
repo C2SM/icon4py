@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Tuple
 
 import numpy as np
 
@@ -42,7 +43,7 @@ def mo_nh_diffusion_stencil_08_numpy(
     w: np.array,
     geofac_grg_x: np.array,
     geofac_grg_y: np.array,
-):
+) -> Tuple[np.array]:
     dwdx = mo_nh_diffusion_stencil_08_dwdx_numpy(c2e2c0, w, geofac_grg_x)
     dwdy = mo_nh_diffusion_stencil_08_dwdy_numpy(c2e2c0, w, geofac_grg_y)
     return dwdx, dwdy
