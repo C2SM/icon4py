@@ -94,5 +94,5 @@ def mo_solve_nonhydro_stencil_30(
         e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e, out=z_graddiv_vn
     )
     _mo_solve_nonhydro_stencil_30_vt(
-        e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e, vn, out=vt
+        e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e, out=vt
     )
