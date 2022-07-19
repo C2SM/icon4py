@@ -1,0 +1,4 @@
+{
+  "python.testing.pytestEnabled": true,
+  "python.formatting.provider": "black"
+}
