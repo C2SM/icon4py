@@ -18,15 +18,22 @@ from icon4py.common.dimension import EdgeDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_14_z_rho_e() -> Field[[EdgeDim, KDim], float]:
+def _mo_solve_nonhydro_stencil_14() -> tuple[
+    Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]
+]:
     z_rho_e = 0.0
-    return z_rho_e
+    z_theta_v_e = 0.0
+    return z_rho_e, z_theta_v_e
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_14_z_rho_e() -> Field[[EdgeDim, KDim], float]:
+    return _mo_solve_nonhydro_stencil_14()[0]
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_14_z_theta_v_e() -> Field[[EdgeDim, KDim], float]:
-    z_theta_v_e = 0.0
-    return z_theta_v_e
+    return _mo_solve_nonhydro_stencil_14()[1]
 
 
 @program

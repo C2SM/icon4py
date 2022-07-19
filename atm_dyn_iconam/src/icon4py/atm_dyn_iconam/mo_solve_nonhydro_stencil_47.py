@@ -18,17 +18,26 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_47_w_nnew(
+def _mo_solve_nonhydro_stencil_47(
     w_concorr_c: Field[[CellDim, KDim], float]
-) -> Field[[CellDim, KDim], float]:
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     w_nnew = w_concorr_c
-    return w_nnew
+    z_contr_w_fl_l = float(0.0)
+    return w_nnew, z_contr_w_fl_l
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_47_z_contr_w_fl_l() -> Field[[CellDim, KDim], float]:
-    z_contr_w_fl_l = float(0.0)
-    return z_contr_w_fl_l
+def _mo_solve_nonhydro_stencil_47_w_nnew(
+    w_concorr_c: Field[[CellDim, KDim], float]
+) -> Field[[CellDim, KDim], float]:
+    return _mo_solve_nonhydro_stencil_47(w_concorr_c)[0]
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_47_z_contr_w_fl_l(
+    w_concorr_c: Field[[CellDim, KDim], float]
+) -> Field[[CellDim, KDim], float]:
+    return _mo_solve_nonhydro_stencil_47(w_concorr_c)[1]
 
 
 @program
@@ -38,4 +47,4 @@ def mo_solve_nonhydro_stencil_47(
     w_concorr_c: Field[[CellDim, KDim], float],
 ):
     _mo_solve_nonhydro_stencil_47_w_nnew(w_concorr_c, out=w_nnew)
-    _mo_solve_nonhydro_stencil_47_z_contr_w_fl_l(out=z_contr_w_fl_l)
+    _mo_solve_nonhydro_stencil_47_z_contr_w_fl_l(w_concorr_c, out=z_contr_w_fl_l)

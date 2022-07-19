@@ -18,15 +18,22 @@ from icon4py.common.dimension import EdgeDim, KDim
 
 
 @field_operator
+def _mo_solve_nonhydro_stencil_33() -> tuple[
+    Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]
+]:
+    vn_traj = 0.0
+    mass_flx_me = 0.0
+    return vn_traj, mass_flx_me
+
+
+@field_operator
 def _mo_solve_nonhydro_stencil_33_vn_traj() -> Field[[EdgeDim, KDim], float]:
-    vn_traj = float(0.0)
-    return vn_traj
+    return _mo_solve_nonhydro_stencil_33()[0]
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_33_mass_flx_me() -> Field[[EdgeDim, KDim], float]:
-    mass_flx_me = float(0.0)
-    return mass_flx_me
+    return _mo_solve_nonhydro_stencil_33()[1]
 
 
 @program

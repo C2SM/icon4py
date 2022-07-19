@@ -58,5 +58,9 @@ def mo_solve_nonhydro_stencil_13(
     z_rth_pr_1: Field[[CellDim, KDim], float],
     z_rth_pr_2: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_13_z_rth_pr_1(rho, rho_ref_mc, out=z_rth_pr_1)
-    _mo_solve_nonhydro_stencil_13_z_rth_pr_2(theta_v, theta_ref_mc, out=z_rth_pr_2)
+    _mo_solve_nonhydro_stencil_13_z_rth_pr_1(
+        rho, rho_ref_mc, theta_v, theta_ref_mc, out=z_rth_pr_1
+    )
+    _mo_solve_nonhydro_stencil_13_z_rth_pr_2(
+        rho, rho_ref_mc, theta_v, theta_ref_mc, out=z_rth_pr_2
+    )

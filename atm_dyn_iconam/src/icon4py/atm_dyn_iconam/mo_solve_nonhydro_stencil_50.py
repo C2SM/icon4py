@@ -18,23 +18,42 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
+def _mo_solve_nonhydro_stencil_50(
+    z_rho_expl: Field[[CellDim, KDim], float],
+    z_exner_expl: Field[[CellDim, KDim], float],
+    rho_incr: Field[[CellDim, KDim], float],
+    exner_incr: Field[[CellDim, KDim], float],
+    iau_wgt_dyn: float,
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
+    z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
+    return z_rho_expl, z_exner_expl
+
+
+@field_operator
 def _mo_solve_nonhydro_stencil_50_z_rho_expl(
     z_rho_expl: Field[[CellDim, KDim], float],
+    z_exner_expl: Field[[CellDim, KDim], float],
     rho_incr: Field[[CellDim, KDim], float],
+    exner_incr: Field[[CellDim, KDim], float],
     iau_wgt_dyn: float,
 ) -> Field[[CellDim, KDim], float]:
-    z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
-    return z_rho_expl
+    return _mo_solve_nonhydro_stencil_50(
+        z_rho_expl, z_exner_expl, rho_incr, exner_incr, iau_wgt_dyn
+    )[0]
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_50_z_exner_expl(
+    z_rho_expl: Field[[CellDim, KDim], float],
     z_exner_expl: Field[[CellDim, KDim], float],
+    rho_incr: Field[[CellDim, KDim], float],
     exner_incr: Field[[CellDim, KDim], float],
     iau_wgt_dyn: float,
 ) -> Field[[CellDim, KDim], float]:
-    z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
-    return z_exner_expl
+    return _mo_solve_nonhydro_stencil_50(
+        z_rho_expl, z_exner_expl, rho_incr, exner_incr, iau_wgt_dyn
+    )[1]
 
 
 @program
@@ -46,8 +65,8 @@ def mo_solve_nonhydro_stencil_50(
     iau_wgt_dyn: float,
 ):
     _mo_solve_nonhydro_stencil_50_z_rho_expl(
-        z_rho_expl, rho_incr, iau_wgt_dyn, out=z_rho_expl
+        z_rho_expl, z_exner_expl, rho_incr, exner_incr, iau_wgt_dyn, out=z_rho_expl
     )
     _mo_solve_nonhydro_stencil_50_z_exner_expl(
-        z_exner_expl, exner_incr, iau_wgt_dyn, out=z_exner_expl
+        z_rho_expl, z_exner_expl, rho_incr, exner_incr, iau_wgt_dyn, out=z_exner_expl
     )

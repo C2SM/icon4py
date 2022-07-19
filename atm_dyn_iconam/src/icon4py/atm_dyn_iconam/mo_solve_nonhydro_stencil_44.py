@@ -18,27 +18,75 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
+def _mo_solve_nonhydro_stencil_44(
+    exner_nnow: Field[[CellDim, KDim], float],
+    rho_nnow: Field[[CellDim, KDim], float],
+    theta_v_nnow: Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: Field[[CellDim, KDim], float],
+    vwind_impl_wgt: Field[[CellDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
+    dtime: float,
+    rd: float,
+    cvd: float,
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
+    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
+    return z_beta, z_alpha
+
+
+@field_operator
 def _mo_solve_nonhydro_stencil_44_z_beta(
     exner_nnow: Field[[CellDim, KDim], float],
     rho_nnow: Field[[CellDim, KDim], float],
     theta_v_nnow: Field[[CellDim, KDim], float],
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
+    vwind_impl_wgt: Field[[CellDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
     dtime: float,
     rd: float,
     cvd: float,
 ) -> Field[[CellDim, KDim], float]:
-    z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
-    return z_beta
+    return _mo_solve_nonhydro_stencil_44(
+        exner_nnow,
+        rho_nnow,
+        theta_v_nnow,
+        inv_ddqz_z_full,
+        vwind_impl_wgt,
+        theta_v_ic,
+        rho_ic,
+        dtime,
+        rd,
+        cvd,
+    )[0]
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_44_z_alpha(
+    exner_nnow: Field[[CellDim, KDim], float],
+    rho_nnow: Field[[CellDim, KDim], float],
+    theta_v_nnow: Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: Field[[CellDim, KDim], float],
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     rho_ic: Field[[CellDim, KDim], float],
+    dtime: float,
+    rd: float,
+    cvd: float,
 ) -> Field[[CellDim, KDim], float]:
-    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
-    return z_alpha
+    return _mo_solve_nonhydro_stencil_44(
+        exner_nnow,
+        rho_nnow,
+        theta_v_nnow,
+        inv_ddqz_z_full,
+        vwind_impl_wgt,
+        theta_v_ic,
+        rho_ic,
+        dtime,
+        rd,
+        cvd,
+    )[1]
 
 
 @program
@@ -57,8 +105,28 @@ def mo_solve_nonhydro_stencil_44(
     cvd: float,
 ):
     _mo_solve_nonhydro_stencil_44_z_beta(
-        exner_nnow, rho_nnow, theta_v_nnow, inv_ddqz_z_full, dtime, rd, cvd, out=z_beta
+        exner_nnow,
+        rho_nnow,
+        theta_v_nnow,
+        inv_ddqz_z_full,
+        vwind_impl_wgt,
+        theta_v_ic,
+        rho_ic,
+        dtime,
+        rd,
+        cvd,
+        out=z_beta,
     )
     _mo_solve_nonhydro_stencil_44_z_alpha(
-        vwind_impl_wgt, theta_v_ic, rho_ic, out=z_alpha
+        exner_nnow,
+        rho_nnow,
+        theta_v_nnow,
+        inv_ddqz_z_full,
+        vwind_impl_wgt,
+        theta_v_ic,
+        rho_ic,
+        dtime,
+        rd,
+        cvd,
+        out=z_alpha,
     )

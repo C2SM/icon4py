@@ -18,33 +18,84 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_42_z_w_expl(
+def _mo_solve_nonhydro_stencil_42(
     w_nnow: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
+    w_concorr_c: Field[[CellDim, KDim], float],
+    vwind_expl_wgt: Field[[CellDim], float],
     dtime: float,
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
     cpd: float,
-) -> Field[[CellDim, KDim], float]:
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_w_expl = w_nnow + dtime * (
         wgt_nnow_vel * ddt_w_adv_ntl1
         + wgt_nnew_vel * ddt_w_adv_ntl2
         - cpd * z_th_ddz_exner_c
     )
-    return z_w_expl
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+    return z_w_expl, z_contr_w_fl_l
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_42_z_w_expl(
+    w_nnow: Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
+    w_concorr_c: Field[[CellDim, KDim], float],
+    vwind_expl_wgt: Field[[CellDim], float],
+    dtime: float,
+    wgt_nnow_vel: float,
+    wgt_nnew_vel: float,
+    cpd: float,
+) -> Field[[CellDim, KDim], float]:
+    return _mo_solve_nonhydro_stencil_42(
+        w_nnow,
+        ddt_w_adv_ntl1,
+        ddt_w_adv_ntl2,
+        z_th_ddz_exner_c,
+        rho_ic,
+        w_concorr_c,
+        vwind_expl_wgt,
+        dtime,
+        wgt_nnow_vel,
+        wgt_nnew_vel,
+        cpd,
+    )[0]
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_42_z_contr_w_fl_l(
     w_nnow: Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
     rho_ic: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
     vwind_expl_wgt: Field[[CellDim], float],
+    dtime: float,
+    wgt_nnow_vel: float,
+    wgt_nnew_vel: float,
+    cpd: float,
 ) -> Field[[CellDim, KDim], float]:
-    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
-    return z_contr_w_fl_l
+    return _mo_solve_nonhydro_stencil_42(
+        w_nnow,
+        ddt_w_adv_ntl1,
+        ddt_w_adv_ntl2,
+        z_th_ddz_exner_c,
+        rho_ic,
+        w_concorr_c,
+        vwind_expl_wgt,
+        dtime,
+        wgt_nnow_vel,
+        wgt_nnew_vel,
+        cpd,
+    )[1]
 
 
 @program
@@ -68,6 +119,9 @@ def mo_solve_nonhydro_stencil_42(
         ddt_w_adv_ntl1,
         ddt_w_adv_ntl2,
         z_th_ddz_exner_c,
+        rho_ic,
+        w_concorr_c,
+        vwind_expl_wgt,
         dtime,
         wgt_nnow_vel,
         wgt_nnew_vel,
@@ -75,5 +129,16 @@ def mo_solve_nonhydro_stencil_42(
         out=z_w_expl,
     )
     _mo_solve_nonhydro_stencil_42_z_contr_w_fl_l(
-        w_nnow, rho_ic, w_concorr_c, vwind_expl_wgt, out=z_contr_w_fl_l
+        w_nnow,
+        ddt_w_adv_ntl1,
+        ddt_w_adv_ntl2,
+        z_th_ddz_exner_c,
+        rho_ic,
+        w_concorr_c,
+        vwind_expl_wgt,
+        dtime,
+        wgt_nnow_vel,
+        wgt_nnew_vel,
+        cpd,
+        out=z_contr_w_fl_l,
     )
