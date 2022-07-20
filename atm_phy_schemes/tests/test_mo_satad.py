@@ -17,7 +17,7 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-# TODO: zero_field is used when a field is defined within a field_operator, if fields are re-assigned different values then there is no need to import that
+# zero_field is used when a field is defined within a field_operator, if fields are re-assigned different values then there is no need to import that
 def test_mo_satad():
     mesh = SimpleMesh()
 
