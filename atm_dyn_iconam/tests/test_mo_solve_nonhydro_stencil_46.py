@@ -11,8 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Tuple
-
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_46 import (
@@ -38,7 +36,7 @@ def mo_solve_nonhydro_stencil_46_z_contr_w_fl_l_numpy(
 def mo_solve_nonhydro_stencil_46_numpy(
     w_nnew: np.array,
     z_contr_w_fl_l: np.array,
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
     w_nnew = mo_solve_nonhydro_stencil_46_w_nnew_numpy(w_nnew)
     z_contr_w_fl_l = mo_solve_nonhydro_stencil_46_z_contr_w_fl_l_numpy(z_contr_w_fl_l)
     return w_nnew, z_contr_w_fl_l

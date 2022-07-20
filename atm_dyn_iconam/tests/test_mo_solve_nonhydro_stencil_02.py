@@ -11,8 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Tuple
-
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_02 import (
@@ -39,7 +37,7 @@ def mo_solve_nonhydro_stencil_02_exner_pr_numpy(
 
 def mo_solve_nonhydro_stencil_02_numpy(
     exner: np.array, exner_ref_mc: np.array, exner_pr: np.array, exner_exfac: np.array
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
     z_exner_pr = mo_solve_nonhydro_stencil_02_z_exner_ex_pr_numpy(
         exner, exner_ref_mc, exner_pr, exner_exfac
     )

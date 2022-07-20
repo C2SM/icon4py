@@ -11,8 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Tuple
-
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_30 import (
@@ -54,7 +52,7 @@ def mo_solve_nonhydro_stencil_30_numpy(
     vn: np.array,
     geofac_grdiv: np.array,
     rbf_vec_coeff_e: np.array,
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
     z_vn_avg = mo_solve_nonhydro_stencil_30_z_vn_avg_numpy(e2c2eO, e_flx_avg, vn)
     z_graddiv_vn = mo_solve_nonhydro_stencil_30_z_graddiv_vn_numpy(
         e2c2eO, geofac_grdiv, vn

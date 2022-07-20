@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Tuple
 
 import numpy as np
 
@@ -48,7 +47,7 @@ def mo_nh_diffusion_stencil_16_numpy(
     theta_v: np.array,
     exner: np.array,
     rd_o_cvd,
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
     theta_v = mo_nh_diffusion_stencil_16_theta_v_numpy(z_temp, area, theta_v)
     exner = mo_nh_diffusion_stencil_16_exner_numpy(theta_v, exner, rd_o_cvd)
     return theta_v, exner

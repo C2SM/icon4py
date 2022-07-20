@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Tuple
 
 import numpy as np
 
@@ -34,7 +33,7 @@ def mo_solve_nonhydro_stencil_33_mass_flx_me_numpy(mass_flx_me: np.array) -> np.
 
 def mo_solve_nonhydro_stencil_33_numpy(
     vn_traj: np.array, mass_flx_me: np.array
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
     vn_traj = mo_solve_nonhydro_stencil_33_vn_traj_numpy(vn_traj)
     mass_flx_me = mo_solve_nonhydro_stencil_33_mass_flx_me_numpy(mass_flx_me)
     return vn_traj, mass_flx_me

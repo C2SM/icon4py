@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Tuple
 
 import numpy as np
 
@@ -41,7 +40,7 @@ def mo_velocity_advection_stencil_05_numpy_z_kin_hor_e(
 
 def mo_velocity_advection_stencil_05_numpy(
     vn: np.array, vt: np.array
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
     vn_ie = mo_velocity_advection_stencil_05_numpy_vn_ie(vn)
     z_vt_ie = mo_velocity_advection_stencil_05_numpy_z_vt_ie(vt)
     z_kin_hor_e = mo_velocity_advection_stencil_05_numpy_z_kin_hor_e(vn, vt)

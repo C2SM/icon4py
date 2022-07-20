@@ -11,8 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Tuple
-
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_37 import (
@@ -40,7 +38,7 @@ def mo_solve_nonhydro_stencil_37_z_kin_hor_e_numpy(
     return z_kin_hor_e
 
 
-def mo_solve_nonhydro_stencil_37_numpy(vn: np.array, vt: np.array) -> Tuple[np.array]:
+def mo_solve_nonhydro_stencil_37_numpy(vn: np.array, vt: np.array) -> tuple[np.array]:
     vn_ie = mo_solve_nonhydro_stencil_37_vn_ie_numpy(vn)
     z_vt_ie = mo_solve_nonhydro_stencil_37_z_vt_ie_numpy(vt)
     z_kin_hor_e = mo_solve_nonhydro_stencil_37_z_kin_hor_e_numpy(vn, vt)

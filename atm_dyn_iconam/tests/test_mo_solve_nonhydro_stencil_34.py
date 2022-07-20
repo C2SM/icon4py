@@ -11,8 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Tuple
-
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_34 import (
@@ -43,7 +41,7 @@ def mo_solve_nonhydro_stencil_34_numpy(
     vn_traj: np.array,
     mass_flx_me: np.array,
     r_nsubsteps: float,
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
     vn_traj = mo_solve_nonhydro_stencil_34_vn_traj_numpy(z_vn_avg, vn_traj, r_nsubsteps)
     mass_flx_me = mo_solve_nonhydro_stencil_34_mass_flx_me_numpy(
         mass_fl_e, mass_flx_me, r_nsubsteps

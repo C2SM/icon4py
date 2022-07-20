@@ -11,8 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Tuple
-
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_44 import (
@@ -55,7 +53,7 @@ def mo_solve_nonhydro_stencil_44_numpy(
     dtime: float,
     rd: float,
     cvd: float,
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
     z_beta = mo_solve_nonhydro_stencil_44_z_beta_numpy(
         exner_nnow, rho_nnow, theta_v_nnow, inv_ddqz_z_full, dtime, rd, cvd
     )
