@@ -12,27 +12,29 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-TODO: 
+Provide changes.
+
+TODO: # noqa: W291
 - Change documentation such that description appears when hovering over symbol  in IDE's
 """
-
+# 'noqa: E800' added to make flake8 pass
 # Mathematical constants (in brackets original C names)
 
-# euler     (mo_E       )  -- e
-# log2e     (mo_LOG2E   )  -- log2(e)
-# log10e    (mo_LOG10E  )  -- log10(e)
-# ln2       (mo_LN2     )  -- ln(2)
-# ln10      (mo_LN10    )  -- ln(10)
-# pi        (mo_PI      )  -- pi
-# pi_2      (mo_PI_2    )  -- pi/2
-# pi_4      (mo_PI_4    )  -- pi/4
-# rpi       (mo_1_PI    )  -- 1/pi
-# rpi_2     (mo_2_PI    )  -- 2/pi
-# rsqrtpi_2 (mo_2_SQRTPI)  -- 2/(sqrt(pi))
-# sqrt2     (mo_SQRT2   )  -- sqrt(2)
-# sqrt1_2   (mo_SQRT1_2 )  -- 1/sqrt(2)
-# sqrt3                    -- sqrt(3)
-# sqrt1_3                  -- 1/sqrt(3)
+# euler     (mo_E       )  -- e # noqa: E800
+# log2e     (mo_LOG2E   )  -- log2(e) # noqa: E800
+# log10e    (mo_LOG10E  )  -- log10(e) # noqa: E800
+# ln2       (mo_LN2     )  -- ln(2) # noqa: E800
+# ln10      (mo_LN10    )  -- ln(10) # noqa: E800
+# pi        (mo_PI      )  -- pi # noqa: E800
+# pi_2      (mo_PI_2    )  -- pi/2 # noqa: E800
+# pi_4      (mo_PI_4    )  -- pi/4 # noqa: E800
+# rpi       (mo_1_PI    )  -- 1/pi # noqa: E800
+# rpi_2     (mo_2_PI    )  -- 2/pi # noqa: E800
+# rsqrtpi_2 (mo_2_SQRTPI)  -- 2/(sqrt(pi)) # noqa: E800
+# sqrt2     (mo_SQRT2   )  -- sqrt(2) # noqa: E800
+# sqrt1_2   (mo_SQRT1_2 )  -- 1/sqrt(2) # noqa: E800
+# sqrt3                    -- sqrt(3) # noqa: E800
+# sqrt1_3                  -- 1/sqrt(3) # noqa: E800
 
 euler = 2.71828182845904523536028747135266250
 log2e = 1.44269504088896340735992468100189214
@@ -71,6 +73,6 @@ pi_180 = pi / 180.0
 
 # phi0 is  the latitude of the lowest major triangle corner
 # and the latitude of the major hexagonal faces centers
-# phi0 = 0.5*pi - 2.*acos(1.0/(2.*sin(pi/5.)))
+# phi0 = 0.5*pi - 2.*acos(1.0/(2.*sin(pi/5.))) # noqa: E800
 
 phi0 = 0.46364760900080614903

@@ -85,7 +85,8 @@ def _sat_pres_water(t: Field[[CellDim, KDim], float]):
     )  # DL: TODO swicth back once math-builtins available in GT4Py
 
 
-# comment: return c1es * exp(c3les * (t - tmelt) / (t - c4les))
+# 'noqa: E800' added to make flake8 pass
+# return c1es * exp(c3les * (t - tmelt) / (t - c4les)) # noqa: E800
 
 
 @field_operator
