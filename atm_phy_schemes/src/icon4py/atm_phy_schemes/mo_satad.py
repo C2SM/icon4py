@@ -192,7 +192,7 @@ def _satad(
         qwa = _qsat_rho(t, rho)
         qc = max(qc + qv - qwa, zqwmin)
         qv = qwa
-    return qv, qc, t
+    return t, qv, qc
 
 
 @program

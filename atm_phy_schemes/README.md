@@ -2,7 +2,7 @@
 
 ## Description
 
-Contains code ported from ICON `src/atm_phy_schems`.
+Contains code ported from ICON `src/atm_phy_schemes`.
 
 ## Installation instructions
 
