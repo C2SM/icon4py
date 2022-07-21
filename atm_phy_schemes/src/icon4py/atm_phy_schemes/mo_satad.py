@@ -56,7 +56,6 @@ from icon4py.shared.mo_physical_constants import (
 
 # TODO: flake8 has specific requirements for docstrings, I changed the format so that I could commit but the phrasing/grammar needs to be adapted
 # TODO: Local constants What to do with these?
-# TODO: as of right now, constants need to be imported in field_operator(s) and program(s)
 cp_v = 1850.0  # specific heat of water vapor at constant pressure (Landolt-Bornstein)
 ci = 2108.0  # specific heat of ice
 
@@ -69,6 +68,7 @@ zqwmin = 1e-20
 
 @field_operator
 def _latent_heat_vaporization(t: Field[[CellDim, KDim], float]):
+    # TODO: place all docstrings outside of field_operators as they are not supported inside
     """
     Provide description.
 
