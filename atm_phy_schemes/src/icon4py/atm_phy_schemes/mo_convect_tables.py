@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Provide description.
+Lookup tables for convective adjustment code.
 
 TODO:
 - Change documentation such that description appears when hovering over symbol  in IDE's
