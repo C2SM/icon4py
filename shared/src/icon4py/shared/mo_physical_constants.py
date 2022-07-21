@@ -20,8 +20,7 @@ Physical constants are grouped as follows:
 - Earth and Earth orbit constants
 - Thermodynamic constants for the dry and moist atmosphere
 - Constants used for the computation of lookup tables of the saturation
-   mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
-   (to be shifted to the module that computes the lookup tables)
+mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
 """
 
 
@@ -73,8 +72,7 @@ earth_angular_velocity = 7.29212e-5  # [rad/s]  angular velocity
 grav = 9.80665  # [m/s2] av. gravitational acceleration
 rgrav = 1.0 / grav  # [s2/m]
 
-rae = 0.1277e-2  # [m/m]  ratio of atm. scale height
-#        to Earth radius
+rae = 0.1277e-2  # [m/m]  ratio of atm. scale height to Earth radius
 
 
 # Thermodynamic constants for the dry and moist atmosphere
@@ -168,25 +166,20 @@ ki = 2.1656  # heat conductivity ice      [J  / (m s K)]
 rhoi = 917.0  # density of sea ice         [kg / m**3]
 rhos = 300.0  # density of snow            [kg / m**3]
 ci = 2106.0  # Heat capacity of ice       [J / (kg K)]
-cs = 2090.0  #  Heat capacity of snow      [J / (kg K)]
+cs = 2090.0  # Heat capacity of snow      [J / (kg K)]
 
 Tf = -1.80  # Temperature ice bottom     [C]
 mu = 0.054  # Constant in linear freezing-
-# point relationship         [C/ppt]
-# (aka melting) temperature) [C]
-#  muS          = -(-0.0575 + 1.710523E-3*Sqrt(Sice) - 2.154996E-4*Sice) * Sice
 albedoW = 0.07  # albedo of the ocean used in atmosphere
 
 
 fr_fac = 1.1925  # Frank Roeske energy budget closing factor for OMIP
-# fr_fac       = 1.0          # factor not active
 
 # CCSM3 albedo scheme - not used for coupling
 alb_ice_vis = 0.73  # Albedo of dry ice  (visible)
 alb_ice_nir = 0.33  # Albedo of dry ice  (near-infrared)
 alb_sno_vis = 0.96  # Albedo of dry snow (visible)
 alb_sno_nir = 0.68  # Albedo of dry snow (near-infrared)
-# I_0          = 0.3             # Ice-surface penetrating shortwave fraction
 I_0 = 0.17  # Ice-surface penetrating shortwave fraction
 Cd_ia = 1.2e-3  # Ice-atmosphere drag coefficient
 Cd_io = 3.0e-3  # Ice-ocean drag coefficient
@@ -198,8 +191,7 @@ Ch_io = 12.0e-3  # Ice-ocean heat transfer coefficient
 # Note that a different value (Tf=-1.8 dgr C) is defined in "mo_physical_constants".
 # _cdm<
 
-tf_salt = 271.45  # salt-water freezing point [K]
-# (note that it differs from Tf)
+tf_salt = 271.45  # salt-water freezing point [K] (note that it differs from Tf)
 
 # Length of day in seconds, as integer and real
 rdaylen = 86400.0  # [s]

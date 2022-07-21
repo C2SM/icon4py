@@ -12,20 +12,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-TODO: 
+Lookup tables for convective adjustment code.
+
+TODO:
 - Change documentation such that description appears when hovering over symbol  in IDE's
 - Finish port
 """
 
 from icon4py.shared.mo_physical_constants import (
-    alv,
     als,
+    alv,
     cpd,
     rd,
     rv,
     tmelt,
-    vtmpc1,
 )
+
 
 # Constants used for the computation of lookup tables of the saturation
 # mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
