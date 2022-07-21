@@ -11,13 +11,87 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.atm_phy_schemes.mo_satad import satad
+import numpy as np
+
+from icon4py.atm_phy_schemes.mo_convect_tables import (
+    c1es,
+    c3les,
+    c4les,
+    c5les,
+)
+
+# from icon4py.atm_phy_schemes.mo_satad import satad
 from icon4py.common.dimension import CellDim, KDim
+from icon4py.shared.mo_physical_constants import (
+    alv,
+    clw,
+    cvd,
+    rv,
+    tmelt,
+)
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-# zero_field is used when a field is defined within a field_operator, if fields are re-assigned different values then there is no need to import that
+cp_v = 1850.0
+ci = 2108.0
+
+tol = 1e-3
+maxiter = 10
+zqwmin = 1e-20
+
+
+def latent_heat_vaporization(t):
+    return alv + (cp_v - clw) * (t - tmelt) - rv * t
+
+
+def sat_pres_water(t):
+    return c1es * np.exp(c3les * (t - tmelt) / (t - c4les))
+
+
+def qsat_rho(t, rho):
+    return sat_pres_water(t) / (rho * rv * t)
+
+
+def dqsatdT_rho(t, zqsat):
+    beta = c5les / (t - c4les) ** 2 - 1.0 / t
+    return beta * zqsat
+
+
+def satad_numpy(qv, qc, t, rho):
+
+    lwdocvd = latent_heat_vaporization(t) / cvd
+
+    for cell, k in np.ndindex(
+        np.shape(qv)
+    ):  # DL: np.where implementaion too complicated
+        if qv[cell, k] + qc[cell, k] <= qsat_rho(t, rho)[cell, k]:
+            qv[cell, k] = qv[cell, k] + qc[cell, k]
+            qc[cell, k] = 0.0
+            t[cell, k] = t[cell, k] - lwdocvd[cell, k] * qc[cell, k]
+        else:
+            twork = t[cell, k]
+            tworkold = twork + 10.0
+
+            for _ in 1, maxiter:
+                if abs(twork - tworkold) > tol:
+                    tworkold = twork
+                    qwd = qsat_rho(t, rho)[cell, k]
+                    dqwd = dqsatdT_rho(twork, qwd)
+                    fT = twork - t[cell, k] + lwdocvd[cell, k] * (qwd - qv[cell, k])
+                    dfT = 1.0 + lwdocvd[cell, k] * dqwd
+                    twork = twork - fT / dfT
+
+            t[cell, k] = twork
+
+            qwa = qsat_rho(t[cell, k], rho[cell, k])
+            qc[cell, k] = max(qc[cell, k] + qv[cell, k] - qwa, zqwmin)
+            qv[cell, k] = qwa
+
+            del twork
+    return t, qv, qc
+
+
 def test_mo_satad():
     mesh = SimpleMesh()
 
@@ -26,10 +100,17 @@ def test_mo_satad():
     t = random_field(mesh, CellDim, KDim)
     rho = random_field(mesh, CellDim, KDim)
 
-    satad(
-        qv,
-        qc,
-        t,
-        rho,
-        offset_provider={},
+    t_ref, qv_ref, qc_ref = satad_numpy(
+        np.asarray(qv), np.asarray(qc), np.asarray(t), np.asarray(rho)
     )
+    # satad(
+    #     qv,
+    #     qc,
+    #     t,
+    #     rho,
+    #     offset_provider={},
+    # )
+
+    # assert np.allclose(t, t_ref)
+    # assert np.allclose(qv, qv_ref)
+    # assert np.allclose(qc, qc_ref)
