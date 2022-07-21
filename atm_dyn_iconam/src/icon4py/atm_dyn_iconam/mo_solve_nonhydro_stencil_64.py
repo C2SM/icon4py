@@ -12,14 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from functional.ffront.fbuiltins import Field, broadcast
 
 from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_64() -> Field[[CellDim, KDim], float]:
-    mass_flx_ic = float(0.0)
+    mass_flx_ic = broadcast(0.0, (CellDim, KDim))
     return mass_flx_ic
 
 
