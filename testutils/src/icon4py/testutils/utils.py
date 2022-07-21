@@ -27,8 +27,10 @@ def random_mask(mesh, *dims, numeric=False):
 
 
 def random_field(mesh, *dims, low: float = -1.0, high: float = 1.0):
-    """Initialize a LocatedField with random values between a lower and
-       higher bound, using a uniform random distribution.
+    """Generate a random field between specified bounds.
+
+    Initialize a LocatedField with random values between a lower and
+    higher bound, using a uniform random distribution.
 
     Args:
         mesh: SimpleMesh object

@@ -66,8 +66,8 @@ def mo_solve_nonhydro_stencil_66_numpy(
 def test_mo_solve_nonhydro_stencil_66():
     mesh = SimpleMesh()
 
-    rd_o_cvd = np.float64(10.0)
-    rd_o_p0ref = np.float64(20.0)
+    rd_o_cvd = 10.0
+    rd_o_p0ref = 20.0
     bdy_halo_c = random_mask(mesh, CellDim, numeric=True)
     exner = random_field(mesh, CellDim, KDim, low=1, high=2)
     rho = random_field(mesh, CellDim, KDim, low=1, high=2)
