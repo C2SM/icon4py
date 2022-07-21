@@ -146,9 +146,13 @@ def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
     if len(fencil.closures) > 1:
         raise MultipleFieldOperatorException()
 
-    fencil.params.append(itir.Sym(id="domain"))
     fencil.closures[0].domain = itir.SymRef(id="domain")
-    return fencil
+    return itir.FencilDefinition(
+        id=fencil.id,
+        function_definitions=fencil.function_definitions,
+        params=[*fencil.params, itir.Sym(id="domain")],
+        closures=fencil.closures,
+    )
 
 
 def get_fvprog(fencil):
