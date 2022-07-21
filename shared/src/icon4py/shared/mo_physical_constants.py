@@ -20,8 +20,7 @@ Physical constants are grouped as follows:
 - Earth and Earth orbit constants
 - Thermodynamic constants for the dry and moist atmosphere
 - Constants used for the computation of lookup tables of the saturation
-   mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
-   (to be shifted to the module that computes the lookup tables)
+mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
 """
 
 
