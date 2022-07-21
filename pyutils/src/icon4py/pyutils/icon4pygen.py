@@ -129,16 +129,25 @@ def format_metadata(fvprog: Program, chains, **kwargs) -> str:
     )
 
 
-def generate_cpp_code(fvprog, offset_provider, **kwargs) -> str:
+def generate_cpp_code(fencil: itir.FencilDefinition, offset_provider, **kwargs) -> str:
     """Generate C++ code using the GTFN backend."""
     return generate(
-        fvprog.itir, grid_type="unstructured", offset_provider=offset_provider, **kwargs
+        fencil, grid_type="unstructured", offset_provider=offset_provider, **kwargs
     )
 
 
 def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
     module_name, member_name = fencil.split(":")
     fencil = getattr(importlib.import_module(module_name), member_name)
+    return fencil
+
+
+def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+    if len(fencil.closures) > 1:
+        raise MultipleFieldOperatorException()
+
+    fencil.params.append(itir.Sym(id="domain"))
+    fencil.closures[0].domain = itir.SymRef(id="domain")
     return fencil
 
 
@@ -154,6 +163,7 @@ def get_fvprog(fencil):
 
     if len(fvprog.past_node.body) > 1:
         raise MultipleFieldOperatorException()
+
     return fvprog
 
 
@@ -183,4 +193,4 @@ def main(output_metadata, fencil):
         offsets[chain] = provide_offset(chain)
     if output_metadata:
         output_metadata.write_text(format_metadata(fvprog, chains))
-    click.echo(generate_cpp_code(fvprog, offsets))
+    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offsets))
