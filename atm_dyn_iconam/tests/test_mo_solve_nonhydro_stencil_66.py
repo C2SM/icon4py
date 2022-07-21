@@ -11,8 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Tuple
-
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_66 import (
@@ -20,7 +18,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_66 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+from icon4py.testutils.utils import random_field, random_mask
 
 
 def mo_solve_nonhydro_stencil_66_theta_v_numpy(
@@ -29,7 +27,7 @@ def mo_solve_nonhydro_stencil_66_theta_v_numpy(
     exner: np.array,
 ) -> np.array:
 
-    theta_v = np.where(bdy_halo_c == 1.0, exner, theta_v)
+    theta_v = np.where(bdy_halo_c == 1, exner, theta_v)
     return theta_v
 
 
@@ -42,7 +40,7 @@ def mo_solve_nonhydro_stencil_66_exner_numpy(
 ) -> np.array:
 
     exner = np.where(
-        bdy_halo_c == 1.0, np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * exner)), exner
+        bdy_halo_c == 1, np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * exner)), exner
     )
     return exner
 
@@ -54,12 +52,8 @@ def mo_solve_nonhydro_stencil_66_numpy(
     exner: np.array,
     rd_o_cvd: float,
     rd_o_p0ref: float,
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
     bdy_halo_c = np.expand_dims(bdy_halo_c, axis=-1)
-    theta_v = np.where(bdy_halo_c == 1.0, exner, theta_v)
-    exner = np.where(
-        bdy_halo_c == 1.0, np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * exner)), exner
-    )
 
     theta_v = mo_solve_nonhydro_stencil_66_theta_v_numpy(bdy_halo_c, theta_v, exner)
     exner = mo_solve_nonhydro_stencil_66_exner_numpy(
@@ -74,10 +68,10 @@ def test_mo_solve_nonhydro_stencil_66():
 
     rd_o_cvd = np.float64(10.0)
     rd_o_p0ref = np.float64(20.0)
-    bdy_halo_c = random_field(mesh, CellDim)
-    exner = random_field(mesh, CellDim, KDim)
-    rho = random_field(mesh, CellDim, KDim)
-    theta_v = random_field(mesh, CellDim, KDim)
+    bdy_halo_c = random_mask(mesh, CellDim, numeric=True)
+    exner = random_field(mesh, CellDim, KDim, low=1, high=2)
+    rho = random_field(mesh, CellDim, KDim, low=1, high=2)
+    theta_v = random_field(mesh, CellDim, KDim, low=1, high=2)
 
     theta_v_ref, exner_ref = mo_solve_nonhydro_stencil_66_numpy(
         np.asarray(bdy_halo_c),

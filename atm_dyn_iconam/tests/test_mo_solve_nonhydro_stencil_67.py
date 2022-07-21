@@ -11,9 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
-from typing import Tuple
-
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_67 import (
@@ -40,7 +37,7 @@ def mo_solve_nonhydro_stencil_67_exner_numpy(
 
 def mo_solve_nonhydro_stencil_67_numpy(
     rho: np.array, exner: np.array, rd_o_cvd: float, rd_o_p0ref: float
-) -> Tuple[np.array]:
+) -> tuple[np.array]:
 
     theta_v = mo_solve_nonhydro_stencil_67_theta_v_numpy(exner)
     exner = mo_solve_nonhydro_stencil_67_exner_numpy(rho, theta_v, rd_o_cvd, rd_o_p0ref)
