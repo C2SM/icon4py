@@ -174,6 +174,7 @@ def _satad(
             # Newton
             fT = twork - t + lwdocvd * (qwd - qv)
             dfT = 1.0 + lwdocvd * dqwd
+            # TODO: gt4py does not allow for e.g. '-=' or '+=', this needs to be changed to 'twork = twork - fT / dfT'
             twork -= fT / dfT
 
         t = twork
