@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
 """Utilities for generating icon stencils."""
 
 from __future__ import annotations

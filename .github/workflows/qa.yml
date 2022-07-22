@@ -22,6 +22,7 @@ jobs:
                   python -m pip install --upgrade pip setuptools wheel
                   python -m pip install $(cat ./base-requirements-dev.txt | grep pre-commit)
                   pre-commit install-hooks
+                  # mypy hook uses local repo and thus requires installing icon4py & gt4py
                   python -m pip install $(cat ./base-requirements-dev.txt | grep mypy)
                   python -m pip install $(cat ./base-requirements-dev.txt | grep gt4py)
                   python -m pip install $(cat ./requirements-dev.txt | grep '\-e')
