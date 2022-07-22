@@ -15,7 +15,7 @@ import numpy as np
 from functional.iterator.embedded import np_as_located_field
 
 
-def random_mask(mesh, *dims, numeric=False):
+def random_mask(mesh, *dims, numeric: bool = False):
     shape = tuple(map(lambda x: mesh.size[x], dims))
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
@@ -53,5 +53,5 @@ def get_cell_to_k_table(k_arr, k):
     return np.repeat(c2k[:], k, axis=-1)
 
 
-def get_stencil_module_path(module: str, stencil_name: str) -> str:
-    return f"icon4py.{module}.{stencil_name}:{stencil_name}"
+def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
+    return f"icon4py.{stencil_module}.{stencil_name}:{stencil_name}"
