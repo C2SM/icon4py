@@ -20,9 +20,10 @@ jobs:
             - name: Install dependencies
               run: |
                   python -m pip install --upgrade pip setuptools wheel
-                  python -m pip install $(cat ./base-requirements-dev.txt | grep mypy)
                   python -m pip install $(cat ./base-requirements-dev.txt | grep pre-commit)
                   pre-commit install-hooks
+                  python -m pip install $(cat ./base-requirements-dev.txt | grep mypy)
+                  python -m pip install $(cat ./requirements-dev.txt | grep '\-e')
             - name: Run checks
               run: |
                   python -m pip list
