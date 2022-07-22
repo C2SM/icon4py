@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from functional.common import DimensionKind
 from functional.ffront.fbuiltins import Dimension, FieldOffset
 
 
@@ -18,15 +19,15 @@ KDim = Dimension("K")
 EdgeDim = Dimension("Edge")
 CellDim = Dimension("Cell")
 VertexDim = Dimension("Vertex")
-E2CDim = Dimension("E2C", True)
-E2VDim = Dimension("E2V", True)
-C2EDim = Dimension("C2E", True)
-V2CDim = Dimension("V2C", True)
-V2EDim = Dimension("V2E", True)
-C2E2CODim = Dimension("C2E2CO", True)
-E2C2EODim = Dimension("E2C2EO", True)
-E2C2EDim = Dimension("E2C2E", True)
-C2E2CDim = Dimension("C2E2C", True)
+E2CDim = Dimension("E2C", DimensionKind.LOCAL)
+E2VDim = Dimension("E2V", DimensionKind.LOCAL)
+C2EDim = Dimension("C2E", DimensionKind.LOCAL)
+V2CDim = Dimension("V2C", DimensionKind.LOCAL)
+V2EDim = Dimension("V2E", DimensionKind.LOCAL)
+C2E2CODim = Dimension("C2E2CO", DimensionKind.LOCAL)
+E2C2EODim = Dimension("E2C2EO", DimensionKind.LOCAL)
+E2C2EDim = Dimension("E2C2E", DimensionKind.LOCAL)
+C2E2CDim = Dimension("C2E2C", DimensionKind.LOCAL)
 E2C = FieldOffset("E2C", source=CellDim, target=(EdgeDim, E2CDim))
 C2E = FieldOffset("C2E", source=EdgeDim, target=(CellDim, C2EDim))
 V2C = FieldOffset("V2C", source=CellDim, target=(VertexDim, V2CDim))
