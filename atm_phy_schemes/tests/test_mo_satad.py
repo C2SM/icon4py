@@ -11,7 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import warnings
+
 import numpy as np
+from functional.iterator.embedded import np_as_located_field
+from hypothesis import HealthCheck, assume, given, settings
+from hypothesis import strategies as st
+from hypothesis import target
+from hypothesis.extra.numpy import arrays
 
 from icon4py.atm_phy_schemes.mo_convect_tables import (
     c1es,
@@ -30,7 +37,21 @@ from icon4py.shared.mo_physical_constants import (
     tmelt,
 )
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+
+
+def random_field_strategy(mesh, *dims) -> st.SearchStrategy[float]:
+    """Return a hypothesis strategy of a random field."""
+    return arrays(
+        dtype=np.float64,
+        shape=tuple(map(lambda x: mesh.size[x], dims)),
+        elements=st.floats(
+            min_value=0.0,
+            exclude_min=True,
+            allow_nan=False,
+            allow_infinity=False,
+            allow_subnormal=True,
+        ),
+    ).map(np_as_located_field(*dims))
 
 
 cp_v = 1850.0
@@ -92,17 +113,37 @@ def satad_numpy(qv, qc, t, rho):
     return t, qv, qc
 
 
-def test_mo_satad():
-    mesh = SimpleMesh()
+@given(
+    random_field_strategy(SimpleMesh(), CellDim, KDim),
+    random_field_strategy(SimpleMesh(), CellDim, KDim),
+    random_field_strategy(SimpleMesh(), CellDim, KDim),
+    random_field_strategy(SimpleMesh(), CellDim, KDim),
+)
+@settings(
+    suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
+    deadline=None,
+    max_examples=10,
+)
+def test_mo_satad(qv, qc, t, rho):
 
-    qv = random_field(mesh, CellDim, KDim)
-    qc = random_field(mesh, CellDim, KDim)
-    t = random_field(mesh, CellDim, KDim)
-    rho = random_field(mesh, CellDim, KDim)
+    warnings.filterwarnings("error")
+    try:
+        t_ref, qv_ref, qc_ref = satad_numpy(
+            np.asarray(qv).copy(),
+            np.asarray(qc).copy(),
+            np.asarray(t).copy(),
+            np.asarray(rho).copy(),
+        )
+    except RuntimeWarning:
+        assume(False)
 
-    t_ref, qv_ref, qc_ref = satad_numpy(
-        np.asarray(qv), np.asarray(qc), np.asarray(t), np.asarray(rho)
-    )
+    # Exploit hypothesis tool to guess needed co-variability of inputs.
+    try:
+        tendency = np.asarray(qv) - qv_ref
+        target(np.std(tendency), label="Stdev. tendency")
+    except Exception:
+        assume(False)
+
     # satad(
     #     qv,
     #     qc,
