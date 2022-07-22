@@ -57,5 +57,5 @@ pi_180 = pi / 180.0
 
 # phi0 is  the latitude of the lowest major triangle corner
 # and the latitude of the major hexagonal faces centers
-# phi0 = 0.5*pi - 2.*acos(1.0/(2.*sin(pi/5.))) # noqa: E800
+# phi0 = 0.5*pi - 2.*acos(1.0/(2.*sin(pi/5.)))
 phi0 = 0.46364760900080614903

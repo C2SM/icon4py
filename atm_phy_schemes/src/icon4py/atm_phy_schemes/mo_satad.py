@@ -88,7 +88,7 @@ def _latent_heat_vaporization(
 def _sat_pres_water(t: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
 
     # DL: TODO swicth back once math-builtins available in GT4Py
-    # return c1es * exp(c3les * (t - tmelt) / (t - c4les)) # noqa: E800
+    # return c1es * exp(c3les * (t - tmelt) / (t - c4les))
     return c1es * (c3les * (t - tmelt) / (t - c4les))
 
 
