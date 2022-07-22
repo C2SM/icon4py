@@ -117,19 +117,15 @@ repos:
                 # - flake8-rst-docstrings
                 - pygments
 
-    # TODO(egparedes): activate mypy once current problems are fixed:
-    #   * gt4py-functional dependency updated to a version correctly exporting type information
-    #   * make mypy work correctly in pre-commit (which passes inputs as files and not as packages)
-    #   * fix source code errors detected by mypy
-    # - repo: https://github.com/pre-commit/mirrors-mypy
-    #   rev: v0.942
-    #   hooks:
-    #       - id: mypy
-    #         name: mypy static type checker
-    #         args: [--install-types, --non-interactive]
-    #         exclude: |
-    #             (?x)(
-    #             /setup\.py$ |
-    #             /tests/.* |
-    #             /atm_dyn_iconam/.*
-    #             )$
+    - repo: local
+      hooks:
+          - id: mypy
+            name: mypy static type checker
+            entry: |
+                mypy --install-types --non-interactive -p icon4py.common -p icon4py.pyutils -p icon4py.testutils
+            language: system
+            types_or: [python, pyi]
+            always_run: true
+            pass_filenames: false
+            require_serial: true
+            stages: [commit]
