@@ -53,23 +53,24 @@ def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
 
 def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     """Extract and format the in/out fields from a Program."""
-    fields: dict[str, _FieldInfo] = {
-        field.id: _FieldInfo(field, True, False) for field in fvprog.past_node.params
-    }
-
     assert is_list_of_names(
         fvprog.past_node.body[0].args
     ), "Found unsupported expression in input arguments."
-    fvprog_arg_names = [arg.id for arg in fvprog.past_node.body[0].args]
+    input_arg_ids = [arg.id for arg in fvprog.past_node.body[0].args]
 
-    for out_field in [fvprog.past_node.body[0].kwargs["out"]]:
-        assert isinstance(
-            out_field, past.Name
-        ), "Found unsupported expression in output argument."
-        if out_field.id in fvprog_arg_names:
-            fields[out_field.id] = _FieldInfo(fields[out_field.id].field, True, True)
-        else:
-            fields[out_field.id] = _FieldInfo(fields[out_field.id].field, False, True)
+    assert is_list_of_names(
+        [fvprog.past_node.body[0].kwargs["out"]]
+    ), "Found unsupported expression in output argument."
+    output_arg_ids = [arg.id for arg in [fvprog.past_node.body[0].kwargs["out"]]]
+
+    fields: dict[str, _FieldInfo] = {
+        field_node.id: _FieldInfo(
+            field=field_node,
+            inp=(field_node.id in input_arg_ids),
+            out=(field_node.id in output_arg_ids),
+        )
+        for field_node in fvprog.past_node.params
+    }
 
     return fields
 
