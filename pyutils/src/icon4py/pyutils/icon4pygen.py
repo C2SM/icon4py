@@ -55,12 +55,12 @@ def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     assert is_list_of_names(
         fvprog.past_node.body[0].args
     ), "Found unsupported expression in input arguments."
-    input_arg_ids = [arg.id for arg in fvprog.past_node.body[0].args]
+    input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
 
     assert is_list_of_names(
         [fvprog.past_node.body[0].kwargs["out"]]
     ), "Found unsupported expression in output argument."
-    output_arg_ids = [arg.id for arg in [fvprog.past_node.body[0].kwargs["out"]]]
+    output_arg_ids = set(arg.id for arg in [fvprog.past_node.body[0].kwargs["out"]])
 
     fields: dict[str, _FieldInfo] = {
         field_node.id: _FieldInfo(
