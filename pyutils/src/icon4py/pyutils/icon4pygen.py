@@ -21,11 +21,10 @@ import importlib
 import pathlib
 import types
 from collections.abc import Iterable
-from typing import Any, Union, cast
+from typing import Any, TypeGuard
 
 import click
 import tabulate
-from eve.datamodels.core import field
 from functional.common import DimensionKind
 from functional.fencil_processors.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
@@ -48,20 +47,29 @@ class _FieldInfo:
     out: bool
 
 
-def get_field_infos(fv_prog: Program) -> dict[str, _FieldInfo]:
+def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
+    return isinstance(obj, list) and all(isinstance(i, past.Name) for i in obj)
+
+
+def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     """Extract and format the in/out fields from a Program."""
     fields: dict[str, _FieldInfo] = {
-        field.id: _FieldInfo(field, True, False) for field in fv_prog.past_node.params
+        field.id: _FieldInfo(field, True, False) for field in fvprog.past_node.params
     }
-    fv_prog_arg_names = [
-        arg.id for arg in cast(list[past.Name], fv_prog.past_node.body[0].args)
-    ]
-    for out_field in [fv_prog.past_node.body[0].kwargs["out"]]:
-        out_field = cast(past.Name, out_field)
-        if out_field.id in fv_prog_arg_names:
+
+    assert is_list_of_names(
+        fvprog.past_node.body[0].args
+    ), "Found unsupported expression in input arguments."
+    fvprog_arg_names = [arg.id for arg in fvprog.past_node.body[0].args]
+
+    for out_field in [fvprog.past_node.body[0].kwargs["out"]]:
+        assert isinstance(
+            out_field, past.Name
+        ), "Found unsupported expression in output argument."
+        if out_field.id in fvprog_arg_names:
             fields[out_field.id] = _FieldInfo(fields[out_field.id].field, True, True)
         else:
-            fields[out_field.id] = _FieldInfo(out_field, False, True)
+            fields[out_field.id] = _FieldInfo(fields[out_field.id].field, False, True)
 
     return fields
 
@@ -71,10 +79,10 @@ def format_io_string(fieldinfo: _FieldInfo) -> str:
     return f"{'in' if fieldinfo.inp else ''}{'out' if fieldinfo.out else ''}"
 
 
-def scan_for_chains(fv_prog: Program) -> set[str]:
+def scan_for_chains(fvprog: Program) -> set[str]:
     """Scan PAST node for connectivities and return a set of all connectivity chains."""
     all_types = (
-        fv_prog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
+        fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
     )
     all_field_types = [
         symbol_type
@@ -83,7 +91,7 @@ def scan_for_chains(fv_prog: Program) -> set[str]:
     ]
     all_dims = set(i for j in all_field_types for i in j.dims)
     all_offset_labels = (
-        fv_prog.itir.pre_walk_values()
+        fvprog.itir.pre_walk_values()
         .if_isinstance(itir.OffsetLiteral)
         .getattr("value")
         .to_list()
@@ -120,14 +128,18 @@ def provide_offset(chain: str) -> types.SimpleNamespace:
     )
 
 
-def format_metadata(fv_prog: Program, chains: Iterable[str], **kwargs: Any) -> str:
+def format_metadata(fvprog: Program, chains: Iterable[str], **kwargs: Any) -> str:
     """Format in/out field and connectivity information from a program as a string table."""
-    field_infos = get_field_infos(fv_prog)
+    field_infos = get_field_infos(fvprog)
     table = []
     for name, info in field_infos.items():
         display_type = info.field.type
-        if not isinstance(info.field.type, ct.FieldType):
+
+        if isinstance(info.field.type, ct.ScalarType):
             display_type = ct.FieldType(dims=[], dtype=info.field.type)
+        elif not isinstance(info.field.type, ct.FieldType):
+            raise NotImplementedError("Found unsupported argument type.")
+
         table.append({"name": name, "type": display_type, "io": format_io_string(info)})
     kwargs.setdefault("tablefmt", "plain")
     return (
@@ -166,19 +178,19 @@ def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
     )
 
 
-def get_fv_prog(fencil_def: Program | FieldOperator | types.FunctionType) -> Program:
+def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Program:
     match fencil_def:
         case Program():
-            fv_prog = fencil_def
+            fvprog = fencil_def
         case FieldOperator():
-            fv_prog = fencil_def.as_program()
+            fvprog = fencil_def.as_program()
         case _:
-            fv_prog = program(fencil_def)
+            fvprog = program(fencil_def)
 
-    if len(fv_prog.past_node.body) > 1:
+    if len(fvprog.past_node.body) > 1:
         raise MultipleFieldOperatorException()
 
-    return fv_prog
+    return fvprog
 
 
 @click.command(
@@ -200,11 +212,11 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     dotted name of the containing module and <member> is the name of the fencil.
     """
     fencil_def = import_fencil(fencil)
-    fv_prog = get_fv_prog(fencil_def)
-    chains = scan_for_chains(fv_prog)
+    fvprog = get_fvprog(fencil_def)
+    chains = scan_for_chains(fvprog)
     offsets = {}
     for chain in chains:
         offsets[chain] = provide_offset(chain)
     if output_metadata:
-        output_metadata.write_text(format_metadata(fv_prog, chains))
-    click.echo(generate_cpp_code(adapt_domain(fv_prog.itir), offsets))
+        output_metadata.write_text(format_metadata(fvprog, chains))
+    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offsets))
