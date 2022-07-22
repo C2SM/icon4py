@@ -53,12 +53,12 @@ def get_field_infos(fv_prog: Program) -> dict[str, _FieldInfo]:
     fields: dict[str, _FieldInfo] = {
         field.id: _FieldInfo(field, True, False) for field in fv_prog.past_node.params
     }
-    fvprog_arg_names = [
+    fv_prog_arg_names = [
         arg.id for arg in cast(list[past.Name], fv_prog.past_node.body[0].args)
     ]
     for out_field in [fv_prog.past_node.body[0].kwargs["out"]]:
         out_field = cast(past.Name, out_field)
-        if out_field.id in fvprog_arg_names:
+        if out_field.id in fv_prog_arg_names:
             fields[out_field.id] = _FieldInfo(fields[out_field.id].field, True, True)
         else:
             fields[out_field.id] = _FieldInfo(out_field, False, True)
@@ -71,10 +71,10 @@ def format_io_string(fieldinfo: _FieldInfo) -> str:
     return f"{'in' if fieldinfo.inp else ''}{'out' if fieldinfo.out else ''}"
 
 
-def scan_for_chains(fvprog: Program) -> set[str]:
+def scan_for_chains(fv_prog: Program) -> set[str]:
     """Scan PAST node for connectivities and return a set of all connectivity chains."""
     all_types = (
-        fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
+        fv_prog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
     )
     all_field_types = [
         symbol_type
@@ -83,7 +83,7 @@ def scan_for_chains(fvprog: Program) -> set[str]:
     ]
     all_dims = set(i for j in all_field_types for i in j.dims)
     all_offset_labels = (
-        fvprog.itir.pre_walk_values()
+        fv_prog.itir.pre_walk_values()
         .if_isinstance(itir.OffsetLiteral)
         .getattr("value")
         .to_list()
@@ -120,9 +120,9 @@ def provide_offset(chain: str) -> types.SimpleNamespace:
     )
 
 
-def format_metadata(fvprog: Program, chains: Iterable[str], **kwargs: Any) -> str:
+def format_metadata(fv_prog: Program, chains: Iterable[str], **kwargs: Any) -> str:
     """Format in/out field and connectivity information from a program as a string table."""
-    field_infos = get_field_infos(fvprog)
+    field_infos = get_field_infos(fv_prog)
     table = []
     for name, info in field_infos.items():
         display_type = info.field.type
@@ -137,8 +137,9 @@ def format_metadata(fvprog: Program, chains: Iterable[str], **kwargs: Any) -> st
     )
 
 
+# TODO: provide a better typing for offset_provider
 def generate_cpp_code(
-    fencil: itir.FencilDefinition, offset_provider, **kwargs: Any
+    fencil: itir.FencilDefinition, offset_provider: dict, **kwargs: Any
 ) -> str:
     """Generate C++ code using the GTFN backend."""
     return generate(
@@ -148,8 +149,8 @@ def generate_cpp_code(
 
 def import_fencil(fencil_name: str) -> Program | FieldOperator | types.FunctionType:
     module_name, member_name = fencil_name.split(":")
-    fencil_name = getattr(importlib.import_module(module_name), member_name)
-    return fencil_name
+    fencil = getattr(importlib.import_module(module_name), member_name)
+    return fencil
 
 
 def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
@@ -165,19 +166,19 @@ def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
     )
 
 
-def get_fvprog(fencil) -> Program:
-    match fencil:
+def get_fv_prog(fencil_def: Program | FieldOperator | types.FunctionType) -> Program:
+    match fencil_def:
         case Program():
-            fvprog = fencil
+            fv_prog = fencil_def
         case FieldOperator():
-            fvprog = fencil.as_program()
+            fv_prog = fencil_def.as_program()
         case _:
-            fvprog = program(fencil)
+            fv_prog = program(fencil_def)
 
-    if len(fvprog.past_node.body) > 1:
+    if len(fv_prog.past_node.body) > 1:
         raise MultipleFieldOperatorException()
 
-    return fvprog
+    return fv_prog
 
 
 @click.command(
@@ -198,11 +199,12 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     A fencil may be specified as <module>:<member>, where <module> is the
     dotted name of the containing module and <member> is the name of the fencil.
     """
-    fvprog = get_fvprog(import_fencil(fencil))
-    chains = scan_for_chains(fvprog)
+    fencil_def = import_fencil(fencil)
+    fv_prog = get_fv_prog(fencil_def)
+    chains = scan_for_chains(fv_prog)
     offsets = {}
     for chain in chains:
         offsets[chain] = provide_offset(chain)
     if output_metadata:
-        output_metadata.write_text(format_metadata(fvprog, chains))
-    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offsets))
+        output_metadata.write_text(format_metadata(fv_prog, chains))
+    click.echo(generate_cpp_code(adapt_domain(fv_prog.itir), offsets))
