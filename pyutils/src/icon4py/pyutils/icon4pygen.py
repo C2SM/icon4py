@@ -12,20 +12,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """Utilities for generating icon stencils."""
-import collections
 import importlib
 import pathlib
-import types
-from typing import Any, Union
+from collections import namedtuple
+from types import SimpleNamespace
+from typing import Union
 
 import click
 import tabulate
+from functional.common import DimensionKind
+from functional.fencil_processors.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
-from functional.ffront import itir_makers as im
 from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
-from functional.iterator.backends.gtfn.gtfn_backend import generate
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.pyutils.exceptions import (
@@ -35,25 +35,25 @@ from icon4py.pyutils.exceptions import (
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
-_FieldInfo = collections.namedtuple("_FieldInfo", ["field", "inp", "out"])
+_FIELDINFO = namedtuple("_FIELDINFO", ["field", "inp", "out"])
 
 
-def get_fieldinfo(fvprog: Program) -> dict[str, _FieldInfo]:
+def get_fieldinfo(fvprog: Program) -> dict[str, _FIELDINFO]:
     """Extract and format the in/out fields from a Program."""
     fields = {
-        field.id: _FieldInfo(field, True, False) for field in fvprog.past_node.params
+        field.id: _FIELDINFO(field, True, False) for field in fvprog.past_node.params
     }
 
     for out_field in [fvprog.past_node.body[0].kwargs["out"]]:
         if out_field.id in [arg.id for arg in fvprog.past_node.body[0].args]:
-            fields[out_field.id] = _FieldInfo(fields[out_field.id].field, True, True)
+            fields[out_field.id] = _FIELDINFO(fields[out_field.id].field, True, True)
         else:
-            fields[out_field.id] = _FieldInfo(out_field, False, True)
+            fields[out_field.id] = _FIELDINFO(out_field, False, True)
 
     return fields
 
 
-def format_io_string(fieldinfo: _FieldInfo) -> str:
+def format_io_string(fieldinfo: _FIELDINFO) -> str:
     """Format the output for the "io" column: in/inout/out."""
     iostring = ""
     if fieldinfo.inp:
@@ -63,7 +63,7 @@ def format_io_string(fieldinfo: _FieldInfo) -> str:
     return iostring
 
 
-def scan_for_chains(fvprog: Program) -> set[str]:
+def scan_for_chains(fvprog: Program) -> list[str]:
     """Scan PAST node for connectivities and return a set of all connectivity chains."""
     all_types = (
         fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
@@ -80,11 +80,11 @@ def scan_for_chains(fvprog: Program) -> set[str]:
         .getattr("value")
         .to_list()
     )
-    all_dim_labels = [dim.value for dim in all_dims if dim.local]
+    all_dim_labels = [dim.value for dim in all_dims if dim.kind == DimensionKind.LOCAL]
     return set(all_offset_labels + all_dim_labels)
 
 
-def provide_offset(chain: str) -> types.SimpleNamespace:
+def provide_offset(chain: str) -> SimpleNamespace:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -106,15 +106,13 @@ def provide_offset(chain: str) -> types.SimpleNamespace:
             pass
         else:
             raise InvalidConnectivityException(location_chain)
-    return types.SimpleNamespace(
+    return SimpleNamespace(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
-        has_skip_values=True,
+        has_skip_values=False,
     )
 
 
-def format_metadata(
-    fvprog: Program, chains: collections.abc.Iterable[str], **kwargs: Any
-) -> str:
+def format_metadata(fvprog: Program, chains, **kwargs) -> str:
     """Format in/out field and connectivity information from a program as a string table."""
     fieldinfos = get_fieldinfo(fvprog)
     table = []
@@ -131,22 +129,10 @@ def format_metadata(
     )
 
 
-def gtfn_program(fencil_function: types.FunctionType) -> Program:
-    fvprog = program(fencil_function, backend="gtfn")
-    adapt_program_gtfn(fvprog)
-    return fvprog
-
-
-def adapt_program_gtfn(fvprog: Program) -> Program:
-    fvprog.itir.params.append(im.sym("domain_"))
-    fvprog.itir.closures[0].domain = im.ref("domain_")
-    return fvprog
-
-
-def generate_cpp_code(fvprog: Program, offset_provider: dict, **kwargs: Any) -> str:
+def generate_cpp_code(fencil: itir.FencilDefinition, offset_provider, **kwargs) -> str:
     """Generate C++ code using the GTFN backend."""
     return generate(
-        fvprog.itir, grid_type="unstructured", offset_provider=offset_provider, **kwargs
+        fencil, grid_type="unstructured", offset_provider=offset_provider, **kwargs
     )
 
 
@@ -154,6 +140,35 @@ def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
     module_name, member_name = fencil.split(":")
     fencil = getattr(importlib.import_module(module_name), member_name)
     return fencil
+
+
+def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+    if len(fencil.closures) > 1:
+        raise MultipleFieldOperatorException()
+
+    fencil.closures[0].domain = itir.SymRef(id="domain")
+    return itir.FencilDefinition(
+        id=fencil.id,
+        function_definitions=fencil.function_definitions,
+        params=[*fencil.params, itir.Sym(id="domain")],
+        closures=fencil.closures,
+    )
+
+
+def get_fvprog(fencil):
+    fvprog = None
+    match fencil:
+        case Program():
+            fvprog = fencil
+        case FieldOperator():
+            fvprog = fencil.as_program()
+        case _:
+            fvprog = program(fencil)
+
+    if len(fvprog.past_node.body) > 1:
+        raise MultipleFieldOperatorException()
+
+    return fvprog
 
 
 @click.command(
@@ -167,31 +182,19 @@ def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
     help="file path for optional metadata output",
 )
 @click.argument("fencil", type=str)
-def main(output_metadata: pathlib.Path, fencil: str) -> None:
+def main(output_metadata, fencil):
     """
     Generate metadata and C++ code for an icon4py fencil.
 
     A fencil may be specified as <module>:<member>, where <module> is the
     dotted name of the containing module and <member> is the name of the fencil.
     """
-    imported_fencil = import_fencil(fencil)
-
-    match imported_fencil:
-        case Program():
-            fvprog = imported_fencil.with_backend("gtfn")
-        case FieldOperator():
-            fvprog = imported_fencil.with_backend("gtfn").as_program()
-        case _:
-            fvprog = program(imported_fencil, backend="gtfn")
-
-    if len(fvprog.past_node.body) > 1:
-        raise MultipleFieldOperatorException()
-
-    fvprog = adapt_program_gtfn(fvprog)
+    fencil = import_fencil(fencil)
+    fvprog = get_fvprog(fencil)
     chains = scan_for_chains(fvprog)
     offsets = {}
     for chain in chains:
         offsets[chain] = provide_offset(chain)
     if output_metadata:
         output_metadata.write_text(format_metadata(fvprog, chains))
-    click.echo(generate_cpp_code(fvprog, offsets))
+    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offsets))
