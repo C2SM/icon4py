@@ -159,8 +159,8 @@ def generate_cpp_code(
     )
 
 
-def import_fencil(fencil_name: str) -> Program | FieldOperator | types.FunctionType:
-    module_name, member_name = fencil_name.split(":")
+def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
+    module_name, member_name = name.split(":")
     fencil = getattr(importlib.import_module(module_name), member_name)
     return fencil
 
@@ -211,7 +211,7 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     A fencil may be specified as <module>:<member>, where <module> is the
     dotted name of the containing module and <member> is the name of the fencil.
     """
-    fencil_def = import_fencil(fencil)
+    fencil_def = import_definition(fencil)
     fvprog = get_fvprog(fencil_def)
     chains = scan_for_chains(fvprog)
     offsets = {}

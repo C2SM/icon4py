@@ -19,14 +19,14 @@ import pytest
 from icon4py.pyutils.icon4pygen import (
     format_metadata,
     get_fvprog,
-    import_fencil,
+    import_definition,
     scan_for_chains,
 )
 from icon4py.testutils.utils import get_stencil_module_path
 
 
 def get_stencil_metadata(stencil_module: str, stencil_name: str) -> str:
-    fencil = import_fencil(get_stencil_module_path(stencil_module, stencil_name))
+    fencil = import_definition(get_stencil_module_path(stencil_module, stencil_name))
     fvprog = get_fvprog(fencil)
     chains = scan_for_chains(fvprog)
     return format_metadata(fvprog, chains)
