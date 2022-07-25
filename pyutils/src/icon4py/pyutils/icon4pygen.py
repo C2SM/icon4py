@@ -25,7 +25,9 @@ from typing import Any, TypeGuard
 import click
 import tabulate
 from functional.common import DimensionKind
-from functional.fencil_processors.gtfn.gtfn_backend import generate
+from functional.fencil_processors.codegens.gtfn.gtfn_backend import (
+    generate,
+)
 from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
