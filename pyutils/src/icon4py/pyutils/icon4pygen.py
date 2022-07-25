@@ -20,6 +20,7 @@ from typing import Union
 
 import click
 import tabulate
+from functional.common import DimensionKind
 from functional.fencil_processors.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
@@ -79,7 +80,7 @@ def scan_for_chains(fvprog: Program) -> list[str]:
         .getattr("value")
         .to_list()
     )
-    all_dim_labels = [dim.value for dim in all_dims if dim.local]
+    all_dim_labels = [dim.value for dim in all_dims if dim.kind == DimensionKind.LOCAL]
     return set(all_offset_labels + all_dim_labels)
 
 
@@ -107,7 +108,7 @@ def provide_offset(chain: str) -> SimpleNamespace:
             raise InvalidConnectivityException(location_chain)
     return SimpleNamespace(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
-        has_skip_values=True,
+        has_skip_values=False,
     )
 
 
@@ -128,10 +129,10 @@ def format_metadata(fvprog: Program, chains, **kwargs) -> str:
     )
 
 
-def generate_cpp_code(fvprog, offset_provider, **kwargs) -> str:
+def generate_cpp_code(fencil: itir.FencilDefinition, offset_provider, **kwargs) -> str:
     """Generate C++ code using the GTFN backend."""
     return generate(
-        fvprog.itir, grid_type="unstructured", offset_provider=offset_provider, **kwargs
+        fencil, grid_type="unstructured", offset_provider=offset_provider, **kwargs
     )
 
 
@@ -139,6 +140,35 @@ def import_fencil(fencil: str) -> Union[Program, FieldOperator]:
     module_name, member_name = fencil.split(":")
     fencil = getattr(importlib.import_module(module_name), member_name)
     return fencil
+
+
+def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+    if len(fencil.closures) > 1:
+        raise MultipleFieldOperatorException()
+
+    fencil.closures[0].domain = itir.SymRef(id="domain")
+    return itir.FencilDefinition(
+        id=fencil.id,
+        function_definitions=fencil.function_definitions,
+        params=[*fencil.params, itir.Sym(id="domain")],
+        closures=fencil.closures,
+    )
+
+
+def get_fvprog(fencil):
+    fvprog = None
+    match fencil:
+        case Program():
+            fvprog = fencil
+        case FieldOperator():
+            fvprog = fencil.as_program()
+        case _:
+            fvprog = program(fencil)
+
+    if len(fvprog.past_node.body) > 1:
+        raise MultipleFieldOperatorException()
+
+    return fvprog
 
 
 @click.command(
@@ -160,24 +190,11 @@ def main(output_metadata, fencil):
     dotted name of the containing module and <member> is the name of the fencil.
     """
     fencil = import_fencil(fencil)
-
-    fvprog = None
-    match fencil:
-        case Program():
-            fvprog = fencil
-        case FieldOperator():
-            fvprog = fencil.as_program()
-        case _:
-            fvprog = program(fencil)
-
-    if len(fvprog.past_node.body) > 1:
-        raise MultipleFieldOperatorException()
-
-    fvprog = fvprog
+    fvprog = get_fvprog(fencil)
     chains = scan_for_chains(fvprog)
     offsets = {}
     for chain in chains:
         offsets[chain] = provide_offset(chain)
     if output_metadata:
         output_metadata.write_text(format_metadata(fvprog, chains))
-    click.echo(generate_cpp_code(fvprog, offsets))
+    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offsets))
