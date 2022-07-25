@@ -22,7 +22,7 @@ def _mo_solve_nonhydro_stencil_47(
     w_concorr_c: Field[[CellDim, KDim], float]
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     w_nnew = w_concorr_c
-    z_contr_w_fl_l = float(0.0)
+    z_contr_w_fl_l = 0.0
     return w_nnew, z_contr_w_fl_l
 
 

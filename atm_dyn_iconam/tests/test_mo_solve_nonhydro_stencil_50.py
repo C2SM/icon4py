@@ -18,18 +18,25 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_50 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+from icon4py.testutils.utils import broadcasted_field, random_field
+
+
+# TODO: change iau_wgt_dyn back to type float
 
 
 def mo_solve_nonhydro_stencil_50_z_rho_expl_numpy(
-    z_rho_expl: np.array, rho_incr: np.array, iau_wgt_dyn
+    z_rho_expl: np.array,
+    rho_incr: np.array,
+    iau_wgt_dyn: np.array,
 ) -> np.array:
     z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
     return z_rho_expl
 
 
 def mo_solve_nonhydro_stencil_50_z_exner_expl_numpy(
-    z_exner_expl: np.array, exner_incr: np.array, iau_wgt_dyn
+    z_exner_expl: np.array,
+    exner_incr: np.array,
+    iau_wgt_dyn: np.array,
 ) -> np.array:
     z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
     return z_exner_expl
@@ -40,7 +47,7 @@ def mo_solve_nonhydro_stencil_50_numpy(
     rho_incr: np.array,
     z_exner_expl: np.array,
     exner_incr: np.array,
-    iau_wgt_dyn,
+    iau_wgt_dyn: np.array,
 ) -> tuple[np.array]:
     z_rho_expl = mo_solve_nonhydro_stencil_50_z_rho_expl_numpy(
         z_rho_expl, rho_incr, iau_wgt_dyn
@@ -58,14 +65,14 @@ def test_mo_solve_nonhydro_stencil_50():
     exner_incr = random_field(mesh, CellDim, KDim)
     z_rho_expl = random_field(mesh, CellDim, KDim)
     rho_incr = random_field(mesh, CellDim, KDim)
-    iau_wgt_dyn = np.float64(8.0)
+    iau_wgt_dyn = broadcasted_field(8.0, mesh, CellDim, KDim)
 
     z_rho_expl_ref, z_exner_expl_ref = mo_solve_nonhydro_stencil_50_numpy(
         np.asarray(z_rho_expl),
         np.asarray(rho_incr),
         np.asarray(z_exner_expl),
         np.asarray(exner_incr),
-        iau_wgt_dyn,
+        np.asarray(iau_wgt_dyn),
     )
 
     mo_solve_nonhydro_stencil_50(
