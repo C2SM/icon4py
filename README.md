@@ -97,7 +97,7 @@ pre-commit run
 pre-commit run -a
 
 # Run only some of the tools (e.g. mypy)
-pre-commit run mypy -a
+pre-commit run -a mypy
 ```
 
 ### Testing

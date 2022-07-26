@@ -23,7 +23,7 @@ from icon4py.testutils.utils import random_field, zero_field
 
 def mo_velocity_advection_stencil_09_numpy(
     c2e: np.array, z_w_concorr_me: np.array, e_bln_c_s: np.array
-):
+) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     z_w_concorr_mc = np.sum(z_w_concorr_me[c2e] * e_bln_c_s, axis=1)
     return z_w_concorr_mc

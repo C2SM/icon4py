@@ -21,7 +21,7 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_velocity_advection_stencil_11_numpy(w: np.array):
+def mo_velocity_advection_stencil_11_numpy(w: np.array) -> np.array:
     z_w_con_c = w
     return z_w_con_c
 

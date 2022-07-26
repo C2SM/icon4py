@@ -21,22 +21,26 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_velocity_advection_stencil_05_numpy_vn_ie(vn: np.array):
+def mo_velocity_advection_stencil_05_numpy_vn_ie(vn: np.array) -> np.array:
     vn_ie = vn
     return vn_ie
 
 
-def mo_velocity_advection_stencil_05_numpy_z_vt_ie(vt: np.array):
+def mo_velocity_advection_stencil_05_numpy_z_vt_ie(vt: np.array) -> np.array:
     z_vt_ie = vt
     return z_vt_ie
 
 
-def mo_velocity_advection_stencil_05_numpy_z_kin_hor_e(vn: np.array, vt: np.array):
+def mo_velocity_advection_stencil_05_numpy_z_kin_hor_e(
+    vn: np.array, vt: np.array
+) -> np.array:
     z_kin_hor_e = 0.5 * ((vn * vn) + (vt * vt))
     return z_kin_hor_e
 
 
-def mo_velocity_advection_stencil_05_numpy(vn: np.array, vt: np.array):
+def mo_velocity_advection_stencil_05_numpy(
+    vn: np.array, vt: np.array
+) -> tuple[np.array]:
     vn_ie = mo_velocity_advection_stencil_05_numpy_vn_ie(vn)
     z_vt_ie = mo_velocity_advection_stencil_05_numpy_z_vt_ie(vt)
     z_kin_hor_e = mo_velocity_advection_stencil_05_numpy_z_kin_hor_e(vn, vt)

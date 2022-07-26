@@ -24,7 +24,7 @@ def _mo_solve_nonhydro_stencil_54(
     w: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
     z_raylfac = broadcast(z_raylfac, (CellDim, KDim))
-    w = z_raylfac * w + (float(1.0) - z_raylfac) * w_1
+    w = z_raylfac * w + (1.0 - z_raylfac) * w_1
     return w
 
 
