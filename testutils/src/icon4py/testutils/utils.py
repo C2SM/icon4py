@@ -53,14 +53,6 @@ def random_field(mesh, *dims, low: float = -1.0, high: float = 1.0):
     )
 
 
-def broadcasted_field(
-    num: float, mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension
-) -> it_embedded.MutableLocatedField:
-    return it_embedded.np_as_located_field(*dims)(
-        np.full(tuple(map(lambda x: mesh.size[x], dims)), num)
-    )
-
-
 def zero_field(
     mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension
 ) -> it_embedded.MutableLocatedField:
