@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-import numpy.typing as npt
 from functional import common as gt_common
 from functional.iterator import embedded as it_embedded
 
@@ -68,21 +67,6 @@ def zero_field(
     return it_embedded.np_as_located_field(*dims)(
         np.zeros(shape=tuple(map(lambda x: mesh.size[x], dims)))
     )
-
-
-def get_cell_to_k_table(k_arr: npt.NDArray, k: int) -> npt.NDArray:
-    """Create cell to k table based on an input array and k value.
-
-    Args:
-        k_arr: 1D input array holding k values.
-        k: k value to use within k table.
-
-    Returns:
-        2D array filled with k values
-    """
-    # creating cell to k table
-    c2k = np.expand_dims(k_arr, axis=-1)
-    return np.repeat(c2k[:], k, axis=-1)
 
 
 def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:

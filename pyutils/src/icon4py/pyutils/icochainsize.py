@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from typing import List, Tuple, TypeAlias
+from typing import List, TypeAlias
 
 from functional.common import Dimension
 
@@ -121,8 +121,8 @@ class Connection:
     end: Dimension
 
 
-Position: TypeAlias = Tuple[int, int, int]
-HexCell: TypeAlias = Tuple[Position, Position, Position, Position, Position, Position]
+Position: TypeAlias = tuple[int, int, int]
+HexCell: TypeAlias = tuple[Position, Position, Position, Position, Position, Position]
 
 
 def vertex_to_edge(vertex: Position) -> HexCell:
@@ -149,19 +149,19 @@ def vertex_to_cell(vertex: Position) -> HexCell:
     )
 
 
-def edge_to_vertex(edge: Position) -> Tuple[Position, Position]:
+def edge_to_vertex(edge: Position) -> tuple[Position, Position]:
     (x, y, e) = edge
     if e == 0:
-        return (x, y, 0), (x + 1, y, 0)
+        return ((x, y, 0), (x + 1, y, 0))
     elif e == 1:
-        return (x + 1, y, 0), (x, y + 1, 0)
+        return ((x + 1, y, 0), (x, y + 1, 0))
     elif e == 2:
-        return (x, y, 0), (x, y + 1, 0)
+        return ((x, y, 0), (x, y + 1, 0))
     else:
         raise Exception("Invalid edge type")
 
 
-def edge_to_cell(edge: Position) -> Tuple[Position, Position]:
+def edge_to_cell(edge: Position) -> tuple[Position, Position]:
     (x, y, e) = edge
     if e == 0:
         return ((x, y, 0), (x, y - 1, 1))
@@ -173,7 +173,7 @@ def edge_to_cell(edge: Position) -> Tuple[Position, Position]:
         raise Exception("Invalid edge type")
 
 
-def cell_to_vertex(cell: Position) -> Tuple[Position, Position, Position]:
+def cell_to_vertex(cell: Position) -> tuple[Position, Position, Position]:
     (x, y, c) = cell
     if c == 0:
         return ((x, y, 0), (x + 1, y, 0), (x, y + 1, 0))
@@ -183,7 +183,7 @@ def cell_to_vertex(cell: Position) -> Tuple[Position, Position, Position]:
         raise Exception("Invalid edge type")
 
 
-def cell_to_edge(cell: Position) -> Tuple[Position, Position, Position]:
+def cell_to_edge(cell: Position) -> tuple[Position, Position, Position]:
     (x, y, c) = cell
     if c == 0:
         return ((x, y, 0), (x, y, 1), (x, y, 2))
