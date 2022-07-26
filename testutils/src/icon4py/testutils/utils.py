@@ -32,12 +32,26 @@ def random_mask(
     return it_embedded.np_as_located_field(*dims)(arr)
 
 
-def random_field(
-    mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension
-) -> it_embedded.MutableLocatedField:
-    return it_embedded.np_as_located_field(*dims)(
-        np.random.randn(*map(lambda x: mesh.size[x], dims))
-    )
+
+def random_field(mesh, *dims, low: float = -1.0, high: float = 1.0):
+    """Generate a random field between specified bounds.
+
+    Initialize a LocatedField with random values between a lower and
+    higher bound, using a uniform random distribution.
+
+    Args:
+        mesh: SimpleMesh object
+        dims: Iterable of mesh dimensions
+        low: lower bound of random values
+        high: higher bound of random values
+
+    Returns:
+        LocatedField with random values
+    """
+    return np_as_located_field(*dims)(
+        np.random.default_rng().uniform(
+            low=low, high=high, size=tuple(map(lambda x: mesh.size[x], dims))
+        )
 
 
 def broadcasted_field(

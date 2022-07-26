@@ -12,24 +12,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, neighbor_sum
+from functional.ffront.fbuiltins import Field, max_over, maximum
 
-from icon4py.common.dimension import V2E, EdgeDim, KDim, V2EDim, VertexDim
+from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
 
 
 @field_operator
-def _mo_math_divrot_rot_vertex_ri_dsl(
-    vec_e: Field[[EdgeDim, KDim], float],
-    geofac_rot: Field[[VertexDim, V2EDim], float],
-) -> Field[[VertexDim, KDim], float]:
-    rot_vec = neighbor_sum(vec_e(V2E) * geofac_rot, axis=V2EDim)
-    return rot_vec
+def _mo_nh_diffusion_stencil_12(
+    kh_smag_e: Field[[EdgeDim, KDim], float],
+    enh_diffu_3d: Field[[CellDim, KDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    kh_smag_e = maximum(kh_smag_e, max_over(enh_diffu_3d(E2C), axis=E2CDim))
+    return kh_smag_e
 
 
 @program
-def mo_math_divrot_rot_vertex_ri_dsl(
-    vec_e: Field[[EdgeDim, KDim], float],
-    geofac_rot: Field[[VertexDim, V2EDim], float],
-    rot_vec: Field[[VertexDim, KDim], float],
+def mo_nh_diffusion_stencil_12(
+    kh_smag_e: Field[[EdgeDim, KDim], float],
+    enh_diffu_3d: Field[[CellDim, KDim], float],
 ):
-    _mo_math_divrot_rot_vertex_ri_dsl(vec_e, geofac_rot, out=rot_vec)
+    _mo_nh_diffusion_stencil_12(kh_smag_e, enh_diffu_3d, out=kh_smag_e)
