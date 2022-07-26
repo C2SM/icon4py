@@ -107,7 +107,7 @@ def provide_offset(chain: str) -> types.SimpleNamespace:
 
     Connectivity strings must contain one of the following connectivity type identifiers:
     C (cell), E (Edge), V (Vertex) and be separated by a '2' e.g. 'E2V'. If the origin is to
-    be included, the string should terminate with O (uppercase o)
+    be included, the string should terminate with O (uppercase o), e.g. 'C2E2CO`.
     """
     location_chain = []
     include_center = False
