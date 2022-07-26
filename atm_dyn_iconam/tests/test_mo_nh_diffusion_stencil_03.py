@@ -74,8 +74,5 @@ def test_mo_nh_diffusion_stencil_03():
         offset_provider={"Koff": KDim},
     )
 
-    print(k_hc[:, 5])  # completely different
-    print(kh_c_ref[:, 5])
-
     assert np.allclose(hdef_ic[:, 1:], kh_c_ref)
     assert np.allclose(div_ic[:, 1:], div_ref)
