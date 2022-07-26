@@ -46,7 +46,9 @@ def get_fieldinfo(fvprog: Program) -> dict[str, _FIELDINFO]:
         field.id: _FIELDINFO(field, True, False) for field in fvprog.past_node.params
     }
 
-    for out_field in [fvprog.past_node.body[0].kwargs["out"]]:
+    out_arg = fvprog.past_node.body[0].kwargs["out"]
+    out_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
+    for out_field in out_fields:
         if out_field.id in [arg.id for arg in fvprog.past_node.body[0].args]:
             fields[out_field.id] = _FIELDINFO(fields[out_field.id].field, True, True)
         else:
