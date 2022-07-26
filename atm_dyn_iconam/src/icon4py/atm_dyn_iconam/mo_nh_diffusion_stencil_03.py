@@ -58,5 +58,5 @@ def mo_nh_diffusion_stencil_03(
     div_ic: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_03_div_ic(wgtfac_c, div, out=div_ic)
-    _mo_nh_diffusion_stencil_03_hdef_ic(wgtfac_c, kh_c, out=hdef_ic)
+    _mo_nh_diffusion_stencil_03_div_ic(wgtfac_c, div, out=div_ic[:, 1:])
+    _mo_nh_diffusion_stencil_03_hdef_ic(wgtfac_c, kh_c, out=hdef_ic[:, 1:])
