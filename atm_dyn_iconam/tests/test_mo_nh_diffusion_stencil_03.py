@@ -25,7 +25,7 @@ def mo_nh_diffusion_stencil_03_div_ic_numpy(
     wgtfac_c: np.array,
     div: np.array,
 ) -> np.array:
-    div_ic = wgtfac_c[:, 1:] * div[:, 1:] + (1.0 - wgtfac_c[:, 1:]) * div[:, :-1]
+    div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * np.roll(div, shift=1, axis=1)
     return div_ic
 
 
@@ -33,9 +33,7 @@ def mo_nh_diffusion_stencil_03_hdef_ic_numpy(
     wgtfac_c: np.array,
     k_hc: np.array,
 ) -> np.array:
-    hdef_ic = (
-        wgtfac_c[:, 1:] * k_hc[:, 1:] + (1.0 - wgtfac_c[:, 1:]) * k_hc[:, :-1]
-    ) ** 2
+    hdef_ic = (wgtfac_c * k_hc + (1.0 - wgtfac_c) * np.roll(k_hc, shift=1, axis=1)) ** 2
     return hdef_ic
 
 
@@ -74,5 +72,5 @@ def test_mo_nh_diffusion_stencil_03():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(hdef_ic[:, 1:], kh_c_ref)
-    assert np.allclose(div_ic[:, 1:], div_ref)
+    assert np.allclose(hdef_ic[:, 1:], kh_c_ref[:, 1:])
+    assert np.allclose(div_ic[:, 1:], div_ref[:, 1:])

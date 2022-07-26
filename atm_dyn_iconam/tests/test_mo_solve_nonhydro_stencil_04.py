@@ -26,9 +26,9 @@ def mo_solve_nonhydro_stencil_04_numpy(
     z_exner_ex_pr: np.array,
 ) -> np.array:
     z_exner_ic = (
-        wgtfacq_c[:, 2:-1] * z_exner_ex_pr[:, 2:-1]
-        + wgtfacq_c[:, 1:-2] * z_exner_ex_pr[:, 1:-2]
-        + wgtfacq_c[:, 0:-3] * z_exner_ex_pr[:, 0:-3]
+        np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_exner_ex_pr, shift=1, axis=1)
+        + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_exner_ex_pr, shift=2, axis=1)
+        + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_exner_ex_pr, shift=3, axis=1)
     )
     return z_exner_ic
 
@@ -51,4 +51,4 @@ def test_mo_solve_nonhydro_stencil_04():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(z_exner_ic[:, 3:], z_exner_ic_ref)
+    assert np.allclose(z_exner_ic[:, 3:], z_exner_ic_ref[:, 3:])
