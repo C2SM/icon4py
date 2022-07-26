@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from functional.ffront.fbuiltins import Field, broadcast
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -22,7 +22,7 @@ def _mo_solve_nonhydro_stencil_47(
     w_concorr_c: Field[[CellDim, KDim], float]
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     w_nnew = w_concorr_c
-    z_contr_w_fl_l = 0.0
+    z_contr_w_fl_l = broadcast(0.0, (CellDim, KDim))
     return w_nnew, z_contr_w_fl_l
 
 

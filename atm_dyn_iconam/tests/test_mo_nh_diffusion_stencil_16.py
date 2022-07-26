@@ -18,10 +18,7 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import broadcasted_field, random_field
-
-
-# TODO: change rd_o_cvd back to type float
+from icon4py.testutils.utils import random_field
 
 
 def mo_nh_diffusion_stencil_16_theta_v_numpy(
@@ -49,7 +46,7 @@ def mo_nh_diffusion_stencil_16_numpy(
     area: np.array,
     theta_v: np.array,
     exner: np.array,
-    rd_o_cvd: np.array,
+    rd_o_cvd,
 ) -> tuple[np.array]:
     theta_v = mo_nh_diffusion_stencil_16_theta_v_numpy(z_temp, area, theta_v)
     exner = mo_nh_diffusion_stencil_16_exner_numpy(theta_v, exner, rd_o_cvd)
@@ -63,14 +60,14 @@ def test_mo_nh_diffusion_stencil_16():
     area = random_field(mesh, KDim)
     theta_v = random_field(mesh, CellDim, KDim)
     exner = random_field(mesh, CellDim, KDim)
-    rd_o_cvd = broadcasted_field(5.0, mesh, CellDim, KDim)
+    rd_o_cvd = 5.0
 
     theta_v_ref, exner_ref = mo_nh_diffusion_stencil_16_numpy(
         np.asarray(z_temp),
         np.asarray(area),
         np.asarray(theta_v),
         np.asarray(exner),
-        np.asarray(rd_o_cvd),
+        rd_o_cvd,
     )
     mo_nh_diffusion_stencil_16(
         z_temp,

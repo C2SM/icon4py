@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from functional.ffront.fbuiltins import Field, broadcast
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -21,8 +21,8 @@ from icon4py.common.dimension import EdgeDim, KDim
 def _mo_solve_nonhydro_stencil_33() -> tuple[
     Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]
 ]:
-    vn_traj = 0.0
-    mass_flx_me = 0.0
+    vn_traj = broadcast(0.0, (EdgeDim, KDim))
+    mass_flx_me = broadcast(0.0, (EdgeDim, KDim))
     return vn_traj, mass_flx_me
 
 

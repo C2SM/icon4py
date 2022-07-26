@@ -17,16 +17,13 @@ from functional.ffront.fbuiltins import Field
 from icon4py.common.dimension import EdgeDim, KDim
 
 
-# TODO: change r_nsubsteps back to type float
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_34(
     z_vn_avg: Field[[EdgeDim, KDim], float],
     mass_fl_e: Field[[EdgeDim, KDim], float],
     vn_traj: Field[[EdgeDim, KDim], float],
     mass_flx_me: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: Field[[EdgeDim, KDim], float],
+    r_nsubsteps: float,
 ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
     vn_traj = vn_traj + r_nsubsteps * z_vn_avg
     mass_flx_me = mass_flx_me + r_nsubsteps * mass_fl_e
@@ -39,7 +36,7 @@ def _mo_solve_nonhydro_stencil_34_vn_traj(
     mass_fl_e: Field[[EdgeDim, KDim], float],
     vn_traj: Field[[EdgeDim, KDim], float],
     mass_flx_me: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: Field[[EdgeDim, KDim], float],
+    r_nsubsteps: float,
 ) -> Field[[EdgeDim, KDim], float]:
     return _mo_solve_nonhydro_stencil_34(
         z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps
@@ -52,7 +49,7 @@ def _mo_solve_nonhydro_stencil_34_mass_flx_me(
     mass_fl_e: Field[[EdgeDim, KDim], float],
     vn_traj: Field[[EdgeDim, KDim], float],
     mass_flx_me: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: Field[[EdgeDim, KDim], float],
+    r_nsubsteps: float,
 ) -> Field[[EdgeDim, KDim], float]:
     return _mo_solve_nonhydro_stencil_34(
         z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps
@@ -65,7 +62,7 @@ def mo_solve_nonhydro_stencil_34(
     mass_fl_e: Field[[EdgeDim, KDim], float],
     vn_traj: Field[[EdgeDim, KDim], float],
     mass_flx_me: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: Field[[EdgeDim, KDim], float],
+    r_nsubsteps: float,
 ):
     _mo_solve_nonhydro_stencil_34_vn_traj(
         z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, out=vn_traj

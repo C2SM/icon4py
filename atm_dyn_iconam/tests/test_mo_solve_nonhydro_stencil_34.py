@@ -18,25 +18,18 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_34 import (
 )
 from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import broadcasted_field, random_field
-
-
-# TODO: change r_nsubsteps back to type float
+from icon4py.testutils.utils import random_field
 
 
 def mo_solve_nonhydro_stencil_34_vn_traj_numpy(
-    z_vn_avg: np.array,
-    vn_traj: np.array,
-    r_nsubsteps: np.array,
+    z_vn_avg: np.array, vn_traj: np.array, r_nsubsteps
 ) -> np.array:
     vn_traj = vn_traj + r_nsubsteps * z_vn_avg
     return vn_traj
 
 
 def mo_solve_nonhydro_stencil_34_mass_flx_me_numpy(
-    mass_fl_e: np.array,
-    mass_flx_me: np.array,
-    r_nsubsteps: np.array,
+    mass_fl_e: np.array, mass_flx_me: np.array, r_nsubsteps
 ) -> np.array:
     mass_flx_me = mass_flx_me + r_nsubsteps * mass_fl_e
     return mass_flx_me
@@ -47,7 +40,7 @@ def mo_solve_nonhydro_stencil_34_numpy(
     mass_fl_e: np.array,
     vn_traj: np.array,
     mass_flx_me: np.array,
-    r_nsubsteps: np.array,
+    r_nsubsteps,
 ) -> tuple[np.array]:
     vn_traj = mo_solve_nonhydro_stencil_34_vn_traj_numpy(z_vn_avg, vn_traj, r_nsubsteps)
     mass_flx_me = mo_solve_nonhydro_stencil_34_mass_flx_me_numpy(
@@ -63,14 +56,14 @@ def test_mo_solve_nonhydro_stencil_34():
     mass_flx_me = random_field(mesh, EdgeDim, KDim)
     z_vn_avg = random_field(mesh, EdgeDim, KDim)
     vn_traj = random_field(mesh, EdgeDim, KDim)
-    r_nsubsteps = broadcasted_field(9.0, mesh, EdgeDim, KDim)
+    r_nsubsteps = 9.0
 
     vn_traj_ref, mass_flx_me_ref = mo_solve_nonhydro_stencil_34_numpy(
         np.asarray(z_vn_avg),
         np.asarray(mass_fl_e),
         np.asarray(vn_traj),
         np.asarray(mass_flx_me),
-        np.asarray(r_nsubsteps),
+        r_nsubsteps,
     )
 
     mo_solve_nonhydro_stencil_34(

@@ -17,9 +17,6 @@ from functional.ffront.fbuiltins import Field
 from icon4py.common.dimension import CellDim, KDim
 
 
-# TODO: change dtime back to type float
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_61(
     rho_now: Field[[CellDim, KDim], float],
@@ -28,7 +25,7 @@ def _mo_solve_nonhydro_stencil_61(
     grf_tend_thv: Field[[CellDim, KDim], float],
     w_now: Field[[CellDim, KDim], float],
     grf_tend_w: Field[[CellDim, KDim], float],
-    dtime: Field[[CellDim, KDim], float],
+    dtime: float,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -48,7 +45,7 @@ def _mo_solve_nonhydro_stencil_61_rho_new(
     grf_tend_thv: Field[[CellDim, KDim], float],
     w_now: Field[[CellDim, KDim], float],
     grf_tend_w: Field[[CellDim, KDim], float],
-    dtime: Field[[CellDim, KDim], float],
+    dtime: float,
 ) -> Field[[CellDim, KDim], float]:
     return _mo_solve_nonhydro_stencil_61(
         rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
@@ -63,7 +60,7 @@ def _mo_solve_nonhydro_stencil_61_exner_new(
     grf_tend_thv: Field[[CellDim, KDim], float],
     w_now: Field[[CellDim, KDim], float],
     grf_tend_w: Field[[CellDim, KDim], float],
-    dtime: Field[[CellDim, KDim], float],
+    dtime: float,
 ) -> Field[[CellDim, KDim], float]:
     return _mo_solve_nonhydro_stencil_61(
         rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
@@ -78,7 +75,7 @@ def _mo_solve_nonhydro_stencil_61_w_new(
     grf_tend_thv: Field[[CellDim, KDim], float],
     w_now: Field[[CellDim, KDim], float],
     grf_tend_w: Field[[CellDim, KDim], float],
-    dtime: Field[[CellDim, KDim], float],
+    dtime: float,
 ) -> Field[[CellDim, KDim], float]:
     return _mo_solve_nonhydro_stencil_61(
         rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
@@ -96,7 +93,7 @@ def mo_solve_nonhydro_stencil_61(
     rho_new: Field[[CellDim, KDim], float],
     exner_new: Field[[CellDim, KDim], float],
     w_new: Field[[CellDim, KDim], float],
-    dtime: Field[[CellDim, KDim], float],
+    dtime: float,
 ):
     _mo_solve_nonhydro_stencil_61_rho_new(
         rho_now,

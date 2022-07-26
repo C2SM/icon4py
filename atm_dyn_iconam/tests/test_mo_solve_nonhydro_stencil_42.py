@@ -18,14 +18,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_42 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import (
-    broadcasted_field,
-    random_field,
-    zero_field,
-)
-
-
-# TODO: change dtime, wgt_nnow_vel, wgt_nnew_vel, cpd back to type float
+from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_42_z_w_expl_numpy(
@@ -33,10 +26,10 @@ def mo_solve_nonhydro_stencil_42_z_w_expl_numpy(
     ddt_w_adv_ntl1: np.array,
     ddt_w_adv_ntl2: np.array,
     z_th_ddz_exner_c: np.array,
-    dtime: np.array,
-    wgt_nnow_vel: np.array,
-    wgt_nnew_vel: np.array,
-    cpd: np.array,
+    dtime,
+    wgt_nnow_vel,
+    wgt_nnew_vel,
+    cpd,
 ) -> np.array:
     z_w_expl = w_nnow + dtime * (
         wgt_nnow_vel * ddt_w_adv_ntl1
@@ -62,10 +55,10 @@ def mo_solve_nonhydro_stencil_42_numpy(
     rho_ic: np.array,
     w_concorr_c: np.array,
     vwind_expl_wgt: np.array,
-    dtime: np.array,
-    wgt_nnow_vel: np.array,
-    wgt_nnew_vel: np.array,
-    cpd: np.array,
+    dtime,
+    wgt_nnow_vel,
+    wgt_nnew_vel,
+    cpd,
 ) -> tuple[np.array]:
     z_w_expl = mo_solve_nonhydro_stencil_42_z_w_expl_numpy(
         w_nnow,
@@ -95,10 +88,10 @@ def test_mo_solve_nonhydro_stencil_42():
     w_concorr_c = random_field(mesh, CellDim, KDim)
     vwind_expl_wgt = random_field(mesh, CellDim)
     z_contr_w_fl_l = zero_field(mesh, CellDim, KDim)
-    dtime = broadcasted_field(5.0, mesh, CellDim, KDim)
-    wgt_nnow_vel = broadcasted_field(8.0, mesh, CellDim, KDim)
-    wgt_nnew_vel = broadcasted_field(9.0, mesh, CellDim, KDim)
-    cpd = broadcasted_field(10.0, mesh, CellDim, KDim)
+    dtime = 5.0
+    wgt_nnow_vel = 8.0
+    wgt_nnew_vel = 9.0
+    cpd = 10.0
 
     z_w_expl_ref, z_contr_w_fl_l_ref = mo_solve_nonhydro_stencil_42_numpy(
         np.asarray(w_nnow),
@@ -108,10 +101,10 @@ def test_mo_solve_nonhydro_stencil_42():
         np.asarray(rho_ic),
         np.asarray(w_concorr_c),
         np.asarray(vwind_expl_wgt),
-        np.asarray(dtime),
-        np.asarray(wgt_nnow_vel),
-        np.asarray(wgt_nnew_vel),
-        np.asarray(cpd),
+        dtime,
+        wgt_nnow_vel,
+        wgt_nnew_vel,
+        cpd,
     )
     mo_solve_nonhydro_stencil_42(
         z_w_expl,

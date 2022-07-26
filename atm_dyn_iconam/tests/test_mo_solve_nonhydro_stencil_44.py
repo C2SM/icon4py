@@ -18,14 +18,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_44 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import (
-    broadcasted_field,
-    random_field,
-    zero_field,
-)
-
-
-# TODO: change dtime, rv, cvd back to type float
+from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_44_z_beta_numpy(
@@ -33,9 +26,9 @@ def mo_solve_nonhydro_stencil_44_z_beta_numpy(
     rho_nnow: np.array,
     theta_v_nnow: np.array,
     inv_ddqz_z_full: np.array,
-    dtime: np.array,
-    rd: np.array,
-    cvd: np.array,
+    dtime,
+    rd,
+    cvd,
 ) -> np.array:
     z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
     return z_beta
@@ -57,9 +50,9 @@ def mo_solve_nonhydro_stencil_44_numpy(
     vwind_impl_wgt: np.array,
     theta_v_ic: np.array,
     rho_ic: np.array,
-    dtime: np.array,
-    rd: np.array,
-    cvd: np.array,
+    dtime,
+    rd,
+    cvd,
 ) -> tuple[np.array]:
     z_beta = mo_solve_nonhydro_stencil_44_z_beta_numpy(
         exner_nnow, rho_nnow, theta_v_nnow, inv_ddqz_z_full, dtime, rd, cvd
@@ -82,9 +75,9 @@ def test_mo_solve_nonhydro_stencil_44_z_alpha():
     rho_ic = random_field(mesh, CellDim, KDim)
     z_alpha = zero_field(mesh, CellDim, KDim)
     z_beta = zero_field(mesh, CellDim, KDim)
-    dtime = broadcasted_field(10.0, mesh, CellDim, KDim)
-    rd = broadcasted_field(5.0, mesh, CellDim, KDim)
-    cvd = broadcasted_field(3.0, mesh, CellDim, KDim)
+    dtime = 10.0
+    rd = 5.0
+    cvd = 3.0
 
     z_beta_ref, z_alpha_ref = mo_solve_nonhydro_stencil_44_numpy(
         np.asarray(exner_nnow),
@@ -94,9 +87,9 @@ def test_mo_solve_nonhydro_stencil_44_z_alpha():
         np.asarray(vwind_impl_wgt),
         np.asarray(theta_v_ic),
         np.asarray(rho_ic),
-        np.asarray(dtime),
-        np.asarray(rd),
-        np.asarray(cvd),
+        dtime,
+        rd,
+        cvd,
     )
 
     mo_solve_nonhydro_stencil_44(

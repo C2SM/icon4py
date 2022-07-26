@@ -18,27 +18,47 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_66_theta_v(
+def _mo_solve_nonhydro_stencil_66(
     bdy_halo_c: Field[[CellDim], float],
+    rho: Field[[CellDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    rd_o_cvd: float,
+    rd_o_p0ref: float,
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     theta_v = where(bdy_halo_c == 1.0, exner, theta_v)
-    return theta_v
+    exner = where(
+        bdy_halo_c == 1.0, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner
+    )
+    return theta_v, exner
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_66_theta_v(
+    bdy_halo_c: Field[[CellDim], float],
+    rho: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], float],
+    rd_o_cvd: float,
+    rd_o_p0ref: float,
+) -> Field[[CellDim, KDim], float]:
+    return _mo_solve_nonhydro_stencil_66(
+        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref
+    )[0]
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_66_exner(
     bdy_halo_c: Field[[CellDim], float],
     rho: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
     rd_o_p0ref: float,
 ) -> Field[[CellDim, KDim], float]:
-    exner = where(
-        bdy_halo_c == 1.0, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner
-    )
-    return exner
+    return _mo_solve_nonhydro_stencil_66(
+        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref
+    )[1]
 
 
 @program
@@ -51,8 +71,10 @@ def mo_solve_nonhydro_stencil_66(
     rd_o_p0ref: float,
 ):
 
-    _mo_solve_nonhydro_stencil_66_theta_v(bdy_halo_c, theta_v, exner, out=theta_v)
+    _mo_solve_nonhydro_stencil_66_theta_v(
+        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=theta_v
+    )
 
     _mo_solve_nonhydro_stencil_66_exner(
-        bdy_halo_c, rho, exner, rd_o_cvd, rd_o_p0ref, out=exner
+        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=exner
     )

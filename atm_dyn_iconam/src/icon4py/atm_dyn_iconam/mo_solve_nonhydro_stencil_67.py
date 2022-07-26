@@ -18,22 +18,38 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_67_theta_v(
-    exner: Field[[CellDim, KDim], float]
-) -> Field[[CellDim, KDim], float]:
+def _mo_solve_nonhydro_stencil_67(
+    rho: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], float],
+    rd_o_cvd: float,
+    rd_o_p0ref: float,
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     theta_v = exner
-    return theta_v
+    exner = exp(rd_o_cvd * log(rd_o_p0ref * rho * theta_v))
+    return theta_v, exner
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_67_theta_v(
+    rho: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], float],
+    rd_o_cvd: float,
+    rd_o_p0ref: float,
+) -> Field[[CellDim, KDim], float]:
+    return _mo_solve_nonhydro_stencil_67(rho, theta_v, exner, rd_o_cvd, rd_o_p0ref)[0]
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_67_exner(
     rho: Field[[CellDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
     rd_o_p0ref: float,
 ) -> Field[[CellDim, KDim], float]:
-    exner = exp(rd_o_cvd * log(rd_o_p0ref * rho * theta_v))
-    return exner
+    return _mo_solve_nonhydro_stencil_67(rho, theta_v, exner, rd_o_cvd, rd_o_p0ref)[1]
 
 
 @program
@@ -45,6 +61,10 @@ def mo_solve_nonhydro_stencil_67(
     rd_o_p0ref: float,
 ):
 
-    _mo_solve_nonhydro_stencil_67_theta_v(exner, out=theta_v)
+    _mo_solve_nonhydro_stencil_67_theta_v(
+        rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=theta_v
+    )
 
-    _mo_solve_nonhydro_stencil_67_exner(rho, theta_v, rd_o_cvd, rd_o_p0ref, out=exner)
+    _mo_solve_nonhydro_stencil_67_exner(
+        rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=exner
+    )

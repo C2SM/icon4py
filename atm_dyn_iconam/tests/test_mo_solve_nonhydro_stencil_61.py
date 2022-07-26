@@ -18,20 +18,13 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_61 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import (
-    broadcasted_field,
-    random_field,
-    zero_field,
-)
-
-
-# TODO: change dtime back to type float
+from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_61_rho_new_numpy(
     rho_now: np.array,
     grf_tend_rho: np.array,
-    dtime: np.array,
+    dtime,
 ) -> np.array:
     rho_new = rho_now + dtime * grf_tend_rho
     return rho_new
@@ -40,7 +33,7 @@ def mo_solve_nonhydro_stencil_61_rho_new_numpy(
 def mo_solve_nonhydro_stencil_61_exner_new_numpy(
     theta_v_now: np.array,
     grf_tend_thv: np.array,
-    dtime: np.array,
+    dtime,
 ) -> np.array:
     exner_new = theta_v_now + dtime * grf_tend_thv
     return exner_new
@@ -49,7 +42,7 @@ def mo_solve_nonhydro_stencil_61_exner_new_numpy(
 def mo_solve_nonhydro_stencil_61_w_new_numpy(
     w_now: np.array,
     grf_tend_w: np.array,
-    dtime: np.array,
+    dtime,
 ) -> np.array:
     w_new = w_now + dtime * grf_tend_w
     return w_new
@@ -62,7 +55,7 @@ def mo_solve_nonhydro_stencil_61_numpy(
     grf_tend_thv: np.array,
     w_now: np.array,
     grf_tend_w: np.array,
-    dtime: np.array,
+    dtime,
 ) -> tuple[np.array]:
     rho_new = mo_solve_nonhydro_stencil_61_rho_new_numpy(rho_now, grf_tend_rho, dtime)
     exner_new = mo_solve_nonhydro_stencil_61_exner_new_numpy(
@@ -81,7 +74,7 @@ def test_mo_solve_nonhydro_stencil_61():
     grf_tend_thv = random_field(mesh, CellDim, KDim)
     w_now = random_field(mesh, CellDim, KDim)
     grf_tend_w = random_field(mesh, CellDim, KDim)
-    dtime = broadcasted_field(5.0, mesh, CellDim, KDim)
+    dtime = 5.0
     rho_new = zero_field(mesh, CellDim, KDim)
     exner_new = zero_field(mesh, CellDim, KDim)
     w_new = zero_field(mesh, CellDim, KDim)
@@ -93,7 +86,7 @@ def test_mo_solve_nonhydro_stencil_61():
         np.asarray(grf_tend_thv),
         np.asarray(w_now),
         np.asarray(grf_tend_w),
-        np.asarray(dtime),
+        dtime,
     )
     mo_solve_nonhydro_stencil_61(
         rho_now,

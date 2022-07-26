@@ -17,16 +17,13 @@ from functional.ffront.fbuiltins import Field
 from icon4py.common.dimension import CellDim, KDim
 
 
-# TODO: change iau_wgt_dyn back to type float
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_50(
     z_rho_expl: Field[[CellDim, KDim], float],
     z_exner_expl: Field[[CellDim, KDim], float],
     rho_incr: Field[[CellDim, KDim], float],
     exner_incr: Field[[CellDim, KDim], float],
-    iau_wgt_dyn: Field[[CellDim, KDim], float],
+    iau_wgt_dyn: float,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
     z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
@@ -39,7 +36,7 @@ def _mo_solve_nonhydro_stencil_50_z_rho_expl(
     z_exner_expl: Field[[CellDim, KDim], float],
     rho_incr: Field[[CellDim, KDim], float],
     exner_incr: Field[[CellDim, KDim], float],
-    iau_wgt_dyn: Field[[CellDim, KDim], float],
+    iau_wgt_dyn: float,
 ) -> Field[[CellDim, KDim], float]:
     return _mo_solve_nonhydro_stencil_50(
         z_rho_expl, z_exner_expl, rho_incr, exner_incr, iau_wgt_dyn
@@ -52,7 +49,7 @@ def _mo_solve_nonhydro_stencil_50_z_exner_expl(
     z_exner_expl: Field[[CellDim, KDim], float],
     rho_incr: Field[[CellDim, KDim], float],
     exner_incr: Field[[CellDim, KDim], float],
-    iau_wgt_dyn: Field[[CellDim, KDim], float],
+    iau_wgt_dyn: float,
 ) -> Field[[CellDim, KDim], float]:
     return _mo_solve_nonhydro_stencil_50(
         z_rho_expl, z_exner_expl, rho_incr, exner_incr, iau_wgt_dyn
@@ -65,7 +62,7 @@ def mo_solve_nonhydro_stencil_50(
     z_exner_expl: Field[[CellDim, KDim], float],
     rho_incr: Field[[CellDim, KDim], float],
     exner_incr: Field[[CellDim, KDim], float],
-    iau_wgt_dyn: Field[[CellDim, KDim], float],
+    iau_wgt_dyn: float,
 ):
     _mo_solve_nonhydro_stencil_50_z_rho_expl(
         z_rho_expl, z_exner_expl, rho_incr, exner_incr, iau_wgt_dyn, out=z_rho_expl

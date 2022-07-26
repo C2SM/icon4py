@@ -31,7 +31,6 @@ def random_mask(
     return it_embedded.np_as_located_field(*dims)(arr)
 
 
-
 def random_field(mesh, *dims, low: float = -1.0, high: float = 1.0):
     """Generate a random field between specified bounds.
 
@@ -47,10 +46,11 @@ def random_field(mesh, *dims, low: float = -1.0, high: float = 1.0):
     Returns:
         LocatedField with random values
     """
-    return np_as_located_field(*dims)(
+    return it_embedded.np_as_located_field(*dims)(
         np.random.default_rng().uniform(
             low=low, high=high, size=tuple(map(lambda x: mesh.size[x], dims))
         )
+    )
 
 
 def broadcasted_field(
