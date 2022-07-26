@@ -21,27 +21,10 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_37_vn_ie_numpy(vn: np.array) -> np.array:
-    vn_ie = vn
-    return vn_ie
-
-
-def mo_solve_nonhydro_stencil_37_z_vt_ie_numpy(vt: np.array) -> np.array:
-    z_vt_ie = vt
-    return z_vt_ie
-
-
-def mo_solve_nonhydro_stencil_37_z_kin_hor_e_numpy(
-    vn: np.array, vt: np.array
-) -> np.array:
-    z_kin_hor_e = 0.5 * (pow(vn, 2) + pow(vt, 2))
-    return z_kin_hor_e
-
-
 def mo_solve_nonhydro_stencil_37_numpy(vn: np.array, vt: np.array) -> tuple[np.array]:
-    vn_ie = mo_solve_nonhydro_stencil_37_vn_ie_numpy(vn)
-    z_vt_ie = mo_solve_nonhydro_stencil_37_z_vt_ie_numpy(vt)
-    z_kin_hor_e = mo_solve_nonhydro_stencil_37_z_kin_hor_e_numpy(vn, vt)
+    vn_ie = vn
+    z_vt_ie = vt
+    z_kin_hor_e = 0.5 * (pow(vn, 2) + pow(vt, 2))
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 

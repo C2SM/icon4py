@@ -21,32 +21,14 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_32_mass_fl_e_numpy(
-    z_rho_e: np.array, z_vn_avg: np.array, ddqz_z_full_e: np.array
-) -> np.array:
-    mass_fl_e = z_rho_e * z_vn_avg * ddqz_z_full_e
-    return mass_fl_e
-
-
-def mo_solve_nonhydro_stencil_32_z_theta_v_fl_e_numpy(
-    mass_fl_e: np.array, z_theta_v_e: np.array
-) -> np.array:
-    z_theta_v_fl_e = mass_fl_e * z_theta_v_e
-    return z_theta_v_fl_e
-
-
 def mo_solve_nonhydro_stencil_32_numpy(
     z_rho_e: np.array,
     z_vn_avg: np.array,
     ddqz_z_full_e: np.array,
     z_theta_v_e: np.array,
 ) -> tuple[np.array]:
-    mass_fl_e = mo_solve_nonhydro_stencil_32_mass_fl_e_numpy(
-        z_rho_e, z_vn_avg, ddqz_z_full_e
-    )
-    z_theta_v_fl_e = mo_solve_nonhydro_stencil_32_z_theta_v_fl_e_numpy(
-        mass_fl_e, z_theta_v_e
-    )
+    mass_fl_e = z_rho_e * z_vn_avg * ddqz_z_full_e
+    z_theta_v_fl_e = mass_fl_e * z_theta_v_e
     return mass_fl_e, z_theta_v_fl_e
 
 

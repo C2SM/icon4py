@@ -21,38 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u_numpy(
-    c2ec2o: np.array, p_ccpr1: np.array, geofac_grg_x
-) -> np.array:
-    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-    p_grad_1_u = np.sum(geofac_grg_x * p_ccpr1[c2ec2o], axis=1)
-    return p_grad_1_u
-
-
-def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v_numpy(
-    c2ec2o: np.array, p_ccpr1: np.array, geofac_grg_y
-) -> np.array:
-    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-    p_grad_1_v = np.sum(geofac_grg_y * p_ccpr1[c2ec2o], axis=1)
-    return p_grad_1_v
-
-
-def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u_numpy(
-    c2ec2o: np.array, p_ccpr2: np.array, geofac_grg_x
-) -> np.array:
-    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-    p_grad_2_u = np.sum(geofac_grg_x * p_ccpr2[c2ec2o], axis=1)
-    return p_grad_2_u
-
-
-def mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v_numpy(
-    c2ec2o: np.array, p_ccpr2: np.array, geofac_grg_y
-) -> np.array:
-    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-    p_grad_2_v = np.sum(geofac_grg_y * p_ccpr2[c2ec2o], axis=1)
-    return p_grad_2_v
-
-
 def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
     c2e2cO: np.array,
     p_ccpr1: np.array,
@@ -60,30 +28,19 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
     geofac_grg_x: np.array,
     geofac_grg_y: np.array,
 ) -> tuple[np.array]:
-    p_grad_1_u = mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_u_numpy(
-        c2e2cO,
-        p_ccpr1,
-        geofac_grg_x,
-    )
-    p_grad_1_v = mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_1_v_numpy(
-        c2e2cO,
-        p_ccpr1,
-        geofac_grg_y,
-    )
-    p_grad_2_u = mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_u_numpy(
-        c2e2cO,
-        p_ccpr2,
-        geofac_grg_x,
-    )
-    p_grad_2_v = mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v_numpy(
-        c2e2cO,
-        p_ccpr2,
-        geofac_grg_y,
-    )
+    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
+    p_grad_1_u = np.sum(geofac_grg_x * p_ccpr1[c2e2cO], axis=1)
+
+    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
+    p_grad_1_v = np.sum(geofac_grg_y * p_ccpr1[c2e2cO], axis=1)
+
+    p_grad_2_u = np.sum(geofac_grg_x * p_ccpr2[c2e2cO], axis=1)
+
+    p_grad_2_v = np.sum(geofac_grg_y * p_ccpr2[c2e2cO], axis=1)
     return p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v
 
 
-def test_mo_math_gradients_grad_green_gauss_cell_dsl_p_grad_2_v_numpy():
+def test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy():
     mesh = SimpleMesh()
 
     p_ccpr1 = random_field(mesh, CellDim, KDim)

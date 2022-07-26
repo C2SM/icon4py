@@ -21,21 +21,11 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import zero_field
 
 
-def mo_solve_nonhydro_stencil_33_vn_traj_numpy(vn_traj: np.array) -> np.array:
-    vn_traj = np.zeros_like(vn_traj)
-    return vn_traj
-
-
-def mo_solve_nonhydro_stencil_33_mass_flx_me_numpy(mass_flx_me: np.array) -> np.array:
-    mass_flx_me = np.zeros_like(mass_flx_me)
-    return mass_flx_me
-
-
 def mo_solve_nonhydro_stencil_33_numpy(
     vn_traj: np.array, mass_flx_me: np.array
 ) -> tuple[np.array]:
-    vn_traj = mo_solve_nonhydro_stencil_33_vn_traj_numpy(vn_traj)
-    mass_flx_me = mo_solve_nonhydro_stencil_33_mass_flx_me_numpy(mass_flx_me)
+    vn_traj = np.zeros_like(vn_traj)
+    mass_flx_me = np.zeros_like(mass_flx_me)
     return vn_traj, mass_flx_me
 
 

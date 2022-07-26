@@ -21,30 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, random_mask
 
 
-def mo_solve_nonhydro_stencil_66_theta_v_numpy(
-    bdy_halo_c: np.array,
-    theta_v: np.array,
-    exner: np.array,
-) -> np.array:
-
-    theta_v = np.where(bdy_halo_c == 1, exner, theta_v)
-    return theta_v
-
-
-def mo_solve_nonhydro_stencil_66_exner_numpy(
-    bdy_halo_c: np.array,
-    rho: np.array,
-    exner: np.array,
-    rd_o_cvd: float,
-    rd_o_p0ref: float,
-) -> np.array:
-
-    exner = np.where(
-        bdy_halo_c == 1, np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * exner)), exner
-    )
-    return exner
-
-
 def mo_solve_nonhydro_stencil_66_numpy(
     bdy_halo_c: np.array,
     rho: np.array,
@@ -55,9 +31,9 @@ def mo_solve_nonhydro_stencil_66_numpy(
 ) -> tuple[np.array]:
     bdy_halo_c = np.expand_dims(bdy_halo_c, axis=-1)
 
-    theta_v = mo_solve_nonhydro_stencil_66_theta_v_numpy(bdy_halo_c, theta_v, exner)
-    exner = mo_solve_nonhydro_stencil_66_exner_numpy(
-        bdy_halo_c, rho, exner, rd_o_cvd, rd_o_p0ref
+    theta_v = np.where(bdy_halo_c == 1, exner, theta_v)
+    exner = np.where(
+        bdy_halo_c == 1, np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * exner)), exner
     )
 
     return theta_v, exner

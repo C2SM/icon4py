@@ -21,30 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_30_z_vn_avg_numpy(
-    e2c2eO: np.array, e_flx_avg: np.array, vn: np.array
-) -> np.array:
-    e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
-    z_vn_avg = np.sum(vn[e2c2eO] * e_flx_avg, axis=1)
-    return z_vn_avg
-
-
-def mo_solve_nonhydro_stencil_30_z_graddiv_vn_numpy(
-    e2c2eO: np.array, geofac_grdiv: np.array, vn: np.array
-) -> np.array:
-    geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
-    z_graddiv_vn = np.sum(vn[e2c2eO] * geofac_grdiv, axis=1)
-    return z_graddiv_vn
-
-
-def mo_solve_nonhydro_stencil_30_vt_numpy(
-    e2c2e: np.array, rbf_vec_coeff_e: np.array, vn: np.array
-) -> np.array:
-    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-    vt = np.sum(vn[e2c2e] * rbf_vec_coeff_e, axis=1)
-    return vt
-
-
 def mo_solve_nonhydro_stencil_30_numpy(
     e2c2e: np.array,
     e2c2eO: np.array,
@@ -53,11 +29,12 @@ def mo_solve_nonhydro_stencil_30_numpy(
     geofac_grdiv: np.array,
     rbf_vec_coeff_e: np.array,
 ) -> tuple[np.array]:
-    z_vn_avg = mo_solve_nonhydro_stencil_30_z_vn_avg_numpy(e2c2eO, e_flx_avg, vn)
-    z_graddiv_vn = mo_solve_nonhydro_stencil_30_z_graddiv_vn_numpy(
-        e2c2eO, geofac_grdiv, vn
-    )
-    vt = mo_solve_nonhydro_stencil_30_vt_numpy(e2c2e, rbf_vec_coeff_e, vn)
+    e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
+    z_vn_avg = np.sum(vn[e2c2eO] * e_flx_avg, axis=1)
+    geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
+    z_graddiv_vn = np.sum(vn[e2c2eO] * geofac_grdiv, axis=1)
+    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
+    vt = np.sum(vn[e2c2e] * rbf_vec_coeff_e, axis=1)
     return z_vn_avg, z_graddiv_vn, vt
 
 

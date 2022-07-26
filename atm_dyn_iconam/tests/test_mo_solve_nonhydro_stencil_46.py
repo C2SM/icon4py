@@ -21,24 +21,12 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import zero_field
 
 
-def mo_solve_nonhydro_stencil_46_w_nnew_numpy(w_nnew: np.array) -> np.array:
-    w_nnew = np.zeros_like(w_nnew)
-    return w_nnew
-
-
-def mo_solve_nonhydro_stencil_46_z_contr_w_fl_l_numpy(
-    z_contr_w_fl_l: np.array,
-) -> np.array:
-    z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
-    return z_contr_w_fl_l
-
-
 def mo_solve_nonhydro_stencil_46_numpy(
     w_nnew: np.array,
     z_contr_w_fl_l: np.array,
 ) -> tuple[np.array]:
-    w_nnew = mo_solve_nonhydro_stencil_46_w_nnew_numpy(w_nnew)
-    z_contr_w_fl_l = mo_solve_nonhydro_stencil_46_z_contr_w_fl_l_numpy(z_contr_w_fl_l)
+    w_nnew = np.zeros_like(w_nnew)
+    z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
     return w_nnew, z_contr_w_fl_l
 
 

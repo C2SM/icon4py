@@ -21,28 +21,12 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_02_z_exner_ex_pr_numpy(
-    exner: np.array, exner_ref_mc: np.array, exner_pr: np.array, exner_exfac: np.array
-) -> np.array:
-    z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
-    return z_exner_ex_pr
-
-
-def mo_solve_nonhydro_stencil_02_exner_pr_numpy(
-    exner: np.array, exner_ref_mc: np.array
-) -> np.array:
-    exner_pr = exner - exner_ref_mc
-    return exner_pr
-
-
 def mo_solve_nonhydro_stencil_02_numpy(
     exner: np.array, exner_ref_mc: np.array, exner_pr: np.array, exner_exfac: np.array
 ) -> tuple[np.array]:
-    z_exner_pr = mo_solve_nonhydro_stencil_02_z_exner_ex_pr_numpy(
-        exner, exner_ref_mc, exner_pr, exner_exfac
-    )
-    exner_pr = mo_solve_nonhydro_stencil_02_exner_pr_numpy(exner, exner_ref_mc)
-    return z_exner_pr, exner_pr
+    z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
+    exner_pr = exner - exner_ref_mc
+    return z_exner_ex_pr, exner_pr
 
 
 def test_mo_solve_nonhydro_stencil_02():

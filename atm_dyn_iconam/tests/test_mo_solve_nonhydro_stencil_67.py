@@ -21,26 +21,12 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_solve_nonhydro_stencil_67_theta_v_numpy(exner: np.array) -> np.array:
-
-    theta_v = np.copy(exner)
-    return theta_v
-
-
-def mo_solve_nonhydro_stencil_67_exner_numpy(
-    rho: np.array, theta_v: np.array, rd_o_cvd: float, rd_o_p0ref: float
-) -> np.array:
-
-    exner = np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * theta_v))
-    return exner
-
-
 def mo_solve_nonhydro_stencil_67_numpy(
     rho: np.array, exner: np.array, rd_o_cvd: float, rd_o_p0ref: float
 ) -> tuple[np.array]:
 
-    theta_v = mo_solve_nonhydro_stencil_67_theta_v_numpy(exner)
-    exner = mo_solve_nonhydro_stencil_67_exner_numpy(rho, theta_v, rd_o_cvd, rd_o_p0ref)
+    theta_v = np.copy(exner)
+    exner = np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * theta_v))
 
     return theta_v, exner
 

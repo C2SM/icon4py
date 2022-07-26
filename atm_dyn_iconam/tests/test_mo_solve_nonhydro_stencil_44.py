@@ -21,27 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_44_z_beta_numpy(
-    exner_nnow: np.array,
-    rho_nnow: np.array,
-    theta_v_nnow: np.array,
-    inv_ddqz_z_full: np.array,
-    dtime,
-    rd,
-    cvd,
-) -> np.array:
-    z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
-    return z_beta
-
-
-def mo_solve_nonhydro_stencil_44_z_alpha_numpy(
-    vwind_impl_wgt: np.array, theta_v_ic: np.array, rho_ic: np.array
-) -> np.array:
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
-    return z_alpha
-
-
 def mo_solve_nonhydro_stencil_44_numpy(
     exner_nnow: np.array,
     rho_nnow: np.array,
@@ -54,12 +33,10 @@ def mo_solve_nonhydro_stencil_44_numpy(
     rd,
     cvd,
 ) -> tuple[np.array]:
-    z_beta = mo_solve_nonhydro_stencil_44_z_beta_numpy(
-        exner_nnow, rho_nnow, theta_v_nnow, inv_ddqz_z_full, dtime, rd, cvd
-    )
-    z_alpha = mo_solve_nonhydro_stencil_44_z_alpha_numpy(
-        vwind_impl_wgt, theta_v_ic, rho_ic
-    )
+    z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
+
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
     return z_beta, z_alpha
 
 

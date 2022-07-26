@@ -21,31 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_02_div_numpy(
-    c2e: np.array,
-    vn: np.array,
-    geofac_div: np.array,
-) -> np.array:
-    geofac_div = np.expand_dims(geofac_div, axis=-1)
-    vn_geofac = vn[c2e] * geofac_div
-    div = np.sum(vn_geofac, axis=1)  # sum along edge dimension
-    return div
-
-
-def mo_nh_diffusion_stencil_02_khc_numpy(
-    c2e: np.array,
-    kh_smag_ec: np.array,
-    e_bln_c_s: np.array,
-    diff_multfac_smag: np.array,
-) -> np.array:
-    e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    diff_multfac_smag = np.expand_dims(diff_multfac_smag, axis=-1)
-    mul = kh_smag_ec[c2e] * e_bln_c_s
-    summed = np.sum(mul, axis=1)  # sum along edge dimension
-    kh_c = summed / diff_multfac_smag
-    return kh_c
-
-
 def mo_nh_diffusion_stencil_02_numpy(
     c2e: np.array,
     kh_smag_ec: np.array,
@@ -54,10 +29,16 @@ def mo_nh_diffusion_stencil_02_numpy(
     geofac_div: np.array,
     diff_multfac_smag: np.array,
 ) -> tuple[np.array]:
-    kh_c = mo_nh_diffusion_stencil_02_khc_numpy(
-        c2e, kh_smag_ec, e_bln_c_s, diff_multfac_smag
-    )
-    div = mo_nh_diffusion_stencil_02_div_numpy(c2e, vn, geofac_div)
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    vn_geofac = vn[c2e] * geofac_div
+    div = np.sum(vn_geofac, axis=1)
+
+    e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
+    diff_multfac_smag = np.expand_dims(diff_multfac_smag, axis=-1)
+    mul = kh_smag_ec[c2e] * e_bln_c_s
+    summed = np.sum(mul, axis=1)
+    kh_c = summed / diff_multfac_smag
+
     return div, kh_c
 
 

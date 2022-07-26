@@ -21,31 +21,12 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_41_z_flxdiv_mass_numpy(
-    c2e: np.array, geofac_div: np.array, mass_fl_e: np.array
-) -> np.array:
-    geofac_div = np.expand_dims(geofac_div, axis=-1)
-    z_flxdiv_mass = np.sum(geofac_div * mass_fl_e[c2e], axis=1)
-    return z_flxdiv_mass
-
-
-def mo_solve_nonhydro_stencil_41_z_flxdiv_theta_numpy(
-    c2e: np.array, geofac_div: np.array, z_theta_v_fl_e: np.array
-) -> np.array:
-    geofac_div = np.expand_dims(geofac_div, axis=-1)
-    z_flxdiv_theta = np.sum(geofac_div * z_theta_v_fl_e[c2e], axis=1)
-    return z_flxdiv_theta
-
-
 def mo_solve_nonhydro_stencil_41_numpy(
     c2e: np.array, geofac_div: np.array, mass_fl_e: np.array, z_theta_v_fl_e: np.array
 ) -> tuple[np.array]:
-    z_flxdiv_mass = mo_solve_nonhydro_stencil_41_z_flxdiv_mass_numpy(
-        c2e, geofac_div, mass_fl_e
-    )
-    z_flxdiv_theta = mo_solve_nonhydro_stencil_41_z_flxdiv_theta_numpy(
-        c2e, geofac_div, z_theta_v_fl_e
-    )
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    z_flxdiv_mass = np.sum(geofac_div * mass_fl_e[c2e], axis=1)
+    z_flxdiv_theta = np.sum(geofac_div * z_theta_v_fl_e[c2e], axis=1)
     return z_flxdiv_mass, z_flxdiv_theta
 
 

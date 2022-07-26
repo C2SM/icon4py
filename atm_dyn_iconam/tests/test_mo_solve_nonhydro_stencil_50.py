@@ -21,24 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_solve_nonhydro_stencil_50_z_rho_expl_numpy(
-    z_rho_expl: np.array,
-    rho_incr: np.array,
-    iau_wgt_dyn,
-) -> np.array:
-    z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
-    return z_rho_expl
-
-
-def mo_solve_nonhydro_stencil_50_z_exner_expl_numpy(
-    z_exner_expl: np.array,
-    exner_incr: np.array,
-    iau_wgt_dyn,
-) -> np.array:
-    z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
-    return z_exner_expl
-
-
 def mo_solve_nonhydro_stencil_50_numpy(
     z_rho_expl: np.array,
     rho_incr: np.array,
@@ -46,12 +28,8 @@ def mo_solve_nonhydro_stencil_50_numpy(
     exner_incr: np.array,
     iau_wgt_dyn,
 ) -> tuple[np.array]:
-    z_rho_expl = mo_solve_nonhydro_stencil_50_z_rho_expl_numpy(
-        z_rho_expl, rho_incr, iau_wgt_dyn
-    )
-    z_exner_expl = mo_solve_nonhydro_stencil_50_z_exner_expl_numpy(
-        z_exner_expl, exner_incr, iau_wgt_dyn
-    )
+    z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
+    z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
     return z_rho_expl, z_exner_expl
 
 

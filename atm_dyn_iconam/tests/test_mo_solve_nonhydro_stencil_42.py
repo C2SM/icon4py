@@ -21,32 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_42_z_w_expl_numpy(
-    w_nnow: np.array,
-    ddt_w_adv_ntl1: np.array,
-    ddt_w_adv_ntl2: np.array,
-    z_th_ddz_exner_c: np.array,
-    dtime,
-    wgt_nnow_vel,
-    wgt_nnew_vel,
-    cpd,
-) -> np.array:
-    z_w_expl = w_nnow + dtime * (
-        wgt_nnow_vel * ddt_w_adv_ntl1
-        + wgt_nnew_vel * ddt_w_adv_ntl2
-        - cpd * z_th_ddz_exner_c
-    )
-    return z_w_expl
-
-
-def mo_solve_nonhydro_stencil_42_z_contr_w_fl_l_numpy(
-    w_nnow: np.array, rho_ic: np.array, w_concorr_c: np.array, vwind_expl_wgt: np.array
-) -> np.array:
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
-    return z_contr_w_fl_l
-
-
 def mo_solve_nonhydro_stencil_42_numpy(
     w_nnow: np.array,
     ddt_w_adv_ntl1: np.array,
@@ -60,19 +34,13 @@ def mo_solve_nonhydro_stencil_42_numpy(
     wgt_nnew_vel,
     cpd,
 ) -> tuple[np.array]:
-    z_w_expl = mo_solve_nonhydro_stencil_42_z_w_expl_numpy(
-        w_nnow,
-        ddt_w_adv_ntl1,
-        ddt_w_adv_ntl2,
-        z_th_ddz_exner_c,
-        dtime,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
-        cpd,
+    z_w_expl = w_nnow + dtime * (
+        wgt_nnow_vel * ddt_w_adv_ntl1
+        + wgt_nnew_vel * ddt_w_adv_ntl2
+        - cpd * z_th_ddz_exner_c
     )
-    z_contr_w_fl_l = mo_solve_nonhydro_stencil_42_z_contr_w_fl_l_numpy(
-        w_nnow, rho_ic, w_concorr_c, vwind_expl_wgt
-    )
+    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
     return z_w_expl, z_contr_w_fl_l
 
 

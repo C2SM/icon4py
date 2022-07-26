@@ -21,30 +21,17 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_08_dwdx_numpy(
-    c2e2c0: np.array, w: np.array, geofac_grg_x: np.array
-) -> np.array:
-    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-    dwdx = np.sum(geofac_grg_x * w[c2e2c0], axis=1)
-    return dwdx
-
-
-def mo_nh_diffusion_stencil_08_dwdy_numpy(
-    c2e2c0: np.array, w: np.array, geofac_grg_y: np.array
-) -> np.array:
-    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-    dwdy = np.sum(geofac_grg_y * w[c2e2c0], axis=1)
-    return dwdy
-
-
 def mo_nh_diffusion_stencil_08_numpy(
     c2e2c0: np.array,
     w: np.array,
     geofac_grg_x: np.array,
     geofac_grg_y: np.array,
 ) -> tuple[np.array]:
-    dwdx = mo_nh_diffusion_stencil_08_dwdx_numpy(c2e2c0, w, geofac_grg_x)
-    dwdy = mo_nh_diffusion_stencil_08_dwdy_numpy(c2e2c0, w, geofac_grg_y)
+    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
+    dwdx = np.sum(geofac_grg_x * w[c2e2c0], axis=1)
+
+    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
+    dwdy = np.sum(geofac_grg_y * w[c2e2c0], axis=1)
     return dwdx, dwdy
 
 

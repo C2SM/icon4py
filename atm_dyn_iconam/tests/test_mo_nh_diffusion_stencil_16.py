@@ -21,26 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_nh_diffusion_stencil_16_theta_v_numpy(
-    z_temp: np.array,
-    area: np.array,
-    theta_v: np.array,
-) -> np.array:
-    area = np.expand_dims(area, axis=0)
-    theta_v = theta_v + (area * z_temp)
-    return theta_v
-
-
-def mo_nh_diffusion_stencil_16_exner_numpy(
-    theta_v: np.array,
-    exner: np.array,
-    rd_o_cvd: np.array,
-) -> np.array:
-    z_theta = theta_v
-    exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
-    return exner
-
-
 def mo_nh_diffusion_stencil_16_numpy(
     z_temp: np.array,
     area: np.array,
@@ -48,8 +28,10 @@ def mo_nh_diffusion_stencil_16_numpy(
     exner: np.array,
     rd_o_cvd,
 ) -> tuple[np.array]:
-    theta_v = mo_nh_diffusion_stencil_16_theta_v_numpy(z_temp, area, theta_v)
-    exner = mo_nh_diffusion_stencil_16_exner_numpy(theta_v, exner, rd_o_cvd)
+    area = np.expand_dims(area, axis=0)
+    theta_v = theta_v + (area * z_temp)
+    z_theta = theta_v
+    exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
     return theta_v, exner
 
 

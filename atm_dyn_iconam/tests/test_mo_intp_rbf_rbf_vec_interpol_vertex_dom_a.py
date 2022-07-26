@@ -21,35 +21,15 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v_numpy(
-    v2e: np.array,
-    p_e_in: np.array,
-    ptr_coeff_1: np.array,
-) -> np.array:
-    ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
-    p_v_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
-    return p_v_out
-
-
-def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u_numpy(
-    v2e: np.array,
-    p_e_in: np.array,
-    ptr_coeff_2: np.array,
-) -> np.array:
-    ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
-    p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_2, axis=1)
-    return p_u_out
-
-
 def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_numpy(
     v2e: np.array, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array
 ) -> tuple[np.array]:
-    p_v_out = mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v_numpy(
-        v2e, p_e_in, ptr_coeff_1
-    )
-    p_u_out = mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u_numpy(
-        v2e, p_e_in, ptr_coeff_2
-    )
+    ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
+    p_v_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
+
+    ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
+    p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_2, axis=1)
+
     return p_v_out, p_u_out
 
 

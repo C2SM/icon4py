@@ -21,20 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_solve_nonhydro_stencil_34_vn_traj_numpy(
-    z_vn_avg: np.array, vn_traj: np.array, r_nsubsteps
-) -> np.array:
-    vn_traj = vn_traj + r_nsubsteps * z_vn_avg
-    return vn_traj
-
-
-def mo_solve_nonhydro_stencil_34_mass_flx_me_numpy(
-    mass_fl_e: np.array, mass_flx_me: np.array, r_nsubsteps
-) -> np.array:
-    mass_flx_me = mass_flx_me + r_nsubsteps * mass_fl_e
-    return mass_flx_me
-
-
 def mo_solve_nonhydro_stencil_34_numpy(
     z_vn_avg: np.array,
     mass_fl_e: np.array,
@@ -42,10 +28,8 @@ def mo_solve_nonhydro_stencil_34_numpy(
     mass_flx_me: np.array,
     r_nsubsteps,
 ) -> tuple[np.array]:
-    vn_traj = mo_solve_nonhydro_stencil_34_vn_traj_numpy(z_vn_avg, vn_traj, r_nsubsteps)
-    mass_flx_me = mo_solve_nonhydro_stencil_34_mass_flx_me_numpy(
-        mass_fl_e, mass_flx_me, r_nsubsteps
-    )
+    vn_traj = vn_traj + r_nsubsteps * z_vn_avg
+    mass_flx_me = mass_flx_me + r_nsubsteps * mass_fl_e
     return vn_traj, mass_flx_me
 
 

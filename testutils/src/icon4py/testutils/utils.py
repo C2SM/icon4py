@@ -31,7 +31,9 @@ def random_mask(
     return it_embedded.np_as_located_field(*dims)(arr)
 
 
-def random_field(mesh, *dims, low: float = -1.0, high: float = 1.0):
+def random_field(
+    mesh, *dims, low: float = -1.0, high: float = 1.0
+) -> it_embedded.MutableLocatedField:
     """Generate a random field between specified bounds.
 
     Initialize a LocatedField with random values between a lower and

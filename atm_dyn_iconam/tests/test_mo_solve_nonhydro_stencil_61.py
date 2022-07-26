@@ -21,33 +21,6 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_61_rho_new_numpy(
-    rho_now: np.array,
-    grf_tend_rho: np.array,
-    dtime,
-) -> np.array:
-    rho_new = rho_now + dtime * grf_tend_rho
-    return rho_new
-
-
-def mo_solve_nonhydro_stencil_61_exner_new_numpy(
-    theta_v_now: np.array,
-    grf_tend_thv: np.array,
-    dtime,
-) -> np.array:
-    exner_new = theta_v_now + dtime * grf_tend_thv
-    return exner_new
-
-
-def mo_solve_nonhydro_stencil_61_w_new_numpy(
-    w_now: np.array,
-    grf_tend_w: np.array,
-    dtime,
-) -> np.array:
-    w_new = w_now + dtime * grf_tend_w
-    return w_new
-
-
 def mo_solve_nonhydro_stencil_61_numpy(
     rho_now: np.array,
     grf_tend_rho: np.array,
@@ -57,11 +30,9 @@ def mo_solve_nonhydro_stencil_61_numpy(
     grf_tend_w: np.array,
     dtime,
 ) -> tuple[np.array]:
-    rho_new = mo_solve_nonhydro_stencil_61_rho_new_numpy(rho_now, grf_tend_rho, dtime)
-    exner_new = mo_solve_nonhydro_stencil_61_exner_new_numpy(
-        theta_v_now, grf_tend_thv, dtime
-    )
-    w_new = mo_solve_nonhydro_stencil_61_w_new_numpy(w_now, grf_tend_w, dtime)
+    rho_new = rho_now + dtime * grf_tend_rho
+    exner_new = theta_v_now + dtime * grf_tend_thv
+    w_new = w_now + dtime * grf_tend_w
     return rho_new, exner_new, w_new
 
 

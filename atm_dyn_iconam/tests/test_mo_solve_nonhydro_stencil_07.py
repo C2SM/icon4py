@@ -21,25 +21,11 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_07_z_rth_pr_1_numpy(
-    rho: np.array, rho_ref_mc: np.array
-) -> np.array:
-    z_rth_pr_1 = rho - rho_ref_mc
-    return z_rth_pr_1
-
-
-def mo_solve_nonhydro_stencil_07_z_rth_pr_2_numpy(
-    theta_v: np.array, theta_ref_mc: np.array
-) -> np.array:
-    z_rth_pr_2 = theta_v - theta_ref_mc
-    return z_rth_pr_2
-
-
 def mo_solve_nonhydro_stencil_07_numpy(
     rho: np.array, rho_ref_mc: np.array, theta_v: np.array, theta_ref_mc: np.array
 ) -> tuple[np.array]:
-    z_rth_pr_1 = mo_solve_nonhydro_stencil_07_z_rth_pr_1_numpy(rho, rho_ref_mc)
-    z_rth_pr_2 = mo_solve_nonhydro_stencil_07_z_rth_pr_2_numpy(theta_v, theta_ref_mc)
+    z_rth_pr_1 = rho - rho_ref_mc
+    z_rth_pr_2 = theta_v - theta_ref_mc
     return z_rth_pr_1, z_rth_pr_2
 
 
