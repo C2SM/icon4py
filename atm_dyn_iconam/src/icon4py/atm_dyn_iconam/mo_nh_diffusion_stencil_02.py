@@ -36,6 +36,19 @@ def _mo_nh_diffusion_stencil_02_khc(
     return kh_c
 
 
+@field_operator
+def _mo_nh_diffusion_stencil_02(
+    kh_smag_ec: Field[[EdgeDim, KDim], float],
+    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    diff_multfac_smag: Field[[KDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    geofac_div: Field[[CellDim, C2EDim], float],
+) -> Field[[CellDim, KDim], float]:
+    return _mo_nh_diffusion_stencil_02_khc(
+        kh_smag_ec, e_bln_c_s, diff_multfac_smag
+    ), _mo_nh_diffusion_stencil_02_div(vn, geofac_div)
+
+
 @program
 def mo_nh_diffusion_stencil_02(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
@@ -46,5 +59,6 @@ def mo_nh_diffusion_stencil_02(
     kh_c: Field[[CellDim, KDim], float],
     div: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_02_khc(kh_smag_ec, e_bln_c_s, diff_multfac_smag, out=kh_c)
-    _mo_nh_diffusion_stencil_02_div(vn, geofac_div, out=div)
+    _mo_nh_diffusion_stencil_02(
+        kh_smag_ec, e_bln_c_s, diff_multfac_smag, vn, geofac_div, out=(kh_c, div)
+    )
