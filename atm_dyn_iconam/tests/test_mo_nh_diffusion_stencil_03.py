@@ -21,29 +21,19 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-# if "Koff[-1]" is removed from `mo_nh_diffusion_stencil_03` the lower two versions
-# verify -> problem is indeed with offset
 def mo_nh_diffusion_stencil_03_div_ic_numpy(
     wgtfac_c: np.array,
     div: np.array,
 ) -> np.array:
-    div_offset = np.delete(div, len(div[:][0]) - 1, axis=1)
-    div = np.delete(div, 0, axis=1)
-    wgtfac_c = np.delete(wgtfac_c, 0, axis=1)
-    div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * div_offset
+    div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * np.roll(div, shift=1, axis=1)
     return div_ic
 
 
-# if "Koff[-1]" is removed from `mo_nh_diffusion_stencil_03` the lower two versions
-# verify -> problem is indeed with offset
 def mo_nh_diffusion_stencil_03_hdef_ic_numpy(
     wgtfac_c: np.array,
     k_hc: np.array,
 ) -> np.array:
-    k_hc_offset = np.delete(k_hc, len(k_hc[:][0]) - 1, axis=1)
-    k_hc = np.delete(k_hc, 0, axis=1)
-    wgtfac_c = np.delete(wgtfac_c, 0, axis=1)
-    hdef_ic = wgtfac_c * k_hc + (1.0 - wgtfac_c) * k_hc_offset**2
+    hdef_ic = (wgtfac_c * k_hc + (1.0 - wgtfac_c) * np.roll(k_hc, shift=1, axis=1)) ** 2
     return hdef_ic
 
 
@@ -67,7 +57,7 @@ def test_mo_nh_diffusion_stencil_03():
     div_ic = zero_field(mesh, CellDim, KDim)
     hdef_ic = zero_field(mesh, CellDim, KDim)
 
-    div_ref, hdef_ic_ref = mo_nh_diffusion_stencil_03_numpy(
+    div_ref, kh_c_ref = mo_nh_diffusion_stencil_03_numpy(
         np.asarray(wgtfac_c),
         np.asarray(div),
         np.asarray(k_hc),
@@ -82,5 +72,5 @@ def test_mo_nh_diffusion_stencil_03():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(hdef_ic[:, 1:], hdef_ic_ref)
-    assert np.allclose(div_ic[:, 1:], div_ref)
+    assert np.allclose(hdef_ic[:, 1:], kh_c_ref[:, 1:])
+    assert np.allclose(div_ic[:, 1:], div_ref[:, 1:])
