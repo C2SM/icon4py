@@ -98,7 +98,7 @@ repos:
       hooks:
           - id: isort
             name: sort Python imports
-            args: ["--profile", "black", --line-length=72]
+            args: ["--profile", "black", --line-length=82]
 
     - repo: https://gitlab.com/PyCQA/flake8
       rev: 4.0.1

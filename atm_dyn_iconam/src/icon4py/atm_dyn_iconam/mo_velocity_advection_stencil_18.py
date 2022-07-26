@@ -12,13 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import (
-    Field,
-    abs,
-    minimum,
-    neighbor_sum,
-    where,
-)
+from functional.ffront.fbuiltins import Field, abs, minimum, neighbor_sum, where
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
@@ -46,7 +40,7 @@ def _mo_velocity_advection_stencil_18(
             0.85 - cfl_w_limit * dtime,
             abs(z_w_con_c) * dtime / ddqz_z_half - cfl_w_limit * dtime,
         ),
-        0,
+        0.0,
     )
 
     ddt_w_adv = where(
