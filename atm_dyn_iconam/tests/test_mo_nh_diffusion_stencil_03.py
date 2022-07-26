@@ -20,27 +20,22 @@ from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
-# if "Koff[-1]" is removed from `mo_nh_diffusion_stencil_03` the lower two versions
-# verify -> problem is indeed with offset
+
 def mo_nh_diffusion_stencil_03_div_ic_numpy(
     wgtfac_c: np.array,
     div: np.array,
 ) -> np.array:
     div_ic = wgtfac_c[:, 1:] * div[:, 1:] + (1.0 - wgtfac_c[:, 1:]) * div[:, :-1]
-    # div_ic = wgtfac_c[:, 1:] * div[:, 1:] + (1.0 - wgtfac_c[:, 1:]) * div[:, 1:]
-    # div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * div
     return div_ic
 
 
-# if "Koff[-1]" is removed from `mo_nh_diffusion_stencil_03` the lower two versions
-# verify -> problem is indeed with offset
 def mo_nh_diffusion_stencil_03_hdef_ic_numpy(
     wgtfac_c: np.array,
     k_hc: np.array,
 ) -> np.array:
-    hdef_ic = wgtfac_c[:, 1:] * k_hc[:, 1:] + (1.0 - wgtfac_c[:, 1:]) * k_hc[:, :-1]
-    # hdef_ic = wgtfac_c[:, 1:] * k_hc[:, 1:] + (1.0 - wgtfac_c[:, 1:]) * k_hc[:, 1:]
-    # hdef_ic = wgtfac_c * k_hc + (1.0 - wgtfac_c) * k_hc
+    hdef_ic = (
+        wgtfac_c[:, 1:] * k_hc[:, 1:] + (1.0 - wgtfac_c[:, 1:]) * k_hc[:, :-1]
+    ) ** 2
     return hdef_ic
 
 
