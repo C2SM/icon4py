@@ -10,3 +10,40 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+import numpy as np
+
+from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_15 import (
+    mo_velocity_advection_stencil_15,
+)
+from icon4py.common.dimension import CellDim, KDim
+from icon4py.testutils.simple_mesh import SimpleMesh
+from icon4py.testutils.utils import random_field, zero_field
+
+
+def mo_velocity_advection_stencil_15_numpy(
+    z_w_con_c: np.array,
+):
+    z_w_con_c_offset = np.roll(z_w_con_c, shift=-1, axis=1)
+    z_w_con_c_full = 0.5 * (z_w_con_c + z_w_con_c_offset)
+    return z_w_con_c_full
+
+
+def test_mo_nh_diffusion_stencil_15():
+    mesh = SimpleMesh()
+
+    z_w_con_c = random_field(mesh, CellDim, KDim)
+
+    z_w_con_c_full = zero_field(mesh, CellDim, KDim)
+
+    z_w_con_c_full_ref = mo_velocity_advection_stencil_15_numpy(
+        np.asarray(z_w_con_c),
+    )
+
+    mo_velocity_advection_stencil_15(
+        z_w_con_c,
+        z_w_con_c_full,
+        offset_provider={"Koff": KDim},
+    )
+
+    assert np.allclose(z_w_con_c_full.__array__()[:, :-1], z_w_con_c_full_ref[:, :-1])

@@ -129,7 +129,7 @@ def mo_solve_nonhydro_stencil_49(
         theta_v_ic,
         ddt_exner_phy,
         dtime,
-        out=z_rho_expl[:, 1:],
+        out=z_rho_expl,
     )
     _mo_solve_nonhydro_stencil_49_z_exner_expl(
         rho_nnow,
@@ -142,5 +142,5 @@ def mo_solve_nonhydro_stencil_49(
         theta_v_ic,
         ddt_exner_phy,
         dtime,
-        out=z_exner_expl[:, 1:],
+        out=z_exner_expl,
     )
