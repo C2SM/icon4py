@@ -37,7 +37,7 @@ def mo_solve_nonhydro_stencil_60_numpy(
 def test_mo_solve_nonhydro_stencil_60():
     mesh = SimpleMesh()
 
-    ndyn_substeps_var, dtime = float(10.0), float(12.0)
+    ndyn_substeps_var, dtime = 10.0, 12.0
     exner = random_field(mesh, CellDim, KDim)
     ddt_exner_phy = random_field(mesh, CellDim, KDim)
     exner_dyn_incr = random_field(mesh, CellDim, KDim)

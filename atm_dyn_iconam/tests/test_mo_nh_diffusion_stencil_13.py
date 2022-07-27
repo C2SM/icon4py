@@ -26,7 +26,7 @@ def mo_nh_diffusion_stencil_13_numpy(
     kh_smag_e: np.array,
     inv_dual_edge_length: np.array,
     theta_v: np.array,
-):
+) -> np.array:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
     theta_v_e2c = theta_v[e2c]
