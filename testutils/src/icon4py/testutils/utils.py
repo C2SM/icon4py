@@ -30,11 +30,14 @@ def random_mask(
         arr = arr.astype("int")
     return it_embedded.np_as_located_field(*dims)(arr)
 
+
 def random_field(
-    mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension
+    mesh, *dims, low: float = -1.0, high: float = 1.0
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.random.randn(*map(lambda x: mesh.size[x], dims))
+        np.random.default_rng().uniform(
+            low=low, high=high, size=tuple(map(lambda x: mesh.size[x], dims))
+        )
     )
 
 
@@ -44,6 +47,7 @@ def zero_field(
     return it_embedded.np_as_located_field(*dims)(
         np.zeros(shape=tuple(map(lambda x: mesh.size[x], dims)))
     )
+
 
 def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
     return f"icon4py.{stencil_module}.{stencil_name}:{stencil_name}"
