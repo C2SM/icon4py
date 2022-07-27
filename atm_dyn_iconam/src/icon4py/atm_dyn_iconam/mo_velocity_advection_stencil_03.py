@@ -19,14 +19,16 @@ from icon4py.common.dimension import EdgeDim, KDim
 
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
+
 @field_operator
 def _mo_velocity_advection_stencil_03(
     wgtfac_e: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
-    ) -> Field[[EdgeDim, KDim], float]:
-    z_vt_ie = wgtfac_e * vt + (1. - wgtfac_e) * vt(Koff[-1])
+) -> Field[[EdgeDim, KDim], float]:
+    z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt(Koff[-1])
 
     return z_vt_ie
+
 
 @program
 def mo_velocity_advection_stencil_03(
@@ -34,6 +36,4 @@ def mo_velocity_advection_stencil_03(
     vt: Field[[EdgeDim, KDim], float],
     z_vt_ie: Field[[EdgeDim, KDim], float],
 ):
-    _mo_velocity_advection_stencil_03(
-        wgtfac_e, vt, out=z_vt_ie
-    )
+    _mo_velocity_advection_stencil_03(wgtfac_e, vt, out=z_vt_ie)

@@ -21,13 +21,13 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-
-
 def mo_velocity_advection_stencil_10_numpy(
     wgtfac_c: np.array, z_w_concorr_mc: np.array
 ) -> np.array:
     z_w_concorr_mc_k_minus_1 = np.roll(z_w_concorr_mc, shift=1, axis=1)
-    w_concorr_c = wgtfac_c * z_w_concorr_mc + (1. - wgtfac_c) * z_w_concorr_mc_k_minus_1
+    w_concorr_c = (
+        wgtfac_c * z_w_concorr_mc + (1.0 - wgtfac_c) * z_w_concorr_mc_k_minus_1
+    )
 
     return w_concorr_c
 
@@ -41,8 +41,7 @@ def test_mo_velocity_advection_stencil_10():
     w_concorr_c = zero_field(mesh, CellDim, KDim)
 
     w_concorr_c_ref = mo_velocity_advection_stencil_10_numpy(
-        np.asarray(wgtfac_c),
-        np.asarray(z_w_concorr_mc)
+        np.asarray(wgtfac_c), np.asarray(z_w_concorr_mc)
     )
     mo_velocity_advection_stencil_10(
         wgtfac_c,
@@ -52,4 +51,3 @@ def test_mo_velocity_advection_stencil_10():
     )
 
     assert np.allclose(w_concorr_c, w_concorr_c_ref)
-

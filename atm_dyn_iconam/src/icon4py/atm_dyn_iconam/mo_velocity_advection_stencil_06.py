@@ -17,17 +17,22 @@ from functional.ffront.fbuiltins import Field, FieldOffset
 from icon4py.common.dimension import EdgeDim, KDim
 
 
-
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
+
 
 @field_operator
 def _mo_velocity_advection_stencil_06(
     wgtfacq_e: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
-    ) -> Field[[EdgeDim, KDim], float]:
-    vn_ie = wgtfacq_e(Koff[-1]) * vn(Koff[-1]) + wgtfacq_e(Koff[-2]) * vn(Koff[-2]) + wgtfacq_e(Koff[-3]) * vn(Koff[-3])
+) -> Field[[EdgeDim, KDim], float]:
+    vn_ie = (
+        wgtfacq_e(Koff[-1]) * vn(Koff[-1])
+        + wgtfacq_e(Koff[-2]) * vn(Koff[-2])
+        + wgtfacq_e(Koff[-3]) * vn(Koff[-3])
+    )
 
     return vn_ie
+
 
 @program
 def mo_velocity_advection_stencil_06(
@@ -35,6 +40,4 @@ def mo_velocity_advection_stencil_06(
     vn: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
 ):
-    _mo_velocity_advection_stencil_06(
-        wgtfacq_e, vn, out=vn_ie
-    )
+    _mo_velocity_advection_stencil_06(wgtfacq_e, vn, out=vn_ie)
