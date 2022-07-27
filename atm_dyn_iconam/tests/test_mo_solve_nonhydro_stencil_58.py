@@ -44,7 +44,7 @@ def test_mo_solve_nonhydro_stencil_58():
     vwind_impl_wgt = random_field(mesh, CellDim)
     w = random_field(mesh, CellDim, KDim)
     mass_flx_ic = random_field(mesh, CellDim, KDim)
-    r_nsubsteps = np.float64(7.0)
+    r_nsubsteps = 7.0
 
     ref = mo_solve_nonhydro_stencil_58_numpy(
         np.asarray(z_contr_w_fl_l),

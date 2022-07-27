@@ -34,7 +34,7 @@ def test_mo_solve_nonhydro_stencil_29():
     grf_tend_vn = random_field(mesh, EdgeDim, KDim)
     vn_now = random_field(mesh, EdgeDim, KDim)
     vn_new = zero_field(mesh, EdgeDim, KDim)
-    dtime = np.float64(6.0)
+    dtime = 6.0
 
     ref = mo_solve_nonhydro_stencil_29_numpy(
         np.asarray(grf_tend_vn), np.asarray(vn_now), dtime
