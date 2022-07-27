@@ -23,7 +23,7 @@ from icon4py.testutils.utils import random_field, zero_field
 
 def mo_math_divrot_rot_vertex_ri_dsl_numpy(
     v2e: np.array, vec_e: np.array, geofac_rot: np.array
-):
+) -> np.array:
     geofac_rot = np.expand_dims(geofac_rot, axis=-1)
     rot_vec = np.sum(vec_e[v2e] * geofac_rot, axis=1)
     return rot_vec

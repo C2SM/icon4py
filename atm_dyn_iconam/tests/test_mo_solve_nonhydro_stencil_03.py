@@ -23,7 +23,7 @@ from icon4py.testutils.utils import random_field
 
 def mo_solve_nonhydro_stencil_03_numpy(
     z_exner_ex_pr: np.array,
-):
+) -> np.array:
     z_exner_ex_pr = np.zeros_like(z_exner_ex_pr)
     return z_exner_ex_pr
 

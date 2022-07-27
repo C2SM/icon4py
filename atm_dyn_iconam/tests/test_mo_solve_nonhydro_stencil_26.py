@@ -33,7 +33,7 @@ def test_mo_solve_nonhydro_stencil_26():
 
     z_graddiv_vn = random_field(mesh, EdgeDim, KDim)
     vn = random_field(mesh, EdgeDim, KDim)
-    scal_divdamp_o2 = np.float64(5.0)
+    scal_divdamp_o2 = 5.0
 
     ref = mo_solve_nonhydro_stencil_26_numpy(
         np.asarray(z_graddiv_vn), np.asarray(vn), scal_divdamp_o2
