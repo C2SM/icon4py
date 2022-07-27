@@ -39,7 +39,7 @@ def mo_solve_nonhydro_stencil_24_numpy(
 def test_mo_solve_nonhydro_stencil_24():
     mesh = SimpleMesh()
 
-    dtime, cpd = np.float64(10.0), np.float64(10.0)
+    dtime, cpd = 10.0, 10.0
     vn_nnow = random_field(mesh, EdgeDim, KDim)
     ddt_vn_adv_ntl1 = random_field(mesh, EdgeDim, KDim)
     ddt_vn_phy = random_field(mesh, EdgeDim, KDim)

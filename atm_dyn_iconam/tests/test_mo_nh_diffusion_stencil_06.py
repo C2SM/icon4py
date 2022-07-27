@@ -32,7 +32,7 @@ def mo_nh_diffusion_stencil_06_numpy(
 def test_mo_nh_diffusion_stencil_06():
     mesh = SimpleMesh()
 
-    fac_bdydiff_v = np.float64(5.0)
+    fac_bdydiff_v = 5.0
     z_nabla2_e = random_field(mesh, EdgeDim, KDim)
     area_edge = random_field(mesh, EdgeDim)
     vn = random_field(mesh, EdgeDim, KDim)

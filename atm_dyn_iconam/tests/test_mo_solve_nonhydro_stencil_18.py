@@ -25,7 +25,7 @@ def mo_solve_nonhydro_stencil_18_numpy(
     e2c: np.array,
     inv_dual_edge_length: np.array,
     z_exner_ex_pr: np.array,
-):
+) -> np.array:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
     z_exner_ex_pr_e2c = z_exner_ex_pr[e2c]
