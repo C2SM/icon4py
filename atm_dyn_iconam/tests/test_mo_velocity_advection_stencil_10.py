@@ -16,7 +16,7 @@ import numpy as np
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_10 import (
     mo_velocity_advection_stencil_10,
 )
-from icon4py.common.dimension import E2C2EDim, EdgeDim, KDim
+from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
@@ -35,10 +35,10 @@ def mo_velocity_advection_stencil_10_numpy(
 def test_mo_velocity_advection_stencil_10():
     mesh = SimpleMesh()
 
-    wgtfac_c = random_field(mesh, EdgeDim, KDim)
-    z_w_concorr_mc = random_field(mesh, EdgeDim, KDim)
+    wgtfac_c = random_field(mesh, CellDim, KDim)
+    z_w_concorr_mc = random_field(mesh, CellDim, KDim)
 
-    w_concorr_c = zero_field(mesh, EdgeDim, KDim)
+    w_concorr_c = zero_field(mesh, CellDim, KDim)
 
     w_concorr_c_ref = mo_velocity_advection_stencil_10_numpy(
         np.asarray(wgtfac_c),

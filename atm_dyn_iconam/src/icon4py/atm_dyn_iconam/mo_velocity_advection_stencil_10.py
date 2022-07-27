@@ -14,25 +14,25 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, FieldOffset
 
-from icon4py.common.dimension import EdgeDim, KDim
+from icon4py.common.dimension import CellDim, KDim
 
 
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 @field_operator
 def _mo_velocity_advection_stencil_10(
-    wgtfac_c: Field[[EdgeDim, KDim], float],
-    z_w_concorr_mc: Field[[EdgeDim, KDim], float],
-    ) -> Field[[EdgeDim, KDim], float]:
+    wgtfac_c: Field[[CellDim, KDim], float],
+    z_w_concorr_mc: Field[[CellDim, KDim], float],
+    ) -> Field[[CellDim, KDim], float]:
     w_concorr_c = wgtfac_c * z_w_concorr_mc + (1. - wgtfac_c) * z_w_concorr_mc(Koff[-1])
 
     return w_concorr_c
 
 @program
 def mo_velocity_advection_stencil_10(
-    wgtfac_c: Field[[EdgeDim, KDim], float],
-    z_w_concorr_mc: Field[[EdgeDim, KDim], float],
-    w_concorr_c: Field[[EdgeDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
+    z_w_concorr_mc: Field[[CellDim, KDim], float],
+    w_concorr_c: Field[[CellDim, KDim], float],
 ):
     _mo_velocity_advection_stencil_10(
         wgtfac_c, z_w_concorr_mc, out=w_concorr_c
