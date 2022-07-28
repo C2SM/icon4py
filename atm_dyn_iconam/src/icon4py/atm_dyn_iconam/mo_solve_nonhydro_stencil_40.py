@@ -16,6 +16,7 @@ from functional.ffront.fbuiltins import Field, FieldOffset, neighbor_sum
 
 from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 
+
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 

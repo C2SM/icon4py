@@ -1,14 +1,3 @@
-# from dusk.script import *
-
-# lb, nudging, interior, halo, end = HorizontalDomains(0, 1000, 2000, 3000, 4000)
-
-# @stencil
-# def mo_nh_diffusion_stencil_03(div: Field[Cell, K], kh_c: Field[Cell, K], wgtfac_c: Field[Cell, K],
-#         div_ic: Field[Cell, K], hdef_ic: Field[Cell, K]):
-#     with domain.upward[1:].across[nudging:halo] as k:
-#         div_ic  =  wgtfac_c*div  + (1. - wgtfac_c)*div[k-1]
-#         hdef_ic = (wgtfac_c*kh_c + (1. - wgtfac_c)*kh_c[k-1])**2
-
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
@@ -26,6 +15,7 @@ from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, FieldOffset
 
 from icon4py.common.dimension import CellDim, KDim
+
 
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
