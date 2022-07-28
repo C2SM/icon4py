@@ -25,14 +25,14 @@ def _mo_solve_nonhydro_stencil_11(
     z_rth_pr: Field[[CellDim, KDim], float],
     theta_ref_ic: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+) -> tuple[Field[[CellDim, KDim], float],Field[[CellDim, KDim], float]]:
     z_theta_v_pr_ic = (
         wgtfacq_c(Koff[-1]) * z_rth_pr(Koff[-1])
         + wgtfacq_c(Koff[-2]) * z_rth_pr(Koff[-2])
         + wgtfacq_c(Koff[-3]) * z_rth_pr(Koff[-3])
     )
     theta_v_ic = theta_ref_ic + z_theta_v_pr_ic
-    return (z_theta_v_pr_ic, theta_v_ic)
+    return z_theta_v_pr_ic, theta_v_ic
 
 
 @field_operator

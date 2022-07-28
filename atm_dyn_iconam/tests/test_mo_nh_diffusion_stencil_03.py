@@ -21,31 +21,15 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_03_div_ic_numpy(
-    wgtfac_c: np.array,
-    div: np.array,
-) -> np.array:
-    div_offset_1 = np.roll(div, shift=1, axis=1)
-    div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1
-    return div_ic
-
-
-def mo_nh_diffusion_stencil_03_hdef_ic_numpy(
-    wgtfac_c: np.array,
-    k_hc: np.array,
-) -> np.array:
-    kc_offset_1 = np.roll(k_hc, shift=1, axis=1)
-    hdef_ic = (wgtfac_c * k_hc + (1.0 - wgtfac_c) * kc_offset_1) ** 2
-    return hdef_ic
-
-
 def mo_nh_diffusion_stencil_03_numpy(
     wgtfac_c: np.array,
     div: np.array,
     k_hc: np.array,
-):
-    div_ic = mo_nh_diffusion_stencil_03_div_ic_numpy(wgtfac_c, div)
-    hdef_ic = mo_nh_diffusion_stencil_03_hdef_ic_numpy(wgtfac_c, k_hc)
+) -> tuple[np.array, np.array]:
+    kc_offset_1 = np.roll(k_hc, shift=1, axis=1)
+    div_offset_1 = np.roll(div, shift=1, axis=1)
+    div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1
+    hdef_ic = (wgtfac_c * k_hc + (1.0 - wgtfac_c) * kc_offset_1) ** 2
     return div_ic, hdef_ic
 
 

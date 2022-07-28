@@ -50,7 +50,7 @@ def mo_solve_nonhydro_stencil_48_numpy(
         )
         + dtime * ddt_exner_phy
     )
-    return (z_rho_expl, z_exner_expl)
+    return z_rho_expl, z_exner_expl
 
 
 def test_mo_solve_nonhydro_stencil_48():

@@ -37,7 +37,7 @@ def mo_solve_nonhydro_stencil_10_numpy(
     vwind_expl_wgt: np.array,
     exner_pr: np.array,
     d_exner_dz_ref_ic: np.array,
-) -> np.array:
+) -> tuple[np.array, np.array, np.array, np.array]:
 
     vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
     rho_now_offset = np.roll(rho_now, shift=1, axis=1)

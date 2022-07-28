@@ -26,14 +26,14 @@ def mo_solve_nonhydro_stencil_11_numpy(
     z_rth_pr: np.array,
     theta_ref_ic: np.array,
     z_theta_v_pr_ic: np.array,
-) -> np.array:
+) -> tuple[np.array, np.array]:
     z_theta_v_pr_ic = (
         np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_rth_pr, shift=1, axis=1)
         + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_rth_pr, shift=2, axis=1)
         + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_rth_pr, shift=3, axis=1)
     )
     theta_v_ic = theta_ref_ic + z_theta_v_pr_ic
-    return (z_theta_v_pr_ic, theta_v_ic)
+    return z_theta_v_pr_ic, theta_v_ic
 
 
 def test_mo_solve_nonhydro_stencil_11():

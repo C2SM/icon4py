@@ -25,14 +25,14 @@ def mo_solve_nonhydro_stencil_36_numpy(
     wgtfac_e: np.array,
     vn: np.array,
     vt: np.array,
-) -> np.array:
+) -> tuple[np.array, np.array]:
     vn_offset_1 = np.roll(vn, shift=1, axis=1)
     vt_offset_1 = np.roll(vt, shift=1, axis=1)
 
     vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_offset_1
     z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_offset_1
     z_kin_hor_e = 0.5 * (vn**2 + vt**2)
-    return (vn_ie, z_vt_ie, z_kin_hor_e)
+    return vn_ie, z_vt_ie, z_kin_hor_e
 
 
 def test_mo_solve_nonhydro_stencil_36():
