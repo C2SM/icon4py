@@ -16,6 +16,7 @@ from functional.ffront.fbuiltins import Field, FieldOffset
 
 from icon4py.common.dimension import CellDim, KDim
 
+
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 
@@ -36,7 +37,12 @@ def _mo_solve_nonhydro_stencil_10(
     vwind_expl_wgt: Field[[CellDim], float],
     exner_pr: Field[[CellDim, KDim], float],
     d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
     z_w_backtraj = -(w - w_concorr_c) * dtime * 0.5 / ddqz_z_half
     z_rho_tavg_m1 = wgt_nnow_rth * rho_now(Koff[-1]) + wgt_nnew_rth * rho_var(Koff[-1])
     z_theta_tavg_m1 = wgt_nnow_rth * theta_now(Koff[-1]) + wgt_nnew_rth * theta_var(

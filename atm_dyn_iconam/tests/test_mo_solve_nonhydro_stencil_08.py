@@ -27,7 +27,7 @@ def mo_solve_nonhydro_stencil_08_numpy(
     rho_ref_mc: np.array,
     theta_v: np.array,
     theta_ref_mc: np.array,
-) -> np.array:
+) -> tuple[np.array, np.array, np.array]:
     rho_offset_1 = np.roll(rho, shift=1, axis=1)
     rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1
     z_rth_pr_1 = rho - rho_ref_mc

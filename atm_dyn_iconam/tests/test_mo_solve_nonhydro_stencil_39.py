@@ -16,7 +16,7 @@ import numpy as np
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_39 import (
     mo_solve_nonhydro_stencil_39,
 )
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, C2EDim
+from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
