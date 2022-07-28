@@ -42,12 +42,12 @@ def _mo_solve_nonhydro_stencil_55(
     Field[[CellDim, KDim], float],
 ]:
     rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
-        rho_ic(Koff) * w(Koff) - rho_ic(Koff[1]) * w(Koff[1])
+        rho_ic * w - rho_ic(Koff[1]) * w(Koff[1])
     )
     exner_new = (
         z_exner_expl
         + exner_ref_mc
-        - z_beta * (z_alpha(Koff) * w(Koff) - z_alpha(Koff[1]) * w(Koff[1]))
+        - z_beta * (z_alpha * w - z_alpha(Koff[1]) * w(Koff[1]))
     )
     theta_v_new = (
         rho_now

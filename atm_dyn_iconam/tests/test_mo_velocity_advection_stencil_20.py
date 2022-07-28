@@ -50,7 +50,6 @@ def mo_velocity_advection_stencil_20_numpy(
     w_con_e = np.zeros_like(vn)
     difcoef = np.zeros_like(vn)
 
-    levelmask_offset_0 = np.roll(levelmask, shift=0, axis=0)
     levelmask_offset_1 = np.roll(levelmask, shift=-1, axis=0)
 
     c_lin_e = np.expand_dims(c_lin_e, axis=-1)
@@ -60,12 +59,12 @@ def mo_velocity_advection_stencil_20_numpy(
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
 
     w_con_e = np.where(
-        (levelmask_offset_0 == 1) | (levelmask_offset_1 == 1),
+        (levelmask == 1) | (levelmask_offset_1 == 1),
         np.sum(c_lin_e * z_w_con_c_full[e2c], axis=1),
         w_con_e,
     )
     difcoef = np.where(
-        ((levelmask_offset_0 == 1) | (levelmask_offset_1 == 1))
+        ((levelmask == 1) | (levelmask_offset_1 == 1))
         & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
         scalfac_exdiff
         * np.minimum(
@@ -75,7 +74,7 @@ def mo_velocity_advection_stencil_20_numpy(
         difcoef,
     )
     ddt_vn_adv = np.where(
-        ((levelmask_offset_0 == 1) | (levelmask_offset_1 == 1))
+        ((levelmask == 1) | (levelmask_offset_1 == 1))
         & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
         ddt_vn_adv
         + difcoef * area_edge * np.sum(geofac_grdiv * vn[e2c2eO], axis=1)

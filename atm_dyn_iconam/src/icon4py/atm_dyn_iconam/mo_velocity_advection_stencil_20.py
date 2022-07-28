@@ -62,13 +62,12 @@ def _mo_velocity_advection_stencil_20(
     difcoef = broadcast(0.0, (EdgeDim, KDim))
 
     w_con_e = where(
-        levelmask(Koff) | levelmask(Koff[1]),
+        levelmask | levelmask(Koff[1]),
         neighbor_sum(c_lin_e * z_w_con_c_full(E2C), axis=E2CDim),
         w_con_e,
     )
     difcoef = where(
-        (levelmask(Koff) | levelmask(Koff[1]))
-        & (abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
+        (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
         scalfac_exdiff
         * minimum(
             0.85 - cfl_w_limit * d_time,
@@ -77,8 +76,7 @@ def _mo_velocity_advection_stencil_20(
         difcoef,
     )
     ddt_vn_adv = where(
-        (levelmask(Koff) | levelmask(Koff[1]))
-        & (abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
+        (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
         ddt_vn_adv
         + difcoef * area_edge * neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
         + tangent_orientation

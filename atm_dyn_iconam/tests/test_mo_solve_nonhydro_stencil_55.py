@@ -37,20 +37,18 @@ def mo_solve_nonhydro_stencil_55_numpy(
     dtime,
     cvd_o_rd,
 ) -> tuple[np.array]:
-    rho_ic_offset_0 = np.roll(rho_ic, shift=0, axis=1)
     rho_ic_offset_1 = np.roll(rho_ic, shift=-1, axis=1)
     w_offset_0 = np.roll(w, shift=0, axis=1)
     w_offset_1 = np.roll(w, shift=-1, axis=1)
-    z_alpha_offset_0 = np.roll(z_alpha, shift=0, axis=1)
     z_alpha_offset_1 = np.roll(z_alpha, shift=-1, axis=1)
     vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
     rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
-        rho_ic_offset_0 * w_offset_0 - rho_ic_offset_1 * w_offset_1
+        rho_ic * w_offset_0 - rho_ic_offset_1 * w_offset_1
     )
     exner_new = (
         z_exner_expl
         + exner_ref_mc
-        - z_beta * (z_alpha_offset_0 * w_offset_0 - z_alpha_offset_1 * w_offset_1)
+        - z_beta * (z_alpha * w_offset_0 - z_alpha_offset_1 * w_offset_1)
     )
     theta_v_new = (
         rho_now
