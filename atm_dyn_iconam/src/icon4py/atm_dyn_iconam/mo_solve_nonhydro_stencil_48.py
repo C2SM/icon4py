@@ -50,60 +50,6 @@ def _mo_solve_nonhydro_stencil_48(
     return (z_rho_expl, z_exner_expl)
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_48_z_rho_expl(
-    dtime: float,
-    rho_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_flxdiv_mass: Field[[CellDim, KDim], float],
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    z_flxdiv_theta: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    ddt_exner_phy: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_48(
-        dtime,
-        rho_nnow,
-        inv_ddqz_z_full,
-        z_flxdiv_mass,
-        z_contr_w_fl_l,
-        exner_pr,
-        z_beta,
-        z_flxdiv_theta,
-        theta_v_ic,
-        ddt_exner_phy,
-    )[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_48_z_exner_expl(
-    dtime: float,
-    rho_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_flxdiv_mass: Field[[CellDim, KDim], float],
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    z_flxdiv_theta: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    ddt_exner_phy: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_48(
-        dtime,
-        rho_nnow,
-        inv_ddqz_z_full,
-        z_flxdiv_mass,
-        z_contr_w_fl_l,
-        exner_pr,
-        z_beta,
-        z_flxdiv_theta,
-        theta_v_ic,
-        ddt_exner_phy,
-    )[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_48(
     dtime: float,
@@ -119,7 +65,7 @@ def mo_solve_nonhydro_stencil_48(
     z_rho_expl: Field[[CellDim, KDim], float],
     z_exner_expl: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_48_z_rho_expl(
+    _mo_solve_nonhydro_stencil_48(
         dtime,
         rho_nnow,
         inv_ddqz_z_full,
@@ -130,18 +76,5 @@ def mo_solve_nonhydro_stencil_48(
         z_flxdiv_theta,
         theta_v_ic,
         ddt_exner_phy,
-        out=z_rho_expl,
-    )
-    _mo_solve_nonhydro_stencil_48_z_exner_expl(
-        dtime,
-        rho_nnow,
-        inv_ddqz_z_full,
-        z_flxdiv_mass,
-        z_contr_w_fl_l,
-        exner_pr,
-        z_beta,
-        z_flxdiv_theta,
-        theta_v_ic,
-        ddt_exner_phy,
-        out=z_exner_expl,
+        out=(z_rho_expl, z_exner_expl),
     )

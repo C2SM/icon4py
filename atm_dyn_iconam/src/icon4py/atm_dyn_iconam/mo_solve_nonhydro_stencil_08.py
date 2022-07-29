@@ -38,57 +38,6 @@ def _mo_solve_nonhydro_stencil_08(
     return rho_ic, z_rth_pr_1, z_rth_pr_2
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_08_rho_ic(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    rho: Field[[CellDim, KDim], float],
-    rho_ref_mc: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_08(
-        wgtfac_c,
-        rho,
-        rho_ref_mc,
-        theta_v,
-        theta_ref_mc,
-    )[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_08_z_rth_pr_1(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    rho: Field[[CellDim, KDim], float],
-    rho_ref_mc: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_08(
-        wgtfac_c,
-        rho,
-        rho_ref_mc,
-        theta_v,
-        theta_ref_mc,
-    )[1]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_08_z_rth_pr_2(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    rho: Field[[CellDim, KDim], float],
-    rho_ref_mc: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_08(
-        wgtfac_c,
-        rho,
-        rho_ref_mc,
-        theta_v,
-        theta_ref_mc,
-    )[2]
-
-
 @program
 def mo_solve_nonhydro_stencil_08(
     wgtfac_c: Field[[CellDim, KDim], float],
@@ -100,27 +49,11 @@ def mo_solve_nonhydro_stencil_08(
     z_rth_pr_1: Field[[CellDim, KDim], float],
     z_rth_pr_2: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_08_rho_ic(
+    _mo_solve_nonhydro_stencil_08(
         wgtfac_c,
         rho,
         rho_ref_mc,
         theta_v,
         theta_ref_mc,
-        out=rho_ic,
-    )
-    _mo_solve_nonhydro_stencil_08_z_rth_pr_1(
-        wgtfac_c,
-        rho,
-        rho_ref_mc,
-        theta_v,
-        theta_ref_mc,
-        out=z_rth_pr_1,
-    )
-    _mo_solve_nonhydro_stencil_08_z_rth_pr_2(
-        wgtfac_c,
-        rho,
-        rho_ref_mc,
-        theta_v,
-        theta_ref_mc,
-        out=z_rth_pr_2,
+        out=(rho_ic, z_rth_pr_1, z_rth_pr_2),
     )

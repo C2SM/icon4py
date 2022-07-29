@@ -43,69 +43,6 @@ def _mo_solve_nonhydro_stencil_09(
     return z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_09_z_theta_v_pr_ic(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_09(
-        wgtfac_c,
-        z_rth_pr_2,
-        theta_v,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
-    )[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_09_theta_v_ic(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_09(
-        wgtfac_c,
-        z_rth_pr_2,
-        theta_v,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
-    )[1]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_09_z_th_ddz_exner_c(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_09(
-        wgtfac_c,
-        z_rth_pr_2,
-        theta_v,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
-    )[2]
-
-
 @program
 def mo_solve_nonhydro_stencil_09(
     wgtfac_c: Field[[CellDim, KDim], float],
@@ -119,7 +56,7 @@ def mo_solve_nonhydro_stencil_09(
     theta_v_ic: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_09_z_theta_v_pr_ic(
+    _mo_solve_nonhydro_stencil_09(
         wgtfac_c,
         z_rth_pr_2,
         theta_v,
@@ -127,25 +64,5 @@ def mo_solve_nonhydro_stencil_09(
         exner_pr,
         d_exner_dz_ref_ic,
         ddqz_z_half,
-        out=z_theta_v_pr_ic,
-    )
-    _mo_solve_nonhydro_stencil_09_theta_v_ic(
-        wgtfac_c,
-        z_rth_pr_2,
-        theta_v,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
-        out=theta_v_ic,
-    )
-    _mo_solve_nonhydro_stencil_09_z_th_ddz_exner_c(
-        wgtfac_c,
-        z_rth_pr_2,
-        theta_v,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
-        out=z_th_ddz_exner_c,
+        out=(z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
     )

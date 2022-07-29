@@ -58,111 +58,6 @@ def _mo_solve_nonhydro_stencil_55(
     return rho_new, exner_new, theta_v_new
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_55_rho_new(
-    z_rho_expl: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_exner_expl: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    rho_now: Field[[CellDim, KDim], float],
-    theta_v_now: Field[[CellDim, KDim], float],
-    exner_now: Field[[CellDim, KDim], float],
-    dtime: float,
-    cvd_o_rd: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_55(
-        z_rho_expl,
-        vwind_impl_wgt,
-        inv_ddqz_z_full,
-        rho_ic,
-        w,
-        z_exner_expl,
-        exner_ref_mc,
-        z_alpha,
-        z_beta,
-        rho_now,
-        theta_v_now,
-        exner_now,
-        dtime,
-        cvd_o_rd,
-    )[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_55_exner_new(
-    z_rho_expl: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_exner_expl: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    rho_now: Field[[CellDim, KDim], float],
-    theta_v_now: Field[[CellDim, KDim], float],
-    exner_now: Field[[CellDim, KDim], float],
-    dtime: float,
-    cvd_o_rd: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_55(
-        z_rho_expl,
-        vwind_impl_wgt,
-        inv_ddqz_z_full,
-        rho_ic,
-        w,
-        z_exner_expl,
-        exner_ref_mc,
-        z_alpha,
-        z_beta,
-        rho_now,
-        theta_v_now,
-        exner_now,
-        dtime,
-        cvd_o_rd,
-    )[1]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_55_theta_v_new(
-    z_rho_expl: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_exner_expl: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    rho_now: Field[[CellDim, KDim], float],
-    theta_v_now: Field[[CellDim, KDim], float],
-    exner_now: Field[[CellDim, KDim], float],
-    dtime: float,
-    cvd_o_rd: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_55(
-        z_rho_expl,
-        vwind_impl_wgt,
-        inv_ddqz_z_full,
-        rho_ic,
-        w,
-        z_exner_expl,
-        exner_ref_mc,
-        z_alpha,
-        z_beta,
-        rho_now,
-        theta_v_now,
-        exner_now,
-        dtime,
-        cvd_o_rd,
-    )[2]
-
-
 @program
 def mo_solve_nonhydro_stencil_55(
     z_rho_expl: Field[[CellDim, KDim], float],
@@ -183,7 +78,7 @@ def mo_solve_nonhydro_stencil_55(
     dtime: float,
     cvd_o_rd: float,
 ):
-    _mo_solve_nonhydro_stencil_55_rho_new(
+    _mo_solve_nonhydro_stencil_55(
         z_rho_expl,
         vwind_impl_wgt,
         inv_ddqz_z_full,
@@ -198,39 +93,5 @@ def mo_solve_nonhydro_stencil_55(
         exner_now,
         dtime,
         cvd_o_rd,
-        out=rho_new,
-    )
-    _mo_solve_nonhydro_stencil_55_exner_new(
-        z_rho_expl,
-        vwind_impl_wgt,
-        inv_ddqz_z_full,
-        rho_ic,
-        w,
-        z_exner_expl,
-        exner_ref_mc,
-        z_alpha,
-        z_beta,
-        rho_now,
-        theta_v_now,
-        exner_now,
-        dtime,
-        cvd_o_rd,
-        out=exner_new,
-    )
-    _mo_solve_nonhydro_stencil_55_theta_v_new(
-        z_rho_expl,
-        vwind_impl_wgt,
-        inv_ddqz_z_full,
-        rho_ic,
-        w,
-        z_exner_expl,
-        exner_ref_mc,
-        z_alpha,
-        z_beta,
-        rho_now,
-        theta_v_now,
-        exner_now,
-        dtime,
-        cvd_o_rd,
-        out=theta_v_new,
+        out=(rho_new, exner_new, theta_v_new),
     )
