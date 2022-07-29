@@ -19,8 +19,6 @@ Changes.
 - Only implementend gpu version. Maybe further optimizations possible for CPU (check original code)
 
 TODO:
-- Need math-builtins in GT4Py (e.g., exp) -> Workinprogress
-- Need support for retrun of multiple fields in field_operators and programs, e.g., return tuple -> Workinprogress
 - Can we call field_operator from a field_operator? -> Workinprogress
 - Is where statement the nicest possible syntax for the IF-ELSE below? Also, where currently can only return 1 Field
 - Implement Newtonian iteration! -> Needs fixted-size for loop feature in GT4Py
@@ -37,25 +35,12 @@ Comment from FORTRAN version:
 lookup tables in mo_convect_tables. Bit incompatible change!
 """
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from functional.ffront.fbuiltins import Field, exp
 
-from icon4py.atm_phy_schemes.mo_convect_tables import (
-    c1es,
-    c3les,
-    c4les,
-    c5les,
-)
+from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.shared.mo_physical_constants import (
-    alv,
-    clw,
-    cvd,
-    rv,
-    tmelt,
-)
+from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
 
-
-# from functional.ffront.fbuiltins import exp #TODO: Requires math builtins
 
 # TODO: Local constants What to do with these?
 cp_v = 1850.0  # specific heat of water vapor at constant pressure (Landolt-Bornstein)
@@ -86,10 +71,7 @@ def _latent_heat_vaporization(
 
 @field_operator
 def _sat_pres_water(t: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
-
-    # DL: TODO swicth back once math-builtins available in GT4Py
-    # return c1es * exp(c3les * (t - tmelt) / (t - c4les))
-    return c1es * (c3les * (t - tmelt) / (t - c4les))
+    return c1es * exp(c3les * (t - tmelt) / (t - c4les))
 
 
 """Return specific humidity at water saturation (with respect to flat surface)."""
