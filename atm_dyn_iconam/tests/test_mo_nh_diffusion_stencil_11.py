@@ -42,7 +42,7 @@ def test_mo_nh_diffusion_stencil_11():
     theta_v = random_field(mesh, CellDim, KDim)
     theta_ref_mc = random_field(mesh, CellDim, KDim)
     enh_diffu_3d = zero_field(mesh, CellDim, KDim)
-    thresh_tdiff = np.float64(5.0)
+    thresh_tdiff = 5.0
 
     ref = mo_nh_diffusion_stencil_11_numpy(
         mesh.c2e2c, np.asarray(theta_v), np.asarray(theta_ref_mc), thresh_tdiff
