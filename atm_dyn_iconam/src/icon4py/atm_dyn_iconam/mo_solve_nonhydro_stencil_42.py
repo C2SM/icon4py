@@ -40,64 +40,6 @@ def _mo_solve_nonhydro_stencil_42(
     return z_w_expl, z_contr_w_fl_l
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_42_z_w_expl(
-    w_nnow: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    dtime: float,
-    wgt_nnow_vel: float,
-    wgt_nnew_vel: float,
-    cpd: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_42(
-        w_nnow,
-        ddt_w_adv_ntl1,
-        ddt_w_adv_ntl2,
-        z_th_ddz_exner_c,
-        rho_ic,
-        w_concorr_c,
-        vwind_expl_wgt,
-        dtime,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
-        cpd,
-    )[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_42_z_contr_w_fl_l(
-    w_nnow: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    dtime: float,
-    wgt_nnow_vel: float,
-    wgt_nnew_vel: float,
-    cpd: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_42(
-        w_nnow,
-        ddt_w_adv_ntl1,
-        ddt_w_adv_ntl2,
-        z_th_ddz_exner_c,
-        rho_ic,
-        w_concorr_c,
-        vwind_expl_wgt,
-        dtime,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
-        cpd,
-    )[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_42(
     z_w_expl: Field[[CellDim, KDim], float],
@@ -114,7 +56,7 @@ def mo_solve_nonhydro_stencil_42(
     wgt_nnew_vel: float,
     cpd: float,
 ):
-    _mo_solve_nonhydro_stencil_42_z_w_expl(
+    _mo_solve_nonhydro_stencil_42(
         w_nnow,
         ddt_w_adv_ntl1,
         ddt_w_adv_ntl2,
@@ -126,19 +68,5 @@ def mo_solve_nonhydro_stencil_42(
         wgt_nnow_vel,
         wgt_nnew_vel,
         cpd,
-        out=z_w_expl,
-    )
-    _mo_solve_nonhydro_stencil_42_z_contr_w_fl_l(
-        w_nnow,
-        ddt_w_adv_ntl1,
-        ddt_w_adv_ntl2,
-        z_th_ddz_exner_c,
-        rho_ic,
-        w_concorr_c,
-        vwind_expl_wgt,
-        dtime,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
-        cpd,
-        out=z_contr_w_fl_l,
+        out=(z_w_expl, z_contr_w_fl_l),
     )

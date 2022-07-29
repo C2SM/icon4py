@@ -28,24 +28,6 @@ def _mo_solve_nonhydro_stencil_41(
     return z_flxdiv_mass, z_flxdiv_theta
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_41_z_flxdiv_mass(
-    geofac_div: Field[[CellDim, C2EDim], float],
-    mass_fl_e: Field[[EdgeDim, KDim], float],
-    z_theta_v_fl_e: Field[[EdgeDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_41(geofac_div, mass_fl_e, z_theta_v_fl_e)[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_41_z_flxdiv_theta(
-    geofac_div: Field[[CellDim, C2EDim], float],
-    mass_fl_e: Field[[EdgeDim, KDim], float],
-    z_theta_v_fl_e: Field[[EdgeDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_41(geofac_div, mass_fl_e, z_theta_v_fl_e)[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_41(
     geofac_div: Field[[CellDim, C2EDim], float],
@@ -54,9 +36,6 @@ def mo_solve_nonhydro_stencil_41(
     z_flxdiv_mass: Field[[CellDim, KDim], float],
     z_flxdiv_theta: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_41_z_flxdiv_mass(
-        geofac_div, mass_fl_e, z_theta_v_fl_e, out=z_flxdiv_mass
-    )
-    _mo_solve_nonhydro_stencil_41_z_flxdiv_theta(
-        geofac_div, mass_fl_e, z_theta_v_fl_e, out=z_flxdiv_theta
+    _mo_solve_nonhydro_stencil_41(
+        geofac_div, mass_fl_e, z_theta_v_fl_e, out=(z_flxdiv_mass, z_flxdiv_theta)
     )
