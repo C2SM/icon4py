@@ -34,4 +34,4 @@ def mo_solve_nonhydro_stencil_53(
     z_q: Field[[CellDim, KDim], float],
     w: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_53(z_q, w, out=w[:, :-1])
+    _mo_solve_nonhydro_stencil_53(z_q, w, out=w)
