@@ -17,7 +17,6 @@ import re
 import pytest
 from click.testing import CliRunner
 
-from icon4py.pyutils.exceptions import MultipleFieldOperatorException
 from icon4py.pyutils.icon4pygen import main
 from icon4py.testutils.utils import get_stencil_module_path
 
@@ -70,5 +69,4 @@ def test_multiple_field_operator_stencil(cli):
         "atm_dyn_iconam", "mo_velocity_advection_stencil_05"
     )
     result = cli.invoke(main, [module_path])
-    assert result.exit_code == 1
-    assert isinstance(result.exception, MultipleFieldOperatorException)
+    assert result.exit_code == 0

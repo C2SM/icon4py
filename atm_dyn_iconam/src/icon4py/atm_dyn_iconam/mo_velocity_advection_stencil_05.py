@@ -32,30 +32,6 @@ def _mo_velocity_advection_stencil_05(
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@field_operator
-def _mo_velocity_advection_stencil_05_vn_ie(
-    vn: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    return _mo_velocity_advection_stencil_05(vn, vt)[0]
-
-
-@field_operator
-def _mo_velocity_advection_stencil_05_z_vt_ie(
-    vn: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    return _mo_velocity_advection_stencil_05(vn, vt)[1]
-
-
-@field_operator
-def _mo_velocity_advection_stencil_05_z_kin_hor_e(
-    vn: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    return _mo_velocity_advection_stencil_05(vn, vt)[2]
-
-
 @program
 def mo_velocity_advection_stencil_05(
     vn: Field[[EdgeDim, KDim], float],
@@ -64,6 +40,4 @@ def mo_velocity_advection_stencil_05(
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
 ):
-    _mo_velocity_advection_stencil_05_vn_ie(vn, vt, out=vn_ie)
-    _mo_velocity_advection_stencil_05_z_vt_ie(vn, vt, out=z_vt_ie)
-    _mo_velocity_advection_stencil_05_z_kin_hor_e(vn, vt, out=z_kin_hor_e)
+    _mo_velocity_advection_stencil_05(vn, vt, out=(vn_ie, z_vt_ie, z_kin_hor_e))
