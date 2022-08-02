@@ -19,9 +19,9 @@ from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 @field_operator
 def _mo_velocity_advection_stencil_18(
-    levelmask: Field[[KDim], int],
-    cfl_clipping: Field[[CellDim, KDim], int],
-    owner_mask: Field[[CellDim], int],
+    levelmask: Field[[KDim], float],
+    cfl_clipping: Field[[CellDim, KDim], float],
+    owner_mask: Field[[CellDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],
@@ -34,7 +34,7 @@ def _mo_velocity_advection_stencil_18(
 ) -> Field[[CellDim, KDim], float]:
 
     difcoef = where(
-        (levelmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+        (levelmask == 1.0) & (cfl_clipping == 1.0) & (owner_mask == 1.0),
         scalfac_exdiff
         * minimum(
             0.85 - cfl_w_limit * dtime,
@@ -44,7 +44,7 @@ def _mo_velocity_advection_stencil_18(
     )
 
     ddt_w_adv = where(
-        (levelmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+        (levelmask == 1.0) & (cfl_clipping == 1.0) & (owner_mask == 1.0),
         ddt_w_adv
         + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
         ddt_w_adv,
@@ -55,9 +55,9 @@ def _mo_velocity_advection_stencil_18(
 
 @program
 def mo_velocity_advection_stencil_18(
-    levelmask: Field[[KDim], int],
-    cfl_clipping: Field[[CellDim, KDim], int],
-    owner_mask: Field[[CellDim], int],
+    levelmask: Field[[KDim], float],
+    cfl_clipping: Field[[CellDim, KDim], float],
+    owner_mask: Field[[CellDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],
