@@ -51,4 +51,4 @@ def test_mo_solve_nonhydro_stencil_04():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(z_exner_ic[:, 3:], z_exner_ic_ref[:, 3:])
+    assert np.allclose(z_exner_ic, z_exner_ic_ref)
