@@ -46,4 +46,4 @@ def test_mo_nh_diffusion_stencil_15():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(z_w_con_c_full.__array__()[:, :-1], z_w_con_c_full_ref[:, :-1])
+    assert np.allclose(z_w_con_c_full[:, :-1], z_w_con_c_full_ref[:, :-1])

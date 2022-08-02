@@ -59,4 +59,4 @@ def test_mo_velocity_advection_stencil_16():
         ddt_w_adv,
         offset_provider={"Koff": KDim},
     )
-    assert np.allclose(ddt_w_adv_ref[:, :-1], ddt_w_adv.__array__()[:, :-1])
+    assert np.allclose(ddt_w_adv_ref[:, :-1], ddt_w_adv[:, :-1])
