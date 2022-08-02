@@ -22,8 +22,8 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 @field_operator
 def _mo_solve_nonhydro_stencil_38(
-    wgtfacq_e: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
+    wgtfacq_e: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
     vn_ie = (
         wgtfacq_e(Koff[-1]) * vn(Koff[-1])
@@ -35,8 +35,8 @@ def _mo_solve_nonhydro_stencil_38(
 
 @program
 def mo_solve_nonhydro_stencil_38(
-    wgtfac_e: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
+    wgtfac_e: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_38(wgtfac_e, vn, out=vn_ie)
+    _mo_solve_nonhydro_stencil_38(vn, wgtfac_e, out=vn_ie)

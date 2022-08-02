@@ -24,8 +24,8 @@ from icon4py.testutils.utils import random_field, zero_field
 def mo_solve_nonhydro_stencil_12_numpy(
     z_theta_v_pr_ic: np.array,
     d2dexdz2_fac1_mc: np.array,
-    z_rth_pr_2: np.array,
     d2dexdz2_fac2_mc: np.array,
+    z_rth_pr_2: np.array,
 ) -> np.array:
     z_theta_v_pr_ic_offset_1 = np.roll(z_theta_v_pr_ic, shift=-1, axis=1)
     z_dexner_dz_c_2 = -0.5 * (
@@ -48,15 +48,15 @@ def test_mo_solve_nonhydro_stencil_12():
     z_dexner_dz_c_2_ref = mo_solve_nonhydro_stencil_12_numpy(
         np.asarray(z_theta_v_pr_ic),
         np.asarray(d2dexdz2_fac1_mc),
-        np.asarray(z_rth_pr_2),
         np.asarray(d2dexdz2_fac2_mc),
+        np.asarray(z_rth_pr_2),
     )
 
     mo_solve_nonhydro_stencil_12(
         z_theta_v_pr_ic,
         d2dexdz2_fac1_mc,
-        z_rth_pr_2,
         d2dexdz2_fac2_mc,
+        z_rth_pr_2,
         z_dexner_dz_c_2,
         offset_provider={"Koff": KDim},
     )

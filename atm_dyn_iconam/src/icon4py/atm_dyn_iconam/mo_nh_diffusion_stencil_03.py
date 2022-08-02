@@ -22,9 +22,9 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 @field_operator
 def _mo_nh_diffusion_stencil_03(
-    wgtfac_c: Field[[CellDim, KDim], float],
     div: Field[[CellDim, KDim], float],
     kh_c: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * div(Koff[-1])
     hdef_ic = (wgtfac_c * kh_c + (1.0 - wgtfac_c) * kh_c(Koff[-1])) ** 2
@@ -33,10 +33,10 @@ def _mo_nh_diffusion_stencil_03(
 
 @program
 def mo_nh_diffusion_stencil_03(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    kh_c: Field[[CellDim, KDim], float],
     div: Field[[CellDim, KDim], float],
+    kh_c: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
     div_ic: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_03(wgtfac_c, div, kh_c, out=(div_ic, hdef_ic))
+    _mo_nh_diffusion_stencil_03(div, kh_c, wgtfac_c, out=(div_ic, hdef_ic))

@@ -22,8 +22,8 @@ from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_38_numpy(
-    wgtfacq_e: np.array,
     vn: np.array,
+    wgtfacq_e: np.array,
 ) -> np.array:
     vn_ie = (
         np.roll(wgtfacq_e, shift=1, axis=1) * np.roll(vn, shift=1, axis=1)
@@ -42,13 +42,13 @@ def test_mo_solve_nonhydro_stencil_38():
     vn_ie = zero_field(mesh, EdgeDim, KDim)
 
     vn_ie_ref = mo_solve_nonhydro_stencil_38_numpy(
-        np.asarray(wgtfac_e),
         np.asarray(vn),
+        np.asarray(wgtfac_e),
     )
 
     mo_solve_nonhydro_stencil_38(
-        wgtfac_e,
         vn,
+        wgtfac_e,
         vn_ie,
         offset_provider={"Koff": KDim},
     )

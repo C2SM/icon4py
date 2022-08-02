@@ -22,10 +22,10 @@ from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_39_numpy(
+    c2e: np.array,
     e_bln_c_s: np.array,
     z_w_concorr_me: np.array,
     wgtfac_c: np.array,
-    c2e: np.array,
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     z_w_concorr_me_offset_1 = np.roll(z_w_concorr_me, shift=1, axis=1)
@@ -45,16 +45,16 @@ def test_mo_solve_nonhydro_stencil_39():
     w_concorr_c = zero_field(mesh, CellDim, KDim)
 
     w_concorr_c_ref = mo_solve_nonhydro_stencil_39_numpy(
+        mesh.c2e,
         np.asarray(e_bln_c_s),
         np.asarray(z_w_concorr_me),
         np.asarray(wgtfac_c),
-        mesh.c2e,
     )
 
     mo_solve_nonhydro_stencil_39(
-        wgtfac_c,
-        z_w_concorr_me,
         e_bln_c_s,
+        z_w_concorr_me,
+        wgtfac_c,
         w_concorr_c,
         offset_provider={"Koff": KDim, "C2E": mesh.get_c2e_offset_provider()},
     )

@@ -22,7 +22,6 @@ from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_48_numpy(
-    dtime: float,
     rho_nnow: np.array,
     inv_ddqz_z_full: np.array,
     z_flxdiv_mass: np.array,
@@ -32,6 +31,7 @@ def mo_solve_nonhydro_stencil_48_numpy(
     z_flxdiv_theta: np.array,
     theta_v_ic: np.array,
     ddt_exner_phy: np.array,
+    dtime,
 ) -> tuple[np.array, np.array]:
     z_contr_w_fl_l_offset_1 = np.roll(z_contr_w_fl_l, shift=-1, axis=1)
     theta_v_ic_offset_1 = np.roll(theta_v_ic, shift=-1, axis=1)
@@ -71,7 +71,6 @@ def test_mo_solve_nonhydro_stencil_48():
     z_exner_expl = zero_field(mesh, CellDim, KDim)
 
     (z_rho_expl_ref, z_exner_expl_ref) = mo_solve_nonhydro_stencil_48_numpy(
-        dtime,
         np.asarray(rho_nnow),
         np.asarray(inv_ddqz_z_full),
         np.asarray(z_flxdiv_mass),
@@ -81,10 +80,12 @@ def test_mo_solve_nonhydro_stencil_48():
         np.asarray(z_flxdiv_theta),
         np.asarray(theta_v_ic),
         np.asarray(ddt_exner_phy),
+        dtime,
     )
 
     mo_solve_nonhydro_stencil_48(
-        dtime,
+        z_rho_expl,
+        z_exner_expl,
         rho_nnow,
         inv_ddqz_z_full,
         z_flxdiv_mass,
@@ -94,8 +95,7 @@ def test_mo_solve_nonhydro_stencil_48():
         z_flxdiv_theta,
         theta_v_ic,
         ddt_exner_phy,
-        z_rho_expl,
-        z_exner_expl,
+        dtime,
         offset_provider={"Koff": KDim},
     )
 

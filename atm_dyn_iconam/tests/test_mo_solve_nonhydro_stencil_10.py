@@ -18,13 +18,10 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_10 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import random_field
 
 
 def mo_solve_nonhydro_stencil_10_numpy(
-    dtime: float,
-    wgt_nnow_rth: float,
-    wgt_nnew_rth: float,
     w: np.array,
     w_concorr_c: np.array,
     ddqz_z_half: np.array,
@@ -37,6 +34,9 @@ def mo_solve_nonhydro_stencil_10_numpy(
     vwind_expl_wgt: np.array,
     exner_pr: np.array,
     d_exner_dz_ref_ic: np.array,
+    dtime,
+    wgt_nnow_rth,
+    wgt_nnew_rth,
 ) -> tuple[np.array, np.array, np.array, np.array]:
 
     vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
@@ -100,20 +100,12 @@ def test_mo_solve_nonhydro_stencil_10():
     theta_v_ic = random_field(mesh, CellDim, KDim)
     z_th_ddz_exner_c = random_field(mesh, CellDim, KDim)
 
-    rho_ic = zero_field(mesh, CellDim, KDim)
-    z_theta_v_pr_ic = zero_field(mesh, CellDim, KDim)
-    theta_v_ic = zero_field(mesh, CellDim, KDim)
-    z_th_ddz_exner_c = zero_field(mesh, CellDim, KDim)
-
     (
         rho_ic_ref,
         z_theta_v_pr_ic_ref,
         theta_v_ic_ref,
         z_th_ddz_exner_c_ref,
     ) = mo_solve_nonhydro_stencil_10_numpy(
-        dtime,
-        wgt_nnow_rth,
-        wgt_nnew_rth,
         np.asarray(w),
         np.asarray(w_concorr_c),
         np.asarray(ddqz_z_half),
@@ -126,12 +118,12 @@ def test_mo_solve_nonhydro_stencil_10():
         np.asarray(vwind_expl_wgt),
         np.asarray(exner_pr),
         np.asarray(d_exner_dz_ref_ic),
-    )
-
-    mo_solve_nonhydro_stencil_10(
         dtime,
         wgt_nnow_rth,
         wgt_nnew_rth,
+    )
+
+    mo_solve_nonhydro_stencil_10(
         w,
         w_concorr_c,
         ddqz_z_half,
@@ -148,6 +140,9 @@ def test_mo_solve_nonhydro_stencil_10():
         z_theta_v_pr_ic,
         theta_v_ic,
         z_th_ddz_exner_c,
+        dtime,
+        wgt_nnow_rth,
+        wgt_nnew_rth,
         offset_provider={"Koff": KDim},
     )
 

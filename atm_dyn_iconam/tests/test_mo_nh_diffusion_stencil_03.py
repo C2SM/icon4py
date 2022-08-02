@@ -22,9 +22,9 @@ from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_nh_diffusion_stencil_03_numpy(
-    wgtfac_c: np.array,
     div: np.array,
     k_hc: np.array,
+    wgtfac_c: np.array,
 ) -> tuple[np.array, np.array]:
     kc_offset_1 = np.roll(k_hc, shift=1, axis=1)
     div_offset_1 = np.roll(div, shift=1, axis=1)
@@ -38,21 +38,21 @@ def test_mo_nh_diffusion_stencil_03():
 
     wgtfac_c = random_field(mesh, CellDim, KDim)
     div = random_field(mesh, CellDim, KDim)
-    k_hc = random_field(mesh, CellDim, KDim)
+    kh_c = random_field(mesh, CellDim, KDim)
 
     div_ic = zero_field(mesh, CellDim, KDim)
     hdef_ic = zero_field(mesh, CellDim, KDim)
 
     div_ref, kh_c_ref = mo_nh_diffusion_stencil_03_numpy(
-        np.asarray(wgtfac_c),
         np.asarray(div),
-        np.asarray(k_hc),
+        np.asarray(kh_c),
+        np.asarray(wgtfac_c),
     )
 
     mo_nh_diffusion_stencil_03(
-        wgtfac_c,
-        k_hc,
         div,
+        kh_c,
+        wgtfac_c,
         div_ic,
         hdef_ic,
         offset_provider={"Koff": KDim},

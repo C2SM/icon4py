@@ -22,9 +22,9 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 @field_operator
 def _mo_solve_nonhydro_stencil_39(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
+    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
     z_w_concorr_me_offset_1 = z_w_concorr_me(Koff[-1])
     z_w_concorr_mc_m1 = neighbor_sum(
@@ -37,9 +37,9 @@ def _mo_solve_nonhydro_stencil_39(
 
 @program
 def mo_solve_nonhydro_stencil_39(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
+    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_39(wgtfac_c, z_w_concorr_me, e_bln_c_s, out=w_concorr_c)
+    _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c, out=w_concorr_c)

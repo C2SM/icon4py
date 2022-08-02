@@ -59,9 +59,9 @@ def test_mo_solve_nonhydro_stencil_40():
     )
 
     mo_solve_nonhydro_stencil_40(
-        wgtfac_c,
-        z_w_concorr_me,
         e_bln_c_s,
+        z_w_concorr_me,
+        wgtfac_c,
         w_concorr_c,
         offset_provider={"Koff": KDim, "C2E": mesh.get_c2e_offset_provider()},
     )

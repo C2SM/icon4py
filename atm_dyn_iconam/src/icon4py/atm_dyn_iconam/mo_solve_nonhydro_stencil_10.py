@@ -22,9 +22,6 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 @field_operator
 def _mo_solve_nonhydro_stencil_10(
-    dtime: float,
-    wgt_nnow_rth: float,
-    wgt_nnew_rth: float,
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
@@ -37,6 +34,9 @@ def _mo_solve_nonhydro_stencil_10(
     vwind_expl_wgt: Field[[CellDim], float],
     exner_pr: Field[[CellDim, KDim], float],
     d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
+    dtime: float,
+    wgt_nnow_rth: float,
+    wgt_nnew_rth: float,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -77,9 +77,6 @@ def _mo_solve_nonhydro_stencil_10(
 
 @program
 def mo_solve_nonhydro_stencil_10(
-    dtime: float,
-    wgt_nnow_rth: float,
-    wgt_nnew_rth: float,
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
@@ -96,11 +93,11 @@ def mo_solve_nonhydro_stencil_10(
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    dtime: float,
+    wgt_nnow_rth: float,
+    wgt_nnew_rth: float,
 ):
     _mo_solve_nonhydro_stencil_10(
-        dtime,
-        wgt_nnow_rth,
-        wgt_nnew_rth,
         w,
         w_concorr_c,
         ddqz_z_half,
@@ -113,5 +110,8 @@ def mo_solve_nonhydro_stencil_10(
         vwind_expl_wgt,
         exner_pr,
         d_exner_dz_ref_ic,
+        dtime,
+        wgt_nnow_rth,
+        wgt_nnew_rth,
         out=(rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
     )
