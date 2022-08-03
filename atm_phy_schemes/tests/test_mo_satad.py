@@ -27,7 +27,7 @@ from icon4py.atm_phy_schemes.mo_convect_tables import (
     c5les,
 )
 
-# from icon4py.atm_phy_schemes.mo_satad import satad
+from icon4py.atm_phy_schemes.mo_satad import satad
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.shared.mo_physical_constants import (
     alv,
@@ -83,13 +83,11 @@ def satad_numpy(qv, qc, t, rho):
 
     lwdocvd = latent_heat_vaporization(t) / cvd
 
-    for cell, k in np.ndindex(
-        np.shape(qv)
-    ):  # DL: np.where implementaion too complicated
+    for cell, k in np.ndindex(np.shape(qv)):
         if qv[cell, k] + qc[cell, k] <= qsat_rho(t, rho)[cell, k]:
             qv[cell, k] = qv[cell, k] + qc[cell, k]
-            qc[cell, k] = 0.0
             t[cell, k] = t[cell, k] - lwdocvd[cell, k] * qc[cell, k]
+            qc[cell, k] = 0.0
         else:
             twork = t[cell, k]
             tworkold = twork + 10.0
@@ -126,32 +124,33 @@ def satad_numpy(qv, qc, t, rho):
 )
 def test_mo_satad(qv, qc, t, rho):
 
-    warnings.filterwarnings("error")
-    try:
-        t_ref, qv_ref, qc_ref = satad_numpy(
-            np.asarray(qv).copy(),
-            np.asarray(qc).copy(),
-            np.asarray(t).copy(),
-            np.asarray(rho).copy(),
-        )
-    except RuntimeWarning:
-        assume(False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error")
+        try:
+            t_ref, qv_ref, qc_ref = satad_numpy(
+                np.asarray(qv),
+                np.asarray(qc),
+                np.asarray(t),
+                np.asarray(rho),
+            )
+        except RuntimeWarning:
+            assume(False)
 
-    # Exploit hypothesis tool to guess needed co-variability of inputs.
-    try:
-        tendency = np.asarray(qv) - qv_ref
-        target(np.std(tendency), label="Stdev. tendency")
-    except Exception:
-        assume(False)
+        # Exploit hypothesis tool to guess needed co-variability of inputs.
+        try:
+            tendency = np.asarray(qv) - qv_ref
+            target(np.std(tendency), label="Stdev. tendency")
+        except Exception:
+            assume(False)
 
-    # satad(
-    #     qv,
-    #     qc,
-    #     t,
-    #     rho,
-    #     offset_provider={},
-    # )
+    satad(
+        qv,
+        qc,
+        t,
+        rho,
+        offset_provider={},
+    )
 
-    # assert np.allclose(t, t_ref)
-    # assert np.allclose(qv, qv_ref)
-    # assert np.allclose(qc, qc_ref)
+    assert np.allclose(t, t_ref)
+    assert np.allclose(qv, qv_ref)
+    assert np.allclose(qc, qc_ref)
