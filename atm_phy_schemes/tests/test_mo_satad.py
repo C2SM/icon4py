@@ -100,10 +100,10 @@ def satad_numpy(qv, qc, t, rho):
 
 
 @given(
-    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=0.0),
-    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=0.0),
-    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=0.0),
-    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=0.0),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-12),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-12),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-12),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-12),
 )
 @settings(
     suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
