@@ -179,15 +179,16 @@ def _newtonian_iteration_t(
 
     # for _ in range(1, maxiter):
     twork = _newtonian_for_body(t, qv, rho, lwdocvd)
-    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    return _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    return twork
 
 
 """
@@ -226,7 +227,7 @@ def _satad(
     cvd = cpd - rd
     zqwmin = 1e-20
 
-    tAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
+    tAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd
 
     # check, which points will still be subsaturated even after evaporating
     # all cloud water. For these gridpoints Newton iteration is not necessary.
@@ -235,9 +236,7 @@ def _satad(
 
     qv = where(totallySubsaturated, qv + qc, _qsat_rho(t, rho))
     qc = where(totallySubsaturated, 0.0, maximum(qv + qc - _qsat_rho(t, rho), zqwmin))
-    t = where(
-        totallySubsaturated, tAfterAllQcEvaporated, _newtonian_iteration_t(t, qv, rho)
-    )
+    t = where(totallySubsaturated, tAfterAllQcEvaporated, 1.0)
 
     return t, qv, qc
 

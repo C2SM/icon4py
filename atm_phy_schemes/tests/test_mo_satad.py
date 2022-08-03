@@ -20,32 +20,20 @@ from hypothesis import strategies as st
 from hypothesis import target
 from hypothesis.extra.numpy import arrays
 
-from icon4py.atm_phy_schemes.mo_convect_tables import (
-    c1es,
-    c3les,
-    c4les,
-    c5les,
-)
-
+from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
 from icon4py.atm_phy_schemes.mo_satad import satad
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.shared.mo_physical_constants import (
-    alv,
-    clw,
-    cvd,
-    rv,
-    tmelt,
-)
+from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
 from icon4py.testutils.simple_mesh import SimpleMesh
 
 
-def random_field_strategy(mesh, *dims) -> st.SearchStrategy[float]:
+def random_field_strategy(mesh, *dims, min_value=None) -> st.SearchStrategy[float]:
     """Return a hypothesis strategy of a random field."""
     return arrays(
         dtype=np.float64,
         shape=tuple(map(lambda x: mesh.size[x], dims)),
         elements=st.floats(
-            min_value=0.0,
+            min_value=min_value,
             exclude_min=True,
             allow_nan=False,
             allow_infinity=False,
@@ -112,10 +100,10 @@ def satad_numpy(qv, qc, t, rho):
 
 
 @given(
-    random_field_strategy(SimpleMesh(), CellDim, KDim),
-    random_field_strategy(SimpleMesh(), CellDim, KDim),
-    random_field_strategy(SimpleMesh(), CellDim, KDim),
-    random_field_strategy(SimpleMesh(), CellDim, KDim),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=0.0),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=0.0),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=0.0),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=0.0),
 )
 @settings(
     suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
@@ -128,10 +116,10 @@ def test_mo_satad(qv, qc, t, rho):
         warnings.filterwarnings("error")
         try:
             t_ref, qv_ref, qc_ref = satad_numpy(
-                np.asarray(qv),
-                np.asarray(qc),
-                np.asarray(t),
-                np.asarray(rho),
+                np.asarray(qv).copy(),
+                np.asarray(qc).copy(),
+                np.asarray(t).copy(),
+                np.asarray(rho).copy(),
             )
         except RuntimeWarning:
             assume(False)
@@ -150,7 +138,6 @@ def test_mo_satad(qv, qc, t, rho):
         rho,
         offset_provider={},
     )
-
-    assert np.allclose(t, t_ref)
-    assert np.allclose(qv, qv_ref)
-    assert np.allclose(qc, qc_ref)
+    assert np.allclose(np.asarray(t), t_ref)
+    assert np.allclose(np.asarray(qv), qv_ref)
+    assert np.allclose(np.asarray(qc), qc_ref)
