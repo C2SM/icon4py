@@ -19,45 +19,27 @@ Changes.
 - Only implementend gpu version. Maybe further optimizations possible for CPU (check original code)
 
 TODO:
-- Is where statement the nicest possible syntax for the IF-ELSE below? Also, where currently can only return 1 Field(
-(a) Do np.where(fun1, func2) implementation
-(b) How would algorithm look in local view? In current localview frontend.
-(c) ...
-- Implement Newtonian iteration! -> Needs fixted-size for loop feature in GT4Py
-(0) For loop outside (maybe low priority)
-(a) Unroll by hand
-(b) Naive unroll of compile time FOR, maybe optimize
-(c) Tracing
-- Should pre-computations be removed? E.g, lwdocvd and qwa ???
-(a) Currently only partly optimized. Should be fine if in same @program
-- Assignment operators: --> WONTFIX for now, since we want to behave like numpy.
-- Support for docstings inside field_operators. For now: Place all docstrings outside of field_operators as they are not supported inside.
---> Trivial to implement
-- What to do with
-
-
-Nice to have:
-- Document constants such that description appears when hovering over symbol in IDE's -> mo_physical_constants.py et al
--> DL:adapt code
+1. Is where statement the nicest possible syntax for the IF-ELSE below? Also, where currently can only return 1 Field(
+    (a) Do np.where(fun1, func2) implementation
+    (b) How would algorithm look in local view? In current localview frontend.
+    (c) ...
+2. Implement Newtonian iteration! -> Needs fixted-size for loop feature in GT4Py
+    (0) For loop outside (maybe low priority)
+    (a) Unroll by hand
+    (b) Naive unroll of compile time FOR, maybe optimize
+    (c) Tracing
+3. Constants
 
 Comment from FORTRAN version:
 - Suggested by U. Blahak: Replace pres_sat_water, pres_sat_ice and spec_humi by
 lookup tables in mo_convect_tables. Bit incompatible change!
-
-
-# Results: Big ticket features
-0. Docstings in field_operator (Nikki)
-1. start planning for loop or recursion (Linus)
-2. start thinking about multiple returns form where (Nikki)
-3. local, global, compile-time constants (Peter)
-
-
 """
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, exp, where, abs, maximum
+from functional.ffront.fbuiltins import Field, abs, exp, maximum, where
 
 # from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
 from icon4py.common.dimension import CellDim, KDim
+
 
 # from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
 
@@ -197,14 +179,14 @@ def _newtonian_iteration_t(
 
     # for _ in range(1, maxiter):
     twork = _newtonian_for_body(t, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
     return _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
 
 
@@ -244,25 +226,29 @@ def _satad(
     cvd = cpd - rd
     zqwmin = 1e-20
 
-    tTest = t - _latent_heat_vaporization(t) / cvd * qc
+    tAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
 
     # check, which points will still be subsaturated even after evaporating
-    # all cloud water.For these gridpoints Newton iteration is not necessary.
-    subsaturated = qv + qc <= _qsat_rho(t, rho)
+    # all cloud water. For these gridpoints Newton iteration is not necessary.
+    # TODO: Not sure if shortcut actually improves performacre
+    totallySubsaturated = qv + qc <= _qsat_rho(t, rho)
 
-    qv = where(subsaturated, qv + qc, _qsat_rho(t, rho))
-    qc = where(subsaturated, 0.0, maximum(qv + qc - _qsat_rho(t, rho), zqwmin))
-    t = where(subsaturated, tTest, _newtonian_iteration_t(t, qv, rho))
+    qv = where(totallySubsaturated, qv + qc, _qsat_rho(t, rho))
+    qc = where(totallySubsaturated, 0.0, maximum(qv + qc - _qsat_rho(t, rho), zqwmin))
+    t = where(
+        totallySubsaturated, tAfterAllQcEvaporated, _newtonian_iteration_t(t, qv, rho)
+    )
 
     return t, qv, qc
 
 
 # DL: Do we actually need the program?
-@program
+@program()
 def satad(
     qv: Field[[CellDim, KDim], float],
     qc: Field[[CellDim, KDim], float],
     t: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
 ):
+
     _satad(qv, qc, t, rho, out=(t, qv, qc))
