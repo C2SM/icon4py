@@ -26,20 +26,9 @@ def _mo_solve_nonhydro_stencil_33() -> tuple[
     return vn_traj, mass_flx_me
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_33_vn_traj() -> Field[[EdgeDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_33()[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_33_mass_flx_me() -> Field[[EdgeDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_33()[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_33(
     vn_traj: Field[[EdgeDim, KDim], float],
     mass_flx_me: Field[[EdgeDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_33_vn_traj(out=vn_traj)
-    _mo_solve_nonhydro_stencil_33_mass_flx_me(out=mass_flx_me)
+    _mo_solve_nonhydro_stencil_33(out=(vn_traj, mass_flx_me))

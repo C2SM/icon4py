@@ -26,20 +26,9 @@ def _mo_solve_nonhydro_stencil_46() -> tuple[
     return w_nnew, z_contr_w_fl_l
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_46_w_nnew() -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_46()[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_46_z_contr_w_fl_l() -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_46()[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_46(
     w_nnew: Field[[CellDim, KDim], float],
     z_contr_w_fl_l: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_46_w_nnew(out=w_nnew)
-    _mo_solve_nonhydro_stencil_46_z_contr_w_fl_l(out=z_contr_w_fl_l)
+    _mo_solve_nonhydro_stencil_46(out=(w_nnew, z_contr_w_fl_l))
