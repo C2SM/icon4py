@@ -24,7 +24,7 @@ from typing import Any, TypeGuard
 
 import click
 import tabulate
-from functional.common import Connectivity, Dimension, DimensionKind, GridType
+from functional.common import Connectivity, Dimension, DimensionKind
 from functional.fencil_processors.codegens.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
@@ -131,7 +131,8 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
 def provide_offset(offset: str) -> type.SimpleNamespace | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
-        return Koff.target[0]
+        assert Koff.source == Koff.target[0]
+        return Koff.source
     else:
         return provide_neighbor_table(offset)
 
@@ -166,7 +167,6 @@ def generate_cpp_code(
     """Generate C++ code using the GTFN backend."""
     return generate(
         fencil,
-        grid_type=GridType.UNSTRUCTURED,
         offset_provider=offset_provider,
         **kwargs,
     )
@@ -178,15 +178,47 @@ def import_definition(name: str) -> Program | FieldOperator | types.FunctionType
     return fencil
 
 
+def _is_size_param(param: itir.Sym) -> bool:
+    """Check if parameter is a size parameter introduced by field view frontend."""
+    return param.id.startswith("__") and "_size_" in param.id
+
+
 def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+    """Replace field view size parameters by horizontal and vertical range paramters."""
     if len(fencil.closures) > 1:
         raise MultipleFieldOperatorException()
 
-    fencil.closures[0].domain = itir.SymRef(id="domain")
+    fencil.closures[0].domain = itir.FunCall(
+        fun=itir.SymRef(id="unstructured_domain"),
+        args=[
+            itir.FunCall(
+                fun=itir.SymRef(id="named_range"),
+                args=[
+                    itir.AxisLiteral(value="horizontal"),
+                    itir.SymRef(id="horizontal_start"),
+                    itir.SymRef(id="horizontal_end"),
+                ],
+            ),
+            itir.FunCall(
+                fun=itir.SymRef(id="named_range"),
+                args=[
+                    itir.AxisLiteral(value=Koff.source.value),
+                    itir.SymRef(id="vertical_start"),
+                    itir.SymRef(id="vertical_end"),
+                ],
+            ),
+        ],
+    )
     return itir.FencilDefinition(
         id=fencil.id,
         function_definitions=fencil.function_definitions,
-        params=[*fencil.params, itir.Sym(id="domain")],
+        params=[
+            *(p for p in fencil.params if not _is_size_param(p)),
+            itir.Sym(id="horizontal_start"),
+            itir.Sym(id="horizontal_end"),
+            itir.Sym(id="vertical_start"),
+            itir.Sym(id="vertical_end"),
+        ],
         closures=fencil.closures,
     )
 
