@@ -130,12 +130,17 @@ def _newtonian_for_body(
     t: Field[[CellDim, KDim], float],
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
-    lwdocvd: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
     # TODO: RENAME and test if identical. Double check with Hannes
     # Save the starting value of temperature t
     twork = t
 
+    # TODO: Remove
+    rd = 287.04
+    cpd = 1004.64
+    cvd = cpd - rd
+
+    lwdocvd = _latent_heat_vaporization(t) / cvd
     fT = twork - t + lwdocvd * (_qsat_rho(twork, rho) - qv)
     dfT = 1.0 + lwdocvd * _dqsatdT_rho(twork, _qsat_rho(twork, rho))
 
@@ -147,7 +152,6 @@ def _conditional_newtonian_for_body(
     t: Field[[CellDim, KDim], float],
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
-    lwdocvd: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
     # TODO: RENAME and test if identical. Double check with Hannes
     # Save the starting value of temperature t
@@ -156,6 +160,12 @@ def _conditional_newtonian_for_body(
     # Here we still have to iterate ...
     tworkold = twork
 
+    # TODO: Remove
+    rd = 287.04
+    cpd = 1004.64
+    cvd = cpd - rd
+
+    lwdocvd = _latent_heat_vaporization(t) / cvd
     fT = twork - t + lwdocvd * (_qsat_rho(twork, rho) - qv)
     dfT = 1.0 + lwdocvd * _dqsatdT_rho(twork, _qsat_rho(twork, rho))
 
@@ -170,24 +180,18 @@ def _newtonian_iteration_t(
     rho: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
 
-    # TODO: Remove
-    rd = 287.04
-    cpd = 1004.64
-    cvd = cpd - rd
-
-    lwdocvd = _latent_heat_vaporization(t) / cvd
-
     # for _ in range(1, maxiter):
-    twork = _newtonian_for_body(t, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
-    twork = _conditional_newtonian_for_body(twork, qv, rho, lwdocvd)
+    twork = _newtonian_for_body(t, qv, rho)
+    twork = _conditional_newtonian_for_body(twork, qv, rho)
+    # DL: @Linus Uncommenting below is suuuper slow :-)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho)
     return twork
 
 
@@ -227,7 +231,7 @@ def _satad(
     cvd = cpd - rd
     zqwmin = 1e-20
 
-    tAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd
+    tAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
 
     # check, which points will still be subsaturated even after evaporating
     # all cloud water. For these gridpoints Newton iteration is not necessary.
@@ -236,7 +240,9 @@ def _satad(
 
     qv = where(totallySubsaturated, qv + qc, _qsat_rho(t, rho))
     qc = where(totallySubsaturated, 0.0, maximum(qv + qc - _qsat_rho(t, rho), zqwmin))
-    t = where(totallySubsaturated, tAfterAllQcEvaporated, 1.0)
+    t = where(
+        totallySubsaturated, tAfterAllQcEvaporated, _newtonian_iteration_t(t, qv, rho)
+    )
 
     return t, qv, qc
 
