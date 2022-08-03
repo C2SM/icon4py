@@ -26,20 +26,9 @@ def _mo_solve_nonhydro_stencil_15() -> tuple[
     return z_rho_e, z_theta_v_e
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_15_z_rho_e() -> Field[[EdgeDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_15()[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_15_z_theta_v_e() -> Field[[EdgeDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_15()[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_15(
     z_rho_e: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_15_z_rho_e(out=z_rho_e)
-    _mo_solve_nonhydro_stencil_15_z_theta_v_e(out=z_theta_v_e)
+    _mo_solve_nonhydro_stencil_15(out=(z_rho_e, z_theta_v_e))

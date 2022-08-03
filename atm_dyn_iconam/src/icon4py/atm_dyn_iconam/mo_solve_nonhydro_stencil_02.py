@@ -31,26 +31,6 @@ def _mo_solve_nonhydro_stencil_02(
     return z_exner_ex_pr, exner_pr
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_02_z_exner_ex_pr(
-    exner_exfac: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_02(exner_exfac, exner, exner_ref_mc, exner_pr)[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_02_exner_pr(
-    exner_exfac: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_02(exner_exfac, exner, exner_ref_mc, exner_pr)[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_02(
     exner_exfac: Field[[CellDim, KDim], float],
@@ -59,9 +39,6 @@ def mo_solve_nonhydro_stencil_02(
     exner_pr: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_02_z_exner_ex_pr(
-        exner_exfac, exner, exner_ref_mc, exner_pr, out=z_exner_ex_pr
-    )
-    _mo_solve_nonhydro_stencil_02_exner_pr(
-        exner_exfac, exner, exner_ref_mc, exner_pr, out=exner_pr
+    _mo_solve_nonhydro_stencil_02(
+        exner_exfac, exner, exner_ref_mc, exner_pr, out=(z_exner_ex_pr, exner_pr)
     )
