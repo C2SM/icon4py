@@ -11,11 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import warnings
-
 import numpy as np
 from functional.iterator.embedded import np_as_located_field
-from hypothesis import HealthCheck, assume, given, settings
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from hypothesis import target
 from hypothesis.extra.numpy import arrays
@@ -37,7 +35,6 @@ def random_field_strategy(mesh, *dims, min_value=None) -> st.SearchStrategy[floa
             exclude_min=True,
             allow_nan=False,
             allow_infinity=False,
-            allow_subnormal=True,
         ),
     ).map(np_as_located_field(*dims))
 
@@ -46,7 +43,7 @@ cp_v = 1850.0
 ci = 2108.0
 
 tol = 1e-3
-maxiter = 10
+maxiter = 2
 zqwmin = 1e-20
 
 
@@ -74,8 +71,8 @@ def satad_numpy(qv, qc, t, rho):
     for cell, k in np.ndindex(np.shape(qv)):
         if qv[cell, k] + qc[cell, k] <= qsat_rho(t, rho)[cell, k]:
             qv[cell, k] = qv[cell, k] + qc[cell, k]
-            t[cell, k] = t[cell, k] - lwdocvd[cell, k] * qc[cell, k]
             qc[cell, k] = 0.0
+            t[cell, k] = t[cell, k] - lwdocvd[cell, k] * qc[cell, k]
         else:
             twork = t[cell, k]
             tworkold = twork + 10.0
@@ -95,7 +92,6 @@ def satad_numpy(qv, qc, t, rho):
             qc[cell, k] = max(qc[cell, k] + qv[cell, k] - qwa, zqwmin)
             qv[cell, k] = qwa
 
-            del twork
     return t, qv, qc
 
 
@@ -112,32 +108,18 @@ def satad_numpy(qv, qc, t, rho):
 )
 def test_mo_satad(qv, qc, t, rho):
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings("error")
-        try:
-            t_ref, qv_ref, qc_ref = satad_numpy(
-                np.asarray(qv).copy(),
-                np.asarray(qc).copy(),
-                np.asarray(t).copy(),
-                np.asarray(rho).copy(),
-            )
-        except RuntimeWarning:
-            assume(False)
-
-        # Exploit hypothesis tool to guess needed co-variability of inputs.
-        try:
-            tendency = np.asarray(qv) - qv_ref
-            target(np.std(tendency), label="Stdev. tendency")
-        except Exception:
-            assume(False)
-
-    satad(
-        qv,
-        qc,
-        t,
-        rho,
-        offset_provider={},
+    t_ref, qv_ref, qc_ref = satad_numpy(
+        np.asarray(qv).copy(),
+        np.asarray(qc).copy(),
+        np.asarray(t).copy(),
+        np.asarray(rho).copy(),
     )
+
+    # Exploit hypothesis tool to guess needed co-variability of inputs.
+    tendency = np.asarray(qv) - qv_ref
+    target(np.std(tendency), label="Stdev. tendency")
+
+    satad(qv, qc, t, rho, offset_provider={})
     assert np.allclose(np.asarray(t), t_ref)
     assert np.allclose(np.asarray(qv), qv_ref)
     assert np.allclose(np.asarray(qc), qc_ref)
