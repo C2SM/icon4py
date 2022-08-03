@@ -30,32 +30,6 @@ def _mo_solve_nonhydro_stencil_34(
     return vn_traj, mass_flx_me
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_34_vn_traj(
-    z_vn_avg: Field[[EdgeDim, KDim], float],
-    mass_fl_e: Field[[EdgeDim, KDim], float],
-    vn_traj: Field[[EdgeDim, KDim], float],
-    mass_flx_me: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: float,
-) -> Field[[EdgeDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_34(
-        z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps
-    )[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_34_mass_flx_me(
-    z_vn_avg: Field[[EdgeDim, KDim], float],
-    mass_fl_e: Field[[EdgeDim, KDim], float],
-    vn_traj: Field[[EdgeDim, KDim], float],
-    mass_flx_me: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: float,
-) -> Field[[EdgeDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_34(
-        z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps
-    )[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_34(
     z_vn_avg: Field[[EdgeDim, KDim], float],
@@ -64,9 +38,11 @@ def mo_solve_nonhydro_stencil_34(
     mass_flx_me: Field[[EdgeDim, KDim], float],
     r_nsubsteps: float,
 ):
-    _mo_solve_nonhydro_stencil_34_vn_traj(
-        z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, out=vn_traj
-    )
-    _mo_solve_nonhydro_stencil_34_mass_flx_me(
-        z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, out=mass_flx_me
+    _mo_solve_nonhydro_stencil_34(
+        z_vn_avg,
+        mass_fl_e,
+        vn_traj,
+        mass_flx_me,
+        r_nsubsteps,
+        out=(vn_traj, mass_flx_me),
     )

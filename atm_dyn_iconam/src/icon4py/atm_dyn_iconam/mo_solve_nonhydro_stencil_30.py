@@ -41,42 +41,6 @@ def _mo_solve_nonhydro_stencil_30(
     return z_vn_avg, z_graddiv_vn, vt
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_30_z_vn_avg(
-    e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_30(e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e)[
-        0
-    ]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_30_z_graddiv_vn(
-    e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_30(e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e)[
-        1
-    ]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_30_vt(
-    e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_30(e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e)[
-        2
-    ]
-
-
 @program
 def mo_solve_nonhydro_stencil_30(
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
@@ -87,12 +51,6 @@ def mo_solve_nonhydro_stencil_30(
     z_graddiv_vn: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_30_z_vn_avg(
-        e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e, out=z_vn_avg
-    )
-    _mo_solve_nonhydro_stencil_30_z_graddiv_vn(
-        e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e, out=z_graddiv_vn
-    )
-    _mo_solve_nonhydro_stencil_30_vt(
-        e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e, out=vt
+    _mo_solve_nonhydro_stencil_30(
+        e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e, out=(z_vn_avg, z_graddiv_vn, vt)
     )

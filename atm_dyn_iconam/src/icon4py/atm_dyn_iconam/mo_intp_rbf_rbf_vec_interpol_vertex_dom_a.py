@@ -28,28 +28,6 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a(
     return p_u_out, p_v_out
 
 
-@field_operator
-def _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u(
-    p_e_in: Field[[EdgeDim, KDim], float],
-    ptr_coeff_1: Field[[VertexDim, V2EDim], float],
-    ptr_coeff_2: Field[[VertexDim, V2EDim], float],
-) -> Field[[VertexDim, KDim], float]:
-    return _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a(p_e_in, ptr_coeff_1, ptr_coeff_2)[
-        0
-    ]
-
-
-@field_operator
-def _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v(
-    p_e_in: Field[[EdgeDim, KDim], float],
-    ptr_coeff_1: Field[[VertexDim, V2EDim], float],
-    ptr_coeff_2: Field[[VertexDim, V2EDim], float],
-) -> Field[[VertexDim, KDim], float]:
-    return _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a(p_e_in, ptr_coeff_1, ptr_coeff_2)[
-        1
-    ]
-
-
 @program
 def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a(
     p_e_in: Field[[EdgeDim, KDim], float],
@@ -58,9 +36,6 @@ def mo_intp_rbf_rbf_vec_interpol_vertex_dom_a(
     p_u_out: Field[[VertexDim, KDim], float],
     p_v_out: Field[[VertexDim, KDim], float],
 ):
-    _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_u(
-        p_e_in, ptr_coeff_1, ptr_coeff_2, out=p_u_out
-    )
-    _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a_p_v(
-        p_e_in, ptr_coeff_1, ptr_coeff_2, out=p_v_out
+    _mo_intp_rbf_rbf_vec_interpol_vertex_dom_a(
+        p_e_in, ptr_coeff_1, ptr_coeff_2, out=(p_u_out, p_v_out)
     )

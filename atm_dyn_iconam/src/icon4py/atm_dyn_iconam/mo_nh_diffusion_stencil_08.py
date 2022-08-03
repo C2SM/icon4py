@@ -28,24 +28,6 @@ def _mo_nh_diffusion_stencil_08(
     return dwdx, dwdy
 
 
-@field_operator
-def _mo_nh_diffusion_stencil_08_dwdx(
-    w: Field[[CellDim, KDim], float],
-    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
-    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_nh_diffusion_stencil_08(w, geofac_grg_x, geofac_grg_y)[0]
-
-
-@field_operator
-def _mo_nh_diffusion_stencil_08_dwdy(
-    w: Field[[CellDim, KDim], float],
-    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
-    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
-) -> Field[[CellDim, KDim], float]:
-    return _mo_nh_diffusion_stencil_08(w, geofac_grg_x, geofac_grg_y)[1]
-
-
 @program
 def mo_nh_diffusion_stencil_08(
     w: Field[[CellDim, KDim], float],
@@ -54,5 +36,4 @@ def mo_nh_diffusion_stencil_08(
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_08_dwdx(w, geofac_grg_x, geofac_grg_y, out=dwdx)
-    _mo_nh_diffusion_stencil_08_dwdy(w, geofac_grg_x, geofac_grg_y, out=dwdy)
+    _mo_nh_diffusion_stencil_08(w, geofac_grg_x, geofac_grg_y, out=(dwdx, dwdy))
