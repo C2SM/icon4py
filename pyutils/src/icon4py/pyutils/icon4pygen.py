@@ -24,14 +24,14 @@ from typing import Any, TypeGuard
 
 import click
 import tabulate
-from functional.common import DimensionKind
+from functional.common import Connectivity, Dimension, DimensionKind, GridType
 from functional.fencil_processors.codegens.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 
-from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (
     InvalidConnectivityException,
     MultipleFieldOperatorException,
@@ -100,7 +100,7 @@ def scan_for_chains(fvprog: Program) -> set[str]:
     return set(all_offset_labels + all_dim_labels)
 
 
-def provide_offset(chain: str) -> types.SimpleNamespace:
+def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -128,6 +128,14 @@ def provide_offset(chain: str) -> types.SimpleNamespace:
     )
 
 
+def provide_offset(offset: str) -> type.SimpleNamespace | Dimension:
+    if offset == Koff.value:
+        assert len(Koff.target) == 1
+        return Koff.target[0]
+    else:
+        return provide_neighbor_table(offset)
+
+
 def format_metadata(fvprog: Program, chains: Iterable[str], **kwargs: Any) -> str:
     """Format in/out field and connectivity information from a program as a string table."""
     field_infos = get_field_infos(fvprog)
@@ -151,11 +159,16 @@ def format_metadata(fvprog: Program, chains: Iterable[str], **kwargs: Any) -> st
 
 # TODO: provide a better typing for offset_provider
 def generate_cpp_code(
-    fencil: itir.FencilDefinition, offset_provider: dict, **kwargs: Any
+    fencil: itir.FencilDefinition,
+    offset_provider: dict[str, Dimension | Connectivity],
+    **kwargs: Any,
 ) -> str:
     """Generate C++ code using the GTFN backend."""
     return generate(
-        fencil, grid_type="unstructured", offset_provider=offset_provider, **kwargs
+        fencil,
+        grid_type=GridType.UNSTRUCTURED,
+        offset_provider=offset_provider,
+        **kwargs,
     )
 
 
