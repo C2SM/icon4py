@@ -28,6 +28,7 @@ def cli():
 
 CODEGEN_PATTERNS = {"includes": "#include <.*>", "namespaces": "using .*;"}
 STENCILS_TO_TEST = [
+    ("atm_dyn_iconam", "mo_nh_diffusion_stencil_03"),
     ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
     ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
     ("atm_dyn_iconam", "mo_velocity_advection_stencil_07"),
