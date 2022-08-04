@@ -64,7 +64,7 @@ def test_mo_velocity_advection_stencil_14():
         cfl_clipping_ref,
         pre_levelmask_ref,
         vcfl_ref,
-        z_w_con_c_ref,
+        z_w_con_c_ref
     ) = mo_velocity_advection_stencil_14_numpy(
         np.asarray(ddqz_z_half),
         np.asarray(z_w_con_c),
