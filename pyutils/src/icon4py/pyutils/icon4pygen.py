@@ -79,8 +79,8 @@ def format_io_string(fieldinfo: _FieldInfo) -> str:
     return f"{'in' if fieldinfo.inp else ''}{'out' if fieldinfo.out else ''}"
 
 
-def scan_for_chains(fvprog: Program) -> set[str]:
-    """Scan PAST node for connectivities and return a set of all connectivity chains."""
+def scan_for_offsets(fvprog: Program) -> set[str]:
+    """Scan PAST node for offsets and return a set of all offsets."""
     all_types = (
         fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
     )
@@ -258,10 +258,11 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     """
     fencil_def = import_definition(fencil)
     fvprog = get_fvprog(fencil_def)
-    chains = scan_for_chains(fvprog)
-    offsets = {}
-    for chain in chains:
-        offsets[chain] = provide_offset(chain)
+    offsets = scan_for_offsets(fvprog)
+    offset_provider = {}
+    for offset in offsets:
+        offset_provider[offset] = provide_offset(offset)
     if output_metadata:
-        output_metadata.write_text(format_metadata(fvprog, chains))
-    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offsets))
+        connectivity_chains = [c for c in offsets if offset != Koff.value]
+        output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
+    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
