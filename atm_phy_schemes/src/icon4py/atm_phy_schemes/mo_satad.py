@@ -182,7 +182,7 @@ def _newtonian_iteration_t(
 
     # for _ in range(1, maxiter):
     twork = _newtonian_for_body(t, qv, rho)
-    twork = _conditional_newtonian_for_body(twork, qv, rho)
+    # twork = _conditional_newtonian_for_body(twork, qv, rho)
     # DL: @Linus Uncommenting below is suuuper slow :-)
     # twork = _conditional_newtonian_for_body(twork, qv, rho)
     # twork = _conditional_newtonian_for_body(twork, qv, rho)
