@@ -11,9 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import warnings
+
 import numpy as np
 from functional.iterator.embedded import np_as_located_field
-from hypothesis import HealthCheck, given, settings
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
 from hypothesis import target
 from hypothesis.extra.numpy import arrays
@@ -107,17 +109,25 @@ def satad_numpy(qv, qc, t, rho):
     max_examples=10,
 )
 def test_mo_satad(qv, qc, t, rho):
+    with warnings.catch_warnings():
+        warnings.filterwarnings("error")
+        try:
+            t_ref, qv_ref, qc_ref = satad_numpy(
+                np.asarray(qv).copy(),
+                np.asarray(qc).copy(),
+                np.asarray(t).copy(),
+                np.asarray(rho).copy(),
+            )
+        except RuntimeWarning:
+            assume(False)
 
-    t_ref, qv_ref, qc_ref = satad_numpy(
-        np.asarray(qv).copy(),
-        np.asarray(qc).copy(),
-        np.asarray(t).copy(),
-        np.asarray(rho).copy(),
-    )
-
-    # Exploit hypothesis tool to guess needed co-variability of inputs.
-    tendency = np.asarray(qv) - qv_ref
-    target(np.std(tendency), label="Stdev. tendency")
+        try:
+            # Exploit hypothesis tool to guess needed co-variability of inputs.
+            tendency = np.asarray(qv) - qv_ref
+            target(np.mean(np.abs(tendency)), label="Mean tendency")
+            target(np.std(tendency), label="Stdev. tendency")
+        except Exception:
+            assume(False)
 
     satad(qv, qc, t, rho, offset_provider={})
     assert np.allclose(np.asarray(t), t_ref)
