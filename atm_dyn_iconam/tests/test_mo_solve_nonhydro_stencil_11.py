@@ -46,7 +46,7 @@ def test_mo_solve_nonhydro_stencil_11():
 
     theta_v_ic = zero_field(mesh, CellDim, KDim)
 
-    [z_theta_v_pr_ic_ref, theta_v_ic_ref] = mo_solve_nonhydro_stencil_11_numpy(
+    z_theta_v_pr_ic_ref, theta_v_ic_ref = mo_solve_nonhydro_stencil_11_numpy(
         np.asarray(wgtfacq_c),
         np.asarray(z_rth_pr),
         np.asarray(theta_ref_ic),

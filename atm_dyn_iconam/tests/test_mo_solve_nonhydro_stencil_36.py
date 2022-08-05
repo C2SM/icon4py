@@ -46,7 +46,7 @@ def test_mo_solve_nonhydro_stencil_36():
     z_vt_ie = zero_field(mesh, EdgeDim, KDim)
     z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
 
-    [vn_ie_ref, z_vt_ie_ref, z_kin_hor_e_ref] = mo_solve_nonhydro_stencil_36_numpy(
+    vn_ie_ref, z_vt_ie_ref, z_kin_hor_e_ref = mo_solve_nonhydro_stencil_36_numpy(
         np.asarray(wgtfac_e),
         np.asarray(vn),
         np.asarray(vt),
