@@ -58,6 +58,7 @@ def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
 
     out_arg = fvprog.past_node.body[0].kwargs["out"]
+    out_arg = out_arg.value if isinstance(out_arg, past.Subscript) else out_arg
     assert isinstance(out_arg, (past.Name, past.TupleExpr))
     output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
     output_arg_ids = set(arg.id for arg in output_fields)
