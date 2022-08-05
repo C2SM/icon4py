@@ -15,7 +15,6 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import (
     Field,
-    FieldOffset,
     abs,
     broadcast,
     minimum,
@@ -33,11 +32,9 @@ from icon4py.common.dimension import (
     E2VDim,
     EdgeDim,
     KDim,
+    Koff,
     VertexDim,
 )
-
-
-Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 
 @field_operator

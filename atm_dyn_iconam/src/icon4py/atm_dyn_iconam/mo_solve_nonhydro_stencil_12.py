@@ -12,12 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, FieldOffset
+from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import CellDim, KDim
-
-
-Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
+from icon4py.common.dimension import CellDim, KDim, Koff
 
 
 @field_operator
