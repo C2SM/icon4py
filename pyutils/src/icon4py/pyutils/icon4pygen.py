@@ -24,14 +24,14 @@ from typing import Any, TypeGuard
 
 import click
 import tabulate
-from functional.common import DimensionKind
+from functional.common import Connectivity, Dimension, DimensionKind
 from functional.fencil_processors.codegens.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 
-from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (
     InvalidConnectivityException,
     MultipleFieldOperatorException,
@@ -80,8 +80,8 @@ def format_io_string(fieldinfo: _FieldInfo) -> str:
     return f"{'in' if fieldinfo.inp else ''}{'out' if fieldinfo.out else ''}"
 
 
-def scan_for_chains(fvprog: Program) -> set[str]:
-    """Scan PAST node for connectivities and return a set of all connectivity chains."""
+def scan_for_offsets(fvprog: Program) -> set[str]:
+    """Scan PAST node for offsets and return a set of all offsets."""
     all_types = (
         fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
     )
@@ -101,7 +101,7 @@ def scan_for_chains(fvprog: Program) -> set[str]:
     return set(all_offset_labels + all_dim_labels)
 
 
-def provide_offset(chain: str) -> types.SimpleNamespace:
+def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -129,6 +129,15 @@ def provide_offset(chain: str) -> types.SimpleNamespace:
     )
 
 
+def provide_offset(offset: str) -> type.SimpleNamespace | Dimension:
+    if offset == Koff.value:
+        assert len(Koff.target) == 1
+        assert Koff.source == Koff.target[0]
+        return Koff.source
+    else:
+        return provide_neighbor_table(offset)
+
+
 def format_metadata(fvprog: Program, chains: Iterable[str], **kwargs: Any) -> str:
     """Format in/out field and connectivity information from a program as a string table."""
     field_infos = get_field_infos(fvprog)
@@ -152,11 +161,15 @@ def format_metadata(fvprog: Program, chains: Iterable[str], **kwargs: Any) -> st
 
 # TODO: provide a better typing for offset_provider
 def generate_cpp_code(
-    fencil: itir.FencilDefinition, offset_provider: dict, **kwargs: Any
+    fencil: itir.FencilDefinition,
+    offset_provider: dict[str, Dimension | Connectivity],
+    **kwargs: Any,
 ) -> str:
     """Generate C++ code using the GTFN backend."""
     return generate(
-        fencil, grid_type="unstructured", offset_provider=offset_provider, **kwargs
+        fencil,
+        offset_provider=offset_provider,
+        **kwargs,
     )
 
 
@@ -166,15 +179,47 @@ def import_definition(name: str) -> Program | FieldOperator | types.FunctionType
     return fencil
 
 
+def _is_size_param(param: itir.Sym) -> bool:
+    """Check if parameter is a size parameter introduced by field view frontend."""
+    return param.id.startswith("__") and "_size_" in param.id
+
+
 def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+    """Replace field view size parameters by horizontal and vertical range paramters."""
     if len(fencil.closures) > 1:
         raise MultipleFieldOperatorException()
 
-    fencil.closures[0].domain = itir.SymRef(id="domain")
+    fencil.closures[0].domain = itir.FunCall(
+        fun=itir.SymRef(id="unstructured_domain"),
+        args=[
+            itir.FunCall(
+                fun=itir.SymRef(id="named_range"),
+                args=[
+                    itir.AxisLiteral(value="horizontal"),
+                    itir.SymRef(id="horizontal_start"),
+                    itir.SymRef(id="horizontal_end"),
+                ],
+            ),
+            itir.FunCall(
+                fun=itir.SymRef(id="named_range"),
+                args=[
+                    itir.AxisLiteral(value=Koff.source.value),
+                    itir.SymRef(id="vertical_start"),
+                    itir.SymRef(id="vertical_end"),
+                ],
+            ),
+        ],
+    )
     return itir.FencilDefinition(
         id=fencil.id,
         function_definitions=fencil.function_definitions,
-        params=[*fencil.params, itir.Sym(id="domain")],
+        params=[
+            *(p for p in fencil.params if not _is_size_param(p)),
+            itir.Sym(id="horizontal_start"),
+            itir.Sym(id="horizontal_end"),
+            itir.Sym(id="vertical_start"),
+            itir.Sym(id="vertical_end"),
+        ],
         closures=fencil.closures,
     )
 
@@ -214,10 +259,11 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     """
     fencil_def = import_definition(fencil)
     fvprog = get_fvprog(fencil_def)
-    chains = scan_for_chains(fvprog)
-    offsets = {}
-    for chain in chains:
-        offsets[chain] = provide_offset(chain)
+    offsets = scan_for_offsets(fvprog)
+    offset_provider = {}
+    for offset in offsets:
+        offset_provider[offset] = provide_offset(offset)
     if output_metadata:
-        output_metadata.write_text(format_metadata(fvprog, chains))
-    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offsets))
+        connectivity_chains = [c for c in offsets if offset != Koff.value]
+        output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
+    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
