@@ -19,6 +19,7 @@ import dataclasses
 import importlib
 import pathlib
 import types
+import warnings
 from collections.abc import Iterable
 from typing import Any, TypeGuard
 
@@ -58,7 +59,11 @@ def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
 
     out_arg = fvprog.past_node.body[0].kwargs["out"]
-    out_arg = out_arg.value if isinstance(out_arg, past.Subscript) else out_arg
+    if isinstance(out_arg, past.Subscript):
+        warnings.warn(
+            f"Slicing in `out` argument is ignored in call to `{fvprog.past_node.id}`."
+        )
+        out_arg = out_arg.value
     assert isinstance(out_arg, (past.Name, past.TupleExpr))
     output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
     output_arg_ids = set(arg.id for arg in output_fields)
