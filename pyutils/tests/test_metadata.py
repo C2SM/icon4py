@@ -20,7 +20,7 @@ from icon4py.pyutils.icon4pygen import (
     format_metadata,
     get_fvprog,
     import_definition,
-    scan_for_chains,
+    scan_for_offsets,
 )
 from icon4py.testutils.utils import get_stencil_module_path
 
@@ -28,7 +28,7 @@ from icon4py.testutils.utils import get_stencil_module_path
 def get_stencil_metadata(stencil_module: str, stencil_name: str) -> str:
     fencil = import_definition(get_stencil_module_path(stencil_module, stencil_name))
     fvprog = get_fvprog(fencil)
-    chains = scan_for_chains(fvprog)
+    chains = scan_for_offsets(fvprog)
     return format_metadata(fvprog, chains)
 
 
