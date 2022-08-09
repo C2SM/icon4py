@@ -27,13 +27,16 @@ from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
 from icon4py.testutils.simple_mesh import SimpleMesh
 
 
-def random_field_strategy(mesh, *dims, min_value=None) -> st.SearchStrategy[float]:
+def random_field_strategy(
+    mesh, *dims, min_value=None, max_value=None
+) -> st.SearchStrategy[float]:
     """Return a hypothesis strategy of a random field."""
     return arrays(
         dtype=np.float64,
         shape=tuple(map(lambda x: mesh.size[x], dims)),
         elements=st.floats(
             min_value=min_value,
+            max_value=max_value,
             exclude_min=True,
             allow_nan=False,
             allow_infinity=False,
@@ -45,7 +48,7 @@ cp_v = 1850.0
 ci = 2108.0
 
 tol = 1e-3
-maxiter = 1
+maxiter = 2
 zqwmin = 1e-20
 
 
@@ -72,9 +75,9 @@ def satad_numpy(qv, qc, t, rho):
 
     for cell, k in np.ndindex(np.shape(qv)):
         if qv[cell, k] + qc[cell, k] <= qsat_rho(t, rho)[cell, k]:
+            t[cell, k] = t[cell, k] - lwdocvd[cell, k] * qc[cell, k]
             qv[cell, k] = qv[cell, k] + qc[cell, k]
             qc[cell, k] = 0.0
-            t[cell, k] = t[cell, k] - lwdocvd[cell, k] * qc[cell, k]
         else:
             twork = t[cell, k]
             tworkold = twork + 10.0
@@ -97,11 +100,19 @@ def satad_numpy(qv, qc, t, rho):
     return t, qv, qc
 
 
+def maximizeTendencies(fld, refFld, varname):
+    """Make hypothesis maximize mean and std of tendency."""
+    tendency = np.asarray(fld) - refFld
+    target(np.mean(np.abs(tendency)), label=varname + " mean tendency")
+    target(np.std(tendency), label=varname + " stdev. tendency")
+
+
+# TODO: Understand magic number 1e-8. Single precision-related?
 @given(
-    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-12),
-    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-12),
-    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-12),
-    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-12),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=200, max_value=350),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-8, max_value=1.0),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-8, max_value=1.0),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-8, max_value=1.0),
 )
 @settings(
     suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
@@ -112,7 +123,7 @@ def test_mo_satad(qv, qc, t, rho):
     with warnings.catch_warnings():
         warnings.filterwarnings("error")
         try:
-            t_ref, qv_ref, qc_ref = satad_numpy(
+            tRef, qvRef, qcRef = satad_numpy(
                 np.asarray(qv).copy(),
                 np.asarray(qc).copy(),
                 np.asarray(t).copy(),
@@ -121,15 +132,12 @@ def test_mo_satad(qv, qc, t, rho):
         except RuntimeWarning:
             assume(False)
 
-        try:
-            # Exploit hypothesis tool to guess needed co-variability of inputs.
-            tendency = np.asarray(qv) - qv_ref
-            target(np.mean(np.abs(tendency)), label="Mean tendency")
-            target(np.std(tendency), label="Stdev. tendency")
-        except Exception:
-            assume(False)
+    maximizeTendencies(t, tRef, "t")
+    maximizeTendencies(qv, qvRef, "qv")
+    maximizeTendencies(qc, qcRef, "qc")
 
     satad(qv, qc, t, rho, offset_provider={})
-    assert np.allclose(np.asarray(t), t_ref)
-    assert np.allclose(np.asarray(qv), qv_ref)
-    assert np.allclose(np.asarray(qc), qc_ref)
+
+    assert np.allclose(np.asarray(t), tRef)
+    assert np.allclose(np.asarray(qv), qvRef)
+    assert np.allclose(np.asarray(qc), qcRef)
