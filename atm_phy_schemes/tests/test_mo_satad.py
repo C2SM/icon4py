@@ -11,17 +11,16 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import warnings
 
 import numpy as np
 from functional.iterator.embedded import np_as_located_field
-from hypothesis import HealthCheck, assume, given, settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from hypothesis import target
 from hypothesis.extra.numpy import arrays
 
 from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
-from icon4py.atm_phy_schemes.mo_satad import satad
+from icon4py.atm_phy_schemes.mo_satad import _newtonian_iteration_t, satad
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -44,11 +43,18 @@ def random_field_strategy(
     ).map(np_as_located_field(*dims))
 
 
+def maximizeTendency(fld, refFld, varname):
+    """Make hypothesis maximize mean and std of tendency."""
+    tendency = np.asarray(fld) - refFld
+    target(np.mean(np.abs(tendency)), label=varname + " mean tendency")
+    target(np.std(tendency), label=varname + " stdev. tendency")
+
+
 cp_v = 1850.0
 ci = 2108.0
 
 tol = 1e-3
-maxiter = 2
+maxiter = 1  # DL: Needs to be 10, but GT4Py is currently too slow
 zqwmin = 1e-20
 
 
@@ -69,29 +75,37 @@ def dqsatdT_rho(t, zqsat):
     return beta * zqsat
 
 
+def newtonian_iteration_t(t, qv, rho):
+    lwdocvd = latent_heat_vaporization(t) / cvd
+
+    tWork = t.copy()
+    tWorkold = tWork.copy() + 10.0
+
+    for _ in range(maxiter):
+        if abs(tWork - tWorkold) > tol:
+            tWorkold = tWork
+            qwd = qsat_rho(t, rho)
+            dqwd = dqsatdT_rho(tWork, qwd)
+            fT = tWork - t + lwdocvd * (qwd - qv)
+            dfT = 1.0 + lwdocvd * dqwd
+            tWork = tWork - fT / dfT
+
+    return tWork
+
+
 def satad_numpy(qv, qc, t, rho):
 
     lwdocvd = latent_heat_vaporization(t) / cvd
 
     for cell, k in np.ndindex(np.shape(qv)):
-        if qv[cell, k] + qc[cell, k] <= qsat_rho(t, rho)[cell, k]:
+        totallySubsaturated = qv[cell, k] + qc[cell, k] <= qsat_rho(t, rho)[cell, k]
+
+        if totallySubsaturated:
             t[cell, k] = t[cell, k] - lwdocvd[cell, k] * qc[cell, k]
             qv[cell, k] = qv[cell, k] + qc[cell, k]
             qc[cell, k] = 0.0
         else:
-            twork = t[cell, k]
-            tworkold = twork + 10.0
-
-            for _ in 1, maxiter:
-                if abs(twork - tworkold) > tol:
-                    tworkold = twork
-                    qwd = qsat_rho(t, rho)[cell, k]
-                    dqwd = dqsatdT_rho(twork, qwd)
-                    fT = twork - t[cell, k] + lwdocvd[cell, k] * (qwd - qv[cell, k])
-                    dfT = 1.0 + lwdocvd[cell, k] * dqwd
-                    twork = twork - fT / dfT
-
-            t[cell, k] = twork
+            t[cell, k] = newtonian_iteration_t(t[cell, k], qv[cell, k], rho[cell, k])
 
             qwa = qsat_rho(t[cell, k], rho[cell, k])
             qc[cell, k] = max(qc[cell, k] + qv[cell, k] - qwa, zqwmin)
@@ -100,41 +114,47 @@ def satad_numpy(qv, qc, t, rho):
     return t, qv, qc
 
 
-def maximizeTendencies(fld, refFld, varname):
-    """Make hypothesis maximize mean and std of tendency."""
-    tendency = np.asarray(fld) - refFld
-    target(np.mean(np.abs(tendency)), label=varname + " mean tendency")
-    target(np.std(tendency), label=varname + " stdev. tendency")
-
-
 # TODO: Understand magic number 1e-8. Single precision-related?
+@given(
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=200, max_value=350),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-8, max_value=1.0),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-8, max_value=1.0),
+)
+@settings(deadline=None, max_examples=10)
+def test_newtonian_iteration(t, qv, rho):
+    tRef = np.zeros_like(np.asarray(t))
+
+    for cell, k in np.ndindex(np.shape(t)):
+        tRef[cell, k] = newtonian_iteration_t(
+            np.asarray(t).copy()[cell, k],
+            np.asarray(qv)[cell, k],
+            np.asarray(rho)[cell, k],
+        )
+    _newtonian_iteration_t(t, qv, rho, out=t, offset_provider={})
+
+    maximizeTendency(t, tRef, "t")
+    assert np.allclose(np.asarray(t), tRef)
+
+
 @given(
     random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=200, max_value=350),
     random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-8, max_value=1.0),
     random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-8, max_value=1.0),
     random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-8, max_value=1.0),
 )
-@settings(
-    suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
-    deadline=None,
-    max_examples=10,
-)
+@settings(deadline=None, max_examples=10)
 def test_mo_satad(qv, qc, t, rho):
-    with warnings.catch_warnings():
-        warnings.filterwarnings("error")
-        try:
-            tRef, qvRef, qcRef = satad_numpy(
-                np.asarray(qv).copy(),
-                np.asarray(qc).copy(),
-                np.asarray(t).copy(),
-                np.asarray(rho).copy(),
-            )
-        except RuntimeWarning:
-            assume(False)
 
-    maximizeTendencies(t, tRef, "t")
-    maximizeTendencies(qv, qvRef, "qv")
-    maximizeTendencies(qc, qcRef, "qc")
+    tRef, qvRef, qcRef = satad_numpy(
+        np.asarray(qv).copy(),
+        np.asarray(qc).copy(),
+        np.asarray(t).copy(),
+        np.asarray(rho).copy(),
+    )
+
+    maximizeTendency(t, tRef, "t")
+    maximizeTendency(qv, qvRef, "qv")
+    maximizeTendency(qc, qcRef, "qc")
 
     satad(qv, qc, t, rho, offset_provider={})
 
