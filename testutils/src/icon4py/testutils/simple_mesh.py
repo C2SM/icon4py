@@ -30,6 +30,7 @@ from icon4py.common.dimension import (
     V2CDim,
     V2EDim,
     VertexDim,
+    CEDim,
 )
 
 
@@ -354,6 +355,7 @@ class SimpleMesh:
             KDim: self.k_level,
             VertexDim: self.n_vertices,
             V2EDim: self.n_v2e,
+            CEDim: self.n_cells*self.n_c2e,
         }
 
     def get_c2e_offset_provider(self) -> NeighborTableOffsetProvider:
