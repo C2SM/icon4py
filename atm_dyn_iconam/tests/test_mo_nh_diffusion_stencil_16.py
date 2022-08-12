@@ -29,8 +29,8 @@ def mo_nh_diffusion_stencil_16_numpy(
     rd_o_cvd,
 ) -> tuple[np.array]:
     area = np.expand_dims(area, axis=0)
-    theta_v = theta_v + (area * z_temp)
     z_theta = theta_v
+    theta_v = theta_v + (area * z_temp)
     exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
     return theta_v, exner
 
