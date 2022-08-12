@@ -18,6 +18,7 @@ from __future__ import annotations
 import dataclasses
 import importlib
 import pathlib
+from sys import argv
 import types
 from collections.abc import Iterable
 from typing import Any, TypeGuard
@@ -107,6 +108,17 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
     C (cell), E (Edge), V (Vertex) and be separated by a '2' e.g. 'E2V'. If the origin is to
     be included, the string should terminate with O (uppercase o), e.g. 'C2E2CO`.
     """
+
+    """Handling of "new" sparse dimensions
+    
+    A new sparse dimension may look like C2CE or V2CVEC. In this case, we need to strip the 2
+    and pass the tokens after to the algorithm below
+    """
+
+    new_sparse_field = any(len(token) > 1 for token in chain.split("2"))
+    if new_sparse_field:
+        chain = chain.split("2")[1]
+
     location_chain = []
     include_center = False
     for letter in chain:
@@ -266,3 +278,7 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
         connectivity_chains = [c for c in offsets if offset != Koff.value]
         output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
     click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
+
+
+if __name__ == "__main__":
+    main(argv[1:])
