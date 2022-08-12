@@ -27,10 +27,11 @@ def mo_velocity_advection_stencil_16_numpy(
     coeff1_dwdz: np.array,
     coeff2_dwdz: np.array,
 ) -> np.array:
-    w_offset1 = np.roll(w, shift=-1, axis=1)
+    w_offset1 = np.roll(w, shift=1, axis=1)
+    w_offset2 = np.roll(w, shift=-1, axis=1)
     ddt_w_adv = -z_w_con_c * (
         w_offset1 * coeff1_dwdz
-        - w_offset1 * coeff2_dwdz
+        - w_offset2 * coeff2_dwdz
         + w * (coeff2_dwdz - coeff1_dwdz)
     )
     return ddt_w_adv
