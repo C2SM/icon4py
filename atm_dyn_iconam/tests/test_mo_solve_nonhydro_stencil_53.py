@@ -25,9 +25,14 @@ def mo_solve_nonhydro_stencil_53_numpy(
     z_q: np.array,
     w: np.array,
 ) -> np.array:
-    w_offset_1 = np.roll(w, shift=-1, axis=1)
-    w = w + w_offset_1 * z_q
-    return w
+    w_new = np.zeros_like(w)
+    last_k_level = w.shape[1] - 1
+
+    w_new[:, last_k_level] = w[:, last_k_level]
+    for k in reversed(range(1, last_k_level)):
+        w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
+    w_new[:, 0] = w[:, 0]
+    return w_new
 
 
 def test_mo_solve_nonhydro_stencil_53():
@@ -40,6 +45,8 @@ def test_mo_solve_nonhydro_stencil_53():
         np.asarray(w),
     )
 
-    mo_solve_nonhydro_stencil_53(z_q, w, offset_provider={"Koff": KDim})
+    mo_solve_nonhydro_stencil_53(
+        z_q, w, w, offset_provider={"Koff": KDim}
+    )  # TODO passing `w` as in and out is not guaranteed to work
 
-    assert np.allclose(w_ref[:, :-1], w[:, :-1])
+    assert np.allclose(w_ref, w)

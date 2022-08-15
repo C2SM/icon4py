@@ -11,24 +11,21 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
+from functional.ffront.decorator import program, scan_operator
 from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import CellDim, KDim, Koff
+from icon4py.common.dimension import CellDim, KDim
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_53(
-    z_q: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    w = w + w(Koff[1]) * z_q
-    return w
+@scan_operator(axis=KDim, forward=False, init=0.0)
+def _mo_solve_nonhydro_stencil_53_scan(state: float, z_q: float, w: float) -> float:
+    return w + state * z_q
 
 
 @program
 def mo_solve_nonhydro_stencil_53(
     z_q: Field[[CellDim, KDim], float],
+    w_before: Field[[CellDim, KDim], float],
     w: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_53(z_q, w, out=w)
+    _mo_solve_nonhydro_stencil_53_scan(z_q, w_before, out=w[:, 1:])
