@@ -24,7 +24,7 @@ from icon4py.testutils.utils import random_field, zero_field
 def mo_solve_nonhydro_stencil_40_numpy(
     e_bln_c_s: np.array,
     z_w_concorr_me: np.array,
-    wgtfac_c: np.array,
+    wgtfacq_c: np.array,
     c2e: np.array,
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
@@ -35,9 +35,9 @@ def mo_solve_nonhydro_stencil_40_numpy(
     z_w_concorr_mc_m2 = np.sum(e_bln_c_s * z_w_concorr_me_offset_2[c2e], axis=1)
     z_w_concorr_mc_m3 = np.sum(e_bln_c_s * z_w_concorr_me_offset_3[c2e], axis=1)
     w_concorr_c = (
-        np.roll(wgtfac_c, shift=1, axis=1) * z_w_concorr_mc_m1
-        + np.roll(wgtfac_c, shift=2, axis=1) * z_w_concorr_mc_m2
-        + np.roll(wgtfac_c, shift=3, axis=1) * z_w_concorr_mc_m3
+        np.roll(wgtfacq_c, shift=1, axis=1) * z_w_concorr_mc_m1
+        + np.roll(wgtfacq_c, shift=2, axis=1) * z_w_concorr_mc_m2
+        + np.roll(wgtfacq_c, shift=3, axis=1) * z_w_concorr_mc_m3
     )
     return w_concorr_c
 
@@ -47,21 +47,21 @@ def test_mo_solve_nonhydro_stencil_40():
 
     e_bln_c_s = random_field(mesh, CellDim, C2EDim)
     z_w_concorr_me = random_field(mesh, EdgeDim, KDim)
-    wgtfac_c = random_field(mesh, CellDim, KDim)
+    wgtfacq_c = random_field(mesh, CellDim, KDim)
 
     w_concorr_c = zero_field(mesh, CellDim, KDim)
 
     w_concorr_c_ref = mo_solve_nonhydro_stencil_40_numpy(
         np.asarray(e_bln_c_s),
         np.asarray(z_w_concorr_me),
-        np.asarray(wgtfac_c),
+        np.asarray(wgtfacq_c),
         mesh.c2e,
     )
 
     mo_solve_nonhydro_stencil_40(
         e_bln_c_s,
         z_w_concorr_me,
-        wgtfac_c,
+        wgtfacq_c,
         w_concorr_c,
         offset_provider={"Koff": KDim, "C2E": mesh.get_c2e_offset_provider()},
     )
