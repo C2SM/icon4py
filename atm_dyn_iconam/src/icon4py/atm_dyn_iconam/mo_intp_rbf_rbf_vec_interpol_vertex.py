@@ -18,24 +18,24 @@ from icon4py.common.dimension import V2E, EdgeDim, KDim, V2EDim, VertexDim
 
 
 @field_operator
-def _mo_intp_rbf_rbf_vec_interpol_vertex_dom_b(
+def _mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: Field[[EdgeDim, KDim], float],
     ptr_coeff_1: Field[[VertexDim, V2EDim], float],
     ptr_coeff_2: Field[[VertexDim, V2EDim], float],
 ) -> tuple[Field[[VertexDim, KDim], float], Field[[VertexDim, KDim], float]]:
-    p_u_out = neighbor_sum(ptr_coeff_1 * p_e_in(V2E), axis=V2EDim)
-    p_v_out = neighbor_sum(ptr_coeff_2 * p_e_in(V2E), axis=V2EDim)
+    p_u_out = neighbor_sum(p_e_in(V2E) * ptr_coeff_1, axis=V2EDim)
+    p_v_out = neighbor_sum(p_e_in(V2E) * ptr_coeff_2, axis=V2EDim)
     return p_u_out, p_v_out
 
 
 @program
-def mo_intp_rbf_rbf_vec_interpol_vertex_dom_b(
+def mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: Field[[EdgeDim, KDim], float],
     ptr_coeff_1: Field[[VertexDim, V2EDim], float],
     ptr_coeff_2: Field[[VertexDim, V2EDim], float],
     p_u_out: Field[[VertexDim, KDim], float],
     p_v_out: Field[[VertexDim, KDim], float],
 ):
-    _mo_intp_rbf_rbf_vec_interpol_vertex_dom_b(
+    _mo_intp_rbf_rbf_vec_interpol_vertex(
         p_e_in, ptr_coeff_1, ptr_coeff_2, out=(p_u_out, p_v_out)
     )
