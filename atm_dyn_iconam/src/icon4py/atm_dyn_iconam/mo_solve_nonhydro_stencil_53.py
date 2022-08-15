@@ -18,8 +18,8 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @scan_operator(axis=KDim, forward=False, init=0.0)
-def _mo_solve_nonhydro_stencil_53_scan(state: float, z_q: float, w: float) -> float:
-    return w + state * z_q
+def _mo_solve_nonhydro_stencil_53_scan(w_state: float, z_q: float, w: float) -> float:
+    return w + w_state * z_q
 
 
 @program
