@@ -36,7 +36,7 @@ def random_field_strategy(
         elements=st.floats(
             min_value=min_value,
             max_value=max_value,
-            exclude_min=True,
+            exclude_min=min_value is not None,
             allow_nan=False,
             allow_infinity=False,
         ),
@@ -46,8 +46,8 @@ def random_field_strategy(
 def maximizeTendency(fld, refFld, varname):
     """Make hypothesis maximize mean and std of tendency."""
     tendency = np.asarray(fld) - refFld
-    target(np.mean(np.abs(tendency)), label=varname + " mean tendency")
-    target(np.std(tendency), label=varname + " stdev. tendency")
+    target(np.mean(np.abs(tendency)), label=f"{varname} mean tendency")
+    target(np.std(tendency), label=f"{varname} stdev. tendency")
 
 
 cp_v = 1850.0
