@@ -110,12 +110,15 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
     """
 
     """Handling of "new" sparse dimensions
-    
+
     A new sparse dimension may look like C2CE or V2CVEC. In this case, we need to strip the 2
     and pass the tokens after to the algorithm below
     """
 
-    new_sparse_field = any(len(token) > 1 for token in chain.split("2"))
+    # note: this seeems really brittle. maybe agree on a keyowrd to indicate new sparse fields?
+    new_sparse_field = any(
+        len(token) > 1 for token in chain.split("2")
+    ) and not chain.endswith("O")
     if new_sparse_field:
         chain = chain.split("2")[1]
 
