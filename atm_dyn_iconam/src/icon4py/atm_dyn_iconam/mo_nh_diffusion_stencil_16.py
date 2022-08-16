@@ -20,48 +20,25 @@ from icon4py.common.dimension import CellDim, KDim
 @field_operator
 def _mo_nh_diffusion_stencil_16(
     z_temp: Field[[CellDim, KDim], float],
-    area: Field[[KDim], float],
+    area: Field[[CellDim], float],
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    theta_v = theta_v + (area * z_temp)
     z_theta = theta_v
+    theta_v = theta_v + (area * z_temp)
     exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
     return theta_v, exner
-
-
-@field_operator
-def _mo_nh_diffusion_stencil_16_theta_v(
-    z_temp: Field[[CellDim, KDim], float],
-    area: Field[[KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_nh_diffusion_stencil_16(z_temp, area, theta_v, exner, rd_o_cvd)[0]
-
-
-@field_operator
-def _mo_nh_diffusion_stencil_16_exner(
-    z_temp: Field[[CellDim, KDim], float],
-    area: Field[[KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_nh_diffusion_stencil_16(z_temp, area, theta_v, exner, rd_o_cvd)[1]
 
 
 @program
 def mo_nh_diffusion_stencil_16(
     z_temp: Field[[CellDim, KDim], float],
-    area: Field[[KDim], float],
+    area: Field[[CellDim], float],
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
 ):
-    _mo_nh_diffusion_stencil_16_theta_v(
-        z_temp, area, theta_v, exner, rd_o_cvd, out=theta_v
+    _mo_nh_diffusion_stencil_16(
+        z_temp, area, theta_v, exner, rd_o_cvd, out=(theta_v, exner)
     )
-    _mo_nh_diffusion_stencil_16_exner(z_temp, area, theta_v, exner, rd_o_cvd, out=exner)

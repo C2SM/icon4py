@@ -35,60 +35,6 @@ def _mo_solve_nonhydro_stencil_44(
     return z_beta, z_alpha
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_44_z_beta(
-    exner_nnow: Field[[CellDim, KDim], float],
-    rho_nnow: Field[[CellDim, KDim], float],
-    theta_v_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    dtime: float,
-    rd: float,
-    cvd: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_44(
-        exner_nnow,
-        rho_nnow,
-        theta_v_nnow,
-        inv_ddqz_z_full,
-        vwind_impl_wgt,
-        theta_v_ic,
-        rho_ic,
-        dtime,
-        rd,
-        cvd,
-    )[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_44_z_alpha(
-    exner_nnow: Field[[CellDim, KDim], float],
-    rho_nnow: Field[[CellDim, KDim], float],
-    theta_v_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    dtime: float,
-    rd: float,
-    cvd: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_44(
-        exner_nnow,
-        rho_nnow,
-        theta_v_nnow,
-        inv_ddqz_z_full,
-        vwind_impl_wgt,
-        theta_v_ic,
-        rho_ic,
-        dtime,
-        rd,
-        cvd,
-    )[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_44(
     z_beta: Field[[CellDim, KDim], float],
@@ -104,7 +50,7 @@ def mo_solve_nonhydro_stencil_44(
     rd: float,
     cvd: float,
 ):
-    _mo_solve_nonhydro_stencil_44_z_beta(
+    _mo_solve_nonhydro_stencil_44(
         exner_nnow,
         rho_nnow,
         theta_v_nnow,
@@ -115,18 +61,5 @@ def mo_solve_nonhydro_stencil_44(
         dtime,
         rd,
         cvd,
-        out=z_beta,
-    )
-    _mo_solve_nonhydro_stencil_44_z_alpha(
-        exner_nnow,
-        rho_nnow,
-        theta_v_nnow,
-        inv_ddqz_z_full,
-        vwind_impl_wgt,
-        theta_v_ic,
-        rho_ic,
-        dtime,
-        rd,
-        cvd,
-        out=z_alpha,
+        out=(z_beta, z_alpha),
     )

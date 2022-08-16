@@ -33,34 +33,6 @@ def _mo_solve_nonhydro_stencil_66(
     return theta_v, exner
 
 
-@field_operator
-def _mo_solve_nonhydro_stencil_66_theta_v(
-    bdy_halo_c: Field[[CellDim], float],
-    rho: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
-    rd_o_p0ref: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_66(
-        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref
-    )[0]
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_66_exner(
-    bdy_halo_c: Field[[CellDim], float],
-    rho: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
-    rd_o_p0ref: float,
-) -> Field[[CellDim, KDim], float]:
-    return _mo_solve_nonhydro_stencil_66(
-        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref
-    )[1]
-
-
 @program
 def mo_solve_nonhydro_stencil_66(
     bdy_halo_c: Field[[CellDim], float],
@@ -71,10 +43,6 @@ def mo_solve_nonhydro_stencil_66(
     rd_o_p0ref: float,
 ):
 
-    _mo_solve_nonhydro_stencil_66_theta_v(
-        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=theta_v
-    )
-
-    _mo_solve_nonhydro_stencil_66_exner(
-        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=exner
+    _mo_solve_nonhydro_stencil_66(
+        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner)
     )
