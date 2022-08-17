@@ -19,7 +19,7 @@ from icon4py.common.dimension import CellDim, KDim, Koff
 
 @field_operator
 def _mo_solve_nonhydro_stencil_51(
-    vwind_impl_wgt: Field[[CellDim, KDim], float],
+    vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_beta: Field[[CellDim, KDim], float],
@@ -43,7 +43,7 @@ def _mo_solve_nonhydro_stencil_51(
 def mo_solve_nonhydro_stencil_51(
     z_q: Field[[CellDim, KDim], float],
     w_nnew: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim, KDim], float],
+    vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_beta: Field[[CellDim, KDim], float],

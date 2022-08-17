@@ -51,6 +51,7 @@ def mo_solve_nonhydro_stencil_51_numpy(
     dtime: float,
     cpd: float,
 ) -> tuple[np.array]:
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
     z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
     z_alpha_k_plus_1 = np.roll(z_alpha, shift=-1, axis=1)
     z_beta_k_minus_1 = np.roll(z_beta, shift=1, axis=1)
@@ -68,7 +69,7 @@ def test_mo_solve_nonhydro_stencil_51():
     mesh = SimpleMesh()
     z_q = random_field(mesh, CellDim, KDim)
     w_nnew = random_field(mesh, CellDim, KDim)
-    vwind_impl_wgt = random_field(mesh, CellDim, KDim)
+    vwind_impl_wgt = random_field(mesh, CellDim)
     theta_v_ic = random_field(mesh, CellDim, KDim)
     ddqz_z_half = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
     z_beta = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
