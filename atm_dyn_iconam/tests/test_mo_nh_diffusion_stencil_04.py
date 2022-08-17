@@ -12,14 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from functional.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_04 import (
     mo_nh_diffusion_stencil_04,
 )
-from icon4py.common.dimension import VertexDim, EdgeDim, ECVDim, E2C2VDim, KDim
+from icon4py.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
-from functional.iterator.embedded import StridedNeighborOffsetProvider
 
 
 def mo_nh_diffusion_stencil_04_numpy(

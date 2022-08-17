@@ -18,9 +18,9 @@ from __future__ import annotations
 import dataclasses
 import importlib
 import pathlib
-from sys import argv
 import types
 from collections.abc import Iterable
+from sys import argv
 from typing import Any, TypeGuard
 
 import click
@@ -107,14 +107,12 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
     Connectivity strings must contain one of the following connectivity type identifiers:
     C (cell), E (Edge), V (Vertex) and be separated by a '2' e.g. 'E2V'. If the origin is to
     be included, the string should terminate with O (uppercase o), e.g. 'C2E2CO`.
-    """
 
-    """Handling of "new" sparse dimensions
+    Handling of "new" sparse dimensions
 
     A new sparse dimension may look like C2CE or V2CVEC. In this case, we need to strip the 2
     and pass the tokens after to the algorithm below
     """
-
     # note: this seeems really brittle. maybe agree on a keyowrd to indicate new sparse fields?
     new_sparse_field = any(
         len(token) > 1 for token in chain.split("2")

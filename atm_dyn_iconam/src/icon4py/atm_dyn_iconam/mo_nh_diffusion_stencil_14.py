@@ -14,7 +14,15 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.common.dimension import C2E, C2CE, C2EDim, CellDim, EdgeDim, CEDim, KDim
+from icon4py.common.dimension import (
+    C2CE,
+    C2E,
+    C2EDim,
+    CEDim,
+    CellDim,
+    EdgeDim,
+    KDim,
+)
 
 
 @field_operator

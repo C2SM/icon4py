@@ -20,19 +20,19 @@ from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    CEDim,
     CellDim,
     E2C2EDim,
     E2C2EODim,
-    E2CDim,
     E2C2VDim,
+    E2CDim,
     E2VDim,
+    ECVDim,
     EdgeDim,
     KDim,
     V2CDim,
     V2EDim,
     VertexDim,
-    CEDim,
-    ECVDim
 )
 
 
@@ -60,16 +60,16 @@ from icon4py.common.dimension import (
 class SimpleMeshData:
     e2c2v_table = np.asarray(
         [
-            [0, 1, 4, 6],  #  0
-            [0, 4, 1, 3],  #  1
-            [0, 3, 4, 2],  #  2
-            [1, 2, 5, 7],  #  3
-            [1, 5, 2, 4],  #  4
-            [1, 4, 5, 0],  #  5
-            [2, 0, 3, 8],  #  6
-            [2, 3, 5, 0],  #  7
-            [2, 5, 1, 3],  #  8
-            [3, 4, 0, 7],  #  9
+            [0, 1, 4, 6],  # 0
+            [0, 4, 1, 3],  # 1
+            [0, 3, 4, 2],  # 2
+            [1, 2, 5, 7],  # 3
+            [1, 5, 2, 4],  # 4
+            [1, 4, 5, 0],  # 5
+            [2, 0, 3, 8],  # 6
+            [2, 3, 5, 0],  # 7
+            [2, 5, 1, 3],  # 8
+            [3, 4, 0, 7],  # 9
             [3, 7, 4, 6],  # 10
             [3, 6, 7, 5],  # 11
             [4, 5, 8, 1],  # 12
