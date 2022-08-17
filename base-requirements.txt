@@ -1,2 +1,2 @@
 # VCS
-gt4py-functional @ git+https://github.com/GridTools/gt4py.git@stable_functional_aug12
+gt4py-functional @ git+https://github.com/GridTools/gt4py.git@functional
