@@ -13,41 +13,17 @@
 
 
 import numpy as np
-from functional.iterator.embedded import np_as_located_field
 from hypothesis import given, settings
-from hypothesis import strategies as st
-from hypothesis import target
-from hypothesis.extra.numpy import arrays
 
 from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
 from icon4py.atm_phy_schemes.mo_satad import _newtonian_iteration_t, satad
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
-from icon4py.testutils.simple_mesh import SimpleMesh
-
-
-def random_field_strategy(
-    mesh, *dims, min_value=None, max_value=None
-) -> st.SearchStrategy[float]:
-    """Return a hypothesis strategy of a random field."""
-    return arrays(
-        dtype=np.float64,
-        shape=tuple(map(lambda x: mesh.size[x], dims)),
-        elements=st.floats(
-            min_value=min_value,
-            max_value=max_value,
-            exclude_min=min_value is not None,
-            allow_nan=False,
-            allow_infinity=False,
-        ),
-    ).map(np_as_located_field(*dims))
-
-
-def maximizeTendency(fld, refFld, varname):
-    """Make hypothesis maximize mean and std of tendency."""
-    tendency = np.asarray(fld) - refFld
-    target(np.mean(np.abs(tendency)), label=f"{varname} mean tendency")
-    target(np.std(tendency), label=f"{varname} stdev. tendency")
+from icon4py.testutils.simple_mesh import (
+    SimpleMesh,
+    maximizeTendency,
+    random_field_strategy,
+)
 
 
 cp_v = 1850.0

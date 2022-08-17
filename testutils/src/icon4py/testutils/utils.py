@@ -14,6 +14,9 @@
 import numpy as np
 from functional import common as gt_common
 from functional.iterator import embedded as it_embedded
+from hypothesis import strategies as st
+from hypothesis import target
+from hypothesis.extra.numpy import arrays as hypothesis_array
 
 from . import simple_mesh
 
@@ -51,3 +54,27 @@ def zero_field(
 
 def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
     return f"icon4py.{stencil_module}.{stencil_name}:{stencil_name}"
+
+
+def random_field_strategy(
+    mesh, *dims, min_value=None, max_value=None
+) -> st.SearchStrategy[float]:
+    """Return a hypothesis strategy of a random field."""
+    return hypothesis_array(
+        dtype=np.float64,
+        shape=tuple(map(lambda x: mesh.size[x], dims)),
+        elements=st.floats(
+            min_value=min_value,
+            max_value=max_value,
+            exclude_min=min_value is not None,
+            allow_nan=False,
+            allow_infinity=False,
+        ),
+    ).map(it_embedded.np_as_located_field(*dims))
+
+
+def maximizeTendency(fld, refFld, varname):
+    """Make hypothesis maximize mean and std of tendency."""
+    tendency = np.asarray(fld) - refFld
+    target(np.mean(np.abs(tendency)), label=f"{varname} mean tendency")
+    target(np.std(tendency), label=f"{varname} stdev. tendency")
