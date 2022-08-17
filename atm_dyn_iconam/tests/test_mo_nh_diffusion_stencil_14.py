@@ -19,7 +19,8 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_14 import (
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim, CEDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
-from functional.iterator.embedded import NewSparseOffsetProvider
+from functional.iterator.embedded import StridedNeighborOffsetProvider
+
 
 def mo_nh_diffusion_stencil_14_numpy(
     c2e: np.array, z_nabla2_e: np.array, geofac_div: np.array
@@ -39,7 +40,7 @@ def test_mo_nh_diffusion_stencil_14():
     # todo: do this properly
     for i in range(0, mesh.n_cells):
         for j in range(0, mesh.n_c2e):
-            geofac_div_new[i*mesh.n_c2e+j] = geofac_div[i,j]
+            geofac_div_new[i * mesh.n_c2e + j] = geofac_div[i, j]
 
     out = zero_field(mesh, CellDim, KDim)
 
@@ -50,6 +51,11 @@ def test_mo_nh_diffusion_stencil_14():
         z_nabla2_e,
         geofac_div_new,
         out,
-        offset_provider={"C2E": mesh.get_c2e_offset_provider(), "C2CE" : NewSparseOffsetProvider((mesh.n_cells, mesh.n_c2e), CellDim, CEDim, mesh.n_c2e)},
+        offset_provider={
+            "C2E": mesh.get_c2e_offset_provider(),
+            "C2CE": StridedNeighborOffsetProvider(
+                (mesh.n_cells, mesh.n_c2e), CellDim, CEDim, mesh.n_c2e
+            ),
+        },
     )
     assert np.allclose(out, ref)

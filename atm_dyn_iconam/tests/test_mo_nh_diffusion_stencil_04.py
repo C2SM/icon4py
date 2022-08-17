@@ -19,7 +19,7 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_04 import (
 from icon4py.common.dimension import VertexDim, EdgeDim, ECVDim, E2C2VDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
-from functional.iterator.embedded import NewSparseOffsetProvider
+from functional.iterator.embedded import StridedNeighborOffsetProvider
 
 
 def mo_nh_diffusion_stencil_04_numpy(
@@ -110,7 +110,7 @@ def test_mo_nh_diffusion_stencil_04():
         z_nabla4_e2,
         offset_provider={
             "E2C2V": mesh.get_e2c2v_offset_provider(),
-            "E2ECV": NewSparseOffsetProvider(
+            "E2ECV": StridedNeighborOffsetProvider(
                 (mesh.n_edges, mesh.n_e2c2v), EdgeDim, ECVDim, mesh.n_e2c2v
             ),
         },
