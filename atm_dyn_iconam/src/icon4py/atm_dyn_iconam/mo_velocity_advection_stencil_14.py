@@ -21,43 +21,40 @@ from icon4py.common.dimension import CellDim, KDim
 def _mo_velocity_advection_stencil_14(
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
-    cfl_clipping: Field[[CellDim, KDim], float],
-    pre_levelmask: Field[[CellDim, KDim], float],
-    vcfl: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
     dtime: float,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], int],
+    Field[[CellDim, KDim], int],
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
 
     cfl_clipping = where(
-        abs(z_w_con_c) > cfl_w_limit * ddqz_z_half, broadcast(1.0, (CellDim, KDim)), 0.0
+        abs(z_w_con_c) > cfl_w_limit * ddqz_z_half, broadcast(1, (CellDim, KDim)), 0
     )
 
-    pre_levelmask = where(cfl_clipping == 1.0, broadcast(1.0, (CellDim, KDim)), 0.0)
+    pre_levmask = where(cfl_clipping == 1, broadcast(1, (CellDim, KDim)), 0)
 
-    vcfl = where(cfl_clipping == 1.0, z_w_con_c * dtime / ddqz_z_half, 0.0)
+    vcfl = where(cfl_clipping == 1, z_w_con_c * dtime / ddqz_z_half, 0.0)
 
     z_w_con_c = where(
-        (cfl_clipping == 1.0) & (vcfl < -0.85), -0.85 * ddqz_z_half / dtime, z_w_con_c
+        (cfl_clipping == 1) & (vcfl < -0.85), -0.85 * ddqz_z_half / dtime, z_w_con_c
     )
 
     z_w_con_c = where(
-        (cfl_clipping == 1.0) & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c
+        (cfl_clipping == 1) & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c
     )
 
-    return cfl_clipping, pre_levelmask, vcfl, z_w_con_c
+    return cfl_clipping, pre_levmask, vcfl, z_w_con_c
 
 
 @program
 def mo_velocity_advection_stencil_14(
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
-    cfl_clipping: Field[[CellDim, KDim], float],
-    pre_levelmask: Field[[CellDim, KDim], float],
+    cfl_clipping: Field[[CellDim, KDim], int],
+    pre_levmask: Field[[CellDim, KDim], int],
     vcfl: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
     dtime: float,
@@ -65,10 +62,7 @@ def mo_velocity_advection_stencil_14(
     _mo_velocity_advection_stencil_14(
         ddqz_z_half,
         z_w_con_c,
-        cfl_clipping,
-        pre_levelmask,
-        vcfl,
         cfl_w_limit,
         dtime,
-        out=(cfl_clipping, pre_levelmask, vcfl, z_w_con_c),
+        out=(cfl_clipping, pre_levmask, vcfl, z_w_con_c),
     )

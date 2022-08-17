@@ -42,10 +42,10 @@ def random_field(
 
 
 def zero_field(
-    mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension
+    mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension, dtype=float
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.zeros(shape=tuple(map(lambda x: mesh.size[x], dims)))
+        np.zeros(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)
     )
 
 
