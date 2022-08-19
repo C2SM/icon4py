@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, abs, broadcast, where
+from functional.ffront.fbuiltins import Field, abs, where
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -24,26 +24,24 @@ def _mo_velocity_advection_stencil_14(
     cfl_w_limit: float,
     dtime: float,
 ) -> tuple[
-    Field[[CellDim, KDim], int],
-    Field[[CellDim, KDim], int],
+    Field[[CellDim, KDim], bool],
+    Field[[CellDim, KDim], bool],
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
 
-    cfl_clipping = where(
-        abs(z_w_con_c) > cfl_w_limit * ddqz_z_half, broadcast(1, (CellDim, KDim)), 0
-    )
+    cfl_clipping = abs(z_w_con_c) > cfl_w_limit * ddqz_z_half
 
-    pre_levmask = where(cfl_clipping == 1, broadcast(1, (CellDim, KDim)), 0)
+    pre_levmask = cfl_clipping
 
-    vcfl = where(cfl_clipping == 1, z_w_con_c * dtime / ddqz_z_half, 0.0)
+    vcfl = where(cfl_clipping, z_w_con_c * dtime / ddqz_z_half, 0.0)
 
     z_w_con_c = where(
-        (cfl_clipping == 1) & (vcfl < -0.85), -0.85 * ddqz_z_half / dtime, z_w_con_c
+        cfl_clipping & (vcfl < -0.85), -0.85 * ddqz_z_half / dtime, z_w_con_c
     )
 
     z_w_con_c = where(
-        (cfl_clipping == 1) & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c
+        cfl_clipping & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c
     )
 
     return cfl_clipping, pre_levmask, vcfl, z_w_con_c
@@ -53,8 +51,8 @@ def _mo_velocity_advection_stencil_14(
 def mo_velocity_advection_stencil_14(
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
-    cfl_clipping: Field[[CellDim, KDim], int],
-    pre_levmask: Field[[CellDim, KDim], int],
+    cfl_clipping: Field[[CellDim, KDim], bool],
+    pre_levmask: Field[[CellDim, KDim], bool],
     vcfl: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
     dtime: float,

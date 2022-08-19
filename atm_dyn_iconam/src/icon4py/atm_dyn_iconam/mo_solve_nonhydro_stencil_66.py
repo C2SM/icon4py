@@ -19,21 +19,21 @@ from icon4py.common.dimension import CellDim, KDim
 
 @field_operator
 def _mo_solve_nonhydro_stencil_66(
-    bdy_halo_c: Field[[CellDim], int],
+    bdy_halo_c: Field[[CellDim], bool],
     rho: Field[[CellDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
     rd_o_p0ref: float,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    theta_v = where(bdy_halo_c == 1, exner, theta_v)
-    exner = where(bdy_halo_c == 1, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
+    theta_v = where(bdy_halo_c, exner, theta_v)
+    exner = where(bdy_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
     return theta_v, exner
 
 
 @program
 def mo_solve_nonhydro_stencil_66(
-    bdy_halo_c: Field[[CellDim], int],
+    bdy_halo_c: Field[[CellDim], bool],
     rho: Field[[CellDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
