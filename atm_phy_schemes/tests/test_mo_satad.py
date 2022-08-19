@@ -19,11 +19,8 @@ from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
 from icon4py.atm_phy_schemes.mo_satad import _newtonian_iteration_t, satad
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
-from icon4py.testutils.simple_mesh import (
-    SimpleMesh,
-    maximizeTendency,
-    random_field_strategy,
-)
+from icon4py.testutils.simple_mesh import SimpleMesh
+from icon4py.testutils.utils import maximizeTendency, random_field_strategy
 
 
 cp_v = 1850.0
