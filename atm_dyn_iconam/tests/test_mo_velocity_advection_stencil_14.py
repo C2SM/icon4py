@@ -18,7 +18,7 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_14 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import random_field, random_mask, zero_field
 
 
 def mo_velocity_advection_stencil_14_numpy(
@@ -53,11 +53,9 @@ def test_mo_velocity_advection_stencil_14():
 
     ddqz_z_half = random_field(mesh, CellDim, KDim)
     z_w_con_c = random_field(mesh, CellDim, KDim)
-    cfl_clipping = zero_field(mesh, CellDim, KDim, dtype=bool)
+    cfl_clipping = random_mask(mesh, CellDim, KDim, dtype=float)
 
-    pre_levelmask = zero_field(
-        mesh, CellDim, KDim, dtype=bool
-    )  # TODO should be just a K field
+    pre_levelmask = zero_field(mesh, CellDim, KDim)  # TODO should be just a K field
     vcfl = zero_field(mesh, CellDim, KDim)
     cfl_w_limit = 5.0
     dtime = 9.0
