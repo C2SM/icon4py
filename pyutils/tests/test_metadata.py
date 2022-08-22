@@ -42,7 +42,7 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
     ]
 
     if col == "offsets":
-        return offsets
+        return offsets[0].split(", ")
 
     return [arg[col] for arg in parsed]
 
@@ -62,7 +62,7 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
         (
             "atm_dyn_iconam",
             "mo_nh_diffusion_stencil_14",
-            ["C2CE, C2E"],
+            {"C2CE", "C2E"},
             ["z_nabla2_e", "geofac_div", "z_temp"],
             [
                 "Field[[Edge, K], dtype=float64]",
@@ -76,7 +76,7 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
         (
             "atm_dyn_iconam",
             "mo_solve_nonhydro_stencil_29",
-            [""],
+            {""},
             ["grf_tend_vn", "vn_now", "vn_new", "dtime"],
             [
                 "Field[[Edge, K], dtype=float64]",
@@ -91,7 +91,7 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
         (
             "atm_dyn_iconam",
             "mo_nh_diffusion_stencil_06",
-            [""],
+            {""},
             ["z_nabla2_e", "area_edge", "vn", "fac_bdydiff_v"],
             [
                 "Field[[Edge, K], dtype=float64]",
@@ -119,9 +119,9 @@ def test_tabulation(
     parsed_names = parse_tabulated(tabulated, "name")
     parsed_types = parse_tabulated(tabulated, "type")
     parsed_io = parse_tabulated(tabulated, "io")
-    parsed_offsets = parse_tabulated(tabulated, "offsets")
+    parsed_offsets = set(parse_tabulated(tabulated, "offsets"))
 
-    assert parsed_offsets == exp_offsets
+    assert len(parsed_offsets - exp_offsets) == 0
     assert parsed_names == exp_names
     assert parsed_types == exp_types
     assert (
