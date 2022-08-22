@@ -63,9 +63,9 @@ def mo_velocity_advection_stencil_18_numpy(
 def test_mo_velocity_advection_stencil_18():
     mesh = SimpleMesh()
 
-    levelmask = random_mask(mesh, KDim, numeric=True)
-    cfl_clipping = random_mask(mesh, CellDim, KDim, numeric=True)
-    owner_mask = random_mask(mesh, CellDim, numeric=True)
+    levelmask = random_mask(mesh, KDim)
+    cfl_clipping = random_mask(mesh, CellDim, KDim)
+    owner_mask = random_mask(mesh, CellDim)
     z_w_con_c = random_field(mesh, CellDim, KDim)
     ddqz_z_half = random_field(mesh, CellDim, KDim)
     area = random_field(mesh, CellDim)
