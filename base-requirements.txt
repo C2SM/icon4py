@@ -1,2 +1,2 @@
 # VCS
-gt4py-functional @ git+https://github.com/mroethlin/gt4py.git@addNewOffsetProvider
+gt4py-functional @ git+https://github.com/GridTools/gt4py.git@functional
