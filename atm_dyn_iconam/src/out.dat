@@ -1,4 +1,0 @@
-C2E, C2CE
-z_nabla2_e  Field[[Edge, K], dtype=float64]  in
-geofac_div  Field[[CE], dtype=float64]       in
-z_temp      Field[[Cell, K], dtype=float64]  out
