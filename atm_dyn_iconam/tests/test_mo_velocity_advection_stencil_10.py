@@ -44,8 +44,8 @@ def test_mo_velocity_advection_stencil_10():
         np.asarray(wgtfac_c), np.asarray(z_w_concorr_mc)
     )
     mo_velocity_advection_stencil_10(
-        wgtfac_c,
         z_w_concorr_mc,
+        wgtfac_c,
         w_concorr_c,
         offset_provider={"Koff": KDim},
     )
