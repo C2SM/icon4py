@@ -53,9 +53,7 @@ def test_mo_nh_diffusion_stencil_14():
         out,
         offset_provider={
             "C2E": mesh.get_c2e_offset_provider(),
-            "C2CE": StridedNeighborOffsetProvider(
-                (mesh.n_cells, mesh.n_c2e), CellDim, CEDim, mesh.n_c2e
-            ),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
         },
     )
     assert np.allclose(out, ref)

@@ -110,9 +110,7 @@ def test_mo_nh_diffusion_stencil_04():
         z_nabla4_e2,
         offset_provider={
             "E2C2V": mesh.get_e2c2v_offset_provider(),
-            "E2ECV": StridedNeighborOffsetProvider(
-                (mesh.n_edges, mesh.n_e2c2v), EdgeDim, ECVDim, mesh.n_e2c2v
-            ),
+            "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, mesh.n_e2c2v),
         },
     )
 

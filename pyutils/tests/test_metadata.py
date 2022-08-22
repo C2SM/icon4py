@@ -62,11 +62,11 @@ def parse_tabulated(tabulated: str, col: str) -> List[str]:
         (
             "atm_dyn_iconam",
             "mo_nh_diffusion_stencil_14",
-            ["C2E"],
+            ["C2CE, C2E"],
             ["z_nabla2_e", "geofac_div", "z_temp"],
             [
                 "Field[[Edge, K], dtype=float64]",
-                "Field[[Cell, C2E], dtype=float64]",
+                "Field[[CE], dtype=float64]",
                 "Field[[Cell, K], dtype=float64]",
             ],
             2,
