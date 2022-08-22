@@ -19,7 +19,7 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_04 import (
 )
 from icon4py.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
 
 def mo_nh_diffusion_stencil_04_numpy(
@@ -69,18 +69,8 @@ def test_mo_nh_diffusion_stencil_04():
     primal_normal_vert_v1 = random_field(mesh, EdgeDim, E2C2VDim)
     primal_normal_vert_v2 = random_field(mesh, EdgeDim, E2C2VDim)
 
-    primal_normal_vert_v1_new = random_field(mesh, ECVDim)
-    primal_normal_vert_v2_new = random_field(mesh, ECVDim)
-
-    # todo: do this properly
-    for i in range(0, mesh.n_edges):
-        for j in range(0, mesh.n_e2c2v):
-            primal_normal_vert_v1_new[i * mesh.n_e2c2v + j] = primal_normal_vert_v1[
-                i, j
-            ]
-            primal_normal_vert_v2_new[i * mesh.n_e2c2v + j] = primal_normal_vert_v2[
-                i, j
-            ]
+    primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, ECVDim)
+    primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, ECVDim)
 
     z_nabla2_e = random_field(mesh, EdgeDim, KDim)
     inv_vert_vert_length = random_field(mesh, EdgeDim)
@@ -115,7 +105,3 @@ def test_mo_nh_diffusion_stencil_04():
     )
 
     assert np.allclose(z_nabla4_e2, z_nabla4_e2_ref)
-
-
-if __name__ == "__main__":
-    test_mo_nh_diffusion_stencil_04()
