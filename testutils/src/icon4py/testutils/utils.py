@@ -11,7 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Optional
+
 import numpy as np
+import numpy.typing as npt
 from functional import common as gt_common
 from functional.iterator import embedded as it_embedded
 
@@ -19,15 +22,17 @@ from . import simple_mesh
 
 
 def random_mask(
-    mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension, numeric: bool = False
+    mesh: simple_mesh.SimpleMesh,
+    *dims: gt_common.Dimension,
+    dtype: Optional[npt.DTypeLike] = None,
 ) -> it_embedded.MutableLocatedField:
     shape = tuple(map(lambda x: mesh.size[x], dims))
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
     np.random.shuffle(arr)
     arr = np.reshape(arr, newshape=shape)
-    if numeric:
-        arr = arr.astype("int")
+    if dtype:
+        arr = arr.astype(dtype)
     return it_embedded.np_as_located_field(*dims)(arr)
 
 
@@ -42,10 +47,10 @@ def random_field(
 
 
 def zero_field(
-    mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension
+    mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension, dtype=float
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.zeros(shape=tuple(map(lambda x: mesh.size[x], dims)))
+        np.zeros(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)
     )
 
 

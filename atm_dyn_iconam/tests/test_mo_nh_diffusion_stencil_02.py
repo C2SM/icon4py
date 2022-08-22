@@ -34,7 +34,7 @@ def mo_nh_diffusion_stencil_02_numpy(
     div = np.sum(vn_geofac, axis=1)
 
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    diff_multfac_smag = np.expand_dims(diff_multfac_smag, axis=-1)
+    diff_multfac_smag = np.expand_dims(diff_multfac_smag, axis=0)
     mul = kh_smag_ec[c2e] * e_bln_c_s
     summed = np.sum(mul, axis=1)
     kh_c = summed / diff_multfac_smag
@@ -49,7 +49,7 @@ def test_mo_nh_diffusion_stencil_02():
     geofac_div = random_field(mesh, CellDim, C2EDim)
     kh_smag_ec = random_field(mesh, EdgeDim, KDim)
     e_bln_c_s = random_field(mesh, CellDim, C2EDim)
-    diff_multfac_smag = random_field(mesh, CellDim)
+    diff_multfac_smag = random_field(mesh, KDim)
 
     kh_c = zero_field(mesh, CellDim, KDim)
     div = zero_field(mesh, CellDim, KDim)
