@@ -120,10 +120,10 @@ def test_mo_velocity_advection_stencil_19():
         ddt_vn_adv,
         offset_provider={
             "E2V": mesh.get_e2v_offset_provider(),
-            "E2C": mesh.get_e2c2v_offset_provider(),
+            "E2C": mesh.get_e2c_offset_provider(),
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
             "Koff": KDim,
         },
     )
 
-    assert np.allclose(ddt_vn_adv, ddt_vn_adv_ref)
+    assert np.allclose(ddt_vn_adv[:, :-1], ddt_vn_adv_ref[:, :-1])
