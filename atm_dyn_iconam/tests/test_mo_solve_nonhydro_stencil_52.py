@@ -52,7 +52,6 @@ def mo_solve_nonhydro_stencil_52_numpy(
         w[:, k] = z_w_expl[:, k] - z_gamma[:, k] * (
             z_exner_expl[:, k - 1] - z_exner_expl[:, k]
         )
-    for k in range(2, last_k_level):
         w[:, k] = (w[:, k] - z_a[:, k] * w[:, k - 1]) * z_g[:, k]
     return z_q, w
 
