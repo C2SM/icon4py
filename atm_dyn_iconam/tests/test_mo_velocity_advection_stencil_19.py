@@ -68,7 +68,7 @@ def mo_velocity_advection_stencil_19_numpy(
             + coeff_gradekin[:, 1] * z_ekinh_e2c[:, 1]
         )
         + vt * (f_e + 0.5 * np.sum(zeta[e2v], axis=1))
-        + np.sum(z_w_con_c_full[e2c] * c_lin_e)
+        + np.sum(z_w_con_c_full[e2c] * c_lin_e, axis=1)
         * (vn_ie - vn_ie_offset_1)
         / ddqz_z_full_e
     )
