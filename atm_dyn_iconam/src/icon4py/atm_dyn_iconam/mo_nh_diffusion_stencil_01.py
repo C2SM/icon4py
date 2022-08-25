@@ -45,24 +45,30 @@ def _mo_nh_diffusion_stencil_01(
     Field[[EdgeDim, KDim], float],
 ]:
     dvt_tang = (
-        -u_vert(E2C2V[0]) * dual_normal_vert_x(E2ECV[0])
-        + v_vert(E2C2V[0]) * dual_normal_vert_y(E2ECV[0])
+        -(
+            u_vert(E2C2V[0]) * dual_normal_vert_x(E2ECV[0])
+            + v_vert(E2C2V[0]) * dual_normal_vert_y(E2ECV[0])
+        )
     ) + (
         u_vert(E2C2V[1]) * dual_normal_vert_x(E2ECV[1])
         + v_vert(E2C2V[1]) * dual_normal_vert_y(E2ECV[1])
     )
 
     dvt_norm = (
-        u_vert(E2C2V[2]) * dual_normal_vert_x(E2ECV[2])
-        + v_vert(E2C2V[2]) * dual_normal_vert_y(E2ECV[2])
+        -(
+            u_vert(E2C2V[2]) * dual_normal_vert_x(E2ECV[2])
+            + v_vert(E2C2V[2]) * dual_normal_vert_y(E2ECV[2])
+        )
     ) + (
-        -u_vert(E2C2V[3]) * dual_normal_vert_x(E2ECV[3])
+        u_vert(E2C2V[3]) * dual_normal_vert_x(E2ECV[3])
         + v_vert(E2C2V[3]) * dual_normal_vert_y(E2ECV[3])
     )
 
     kh_smag_1 = (
-        -u_vert(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
-        + v_vert(E2C2V[0]) * primal_normal_vert_y(E2ECV[0])
+        -(
+            u_vert(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
+            + v_vert(E2C2V[0]) * primal_normal_vert_y(E2ECV[0])
+        )
     ) + (
         u_vert(E2C2V[1]) * primal_normal_vert_x(E2ECV[1])
         + v_vert(E2C2V[1]) * primal_normal_vert_y(E2ECV[1])
@@ -77,10 +83,12 @@ def _mo_nh_diffusion_stencil_01(
     kh_smag_1 = kh_smag_1 * kh_smag_1
 
     kh_smag_2 = (
-        u_vert(E2C2V[2]) * primal_normal_vert_x(E2ECV[2])
-        + v_vert(E2C2V[2]) * primal_normal_vert_y(E2ECV[2])
+        -(
+            u_vert(E2C2V[2]) * primal_normal_vert_x(E2ECV[2])
+            + v_vert(E2C2V[2]) * primal_normal_vert_y(E2ECV[2])
+        )
     ) + (
-        -u_vert(E2C2V[3]) * primal_normal_vert_x(E2ECV[3])
+        u_vert(E2C2V[3]) * primal_normal_vert_x(E2ECV[3])
         + v_vert(E2C2V[3]) * primal_normal_vert_y(E2ECV[3])
     )
 

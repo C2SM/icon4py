@@ -49,24 +49,30 @@ def mo_nh_diffusion_stencil_01_numpy(
     tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
     dvt_tang = (
-        -u_vert_e2c2v[:, 0] * dual_normal_vert_x[:, 0]
-        + v_vert_e2c2v[:, 0] * dual_normal_vert_y[:, 0]
+        -(
+            u_vert_e2c2v[:, 0] * dual_normal_vert_x[:, 0]
+            + v_vert_e2c2v[:, 0] * dual_normal_vert_y[:, 0]
+        )
     ) + (
         u_vert_e2c2v[:, 1] * dual_normal_vert_x[:, 1]
         + v_vert_e2c2v[:, 1] * dual_normal_vert_y[:, 1]
     )
 
     dvt_norm = (
-        u_vert_e2c2v[:, 2] * dual_normal_vert_x[:, 2]
-        + v_vert_e2c2v[:, 2] * dual_normal_vert_y[:, 2]
+        -(
+            u_vert_e2c2v[:, 2] * dual_normal_vert_x[:, 2]
+            + v_vert_e2c2v[:, 2] * dual_normal_vert_y[:, 2]
+        )
     ) + (
-        -u_vert_e2c2v[:, 3] * dual_normal_vert_x[:, 3]
+        u_vert_e2c2v[:, 3] * dual_normal_vert_x[:, 3]
         + v_vert_e2c2v[:, 3] * dual_normal_vert_y[:, 3]
     )
 
     kh_smag_1 = (
-        -u_vert_e2c2v[:, 0] * primal_normal_vert_x[:, 0]
-        + v_vert_e2c2v[:, 0] * primal_normal_vert_y[:, 0]
+        -(
+            u_vert_e2c2v[:, 0] * primal_normal_vert_x[:, 0]
+            + v_vert_e2c2v[:, 0] * primal_normal_vert_y[:, 0]
+        )
     ) + (
         u_vert_e2c2v[:, 1] * primal_normal_vert_x[:, 1]
         + v_vert_e2c2v[:, 1] * primal_normal_vert_y[:, 1]
@@ -81,10 +87,12 @@ def mo_nh_diffusion_stencil_01_numpy(
     kh_smag_1 = kh_smag_1 * kh_smag_1
 
     kh_smag_2 = (
-        u_vert_e2c2v[:, 2] * primal_normal_vert_x[:, 2]
-        + v_vert_e2c2v[:, 2] * primal_normal_vert_y[:, 2]
+        -(
+            u_vert_e2c2v[:, 2] * primal_normal_vert_x[:, 2]
+            + v_vert_e2c2v[:, 2] * primal_normal_vert_y[:, 2]
+        )
     ) + (
-        -u_vert_e2c2v[:, 3] * primal_normal_vert_x[:, 3]
+        u_vert_e2c2v[:, 3] * primal_normal_vert_x[:, 3]
         + v_vert_e2c2v[:, 3] * primal_normal_vert_y[:, 3]
     )
 
