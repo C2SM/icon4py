@@ -26,7 +26,6 @@ from icon4py.common.dimension import (
 
 @field_operator
 def _mo_nh_diffusion_stencil_01(
-    smag_offset: Field[[EdgeDim, KDim], float],
     diff_multfac_smag: Field[[KDim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
@@ -39,6 +38,7 @@ def _mo_nh_diffusion_stencil_01(
     dual_normal_vert_y: Field[[ECVDim], float],
     vn: Field[[EdgeDim, KDim], float],
     smag_limit: Field[[KDim], float],
+    smag_offset: float,
 ) -> tuple[
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
@@ -129,7 +129,6 @@ def _mo_nh_diffusion_stencil_01(
 
 @program
 def mo_nh_diffusion_stencil_01(
-    smag_offset: Field[[EdgeDim, KDim], float],
     diff_multfac_smag: Field[[KDim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
@@ -145,9 +144,9 @@ def mo_nh_diffusion_stencil_01(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     z_nabla2_e: Field[[EdgeDim, KDim], float],
+    smag_offset: float,
 ):
     _mo_nh_diffusion_stencil_01(
-        smag_offset,
         diff_multfac_smag,
         tangent_orientation,
         inv_primal_edge_length,
@@ -160,5 +159,6 @@ def mo_nh_diffusion_stencil_01(
         dual_normal_vert_y,
         vn,
         smag_limit,
+        smag_offset,
         out=(kh_smag_e, kh_smag_ec, z_nabla2_e),
     )

@@ -24,7 +24,6 @@ from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
 def mo_nh_diffusion_stencil_01_numpy(
     e2c2v: np.array,
-    smag_offset: np.array,
     diff_multfac_smag: np.array,
     tangent_orientation: np.array,
     inv_primal_edge_length: np.array,
@@ -37,6 +36,7 @@ def mo_nh_diffusion_stencil_01_numpy(
     dual_normal_vert_y: np.array,
     vn: np.array,
     smag_limit: np.array,
+    smag_offset,
 ) -> tuple[np.array]:
     u_vert_e2c2v = u_vert[e2c2v]
     v_vert_e2c2v = v_vert[e2c2v]
@@ -136,7 +136,7 @@ def test_mo_nh_diffusion_stencil_01():
 
     u_vert = random_field(mesh, VertexDim, KDim)
     v_vert = random_field(mesh, VertexDim, KDim)
-    smag_offset = random_field(mesh, EdgeDim, KDim)
+    smag_offset = 9.0
     diff_multfac_smag = random_field(mesh, KDim)
     tangent_orientation = random_field(mesh, EdgeDim)
     vn = random_field(mesh, EdgeDim, KDim)
@@ -160,7 +160,6 @@ def test_mo_nh_diffusion_stencil_01():
 
     kh_smag_e_ref, kh_smag_ec_ref, z_nabla2_e_ref = mo_nh_diffusion_stencil_01_numpy(
         mesh.e2c2v,
-        np.asarray(smag_offset),
         np.asarray(diff_multfac_smag),
         np.asarray(tangent_orientation),
         np.asarray(inv_primal_edge_length),
@@ -173,10 +172,10 @@ def test_mo_nh_diffusion_stencil_01():
         np.asarray(dual_normal_vert_y),
         np.asarray(vn),
         np.asarray(smag_limit),
+        smag_offset,
     )
 
     mo_nh_diffusion_stencil_01(
-        smag_offset,
         diff_multfac_smag,
         tangent_orientation,
         inv_primal_edge_length,
@@ -192,6 +191,7 @@ def test_mo_nh_diffusion_stencil_01():
         kh_smag_e,
         kh_smag_ec,
         z_nabla2_e,
+        smag_offset,
         offset_provider={
             "E2C2V": mesh.get_e2c2v_offset_provider(),
             "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, mesh.n_e2c2v),
