@@ -101,7 +101,7 @@ def _mo_nh_diffusion_stencil_01(
     z_nabla2_e = (
         (
             (
-                -u_vert(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
+                u_vert(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
                 + v_vert(E2C2V[0]) * primal_normal_vert_y(E2ECV[0])
             )
             + (

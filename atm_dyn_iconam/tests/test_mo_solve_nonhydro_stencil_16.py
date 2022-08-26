@@ -36,11 +36,6 @@ def mo_solve_nonhydro_stencil_16_numpy(
     z_rth_pr_2: np.array,
 ) -> np.array:
 
-    #rho_ref_me_e2c = rho_ref_me[e2c]
-    #p_distv_bary_1_e2c = p_distv_bary_1[e2c]
-    #p_distv_bary_2_e2c = p_distv_bary_2[e2c]
-    #theta_ref_me_e2c = theta_ref_me[e2c]
-
     z_rth_pr_1_e2c = z_rth_pr_1[e2c]
     z_rth_pr_2_e2c = z_rth_pr_2[e2c]
     z_grad_rth_1_e2c = z_grad_rth_1[e2c]
@@ -48,23 +43,29 @@ def mo_solve_nonhydro_stencil_16_numpy(
     z_grad_rth_3_e2c = z_grad_rth_3[e2c]
     z_grad_rth_4_e2c = z_grad_rth_4[e2c]
 
-
     z_rho_e = np.where(
-        p_vn>0,
-        rho_ref_me+z_rth_pr_1_e2c[:, 0]+p_distv_bary_1*z_grad_rth_1_e2c[:, 0]
-        + p_distv_bary_2*z_grad_rth_2_e2c[:, 0],
-        rho_ref_me + z_rth_pr_1_e2c[:, 1] + p_distv_bary_1 * z_grad_rth_1_e2c[:, 1]
-        + p_distv_bary_2 * z_grad_rth_2_e2c[:, 1]
+        p_vn > 0,
+        rho_ref_me
+        + z_rth_pr_1_e2c[:, 0]
+        + p_distv_bary_1 * z_grad_rth_1_e2c[:, 0]
+        + p_distv_bary_2 * z_grad_rth_2_e2c[:, 0],
+        rho_ref_me
+        + z_rth_pr_1_e2c[:, 1]
+        + p_distv_bary_1 * z_grad_rth_1_e2c[:, 1]
+        + p_distv_bary_2 * z_grad_rth_2_e2c[:, 1],
     )
 
     z_theta_v_e = np.where(
         p_vn > 0,
-        theta_ref_me + z_rth_pr_2_e2c[:, 0] + p_distv_bary_1 * z_grad_rth_3_e2c[:, 0]
+        theta_ref_me
+        + z_rth_pr_2_e2c[:, 0]
+        + p_distv_bary_1 * z_grad_rth_3_e2c[:, 0]
         + p_distv_bary_2 * z_grad_rth_4_e2c[:, 0],
-        theta_ref_me + z_rth_pr_2_e2c[:, 1] + p_distv_bary_1 * z_grad_rth_3_e2c[:, 1]
-        + p_distv_bary_2 * z_grad_rth_4_e2c[:, 1]
+        theta_ref_me
+        + z_rth_pr_2_e2c[:, 1]
+        + p_distv_bary_1 * z_grad_rth_3_e2c[:, 1]
+        + p_distv_bary_2 * z_grad_rth_4_e2c[:, 1],
     )
-
 
     return z_rho_e, z_theta_v_e
 
@@ -86,8 +87,7 @@ def test_mo_solve_nonhydro_stencil_16():
     z_rho_e = random_field(mesh, EdgeDim, KDim)
     z_theta_v_e = random_field(mesh, EdgeDim, KDim)
 
-
-    z_rho_e_ref,z_theta_v_e_ref = mo_solve_nonhydro_stencil_16_numpy(
+    z_rho_e_ref, z_theta_v_e_ref = mo_solve_nonhydro_stencil_16_numpy(
         mesh.e2c,
         np.asarray(p_vn),
         np.asarray(rho_ref_me),
@@ -99,7 +99,7 @@ def test_mo_solve_nonhydro_stencil_16():
         np.asarray(z_grad_rth_3),
         np.asarray(z_grad_rth_4),
         np.asarray(z_rth_pr_1),
-        np.asarray(z_rth_pr_2)
+        np.asarray(z_rth_pr_2),
     )
 
     mo_solve_nonhydro_stencil_16(
