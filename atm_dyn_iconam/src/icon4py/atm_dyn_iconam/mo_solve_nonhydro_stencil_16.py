@@ -14,12 +14,7 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, broadcast, where
 
-from icon4py.common.dimension import (
-    E2C,
-    CellDim,
-    EdgeDim,
-    KDim,
-)
+from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -35,32 +30,34 @@ def _mo_solve_nonhydro_stencil_16(
     z_grad_rth_4: Field[[CellDim, KDim], float],
     z_rth_pr_1: Field[[CellDim, KDim], float],
     z_rth_pr_2: Field[[CellDim, KDim], float],
-) -> tuple[
-    Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
-
+) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
 
     z_rho_e = broadcast(0, (EdgeDim, KDim))
     z_theta_v_e = broadcast(0, (EdgeDim, KDim))
 
-
-
     z_rho_e = where(
         p_vn > 0.0,
-        rho_ref_me + z_rth_pr_1(E2C[0]) + p_distv_bary_1 * z_grad_rth_1(E2C[0])
+        rho_ref_me
+        + z_rth_pr_1(E2C[0])
+        + p_distv_bary_1 * z_grad_rth_1(E2C[0])
         + p_distv_bary_2 * z_grad_rth_2(E2C[0]),
-        rho_ref_me + z_rth_pr_1(E2C[1]) + p_distv_bary_1 * z_grad_rth_1(E2C[1])
-        + p_distv_bary_2 * z_grad_rth_2(E2C[1])
+        rho_ref_me
+        + z_rth_pr_1(E2C[1])
+        + p_distv_bary_1 * z_grad_rth_1(E2C[1])
+        + p_distv_bary_2 * z_grad_rth_2(E2C[1]),
     )
 
     z_theta_v_e = where(
         p_vn > 0.0,
-        theta_ref_me + z_rth_pr_2(E2C[0]) +
-        p_distv_bary_1 * z_grad_rth_3(E2C[0]) + p_distv_bary_2 * z_grad_rth_4(E2C[0]),
-        theta_ref_me + z_rth_pr_2(E2C[1]) +
-        p_distv_bary_1 * z_grad_rth_3(E2C[1]) + p_distv_bary_2 * z_grad_rth_4(E2C[1])
+        theta_ref_me
+        + z_rth_pr_2(E2C[0])
+        + p_distv_bary_1 * z_grad_rth_3(E2C[0])
+        + p_distv_bary_2 * z_grad_rth_4(E2C[0]),
+        theta_ref_me
+        + z_rth_pr_2(E2C[1])
+        + p_distv_bary_1 * z_grad_rth_3(E2C[1])
+        + p_distv_bary_2 * z_grad_rth_4(E2C[1]),
     )
-
-
 
     return z_rho_e, z_theta_v_e
 
@@ -93,5 +90,5 @@ def mo_solve_nonhydro_stencil_16(
         z_grad_rth_4,
         z_rth_pr_1,
         z_rth_pr_2,
-        out=(z_rho_e,z_theta_v_e),
+        out=(z_rho_e, z_theta_v_e),
     )
