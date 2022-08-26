@@ -22,7 +22,6 @@ from icon4py.common.dimension import (
     E2CDim,
     E2VDim,
     ECDim,
-    ECDim,
     EdgeDim,
     KDim,
     Koff,
@@ -43,29 +42,55 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     primal_normal_cell_2: Field[[ECDim], float],
     dual_normal_cell_2: Field[[ECDim], float],
     p_dthalf: float,
-) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
+) -> tuple[
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+]:
 
     one_if_positive = broadcast(0, (EdgeDim, KDim))
     z_ntdistv_bary_1 = broadcast(0, (EdgeDim, KDim))
-    cell_idx = broadcast(cell_idx, (ECDim, KDim))
-    cell_blk = broadcast(cell_blk, (ECDim, KDim))
+    # cell_idx = broadcast(cell_idx, (ECDim, KDim))
+    # cell_blk = broadcast(cell_blk, (ECDim, KDim))
     p_distv_bary_1 = broadcast(0.0, (EdgeDim, KDim))
     p_distv_bary_2 = broadcast(0.0, (EdgeDim, KDim))
     one_if_positive = where(p_vn > 0.0, 1.0, 0.0)
 
+    p_cell_idx = one_if_positive * cell_idx(E2EC[0]) + (
+        1.0 - one_if_positive
+    ) * cell_idx(E2EC[1])
+    p_cell_blk = one_if_positive * cell_blk(E2EC[0]) + (
+        1.0 - one_if_positive
+    ) * cell_blk(E2EC[1])
 
-    p_cell_idx = one_if_positive*cell_idx(E2EC[0]) + (1.0-one_if_positive)*cell_idx(E2EC[1])
-    p_cell_blk = one_if_positive*cell_blk(E2EC[0]) + (1.0-one_if_positive)*cell_blk(E2EC[1])
+    z_ntdistv_bary_1 = -(
+        p_vn * p_dthalf
+        + one_if_positive * pos_on_tplane_e_1(E2EC[0])
+        + (1.0 - one_if_positive) * pos_on_tplane_e_1(E2EC[1])
+    )
 
-    z_ntdistv_bary_1 = - (p_vn * p_dthalf + one_if_positive*pos_on_tplane_e_1(E2EC[0]) + (1.0-one_if_positive)*pos_on_tplane_e_1(E2EC[1]))
+    z_ntdistv_bary_2 = -(
+        p_vt * p_dthalf
+        + one_if_positive * pos_on_tplane_e_2(E2EC[0])
+        + (1.0 - one_if_positive) * pos_on_tplane_e_2(E2EC[1])
+    )
 
-    z_ntdistv_bary_2 = - (p_vt * p_dthalf + one_if_positive * pos_on_tplane_e_2(E2EC[0]) + (1.0 - one_if_positive) * pos_on_tplane_e_2(E2EC[1]))
+    p_distv_bary_1 = one_if_positive * (
+        z_ntdistv_bary_1 * primal_normal_cell_1(E2EC[0])
+        + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[0])
+    ) + (1.0 - one_if_positive) * (
+        z_ntdistv_bary_1 * primal_normal_cell_1(E2EC[1])
+        + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[1])
+    )
 
-    p_distv_bary_1 = one_if_positive* (z_ntdistv_bary_1 * primal_normal_cell_1(E2EC[0]) + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[0])) + (1.0-one_if_positive)*(z_ntdistv_bary_1 * primal_normal_cell_1(E2EC[1]) + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[1]))
-
-    p_distv_bary_2 = one_if_positive* (z_ntdistv_bary_1 * primal_normal_cell_2(E2EC[0]) + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[0])) + (1.0-one_if_positive)*(z_ntdistv_bary_1 * primal_normal_cell_2(E2EC[1]) + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[1]))
-
-
+    p_distv_bary_2 = one_if_positive * (
+        z_ntdistv_bary_1 * primal_normal_cell_2(E2EC[0])
+        + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[0])
+    ) + (1.0 - one_if_positive) * (
+        z_ntdistv_bary_1 * primal_normal_cell_2(E2EC[1])
+        + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[1])
+    )
 
     return p_cell_idx, p_cell_blk, p_distv_bary_1, p_distv_bary_2
 
@@ -100,5 +125,5 @@ def mo_advection_traj_btraj_compute_o1_dsl(
         primal_normal_cell_2,
         dual_normal_cell_2,
         p_dthalf,
-        out=(p_cell_idx,p_cell_blk,p_distv_bary_1,p_distv_bary_2),
+        out=(p_cell_idx, p_cell_blk, p_distv_bary_1, p_distv_bary_2),
     )
