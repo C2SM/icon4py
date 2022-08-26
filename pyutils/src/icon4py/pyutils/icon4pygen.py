@@ -275,15 +275,6 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset)
     if output_metadata:
-<<<<<<< Updated upstream
         connectivity_chains = [offset for offset in offsets if offset != Koff.value]
         output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
     click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
-=======
-        output_metadata.write_text(format_metadata(fvprog, chains))
-    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offsets))
-
-
-if __name__ == "__main__":
-    main()
->>>>>>> Stashed changes

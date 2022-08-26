@@ -14,19 +14,7 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, broadcast, where
 
-from icon4py.common.dimension import (
-    E2C,
-    E2EC,
-    E2V,
-    CellDim,
-    E2CDim,
-    E2VDim,
-    ECDim,
-    EdgeDim,
-    KDim,
-    Koff,
-    VertexDim,
-)
+from icon4py.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
 
 @field_operator
@@ -51,8 +39,6 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
 
     one_if_positive = broadcast(0, (EdgeDim, KDim))
     z_ntdistv_bary_1 = broadcast(0, (EdgeDim, KDim))
-    # cell_idx = broadcast(cell_idx, (ECDim, KDim))
-    # cell_blk = broadcast(cell_blk, (ECDim, KDim))
     p_distv_bary_1 = broadcast(0.0, (EdgeDim, KDim))
     p_distv_bary_2 = broadcast(0.0, (EdgeDim, KDim))
     one_if_positive = where(p_vn > 0.0, 1.0, 0.0)
