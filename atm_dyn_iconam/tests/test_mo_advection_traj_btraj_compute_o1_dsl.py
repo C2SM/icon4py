@@ -67,7 +67,7 @@ def mo_advection_traj_btraj_compute_o1_dsl_numpy(
 
     p_distv_bary_1 = one_if_positive * (
         z_ntdistv_bary_1 * primal_normal_cell_1[:, 0]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1]
+        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0]
     ) + (1.0 - one_if_positive) * (
         z_ntdistv_bary_1 * primal_normal_cell_1[:, 1]
         + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1]
