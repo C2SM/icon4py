@@ -36,7 +36,7 @@ def _mo_solve_nonhydro_stencil_52_z_q(
     cpd: float,
 ) -> Field[[CellDim, KDim], float]:
     z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
-    z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[1])
+    z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[-1])
     z_c = -z_gamma * z_beta * z_alpha(Koff[1])
     z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
     z_g = 1.0 / (z_b + z_a * z_q(Koff[-1]))
@@ -58,7 +58,7 @@ def _mo_solve_nonhydro_stencil_52_w(
     cpd: float,
 ) -> Field[[CellDim, KDim], float]:
     z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
-    z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[1])
+    z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[-1])
     z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
     z_g = 1.0 / (z_b + z_a * z_q(Koff[-1]))
     w_before = z_w_expl - z_gamma * (z_exner_expl(Koff[-1]) - z_exner_expl)
@@ -89,7 +89,7 @@ def mo_solve_nonhydro_stencil_52(
         z_q,
         dtime,
         cpd,
-        out=z_q[:, 2:],
+        out=z_q[:, 1:],  # TODO domain
     )
     _mo_solve_nonhydro_stencil_52_w(
         vwind_impl_wgt,
@@ -102,5 +102,5 @@ def mo_solve_nonhydro_stencil_52(
         z_q,
         dtime,
         cpd,
-        out=w[:, 2:],
+        out=w[:, 1:-1],  # TODO domain
     )
