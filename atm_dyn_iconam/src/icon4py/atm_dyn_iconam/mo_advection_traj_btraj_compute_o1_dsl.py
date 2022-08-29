@@ -36,12 +36,16 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
+    one_if_positive = where(p_vn > 0.0, broadcast(1.0, (EdgeDim, KDim)), 0.0)
 
-    one_if_positive = broadcast(0, (EdgeDim, KDim))
-    z_ntdistv_bary_1 = broadcast(0, (EdgeDim, KDim))
-    p_distv_bary_1 = broadcast(0.0, (EdgeDim, KDim))
-    p_distv_bary_2 = broadcast(0.0, (EdgeDim, KDim))
-    one_if_positive = where(p_vn > 0.0, 1.0, 0.0)
+    #cell_idx = broadcast(cell_idx, (ECDim, KDim))
+    #cell_blk = broadcast(cell_blk, (ECDim, KDim))
+    #pos_on_tplane_e_1 = broadcast(pos_on_tplane_e_1, (ECDim, KDim))
+    #pos_on_tplane_e_2 = broadcast(pos_on_tplane_e_2, (ECDim, KDim))
+    #primal_normal_cell_1= broadcast(primal_normal_cell_1, (ECDim, KDim))
+    #primal_normal_cell_2 = broadcast(primal_normal_cell_2, (ECDim, KDim))
+    #dual_normal_cell_1 = broadcast(dual_normal_cell_1, (ECDim, KDim))
+    #dual_normal_cell_2 = broadcast(dual_normal_cell_2, (ECDim, KDim))
 
     p_cell_idx = one_if_positive * cell_idx(E2EC[0]) + (
         1.0 - one_if_positive

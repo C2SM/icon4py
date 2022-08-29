@@ -47,10 +47,10 @@ def mo_advection_traj_btraj_compute_o1_dsl_numpy(
     dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
     p_cell_idx = (
-        one_if_positive * cell_idx[:, 0] - (1.0 - one_if_positive) * cell_idx[:, 1]
+        one_if_positive * cell_idx[:, 0] + (1.0 - one_if_positive) * cell_idx[:, 1]
     )
     p_cell_blk = (
-        one_if_positive * cell_blk[:, 0] - (1.0 - one_if_positive) * cell_blk[:, 1]
+        one_if_positive * cell_blk[:, 0] + (1.0 - one_if_positive) * cell_blk[:, 1]
     )
 
     z_ntdistv_bary_1 = -(
@@ -109,7 +109,7 @@ def test_mo_advection_traj_btraj_compute_o1_dsl():
     p_cell_blk = random_field(mesh, EdgeDim, KDim)
     p_distv_bary_1 = random_field(mesh, EdgeDim, KDim)
     p_distv_bary_2 = random_field(mesh, EdgeDim, KDim)
-    p_dthalf = 10.0
+    p_dthalf = 2.0
 
     (
         p_cell_idx_ref,
