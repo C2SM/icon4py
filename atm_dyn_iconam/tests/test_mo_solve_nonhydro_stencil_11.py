@@ -46,7 +46,9 @@ def test_mo_solve_nonhydro_stencil_11():
     z_rth_pr = random_field(mesh, CellDim, KDim)
     theta_ref_ic = random_field(mesh, CellDim, KDim)
     z_theta_v_pr_ic = random_field(mesh, CellDim, KDim)
-    k_index = np_as_located_field(KDim)(np.arange(wgtfacq_c.__array__().shape[-1]))
+    k_index = np_as_located_field(KDim)(
+        np.arange(wgtfacq_c.__array__().shape[-1]).astype("int32")
+    )
 
     theta_v_ic = zero_field(mesh, CellDim, KDim)
 
