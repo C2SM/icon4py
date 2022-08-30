@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, where
+from functional.ffront.fbuiltins import Field, int32, where
 
 from icon4py.common.dimension import CellDim, KDim, Koff
 
@@ -34,7 +34,7 @@ def _mo_solve_nonhydro_stencil_11_inner(
 
 @field_operator
 def _mo_solve_nonhydro_stencil_11(
-    k_index: Field[[KDim], int],
+    k_index: Field[[KDim], int32],
     wgtfacq_c: Field[[CellDim, KDim], float],
     z_rth_pr: Field[[CellDim, KDim], float],
     theta_ref_ic: Field[[CellDim, KDim], float],
@@ -42,14 +42,14 @@ def _mo_solve_nonhydro_stencil_11(
     z_theta_v_pr_ic, theta_v_ic = _mo_solve_nonhydro_stencil_11_inner(
         wgtfacq_c, z_rth_pr, theta_ref_ic
     )
-    z_theta_v_pr_ic = where(k_index > 0, z_theta_v_pr_ic, 0.0)
-    theta_v_ic = where(k_index > 0, theta_v_ic, 0.0)
+    z_theta_v_pr_ic = where(k_index > int32(0), z_theta_v_pr_ic, 0.0)
+    theta_v_ic = where(k_index > int32(0), theta_v_ic, 0.0)
     return z_theta_v_pr_ic, theta_v_ic
 
 
 @program
 def mo_solve_nonhydro_stencil_11(
-    k_index: Field[[KDim], int],
+    k_index: Field[[KDim], int32],
     wgtfacq_c: Field[[CellDim, KDim], float],
     z_rth_pr: Field[[CellDim, KDim], float],
     theta_ref_ic: Field[[CellDim, KDim], float],
