@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, broadcast, where
+from functional.ffront.fbuiltins import Field, where
 
 from icon4py.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
@@ -36,7 +36,7 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-    one_if_positive = where(p_vn > 0.0, broadcast(1.0, (EdgeDim, KDim)), 0.0)
+    one_if_positive = where(p_vn > 0.0, 1.0, 0.0)
 
     p_cell_idx = one_if_positive * cell_idx(E2EC[0]) + (
         1.0 - one_if_positive
