@@ -18,45 +18,44 @@ from icon4py.common.dimension import CellDim, KDim, Koff
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_11_inner(
-    wgtfacq_c: Field[[CellDim, KDim], float],
-    z_rth_pr: Field[[CellDim, KDim], float],
-    theta_ref_ic: Field[[CellDim, KDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic = (
-        wgtfacq_c(Koff[-1]) * z_rth_pr(Koff[-1])
-        + wgtfacq_c(Koff[-2]) * z_rth_pr(Koff[-2])
-        + wgtfacq_c(Koff[-3]) * z_rth_pr(Koff[-3])
-    )
-    theta_v_ic = theta_ref_ic + z_theta_v_pr_ic
-    return z_theta_v_pr_ic, theta_v_ic
-
-
-@field_operator
 def _mo_solve_nonhydro_stencil_11(
+    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
     k_index: Field[[KDim], int32],
     wgtfacq_c: Field[[CellDim, KDim], float],
     z_rth_pr: Field[[CellDim, KDim], float],
     theta_ref_ic: Field[[CellDim, KDim], float],
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic, theta_v_ic = _mo_solve_nonhydro_stencil_11_inner(
-        wgtfacq_c, z_rth_pr, theta_ref_ic
+
+    z_theta_v_pr_ic = where(
+        k_index == int32(65),
+        (
+            wgtfacq_c(Koff[-1]) * z_rth_pr(Koff[-1])
+            + wgtfacq_c(Koff[-2]) * z_rth_pr(Koff[-2])
+            + wgtfacq_c(Koff[-3]) * z_rth_pr(Koff[-3])
+        ),
+        z_theta_v_pr_ic,
     )
+
+    theta_v_ic = where(k_index == int32(65), theta_ref_ic + z_theta_v_pr_ic, theta_v_ic)
+
     z_theta_v_pr_ic = where(k_index > int32(0), z_theta_v_pr_ic, 0.0)
-    theta_v_ic = where(k_index > int32(0), theta_v_ic, 0.0)
+
     return z_theta_v_pr_ic, theta_v_ic
 
 
 @program
 def mo_solve_nonhydro_stencil_11(
+    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
     k_index: Field[[KDim], int32],
     wgtfacq_c: Field[[CellDim, KDim], float],
     z_rth_pr: Field[[CellDim, KDim], float],
     theta_ref_ic: Field[[CellDim, KDim], float],
-    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
 ):
     _mo_solve_nonhydro_stencil_11(
+        z_theta_v_pr_ic,
+        theta_v_ic,
         k_index,
         wgtfacq_c,
         z_rth_pr,

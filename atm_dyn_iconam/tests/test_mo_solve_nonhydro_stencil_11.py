@@ -19,40 +19,49 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_11 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import random_field
 
 
 def mo_solve_nonhydro_stencil_11_numpy(
+    z_theta_v_pr_ic: np.array,
+    theta_v_ic: np.array,
     k_index: np.array,
     wgtfacq_c: np.array,
     z_rth_pr: np.array,
     theta_ref_ic: np.array,
 ) -> tuple[np.array, np.array]:
-    z_theta_v_pr_ic = (
-        np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_rth_pr, shift=1, axis=1)
-        + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_rth_pr, shift=2, axis=1)
-        + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_rth_pr, shift=3, axis=1)
+    z_theta_v_pr_ic = np.where(
+        k_index == 65,
+        (
+            np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_rth_pr, shift=1, axis=1)
+            + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_rth_pr, shift=2, axis=1)
+            + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_rth_pr, shift=3, axis=1)
+        ),
+        z_theta_v_pr_ic,
     )
-    theta_v_ic = theta_ref_ic + z_theta_v_pr_ic
+
+    theta_v_ic = np.where(k_index == 65, theta_ref_ic + z_theta_v_pr_ic, theta_v_ic)
+
     z_theta_v_pr_ic = np.where(k_index > 0, z_theta_v_pr_ic, 0.0)
-    theta_v_ic = np.where(k_index > 0, theta_v_ic, 0.0)
+
     return z_theta_v_pr_ic, theta_v_ic
 
 
 def test_mo_solve_nonhydro_stencil_11():
     mesh = SimpleMesh()
 
+    z_theta_v_pr_ic = random_field(mesh, CellDim, KDim)
+    theta_v_ic = random_field(mesh, CellDim, KDim)
     wgtfacq_c = random_field(mesh, CellDim, KDim)
     z_rth_pr = random_field(mesh, CellDim, KDim)
     theta_ref_ic = random_field(mesh, CellDim, KDim)
-    z_theta_v_pr_ic = random_field(mesh, CellDim, KDim)
     k_index = np_as_located_field(KDim)(
         np.arange(wgtfacq_c.__array__().shape[-1]).astype("int32")
     )
 
-    theta_v_ic = zero_field(mesh, CellDim, KDim)
-
     z_theta_v_pr_ic_ref, theta_v_ic_ref = mo_solve_nonhydro_stencil_11_numpy(
+        np.asarray(z_theta_v_pr_ic),
+        np.asarray(theta_v_ic),
         np.asarray(k_index),
         np.asarray(wgtfacq_c),
         np.asarray(z_rth_pr),
@@ -60,12 +69,12 @@ def test_mo_solve_nonhydro_stencil_11():
     )
 
     mo_solve_nonhydro_stencil_11(
+        z_theta_v_pr_ic,
+        theta_v_ic,
         k_index,
         wgtfacq_c,
         z_rth_pr,
         theta_ref_ic,
-        z_theta_v_pr_ic,
-        theta_v_ic,
         offset_provider={"Koff": KDim},
     )
 
