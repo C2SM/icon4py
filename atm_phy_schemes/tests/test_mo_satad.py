@@ -20,7 +20,7 @@ from hypothesis import target
 from hypothesis.extra.numpy import arrays
 
 from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
-from icon4py.atm_phy_schemes.mo_satad import _newtonian_iteration_t, satad
+from icon4py.atm_phy_schemes.mo_satad import _newtonian_iteration_temp, satad
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -54,7 +54,7 @@ cp_v = 1850.0
 ci = 2108.0
 
 tol = 1e-3
-maxiter = 1  # DL: Needs to be 10, but GT4Py is currently too slow
+maxiter = 2  # DL: Needs to be 10, but GT4Py is currently too slow
 zqwmin = 1e-20
 
 
@@ -78,38 +78,37 @@ def dqsatdT_rho(t, zqsat):
     return beta * zqsat
 
 
-def newtonian_iteration_t(t, qv, rho):
+def newtonian_iteration_temp(t, twork, tworkold, qv, rho):
     """Obtain temperature at saturation using Newtonian iteration."""
     lwdocvd = latent_heat_vaporization(t) / cvd
 
-    tWork = t.copy()
-    tWorkold = tWork.copy() + 10.0
-
     for _ in range(maxiter):
-        if abs(tWork - tWorkold) > tol:
-            tWorkold = tWork
-            qwd = qsat_rho(t, rho)
-            dqwd = dqsatdT_rho(tWork, qwd)
-            fT = tWork - t + lwdocvd * (qwd - qv)
+        if abs(twork - tworkold) > tol:
+            tworkold = twork
+            qwd = qsat_rho(twork, rho)
+            dqwd = dqsatdT_rho(twork, qwd)
+            fT = twork - t + lwdocvd * (qwd - qv)
             dfT = 1.0 + lwdocvd * dqwd
-            tWork = tWork - fT / dfT
+            twork = twork - fT / dfT
 
-    return tWork
+    return twork
 
 
 def satad_numpy(qv, qc, t, rho):
-    """Numpy implementation of satad."""
-    lwdocvd = latent_heat_vaporization(t) / cvd
-
+    """Numpy translation of satad_v_3D from Fortan ICON."""
     for cell, k in np.ndindex(np.shape(qv)):
-        totallySubsaturated = qv[cell, k] + qc[cell, k] <= qsat_rho(t, rho)[cell, k]
+        lwdocvd = latent_heat_vaporization(t[cell, k]) / cvd
 
-        if totallySubsaturated:
-            t[cell, k] = t[cell, k] - lwdocvd[cell, k] * qc[cell, k]
+        Ttest = t[cell, k] - lwdocvd * qc[cell, k]
+
+        if qv[cell, k] + qc[cell, k] <= qsat_rho(Ttest, rho[cell, k]):
             qv[cell, k] = qv[cell, k] + qc[cell, k]
             qc[cell, k] = 0.0
+            t[cell, k] = Ttest
         else:
-            t[cell, k] = newtonian_iteration_t(t[cell, k], qv[cell, k], rho[cell, k])
+            t[cell, k] = newtonian_iteration_temp(
+                t[cell, k], t[cell, k], t[cell, k] + 10.0, qv[cell, k], rho[cell, k]
+            )
 
             qwa = qsat_rho(t[cell, k], rho[cell, k])
             qc[cell, k] = max(qc[cell, k] + qv[cell, k] - qwa, zqwmin)
@@ -131,8 +130,11 @@ def test_newtonian_iteration(t, qv, rho):
 
     # Numpy Implementation
     for cell, k in np.ndindex(np.shape(t)):
-        tRef[cell, k] = newtonian_iteration_t(
-            np.asarray(t).copy()[cell, k],
+
+        tRef[cell, k] = newtonian_iteration_temp(
+            np.asarray(t)[cell, k],
+            np.asarray(t)[cell, k],
+            np.asarray(t)[cell, k] + 10.0,
             np.asarray(qv)[cell, k],
             np.asarray(rho)[cell, k],
         )
@@ -141,7 +143,7 @@ def test_newtonian_iteration(t, qv, rho):
     maximizeTendency(t, tRef, "t")
 
     # GT4Py Implementation
-    _newtonian_iteration_t(t, qv, rho, out=t, offset_provider={})
+    _newtonian_iteration_temp(t, qv, rho, out=t, offset_provider={})
 
     assert np.allclose(np.asarray(t), tRef)
 

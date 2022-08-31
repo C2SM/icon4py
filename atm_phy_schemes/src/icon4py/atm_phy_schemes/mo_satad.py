@@ -131,12 +131,9 @@ def _newtonian_for_body(
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
     lwdocvd: Field[[CellDim, KDim], float],
-    qsat_rho: Field[[CellDim, KDim], float],
-
 ) -> Field[[CellDim, KDim], float]:
 
-
-    fT = lwdocvd * (qsat_rho - qv)
+    fT = lwdocvd * (_qsat_rho(t, rho) - qv)
     dfT = 1.0 + lwdocvd * _dqsatdT_rho(t, _qsat_rho(t, rho))
 
     return t - fT / dfT
@@ -149,21 +146,18 @@ def _conditional_newtonian_for_body(
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
     lwdocvd: Field[[CellDim, KDim], float],
-    qsat_rho: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
 
-
-    fT = tWork - t + lwdocvd * (qsat_rho - qv)
-    dfT = 1.0 + lwdocvd * _dqsatdT_rho(tWork, qsat_rho)
+    fT = tWork - t + lwdocvd * (_qsat_rho(tWork, rho) - qv)
+    dfT = 1.0 + lwdocvd * _dqsatdT_rho(tWork, _qsat_rho(tWork, rho))
 
     tol = 1e-3  # TODO: Remove
 
-    tWorkOld = tWork
-    return where(abs(tWork - tWorkOld) > tol, tWork - fT / dfT, tWork)
+    return where(abs(tWork - t) > tol, tWork - fT / dfT, tWork)
 
 
 @field_operator
-def _newtonian_iteration_t(
+def _newtonian_iteration_temp(
     t: Field[[CellDim, KDim], float],
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
@@ -174,23 +168,21 @@ def _newtonian_iteration_t(
     cpd = 1004.64
     cvd = cpd - rd
 
-    #Remains const. during iteration
+    # Remains const. during iteration
     lwdocvd = _latent_heat_vaporization(t) / cvd
-    qsat_rho = _qsat_rho(t, rho)
 
     # for _ in range(1, maxiter):
-    tWork = t
-    tWork =_newtonian_for_body(t, qv, rho, lwdocvd, qsat_rho)
-    tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
+    tWork = _newtonian_for_body(t, qv, rho, lwdocvd)
+    tWork = _conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
     # DL: @Linus Uncommenting below is suuuper slow :-)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
+    # tWork = _conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
     return tWork
 
 
@@ -230,16 +222,22 @@ def _satad(
     cvd = cpd - rd
     zqwmin = 1e-20
 
-    TempAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
-
     # check, which points will still be subsaturated even after evaporating
     # all cloud water. For these gridpoints Newton iteration is not necessary.
     # TODO: Not sure if shortcut actually improves performance. Maybe just do Newton everywhere?
-    totallySubsaturated = qv + qc <= _qsat_rho(t, rho)
+    TempAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
+    totallySubsaturated = qv + qc <= _qsat_rho(TempAfterAllQcEvaporated, rho)
 
-    t = where(totallySubsaturated, TempAfterAllQcEvaporated, _newtonian_iteration_t(t, qv, rho))
+    t = where(
+        totallySubsaturated,
+        TempAfterAllQcEvaporated,
+        _newtonian_iteration_temp(t, qv, rho),
+    )
+    qv_temp = qv  # TODO: Remove once multi-return where become available
     qv = where(totallySubsaturated, qv + qc, _qsat_rho(t, rho))
-    qc = where(totallySubsaturated, 0.0, maximum(qv + qc - _qsat_rho(t, rho), zqwmin))
+    qc = where(
+        totallySubsaturated, 0.0, maximum(qv_temp + qc - _qsat_rho(t, rho), zqwmin)
+    )
 
     return t, qv, qc
 
