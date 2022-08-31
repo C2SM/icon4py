@@ -28,7 +28,8 @@ TODO:
     (a) Unroll by hand
     (b) Naive unroll of compile time FOR, maybe optimize
     (c) Tracing
-3. Constants
+3. Global Constants
+4. Tuple return from field_operator outside of program
 
 Comment from FORTRAN version:
 - Suggested by U. Blahak: Replace pres_sat_water, pres_sat_ice and spec_humi by
@@ -242,7 +243,7 @@ def _satad(
     return t, qv, qc
 
 
-# DL: Do we actually need the program?
+# TODO: Programm is still need since tuple return is not yet available elsewhere
 @program()
 def satad(
     qv: Field[[CellDim, KDim], float],
