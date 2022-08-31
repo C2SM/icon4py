@@ -59,10 +59,12 @@ zqwmin = 1e-20
 
 
 def latent_heat_vaporization(t):
+    """Return latent heat of vaporization given a temperature."""
     return alv + (cp_v - clw) * (t - tmelt) - rv * t
 
 
 def sat_pres_water(t):
+    """Saturation pressure of water."""
     return c1es * np.exp(c3les * (t - tmelt) / (t - c4les))
 
 
@@ -71,11 +73,13 @@ def qsat_rho(t, rho):
 
 
 def dqsatdT_rho(t, zqsat):
+    """Return derivative of qsat with respect to t."""
     beta = c5les / (t - c4les) ** 2 - 1.0 / t
     return beta * zqsat
 
 
 def newtonian_iteration_t(t, qv, rho):
+    """Obtain temperature at saturation using Newtonian iteration."""
     lwdocvd = latent_heat_vaporization(t) / cvd
 
     tWork = t.copy()
@@ -94,7 +98,7 @@ def newtonian_iteration_t(t, qv, rho):
 
 
 def satad_numpy(qv, qc, t, rho):
-
+    """Numpy implementation of satad."""
     lwdocvd = latent_heat_vaporization(t) / cvd
 
     for cell, k in np.ndindex(np.shape(qv)):
@@ -122,17 +126,23 @@ def satad_numpy(qv, qc, t, rho):
 )
 @settings(deadline=None, max_examples=10)
 def test_newtonian_iteration(t, qv, rho):
+    """Test newtonian_iteration aginst a numpy implementaion."""
     tRef = np.zeros_like(np.asarray(t))
 
+    # Numpy Implementation
     for cell, k in np.ndindex(np.shape(t)):
         tRef[cell, k] = newtonian_iteration_t(
             np.asarray(t).copy()[cell, k],
             np.asarray(qv)[cell, k],
             np.asarray(rho)[cell, k],
         )
+
+    # Guide hypothesis tool to maximize tendency of t
+    maximizeTendency(t, tRef, "t")
+
+    # GT4Py Implementation
     _newtonian_iteration_t(t, qv, rho, out=t, offset_provider={})
 
-    maximizeTendency(t, tRef, "t")
     assert np.allclose(np.asarray(t), tRef)
 
 
@@ -144,7 +154,8 @@ def test_newtonian_iteration(t, qv, rho):
 )
 @settings(deadline=None, max_examples=10)
 def test_mo_satad(qv, qc, t, rho):
-
+    """Test satad aginst a numpy implementaion."""
+    # Numpy Implementation
     tRef, qvRef, qcRef = satad_numpy(
         np.asarray(qv).copy(),
         np.asarray(qc).copy(),
@@ -152,12 +163,15 @@ def test_mo_satad(qv, qc, t, rho):
         np.asarray(rho).copy(),
     )
 
+    # Guide hypothesis tool to maximize these tendencies
     maximizeTendency(t, tRef, "t")
     maximizeTendency(qv, qvRef, "qv")
     maximizeTendency(qc, qcRef, "qc")
 
+    # GT4Py Implementation
     satad(qv, qc, t, rho, offset_provider={})
 
+    # Check results using a tolerance test
     assert np.allclose(np.asarray(t), tRef)
     assert np.allclose(np.asarray(qv), qvRef)
     assert np.allclose(np.asarray(qc), qcRef)
