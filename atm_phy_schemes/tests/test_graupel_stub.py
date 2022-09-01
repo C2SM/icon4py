@@ -11,14 +11,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
+import numpy as np
 from functional.ffront.decorator import program, scan_operator
 from functional.ffront.fbuiltins import Field
 from hypothesis import given, settings
 
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field_strategy
+from icon4py.testutils.utils import (
+    maximizeTendency,
+    random_field_strategy,
+    zero_field,
+)
 
 
 """Implicit sedimentaion"""
@@ -26,43 +30,90 @@ from icon4py.testutils.utils import random_field_strategy
 """
 
 TODO GT4Py team:
-- ternary in scan_operator (Till, fast track)
+- ternary in scan_operator (Niki, fast track)
 - local IF statement in scan_operator --> big ticket item (Till)
 - think about optimized returning CellDim field (hotfix Till)
-- Cant passs scalars to scan()
+- Pass scalars to scan()
+
+To discuss:
+- Fucntional model in, out, overwrite
+- Multiple returns from scan_operator?
+- Return 3D field?
 
 
 TODO DL:
-- Make compile with changed if
+- Make compile
 - Recode in Python -> test scan operator
 - send code snippet to Till
+
+Questions:
+1. How and when to switch qc in and qc_out? -> Hannes nees to explain me functional programming
+
 """
+
+
+def graupel_numpy(qc, qr, a=0.1, b=0.2):
+    """Current goal is ot match this routine."""
+    precipitation = 0.0
+
+    for cell, k in np.ndindex(np.shape(qc)):
+
+        # Autoconversion: Cloud Drops -> Rain Drops
+        qc[cell, k] -= qc[cell, k] * a
+        qr[cell, k] += qc[cell, k] * a
+
+        # Add sedimentation from gridpoint above
+        qr[cell, k] += precipitation
+
+        # Compute new sedimentation rate (made up formula).
+        precipitation = b * qr[cell, k - 1] ** 3 if qr[cell, k] <= 0.1 else 0.0
+
+        # Precipitation is qr arriving at the ground
+        if k is not np.shape(qc)[1]:
+            qr[cell, k] -= precipitation
+
+    return qc, qr, precipitation
 
 
 # DL: Init initiates the state?
 @scan_operator(axis=KDim, forward=True, init=0.0)
-def _graupel_scan(state: float, qc: float) -> float:
+def _graupel_scan(state: float, qc: float, qr: float) -> float:
 
     a = 0.1
-    return qc + state * a
+    return state + a
 
 
 @program
 def graupel(
-    qc_before: Field[[CellDim, KDim], float],
-    qc: Field[[CellDim, KDim], float],
+    qc_in: Field[[CellDim, KDim], float],
+    qr_in: Field[[CellDim, KDim], float],
+    qc_out: Field[[CellDim, KDim], float],
+    qr_out: Field[[CellDim, KDim], float],
 ):
-    _graupel_scan(qc_before, out=qc)
+    _graupel_scan(qc_in, qr_in, out=qc_out)
 
 
 @given(
-    random_field_strategy(SimpleMesh(), CellDim, KDim),
-    random_field_strategy(SimpleMesh(), CellDim, KDim),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-7, max_value=1),
+    random_field_strategy(SimpleMesh(), CellDim, KDim, min_value=1e-7, max_value=1),
 )
 @settings(deadline=None, max_examples=10)
-def test_graupel(qc_before, qc):
+def test_graupel(qc, qr):
 
-    graupel(qc_before, qc, offset_provider={"Koff": KDim})
+    mesh = SimpleMesh()
+    qc_out = zero_field(mesh, CellDim, KDim)
+    qr_out = zero_field(mesh, CellDim, KDim)
+
+    graupel(qc, qr, qc_out, qr_out, offset_provider={"Koff": KDim})
+
+    precipitation_out_numpy = np.asarray(zero_field(mesh, CellDim))
+    qc_out_numpy = np.asarray(qc_out).copy()
+    qr_out_numpy = np.asarray(qr_out).copy()
+
+    qc_out_numpy, qr_out_numpy, precipitation_out_numpy = graupel_numpy(
+        np.asarray(qc), np.asarray(qr)
+    )  # Changes qc, qr
+    maximizeTendency(precipitation_out_numpy, 0.0, "precipitation")
 
 
 # @scan_operator(axis=KDim, forward=True, init=(0.0, 0.0, 0.0))
