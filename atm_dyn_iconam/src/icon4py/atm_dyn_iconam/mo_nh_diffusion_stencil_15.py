@@ -82,15 +82,15 @@ def mo_nh_diffusion_stencil_15(
     )
 
 
-_metadata = f"""{C2E2C.value}, {Koff.value}
+_metadata = f"""{C2E2C.value}, {KDim.value}
 mask           Field[[{CellDim.value}, {KDim.value}], dtype=bool]  in
 zd_vertidx     Field[[{CellDim.value}, {C2E2CDim.value}, {KDim.value}], dtype=int32]  in
 zd_diffcoef    Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
 geofac_n2s_c   Field[[{CellDim.value}], dtype=float64]  in
 geofac_n2s_nbh Field[[{CellDim.value}, {C2E2CDim.value}], dtype=float64]  in
 vcoef          Field[[{CellDim.value}, {C2E2CDim.value}, {KDim.value}], dtype=float64]  in
-theta_v        Field[[{CellDim.value}, {C2E2CDim.value}], dtype=float64]  in
-z_temp         Field[[{CellDim.value}, {C2E2CDim.value}], dtype=float64]  inout"""
+theta_v        Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
+z_temp         Field[[{CellDim.value}, {KDim.value}], dtype=float64]  inout"""
 
 # patch the fendef with metainfo for icon4pygen
 mo_nh_diffusion_stencil_15.__dict__["offsets"] = [
