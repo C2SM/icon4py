@@ -80,6 +80,3 @@ def mo_nh_diffusion_stencil_15(
             z_temp,
         ],
     )
-
-
-print(mo_nh_diffusion_stencil_15.itir(*([None] * 12)))

@@ -42,10 +42,10 @@ def mo_nh_diffusion_stencil_15_numpy(
         for isparse in range(full_shape[1]):
             for ik in range(full_shape[2]):
                 theta_v_at_zd_vertidx[ic, isparse, ik] = theta_v[
-                    c2e2c[ic, isparse], zd_vertidx[ic, isparse, ik]
+                    c2e2c[ic, isparse], ik + zd_vertidx[ic, isparse, ik]
                 ]
                 theta_v_at_zd_vertidx_p1[ic, isparse, ik] = theta_v[
-                    c2e2c[ic, isparse], zd_vertidx[ic, isparse, ik] + 1
+                    c2e2c[ic, isparse], ik + zd_vertidx[ic, isparse, ik] + 1
                 ]
 
     sum_over = np.sum(
