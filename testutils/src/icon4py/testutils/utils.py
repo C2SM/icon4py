@@ -57,6 +57,16 @@ def zero_field(
     )
 
 
+def as_1D_sparse_field(
+    field: it_embedded.MutableLocatedField, dim: gt_common.Dimension
+) -> it_embedded.MutableLocatedField:
+    """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
+    old_shape = np.asarray(field).shape
+    assert len(old_shape) == 2
+    new_shape = (old_shape[0] * old_shape[1],)
+    return it_embedded.np_as_located_field(dim)(np.asarray(field).reshape(new_shape))
+
+
 def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
     return f"icon4py.{stencil_module}.{stencil_name}:{stencil_name}"
 
