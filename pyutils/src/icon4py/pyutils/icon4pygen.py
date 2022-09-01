@@ -20,6 +20,7 @@ import importlib
 import pathlib
 import types
 from collections.abc import Iterable
+from inspect import signature
 from typing import Any, TypeGuard
 
 import click
@@ -30,6 +31,7 @@ from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
+from functional.iterator.runtime import FendefDispatcher
 
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (
@@ -269,12 +271,23 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     dotted name of the containing module and <member> is the name of the fencil.
     """
     fencil_def = import_definition(fencil)
-    fvprog = get_fvprog(fencil_def)
-    offsets = scan_for_offsets(fvprog)
+    if isinstance(fencil_def, FendefDispatcher):
+        num_params = len(signature(fencil_def.function).parameters)
+        itir = fencil_def.itir(*[None] * num_params)  # TODO do this in GT4Py?
+        offsets = fencil_def.offsets
+        metadata = fencil_def.metadata
+        if output_metadata:
+            output_metadata.write_text(metadata)
+    else:
+        fvprog = get_fvprog(fencil_def)
+        offsets = scan_for_offsets(fvprog)
+        if output_metadata:
+            connectivity_chains = [offset for offset in offsets if offset != Koff.value]
+            metadata = format_metadata(fvprog, connectivity_chains)
+        itir = adapt_domain(fvprog.itir)
     offset_provider = {}
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset)
     if output_metadata:
-        connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-        output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
-    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
+        output_metadata.write_text(metadata)
+    click.echo(generate_cpp_code(itir, offset_provider))
