@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_11 import (
-    mo_solve_nonhydro_stencil_11,
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_11_upper import (
+    mo_solve_nonhydro_stencil_11_upper,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_solve_nonhydro_stencil_11_numpy(
+def mo_solve_nonhydro_stencil_11_upper_numpy(
     wgtfacq_c: np.array,
     z_rth_pr: np.array,
     theta_ref_ic: np.array,
@@ -36,7 +36,7 @@ def mo_solve_nonhydro_stencil_11_numpy(
     return z_theta_v_pr_ic, theta_v_ic
 
 
-def test_mo_solve_nonhydro_stencil_11():
+def test_mo_solve_nonhydro_stencil_11_upper():
     mesh = SimpleMesh()
 
     wgtfacq_c = random_field(mesh, CellDim, KDim)
@@ -46,14 +46,14 @@ def test_mo_solve_nonhydro_stencil_11():
 
     theta_v_ic = zero_field(mesh, CellDim, KDim)
 
-    z_theta_v_pr_ic_ref, theta_v_ic_ref = mo_solve_nonhydro_stencil_11_numpy(
+    z_theta_v_pr_ic_ref, theta_v_ic_ref = mo_solve_nonhydro_stencil_11_upper_numpy(
         np.asarray(wgtfacq_c),
         np.asarray(z_rth_pr),
         np.asarray(theta_ref_ic),
         np.asarray(z_theta_v_pr_ic),
     )
 
-    mo_solve_nonhydro_stencil_11(
+    mo_solve_nonhydro_stencil_11_upper(
         wgtfacq_c,
         z_rth_pr,
         theta_ref_ic,
