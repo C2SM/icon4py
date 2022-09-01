@@ -27,8 +27,46 @@ def mo_solve_nonhydro_stencil_20_numpy(
     z_dexner_dz_c_1: np.array,
     z_dexner_dz_c_2: np.array,
 ) -> np.array:
-    # todo: implement numpy version
-    return None
+    def _apply_index_field(indexed, shape, to_index, neighbor_table, index_field):
+        for ic in range(shape[0]):
+            for isparse in range(shape[1]):
+                for ik in range(shape[2]):
+                    indexed[ic, isparse, ik] = to_index[
+                        neighbor_table[ic, isparse], index_field[ic, isparse, ik]
+                    ]
+        return indexed
+
+    full_shape = zdiff_gradp.shape
+    indexed = np.zeros_like(zdiff_gradp)
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
+
+    z_exner_ex_pr_at_kidx = _apply_index_field(
+        indexed, full_shape, z_exner_ex_pr, e2c, ikidx
+    )
+    z_dexner_dz_c_1_at_kidx = _apply_index_field(
+        indexed, full_shape, z_dexner_dz_c_1, e2c, ikidx
+    )
+    z_dexner_dz_c_2_at_kidx = _apply_index_field(
+        indexed, full_shape, z_dexner_dz_c_2, e2c, ikidx
+    )
+
+    sum_expr = -(
+        z_exner_ex_pr_at_kidx[:, 0, :]
+        + zdiff_gradp[:, 0, :]
+        * (
+            z_dexner_dz_c_1_at_kidx[:, 0, :]
+            + zdiff_gradp[:, 0, :] * z_dexner_dz_c_2_at_kidx[:, 0, :]
+        )
+        + z_exner_ex_pr_at_kidx[:, 1, :]
+        + zdiff_gradp[:, 1, :]
+        * (
+            z_dexner_dz_c_1_at_kidx[:, 1, :]
+            + zdiff_gradp[:, 1, :] * z_dexner_dz_c_2_at_kidx[:, 1, :]
+        )
+    )
+
+    z_gradh_exner = inv_dual_edge_length * sum_expr
+    return z_gradh_exner
 
 
 def test_mo_solve_nonhydro_stencil_20():
@@ -36,12 +74,12 @@ def test_mo_solve_nonhydro_stencil_20():
 
     inv_dual_edge_length = random_field(mesh, EdgeDim)
     z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-    zdiff_gradp = random_field(mesh, CellDim, E2CDim, KDim)
-    ikidx = zero_field(mesh, CellDim, E2CDim, KDim, dtype=int)
+    zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
+    ikidx = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int)
     z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim)
     z_dexner_dz_c_2 = random_field(mesh, CellDim, KDim)
 
-    mo_solve_nonhydro_stencil_20_numpy(
+    z_gradh_exner_ref = mo_solve_nonhydro_stencil_20_numpy(
         mesh.e2c,
         np.asarray(inv_dual_edge_length),
         np.asarray(z_exner_ex_pr),
@@ -53,3 +91,4 @@ def test_mo_solve_nonhydro_stencil_20():
 
     # todo: call gt4py stencil
     # todo: assert equality between numpy and gt4py
+    assert z_gradh_exner_ref == z_gradh_exner_ref
