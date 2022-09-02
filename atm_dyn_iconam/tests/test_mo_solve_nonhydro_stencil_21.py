@@ -26,21 +26,78 @@ def mo_solve_nonhydro_stencil_21_numpy(
     theta_v_ic: np.array,
     inv_ddqz_z_full: np.array,
     inv_dual_edge_length: np.array,
+    grav_o_cpd: float,
 ) -> tuple[np.array]:
-    # todo: implement numpy version
-    z_theta1, z_theta2, z_hydro_corr = None, None, None
+    def _apply_index_field(
+        indexed, indexed_p1, shape, to_index, neighbor_table, index_field
+    ):
+        for ic in range(shape[0]):
+            for isparse in range(shape[1]):
+                for ik in range(shape[2]):
+                    indexed[ic, isparse, ik] = to_index[
+                        neighbor_table[ic, isparse], index_field[ic, isparse, ik]
+                    ]
+                    indexed_p1[ic, isparse, ik] = to_index[
+                        neighbor_table[ic, isparse],
+                        ik + index_field[ic, isparse, ik] + 1,
+                    ]
+        return indexed, indexed_p1
+
+    full_shape = zdiff_gradp.shape
+    indexed = np.zeros_like(zdiff_gradp)
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
+
+    theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
+        indexed, indexed, full_shape, theta_v_ic, e2c, ikidx
+    )
+    inv_ddqz_z_full_at_kidx, inv_ddqz_z_full_at_kidx_p1 = _apply_index_field(
+        indexed, indexed, full_shape, inv_ddqz_z_full, e2c, ikidx
+    )
+
+    z_theta1 = (
+        theta_v_ic_at_kidx[:, 0, :]
+        + zdiff_gradp[:, 0, :]
+        * (theta_v_ic_at_kidx[:, 0, :] - theta_v_ic_at_kidx_p1[:, 0, :])
+        * inv_ddqz_z_full_at_kidx[:, 0, :]
+    )
+
+    z_theta2 = (
+        theta_v_ic_at_kidx[:, 1, :]
+        + zdiff_gradp[:, 1, :]
+        * (theta_v_ic_at_kidx[:, 1, :] - theta_v_ic_at_kidx_p1[:, 1, :])
+        * inv_ddqz_z_full_at_kidx[:, 1, :]
+    )
+
+    z_hydro_corr = (
+        grav_o_cpd
+        * inv_dual_edge_length
+        * (z_theta2 - z_theta1)
+        * 4.0
+        / ((z_theta1 + z_theta2) ** 2)
+    )
+
     return z_theta1, z_theta2, z_hydro_corr
 
 
 def test_mo_solve_nonhydro_stencil_21():
     mesh = SimpleMesh()
 
+    ikidx = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int)
+    rng = np.random.default_rng()
+    for k in range(mesh.k_level):
+        # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
+        ikidx[:, :, k] = rng.integers(
+            low=0 - k,
+            high=mesh.k_level - k - 1,
+            size=(ikidx.shape[0], ikidx.shape[1]),
+        )
+
     theta_v = random_field(mesh, CellDim, KDim)
-    ikidx = zero_field(mesh, CellDim, E2CDim, KDim, dtype=int)
-    zdiff_grap = random_field(mesh, CellDim, E2CDim, KDim)
+    zdiff_grap = random_field(mesh, EdgeDim, E2CDim, KDim)
     theta_v_ic = random_field(mesh, CellDim, KDim)
     inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
     inv_dual_edge_length = random_field(mesh, EdgeDim)
+    grav_o_cpd = 10.0
 
     mo_solve_nonhydro_stencil_21_numpy(
         mesh.e2c,
@@ -50,6 +107,7 @@ def test_mo_solve_nonhydro_stencil_21():
         np.asarray(theta_v_ic),
         np.asarray(inv_ddqz_z_full),
         np.asarray(inv_dual_edge_length),
+        grav_o_cpd,
     )
 
     # todo: call gt4py stencil
