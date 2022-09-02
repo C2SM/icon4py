@@ -13,6 +13,9 @@
 
 import numpy as np
 
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_21 import (
+    mo_solve_nonhydro_stencil_21,
+)
 from icon4py.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
@@ -95,25 +98,53 @@ def test_mo_solve_nonhydro_stencil_21():
         )
 
     theta_v = random_field(mesh, CellDim, KDim)
-    zdiff_grap = random_field(mesh, EdgeDim, E2CDim, KDim)
+    zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
     theta_v_ic = random_field(mesh, CellDim, KDim)
     inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
     inv_dual_edge_length = random_field(mesh, EdgeDim)
     grav_o_cpd = 10.0
 
-    z_theta1, z_theta2, z_hydro_corr = mo_solve_nonhydro_stencil_21_numpy(
+    z_theta1 = zero_field(mesh, EdgeDim, KDim)
+    z_theta2 = zero_field(mesh, EdgeDim, KDim)
+    z_hydro_corr = zero_field(mesh, EdgeDim, KDim)
+
+    z_theta1_ref, z_theta2_ref, z_hydro_corr_ref = mo_solve_nonhydro_stencil_21_numpy(
         mesh.e2c,
         np.asarray(theta_v),
         np.asarray(ikidx),
-        np.asarray(zdiff_grap),
+        np.asarray(zdiff_gradp),
         np.asarray(theta_v_ic),
         np.asarray(inv_ddqz_z_full),
         np.asarray(inv_dual_edge_length),
         grav_o_cpd,
     )
 
-    # todo: call gt4py stencil
-    # todo: assert equality between numpy and gt4py
-    assert np.allclose(z_theta1, z_theta1)
-    assert np.allclose(z_theta2, z_theta2)
-    assert np.allclose(z_hydro_corr, z_hydro_corr)
+    hstart = 0
+    hend = mesh.n_edges
+    kstart = 0
+    kend = mesh.k_level
+
+    z_theta1, z_theta2, z_hydro_corr = mo_solve_nonhydro_stencil_21(
+        theta_v,
+        ikidx,
+        zdiff_gradp,
+        theta_v_ic,
+        inv_ddqz_z_full,
+        inv_dual_edge_length,
+        grav_o_cpd,
+        z_theta1,
+        z_theta2,
+        z_hydro_corr,
+        hstart,
+        hend,
+        kstart,
+        kend,
+        offset_provider={
+            "E2C": mesh.get_e2c_offset_provider(),
+            "Koff": KDim,
+        },
+    )
+
+    assert np.allclose(z_theta1_ref, z_theta1)
+    assert np.allclose(z_theta2_ref, z_theta2)
+    assert np.allclose(z_hydro_corr_ref, z_hydro_corr)

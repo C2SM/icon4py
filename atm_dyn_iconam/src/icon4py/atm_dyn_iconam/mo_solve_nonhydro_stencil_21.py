@@ -19,53 +19,61 @@ from functional.iterator.builtins import (
 )
 from functional.iterator.runtime import closure, fendef, fundef
 
-from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim, Koff
+from icon4py.common.dimension import E2C, EdgeDim, KDim, Koff
 
 
 @fundef
-def step(
-    i,
-    z_exner_ex_pr,
-    zdiff_gradp,
-    ikidx,
-    z_dexner_dz_c_1,
-    z_dexner_dz_c_2,
-):
+def step(i, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full):
     d_ikidx = deref(shift(i)(ikidx))
-    d_z_exner_exp_pr = deref(shift(Koff, d_ikidx, E2C, i)(z_exner_ex_pr))
-    d_z_dexner_dz_c_1 = deref(shift(Koff, d_ikidx, E2C, i)(z_dexner_dz_c_1))
-    d_z_dexner_dz_c_2 = deref(shift(Koff, d_ikidx, E2C, i)(z_dexner_dz_c_2))
+
+    d_theta_v = deref(shift(Koff, d_ikidx, E2C, i)(theta_v))
+    s_theta_v_ic = shift(Koff, d_ikidx, E2C, i)(theta_v_ic)
+    d_theta_v_ic = deref(s_theta_v_ic)
+    d_theta_v_ic_p1 = deref(shift(Koff, 1)(s_theta_v_ic))
+    d_inv_ddqz_z_full = deref(shift(Koff, d_ikidx, E2C, i)(inv_ddqz_z_full))
     d_zdiff_gradp = deref(shift(i)(zdiff_gradp))
 
-    return d_z_exner_exp_pr + d_zdiff_gradp * (
-        d_z_dexner_dz_c_1 + d_zdiff_gradp * d_z_dexner_dz_c_2
+    return (
+        d_theta_v + d_zdiff_gradp * (d_theta_v_ic - d_theta_v_ic_p1) * d_inv_ddqz_z_full
     )
 
 
 @fundef
-def _mo_solve_nonhydro_stencil_20(
-    inv_dual_edge_length,
-    z_exner_ex_pr,
-    zdiff_gradp,
+def _mo_solve_nonhydro_stencil_21(
+    theta_v,
     ikidx,
-    z_dexner_dz_c_1,
-    z_dexner_dz_c_2,
+    zdiff_gradp,
+    theta_v_ic,
+    inv_ddqz_z_full,
+    inv_dual_edge_length,
+    grav_o_cpd,
 ):
-    return deref(inv_dual_edge_length) * (
-        step(1, z_exner_ex_pr, zdiff_gradp, ikidx, z_dexner_dz_c_1, z_dexner_dz_c_2)
-        - step(0, z_exner_ex_pr, zdiff_gradp, ikidx, z_dexner_dz_c_1, z_dexner_dz_c_2)
+
+    z_theta1 = step(0, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
+    z_theta2 = step(1, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
+    z_hydro_corr = (
+        deref(grav_o_cpd)
+        * deref(inv_dual_edge_length)
+        * (z_theta2 - z_theta1)
+        * 4.0
+        / ((z_theta1 + z_theta2) ** 2)
     )
+
+    return z_theta1, z_theta2, z_hydro_corr
 
 
 @fendef
-def mo_solve_nonhydro_stencil_20(
-    inv_dual_edge_length,
-    z_exner_ex_pr,
-    zdiff_gradp,
+def mo_solve_nonhydro_stencil_21(
+    theta_v,
     ikidx,
-    z_dexner_dz_c_1,
-    z_dexner_dz_c_2,
-    z_gradh_exner,
+    zdiff_gradp,
+    theta_v_ic,
+    inv_ddqz_z_full,
+    inv_dual_edge_length,
+    grav_o_cpd,
+    z_theta1,
+    z_theta2,
+    z_hydro_corr,
     hstart: int,
     hend: int,
     kstart: int,
@@ -75,31 +83,17 @@ def mo_solve_nonhydro_stencil_20(
         unstructured_domain(
             named_range(EdgeDim, hstart, hend), named_range(KDim, kstart, kend)
         ),
-        _mo_solve_nonhydro_stencil_20,
-        z_gradh_exner,
+        _mo_solve_nonhydro_stencil_21(z_theta1, z_theta2, z_hydro_corr),
         [
-            inv_dual_edge_length,
-            z_exner_ex_pr,
-            zdiff_gradp,
+            theta_v,
             ikidx,
-            z_dexner_dz_c_1,
-            z_dexner_dz_c_2,
+            zdiff_gradp,
+            theta_v_ic,
+            inv_ddqz_z_full,
+            inv_dual_edge_length,
+            grav_o_cpd,
+            z_theta1,
+            z_theta2,
+            z_hydro_corr,
         ],
     )
-
-
-_metadata = f"""{E2C.value}
-inv_dual_edge_length  Field[[{EdgeDim.value}], dtype=float64]  in
-z_exner_ex_pr         Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-zdiff_gradp           Field[[{EdgeDim.value}, {E2CDim.value}, {KDim.value}], dtype=float64]  in
-kidx                  Field[[{EdgeDim.value}, {E2CDim.value}, {KDim.value}], dtype=int32]  in
-z_dexner_dz_c_1       Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-z_dexner_dz_c_2       Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-z_gradh_exner         Field[[{EdgeDim.value}, {KDim.value}], dtype=float64]  out"""
-
-# patch the fendef with metainfo for icon4pygen
-mo_solve_nonhydro_stencil_20.__dict__["offsets"] = [
-    Koff.value,
-    E2C.value,
-]  # could be done with a pass...
-mo_solve_nonhydro_stencil_20.__dict__["metadata"] = _metadata
