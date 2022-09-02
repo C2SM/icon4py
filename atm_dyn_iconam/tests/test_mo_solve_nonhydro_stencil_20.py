@@ -71,7 +71,14 @@ def test_mo_solve_nonhydro_stencil_20():
     z_exner_ex_pr = random_field(mesh, CellDim, KDim)
     zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
     ikidx = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int)
-    # TODO fill useful values
+    rng = np.random.default_rng()
+    for k in range(mesh.k_level):
+        # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
+        ikidx[:, :, k] = rng.integers(
+            low=0 - k,
+            high=mesh.k_level - k - 1,
+            size=(ikidx.shape[0], ikidx.shape[1]),
+        )
 
     z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim)
     z_dexner_dz_c_2 = random_field(mesh, CellDim, KDim)
