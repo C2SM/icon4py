@@ -83,8 +83,8 @@ def mo_solve_nonhydro_stencil_21(
         unstructured_domain(
             named_range(EdgeDim, hstart, hend), named_range(KDim, kstart, kend)
         ),
-        _mo_solve_nonhydro_stencil_21(z_theta1, z_theta2, z_hydro_corr),
-        [
+        _mo_solve_nonhydro_stencil_21,
+        (z_theta1, z_theta2, z_hydro_corr)[
             theta_v,
             ikidx,
             zdiff_gradp,
