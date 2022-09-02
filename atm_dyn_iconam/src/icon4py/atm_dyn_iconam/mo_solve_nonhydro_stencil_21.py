@@ -47,12 +47,15 @@ def _mo_solve_nonhydro_stencil_21(
     inv_ddqz_z_full,
     inv_dual_edge_length,
     grav_o_cpd,
+    z_theta1,
+    z_theta2,
+    z_hydro_corr,
 ):
 
     z_theta1 = step(0, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
     z_theta2 = step(1, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
     z_hydro_corr = (
-        deref(grav_o_cpd)
+        grav_o_cpd
         * deref(inv_dual_edge_length)
         * (z_theta2 - z_theta1)
         * 4.0
@@ -84,7 +87,8 @@ def mo_solve_nonhydro_stencil_21(
             named_range(EdgeDim, hstart, hend), named_range(KDim, kstart, kend)
         ),
         _mo_solve_nonhydro_stencil_21,
-        (z_theta1, z_theta2, z_hydro_corr)[
+        (z_theta1, z_theta2, z_hydro_corr),
+        [
             theta_v,
             ikidx,
             zdiff_gradp,
