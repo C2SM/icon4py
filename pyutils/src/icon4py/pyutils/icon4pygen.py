@@ -272,7 +272,8 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     """
     fencil_def = import_definition(fencil)
     if isinstance(fencil_def, FendefDispatcher):
-        num_params = len(signature(fencil_def.function).parameters)
+        params = signature(fencil_def.function).parameters
+        num_params = len(params)
         itir = fencil_def.itir(*[None] * num_params)  # TODO do this in GT4Py?
         offsets = fencil_def.offsets
         metadata = fencil_def.metadata

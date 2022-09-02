@@ -82,7 +82,7 @@ def mo_nh_diffusion_stencil_15(
     )
 
 
-_metadata = f"""{C2E2C.value}, {KDim.value}
+_metadata = f"""{C2E2C.value}
 mask           Field[[{CellDim.value}, {KDim.value}], dtype=bool]  in
 zd_vertidx     Field[[{CellDim.value}, {C2E2CDim.value}, {KDim.value}], dtype=int32]  in
 zd_diffcoef    Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
