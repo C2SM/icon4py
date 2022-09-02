@@ -124,7 +124,7 @@ def test_mo_solve_nonhydro_stencil_21():
     kstart = 0
     kend = mesh.k_level
 
-    z_theta1, z_theta2, z_hydro_corr = mo_solve_nonhydro_stencil_21(
+    mo_solve_nonhydro_stencil_21(
         theta_v,
         ikidx,
         zdiff_gradp,
