@@ -19,7 +19,7 @@ from functional.iterator.builtins import (
 )
 from functional.iterator.runtime import closure, fendef, fundef
 
-from icon4py.common.dimension import E2C, EdgeDim, KDim, Koff
+from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim, Koff
 
 
 @fundef
@@ -86,3 +86,20 @@ def mo_solve_nonhydro_stencil_20(
             z_dexner_dz_c_2,
         ],
     )
+
+
+_metadata = f"""{E2C.value}
+inv_dual_edge_length  Field[[{EdgeDim.value}], dtype=float64]  in
+z_exner_ex_pr         Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
+zdiff_gradp           Field[[{EdgeDim.value}, {E2CDim.value}, {KDim.value}], dtype=float64]  in
+kidx                  Field[[{EdgeDim.value}, {E2CDim.value}, {KDim.value}], dtype=int32]  in
+z_dexner_dz_c_1       Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
+z_dexner_dz_c_2       Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
+z_gradh_exner         Field[[{EdgeDim.value}, {KDim.value}], dtype=float64]  out"""
+
+# patch the fendef with metainfo for icon4pygen
+mo_solve_nonhydro_stencil_20.__dict__["offsets"] = [
+    Koff.value,
+    E2C.value,
+]  # could be done with a pass...
+mo_solve_nonhydro_stencil_20.__dict__["metadata"] = _metadata
