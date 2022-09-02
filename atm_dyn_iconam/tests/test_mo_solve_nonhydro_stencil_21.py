@@ -28,30 +28,29 @@ def mo_solve_nonhydro_stencil_21_numpy(
     inv_dual_edge_length: np.array,
     grav_o_cpd: float,
 ) -> tuple[np.array]:
-    def _apply_index_field(
-        indexed, indexed_p1, shape, to_index, neighbor_table, index_field
-    ):
-        for ic in range(shape[0]):
+    def _apply_index_field(shape, to_index, neighbor_table, offset_field):
+        indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
+        for iprimary in range(shape[0]):
             for isparse in range(shape[1]):
                 for ik in range(shape[2]):
-                    indexed[ic, isparse, ik] = to_index[
-                        neighbor_table[ic, isparse], index_field[ic, isparse, ik]
+                    indexed[iprimary, isparse, ik] = to_index[
+                        neighbor_table[iprimary, isparse],
+                        ik + offset_field[iprimary, isparse, ik],
                     ]
-                    indexed_p1[ic, isparse, ik] = to_index[
-                        neighbor_table[ic, isparse],
-                        ik + index_field[ic, isparse, ik] + 1,
+                    indexed_p1[iprimary, isparse, ik] = to_index[
+                        neighbor_table[iprimary, isparse],
+                        ik + offset_field[iprimary, isparse, ik],
                     ]
         return indexed, indexed_p1
 
     full_shape = zdiff_gradp.shape
-    indexed = np.zeros_like(zdiff_gradp)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
     theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
-        indexed, indexed, full_shape, theta_v_ic, e2c, ikidx
+        full_shape, theta_v_ic, e2c, ikidx
     )
     inv_ddqz_z_full_at_kidx, inv_ddqz_z_full_at_kidx_p1 = _apply_index_field(
-        indexed, indexed, full_shape, inv_ddqz_z_full, e2c, ikidx
+        full_shape, inv_ddqz_z_full, e2c, ikidx
     )
 
     z_theta1 = (
