@@ -46,22 +46,25 @@ def mo_solve_nonhydro_stencil_21_numpy(
     full_shape = zdiff_gradp.shape
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
+    theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikidx)
+
     theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
         full_shape, theta_v_ic, e2c, ikidx
     )
-    inv_ddqz_z_full_at_kidx, inv_ddqz_z_full_at_kidx_p1 = _apply_index_field(
+
+    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(
         full_shape, inv_ddqz_z_full, e2c, ikidx
     )
 
     z_theta1 = (
-        theta_v_ic_at_kidx[:, 0, :]
+        theta_v_at_kidx[:, 0, :]
         + zdiff_gradp[:, 0, :]
         * (theta_v_ic_at_kidx[:, 0, :] - theta_v_ic_at_kidx_p1[:, 0, :])
         * inv_ddqz_z_full_at_kidx[:, 0, :]
     )
 
     z_theta2 = (
-        theta_v_ic_at_kidx[:, 1, :]
+        theta_v_at_kidx[:, 1, :]
         + zdiff_gradp[:, 1, :]
         * (theta_v_ic_at_kidx[:, 1, :] - theta_v_ic_at_kidx_p1[:, 1, :])
         * inv_ddqz_z_full_at_kidx[:, 1, :]
@@ -98,7 +101,7 @@ def test_mo_solve_nonhydro_stencil_21():
     inv_dual_edge_length = random_field(mesh, EdgeDim)
     grav_o_cpd = 10.0
 
-    mo_solve_nonhydro_stencil_21_numpy(
+    z_theta1, z_theta2, z_hydro_corr = mo_solve_nonhydro_stencil_21_numpy(
         mesh.e2c,
         np.asarray(theta_v),
         np.asarray(ikidx),
@@ -111,3 +114,6 @@ def test_mo_solve_nonhydro_stencil_21():
 
     # todo: call gt4py stencil
     # todo: assert equality between numpy and gt4py
+    assert np.allclose(z_theta1, z_theta1)
+    assert np.allclose(z_theta2, z_theta2)
+    assert np.allclose(z_hydro_corr, z_hydro_corr)
