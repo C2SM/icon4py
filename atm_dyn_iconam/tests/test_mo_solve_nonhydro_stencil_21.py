@@ -42,7 +42,7 @@ def mo_solve_nonhydro_stencil_21_numpy(
                     ]
                     indexed_p1[iprimary, isparse, ik] = to_index[
                         neighbor_table[iprimary, isparse],
-                        ik + offset_field[iprimary, isparse, ik],
+                        ik + offset_field[iprimary, isparse, ik] + 1,
                     ]
         return indexed, indexed_p1
 
