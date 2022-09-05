@@ -13,7 +13,9 @@
 
 from functional.iterator.builtins import (
     deref,
+    make_tuple,
     named_range,
+    power,
     shift,
     unstructured_domain,
 )
@@ -55,7 +57,7 @@ def _mo_solve_nonhydro_stencil_21(
         * deref(inv_dual_edge_length)
         * (z_theta2 - z_theta1)
         * 4.0
-        / (z_theta1 + z_theta2) ** 2
+        / power((z_theta1 + z_theta2), 2.0)
     )
     return z_theta1, z_theta2, z_hydro_corr
 
@@ -82,7 +84,7 @@ def mo_solve_nonhydro_stencil_21(
             named_range(EdgeDim, hstart, hend), named_range(KDim, kstart, kend)
         ),
         _mo_solve_nonhydro_stencil_21,
-        (z_theta1, z_theta2, z_hydro_corr),
+        make_tuple(z_theta1, z_theta2, z_hydro_corr),
         [
             theta_v,
             ikidx,
