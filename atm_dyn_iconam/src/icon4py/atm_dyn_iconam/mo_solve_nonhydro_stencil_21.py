@@ -19,7 +19,7 @@ from functional.iterator.builtins import (
 )
 from functional.iterator.runtime import closure, fendef, fundef
 
-from icon4py.common.dimension import E2C, EdgeDim, KDim, Koff
+from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim, Koff
 
 
 @fundef
@@ -48,7 +48,6 @@ def _mo_solve_nonhydro_stencil_21(
     inv_dual_edge_length,
     grav_o_cpd,
 ):
-
     z_theta1 = step(0, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
     z_theta2 = step(1, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
     z_hydro_corr = (
@@ -56,7 +55,7 @@ def _mo_solve_nonhydro_stencil_21(
         * deref(inv_dual_edge_length)
         * (z_theta2 - z_theta1)
         * 4.0
-        / ((z_theta1 + z_theta2) ** 2)
+        / (z_theta1 + z_theta2) ** 2
     )
     return z_theta1, z_theta2, z_hydro_corr
 
@@ -94,3 +93,24 @@ def mo_solve_nonhydro_stencil_21(
             grav_o_cpd,
         ],
     )
+
+
+_metadata = f"""{E2C.value}
+theta_v                 Field[[{CellDim.value}, {KDim.value}], dtype=float64]   in
+ikidx                   Field[[{EdgeDim.value}, {E2CDim.value}, {KDim.value}], dtype=int32] in
+zdiff_gradp             Field[[{EdgeDim.value}, {E2CDim.value}, {KDim.value}], dtype=float64]   in
+theta_v_ic              Field[[{CellDim.value}, {KDim.value}], dtype=float64]   in
+inv_ddqz_z_full         Field[[{CellDim.value}, {KDim.value}], dtype=float64]   in
+inv_dual_edge_length    Field[[{EdgeDim.value}], dtype=float64]   in
+grav_o_cpd              Field[[], dtype=float64]    in
+z_theta1                Field[[{EdgeDim.value}, {KDim.value}], dtype=float64]  out
+z_theta2                Field[[{EdgeDim.value}, {KDim.value}], dtype=float64]  out
+z_hydro_corr            Field[[{EdgeDim.value}, {KDim.value}], dtype=float64]  out
+"""
+
+# patch the fendef with metainfo for icon4pygen
+mo_solve_nonhydro_stencil_21.__dict__["offsets"] = [
+    Koff.value,
+    E2C.value,
+]  # could be done with a pass...
+mo_solve_nonhydro_stencil_21.__dict__["metadata"] = _metadata
