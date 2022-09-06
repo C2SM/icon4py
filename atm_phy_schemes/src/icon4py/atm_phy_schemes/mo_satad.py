@@ -52,19 +52,16 @@ from icon4py.common.dimension import CellDim, KDim
 # maxiter = 10  #
 # zqwmin = 1e-20
 
-# TODO: Docstrings will crash field_Operators
-"""
-Return latent heat of vaporization.
-
-Computed as internal energy and taking into account Kirchoff's relations
-"""
-
 
 @field_operator
 def _latent_heat_vaporization(
     t: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
+    """
+    Return latent heat of vaporization.
 
+    Computed as internal energy and taking into account Kirchoff's relations
+    """
     # TODO: Remove later
     alv = 2.5008e6
     tmelt = 273.15
@@ -77,11 +74,9 @@ def _latent_heat_vaporization(
     return alv + (cp_v - clw) * (t - tmelt) - rv * t
 
 
-"""Return saturation water vapour pressure."""
-
-
 @field_operator
 def _sat_pres_water(t: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
+    """Return saturation water vapour pressure."""
     # TODO: Remove later
     tmelt = 273.15
     c1es = 610.78
@@ -91,31 +86,25 @@ def _sat_pres_water(t: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], 
     return c1es * exp(c3les * (t - tmelt) / (t - c4les))
 
 
-"""Return specific humidity at water saturation (with respect to flat surface)."""
-
-
 @field_operator
 def _qsat_rho(
     t: Field[[CellDim, KDim], float], rho: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
-
+    """Return specific humidity at water saturation (with respect to flat surface)."""
     rv = 461.51  # TODO: Remove
 
     return _sat_pres_water(t) / (rho * rv * t)
-
-
-"""
-Return partial derivative of the specific humidity at water saturation.
-
-Computed with respect to the temperature at constant total density.
-"""
 
 
 @field_operator
 def _dqsatdT_rho(
     t: Field[[CellDim, KDim], float], zqsat: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
+    """
+    Return partial derivative of the specific humidity at water saturation.
 
+    Computed with respect to the temperature at constant total density.
+    """
     # TODO: Remove later
     tmelt = 273.15
     c3les = 17.269
@@ -187,24 +176,6 @@ def _newtonian_iteration_temp(
     return tWork
 
 
-"""
-Adjust saturation at each grid point.
-
-Synopsis:
-Saturation adjustment condenses/evaporates specific humidity (qv) into/from
-cloud water content (qc) such that a gridpoint is just saturated. Temperature (t)
-is adapted accordingly and pressure adapts itself in ICON.
-
-Method:
-Saturation adjustment at constant total density (adjustment of T and p accordingly)
-assuming chemical equilibrium of water and vapor. For the heat capacity of
-of the total system (dry air, vapor, and hydrometeors) the value of dry air
-is taken, which is a common approximation and introduces only a small error.
-
-Originally inspirered from satad_v_3D_gpu of ICON release 2.6.4.
-"""
-
-
 @field_operator
 def _satad(
     qv: Field[[CellDim, KDim], float],
@@ -216,7 +187,22 @@ def _satad(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
+    """
+    Adjust saturation at each grid point.
 
+    Synopsis:
+    Saturation adjustment condenses/evaporates specific humidity (qv) into/from
+    cloud water content (qc) such that a gridpoint is just saturated. Temperature (t)
+    is adapted accordingly and pressure adapts itself in ICON.
+
+    Method:
+    Saturation adjustment at constant total density (adjustment of T and p accordingly)
+    assuming chemical equilibrium of water and vapor. For the heat capacity of
+    of the total system (dry air, vapor, and hydrometeors) the value of dry air
+    is taken, which is a common approximation and introduces only a small error.
+
+    Originally inspirered from satad_v_3D_gpu of ICON release 2.6.4.
+    """
     # TODO: Remove
     rd = 287.04
     cpd = 1004.64
