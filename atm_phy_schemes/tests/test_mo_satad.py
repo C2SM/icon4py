@@ -12,6 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
+import contextlib
+import io
+import trace
+
 import numpy as np
 from functional.iterator.embedded import np_as_located_field
 from hypothesis import given, settings
@@ -158,14 +162,25 @@ def test_newtonian_iteration(t, qv, rho):
 def test_mo_satad(qv, qc, t, rho):
     """Test satad aginst a numpy implementaion."""
     # Numpy Implementation
-    tRef, qvRef, qcRef = satad_numpy(
-        np.asarray(qv).copy(),
-        np.asarray(qc).copy(),
-        np.asarray(t).copy(),
-        np.asarray(rho).copy(),
+    tracer = trace.Trace(trace=1, count=1)
+    f = io.StringIO()
+    with contextlib.redirect_stdout(f):
+        tRef, qvRef, qcRef = tracer.runfunc(
+            satad_numpy,
+            np.asarray(qv).copy(),
+            np.asarray(qc).copy(),
+            np.asarray(t).copy(),
+            np.asarray(rho).copy(),
+        )
+
+    lines = len(
+        [line_no for fname, line_no in tracer.counts.keys() if fname == __file__]
     )
 
-    # Guide hypothesis tool to maximize these tendencies
+    # Guide hypothesis to maximize the number of lines visited
+    target(lines, label="lines")
+
+    # Guide hypothesis tool to maximize tendencies
     maximizeTendency(t, tRef, "t")
     maximizeTendency(qv, qvRef, "qv")
     maximizeTendency(qc, qcRef, "qc")
