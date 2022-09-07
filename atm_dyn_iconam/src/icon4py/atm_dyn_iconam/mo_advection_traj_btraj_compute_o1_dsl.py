@@ -36,41 +36,36 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-    one_if_positive = where(p_vn > 0.0, 1.0, 0.0)
 
-    p_cell_idx = one_if_positive * cell_idx(E2EC[0]) + (
-        1.0 - one_if_positive
-    ) * cell_idx(E2EC[1])
-    p_cell_blk = one_if_positive * cell_blk(E2EC[0]) + (
-        1.0 - one_if_positive
-    ) * cell_blk(E2EC[1])
+    lvn_pos = where(p_vn > 0.0, True, False)
+
+    p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))
+    p_cell_blk = where(lvn_pos, cell_blk(E2EC[0]), cell_blk(E2EC[1]))
 
     z_ntdistv_bary_1 = -(
         p_vn * p_dthalf
-        + one_if_positive * pos_on_tplane_e_1(E2EC[0])
-        + (1.0 - one_if_positive) * pos_on_tplane_e_1(E2EC[1])
+        + where(lvn_pos, pos_on_tplane_e_1(E2EC[0]), pos_on_tplane_e_1(E2EC[1]))
     )
 
     z_ntdistv_bary_2 = -(
         p_vt * p_dthalf
-        + one_if_positive * pos_on_tplane_e_2(E2EC[0])
-        + (1.0 - one_if_positive) * pos_on_tplane_e_2(E2EC[1])
+        + where(lvn_pos, pos_on_tplane_e_2(E2EC[0]), pos_on_tplane_e_2(E2EC[1]))
     )
 
-    p_distv_bary_1 = one_if_positive * (
+    p_distv_bary_1 = where(
+        lvn_pos,
         z_ntdistv_bary_1 * primal_normal_cell_1(E2EC[0])
-        + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[0])
-    ) + (1.0 - one_if_positive) * (
+        + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[0]),
         z_ntdistv_bary_1 * primal_normal_cell_1(E2EC[1])
-        + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[1])
+        + z_ntdistv_bary_2 * dual_normal_cell_1(E2EC[1]),
     )
 
-    p_distv_bary_2 = one_if_positive * (
+    p_distv_bary_2 = where(
+        lvn_pos,
         z_ntdistv_bary_1 * primal_normal_cell_2(E2EC[0])
-        + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[0])
-    ) + (1.0 - one_if_positive) * (
+        + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[0]),
         z_ntdistv_bary_1 * primal_normal_cell_2(E2EC[1])
-        + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[1])
+        + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[1]),
     )
 
     return p_cell_idx, p_cell_blk, p_distv_bary_1, p_distv_bary_2
