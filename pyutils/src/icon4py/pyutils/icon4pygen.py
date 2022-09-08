@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import importlib
 import pathlib
 import types
@@ -31,26 +30,21 @@ from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 
+from icon4py.bindings.codegen import CppBindGen, PyBindGen
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (
     InvalidConnectivityException,
     MultipleFieldOperatorException,
 )
 from icon4py.pyutils.icochainsize import IcoChainSize
-
-
-@dataclasses.dataclass(frozen=True)
-class _FieldInfo:
-    field: past.DataSymbol
-    inp: bool
-    out: bool
+from icon4py.pyutils.stencil_info import FieldInfo, StencilInfo
 
 
 def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
     return isinstance(obj, list) and all(isinstance(i, past.Name) for i in obj)
 
 
-def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
+def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     """Extract and format the in/out fields from a Program."""
     assert is_list_of_names(
         fvprog.past_node.body[0].args
@@ -62,8 +56,8 @@ def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
     output_arg_ids = set(arg.id for arg in output_fields)
 
-    fields: dict[str, _FieldInfo] = {
-        field_node.id: _FieldInfo(
+    fields: dict[str, FieldInfo] = {
+        field_node.id: FieldInfo(
             field=field_node,
             inp=(field_node.id in input_arg_ids),
             out=(field_node.id in output_arg_ids),
@@ -74,7 +68,7 @@ def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     return fields
 
 
-def format_io_string(fieldinfo: _FieldInfo) -> str:
+def format_io_string(fieldinfo: FieldInfo) -> str:
     """Format the output for the "io" column: in/inout/out."""
     return f"{'in' if fieldinfo.inp else ''}{'out' if fieldinfo.out else ''}"
 
@@ -112,7 +106,7 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
     A new sparse dimension may look like C2CE or V2CVEC. In this case, we need to strip the 2
     and pass the tokens after to the algorithm below
     """
-    # note: this seeems really brittle. maybe agree on a keyowrd to indicate new sparse fields?
+    # note: this seems really brittle. maybe agree on a keyword to indicate new sparse fields?
     new_sparse_field = any(
         len(token) > 1 for token in chain.split("2")
     ) and not chain.endswith("O")
@@ -250,31 +244,52 @@ def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Prog
     return fvprog
 
 
-@click.command(
-    "icon4pygen",
-)
-@click.option(
-    "--output-metadata",
-    type=click.Path(
-        exists=False, dir_okay=False, resolve_path=True, path_type=pathlib.Path
-    ),
-    help="file path for optional metadata output",
-)
-@click.argument("fencil", type=str)
-def main(output_metadata: pathlib.Path, fencil: str) -> None:
-    """
-    Generate metadata and C++ code for an icon4py fencil.
-
-    A fencil may be specified as <module>:<member>, where <module> is the
-    dotted name of the containing module and <member> is the name of the fencil.
-    """
+def get_stencil_metadata(fencil) -> StencilInfo:
     fencil_def = import_definition(fencil)
     fvprog = get_fvprog(fencil_def)
     offsets = scan_for_offsets(fvprog)
     offset_provider = {}
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset)
-    if output_metadata:
-        connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-        output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
-    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
+    connectivity_chains = [offset for offset in offsets if offset != Koff.value]
+    stencil_header_cpp_code = generate_cpp_code(
+        adapt_domain(fvprog.itir), offset_provider
+    )
+    return StencilInfo(fvprog, connectivity_chains, stencil_header_cpp_code)
+
+
+@click.command(
+    "icon4pygen",
+)
+@click.option(
+    "--cppbindgen-path",
+    type=click.Path(
+        exists=True, dir_okay=True, resolve_path=True, path_type=pathlib.Path
+    ),
+    help="Path to cppbindgen source folder. Specifying this option will compile and execute the c++ bindings generator and store all generated files in the build folder under build/generated.",
+)
+@click.argument("fencil", type=str)
+@click.argument(
+    "outpath",
+    type=click.Path(
+        exists=True, dir_okay=True, resolve_path=True, path_type=pathlib.Path
+    ),
+)
+def main(
+    outpath: pathlib.Path, fencil: str, cppbindgen_path: pathlib.Path = None
+) -> None:
+    """
+    Generate C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
+
+    A fencil may be specified as <module>:<member>, where <module> is the
+    dotted name of the containing module and <member> is the name of the fencil.
+
+    The outpath represents a path to the folder in which to write all generated code.
+    """
+    # todo: fix readme
+    metadata = get_stencil_metadata(fencil)
+
+    if cppbindgen_path:
+        CppBindGen(metadata)(cppbindgen_path)
+
+    PyBindGen(metadata)(outpath)
