@@ -18,11 +18,9 @@ from __future__ import annotations
 import importlib
 import pathlib
 import types
-from collections.abc import Iterable
-from typing import Any, TypeGuard
+from typing import Any
 
 import click
-import tabulate
 from functional.common import Connectivity, Dimension, DimensionKind
 from functional.fencil_processors.codegens.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
@@ -37,40 +35,7 @@ from icon4py.pyutils.exceptions import (
     MultipleFieldOperatorException,
 )
 from icon4py.pyutils.icochainsize import IcoChainSize
-from icon4py.pyutils.stencil_info import FieldInfo, StencilInfo
-
-
-def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
-    return isinstance(obj, list) and all(isinstance(i, past.Name) for i in obj)
-
-
-def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
-    """Extract and format the in/out fields from a Program."""
-    assert is_list_of_names(
-        fvprog.past_node.body[0].args
-    ), "Found unsupported expression in input arguments."
-    input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
-
-    out_arg = fvprog.past_node.body[0].kwargs["out"]
-    assert isinstance(out_arg, (past.Name, past.TupleExpr))
-    output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
-    output_arg_ids = set(arg.id for arg in output_fields)
-
-    fields: dict[str, FieldInfo] = {
-        field_node.id: FieldInfo(
-            field=field_node,
-            inp=(field_node.id in input_arg_ids),
-            out=(field_node.id in output_arg_ids),
-        )
-        for field_node in fvprog.past_node.params
-    }
-
-    return fields
-
-
-def format_io_string(fieldinfo: FieldInfo) -> str:
-    """Format the output for the "io" column: in/inout/out."""
-    return f"{'in' if fieldinfo.inp else ''}{'out' if fieldinfo.out else ''}"
+from icon4py.pyutils.stencil_info import StencilInfo
 
 
 def scan_for_offsets(fvprog: Program) -> set[str]:
@@ -141,27 +106,6 @@ def provide_offset(offset: str) -> type.SimpleNamespace | Dimension:
         return Koff.source
     else:
         return provide_neighbor_table(offset)
-
-
-def format_metadata(fvprog: Program, chains: Iterable[str], **kwargs: Any) -> str:
-    """Format in/out field and connectivity information from a program as a string table."""
-    field_infos = get_field_infos(fvprog)
-    table = []
-    for name, info in field_infos.items():
-        display_type = info.field.type
-
-        if isinstance(info.field.type, ct.ScalarType):
-            display_type = ct.FieldType(dims=[], dtype=info.field.type)
-        elif not isinstance(info.field.type, ct.FieldType):
-            raise NotImplementedError("Found unsupported argument type.")
-
-        table.append({"name": name, "type": display_type, "io": format_io_string(info)})
-    kwargs.setdefault("tablefmt", "plain")
-    return (
-        ", ".join([chain for chain in chains])
-        + "\n"
-        + tabulate.tabulate(table, **kwargs)
-    )
 
 
 # TODO: provide a better typing for offset_provider
@@ -271,9 +215,7 @@ def get_stencil_metadata(fencil) -> StencilInfo:
 @click.argument("fencil", type=str)
 @click.argument(
     "outpath",
-    type=click.Path(
-        exists=True, dir_okay=True, resolve_path=True, path_type=pathlib.Path
-    ),
+    type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
 )
 def main(
     outpath: pathlib.Path, fencil: str, cppbindgen_path: pathlib.Path = None
@@ -286,10 +228,13 @@ def main(
 
     The outpath represents a path to the folder in which to write all generated code.
     """
-    # todo: fix readme
     metadata = get_stencil_metadata(fencil)
 
     if cppbindgen_path:
         CppBindGen(metadata)(cppbindgen_path)
 
     PyBindGen(metadata)(outpath)
+
+
+if __name__ == "__main__":
+    main()
