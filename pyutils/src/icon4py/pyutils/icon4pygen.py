@@ -28,7 +28,7 @@ from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 
-from icon4py.bindings.codegen import CppBindGen, PyBindGen
+from icon4py.bindings.workflow import CppBindGen, PyBindGen
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (
     InvalidConnectivityException,
