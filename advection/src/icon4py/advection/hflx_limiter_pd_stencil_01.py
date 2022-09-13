@@ -12,48 +12,36 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import (
-    Field,
-    broadcast,
-    maximum,
-    minimum,
-    neighbor_sum,
-)
+from functional.ffront.fbuiltins import Field, broadcast, maximum, minimum
 
-from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import C2CE, C2E, CEDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
 def _hflx_limiter_pd_stencil_01(
-    geofac_div: Field[[CellDim, C2EDim], float],
+    geofac_div: Field[[CEDim], float],
     p_cc: Field[[CellDim, KDim], float],
     p_rhodz_now: Field[[CellDim, KDim], float],
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     p_dtime: float,
     dbl_eps: float,
 ) -> Field[[CellDim, KDim], float]:
-    #    p_m: Field[[CellDim, KDim], float]
-    #    p_m = maximum(0.0, p_mflx_tracer_h(C2E[0])*geofac_div(0)*p_dtime)
-    #    p_m = maximum(0.0, p_mflx_tracer_h(C2E[0])*geofac_div(0)*p_dtime) + maximum(0.0, p_mflx_tracer_h(C2E[1])*geofac_div(1)*p_dtime) + maximum(0.0, p_mflx_tracer_h(C2E[2])*geofac_div(2)*p_dtime)
-    # p_m = neighbor_sum(a_a, axis=C2EDim)
-    # r_m = minimum(1.0, (p_cc*p_rhodz_now)/(p_m+dbl_eps))
-    #    r_m = minimum(1.0, (p_cc*p_rhodz_now)/(1.0+dbl_eps))
+    zero = broadcast(0.0, (CellDim, KDim))
 
-    p_m = neighbor_sum(
-        maximum(
-            broadcast(0.0, (CellDim, KDim)), p_mflx_tracer_h(C2E) * geofac_div * p_dtime
-        ),
-        axis=C2EDim,
-    )
+    pm_0 = maximum(zero, p_mflx_tracer_h(C2E[0]) * geofac_div(C2CE[0]) * p_dtime)
+    pm_1 = maximum(zero, p_mflx_tracer_h(C2E[1]) * geofac_div(C2CE[1]) * p_dtime)
+    pm_2 = maximum(zero, p_mflx_tracer_h(C2E[2]) * geofac_div(C2CE[2]) * p_dtime)
+    p_m = pm_0 + pm_1 + pm_2
     r_m = minimum(
         broadcast(1.0, (CellDim, KDim)), (p_cc * p_rhodz_now) / (p_m + dbl_eps)
     )
+
     return r_m
 
 
 @program
 def hflx_limiter_pd_stencil_01(
-    geofac_div: Field[[CellDim, C2EDim], float],
+    geofac_div: Field[[CEDim], float],
     p_cc: Field[[CellDim, KDim], float],
     p_rhodz_now: Field[[CellDim, KDim], float],
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
