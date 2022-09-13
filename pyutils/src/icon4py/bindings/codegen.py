@@ -55,7 +55,6 @@ class CppHeader:
                     for field_name, field_info in self.fields.items()
                 ],
             ),
-            # TODO: return correct parameters (dsl fields, output fields, rel/abs fields)
             verifyFunc=VerifyFuncDeclaration(
                 funcname=stencil_name,
                 dsl_params=dsl_params,
@@ -85,7 +84,6 @@ class CppHeader:
         ]
 
     def _source_to_file(self, outpath: Path, src: str):
-        # write even if dir does not exist
         header_path = outpath / f"{self.stencil_info.fvprog.past_node.id}.h"
         with open(header_path, "w") as f:
             f.write(src)
@@ -104,7 +102,6 @@ class StencilFuncDeclaration(Node):
 
 
 class VerifyFuncDeclaration(Node):
-    # TODO: add (dsl fields, output fields, rel/abs fields)
     funcname: str
     dsl_params: Sequence[FunctionParameter]
     out_params: Sequence[FunctionParameter]
@@ -136,6 +133,7 @@ class HeaderGenerator(TemplatedGenerator):
         """
     )
 
+    # todo: still need to ensure to generate some parameters as pointers, whilst others are passed by reference e.g. rel_tol and abs_tol
     VerifyFuncDeclaration = as_jinja(
         """\
         bool verify_{{funcname}}({{",".join(dsl_params)}}, {{",".join(out_params)}}, {{",".join(abs_params)}}, {{",".join(rel_params)}}, const int iteration) ;
