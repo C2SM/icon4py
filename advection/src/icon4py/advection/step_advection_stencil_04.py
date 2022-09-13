@@ -16,14 +16,16 @@ from functional.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import CellDim, KDim
 
+
 @field_operator
 def _step_advection_stencil_04(
     p_tracer_now: Field[[CellDim, KDim], float],
     p_tracer_new: Field[[CellDim, KDim], float],
     p_dtime: float,
 ) -> Field[[CellDim, KDim], float]:
-    opt_ddt_tracer_adv=(p_tracer_new-p_tracer_now)/p_dtime
+    opt_ddt_tracer_adv = (p_tracer_new - p_tracer_now) / p_dtime
     return opt_ddt_tracer_adv
+
 
 @program
 def step_advection_stencil_04(
@@ -32,4 +34,6 @@ def step_advection_stencil_04(
     opt_ddt_tracer_adv: Field[[CellDim, KDim], float],
     p_dtime: float,
 ):
-    _step_advection_stencil_04(p_tracer_now, p_tracer_new, p_dtime, out=opt_ddt_tracer_adv)
+    _step_advection_stencil_04(
+        p_tracer_now, p_tracer_new, p_dtime, out=opt_ddt_tracer_adv
+    )

@@ -11,34 +11,36 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np 
+import numpy as np
 
 from icon4py.advection.hflx_limiter_pd_stencil_02 import (
     hflx_limiter_pd_stencil_02,
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import random_field
+
 
 def hflx_limiter_pd_stencil_02_numpy(
     e2c: np.array,
-    refin_ctrl: np.array, 
+    refin_ctrl: np.array,
     r_m: np.array,
     p_mflx_tracer_h_in: np.array,
     bound,
 ):
     r_m_e2c = r_m[e2c]
     refin_ctrl = np.expand_dims(refin_ctrl, axis=-1)
-    p_mflx_tracer_h_out = np.where (
+    p_mflx_tracer_h_out = np.where(
         refin_ctrl != bound,
-        np.where (
-            p_mflx_tracer_h_in >=0,
+        np.where(
+            p_mflx_tracer_h_in >= 0,
             p_mflx_tracer_h_in * r_m_e2c[:, 0],
             p_mflx_tracer_h_in * r_m_e2c[:, 1],
         ),
         p_mflx_tracer_h_in,
     )
     return p_mflx_tracer_h_out
+
 
 def test_hflx_limiter_pd_stencil_02():
     mesh = SimpleMesh()
@@ -47,7 +49,7 @@ def test_hflx_limiter_pd_stencil_02():
     r_m = random_field(mesh, CellDim, KDim)
     p_mflx_tracer_h_in = random_field(mesh, EdgeDim, KDim)
     p_mflx_tracer_h_out = random_field(mesh, EdgeDim, KDim)
-    bound=np.float64(7.0)
+    bound = np.float64(7.0)
 
     ref = hflx_limiter_pd_stencil_02_numpy(
         mesh.e2c,
@@ -58,7 +60,7 @@ def test_hflx_limiter_pd_stencil_02():
     )
 
     hflx_limiter_pd_stencil_02(
-        refin_ctrl, 
+        refin_ctrl,
         r_m,
         p_mflx_tracer_h_in,
         p_mflx_tracer_h_out,

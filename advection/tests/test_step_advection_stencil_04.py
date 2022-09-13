@@ -13,34 +13,33 @@
 
 import numpy as np
 
-from icon4py.advection.step_advection_stencil_04 import (
-    step_advection_stencil_04,
-)
-
+from icon4py.advection.step_advection_stencil_04 import step_advection_stencil_04
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
+
 def step_advection_stencil_04_numpy(
-    p_tracer_now: np.array, 
-    p_tracer_new: np.array, 
+    p_tracer_now: np.array,
+    p_tracer_new: np.array,
     p_dtime,
 ) -> np.array:
-    opt_ddt_tracer_adv = (p_tracer_new-p_tracer_now)/p_dtime
+    opt_ddt_tracer_adv = (p_tracer_new - p_tracer_now) / p_dtime
     return opt_ddt_tracer_adv
+
 
 def test_step_advection_stencil_04():
     mesh = SimpleMesh()
 
     p_tracer_now = random_field(mesh, CellDim, KDim)
     p_tracer_new = random_field(mesh, CellDim, KDim)
-    opt_ddt_tracer_adv = zero_field(mesh, CellDim, KDim)    
-    p_dtime = np.float64(5.0)  
+    opt_ddt_tracer_adv = zero_field(mesh, CellDim, KDim)
+    p_dtime = np.float64(5.0)
 
     ref = step_advection_stencil_04_numpy(
         np.asarray(p_tracer_now),
-        np.asarray(p_tracer_new), 
-        p_dtime, 
+        np.asarray(p_tracer_new),
+        p_dtime,
     )
     step_advection_stencil_04(
         p_tracer_now,
@@ -48,5 +47,5 @@ def test_step_advection_stencil_04():
         opt_ddt_tracer_adv,
         p_dtime,
         offset_provider={},
-)
+    )
     assert np.allclose(opt_ddt_tracer_adv, ref)

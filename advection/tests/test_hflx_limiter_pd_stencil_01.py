@@ -11,14 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np 
+import numpy as np
 
 from icon4py.advection.hflx_limiter_pd_stencil_01 import (
     hflx_limiter_pd_stencil_01,
 )
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, C2EDim
+from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
+
 
 def hflx_limiter_pd_stencil_01_numpy(
     c2e: np.array,
@@ -29,15 +30,23 @@ def hflx_limiter_pd_stencil_01_numpy(
     p_dtime,
     dbl_eps,
 ):
-#    p_m: np.array
-    p_mflx_tracer_h_c2e = p_mflx_tracer_h[c2e] 
-    #p_m = max(0.0, geofac_div[:, 0]*p_mflx_tracer_h_c2e[:, 0]*p_dtime) + max(0.0, geofac_div[:, 1]*p_mflx_tracer_h_c2e[:, 1]*p_dtime) + max(0.0, geofac_div[:, 2]*p_mflx_tracer_h_c2e[:, 2]*p_dtime)
-    geofac_div=np.expand_dims(geofac_div,axis=-1)
-#    p_m = max(0.0, geofac_div[:, 0]*p_mflx_tracer_h_c2e[:, 0]*p_dtime) 
-    p_m = np.sum(np.maximum(np.zeros(p_mflx_tracer_h_c2e.shape,dtype=float), p_mflx_tracer_h_c2e*geofac_div*p_dtime))
-    r_m = np.minimum(np.ones(p_cc.shape,dtype=float),(p_cc*p_rhodz_now)/(p_m+dbl_eps))
+    #    p_m: np.array
+    p_mflx_tracer_h_c2e = p_mflx_tracer_h[c2e]
+    # p_m = max(0.0, geofac_div[:, 0]*p_mflx_tracer_h_c2e[:, 0]*p_dtime) + max(0.0, geofac_div[:, 1]*p_mflx_tracer_h_c2e[:, 1]*p_dtime) + max(0.0, geofac_div[:, 2]*p_mflx_tracer_h_c2e[:, 2]*p_dtime)
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    #    p_m = max(0.0, geofac_div[:, 0]*p_mflx_tracer_h_c2e[:, 0]*p_dtime)
+    p_m = np.sum(
+        np.maximum(
+            np.zeros(p_mflx_tracer_h_c2e.shape, dtype=float),
+            p_mflx_tracer_h_c2e * geofac_div * p_dtime,
+        )
+    )
+    r_m = np.minimum(
+        np.ones(p_cc.shape, dtype=float), (p_cc * p_rhodz_now) / (p_m + dbl_eps)
+    )
 
     return r_m
+
 
 def test_hflx_limiter_pd_stencil_01():
     mesh = SimpleMesh()

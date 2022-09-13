@@ -12,8 +12,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, maximum, minimum, neighbor_sum, broadcast
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, C2EDim, C2E
+from functional.ffront.fbuiltins import (
+    Field,
+    broadcast,
+    maximum,
+    minimum,
+    neighbor_sum,
+)
+
+from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+
 
 @field_operator
 def _hflx_limiter_pd_stencil_01(
@@ -21,19 +29,27 @@ def _hflx_limiter_pd_stencil_01(
     p_cc: Field[[CellDim, KDim], float],
     p_rhodz_now: Field[[CellDim, KDim], float],
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
-    p_dtime:float,
+    p_dtime: float,
     dbl_eps: float,
 ) -> Field[[CellDim, KDim], float]:
-#    p_m: Field[[CellDim, KDim], float]
-#    p_m = maximum(0.0, p_mflx_tracer_h(C2E[0])*geofac_div(0)*p_dtime) 
-#    p_m = maximum(0.0, p_mflx_tracer_h(C2E[0])*geofac_div(0)*p_dtime) + maximum(0.0, p_mflx_tracer_h(C2E[1])*geofac_div(1)*p_dtime) + maximum(0.0, p_mflx_tracer_h(C2E[2])*geofac_div(2)*p_dtime) 
-    #p_m = neighbor_sum(a_a, axis=C2EDim)
-    #r_m = minimum(1.0, (p_cc*p_rhodz_now)/(p_m+dbl_eps))
-#    r_m = minimum(1.0, (p_cc*p_rhodz_now)/(1.0+dbl_eps))
+    #    p_m: Field[[CellDim, KDim], float]
+    #    p_m = maximum(0.0, p_mflx_tracer_h(C2E[0])*geofac_div(0)*p_dtime)
+    #    p_m = maximum(0.0, p_mflx_tracer_h(C2E[0])*geofac_div(0)*p_dtime) + maximum(0.0, p_mflx_tracer_h(C2E[1])*geofac_div(1)*p_dtime) + maximum(0.0, p_mflx_tracer_h(C2E[2])*geofac_div(2)*p_dtime)
+    # p_m = neighbor_sum(a_a, axis=C2EDim)
+    # r_m = minimum(1.0, (p_cc*p_rhodz_now)/(p_m+dbl_eps))
+    #    r_m = minimum(1.0, (p_cc*p_rhodz_now)/(1.0+dbl_eps))
 
-    p_m = neighbor_sum(maximum(broadcast(0.0, (CellDim, KDim)), p_mflx_tracer_h(C2E)*geofac_div*p_dtime), axis=C2EDim)
-    r_m = minimum(broadcast(1.0, (CellDim, KDim)), (p_cc*p_rhodz_now)/(p_m+dbl_eps))
+    p_m = neighbor_sum(
+        maximum(
+            broadcast(0.0, (CellDim, KDim)), p_mflx_tracer_h(C2E) * geofac_div * p_dtime
+        ),
+        axis=C2EDim,
+    )
+    r_m = minimum(
+        broadcast(1.0, (CellDim, KDim)), (p_cc * p_rhodz_now) / (p_m + dbl_eps)
+    )
     return r_m
+
 
 @program
 def hflx_limiter_pd_stencil_01(
@@ -42,15 +58,15 @@ def hflx_limiter_pd_stencil_01(
     p_rhodz_now: Field[[CellDim, KDim], float],
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     r_m: Field[[CellDim, KDim], float],
-    p_dtime:float,
+    p_dtime: float,
     dbl_eps: float,
 ):
     _hflx_limiter_pd_stencil_01(
-    geofac_div,
-    p_cc,
-    p_rhodz_now,
-    p_mflx_tracer_h,
-    p_dtime,
-    dbl_eps,
-    out=r_m,
+        geofac_div,
+        p_cc,
+        p_rhodz_now,
+        p_mflx_tracer_h,
+        p_dtime,
+        dbl_eps,
+        out=r_m,
     )
