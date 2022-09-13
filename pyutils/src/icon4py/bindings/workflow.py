@@ -64,4 +64,5 @@ class PyBindGen:
 
     def __call__(self, outpath: Path):
         # todo: implement code generation for f90 interface, cpp and h files.
+        check_dir_exists(outpath)
         CppHeader(self.stencil_info).write(outpath)

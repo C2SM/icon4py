@@ -28,27 +28,30 @@ from icon4py.pyutils.stencil_info import StencilInfo
 class CppHeader:
     stencil_info: StencilInfo
 
-    def write(self, output_path: Path):
+    def write(self, outpath: Path):
         header = self._generate_header()
-        src = format_source("cpp", HeaderGenerator.apply(header), style="LLVM")
-        self.string_to_file(header, output_path, src)
+        source = format_source("cpp", HeaderGenerator.apply(header), style="LLVM")
+        self._source_to_file(outpath, source)
 
     def _generate_header(self):
-        # TODO: read attributes form stencil info (the below is a test).
         header = HeaderFile(
             runFunc=StencilFuncDeclaration(
-                funcname="foo",
+                funcname=self.stencil_info.fvprog.past_node.id,
                 parameters=[
-                    FunctionParameter(name="bar", dtype=np.dtype(np.int32)),
-                    FunctionParameter(name="bar2", dtype=np.dtype(np.float32)),
-                    FunctionParameter(name="bar3", dtype=np.dtype(np.bool)),
+                    FunctionParameter(
+                        name=param.id, dtype=np.dtype(param.type.dtype.__str__())
+                    )
+                    for param in self.stencil_info.fvprog.past_node.params
                 ],
             )
         )
         return header
 
-    def _make_header_file_path(self, output_path, src):
-        ...
+    def _source_to_file(self, outpath: Path, src: str):
+        # write even if dir does not exist
+        header_path = outpath / f"{self.stencil_info.fvprog.past_node.id}.h"
+        with open(header_path, "w") as f:
+            f.write(src)
 
 
 class FunctionParameter(Node):
@@ -79,10 +82,11 @@ class HeaderGenerator(TemplatedGenerator):
 
     StencilFuncDeclaration = as_jinja(
         """\
-        void run_{{funcname}}({{", ".join(parameters)}}, const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
+        void run_{{funcname}}({{",".join(parameters)}}, const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
         """
     )
 
     def visit_FunctionParameter(self, param: FunctionParameter):
         type_str = render_python_type(param.dtype.type)
-        return type_str + " " + param.name
+        p = f"{type_str} *{param.name}"
+        return p
