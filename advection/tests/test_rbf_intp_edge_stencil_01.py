@@ -27,9 +27,6 @@ def rbf_intp_edge_stencil_01_numpy(
 
     ptr_coeff = np.expand_dims(ptr_coeff, axis=-1)
     p_vt_out = np.sum(p_vn_in[e2c2e] * ptr_coeff, axis=1)
-    #    p_vn_ptr = p_vn_in[e2c2e] * ptr_coeff
-    #    p_vt_out = np.sum(p_vn_ptr, axis=1)
-
     return p_vt_out
 
 
