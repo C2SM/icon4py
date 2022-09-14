@@ -12,12 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
+import imp
 from pathlib import Path
 
 from icon4py.bindings.build import CppbindgenBuilder
 from icon4py.bindings.codegen import CppHeader
 from icon4py.bindings.utils import check_dir_exists, run_subprocess
 from icon4py.pyutils.metadata import format_metadata
+from icon4py.bindings.types import stencil_info_to_binding_type
 from icon4py.pyutils.stencil_info import StencilInfo
 
 
@@ -63,6 +65,9 @@ class PyBindGen:
     stencil_info: StencilInfo
 
     def __call__(self, outpath: Path):
+        # from stencil_meta data to bindgen internatl data structures
+        stencil_info_to_binding_type(self.stencil_info)  # todo: actually use the result
+
         # todo: implement code generation for f90 interface, cpp and h files.
         check_dir_exists(outpath)
         CppHeader(self.stencil_info).write(outpath)
