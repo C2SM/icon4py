@@ -2,7 +2,6 @@ import tarfile
 from xml.etree.ElementInclude import include
 from importlib.metadata import metadata
 from typing import List, Union, Tuple, Optional
-from dataclasses import dataclass
 from webbrowser import get
 from icon4py.pyutils.stencil_info import StencilInfo, FieldInfo
 from icon4py.pyutils.metadata import get_field_infos
@@ -31,7 +30,7 @@ class Vertex(BasicLocation):
         return "V"
 
 
-__BASIC_LOCATIONS__ = [Cell, Edge, Vertex]
+__BASIC_LOCATIONS__ = {location.__name__: location for location in [Cell, Edge, Vertex]}
 
 
 def chain_from_str(chain: str):
@@ -72,7 +71,6 @@ class ChainedLocation:
             raise Exception()
 
 
-@dataclass
 class Offset:
     source: Union[BasicLocation, CompoundLocation]
     target: Tuple[BasicLocation, ChainedLocation]
@@ -88,12 +86,15 @@ class Offset:
 
         source = chain.split("2")[-1]
 
-        if source in [str(loc()) for loc in __BASIC_LOCATIONS__]:
+        if source in [str(loc()) for loc in __BASIC_LOCATIONS__.values()]:
             self.source = chain_from_str(source)[0]
         elif all(
-            char in [str(loc()) for loc in __BASIC_LOCATIONS__] for char in source
+            char in [str(loc()) for loc in __BASIC_LOCATIONS__.values()]
+            for char in source
         ):
             self.source = CompoundLocation(chain_from_str(source))
+        else:
+            raise Exception("Invalid Source")
 
         target_0 = chain_from_str(chain.split("2")[0])[0]
         if isinstance(self.source, CompoundLocation):
@@ -133,14 +134,14 @@ class Field:
             if horizontal_dimension.endswith("O"):
                 self.includes_center = True
                 horizontal_dimension = horizontal_dimension[:-1]
-            if horizontal_dimension in [loc.__name__ for loc in __BASIC_LOCATIONS__]:
-                self.location = globals()[horizontal_dimension]()  # not sure about this
+            if horizontal_dimension in [loc for loc in __BASIC_LOCATIONS__.keys()]:
+                self.location = __BASIC_LOCATIONS__[horizontal_dimension]()
             elif all(len(token) == 1 for token in horizontal_dimension.split("2")):
                 self.location = ChainedLocation(
                     chain_from_str("".join(horizontal_dimension.split("2")))
                 )
             elif all(
-                char in [str(loc()) for loc in __BASIC_LOCATIONS__]
+                char in [str(loc()) for loc in __BASIC_LOCATIONS__.values()]
                 for char in horizontal_dimension
             ):
                 self.location = CompoundLocation(chain_from_str(horizontal_dimension))
