@@ -16,7 +16,7 @@ import imp
 from pathlib import Path
 
 from icon4py.bindings.build import CppbindgenBuilder
-from icon4py.bindings.codegen import CppHeader
+from icon4py.bindings.codegen import CppHeader, F90Iface
 from icon4py.bindings.utils import check_dir_exists, run_subprocess
 from icon4py.pyutils.metadata import format_metadata
 from icon4py.bindings.types import stencil_info_to_binding_type
@@ -65,9 +65,12 @@ class PyBindGen:
     stencil_info: StencilInfo
 
     def __call__(self, outpath: Path):
+        check_dir_exists(outpath)
+
         # from stencil_meta data to bindgen internatl data structures
-        stencil_info_to_binding_type(self.stencil_info)  # todo: actually use the result
+        (fields, offsets) = stencil_info_to_binding_type(self.stencil_info)
 
         # todo: implement code generation for f90 interface, cpp and h files.
-        check_dir_exists(outpath)
+        F90Iface(fields, offsets).write(outpath)
+
         CppHeader(self.stencil_info).write(outpath)

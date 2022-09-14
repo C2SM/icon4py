@@ -7,6 +7,7 @@ from icon4py.pyutils.stencil_info import StencilInfo, FieldInfo
 from icon4py.pyutils.metadata import get_field_infos
 from functional.ffront.common_types import ScalarKind
 from collections import namedtuple
+from eve import Node
 
 Intent = namedtuple("Intent", ["inp", "out"])
 
@@ -105,7 +106,7 @@ class Offset:
         self.target = (target_0, target_1)
 
 
-class Field:
+class Field(Node):
     location: Optional[Union[BasicLocation, CompoundLocation, ChainedLocation]]
     has_vertical_dimension: bool
     includes_center: bool
@@ -120,7 +121,7 @@ class Field:
         return isinstance(self.location, BasicLocation)
 
     def __init__(self, name: str, field_info: FieldInfo):
-        self.name = name
+        self.name = str(name)  # why isn't this a str in the first place?
         self.type = field_info.field.type.dtype.kind
         self.intent = Intent(inp=field_info.inp, out=field_info.out)
         self.has_vertical_dimension = any(
@@ -129,6 +130,7 @@ class Field:
         maybe_horizontal_dimension = list(
             filter(lambda dim: dim.value != "K", field_info.field.type.dims)
         )
+        self.includes_center = False
         if len(maybe_horizontal_dimension):
             horizontal_dimension = maybe_horizontal_dimension[0].value
             if horizontal_dimension.endswith("O"):

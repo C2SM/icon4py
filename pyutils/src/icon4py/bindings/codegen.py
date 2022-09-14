@@ -18,10 +18,45 @@ from typing import Sequence
 import numpy as np
 from eve import Node
 from eve.codegen import JinjaTemplate as as_jinja
+from eve.codegen import MakoTemplate as as_mako
 from eve.codegen import TemplatedGenerator, format_source
 
 from icon4py.bindings.cppgen import render_python_type
 from icon4py.pyutils.stencil_info import StencilInfo
+from icon4py.bindings.types import Field
+from icon4py.bindings.types import Offset
+
+
+class F90Generator(TemplatedGenerator):
+    F90Fields = as_jinja(
+        """\
+        {% for field in fields %}
+            {{field}}
+        {% endfor %}
+        """
+    )
+
+    def visit_Field(self, field: Field):
+        return f"real({field.type}), dimension(*), target :: {field.name}"
+
+
+class F90Fields(Node):
+    fields: Sequence[Field]
+
+
+@dataclass
+class F90Iface:
+    fields: Sequence[Field]
+    offsets: Sequence[Offset]
+
+    def _generate_iface(self):
+        iface = F90Fields(fields=self.fields)
+        return iface
+
+    def write(self, outpath: Path):
+        iface = self._generate_iface()
+        source = F90Generator.apply(iface)
+        print(source)
 
 
 @dataclass
