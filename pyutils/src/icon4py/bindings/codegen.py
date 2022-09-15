@@ -13,7 +13,7 @@
 
 import itertools
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 import numpy as np
 from eve import Node
@@ -63,6 +63,9 @@ class CppHeader:
         ]
 
         before_params = self._make_verify_params("_before", pointer=True, const=False)
+        k_size_params = self._make_verify_params(
+            "_k_size", pointer=False, const=True, type_overload=np.intc
+        )
 
         header = HeaderFile(
             runFunc=StencilFuncDeclaration(
@@ -80,20 +83,23 @@ class CppHeader:
                 tolerance_params=tolerance_params,
                 before_params=before_params,
             ),
+            setupFunc=SetupFunc(funcname=stencil_name, parameters=k_size_params),
+            freeFunc=FreeFunc(funcname=stencil_name),
         )
         return header
 
     def _make_verify_params(
-        self, pstring: str = "", pointer: bool = False, const: bool = False
+        self,
+        pstring: str = "",
+        pointer: bool = False,
+        const: bool = False,
+        type_overload: Any = None,
     ):
         names = [
             str(f"{f}{pstring}") for f, f_info in self.fields.items() if f_info.out
         ]
-        types = [
-            render_python_type(np.dtype(f_info.field.type.dtype.__str__()).type)
-            for f, f_info in self.fields.items()
-            if f_info.out
-        ]
+
+        types = self._render_types(type_overload)
 
         field_dict = dict(zip(names, types))
 
@@ -108,6 +114,15 @@ class CppHeader:
             )
             for name, dtype in field_dict.items()
         ]
+
+    def _render_types(self, overload: Any = None):
+        types = []
+        for _, f_info in self.fields.items():
+            render_type = (
+                f_info.field.type.dtype.__str__() if not overload else overload
+            )
+            types.append(render_python_type(np.dtype(render_type).type))
+        return types
 
     def _source_to_file(self, outpath: Path, src: str):
         header_path = outpath / f"{self.stencil_info.fvprog.past_node.id}.h"
@@ -142,10 +157,20 @@ class RunAndVerifyFunc(StencilFuncDeclaration):
     before_params: Sequence[FunctionParameter]
 
 
+class SetupFunc(StencilFuncDeclaration):
+    ...
+
+
+class FreeFunc(Func):
+    ...
+
+
 class HeaderFile(Node):
     runFunc: StencilFuncDeclaration
     verifyFunc: VerifyFuncDeclaration
     runAndVerifyFunc: RunAndVerifyFunc
+    setupFunc: StencilFuncDeclaration
+    freeFunc: Func
 
 
 class HeaderGenerator(TemplatedGenerator):
@@ -156,9 +181,11 @@ class HeaderGenerator(TemplatedGenerator):
         #include "driver-includes/defs.hpp"
         #include "driver-includes/cuda_utils.hpp"
         extern "C" {
-        {{runFunc}}
-        {{verifyFunc}}
-        {{runAndVerifyFunc}}
+        {{ runFunc }}
+        {{ verifyFunc }}
+        {{ runAndVerifyFunc }}
+        {{ setupFunc }}
+        {{ freeFunc }}
         }
         """
     )
@@ -178,6 +205,18 @@ class HeaderGenerator(TemplatedGenerator):
     RunAndVerifyFunc = as_jinja(
         """\
         void run_and_verify_{{funcname}}({{", ".join(parameters)}}, {{", ".join(before_params)}}, const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd, {{", ".join(tolerance_params)}}) ;
+        """
+    )
+
+    SetupFunc = as_jinja(
+        """\
+        void setup_{{funcname}}(dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, {{", ".join(parameters)}}) ;
+        """
+    )
+
+    FreeFunc = as_jinja(
+        """\
+        void free_{{funcname}}() ;
         """
     )
 
