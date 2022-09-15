@@ -113,6 +113,8 @@ class F90Generator(TemplatedGenerator):
         {%- endif %}
         {%- endfor %}
         ) bind(c)
+        use, intrinsic :: iso_c_binding
+        use openacc
         {% for field in _this_node.all_fields -%}             
             {{field.ctype()}}, dimension(*), target :: {{field.name}}
         {% endfor %}
@@ -157,6 +159,9 @@ class F90Generator(TemplatedGenerator):
         use openacc        
         {% for field in _this_node.all_fields -%}             
             {{field.ctype()}}, {{field.dim_string()}}, target :: {{field.name}}
+        {% endfor -%}
+        {% for field in _this_node.out_fields -%}             
+            {{field.ctype()}}, {{field.dim_string()}}, target :: {{field.name}}_before
         {% endfor -%}        
         integer(c_int), value, target :: vertical_lower
         integer(c_int), value, target :: vertical_upper
@@ -193,10 +198,10 @@ class F90Generator(TemplatedGenerator):
         {%- endfor %}  
         !$ACC host_data use_device( &
         {% for field in _this_node.all_fields -%}             
-            {{field.name}}, &   
+        !$ACC {{field.name}}, &   
         {% endfor %}
         {%- for field in _this_node.out_fields -%}             
-            {{field.name}}_before, &
+        !$ACC {{field.name}}_before, &
         {% endfor -%}        
         !$ACC )
         #ifdef __DSL_VERIFY
@@ -221,14 +226,11 @@ class F90Generator(TemplatedGenerator):
             {%- endfor -%}
             )
         #else
-            call run_and_verify_{{sten_name}} &
+            call run_{{sten_name}} &
             ( &
             {% for field in _this_node.all_fields -%}             
                 {{field.name}}, &   
-            {% endfor %}
-            {%- for field in _this_node.out_fields -%}             
-                {{field.name}}_before, &
-            {% endfor -%}          
+            {% endfor %}            
             vertical_start, &
             vertical_end, &
             horizontal_start, &
@@ -242,6 +244,7 @@ class F90Generator(TemplatedGenerator):
 
     F90WrapSetupFun = as_jinja(
         """
+        subroutine &
         wrap_setup_{{sten_name}}( &
         mesh, &
         k_size, &
@@ -259,13 +262,10 @@ class F90Generator(TemplatedGenerator):
         integer(c_int), value, target :: k_size
         integer(kind=acc_handle_kind), value, target :: stream
         {%- for field in _this_node.out_fields -%}             
-            {{field.name}}_kmax
-        {% endfor %}
-        {%- for field in _this_node.out_fields -%}             
             integer(c_int), value, target, optional :: {{field.name}}_kmax
         {% endfor %}
         {%- for field in _this_node.out_fields -%}             
-            integer(c_int) :: {{field.name}}_kmax
+            integer(c_int) :: {{field.name}}_kvert_max
         {% endfor %}
         {%- for field in _this_node.out_fields -%}             
         
@@ -281,7 +281,7 @@ class F90Generator(TemplatedGenerator):
             k_size, &
             stream, &
             {% for field in _this_node.out_fields -%}             
-            {{field.name}}_kmax{% if not loop.last -%}
+            {{field.name}}_kvert_max{% if not loop.last -%}
             , &
             {% else %} &
             {% endif -%} 
@@ -299,7 +299,7 @@ class F90Generator(TemplatedGenerator):
         k_size, &
         stream, &
         {% for field in _this_node.out_fields -%}             
-            {{field.name}}{% if not loop.last -%}
+            {{field.name}}_kmax{% if not loop.last -%}
             , &
         {%- else %} &
         {%- endif %}
@@ -311,7 +311,7 @@ class F90Generator(TemplatedGenerator):
         integer(c_int), value, target :: k_size
         integer(kind=acc_handle_kind), value, target :: stream
         {% for field in _this_node.out_fields -%}             
-            integer(c_int), value, target :: {{field.name}} {% if not loop.last -%}
+            integer(c_int), value, target :: {{field.name}}_kmax {% if not loop.last -%}
             , &
         {% endif %}
         {%- endfor %}         
