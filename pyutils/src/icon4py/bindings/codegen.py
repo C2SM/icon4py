@@ -18,7 +18,7 @@ from typing import Any, Sequence
 import numpy as np
 from eve import Node
 from eve.codegen import JinjaTemplate as as_jinja
-from eve.codegen import TemplatedGenerator
+from eve.codegen import TemplatedGenerator, format_source
 
 from icon4py.bindings.cppgen import render_python_type
 from icon4py.pyutils.metadata import get_field_infos
@@ -33,11 +33,10 @@ class CppHeader:
 
     def write(self, outpath: Path):
         header = self._generate_header()
-        source = self.generator.apply(header)
+        source = format_source("cpp", self.generator.apply(header), style="LLVM")
         self._source_to_file(outpath, source)
 
     def _generate_header(self):
-
         (
             all_params,
             before_params,
@@ -71,9 +70,20 @@ class CppHeader:
     def _get_template_data(self):
         stencil_name = self.stencil_info.fvprog.past_node.id
         out_params = self._make_verify_params("", True, pointer=True, const=True)
-        all_params = self._make_verify_params(
-            "", False, pointer=True, const=False
-        ) + self._make_verify_params("", True, pointer=True, const=False)
+
+        all_params = [
+            FunctionParameter(
+                name=f,
+                dtype=render_python_type(
+                    np.dtype(f_info.field.type.dtype.__str__()).type
+                ),
+                out=f_info.out,
+                pointer=True,
+                const=False,
+            )
+            for f, f_info in self.fields.items()
+        ]
+
         k_size_params = self._make_verify_params(
             "_k_size", True, pointer=False, const=True, type_overload=np.intc
         )
