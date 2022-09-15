@@ -37,35 +37,15 @@ class CppHeader:
         self._source_to_file(outpath, source)
 
     def _generate_header(self):
-        stencil_name = self.stencil_info.fvprog.past_node.id
 
-        # interleave function params *[_dsl, out] for each out field. [_rel_tol, _abs_tol] for each out field
-        dsl_params = self._make_verify_params("_dsl", pointer=True, const=True)
-        out_params = self._make_verify_params(pointer=True, const=True)
-        out_dsl_params = list(itertools.chain(*zip(dsl_params, out_params)))
-
-        rel_params = self._make_verify_params("_rel_tol", pointer=False, const=True)
-        abs_params = self._make_verify_params("_abs_tol", pointer=False, const=True)
-        tolerance_params = list(itertools.chain(*zip(rel_params, abs_params)))
-
-        all_params = [
-            FunctionParameter(
-                name=field_name,
-                dtype=render_python_type(
-                    np.dtype(field_info.field.type.dtype.__str__()).type
-                ),
-                inp=field_info.inp,
-                out=field_info.out,
-                pointer=True,
-                const=False,
-            )
-            for field_name, field_info in self.fields.items()
-        ]
-
-        before_params = self._make_verify_params("_before", pointer=True, const=False)
-        k_size_params = self._make_verify_params(
-            "_k_size", pointer=False, const=True, type_overload=np.intc
-        )
+        (
+            all_params,
+            before_params,
+            k_size_params,
+            out_dsl_params,
+            tolerance_params,
+            stencil_name,
+        ) = self._get_template_data()
 
         header = HeaderFile(
             runFunc=StencilFuncDeclaration(
@@ -88,15 +68,50 @@ class CppHeader:
         )
         return header
 
+    def _get_template_data(self):
+        stencil_name = self.stencil_info.fvprog.past_node.id
+        out_params = self._make_verify_params("", True, pointer=True, const=True)
+        all_params = self._make_verify_params(
+            "", False, pointer=True, const=False
+        ) + self._make_verify_params("", True, pointer=True, const=False)
+        k_size_params = self._make_verify_params(
+            "_k_size", True, pointer=False, const=True, type_overload=np.intc
+        )
+        out_dsl_params = self._interleave_params(
+            self._make_verify_params("_dsl", True, pointer=True, const=True), out_params
+        )
+        tolerance_params = self._interleave_params(
+            self._make_verify_params("_rel_tol", True, pointer=False, const=True),
+            self._make_verify_params("_abs_tol", True, pointer=False, const=True),
+        )
+        before_params = self._make_verify_params(
+            "_before", True, pointer=True, const=False
+        )
+        return (
+            all_params,
+            before_params,
+            k_size_params,
+            out_dsl_params,
+            tolerance_params,
+            stencil_name,
+        )
+
+    @staticmethod
+    def _interleave_params(*args):
+        return list(itertools.chain(*zip(*args)))
+
     def _make_verify_params(
         self,
-        pstring: str = "",
+        pstring: str,
+        is_output: bool,
         pointer: bool = False,
         const: bool = False,
         type_overload: Any = None,
     ):
         names = [
-            str(f"{f}{pstring}") for f, f_info in self.fields.items() if f_info.out
+            str(f"{f}{pstring}")
+            for f, f_info in self.fields.items()
+            if f_info.out == is_output
         ]
 
         types = self._render_types(type_overload)
@@ -107,8 +122,7 @@ class CppHeader:
             FunctionParameter(
                 name=name,
                 dtype=dtype,
-                inp=False,
-                out=True,
+                out=is_output,
                 pointer=pointer,
                 const=const,
             )
@@ -137,7 +151,6 @@ class Func(Node):
 class FunctionParameter(Node):
     name: str
     dtype: str
-    inp: bool
     out: bool
     pointer: bool
     const: bool
@@ -174,7 +187,6 @@ class HeaderFile(Node):
 
 
 class HeaderGenerator(TemplatedGenerator):
-    # TODO: implement other header declarations
     HeaderFile = as_jinja(
         """\
         #pragma once
