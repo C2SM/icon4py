@@ -39,45 +39,53 @@ class CppHeader:
     def _generate_header(self):
         stencil_name = self.stencil_info.fvprog.past_node.id
 
+        # interleave function params *[_dsl, out] for each out field. [_rel_tol, _abs_tol] for each out field
         dsl_params = self._make_verify_params("_dsl", pointer=True, const=True)
         out_params = self._make_verify_params(pointer=True, const=True)
-        out_comp_params = list(itertools.chain(*zip(dsl_params, out_params)))
+        out_dsl_params = list(itertools.chain(*zip(dsl_params, out_params)))
 
         rel_params = self._make_verify_params("_rel_tol", pointer=False, const=True)
         abs_params = self._make_verify_params("_abs_tol", pointer=False, const=True)
         tolerance_params = list(itertools.chain(*zip(rel_params, abs_params)))
 
+        all_params = [
+            FunctionParameter(
+                name=field_name,
+                dtype=render_python_type(
+                    np.dtype(field_info.field.type.dtype.__str__()).type
+                ),
+                inp=field_info.inp,
+                out=field_info.out,
+                pointer=True,
+                const=False,
+            )
+            for field_name, field_info in self.fields.items()
+        ]
+
+        before_params = self._make_verify_params("_before", pointer=True, const=False)
+
         header = HeaderFile(
             runFunc=StencilFuncDeclaration(
                 funcname=stencil_name,
-                parameters=[
-                    FunctionParameter(
-                        name=field_name,
-                        dtype=render_python_type(
-                            np.dtype(field_info.field.type.dtype.__str__()).type
-                        ),
-                        inp=field_info.inp,
-                        out=field_info.out,
-                        pointer=True,
-                        const=False,
-                    )
-                    for field_name, field_info in self.fields.items()
-                ],
+                parameters=all_params,
             ),
             verifyFunc=VerifyFuncDeclaration(
                 funcname=stencil_name,
-                out_comp_params=out_comp_params,
+                out_dsl_params=out_dsl_params,
                 tolerance_params=tolerance_params,
+            ),
+            runAndVerifyFunc=RunAndVerifyFunc(
+                funcname=stencil_name,
+                parameters=all_params,
+                tolerance_params=tolerance_params,
+                before_params=before_params,
             ),
         )
         return header
 
-    # *[_dsl, out] for each out field. [_rel_tol, _abs_tol] for each out field
-
     def _make_verify_params(
         self, pstring: str = "", pointer: bool = False, const: bool = False
     ):
-
         names = [
             str(f"{f}{pstring}") for f, f_info in self.fields.items() if f_info.out
         ]
@@ -107,6 +115,10 @@ class CppHeader:
             f.write(src)
 
 
+class Func(Node):
+    funcname: str
+
+
 class FunctionParameter(Node):
     name: str
     dtype: str
@@ -116,20 +128,24 @@ class FunctionParameter(Node):
     const: bool
 
 
-class StencilFuncDeclaration(Node):
-    funcname: str
+class StencilFuncDeclaration(Func):
     parameters: Sequence[FunctionParameter]
 
 
-class VerifyFuncDeclaration(Node):
-    funcname: str
-    out_comp_params: Sequence[FunctionParameter]
+class VerifyFuncDeclaration(Func):
+    out_dsl_params: Sequence[FunctionParameter]
     tolerance_params: Sequence[FunctionParameter]
+
+
+class RunAndVerifyFunc(StencilFuncDeclaration):
+    tolerance_params: Sequence[FunctionParameter]
+    before_params: Sequence[FunctionParameter]
 
 
 class HeaderFile(Node):
     runFunc: StencilFuncDeclaration
     verifyFunc: VerifyFuncDeclaration
+    runAndVerifyFunc: RunAndVerifyFunc
 
 
 class HeaderGenerator(TemplatedGenerator):
@@ -142,6 +158,7 @@ class HeaderGenerator(TemplatedGenerator):
         extern "C" {
         {{runFunc}}
         {{verifyFunc}}
+        {{runAndVerifyFunc}}
         }
         """
     )
@@ -154,7 +171,13 @@ class HeaderGenerator(TemplatedGenerator):
 
     VerifyFuncDeclaration = as_jinja(
         """\
-        bool verify_{{funcname}}({{", ".join(out_comp_params)}}, {{", ".join(tolerance_params)}}, const int iteration) ;
+        bool verify_{{funcname}}({{", ".join(out_dsl_params)}}, {{", ".join(tolerance_params)}}, const int iteration) ;
+        """
+    )
+
+    RunAndVerifyFunc = as_jinja(
+        """\
+        void run_and_verify_{{funcname}}({{", ".join(parameters)}}, {{", ".join(before_params)}}, const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd, {{", ".join(tolerance_params)}}) ;
         """
     )
 
