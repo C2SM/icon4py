@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import itertools
 from pathlib import Path
 from typing import Sequence
 
@@ -37,10 +38,14 @@ class CppHeader:
 
     def _generate_header(self):
         stencil_name = self.stencil_info.fvprog.past_node.id
-        dsl_params = self._make_verify_params("_dsl")
-        rel_params = self._make_verify_params("_rel_tol")
-        abs_params = self._make_verify_params("_abs_tol")
-        out_params = self._make_verify_params()
+
+        dsl_params = self._make_verify_params("_dsl", pointer=True, const=True)
+        out_params = self._make_verify_params(pointer=True, const=True)
+        out_comp_params = list(itertools.chain(*zip(dsl_params, out_params)))
+
+        rel_params = self._make_verify_params("_rel_tol", pointer=False, const=True)
+        abs_params = self._make_verify_params("_abs_tol", pointer=False, const=True)
+        tolerance_params = list(itertools.chain(*zip(rel_params, abs_params)))
 
         header = HeaderFile(
             runFunc=StencilFuncDeclaration(
@@ -48,30 +53,36 @@ class CppHeader:
                 parameters=[
                     FunctionParameter(
                         name=field_name,
-                        dtype=np.dtype(field_info.field.type.dtype.__str__()),
+                        dtype=render_python_type(
+                            np.dtype(field_info.field.type.dtype.__str__()).type
+                        ),
                         inp=field_info.inp,
                         out=field_info.out,
+                        pointer=True,
+                        const=False,
                     )
                     for field_name, field_info in self.fields.items()
                 ],
             ),
             verifyFunc=VerifyFuncDeclaration(
                 funcname=stencil_name,
-                dsl_params=dsl_params,
-                rel_params=rel_params,
-                abs_params=abs_params,
-                out_params=out_params,
+                out_comp_params=out_comp_params,
+                tolerance_params=tolerance_params,
             ),
         )
         return header
 
-    def _make_verify_params(self, pstring=""):
+    # *[_dsl, out] for each out field. [_rel_tol, _abs_tol] for each out field
+
+    def _make_verify_params(
+        self, pstring: str = "", pointer: bool = False, const: bool = False
+    ):
 
         names = [
             str(f"{f}{pstring}") for f, f_info in self.fields.items() if f_info.out
         ]
         types = [
-            np.dtype(f_info.field.type.dtype.__str__())
+            render_python_type(np.dtype(f_info.field.type.dtype.__str__()).type)
             for f, f_info in self.fields.items()
             if f_info.out
         ]
@@ -79,7 +90,14 @@ class CppHeader:
         field_dict = dict(zip(names, types))
 
         return [
-            FunctionParameter(name=name, dtype=dtype, inp=False, out=True)
+            FunctionParameter(
+                name=name,
+                dtype=dtype,
+                inp=False,
+                out=True,
+                pointer=pointer,
+                const=const,
+            )
             for name, dtype in field_dict.items()
         ]
 
@@ -91,9 +109,11 @@ class CppHeader:
 
 class FunctionParameter(Node):
     name: str
-    dtype: np.dtype
+    dtype: str
     inp: bool
     out: bool
+    pointer: bool
+    const: bool
 
 
 class StencilFuncDeclaration(Node):
@@ -103,10 +123,8 @@ class StencilFuncDeclaration(Node):
 
 class VerifyFuncDeclaration(Node):
     funcname: str
-    dsl_params: Sequence[FunctionParameter]
-    out_params: Sequence[FunctionParameter]
-    rel_params: Sequence[FunctionParameter]
-    abs_params: Sequence[FunctionParameter]
+    out_comp_params: Sequence[FunctionParameter]
+    tolerance_params: Sequence[FunctionParameter]
 
 
 class HeaderFile(Node):
@@ -118,6 +136,7 @@ class HeaderGenerator(TemplatedGenerator):
     # TODO: implement other header declarations
     HeaderFile = as_jinja(
         """\
+        #pragma once
         #include "driver-includes/defs.hpp"
         #include "driver-includes/cuda_utils.hpp"
         extern "C" {
@@ -129,18 +148,18 @@ class HeaderGenerator(TemplatedGenerator):
 
     StencilFuncDeclaration = as_jinja(
         """\
-        void run_{{funcname}}({{",".join(parameters)}}, const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
+        void run_{{funcname}}({{", ".join(parameters)}}, const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
         """
     )
 
-    # todo: still need to ensure to generate some parameters as pointers, whilst others are passed by reference e.g. rel_tol and abs_tol
     VerifyFuncDeclaration = as_jinja(
         """\
-        bool verify_{{funcname}}({{",".join(dsl_params)}}, {{",".join(out_params)}}, {{",".join(abs_params)}}, {{",".join(rel_params)}}, const int iteration) ;
+        bool verify_{{funcname}}({{", ".join(out_comp_params)}}, {{", ".join(tolerance_params)}}, const int iteration) ;
         """
     )
 
     def visit_FunctionParameter(self, param: FunctionParameter):
-        type_str = render_python_type(param.dtype.type)
-        p = f"{type_str} *{param.name}"
-        return p
+        const = "const " if param.const else ""
+        pointer = "*" if param.pointer else ""
+        type_str = f"{const}{param.dtype}{pointer} {param.name}"
+        return type_str
