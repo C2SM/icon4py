@@ -71,6 +71,6 @@ class PyBindGen:
         (fields, offsets) = stencil_info_to_binding_type(self.stencil_info)
 
         # todo: implement code generation for f90 interface, cpp and h files.
-        F90Iface(fields, offsets).write(outpath)
+        F90Iface(self.stencil_info.fvprog.itir.id, fields, offsets).write(outpath)
 
         CppHeader(self.stencil_info).write(outpath)

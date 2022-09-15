@@ -107,6 +107,14 @@ class Offset:
 
 
 class Field(Node):
+    _builtin_to_ctype = {
+        ScalarKind.FLOAT64 : "real(c_double)",
+        ScalarKind.FLOAT32 : "real(c_float)",
+        ScalarKind.BOOL : "c_int", #?
+        ScalarKind.INT32 : "c_int",
+        ScalarKind.INT64 : "c_long", 
+    }
+
     location: Optional[Union[BasicLocation, CompoundLocation, ChainedLocation]]
     has_vertical_dimension: bool
     includes_center: bool
@@ -119,6 +127,18 @@ class Field(Node):
 
     def is_dense(self):
         return isinstance(self.location, BasicLocation)
+
+    def ctype(self):
+        return self._builtin_to_ctype[self.type]
+
+    def rank(self):
+        rank = int(self.has_vertical_dimension) + int(self.location is not None)
+        if self.location is not None:
+            rank += int(isinstance(self.location, ChainedLocation))
+        return rank
+
+    def dim_string(self):
+        return "dimension(" + ",".join( [":"] * self.rank() ) + ")"
 
     def __init__(self, name: str, field_info: FieldInfo):
         self.name = str(name)  # why isn't this a str in the first place?
