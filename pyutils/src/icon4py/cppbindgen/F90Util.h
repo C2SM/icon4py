@@ -100,7 +100,7 @@ protected:
     case InterfaceType::CHAR:
       return "character(kind=c_char)";
     case InterfaceType::BOOLEAN:
-      return "logical(c_bool)";
+      return "logical(c_int)";
     case InterfaceType::OBJ:
       return "type(c_ptr)";
     case InterfaceType::CUDA_STREAM_T:   

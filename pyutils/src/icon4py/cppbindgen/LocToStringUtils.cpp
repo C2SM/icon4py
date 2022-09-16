@@ -45,25 +45,31 @@ std::string chainToTableString(const ast::UnstructuredIterationSpace iterSpace) 
 
 std::string chainToShorthand(const dawn::ast::UnstructuredIterationSpace &space, StringCase strCase, std::optional<char> seperator) {
   std::string ret;
+
+  auto locToChar = [strCase] (dawn::ast::LocationType loc) {
+    switch(loc) {
+      case dawn::ast::LocationType::Cells:
+        return (strCase == StringCase::lower ? "c" : "C");
+      case dawn::ast::LocationType::Edges:
+        return (strCase == StringCase::lower ? "e" : "E");
+      case dawn::ast::LocationType::Vertices:
+        return (strCase == StringCase::lower ? "v" : "V");
+    }
+  };
+
+  if (space.isNewSparse()) {
+    ret += std::string{locToChar(space.NewSparseRoot.value())} + "2";
+  }
+
   for(auto loc : space.Chain) {
-    if (!ret.empty()) {
+    if (!ret.empty() && !space.isNewSparse()) {
       ret += (seperator ? std::string{seperator.value()} : "");
     }
-    switch(loc) {
-    case dawn::ast::LocationType::Cells:
-      ret += (strCase == StringCase::lower ? "c" : "C");
-      break;
-    case dawn::ast::LocationType::Edges:
-      ret += (strCase == StringCase::lower ? "e" : "E");
-      break;
-    case dawn::ast::LocationType::Vertices:
-      ret += (strCase == StringCase::lower ? "v" : "V");
-      break;
-    }  
+    ret += locToChar(loc);
   }
   if (space.IncludeCenter) {
     ret += (strCase == StringCase::lower ? "o" : "O");
-  } 
+  }
   return ret;
 }
 
@@ -79,7 +85,7 @@ std::string chainToSparseSizeString(const dawn::ast::UnstructuredIterationSpace 
       break;
     case dawn::ast::LocationType::Vertices:
       ss << "V_";
-      break;    
+      break;
     }
   }
   if(iterSpace.IncludeCenter) {

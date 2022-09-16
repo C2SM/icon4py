@@ -26,20 +26,26 @@ namespace ast {
 struct UnstructuredIterationSpace {
   NeighborChain Chain;
   bool IncludeCenter = false;
+  std::optional<LocationType> NewSparseRoot;
 
   UnstructuredIterationSpace(std::vector<LocationType>&& chain, bool includeCenter)
       : Chain(chain), IncludeCenter(includeCenter) {
     if(includeCenter && chain.front() != chain.back()) {
       throw std::logic_error("including center is only allowed if the end "
-                                 "location is the same as the starting location");
+                             "location is the same as the starting location");
     }
     if(chain.size() == 0) {
       throw std::logic_error("neighbor chain needs to have at least one member");
     }
     if(!chainIsValid()) {
       throw std::logic_error("invalid neighbor chain (repeated element in succession, use "
-                                 "expaneded notation (e.g. C->C becomes C->E->C\n");
+                             "expaneded notation (e.g. C->C becomes C->E->C\n");
     }
+  }
+  UnstructuredIterationSpace(std::vector<LocationType>&& chain, bool includeCenter,
+                             std::optional<LocationType> newSparseRoot)
+      : UnstructuredIterationSpace(std::move(chain), includeCenter) {
+    NewSparseRoot = newSparseRoot;
   }
   UnstructuredIterationSpace(std::vector<LocationType>&& chain)
       : UnstructuredIterationSpace(std::move(chain), false) {}
@@ -54,6 +60,8 @@ struct UnstructuredIterationSpace {
     }
     return true;
   }
+
+  bool isNewSparse() const { return NewSparseRoot.has_value(); }
 
   bool operator==(const UnstructuredIterationSpace& other) const {
     return Chain == other.Chain && IncludeCenter == other.IncludeCenter;

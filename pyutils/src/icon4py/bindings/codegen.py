@@ -19,6 +19,8 @@ import numpy as np
 from eve import Node
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator, format_source
+from functional.ffront import program_ast as past
+from functional.ffront.common_types import FieldType
 
 from icon4py.bindings.cppgen import render_python_type
 from icon4py.pyutils.metadata import get_field_infos
@@ -39,10 +41,10 @@ class CppHeader:
     def _generate_header(self):
         (
             all_params,
-            before_params,
-            k_size_params,
-            out_dsl_params,
-            tolerance_params,
+            before,
+            k_size,
+            out_dsl,
+            tolerance,
             stencil_name,
         ) = self._get_template_data()
 
@@ -53,56 +55,41 @@ class CppHeader:
             ),
             verifyFunc=VerifyFuncDeclaration(
                 funcname=stencil_name,
-                out_dsl_params=out_dsl_params,
-                tolerance_params=tolerance_params,
+                out_dsl_params=out_dsl,
+                tolerance_params=tolerance,
             ),
             runAndVerifyFunc=RunAndVerifyFunc(
                 funcname=stencil_name,
                 parameters=all_params,
-                tolerance_params=tolerance_params,
-                before_params=before_params,
+                tolerance_params=tolerance,
+                before_params=before,
             ),
-            setupFunc=SetupFunc(funcname=stencil_name, parameters=k_size_params),
+            setupFunc=SetupFunc(funcname=stencil_name, parameters=k_size),
             freeFunc=FreeFunc(funcname=stencil_name),
         )
         return header
 
     def _get_template_data(self):
         stencil_name = self.stencil_info.fvprog.past_node.id
-        out_params = self._make_verify_params("", True, pointer=True, const=True)
-
-        all_params = [
-            FunctionParameter(
-                name=f,
-                dtype=render_python_type(
-                    np.dtype(f_info.field.type.dtype.__str__()).type
-                ),
-                out=f_info.out,
-                pointer=True,
-                const=False,
-            )
-            for f, f_info in self.fields.items()
-        ]
-
-        k_size_params = self._make_verify_params(
-            "_k_size", True, pointer=False, const=True, type_overload=np.intc
+        output = self._make_output_params("", is_const=True)
+        all_params = self._make_output_params("", select_all=True)
+        k_size = self._make_output_params(
+            "_k_size", is_const=True, type_overload=np.intc
         )
-        out_dsl_params = self._interleave_params(
-            self._make_verify_params("_dsl", True, pointer=True, const=True), out_params
+        out_dsl = self._interleave_params(
+            self._make_output_params("_dsl", is_const=True), output
         )
-        tolerance_params = self._interleave_params(
-            self._make_verify_params("_rel_tol", True, pointer=False, const=True),
-            self._make_verify_params("_abs_tol", True, pointer=False, const=True),
+        tolerance = self._interleave_params(
+            self._make_output_params("_rel_tol", is_const=True),
+            self._make_output_params("_abs_tol", is_const=True),
         )
-        before_params = self._make_verify_params(
-            "_before", True, pointer=True, const=False
-        )
+        before = self._make_output_params("_before", is_const=False)
         return (
             all_params,
-            before_params,
-            k_size_params,
-            out_dsl_params,
-            tolerance_params,
+            before,
+            k_size,
+            out_dsl,
+            tolerance,
             stencil_name,
         )
 
@@ -110,48 +97,64 @@ class CppHeader:
     def _interleave_params(*args):
         return list(itertools.chain(*zip(*args)))
 
-    def _make_verify_params(
+    def _make_output_params(
         self,
-        pstring: str,
-        is_output: bool,
-        pointer: bool = False,
-        const: bool = False,
+        pname: str,
+        is_const: bool = False,
         type_overload: Any = None,
+        select_all: bool = False,
     ):
-        names = [
-            str(f"{f}{pstring}")
-            for f, f_info in self.fields.items()
-            if f_info.out == is_output
-        ]
 
-        types = self._render_types(type_overload)
+        params = []
 
-        field_dict = dict(zip(names, types))
+        for f, f_info in self.fields.items():
 
-        return [
-            FunctionParameter(
-                name=name,
-                dtype=dtype,
-                out=is_output,
-                pointer=pointer,
-                const=const,
-            )
-            for name, dtype in field_dict.items()
-        ]
+            if select_all:
+                is_out = f_info.out
+            else:
+                is_out = True
 
-    def _render_types(self, overload: Any = None):
-        types = []
-        for _, f_info in self.fields.items():
-            render_type = (
-                f_info.field.type.dtype.__str__() if not overload else overload
-            )
-            types.append(render_python_type(np.dtype(render_type).type))
-        return types
+            if f_info.out == is_out:
+                name = f"{f}{pname}"
+                dtype = self._render_types(f_info, type_overload)
+                is_pointer = self._is_pointer(f_info, name)
+                params.append(
+                    FunctionParameter(
+                        name=name,
+                        dtype=dtype,
+                        out=is_out,
+                        pointer=is_pointer,
+                        const=is_const,
+                    )
+                )
+        return params
+
+    @staticmethod
+    def _is_pointer(f_info, name):
+        for f in ["_abs_tol", "_rel_tol", "_k_size"]:
+            if f in name:
+                return False
+
+        if hasattr(f_info.field.type, "dims"):
+            return True
+        return False
+
+    def _render_types(self, f_info, overload: Any = None):
+        render_type = (
+            self._handle_field_type(f_info.field) if not overload else overload
+        )
+        return render_python_type(np.dtype(render_type).type)
 
     def _source_to_file(self, outpath: Path, src: str):
         header_path = outpath / f"{self.stencil_info.fvprog.past_node.id}.h"
         with open(header_path, "w") as f:
             f.write(src)
+
+    @staticmethod
+    def _handle_field_type(field: past.DataSymbol):
+        if isinstance(field.type, FieldType):
+            return str(field.type.dtype)
+        return str(field.type)
 
 
 class Func(Node):
