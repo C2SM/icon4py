@@ -35,7 +35,7 @@ def cppbindgen_path():
     return Path(os.path.dirname(icon4py.bindings.__file__)).parent / Path("cppbindgen")
 
 
-def test_foo(fencils, cppbindgen_path):
+def test_pybindgen_against_cppbindgen(fencils, cppbindgen_path):
     output_path = Path(os.getcwd()) / Path("tmp")
 
     for fencil in fencils:
