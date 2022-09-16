@@ -22,11 +22,11 @@ LANGUAGE_ID: Final = "cpp"
 
 _TYPE_MAPPING: Final = MappingProxyType(
     {
-        bool: "bool",
+        bool: "int",
         int: "long",
         float: "double",
         complex: "std::complex<double>",
-        numpy.bool_: "bool",
+        numpy.bool_: "int",
         numpy.byte: "signed char",
         numpy.ubyte: "unsigned char",
         numpy.short: "short",
@@ -43,7 +43,7 @@ _TYPE_MAPPING: Final = MappingProxyType(
         numpy.csingle: "std::complex<float>",
         numpy.cdouble: "std::complex<double>",
         numpy.clongdouble: "std::complex<long double>",
-        ctypes.c_bool: "bool",
+        ctypes.c_bool: "int",
         ctypes.c_char: "char",
         ctypes.c_wchar: "wchar_t",
         ctypes.c_byte: "char",
