@@ -14,6 +14,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from eve.codegen import format_source
+
 from icon4py.bindings.build import CppbindgenBuilder
 from icon4py.bindings.codegen import CppHeader
 from icon4py.bindings.utils import check_dir_exists, run_subprocess
@@ -37,6 +39,19 @@ class CppBindGen:
         gen_path = self._create_gen_folder(build_path)
         metadata_path = self._write_metadata(gen_path)
         self._execute_cppbindgen(metadata_path, build_path)
+        self._format_source_code(gen_path)
+
+    def _format_source_code(self, gen_path: Path):
+        extensions = ["cpp", "h"]
+
+        for ext in extensions:
+            files = gen_path.glob(f"*.{ext}")
+            for file in files:
+                with open(file, "r+") as f:
+                    formatted = format_source("cpp", f.read(), style="LLVM")
+                    f.seek(0)
+                    f.write(formatted)
+                    f.truncate()
 
     def _execute_cppbindgen(self, metadata_path: Path, build_path: Path):
         binary_path = build_path / self.binary_name
