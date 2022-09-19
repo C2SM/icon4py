@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, where
+from functional.ffront.fbuiltins import Field, where, int32
 
 from icon4py.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
@@ -21,8 +21,8 @@ from icon4py.common.dimension import E2EC, ECDim, EdgeDim, KDim
 def _mo_advection_traj_btraj_compute_o1_dsl(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
-    cell_idx: Field[[ECDim], float],
-    cell_blk: Field[[ECDim], float],
+    cell_idx: Field[[ECDim], int32],
+    cell_blk: Field[[ECDim], int32],
     pos_on_tplane_e_1: Field[[ECDim], float],
     pos_on_tplane_e_2: Field[[ECDim], float],
     primal_normal_cell_1: Field[[ECDim], float],
@@ -31,8 +31,8 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     dual_normal_cell_2: Field[[ECDim], float],
     p_dthalf: float,
 ) -> tuple[
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], int32],
+    Field[[EdgeDim, KDim], int32],
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
@@ -75,16 +75,16 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
 def mo_advection_traj_btraj_compute_o1_dsl(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
-    cell_idx: Field[[ECDim], float],
-    cell_blk: Field[[ECDim], float],
+    cell_idx: Field[[ECDim], int32],
+    cell_blk: Field[[ECDim], int32],
     pos_on_tplane_e_1: Field[[ECDim], float],
     pos_on_tplane_e_2: Field[[ECDim], float],
     primal_normal_cell_1: Field[[ECDim], float],
     dual_normal_cell_1: Field[[ECDim], float],
     primal_normal_cell_2: Field[[ECDim], float],
     dual_normal_cell_2: Field[[ECDim], float],
-    p_cell_idx: Field[[EdgeDim, KDim], float],
-    p_cell_blk: Field[[EdgeDim, KDim], float],
+    p_cell_idx: Field[[EdgeDim, KDim], int32],
+    p_cell_blk: Field[[EdgeDim, KDim], int32],
     p_distv_bary_1: Field[[EdgeDim, KDim], float],
     p_distv_bary_2: Field[[EdgeDim, KDim], float],
     p_dthalf: float,
