@@ -67,8 +67,9 @@ def test_multiple_field_operator_stencil(cli):
         "atm_dyn_iconam", "mo_velocity_advection_stencil_05"
     )
     outpath = "."
-    result = cli.invoke(main, [module_path, outpath])
-    assert result.exit_code == 0
+    with cli.isolated_filesystem():
+        result = cli.invoke(main, [module_path, outpath])
+        assert result.exit_code == 0
 
 
 def check_code_was_generated(stencil_name):

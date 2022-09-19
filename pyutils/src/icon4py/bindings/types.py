@@ -15,7 +15,8 @@ from collections import namedtuple
 from typing import List, Optional, Tuple, Union
 
 from eve import Node
-from functional.ffront.common_types import ScalarKind
+from functional.ffront import program_ast as past
+from functional.ffront.common_types import FieldType, ScalarKind
 
 from icon4py.pyutils.metadata import get_field_infos
 from icon4py.pyutils.stencil_info import FieldInfo, StencilInfo
@@ -154,17 +155,35 @@ class Field(Node):
 
     def __init__(self, name: str, field_info: FieldInfo):
         self.name = str(name)  # why isn't this a str in the first place?
-        self.field_type = (
-            field_info.field.type.dtype.kind
-        )  # todo: handle 'ScalarType' object has no attribute 'dtype'
+        self.field_type = self._extract_field_type(field_info.field)
         self.intent = Intent(inp=field_info.inp, out=field_info.out)
-        self.has_vertical_dimension = any(
-            dim.value == "K" for dim in field_info.field.type.dims
-        )
-        maybe_horizontal_dimension = list(
-            filter(lambda dim: dim.value != "K", field_info.field.type.dims)
-        )
+        self.has_vertical_dimension = self._has_vertical_dimension(field_info.field)
         self.includes_center = False
+        self.location = None
+        self._get_horizontal_dimension_and_update_location = (
+            self._get_horizontal_dimension_and_update_location(field_info.field)
+        )
+
+    @staticmethod
+    def _extract_field_type(field: past.DataSymbol) -> ScalarKind:
+        """Handle extraction of field types for different fields e.g. Scalar."""
+        if not isinstance(field.type, FieldType):
+            return field.type.kind
+        return field.type.dtype.kind
+
+    @staticmethod
+    def _has_vertical_dimension(field: past.DataSymbol):
+        if not isinstance(field.type, FieldType):
+            return False
+        return any(dim.value == "K" for dim in field.type.dims)
+
+    def _get_horizontal_dimension_and_update_location(self, field: past.DataSymbol):
+        if not isinstance(field.type, FieldType):
+            return None
+
+        maybe_horizontal_dimension = list(
+            filter(lambda dim: dim.value != "K", field.type.dims)
+        )
         if len(maybe_horizontal_dimension):
             horizontal_dimension = maybe_horizontal_dimension[0].value
             if horizontal_dimension.endswith("O"):
@@ -183,13 +202,12 @@ class Field(Node):
                 self.location = CompoundLocation(chain_from_str(horizontal_dimension))
             else:
                 raise Exception("invalid chain")
+            return horizontal_dimension
 
 
 def stencil_info_to_binding_type(stencil_info: StencilInfo):
     chains = stencil_info.connectivity_chains
     fields = get_field_infos(stencil_info.fvprog)
-
     binding_fields = [Field(name, info) for name, info in fields.items()]
     binding_offsets = [Offset(chain) for chain in chains]
-
     return (binding_fields, binding_offsets)

@@ -560,18 +560,16 @@ class CppHeader:
             if f in name:
                 return False
 
-        if hasattr(f_info.field.field_type, "dims"):
+        if hasattr(f_info.field.type, "dims"):
             return True
         return False
 
     def _render_types(self, f_info, overload: Any = None):
-        render_type = (
-            self._handle_field_type(f_info.field) if not overload else overload
-        )
-        return render_python_type(np.dtype(render_type).field_type)
+        render_type = self._handle_field(f_info.field) if not overload else overload
+        return render_python_type(np.dtype(render_type).type)
 
     @staticmethod
-    def _handle_field_type(field: past.DataSymbol):
+    def _handle_field(field: past.DataSymbol):
         if isinstance(field.type, FieldType):
             return str(field.type.dtype)
         return str(field.type)
