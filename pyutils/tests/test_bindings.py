@@ -13,13 +13,14 @@
 
 import os
 import pkgutil
+import random
 from pathlib import Path
 
 import pytest
 
 import icon4py.atm_dyn_iconam
 from icon4py.bindings.workflow import CppBindGen, PyBindGen
-from icon4py.pyutils.icon4pygen import get_stencil_metadata
+from icon4py.pyutils.icon4pygen import get_stencil_info
 
 
 @pytest.fixture
@@ -38,8 +39,11 @@ def cppbindgen_path():
 def test_pybindgen_against_cppbindgen(fencils, cppbindgen_path):
     output_path = Path(os.getcwd()) / Path("tmp")
 
-    for fencil in fencils:
-        metadata = get_stencil_metadata(fencil)
+    # select random sample of fencils (processing time too large otherwise)
+    selected_fencils = random.choices(fencils, k=10)
+
+    for fencil in selected_fencils:
+        metadata = get_stencil_info(fencil)
         CppBindGen(metadata)(cppbindgen_path)
         PyBindGen(metadata)(output_path)
         compare_files(cppbindgen_path, output_path, fencil)

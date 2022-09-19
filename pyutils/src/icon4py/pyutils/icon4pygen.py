@@ -18,11 +18,9 @@ from __future__ import annotations
 import importlib
 import pathlib
 import types
-from typing import Any
 
 import click
-from functional.common import Connectivity, Dimension, DimensionKind
-from functional.fencil_processors.codegens.gtfn.gtfn_backend import generate
+from functional.common import Dimension, DimensionKind
 from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
@@ -108,69 +106,10 @@ def provide_offset(offset: str) -> type.SimpleNamespace | Dimension:
         return provide_neighbor_table(offset)
 
 
-# TODO: provide a better typing for offset_provider
-def generate_cpp_code(
-    fencil: itir.FencilDefinition,
-    offset_provider: dict[str, Dimension | Connectivity],
-    **kwargs: Any,
-) -> str:
-    """Generate C++ code using the GTFN backend."""
-    return generate(
-        fencil,
-        offset_provider=offset_provider,
-        **kwargs,
-    )
-
-
 def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
     module_name, member_name = name.split(":")
     fencil = getattr(importlib.import_module(module_name), member_name)
     return fencil
-
-
-def _is_size_param(param: itir.Sym) -> bool:
-    """Check if parameter is a size parameter introduced by field view frontend."""
-    return param.id.startswith("__") and "_size_" in param.id
-
-
-def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
-    """Replace field view size parameters by horizontal and vertical range paramters."""
-    if len(fencil.closures) > 1:
-        raise MultipleFieldOperatorException()
-
-    fencil.closures[0].domain = itir.FunCall(
-        fun=itir.SymRef(id="unstructured_domain"),
-        args=[
-            itir.FunCall(
-                fun=itir.SymRef(id="named_range"),
-                args=[
-                    itir.AxisLiteral(value="horizontal"),
-                    itir.SymRef(id="horizontal_start"),
-                    itir.SymRef(id="horizontal_end"),
-                ],
-            ),
-            itir.FunCall(
-                fun=itir.SymRef(id="named_range"),
-                args=[
-                    itir.AxisLiteral(value=Koff.source.value),
-                    itir.SymRef(id="vertical_start"),
-                    itir.SymRef(id="vertical_end"),
-                ],
-            ),
-        ],
-    )
-    return itir.FencilDefinition(
-        id=fencil.id,
-        function_definitions=fencil.function_definitions,
-        params=[
-            *(p for p in fencil.params if not _is_size_param(p)),
-            itir.Sym(id="horizontal_start"),
-            itir.Sym(id="horizontal_end"),
-            itir.Sym(id="vertical_start"),
-            itir.Sym(id="vertical_end"),
-        ],
-        closures=fencil.closures,
-    )
 
 
 def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Program:
@@ -188,7 +127,7 @@ def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Prog
     return fvprog
 
 
-def get_stencil_metadata(fencil) -> StencilInfo:
+def get_stencil_info(fencil) -> StencilInfo:
     fencil_def = import_definition(fencil)
     fvprog = get_fvprog(fencil_def)
     offsets = scan_for_offsets(fvprog)
@@ -196,10 +135,7 @@ def get_stencil_metadata(fencil) -> StencilInfo:
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-    stencil_header_cpp_code = generate_cpp_code(
-        adapt_domain(fvprog.itir), offset_provider
-    )
-    return StencilInfo(fvprog, connectivity_chains, stencil_header_cpp_code)
+    return StencilInfo(fvprog, connectivity_chains, offset_provider)
 
 
 @click.command(
@@ -228,12 +164,12 @@ def main(
 
     The outpath represents a path to the folder in which to write all generated code.
     """
-    metadata = get_stencil_metadata(fencil)
+    stencil_info = get_stencil_info(fencil)
 
     if cppbindgen_path:
-        CppBindGen(metadata)(cppbindgen_path)
+        CppBindGen(stencil_info)(cppbindgen_path)
 
-    PyBindGen(metadata)(outpath)
+    PyBindGen(stencil_info)(outpath)
 
 
 if __name__ == "__main__":

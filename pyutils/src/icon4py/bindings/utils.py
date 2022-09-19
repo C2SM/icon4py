@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import pathlib
 import subprocess
+from pathlib import Path
 
 
 def run_subprocess(*args, **kwargs) -> None:
@@ -25,5 +25,11 @@ def run_subprocess(*args, **kwargs) -> None:
         raise RuntimeError(error)
 
 
-def check_dir_exists(dirpath: pathlib.Path):
+def check_dir_exists(dirpath: Path):
     dirpath.mkdir(parents=True, exist_ok=True)
+
+
+def write_string(string: str, outdir: Path, fname: str):
+    path = outdir / fname
+    with open(path, "w") as f:
+        f.write(string)

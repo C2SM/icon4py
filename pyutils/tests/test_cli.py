@@ -26,38 +26,38 @@ def cli():
     return CliRunner()
 
 
-CODEGEN_PATTERNS = {"includes": "#include <.*>", "namespaces": "using .*;"}
 STENCILS_TO_TEST = [
     ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
     ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
     ("atm_dyn_iconam", "mo_velocity_advection_stencil_07"),
+    ("atm_dyn_iconam", "mo_nh_diffusion_stencil_03"),
 ]
+
+
+def check_gridtools_codegen(fname: str):
+    patterns = {"includes": "#include <.*>", "namespaces": "using .*;"}
+    with open(fname, "r") as f:
+        code = f.read()
+        for _, pattern in patterns.items():
+            matches = re.findall(pattern, code, re.MULTILINE)
+            assert matches
 
 
 @pytest.mark.parametrize(("stencil_module", "stencil_name"), STENCILS_TO_TEST)
 def test_codegen(cli, stencil_module, stencil_name):
     module_path = get_stencil_module_path(stencil_module, stencil_name)
-    result = cli.invoke(main, [module_path])
-    assert result.exit_code == 0
-    for _, pattern in CODEGEN_PATTERNS.items():
-        matches = re.findall(pattern, result.output, re.MULTILINE)
-        assert matches
-
-
-@pytest.mark.parametrize(("stencil_module", "stencil_name"), STENCILS_TO_TEST)
-def test_metadatagen(cli, stencil_module, stencil_name):
-    fname = f"{stencil_name}.dat"
-    module_path = get_stencil_module_path(stencil_module, stencil_name)
+    outpath = "."
 
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, "--output-metadata", fname])
+        result = cli.invoke(main, [module_path, outpath])
         assert result.exit_code == 0
-        assert fname in os.listdir(os.getcwd()) and os.path.getsize(fname) > 0
+        check_code_was_generated(stencil_name)
 
 
 def test_invalid_module_path(cli):
     module_path = get_stencil_module_path("some_module", "foo")
-    result = cli.invoke(main, [module_path])
+    outpath = "."
+    result = cli.invoke(main, [module_path, outpath])
     assert result.exit_code == 1
     assert isinstance(result.exception, ModuleNotFoundError)
 
@@ -66,17 +66,13 @@ def test_multiple_field_operator_stencil(cli):
     module_path = get_stencil_module_path(
         "atm_dyn_iconam", "mo_velocity_advection_stencil_05"
     )
-    result = cli.invoke(main, [module_path])
+    outpath = "."
+    result = cli.invoke(main, [module_path, outpath])
     assert result.exit_code == 0
 
 
-def test_koffset_stencil(cli):
-    """Stencil contains a k offset but no connectivities."""
-    stencil_name = "mo_nh_diffusion_stencil_03"
-    module_path = get_stencil_module_path("atm_dyn_iconam", stencil_name)
-    fname = f"{stencil_name}.dat"
-    with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, "--output-metadata", fname])
-        assert result.exit_code == 0
-        with open(fname, "r") as f:
-            assert f.readline().strip() == ""  # list of connectivities is empty
+def check_code_was_generated(stencil_name):
+    bindgen_header = f"{stencil_name}.h"
+    gridtools_header = f"{stencil_name}.hpp"
+    assert set([bindgen_header, gridtools_header]).issubset(os.listdir(os.getcwd()))
+    check_gridtools_codegen(gridtools_header)

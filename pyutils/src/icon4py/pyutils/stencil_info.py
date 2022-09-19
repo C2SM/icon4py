@@ -21,7 +21,7 @@ from functional.ffront.decorator import Program
 class StencilInfo:
     fvprog: Program
     connectivity_chains: list[str]
-    stencil_header: str
+    offset_provider: dict
 
 
 @dataclasses.dataclass(frozen=True)

@@ -19,12 +19,82 @@ import numpy as np
 from eve import Node
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator, format_source
+from functional.fencil_processors.codegens.gtfn.gtfn_backend import generate
 from functional.ffront import program_ast as past
 from functional.ffront.common_types import FieldType
+from functional.iterator import ir as itir
 
 from icon4py.bindings.cppgen import render_python_type
+from icon4py.bindings.utils import write_string
+from icon4py.common.dimension import Koff
+from icon4py.pyutils.exceptions import MultipleFieldOperatorException
 from icon4py.pyutils.metadata import get_field_infos
 from icon4py.pyutils.stencil_info import StencilInfo
+
+
+class GTHeader:
+    def __init__(self, stencil_info: StencilInfo):
+        self.stencil_info = stencil_info
+        self.stencil_name = stencil_info.fvprog.past_node.id
+
+    def write(self, outpath: Path):
+        gtheader = self._generate_cpp_code(
+            self._adapt_domain(self.stencil_info.fvprog.itir)
+        )
+        write_string(gtheader, outpath, f"{self.stencil_name}.hpp")
+
+    # TODO: provide a better typing for offset_provider
+    def _generate_cpp_code(self, fencil: itir.FencilDefinition, **kwargs: Any) -> str:
+        """Generate C++ code using the GTFN backend."""
+        return generate(
+            fencil,
+            offset_provider=self.stencil_info.offset_provider,
+            **kwargs,
+        )
+
+    def _adapt_domain(self, fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+        """Replace field view size parameters by horizontal and vertical range paramters."""
+        if len(fencil.closures) > 1:
+            raise MultipleFieldOperatorException()
+
+        fencil.closures[0].domain = itir.FunCall(
+            fun=itir.SymRef(id="unstructured_domain"),
+            args=[
+                itir.FunCall(
+                    fun=itir.SymRef(id="named_range"),
+                    args=[
+                        itir.AxisLiteral(value="horizontal"),
+                        itir.SymRef(id="horizontal_start"),
+                        itir.SymRef(id="horizontal_end"),
+                    ],
+                ),
+                itir.FunCall(
+                    fun=itir.SymRef(id="named_range"),
+                    args=[
+                        itir.AxisLiteral(value=Koff.source.value),
+                        itir.SymRef(id="vertical_start"),
+                        itir.SymRef(id="vertical_end"),
+                    ],
+                ),
+            ],
+        )
+        return itir.FencilDefinition(
+            id=fencil.id,
+            function_definitions=fencil.function_definitions,
+            params=[
+                *(p for p in fencil.params if not self._is_size_param(p)),
+                itir.Sym(id="horizontal_start"),
+                itir.Sym(id="horizontal_end"),
+                itir.Sym(id="vertical_start"),
+                itir.Sym(id="vertical_end"),
+            ],
+            closures=fencil.closures,
+        )
+
+    @staticmethod
+    def _is_size_param(param: itir.Sym) -> bool:
+        """Check if parameter is a size parameter introduced by field view frontend."""
+        return param.id.startswith("__") and "_size_" in param.id
 
 
 class CppHeader:
@@ -32,11 +102,12 @@ class CppHeader:
         self.stencil_info = stencil_info
         self.generator = HeaderGenerator
         self.fields = get_field_infos(stencil_info.fvprog)
+        self.stencil_name = stencil_info.fvprog.past_node.id
 
     def write(self, outpath: Path):
         header = self._generate_header()
         source = format_source("cpp", self.generator.apply(header), style="LLVM")
-        self._source_to_file(outpath, source)
+        write_string(source, outpath, f"{self.stencil_name}.h")
 
     def _generate_header(self):
         (
@@ -45,32 +116,30 @@ class CppHeader:
             k_size,
             out_dsl,
             tolerance,
-            stencil_name,
         ) = self._get_template_data()
 
         header = HeaderFile(
             runFunc=StencilFuncDeclaration(
-                funcname=stencil_name,
+                funcname=self.stencil_name,
                 parameters=all_params,
             ),
             verifyFunc=VerifyFuncDeclaration(
-                funcname=stencil_name,
+                funcname=self.stencil_name,
                 out_dsl_params=out_dsl,
                 tolerance_params=tolerance,
             ),
             runAndVerifyFunc=RunAndVerifyFunc(
-                funcname=stencil_name,
+                funcname=self.stencil_name,
                 parameters=all_params,
                 tolerance_params=tolerance,
                 before_params=before,
             ),
-            setupFunc=SetupFunc(funcname=stencil_name, parameters=k_size),
-            freeFunc=FreeFunc(funcname=stencil_name),
+            setupFunc=SetupFunc(funcname=self.stencil_name, parameters=k_size),
+            freeFunc=FreeFunc(funcname=self.stencil_name),
         )
         return header
 
     def _get_template_data(self):
-        stencil_name = self.stencil_info.fvprog.past_node.id
         output = self._make_output_params("", is_const=True)
         all_params = self._make_output_params("", select_all=True)
         k_size = self._make_output_params(
@@ -90,7 +159,6 @@ class CppHeader:
             k_size,
             out_dsl,
             tolerance,
-            stencil_name,
         )
 
     @staticmethod
@@ -144,11 +212,6 @@ class CppHeader:
             self._handle_field_type(f_info.field) if not overload else overload
         )
         return render_python_type(np.dtype(render_type).type)
-
-    def _source_to_file(self, outpath: Path, src: str):
-        header_path = outpath / f"{self.stencil_info.fvprog.past_node.id}.h"
-        with open(header_path, "w") as f:
-            f.write(src)
 
     @staticmethod
     def _handle_field_type(field: past.DataSymbol):
