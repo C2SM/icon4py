@@ -17,9 +17,7 @@ from dataclasses import dataclass
 from icon4py.bindings.utils import check_dir_exists, run_subprocess
 
 
-# todo: use logger
-
-
+# todo: this can be deleted once PyBindGen is complete
 @dataclass
 class CppbindgenBuilder:
     source_folder: pathlib.Path

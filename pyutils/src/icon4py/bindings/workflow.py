@@ -17,13 +17,13 @@ from pathlib import Path
 from eve.codegen import format_source
 
 from icon4py.bindings.build import CppbindgenBuilder
-from icon4py.bindings.codegen import CppHeader, F90Iface, GTHeader
+from icon4py.bindings.codegen import CppHeader, F90Iface
 from icon4py.bindings.types import stencil_info_to_binding_type
 from icon4py.bindings.utils import check_dir_exists, run_subprocess
-from icon4py.pyutils.metadata import format_metadata
-from icon4py.pyutils.stencil_info import StencilInfo
+from icon4py.pyutils.metadata import StencilInfo, format_metadata
 
 
+# todo: this can be deleted once PyBindGen is complete
 @dataclass(frozen=True)
 class CppBindGen:
     stencil_info: StencilInfo
@@ -82,10 +82,10 @@ class PyBindGen:
         check_dir_exists(outpath)
 
         # from stencil_meta data to bindgen internal data structures
-        (fields, offsets) = stencil_info_to_binding_type(self.stencil_info)
+        stencil_name = self.stencil_info.fvprog.itir.id
+        fields, offsets = stencil_info_to_binding_type(self.stencil_info)
 
-        F90Iface(self.stencil_info.fvprog.itir.id, fields, offsets).write(outpath)
-        CppHeader(self.stencil_info).write(outpath)
-        GTHeader(self.stencil_info).write(outpath)
+        F90Iface(stencil_name, fields, offsets).write(outpath)
+        CppHeader(stencil_name, fields).write(outpath)
 
         # todo: implement code generation for .cpp file

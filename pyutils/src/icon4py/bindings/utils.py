@@ -15,6 +15,7 @@ import subprocess
 from pathlib import Path
 
 
+# todo: this can be deleted once PyBindGen is complete
 def run_subprocess(*args, **kwargs) -> None:
     """Run a command using the given positional and keyword arguments."""
     result = subprocess.run(

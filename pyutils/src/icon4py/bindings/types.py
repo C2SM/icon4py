@@ -18,11 +18,26 @@ from eve import Node
 from functional.ffront import program_ast as past
 from functional.ffront.common_types import FieldType, ScalarKind
 
-from icon4py.pyutils.metadata import get_field_infos
-from icon4py.pyutils.stencil_info import FieldInfo, StencilInfo
+from icon4py.pyutils.metadata import FieldInfo, StencilInfo, get_field_infos
 
 
 Intent = namedtuple("Intent", ["inp", "out"])
+
+BUILTIN_TO_ISO_C_TYPE = {
+    ScalarKind.FLOAT64: "real(c_double)",
+    ScalarKind.FLOAT32: "real(c_float)",
+    ScalarKind.BOOL: "c_int",  # ?
+    ScalarKind.INT32: "c_int",
+    ScalarKind.INT64: "c_long",
+}
+
+BUILTIN_TO_CPP_TYPE = {
+    ScalarKind.FLOAT64: "double",
+    ScalarKind.FLOAT32: "float",
+    ScalarKind.BOOL: "int",  # ?
+    ScalarKind.INT32: "int",
+    ScalarKind.INT64: "long",
+}
 
 
 class BasicLocation:
@@ -120,14 +135,6 @@ class Offset:
 
 
 class Field(Node):
-    _builtin_to_ctype = {
-        ScalarKind.FLOAT64: "real(c_double)",
-        ScalarKind.FLOAT32: "real(c_float)",
-        ScalarKind.BOOL: "c_int",  # ?
-        ScalarKind.INT32: "c_int",
-        ScalarKind.INT64: "c_long",
-    }
-
     location: Optional[Union[BasicLocation, CompoundLocation, ChainedLocation]]
     has_vertical_dimension: bool
     includes_center: bool
@@ -141,8 +148,17 @@ class Field(Node):
     def is_dense(self):
         return isinstance(self.location, BasicLocation)
 
-    def ctype(self):
-        return self._builtin_to_ctype[self.field_type]
+    def ctype(self, binding_type: str):
+        match binding_type:
+            case "f90":
+                return BUILTIN_TO_ISO_C_TYPE[self.field_type]
+            case "c++":
+                return BUILTIN_TO_CPP_TYPE[self.field_type]
+
+    def render_pointer(self):
+        if not self.has_vertical_dimension and self.location is None:
+            return ""
+        return "*"
 
     def rank(self):
         rank = int(self.has_vertical_dimension) + int(self.location is not None)
@@ -205,9 +221,11 @@ class Field(Node):
             return horizontal_dimension
 
 
-def stencil_info_to_binding_type(stencil_info: StencilInfo):
+def stencil_info_to_binding_type(
+    stencil_info: StencilInfo,
+) -> tuple[list[Field], List[Offset]]:
     chains = stencil_info.connectivity_chains
     fields = get_field_infos(stencil_info.fvprog)
     binding_fields = [Field(name, info) for name, info in fields.items()]
     binding_offsets = [Offset(chain) for chain in chains]
-    return (binding_fields, binding_offsets)
+    return binding_fields, binding_offsets

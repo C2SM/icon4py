@@ -16,12 +16,12 @@ from typing import List
 
 import pytest
 
-from icon4py.pyutils.icon4pygen import (
+from icon4py.pyutils.metadata import (
+    format_metadata,
     get_fvprog,
     import_definition,
     scan_for_offsets,
 )
-from icon4py.pyutils.metadata import format_metadata
 from icon4py.testutils.utils import get_stencil_module_path
 
 
