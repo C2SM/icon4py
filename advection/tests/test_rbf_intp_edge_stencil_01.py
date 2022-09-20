@@ -11,34 +11,31 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np 
+import numpy as np
 
-from icon4py.advection.rbf_intp_edge_stencil_01 import (
-    rbf_intp_edge_stencil_01,
-)
-from icon4py.common.dimension import EdgeDim, E2C2EDim, KDim
+from icon4py.advection.rbf_intp_edge_stencil_01 import rbf_intp_edge_stencil_01
+from icon4py.common.dimension import E2C2EDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
+
 def rbf_intp_edge_stencil_01_numpy(
     e2c2e: np.array,
-    p_vn_in: np.array, 
+    p_vn_in: np.array,
     ptr_coeff: np.array,
 ) -> np.array:
 
     ptr_coeff = np.expand_dims(ptr_coeff, axis=-1)
     p_vt_out = np.sum(p_vn_in[e2c2e] * ptr_coeff, axis=1)
-#    p_vn_ptr = p_vn_in[e2c2e] * ptr_coeff
-#    p_vt_out = np.sum(p_vn_ptr, axis=1) 
-
     return p_vt_out
 
+
 def test_rbf_intp_edge_stencil_01():
-    mesh= SimpleMesh()
+    mesh = SimpleMesh()
 
     p_vn_in = random_field(mesh, EdgeDim, KDim)
     ptr_coeff = random_field(mesh, EdgeDim, E2C2EDim)
-    p_vt_out = zero_field(mesh, EdgeDim, KDim) 
+    p_vt_out = zero_field(mesh, EdgeDim, KDim)
 
     ref = rbf_intp_edge_stencil_01_numpy(
         mesh.e2c2e,
