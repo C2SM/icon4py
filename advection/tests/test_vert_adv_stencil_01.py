@@ -30,9 +30,11 @@ def vert_adv_stencil_01_numpy(
 ) -> np.array:
     p_mflx_tracer_v_offset_1 = np.roll(p_mflx_tracer_v, shift=-1, axis=1)
 
-    tracer_new = (tracer_now * rhodz_now + p_dtime * (
-            p_mflx_tracer_v_offset_1 * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)) / rhodz_new
-
+    tracer_new = (
+        tracer_now * rhodz_now
+        + p_dtime
+        * (p_mflx_tracer_v_offset_1 * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
+    ) / rhodz_new
 
     return tracer_new
 
@@ -46,7 +48,7 @@ def test_vert_adv_stencil_01():
     deepatmo_divzl = random_field(mesh, KDim)
     deepatmo_divzu = random_field(mesh, KDim)
     rhodz_new = random_field(mesh, CellDim, KDim)
-    tracer_new = random_field(mesh, CellDim, KDim)
+    tracer_new = zero_field(mesh, CellDim, KDim)
     p_dtime = np.float64(5.0)
 
     ref = vert_adv_stencil_01_numpy(
@@ -69,4 +71,4 @@ def test_vert_adv_stencil_01():
         p_dtime,
         offset_provider={"Koff": KDim},
     )
-    assert np.allclose(tracer_new[:,:-1], ref[:,:-1])
+    assert np.allclose(tracer_new[:, :-1], ref[:, :-1])

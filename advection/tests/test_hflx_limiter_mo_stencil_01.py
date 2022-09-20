@@ -12,12 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from functional.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.advection.hflx_limiter_mo_stencil_01 import (
     hflx_limiter_mo_stencil_01,
 )
-from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
@@ -29,8 +28,10 @@ def hflx_limiter_mo_stencil_01_numpy(
     p_mass_flx_e: np.array,
 ):
     p_cc_e2c = p_cc[e2c]
-    z_mflx_low = 0.5*(p_mass_flx_e*(p_cc_e2c[:, 0] + p_cc_e2c[:, 1])
-    - abs(p_mass_flx_e) *(-p_cc_e2c[:, 0] + p_cc_e2c[:, 1]))
+    z_mflx_low = 0.5 * (
+        p_mass_flx_e * (p_cc_e2c[:, 0] + p_cc_e2c[:, 1])
+        - abs(p_mass_flx_e) * (-p_cc_e2c[:, 0] + p_cc_e2c[:, 1])
+    )
 
     z_anti = p_mflx_tracer_h - z_mflx_low
 

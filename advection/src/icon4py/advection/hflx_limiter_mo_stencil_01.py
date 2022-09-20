@@ -14,7 +14,7 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, abs
 
-from icon4py.common.dimension import C2CE, E2C, CEDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -22,10 +22,12 @@ def _hflx_limiter_mo_stencil_01(
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     p_cc: Field[[CellDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
-) -> tuple[Field[[EdgeDim, KDim], float],Field[[EdgeDim, KDim], float]]:
+) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
 
-    z_mflx_low = 0.5 * ( p_mass_flx_e * (p_cc(E2C[0]) + p_cc(E2C[1]))
-                         - abs(p_mass_flx_e) * (-p_cc(E2C[0]) + p_cc(E2C[1])))
+    z_mflx_low = 0.5 * (
+        p_mass_flx_e * (p_cc(E2C[0]) + p_cc(E2C[1]))
+        - abs(p_mass_flx_e) * (-p_cc(E2C[0]) + p_cc(E2C[1]))
+    )
 
     z_anti = p_mflx_tracer_h - z_mflx_low
 
@@ -44,5 +46,5 @@ def hflx_limiter_mo_stencil_01(
         p_mflx_tracer_h,
         p_cc,
         p_mass_flx_e,
-        out = (z_mflx_low, z_anti),
+        out=(z_mflx_low, z_anti),
     )
