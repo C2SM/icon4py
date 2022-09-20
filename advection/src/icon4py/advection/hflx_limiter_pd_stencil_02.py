@@ -14,25 +14,27 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, where
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, E2C
+from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
+
 
 @field_operator
 def _hflx_limiter_pd_stencil_02(
-    refin_ctrl: Field[[EdgeDim], float], 
+    refin_ctrl: Field[[EdgeDim], float],
     r_m: Field[[CellDim, KDim], float],
     p_mflx_tracer_h_in: Field[[EdgeDim, KDim], float],
     bound: float,
 ) -> Field[[EdgeDim, KDim], float]:
-    p_mflx_tracer_h_out = where (
+    p_mflx_tracer_h_out = where(
         refin_ctrl == bound,
         p_mflx_tracer_h_in,
-        where (
-            (p_mflx_tracer_h_in > 0.0) | (p_mflx_tracer_h_in==0.0),
+        where(
+            (p_mflx_tracer_h_in > 0.0) | (p_mflx_tracer_h_in == 0.0),
             p_mflx_tracer_h_in * r_m(E2C[0]),
             p_mflx_tracer_h_in * r_m(E2C[1]),
         ),
     )
     return p_mflx_tracer_h_out
+
 
 @program
 def hflx_limiter_pd_stencil_02(
@@ -43,9 +45,9 @@ def hflx_limiter_pd_stencil_02(
     bound: float,
 ):
     _hflx_limiter_pd_stencil_02(
-    refin_ctrl,
-    r_m,
-    p_mflx_tracer_h_in,
-    bound,
-    out=p_mflx_tracer_h_out,
-)
+        refin_ctrl,
+        r_m,
+        p_mflx_tracer_h_in,
+        bound,
+        out=p_mflx_tracer_h_out,
+    )

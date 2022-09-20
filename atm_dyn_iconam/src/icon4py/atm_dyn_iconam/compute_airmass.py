@@ -26,7 +26,6 @@ def _compute_airmass(
     return rho_in * ddqz_z_full_in * deepatmo_t1mc_in
 
 
-
 @program
 def compute_airmass(
     rho_in: Field[[CellDim, KDim], float],
