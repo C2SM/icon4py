@@ -17,7 +17,8 @@ from pathlib import Path
 from eve.codegen import format_source
 
 from icon4py.bindings.build import CppbindgenBuilder
-from icon4py.bindings.codegen import CppHeader, F90Iface
+from icon4py.bindings.codegen.f90 import F90Iface
+from icon4py.bindings.codegen.header import CppHeader
 from icon4py.bindings.types import stencil_info_to_binding_type
 from icon4py.bindings.utils import check_dir_exists, run_subprocess
 from icon4py.pyutils.metadata import StencilInfo, format_metadata

@@ -17,10 +17,9 @@ from typing import Sequence
 
 from eve import Node
 from eve.codegen import JinjaTemplate as as_jinja
-from eve.codegen import TemplatedGenerator, format_source
+from eve.codegen import TemplatedGenerator
 
 from icon4py.bindings.types import Field, Offset
-from icon4py.bindings.utils import write_string
 
 
 class F90Generator(TemplatedGenerator):
@@ -346,6 +345,12 @@ class F90Iface:
     fields: Sequence[Field]
     offsets: Sequence[Offset]
 
+    def write(self, outpath: Path):
+        iface = self._generate_iface()
+        source = F90Generator.apply(iface)
+        # todo: code formatting & writing code to file.
+        print(source)
+
     def _generate_iface(self):
         iface = F90File(
             sten_name=self.sten_name,
@@ -371,157 +376,3 @@ class F90Iface:
             ),
         )
         return iface
-
-    def write(self, outpath: Path):
-        iface = self._generate_iface()
-        source = F90Generator.apply(iface)
-        # todo: code formatting & writing code to file.
-        print(source)
-
-
-class CppHeader:
-    def __init__(
-        self,
-        stencil_name: str,
-        fields: list[Field],
-    ):
-        self.stencil_name = stencil_name
-        self.fields = fields
-
-    def write(self, outpath: Path):
-        header = self._generate_header()
-        source = format_source("cpp", HeaderGenerator.apply(header), style="LLVM")
-        write_string(source, outpath, f"{self.stencil_name}.h")
-
-    def _generate_header(self):
-        output_fields = [field for field in self.fields if field.intent.out]
-        header = HeaderFile(
-            runFunc=StencilFuncDeclaration(
-                funcname=self.stencil_name,
-                fields=self.fields,
-            ),
-            verifyFunc=VerifyFuncDeclaration(
-                funcname=self.stencil_name,
-                out_fields=output_fields,
-            ),
-            runAndVerifyFunc=RunAndVerifyFunc(
-                funcname=self.stencil_name, fields=self.fields, out_fields=output_fields
-            ),
-            setupFunc=SetupFunc(funcname=self.stencil_name, out_fields=output_fields),
-            freeFunc=FreeFunc(funcname=self.stencil_name),
-        )
-        return header
-
-
-class Func(Node):
-    funcname: str
-
-
-class FreeFunc(Func):
-    ...
-
-
-class StencilFuncDeclaration(Func):
-    fields: Sequence[Field]
-
-
-class VerifyFuncDeclaration(Func):
-    out_fields: Sequence[Field]
-
-
-class SetupFunc(VerifyFuncDeclaration):
-    ...
-
-
-class RunAndVerifyFunc(StencilFuncDeclaration, VerifyFuncDeclaration):
-    ...
-
-
-class HeaderFile(Node):
-    runFunc: StencilFuncDeclaration
-    verifyFunc: VerifyFuncDeclaration
-    runAndVerifyFunc: RunAndVerifyFunc
-    setupFunc: SetupFunc
-    freeFunc: FreeFunc
-
-
-class HeaderGenerator(TemplatedGenerator):
-    HeaderFile = as_jinja(
-        """\
-        #pragma once
-        #include "driver-includes/defs.hpp"
-        #include "driver-includes/cuda_utils.hpp"
-        extern "C" {
-        {{ runFunc }}
-        {{ verifyFunc }}
-        {{ runAndVerifyFunc }}
-        {{ setupFunc }}
-        {{ freeFunc }}
-        }
-        """
-    )
-
-    StencilFuncDeclaration = as_jinja(
-        """\
-        void run_{{funcname}}(
-        {% for field in _this_node.fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {% endfor -%}
-        const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
-        """
-    )
-
-    VerifyFuncDeclaration = as_jinja(
-        """\
-        bool verify_{{funcname}}(
-        {% for field in _this_node.out_fields -%}
-        const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
-        const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {% endfor -%}
-        {% for field in _this_node.out_fields -%}
-        const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
-        const {{ field.ctype('c++')}} {{ field.name }}_abs_tol,
-        {% endfor -%}
-        const int iteration) ;
-        """
-    )
-
-    RunAndVerifyFunc = as_jinja(
-        """\
-        void run_and_verify_{{funcname}}(
-        {% for field in _this_node.fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {% endfor -%}
-        {% for field in _this_node.out_fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
-        {% endfor -%}
-        const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
-        {% for field in _this_node.out_fields -%}
-        const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
-        const {{ field.ctype('c++')}} {{ field.name }}_abs_tol
-        {% if not loop.last -%}
-        ,
-        {% endif -%}
-        {% endfor -%}
-        ) ;
-        """
-    )
-
-    SetupFunc = as_jinja(
-        """\
-        void setup_{{funcname}}(
-        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
-        {% for field in _this_node.out_fields -%}
-        const int {{ field.name }}_k_size
-        {% if not loop.last -%}
-        ,
-        {% endif -%}
-        {% endfor -%}) ;
-        """
-    )
-
-    FreeFunc = as_jinja(
-        """\
-        void free_{{funcname}}() ;
-        """
-    )
