@@ -25,10 +25,10 @@ def _step_advection_stencil_01(
     deepatmo_divzu: Field[[KDim], float],
     p_dtime: float,
 ) -> Field[[CellDim, KDim], float]:
-    k_offset_up_low = (
+    k_offset_up_low = p_dtime * (
         p_mflx_contra_v(Koff[1]) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
-    return p_dtime + rhodz_ast * k_offset_up_low
+    return rhodz_ast + k_offset_up_low
 
 
 @program
