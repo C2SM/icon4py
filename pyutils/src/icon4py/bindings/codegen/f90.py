@@ -335,52 +335,56 @@ class F90Generator(TemplatedGenerator):
     )
 
 
-class F90FieldNames(Node):
+class F90FieldContainer(Node):
     fields: Sequence[Field]
 
 
-class F90FieldNamesBefore(Node):
-    fields: Sequence[Field]
+class F90FieldNames(F90FieldContainer):
+    ...
 
 
-class F90TypedFieldNames(Node):
-    fields: Sequence[Field]
+class F90FieldNamesBefore(F90FieldContainer):
+    ...
 
 
-class F90TypedFieldNamesBefore(Node):
-    fields: Sequence[Field]
+class F90TypedFieldNames(F90FieldContainer):
+    ...
 
 
-class F90ToleranceArgs(Node):
-    fields: Sequence[Field]
+class F90TypedFieldNamesBefore(F90FieldContainer):
+    ...
 
 
-class F90TypedToleranceArgs(Node):
-    fields: Sequence[Field]
+class F90ToleranceArgs(F90FieldContainer):
+    ...
 
 
-class F90ErrToleranceDeclarations(Node):
-    fields: Sequence[Field]
+class F90TypedToleranceArgs(F90FieldContainer):
+    ...
 
 
-class F90ToleranceConditionals(Node):
-    fields: Sequence[Field]
+class F90ErrToleranceDeclarations(F90FieldContainer):
+    ...
 
 
-class F90VertNames(Node):
-    fields: Sequence[Field]
+class F90ToleranceConditionals(F90FieldContainer):
+    ...
 
 
-class F90TypedVertNames(Node):
-    fields: Sequence[Field]
+class F90VertNames(F90FieldContainer):
+    ...
 
 
-class F90VertDeclarations(Node):
-    fields: Sequence[Field]
+class F90TypedVertNames(F90FieldContainer):
+    ...
 
 
-class F90VertConditionals(Node):
-    fields: Sequence[Field]
+class F90VertDeclarations(F90FieldContainer):
+    ...
+
+
+class F90VertConditionals(F90FieldContainer):
+    ...
 
 
 class F90OpenACCSection(Node):
@@ -446,16 +450,20 @@ class F90Iface:
     fields: Sequence[Field]
     offsets: Sequence[Offset]
 
-    def write(self, outpath: Path):
-        iface = self._generate_iface()
-        source = F90Generator.apply(iface)
+    def _format_code(self, source: str):
         source_file = StringIO(source)
         formated_source_file = StringIO()
         reformat_ffile(
             source_file, formated_source_file, orig_filename=f"{self.sten_name}.f90"
         )
         formated_source_file.seek(0)
-        write_string(formated_source_file.read(), outpath, f"{self.sten_name}.f90")
+        return formated_source_file.read()
+
+    def write(self, outpath: Path):
+        iface = self._generate_iface()
+        source = F90Generator.apply(iface)
+        formatted_source = self._format_code(source)
+        write_string(formatted_source, outpath, f"{self.sten_name}.f90")
 
     def _generate_iface(self):
         all_fields = self.fields
