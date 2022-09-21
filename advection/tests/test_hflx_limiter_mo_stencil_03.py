@@ -79,6 +79,7 @@ def test_hflx_diffusion_mo_stencil_03_min_max():
     )
     assert np.allclose(z_max, z_max_ref)
     # TODO [ml] fix min over
+
     # assert np.allclose(z_min, z_min_ref)
 
 

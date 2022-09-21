@@ -12,8 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from icon4py.advection.upwind_hflux_miura_stencil_02 import upwind_hflux_miura_stencil_02
 
+from icon4py.advection.upwind_hflux_miura_stencil_02 import (
+    upwind_hflux_miura_stencil_02,
+)
 from icon4py.common.dimension import C2E2CDim, CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
