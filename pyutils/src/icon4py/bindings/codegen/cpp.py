@@ -22,13 +22,13 @@ from icon4py.bindings.utils import write_string
 
 
 @dataclass
-class CppImpl:
+class CppDef:
     stencil_name: str
     fields: list[Field]
 
     def write(self, outpath: Path):
         header = self._generate_header()
-        source = format_source("cpp", CppImplGenerator.apply(header), style="LLVM")
+        source = format_source("cpp", CppDefGenerator.apply(header), style="LLVM")
         write_string(source, outpath, f"{self.stencil_name}.cpp")
 
     def _generate_header(self):
@@ -36,7 +36,9 @@ class CppImpl:
 
 
 class IncludeStatements(Node):
-    pass
+    funcname: str
+    levels_per_thread: int
+    block_size: int
 
 
 class UsingDeclarations(Node):
@@ -83,7 +85,7 @@ class CppFile(Node):
     freeFunc: FreeFunc
 
 
-class CppImplGenerator(TemplatedGenerator):
+class CppDefGenerator(TemplatedGenerator):
     CppFile = as_jinja(
         """\
         {{ includeStatements }}
@@ -97,5 +99,28 @@ class CppImplGenerator(TemplatedGenerator):
         {{ setupFunc }}
         {{ freeFunc }}
         }
+        """
+    )
+
+    IncludeStatements = as_jinja(
+        """\
+        #include \"{{ stencil_name }}.hpp\"
+        #include <gridtools/fn/cartesian.hpp>
+        #include <gridtools/fn/backend/gpu.hpp>
+        #include <gridtools/stencil/global_parameter.hpp>
+        #include <gridtools/common/array.hpp>
+        #include \"driver-includes/unstructured_interface.hpp
+        #include \"driver-includes/unstructured_domain.hpp
+        #include \"driver-includes/defs.hpp
+        #include \"driver-includes/cuda_utils.hpp
+        #include \"driver-includes/cuda_verify.hpp
+        #include \"driver-includes/to_vtk.h
+        #include \"driver-includes/to_json.hpp
+        #include \"driver-includes/verification_metrics.hpp
+        #define GRIDTOOLS_DAWN_NO_INCLUDE // Required to not include gridtools from math.hpp
+        #include \"driver-includes/math.hpp\"
+        #include <chrono>
+        #define BLOCK_SIZE {{ block_size }}
+        #define LEVELS_PER_THREAD {{ levels_per_thread }}
         """
     )

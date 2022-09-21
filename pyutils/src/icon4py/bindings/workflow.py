@@ -17,7 +17,7 @@ from pathlib import Path
 from eve.codegen import format_source
 
 from icon4py.bindings.build import CppbindgenBuilder
-from icon4py.bindings.codegen.cpp import CppImpl
+from icon4py.bindings.codegen.cpp import CppDef
 from icon4py.bindings.codegen.f90 import F90Iface
 from icon4py.bindings.codegen.header import CppHeader
 from icon4py.bindings.types import stencil_info_to_binding_type
@@ -89,6 +89,6 @@ class PyBindGen:
 
         F90Iface(stencil_name, fields, offsets).write(outpath)
         CppHeader(stencil_name, fields).write(outpath)
-        CppImpl(stencil_name, fields).write(outpath)
+        CppDef(stencil_name, fields).write(outpath)
 
         # todo: implement code generation for .cpp file
