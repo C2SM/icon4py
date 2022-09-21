@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from eve.codegen import JinjaTemplate as as_jinja
-from eve.codegen import TemplatedGenerator, format_source
+from eve.codegen import Node, TemplatedGenerator, format_source
 
 from icon4py.bindings.types import Field
 from icon4py.bindings.utils import write_string
@@ -35,8 +35,55 @@ class CppImpl:
         pass
 
 
-class CppImplGenerator(TemplatedGenerator):
+class IncludeStatements(Node):
+    pass
 
+
+class UsingDeclarations(Node):
+    pass
+
+
+class UtilityFunctions(Node):
+    pass
+
+
+class StencilClass(Node):
+    pass
+
+
+class RunFunc(Node):
+    pass
+
+
+class VerifyFunc(Node):
+    pass
+
+
+class RunAndVerifyFunc(Node):
+    pass
+
+
+class SetupFunc(Node):
+    pass
+
+
+class FreeFunc(Node):
+    pass
+
+
+class CppFile(Node):
+    includeStatements: IncludeStatements
+    usingDeclarations: UsingDeclarations
+    utilityFunctions: UtilityFunctions
+    stencilClass: StencilClass
+    runFunc: RunFunc
+    verifyFunc: VerifyFunc
+    runAndVerifyFunc: RunAndVerifyFunc
+    setupFunc: SetupFunc
+    freeFunc: FreeFunc
+
+
+class CppImplGenerator(TemplatedGenerator):
     CppFile = as_jinja(
         """\
         {{ includeStatements }}
