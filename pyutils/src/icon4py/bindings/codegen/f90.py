@@ -20,6 +20,10 @@ from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator
 
 from icon4py.bindings.types import Field, Offset
+from icon4py.bindings.utils import write_string
+
+from io import FileIO, StringIO
+from fprettify import reformat_ffile
 
 
 class F90Generator(TemplatedGenerator):
@@ -445,8 +449,13 @@ class F90Iface:
     def write(self, outpath: Path):
         iface = self._generate_iface()
         source = F90Generator.apply(iface)
-        # todo: code formatting & writing code to file.
-        print(source)
+        source_file = StringIO(source)
+        formated_source_file = StringIO()
+        reformat_ffile(
+            source_file, formated_source_file, orig_filename=f"{self.sten_name}.f90"
+        )
+        formated_source_file.seek(0)
+        write_string(formated_source_file.read(), outpath, f"{self.sten_name}.f90")
 
     def _generate_iface(self):
         all_fields = self.fields
