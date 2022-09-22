@@ -53,12 +53,18 @@ def get_stencil_info(fencil) -> StencilInfo:
     help="Path to cppbindgen source folder. Specifying this option will compile and execute the c++ bindings generator and store all generated files in the build folder under build/generated.",
 )
 @click.argument("fencil", type=str)
+@click.argument("block_size", type=int)
+@click.argument("levels_per_thread", type=int)
 @click.argument(
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
 )
 def main(
-    outpath: pathlib.Path, fencil: str, cppbindgen_path: pathlib.Path = None
+    fencil: str,
+    block_size: int,
+    levels_per_thread: int,
+    outpath: pathlib.Path,
+    cppbindgen_path: pathlib.Path = None,
 ) -> None:
     """
     Generate C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
@@ -75,4 +81,8 @@ def main(
         CppBindGen(stencil_info)(cppbindgen_path)
 
     GTHeader(stencil_info)(outpath)
-    PyBindGen(stencil_info)(outpath)
+    PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+
+
+if __name__ == "__main__":
+    main()

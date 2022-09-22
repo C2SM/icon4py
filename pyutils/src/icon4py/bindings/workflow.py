@@ -79,6 +79,8 @@ class CppBindGen:
 @dataclass(frozen=True)
 class PyBindGen:
     stencil_info: StencilInfo
+    levels_per_thread: int
+    block_size: int
 
     def __call__(self, outpath: Path):
         check_dir_exists(outpath)
@@ -89,6 +91,8 @@ class PyBindGen:
 
         F90Iface(stencil_name, fields, offsets).write(outpath)
         CppHeader(stencil_name, fields).write(outpath)
-        CppDef(stencil_name, fields).write(outpath)
+        CppDef(stencil_name, fields, self.levels_per_thread, self.block_size).write(
+            outpath
+        )
 
         # todo: implement code generation for .cpp file
