@@ -30,15 +30,18 @@ def _hflx_limiter_mo_stencil_01_2(
 
 ) -> tuple[Field[[CellDim, KDim], float],Field[[CellDim, KDim], float],Field[[CellDim, KDim], float],Field[[CellDim, KDim], float],Field[[CellDim, KDim], float],Field[[CellDim, KDim], float]]:
 
-    z_mflx_anti = p_dtime * geofac_div / p_rhodz_new * z_anti(C2E)
+    # an explicit broadcast is required. 
+    geofac_div = broadcast(geofac_div, (CellDim, C2EDim, KDim))
+    #z_mflx_anti = p_dtime * geofac_div / p_rhodz_new * z_anti(C2E)
 
-    min_z_flx_anti = minimum(0.0, z_mflx_anti)
-    max_z_flx_anti = maximum(0.0, z_mflx_anti)
+    #min_z_flx_anti = minimum(0.0, z_mflx_anti)
+    #max_z_flx_anti = maximum(0.0, z_mflx_anti)
 
-    z_mflx_anti_in = -neighbor_sum(min_z_flx_anti, axis=C2EDim)
-    z_mflx_anti_out = -neighbor_sum(max_z_flx_anti, axis=C2EDim)
-    #z_mflx_anti_in = -neighbor_sum(maximum(0.0, p_dtime * geofac_div / p_rhodz_new * z_anti(C2E)), axis=C2EDim)
-    #z_mflx_anti_out = neighbor_sum(maximum(0.0, p_dtime * geofac_div / p_rhodz_new * z_anti(C2E)), axis=C2EDim)
+    #z_mflx_anti_in = -neighbor_sum(minimum(0.0, z_mflx_anti), axis=C2EDim)
+    #z_mflx_anti_out = -neighbor_sum(maximum(0.0, z_mflx_anti), axis=C2EDim)
+    # Expression needs to be inlined, and min/max doesn't work with it yet.
+    z_mflx_anti_in = -neighbor_sum(p_dtime * geofac_div / p_rhodz_new * z_anti(C2E), axis=C2EDim)
+    z_mflx_anti_out = neighbor_sum(p_dtime * geofac_div / p_rhodz_new * z_anti(C2E), axis=C2EDim)
     z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div, axis=C2EDim)
 
     z_tracer_new_low = (p_cc * p_rhodz_now - p_dtime * z_fluxdiv_c) / p_rhodz_new
