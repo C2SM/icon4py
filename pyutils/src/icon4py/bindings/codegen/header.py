@@ -36,7 +36,7 @@ class CppHeader:
     def _generate_header(self):
         output_fields = [field for field in self.fields if field.intent.out]
         header = CppHeaderFile(
-            runFunc=CppFuncDeclaration(
+            runFunc=CppRunFuncDeclaration(
                 funcname=self.stencil_name,
                 fields=self.fields,
             ),
@@ -63,7 +63,7 @@ class CppFreeFunc(CppFunc):
     ...
 
 
-class CppFuncDeclaration(CppFunc):
+class CppRunFuncDeclaration(CppFunc):
     fields: Sequence[Field]
 
 
@@ -75,16 +75,27 @@ class CppSetupFunc(CppVerifyFuncDeclaration):
     ...
 
 
-class CppRunAndVerifyFunc(CppFuncDeclaration, CppVerifyFuncDeclaration):
+class CppRunAndVerifyFunc(CppRunFuncDeclaration, CppVerifyFuncDeclaration):
     ...
 
 
 class CppHeaderFile(Node):
-    runFunc: CppFuncDeclaration
+    runFunc: CppRunFuncDeclaration
     verifyFunc: CppVerifyFuncDeclaration
     runAndVerifyFunc: CppRunAndVerifyFunc
     setupFunc: CppSetupFunc
     freeFunc: CppFreeFunc
+
+
+run_func_declaration = as_jinja(
+    """\
+    void run_{{funcname}}(
+    {% for field in _this_node.fields -%}
+    {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {% endfor -%}
+    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
+    """
+)
 
 
 class CppHeaderGenerator(TemplatedGenerator):
@@ -103,15 +114,7 @@ class CppHeaderGenerator(TemplatedGenerator):
         """
     )
 
-    CppFuncDeclaration = as_jinja(
-        """\
-        void run_{{funcname}}(
-        {% for field in _this_node.fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {% endfor -%}
-        const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
-        """
-    )
+    CppRunFuncDeclaration = run_func_declaration
 
     CppVerifyFuncDeclaration = as_jinja(
         """\

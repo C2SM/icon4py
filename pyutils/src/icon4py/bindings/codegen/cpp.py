@@ -13,10 +13,15 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Sequence
 
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import Node, TemplatedGenerator, format_source
 
+from icon4py.bindings.codegen.header import (
+    CppRunFuncDeclaration,
+    run_func_declaration,
+)
 from icon4py.bindings.types import Field
 from icon4py.bindings.utils import write_string
 
@@ -42,7 +47,13 @@ class CppDef:
             ),
             utility_functions=UtilityFunctions(),
             stencil_class=StencilClass(),  # todo
-            run_func=RunFunc(),  # todo
+            run_func=RunFunc(
+                funcname=self.stencil_name,
+                params=Params(fields=self.fields),
+                func_declaration=CppRunFuncDeclaration(
+                    funcname=self.stencil_name, fields=self.fields
+                ),
+            ),
             verify_func=VerifyFunc(),  # todo
             run_verify_func=RunAndVerifyFunc(),  # todo
             setup_func=SetupFunc(),  # todo
@@ -65,8 +76,14 @@ class StencilClass(Node):
     pass
 
 
+class Params(Node):
+    fields: Sequence[Field]
+
+
 class RunFunc(Node):
-    pass
+    funcname: str
+    params: Params
+    func_declaration: CppRunFuncDeclaration
 
 
 class VerifyFunc(Node):
@@ -182,5 +199,29 @@ class CppDefGenerator(TemplatedGenerator):
               .template set<sid::property::strides>(strideMap)
               .template set<sid::property::strides_kind, sid::unknown_kind>();
         }
+        """
+    )
+
+    CppRunFuncDeclaration = run_func_declaration
+
+    RunFunc = as_jinja(
+        """\
+        {{func_declaration }} {
+        dawn_generated::cuda_ico::{{ funcname }} s;
+        s.copy_pointers({{ params }});
+        s.run(verticalStart, verticalEnd, horizontalStart, horizontalEnd);
+        return;
+        }
+        """
+    )
+
+    Params = as_jinja(
+        """\
+        {%- for field in _this_node.fields -%}
+        {{ field.name }}
+        {%- if not loop.last -%}
+        ,
+        {%- endif -%}
+        {%- endfor -%}
         """
     )
