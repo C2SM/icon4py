@@ -169,6 +169,22 @@ class Field(Node):
     def dim_string(self):
         return "dimension(" + ",".join([":"] * self.rank()) + ")"
 
+    def stride_type(self):
+        _strides = {"E": "EdgeStride", "C": "CellStride", "V": "VertexStride"}
+        return _strides[str(self.location)]
+
+    def serialise_func(self):
+        _serializers = {
+            "E": "serialize_dense_edges",
+            "C": "serialize_dense_cells",
+            "V": "serialize_dense_vertexes",
+        }
+        return _serializers[str(self.location)]
+
+    def mesh_type(self):
+        _mesh_types = {"E": "EdgeStride", "C": "CellStride", "V": "VertexStride"}
+        return _mesh_types[str(self.location)]
+
     def __init__(self, name: str, field_info: FieldInfo):
         self.name = str(name)  # why isn't this a str in the first place?
         self.field_type = self._extract_field_type(field_info.field)

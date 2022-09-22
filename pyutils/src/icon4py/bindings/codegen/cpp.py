@@ -39,6 +39,8 @@ class CppDef:
         write_string(source, outpath, f"{self.stencil_name}.cpp")
 
     def _generate_definition(self):
+        output_fields = [field for field in self.fields if field.intent.out]
+
         definition = CppDefTemplate(
             includes=IncludeStatements(
                 funcname=self.stencil_name,
@@ -54,7 +56,15 @@ class CppDef:
                     funcname=self.stencil_name, fields=self.fields
                 ),
             ),
-            verify_func=VerifyFunc(),  # todo
+            verify_func=VerifyFunc(
+                funcname=self.stencil_name,
+                func_declaration=CppVerifyFuncDeclaration(
+                    funcname=self.stencil_name, out_fields=output_fields
+                ),
+                metrics_serialisation=MetricsSerialisation(
+                    funcname=self.stencil_name, out_fields=output_fields
+                ),
+            ),  # todo
             run_verify_func=RunAndVerifyFunc(),  # todo
             setup_func=SetupFunc(),  # todo
             free_func=FreeFunc(),  # todo
@@ -86,8 +96,19 @@ class RunFunc(Node):
     func_declaration: CppRunFuncDeclaration
 
 
+class CppVerifyFuncDeclaration(Node):
+    funcname: str
+    out_fields: Sequence[Field]
+
+
+class MetricsSerialisation(CppVerifyFuncDeclaration):
+    ...
+
+
 class VerifyFunc(Node):
-    pass
+    funcname: str
+    func_declaration: CppVerifyFuncDeclaration
+    metrics_serialisation: MetricsSerialisation
 
 
 class RunAndVerifyFunc(Node):
@@ -223,5 +244,72 @@ class CppDefGenerator(TemplatedGenerator):
         ,
         {%- endif -%}
         {%- endfor -%}
+        """
+    )
+
+    CppVerifyFuncDeclaration = as_jinja(
+        """\
+        void verify_{{funcname}}(
+        {%- for field in _this_node.out_fields -%}
+        const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
+        const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+        {%- endfor -%}
+        {%- for field in _this_node.out_fields -%}
+        const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
+        const {{ field.ctype('c++')}} {{ field.name }}_abs_tol,
+        {%- endfor -%}
+        const int iteration) ;
+        """
+    )
+
+    VerifyFunc = as_jinja(
+        """\
+        {{ func_declaration }} {
+        using namespace std::chrono;
+        const auto &mesh = dawn_generated::cuda_ico::{{ funcname }}::getMesh();
+        cudaStream_t stream = dawn_generated::cuda_ico::{{ funcname }}::getStream();
+        int kSize = dawn_generated::cuda_ico::mo_nh_diffusion_stencil_06::getKSize();
+        high_resolution_clock::time_point t_start = high_resolution_clock::now();
+        struct VerificationMetrics stencilMetrics;
+        {{ metrics_serialisation }}
+        }
+        """
+    )
+
+    MetricsSerialisation = as_jinja(
+        """\
+        {%- for field in _this_node.out_fields %}
+        int {{ field.name }}_kSize = dawn_generated::cuda_ico::{{ funcname }}::
+        get_{{ field.name }}_KSize();
+        stencilMetrics = ::dawn::verify_field(
+            stream, (mesh.{{ field.stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
+            \"{{ field.name }}\", {{ field.name }}_rel_tol, {{ field.name }}_abs_tol, iteration);
+        #ifdef __SERIALIZE_METRICS
+        MetricsSerialiser serialiser_{{ field.name }}(
+            stencilMetrics, metricsNameFromEnvVar("SLURM_JOB_ID"),
+            \"{{ funcname }}\", \"{{ field.name }}\");
+        serialiser_{{ field.name }}.writeJson(iteration);
+        #endif
+        if (!stencilMetrics.isValid) {
+        #ifdef __SERIALIZE_ON_ERROR
+        {{ field.serialise_func() }}(0, (mesh.{{ field.mesh_type() }} - 1), {{ field.name }}_kSize,
+                              (mesh.{{ field.stride_type() }}), {{ field.name }},
+                              \"{{ funcname }}\", \"{{ field.name }}\", iteration);
+        {{ field.serialise_func() }}(0, (mesh.{{ field.mesh_type() }} - 1), {{ field.name }}_kSize,
+                              (mesh.{{ field.stride_type() }}), {{ field.name }}_dsl,
+                              \"{{ funcname }}\", \"{{ field.name }}_dsl\",
+                              iteration);
+        std::cout << "[DSL] serializing {{ field.name }} as error is high.\n" << std::flush;
+        #endif
+        }
+        {%- endfor %}
+        #ifdef __SERIALIZE_ON_ERROR
+        serialize_flush_iter(\"{{ funcname }}\", iteration);
+        #endif
+        high_resolution_clock::time_point t_end = high_resolution_clock::now();
+        duration<double> timing = duration_cast<duration<double>>(t_end - t_start);
+        std::cout << "[DSL] Verification took " << timing.count() << " seconds.\n" << std::flush;
+        return stencilMetrics.isValid;
+        };
         """
     )

@@ -90,9 +90,9 @@ class CppHeaderFile(Node):
 run_func_declaration = as_jinja(
     """\
     void run_{{funcname}}(
-    {% for field in _this_node.fields -%}
+    {%- for field in _this_node.fields -%}
     {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-    {% endfor -%}
+    {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
     """
 )
@@ -119,14 +119,14 @@ class CppHeaderGenerator(TemplatedGenerator):
     CppVerifyFuncDeclaration = as_jinja(
         """\
         bool verify_{{funcname}}(
-        {% for field in _this_node.out_fields -%}
+        {%- for field in _this_node.out_fields -%}
         const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
         const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {% endfor -%}
-        {% for field in _this_node.out_fields -%}
+        {%- endfor -%}
+        {%- for field in _this_node.out_fields -%}
         const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
         const {{ field.ctype('c++')}} {{ field.name }}_abs_tol,
-        {% endfor -%}
+        {%- endfor -%}
         const int iteration) ;
         """
     )
@@ -134,20 +134,20 @@ class CppHeaderGenerator(TemplatedGenerator):
     CppRunAndVerifyFunc = as_jinja(
         """\
         void run_and_verify_{{funcname}}(
-        {% for field in _this_node.fields -%}
+        {%- for field in _this_node.fields -%}
         {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {% endfor -%}
-        {% for field in _this_node.out_fields -%}
+        {%- endfor -%}
+        {%- for field in _this_node.out_fields -%}
         {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
-        {% endfor -%}
+        {%- endfor -%}
         const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
-        {% for field in _this_node.out_fields -%}
+        {%- for field in _this_node.out_fields -%}
         const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
         const {{ field.ctype('c++')}} {{ field.name }}_abs_tol
-        {% if not loop.last -%}
+        {%- if not loop.last -%}
         ,
-        {% endif -%}
-        {% endfor -%}
+        {%- endif -%}
+        {%- endfor -%}
         ) ;
         """
     )
@@ -156,12 +156,12 @@ class CppHeaderGenerator(TemplatedGenerator):
         """\
         void setup_{{funcname}}(
         dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
-        {% for field in _this_node.out_fields -%}
+        {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_k_size
-        {% if not loop.last -%}
+        {%- if not loop.last -%}
         ,
-        {% endif -%}
-        {% endfor -%}) ;
+        {%- endif -%}
+        {%- endfor -%}) ;
         """
     )
 
