@@ -13,7 +13,7 @@
 
 from functional.common import Field
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import max_over, maximum, minimum
+from functional.ffront.fbuiltins import max_over, maximum, min_over, minimum
 
 from icon4py.common.dimension import C2E2C, C2E2CDim, CellDim, KDim
 
@@ -28,9 +28,8 @@ def _hflx_limiter_mo_stencil_03_min_max(
     z_max = beta_fct * maximum(
         max_over(z_tracer_max(C2E2C), axis=C2E2CDim), z_tracer_max
     )
-    # TODO [magdalena] FIX needs min_over (add to GT4Py)
     z_min = r_beta_fct * minimum(
-        max_over(z_tracer_min(C2E2C), axis=C2E2CDim), z_tracer_min
+        min_over(z_tracer_min(C2E2C), axis=C2E2CDim), z_tracer_min
     )
     return z_max, z_min
 

@@ -78,9 +78,7 @@ def test_hflx_diffusion_mo_stencil_03_min_max():
         offset_provider={"C2E2C": mesh.get_c2e2c_offset_provider()},
     )
     assert np.allclose(z_max, z_max_ref)
-    # TODO [ml] fix min over
-
-    # assert np.allclose(z_min, z_min_ref)
+    assert np.allclose(z_min, z_min_ref)
 
 
 def test_hflx_diffusion_mo_stencil_03():
