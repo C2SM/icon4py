@@ -19,8 +19,11 @@ from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import Node, TemplatedGenerator, format_source
 
 from icon4py.bindings.codegen.header import (
+    CppRunAndVerifyFuncDeclaration,
     CppRunFuncDeclaration,
+    CppVerifyFuncDeclaration,
     run_func_declaration,
+    run_verify_func_declaration,
 )
 from icon4py.bindings.types import Field
 from icon4py.bindings.utils import write_string
@@ -52,20 +55,34 @@ class CppDef:
             run_func=RunFunc(
                 funcname=self.stencil_name,
                 params=Params(fields=self.fields),
-                func_declaration=CppRunFuncDeclaration(
+                run_func_declaration=CppRunFuncDeclaration(
                     funcname=self.stencil_name, fields=self.fields
                 ),
             ),
             verify_func=VerifyFunc(
                 funcname=self.stencil_name,
-                func_declaration=CppVerifyFuncDeclaration(
+                verify_func_declaration=CppVerifyFuncDeclaration(
                     funcname=self.stencil_name, out_fields=output_fields
                 ),
                 metrics_serialisation=MetricsSerialisation(
                     funcname=self.stencil_name, out_fields=output_fields
                 ),
-            ),  # todo
-            run_verify_func=RunAndVerifyFunc(),  # todo
+            ),
+            run_verify_func=RunAndVerifyFunc(
+                funcname=self.stencil_name,
+                run_verify_func_declaration=CppRunAndVerifyFuncDeclaration(
+                    funcname=self.stencil_name,
+                    fields=self.fields,
+                    out_fields=output_fields,
+                ),
+                run_func_call=RunFuncCall(
+                    funcname=self.stencil_name, fields=self.fields
+                ),
+                verify_func_call=VerifyFuncCall(
+                    funcname=self.stencil_name, out_fields=output_fields
+                ),
+            ),
+            # todo
             setup_func=SetupFunc(),  # todo
             free_func=FreeFunc(),  # todo
         )
@@ -93,12 +110,7 @@ class Params(Node):
 class RunFunc(Node):
     funcname: str
     params: Params
-    func_declaration: CppRunFuncDeclaration
-
-
-class CppVerifyFuncDeclaration(Node):
-    funcname: str
-    out_fields: Sequence[Field]
+    run_func_declaration: CppRunFuncDeclaration
 
 
 class MetricsSerialisation(CppVerifyFuncDeclaration):
@@ -107,12 +119,23 @@ class MetricsSerialisation(CppVerifyFuncDeclaration):
 
 class VerifyFunc(Node):
     funcname: str
-    func_declaration: CppVerifyFuncDeclaration
+    verify_func_declaration: CppVerifyFuncDeclaration
     metrics_serialisation: MetricsSerialisation
 
 
+class RunFuncCall(CppRunFuncDeclaration):
+    ...
+
+
+class VerifyFuncCall(CppVerifyFuncDeclaration):
+    ...
+
+
 class RunAndVerifyFunc(Node):
-    pass
+    funcname: str
+    run_verify_func_declaration: CppRunAndVerifyFuncDeclaration
+    run_func_call: RunFuncCall
+    verify_func_call: VerifyFuncCall
 
 
 class SetupFunc(Node):
@@ -227,7 +250,7 @@ class CppDefGenerator(TemplatedGenerator):
 
     RunFunc = as_jinja(
         """\
-        {{func_declaration }} {
+        {{run_func_declaration }} {
         dawn_generated::cuda_ico::{{ funcname }} s;
         s.copy_pointers({{ params }});
         s.run(verticalStart, verticalEnd, horizontalStart, horizontalEnd);
@@ -264,7 +287,7 @@ class CppDefGenerator(TemplatedGenerator):
 
     VerifyFunc = as_jinja(
         """\
-        {{ func_declaration }} {
+        {{ verify_func_declaration }} {
         using namespace std::chrono;
         const auto &mesh = dawn_generated::cuda_ico::{{ funcname }}::getMesh();
         cudaStream_t stream = dawn_generated::cuda_ico::{{ funcname }}::getStream();
@@ -311,5 +334,51 @@ class CppDefGenerator(TemplatedGenerator):
         std::cout << "[DSL] Verification took " << timing.count() << " seconds.\n" << std::flush;
         return stencilMetrics.isValid;
         };
+        """
+    )
+
+    CppRunAndVerifyFuncDeclaration = run_verify_func_declaration
+
+    RunFuncCall = as_jinja(
+        """\
+        run_{{funcname}}(
+        {%- for field in _this_node.fields -%}
+        {{ field.name }},
+        {%- endfor -%}
+        const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
+        """
+    )
+
+    VerifyFuncCall = as_jinja(
+        """\
+        verify_{{funcname}}(
+        {%- for field in _this_node.out_fields -%}
+        {{ field.name }}_before,
+        {{ field.name }},
+        {%- endfor -%}
+        {%- for field in _this_node.out_fields -%}
+        {{ field.name }}_rel_tol,
+        {{ field.name }}_abs_tol,
+        {%- endfor -%}
+        const int iteration) ;
+        """
+    )
+
+    RunAndVerifyFunc = as_jinja(
+        """\
+        {{ run_verify_func_declaration }}
+        static int iteration = 0;
+        std::cout << \"[DSL] Running stencil {{ funcname }} (\"
+                  << iteration << \") ...\\n\"
+                  << std::flush;
+        {{ run_func_call }}
+        std::cout << \"[DSL] {{ funcname }} run time: \" << time
+            << \"s\\n\"
+            << std::flush;
+        std::cout << \"[DSL] Verifying stencil {{ funcname }}...\\n\"
+                  << std::flush;
+        {{ verify_func_call }}
+        iteration++;
+        }
         """
     )

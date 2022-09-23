@@ -44,7 +44,7 @@ class CppHeader:
                 funcname=self.stencil_name,
                 out_fields=output_fields,
             ),
-            runAndVerifyFunc=CppRunAndVerifyFunc(
+            runAndVerifyFunc=CppRunAndVerifyFuncDeclaration(
                 funcname=self.stencil_name, fields=self.fields, out_fields=output_fields
             ),
             setupFunc=CppSetupFunc(
@@ -75,14 +75,14 @@ class CppSetupFunc(CppVerifyFuncDeclaration):
     ...
 
 
-class CppRunAndVerifyFunc(CppRunFuncDeclaration, CppVerifyFuncDeclaration):
+class CppRunAndVerifyFuncDeclaration(CppRunFuncDeclaration, CppVerifyFuncDeclaration):
     ...
 
 
 class CppHeaderFile(Node):
     runFunc: CppRunFuncDeclaration
     verifyFunc: CppVerifyFuncDeclaration
-    runAndVerifyFunc: CppRunAndVerifyFunc
+    runAndVerifyFunc: CppRunAndVerifyFuncDeclaration
     setupFunc: CppSetupFunc
     freeFunc: CppFreeFunc
 
@@ -94,6 +94,27 @@ run_func_declaration = as_jinja(
     {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
     {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
+    """
+)
+
+run_verify_func_declaration = as_jinja(
+    """\
+    void run_and_verify_{{funcname}}(
+    {%- for field in _this_node.fields -%}
+    {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {%- endfor -%}
+    {%- for field in _this_node.out_fields -%}
+    {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
+    {%- endfor -%}
+    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
+    {%- for field in _this_node.out_fields -%}
+    const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
+    const {{ field.ctype('c++')}} {{ field.name }}_abs_tol
+    {%- if not loop.last -%}
+    ,
+    {%- endif -%}
+    {%- endfor -%}
+    ) ;
     """
 )
 
@@ -113,8 +134,9 @@ class CppHeaderGenerator(TemplatedGenerator):
         }
         """
     )
-
     CppRunFuncDeclaration = run_func_declaration
+
+    CppRunAndVerifyFuncDeclaration = run_verify_func_declaration
 
     CppVerifyFuncDeclaration = as_jinja(
         """\
@@ -128,27 +150,6 @@ class CppHeaderGenerator(TemplatedGenerator):
         const {{ field.ctype('c++')}} {{ field.name }}_abs_tol,
         {%- endfor -%}
         const int iteration) ;
-        """
-    )
-
-    CppRunAndVerifyFunc = as_jinja(
-        """\
-        void run_and_verify_{{funcname}}(
-        {%- for field in _this_node.fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
-        {%- endfor -%}
-        const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
-        {%- for field in _this_node.out_fields -%}
-        const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
-        const {{ field.ctype('c++')}} {{ field.name }}_abs_tol
-        {%- if not loop.last -%}
-        ,
-        {%- endif -%}
-        {%- endfor -%}
-        ) ;
         """
     )
 
