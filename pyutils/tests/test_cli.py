@@ -75,5 +75,8 @@ def test_multiple_field_operator_stencil(cli):
 def check_code_was_generated(stencil_name):
     bindgen_header = f"{stencil_name}.h"
     gridtools_header = f"{stencil_name}.hpp"
-    assert set([bindgen_header, gridtools_header]).issubset(os.listdir(os.getcwd()))
+    f90_iface = f"{stencil_name}.f90"
+    assert set([bindgen_header, gridtools_header, f90_iface]).issubset(
+        os.listdir(os.getcwd())
+    )
     check_gridtools_codegen(gridtools_header)

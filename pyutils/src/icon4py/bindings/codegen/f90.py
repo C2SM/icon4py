@@ -22,8 +22,10 @@ from eve.codegen import TemplatedGenerator
 from icon4py.bindings.types import Field, Offset
 from icon4py.bindings.utils import write_string
 
-from io import FileIO, StringIO
-from fprettify import reformat_ffile
+# from io import StringIO
+# from fprettify import reformat_ffile
+
+import subprocess
 
 
 class F90Generator(TemplatedGenerator):
@@ -54,36 +56,54 @@ class F90Generator(TemplatedGenerator):
 
     F90FieldNames = as_jinja(
         """
-        {%- for field in _this_node.fields -%} 
+        {%- for field in _this_node.fields -%}
             {{field.name}}, & {% if not loop.last %}
-            {% else %}{% endif %}            
+            {% else %}{% endif %}
            {%- endfor -%}
         """
     )
 
     F90FieldNamesBefore = as_jinja(
         """
-        {%- for field in _this_node.fields -%} 
+        {%- for field in _this_node.fields -%}
             {{field.name}}_before, & {% if not loop.last %}
-            {% else %}{% endif %}            
+            {% else %}{% endif %}
            {%- endfor -%}
         """
     )
 
     F90TypedFieldNames = as_jinja(
         """
-        {%- for field in _this_node.fields -%} 
-            {{field.ctype('f90')}}, dimension(*), target :: {{field.name}} {% if not loop.last %}
-            {% else %}{% endif %}            
+        {%- for field in _this_node.fields -%}
+            {{field.ctype('f90')}}, {{ field.dim_string() }}, target :: {{field.name}} {% if not loop.last %}
+            {% else %}{% endif %}
            {%- endfor -%}
         """
     )
 
     F90TypedFieldNamesBefore = as_jinja(
         """
-        {%- for field in _this_node.fields -%} 
-            {{field.ctype('f90')}}, dimension(*), target :: {{field.name}}_before {% if not loop.last %}
-            {% else %}{% endif %}            
+        {%- for field in _this_node.fields -%}
+            {{field.ctype('f90')}}, {{ field.dim_string() }}, target :: {{field.name}}_before {% if not loop.last %}
+            {% else %}{% endif %}
+           {%- endfor -%}
+        """
+    )
+
+    F90RankedFieldNames = as_jinja(
+        """
+        {%- for field in _this_node.fields -%}
+            {{field.ctype('f90')}}, {{field.ranked_dim_string()}}, target :: {{field.name}} {% if not loop.last %}
+            {% else %}{% endif %}
+           {%- endfor -%}
+        """
+    )
+
+    F90RankedFieldNamesBefore = as_jinja(
+        """
+        {%- for field in _this_node.fields -%}
+            {{field.ctype('f90')}}, {{field.ranked_dim_string()}}, target :: {{field.name}}_before {% if not loop.last %}
+            {% else %}{% endif %}
            {%- endfor -%}
         """
     )
@@ -94,6 +114,16 @@ class F90Generator(TemplatedGenerator):
         {{field.name}}_rel_tol, &
         {{field.name}}_abs_tol {% if not loop.last %}, &
         {% else %} & {% endif %}
+        {% endfor -%}
+      """
+    )
+
+    F90ErrToleranceArgs = as_jinja(
+        """
+        {%- for field in _this_node.fields -%}
+        {{field.name}}_rel_err_tol, &
+        {{field.name}}_abs_err_tol {% if not loop.last %}, &
+        {% else %} & {% endif %}
         {%- endfor -%}
       """
     )
@@ -103,7 +133,16 @@ class F90Generator(TemplatedGenerator):
         {%- for field in _this_node.fields -%}
           real(c_double), value, target :: {{field.name}}_rel_tol
           real(c_double), value, target :: {{field.name}}_abs_tol
-        {%- endfor -%}
+        {% endfor -%}
+      """
+    )
+
+    F90TypedToleranceArgsOptional = as_jinja(
+        """
+        {%- for field in _this_node.fields -%}
+          real(c_double), value, target, optional :: {{field.name}}_rel_tol
+          real(c_double), value, target, optional :: {{field.name}}_abs_tol
+        {% endfor -%}
       """
     )
 
@@ -112,7 +151,7 @@ class F90Generator(TemplatedGenerator):
         {%- for field in _this_node.fields -%}
         real(c_double) :: {{field.name}}_rel_err_tol
         real(c_double) :: {{field.name}}_abs_err_tol
-        {%- endfor -%}
+        {% endfor -%}
         """
     )
 
@@ -129,7 +168,7 @@ class F90Generator(TemplatedGenerator):
         else
             {{field.name}}_abs_err_tol = DEFAULT_ABSOLUTE_ERROR_THRESHOLD
         endif
-        {%- endfor %}
+        {% endfor %}
         """
     )
 
@@ -144,20 +183,29 @@ class F90Generator(TemplatedGenerator):
         """
     )
 
-    F90VertNames = as_jinja(
+    F90KNames = as_jinja(
         """
         {%- for field in _this_node.fields -%}
-            {{field.name}}_kmax, & {% if not loop.last %}
-            {% else %}{% endif %}             
-        {%- endfor -%}
+            {{field.name}}_kmax{% if not loop.last %}, &
+            {% else %} &
+            {% endif %}
+        {% endfor -%}
         """
     )
 
-    F90TypedVertNames = as_jinja(
+    F90TypedKNamesOptional = as_jinja(
         """
         {%- for field in _this_node.fields -%}
             integer(c_int), value, target, optional :: {{field.name}}_kmax
-        {%- endfor -%}
+        {% endfor -%}
+        """
+    )
+
+    F90TypedKNames = as_jinja(
+        """
+        {%- for field in _this_node.fields -%}
+            integer(c_int), value, target :: {{field.name}}_kmax
+        {% endfor -%}
         """
     )
 
@@ -165,6 +213,16 @@ class F90Generator(TemplatedGenerator):
         """
         {%- for field in _this_node.fields -%}
             integer(c_int) :: {{field.name}}_kvert_max
+        {% endfor -%}
+        """
+    )
+
+    F90VertNames = as_jinja(
+        """
+        {%- for field in _this_node.fields -%}
+            {{field.name}}_kvert_max{% if not loop.last %}, &
+        {% else %} &
+        {% endif %}
         {%- endfor -%}
         """
     )
@@ -177,7 +235,7 @@ class F90Generator(TemplatedGenerator):
         else
             {{field.name}}_kvert_max = k_size
         endif
-        {%- endfor -%}
+        {% endfor -%}
         """
     )
 
@@ -185,7 +243,7 @@ class F90Generator(TemplatedGenerator):
         """\
         subroutine &
         run_{{sten_name}}( &
-        {{field_names}} 
+        {{field_names}}
         vertical_lower, &
         vertical_upper, &
         horizontal_lower, &
@@ -241,7 +299,7 @@ class F90Generator(TemplatedGenerator):
         type(c_ptr), value, target :: mesh
         integer(c_int), value, target :: k_size
         integer(kind=acc_handle_kind), value, target :: stream
-        {{typed_vert_names}}
+        {{typed_k_names}}
         end subroutine
         """
     )
@@ -256,17 +314,17 @@ class F90Generator(TemplatedGenerator):
         vertical_upper, &
         horizontal_lower, &
         horizontal_upper, &
-        {{tolerance_args}} 
+        {{tolerance_args}}
         )
         use, intrinsic :: iso_c_binding
         use openacc
-        {{typed_field_names}}
-        {{typed_field_names_before}}        
+        {{ranked_field_names}}
+        {{ranked_field_names_before}}
         integer(c_int), value, target :: vertical_lower
         integer(c_int), value, target :: vertical_upper
         integer(c_int), value, target :: horizontal_lower
         integer(c_int), value, target :: horizontal_upper
-        {{typed_tolerance_args}}
+        {{typed_tolerance_args_optional}}
         {{error_tolerance_declarations}}
         integer(c_int) :: vertical_start
         integer(c_int) :: vertical_end
@@ -289,7 +347,7 @@ class F90Generator(TemplatedGenerator):
             vertical_end, &
             horizontal_start, &
             horizontal_end, &
-            {{tolerance_args}}
+            {{err_tolerance_args}}
             )
         #else
             call run_{{sten_name}} &
@@ -313,14 +371,14 @@ class F90Generator(TemplatedGenerator):
         mesh, &
         k_size, &
         stream, &
-        {{vert_names}}
+        {{k_names}}
         )
         use, intrinsic :: iso_c_binding
         use openacc
         type(c_ptr), value, target :: mesh
         integer(c_int), value, target :: k_size
         integer(kind=acc_handle_kind), value, target :: stream
-        {{typed_vert_names}}
+        {{typed_k_names_optional}}
         {{vert_declarations}}
         {{vert_conditionals}}
         call setup_{{sten_name}} &
@@ -355,11 +413,27 @@ class F90TypedFieldNamesBefore(F90FieldContainer):
     ...
 
 
+class F90RankedFieldNames(F90FieldContainer):
+    ...
+
+
+class F90RankedFieldNamesBefore(F90FieldContainer):
+    ...
+
+
 class F90ToleranceArgs(F90FieldContainer):
     ...
 
 
+class F90ErrToleranceArgs(F90FieldContainer):
+    ...
+
+
 class F90TypedToleranceArgs(F90FieldContainer):
+    ...
+
+
+class F90TypedToleranceArgsOptional(F90FieldContainer):
     ...
 
 
@@ -371,15 +445,23 @@ class F90ToleranceConditionals(F90FieldContainer):
     ...
 
 
-class F90VertNames(F90FieldContainer):
+class F90KNames(F90FieldContainer):
     ...
 
 
-class F90TypedVertNames(F90FieldContainer):
+class F90TypedKNames(F90FieldContainer):
+    ...
+
+
+class F90TypedKNamesOptional(F90FieldContainer):
     ...
 
 
 class F90VertDeclarations(F90FieldContainer):
+    ...
+
+
+class F90VertNames(F90FieldContainer):
     ...
 
 
@@ -410,8 +492,8 @@ class F90RunAndVerifyFun(Node):
 
 class F90SetupFun(Node):
     sten_name: str
-    vert_names: F90VertNames
-    typed_vert_names: F90TypedVertNames
+    vert_names: F90KNames
+    typed_k_names: F90TypedKNames
 
 
 class F90WrapRunFun(Node):
@@ -419,20 +501,22 @@ class F90WrapRunFun(Node):
     field_names: F90FieldNames
     field_names_before: F90FieldNamesBefore
     tolerance_args: F90ToleranceArgs
-    typed_field_names: F90TypedFieldNames
-    typed_field_names_before: F90TypedFieldNamesBefore
-    typed_tolerance_args: F90TypedToleranceArgs
+    ranked_field_names: F90RankedFieldNames
+    ranked_field_names_before: F90RankedFieldNamesBefore
+    typed_tolerance_args_optional: F90TypedToleranceArgsOptional
     error_tolerance_declarations: F90ErrToleranceDeclarations
     tolerance_conditionals: F90ToleranceConditionals
     openacc_section: F90OpenACCSection
+    err_tolerance_args: F90ErrToleranceArgs
 
 
 class F90WrapSetupFun(Node):
     sten_name: str
-    vert_names: F90VertNames
-    typed_vert_names: F90TypedVertNames
+    k_names: F90KNames
+    typed_k_names_optional: F90TypedKNamesOptional
     vert_declarations: F90VertDeclarations
     vert_conditionals: F90VertConditionals
+    vert_names: F90VertNames
 
 
 class F90File(Node):
@@ -450,19 +534,24 @@ class F90Iface:
     fields: Sequence[Field]
     offsets: Sequence[Offset]
 
-    def _format_code(self, source: str):
-        source_file = StringIO(source)
-        formated_source_file = StringIO()
-        reformat_ffile(
-            source_file, formated_source_file, orig_filename=f"{self.sten_name}.f90"
-        )
-        formated_source_file.seek(0)
-        return formated_source_file.read()
+    # def _format_code(self, source: str):
+    #     source_file = StringIO(source)
+    #     formated_source_file = StringIO()
+    #     reformat_ffile(
+    #         source_file, formated_source_file, orig_filename=f"{self.sten_name}.f90"
+    #     )
+    #     formated_source_file.seek(0)
+    #     return formated_source_file.read()
+
+    def _format_code_subprocesss(self, source: str):
+        args = ["fprettify"]
+        p1 = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+        return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()
 
     def write(self, outpath: Path):
         iface = self._generate_iface()
         source = F90Generator.apply(iface)
-        formatted_source = self._format_code(source)
+        formatted_source = self._format_code_subprocesss(source)
         write_string(formatted_source, outpath, f"{self.sten_name}.f90")
 
     def _generate_iface(self):
@@ -486,32 +575,36 @@ class F90Iface:
             ),
             setup_fun=F90SetupFun(
                 sten_name=self.sten_name,
-                vert_names=F90VertNames(fields=out_fields),
-                typed_vert_names=F90TypedVertNames(fields=out_fields),
+                vert_names=F90KNames(fields=out_fields),
+                typed_k_names=F90TypedKNames(fields=out_fields),
             ),
             wrap_run_fun=F90WrapRunFun(
                 sten_name=self.sten_name,
                 field_names=F90FieldNames(fields=all_fields),
                 field_names_before=F90FieldNamesBefore(fields=out_fields),
                 tolerance_args=F90ToleranceArgs(fields=out_fields),
-                typed_field_names=F90TypedFieldNames(fields=all_fields),
-                typed_field_names_before=F90TypedFieldNamesBefore(fields=out_fields),
-                typed_tolerance_args=F90TypedToleranceArgs(fields=out_fields),
+                ranked_field_names=F90RankedFieldNames(fields=all_fields),
+                ranked_field_names_before=F90RankedFieldNamesBefore(fields=out_fields),
+                typed_tolerance_args_optional=F90TypedToleranceArgsOptional(
+                    fields=out_fields
+                ),
                 error_tolerance_declarations=F90ErrToleranceDeclarations(
                     fields=out_fields
                 ),
                 tolerance_conditionals=F90ToleranceConditionals(fields=out_fields),
                 openacc_section=F90OpenACCSection(
-                    all_fields=all_fields,
-                    out_fields=out_fields,
+                    all_fields=[field for field in all_fields if field.rank() != 0],
+                    out_fields=[field for field in out_fields if field.rank() != 0],
                 ),
+                err_tolerance_args=F90ErrToleranceArgs(fields=out_fields),
             ),
             wrap_setup_fun=F90WrapSetupFun(
                 sten_name=self.sten_name,
-                vert_names=F90VertNames(fields=out_fields),
-                typed_vert_names=F90TypedVertNames(fields=out_fields),
+                k_names=F90KNames(fields=out_fields),
+                typed_k_names_optional=F90TypedKNamesOptional(fields=out_fields),
                 vert_declarations=F90VertDeclarations(fields=out_fields),
                 vert_conditionals=F90VertConditionals(fields=out_fields),
+                vert_names=F90VertNames(fields=out_fields),
             ),
         )
         return iface

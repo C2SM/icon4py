@@ -26,7 +26,7 @@ Intent = namedtuple("Intent", ["inp", "out"])
 BUILTIN_TO_ISO_C_TYPE = {
     ScalarKind.FLOAT64: "real(c_double)",
     ScalarKind.FLOAT32: "real(c_float)",
-    ScalarKind.BOOL: "c_int",  # ?
+    ScalarKind.BOOL: "logical(c_int)",  # ?
     ScalarKind.INT32: "c_int",
     ScalarKind.INT64: "c_long",
 }
@@ -155,19 +155,24 @@ class Field(Node):
             case "c++":
                 return BUILTIN_TO_CPP_TYPE[self.field_type]
 
-    def render_pointer(self):
-        if not self.has_vertical_dimension and self.location is None:
-            return ""
-        return "*"
-
     def rank(self):
         rank = int(self.has_vertical_dimension) + int(self.location is not None)
         if self.location is not None:
             rank += int(isinstance(self.location, ChainedLocation))
         return rank
 
+    def render_pointer(self):
+        return "" if self.rank == 0 else "*"
+
+    def ranked_dim_string(self):
+        return (
+            "dimension(" + ",".join([":"] * self.rank()) + ")"
+            if self.rank() != 0
+            else "value"
+        )
+
     def dim_string(self):
-        return "dimension(" + ",".join([":"] * self.rank()) + ")"
+        return "dimension(*)" if self.rank() != 0 else "value"
 
     def __init__(self, name: str, field_info: FieldInfo):
         self.name = str(name)  # why isn't this a str in the first place?

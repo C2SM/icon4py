@@ -46,14 +46,17 @@ def test_pybindgen_against_cppbindgen(fencils, cppbindgen_path):
         metadata = get_stencil_info(fencil)
         CppBindGen(metadata)(cppbindgen_path)
         PyBindGen(metadata)(output_path)
-        compare_files(cppbindgen_path, output_path, fencil)
+        compare_files(cppbindgen_path, output_path, fencil, "h")
+        compare_files(cppbindgen_path, output_path, fencil, "f90")
 
 
-def compare_files(cppbindgen_dir: Path, pybindgen_dir: Path, fencil: str):
+def compare_files(
+    cppbindgen_dir: Path, pybindgen_dir: Path, fencil: str, extension: str
+):
     fname = f"{fencil.split(':')[1]}"
 
-    cppgen_name = cppbindgen_dir / Path(f"build/generated/{fname}.h")
-    pygen_name = pybindgen_dir / Path(f"{fname}.h")
+    cppgen_name = cppbindgen_dir / Path(f"build/generated/{fname}.{extension}")
+    pygen_name = pybindgen_dir / Path(f"{fname}.{extension}")
 
     with open(cppgen_name, "r+") as cpp:
         cpp_f = cpp.read()
