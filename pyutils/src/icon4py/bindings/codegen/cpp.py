@@ -19,8 +19,10 @@ from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import Node, TemplatedGenerator, format_source
 
 from icon4py.bindings.codegen.header import (
+    CppFreeFunc,
     CppRunAndVerifyFuncDeclaration,
     CppRunFuncDeclaration,
+    CppSetupFuncDeclaration,
     CppVerifyFuncDeclaration,
     run_func_declaration,
     run_verify_func_declaration,
@@ -82,9 +84,14 @@ class CppDef:
                     funcname=self.stencil_name, out_fields=output_fields
                 ),
             ),
-            # todo
-            setup_func=SetupFunc(),  # todo
-            free_func=FreeFunc(),  # todo
+            setup_func=SetupFunc(
+                funcname=self.stencil_name,
+                out_fields=output_fields,
+                func_declaration=CppSetupFuncDeclaration(
+                    funcname=self.stencil_name, out_fields=output_fields
+                ),
+            ),  # todo
+            free_func=FreeFunc(funcname=self.stencil_name),
         )
         return definition
 
@@ -131,6 +138,10 @@ class VerifyFuncCall(CppVerifyFuncDeclaration):
     ...
 
 
+class SetupFunc(CppVerifyFuncDeclaration):
+    func_declaration: CppSetupFuncDeclaration
+
+
 class RunAndVerifyFunc(Node):
     funcname: str
     run_verify_func_declaration: CppRunAndVerifyFuncDeclaration
@@ -138,12 +149,8 @@ class RunAndVerifyFunc(Node):
     verify_func_call: VerifyFuncCall
 
 
-class SetupFunc(Node):
-    pass
-
-
-class FreeFunc(Node):
-    pass
+class FreeFunc(CppFreeFunc):
+    ...
 
 
 class CppDefTemplate(Node):
@@ -379,6 +386,42 @@ class CppDefGenerator(TemplatedGenerator):
                   << std::flush;
         {{ verify_func_call }}
         iteration++;
+        }
+        """
+    )
+
+    CppSetupFuncDeclaration = as_jinja(
+        """\
+        void setup_{{funcname}}(
+        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
+        {%- for field in _this_node.out_fields -%}
+        const int {{ field.name }}_k_size
+        {%- if not loop.last -%}
+        ,
+        {%- endif -%}
+        {%- endfor -%})
+        """
+    )
+
+    SetupFunc = as_jinja(
+        """\
+        {{ func_declaration }} {
+        dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream,
+        {%- for field in _this_node.out_fields -%}
+        {{ field.name }}_size
+        {%- if not loop.last -%}
+        ,
+        {%- endif -%}
+        {%- endfor -%}
+        );
+        }
+        """
+    )
+
+    FreeFunc = as_jinja(
+        """\
+        void free_{{funcname}}() {
+            dawn_generated::cuda_ico::{{ funcname }}::free();
         }
         """
     )
