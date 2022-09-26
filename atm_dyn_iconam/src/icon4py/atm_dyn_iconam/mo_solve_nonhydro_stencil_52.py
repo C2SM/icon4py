@@ -68,7 +68,7 @@ def _mo_solve_nonhydro_stencil_52_w_scan(
     z_g: float,
     w: float,
 ) -> float:
-    return (w - z_a * w_state) * z_g
+    return w if w_state == 0.0 else (w - z_a * w_state) * z_g
 
 
 @field_operator
