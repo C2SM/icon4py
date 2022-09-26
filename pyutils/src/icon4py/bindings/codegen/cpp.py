@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
@@ -27,18 +26,27 @@ from icon4py.bindings.codegen.header import (
     run_func_declaration,
     run_verify_func_declaration,
 )
-from icon4py.bindings.types import Field
+from icon4py.bindings.types import Field, Offset
 from icon4py.bindings.utils import write_string
 
 
-@dataclass
 class CppDef:
-    stencil_name: str
-    fields: list[Field]
-    levels_per_thread: int
-    block_size: int
+    def __init__(
+        self,
+        stencil_name: str,
+        fields: list[Field],
+        offsets: list[Offset],
+        levels_per_thread: int,
+        block_size: int,
+    ):
+        self.stencil_name = stencil_name
+        self.fields = fields
+        self.levels_per_thread = levels_per_thread
+        self.block_size = block_size
+        self.offset_handler = OffsetHandler(offsets)
 
     def write(self, outpath: Path):
+        # todo: get neighbor tables and vars from offset handler
         definition = self._generate_definition()
         source = format_source("cpp", CppDefGenerator.apply(definition), style="LLVM")
         write_string(source, outpath, f"{self.stencil_name}.cpp")
@@ -96,6 +104,51 @@ class CppDef:
             free_func=FreeFunc(funcname=self.stencil_name),
         )
         return definition
+
+
+class OffsetHandler:
+    def __init__(self, offsets: list[Offset]):
+        self.offsets = offsets
+
+    def make_neighbor_table_vars(self):
+        if len(self.offsets) == 0:
+            return ""
+
+        var_list = []
+        for offset in self.offsets:
+            var_list.append(
+                f"int * {offset.target[1].__str__().replace('2', '').lower()}Table"
+            )
+        return var_list
+
+    def make_neighbor_table_structs(self):
+        if len(self.offsets) == 0:
+            return ""
+        neighbor_table_list = []
+        for offset in self.offsets:
+            locations = "some loc, some loc"
+            origin = 0
+
+            string = (
+                f"{offset.target[1].__str__().replace('2', '').lower()}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
+                f"{{{locations}}}, {origin}}});"
+            )
+            neighbor_table_list.append(string)
+        return string
+
+    """\
+    gpu_tri_mesh
+
+    # simple offset cases (1 offset no origin)
+
+    for offset in offsets:
+        int* <source><target>Table
+
+    for offset in offsets:
+        <source><target>Table = mesh->NeighborTables.at(
+                  std::tuple<std::vector<dawn::LocationType>, bool>{
+                      {dawn::LocationType::<SourceLocationType>, dawn::LocationType::<TargetLocationType>}, <1 with origin, 0 without origin>});
+    """
 
 
 class IncludeStatements(Node):
