@@ -1,22 +1,20 @@
-# Only /workspace folder is preserved on restarts, therefore both the Python
-# virtual environment and pre-commit caches have to be installed there
+# Only the '/workspace' folder is preserved on restarts, therefore both
+# Python packages and pre-commit caches need to be installed there
+# except pre-commit which doesn't work with PIP_USER=yes (therefore the alias)
 image:
-    file: .gitpod.Dockerfile
+  file: .gitpod.Dockerfile
 tasks:
-    - name: Setup venv and dev tools
-      init: |
-          mkdir .vscode
-          cp .gitpod/.vscode/* .vscode/
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements-dev.txt
-          pre-commit install --install-hooks
-          deactivate
-      command: source .venv/bin/activate
-      env:
-          PIP_SRC: _external_src
-          PRE_COMMIT_HOME: /workspace/.caches/pre-commit
+- name: Setup venv and dev tools
+  init: |
+    mkdir .vscode
+    cp .gitpod/.vscode/* .vscode/
+    pip install --upgrade pip setuptools wheel
+    pip install -r requirements-dev.txt
+    pre-commit install --install-hooks
+  #command: alias pre-commit="PIP_USER=no pre-commit"
+  env:
+    PIP_SRC: _external_src
+    PRE_COMMIT_HOME: /workspace/.caches/pre-commit
 vscode:
     extensions:
         - ms-python.python
@@ -24,3 +22,4 @@ vscode:
         - ms-toolsai.jupyter-keymap
         - ms-toolsai.jupyter-renderers
         - genuitecllc.codetogether
+
