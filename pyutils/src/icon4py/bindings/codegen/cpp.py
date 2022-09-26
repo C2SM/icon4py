@@ -54,7 +54,9 @@ class CppDef:
             ),
             utility_functions=UtilityFunctions(),
             stencil_class=StencilClass(
-                funcname=self.stencil_name, gpu_tri_mesh=GpuTriMesh(fields=self.fields)
+                funcname=self.stencil_name,
+                gpu_tri_mesh=GpuTriMesh(fields=self.fields),
+                run_func=StenClassRunFun(fields=self.fields),
             ),  # todo
             run_func=RunFunc(
                 funcname=self.stencil_name,
@@ -112,9 +114,14 @@ class GpuTriMesh(Node):
     fields: Sequence[Field]
 
 
+class StenClassRunFun(Node):
+    fields: Sequence[Field]
+
+
 class StencilClass(Node):
     funcname: str
     gpu_tri_mesh: GpuTriMesh
+    run_fun: StenClassRunFun
 
 
 class Params(Node):
@@ -303,6 +310,68 @@ class CppDefGenerator(TemplatedGenerator):
             }
           };
         """
+    )
+
+    StenClassRunFun = as_jinja(
+        """
+      using namespace gridtools;
+      using namespace fn;
+      {%- for field in _this_node.dense_fields -%}
+        {{ field.render_sid() }}
+      {%- endfor -%}
+      {%- for field in _this_node.compound_fields -%}
+        {{ field.render_sid() }}
+      {%- endfor -%}
+      {%- for field in _this_node.sparse_fields -%}
+        {%- for i in range(0, field.num_nbh()) -%}
+            double *{{field.name}}_{{i}} = &{{field.name}}[{{i}}*mesh_.field.stride()];
+        {%- endfor -%}
+        {%- for i in range(0, field.num_nbh()) -%}
+            auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, gridtools::hymap::keys<unstructured::dim::horizontal>::make_values(1));
+        {%- endfor -%}
+        auto {{field.name}}_sid_comp = sid::composite::keys<
+        {%- for i in range(0, field.num_nbh()) -%}
+            integral_constant<int,{{i}}>
+        {%- endfor -%}>::make_values(
+          {%- for i in range(0, field.num_nbh()) -%}
+            {field.name}}_sid_{{i}}
+        {%- endfor -%}
+        )
+      {%- endfor -%}
+      {%- for parameter in _this_node.parameters -%}
+        gridtools::stencil::global_parameter {{parameter.name}} { {{parameter.name}} };
+      {%- endfor -%}
+      fn_backend_t cuda_backend{};
+      cuda_backend.stream = stream_;
+      {%- for connection in _this_node.sparse_connections}
+        neighbor_table_fortran<{{field.num_neighbors()}}> {{field.render_lc_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{field.render_lc_shorthand()}}Table};
+      {%- endfor -%}
+      {%- for connection in _this_node.strided_connections}
+        neighbor_table_4new_sparse<{{field.num_neighbors()}}> {{field.render_lc_shorthand()}}_ptr{};
+      {%- endfor -%}
+      auto connectivities = gridtools::hymap::keys<
+      {%- for connection in _this_node.all_connections -%}
+        generated::{{field.render_uc_shorthand()}}
+      {%- endfor -%}>::make_values(
+      {%- for connection in _this_node.all_connections -%}
+        {{field.render_lc_shorthand()}}_ptr{}
+      {%- endfor -%}>
+      )
+      generated::{{stencil_name}}(connectivities)(cuda_backend,
+      {%- for field in _this_node.parameters -%}
+        {{field.name}}
+      {%- endfor -%}
+      {%- for field in _this_node.all_fields -%}
+        {{field.name}}
+      {%- endfor -%}
+      , horizontalStart, horizontalEnd, verticalStart, verticalEnd);
+      #ifndef NDEBUG
+        gpuErrchk(cudaPeekAtLastError());
+        gpuErrchk(cudaDeviceSynchronize());
+      #endif
+  }
+
+      """
     )
 
     CppRunFuncDeclaration = run_func_declaration
