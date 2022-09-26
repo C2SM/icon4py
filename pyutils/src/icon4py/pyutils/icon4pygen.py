@@ -30,8 +30,6 @@ from icon4py.pyutils.metadata import (
     scan_for_offsets,
 )
 
-import sys
-
 
 def get_stencil_info(fencil) -> StencilInfo:
     fencil_def = import_definition(fencil)

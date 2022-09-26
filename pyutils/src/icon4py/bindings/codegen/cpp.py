@@ -53,7 +53,9 @@ class CppDef:
                 block_size=self.block_size,
             ),
             utility_functions=UtilityFunctions(),
-            stencil_class=StencilClass(),  # todo
+            stencil_class=StencilClass(
+                funcname=self.stencil_name, gpu_tri_mesh=GpuTriMesh(fields=self.fields)
+            ),  # todo
             run_func=RunFunc(
                 funcname=self.stencil_name,
                 params=Params(fields=self.fields),
@@ -90,7 +92,7 @@ class CppDef:
                 func_declaration=CppSetupFuncDeclaration(
                     funcname=self.stencil_name, out_fields=output_fields
                 ),
-            ),  # todo
+            ),
             free_func=FreeFunc(funcname=self.stencil_name),
         )
         return definition
@@ -106,8 +108,13 @@ class UtilityFunctions(Node):
     ...
 
 
+class GpuTriMesh(Node):
+    fields: Sequence[Field]
+
+
 class StencilClass(Node):
-    pass
+    funcname: str
+    gpu_tri_mesh: GpuTriMesh
 
 
 class Params(Node):
@@ -250,6 +257,51 @@ class CppDefGenerator(TemplatedGenerator):
               .template set<sid::property::strides>(strideMap)
               .template set<sid::property::strides_kind, sid::unknown_kind>();
         }
+        """
+    )
+
+    StencilClass = as_jinja(
+        """\
+        namespace dawn_generated {
+        namespace cuda_ico {
+
+        class {{ funcname }} {
+        {{ gpu_tri_mesh }}
+
+        }
+
+
+        } // namespace cuda_ico
+        } // namespace dawn_generated
+        """
+    )
+
+    GpuTriMesh = as_jinja(
+        """/
+        public:
+          struct GpuTriMesh {
+            int NumVertices;
+            int NumEdges;
+            int NumCells;
+            int VertexStride;
+            int EdgeStride;
+            int CellStride;
+            int *veTable;   # todo
+
+            GpuTriMesh() {}
+
+            GpuTriMesh(const dawn::GlobalGpuTriMesh *mesh) {
+              NumVertices = mesh->NumVertices;
+              NumCells = mesh->NumCells;
+              NumEdges = mesh->NumEdges;
+              VertexStride = mesh->VertexStride;
+              CellStride = mesh->CellStride;
+              EdgeStride = mesh->EdgeStride;
+              veTable = mesh->NeighborTables.at(    # todo
+                  std::tuple<std::vector<dawn::LocationType>, bool>{
+                      {dawn::LocationType::Vertices, dawn::LocationType::Edges}, 0});
+            }
+          };
         """
     )
 
