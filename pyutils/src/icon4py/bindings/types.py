@@ -158,11 +158,13 @@ class Field(Node):
     def rank(self):
         rank = int(self.has_vertical_dimension) + int(self.location is not None)
         if self.location is not None:
-            rank += int(isinstance(self.location, ChainedLocation))
+            rank += int(isinstance(self.location, ChainedLocation)) + int(
+                isinstance(self.location, CompoundLocation)
+            )
         return rank
 
     def render_pointer(self):
-        return "" if self.rank == 0 else "*"
+        return "" if self.rank() == 0 else "*"
 
     def ranked_dim_string(self):
         return (
@@ -205,25 +207,38 @@ class Field(Node):
         maybe_horizontal_dimension = list(
             filter(lambda dim: dim.value != "K", field.type.dims)
         )
-        if len(maybe_horizontal_dimension):
-            horizontal_dimension = maybe_horizontal_dimension[0].value
-            if horizontal_dimension.endswith("O"):
-                self.includes_center = True
-                horizontal_dimension = horizontal_dimension[:-1]
-            if horizontal_dimension in [loc for loc in __BASIC_LOCATIONS__.keys()]:
-                self.location = __BASIC_LOCATIONS__[horizontal_dimension]()
-            elif all(len(token) == 1 for token in horizontal_dimension.split("2")):
-                self.location = ChainedLocation(
-                    chain_from_str("".join(horizontal_dimension.split("2")))
-                )
-            elif all(
-                char in [str(loc()) for loc in __BASIC_LOCATIONS__.values()]
-                for char in horizontal_dimension
-            ):
-                self.location = CompoundLocation(chain_from_str(horizontal_dimension))
-            else:
-                raise Exception("invalid chain")
-            return horizontal_dimension
+
+        # vertical field or scalar
+        if not len(maybe_horizontal_dimension):
+            return None
+
+        # for sparse fields, throw out dense "root" since it's redundant
+        horizontal_dimension = (
+            maybe_horizontal_dimension[1].value
+            if len(maybe_horizontal_dimension) > 1
+            else maybe_horizontal_dimension[0].value
+        )
+
+        # consume indicator that signals inclusion of center
+        if horizontal_dimension.endswith("O"):
+            self.includes_center = True
+            horizontal_dimension = horizontal_dimension[:-1]
+
+        # actual case distinction of field types
+        if horizontal_dimension in [loc for loc in __BASIC_LOCATIONS__.keys()]:
+            self.location = __BASIC_LOCATIONS__[horizontal_dimension]()
+        elif all(len(token) == 1 for token in horizontal_dimension.split("2")):
+            self.location = ChainedLocation(
+                chain_from_str("".join(horizontal_dimension.split("2")))
+            )
+        elif all(
+            char in [str(loc()) for loc in __BASIC_LOCATIONS__.values()]
+            for char in horizontal_dimension
+        ):
+            self.location = CompoundLocation(chain_from_str(horizontal_dimension))
+        else:
+            raise Exception("invalid chain")
+        return horizontal_dimension
 
 
 def stencil_info_to_binding_type(
