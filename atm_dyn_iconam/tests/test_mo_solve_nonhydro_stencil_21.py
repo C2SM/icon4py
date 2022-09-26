@@ -13,6 +13,9 @@
 
 import numpy as np
 
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_21 import (
+    mo_solve_nonhydro_stencil_21,
+)
 from icon4py.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
@@ -28,41 +31,43 @@ def mo_solve_nonhydro_stencil_21_numpy(
     inv_dual_edge_length: np.array,
     grav_o_cpd: float,
 ) -> tuple[np.array]:
-    def _apply_index_field(
-        indexed, indexed_p1, shape, to_index, neighbor_table, index_field
-    ):
-        for ic in range(shape[0]):
+    def _apply_index_field(shape, to_index, neighbor_table, offset_field):
+        indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
+        for iprimary in range(shape[0]):
             for isparse in range(shape[1]):
                 for ik in range(shape[2]):
-                    indexed[ic, isparse, ik] = to_index[
-                        neighbor_table[ic, isparse], index_field[ic, isparse, ik]
+                    indexed[iprimary, isparse, ik] = to_index[
+                        neighbor_table[iprimary, isparse],
+                        ik + offset_field[iprimary, isparse, ik],
                     ]
-                    indexed_p1[ic, isparse, ik] = to_index[
-                        neighbor_table[ic, isparse],
-                        ik + index_field[ic, isparse, ik] + 1,
+                    indexed_p1[iprimary, isparse, ik] = to_index[
+                        neighbor_table[iprimary, isparse],
+                        ik + offset_field[iprimary, isparse, ik] + 1,
                     ]
         return indexed, indexed_p1
 
     full_shape = zdiff_gradp.shape
-    indexed = np.zeros_like(zdiff_gradp)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
+    theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikidx)
+
     theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
-        indexed, indexed, full_shape, theta_v_ic, e2c, ikidx
+        full_shape, theta_v_ic, e2c, ikidx
     )
-    inv_ddqz_z_full_at_kidx, inv_ddqz_z_full_at_kidx_p1 = _apply_index_field(
-        indexed, indexed, full_shape, inv_ddqz_z_full, e2c, ikidx
+
+    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(
+        full_shape, inv_ddqz_z_full, e2c, ikidx
     )
 
     z_theta1 = (
-        theta_v_ic_at_kidx[:, 0, :]
+        theta_v_at_kidx[:, 0, :]
         + zdiff_gradp[:, 0, :]
         * (theta_v_ic_at_kidx[:, 0, :] - theta_v_ic_at_kidx_p1[:, 0, :])
         * inv_ddqz_z_full_at_kidx[:, 0, :]
     )
 
     z_theta2 = (
-        theta_v_ic_at_kidx[:, 1, :]
+        theta_v_at_kidx[:, 1, :]
         + zdiff_gradp[:, 1, :]
         * (theta_v_ic_at_kidx[:, 1, :] - theta_v_ic_at_kidx_p1[:, 1, :])
         * inv_ddqz_z_full_at_kidx[:, 1, :]
@@ -93,22 +98,53 @@ def test_mo_solve_nonhydro_stencil_21():
         )
 
     theta_v = random_field(mesh, CellDim, KDim)
-    zdiff_grap = random_field(mesh, EdgeDim, E2CDim, KDim)
+    zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
     theta_v_ic = random_field(mesh, CellDim, KDim)
     inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
     inv_dual_edge_length = random_field(mesh, EdgeDim)
     grav_o_cpd = 10.0
 
-    mo_solve_nonhydro_stencil_21_numpy(
+    z_theta1 = zero_field(mesh, EdgeDim, KDim)
+    z_theta2 = zero_field(mesh, EdgeDim, KDim)
+    z_hydro_corr = zero_field(mesh, EdgeDim, KDim)
+
+    z_theta1_ref, z_theta2_ref, z_hydro_corr_ref = mo_solve_nonhydro_stencil_21_numpy(
         mesh.e2c,
         np.asarray(theta_v),
         np.asarray(ikidx),
-        np.asarray(zdiff_grap),
+        np.asarray(zdiff_gradp),
         np.asarray(theta_v_ic),
         np.asarray(inv_ddqz_z_full),
         np.asarray(inv_dual_edge_length),
         grav_o_cpd,
     )
 
-    # todo: call gt4py stencil
-    # todo: assert equality between numpy and gt4py
+    hstart = 0
+    hend = mesh.n_edges
+    kstart = 0
+    kend = mesh.k_level
+
+    mo_solve_nonhydro_stencil_21(
+        theta_v,
+        ikidx,
+        zdiff_gradp,
+        theta_v_ic,
+        inv_ddqz_z_full,
+        inv_dual_edge_length,
+        grav_o_cpd,
+        z_theta1,
+        z_theta2,
+        z_hydro_corr,
+        hstart,
+        hend,
+        kstart,
+        kend,
+        offset_provider={
+            "E2C": mesh.get_e2c_offset_provider(),
+            "Koff": KDim,
+        },
+    )
+
+    assert np.allclose(z_theta1_ref, z_theta1)
+    assert np.allclose(z_theta2_ref, z_theta2)
+    assert np.allclose(z_hydro_corr_ref, z_hydro_corr)
