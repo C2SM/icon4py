@@ -36,7 +36,7 @@ class CppHeader:
     def _generate_header(self):
         output_fields = [field for field in self.fields if field.intent.out]
         header = CppHeaderFile(
-            runFunc=CppFuncDeclaration(
+            runFunc=CppRunFuncDeclaration(
                 funcname=self.stencil_name,
                 fields=self.fields,
             ),
@@ -44,10 +44,10 @@ class CppHeader:
                 funcname=self.stencil_name,
                 out_fields=output_fields,
             ),
-            runAndVerifyFunc=CppRunAndVerifyFunc(
+            runAndVerifyFunc=CppRunAndVerifyFuncDeclaration(
                 funcname=self.stencil_name, fields=self.fields, out_fields=output_fields
             ),
-            setupFunc=CppSetupFunc(
+            setupFunc=CppSetupFuncDeclaration(
                 funcname=self.stencil_name, out_fields=output_fields
             ),
             freeFunc=CppFreeFunc(funcname=self.stencil_name),
@@ -63,7 +63,7 @@ class CppFreeFunc(CppFunc):
     ...
 
 
-class CppFuncDeclaration(CppFunc):
+class CppRunFuncDeclaration(CppFunc):
     fields: Sequence[Field]
 
 
@@ -71,20 +71,65 @@ class CppVerifyFuncDeclaration(CppFunc):
     out_fields: Sequence[Field]
 
 
-class CppSetupFunc(CppVerifyFuncDeclaration):
+class CppSetupFuncDeclaration(CppVerifyFuncDeclaration):
     ...
 
 
-class CppRunAndVerifyFunc(CppFuncDeclaration, CppVerifyFuncDeclaration):
+class CppRunAndVerifyFuncDeclaration(CppRunFuncDeclaration, CppVerifyFuncDeclaration):
     ...
 
 
 class CppHeaderFile(Node):
-    runFunc: CppFuncDeclaration
+    runFunc: CppRunFuncDeclaration
     verifyFunc: CppVerifyFuncDeclaration
-    runAndVerifyFunc: CppRunAndVerifyFunc
-    setupFunc: CppSetupFunc
+    runAndVerifyFunc: CppRunAndVerifyFuncDeclaration
+    setupFunc: CppSetupFuncDeclaration
     freeFunc: CppFreeFunc
+
+
+setup_func_declaration = as_jinja(
+    """\
+    void setup_{{funcname}}(
+    dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
+    {%- for field in _this_node.out_fields -%}
+    const int {{ field.name }}_k_size
+    {%- if not loop.last -%}
+    ,
+    {%- endif -%}
+    {%- endfor -%}) ;
+    """
+)
+
+run_func_declaration = as_jinja(
+    """\
+    void run_{{funcname}}(
+    {%- for field in _this_node.fields -%}
+    {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {%- endfor -%}
+    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
+    """
+)
+
+run_verify_func_declaration = as_jinja(
+    """\
+    void run_and_verify_{{funcname}}(
+    {%- for field in _this_node.fields -%}
+    {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {%- endfor -%}
+    {%- for field in _this_node.out_fields -%}
+    {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
+    {%- endfor -%}
+    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
+    {%- for field in _this_node.out_fields -%}
+    const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
+    const {{ field.ctype('c++')}} {{ field.name }}_abs_tol
+    {%- if not loop.last -%}
+    ,
+    {%- endif -%}
+    {%- endfor -%}
+    ) ;
+    """
+)
 
 
 class CppHeaderGenerator(TemplatedGenerator):
@@ -102,65 +147,26 @@ class CppHeaderGenerator(TemplatedGenerator):
         }
         """
     )
+    CppRunFuncDeclaration = run_func_declaration
 
-    CppFuncDeclaration = as_jinja(
-        """\
-        void run_{{funcname}}(
-        {% for field in _this_node.fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {% endfor -%}
-        const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
-        """
-    )
+    CppRunAndVerifyFuncDeclaration = run_verify_func_declaration
 
     CppVerifyFuncDeclaration = as_jinja(
         """\
         bool verify_{{funcname}}(
-        {% for field in _this_node.out_fields -%}
+        {%- for field in _this_node.out_fields -%}
         const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
         const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {% endfor -%}
-        {% for field in _this_node.out_fields -%}
+        {%- endfor -%}
+        {%- for field in _this_node.out_fields -%}
         const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
         const {{ field.ctype('c++')}} {{ field.name }}_abs_tol,
-        {% endfor -%}
+        {%- endfor -%}
         const int iteration) ;
         """
     )
 
-    CppRunAndVerifyFunc = as_jinja(
-        """\
-        void run_and_verify_{{funcname}}(
-        {% for field in _this_node.fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
-        {% endfor -%}
-        {% for field in _this_node.out_fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
-        {% endfor -%}
-        const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
-        {% for field in _this_node.out_fields -%}
-        const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
-        const {{ field.ctype('c++')}} {{ field.name }}_abs_tol
-        {% if not loop.last -%}
-        ,
-        {% endif -%}
-        {% endfor -%}
-        ) ;
-        """
-    )
-
-    CppSetupFunc = as_jinja(
-        """\
-        void setup_{{funcname}}(
-        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
-        {% for field in _this_node.out_fields -%}
-        const int {{ field.name }}_k_size
-        {% if not loop.last -%}
-        ,
-        {% endif -%}
-        {% endfor -%}) ;
-        """
-    )
+    CppSetupFuncDeclaration = setup_func_declaration
 
     CppFreeFunc = as_jinja(
         """\
