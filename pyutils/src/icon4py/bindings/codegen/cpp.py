@@ -44,7 +44,7 @@ class CppDef:
         source = format_source("cpp", CppDefGenerator.apply(definition), style="LLVM")
         write_string(source, outpath, f"{self.stencil_name}.cpp")
 
-    def _generate_definition(self):
+    def _get_field_data(self):
         output_fields = [field for field in self.fields if field.intent.out]
         # since we can vertical fields as dense fields for the purpose of this function, lets include them here
         dense_fields = [
@@ -61,6 +61,26 @@ class CppDef:
             offset for offset in self.offsets if offset.emit_strided_connectivity()
         ]
         parameters = [field for field in self.fields if field.rank() == 0]
+        return (
+            output_fields,
+            dense_fields,
+            sparse_fields,
+            compound_fields,
+            sparse_offsets,
+            strided_offsets,
+            parameters,
+        )
+
+    def _generate_definition(self):
+        (
+            output_fields,
+            dense_fields,
+            sparse_fields,
+            compound_fields,
+            sparse_offsets,
+            strided_offsets,
+            parameters,
+        ) = self._get_field_data()
 
         definition = CppDefTemplate(
             includes=IncludeStatements(
@@ -83,7 +103,7 @@ class CppDef:
                     all_connections=self.offsets,
                     parameters=parameters,
                 ),
-            ),  # todo
+            ),
             run_func=RunFunc(
                 funcname=self.stencil_name,
                 params=Params(fields=self.fields),
