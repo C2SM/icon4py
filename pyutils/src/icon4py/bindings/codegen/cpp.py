@@ -43,10 +43,9 @@ class CppDef:
         self.fields = fields
         self.levels_per_thread = levels_per_thread
         self.block_size = block_size
-        self.offset_handler = OffsetHandler(offsets)
+        self.offset_handler = GpuTriMeshOffsetHandler(offsets)
 
     def write(self, outpath: Path):
-        # todo: get neighbor tables and vars from offset handler
         definition = self._generate_definition()
         source = format_source("cpp", CppDefGenerator.apply(definition), style="LLVM")
         write_string(source, outpath, f"{self.stencil_name}.cpp")
@@ -62,8 +61,12 @@ class CppDef:
             ),
             utility_functions=UtilityFunctions(),
             stencil_class=StencilClass(
-                funcname=self.stencil_name, gpu_tri_mesh=GpuTriMesh(fields=self.fields)
-            ),  # todo
+                funcname=self.stencil_name,
+                gpu_tri_mesh=GpuTriMesh(
+                    table_vars=self.offset_handler.make_table_vars(),
+                    neighbor_tables=self.offset_handler.make_neighbor_tables(),
+                ),
+            ),
             run_func=RunFunc(
                 funcname=self.stencil_name,
                 params=Params(fields=self.fields),
@@ -106,49 +109,37 @@ class CppDef:
         return definition
 
 
-class OffsetHandler:
+class GpuTriMeshOffsetHandler:
     def __init__(self, offsets: list[Offset]):
         self.offsets = offsets
 
-    def make_neighbor_table_vars(self):
+    def make_table_vars(self):
+        if len(self.offsets) == 0:
+            return ""
+        return [self._make_table_var(offset) for offset in self.offsets]
+
+    def make_neighbor_tables(self):
         if len(self.offsets) == 0:
             return ""
 
-        var_list = []
-        for offset in self.offsets:
-            var_list.append(
-                f"int * {offset.target[1].__str__().replace('2', '').lower()}Table"
+        return [
+            (
+                f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
+                f"{{{', '.join(self._make_location_type(offset))}}}, {1 if offset.includes_center else 0}}});"
             )
-        return var_list
+            for offset in self.offsets
+        ]
 
-    def make_neighbor_table_structs(self):
-        if len(self.offsets) == 0:
-            return ""
-        neighbor_table_list = []
-        for offset in self.offsets:
-            locations = "some loc, some loc"
-            origin = 0
+    @staticmethod
+    def _make_table_var(offset: Offset) -> str:
+        return f"{offset.target[1].__str__().replace('2', '').lower()}{'o' if offset.includes_center else ''}"
 
-            string = (
-                f"{offset.target[1].__str__().replace('2', '').lower()}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
-                f"{{{locations}}}, {origin}}});"
-            )
-            neighbor_table_list.append(string)
-        return string
-
-    """\
-    gpu_tri_mesh
-
-    # simple offset cases (1 offset no origin)
-
-    for offset in offsets:
-        int* <source><target>Table
-
-    for offset in offsets:
-        <source><target>Table = mesh->NeighborTables.at(
-                  std::tuple<std::vector<dawn::LocationType>, bool>{
-                      {dawn::LocationType::<SourceLocationType>, dawn::LocationType::<TargetLocationType>}, <1 with origin, 0 without origin>});
-    """
+    @staticmethod
+    def _make_location_type(offset: Offset) -> list[str]:
+        return [
+            f"dawn::LocationType::{loc.location_type()}"
+            for loc in offset.target[1].chain
+        ]
 
 
 class IncludeStatements(Node):
@@ -162,7 +153,8 @@ class UtilityFunctions(Node):
 
 
 class GpuTriMesh(Node):
-    fields: Sequence[Field]
+    table_vars: list[str]
+    neighbor_tables: list[str]
 
 
 class StencilClass(Node):
@@ -330,7 +322,7 @@ class CppDefGenerator(TemplatedGenerator):
     )
 
     GpuTriMesh = as_jinja(
-        """/
+        """\
         public:
           struct GpuTriMesh {
             int NumVertices;
@@ -339,7 +331,9 @@ class CppDefGenerator(TemplatedGenerator):
             int VertexStride;
             int EdgeStride;
             int CellStride;
-            int *veTable;   # todo
+            {%- for var in _this_node.table_vars -%}
+            int * {{ var }}Table;
+            {%- endfor %}
 
             GpuTriMesh() {}
 
@@ -350,9 +344,9 @@ class CppDefGenerator(TemplatedGenerator):
               VertexStride = mesh->VertexStride;
               CellStride = mesh->CellStride;
               EdgeStride = mesh->EdgeStride;
-              veTable = mesh->NeighborTables.at(    # todo
-                  std::tuple<std::vector<dawn::LocationType>, bool>{
-                      {dawn::LocationType::Vertices, dawn::LocationType::Edges}, 0});
+              {%- for table in _this_node.neighbor_tables -%}
+              {{ table }}
+              {%- endfor -%}
             }
           };
         """

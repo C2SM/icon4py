@@ -82,7 +82,3 @@ def main(
 
     GTHeader(stencil_info)(outpath)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
-
-
-if __name__ == "__main__":
-    main()

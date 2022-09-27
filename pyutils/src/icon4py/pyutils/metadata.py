@@ -182,6 +182,7 @@ def scan_for_offsets(fvprog: Program) -> set[str]:
         .getattr("value")
         .to_list()
     )
+    # we want to preserve order in the offsets for code generation reproducibility
     all_dim_labels = [dim.value for dim in all_dims if dim.kind == DimensionKind.LOCAL]
     return set(all_offset_labels + all_dim_labels)
 
