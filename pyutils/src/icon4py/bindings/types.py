@@ -18,8 +18,9 @@ from eve import Node
 from functional.ffront import program_ast as past
 from functional.ffront.common_types import FieldType, ScalarKind
 
+from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.pyutils.metadata import FieldInfo, StencilInfo, get_field_infos
-
+from icon4py.pyutils.icochainsize import IcoChainSize
 
 Intent = namedtuple("Intent", ["inp", "out"])
 
@@ -108,8 +109,18 @@ class ChainedLocation:
         else:
             raise Exception()
 
+    def __iter__(self):
+        return iter(self.chain)
 
-class Offset:
+    def __getitem__(self, item):
+        return self.chain[item]
+
+    def to_dim_list(self):
+        map_to_dim = {Cell: CellDim, Edge: EdgeDim, Vertex: VertexDim}
+        return [map_to_dim[c.__class__] for c in self.chain]
+
+
+class Offset(Node):
     source: Union[BasicLocation, CompoundLocation]
     target: Tuple[BasicLocation, ChainedLocation]
     includes_center: bool = False
@@ -117,7 +128,28 @@ class Offset:
     def emit_strided_connectivity(self):
         return isinstance(self.source, CompoundLocation)
 
+    # todo: these shorthands should be improved after regression passes
+    def render_lc_shorthand(self):
+        if self.emit_strided_connectivity():
+            lhs = str(self.target[0]).lower()
+            rhs = "".join([char for char in str(self.target[1]) if char != "2"]).lower()
+            return f"{lhs}2{rhs}"
+        else:
+            return "".join(
+                [char for char in str(self.target[1]) if char != "2"]
+            ).lower()
+
+    def render_uc_shorthand(self):
+        if self.emit_strided_connectivity():
+            return self.render_lc_shorthand().upper()
+        else:
+            return str(self.target[1])
+
+    def num_nbh(self):
+        return IcoChainSize.get(self.target[1].to_dim_list()) + self.includes_center
+
     def __init__(self, chain: str):
+        self.includes_center = False
         if chain.endswith("O"):
             self.includes_center = True
             chain = chain[:-1]
@@ -157,6 +189,9 @@ class Field(Node):
     def is_dense(self):
         return isinstance(self.location, BasicLocation)
 
+    def is_compound(self):
+        return isinstance(self.location, CompoundLocation)
+
     def ctype(self, binding_type: str):
         match binding_type:
             case "f90":
@@ -187,7 +222,12 @@ class Field(Node):
 
     def stride_type(self):
         _strides = {"E": "EdgeStride", "C": "CellStride", "V": "VertexStride"}
-        return _strides[str(self.location)]
+        if self.is_dense():
+            return _strides[str(self.location)]
+        elif self.is_sparse():
+            return _strides[str(self.location[0])]
+        else:
+            raise Exception("stride type called on compound location or scalar")
 
     def serialise_func(self):
         _serializers = {
@@ -200,6 +240,26 @@ class Field(Node):
     def mesh_type(self):
         _mesh_types = {"E": "EdgeStride", "C": "CellStride", "V": "VertexStride"}
         return _mesh_types[str(self.location)]
+
+    def render_sid(self):
+        if self.is_sparse():
+            raise Exception("can not render sid of sparse field")
+
+        if self.rank() == 0:
+            raise Exception("can not render sid of a scalar")
+
+        values_str = (
+            "1"
+            if self.rank() == 1 or self.is_compound()
+            else f"1, mesh_.{self.stride_type()}"
+        )
+        return f"get_sid({self.name}, gridtools::hymap::keys<unstructured::dim::vertical>::make_values({values_str}))"
+
+    def num_nbh(self):
+        if not self.is_sparse():
+            raise Exception("num nbh only defined for sparse fields")
+
+        return IcoChainSize.get(self.location.to_dim_list()) + int(self.includes_center)
 
     def __init__(self, name: str, field_info: FieldInfo):
         self.name = str(name)  # why isn't this a str in the first place?
