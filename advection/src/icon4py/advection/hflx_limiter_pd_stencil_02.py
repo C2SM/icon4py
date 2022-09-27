@@ -40,14 +40,13 @@ def _hflx_limiter_pd_stencil_02(
 def hflx_limiter_pd_stencil_02(
     refin_ctrl: Field[[EdgeDim], float],
     r_m: Field[[CellDim, KDim], float],
-    p_mflx_tracer_h_in: Field[[EdgeDim, KDim], float],
-    p_mflx_tracer_h_out: Field[[EdgeDim, KDim], float],
+    p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     bound: float,
 ):
     _hflx_limiter_pd_stencil_02(
         refin_ctrl,
         r_m,
-        p_mflx_tracer_h_in,
+        p_mflx_tracer_h,
         bound,
-        out=p_mflx_tracer_h_out,
+        out=p_mflx_tracer_h,
     )
