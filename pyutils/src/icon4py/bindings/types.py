@@ -49,15 +49,24 @@ class Cell(BasicLocation):
     def __str__(self):
         return "C"
 
+    def location_type(self):
+        return "Cells"
+
 
 class Edge(BasicLocation):
     def __str__(self):
         return "E"
 
+    def location_type(self):
+        return "Edges"
+
 
 class Vertex(BasicLocation):
     def __str__(self):
         return "V"
+
+    def location_type(self):
+        return "Vertices"
 
 
 __BASIC_LOCATIONS__ = {location.__name__: location for location in [Cell, Edge, Vertex]}
@@ -114,7 +123,7 @@ class ChainedLocation:
 class Offset(Node):
     source: Union[BasicLocation, CompoundLocation]
     target: Tuple[BasicLocation, ChainedLocation]
-    includes_center: bool
+    includes_center: bool = False
 
     def emit_strided_connectivity(self):
         return isinstance(self.source, CompoundLocation)

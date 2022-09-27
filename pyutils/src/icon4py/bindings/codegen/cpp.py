@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
@@ -31,13 +30,21 @@ from icon4py.bindings.types import Field, Offset
 from icon4py.bindings.utils import write_string
 
 
-@dataclass
 class CppDef:
-    stencil_name: str
-    fields: list[Field]
-    offsets: list[Offset]
-    levels_per_thread: int
-    block_size: int
+    def __init__(
+        self,
+        stencil_name: str,
+        fields: list[Field],
+        offsets: list[Offset],
+        levels_per_thread: int,
+        block_size: int,
+    ):
+        self.stencil_name = stencil_name
+        self.fields = fields
+        self.levels_per_thread = levels_per_thread
+        self.block_size = block_size
+        self.offset_handler = GpuTriMeshOffsetHandler(offsets)
+        self.offsets = offsets
 
     def write(self, outpath: Path):
         definition = self._generate_definition()
@@ -91,7 +98,9 @@ class CppDef:
             utility_functions=UtilityFunctions(),
             stencil_class=StencilClass(
                 funcname=self.stencil_name,
-                gpu_tri_mesh=GpuTriMesh(fields=self.fields),
+                gpu_tri_mesh=GpuTriMesh(
+                    table_vars=self.offset_handler.make_table_vars(),
+                    neighbor_tables=self.offset_handler.make_neighbor_tables(),
                 run_fun=StenClassRunFun(
                     stencil_name=self.stencil_name,
                     all_fields=self.fields,
@@ -146,6 +155,39 @@ class CppDef:
         return definition
 
 
+class GpuTriMeshOffsetHandler:
+    def __init__(self, offsets: list[Offset]):
+        self.offsets = offsets
+
+    def make_table_vars(self):
+        if len(self.offsets) == 0:
+            return ""
+        return [self._make_table_var(offset) for offset in self.offsets]
+
+    def make_neighbor_tables(self):
+        if len(self.offsets) == 0:
+            return ""
+
+        return [
+            (
+                f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
+                f"{{{', '.join(self._make_location_type(offset))}}}, {1 if offset.includes_center else 0}}});"
+            )
+            for offset in self.offsets
+        ]
+
+    @staticmethod
+    def _make_table_var(offset: Offset) -> str:
+        return f"{offset.target[1].__str__().replace('2', '').lower()}{'o' if offset.includes_center else ''}"
+
+    @staticmethod
+    def _make_location_type(offset: Offset) -> list[str]:
+        return [
+            f"dawn::LocationType::{loc.location_type()}"
+            for loc in offset.target[1].chain
+        ]
+
+
 class IncludeStatements(Node):
     funcname: str
     levels_per_thread: int
@@ -157,7 +199,8 @@ class UtilityFunctions(Node):
 
 
 class GpuTriMesh(Node):
-    fields: Sequence[Field]
+    table_vars: list[str]
+    neighbor_tables: list[str]
 
 
 class StenClassRunFun(Node):
@@ -338,7 +381,7 @@ class CppDefGenerator(TemplatedGenerator):
     )
 
     GpuTriMesh = as_jinja(
-        """/
+        """\
         public:
           struct GpuTriMesh {
             int NumVertices;
@@ -347,7 +390,9 @@ class CppDefGenerator(TemplatedGenerator):
             int VertexStride;
             int EdgeStride;
             int CellStride;
-            int *veTable;   # todo
+            {%- for var in _this_node.table_vars -%}
+            int * {{ var }}Table;
+            {%- endfor %}
 
             GpuTriMesh() {}
 
@@ -358,9 +403,9 @@ class CppDefGenerator(TemplatedGenerator):
               VertexStride = mesh->VertexStride;
               CellStride = mesh->CellStride;
               EdgeStride = mesh->EdgeStride;
-              veTable = mesh->NeighborTables.at(    # todo
-                  std::tuple<std::vector<dawn::LocationType>, bool>{
-                      {dawn::LocationType::Vertices, dawn::LocationType::Edges}, 0});
+              {%- for table in _this_node.neighbor_tables -%}
+              {{ table }}
+              {%- endfor -%}
             }
           };
         """
