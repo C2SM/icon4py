@@ -18,6 +18,7 @@ import types
 from collections.abc import Iterable
 from typing import Any, TypeGuard
 
+import eve
 import tabulate
 from functional.common import Dimension, DimensionKind
 from functional.ffront import common_types as ct
@@ -165,7 +166,7 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
     )
 
 
-def scan_for_offsets(fvprog: Program) -> set[str]:
+def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     """Scan PAST node for offsets and return a set of all offsets."""
     all_types = (
         fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
@@ -182,9 +183,11 @@ def scan_for_offsets(fvprog: Program) -> set[str]:
         .getattr("value")
         .to_list()
     )
-    # we want to preserve order in the offsets for code generation reproducibility
     all_dim_labels = [dim.value for dim in all_dims if dim.kind == DimensionKind.LOCAL]
-    return set(all_offset_labels + all_dim_labels)
+
+    # we want to preserve order in the offsets for code generation reproducibility
+    sorted_dims = sorted(set(all_offset_labels + all_dim_labels))
+    return sorted_dims
 
 
 @dataclasses.dataclass(frozen=True)
