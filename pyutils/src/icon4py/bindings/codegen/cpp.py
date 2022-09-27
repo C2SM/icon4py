@@ -101,6 +101,7 @@ class CppDef:
                 gpu_tri_mesh=GpuTriMesh(
                     table_vars=self.offset_handler.make_table_vars(),
                     neighbor_tables=self.offset_handler.make_neighbor_tables(),
+                ),
                 run_fun=StenClassRunFun(
                     stencil_name=self.stencil_name,
                     all_fields=self.fields,
