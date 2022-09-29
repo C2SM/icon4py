@@ -19,8 +19,6 @@ import pathlib
 
 import click
 
-import sys
-
 from icon4py.bindings.workflow import CppBindGen, PyBindGen
 from icon4py.common.dimension import Koff
 from icon4py.pyutils.backend import GTHeader
@@ -84,7 +82,3 @@ def main(
 
     GTHeader(stencil_info)(outpath)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])

@@ -104,6 +104,7 @@ class CppDef:
                 gpu_tri_mesh=GpuTriMesh(
                     table_vars=self.offset_handler.make_table_vars(),
                     neighbor_tables=self.offset_handler.make_neighbor_tables(),
+                    has_offsets=self.offset_handler.has_offsets,
                 ),
                 run_fun=StenClassRunFun(
                     stencil_name=self.stencil_name,
@@ -118,6 +119,12 @@ class CppDef:
                 ),
                 public_utilities=PublicUtilities(fields=output_fields),
                 copy_pointers=CopyPointers(fields=self.fields),
+                private_members=PrivateMembers(
+                    fields=self.fields, out_fields=output_fields
+                ),
+                setup_func=StencilClassSetupFunc(
+                    funcname=self.stencil_name, out_fields=output_fields
+                ),
             ),
             run_func=RunFunc(
                 funcname=self.stencil_name,
@@ -164,15 +171,16 @@ class CppDef:
 class GpuTriMeshOffsetHandler:
     def __init__(self, offsets: list[Offset]):
         self.offsets = offsets
+        self.has_offsets = True if len(offsets) > 0 else False
 
     def make_table_vars(self):
-        if len(self.offsets) == 0:
-            return ""
+        if not self.has_offsets:
+            return []
         return [self._make_table_var(offset) for offset in self.offsets]
 
     def make_neighbor_tables(self):
-        if len(self.offsets) == 0:
-            return ""
+        if not self.has_offsets:
+            return []
 
         return [
             (
@@ -207,6 +215,7 @@ class UtilityFunctions(Node):
 class GpuTriMesh(Node):
     table_vars: list[str]
     neighbor_tables: list[str]
+    has_offsets: bool
 
 
 class StenClassRunFun(Node):
@@ -229,12 +238,23 @@ class CopyPointers(Node):
     fields: Sequence[Field]
 
 
+class PrivateMembers(Node):
+    fields: Sequence[Field]
+    out_fields: Sequence[Field]
+
+
+class StencilClassSetupFunc(CppSetupFuncDeclaration):
+    ...
+
+
 class StencilClass(Node):
     funcname: str
     gpu_tri_mesh: GpuTriMesh
     run_fun: StenClassRunFun
     public_utilities: PublicUtilities
     copy_pointers: CopyPointers
+    private_members: PrivateMembers
+    setup_func: StencilClassSetupFunc
 
 
 class Params(Node):
@@ -394,14 +414,14 @@ class CppDefGenerator(TemplatedGenerator):
         return kSize_;
       }
 
-      static void free() {
-      }
-
       {% for field in _this_node.fields %}
       static int get_{{field.name}}_KSize() {
-        return {{field.name}}_kSize_;
+      return {{field.name}}_kSize_;
       }
       {% endfor %}
+
+      static void free() {
+      }
       """
     )
 
@@ -426,11 +446,14 @@ class CppDefGenerator(TemplatedGenerator):
 
         class {{ funcname }} {
         {{ gpu_tri_mesh }}
-        {{ run_fun }}
+        {{ private_members }}
         public:
         {{ public_utilities }}
+        {{ setup_func }}
+        {{ funcname }}() {}
+        {{ run_fun }}
         {{ copy_pointers }}
-        }
+        };
         } // namespace cuda_ico
         } // namespace dawn_generated
         """
@@ -446,9 +469,11 @@ class CppDefGenerator(TemplatedGenerator):
             int VertexStride;
             int EdgeStride;
             int CellStride;
+            {%- if has_offsets -%}
             {%- for var in _this_node.table_vars -%}
             int * {{ var }}Table;
-            {%- endfor %}
+            {%- endfor -%}
+            {%- endif %}
 
             GpuTriMesh() {}
 
@@ -459,11 +484,59 @@ class CppDefGenerator(TemplatedGenerator):
               VertexStride = mesh->VertexStride;
               CellStride = mesh->CellStride;
               EdgeStride = mesh->EdgeStride;
+              {%- if has_offsets -%}
               {%- for table in _this_node.neighbor_tables -%}
               {{ table }}
               {%- endfor -%}
+              {%- endif %}
             }
           };
+        """
+    )
+
+    StencilClassSetupFunc = as_jinja(
+        """\
+        static void setup(
+        const dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
+        {%- for field in _this_node.out_fields -%}
+        const int {{ field.name }}_k_size
+        {%- if not loop.last -%}
+        ,
+        {%- endif -%}
+        {%- endfor %}) {
+        mesh_ = GpuTriMesh(mesh);
+        kSize_ = kSize;
+        is_setup = true;
+        stream_ = stream;
+        {%- for field in _this_node.out_fields -%}
+        {{ field.name }}_kSize_ = {{ field.name }}_kSize;
+        {%- endfor -%}
+        }
+        """
+    )
+
+    PrivateMembers = as_jinja(
+        """\
+        private:
+        {%- for field in _this_node.fields -%}
+        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_;
+        {%- endfor -%}
+        inline static int kSize_;
+        inline static GpuTriMesh mesh_;
+        inline static bool is_setup_;
+        inline static cudaStream_t stream_;
+        {%- for field in _this_node.out_fields -%}
+        inline static int {{ field.name }}_kSize_;
+        {%- endfor %}
+
+        dim3 grid(int kSize, int elSize, bool kparallel) {
+            if (kparallel) {
+              int dK = (kSize + LEVELS_PER_THREAD - 1) / LEVELS_PER_THREAD;
+              return dim3((elSize + BLOCK_SIZE - 1) / BLOCK_SIZE, dK, 1);
+            } else {
+              return dim3((elSize + BLOCK_SIZE - 1) / BLOCK_SIZE, 1, 1);
+            }
+          }
         """
     )
 
@@ -558,7 +631,7 @@ class CppDefGenerator(TemplatedGenerator):
 
     CppVerifyFuncDeclaration = as_jinja(
         """\
-        void verify_{{funcname}}(
+        bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
         const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
         const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
