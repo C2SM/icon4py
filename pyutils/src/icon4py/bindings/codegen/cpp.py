@@ -113,6 +113,8 @@ class CppDef:
                     all_connections=self.offsets,
                     parameters=parameters,
                 ),
+                public_utilities=PublicUtilities(fields=output_fields),
+                copy_pointers=CopyPointers(fields=self.fields),
             ),
             run_func=RunFunc(
                 funcname=self.stencil_name,
@@ -216,10 +218,20 @@ class StenClassRunFun(Node):
     all_connections: Sequence[Offset]
 
 
+class PublicUtilities(Node):
+    fields: Sequence[Field]
+
+
+class CopyPointers(Node):
+    fields: Sequence[Field]
+
+
 class StencilClass(Node):
     funcname: str
     gpu_tri_mesh: GpuTriMesh
     run_fun: StenClassRunFun
+    public_utilities: PublicUtilities
+    copy_pointers: CopyPointers
 
 
 class Params(Node):
@@ -365,6 +377,45 @@ class CppDefGenerator(TemplatedGenerator):
         """
     )
 
+    PublicUtilities = as_jinja(
+        """
+      static const GpuTriMesh & getMesh() {
+        return mesh_;
+      }
+
+      static cudaStream_t getStream() {
+        return stream_;
+      }
+
+      static int getKSize() {
+        return kSize_;
+      }
+
+      static void free() {
+      }
+
+      {% for field in _this_node.fields %}
+      static int get_{{field.name}}_KSize() {
+        return {{field.name}}_kSize_;
+      }
+      {% endfor %}
+      """
+    )
+
+    CopyPointers = as_jinja(
+        """
+      void copy(
+        {% for field in _this_node.fields %}
+          {{field.ctype('c++')}}{{field.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
+        {% endfor %}
+      ) {
+        {% for field in _this_node.fields %}
+          {{field.name}}_ = {{field.name}}
+        {% endfor %}
+      }
+      """
+    )
+
     StencilClass = as_jinja(
         """\
         namespace dawn_generated {
@@ -373,9 +424,10 @@ class CppDefGenerator(TemplatedGenerator):
         class {{ funcname }} {
         {{ gpu_tri_mesh }}
         {{ run_fun }}
+        public:
+        {{ public_utilities }}
+        {{ copy_pointers }}
         }
-
-
         } // namespace cuda_ico
         } // namespace dawn_generated
         """
