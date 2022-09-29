@@ -18,7 +18,7 @@ from icon4py.advection.hflx_limiter_mo_stencil_04 import (
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import constant_field, random_field, zero_field
+from icon4py.testutils.utils import random_field, zero_field
 
 
 def hflx_limiter_mo_stencil_04_numpy(
@@ -36,17 +36,9 @@ def hflx_limiter_mo_stencil_04_numpy(
     return z_mflx_low + np.minimum(1.0, r_frac) * z_anti
 
 
-def test_hflx_limiter_mo_stencil_04_positive_z_anti():
-    run_for_sign(1)
-
-
-def test_hflx_limiter_mo_stencil_04_negative_z_anti():
-    run_for_sign(-1)
-
-
-def run_for_sign(sign: int):
+def test_hflx_limiter_mo_stencil_04():
     mesh = SimpleMesh()
-    z_anti = constant_field(mesh, sign * 0.7, EdgeDim, KDim)
+    z_anti = random_field(mesh, EdgeDim, KDim, low=-2.0, high=2.0)
     r_m = random_field(mesh, CellDim, KDim)
     r_p = random_field(mesh, CellDim, KDim)
     z_mflx_low = random_field(mesh, EdgeDim, KDim)

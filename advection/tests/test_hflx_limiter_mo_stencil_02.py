@@ -28,19 +28,31 @@ def hflx_limiter_mo_stencil_02_numpy(
     lo_bound: float,
     hi_bound: float,
 ):
-    if np.all(refin_ctrl == lo_bound) or np.all(refin_ctrl == hi_bound):
-        z_tracer_temp = np.maximum(0.9 * p_cc, z_tracer_new_low)
-        z_tracer_temp = np.minimum(1.1 * p_cc, z_tracer_temp)
-        return np.maximum(p_cc, z_tracer_temp), np.minimum(p_cc, z_tracer_temp)
-    else:
-        return z_tracer_new_low, z_tracer_new_low
+    refin_ctrl = np.expand_dims(refin_ctrl, axis=1)
+    condition = np.logical_or(
+        np.equal(refin_ctrl, lo_bound * np.ones(refin_ctrl.shape)),
+        np.equal(refin_ctrl, hi_bound * np.ones(refin_ctrl.shape)),
+    )
+    z_tracer_new_tmp = np.where(
+        condition,
+        np.minimum(1.1 * p_cc, np.maximum(0.9 * p_cc, z_tracer_new_low)),
+        z_tracer_new_low,
+    )
+    z_tracer_max = np.where(
+        condition, np.maximum(p_cc, z_tracer_new_tmp), z_tracer_new_low
+    )
+    z_tracer_min = np.where(
+        condition, np.minimum(p_cc, z_tracer_new_tmp), z_tracer_new_low
+    )
+    return z_tracer_max, z_tracer_min
 
 
-def test_hflx_limiter_mo_stencil_02_matching_condition():
+def test_hflx_limiter_mo_stencil_02_some_matching_condition():
     mesh = SimpleMesh()
     hi_bound = 1
     lo_bound = 5
     refin_ctrl = constant_field(mesh, hi_bound, CellDim, dtype=int)
+    refin_ctrl[0:2] = 3
     p_cc = random_field(mesh, CellDim, KDim)
     z_tracer_new_low = random_field(mesh, CellDim, KDim)
     z_tracer_max = zero_field(mesh, CellDim, KDim)
@@ -67,7 +79,7 @@ def test_hflx_limiter_mo_stencil_02_matching_condition():
     assert np.allclose(z_tracer_min, ref_min)
 
 
-def test_hflx_limiter_mo_stencil_02_no_matching_condition():
+def test_hflx_limiter_mo_stencil_02_none_matching_condition():
     mesh = SimpleMesh()
     hi_bound = 3
     lo_bound = 1

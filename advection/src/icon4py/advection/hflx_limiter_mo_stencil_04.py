@@ -26,7 +26,7 @@ def _hflx_limiter_mo_stencil_04(
     z_mflx_low: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
     r_frac = where(
-        z_anti >= 0,
+        z_anti >= 0.0,
         minimum(r_m(E2C[0]), r_p(E2C[1])),
         minimum(r_m(E2C[1]), r_p(E2C[0])),
     )

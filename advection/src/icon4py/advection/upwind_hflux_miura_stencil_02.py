@@ -13,29 +13,35 @@
 
 from functional.common import Field
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import broadcast, neighbor_sum
 
-from icon4py.common.dimension import C2E2C, C2E2CDim, CellDim, KDim
+from icon4py.common.dimension import C2CEC, C2E2C, CECDim, CellDim, KDim
 
 
 @field_operator
 def _upwind_hflux_miura_stencil_02(
     p_cc: Field[[CellDim, KDim], float],
-    lsq_pseudoinv_1: Field[[CellDim, C2E2CDim], float],
-    lsq_pseudoinv_2: Field[[CellDim, C2E2CDim], float],
+    lsq_pseudoinv_1: Field[[CECDim], float],
+    lsq_pseudoinv_2: Field[[CECDim], float],
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    # pcc_neighbour_diff = (p_cc(C2E2C)) - broadcast(p_cc, (C2E2C, KDim))
-    pcc_neighbour_diff = broadcast(p_cc, (C2E2C, KDim))
-    p_coeff_1 = neighbor_sum(lsq_pseudoinv_1 * pcc_neighbour_diff, axis=C2E2CDim)
-    p_coeff_2 = neighbor_sum(lsq_pseudoinv_2 * pcc_neighbour_diff, axis=C2E2CDim)
+    # p_coeff_2 = neighbor_sum(lsq_pseudoinv_2 * (p_cc(C2E2C) - broadcast(p_cc, (CellDim, C2E2C, KDim))), axis=C2E2CDim)
+    p_coeff_1 = (
+        lsq_pseudoinv_1(C2CEC[0]) * (p_cc(C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_1(C2CEC[1]) * (p_cc(C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_1(C2CEC[2]) * (p_cc(C2E2C[2]) - p_cc)
+    )
+    p_coeff_2 = (
+        lsq_pseudoinv_2(C2CEC[0]) * (p_cc(C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_2(C2CEC[1]) * (p_cc(C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_2(C2CEC[2]) * (p_cc(C2E2C[2]) - p_cc)
+    )
     return p_coeff_1, p_coeff_2
 
 
 @program
 def upwind_hflux_miura_stencil_02(
     p_cc: Field[[CellDim, KDim], float],
-    lsq_pseudoinv_1: Field[[CellDim, C2E2CDim], float],
-    lsq_pseudoinv_2: Field[[CellDim, C2E2CDim], float],
+    lsq_pseudoinv_1: Field[[CECDim], float],
+    lsq_pseudoinv_2: Field[[CECDim], float],
     p_coeff_1: Field[[CellDim, KDim], float],
     p_coeff_2: Field[[CellDim, KDim], float],
 ):

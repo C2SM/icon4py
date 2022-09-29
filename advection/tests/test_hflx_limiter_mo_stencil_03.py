@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import numpy
 import numpy as np
 
 from icon4py.advection.hflx_limiter_mo_stencil_03 import (
@@ -28,7 +27,7 @@ def hflx_limiter_mo_stencil_03_numpy(
     z_tracer_min: np.ndarray,
     beta_fct: float,
     r_beta_fct: float,
-    z_mflx_anti_in: numpy.ndarray,
+    z_mflx_anti_in: np.ndarray,
     z_mflx_anti_out: np.ndarray,
     z_tracer_new_low: np.ndarray,
     dbl_eps: float,
