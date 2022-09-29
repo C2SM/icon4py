@@ -497,16 +497,16 @@ class CppDefGenerator(TemplatedGenerator):
     StencilClassSetupFunc = as_jinja(
         """\
         static void setup(
-        const dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
+        const dawn::GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream,
         {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_k_size
+        const int {{ field.name }}_kSize
         {%- if not loop.last -%}
         ,
         {%- endif -%}
         {%- endfor %}) {
         mesh_ = GpuTriMesh(mesh);
         kSize_ = kSize;
-        is_setup = true;
+        is_setup_ = true;
         stream_ = stream;
         {%- for field in _this_node.out_fields -%}
         {{ field.name }}_kSize_ = {{ field.name }}_kSize;
@@ -601,7 +601,6 @@ class CppDefGenerator(TemplatedGenerator):
         gpuErrchk(cudaDeviceSynchronize());
       #endif
       }
-
       """
     )
 
@@ -640,7 +639,7 @@ class CppDefGenerator(TemplatedGenerator):
         const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
         const {{ field.ctype('c++')}} {{ field.name }}_abs_tol,
         {%- endfor -%}
-        const int iteration) ;
+        const int iteration)
         """
     )
 
@@ -650,7 +649,7 @@ class CppDefGenerator(TemplatedGenerator):
         using namespace std::chrono;
         const auto &mesh = dawn_generated::cuda_ico::{{ funcname }}::getMesh();
         cudaStream_t stream = dawn_generated::cuda_ico::{{ funcname }}::getStream();
-        int kSize = dawn_generated::cuda_ico::mo_nh_diffusion_stencil_06::getKSize();
+        int kSize = dawn_generated::cuda_ico::{{ funcname }}::getKSize();
         high_resolution_clock::time_point t_start = high_resolution_clock::now();
         struct VerificationMetrics stencilMetrics;
         {{ metrics_serialisation }}
@@ -674,14 +673,14 @@ class CppDefGenerator(TemplatedGenerator):
         #endif
         if (!stencilMetrics.isValid) {
         #ifdef __SERIALIZE_ON_ERROR
-        {{ field.serialise_func() }}(0, (mesh.{{ field.mesh_type() }} - 1), {{ field.name }}_kSize,
+        {{ field.serialise_func() }}(0, (mesh.Num{{ field.location.location_type() }} - 1), {{ field.name }}_kSize,
                               (mesh.{{ field.stride_type() }}), {{ field.name }},
                               \"{{ funcname }}\", \"{{ field.name }}\", iteration);
-        {{ field.serialise_func() }}(0, (mesh.{{ field.mesh_type() }} - 1), {{ field.name }}_kSize,
+        {{ field.serialise_func() }}(0, (mesh.Num{{ field.location.location_type() }} - 1), {{ field.name }}_kSize,
                               (mesh.{{ field.stride_type() }}), {{ field.name }}_dsl,
                               \"{{ funcname }}\", \"{{ field.name }}_dsl\",
                               iteration);
-        std::cout << "[DSL] serializing {{ field.name }} as error is high.\n" << std::flush;
+        std::cout << "[DSL] serializing {{ field.name }} as error is high.\\n" << std::flush;
         #endif
         }
         {%- endfor %}
@@ -690,9 +689,8 @@ class CppDefGenerator(TemplatedGenerator):
         #endif
         high_resolution_clock::time_point t_end = high_resolution_clock::now();
         duration<double> timing = duration_cast<duration<double>>(t_end - t_start);
-        std::cout << "[DSL] Verification took " << timing.count() << " seconds.\n" << std::flush;
+        std::cout << "[DSL] Verification took " << timing.count() << " seconds.\\n" << std::flush;
         return stencilMetrics.isValid;
-        };
         """
     )
 
@@ -702,9 +700,13 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         run_{{funcname}}(
         {%- for field in _this_node.fields -%}
+        {%- if field.intent.out -%}
+        {{ field.name }}_before,
+        {%- else -%}
         {{ field.name }},
+        {%- endif -%}
         {%- endfor -%}
-        const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
+        verticalStart, verticalEnd, horizontalStart, horizontalEnd) ;
         """
     )
 
@@ -719,13 +721,13 @@ class CppDefGenerator(TemplatedGenerator):
         {{ field.name }}_rel_tol,
         {{ field.name }}_abs_tol,
         {%- endfor -%}
-        const int iteration) ;
+        iteration) ;
         """
     )
 
     RunAndVerifyFunc = as_jinja(
         """\
-        {{ run_verify_func_declaration }}
+        {{ run_verify_func_declaration }} {
         static int iteration = 0;
         std::cout << \"[DSL] Running stencil {{ funcname }} (\"
                   << iteration << \") ...\\n\"
@@ -760,7 +762,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{ func_declaration }} {
         dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream,
         {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_size
+        {{ field.name }}_k_size
         {%- if not loop.last -%}
         ,
         {%- endif -%}

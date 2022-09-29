@@ -50,6 +50,7 @@ def test_pybindgen_against_cppbindgen(fencils, cppbindgen_path):
         PyBindGen(metadata, levels_per_thread, block_size)(output_path)
         compare_files(cppbindgen_path, output_path, fencil, "h")
         compare_files(cppbindgen_path, output_path, fencil, "f90")
+        compare_files(cppbindgen_path, output_path, fencil, "cpp")
 
 
 def compare_files(

@@ -96,7 +96,7 @@ setup_func_declaration = as_jinja(
     {%- if not loop.last -%}
     ,
     {%- endif -%}
-    {%- endfor -%}) ;
+    {%- endfor -%})
     """
 )
 
@@ -106,7 +106,7 @@ run_func_declaration = as_jinja(
     {%- for field in _this_node.fields -%}
     {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
     {%- endfor -%}
-    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) ;
+    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd)
     """
 )
 
@@ -127,7 +127,7 @@ run_verify_func_declaration = as_jinja(
     ,
     {%- endif -%}
     {%- endfor -%}
-    ) ;
+    )
     """
 )
 
@@ -139,11 +139,11 @@ class CppHeaderGenerator(TemplatedGenerator):
         #include "driver-includes/defs.hpp"
         #include "driver-includes/cuda_utils.hpp"
         extern "C" {
-        {{ runFunc }}
-        {{ verifyFunc }}
-        {{ runAndVerifyFunc }}
-        {{ setupFunc }}
-        {{ freeFunc }}
+        {{ runFunc }};
+        {{ verifyFunc }};
+        {{ runAndVerifyFunc }};
+        {{ setupFunc }};
+        {{ freeFunc }};
         }
         """
     )
@@ -162,7 +162,7 @@ class CppHeaderGenerator(TemplatedGenerator):
         const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
         const {{ field.ctype('c++')}} {{ field.name }}_abs_tol,
         {%- endfor -%}
-        const int iteration) ;
+        const int iteration)
         """
     )
 
@@ -170,6 +170,6 @@ class CppHeaderGenerator(TemplatedGenerator):
 
     CppFreeFunc = as_jinja(
         """\
-        void free_{{funcname}}() ;
+        void free_{{funcname}}()
         """
     )
