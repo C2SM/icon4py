@@ -68,6 +68,7 @@ class CppDef:
             offset for offset in self.offsets if offset.emit_strided_connectivity()
         ]
         parameters = [field for field in self.fields if field.rank() == 0]
+        fields_without_params = [field for field in self.fields if field.rank() != 0]
         return (
             output_fields,
             dense_fields,
@@ -76,6 +77,7 @@ class CppDef:
             sparse_offsets,
             strided_offsets,
             parameters,
+            fields_without_params,
         )
 
     def _generate_definition(self):
@@ -87,6 +89,7 @@ class CppDef:
             sparse_offsets,
             strided_offsets,
             parameters,
+            fields_without_params,
         ) = self._get_field_data()
 
         definition = CppDefTemplate(
@@ -104,7 +107,7 @@ class CppDef:
                 ),
                 run_fun=StenClassRunFun(
                     stencil_name=self.stencil_name,
-                    all_fields=self.fields,
+                    all_fields=fields_without_params,
                     dense_fields=dense_fields,
                     sparse_fields=sparse_fields,
                     compound_fields=compound_fields,
@@ -404,13 +407,13 @@ class CppDefGenerator(TemplatedGenerator):
 
     CopyPointers = as_jinja(
         """
-      void copy(
-        {% for field in _this_node.fields %}
+      void copy_pointers(
+        {%- for field in _this_node.fields %}
           {{field.ctype('c++')}}{{field.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
         {% endfor %}
       ) {
-        {% for field in _this_node.fields %}
-          {{field.name}}_ = {{field.name}}
+        {% for field in _this_node.fields -%}
+          {{field.name}}_ = {{field.name}};
         {% endfor %}
       }
       """
