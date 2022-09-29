@@ -682,7 +682,9 @@ class CppDefGenerator(TemplatedGenerator):
                               iteration);
         std::cout << "[DSL] serializing {{ field.name }} as error is high.\\n" << std::flush;
         #endif
-        }
+        }{%- if loop.last -%}
+        ;
+        {%- endif -%}
         {%- endfor %}
         #ifdef __SERIALIZE_ON_ERROR
         serialize_flush_iter(\"{{ funcname }}\", iteration);

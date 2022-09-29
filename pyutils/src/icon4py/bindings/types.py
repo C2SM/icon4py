@@ -234,7 +234,7 @@ class Field(Node):
         _serializers = {
             "E": "serialize_dense_edges",
             "C": "serialize_dense_cells",
-            "V": "serialize_dense_vertexes",
+            "V": "serialize_dense_verts",
         }
         return _serializers[str(self.location)]
 
