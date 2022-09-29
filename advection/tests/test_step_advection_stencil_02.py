@@ -31,7 +31,7 @@ def step_advection_stencil_02_numpy(
         np.roll(p_mflx_contra_v, axis=1, shift=-1) * deepatmo_divzl
         - p_mflx_contra_v * deepatmo_divzu
     )
-    return pd_time + np.maximum(0.1 * rhodz_new, rhodz_new) * tmp
+    return np.maximum(0.1 * rhodz_new, rhodz_new) -pd_time * tmp
 
 
 def test_step_advection_stencil_02():
@@ -61,4 +61,5 @@ def test_step_advection_stencil_02():
         offset_provider={"Koff": KDim},
     )
 
-    np.allclose(ref, result)
+    result1 = np.asarray(result)[:, :-1]
+    assert np.allclose(ref[:, :-1], result1)

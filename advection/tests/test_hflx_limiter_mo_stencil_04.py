@@ -28,13 +28,8 @@ def hflx_limiter_mo_stencil_04_numpy(
     r_p: np.ndarray,
     z_mflx_low: np.ndarray,
 ):
-
-    one_if_positive = 1 if np.all(z_anti >= 0) else -1
-
-    one_p = (1 + one_if_positive) * np.minimum(r_m[e2c[:, 0]], r_p[e2c[:, 1]])
-    one_m = (1 - one_if_positive) * np.minimum(r_m[e2c[:, 1]], r_p[e2c[:, 0]])
-    r_frac = 0.5 * (one_p + one_m)
-    return z_mflx_low * np.minimum(1.0, r_frac) * z_anti
+    r_frac = np.where(z_anti >= 0, np.minimum(r_m[e2c[:, 0]], r_p[e2c[:, 1]]), np.minimum(r_m[e2c[:, 1]], r_p[e2c[:, 0]]))
+    return z_mflx_low + np.minimum(1.0, r_frac) * z_anti
 
 
 def test_hflx_limiter_mo_stencil_04_positive_z_anti():
@@ -67,4 +62,4 @@ def run_for_sign(sign: int):
         p_mflx_tracer_h,
         offset_provider={"E2C": mesh.get_e2c_offset_provider()},
     )
-    np.allclose(ref, p_mflx_tracer_h)
+    assert np.allclose(p_mflx_tracer_h, ref)
