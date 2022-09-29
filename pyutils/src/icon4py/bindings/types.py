@@ -19,8 +19,9 @@ from functional.ffront import program_ast as past
 from functional.ffront.common_types import FieldType, ScalarKind
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.pyutils.metadata import FieldInfo, StencilInfo, get_field_infos
 from icon4py.pyutils.icochainsize import IcoChainSize
+from icon4py.pyutils.metadata import FieldInfo, StencilInfo, get_field_infos
+
 
 Intent = namedtuple("Intent", ["inp", "out"])
 
