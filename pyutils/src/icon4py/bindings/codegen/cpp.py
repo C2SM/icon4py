@@ -68,6 +68,7 @@ class CppDef:
             offset for offset in self.offsets if offset.emit_strided_connectivity()
         ]
         parameters = [field for field in self.fields if field.rank() == 0]
+        fields_without_params = [field for field in self.fields if field.rank() != 0]
         return (
             output_fields,
             dense_fields,
@@ -76,6 +77,7 @@ class CppDef:
             sparse_offsets,
             strided_offsets,
             parameters,
+            fields_without_params,
         )
 
     def _generate_definition(self):
@@ -87,6 +89,7 @@ class CppDef:
             sparse_offsets,
             strided_offsets,
             parameters,
+            fields_without_params,
         ) = self._get_field_data()
 
         definition = CppDefTemplate(
@@ -105,7 +108,7 @@ class CppDef:
                 ),
                 run_fun=StenClassRunFun(
                     stencil_name=self.stencil_name,
-                    all_fields=self.fields,
+                    all_fields=fields_without_params,
                     dense_fields=dense_fields,
                     sparse_fields=sparse_fields,
                     compound_fields=compound_fields,
@@ -114,8 +117,13 @@ class CppDef:
                     all_connections=self.offsets,
                     parameters=parameters,
                 ),
+                public_utilities=PublicUtilities(fields=output_fields),
+                copy_pointers=CopyPointers(fields=self.fields),
                 private_members=PrivateMembers(
                     fields=self.fields, out_fields=output_fields
+                ),
+                setup_func=StencilClassSetupFunc(
+                    funcname=self.stencil_name, out_fields=output_fields
                 ),
             ),
             run_func=RunFunc(
@@ -222,16 +230,31 @@ class StenClassRunFun(Node):
     all_connections: Sequence[Offset]
 
 
+class PublicUtilities(Node):
+    fields: Sequence[Field]
+
+
+class CopyPointers(Node):
+    fields: Sequence[Field]
+
+
 class PrivateMembers(Node):
     fields: Sequence[Field]
     out_fields: Sequence[Field]
+
+
+class StencilClassSetupFunc(CppSetupFuncDeclaration):
+    ...
 
 
 class StencilClass(Node):
     funcname: str
     gpu_tri_mesh: GpuTriMesh
     run_fun: StenClassRunFun
+    public_utilities: PublicUtilities
+    copy_pointers: CopyPointers
     private_members: PrivateMembers
+    setup_func: StencilClassSetupFunc
 
 
 class Params(Node):
@@ -377,6 +400,45 @@ class CppDefGenerator(TemplatedGenerator):
         """
     )
 
+    PublicUtilities = as_jinja(
+        """
+      static const GpuTriMesh & getMesh() {
+        return mesh_;
+      }
+
+      static cudaStream_t getStream() {
+        return stream_;
+      }
+
+      static int getKSize() {
+        return kSize_;
+      }
+
+      {% for field in _this_node.fields %}
+      static int get_{{field.name}}_KSize() {
+      return {{field.name}}_kSize_;
+      }
+      {% endfor %}
+
+      static void free() {
+      }
+      """
+    )
+
+    CopyPointers = as_jinja(
+        """
+      void copy_pointers(
+        {%- for field in _this_node.fields %}
+          {{field.ctype('c++')}}{{field.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
+        {% endfor %}
+      ) {
+        {% for field in _this_node.fields -%}
+          {{field.name}}_ = {{field.name}};
+        {% endfor %}
+      }
+      """
+    )
+
     StencilClass = as_jinja(
         """\
         namespace dawn_generated {
@@ -385,10 +447,13 @@ class CppDefGenerator(TemplatedGenerator):
         class {{ funcname }} {
         {{ gpu_tri_mesh }}
         {{ private_members }}
+        public:
+        {{ public_utilities }}
+        {{ setup_func }}
+        {{ funcname }}() {}
         {{ run_fun }}
-        }
-
-
+        {{ copy_pointers }}
+        };
         } // namespace cuda_ico
         } // namespace dawn_generated
         """
@@ -426,6 +491,27 @@ class CppDefGenerator(TemplatedGenerator):
               {%- endif %}
             }
           };
+        """
+    )
+
+    StencilClassSetupFunc = as_jinja(
+        """\
+        static void setup(
+        const dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
+        {%- for field in _this_node.out_fields -%}
+        const int {{ field.name }}_k_size
+        {%- if not loop.last -%}
+        ,
+        {%- endif -%}
+        {%- endfor %}) {
+        mesh_ = GpuTriMesh(mesh);
+        kSize_ = kSize;
+        is_setup = true;
+        stream_ = stream;
+        {%- for field in _this_node.out_fields -%}
+        {{ field.name }}_kSize_ = {{ field.name }}_kSize;
+        {%- endfor -%}
+        }
         """
     )
 
@@ -545,7 +631,7 @@ class CppDefGenerator(TemplatedGenerator):
 
     CppVerifyFuncDeclaration = as_jinja(
         """\
-        void verify_{{funcname}}(
+        bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
         const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
         const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
