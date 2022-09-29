@@ -40,12 +40,14 @@ def test_pybindgen_against_cppbindgen(fencils, cppbindgen_path):
     output_path = Path(os.getcwd()) / Path("tmp")
 
     # select random sample of fencils (processing time too large otherwise)
-    selected_fencils = random.choices(fencils, k=10)
+    selected_fencils = random.choices(fencils, k=100)
+    levels_per_thread = 1
+    block_size = 128
 
     for fencil in selected_fencils:
         metadata = get_stencil_info(fencil)
         CppBindGen(metadata)(cppbindgen_path)
-        PyBindGen(metadata)(output_path)
+        PyBindGen(metadata, levels_per_thread, block_size)(output_path)
         compare_files(cppbindgen_path, output_path, fencil, "h")
         compare_files(cppbindgen_path, output_path, fencil, "f90")
 
