@@ -28,7 +28,11 @@ def hflx_limiter_mo_stencil_04_numpy(
     r_p: np.ndarray,
     z_mflx_low: np.ndarray,
 ):
-    r_frac = np.where(z_anti >= 0, np.minimum(r_m[e2c[:, 0]], r_p[e2c[:, 1]]), np.minimum(r_m[e2c[:, 1]], r_p[e2c[:, 0]]))
+    r_frac = np.where(
+        z_anti >= 0,
+        np.minimum(r_m[e2c[:, 0]], r_p[e2c[:, 1]]),
+        np.minimum(r_m[e2c[:, 1]], r_p[e2c[:, 0]]),
+    )
     return z_mflx_low + np.minimum(1.0, r_frac) * z_anti
 
 
