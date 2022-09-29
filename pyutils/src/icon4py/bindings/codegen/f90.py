@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
@@ -21,11 +22,6 @@ from eve.codegen import TemplatedGenerator
 
 from icon4py.bindings.types import Field, Offset
 from icon4py.bindings.utils import write_string
-
-# from io import StringIO
-# from fprettify import reformat_ffile
-
-import subprocess
 
 
 class F90Generator(TemplatedGenerator):
@@ -533,15 +529,6 @@ class F90Iface:
     sten_name: str
     fields: Sequence[Field]
     offsets: Sequence[Offset]
-
-    # def _format_code(self, source: str):
-    #     source_file = StringIO(source)
-    #     formated_source_file = StringIO()
-    #     reformat_ffile(
-    #         source_file, formated_source_file, orig_filename=f"{self.sten_name}.f90"
-    #     )
-    #     formated_source_file.seek(0)
-    #     return formated_source_file.read()
 
     def _format_code_subprocesss(self, source: str):
         args = ["fprettify"]
