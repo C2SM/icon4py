@@ -21,6 +21,10 @@ from icon4py.pyutils.icon4pygen import main
 from icon4py.testutils.utils import get_stencil_module_path
 
 
+LEVELS_PER_THREAD = "1"
+BLOCK_SIZE = "128"
+
+
 @pytest.fixture
 def cli():
     return CliRunner()
@@ -49,7 +53,7 @@ def test_codegen(cli, stencil_module, stencil_name):
     outpath = "."
 
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, outpath])
+        result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, outpath])
         assert result.exit_code == 0
         check_code_was_generated(stencil_name)
 
@@ -57,7 +61,7 @@ def test_codegen(cli, stencil_module, stencil_name):
 def test_invalid_module_path(cli):
     module_path = get_stencil_module_path("some_module", "foo")
     outpath = "."
-    result = cli.invoke(main, [module_path, outpath])
+    result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, outpath])
     assert result.exit_code == 1
     assert isinstance(result.exception, ModuleNotFoundError)
 
@@ -68,15 +72,16 @@ def test_multiple_field_operator_stencil(cli):
     )
     outpath = "."
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, outpath])
+        result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, outpath])
         assert result.exit_code == 0
 
 
 def check_code_was_generated(stencil_name):
-    bindgen_header = f"{stencil_name}.h"
+    cpp_header = f"{stencil_name}.h"
     gridtools_header = f"{stencil_name}.hpp"
     f90_iface = f"{stencil_name}.f90"
-    assert set([bindgen_header, gridtools_header, f90_iface]).issubset(
+    cpp_def = f"{stencil_name}.f90"
+    assert set([cpp_header, gridtools_header, f90_iface, cpp_def]).issubset(
         os.listdir(os.getcwd())
     )
     check_gridtools_codegen(gridtools_header)

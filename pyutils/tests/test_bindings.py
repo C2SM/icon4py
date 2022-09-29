@@ -40,7 +40,7 @@ def test_pybindgen_against_cppbindgen(fencils, cppbindgen_path):
     output_path = Path(os.getcwd()) / Path("tmp")
 
     # select random sample of fencils (processing time too large otherwise)
-    selected_fencils = random.choices(fencils, k=100)
+    selected_fencils = random.choices(fencils, k=10)
     levels_per_thread = 1
     block_size = 128
 
