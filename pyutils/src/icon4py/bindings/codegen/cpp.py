@@ -101,6 +101,7 @@ class CppDef:
                 gpu_tri_mesh=GpuTriMesh(
                     table_vars=self.offset_handler.make_table_vars(),
                     neighbor_tables=self.offset_handler.make_neighbor_tables(),
+                    has_offsets=self.offset_handler.has_offsets,
                 ),
                 run_fun=StenClassRunFun(
                     stencil_name=self.stencil_name,
@@ -112,6 +113,9 @@ class CppDef:
                     strided_connections=strided_offsets,
                     all_connections=self.offsets,
                     parameters=parameters,
+                ),
+                private_members=PrivateMembers(
+                    fields=self.fields, out_fields=output_fields
                 ),
             ),
             run_func=RunFunc(
@@ -159,15 +163,16 @@ class CppDef:
 class GpuTriMeshOffsetHandler:
     def __init__(self, offsets: list[Offset]):
         self.offsets = offsets
+        self.has_offsets = True if len(offsets) > 0 else False
 
     def make_table_vars(self):
-        if len(self.offsets) == 0:
-            return ""
+        if not self.has_offsets:
+            return []
         return [self._make_table_var(offset) for offset in self.offsets]
 
     def make_neighbor_tables(self):
-        if len(self.offsets) == 0:
-            return ""
+        if not self.has_offsets:
+            return []
 
         return [
             (
@@ -202,6 +207,7 @@ class UtilityFunctions(Node):
 class GpuTriMesh(Node):
     table_vars: list[str]
     neighbor_tables: list[str]
+    has_offsets: bool
 
 
 class StenClassRunFun(Node):
@@ -216,10 +222,16 @@ class StenClassRunFun(Node):
     all_connections: Sequence[Offset]
 
 
+class PrivateMembers(Node):
+    fields: Sequence[Field]
+    out_fields: Sequence[Field]
+
+
 class StencilClass(Node):
     funcname: str
     gpu_tri_mesh: GpuTriMesh
     run_fun: StenClassRunFun
+    private_members: PrivateMembers
 
 
 class Params(Node):
@@ -372,6 +384,7 @@ class CppDefGenerator(TemplatedGenerator):
 
         class {{ funcname }} {
         {{ gpu_tri_mesh }}
+        {{ private_members }}
         {{ run_fun }}
         }
 
@@ -391,9 +404,11 @@ class CppDefGenerator(TemplatedGenerator):
             int VertexStride;
             int EdgeStride;
             int CellStride;
+            {%- if has_offsets -%}
             {%- for var in _this_node.table_vars -%}
             int * {{ var }}Table;
-            {%- endfor %}
+            {%- endfor -%}
+            {%- endif %}
 
             GpuTriMesh() {}
 
@@ -404,11 +419,38 @@ class CppDefGenerator(TemplatedGenerator):
               VertexStride = mesh->VertexStride;
               CellStride = mesh->CellStride;
               EdgeStride = mesh->EdgeStride;
+              {%- if has_offsets -%}
               {%- for table in _this_node.neighbor_tables -%}
               {{ table }}
               {%- endfor -%}
+              {%- endif %}
             }
           };
+        """
+    )
+
+    PrivateMembers = as_jinja(
+        """\
+        private:
+        {%- for field in _this_node.fields -%}
+        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_;
+        {%- endfor -%}
+        inline static int kSize_;
+        inline static GpuTriMesh mesh_;
+        inline static bool is_setup_;
+        inline static cudaStream_t stream_;
+        {%- for field in _this_node.out_fields -%}
+        inline static int {{ field.name }}_kSize_;
+        {%- endfor %}
+
+        dim3 grid(int kSize, int elSize, bool kparallel) {
+            if (kparallel) {
+              int dK = (kSize + LEVELS_PER_THREAD - 1) / LEVELS_PER_THREAD;
+              return dim3((elSize + BLOCK_SIZE - 1) / BLOCK_SIZE, dK, 1);
+            } else {
+              return dim3((elSize + BLOCK_SIZE - 1) / BLOCK_SIZE, 1, 1);
+            }
+          }
         """
     )
 
