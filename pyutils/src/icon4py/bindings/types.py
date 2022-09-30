@@ -138,17 +138,17 @@ class Offset(Node):
         if self.emit_strided_connectivity():
             lhs = str(self.target[0]).lower()
             rhs = "".join([char for char in str(self.target[1]) if char != "2"]).lower()
-            return f"{lhs}2{rhs}"
+            return f"{lhs}2{rhs}" + ("o" if self.includes_center else "")
         else:
             return "".join(
                 [char for char in str(self.target[1]) if char != "2"]
-            ).lower()
+            ).lower() + ("o" if self.includes_center else "")
 
     def render_uc_shorthand(self) -> str:
         if self.emit_strided_connectivity():
             return self.render_lc_shorthand().upper()
         else:
-            return str(self.target[1])
+            return str(self.target[1]) + ("O" if self.includes_center else "")
 
     def num_nbh(self) -> int:
         return IcoChainSize.get(self.target[1].to_dim_list()) + self.includes_center

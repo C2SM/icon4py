@@ -576,7 +576,7 @@ class CppDefGenerator(TemplatedGenerator):
       {% endfor -%});
       {%- for field in _this_node.sparse_fields -%}
         {%- for i in range(0, field.num_nbh()) -%}
-            double *{{field.name}}_{{i}} = &{{field.name}}[{{i}}*mesh_.{{field.stride_type()}}];
+            double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.stride_type()}}];
         {% endfor -%}
         {%- for i in range(0, field.num_nbh()) -%}
             auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, gridtools::hymap::keys<unstructured::dim::horizontal>::make_values(1));
@@ -592,7 +592,11 @@ class CppDefGenerator(TemplatedGenerator):
       {%- endfor %}
       generated::{{stencil_name}}(connectivities)(cuda_backend,
       {%- for field in _this_node.all_fields -%}
+        {%- if field.is_sparse() -%}
+        {{field.name}}_sid_comp,
+        {%- else -%}
         {{field.name}}_sid,
+        {%- endif -%}
       {%- endfor -%}
             {%- for field in _this_node.parameters -%}
         {{field.name}}_gp,
