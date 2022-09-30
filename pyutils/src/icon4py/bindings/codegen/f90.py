@@ -530,12 +530,12 @@ class F90Iface:
     fields: Sequence[Field]
     offsets: Sequence[Offset]
 
-    def _format_code_subprocesss(self, source: str):
+    def _format_code_subprocesss(self, source: str) -> str:
         args = ["fprettify"]
         p1 = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
         return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()
 
-    def write(self, outpath: Path):
+    def write(self, outpath: Path) -> None:
         iface = self._generate_iface()
         source = F90Generator.apply(iface)
         formatted_source = self._format_code_subprocesss(source)

@@ -27,7 +27,7 @@ class GTHeader:
     def __init__(self, stencil_info: StencilInfo):
         self.stencil_info = stencil_info
 
-    def __call__(self, outpath: Path):
+    def __call__(self, outpath: Path) -> None:
         gtheader = self._generate_cpp_code(
             self._adapt_domain(self.stencil_info.fvprog.itir)
         )
@@ -43,7 +43,7 @@ class GTHeader:
         )
 
     def _adapt_domain(self, fencil: itir.FencilDefinition) -> itir.FencilDefinition:
-        """Replace field view size parameters by horizontal and vertical range paramters."""
+        """Replace field view size parameters by horizontal and vertical range parameters."""
         if len(fencil.closures) > 1:
             raise MultipleFieldOperatorException()
 
