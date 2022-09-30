@@ -17,6 +17,7 @@ from typing import List, Optional, Tuple, Union
 from eve import Node
 from functional.ffront import program_ast as past
 from functional.ffront.common_types import FieldType, ScalarKind
+from functional.ffront.fbuiltins import Dimension
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.pyutils.icochainsize import IcoChainSize
@@ -28,7 +29,7 @@ Intent = namedtuple("Intent", ["inp", "out"])
 BUILTIN_TO_ISO_C_TYPE = {
     ScalarKind.FLOAT64: "real(c_double)",
     ScalarKind.FLOAT32: "real(c_float)",
-    ScalarKind.BOOL: "logical(c_int)",  # ?
+    ScalarKind.BOOL: "logical(c_int)",
     ScalarKind.INT32: "c_int",
     ScalarKind.INT64: "c_long",
 }
@@ -36,7 +37,7 @@ BUILTIN_TO_ISO_C_TYPE = {
 BUILTIN_TO_CPP_TYPE = {
     ScalarKind.FLOAT64: "double",
     ScalarKind.FLOAT32: "float",
-    ScalarKind.BOOL: "int",  # ?
+    ScalarKind.BOOL: "int",
     ScalarKind.INT32: "int",
     ScalarKind.INT64: "long",
 }
@@ -47,38 +48,41 @@ class BasicLocation:
 
 
 class Cell(BasicLocation):
-    def __str__(self):
+    def __str__(self) -> str:
         return "C"
 
-    def location_type(self):
+    @staticmethod
+    def location_type() -> str:
         return "Cells"
 
 
 class Edge(BasicLocation):
-    def __str__(self):
+    def __str__(self) -> str:
         return "E"
 
-    def location_type(self):
+    @staticmethod
+    def location_type() -> str:
         return "Edges"
 
 
 class Vertex(BasicLocation):
-    def __str__(self):
+    def __str__(self) -> str:
         return "V"
 
-    def location_type(self):
+    @staticmethod
+    def location_type() -> str:
         return "Vertices"
 
 
 __BASIC_LOCATIONS__ = {location.__name__: location for location in [Cell, Edge, Vertex]}
 
 
-def chain_from_str(chain: str):
+def chain_from_str(chain: str) -> list[BasicLocation]:
     _chain_ctor_dispatcher_ = {"E": Edge, "C": Cell, "V": Vertex}
     return [_chain_ctor_dispatcher_[c]() for c in chain]
 
 
-def is_valid(nbh_list: List[BasicLocation]):
+def is_valid(nbh_list: List[BasicLocation]) -> bool:
     for i in range(0, len(nbh_list) - 1):  # This doesn't look very pythonic
         if isinstance(type(nbh_list[i]), type(nbh_list[i + 1])):
             return False
@@ -88,10 +92,10 @@ def is_valid(nbh_list: List[BasicLocation]):
 class CompoundLocation:
     compound: List[BasicLocation]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "".join([str(loc) for loc in self.compound])
 
-    def __init__(self, compound: List[BasicLocation]):
+    def __init__(self, compound: List[BasicLocation]) -> None:
         if is_valid(compound):
             self.compound = compound
         else:
@@ -101,10 +105,10 @@ class CompoundLocation:
 class ChainedLocation:
     chain: List[BasicLocation]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "2".join([str(loc) for loc in self.chain])
 
-    def __init__(self, chain: List[BasicLocation]):
+    def __init__(self, chain: List[BasicLocation]) -> None:
         if is_valid(chain):
             self.chain = chain
         else:
@@ -113,10 +117,10 @@ class ChainedLocation:
     def __iter__(self):
         return iter(self.chain)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> BasicLocation:
         return self.chain[item]
 
-    def to_dim_list(self):
+    def to_dim_list(self) -> list[Dimension]:
         map_to_dim = {Cell: CellDim, Edge: EdgeDim, Vertex: VertexDim}
         return [map_to_dim[c.__class__] for c in self.chain]
 
@@ -126,11 +130,11 @@ class Offset(Node):
     target: Tuple[BasicLocation, ChainedLocation]
     includes_center: bool = False
 
-    def emit_strided_connectivity(self):
+    def emit_strided_connectivity(self) -> bool:
         return isinstance(self.source, CompoundLocation)
 
     # todo: these shorthands should be improved after regression passes
-    def render_lc_shorthand(self):
+    def render_lc_shorthand(self) -> str:
         if self.emit_strided_connectivity():
             lhs = str(self.target[0]).lower()
             rhs = "".join([char for char in str(self.target[1]) if char != "2"]).lower()
@@ -140,16 +144,16 @@ class Offset(Node):
                 [char for char in str(self.target[1]) if char != "2"]
             ).lower()
 
-    def render_uc_shorthand(self):
+    def render_uc_shorthand(self) -> str:
         if self.emit_strided_connectivity():
             return self.render_lc_shorthand().upper()
         else:
             return str(self.target[1])
 
-    def num_nbh(self):
+    def num_nbh(self) -> int:
         return IcoChainSize.get(self.target[1].to_dim_list()) + self.includes_center
 
-    def __init__(self, chain: str):
+    def __init__(self, chain: str) -> None:
         self.includes_center = False
         if chain.endswith("O"):
             self.includes_center = True
@@ -184,23 +188,23 @@ class Field(Node):
     intent: Intent
     field_type: ScalarKind
 
-    def is_sparse(self):
+    def is_sparse(self) -> bool:
         return isinstance(self.location, ChainedLocation)
 
-    def is_dense(self):
+    def is_dense(self) -> bool:
         return isinstance(self.location, BasicLocation)
 
-    def is_compound(self):
+    def is_compound(self) -> bool:
         return isinstance(self.location, CompoundLocation)
 
-    def ctype(self, binding_type: str):
+    def ctype(self, binding_type: str) -> str:
         match binding_type:
             case "f90":
                 return BUILTIN_TO_ISO_C_TYPE[self.field_type]
             case "c++":
                 return BUILTIN_TO_CPP_TYPE[self.field_type]
 
-    def rank(self):
+    def rank(self) -> int:
         rank = int(self.has_vertical_dimension) + int(self.location is not None)
         if self.location is not None:
             rank += int(isinstance(self.location, ChainedLocation)) + int(
@@ -208,7 +212,7 @@ class Field(Node):
             )
         return rank
 
-    def render_pointer(self):
+    def render_pointer(self) -> str:
         return "" if self.rank() == 0 else "*"
 
     def render_dim_tags(self):
@@ -228,10 +232,10 @@ class Field(Node):
             else "value"
         )
 
-    def dim_string(self):
+    def dim_string(self) -> str:
         return "dimension(*)" if self.rank() != 0 else "value"
 
-    def stride_type(self):
+    def stride_type(self) -> str:
         _strides = {"E": "EdgeStride", "C": "CellStride", "V": "VertexStride"}
         if self.is_dense():
             return _strides[str(self.location)]
@@ -240,7 +244,7 @@ class Field(Node):
         else:
             raise Exception("stride type called on compound location or scalar")
 
-    def serialise_func(self):
+    def serialise_func(self) -> str:
         _serializers = {
             "E": "serialize_dense_edges",
             "C": "serialize_dense_cells",
@@ -248,11 +252,11 @@ class Field(Node):
         }
         return _serializers[str(self.location)]
 
-    def mesh_type(self):
+    def mesh_type(self) -> str:
         _mesh_types = {"E": "EdgeStride", "C": "CellStride", "V": "VertexStride"}
         return _mesh_types[str(self.location)]
 
-    def render_sid(self):
+    def render_sid(self) -> str:
         if self.is_sparse():
             raise Exception("can not render sid of sparse field")
 
@@ -266,7 +270,7 @@ class Field(Node):
         )
         return f"get_sid({self.name}_, gridtools::hymap::keys<{self.render_dim_tags()}>::make_values({values_str}))"
 
-    def num_nbh(self):
+    def num_nbh(self) -> int:
         if not self.is_sparse():
             raise Exception("num nbh only defined for sparse fields")
 

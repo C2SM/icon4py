@@ -176,19 +176,21 @@ class GpuTriMeshOffsetHandler:
     def make_table_vars(self):
         if not self.has_offsets:
             return []
-        return [self._make_table_var(offset) for offset in self.offsets]
+        unique_offsets = {self._make_table_var(offset) for offset in self.offsets}
+        return list(unique_offsets)
 
     def make_neighbor_tables(self):
         if not self.has_offsets:
             return []
 
-        return [
+        unique_locations = {
             (
                 f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
                 f"{{{', '.join(self._make_location_type(offset))}}}, {1 if offset.includes_center else 0}}});"
             )
             for offset in self.offsets
-        ]
+        }
+        return list(unique_locations)
 
     @staticmethod
     def _make_table_var(offset: Offset) -> str:
@@ -682,7 +684,8 @@ class CppDefGenerator(TemplatedGenerator):
                               iteration);
         std::cout << "[DSL] serializing {{ field.name }} as error is high.\\n" << std::flush;
         #endif
-        }{%- if loop.last -%}
+        }
+        {%- if loop.last -%}
         ;
         {%- endif -%}
         {%- endfor %}
