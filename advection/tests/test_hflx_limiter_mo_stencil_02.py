@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from numpy import int32
 
 from icon4py.advection.hflx_limiter_mo_stencil_02 import (
     hflx_limiter_mo_stencil_02,
@@ -30,8 +31,8 @@ def hflx_limiter_mo_stencil_02_numpy(
 ):
     refin_ctrl = np.expand_dims(refin_ctrl, axis=1)
     condition = np.logical_or(
-        np.equal(refin_ctrl, lo_bound * np.ones(refin_ctrl.shape)),
-        np.equal(refin_ctrl, hi_bound * np.ones(refin_ctrl.shape)),
+        np.equal(refin_ctrl, lo_bound * np.ones(refin_ctrl.shape, dtype=int32)),
+        np.equal(refin_ctrl, hi_bound * np.ones(refin_ctrl.shape, dtype=int32)),
     )
     z_tracer_new_tmp = np.where(
         condition,
@@ -49,10 +50,10 @@ def hflx_limiter_mo_stencil_02_numpy(
 
 def test_hflx_limiter_mo_stencil_02_some_matching_condition():
     mesh = SimpleMesh()
-    hi_bound = 1
-    lo_bound = 5
-    refin_ctrl = constant_field(mesh, hi_bound, CellDim, dtype=int)
-    refin_ctrl[0:2] = 3
+    hi_bound = np.int32(1)
+    lo_bound = np.int32(5)
+    refin_ctrl = constant_field(mesh, hi_bound, CellDim, dtype=int32)
+    refin_ctrl[0:2] = np.int32(3)
     p_cc = random_field(mesh, CellDim, KDim)
     z_tracer_new_low = random_field(mesh, CellDim, KDim)
     z_tracer_max = zero_field(mesh, CellDim, KDim)
@@ -81,9 +82,9 @@ def test_hflx_limiter_mo_stencil_02_some_matching_condition():
 
 def test_hflx_limiter_mo_stencil_02_none_matching_condition():
     mesh = SimpleMesh()
-    hi_bound = 3
-    lo_bound = 1
-    refin_ctrl = constant_field(mesh, 2, CellDim, dtype=int)
+    hi_bound = np.int32(3)
+    lo_bound = np.int32(1)
+    refin_ctrl = constant_field(mesh, 2, CellDim, dtype=int32)
     p_cc = random_field(mesh, CellDim, KDim)
     z_tracer_new_low = random_field(mesh, CellDim, KDim)
     z_tracer_max = zero_field(mesh, CellDim, KDim)

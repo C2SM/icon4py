@@ -13,18 +13,18 @@
 
 from functional.common import Field
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import maximum, minimum, where
+from functional.ffront.fbuiltins import int32, maximum, minimum, where
 
 from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_02(
-    refin_ctrl: Field[[CellDim], int],
+    refin_ctrl: Field[[CellDim], int32],
     p_cc: Field[[CellDim, KDim], float],
     z_tracer_new_low: Field[[CellDim, KDim], float],
-    lo_bound: int,
-    hi_bound: int,
+    lo_bound: int32,
+    hi_bound: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     condition = (refin_ctrl == lo_bound) | (refin_ctrl == hi_bound)
     z_tracer_new_tmp = where(
@@ -32,18 +32,20 @@ def _hflx_limiter_mo_stencil_02(
         minimum(1.1 * p_cc, maximum(0.9 * p_cc, z_tracer_new_low)),
         z_tracer_new_low,
     )
-    z_tracer_max = where(condition, maximum(p_cc, z_tracer_new_tmp), z_tracer_new_low)
-    z_tracer_min = where(condition, minimum(p_cc, z_tracer_new_tmp), z_tracer_new_low)
-    return z_tracer_max, z_tracer_min
+    return where(
+        condition,
+        (maximum(p_cc, z_tracer_new_tmp), minimum(p_cc, z_tracer_new_tmp)),
+        (z_tracer_new_low, z_tracer_new_low),
+    )
 
 
 @program
 def hflx_limiter_mo_stencil_02(
-    refin_ctrl: Field[[CellDim], int],
+    refin_ctrl: Field[[CellDim], int32],
     p_cc: Field[[CellDim, KDim], float],
     z_tracer_new_low: Field[[CellDim, KDim], float],
-    lo_bound: int,
-    hi_bound: int,
+    lo_bound: int32,
+    hi_bound: int32,
     z_tracer_max: Field[[CellDim, KDim], float],
     z_tracer_min: Field[[CellDim, KDim], float],
 ):
