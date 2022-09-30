@@ -176,20 +176,24 @@ class GpuTriMeshOffsetHandler:
     def make_table_vars(self) -> list[str]:
         if not self.has_offsets:
             return []
-        unique_offsets = {self._make_table_var(offset) for offset in self.offsets}
+        unique_offsets = sorted(
+            {self._make_table_var(offset) for offset in self.offsets}
+        )
         return list(unique_offsets)
 
     def make_neighbor_tables(self) -> list[str]:
         if not self.has_offsets:
             return []
 
-        unique_locations = {
-            (
-                f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
-                f"{{{', '.join(self._make_location_type(offset))}}}, {1 if offset.includes_center else 0}}});"
-            )
-            for offset in self.offsets
-        }
+        unique_locations = sorted(
+            {
+                (
+                    f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
+                    f"{{{', '.join(self._make_location_type(offset))}}}, {1 if offset.includes_center else 0}}});"
+                )
+                for offset in self.offsets
+            }
+        )
         return list(unique_locations)
 
     @staticmethod
