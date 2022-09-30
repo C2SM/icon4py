@@ -26,11 +26,11 @@ def run_subprocess(*args, **kwargs) -> None:
         raise RuntimeError(error)
 
 
-def check_dir_exists(dirpath: Path):
+def check_dir_exists(dirpath: Path) -> None:
     dirpath.mkdir(parents=True, exist_ok=True)
 
 
-def write_string(string: str, outdir: Path, fname: str):
+def write_string(string: str, outdir: Path, fname: str) -> None:
     path = outdir / fname
     with open(path, "w") as f:
         f.write(string)

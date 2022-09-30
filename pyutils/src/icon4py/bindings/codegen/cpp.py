@@ -46,12 +46,12 @@ class CppDef:
         self.offset_handler = GpuTriMeshOffsetHandler(offsets)
         self.offsets = offsets
 
-    def write(self, outpath: Path):
+    def write(self, outpath: Path) -> None:
         definition = self._generate_definition()
         source = format_source("cpp", CppDefGenerator.apply(definition), style="LLVM")
         write_string(source, outpath, f"{self.stencil_name}.cpp")
 
-    def _get_field_data(self):
+    def _get_field_data(self) -> tuple:
         output_fields = [field for field in self.fields if field.intent.out]
         # since we can vertical fields as dense fields for the purpose of this function, lets include them here
         dense_fields = [
@@ -173,23 +173,27 @@ class GpuTriMeshOffsetHandler:
         self.offsets = offsets
         self.has_offsets = True if len(offsets) > 0 else False
 
-    def make_table_vars(self):
+    def make_table_vars(self) -> list[str]:
         if not self.has_offsets:
             return []
-        unique_offsets = {self._make_table_var(offset) for offset in self.offsets}
+        unique_offsets = sorted(
+            {self._make_table_var(offset) for offset in self.offsets}
+        )
         return list(unique_offsets)
 
-    def make_neighbor_tables(self):
+    def make_neighbor_tables(self) -> list[str]:
         if not self.has_offsets:
             return []
 
-        unique_locations = {
-            (
-                f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
-                f"{{{', '.join(self._make_location_type(offset))}}}, {1 if offset.includes_center else 0}}});"
-            )
-            for offset in self.offsets
-        }
+        unique_locations = sorted(
+            {
+                (
+                    f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
+                    f"{{{', '.join(self._make_location_type(offset))}}}, {1 if offset.includes_center else 0}}});"
+                )
+                for offset in self.offsets
+            }
+        )
         return list(unique_locations)
 
     @staticmethod

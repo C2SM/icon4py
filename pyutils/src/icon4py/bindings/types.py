@@ -276,7 +276,7 @@ class Field(Node):
 
         return IcoChainSize.get(self.location.to_dim_list()) + int(self.includes_center)
 
-    def __init__(self, name: str, field_info: FieldInfo):
+    def __init__(self, name: str, field_info: FieldInfo) -> None:
         self.name = str(name)  # why isn't this a str in the first place?
         self.field_type = self._extract_field_type(field_info.field)
         self.intent = Intent(inp=field_info.inp, out=field_info.out)
@@ -295,7 +295,7 @@ class Field(Node):
         return field.type.dtype.kind
 
     @staticmethod
-    def _has_vertical_dimension(field: past.DataSymbol):
+    def _has_vertical_dimension(field: past.DataSymbol) -> bool:
         if not isinstance(field.type, FieldType):
             return False
         return any(dim.value == "K" for dim in field.type.dims)

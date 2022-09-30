@@ -28,7 +28,7 @@ class CppHeader:
     stencil_name: str
     fields: list[Field]
 
-    def write(self, outpath: Path):
+    def write(self, outpath: Path) -> None:
         header = self._generate_header()
         source = format_source("cpp", CppHeaderGenerator.apply(header), style="LLVM")
         write_string(source, outpath, f"{self.stencil_name}.h")
