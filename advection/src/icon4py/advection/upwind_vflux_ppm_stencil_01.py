@@ -24,7 +24,7 @@ def _upwind_vflux_ppm_stencil_01(
     p_cc: Field[[CellDim, KDim], float],
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_delta_q = 0.5 * (z_face_up - z_face_low)
-    z_a1 = 0.5 * p_cc * (z_face_up + z_face_low)
+    z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
 
     return z_delta_q, z_a1
 

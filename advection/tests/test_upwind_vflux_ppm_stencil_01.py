@@ -25,7 +25,7 @@ def upwind_vflux_ppm_stencil_01_numpy(
     z_face_up: np.ndarray, z_face_low: np.ndarray, p_cc: np.ndarray
 ) -> tuple[np.ndarray]:
     z_delta_q = 0.5 * (z_face_up - z_face_low)
-    z_a1 = 0.5 * p_cc * (z_face_up + z_face_low)
+    z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
     return z_delta_q, z_a1
 
 
