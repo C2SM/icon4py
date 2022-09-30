@@ -82,7 +82,7 @@ class PyBindGen:
     levels_per_thread: int
     block_size: int
 
-    def __call__(self, outpath: Path):
+    def __call__(self, outpath: Path) -> None:
         check_dir_exists(outpath)
 
         # from stencil_meta data to bindgen internal data structures
@@ -94,5 +94,3 @@ class PyBindGen:
         CppDef(
             stencil_name, fields, offsets, self.levels_per_thread, self.block_size
         ).write(outpath)
-
-        # todo: implement code generation for .cpp file
