@@ -572,10 +572,18 @@ class CppDefGenerator(TemplatedGenerator):
         neighbor_table_4new_sparse<{{connection.num_nbh()}}> {{connection.render_lc_shorthand()}}_ptr{};
       {% endfor -%}
       auto connectivities = gridtools::hymap::keys<
-      {%- for connection in _this_node.all_connections -%}
+      {%- for connection in _this_node.sparse_connections -%}
+        generated::{{connection.render_uc_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
+      {%- endfor -%}
+      {%- if _this_node.strided_connections|length > 0 -%},{%-endif-%}
+      {%- for connection in _this_node.strided_connections -%}
         generated::{{connection.render_uc_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
       {%- endfor -%}>::make_values(
-      {%- for connection in _this_node.all_connections -%}
+      {%- for connection in _this_node.sparse_connections -%}
+        {{connection.render_lc_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
+      {% endfor -%}
+      {%- if _this_node.strided_connections|length > 0 -%},{%-endif-%}
+      {%- for connection in _this_node.strided_connections -%}
         {{connection.render_lc_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
       {% endfor -%});
       {%- for field in _this_node.sparse_fields -%}
