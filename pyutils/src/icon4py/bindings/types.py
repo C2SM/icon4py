@@ -215,7 +215,17 @@ class Field(Node):
     def render_pointer(self) -> str:
         return "" if self.rank() == 0 else "*"
 
-    def ranked_dim_string(self) -> str:
+    def render_dim_tags(self):
+        if self.is_sparse():
+            raise Exception("can not render dimension tags for sparse field")
+        tags = []
+        if self.is_dense() or self.is_compound():
+            tags.append("unstructured::dim::horizontal")
+        if self.has_vertical_dimension:
+            tags.append("unstructured::dim::vertical")
+        return ",".join(tags)
+
+    def ranked_dim_string(self):
         return (
             "dimension(" + ",".join([":"] * self.rank()) + ")"
             if self.rank() != 0
@@ -258,7 +268,7 @@ class Field(Node):
             if self.rank() == 1 or self.is_compound()
             else f"1, mesh_.{self.stride_type()}"
         )
-        return f"get_sid({self.name}, gridtools::hymap::keys<unstructured::dim::vertical>::make_values({values_str}))"
+        return f"get_sid({self.name}_, gridtools::hymap::keys<{self.render_dim_tags()}>::make_values({values_str}))"
 
     def num_nbh(self) -> int:
         if not self.is_sparse():

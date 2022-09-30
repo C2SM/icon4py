@@ -551,13 +551,13 @@ class CppDefGenerator(TemplatedGenerator):
       }
       using namespace gridtools;
       using namespace fn;
-      {% for field in _this_node.dense_fields -%}
+      {% for field in _this_node.all_fields -%}
         {% if field.is_sparse() == False %}
           auto {{field.name}}_sid = {{ field.render_sid() }};
         {% endif %}
       {% endfor -%}
       {% for parameter in _this_node.parameters -%}
-        gridtools::stencil::global_parameter {{parameter.name}} { {{parameter.name}} };
+        gridtools::stencil::global_parameter {{parameter.name}}_gp { {{parameter.name}}_ };
       {% endfor -%}
       fn_backend_t cuda_backend{};
       cuda_backend.stream = stream_;

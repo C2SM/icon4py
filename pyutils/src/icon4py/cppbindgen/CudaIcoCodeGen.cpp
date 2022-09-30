@@ -342,7 +342,17 @@ void generateRunFun(
       runFun.addStatement("neighbor_table_fortran<" + std::to_string(dawn::ICOChainSize(space.Chain) + (space.IncludeCenter ? 1 : 0)) +"> " + chainShorthand +
                           "_ptr{.raw_ptr_fortran = mesh_." + chainShorthand +
                           "Table}");
-    } else {
+    }
+    connectivityVec.push_back(chainShorthand + "_ptr");
+    connectivityTagVec.push_back("generated::" + chainShorthandGt4py + "_t");
+  }
+  for (auto space : allSpaces) {
+    std::string chainShorthand =
+        dawn::codegen::cudaico::chainToShorthand(space);
+    std::string chainShorthandGt4py = dawn::codegen::cudaico::chainToShorthand(
+        space, dawn::codegen::cudaico::StringCase::upper, '2');
+
+    if (space.isNewSparse()) {
       runFun.addStatement("neighbor_table_4new_sparse<" + std::to_string(dawn::ICOChainSize(space.Chain) + (space.IncludeCenter ? 1 : 0)) +"> " + chainShorthand +
                           "_ptr{}");
     }
