@@ -30,8 +30,6 @@ from icon4py.pyutils.metadata import (
     scan_for_offsets,
 )
 
-import sys
-
 
 def get_stencil_info(fencil) -> StencilInfo:
     fencil_def = import_definition(fencil)
@@ -84,7 +82,3 @@ def main(
 
     GTHeader(stencil_info)(outpath)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
-
-
-if __name__ == "__main__":
-    main()
