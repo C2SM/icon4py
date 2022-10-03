@@ -62,10 +62,10 @@ class CppDef:
         sparse_fields = [field for field in self.fields if field.is_sparse()]
         compound_fields = [field for field in self.fields if field.is_compound()]
         sparse_offsets = [
-            offset for offset in self.offsets if not offset.emit_strided_connectivity()
+            offset for offset in self.offsets if not offset.is_compound_location()
         ]
         strided_offsets = [
-            offset for offset in self.offsets if offset.emit_strided_connectivity()
+            offset for offset in self.offsets if offset.is_compound_location()
         ]
         parameters = [field for field in self.fields if field.rank() == 0]
         fields_without_params = [field for field in self.fields if field.rank() != 0]
@@ -435,7 +435,7 @@ class CppDefGenerator(TemplatedGenerator):
         """
       void copy_pointers(
         {%- for field in _this_node.fields %}
-          {{field.ctype('c++')}}{{field.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
+          {{field.render_ctype('c++')}}{{field.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
         {% endfor %}
       ) {
         {% for field in _this_node.fields -%}
@@ -525,7 +525,7 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         private:
         {%- for field in _this_node.fields -%}
-        {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_;
+        {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_;
         {%- endfor -%}
         inline static int kSize_;
         inline static GpuTriMesh mesh_;
@@ -566,38 +566,38 @@ class CppDefGenerator(TemplatedGenerator):
       fn_backend_t cuda_backend{};
       cuda_backend.stream = stream_;
       {% for connection in _this_node.sparse_connections -%}
-        neighbor_table_fortran<{{connection.num_nbh()}}> {{connection.render_lc_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.render_lc_shorthand()}}Table};
+        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.render_lowercase_shorthand()}}Table};
       {% endfor -%}
       {%- for connection in _this_node.strided_connections -%}
-        neighbor_table_4new_sparse<{{connection.num_nbh()}}> {{connection.render_lc_shorthand()}}_ptr{};
+        neighbor_table_4new_sparse<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{};
       {% endfor -%}
       auto connectivities = gridtools::hymap::keys<
       {%- for connection in _this_node.sparse_connections -%}
-        generated::{{connection.render_uc_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
+        generated::{{connection.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
       {%- endfor -%}
       {%- if _this_node.strided_connections|length > 0 -%},{%-endif-%}
       {%- for connection in _this_node.strided_connections -%}
-        generated::{{connection.render_uc_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
+        generated::{{connection.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
       {%- endfor -%}>::make_values(
       {%- for connection in _this_node.sparse_connections -%}
-        {{connection.render_lc_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
+        {{connection.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
       {% endfor -%}
       {%- if _this_node.strided_connections|length > 0 -%},{%-endif-%}
       {%- for connection in _this_node.strided_connections -%}
-        {{connection.render_lc_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
+        {{connection.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
       {% endfor -%});
       {%- for field in _this_node.sparse_fields -%}
-        {%- for i in range(0, field.num_nbh()) -%}
-            double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.stride_type()}}];
+        {%- for i in range(0, field.get_num_neighbors()) -%}
+            double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.render_stride_type()}}];
         {% endfor -%}
-        {%- for i in range(0, field.num_nbh()) -%}
+        {%- for i in range(0, field.get_num_neighbors()) -%}
             auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, gridtools::hymap::keys<unstructured::dim::horizontal>::make_values(1));
         {% endfor -%}
         auto {{field.name}}_sid_comp = sid::composite::keys<
-        {%- for i in range(0, field.num_nbh()) -%}
+        {%- for i in range(0, field.get_num_neighbors()) -%}
             integral_constant<int,{{i}}>{%- if not loop.last -%}, {%- endif -%}
         {%- endfor -%}>::make_values(
-          {%- for i in range(0, field.num_nbh()) -%}
+          {%- for i in range(0, field.get_num_neighbors()) -%}
             {{field.name}}_sid_{{i}}{%- if not loop.last -%}, {%- endif -%}
         {%- endfor -%}
         );
@@ -650,12 +650,12 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
-        const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
+        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
-        const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
-        const {{ field.ctype('c++')}} {{ field.name }}_abs_tol,
+        const {{ field.render_ctype('c++')}} {{ field.name }}_rel_tol,
+        const {{ field.render_ctype('c++')}} {{ field.name }}_abs_tol,
         {%- endfor -%}
         const int iteration)
         """
@@ -681,7 +681,7 @@ class CppDefGenerator(TemplatedGenerator):
         int {{ field.name }}_kSize = dawn_generated::cuda_ico::{{ funcname }}::
         get_{{ field.name }}_KSize();
         stencilMetrics = ::dawn::verify_field(
-            stream, (mesh.{{ field.stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
+            stream, (mesh.{{ field.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
             \"{{ field.name }}\", {{ field.name }}_rel_tol, {{ field.name }}_abs_tol, iteration);
         #ifdef __SERIALIZE_METRICS
         MetricsSerialiser serialiser_{{ field.name }}(
@@ -691,11 +691,11 @@ class CppDefGenerator(TemplatedGenerator):
         #endif
         if (!stencilMetrics.isValid) {
         #ifdef __SERIALIZE_ON_ERROR
-        {{ field.serialise_func() }}(0, (mesh.Num{{ field.location.location_type() }} - 1), {{ field.name }}_kSize,
-                              (mesh.{{ field.stride_type() }}), {{ field.name }},
+        {{ field.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
+                              (mesh.{{ field.render_stride_type() }}), {{ field.name }},
                               \"{{ funcname }}\", \"{{ field.name }}\", iteration);
-        {{ field.serialise_func() }}(0, (mesh.Num{{ field.location.location_type() }} - 1), {{ field.name }}_kSize,
-                              (mesh.{{ field.stride_type() }}), {{ field.name }}_dsl,
+        {{ field.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
+                              (mesh.{{ field.render_stride_type() }}), {{ field.name }}_dsl,
                               \"{{ funcname }}\", \"{{ field.name }}_dsl\",
                               iteration);
         std::cout << "[DSL] serializing {{ field.name }} as error is high.\\n" << std::flush;

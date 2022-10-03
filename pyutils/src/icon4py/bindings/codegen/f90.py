@@ -71,7 +71,7 @@ class F90Generator(TemplatedGenerator):
     F90TypedFieldNames = as_jinja(
         """
         {%- for field in _this_node.fields -%}
-            {{field.ctype('f90')}}, {{ field.dim_string() }}, target :: {{field.name}} {% if not loop.last %}
+            {{field.render_ctype('f90')}}, {{ field.render_dim_string() }}, target :: {{field.name}} {% if not loop.last %}
             {% else %}{% endif %}
            {%- endfor -%}
         """
@@ -80,7 +80,7 @@ class F90Generator(TemplatedGenerator):
     F90TypedFieldNamesBefore = as_jinja(
         """
         {%- for field in _this_node.fields -%}
-            {{field.ctype('f90')}}, {{ field.dim_string() }}, target :: {{field.name}}_before {% if not loop.last %}
+            {{field.render_ctype('f90')}}, {{ field.render_dim_string() }}, target :: {{field.name}}_before {% if not loop.last %}
             {% else %}{% endif %}
            {%- endfor -%}
         """
@@ -89,7 +89,7 @@ class F90Generator(TemplatedGenerator):
     F90RankedFieldNames = as_jinja(
         """
         {%- for field in _this_node.fields -%}
-            {{field.ctype('f90')}}, {{field.ranked_dim_string()}}, target :: {{field.name}} {% if not loop.last %}
+            {{field.render_ctype('f90')}}, {{field.render_ranked_dim_string()}}, target :: {{field.name}} {% if not loop.last %}
             {% else %}{% endif %}
            {%- endfor -%}
         """
@@ -98,7 +98,7 @@ class F90Generator(TemplatedGenerator):
     F90RankedFieldNamesBefore = as_jinja(
         """
         {%- for field in _this_node.fields -%}
-            {{field.ctype('f90')}}, {{field.ranked_dim_string()}}, target :: {{field.name}}_before {% if not loop.last %}
+            {{field.render_ctype('f90')}}, {{field.render_ranked_dim_string()}}, target :: {{field.name}}_before {% if not loop.last %}
             {% else %}{% endif %}
            {%- endfor -%}
         """

@@ -104,7 +104,7 @@ run_func_declaration = as_jinja(
     """\
     void run_{{funcname}}(
     {%- for field in _this_node.fields -%}
-    {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
     {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd)
     """
@@ -114,15 +114,15 @@ run_verify_func_declaration = as_jinja(
     """\
     void run_and_verify_{{funcname}}(
     {%- for field in _this_node.fields -%}
-    {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
     {%- endfor -%}
     {%- for field in _this_node.out_fields -%}
-    {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
+    {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
     {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
     {%- for field in _this_node.out_fields -%}
-    const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
-    const {{ field.ctype('c++')}} {{ field.name }}_abs_tol
+    const {{ field.render_ctype('c++')}} {{ field.name }}_rel_tol,
+    const {{ field.render_ctype('c++')}} {{ field.name }}_abs_tol
     {%- if not loop.last -%}
     ,
     {%- endif -%}
@@ -155,12 +155,12 @@ class CppHeaderGenerator(TemplatedGenerator):
         """\
         bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
-        const {{ field.ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
+        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
-        const {{ field.ctype('c++')}} {{ field.name }}_rel_tol,
-        const {{ field.ctype('c++')}} {{ field.name }}_abs_tol,
+        const {{ field.render_ctype('c++')}} {{ field.name }}_rel_tol,
+        const {{ field.render_ctype('c++')}} {{ field.name }}_abs_tol,
         {%- endfor -%}
         const int iteration)
         """
