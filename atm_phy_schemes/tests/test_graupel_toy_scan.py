@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from functional.ffront.decorator import field_operator, program, scan_operator
+from functional.ffront.decorator import program, scan_operator
 from functional.ffront.fbuiltins import Field
 from hypothesis import given, settings
 
@@ -33,7 +33,6 @@ TODO GT4Py team:
 
 To discuss:
 - Returns from scan. Carry, carry + return, 2D Fields in Return
-
 
 """
 
@@ -76,13 +75,13 @@ def _graupel_toy_scan(
     b = 0.2
 
     # unpack carry
-    sedimentation_kMinus1, qc_kMinus1, qr_kMinus1 = carry
+    sedimentation_kMinus1, qr_kMinus1, _ = carry
 
     # Autoconversion: Cloud Drops -> Rain Drops
     qc = qc_in - qc_in * a
     qr = qc_in + qc_in * a
 
-    # Add sedimentation from gridpoint above
+    # Add sedimentation from above level
     qr = qr + sedimentation_kMinus1
 
     # Compute new sedimentation rate (made up formula).
@@ -91,16 +90,7 @@ def _graupel_toy_scan(
     # if k is not np.shape(qc)[1]: #TODO: Need if on index field
     qr = qr_in - sedimentation
 
-    return (sedimentation, qc, qr)
-
-
-@field_operator
-def _graupel_toy_fo(
-    qc: Field[[CellDim, KDim], float],
-    qr: Field[[CellDim, KDim], float],
-) -> Field[CellDim, KDim]:
-    sedimentation, qc, qr = _graupel_toy_scan(qc, qr)
-    return sedimentation
+    return sedimentation, qr, qc
 
 
 @program
@@ -110,7 +100,7 @@ def graupel_toy_scan(
     sedimentation: Field[[CellDim, KDim], float],
 ):
     # Writing to several output fields currently breaks due to gt4py bugs
-    _graupel_toy_fo(qc, qr, out=sedimentation)
+    _graupel_toy_scan(qc, qr, out=(sedimentation, qr, qc))
 
 
 @given(
@@ -127,8 +117,6 @@ def test_graupel_scan(qc, qr):
     qr_numpy = np.asarray(qr)
 
     graupel_toy_scan(qc, qr, sedimentation, offset_provider={})
-
-    # qc_numpy and qr_numpy are modified in place
     precipitation_numpy = graupel_toy_numpy(qc_numpy, qr_numpy)
 
     assert np.allclose(np.asarray(qc), qc_numpy)
