@@ -53,13 +53,13 @@ def _mo_solve_nonhydro_stencil_21(
     z_theta1 = step(0, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
     z_theta2 = step(1, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
     z_hydro_corr = (
-        grav_o_cpd
+        deref(grav_o_cpd)
         * deref(inv_dual_edge_length)
         * (z_theta2 - z_theta1)
         * 4.0
         / power((z_theta1 + z_theta2), 2.0)
     )
-    return z_theta1, z_theta2, z_hydro_corr
+    return z_hydro_corr
 
 
 @fendef
@@ -71,8 +71,6 @@ def mo_solve_nonhydro_stencil_21(
     inv_ddqz_z_full,
     inv_dual_edge_length,
     grav_o_cpd,
-    z_theta1,
-    z_theta2,
     z_hydro_corr,
     hstart: int,
     hend: int,
@@ -84,7 +82,7 @@ def mo_solve_nonhydro_stencil_21(
             named_range(EdgeDim, hstart, hend), named_range(KDim, kstart, kend)
         ),
         _mo_solve_nonhydro_stencil_21,
-        make_tuple(z_theta1, z_theta2, z_hydro_corr),
+        z_hydro_corr,
         [
             theta_v,
             ikidx,
@@ -105,8 +103,6 @@ theta_v_ic              Field[[{CellDim.value}, {KDim.value}], dtype=float64]   
 inv_ddqz_z_full         Field[[{CellDim.value}, {KDim.value}], dtype=float64]   in
 inv_dual_edge_length    Field[[{EdgeDim.value}], dtype=float64]   in
 grav_o_cpd              Field[[], dtype=float64]    in
-z_theta1                Field[[{EdgeDim.value}, {KDim.value}], dtype=float64]  out
-z_theta2                Field[[{EdgeDim.value}, {KDim.value}], dtype=float64]  out
 z_hydro_corr            Field[[{EdgeDim.value}, {KDim.value}], dtype=float64]  out
 """
 
