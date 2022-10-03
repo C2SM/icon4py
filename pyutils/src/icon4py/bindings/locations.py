@@ -13,38 +13,31 @@
 
 from functional.ffront.fbuiltins import Dimension
 
+from icon4py.bindings.codegen.location_renderer import LocationRenderer
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 
 
 class BasicLocation:
-    ...
+    renderer = LocationRenderer
+
+    @classmethod
+    def render_location_type(cls) -> str:
+        return cls.renderer.location_type(cls.__name__)
 
 
 class Cell(BasicLocation):
     def __str__(self) -> str:
         return "C"
 
-    @staticmethod
-    def location_type() -> str:
-        return "Cells"
-
 
 class Edge(BasicLocation):
     def __str__(self) -> str:
         return "E"
 
-    @staticmethod
-    def location_type() -> str:
-        return "Edges"
-
 
 class Vertex(BasicLocation):
     def __str__(self) -> str:
         return "V"
-
-    @staticmethod
-    def location_type() -> str:
-        return "Vertices"
 
 
 BASIC_LOCATIONS = {location.__name__: location for location in [Cell, Edge, Vertex]}

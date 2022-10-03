@@ -56,12 +56,12 @@ class Offset(Node):
         return isinstance(self.source, CompoundLocation)
 
     def render_lowercase_shorthand(self) -> str:
-        self.renderer.lc_shorthand(
+        return self.renderer.lowercase_shorthand(
             self.is_compound_location, self.includes_center, self.target
         )
 
     def render_uppercase_shorthand(self) -> str:
-        self.renderer.uc_shorthand(
+        return self.renderer.uppercase_shorthand(
             self.is_compound_location, self.includes_center, self.target
         )
 
@@ -91,11 +91,16 @@ class Offset(Node):
     def _make_target(
         self, chain: str, source: Union[BasicLocation, CompoundLocation]
     ) -> tuple[BasicLocation, ChainedLocation]:
+        if chain.endswith("O"):
+            chain = chain[:-1]
+
         target_0 = chain_from_str(chain.split("2")[0])[0]
         if isinstance(source, CompoundLocation):
             target_1 = ChainedLocation(chain_from_str(str(source)))
         else:
-            target_1 = ChainedLocation(chain_from_str("".join(chain).split("2")))
+            target_1 = ChainedLocation(
+                chain_from_str("".join(chain).split("2"))
+            )  # todo: make str
 
         return target_0, target_1
 
@@ -154,7 +159,7 @@ class Field(Node):
 
     def render_stride_type(self) -> str:
         return self.renderer.stride_type(
-            self.is_compound(), self.is_sparse(), self.location
+            self.is_dense(), self.is_sparse(), self.location
         )
 
     def render_serialise_func(self) -> str:

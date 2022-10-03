@@ -203,7 +203,7 @@ class GpuTriMeshOffsetHandler:
     @staticmethod
     def _make_location_type(offset: Offset) -> list[str]:
         return [
-            f"dawn::LocationType::{loc.location_type()}"
+            f"dawn::LocationType::{loc.render_location_type()}"
             for loc in offset.target[1].chain
         ]
 
