@@ -57,12 +57,12 @@ class Offset(Node):
 
     def render_lowercase_shorthand(self) -> str:
         return self.renderer.lowercase_shorthand(
-            self.is_compound_location, self.includes_center, self.target
+            self.is_compound_location(), self.includes_center, self.target
         )
 
     def render_uppercase_shorthand(self) -> str:
         return self.renderer.uppercase_shorthand(
-            self.is_compound_location, self.includes_center, self.target
+            self.is_compound_location(), self.includes_center, self.target
         )
 
     def get_num_neighbors(self) -> int:
