@@ -11,6 +11,10 @@ atm_dyn_iconam_sources =
     atm_dyn_iconam/src/icon4py/atm_dyn_iconam/
     .tox/py*/lib/python3.*/site-packages/icon4py/atm_dyn_iconam/
 
+advection_sources =
+    advection/src/icon4py/advection/
+    .tox/py*/lib/python3.*/site-packages/icon4py/advection/
+
 common_sources =
     common/src/icon4py/common/
     .tox/py*/lib/python3.*/site-packages/icon4py/common/
