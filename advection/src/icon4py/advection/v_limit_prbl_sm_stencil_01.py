@@ -50,7 +50,7 @@ def _v_limit_prbl_sm_stencil_01(
                 (p_face, 3.0 * p_cc - 2.0 * p_face),
             ),
         ),
-        (p_face, p_face(Koff[-1])),
+        (p_face, p_face(Koff[1])),
     )
 
     return q_face_up, q_face_low

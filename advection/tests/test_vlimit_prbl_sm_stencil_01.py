@@ -25,14 +25,10 @@ def v_limit_prbl_sm_stencil_01_numpy(
     p_face: np.array,
     p_cc: np.array,
 ):
-    p_face_k_minus_1 = np.roll(p_face, shift=1, axis=1)
     p_face_k_plus_1 = np.roll(p_face, shift=-1, axis=1)
 
     z_delta = p_face - p_face_k_plus_1
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face + p_face_k_plus_1))
-
-    q_face_up = 1.0
-    q_face_low = 1.0
 
     q_face_up, q_face_low = np.where(
         abs(z_delta) < -1 * z_a6i,
@@ -45,7 +41,7 @@ def v_limit_prbl_sm_stencil_01_numpy(
                 (p_face, 3.0 * p_cc - 2.0 * p_face),
             ),
         ),
-        (p_face, p_face_k_minus_1),
+        (p_face, p_face_k_plus_1),
     )
 
     return q_face_up, q_face_low
