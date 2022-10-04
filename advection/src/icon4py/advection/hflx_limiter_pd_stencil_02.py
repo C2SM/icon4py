@@ -12,23 +12,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, where
+from functional.ffront.fbuiltins import Field, int32, where
 
 from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
 def _hflx_limiter_pd_stencil_02(
-    refin_ctrl: Field[[EdgeDim], float],
+    refin_ctrl: Field[[EdgeDim], int32],
     r_m: Field[[CellDim, KDim], float],
     p_mflx_tracer_h_in: Field[[EdgeDim, KDim], float],
-    bound: float,
+    bound: int32,
 ) -> Field[[EdgeDim, KDim], float]:
     p_mflx_tracer_h_out = where(
         refin_ctrl == bound,
         p_mflx_tracer_h_in,
         where(
-            (p_mflx_tracer_h_in > 0.0) | (p_mflx_tracer_h_in == 0.0),
+            p_mflx_tracer_h_in >= 0.0,
             p_mflx_tracer_h_in * r_m(E2C[0]),
             p_mflx_tracer_h_in * r_m(E2C[1]),
         ),
@@ -38,10 +38,10 @@ def _hflx_limiter_pd_stencil_02(
 
 @program
 def hflx_limiter_pd_stencil_02(
-    refin_ctrl: Field[[EdgeDim], float],
+    refin_ctrl: Field[[EdgeDim], int32],
     r_m: Field[[CellDim, KDim], float],
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
-    bound: float,
+    bound: int32,
 ):
     _hflx_limiter_pd_stencil_02(
         refin_ctrl,
