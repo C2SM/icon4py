@@ -1,0 +1,92 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+from typing import TYPE_CHECKING
+
+from icon4py.bindings.locations import BasicLocation, ChainedLocation
+
+
+if TYPE_CHECKING:
+    from icon4py.bindings.entities import Offset
+
+
+class OffsetRenderer:
+    # todo: these shorthands can potentially be improved after regression testing
+
+    @staticmethod
+    def lowercase_shorthand(
+        is_compound_location: bool,
+        includes_center: bool,
+        target: tuple[BasicLocation, ChainedLocation],
+    ) -> str:
+        if is_compound_location:
+            lhs = str(target[0]).lower()
+            rhs = "".join([char for char in str(target[1]) if char != "2"]).lower()
+            return f"{lhs}2{rhs}" + ("o" if includes_center else "")
+        else:
+            return "".join([char for char in str(target[1]) if char != "2"]).lower() + (
+                "o" if includes_center else ""
+            )
+
+    @staticmethod
+    def uppercase_shorthand(
+        is_compound_location: bool,
+        includes_center: bool,
+        target: tuple[BasicLocation, ChainedLocation],
+    ) -> str:
+        if is_compound_location:
+            return OffsetRenderer.lowercase_shorthand(
+                is_compound_location, includes_center, target
+            ).upper()
+        else:
+            return str(target[1]) + ("O" if includes_center else "")
+
+
+class GpuTriMeshOffsetRenderer:
+    def __init__(self, offsets: list["Offset"]):  # :
+        self.offsets = offsets
+        self.has_offsets = True if len(offsets) > 0 else False
+
+    def make_table_vars(self) -> list[str]:
+        if not self.has_offsets:
+            return []
+        unique_offsets = sorted(
+            {self._make_table_var(offset) for offset in self.offsets}
+        )
+        return list(unique_offsets)
+
+    def make_neighbor_tables(self) -> list[str]:
+        if not self.has_offsets:
+            return []
+
+        unique_locations = sorted(
+            {
+                (
+                    f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
+                    f"{{{', '.join(self._make_location_type(offset))}}}, {1 if offset.includes_center else 0}}});"
+                )
+                for offset in self.offsets
+            }
+        )
+        return list(unique_locations)
+
+    @staticmethod
+    def _make_table_var(offset: "Offset") -> str:
+        return f"{offset.target[1].__str__().replace('2', '').lower()}{'o' if offset.includes_center else ''}"
+
+    @staticmethod
+    def _make_location_type(offset: "Offset") -> list[str]:
+        return [
+            f"dawn::LocationType::{loc.render_location_type()}"
+            for loc in offset.target[1].chain
+        ]

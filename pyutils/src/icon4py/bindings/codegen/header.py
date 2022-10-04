@@ -19,72 +19,8 @@ from eve import Node
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator, format_source
 
-from icon4py.bindings.types import Field
+from icon4py.bindings.entities import Field
 from icon4py.bindings.utils import write_string
-
-
-@dataclass
-class CppHeader:
-    stencil_name: str
-    fields: list[Field]
-
-    def write(self, outpath: Path) -> None:
-        header = self._generate_header()
-        source = format_source("cpp", CppHeaderGenerator.apply(header), style="LLVM")
-        write_string(source, outpath, f"{self.stencil_name}.h")
-
-    def _generate_header(self):
-        output_fields = [field for field in self.fields if field.intent.out]
-        header = CppHeaderFile(
-            runFunc=CppRunFuncDeclaration(
-                funcname=self.stencil_name,
-                fields=self.fields,
-            ),
-            verifyFunc=CppVerifyFuncDeclaration(
-                funcname=self.stencil_name,
-                out_fields=output_fields,
-            ),
-            runAndVerifyFunc=CppRunAndVerifyFuncDeclaration(
-                funcname=self.stencil_name, fields=self.fields, out_fields=output_fields
-            ),
-            setupFunc=CppSetupFuncDeclaration(
-                funcname=self.stencil_name, out_fields=output_fields
-            ),
-            freeFunc=CppFreeFunc(funcname=self.stencil_name),
-        )
-        return header
-
-
-class CppFunc(Node):
-    funcname: str
-
-
-class CppFreeFunc(CppFunc):
-    ...
-
-
-class CppRunFuncDeclaration(CppFunc):
-    fields: Sequence[Field]
-
-
-class CppVerifyFuncDeclaration(CppFunc):
-    out_fields: Sequence[Field]
-
-
-class CppSetupFuncDeclaration(CppVerifyFuncDeclaration):
-    ...
-
-
-class CppRunAndVerifyFuncDeclaration(CppRunFuncDeclaration, CppVerifyFuncDeclaration):
-    ...
-
-
-class CppHeaderFile(Node):
-    runFunc: CppRunFuncDeclaration
-    verifyFunc: CppVerifyFuncDeclaration
-    runAndVerifyFunc: CppRunAndVerifyFuncDeclaration
-    setupFunc: CppSetupFuncDeclaration
-    freeFunc: CppFreeFunc
 
 
 setup_func_declaration = as_jinja(
@@ -173,3 +109,67 @@ class CppHeaderGenerator(TemplatedGenerator):
         void free_{{funcname}}()
         """
     )
+
+
+class CppFunc(Node):
+    funcname: str
+
+
+class CppFreeFunc(CppFunc):
+    ...
+
+
+class CppRunFuncDeclaration(CppFunc):
+    fields: Sequence[Field]
+
+
+class CppVerifyFuncDeclaration(CppFunc):
+    out_fields: Sequence[Field]
+
+
+class CppSetupFuncDeclaration(CppVerifyFuncDeclaration):
+    ...
+
+
+class CppRunAndVerifyFuncDeclaration(CppRunFuncDeclaration, CppVerifyFuncDeclaration):
+    ...
+
+
+class CppHeaderFile(Node):
+    runFunc: CppRunFuncDeclaration
+    verifyFunc: CppVerifyFuncDeclaration
+    runAndVerifyFunc: CppRunAndVerifyFuncDeclaration
+    setupFunc: CppSetupFuncDeclaration
+    freeFunc: CppFreeFunc
+
+
+@dataclass
+class CppHeader:
+    stencil_name: str
+    fields: list[Field]
+
+    def write(self, outpath: Path) -> None:
+        header = self._generate_header()
+        source = format_source("cpp", CppHeaderGenerator.apply(header), style="LLVM")
+        write_string(source, outpath, f"{self.stencil_name}.h")
+
+    def _generate_header(self):
+        output_fields = [field for field in self.fields if field.intent.out]
+        header = CppHeaderFile(
+            runFunc=CppRunFuncDeclaration(
+                funcname=self.stencil_name,
+                fields=self.fields,
+            ),
+            verifyFunc=CppVerifyFuncDeclaration(
+                funcname=self.stencil_name,
+                out_fields=output_fields,
+            ),
+            runAndVerifyFunc=CppRunAndVerifyFuncDeclaration(
+                funcname=self.stencil_name, fields=self.fields, out_fields=output_fields
+            ),
+            setupFunc=CppSetupFuncDeclaration(
+                funcname=self.stencil_name, out_fields=output_fields
+            ),
+            freeFunc=CppFreeFunc(funcname=self.stencil_name),
+        )
+        return header

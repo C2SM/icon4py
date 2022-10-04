@@ -13,7 +13,7 @@
 
 from functional.ffront.fbuiltins import Dimension
 
-from icon4py.bindings.codegen.location_renderer import LocationRenderer
+from icon4py.bindings.codegen.render.location import LocationRenderer
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 
 

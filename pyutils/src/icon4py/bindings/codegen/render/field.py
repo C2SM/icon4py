@@ -13,30 +13,15 @@
 
 from typing import Union
 
-from functional.ffront.common_types import ScalarKind
-
+from icon4py.bindings.codegen.type_conversion import (
+    BUILTIN_TO_CPP_TYPE,
+    BUILTIN_TO_ISO_C_TYPE,
+)
 from icon4py.bindings.locations import (
     BasicLocation,
     ChainedLocation,
     CompoundLocation,
 )
-
-
-BUILTIN_TO_ISO_C_TYPE = {
-    ScalarKind.FLOAT64: "real(c_double)",
-    ScalarKind.FLOAT32: "real(c_float)",
-    ScalarKind.BOOL: "logical(c_int)",
-    ScalarKind.INT32: "c_int",
-    ScalarKind.INT64: "c_long",
-}
-
-BUILTIN_TO_CPP_TYPE = {
-    ScalarKind.FLOAT64: "double",
-    ScalarKind.FLOAT32: "float",
-    ScalarKind.BOOL: "int",
-    ScalarKind.INT32: "int",
-    ScalarKind.INT64: "long",
-}
 
 
 class FieldRenderer:
@@ -118,35 +103,3 @@ class FieldRenderer:
                 return BUILTIN_TO_ISO_C_TYPE[field_type]
             case "c++":
                 return BUILTIN_TO_CPP_TYPE[field_type]
-
-
-class OffsetRenderer:
-    # todo: these shorthands can potentially be improved after regression testing
-
-    @staticmethod
-    def lowercase_shorthand(
-        is_compound_location: bool,
-        includes_center: bool,
-        target: tuple[BasicLocation, ChainedLocation],
-    ) -> str:
-        if is_compound_location:
-            lhs = str(target[0]).lower()
-            rhs = "".join([char for char in str(target[1]) if char != "2"]).lower()
-            return f"{lhs}2{rhs}" + ("o" if includes_center else "")
-        else:
-            return "".join([char for char in str(target[1]) if char != "2"]).lower() + (
-                "o" if includes_center else ""
-            )
-
-    @staticmethod
-    def uppercase_shorthand(
-        is_compound_location: bool,
-        includes_center: bool,
-        target: tuple[BasicLocation, ChainedLocation],
-    ) -> str:
-        if is_compound_location:
-            return OffsetRenderer.lowercase_shorthand(
-                is_compound_location, includes_center, target
-            ).upper()
-        else:
-            return str(target[1]) + ("O" if includes_center else "")

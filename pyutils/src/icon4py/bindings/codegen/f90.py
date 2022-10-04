@@ -20,7 +20,7 @@ from eve import Node
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator
 
-from icon4py.bindings.types import Field, Offset
+from icon4py.bindings.entities import Field, Offset
 from icon4py.bindings.utils import write_string
 
 

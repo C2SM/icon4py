@@ -19,7 +19,8 @@ from functional.ffront import program_ast as past
 from functional.ffront.common_types import FieldType, ScalarKind
 from functional.ffront.fbuiltins import Dimension
 
-from icon4py.bindings.codegen.render import FieldRenderer, OffsetRenderer
+from icon4py.bindings.codegen.render.field import FieldRenderer
+from icon4py.bindings.codegen.render.offset import OffsetRenderer
 from icon4py.bindings.locations import (
     BASIC_LOCATIONS,
     BasicLocation,

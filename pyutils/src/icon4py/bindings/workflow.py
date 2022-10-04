@@ -20,7 +20,7 @@ from icon4py.bindings.build import CppbindgenBuilder
 from icon4py.bindings.codegen.cpp import CppDef
 from icon4py.bindings.codegen.f90 import F90Iface
 from icon4py.bindings.codegen.header import CppHeader
-from icon4py.bindings.types import Field, Offset
+from icon4py.bindings.entities import Field, Offset
 from icon4py.bindings.utils import check_dir_exists, run_subprocess
 from icon4py.pyutils.metadata import StencilInfo, format_metadata, get_field_infos
 
