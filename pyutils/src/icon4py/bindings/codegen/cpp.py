@@ -664,28 +664,20 @@ class CppDef:
         ]
         parameters = [field for field in self.fields if field.rank() == 0]
         fields_without_params = [field for field in self.fields if field.rank() != 0]
-        return (
-            output_fields,
-            dense_fields,
-            sparse_fields,
-            compound_fields,
-            sparse_offsets,
-            strided_offsets,
-            parameters,
-            fields_without_params,
+
+        offsets = dict(sparse=sparse_offsets, strided=strided_offsets)
+        fields = dict(
+            output=output_fields,
+            dense=dense_fields,
+            sparse=sparse_fields,
+            compound=compound_fields,
+            parameters=parameters,
+            without_params=fields_without_params,
         )
+        return fields, offsets
 
     def _generate_definition(self):
-        (
-            output_fields,
-            dense_fields,
-            sparse_fields,
-            compound_fields,
-            sparse_offsets,
-            strided_offsets,
-            parameters,
-            fields_without_params,
-        ) = self._get_field_data()
+        fields, offsets = self._get_field_data()
 
         definition = CppDefTemplate(
             includes=IncludeStatements(
@@ -703,22 +695,22 @@ class CppDef:
                 ),
                 run_fun=StenClassRunFun(
                     stencil_name=self.stencil_name,
-                    all_fields=fields_without_params,
-                    dense_fields=dense_fields,
-                    sparse_fields=sparse_fields,
-                    compound_fields=compound_fields,
-                    sparse_connections=sparse_offsets,
-                    strided_connections=strided_offsets,
+                    all_fields=fields["without_params"],
+                    dense_fields=fields["dense"],
+                    sparse_fields=fields["sparse"],
+                    compound_fields=fields["compound"],
+                    sparse_connections=offsets["sparse"],
+                    strided_connections=offsets["strided"],
                     all_connections=self.offsets,
-                    parameters=parameters,
+                    parameters=fields["parameters"],
                 ),
-                public_utilities=PublicUtilities(fields=output_fields),
+                public_utilities=PublicUtilities(fields=fields["output"]),
                 copy_pointers=CopyPointers(fields=self.fields),
                 private_members=PrivateMembers(
-                    fields=self.fields, out_fields=output_fields
+                    fields=self.fields, out_fields=fields["output"]
                 ),
                 setup_func=StencilClassSetupFunc(
-                    funcname=self.stencil_name, out_fields=output_fields
+                    funcname=self.stencil_name, out_fields=fields["output"]
                 ),
             ),
             run_func=RunFunc(
@@ -731,10 +723,10 @@ class CppDef:
             verify_func=VerifyFunc(
                 funcname=self.stencil_name,
                 verify_func_declaration=CppVerifyFuncDeclaration(
-                    funcname=self.stencil_name, out_fields=output_fields
+                    funcname=self.stencil_name, out_fields=fields["output"]
                 ),
                 metrics_serialisation=MetricsSerialisation(
-                    funcname=self.stencil_name, out_fields=output_fields
+                    funcname=self.stencil_name, out_fields=fields["output"]
                 ),
             ),
             run_verify_func=RunAndVerifyFunc(
@@ -742,20 +734,20 @@ class CppDef:
                 run_verify_func_declaration=CppRunAndVerifyFuncDeclaration(
                     funcname=self.stencil_name,
                     fields=self.fields,
-                    out_fields=output_fields,
+                    out_fields=fields["output"],
                 ),
                 run_func_call=RunFuncCall(
                     funcname=self.stencil_name, fields=self.fields
                 ),
                 verify_func_call=VerifyFuncCall(
-                    funcname=self.stencil_name, out_fields=output_fields
+                    funcname=self.stencil_name, out_fields=fields["output"]
                 ),
             ),
             setup_func=SetupFunc(
                 funcname=self.stencil_name,
-                out_fields=output_fields,
+                out_fields=fields["output"],
                 func_declaration=CppSetupFuncDeclaration(
-                    funcname=self.stencil_name, out_fields=output_fields
+                    funcname=self.stencil_name, out_fields=fields["output"]
                 ),
             ),
             free_func=FreeFunc(funcname=self.stencil_name),
