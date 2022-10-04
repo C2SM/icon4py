@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
@@ -21,7 +20,7 @@ from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator
 
 from icon4py.bindings.entities import Field, Offset
-from icon4py.bindings.utils import write_string
+from icon4py.bindings.utils import format_fortran_code, write_string
 
 
 class F90Generator(TemplatedGenerator):
@@ -530,15 +529,10 @@ class F90Iface:
     fields: Sequence[Field]
     offsets: Sequence[Offset]
 
-    def _format_code_subprocesss(self, source: str) -> str:
-        args = ["fprettify"]
-        p1 = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-        return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()
-
     def write(self, outpath: Path) -> None:
         iface = self._generate_iface()
         source = F90Generator.apply(iface)
-        formatted_source = self._format_code_subprocesss(source)
+        formatted_source = format_fortran_code(source)
         write_string(formatted_source, outpath, f"{self.sten_name}.f90")
 
     def _generate_iface(self):

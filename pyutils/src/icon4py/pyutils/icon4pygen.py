@@ -20,37 +20,12 @@ import pathlib
 import click
 
 from icon4py.bindings.workflow import PyBindGen
-from icon4py.common.dimension import Koff
 from icon4py.pyutils.backend import GTHeader
-from icon4py.pyutils.metadata import (
-    StencilInfo,
-    get_fvprog,
-    import_definition,
-    provide_offset,
-    scan_for_offsets,
-)
-
-
-def get_stencil_info(fencil) -> StencilInfo:
-    fencil_def = import_definition(fencil)
-    fvprog = get_fvprog(fencil_def)
-    offsets = scan_for_offsets(fvprog)
-    offset_provider = {}
-    for offset in offsets:
-        offset_provider[offset] = provide_offset(offset)
-    connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-    return StencilInfo(fvprog, connectivity_chains, offset_provider)
+from icon4py.pyutils.metadata import get_stencil_info
 
 
 @click.command(
     "icon4pygen",
-)
-@click.option(
-    "--cppbindgen-path",
-    type=click.Path(
-        exists=True, dir_okay=True, resolve_path=True, path_type=pathlib.Path
-    ),
-    help="Path to cppbindgen source folder. Specifying this option will compile and execute the c++ bindings generator and store all generated files in the build folder under build/generated.",
 )
 @click.argument("fencil", type=str)
 @click.argument("block_size", type=int)
@@ -64,7 +39,6 @@ def main(
     block_size: int,
     levels_per_thread: int,
     outpath: pathlib.Path,
-    cppbindgen_path: pathlib.Path = None,
 ) -> None:
     """
     Generate C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.

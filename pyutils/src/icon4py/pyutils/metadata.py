@@ -15,11 +15,9 @@ from __future__ import annotations
 import dataclasses
 import importlib
 import types
-from collections.abc import Iterable
 from typing import Any, TypeGuard
 
 import eve
-import tabulate
 from functional.common import Dimension, DimensionKind
 from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
@@ -35,15 +33,17 @@ from icon4py.pyutils.icochainsize import IcoChainSize
 
 
 @dataclasses.dataclass(frozen=True)
+class StencilInfo:
+    fvprog: Program
+    connectivity_chains: list[str]
+    offset_provider: dict
+
+
+@dataclasses.dataclass(frozen=True)
 class FieldInfo:
     field: past.DataSymbol
     inp: bool
     out: bool
-
-
-def format_io_string(fieldinfo: FieldInfo) -> str:
-    """Format the output for the "io" column: in/inout/out."""
-    return f"{'in' if fieldinfo.inp else ''}{'out' if fieldinfo.out else ''}"
 
 
 def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
@@ -72,28 +72,6 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     }
 
     return fields
-
-
-# todo: this can be deleted once PyBindGen is complete
-def format_metadata(fvprog: Program, chains: Iterable[str], **kwargs: Any) -> str:
-    """Format in/out field and connectivity information from a program as a string table."""
-    field_infos = get_field_infos(fvprog)
-    table = []
-    for name, info in field_infos.items():
-        display_type = info.field.type
-
-        if isinstance(info.field.type, ct.ScalarType):
-            display_type = ct.FieldType(dims=[], dtype=info.field.type)
-        elif not isinstance(info.field.type, ct.FieldType):
-            raise NotImplementedError("Found unsupported argument type.")
-
-        table.append({"name": name, "type": display_type, "io": format_io_string(info)})
-    kwargs.setdefault("tablefmt", "plain")
-    return (
-        ", ".join([chain for chain in chains])
-        + "\n"
-        + tabulate.tabulate(table, **kwargs)
-    )
 
 
 def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
@@ -190,8 +168,12 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     return sorted_dims
 
 
-@dataclasses.dataclass(frozen=True)
-class StencilInfo:
-    fvprog: Program
-    connectivity_chains: list[str]
-    offset_provider: dict
+def get_stencil_info(fencil) -> StencilInfo:
+    fencil_def = import_definition(fencil)
+    fvprog = get_fvprog(fencil_def)
+    offsets = scan_for_offsets(fvprog)
+    offset_provider = {}
+    for offset in offsets:
+        offset_provider[offset] = provide_offset(offset)
+    connectivity_chains = [offset for offset in offsets if offset != Koff.value]
+    return StencilInfo(fvprog, connectivity_chains, offset_provider)

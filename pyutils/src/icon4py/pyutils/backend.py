@@ -33,7 +33,6 @@ class GTHeader:
         )
         write_string(gtheader, outpath, f"{self.stencil_info.fvprog.itir.id}.hpp")
 
-    # TODO: provide a better typing for offset_provider
     def _generate_cpp_code(self, fencil: itir.FencilDefinition, **kwargs: Any) -> str:
         """Generate C++ code using the GTFN backend."""
         return generate(

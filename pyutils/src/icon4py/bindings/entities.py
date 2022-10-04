@@ -17,7 +17,6 @@ from typing import Union
 from eve import Node
 from functional.ffront import program_ast as past
 from functional.ffront.common_types import FieldType, ScalarKind
-from functional.ffront.fbuiltins import Dimension
 
 from icon4py.bindings.codegen.render.field import FieldRenderer
 from icon4py.bindings.codegen.render.offset import OffsetRenderer
@@ -30,7 +29,7 @@ from icon4py.bindings.locations import (
     Edge,
     Vertex,
 )
-from icon4py.pyutils.icochainsize import IcoChainSize
+from icon4py.bindings.utils import calc_num_neighbors
 from icon4py.pyutils.metadata import FieldInfo
 
 
@@ -38,12 +37,8 @@ Intent = namedtuple("Intent", ["inp", "out"])
 
 
 def chain_from_str(chain: str) -> list[BasicLocation]:
-    _chain_ctor_dispatcher_ = {"E": Edge, "C": Cell, "V": Vertex}
-    return [_chain_ctor_dispatcher_[c]() for c in chain]
-
-
-def _get_num_neighbors(dim_list: list[Dimension], includes_center: bool) -> int:
-    return IcoChainSize.get(dim_list) + int(includes_center)
+    chain_ctor_dispatcher = {"E": Edge, "C": Cell, "V": Vertex}
+    return [chain_ctor_dispatcher[c]() for c in chain]
 
 
 class Offset(Node):
@@ -67,14 +62,16 @@ class Offset(Node):
         )
 
     def get_num_neighbors(self) -> int:
-        return _get_num_neighbors(self.target[1].to_dim_list(), self.includes_center)
+        return calc_num_neighbors(self.target[1].to_dim_list(), self.includes_center)
 
-    def _includes_center(self, chain) -> bool:
+    @staticmethod
+    def _includes_center(chain) -> bool:
         if chain.endswith("O"):
             return True
         return False
 
-    def _handle_source(self, chain: str) -> Union[BasicLocation, CompoundLocation]:
+    @staticmethod
+    def _handle_source(chain: str) -> Union[BasicLocation, CompoundLocation]:
         if chain.endswith("O"):
             chain = chain[:-1]
 
@@ -89,8 +86,9 @@ class Offset(Node):
         else:
             raise Exception("Invalid Source")
 
+    @staticmethod
     def _make_target(
-        self, chain: str, source: Union[BasicLocation, CompoundLocation]
+        chain: str, source: Union[BasicLocation, CompoundLocation]
     ) -> tuple[BasicLocation, ChainedLocation]:
         if chain.endswith("O"):
             chain = chain[:-1]
@@ -108,7 +106,7 @@ class Offset(Node):
 
 class Field(Node):
     def __init__(self, name: str, field_info: FieldInfo) -> None:
-        self.name = str(name)  # why isn't this a str in the first place?
+        self.name = str(name)
         self.field_type = self._extract_field_type(field_info.field)
         self.intent = Intent(inp=field_info.inp, out=field_info.out)
         self.has_vertical_dimension = self._has_vertical_dimension(field_info.field)
@@ -139,7 +137,7 @@ class Field(Node):
     def get_num_neighbors(self) -> int:
         if not self.is_sparse():
             raise Exception("num nbh only defined for sparse fields")
-        return _get_num_neighbors(self.location.to_dim_list(), self.includes_center)
+        return calc_num_neighbors(self.location.to_dim_list(), self.includes_center)
 
     def render_pointer(self) -> str:
         return self.renderer.pointer(self.rank())

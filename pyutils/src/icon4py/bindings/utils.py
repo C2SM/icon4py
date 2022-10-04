@@ -14,15 +14,9 @@
 import subprocess
 from pathlib import Path
 
+from functional.common import Dimension
 
-def run_subprocess(*args, **kwargs) -> None:
-    """Run a command using the given positional and keyword arguments."""
-    result = subprocess.run(
-        *args, **kwargs, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
-    if result.returncode != 0:
-        error = result.stdout.decode()
-        raise RuntimeError(error)
+from icon4py.pyutils.icochainsize import IcoChainSize
 
 
 def check_dir_exists(dirpath: Path) -> None:
@@ -33,3 +27,13 @@ def write_string(string: str, outdir: Path, fname: str) -> None:
     path = outdir / fname
     with open(path, "w") as f:
         f.write(string)
+
+
+def calc_num_neighbors(dim_list: list[Dimension], includes_center: bool) -> int:
+    return IcoChainSize.get(dim_list) + int(includes_center)
+
+
+def format_fortran_code(source: str) -> str:
+    args = ["fprettify"]
+    p1 = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()

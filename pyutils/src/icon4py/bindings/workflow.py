@@ -28,8 +28,9 @@ class PyBindGen:
     levels_per_thread: int
     block_size: int
 
+    @staticmethod
     def _stencil_info_to_binding_type(
-        self, stencil_info: StencilInfo
+        stencil_info: StencilInfo,
     ) -> tuple[list[Field], list[Offset]]:
         chains = stencil_info.connectivity_chains
         fields = get_field_infos(stencil_info.fvprog)
