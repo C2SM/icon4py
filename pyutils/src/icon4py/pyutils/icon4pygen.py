@@ -19,7 +19,7 @@ import pathlib
 
 import click
 
-from icon4py.bindings.workflow import CppBindGen, PyBindGen
+from icon4py.bindings.workflow import PyBindGen
 from icon4py.common.dimension import Koff
 from icon4py.pyutils.backend import GTHeader
 from icon4py.pyutils.metadata import (
@@ -75,14 +75,5 @@ def main(
     The outpath represents a path to the folder in which to write all generated code.
     """
     stencil_info = get_stencil_info(fencil)
-
-    # todo: this is temporary and should be removed once PyBindGen is complete
-    if cppbindgen_path:
-        CppBindGen(stencil_info)(cppbindgen_path)
-
     GTHeader(stencil_info)(outpath)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
-
-
-if __name__ == "__main__":
-    main()
