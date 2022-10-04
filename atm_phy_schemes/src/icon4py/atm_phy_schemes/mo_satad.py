@@ -209,21 +209,22 @@ def _satad(
     cvd = cpd - rd
     zqwmin = 1e-20
 
-    # check, which points will still be subsaturated even after evaporating
-    # all cloud water. For these gridpoints Newton iteration is not necessary.
-    # TODO: Not sure if shortcut actually improves performance. Maybe just do Newton everywhere?
     TempAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
-    totallySubsaturated = qv + qc <= _qsat_rho(TempAfterAllQcEvaporated, rho)
 
-    t = where(
-        totallySubsaturated,
-        TempAfterAllQcEvaporated,
-        _newtonian_iteration_temp(t, qv, rho),
-    )
-    qv_temp = qv  # TODO: Remove once multi-return where become available
-    qv = where(totallySubsaturated, qv + qc, _qsat_rho(t, rho))
-    qc = where(
-        totallySubsaturated, 0.0, maximum(qv_temp + qc - _qsat_rho(t, rho), zqwmin)
+    # TODO: DL: This is ony needed in the False where branch!
+    newtonianIterationTemp = _newtonian_iteration_temp(t, qv, rho)
+
+    t, qv, qc = where(
+        # Check, which points will still be subsaturated even after evaporating all cloud water.
+        qv + qc <= _qsat_rho(TempAfterAllQcEvaporated, rho),
+        # If all cloud water evaporates, no newtonian iteration ncessary
+        (TempAfterAllQcEvaporated, qv + qc, 0.0),
+        # Newtonian iteration on temperature necessary
+        (
+            newtonianIterationTemp,
+            _qsat_rho(newtonianIterationTemp, rho),
+            maximum(qv + qc - _qsat_rho(newtonianIterationTemp, rho), zqwmin),
+        ),
     )
 
     return t, qv, qc
