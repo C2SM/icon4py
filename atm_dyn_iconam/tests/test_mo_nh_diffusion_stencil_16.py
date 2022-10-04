@@ -30,7 +30,7 @@ def mo_nh_diffusion_stencil_16_numpy(
 ) -> tuple[np.array]:
     area = np.expand_dims(area, axis=0)
     z_theta = theta_v
-    theta_v = theta_v + (area * z_temp)
+    theta_v = theta_v + (np.expand_dims(area, axis=-1) * z_temp)
     exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
     return theta_v, exner
 
@@ -39,7 +39,7 @@ def test_mo_nh_diffusion_stencil_16():
     mesh = SimpleMesh()
 
     z_temp = random_field(mesh, CellDim, KDim)
-    area = random_field(mesh, KDim)
+    area = random_field(mesh, CellDim)
     theta_v = random_field(mesh, CellDim, KDim)
     exner = random_field(mesh, CellDim, KDim)
     rd_o_cvd = 5.0

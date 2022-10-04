@@ -12,30 +12,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, FieldOffset
+from functional.ffront.fbuiltins import Field, broadcast
 
 from icon4py.common.dimension import CellDim, KDim
 
 
-Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
-
-
 @field_operator
-def _mo_velocity_advection_stencil_10(
-    z_w_concorr_mc: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    w_concorr_c = wgtfac_c * z_w_concorr_mc + (1.0 - wgtfac_c) * z_w_concorr_mc(
-        Koff[-1]
-    )
+def _mo_solve_nonhydro_stencil_11_lower() -> Field[[CellDim, KDim], float]:
 
-    return w_concorr_c
+    z_theta_v_pr_ic = broadcast(0.0, (CellDim, KDim))
+
+    return z_theta_v_pr_ic
 
 
 @program
-def mo_velocity_advection_stencil_10(
-    z_w_concorr_mc: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
+def mo_solve_nonhydro_stencil_11_lower(
+    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
 ):
-    _mo_velocity_advection_stencil_10(z_w_concorr_mc, wgtfac_c, out=w_concorr_c)
+    _mo_solve_nonhydro_stencil_11_lower(
+        out=z_theta_v_pr_ic,
+    )
