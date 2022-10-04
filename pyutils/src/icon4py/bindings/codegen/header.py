@@ -23,19 +23,6 @@ from icon4py.bindings.entities import Field
 from icon4py.bindings.utils import write_string
 
 
-setup_func_declaration = as_jinja(
-    """\
-    void setup_{{funcname}}(
-    dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
-    {%- for field in _this_node.out_fields -%}
-    const int {{ field.name }}_k_size
-    {%- if not loop.last -%}
-    ,
-    {%- endif -%}
-    {%- endfor -%})
-    """
-)
-
 run_func_declaration = as_jinja(
     """\
     void run_{{funcname}}(
@@ -102,7 +89,18 @@ class CppHeaderGenerator(TemplatedGenerator):
         """
     )
 
-    CppSetupFuncDeclaration = setup_func_declaration
+    CppSetupFuncDeclaration = as_jinja(
+        """\
+        void setup_{{funcname}}(
+        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
+        {%- for field in _this_node.out_fields -%}
+        const int {{ field.name }}_k_size
+        {%- if not loop.last -%}
+        ,
+        {%- endif -%}
+        {%- endfor -%})
+        """
+    )
 
     CppFreeFunc = as_jinja(
         """\
