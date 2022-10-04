@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from functional.ffront.fbuiltins import int32
 from functional.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.atm_dyn_iconam.mo_advection_traj_btraj_compute_o1_dsl import (
@@ -19,7 +20,11 @@ from icon4py.atm_dyn_iconam.mo_advection_traj_btraj_compute_o1_dsl import (
 )
 from icon4py.common.dimension import E2CDim, ECDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import as_1D_sparse_field, random_field
+from icon4py.testutils.utils import (
+    as_1D_sparse_field,
+    constant_field,
+    random_field,
+)
 
 
 def mo_advection_traj_btraj_compute_o1_dsl_numpy(
@@ -82,9 +87,9 @@ def test_mo_advection_traj_btraj_compute_o1_dsl():
 
     p_vn = random_field(mesh, EdgeDim, KDim)
     p_vt = random_field(mesh, EdgeDim, KDim)
-    cell_idx = random_field(mesh, EdgeDim, E2CDim)
+    cell_idx = np.asarray(mesh.e2c, dtype=int32)
     cell_idx_new = as_1D_sparse_field(cell_idx, ECDim)
-    cell_blk = random_field(mesh, EdgeDim, E2CDim)
+    cell_blk = constant_field(mesh, 1, EdgeDim, E2CDim, dtype=int32)
     cell_blk_new = as_1D_sparse_field(cell_blk, ECDim)
     pos_on_tplane_e_1 = random_field(mesh, EdgeDim, E2CDim)
     pos_on_tplane_e_1_new = as_1D_sparse_field(pos_on_tplane_e_1, ECDim)
@@ -98,8 +103,8 @@ def test_mo_advection_traj_btraj_compute_o1_dsl():
     primal_normal_cell_2_new = as_1D_sparse_field(primal_normal_cell_2, ECDim)
     dual_normal_cell_2 = random_field(mesh, EdgeDim, E2CDim)
     dual_normal_cell_2_new = as_1D_sparse_field(dual_normal_cell_2, ECDim)
-    p_cell_idx = random_field(mesh, EdgeDim, KDim)
-    p_cell_blk = random_field(mesh, EdgeDim, KDim)
+    p_cell_idx = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
+    p_cell_blk = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
     p_distv_bary_1 = random_field(mesh, EdgeDim, KDim)
     p_distv_bary_2 = random_field(mesh, EdgeDim, KDim)
     p_dthalf = 2.0

@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, where, int32
+from functional.ffront.fbuiltins import Field, int32, where
 
 from icon4py.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
