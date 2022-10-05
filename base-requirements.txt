@@ -1,3 +1,2 @@
 # VCS
 gt4py-functional @ git+https://github.com/GridTools/gt4py.git@functional
-serialbox @ git+https://github.com/GridTools/serialbox.git#subdirectory=src/serialbox-python
