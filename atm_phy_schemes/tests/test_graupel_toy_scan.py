@@ -23,13 +23,19 @@ from icon4py.testutils.utils import random_field_strategy, zero_field
 
 """Do Implicit sedimentaion
 
+TODO David:
+- Organize IO
 
-TODO GT4Py team:
-- local IF statement in scan_operator --> big ticket item (Till)
-- think about optimized returning CellDim field (hotfix Till)
-- Pass scalars to scan()
-- Need index field for field_operator version
+TODO for scan GT4Py team:
+- Option IF staments
+- think about optimized returning CellDim field (hotfix Till). return 1D Fields from scan_operator.
+- Pass runtime scalars to scan()
+- Index field
+- compile-time constants
 - Need to pre-allocate everything we return
+- elemental functions
+- nested ternary?
+
 
 To discuss:
 - Returns from scan. Carry, carry + return, 2D Fields in Return
@@ -68,7 +74,9 @@ def graupel_toy_numpy(qc, qr):
 
 @scan_operator(axis=KDim, forward=True, init=(0.0, 0.0, 0.0))
 def _graupel_toy_scan(
-    carry: tuple[float, float, float], qc_in: float, qr_in: float
+    carry: tuple[float, float, float],
+    qc_in: float,
+    qr_in: float,
 ) -> tuple[float, float, float]:
 
     a = 0.1
