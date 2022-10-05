@@ -15,6 +15,8 @@ import os
 from sys import exit, stderr
 
 import numpy as np
+import wget
+
 import serialbox as ser
 
 
@@ -25,36 +27,10 @@ WRITE_RESULTS = False
 NoMPIRanks = 6
 
 
-@scan_operator(axis=KDim, forward=True, init=(0.0, 0.0, 0.0))
-def _graupel_toy_scan(
-    carry: tuple[float, float, float],
-    qc_in: float,
-    qr_in: float,
-) -> tuple[float, float, float]:
-
-    a = 0.1
-    b = 0.2
-
-    # unpack carry
-    sedimentation_kMinus1, qr_kMinus1, _ = carry
-
-    # Autoconversion: Cloud Drops -> Rain Drops
-    qc = qc_in - qc_in * a
-    qr = qc_in + qc_in * a
-
-    # Add sedimentation from above level
-    qr = qr + sedimentation_kMinus1
-
-    # Compute new sedimentation rate (made up formula).
-    sedimentation = b * qr_kMinus1**3 if qr <= 0.1 else 0.0
-
-    # if k is not np.shape(qc)[1]: #TODO: Need if on index field
-    qr = qr_in - sedimentation
-
-    return sedimentation, qr, qc
-
-
 def test_graupel():
+
+    if not os.path.exists(SER_DATA):
+        os.system("./get_data.sh")
 
     for rank in range(1, NoMPIRanks + 1):
         print("=======================")

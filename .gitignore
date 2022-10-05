@@ -119,5 +119,9 @@ venv.bak/
 # SpaceVim altfiles settings
 .project_alt.json
 
+### Serialbox ###
+*.dat
+*MetaData*.json
+
 ### Others ###
 .obsidian
