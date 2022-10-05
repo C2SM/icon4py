@@ -15,7 +15,6 @@ import os
 from sys import exit, stderr
 
 import numpy as np
-import wget
 
 import serialbox as ser
 
