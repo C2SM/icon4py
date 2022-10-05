@@ -23,6 +23,8 @@ from icon4py.bindings.locations import (
     CompoundLocation,
 )
 
+from icon4py.bindings.exceptions import BindingsRenderingException
+
 
 class FieldRenderer:
     @staticmethod
@@ -34,7 +36,9 @@ class FieldRenderer:
         is_sparse: bool, is_dense: bool, is_compound: bool, has_vertical_dimension: bool
     ) -> str:
         if is_sparse:
-            raise Exception("can not render dimension tags for sparse field")
+            raise BindingsRenderingException(
+                "can not render dimension tags for sparse field"
+            )
         tags = []
         if is_dense or is_compound:
             tags.append("unstructured::dim::horizontal")
@@ -53,10 +57,10 @@ class FieldRenderer:
         location: Union[BasicLocation, CompoundLocation, ChainedLocation],
     ) -> str:
         if is_sparse:
-            raise Exception("can not render sid of sparse field")
+            raise BindingsRenderingException("can not render sid of sparse field")
 
         if rank == 0:
-            raise Exception("can not render sid of a scalar")
+            raise BindingsRenderingException("can not render sid of a scalar")
 
         values_str = (
             "1"
@@ -76,6 +80,8 @@ class FieldRenderer:
             "C": "serialize_dense_cells",
             "V": "serialize_dense_verts",
         }
+        if not location in _serializers:
+            raise BindingsRenderingException(f"location {location} is not E,C or V")
         return _serializers[location]
 
     @staticmethod
@@ -94,7 +100,9 @@ class FieldRenderer:
         elif is_sparse:
             return _strides[str(location[0])]
         else:
-            raise Exception("stride type called on compound location or scalar")
+            raise BindingsRenderingException(
+                "stride type called on compound location or scalar"
+            )
 
     @staticmethod
     def ctype(binding_type: str, field_type: str):
@@ -103,3 +111,7 @@ class FieldRenderer:
                 return BUILTIN_TO_ISO_C_TYPE[field_type]
             case "c++":
                 return BUILTIN_TO_CPP_TYPE[field_type]
+            case other:
+                raise BindingsRenderingException(
+                    f"binding_type {binding_type} needs to be either c++ or f90"
+                )

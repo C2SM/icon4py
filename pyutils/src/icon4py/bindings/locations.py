@@ -53,7 +53,9 @@ class CompoundLocation:
         if is_valid(compound):
             self.compound = compound
         else:
-            raise Exception()
+            raise Exception(
+                f"chain {compound} contains two of the same elements in succession"
+            )
 
 
 def is_valid(nbh_list: list[BasicLocation]) -> bool:
@@ -73,7 +75,9 @@ class ChainedLocation:
         if is_valid(chain):
             self.chain = chain
         else:
-            raise Exception()
+            raise Exception(
+                f"chain {chain} contains two of the same elements in succession"
+            )
 
     def __iter__(self):
         return iter(self.chain)

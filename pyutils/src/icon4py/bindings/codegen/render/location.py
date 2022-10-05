@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from icon4py.bindings.exceptions import BindingsRenderingException
+
 
 class LocationRenderer:
 
@@ -18,4 +20,8 @@ class LocationRenderer:
 
     @classmethod
     def location_type(cls, cls_name: str):
+        if cls_name not in cls.type_dispatcher.keys():
+            raise BindingsRenderingException(
+                f"cls name {cls_name} needs to be either 'Cell', 'Edge' or 'Vertex'"
+            )
         return cls.type_dispatcher[cls_name]

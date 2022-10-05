@@ -20,6 +20,7 @@ from functional.ffront.common_types import FieldType, ScalarKind
 
 from icon4py.bindings.codegen.render.field import FieldRenderer
 from icon4py.bindings.codegen.render.offset import OffsetRenderer
+from icon4py.bindings.exceptions import BindingsTypeConsistencyException
 from icon4py.bindings.locations import (
     BASIC_LOCATIONS,
     BasicLocation,
@@ -38,6 +39,10 @@ Intent = namedtuple("Intent", ["inp", "out"])
 
 def chain_from_str(chain: str) -> list[BasicLocation]:
     chain_ctor_dispatcher = {"E": Edge, "C": Cell, "V": Vertex}
+    if not all(c in chain_ctor_dispatcher for c in chain):
+        raise BindingsTypeConsistencyException(
+            f"invalid chain {chain} passed to chain_from_str, chain should only contain letters E,C,V"
+        )
     return [chain_ctor_dispatcher[c]() for c in chain]
 
 
@@ -84,7 +89,7 @@ class Offset(Node):
         ):
             return CompoundLocation(chain_from_str(source))
         else:
-            raise Exception("Invalid Source")
+            raise BindingsTypeConsistencyException(f"Invalid source {source}")
 
     @staticmethod
     def _make_target(
@@ -136,7 +141,9 @@ class Field(Node):
 
     def get_num_neighbors(self) -> int:
         if not self.is_sparse():
-            raise Exception("num nbh only defined for sparse fields")
+            raise BindingsTypeConsistencyException(
+                "num nbh only defined for sparse fields"
+            )
         return calc_num_neighbors(self.location.to_dim_list(), self.includes_center)
 
     def render_pointer(self) -> str:
@@ -222,4 +229,6 @@ class Field(Node):
         ):
             self.location = CompoundLocation(chain_from_str(horizontal_dimension))
         else:
-            raise Exception(f"Invalid chain: {original_horizontal_dimension}")
+            raise BindingsTypeConsistencyException(
+                f"Invalid chain: {original_horizontal_dimension}"
+            )
