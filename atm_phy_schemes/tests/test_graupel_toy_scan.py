@@ -116,7 +116,7 @@ def graupel_toy_scan(
     random_field_strategy(MESH, CellDim, KDim, min_value=1e-7, max_value=1),
 )
 @settings(deadline=None, max_examples=10)
-def test_graupel_scan(qc, qr):
+def test_graupel_toy_scan(qc, qr):
 
     mesh = MESH
 
