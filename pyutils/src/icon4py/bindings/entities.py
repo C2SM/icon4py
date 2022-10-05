@@ -142,14 +142,6 @@ class Field(Node):
     def render_pointer(self) -> str:
         return self.renderer.pointer(self.rank())
 
-    def render_dim_tags(self) -> str:
-        return self.renderer.dim_tags(
-            self.is_sparse(),
-            self.is_dense(),
-            self.is_compound(),
-            self.has_vertical_dimension,
-        )
-
     def render_ranked_dim_string(self) -> str:
         return self.renderer.ranked_dim_string(self.rank())
 

@@ -12,11 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import os
+import pkgutil
 import re
 
 import pytest
 from click.testing import CliRunner
 
+import icon4py.atm_dyn_iconam
 from icon4py.pyutils.icon4pygen import main
 from icon4py.testutils.utils import get_stencil_module_path
 
@@ -30,16 +32,20 @@ def cli():
     return CliRunner()
 
 
-STENCILS_TO_TEST = [
-    ("atm_dyn_iconam", "mo_nh_diffusion_stencil_06"),
-    ("atm_dyn_iconam", "mo_solve_nonhydro_stencil_27"),
-    ("atm_dyn_iconam", "mo_velocity_advection_stencil_07"),
-    ("atm_dyn_iconam", "mo_nh_diffusion_stencil_03"),
-]
+def atm_dyn_iconam_fencils():
+    pkgpath = os.path.dirname(icon4py.atm_dyn_iconam.__file__)
+    stencils = [name for _, name, _ in pkgutil.iter_modules([pkgpath])]
+    fencils = [("atm_dyn_iconam", stencil) for stencil in stencils]
+    return fencils
+
+
+# add check for cpp files
+
+# add check for fortran files
 
 
 def check_gridtools_codegen(fname: str):
-    patterns = {"includes": "#include <.*>", "namespaces": "using .*;"}
+    patterns = {"includes": "#include <.*>", "namespaces": "using .*;"}  # todo: extend
     with open(fname, "r") as f:
         code = f.read()
         for _, pattern in patterns.items():
@@ -47,8 +53,8 @@ def check_gridtools_codegen(fname: str):
             assert matches
 
 
-@pytest.mark.parametrize(("stencil_module", "stencil_name"), STENCILS_TO_TEST)
-def test_codegen(cli, stencil_module, stencil_name):
+@pytest.mark.parametrize(("stencil_module", "stencil_name"), atm_dyn_iconam_fencils())
+def test_codegen_atm_dyn_iconam(cli, stencil_module, stencil_name):
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     outpath = "."
 
@@ -66,21 +72,11 @@ def test_invalid_module_path(cli):
     assert isinstance(result.exception, ModuleNotFoundError)
 
 
-def test_multiple_field_operator_stencil(cli):
-    module_path = get_stencil_module_path(
-        "atm_dyn_iconam", "mo_velocity_advection_stencil_05"
-    )
-    outpath = "."
-    with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, outpath])
-        assert result.exit_code == 0
-
-
-def check_code_was_generated(stencil_name):
+def check_code_was_generated(stencil_name: str):
     cpp_header = f"{stencil_name}.h"
     gridtools_header = f"{stencil_name}.hpp"
     f90_iface = f"{stencil_name}.f90"
-    cpp_def = f"{stencil_name}.f90"
+    cpp_def = f"{stencil_name}.cpp"
     assert set([cpp_header, gridtools_header, f90_iface, cpp_def]).issubset(
         os.listdir(os.getcwd())
     )
