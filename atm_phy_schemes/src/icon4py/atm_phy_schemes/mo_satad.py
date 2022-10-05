@@ -19,17 +19,12 @@ Changes.
 - Only implementend gpu version. Maybe further optimizations possible for CPU (check original code)
 
 TODO:
-1. Is where statement the nicest possible syntax for the IF-ELSE below? Also, where currently can only return 1 Field(
-    (a) Do np.where(fun1, func2) implementation
-    (b) How would algorithm look in local view? In current localview frontend.
-    (c) ...
-2. Implement Newtonian iteration! -> Needs fixted-size for loop feature in GT4Py
+1. Implement Newtonian iteration! -> Needs fixted-size for loop feature in GT4Py
     (0) For loop outside (maybe low priority)
     (a) Unroll by hand
     (b) Naive unroll of compile time FOR, maybe optimize
     (c) Tracing
-3. Global Constants
-4. Tuple return from field_operator outside of program
+2. Global Constants
 
 Comment from FORTRAN version:
 - Suggested by U. Blahak: Replace pres_sat_water, pres_sat_ice and spec_humi by
@@ -209,28 +204,28 @@ def _satad(
     cvd = cpd - rd
     zqwmin = 1e-20
 
-    TempAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
+    TemperatureAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
 
-    # TODO: DL: This is ony needed in the False where branch!
-    newtonianIterationTemp = _newtonian_iteration_temp(t, qv, rho)
+    # Check, which points will still be subsaturated even after evaporating all cloud water.
+    SubsaturatedMask = qv + qc <= _qsat_rho(TemperatureAfterAllQcEvaporated, rho)
 
-    t, qv, qc = where(
-        # Check, which points will still be subsaturated even after evaporating all cloud water.
-        qv + qc <= _qsat_rho(TempAfterAllQcEvaporated, rho),
+    t = where(
+        SubsaturatedMask,
         # If all cloud water evaporates, no newtonian iteration ncessary
-        (TempAfterAllQcEvaporated, qv + qc, 0.0),
-        # Newtonian iteration on temperature necessary
-        (
-            newtonianIterationTemp,
-            _qsat_rho(newtonianIterationTemp, rho),
-            maximum(qv + qc - _qsat_rho(newtonianIterationTemp, rho), zqwmin),
-        ),
+        TemperatureAfterAllQcEvaporated,
+        # Newtonian iteration on temperature (expensive)
+        _newtonian_iteration_temp(t, qv, rho),
+    )
+
+    qv, qc = where(
+        SubsaturatedMask,
+        (qv + qc, 0.0),
+        (_qsat_rho(t, rho), maximum(qv + qc - _qsat_rho(t, rho), zqwmin)),
     )
 
     return t, qv, qc
 
 
-# TODO: Programm is still need since tuple return is not yet available elsewhere
 @program()
 def satad(
     qv: Field[[CellDim, KDim], float],
