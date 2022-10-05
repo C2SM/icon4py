@@ -41,7 +41,7 @@ def main(
     outpath: pathlib.Path,
 ) -> None:
     """
-    Generate C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
+    Generate Gridtools C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
 
     A fencil may be specified as <module>:<member>, where <module> is the
     dotted name of the containing module and <member> is the name of the fencil.

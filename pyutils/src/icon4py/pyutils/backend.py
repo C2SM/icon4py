@@ -24,7 +24,9 @@ from icon4py.pyutils.metadata import StencilInfo
 
 
 class GTHeader:
-    def __init__(self, stencil_info: StencilInfo):
+    """Class for generating C++ using the GTFN backend."""
+
+    def __init__(self, stencil_info: StencilInfo) -> None:
         self.stencil_info = stencil_info
 
     def __call__(self, outpath: Path) -> None:

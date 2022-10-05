@@ -24,6 +24,8 @@ from icon4py.pyutils.metadata import StencilInfo, get_field_infos
 
 @dataclass(frozen=True)
 class PyBindGen:
+    """Class to handle the bindings generation workflow."""
+
     stencil_info: StencilInfo
     levels_per_thread: int
     block_size: int
