@@ -274,32 +274,6 @@ class CppDefGenerator(TemplatedGenerator):
           auto {{field.name}}_sid = {{ field.render_sid() }};
         {% endif %}
       {% endfor -%}
-      {% for parameter in _this_node.parameters -%}
-        gridtools::stencil::global_parameter {{parameter.name}}_gp { {{parameter.name}}_ };
-      {% endfor -%}
-      fn_backend_t cuda_backend{};
-      cuda_backend.stream = stream_;
-      {% for connection in _this_node.sparse_connections -%}
-        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.render_lowercase_shorthand()}}Table};
-      {% endfor -%}
-      {%- for connection in _this_node.strided_connections -%}
-        neighbor_table_4new_sparse<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{};
-      {% endfor -%}
-      auto connectivities = gridtools::hymap::keys<
-      {%- for connection in _this_node.sparse_connections -%}
-        generated::{{connection.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
-      {%- endfor -%}
-      {%- if _this_node.strided_connections|length > 0 -%},{%-endif-%}
-      {%- for connection in _this_node.strided_connections -%}
-        generated::{{connection.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
-      {%- endfor -%}>::make_values(
-      {%- for connection in _this_node.sparse_connections -%}
-        {{connection.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
-      {% endfor -%}
-      {%- if _this_node.strided_connections|length > 0 -%},{%-endif-%}
-      {%- for connection in _this_node.strided_connections -%}
-        {{connection.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
-      {% endfor -%});
       {%- for field in _this_node.sparse_fields -%}
         {%- for i in range(0, field.get_num_neighbors()) -%}
             double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.render_stride_type()}}];
@@ -316,6 +290,24 @@ class CppDefGenerator(TemplatedGenerator):
         {%- endfor -%}
         );
       {%- endfor %}
+      {% for parameter in _this_node.parameters -%}
+        gridtools::stencil::global_parameter {{parameter.name}}_gp { {{parameter.name}}_ };
+      {% endfor -%}
+      fn_backend_t cuda_backend{};
+      cuda_backend.stream = stream_;
+      {% for connection in _this_node.sparse_connections -%}
+        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.render_lowercase_shorthand()}}Table};
+      {% endfor -%}
+      {%- for connection in _this_node.strided_connections -%}
+        neighbor_table_4new_sparse<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{};
+      {% endfor -%}
+      auto connectivities = gridtools::hymap::keys<
+      {%- for connection in _this_node.all_connections -%}
+        generated::{{connection.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
+      {%- endfor -%}>::make_values(
+      {%- for connection in _this_node.all_connections -%}
+        {{connection.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
+      {% endfor -%});
       generated::{{stencil_name}}(connectivities)(cuda_backend,
       {%- for field in _this_node.all_fields -%}
         {%- if field.is_sparse() -%}
