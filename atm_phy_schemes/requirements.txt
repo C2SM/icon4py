@@ -1,5 +1,4 @@
 -r ../base-requirements.txt
-serialbox @ git+https://github.com/GridTools/serialbox.git#subdirectory=src/serialbox-python
 ../common
 ../shared
 .
