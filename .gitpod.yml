@@ -12,8 +12,8 @@ tasks:
           pip install --upgrade pip setuptools wheel
           pip install -r requirements-dev.txt
           pre-commit install --install-hooks
-          git clone --recursive git@github.com:GridTools/serialbox.git #Dont know how to do this in setup.py without breaking serialbox
-          CC=`which gcc` CXX=`which g++` pip install serialbox/src/serialbox-python
+          git clone --recursive git@github.com:GridTools/serialbox.git #DL: TODO remove
+          CC=`which gcc` CXX=`which g++` pip install serialbox/src/serialbox-python #DL: TODO remove
           deactivate
       command: source .venv/bin/activate
       env:
