@@ -63,7 +63,7 @@ def face_val_ppm_stencil_04(
         p_cc,
         p_cellhgt_mc_now,
         out=p_face,
-        domain={CellDim: (nudging, halo), KDim: (2, vertical_upper)},
+        domain={CellDim: (nudging, halo), KDim: (vertical_upper - 1, vertical_upper)},
     )
     _face_val_ppm_stencil_04_p_face_2(
         p_cc, out=p_face, domain={CellDim: (nudging, halo), KDim: (vertical_lower, 1)}
