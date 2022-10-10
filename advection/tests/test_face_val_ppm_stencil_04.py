@@ -13,7 +13,9 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.face_val_ppm_stencil_04 import face_val_ppm_stencil_04
+from advection.src.icon4py.advection.face_val_ppm_stencil_04 import (
+    face_val_ppm_stencil_04,
+)
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
