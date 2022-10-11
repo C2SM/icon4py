@@ -278,9 +278,8 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     if output_metadata:
         connectivity_chains = [offset for offset in offsets if offset != Koff.value]
         output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
-    apply_domain = False
-    for _i, past_bodies in enumerate(fvprog.past_node.body):
-        if "domain" not in past_bodies.kwargs:
-            apply_domain = True
+    apply_domain = any(
+        "domain" not in past_bodies.kwargs for past_bodies in fvprog.past_node.body
+    )
     applied_domain = adapt_domain(fvprog.itir) if apply_domain else fvprog.itir
     click.echo(generate_cpp_code(applied_domain, offset_provider))
