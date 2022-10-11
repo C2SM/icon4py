@@ -53,7 +53,7 @@ def _mo_velocity_advection_stencil_20(
     cfl_w_limit: float,
     scalfac_exdiff: float,
     d_time: float,
-) -> Field[[CellDim, KDim], float]:
+) -> Field[[EdgeDim, KDim], float]:
 
     w_con_e = broadcast(0.0, (EdgeDim, KDim))
     difcoef = broadcast(0.0, (EdgeDim, KDim))
