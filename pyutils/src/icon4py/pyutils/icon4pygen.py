@@ -217,15 +217,27 @@ def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
             ],
         )
 
+        return itir.FencilDefinition(
+            id=fencil.id,
+            function_definitions=fencil.function_definitions,
+            params=[
+                *(p for p in fencil.params if not _is_size_param(p)),
+                itir.Sym(id="horizontal_start"),
+                itir.Sym(id="horizontal_end"),
+                itir.Sym(id="vertical_start"),
+                itir.Sym(id="vertical_end"),
+            ],
+            closures=fencil.closures,
+        )
     return itir.FencilDefinition(
         id=fencil.id,
         function_definitions=fencil.function_definitions,
         params=[
             *(p for p in fencil.params if not _is_size_param(p)),
-            itir.Sym(id="horizontal_start"),
-            itir.Sym(id="horizontal_end"),
-            itir.Sym(id="vertical_start"),
-            itir.Sym(id="vertical_end"),
+            fencil.closures[0].domain.args[0].args[1],
+            fencil.closures[0].domain.args[0].args[2],
+            fencil.closures[0].domain.args[1].args[1],
+            fencil.closures[0].domain.args[1].args[2],
         ],
         closures=fencil.closures,
     )
@@ -270,7 +282,3 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
         connectivity_chains = [offset for offset in offsets if offset != Koff.value]
         output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
     click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
-
-
-if __name__ == "__main__":
-    main()
