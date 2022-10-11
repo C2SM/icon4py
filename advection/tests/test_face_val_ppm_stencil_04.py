@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from functional.ffront.fbuiltins import int32
 
 from advection.src.icon4py.advection.face_val_ppm_stencil_04 import (
     face_val_ppm_stencil_04,
@@ -66,10 +67,10 @@ def test_face_val_ppm_stencil_04():
     p_cc = random_field(mesh, CellDim, KDim)
     p_cellhgt_mc_now = random_field(mesh, CellDim, KDim)
     p_face = zero_field(mesh, CellDim, KDim)
-    nudging = 4
-    halo = 16
-    vertical_lower = 0
-    vertical_upper = np.asarray(p_face).shape[1]
+    nudging = int32(4)
+    halo = int32(16)
+    vertical_lower = int32(0)
+    vertical_upper = int32(np.asarray(p_face).shape[1])
 
     p_face_ref = face_val_ppm_stencil_04_numpy(
         np.asarray(p_cc),

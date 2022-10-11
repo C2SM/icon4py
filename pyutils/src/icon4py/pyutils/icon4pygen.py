@@ -32,7 +32,10 @@ from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
-from icon4py.pyutils.exceptions import InvalidConnectivityException
+from icon4py.pyutils.exceptions import (
+    InvalidConnectivityException,
+    MultipleFieldOperatorException,
+)
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
@@ -194,50 +197,40 @@ def _is_size_param(param: itir.Sym) -> bool:
 
 def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
     """Replace field view size parameters by horizontal and vertical range paramters."""
-    if len(fencil.closures) == 1:
-        fencil.closures[0].domain = itir.FunCall(
-            fun=itir.SymRef(id="unstructured_domain"),
-            args=[
-                itir.FunCall(
-                    fun=itir.SymRef(id="named_range"),
-                    args=[
-                        itir.AxisLiteral(value="horizontal"),
-                        itir.SymRef(id="horizontal_start"),
-                        itir.SymRef(id="horizontal_end"),
-                    ],
-                ),
-                itir.FunCall(
-                    fun=itir.SymRef(id="named_range"),
-                    args=[
-                        itir.AxisLiteral(value=Koff.source.value),
-                        itir.SymRef(id="vertical_start"),
-                        itir.SymRef(id="vertical_end"),
-                    ],
-                ),
-            ],
-        )
+    if len(fencil.closures) > 1:
+        raise MultipleFieldOperatorException()
 
-        return itir.FencilDefinition(
-            id=fencil.id,
-            function_definitions=fencil.function_definitions,
-            params=[
-                *(p for p in fencil.params if not _is_size_param(p)),
-                itir.Sym(id="horizontal_start"),
-                itir.Sym(id="horizontal_end"),
-                itir.Sym(id="vertical_start"),
-                itir.Sym(id="vertical_end"),
-            ],
-            closures=fencil.closures,
-        )
+    fencil.closures[0].domain = itir.FunCall(
+        fun=itir.SymRef(id="unstructured_domain"),
+        args=[
+            itir.FunCall(
+                fun=itir.SymRef(id="named_range"),
+                args=[
+                    itir.AxisLiteral(value="horizontal"),
+                    itir.SymRef(id="horizontal_start"),
+                    itir.SymRef(id="horizontal_end"),
+                ],
+            ),
+            itir.FunCall(
+                fun=itir.SymRef(id="named_range"),
+                args=[
+                    itir.AxisLiteral(value=Koff.source.value),
+                    itir.SymRef(id="vertical_start"),
+                    itir.SymRef(id="vertical_end"),
+                ],
+            ),
+        ],
+    )
+
     return itir.FencilDefinition(
         id=fencil.id,
         function_definitions=fencil.function_definitions,
         params=[
             *(p for p in fencil.params if not _is_size_param(p)),
-            fencil.closures[0].domain.args[0].args[1],
-            fencil.closures[0].domain.args[0].args[2],
-            fencil.closures[0].domain.args[1].args[1],
-            fencil.closures[0].domain.args[1].args[2],
+            itir.Sym(id="horizontal_start"),
+            itir.Sym(id="horizontal_end"),
+            itir.Sym(id="vertical_start"),
+            itir.Sym(id="vertical_end"),
         ],
         closures=fencil.closures,
     )
@@ -251,6 +244,10 @@ def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Prog
             fvprog = fencil_def.as_program()
         case _:
             fvprog = program(fencil_def)
+
+    if len(fvprog.past_node.body) > 1:
+        raise MultipleFieldOperatorException()
+
     return fvprog
 
 
@@ -281,4 +278,9 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     if output_metadata:
         connectivity_chains = [offset for offset in offsets if offset != Koff.value]
         output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
-    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
+    apply_domain = False
+    for _i, past_bodies in enumerate(fvprog.past_node.body):
+        if "domain" not in past_bodies.kwargs:
+            apply_domain = True
+    applied_domain = adapt_domain(fvprog.itir) if apply_domain else fvprog.itir
+    click.echo(generate_cpp_code(applied_domain, offset_provider))
