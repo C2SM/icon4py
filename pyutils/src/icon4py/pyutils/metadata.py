@@ -168,8 +168,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     return sorted_dims
 
 
-def get_stencil_info(fencil) -> StencilInfo:
-    fencil_def = import_definition(fencil)
+def get_stencil_info(fencil_def) -> StencilInfo:
     fvprog = get_fvprog(fencil_def)
     offsets = scan_for_offsets(fvprog)
     offset_provider = {}

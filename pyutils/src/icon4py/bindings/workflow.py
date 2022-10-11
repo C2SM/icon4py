@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
 from pathlib import Path
 
 from icon4py.bindings.codegen.cpp import CppDef
@@ -22,13 +21,16 @@ from icon4py.bindings.utils import check_dir_exists
 from icon4py.pyutils.metadata import StencilInfo, get_field_infos
 
 
-@dataclass(frozen=True)
 class PyBindGen:
     """Class to handle the bindings generation workflow."""
 
-    stencil_info: StencilInfo
-    levels_per_thread: int
-    block_size: int
+    def __init__(
+        self, stencil_info: StencilInfo, levels_per_thread: int, block_size: int
+    ):
+        self.stencil_name = stencil_info.fvprog.itir.id
+        self.fields, self.offsets = self._stencil_info_to_binding_type(stencil_info)
+        self.levels_per_thread = levels_per_thread
+        self.block_size = block_size
 
     @staticmethod
     def _stencil_info_to_binding_type(
@@ -42,11 +44,12 @@ class PyBindGen:
 
     def __call__(self, outpath: Path) -> None:
         check_dir_exists(outpath)
-        stencil_name = self.stencil_info.fvprog.itir.id
-        fields, offsets = self._stencil_info_to_binding_type(self.stencil_info)
-
-        F90Iface(stencil_name, fields, offsets).write(outpath)
-        CppHeader(stencil_name, fields).write(outpath)
+        F90Iface(self.stencil_name, self.fields, self.offsets).write(outpath)
+        CppHeader(self.stencil_name, self.fields).write(outpath)
         CppDef(
-            stencil_name, fields, offsets, self.levels_per_thread, self.block_size
+            self.stencil_name,
+            self.fields,
+            self.offsets,
+            self.levels_per_thread,
+            self.block_size,
         ).write(outpath)
