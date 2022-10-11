@@ -13,12 +13,15 @@
 
 import pytest
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Dimension, Field
+from functional.ffront.fbuiltins import Dimension, Field, neighbor_sum
 
 from icon4py.bindings.entities import Offset, chain_from_str
-from icon4py.bindings.exceptions import BindingsTypeConsistencyException
+from icon4py.bindings.exceptions import (
+    BindingsRenderingException,
+    BindingsTypeConsistencyException,
+)
 from icon4py.bindings.workflow import PyBindGen
-from icon4py.common.dimension import EdgeDim
+from icon4py.common.dimension import E2CDim, EdgeDim
 from icon4py.pyutils.metadata import get_stencil_info
 
 
@@ -69,3 +72,39 @@ def test_non_sparse_field_neighbors():
         stencil_info = get_stencil_info(bad_program)
         bindgen = PyBindGen(stencil_info, 128, 1)
         [field.get_num_neighbors() for field in bindgen.fields]
+
+
+def test_ctype_rendering_exception():
+    @field_operator
+    def bad_stencil(
+        a: Field[[EdgeDim], float],
+    ) -> Field[[EdgeDim], float]:
+        return a
+
+    @program
+    def bad_program(
+        a: Field[[EdgeDim], float],
+    ):
+        bad_stencil(a, out=a)
+
+    with pytest.raises(BindingsRenderingException):
+        stencil_info = get_stencil_info(bad_program)
+        bindgen = PyBindGen(stencil_info, 128, 1)
+        [field.render_ctype("py") for field in bindgen.fields]
+
+
+def test_sid_rendering_exception():
+    @field_operator
+    def reduction(nb_field: Field[[EdgeDim, E2CDim], float]) -> Field[[EdgeDim], float]:
+        return neighbor_sum(nb_field, axis=E2CDim)
+
+    @program
+    def reduction_prog(
+        nb_field: Field[[EdgeDim, E2CDim], float], out: Field[[EdgeDim], float]
+    ):
+        reduction(nb_field, out=out)
+
+    with pytest.raises(BindingsRenderingException):
+        stencil_info = get_stencil_info(reduction_prog)
+        bindgen = PyBindGen(stencil_info, 128, 1)
+        [field.render_sid() for field in bindgen.fields]
