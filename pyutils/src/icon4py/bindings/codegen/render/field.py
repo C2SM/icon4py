@@ -17,13 +17,12 @@ from icon4py.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
+from icon4py.bindings.exceptions import BindingsRenderingException
 from icon4py.bindings.locations import (
     BasicLocation,
     ChainedLocation,
     CompoundLocation,
 )
-
-from icon4py.bindings.exceptions import BindingsRenderingException
 
 
 class FieldRenderer:
@@ -80,7 +79,7 @@ class FieldRenderer:
             "C": "serialize_dense_cells",
             "V": "serialize_dense_verts",
         }
-        if not location in _serializers:
+        if location not in _serializers:
             raise BindingsRenderingException(f"location {location} is not E,C or V")
         return _serializers[location]
 
@@ -111,7 +110,7 @@ class FieldRenderer:
                 return BUILTIN_TO_ISO_C_TYPE[field_type]
             case "c++":
                 return BUILTIN_TO_CPP_TYPE[field_type]
-            case other:
+            case _:
                 raise BindingsRenderingException(
                     f"binding_type {binding_type} needs to be either c++ or f90"
                 )

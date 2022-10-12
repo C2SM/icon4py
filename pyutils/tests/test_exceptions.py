@@ -15,13 +15,14 @@ import pytest
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Dimension, Field, neighbor_sum
 
+from icon4py.bindings.codegen.render.location import LocationRenderer
 from icon4py.bindings.entities import Offset, chain_from_str
 from icon4py.bindings.exceptions import (
     BindingsRenderingException,
     BindingsTypeConsistencyException,
 )
 from icon4py.bindings.workflow import PyBindGen
-from icon4py.common.dimension import E2CDim, EdgeDim
+from icon4py.common.dimension import E2CDim, EdgeDim, KDim
 from icon4py.pyutils.metadata import get_stencil_info
 
 
@@ -93,7 +94,7 @@ def test_ctype_rendering_exception():
         [field.render_ctype("py") for field in bindgen.fields]
 
 
-def test_sid_rendering_exception():
+def test_sparse_field_sid_rendering_exception():
     @field_operator
     def reduction(nb_field: Field[[EdgeDim, E2CDim], float]) -> Field[[EdgeDim], float]:
         return neighbor_sum(nb_field, axis=E2CDim)
@@ -108,3 +109,46 @@ def test_sid_rendering_exception():
         stencil_info = get_stencil_info(reduction_prog)
         bindgen = PyBindGen(stencil_info, 128, 1)
         [field.render_sid() for field in bindgen.fields]
+
+
+def test_scalar_sid_rendering_exception():
+    @field_operator
+    def bad_stencil(a: Field[[EdgeDim], float], b: float) -> Field[[EdgeDim], float]:
+        return a + b
+
+    @program
+    def bad_program(a: Field[[EdgeDim], float], b: float):
+        bad_stencil(a, b, out=a)
+
+    stencil_info = get_stencil_info(bad_program)
+    bindgen = PyBindGen(stencil_info, 128, 1)
+
+    with pytest.raises(BindingsRenderingException):
+        [field.render_sid() for field in bindgen.fields]
+
+    with pytest.raises(BindingsRenderingException):
+        [field.render_stride_type() for field in bindgen.fields]
+
+
+def test_serialise_func_rendering_exception():
+    @field_operator
+    def bad_stencil(
+        a: Field[[KDim], float],
+    ) -> Field[[KDim], float]:
+        return a
+
+    @program
+    def bad_program(
+        a: Field[[KDim], float],
+    ):
+        bad_stencil(a, out=a)
+
+    with pytest.raises(BindingsRenderingException):
+        stencil_info = get_stencil_info(bad_program)
+        bindgen = PyBindGen(stencil_info, 128, 1)
+        [field.render_serialise_func() for field in bindgen.fields]
+
+
+def test_invalid_location_type():
+    with pytest.raises(BindingsRenderingException):
+        LocationRenderer.location_type("Klevel")

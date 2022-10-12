@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from icon4py.bindings.locations import BasicLocation, ChainedLocation
 
+
 if TYPE_CHECKING:
     from icon4py.bindings.entities import Offset
 
