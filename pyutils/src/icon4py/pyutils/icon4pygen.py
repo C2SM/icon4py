@@ -290,7 +290,3 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     click.echo(generate_cpp_code(applied_domain, offset_provider))
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
     format_metadata(fvprog, connectivity_chains)
-
-
-if __name__ == "__main__":
-    main()
