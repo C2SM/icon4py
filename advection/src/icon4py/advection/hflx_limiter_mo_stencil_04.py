@@ -11,42 +11,34 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from functional.common import Field
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, int32, where
+from functional.ffront.fbuiltins import minimum, where
 
 from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _hflx_limiter_pd_stencil_02(
-    refin_ctrl: Field[[EdgeDim], int32],
+def _hflx_limiter_mo_stencil_04(
+    z_anti: Field[[EdgeDim, KDim], float],
     r_m: Field[[CellDim, KDim], float],
-    p_mflx_tracer_h_in: Field[[EdgeDim, KDim], float],
-    bound: int32,
+    r_p: Field[[CellDim, KDim], float],
+    z_mflx_low: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    p_mflx_tracer_h_out = where(
-        refin_ctrl == bound,
-        p_mflx_tracer_h_in,
-        where(
-            p_mflx_tracer_h_in >= 0.0,
-            p_mflx_tracer_h_in * r_m(E2C[0]),
-            p_mflx_tracer_h_in * r_m(E2C[1]),
-        ),
+    r_frac = where(
+        z_anti >= 0.0,
+        minimum(r_m(E2C[0]), r_p(E2C[1])),
+        minimum(r_m(E2C[1]), r_p(E2C[0])),
     )
-    return p_mflx_tracer_h_out
+    return z_mflx_low + minimum(1.0, r_frac) * z_anti
 
 
 @program
-def hflx_limiter_pd_stencil_02(
-    refin_ctrl: Field[[EdgeDim], int32],
+def hflx_limiter_mo_stencil_04(
+    z_anti: Field[[EdgeDim, KDim], float],
     r_m: Field[[CellDim, KDim], float],
+    r_p: Field[[CellDim, KDim], float],
+    z_mflx_low: Field[[EdgeDim, KDim], float],
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
-    bound: int32,
 ):
-    _hflx_limiter_pd_stencil_02(
-        refin_ctrl,
-        r_m,
-        p_mflx_tracer_h,
-        bound,
-        out=p_mflx_tracer_h,
-    )
+    _hflx_limiter_mo_stencil_04(z_anti, r_m, r_p, z_mflx_low, out=p_mflx_tracer_h)

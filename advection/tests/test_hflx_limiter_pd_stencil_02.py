@@ -18,7 +18,7 @@ from icon4py.advection.hflx_limiter_pd_stencil_02 import (
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+from icon4py.testutils.utils import constant_field, random_field
 
 
 def hflx_limiter_pd_stencil_02_numpy(
@@ -42,14 +42,12 @@ def hflx_limiter_pd_stencil_02_numpy(
     return p_mflx_tracer_h_out
 
 
-def test_hflx_limiter_pd_stencil_02():
+def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl():
     mesh = SimpleMesh()
-
-    refin_ctrl = random_field(mesh, EdgeDim)
+    bound = np.int32(7)
+    refin_ctrl = constant_field(mesh, 4, EdgeDim, dtype=np.int32)
     r_m = random_field(mesh, CellDim, KDim)
     p_mflx_tracer_h_in = random_field(mesh, EdgeDim, KDim)
-    p_mflx_tracer_h_out = random_field(mesh, EdgeDim, KDim)
-    bound = np.float64(7.0)
 
     ref = hflx_limiter_pd_stencil_02_numpy(
         mesh.e2c,
@@ -63,10 +61,67 @@ def test_hflx_limiter_pd_stencil_02():
         refin_ctrl,
         r_m,
         p_mflx_tracer_h_in,
-        p_mflx_tracer_h_out,
         bound,
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
         },
     )
-    assert np.allclose(p_mflx_tracer_h_out, ref)
+    assert np.allclose(p_mflx_tracer_h_in, ref)
+
+
+def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl():
+    mesh = SimpleMesh()
+    bound = np.int32(7)
+    refin_ctrl = constant_field(mesh, bound, EdgeDim, dtype=np.int32)
+    r_m = random_field(mesh, CellDim, KDim)
+    p_mflx_tracer_h_in = random_field(mesh, EdgeDim, KDim)
+
+    hflx_limiter_pd_stencil_02(
+        refin_ctrl,
+        r_m,
+        p_mflx_tracer_h_in,
+        bound,
+        offset_provider={
+            "E2C": mesh.get_e2c_offset_provider(),
+        },
+    )
+    assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)
+
+
+def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl():
+    mesh = SimpleMesh()
+    bound = np.int32(4)
+    refin_ctrl = constant_field(mesh, 5, EdgeDim, dtype=np.int32)
+    refin_ctrl[2:6] = bound
+    r_m = random_field(mesh, CellDim, KDim)
+    p_mflx_tracer_h_in = random_field(mesh, EdgeDim, KDim)
+
+    hflx_limiter_pd_stencil_02(
+        refin_ctrl,
+        r_m,
+        p_mflx_tracer_h_in,
+        bound,
+        offset_provider={
+            "E2C": mesh.get_e2c_offset_provider(),
+        },
+    )
+    assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)
+
+
+def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl_does_not_change_inout_arg():
+    mesh = SimpleMesh()
+    bound = np.int32(7)
+    refin_ctrl = constant_field(mesh, bound, EdgeDim, dtype=np.int32)
+    r_m = random_field(mesh, CellDim, KDim)
+    p_mflx_tracer_h_in = random_field(mesh, EdgeDim, KDim)
+
+    hflx_limiter_pd_stencil_02(
+        refin_ctrl,
+        r_m,
+        p_mflx_tracer_h_in,
+        bound,
+        offset_provider={
+            "E2C": mesh.get_e2c_offset_provider(),
+        },
+    )
+    assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)
