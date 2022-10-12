@@ -58,14 +58,19 @@ def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
 
     out_arg = fvprog.past_node.body[0].kwargs["out"]
+    domain_arg = fvprog.past_node.body[0].kwargs["domain"]
     assert isinstance(out_arg, (past.Name, past.TupleExpr))
+    assert isinstance(domain_arg, past.Dict)
     output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
     output_arg_ids = set(arg.id for arg in output_fields)
+    domain_arg_ids = set(
+        arg_elts.id for arg in domain_arg.values_ for arg_elts in arg.elts
+    )
 
     fields: dict[str, _FieldInfo] = {
         field_node.id: _FieldInfo(
             field=field_node,
-            inp=(field_node.id in input_arg_ids),
+            inp=(field_node.id in input_arg_ids or field_node.id in domain_arg_ids),
             out=(field_node.id in output_arg_ids),
         )
         for field_node in fvprog.past_node.params
@@ -283,3 +288,9 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     )
     applied_domain = adapt_domain(fvprog.itir) if apply_domain else fvprog.itir
     click.echo(generate_cpp_code(applied_domain, offset_provider))
+    connectivity_chains = [offset for offset in offsets if offset != Koff.value]
+    format_metadata(fvprog, connectivity_chains)
+
+
+if __name__ == "__main__":
+    main()
