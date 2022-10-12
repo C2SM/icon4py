@@ -57,15 +57,17 @@ def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     ), "Found unsupported expression in input arguments."
     input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
 
+    domain_arg_ids = set()
     out_arg = fvprog.past_node.body[0].kwargs["out"]
-    domain_arg = fvprog.past_node.body[0].kwargs["domain"]
+    if "domain" in fvprog.past_node.body[0].kwargs:
+        domain_arg = fvprog.past_node.body[0].kwargs["domain"]
+        assert isinstance(domain_arg, past.Dict)
+        domain_arg_ids = set(
+            arg_elts.id for arg in domain_arg.values_ for arg_elts in arg.elts
+        )
     assert isinstance(out_arg, (past.Name, past.TupleExpr))
-    assert isinstance(domain_arg, past.Dict)
     output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
     output_arg_ids = set(arg.id for arg in output_fields)
-    domain_arg_ids = set(
-        arg_elts.id for arg in domain_arg.values_ for arg_elts in arg.elts
-    )
 
     fields: dict[str, _FieldInfo] = {
         field_node.id: _FieldInfo(
