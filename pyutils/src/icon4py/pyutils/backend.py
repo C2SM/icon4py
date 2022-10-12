@@ -24,19 +24,19 @@ from icon4py.pyutils.metadata import StencilInfo
 
 
 class GTHeader:
-    """Class for generating C++ using the GTFN backend."""
+    """Class for generating Gridtools C++ header using the GTFN backend."""
 
     def __init__(self, stencil_info: StencilInfo) -> None:
         self.stencil_info = stencil_info
 
     def __call__(self, outpath: Path) -> None:
+        """Generate C++ code using the GTFN backend and write it to a file."""
         gtheader = self._generate_cpp_code(
             self._adapt_domain(self.stencil_info.fvprog.itir)
         )
         write_string(gtheader, outpath, f"{self.stencil_info.fvprog.itir.id}.hpp")
 
     def _generate_cpp_code(self, fencil: itir.FencilDefinition, **kwargs: Any) -> str:
-        """Generate C++ code using the GTFN backend."""
         return generate(
             fencil,
             offset_provider=self.stencil_info.offset_provider,

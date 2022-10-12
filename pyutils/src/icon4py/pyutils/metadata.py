@@ -75,6 +75,11 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
 
 
 def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
+    """Import a stencil from a given module.
+
+    Note:
+        The stencil program and module are assumed to have the same name.
+    """
     module_name, member_name = name.split(":")
     fencil = getattr(importlib.import_module(module_name), member_name)
     return fencil
@@ -168,7 +173,10 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     return sorted_dims
 
 
-def get_stencil_info(fencil_def) -> StencilInfo:
+def get_stencil_info(
+    fencil_def: Program | FieldOperator | types.FunctionType,
+) -> StencilInfo:
+    """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
     offsets = scan_for_offsets(fvprog)
     offset_provider = {}

@@ -43,10 +43,15 @@ def main(
     """
     Generate Gridtools C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
 
-    A fencil may be specified as <module>:<member>, where <module> is the
-    dotted name of the containing module and <member> is the name of the fencil.
+    Args:
+        fencil: may be specified as <module>:<member>, where <module> is the dotted name of the containing module
+            and <member> is the name of the fencil.
 
-    The outpath represents a path to the folder in which to write all generated code.
+        block_size: refers to the number of threads per block to use in a cuda kernel.
+
+        levels_per_thread: how many k-levels to process per thread.
+
+        outpath: represents a path to the folder in which to write all generated code.
     """
     fencil_def = import_definition(fencil)
     stencil_info = get_stencil_info(fencil_def)

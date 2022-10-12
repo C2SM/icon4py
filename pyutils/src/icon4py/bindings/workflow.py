@@ -22,11 +22,21 @@ from icon4py.pyutils.metadata import StencilInfo, get_field_infos
 
 
 class PyBindGen:
-    """Class to handle the bindings generation workflow."""
+    """Class to handle the bindings generation workflow.
+
+    The workflow consists of generating the following bindings for the ICON model.
+
+    - A Fortran Interface (.f90), which declares a wrapper function which can be called from within the ICON source code.
+    - A C interface (.cpp, .h) which enables passing Fortran pointers to the Gridtools stencil.
+
+    Note:
+        Within the C interface, we also carry out verification of the DSL output fields against the Fortran output fields.
+        Furthermore, we also serialise data to .csv or .vtk files in case of verification failure.
+    """
 
     def __init__(
         self, stencil_info: StencilInfo, levels_per_thread: int, block_size: int
-    ):
+    ) -> None:
         self.stencil_name = stencil_info.fvprog.itir.id
         self.fields, self.offsets = self._stencil_info_to_binding_type(stencil_info)
         self.levels_per_thread = levels_per_thread

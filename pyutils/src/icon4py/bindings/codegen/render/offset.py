@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 class OffsetRenderer:
-    # todo: these shorthands can potentially be improved after regression testing
+    """A class to render Offset attributes for their the respective c++ or f90 bindings."""
 
     @staticmethod
     def lowercase_shorthand(
@@ -53,6 +53,8 @@ class OffsetRenderer:
 
 
 class GpuTriMeshOffsetRenderer:
+    """A helper class to render a GpuTriMeshOffset for the c++ bindings."""
+
     def __init__(self, offsets: list["Offset"]):  # :
         self.offsets = offsets
         self.has_offsets = True if len(offsets) > 0 else False
