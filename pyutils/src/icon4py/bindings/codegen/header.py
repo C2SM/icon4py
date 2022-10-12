@@ -44,8 +44,8 @@ run_verify_func_declaration = as_jinja(
     {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
     {%- for field in _this_node.out_fields -%}
-    const {{ field.render_ctype('c++')}} {{ field.name }}_rel_tol,
-    const {{ field.render_ctype('c++')}} {{ field.name }}_abs_tol
+    const double {{ field.name }}_rel_tol,
+    const double {{ field.name }}_abs_tol
     {%- if not loop.last -%}
     ,
     {%- endif -%}
@@ -82,8 +82,8 @@ class CppHeaderGenerator(TemplatedGenerator):
         const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
-        const {{ field.render_ctype('c++')}} {{ field.name }}_rel_tol,
-        const {{ field.render_ctype('c++')}} {{ field.name }}_abs_tol,
+        const double {{ field.name }}_rel_tol,
+        const double {{ field.name }}_abs_tol,
         {%- endfor -%}
         const int iteration)
         """

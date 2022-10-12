@@ -97,9 +97,9 @@ class CppDefGenerator(TemplatedGenerator):
           }
         };
 
-        template <int N> struct neighbor_table_4new_sparse {
+        template <int N> struct neighbor_table_strided {
           __device__ friend inline constexpr gridtools::array<int, N>
-          neighbor_table_neighbors(neighbor_table_4new_sparse const &, int index) {
+          neighbor_table_neighbors(neighbor_table_strided const &, int index) {
             gridtools::array<int, N> ret{};
             for (int i = 0; i < N; i++) {
               ret[i] = index + nproma * i;
@@ -299,7 +299,7 @@ class CppDefGenerator(TemplatedGenerator):
         neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.render_lowercase_shorthand()}}Table};
       {% endfor -%}
       {%- for connection in _this_node.strided_connections -%}
-        neighbor_table_4new_sparse<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{};
+        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{};
       {% endfor -%}
       auto connectivities = gridtools::hymap::keys<
       {%- for connection in _this_node.all_connections -%}
@@ -360,8 +360,8 @@ class CppDefGenerator(TemplatedGenerator):
         const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
-        const {{ field.render_ctype('c++')}} {{ field.name }}_rel_tol,
-        const {{ field.render_ctype('c++')}} {{ field.name }}_abs_tol,
+        const double {{ field.name }}_rel_tol,
+        const double {{ field.name }}_abs_tol,
         {%- endfor -%}
         const int iteration)
         """
