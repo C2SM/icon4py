@@ -11,18 +11,17 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.common import Field
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import broadcast
+import numpy as np
 
-from icon4py.common.dimension import CellDim, KDim
-
-
-@field_operator
-def _set_zero() -> Field[[CellDim, KDim], float]:
-    return broadcast(0.0, (CellDim, KDim))
+from icon4py.advection.set_zero_c import set_zero_c
+from icon4py.common.dimension import CellDim
+from icon4py.testutils.simple_mesh import SimpleMesh
+from icon4py.testutils.utils import random_field, zero_field
 
 
-@program
-def set_zero(field: Field[[CellDim, KDim], float]):
-    _set_zero(out=field)
+def test_set_zero_cell_k():
+    mesh = SimpleMesh()
+    field = random_field(mesh, CellDim)
+
+    set_zero_c(field, offset_provider={})
+    assert np.allclose(field, zero_field(mesh, CellDim))
