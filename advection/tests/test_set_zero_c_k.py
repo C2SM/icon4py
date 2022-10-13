@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.advection.celldim_set_zero import set_zero
+from icon4py.advection.set_zero_c_k import set_zero_c_k
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def test_set_zero():
+def test_set_zero_c_k():
     mesh = SimpleMesh()
     field = random_field(mesh, CellDim, KDim)
 
-    set_zero(field, offset_provider={})
+    set_zero_c_k(field, offset_provider={})
     assert np.allclose(field, zero_field(mesh, CellDim, KDim))
