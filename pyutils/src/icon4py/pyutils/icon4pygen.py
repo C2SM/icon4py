@@ -290,5 +290,3 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     )
     applied_domain = adapt_domain(fvprog.itir) if apply_domain else fvprog.itir
     click.echo(generate_cpp_code(applied_domain, offset_provider))
-    connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-    format_metadata(fvprog, connectivity_chains)
