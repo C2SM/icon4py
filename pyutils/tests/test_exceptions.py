@@ -48,7 +48,7 @@ def test_invalid_field_in_program():
 
     with pytest.raises(BindingsTypeConsistencyException):
         stencil_info = get_stencil_info(bad_program)
-        PyBindGen(stencil_info, 128, 1)
+        PyBindGen(stencil_info, 128, 1, False)
 
 
 def test_chain_from_str():
@@ -71,7 +71,7 @@ def test_non_sparse_field_neighbors():
 
     with pytest.raises(BindingsTypeConsistencyException):
         stencil_info = get_stencil_info(bad_program)
-        bindgen = PyBindGen(stencil_info, 128, 1)
+        bindgen = PyBindGen(stencil_info, 128, 1, False)
         [field.get_num_neighbors() for field in bindgen.fields]
 
 
@@ -90,7 +90,7 @@ def test_ctype_rendering_exception():
 
     with pytest.raises(BindingsRenderingException):
         stencil_info = get_stencil_info(bad_program)
-        bindgen = PyBindGen(stencil_info, 128, 1)
+        bindgen = PyBindGen(stencil_info, 128, 1, False)
         [field.render_ctype("py") for field in bindgen.fields]
 
 
@@ -107,7 +107,7 @@ def test_sparse_field_sid_rendering_exception():
 
     with pytest.raises(BindingsRenderingException):
         stencil_info = get_stencil_info(reduction_prog)
-        bindgen = PyBindGen(stencil_info, 128, 1)
+        bindgen = PyBindGen(stencil_info, 128, 1, False)
         [field.render_sid() for field in bindgen.fields]
 
 
@@ -121,7 +121,7 @@ def test_scalar_sid_rendering_exception():
         bad_stencil(a, b, out=a)
 
     stencil_info = get_stencil_info(bad_program)
-    bindgen = PyBindGen(stencil_info, 128, 1)
+    bindgen = PyBindGen(stencil_info, 128, 1, False)
 
     with pytest.raises(BindingsRenderingException):
         [field.render_sid() for field in bindgen.fields]
@@ -145,7 +145,7 @@ def test_serialise_func_rendering_exception():
 
     with pytest.raises(BindingsRenderingException):
         stencil_info = get_stencil_info(bad_program)
-        bindgen = PyBindGen(stencil_info, 128, 1)
+        bindgen = PyBindGen(stencil_info, 128, 1, False)
         [field.render_serialise_func() for field in bindgen.fields]
 
 

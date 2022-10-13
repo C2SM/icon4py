@@ -32,6 +32,14 @@ from icon4py.pyutils.exceptions import (
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
+DEFAULT_DOMAIN_ARGS = [
+    "horizontalStart",
+    "horizontalEnd",
+    "verticalStart",
+    "verticalEnd",
+]
+
+
 @dataclasses.dataclass(frozen=True)
 class StencilInfo:
     fvprog: Program

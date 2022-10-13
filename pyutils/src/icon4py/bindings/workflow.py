@@ -18,7 +18,11 @@ from icon4py.bindings.codegen.f90 import F90Iface
 from icon4py.bindings.codegen.header import CppHeader
 from icon4py.bindings.entities import Field, Offset
 from icon4py.bindings.utils import check_dir_exists
-from icon4py.pyutils.metadata import StencilInfo, get_field_infos
+from icon4py.pyutils.metadata import (
+    DEFAULT_DOMAIN_ARGS,
+    StencilInfo,
+    get_field_infos,
+)
 
 
 class PyBindGen:
@@ -35,12 +39,17 @@ class PyBindGen:
     """
 
     def __init__(
-        self, stencil_info: StencilInfo, levels_per_thread: int, block_size: int
+        self,
+        stencil_info: StencilInfo,
+        levels_per_thread: int,
+        block_size: int,
+        custom_domain: bool,
     ) -> None:
         self.stencil_name = stencil_info.fvprog.itir.id
         self.fields, self.offsets = self._stencil_info_to_binding_type(stencil_info)
         self.levels_per_thread = levels_per_thread
         self.block_size = block_size
+        self.custom_domain = custom_domain
 
     @staticmethod
     def _stencil_info_to_binding_type(
@@ -52,8 +61,16 @@ class PyBindGen:
         binding_offsets = [Offset(chain) for chain in chains]
         return binding_fields, binding_offsets
 
-    def __call__(self, outpath: Path) -> None:
+    def _setup_pybindgen(self, outpath: Path):
         check_dir_exists(outpath)
+        self._prune_domain_fields()
+
+    def _prune_domain_fields(self):
+        if self.custom_domain:
+            self.fields = [f for f in self.fields if f.name not in DEFAULT_DOMAIN_ARGS]
+
+    def __call__(self, outpath: Path) -> None:
+        self._setup_pybindgen(outpath)
         F90Iface(self.stencil_name, self.fields, self.offsets).write(outpath)
         CppHeader(self.stencil_name, self.fields).write(outpath)
         CppDef(

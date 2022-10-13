@@ -55,8 +55,14 @@ def main(
     """
     fencil_def = import_definition(fencil)
     stencil_info = get_stencil_info(fencil_def)
-    GTHeader(stencil_info)(outpath)
-    PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+
+    # check custom domain
+    custom_domain = any(
+        "domain" in past_bodies.kwargs
+        for past_bodies in stencil_info.fvprog.past_node.body
+    )
+    GTHeader(stencil_info, custom_domain)(outpath)
+    PyBindGen(stencil_info, levels_per_thread, block_size, custom_domain)(outpath)
 
 
 if __name__ == "__main__":
