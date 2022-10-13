@@ -50,12 +50,12 @@ def face_val_ppm_stencil_04(
     p_face: Field[[CellDim, KDim], float],
     nudging: int32,
     halo: int32,
-    vertical_lower: int32 = 1,
-    vertical_upper: int32 = 2,
+    vertical_start: int32 = 1,
+    vertical_end: int32 = 2,
 ):
     _face_val_ppm_stencil_04_p_face_1(
         p_cc,
         p_cellhgt_mc_now,
         out=p_face,
-        domain={CellDim: (nudging, halo), KDim: (vertical_lower, vertical_upper)},
+        domain={CellDim: (nudging, halo), KDim: (vertical_start, vertical_end)},
     )
