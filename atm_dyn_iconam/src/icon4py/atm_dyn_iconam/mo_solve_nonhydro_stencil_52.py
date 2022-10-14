@@ -17,6 +17,16 @@ from functional.ffront.fbuiltins import Field
 from icon4py.common.dimension import CellDim, KDim, Koff
 
 
+@scan_operator(axis=KDim, forward=True, init=1.0)
+def _mo_solve_nonhydro_stencil_52_w_scan(
+    w_state: float,
+    z_a: float,
+    z_g: float,
+    w: float,
+) -> float:
+    return w if w_state == 1.0 else (w - z_a * w_state) * z_g
+
+
 @field_operator
 def _mo_solve_nonhydro_stencil_52_z_q(
     vwind_impl_wgt: Field[[CellDim], float],
@@ -59,16 +69,6 @@ def mo_solve_nonhydro_stencil_52_z_q(
         cpd,
         out=z_q,
     )
-
-
-@scan_operator(axis=KDim, forward=True, init=0.0)
-def _mo_solve_nonhydro_stencil_52_w_scan(
-    w_state: float,
-    z_a: float,
-    z_g: float,
-    w: float,
-) -> float:
-    return w if w_state == 0.0 else (w - z_a * w_state) * z_g
 
 
 @field_operator
