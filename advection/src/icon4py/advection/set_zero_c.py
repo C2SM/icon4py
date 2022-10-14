@@ -19,10 +19,10 @@ from icon4py.common.dimension import CellDim
 
 
 @field_operator
-def _set_zero() -> Field[[CellDim], float]:
-    return broadcast(0.0, (CellDim,))
+def _set_zero_c() -> Field[[CellDim], float]:
+    return broadcast(0.0, (CellDim, ))
 
 
 @program
 def set_zero_c(field: Field[[CellDim], float]):
-    _set_zero(out=field)
+    _set_zero_c(out=field)
