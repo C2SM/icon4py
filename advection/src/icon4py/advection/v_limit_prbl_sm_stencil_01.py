@@ -12,14 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import (
-    Field,
-    FieldOffset,
-    abs,
-    broadcast,
-    minimum,
-    where,
-)
+from functional.ffront.fbuiltins import Field, FieldOffset, abs, minimum, where
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -35,9 +28,6 @@ def _v_limit_prbl_sm_stencil_01(
 
     z_delta = p_face - p_face(Koff[1])
     z_a6i = -6.0 * (p_cc - 0.5 * (p_face + p_face(Koff[1])))
-
-    q_face_up = broadcast(1.0, (CellDim, KDim))
-    q_face_low = broadcast(1.0, (CellDim, KDim))
 
     q_face_up, q_face_low = where(
         abs(z_delta) < z_a6i,
