@@ -25,10 +25,7 @@ from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
-from icon4py.pyutils.exceptions import (
-    InvalidConnectivityException,
-    MultipleFieldOperatorException,
-)
+from icon4py.pyutils.exceptions import InvalidConnectivityException
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
@@ -109,9 +106,6 @@ def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Prog
             fvprog = fencil_def.as_program()
         case _:
             fvprog = program(fencil_def)
-
-    if len(fvprog.past_node.body) > 1:
-        raise MultipleFieldOperatorException()
 
     return fvprog
 
