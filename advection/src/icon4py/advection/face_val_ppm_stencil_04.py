@@ -59,6 +59,25 @@ def face_val_ppm_stencil_04(
         out=p_face,
         domain={
             CellDim: (horizontalStart, horizontalEnd),
-            KDim: (verticalStart, verticalEnd),
+            KDim: (1, 2),
+        },
+    )
+
+    _face_val_ppm_stencil_04_p_face_1(
+        p_cc,
+        p_cellhgt_mc_now,
+        out=p_face,
+        domain={
+            CellDim: (horizontalStart, horizontalEnd),
+            KDim: (verticalEnd, verticalEnd),
+        },
+    )
+
+    _face_val_ppm_stencil_04_p_face_2(
+        p_cc,
+        out=p_face,
+        domain={
+            CellDim: (horizontalStart, horizontalEnd),
+            KDim: (verticalStart, 1),
         },
     )

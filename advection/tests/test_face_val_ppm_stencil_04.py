@@ -32,30 +32,55 @@ def face_val_ppm_stencil_04_numpy(
     p_cc_minus_1 = np.roll(p_cc, shift=1, axis=1)
     p_face_ref = np.zeros_like(p_cc)
 
-    p_face_ref[nudging:halo, 1:vertical_upper] = p_cc[
-        nudging:halo, 1:vertical_upper
-    ] * (
+    p_face_ref[nudging:halo, 1:2] = p_cc[nudging:halo, 1:2] * (
         1
         - (
-            p_cellhgt_mc_now[nudging:halo, 1:vertical_upper]
-            / p_cellhgt_mc_now_minus_1[nudging:halo, 1:vertical_upper]
+            p_cellhgt_mc_now[nudging:halo, 1:2]
+            / p_cellhgt_mc_now_minus_1[nudging:halo, 1:2]
         )
     ) + (
-        p_cellhgt_mc_now[nudging:halo, 1:vertical_upper]
+        p_cellhgt_mc_now[nudging:halo, 1:2]
         / (
-            p_cellhgt_mc_now_minus_1[nudging:halo, 1:vertical_upper]
-            + p_cellhgt_mc_now[nudging:halo, 1:vertical_upper]
+            p_cellhgt_mc_now_minus_1[nudging:halo, 1:2]
+            + p_cellhgt_mc_now[nudging:halo, 1:2]
         )
     ) * (
         (
-            p_cellhgt_mc_now[nudging:halo, 1:vertical_upper]
-            / p_cellhgt_mc_now_minus_1[nudging:halo, 1:vertical_upper]
+            p_cellhgt_mc_now[nudging:halo, 1:2]
+            / p_cellhgt_mc_now_minus_1[nudging:halo, 1:2]
         )
-        * p_cc[nudging:halo, 1:vertical_upper]
-        + p_cc_minus_1[nudging:halo, 1:vertical_upper]
+        * p_cc[nudging:halo, 1:2]
+        + p_cc_minus_1[nudging:halo, 1:2]
     )
 
-    p_face_ref[nudging:halo, vertical_lower] = p_cc[nudging:halo, vertical_lower]
+    p_face_ref[nudging:halo, vertical_upper : vertical_upper + 1] = p_cc[
+        nudging:halo, vertical_upper : vertical_upper + 1
+    ] * (
+        1
+        - (
+            p_cellhgt_mc_now[nudging:halo, vertical_upper : vertical_upper + 1]
+            / p_cellhgt_mc_now_minus_1[
+                nudging:halo, vertical_upper : vertical_upper + 1
+            ]
+        )
+    ) + (
+        p_cellhgt_mc_now[nudging:halo, vertical_upper : vertical_upper + 1]
+        / (
+            p_cellhgt_mc_now_minus_1[nudging:halo, vertical_upper : vertical_upper + 1]
+            + p_cellhgt_mc_now[nudging:halo, vertical_upper : vertical_upper + 1]
+        )
+    ) * (
+        (
+            p_cellhgt_mc_now[nudging:halo, vertical_upper : vertical_upper + 1]
+            / p_cellhgt_mc_now_minus_1[
+                nudging:halo, vertical_upper : vertical_upper + 1
+            ]
+        )
+        * p_cc[nudging:halo, vertical_upper : vertical_upper + 1]
+        + p_cc_minus_1[nudging:halo, vertical_upper : vertical_upper + 1]
+    )
+
+    p_face_ref[nudging:halo, 0:1] = p_cc[nudging:halo, 0:1]
     return p_face_ref
 
 
