@@ -66,9 +66,14 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     if "domain" in fvprog.past_node.body[0].kwargs:
         domain_arg = fvprog.past_node.body[0].kwargs["domain"]
         assert isinstance(domain_arg, past.Dict)
-        domain_arg_ids = set(
-            arg_elts.id for arg in domain_arg.values_ for arg_elts in arg.elts
-        )
+        domain_arg_ids = []
+        for arg in domain_arg.values_:
+            for arg_elts in arg.elts:
+                if isinstance(arg_elts, past.Name):
+                    domain_arg_ids.append(arg_elts.id)
+                elif isinstance(arg_elts, past.Constant):
+                    domain_arg_ids.append(arg_elts.value)
+        domain_arg_ids = set(domain_arg_ids)
 
     out_arg = fvprog.past_node.body[0].kwargs["out"]
     assert isinstance(out_arg, (past.Name, past.TupleExpr))
