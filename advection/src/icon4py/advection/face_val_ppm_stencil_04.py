@@ -43,7 +43,7 @@ def _face_val_ppm_stencil_04_p_face_2(
     return p_face
 
 
-@program
+@program(grid_type="unstructured")
 def face_val_ppm_stencil_04(
     p_cc: Field[[CellDim, KDim], float],
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],
@@ -62,10 +62,3 @@ def face_val_ppm_stencil_04(
             KDim: (verticalStart, verticalEnd),
         },
     )
-
-
-# check if stencil has custom domain
-
-# remove horizontal, vertical args from stencil info, then generate code and it will use args from Fortran correctly?
-
-# if it does we generate code to overwrite domain from fortran with the one from the stencil.
