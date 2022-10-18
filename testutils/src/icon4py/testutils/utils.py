@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -24,36 +24,54 @@ from hypothesis.extra.numpy import arrays as hypothesis_array
 from . import simple_mesh
 
 
+def shape(
+    obj: Union[tuple, np.ndarray, simple_mesh.SimpleMesh], *dims: gt_common.Dimension
+):
+    if isinstance(obj, simple_mesh.SimpleMesh):
+        return tuple(map(lambda x: obj.size[x], dims))
+    if isinstance(obj, tuple):
+        return obj
+    if isinstance(obj, np.ndarray):
+        return obj.shape
+    raise NotImplementedError(f"Cannot get shape of {type(obj)}")
+
+
 def random_mask(
     mesh: simple_mesh.SimpleMesh,
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
 ) -> it_embedded.MutableLocatedField:
-    shape = tuple(map(lambda x: mesh.size[x], dims))
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
     np.random.shuffle(arr)
-    arr = np.reshape(arr, newshape=shape)
+    arr = np.reshape(arr, newshape=shape(mesh, dims))
     if dtype:
         arr = arr.astype(dtype)
     return it_embedded.np_as_located_field(*dims)(arr)
+
+
+def to_icon4py_field(
+    field, *dims: gt_common.Dimension, dtype=float
+) -> it_embedded.MutableLocatedField:
+    """Copy a numpy field into an field with named dimensions."""
+    return it_embedded.np_as_located_field(*dims)(field)
 
 
 def random_field(
     mesh, *dims, low: float = -1.0, high: float = 1.0
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.random.default_rng().uniform(
-            low=low, high=high, size=tuple(map(lambda x: mesh.size[x], dims))
-        )
+        np.random.default_rng().uniform(low=low, high=high, size=shape(mesh, dims))
     )
 
 
 def zero_field(
-    mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension, dtype=float
+    mesh: Union[simple_mesh.SimpleMesh, np.ndarray],
+    *dims: gt_common.Dimension,
+    dtype=float,
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.zeros(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)
+        np.zeros(shape=shape(mesh, dims), dtype=dtype)
     )
 
 
