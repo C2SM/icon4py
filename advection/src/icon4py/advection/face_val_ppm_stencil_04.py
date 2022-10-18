@@ -78,6 +78,6 @@ def face_val_ppm_stencil_04(
         out=p_face,
         domain={
             CellDim: (horizontalStart, horizontalEnd),
-            KDim: (verticalStart, 1),
+            KDim: (0, 1),
         },
     )
