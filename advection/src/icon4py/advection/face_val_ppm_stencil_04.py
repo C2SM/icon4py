@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, FieldOffset, broadcast, int32
+from functional.ffront.fbuiltins import Field, FieldOffset, broadcast
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -48,10 +48,10 @@ def face_val_ppm_stencil_04(
     p_cc: Field[[CellDim, KDim], float],
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],
     p_face: Field[[CellDim, KDim], float],
-    horizontalStart: int32,
-    horizontalEnd: int32,
-    verticalStart: int32,
-    verticalEnd: int32,
+    horizontalStart: int,
+    horizontalEnd: int,
+    verticalStart: int,
+    verticalEnd: int,
 ):
     _face_val_ppm_stencil_04_p_face_1(
         p_cc,
@@ -69,7 +69,7 @@ def face_val_ppm_stencil_04(
         out=p_face,
         domain={
             CellDim: (horizontalStart, horizontalEnd),
-            KDim: (verticalEnd, verticalEnd),
+            KDim: (verticalEnd - 1, verticalEnd),
         },
     )
 
