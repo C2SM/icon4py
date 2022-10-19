@@ -24,16 +24,16 @@ from hypothesis.extra.numpy import arrays as hypothesis_array
 from . import simple_mesh
 
 
-def shape(
+def objShape(
     obj: Union[tuple, np.ndarray, simple_mesh.SimpleMesh], *dims: gt_common.Dimension
 ):
+
     if isinstance(obj, simple_mesh.SimpleMesh):
         return tuple(map(lambda x: obj.size[x], dims))
     if isinstance(obj, tuple):
         return obj
     if isinstance(obj, np.ndarray):
         return obj.shape
-    raise NotImplementedError(f"Cannot get shape of {type(obj)}")
 
 
 def random_mask(
@@ -41,37 +41,43 @@ def random_mask(
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
 ) -> it_embedded.MutableLocatedField:
+    shape = objShape(mesh, *dims)
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
     np.random.shuffle(arr)
-    arr = np.reshape(arr, newshape=shape(mesh, dims))
+    arr = np.reshape(arr, newshape=objShape(mesh, *dims))
     if dtype:
         arr = arr.astype(dtype)
     return it_embedded.np_as_located_field(*dims)(arr)
 
 
 def to_icon4py_field(
-    field, *dims: gt_common.Dimension, dtype=float
+    field: Union[tuple, np.ndarray, simple_mesh.SimpleMesh],
+    *dims: gt_common.Dimension,
+    dtype=float,
 ) -> it_embedded.MutableLocatedField:
     """Copy a numpy field into an field with named dimensions."""
     return it_embedded.np_as_located_field(*dims)(field)
 
 
 def random_field(
-    mesh, *dims, low: float = -1.0, high: float = 1.0
+    mesh: Union[tuple, np.ndarray, simple_mesh.SimpleMesh],
+    *dims,
+    low: float = -1.0,
+    high: float = 1.0,
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.random.default_rng().uniform(low=low, high=high, size=shape(mesh, dims))
+        np.random.default_rng().uniform(low=low, high=high, size=objShape(mesh, *dims))
     )
 
 
 def zero_field(
-    mesh: Union[simple_mesh.SimpleMesh, np.ndarray],
+    mesh: Union[tuple, np.ndarray, simple_mesh.SimpleMesh],
     *dims: gt_common.Dimension,
     dtype=float,
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.zeros(shape=shape(mesh, dims), dtype=dtype)
+        np.zeros(shape=objShape(mesh, *dims), dtype=dtype)
     )
 
 
@@ -90,12 +96,15 @@ def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
 
 
 def random_field_strategy(
-    mesh, *dims, min_value=None, max_value=None
+    mesh: Union[tuple, np.ndarray, simple_mesh.SimpleMesh],
+    *dims,
+    min_value=None,
+    max_value=None,
 ) -> st.SearchStrategy[float]:
     """Return a hypothesis strategy of a random field."""
     return hypothesis_array(
         dtype=np.float64,
-        shape=tuple(map(lambda x: mesh.size[x], dims)),
+        shape=objShape(mesh, *dims),
         elements=st.floats(
             min_value=min_value,
             max_value=max_value,
