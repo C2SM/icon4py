@@ -35,6 +35,8 @@ from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.utils import to_icon4py_field, zero_field
 from icon4py.testutils.utils_serialbox import bcolors, field_test
 
+from .icon4py.atm_phy_schemes.gscp_graupel import graupel
+
 
 # Configuration of serialized data
 SER_DATA = os.path.join(os.path.dirname(__file__), "ser_data")
@@ -273,6 +275,7 @@ def test_graupel_serialized_data():
         # zqvsw_up = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
 
         # TODO CALL graupel() stencil here
+        graupel(qc, qr)
 
         # TESTING
 
