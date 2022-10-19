@@ -50,12 +50,11 @@ def test_graupel_serialized_data():
 
         # Open Files
         try:
-            serializer = ser.Serializer(
-                ser.OpenModeKind.Read, SER_DATA, "ref_rank_" + str(rank + 1)
-            )
+            serializer = ser.Serializer(ser.OpenModeKind.Read, SER_DATA, f"ref_rank_{str(rank + 1)}")
+
             savepoints = serializer.savepoint_list()
         except ser.SerialboxError as e:
-            print("serializer: error: {}".format(e), file=stderr)
+            print(f"serializer: error: {e}", file=stderr)
             exit(1)
 
         # Read serialized data for init.
