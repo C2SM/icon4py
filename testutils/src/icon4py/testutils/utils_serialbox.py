@@ -42,9 +42,7 @@ def print_comparison(fld, ref, idx, n):
     )
 
 
-def field_test(
-    fld, fld_string, serializer, savepoint, noErrors=None, atol=0.0, rtol=1e-15
-):
+def field_test(fld, fld_string, serializer, savepoint, numErrors, atol=0.0, rtol=1e-15):
     """Test fields against serialized field."""
     fld = np.asarray(fld)
     ref = serializer.read(fld_string, savepoint).reshape(fld.shape)
@@ -69,10 +67,8 @@ def field_test(
         for n in range(-nSamples, 0):
             print_comparison(fld, ref, idx, n)
 
-        if noErrors:
-            return noErrors + 1
+        return numErrors + 1
 
     else:
         print(f"[   {bcolors.OKGREEN}OK{bcolors.ENDC}   ] {fld_string}")
-        if noErrors:
-            return noErrors
+        return numErrors

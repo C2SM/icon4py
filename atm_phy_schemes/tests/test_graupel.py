@@ -27,11 +27,13 @@ except ImportError:
     os.system("../../install_serialbox.sh")
     import serialbox as ser
 
-from testutils_serialbox import field_test
+from functools import reduce
+from operator import add
 
 from icon4py.atm_phy_schemes.gscp_data import gscp_set_coefficients
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.utils import to_icon4py_field, zero_field
+from icon4py.testutils.utils_serialbox import bcolors, field_test
 
 
 # Configuration of serialized data
@@ -50,8 +52,9 @@ def test_graupel_serialized_data():
 
         # Open Files
         try:
-            serializer = ser.Serializer(ser.OpenModeKind.Read, SER_DATA, f"ref_rank_{str(rank + 1)}")
-
+            serializer = ser.Serializer(
+                ser.OpenModeKind.Read, SER_DATA, f"ref_rank_{str(rank + 1)}"
+            )
             savepoints = serializer.savepoint_list()
         except ser.SerialboxError as e:
             print(f"serializer: error: {e}", file=stderr)
@@ -271,13 +274,28 @@ def test_graupel_serialized_data():
 
         # TODO CALL graupel() stencil here
 
+        # TESTING
+
+        # Initialize numErrors
+        try:
+            numErrors
+        except NameError:
+            numErrors = 0
+
+        numErrors = 0
         # In fields: Should not change
         testFields = (
             (ddqz_z_full, "layer thickness"),
             (rho, "moist air density"),
             (pres, "pres"),
         )
-        [field_test(*field, serializer, savepoints[-3]) for field in testFields]
+        numErrors = reduce(
+            add,
+            [
+                field_test(*field, serializer, savepoints[-3], numErrors=numErrors)
+                for field in testFields
+            ],
+        )
 
         # Inout
 
@@ -291,7 +309,13 @@ def test_graupel_serialized_data():
             (qs, "specific snow content"),
             (qg, "specific graupel content"),
         )
-        [field_test(*field, serializer, savepoints[-2]) for field in testFields]
+        numErrors = reduce(
+            add,
+            [
+                field_test(*field, serializer, savepoints[-2], numErrors=numErrors)
+                for field in testFields
+            ],
+        )
 
         testFields = (
             (rain_gsp_rate, "precipitation rate of rain"),
@@ -299,12 +323,24 @@ def test_graupel_serialized_data():
             (ice_gsp_rate, "precipitation rate of ice"),
             (graupel_gsp_rate, "precipitation rate of graupel"),
         )
-        [field_test(*field, serializer, savepoints[-2]) for field in testFields]
+        numErrors = reduce(
+            add,
+            [
+                field_test(*field, serializer, savepoints[-2], numErrors=numErrors)
+                for field in testFields
+            ],
+        )
 
         # Diagnostics (Out)
 
         if ldiag_ttend:
-            field_test(ddt_tend_t, "tendency temperature", serializer, savepoints[-1])
+            numErrors = field_test(
+                ddt_tend_t,
+                "tendency temperature",
+                serializer,
+                savepoints[-1],
+                numErrors=numErrors,
+            )
 
         if ldiag_qtend:
             testFields = (
@@ -321,4 +357,14 @@ def test_graupel_serialized_data():
                 (ddt_tend_qs, "tendency specific snow content"),
             )
 
-            [field_test(*field, serializer, savepoints[-1]) for field in testFields]
+            numErrors = reduce(
+                add,
+                [
+                    field_test(*field, serializer, savepoints[-1], numErrors=numErrors)
+                    for field in testFields
+                ],
+            )
+
+    assert (
+        numErrors == 0
+    ), f"{bcolors.FAIL}{numErrors} tests failed validation{bcolors.ENDC}"
