@@ -22,6 +22,10 @@ Method:
   Prognostic one-moment bulk microphysical parameterization.
   The sedimentation of rain and snow is computed implicitly.
 
+Equation numbers refer to
+Doms, Foerstner, Heise, Herzog, Raschendorfer, Schrodin, Reinhardt, Vogel
+(September 2005): "A Description of the Nonhydrostatic Regional Model LM",
+
 TODO: GT4Py team
 1. Passing int to program
 2. Passing optional fields to program
