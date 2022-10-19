@@ -31,11 +31,10 @@ from functools import reduce
 from operator import add
 
 from icon4py.atm_phy_schemes.gscp_data import gscp_set_coefficients
+from icon4py.atm_phy_schemes.gscp_graupel import graupel
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.utils import to_icon4py_field, zero_field
 from icon4py.testutils.utils_serialbox import bcolors, field_test
-
-from .icon4py.atm_phy_schemes.gscp_graupel import graupel
 
 
 # Configuration of serialized data
@@ -196,8 +195,7 @@ def test_graupel_serialized_data():
                 .reshape(nproma * nblks_c, nlev)
             )
         else:
-            var2D = (nproma, nlev)
-            ddt_tend_t = zero_field(var2D, CellDim, KDim)
+            ddt_tend_t = zero_field((nproma, nlev), CellDim, KDim)
 
         if ldiag_qtend:
             paramNames = (
@@ -258,24 +256,43 @@ def test_graupel_serialized_data():
                 )
             ]
 
-        # Local automatic arrays
-        # zpkr = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zpks = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zpkg = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zpki = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zprvr = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zprvs = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zprvg = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zprvi = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zvzr = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zvzs = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zvzg = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zvzi = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # dist_cldtop = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
-        # zqvsw_up = gt_zeros_like(var2D, GT4PyConfig)  # iv in ICON
+        # Local automatic arrays TODO:remove
+        temporaries = [zero_field((nproma, nlev), CellDim, KDim) for _ in range(14)]
 
-        # TODO CALL graupel() stencil here
-        graupel(qc, qr)
+        graupel(
+            float(tcall_gscp_jg),
+            ddqz_z_full,
+            temp,
+            pres,
+            rho,
+            qv,
+            qi,
+            qc,
+            qr,
+            qs,
+            qg,
+            qnc_s,
+            float(qi0),
+            float(qc0),
+            rain_gsp_rate,
+            snow_gsp_rate,
+            graupel_gsp_rate,
+            *temporaries,
+            *gscp_coefficients,
+            # ithermo_water, # TODO: Cant pass an int to a program
+            ice_gsp_rate,
+            ddt_tend_t,
+            ddt_tend_qv,
+            ddt_tend_qc,
+            ddt_tend_qi,
+            ddt_tend_qr,
+            ddt_tend_qs,
+            l_cv,
+            True,
+            ldiag_ttend,
+            ldiag_qtend,
+            offset_provider={},
+        )
 
         # TESTING
 
@@ -334,7 +351,7 @@ def test_graupel_serialized_data():
             ],
         )
 
-        # Diagnostics (Out)
+        # Output diagnostics
 
         if ldiag_ttend:
             numErrors = field_test(
