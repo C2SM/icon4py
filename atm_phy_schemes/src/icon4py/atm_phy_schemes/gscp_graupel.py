@@ -27,12 +27,18 @@ Doms, Foerstner, Heise, Herzog, Raschendorfer, Schrodin, Reinhardt, Vogel
 (September 2005): "A Description of the Nonhydrostatic Regional Model LM",
 
 TODO: GT4Py team
-1. Passing int to program
-2. Passing optional fields to program
+1. Need to load int32 to pass it to a program.
+
+2. Defining kwargs in program and scan:
+@program
+def graupel(field1: Field[[CellDim, KDim], float], field2: Field[[CellDim, KDim], float] = None ):
+    if field2 is not None:
+        do this
+3. Re-interate into FORTRAN
 """
 
 from functional.ffront.decorator import program, scan_operator
-from functional.ffront.fbuiltins import Field
+from functional.ffront.fbuiltins import Field, int32
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -160,7 +166,7 @@ def graupel(
     mma: tuple[float, float, float, float, float, float, float, float, float, float],
     mmb: tuple[float, float, float, float, float, float, float, float, float, float],
     # Optional Fields: TODO: Pass optional fields to program
-    # ithermo_water: int,  # TODO: Pass int to prgram
+    ithermo_water: int32,  # TODO: Pass int to prgram
     pri_gsp: Field[[CellDim], float],
     ddt_tend_t: Field[[CellDim, KDim], float],
     ddt_tend_qv: Field[[CellDim, KDim], float],

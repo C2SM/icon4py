@@ -279,7 +279,7 @@ def test_graupel_serialized_data():
             graupel_gsp_rate,
             *temporaries,
             *gscp_coefficients,
-            # ithermo_water, # TODO: Cant pass an int to a program
+            ithermo_water,  # TODO: Cant pass an int to a program
             ice_gsp_rate,
             ddt_tend_t,
             ddt_tend_qv,
