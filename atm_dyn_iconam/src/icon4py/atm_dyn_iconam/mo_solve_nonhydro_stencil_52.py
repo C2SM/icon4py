@@ -17,68 +17,21 @@ from functional.ffront.fbuiltins import Field
 from icon4py.common.dimension import CellDim, KDim, Koff
 
 
-@scan_operator(axis=KDim, forward=True, init=1.0)
-def _mo_solve_nonhydro_stencil_52_w_scan(
-    w_state: float,
-    z_a: float,
-    z_g: float,
+@scan_operator(axis=KDim, forward=True, init=(0.0, 0.0, True))
+def _w(
+    state: tuple[float, float, bool],
     w: float,
-) -> float:
-    return w if w_state == 1.0 else (w - z_a * w_state) * z_g
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_52_z_q(
-    vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    z_q: Field[[CellDim, KDim], float],
-    dtime: float,
-    cpd: float,
-) -> Field[[CellDim, KDim], float]:
-    z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
-    z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[-1])
-    z_c = -z_gamma * z_beta * z_alpha(Koff[1])
-    z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
-    z_g = 1.0 / (z_b + z_a * z_q(Koff[-1]))
-    z_q = -z_c * z_g
-    return z_q
-
-
-@program
-def mo_solve_nonhydro_stencil_52_z_q(
-    vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    z_q: Field[[CellDim, KDim], float],
-    dtime: float,
-    cpd: float,
+    z_q: float,
+    z_a: float,
+    z_b: float,
+    z_c: float,
+    w_prep: float,
 ):
-    _mo_solve_nonhydro_stencil_52_z_q(
-        vwind_impl_wgt,
-        theta_v_ic,
-        ddqz_z_half,
-        z_alpha,
-        z_beta,
-        z_q,
-        dtime,
-        cpd,
-        out=z_q,
-    )
-
-
-@field_operator
-def _mo_solve_nonhydro_stencil_52_w(
-    z_a: Field[[CellDim, KDim], float],
-    z_g: Field[[CellDim, KDim], float],
-    w_before: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    w = _mo_solve_nonhydro_stencil_52_w_scan(z_a, z_g, w_before)
-    return w
+    z_q_m1, w_m1, first = state
+    z_g = 1.0 / (z_b + z_a * z_q_m1)
+    z_q_new = -z_c * z_g
+    w_new = (w_prep - z_a * w_m1) * z_g
+    return (z_q, w, False) if first else (z_q_new, w_new, False)
 
 
 @field_operator
@@ -91,16 +44,63 @@ def _mo_solve_nonhydro_stencil_52(
     z_w_expl: Field[[CellDim, KDim], float],
     z_exner_expl: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
+    w: Field[[CellDim, KDim], float],
+    dtime: float,
+    cpd: float,
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
+    z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[-1])
+    z_c = -z_gamma * z_beta * z_alpha(Koff[1])
+    z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
+    w_prep = z_w_expl - z_gamma * (z_exner_expl(Koff[-1]) - z_exner_expl)
+    z_q_res, w_res, _ = _w(w, z_q, z_a, z_b, z_c, w_prep)
+    return z_q_res, w_res
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_52_z_q(
+    vwind_impl_wgt: Field[[CellDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    ddqz_z_half: Field[[CellDim, KDim], float],
+    z_alpha: Field[[CellDim, KDim], float],
+    z_beta: Field[[CellDim, KDim], float],
+    z_w_expl: Field[[CellDim, KDim], float],
+    z_exner_expl: Field[[CellDim, KDim], float],
+    z_q: Field[[CellDim, KDim], float],
+    w: Field[[CellDim, KDim], float],
     dtime: float,
     cpd: float,
 ) -> Field[[CellDim, KDim], float]:
     z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
     z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[-1])
+    z_c = -z_gamma * z_beta * z_alpha(Koff[1])
     z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
-    z_g = 1.0 / (z_b + z_a * z_q(Koff[-1]))
-    w_before = z_w_expl - z_gamma * (z_exner_expl(Koff[-1]) - z_exner_expl)
-    w = _mo_solve_nonhydro_stencil_52_w(z_a, z_g, w_before)
-    return w
+    w_prep = z_w_expl - z_gamma * (z_exner_expl(Koff[-1]) - z_exner_expl)
+    z_q_res, w_res, _ = _w(w, z_q, z_a, z_b, z_c, w_prep)
+    return z_q_res
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_52_w(
+    vwind_impl_wgt: Field[[CellDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    ddqz_z_half: Field[[CellDim, KDim], float],
+    z_alpha: Field[[CellDim, KDim], float],
+    z_beta: Field[[CellDim, KDim], float],
+    z_w_expl: Field[[CellDim, KDim], float],
+    z_exner_expl: Field[[CellDim, KDim], float],
+    z_q: Field[[CellDim, KDim], float],
+    w: Field[[CellDim, KDim], float],
+    dtime: float,
+    cpd: float,
+) -> Field[[CellDim, KDim], float]:
+    z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
+    z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[-1])
+    z_c = -z_gamma * z_beta * z_alpha(Koff[1])
+    z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
+    w_prep = z_w_expl - z_gamma * (z_exner_expl(Koff[-1]) - z_exner_expl)
+    z_q_res, w_res, _ = _w(w, z_q, z_a, z_b, z_c, w_prep)
+    return w_res
 
 
 @program
@@ -118,7 +118,22 @@ def mo_solve_nonhydro_stencil_52(
     cpd: float,
 ):
 
-    _mo_solve_nonhydro_stencil_52(
+    # _mo_solve_nonhydro_stencil_52(
+    #     vwind_impl_wgt,
+    #     theta_v_ic,
+    #     ddqz_z_half,
+    #     z_alpha,
+    #     z_beta,
+    #     z_w_expl,
+    #     z_exner_expl,
+    #     z_q,
+    #     w,
+    #     dtime,
+    #     cpd,
+    #     out=(z_q[:, 1:], w[:, 1:]),
+    # )
+
+    _mo_solve_nonhydro_stencil_52_z_q(
         vwind_impl_wgt,
         theta_v_ic,
         ddqz_z_half,
@@ -127,7 +142,22 @@ def mo_solve_nonhydro_stencil_52(
         z_w_expl,
         z_exner_expl,
         z_q,
+        w,
         dtime,
         cpd,
-        out=w,
+        out=z_q[:, 1:],
+    )
+    _mo_solve_nonhydro_stencil_52_w(
+        vwind_impl_wgt,
+        theta_v_ic,
+        ddqz_z_half,
+        z_alpha,
+        z_beta,
+        z_w_expl,
+        z_exner_expl,
+        z_q,
+        w,
+        dtime,
+        cpd,
+        out=w[:, 1:],
     )
