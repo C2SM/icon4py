@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from functional.iterator.embedded import constant_field
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_21 import (
     mo_solve_nonhydro_stencil_21,
@@ -81,7 +82,7 @@ def mo_solve_nonhydro_stencil_21_numpy(
         / ((z_theta1 + z_theta2) ** 2)
     )
 
-    return z_theta1, z_theta2, z_hydro_corr
+    return z_hydro_corr
 
 
 def test_mo_solve_nonhydro_stencil_21():
@@ -104,11 +105,9 @@ def test_mo_solve_nonhydro_stencil_21():
     inv_dual_edge_length = random_field(mesh, EdgeDim)
     grav_o_cpd = 10.0
 
-    z_theta1 = zero_field(mesh, EdgeDim, KDim)
-    z_theta2 = zero_field(mesh, EdgeDim, KDim)
     z_hydro_corr = zero_field(mesh, EdgeDim, KDim)
 
-    z_theta1_ref, z_theta2_ref, z_hydro_corr_ref = mo_solve_nonhydro_stencil_21_numpy(
+    z_hydro_corr_ref = mo_solve_nonhydro_stencil_21_numpy(
         mesh.e2c,
         np.asarray(theta_v),
         np.asarray(ikidx),
@@ -131,9 +130,7 @@ def test_mo_solve_nonhydro_stencil_21():
         theta_v_ic,
         inv_ddqz_z_full,
         inv_dual_edge_length,
-        grav_o_cpd,
-        z_theta1,
-        z_theta2,
+        constant_field(grav_o_cpd),
         z_hydro_corr,
         hstart,
         hend,
@@ -145,6 +142,4 @@ def test_mo_solve_nonhydro_stencil_21():
         },
     )
 
-    assert np.allclose(z_theta1_ref, z_theta1)
-    assert np.allclose(z_theta2_ref, z_theta2)
     assert np.allclose(z_hydro_corr_ref, z_hydro_corr)

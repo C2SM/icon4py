@@ -13,7 +13,6 @@
 
 from functional.iterator.builtins import (
     deref,
-    make_tuple,
     named_range,
     power,
     shift,
