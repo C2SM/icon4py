@@ -282,4 +282,8 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     if output_metadata:
         connectivity_chains = [offset for offset in offsets if offset != Koff.value]
         output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
-    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
+    click.echo(
+        generate_cpp_code(
+            adapt_domain(fvprog.itir), offset_provider, column_axis=fvprog._column_axis
+        )
+    )
