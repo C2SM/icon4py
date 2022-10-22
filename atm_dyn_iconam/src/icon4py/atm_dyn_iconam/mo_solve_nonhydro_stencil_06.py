@@ -32,4 +32,6 @@ def mo_solve_nonhydro_stencil_06(
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_06(z_exner_ic, inv_ddqz_z_full, out=z_dexner_dz_c_1)
+    _mo_solve_nonhydro_stencil_06(
+        z_exner_ic, inv_ddqz_z_full, out=z_dexner_dz_c_1[:, :-1]
+    )

@@ -41,5 +41,5 @@ def mo_velocity_advection_stencil_16(
     ddt_w_adv: Field[[CellDim, KDim], float],
 ):
     _mo_velocity_advection_stencil_16(
-        z_w_con_c, w, coeff1_dwdz, coeff2_dwdz, out=ddt_w_adv
+        z_w_con_c, w, coeff1_dwdz, coeff2_dwdz, out=ddt_w_adv[:, 1:-1]
     )

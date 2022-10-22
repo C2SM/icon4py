@@ -73,8 +73,8 @@ def test_mo_solve_nonhydro_stencil_51():
     theta_v_ic = random_field(mesh, CellDim, KDim)
     ddqz_z_half = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
     z_beta = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
-    z_alpha = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
-    z_w_expl = random_field(mesh, CellDim, KDim)
+    z_alpha = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)  # TODO fix k size
+    z_w_expl = random_field(mesh, CellDim, KDim)  # TODO fix k size
     z_exner_expl = random_field(mesh, CellDim, KDim)
     dtime = 10.0
     cpd = 1.0

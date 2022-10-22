@@ -29,7 +29,7 @@ def mo_velocity_advection_stencil_15_numpy(
     return z_w_con_c_full
 
 
-def test_mo_nh_diffusion_stencil_15():
+def test_mo_velocity_advection_stencil_15():
     mesh = SimpleMesh()
 
     z_w_con_c = random_field(mesh, CellDim, KDim)
