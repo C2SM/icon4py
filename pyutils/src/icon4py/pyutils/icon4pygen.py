@@ -24,6 +24,7 @@ from typing import Any, TypeGuard
 
 import click
 import tabulate
+import warnings
 from functional.common import Connectivity, Dimension, DimensionKind
 from functional.program_processors.codegens.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
@@ -58,8 +59,12 @@ def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
 
     out_arg = fvprog.past_node.body[0].kwargs["out"]
-    assert isinstance(out_arg, (past.Name, past.TupleExpr))
-    output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
+    output_fields = (
+        [f.value if isinstance(f, past.Subscript) else f for f in out_arg.elts]
+        if isinstance(out_arg, past.TupleExpr)
+        else [out_arg.value if isinstance(out_arg, past.Subscript) else out_arg]
+    )
+    assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)
 
     fields: dict[str, _FieldInfo] = {
