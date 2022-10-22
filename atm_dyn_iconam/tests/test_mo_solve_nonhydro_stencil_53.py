@@ -46,7 +46,7 @@ def test_mo_solve_nonhydro_stencil_53():
     )
 
     mo_solve_nonhydro_stencil_53(
-        z_q, w, w, offset_provider={"Koff": KDim}
+        z_q, w, offset_provider={"Koff": KDim}
     )  # TODO passing `w` as in and out is not guaranteed to work
 
     assert np.allclose(w_ref, w)
