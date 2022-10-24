@@ -32,9 +32,10 @@ def upwind_hflux_miura_stencil_02_numpy(
     n_diff = p_cc[c2e2c] - p_cc_e
     lsq_pseudoinv_2 = np.expand_dims(lsq_pseudoinv_2, axis=-1)
     lsq_pseudoinv_1 = np.expand_dims(lsq_pseudoinv_1, axis=-1)
-    p_coeff_1 = np.sum(lsq_pseudoinv_1 * n_diff, axis=1)
-    p_coeff_2 = np.sum(lsq_pseudoinv_2 * n_diff, axis=1)
-    return p_coeff_1, p_coeff_2
+    p_coeff_1 = p_cc
+    p_coeff_2 = np.sum(lsq_pseudoinv_1 * n_diff, axis=1)
+    p_coeff_3 = np.sum(lsq_pseudoinv_2 * n_diff, axis=1)
+    return p_coeff_1, p_coeff_2, p_coeff_3
 
 
 def test_upwind_hflux_miura_stencil_02():
@@ -47,8 +48,9 @@ def test_upwind_hflux_miura_stencil_02():
     lsq_pseudoinv_2_field = as_1D_sparse_field(lsq_pseudoinv_2, CECDim)
     p_coeff_1 = zero_field(mesh, CellDim, KDim)
     p_coeff_2 = zero_field(mesh, CellDim, KDim)
+    p_coeff_3 = zero_field(mesh, CellDim, KDim)
 
-    ref_1, ref_2 = upwind_hflux_miura_stencil_02_numpy(
+    ref_1, ref_2, ref_3 = upwind_hflux_miura_stencil_02_numpy(
         mesh.c2e2c,
         np.asarray(p_cc),
         np.asarray(lsq_pseudoinv_1),
@@ -61,6 +63,7 @@ def test_upwind_hflux_miura_stencil_02():
         lsq_pseudoinv_2_field,
         p_coeff_1,
         p_coeff_2,
+        p_coeff_3,
         offset_provider={
             "C2E2C": mesh.get_c2e2c_offset_provider(),
             "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, mesh.n_c2e2c),
@@ -68,5 +71,7 @@ def test_upwind_hflux_miura_stencil_02():
     )
     co1 = np.asarray(p_coeff_1)
     co2 = np.asarray(p_coeff_2)
+    co3 = np.asarray(p_coeff_3)
     assert np.allclose(ref_1, co1)
     assert np.allclose(ref_2, co2)
+    assert np.allclose(ref_3, co3)
