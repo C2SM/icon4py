@@ -26,11 +26,11 @@ import click
 import tabulate
 import warnings
 from functional.common import Connectivity, Dimension, DimensionKind
-from functional.program_processors.codegens.gtfn.gtfn_backend import generate
 from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
+from functional.program_processors.codegens.gtfn.gtfn_backend import generate
 
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (
@@ -51,6 +51,10 @@ def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
     return isinstance(obj, list) and all(isinstance(i, past.Name) for i in obj)
 
 
+def _ignore_subscript(node: past.Name | past.Subscript) -> past.Name:
+    return node if isinstance(node, past.Name) else node.value
+
+
 def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
     """Extract and format the in/out fields from a Program."""
     assert is_list_of_names(
@@ -60,9 +64,9 @@ def get_field_infos(fvprog: Program) -> dict[str, _FieldInfo]:
 
     out_arg = fvprog.past_node.body[0].kwargs["out"]
     output_fields = (
-        [f.value if isinstance(f, past.Subscript) else f for f in out_arg.elts]
+        [_ignore_subscript(f) for f in out_arg.elts]
         if isinstance(out_arg, past.TupleExpr)
-        else [out_arg.value if isinstance(out_arg, past.Subscript) else out_arg]
+        else [_ignore_subscript(out_arg)]
     )
     assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)
