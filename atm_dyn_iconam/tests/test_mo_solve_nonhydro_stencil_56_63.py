@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_56 import (
-    mo_solve_nonhydro_stencil_56,
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_56_63 import (
+    mo_solve_nonhydro_stencil_56_63,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_solve_nonhydro_stencil_56_53_numpy(
+def mo_solve_nonhydro_stencil_56_63_numpy(
     inv_ddqz_z_full: np.array,
     w: np.array,
     w_concorr_c: np.array,
