@@ -21,34 +21,32 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_solve_nonhydro_stencil_56_numpy(
+def mo_solve_nonhydro_stencil_56_53_numpy(
     inv_ddqz_z_full: np.array,
     w: np.array,
     w_concorr_c: np.array,
 ) -> np.array:
-    w_offset_1 = np.roll(w, shift=-1, axis=1)
-    w_concorr_c_offset_1 = np.roll(w_concorr_c, shift=-1, axis=1)
     z_dwdz_dd = inv_ddqz_z_full * (
-        (w - w_offset_1) - (w_concorr_c - w_concorr_c_offset_1)
+        (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
     )
     return z_dwdz_dd
 
 
-def test_mo_solve_nonhydro_stencil_56():
+def test_mo_solve_nonhydro_stencil_56_63():
     mesh = SimpleMesh()
     inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-    w = random_field(mesh, CellDim, KDim)
-    w_concorr_c = random_field(mesh, CellDim, KDim)
+    w = random_field(mesh, CellDim, KDim, extend={KDim: 1})
+    w_concorr_c = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     z_dwdz_dd = random_field(mesh, CellDim, KDim)
 
-    z_dwdz_dd_ref = mo_solve_nonhydro_stencil_56_numpy(
+    z_dwdz_dd_ref = mo_solve_nonhydro_stencil_56_63_numpy(
         np.asarray(inv_ddqz_z_full),
         np.asarray(w),
         np.asarray(w_concorr_c),
     )
 
-    mo_solve_nonhydro_stencil_56(
+    mo_solve_nonhydro_stencil_56_63(
         inv_ddqz_z_full, w, w_concorr_c, z_dwdz_dd, offset_provider={"Koff": KDim}
     )
 
-    assert np.allclose(z_dwdz_dd_ref[:, :-1], np.asarray(z_dwdz_dd)[:, :-1])
+    assert np.allclose(z_dwdz_dd_ref, z_dwdz_dd)
