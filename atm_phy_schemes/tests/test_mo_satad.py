@@ -23,10 +23,10 @@ from hypothesis import strategies as st
 from hypothesis import target
 from hypothesis.extra.numpy import arrays
 
-from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
+from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
 from icon4py.atm_phy_schemes.mo_satad import _newtonian_iteration_temp, satad
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
+from icon4py.shared.mo_physical_constants import phy_const
 from icon4py.testutils.simple_mesh import SimpleMesh
 
 
@@ -64,27 +64,33 @@ zqwmin = 1e-20
 
 def latent_heat_vaporization(t):
     """Return latent heat of vaporization given a temperature."""
-    return alv + (cp_v - clw) * (t - tmelt) - rv * t
+    return (
+        phy_const.alv
+        + (cp_v - phy_const.clw) * (t - phy_const.tmelt)
+        - phy_const.rv * t
+    )
 
 
 def sat_pres_water(t):
     """Saturation pressure of water."""
-    return c1es * np.exp(c3les * (t - tmelt) / (t - c4les))
+    return conv_table.c1es * np.exp(
+        conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les)
+    )
 
 
 def qsat_rho(t, rho):
-    return sat_pres_water(t) / (rho * rv * t)
+    return sat_pres_water(t) / (rho * phy_const.rv * t)
 
 
 def dqsatdT_rho(t, zqsat):
     """Return derivative of qsat with respect to t."""
-    beta = c5les / (t - c4les) ** 2 - 1.0 / t
+    beta = conv_table.c5les / (t - conv_table.c4les) ** 2 - 1.0 / t
     return beta * zqsat
 
 
 def newtonian_iteration_temp(t, twork, tworkold, qv, rho):
     """Obtain temperature at saturation using Newtonian iteration."""
-    lwdocvd = latent_heat_vaporization(t) / cvd
+    lwdocvd = latent_heat_vaporization(t) / phy_const.cvd
 
     for _ in range(maxiter):
         if abs(twork - tworkold) > tol:
@@ -101,7 +107,7 @@ def newtonian_iteration_temp(t, twork, tworkold, qv, rho):
 def satad_numpy(qv, qc, t, rho):
     """Numpy translation of satad_v_3D from Fortan ICON."""
     for cell, k in np.ndindex(np.shape(qv)):
-        lwdocvd = latent_heat_vaporization(t[cell, k]) / cvd
+        lwdocvd = latent_heat_vaporization(t[cell, k]) / phy_const.cvd
 
         Ttest = t[cell, k] - lwdocvd * qc[cell, k]
 

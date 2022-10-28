@@ -20,11 +20,6 @@ Changes.
 
 TODO:
 1. Implement Newtonian iteration! -> Needs fixted-size for loop feature in GT4Py
-    (0) For loop outside (maybe low priority)
-    (a) Unroll by hand
-    (b) Naive unroll of compile time FOR, maybe optimize
-    (c) Tracing
-2. Global Constants
 
 Comment from FORTRAN version:
 - Suggested by U. Blahak: Replace pres_sat_water, pres_sat_ice and spec_humi by
@@ -33,52 +28,35 @@ lookup tables in mo_convect_tables. Bit incompatible change!
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, abs, exp, maximum, where
 
-# from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
+from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
 from icon4py.common.dimension import CellDim, KDim
-
-
-# from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
-
-# # TODO: Local constants What to do with these?
-# cp_v = 1850.0  # specific heat of water vapor at constant pressure (Landolt-Bornstein)
-# ci = 2108.0  # specific heat of ice
-
-# tol = 1e-3
-# maxiter = 10  #
-# zqwmin = 1e-20
+from icon4py.shared.mo_physical_constants import phy_const
 
 
 @field_operator
 def _latent_heat_vaporization(
     t: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
-    """
-    Return latent heat of vaporization.
+    """Return latent heat of vaporization.
 
     Computed as internal energy and taking into account Kirchoff's relations
     """
-    # TODO: Remove later
-    alv = 2.5008e6
-    tmelt = 273.15
-    rv = 461.51
-    cpd = 1004.64
-    rcpl = 3.1733
-    clw = (rcpl + 1.0) * cpd
+    # specific heat of water vapor at constant pressure (Landolt-Bornstein)
     cp_v = 1850.0
 
-    return alv + (cp_v - clw) * (t - tmelt) - rv * t
+    return (
+        phy_const.alv
+        + (cp_v - phy_const.clw) * (t - phy_const.tmelt)
+        - phy_const.rv * t
+    )
 
 
 @field_operator
 def _sat_pres_water(t: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
     """Return saturation water vapour pressure."""
-    # TODO: Remove later
-    tmelt = 273.15
-    c1es = 610.78
-    c3les = 17.269
-    c4les = 35.86
-
-    return c1es * exp(c3les * (t - tmelt) / (t - c4les))
+    return conv_table.c1es * exp(
+        conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les)
+    )
 
 
 @field_operator
@@ -86,9 +64,7 @@ def _qsat_rho(
     t: Field[[CellDim, KDim], float], rho: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
     """Return specific humidity at water saturation (with respect to flat surface)."""
-    rv = 461.51  # TODO: Remove
-
-    return _sat_pres_water(t) / (rho * rv * t)
+    return _sat_pres_water(t) / (rho * phy_const.rv * t)
 
 
 @field_operator
@@ -100,13 +76,7 @@ def _dqsatdT_rho(
 
     Computed with respect to the temperature at constant total density.
     """
-    # TODO: Remove later
-    tmelt = 273.15
-    c3les = 17.269
-    c4les = 35.86
-    c5les = c3les * (tmelt - c4les)
-
-    beta = c5les / (t - c4les) ** 2 - 1.0 / t
+    beta = conv_table.c5les / (t - conv_table.c4les) ** 2 - 1.0 / t
     return beta * zqsat
 
 
@@ -133,10 +103,10 @@ def _conditional_newtonian_for_body(
     lwdocvd: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
 
+    tol = 1e-3  # tolerance for iteration
+
     fT = tWork - t + lwdocvd * (_qsat_rho(tWork, rho) - qv)
     dfT = 1.0 + lwdocvd * _dqsatdT_rho(tWork, _qsat_rho(tWork, rho))
-
-    tol = 1e-3  # TODO: Remove
 
     return where(abs(tWork - t) > tol, tWork - fT / dfT, tWork)
 
@@ -148,13 +118,8 @@ def _newtonian_iteration_temp(
     rho: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
 
-    # TODO: Remove
-    rd = 287.04
-    cpd = 1004.64
-    cvd = cpd - rd
-
     # Remains const. during iteration
-    lwdocvd = _latent_heat_vaporization(t) / cvd
+    lwdocvd = _latent_heat_vaporization(t) / phy_const.cvd
 
     # for _ in range(1, maxiter):
     tWork = _newtonian_for_body(t, qv, rho, lwdocvd)
@@ -198,13 +163,12 @@ def _satad(
 
     Originally inspirered from satad_v_3D_gpu of ICON release 2.6.4.
     """
-    # TODO: Remove
-    rd = 287.04
-    cpd = 1004.64
-    cvd = cpd - rd
+    # Local treshold
     zqwmin = 1e-20
 
-    TemperatureAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
+    TemperatureAfterAllQcEvaporated = (
+        t - _latent_heat_vaporization(t) / phy_const.cvd * qc
+    )
 
     # Check, which points will still be subsaturated even after evaporating all cloud water.
     SubsaturatedMask = qv + qc <= _qsat_rho(TemperatureAfterAllQcEvaporated, rho)
