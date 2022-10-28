@@ -22,15 +22,20 @@ from math import gamma as gamma_fct
 
 import numpy as np
 
-from icon4py.shared.mo_math_constants import pi
-from icon4py.shared.mo_physical_constants import als, rv
+from icon4py.shared.mo_math_constants import math_const
+from icon4py.shared.mo_physical_constants import phy_const
 
+from typing import Final
 
-# Hardcoded switches to select autoconversion and n0s calculation
-# ---------------------------------------------------------------
+from eve.utils import FrozenNamespace
 
-iautocon = 1
-isnow_n0temp = 2
+class GscpData(FrozenNamespace):
+    """Constants for the grid scale parameterizations."""
+    # Hardcoded switches to select autoconversion and n0s calculation
+    # ---------------------------------------------------------------
+
+    iautocon = 1
+    isnow_n0temp = 2
 
 # Epsilons and thresholds
 # -----------------------
@@ -271,8 +276,8 @@ def gscp_set_coefficients(
     zconst = (
         zkcau / (20.0 * zxstar) * (zcnue + 2.0) * (zcnue + 4.0) / (zcnue + 1.0) ** 2
     )
-    ccsrim = 46.98276746732905  # DL (gamma): 0.25 * pi * zecs * v0snow * gamma_fct(zv1s + 3.0)
-    ccsagg = 52.20307496369895  # DL (gamma): 0.25 * pi * v0snow * gamma_fct(zv1s + 3.0)
+    ccsrim = 46.98276746732905  # DL (gamma): 0.25 * math_constants.pi * zecs * v0snow * gamma_fct(zv1s + 3.0)
+    ccsagg = 52.20307496369895  # DL (gamma): 0.25 * math_constants.pi * v0snow * gamma_fct(zv1s + 3.0)
     ccsdep = 99.96257414250321  # DL (gamma): 0.26 * gamma_fct((zv1s + 5.0) / 2.0) * np.sqrt(1.0 / zeta)
     ccsvxp = -(zv1s / (zbms + 1.0) + 1.0)
     ccsvel = 46.23061746664488  # DL (gamma): zams * v0snow * gamma_fct(zbms + zv1s + 1.0) * (zams * gamma_fct(zbms + 1.0)) ** ccsvxp
@@ -282,7 +287,7 @@ def gscp_set_coefficients(
     ccswxp = 0.1666666666666667  # zv1s * ccslxp
     ccsaxp = -(zv1s + 3.0)
     ccsdxp = -(zv1s + 1.0) / 2.0
-    ccshi1 = als * als / (zlheat * rv)
+    ccshi1 = const_phy.als**2 / (zlheat * const_phy.rv)
     ccdvtp = 4.2213489078749271e-5  # 2.22e-5 * tmelt ** (-1.94) * 101325.0
     ccidep = 4.0 * zami ** (-x1o3)
     zn0r = (
@@ -290,10 +295,10 @@ def gscp_set_coefficients(
     )  # empirical relation adapted from Ulbrich (1983)
     zn0r = zn0r * rain_n0_factor  # apply tuning factor to zn0r variable
     zar = (
-        pi * zrhow / 6.0 * zn0r * gamma_fct(mu_rain + 4.0)
+        math_const.pi * zrhow / 6.0 * zn0r * gamma_fct(mu_rain + 4.0)
     )  # pre-factor in lambda of rain
     zcevxp = (mu_rain + 2.0) / (mu_rain + 4.0)
-    zcev = 3.0999999914053263e-3  # DL (gamma): 2.0 * pi * zdv / zhw * zn0r * zar ** (-zcevxp) * gamma_fct(mu_rain + 2.0)
+    zcev = 3.0999999914053263e-3  # DL (gamma): 2.0 * math_constants.pi * zdv / zhw * zn0r * zar ** (-zcevxp) * gamma_fct(mu_rain + 2.0)
     zbevxp = (2.0 * mu_rain + 5.5) / (2.0 * mu_rain + 8.0) - zcevxp
     zbev = 14.152467883390491  # DL: (gamma): ( 0.26 * np.sqrt(zrho0 * 130.0 / zeta) * zar ** (-zbevxp) * gamma_fct((2.0 * mu_rain + 5.5) / 2.0)  / gamma_fct(mu_rain + 2.0)  )
 
@@ -359,8 +364,6 @@ def gscp_set_coefficients(
         float(zvz0i),
         float(icesedi_exp),
         zams,
-        iautocon,
-        isnow_n0temp,
         dist_cldtop_ref,
         reduce_dep_ref,
         tmin_iceautoconv,
