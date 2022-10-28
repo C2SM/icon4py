@@ -19,16 +19,7 @@ Changes.
 - Only implementend gpu version. Maybe further optimizations possible for CPU (check original code)
 
 TODO:
-1. Is where statement the nicest possible syntax for the IF-ELSE below? Also, where currently can only return 1 Field(
-    (a) Do np.where(fun1, func2) implementation
-    (b) How would algorithm look in local view? In current localview frontend.
-    (c) ...
-2. Implement Newtonian iteration! -> Needs fixted-size for loop feature in GT4Py
-    (0) For loop outside (maybe low priority)
-    (a) Unroll by hand
-    (b) Naive unroll of compile time FOR, maybe optimize
-    (c) Tracing
-3. Constants
+1. Implement Newtonian iteration! -> Needs fixted-size for loop feature in GT4Py
 
 Comment from FORTRAN version:
 - Suggested by U. Blahak: Replace pres_sat_water, pres_sat_ice and spec_humi by
@@ -37,91 +28,55 @@ lookup tables in mo_convect_tables. Bit incompatible change!
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, abs, exp, maximum, where
 
-# from icon4py.atm_phy_schemes.mo_convect_tables import c1es, c3les, c4les, c5les
+from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
 from icon4py.common.dimension import CellDim, KDim
-
-
-# from icon4py.shared.mo_physical_constants import alv, clw, cvd, rv, tmelt
-
-# # TODO: Local constants What to do with these?
-# cp_v = 1850.0  # specific heat of water vapor at constant pressure (Landolt-Bornstein)
-# ci = 2108.0  # specific heat of ice
-
-# tol = 1e-3
-# maxiter = 10  #
-# zqwmin = 1e-20
-
-# TODO: Docstrings will crash field_Operators
-"""
-Return latent heat of vaporization.
-
-Computed as internal energy and taking into account Kirchoff's relations
-"""
+from icon4py.shared.mo_physical_constants import phy_const
 
 
 @field_operator
 def _latent_heat_vaporization(
     t: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
+    """Return latent heat of vaporization.
 
-    # TODO: Remove later
-    alv = 2.5008e6
-    tmelt = 273.15
-    rv = 461.51
-    cpd = 1004.64
-    rcpl = 3.1733
-    clw = (rcpl + 1.0) * cpd
+    Computed as internal energy and taking into account Kirchoff's relations
+    """
+    # specific heat of water vapor at constant pressure (Landolt-Bornstein)
     cp_v = 1850.0
 
-    return alv + (cp_v - clw) * (t - tmelt) - rv * t
-
-
-"""Return saturation water vapour pressure."""
+    return (
+        phy_const.alv
+        + (cp_v - phy_const.clw) * (t - phy_const.tmelt)
+        - phy_const.rv * t
+    )
 
 
 @field_operator
 def _sat_pres_water(t: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
-    # TODO: Remove later
-    tmelt = 273.15
-    c1es = 610.78
-    c3les = 17.269
-    c4les = 35.86
-
-    return c1es * exp(c3les * (t - tmelt) / (t - c4les))
-
-
-"""Return specific humidity at water saturation (with respect to flat surface)."""
+    """Return saturation water vapour pressure."""
+    return conv_table.c1es * exp(
+        conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les)
+    )
 
 
 @field_operator
 def _qsat_rho(
     t: Field[[CellDim, KDim], float], rho: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
-
-    rv = 461.51  # TODO: Remove
-
-    return _sat_pres_water(t) / (rho * rv * t)
-
-
-"""
-Return partial derivative of the specific humidity at water saturation.
-
-Computed with respect to the temperature at constant total density.
-"""
+    """Return specific humidity at water saturation (with respect to flat surface)."""
+    return _sat_pres_water(t) / (rho * phy_const.rv * t)
 
 
 @field_operator
 def _dqsatdT_rho(
     t: Field[[CellDim, KDim], float], zqsat: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
+    """
+    Return partial derivative of the specific humidity at water saturation.
 
-    # TODO: Remove later
-    tmelt = 273.15
-    c3les = 17.269
-    c4les = 35.86
-    c5les = c3les * (tmelt - c4les)
-
-    beta = c5les / (t - c4les) ** 2 - 1.0 / t
+    Computed with respect to the temperature at constant total density.
+    """
+    beta = conv_table.c5les / (t - conv_table.c4les) ** 2 - 1.0 / t
     return beta * zqsat
 
 
@@ -131,12 +86,9 @@ def _newtonian_for_body(
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
     lwdocvd: Field[[CellDim, KDim], float],
-    qsat_rho: Field[[CellDim, KDim], float],
-
 ) -> Field[[CellDim, KDim], float]:
 
-
-    fT = lwdocvd * (qsat_rho - qv)
+    fT = lwdocvd * (_qsat_rho(t, rho) - qv)
     dfT = 1.0 + lwdocvd * _dqsatdT_rho(t, _qsat_rho(t, rho))
 
     return t - fT / dfT
@@ -149,67 +101,39 @@ def _conditional_newtonian_for_body(
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
     lwdocvd: Field[[CellDim, KDim], float],
-    qsat_rho: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
 
+    tol = 1e-3  # tolerance for iteration
 
-    fT = tWork - t + lwdocvd * (qsat_rho - qv)
-    dfT = 1.0 + lwdocvd * _dqsatdT_rho(tWork, qsat_rho)
+    fT = tWork - t + lwdocvd * (_qsat_rho(tWork, rho) - qv)
+    dfT = 1.0 + lwdocvd * _dqsatdT_rho(tWork, _qsat_rho(tWork, rho))
 
-    tol = 1e-3  # TODO: Remove
-
-    tWorkOld = tWork
-    return where(abs(tWork - tWorkOld) > tol, tWork - fT / dfT, tWork)
+    return where(abs(tWork - t) > tol, tWork - fT / dfT, tWork)
 
 
 @field_operator
-def _newtonian_iteration_t(
+def _newtonian_iteration_temp(
     t: Field[[CellDim, KDim], float],
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
 
-    # TODO: Remove
-    rd = 287.04
-    cpd = 1004.64
-    cvd = cpd - rd
-
-    #Remains const. during iteration
-    lwdocvd = _latent_heat_vaporization(t) / cvd
-    qsat_rho = _qsat_rho(t, rho)
+    # Remains const. during iteration
+    lwdocvd = _latent_heat_vaporization(t) / phy_const.cvd
 
     # for _ in range(1, maxiter):
-    tWork = t
-    tWork =_newtonian_for_body(t, qv, rho, lwdocvd, qsat_rho)
-    tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
+    tWork = _newtonian_for_body(t, qv, rho, lwdocvd)
+    tWork = _conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
     # DL: @Linus Uncommenting below is suuuper slow :-)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd, qsat_rho)
+    # tWork = _conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
     return tWork
-
-
-"""
-Adjust saturation at each grid point.
-
-Synopsis:
-Saturation adjustment condenses/evaporates specific humidity (qv) into/from
-cloud water content (qc) such that a gridpoint is just saturated. Temperature (t)
-is adapted accordingly and pressure adapts itself in ICON.
-
-Method:
-Saturation adjustment at constant total density (adjustment of T and p accordingly)
-assuming chemical equilibrium of water and vapor. For the heat capacity of
-of the total system (dry air, vapor, and hydrometeors) the value of dry air
-is taken, which is a common approximation and introduces only a small error.
-
-Originally inspirered from satad_v_3D_gpu of ICON release 2.6.4.
-"""
 
 
 @field_operator
@@ -223,28 +147,49 @@ def _satad(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
+    """
+    Adjust saturation at each grid point.
 
-    # TODO: Remove
-    rd = 287.04
-    cpd = 1004.64
-    cvd = cpd - rd
+    Synopsis:
+    Saturation adjustment condenses/evaporates specific humidity (qv) into/from
+    cloud water content (qc) such that a gridpoint is just saturated. Temperature (t)
+    is adapted accordingly and pressure adapts itself in ICON.
+
+    Method:
+    Saturation adjustment at constant total density (adjustment of T and p accordingly)
+    assuming chemical equilibrium of water and vapor. For the heat capacity of
+    of the total system (dry air, vapor, and hydrometeors) the value of dry air
+    is taken, which is a common approximation and introduces only a small error.
+
+    Originally inspirered from satad_v_3D_gpu of ICON release 2.6.4.
+    """
+    # Local treshold
     zqwmin = 1e-20
 
-    TempAfterAllQcEvaporated = t - _latent_heat_vaporization(t) / cvd * qc
+    TemperatureAfterAllQcEvaporated = (
+        t - _latent_heat_vaporization(t) / phy_const.cvd * qc
+    )
 
-    # check, which points will still be subsaturated even after evaporating
-    # all cloud water. For these gridpoints Newton iteration is not necessary.
-    # TODO: Not sure if shortcut actually improves performance. Maybe just do Newton everywhere?
-    totallySubsaturated = qv + qc <= _qsat_rho(t, rho)
+    # Check, which points will still be subsaturated even after evaporating all cloud water.
+    SubsaturatedMask = qv + qc <= _qsat_rho(TemperatureAfterAllQcEvaporated, rho)
 
-    t = where(totallySubsaturated, TempAfterAllQcEvaporated, _newtonian_iteration_t(t, qv, rho))
-    qv = where(totallySubsaturated, qv + qc, _qsat_rho(t, rho))
-    qc = where(totallySubsaturated, 0.0, maximum(qv + qc - _qsat_rho(t, rho), zqwmin))
+    t = where(
+        SubsaturatedMask,
+        # If all cloud water evaporates, no newtonian iteration ncessary
+        TemperatureAfterAllQcEvaporated,
+        # Newtonian iteration on temperature (expensive)
+        _newtonian_iteration_temp(t, qv, rho),
+    )
+
+    qv, qc = where(
+        SubsaturatedMask,
+        (qv + qc, 0.0),
+        (_qsat_rho(t, rho), maximum(qv + qc - _qsat_rho(t, rho), zqwmin)),
+    )
 
     return t, qv, qc
 
 
-# DL: Do we actually need the program?
 @program()
 def satad(
     qv: Field[[CellDim, KDim], float],
