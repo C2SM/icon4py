@@ -26,20 +26,6 @@ from icon4py.testutils.utils import random_field_strategy, zero_field
 TODO David:
 - Organize IO
 
-TODO for scan GT4Py team:
-- Option IF staments
-- think about optimized returning CellDim field (hotfix Till). return 1D Fields from scan_operator.
-- Pass runtime scalars 2D fields, tuples to scan()
-- Index field
-- compile-time constants
-- Need to pre-allocate everything we return
-- elemental functions
-- nested ternary? Nested if statements
-
-
-To discuss:
-- Returns from scan. Carry, carry + return, 2D Fields in Return
-
 """
 
 MESH = SimpleMesh()
