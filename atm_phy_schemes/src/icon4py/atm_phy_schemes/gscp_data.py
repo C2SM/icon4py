@@ -14,7 +14,6 @@
 
 TODO Cleanup:
 - Remove unused constants
-- Remove refernces to cloud-ice scheme
 - Put back gamma_fct
 """
 
@@ -106,7 +105,7 @@ class GscpData(FrozenNamespace):
     """Formfactor in the size-mass relation of ice particles"""
     zbdi = 0.302
     """Exponent in the size-mass relation of ice particles"""
-    zams_ci = 0.069
+    zams = 0.069
     """Formfactor in the mass-size relation of snow particles for cloud ice scheme"""
     zams_gr = 0.069
     """Formfactor in the mass-size relation of snow particles for graupel scheme"""
@@ -176,6 +175,9 @@ class GscpData(FrozenNamespace):
     """initial mass of snow crystals"""
     zbvi = 0.16
     """v = zvz0i*rhoqi^zbvi"""
+
+    v0snow = 25.0
+    """ Sedimentaion velocity of snow """
 
     v_sedi_rain_min = 0.7
     """minimum terminal fall velocity of rain particles (applied only near the ground) [m/s]"""
@@ -267,13 +269,6 @@ def gscp_set_coefficients(
     Default for optional parameters:
     Values from COSMO
     """
-    zams = (
-        gscp_data.zams_gr if igscp == 2 else gscp_data.zams_ci
-    )  # defaults for ice and graupel scheme
-
-    if v0snow != 20.0 and v0snow <= 0.0:
-        v0snow = 20.0 if igscp == 2 else 25.0  # defaults for ice and graupel scheme
-
     zconst = (
         gscp_data.zkcau
         / (20.0 * gscp_data.zxstar)
@@ -331,9 +326,7 @@ def gscp_set_coefficients(
         float(zbevxp),
         float(zvzxp),
         zvz0r,
-        float(v0snow),
         float(zvz0i),
         float(icesedi_exp),
-        zams,
         float(zceff_min),
     )

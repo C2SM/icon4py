@@ -171,10 +171,8 @@ def _graupel(
     # zbevxp: float,
     # zvzxp: float,
     # zvz0r: float,
-    # v0snow: float,
     # zvz0i: float,
     # icesedi_exp: float,
-    # zams: float,
     # zceff_min: float,
     # Optional Fields: TODO: Pass optional fields to program
     # ithermo_water: int32,  # TODO: Pass int to prgram
@@ -263,10 +261,8 @@ def graupel(
     zbevxp: float,
     zvzxp: float,
     zvz0r: float,
-    v0snow: float,
     zvz0i: float,
     icesedi_exp: float,
-    zams: float,
     zceff_min: float,
     # Optional Fields: TODO: Pass optional fields to program
     ithermo_water: int32,
@@ -342,10 +338,8 @@ def graupel(
         # zbevxp,
         # zvzxp,
         # zvz0r,
-        # v0snow,
         # zvz0i,
         # icesedi_exp,
-        # zams,
         # zceff_min,
         # # Optional Fields: TODO: Pass optional fields to program
         # ithermo_water,  # TODO: Pass int to prgram
