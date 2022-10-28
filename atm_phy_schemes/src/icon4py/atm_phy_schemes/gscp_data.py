@@ -254,6 +254,50 @@ class GscpData(FrozenNamespace):
 gscp_data: Final = GscpData()
 
 
+class GscpCoefficients(FrozenNamespace):
+    """Workaround until we can pass scalars to scan()"""
+
+    zceff_min = 0.075
+    v0snow = 20.0
+    zvz0i = 1.25
+    mu_rain = 0.0
+    rain_n0_factor = 1.0
+    icesedi_exp = 0.33
+
+    zconst = (
+        gscp_data.zkcau
+        / (20.0 * gscp_data.zxstar)
+        * (gscp_data.zcnue + 2.0)
+        * (gscp_data.zcnue + 4.0)
+        / (gscp_data.zcnue + 1.0) ** 2
+    )
+    ccsrim = 46.98276746732905
+    ccsagg = 52.20307496369895
+    ccsdep = 99.96257414250321
+    ccsvxp = -(gscp_data.zv1s / (gscp_data.zbms + 1.0) + 1.0)
+    ccsvel = 46.23061746664488
+    ccsvxp = ccsvxp + 1.0
+    ccslam = 0.1379999999844696
+    ccslxp = 1.0 / (gscp_data.zbms + 1.0)
+    ccswxp = 0.1666666666666667
+    ccsaxp = -(gscp_data.zv1s + 3.0)
+    ccsdxp = -(gscp_data.zv1s + 1.0) / 2.0
+    ccshi1 = phy_const.als**2 / (gscp_data.zlheat * phy_const.rv)
+    ccdvtp = 4.2213489078749271e-5
+    ccidep = 4.0 * gscp_data.zami ** (-gscp_data.x1o3)
+    zn0r = 8.0e6 * np.exp(3.2 * mu_rain) * (0.01) ** (-mu_rain)
+    zn0r = zn0r * rain_n0_factor
+    zcevxp = (mu_rain + 2.0) / (mu_rain + 4.0)
+    zcev = 3.0999999914053263e-3
+    zbevxp = (2.0 * mu_rain + 5.5) / (2.0 * mu_rain + 8.0) - zcevxp
+    zbev = 14.152467883390491
+    zvzxp = 0.5 / (mu_rain + 4.0)
+    zvz0r = 12.63008787548925
+
+
+gscp_coefficients: Final = GscpCoefficients()
+
+
 def gscp_set_coefficients(
     igscp,
     zceff_min=0.075,

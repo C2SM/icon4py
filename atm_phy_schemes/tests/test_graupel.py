@@ -39,7 +39,7 @@ from icon4py.testutils.utils_serialbox import bcolors, field_test
 
 # Configuration of serialized data
 SER_DATA = os.path.join(os.path.dirname(__file__), "ser_data")
-NUM_MPI_RANKS = 6
+NUM_MPI_RANKS = 1  # TODO: Set to 6
 
 
 def test_graupel_serialized_data():
