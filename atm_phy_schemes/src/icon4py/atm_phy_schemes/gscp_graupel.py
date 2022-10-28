@@ -26,6 +26,9 @@ Equation numbers refer to
 Doms, Foerstner, Heise, Herzog, Raschendorfer, Schrodin, Reinhardt, Vogel
 (September 2005): "A Description of the Nonhydrostatic Regional Model LM",
 
+TODO: David
+    1. Test if runnign with GPU backend
+
 TODO: GT4Py team
 1. Pass optional fields to program and scan
 
@@ -36,12 +39,77 @@ def graupel(field1: Field[[CellDim, KDim], float], field2: Field[[CellDim, KDim]
         do this
 3. Re-interate into FORTRAN
 """
+from typing import Final
 
+from eve.utils import FrozenNamespace
 from functional.ffront.decorator import program, scan_operator
-from functional.ffront.fbuiltins import Field, int32
+from functional.ffront.fbuiltins import Field, abs, exp, int32
 
 from icon4py.atm_phy_schemes.gscp_data import gscp_data
+from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
 from icon4py.common.dimension import CellDim, KDim
+from icon4py.shared.mo_physical_constants import phy_const
+
+
+class GraupelParametersAndConfiguration(FrozenNamespace):
+    """Configuration and local parameters of the graupel scheme."""
+
+    # Configuration
+    lsedi_ice = (
+        True  # switch for sedimentation of cloud ice (Heymsfield & Donner 1990 *1/3)
+    )
+    lstickeff = True  # switch for sticking coeff. (work from Guenther Zaengl)
+    lsuper_coolw = True  # switch for supercooled liquid water (work from Felix Rieper)
+    lred_depgrow = True  # separate switch for reduced depositional growth near tops of water clouds (now also used in ICON after correcting the cloud top diagnosis)
+
+    # Local Parameters
+    zcsg = 0.5  # coefficient for snow-graupel conversion by riming
+    zcrim_g = 4.43
+    zrimexp_g = 0.94878
+    zcagg_g = 2.46
+    zasmel = 2.95e3  # DIFF*lh_v*RHO/LHEAT
+    zexpsedg = 0.217  # exponent for graupel sedimentation
+    zvz0g = 12.24  # coefficient of sedimentation velocity for graupel
+    ztcrit = 3339.5  # factor in calculation of critical temperature
+
+
+# Statement functions
+# -------------------
+
+
+def fpvsw(ztx):
+    """Return saturation vapour pressure over water from temperature."""
+    return conv_table.c1es * exp(
+        conv_table.c3les * (ztx - conv_table.tmelt) / (ztx - conv_table.c4les)
+    )
+
+
+def fxna(ztx):
+    """Return number of activate ice crystals from temperature."""
+    return 1.0e2 * exp(0.2 * (conv_table.tmelt - ztx))
+
+
+def fxna_cooper(ztx):
+    """Return number of activate ice crystals from temperature.
+
+    Method: Cooper (1986) used by Greg Thompson(2008)
+    """
+    return 5.0 * exp(0.304 * (conv_table.tmelt - ztx))
+
+
+def make_normalized(v):
+    """
+    Set denormals to zero.
+
+    GPU code can't flush to zero double precision denormals. To avoid CPU-GPU differences we'll do it manually.
+    TODO: Add pass that replaces exact IF by soft IF that tresholds on denormal.
+    """
+    # if GT4PyConfig.gpu: #TODO: Test if running with GPU backend
+    v = 0.0 if abs(v) <= 2.225073858507201e-308 else v
+    return v
+
+
+local_param: Final = GraupelParametersAndConfiguration()
 
 
 @scan_operator(axis=KDim, forward=True, init=(0.0, 0.0))
@@ -124,6 +192,10 @@ def _graupel(
     # lldiag_ttend: bool = False,  # if true, temperature tendency shall be diagnosed
     # lldiag_qtend: bool = False,  # if true, moisture tendencies shall be diagnosed
 ):
+
+    # ------------------------------------------------------------------------------
+    #  Section 1: Initial setting of local and global variables
+    # ------------------------------------------------------------------------------
 
     # unpack carry
     qc_kMinus1, qr_kMinus1 = carry
