@@ -51,20 +51,10 @@ class Offset(Node):
         self.includes_center = self._includes_center(chain)
         self.source = self._handle_source(chain)
         self.target = self._make_target(chain, self.source)
-        self.renderer = OffsetRenderer()
+        self.renderer = OffsetRenderer(self)
 
     def is_compound_location(self) -> bool:
         return isinstance(self.source, CompoundLocation)
-
-    def render_lowercase_shorthand(self) -> str:
-        return self.renderer.lowercase_shorthand(
-            self.is_compound_location(), self.includes_center, self.target
-        )
-
-    def render_uppercase_shorthand(self) -> str:
-        return self.renderer.uppercase_shorthand(
-            self.is_compound_location(), self.includes_center, self.target
-        )
 
     def get_num_neighbors(self) -> int:
         return calc_num_neighbors(self.target[1].to_dim_list(), self.includes_center)

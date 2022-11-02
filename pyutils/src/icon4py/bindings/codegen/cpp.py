@@ -296,17 +296,17 @@ class CppDefGenerator(TemplatedGenerator):
       fn_backend_t cuda_backend{};
       cuda_backend.stream = stream_;
       {% for connection in _this_node.sparse_connections -%}
-        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.render_lowercase_shorthand()}}Table};
+        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.renderer.render_lowercase_shorthand()}}Table};
       {% endfor -%}
       {%- for connection in _this_node.strided_connections -%}
-        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{};
+        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{};
       {% endfor -%}
       auto connectivities = gridtools::hymap::keys<
       {%- for connection in _this_node.all_connections -%}
-        generated::{{connection.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
+        generated::{{connection.renderer.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
       {%- endfor -%}>::make_values(
       {%- for connection in _this_node.all_connections -%}
-        {{connection.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
+        {{connection.renderer.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
       {% endfor -%});
       generated::{{stencil_name}}(connectivities)(cuda_backend,
       {%- for field in _this_node.all_fields -%}
