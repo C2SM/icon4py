@@ -57,17 +57,16 @@ class CppDefGenerator(TemplatedGenerator):
         #include "driver-includes/to_vtk.h"
         #include "driver-includes/unstructured_domain.hpp"
         #include "driver-includes/unstructured_interface.hpp"
-        #include "driver-includes/verification_metrics.hpp"
-        #include \"{{ funcname }}.hpp\"
+        #include "driver-includes/verification_metrics.hpp"        
         #include <gridtools/common/array.hpp>
         #include <gridtools/fn/backend/gpu.hpp>
-        #include <gridtools/fn/cartesian.hpp>
         #include <gridtools/stencil/global_parameter.hpp>
         #define GRIDTOOLS_DAWN_NO_INCLUDE
         #include "driver-includes/math.hpp"
         #include <chrono>
         #define BLOCK_SIZE {{ block_size }}
         #define LEVELS_PER_THREAD {{ levels_per_thread }}
+        #include \"{{ funcname }}.hpp\"        
         namespace {
         template <int... sizes>
         using block_sizes_t = gridtools::meta::zip<
