@@ -11,10 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+import eve
 from eve import Node
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator
@@ -28,7 +28,7 @@ class F90Generator(TemplatedGenerator):
         """
         #define DEFAULT_RELATIVE_ERROR_THRESHOLD 1.0d-12
         #define DEFAULT_ABSOLUTE_ERROR_THRESHOLD 0.0d1
-        module {{sten_name}}
+        module {{stencil_name}}
         use, intrinsic :: iso_c_binding
         implicit none
         interface
@@ -36,7 +36,7 @@ class F90Generator(TemplatedGenerator):
         {{run_and_verify_fun}}
         {{setup_fun}}
         subroutine &
-        free_{{sten_name}}( ) bind(c)
+        free_{{stencil_name}}( ) bind(c)
         use, intrinsic :: iso_c_binding
         use openacc
         end subroutine
@@ -237,7 +237,7 @@ class F90Generator(TemplatedGenerator):
     F90RunFun = as_jinja(
         """\
         subroutine &
-        run_{{sten_name}}( &
+        run_{{stencil_name}}( &
         {{field_names}}
         vertical_lower, &
         vertical_upper, &
@@ -258,7 +258,7 @@ class F90Generator(TemplatedGenerator):
     F90RunAndVerifyFun = as_jinja(
         """
         subroutine &
-        run_and_verify_{{sten_name}}( &
+        run_and_verify_{{stencil_name}}( &
         {{field_names}}
         {{field_names_before}}
         vertical_lower, &
@@ -283,7 +283,7 @@ class F90Generator(TemplatedGenerator):
     F90SetupFun = as_jinja(
         """\
         subroutine &
-        setup_{{sten_name}}( &
+        setup_{{stencil_name}}( &
         mesh, &
         k_size, &
         stream, &
@@ -302,7 +302,7 @@ class F90Generator(TemplatedGenerator):
     F90WrapRunFun = as_jinja(
         """\
         subroutine &
-        wrap_run_{{sten_name}}( &
+        wrap_run_{{stencil_name}}( &
         {{field_names}}
         {{field_names_before}}
         vertical_lower, &
@@ -334,7 +334,7 @@ class F90Generator(TemplatedGenerator):
         {{openacc_section}}
         !$ACC )
         #ifdef __DSL_VERIFY
-            call run_and_verify_{{sten_name}} &
+            call run_and_verify_{{stencil_name}} &
             ( &
             {{field_names}}
             {{field_names_before}}
@@ -345,7 +345,7 @@ class F90Generator(TemplatedGenerator):
             {{err_tolerance_args}}
             )
         #else
-            call run_{{sten_name}} &
+            call run_{{stencil_name}} &
             ( &
             {{field_names}}
             vertical_start, &
@@ -362,7 +362,7 @@ class F90Generator(TemplatedGenerator):
     F90WrapSetupFun = as_jinja(
         """\
         subroutine &
-        wrap_setup_{{sten_name}}( &
+        wrap_setup_{{stencil_name}}( &
         mesh, &
         k_size, &
         stream, &
@@ -376,7 +376,7 @@ class F90Generator(TemplatedGenerator):
         {{typed_k_names_optional}}
         {{vert_declarations}}
         {{vert_conditionals}}
-        call setup_{{sten_name}} &
+        call setup_{{stencil_name}} &
         ( &
             mesh, &
             k_size, &
@@ -470,13 +470,13 @@ class F90OpenACCSection(Node):
 
 
 class F90RunFun(Node):
-    sten_name: str
+    stencil_name: str
     field_names: F90FieldNames
     typed_field_names: F90TypedFieldNames
 
 
 class F90RunAndVerifyFun(Node):
-    sten_name: str
+    stencil_name: str
     field_names: F90FieldNames
     field_names_before: F90FieldNamesBefore
     tolerance_args: F90ToleranceArgs
@@ -486,13 +486,13 @@ class F90RunAndVerifyFun(Node):
 
 
 class F90SetupFun(Node):
-    sten_name: str
+    stencil_name: str
     vert_names: F90KNames
     typed_k_names: F90TypedKNames
 
 
 class F90WrapRunFun(Node):
-    sten_name: str
+    stencil_name: str
     field_names: F90FieldNames
     field_names_before: F90FieldNamesBefore
     tolerance_args: F90ToleranceArgs
@@ -506,7 +506,7 @@ class F90WrapRunFun(Node):
 
 
 class F90WrapSetupFun(Node):
-    sten_name: str
+    stencil_name: str
     k_names: F90KNames
     typed_k_names_optional: F90TypedKNamesOptional
     vert_declarations: F90VertDeclarations
@@ -515,77 +515,75 @@ class F90WrapSetupFun(Node):
 
 
 class F90File(Node):
-    sten_name: str
-    run_fun: F90RunFun
-    run_and_verify_fun: F90RunAndVerifyFun
-    setup_fun: F90SetupFun
-    wrap_run_fun: F90WrapRunFun
-    wrap_setup_fun: F90WrapSetupFun
-
-
-@dataclass
-class F90Iface:
-    sten_name: str
+    stencil_name: str
     fields: Sequence[Field]
     offsets: Sequence[Offset]
 
-    def write(self, outpath: Path) -> None:
-        iface = self._generate_iface()
-        source = F90Generator.apply(iface)
-        formatted_source = format_fortran_code(source)
-        write_string(formatted_source, outpath, f"{self.sten_name}.f90")
+    run_fun: F90RunFun = eve.datamodels.field(init=False)
+    run_and_verify_fun: F90RunAndVerifyFun = eve.datamodels.field(init=False)
+    setup_fun: F90SetupFun = eve.datamodels.field(init=False)
+    wrap_run_fun: F90WrapRunFun = eve.datamodels.field(init=False)
+    wrap_setup_fun: F90WrapSetupFun = eve.datamodels.field(init=False)
 
-    def _generate_iface(self):
+    def __post_init__(self):
         all_fields = self.fields
         out_fields = [field for field in self.fields if field.intent.out]
-        iface = F90File(
-            sten_name=self.sten_name,
-            run_fun=F90RunFun(
-                sten_name=self.sten_name,
-                field_names=F90FieldNames(fields=all_fields),
-                typed_field_names=F90TypedFieldNames(fields=all_fields),
-            ),
-            run_and_verify_fun=F90RunAndVerifyFun(
-                sten_name=self.sten_name,
-                field_names=F90FieldNames(fields=all_fields),
-                field_names_before=F90FieldNamesBefore(fields=out_fields),
-                tolerance_args=F90ToleranceArgs(fields=out_fields),
-                typed_field_names=F90TypedFieldNames(fields=all_fields),
-                typed_field_names_before=F90TypedFieldNamesBefore(fields=out_fields),
-                typed_tolerance_args=F90TypedToleranceArgs(fields=out_fields),
-            ),
-            setup_fun=F90SetupFun(
-                sten_name=self.sten_name,
-                vert_names=F90KNames(fields=out_fields),
-                typed_k_names=F90TypedKNames(fields=out_fields),
-            ),
-            wrap_run_fun=F90WrapRunFun(
-                sten_name=self.sten_name,
-                field_names=F90FieldNames(fields=all_fields),
-                field_names_before=F90FieldNamesBefore(fields=out_fields),
-                tolerance_args=F90ToleranceArgs(fields=out_fields),
-                ranked_field_names=F90RankedFieldNames(fields=all_fields),
-                ranked_field_names_before=F90RankedFieldNamesBefore(fields=out_fields),
-                typed_tolerance_args_optional=F90TypedToleranceArgsOptional(
-                    fields=out_fields
-                ),
-                error_tolerance_declarations=F90ErrToleranceDeclarations(
-                    fields=out_fields
-                ),
-                tolerance_conditionals=F90ToleranceConditionals(fields=out_fields),
-                openacc_section=F90OpenACCSection(
-                    all_fields=[field for field in all_fields if field.rank() != 0],
-                    out_fields=[field for field in out_fields if field.rank() != 0],
-                ),
-                err_tolerance_args=F90ErrToleranceArgs(fields=out_fields),
-            ),
-            wrap_setup_fun=F90WrapSetupFun(
-                sten_name=self.sten_name,
-                k_names=F90KNames(fields=out_fields),
-                typed_k_names_optional=F90TypedKNamesOptional(fields=out_fields),
-                vert_declarations=F90VertDeclarations(fields=out_fields),
-                vert_conditionals=F90VertConditionals(fields=out_fields),
-                vert_names=F90VertNames(fields=out_fields),
-            ),
+
+        self.run_fun = F90RunFun(
+            stencil_name=self.stencil_name,
+            field_names=F90FieldNames(fields=all_fields),
+            typed_field_names=F90TypedFieldNames(fields=all_fields),
         )
-        return iface
+
+        self.run_and_verify_fun = F90RunAndVerifyFun(
+            stencil_name=self.stencil_name,
+            field_names=F90FieldNames(fields=all_fields),
+            field_names_before=F90FieldNamesBefore(fields=out_fields),
+            tolerance_args=F90ToleranceArgs(fields=out_fields),
+            typed_field_names=F90TypedFieldNames(fields=all_fields),
+            typed_field_names_before=F90TypedFieldNamesBefore(fields=out_fields),
+            typed_tolerance_args=F90TypedToleranceArgs(fields=out_fields),
+        )
+
+        self.setup_fun = F90SetupFun(
+            stencil_name=self.stencil_name,
+            vert_names=F90KNames(fields=out_fields),
+            typed_k_names=F90TypedKNames(fields=out_fields),
+        )
+
+        self.wrap_run_fun = F90WrapRunFun(
+            stencil_name=self.stencil_name,
+            field_names=F90FieldNames(fields=all_fields),
+            field_names_before=F90FieldNamesBefore(fields=out_fields),
+            tolerance_args=F90ToleranceArgs(fields=out_fields),
+            ranked_field_names=F90RankedFieldNames(fields=all_fields),
+            ranked_field_names_before=F90RankedFieldNamesBefore(fields=out_fields),
+            typed_tolerance_args_optional=F90TypedToleranceArgsOptional(
+                fields=out_fields
+            ),
+            error_tolerance_declarations=F90ErrToleranceDeclarations(fields=out_fields),
+            tolerance_conditionals=F90ToleranceConditionals(fields=out_fields),
+            openacc_section=F90OpenACCSection(
+                all_fields=[field for field in all_fields if field.rank() != 0],
+                out_fields=[field for field in out_fields if field.rank() != 0],
+            ),
+            err_tolerance_args=F90ErrToleranceArgs(fields=out_fields),
+        )
+
+        self.wrap_setup_fun = F90WrapSetupFun(
+            stencil_name=self.stencil_name,
+            k_names=F90KNames(fields=out_fields),
+            typed_k_names_optional=F90TypedKNamesOptional(fields=out_fields),
+            vert_declarations=F90VertDeclarations(fields=out_fields),
+            vert_conditionals=F90VertConditionals(fields=out_fields),
+            vert_names=F90VertNames(fields=out_fields),
+        )
+
+
+def generate_f90_file(
+    stencil_name: str, fields: Sequence[Field], offsets: Sequence[Offset], outpath: Path
+) -> None:
+    f90 = F90File(stencil_name=stencil_name, fields=fields, offsets=offsets)
+    source = F90Generator.apply(f90)
+    formatted_source = format_fortran_code(source)
+    write_string(formatted_source, outpath, f"{stencil_name}.f90")
