@@ -11,10 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+import eve
 from eve import Node
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator, format_source
@@ -27,7 +27,7 @@ run_func_declaration = as_jinja(
     """\
     void run_{{funcname}}(
     {%- for field in _this_node.fields -%}
-    {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
     {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd)
     """
@@ -37,10 +37,10 @@ run_verify_func_declaration = as_jinja(
     """\
     void run_and_verify_{{funcname}}(
     {%- for field in _this_node.fields -%}
-    {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
     {%- endfor -%}
     {%- for field in _this_node.out_fields -%}
-    {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
+    {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_before,
     {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
     {%- for field in _this_node.out_fields -%}
@@ -78,8 +78,8 @@ class CppHeaderGenerator(TemplatedGenerator):
         """\
         bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
-        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_dsl,
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
         const double {{ field.name }}_rel_tol,
@@ -134,40 +134,40 @@ class CppRunAndVerifyFuncDeclaration(CppRunFuncDeclaration, CppVerifyFuncDeclara
 
 
 class CppHeaderFile(Node):
-    runFunc: CppRunFuncDeclaration
-    verifyFunc: CppVerifyFuncDeclaration
-    runAndVerifyFunc: CppRunAndVerifyFuncDeclaration
-    setupFunc: CppSetupFuncDeclaration
-    freeFunc: CppFreeFunc
-
-
-@dataclass
-class CppHeader:
     stencil_name: str
-    fields: list[Field]
+    fields: Sequence[Field]
 
-    def write(self, outpath: Path) -> None:
-        header = self._generate_header()
-        source = format_source("cpp", CppHeaderGenerator.apply(header), style="LLVM")
-        write_string(source, outpath, f"{self.stencil_name}.h")
+    runFunc: CppRunFuncDeclaration = eve.datamodels.field(init=False)
+    verifyFunc: CppVerifyFuncDeclaration = eve.datamodels.field(init=False)
+    runAndVerifyFunc: CppRunAndVerifyFuncDeclaration = eve.datamodels.field(init=False)
+    setupFunc: CppSetupFuncDeclaration = eve.datamodels.field(init=False)
+    freeFunc: CppFreeFunc = eve.datamodels.field(init=False)
 
-    def _generate_header(self):
+    def __post_init__(self):
         output_fields = [field for field in self.fields if field.intent.out]
-        header = CppHeaderFile(
-            runFunc=CppRunFuncDeclaration(
-                funcname=self.stencil_name,
-                fields=self.fields,
-            ),
-            verifyFunc=CppVerifyFuncDeclaration(
-                funcname=self.stencil_name,
-                out_fields=output_fields,
-            ),
-            runAndVerifyFunc=CppRunAndVerifyFuncDeclaration(
-                funcname=self.stencil_name, fields=self.fields, out_fields=output_fields
-            ),
-            setupFunc=CppSetupFuncDeclaration(
-                funcname=self.stencil_name, out_fields=output_fields
-            ),
-            freeFunc=CppFreeFunc(funcname=self.stencil_name),
+
+        self.runFunc = CppRunFuncDeclaration(
+            funcname=self.stencil_name,
+            fields=self.fields,
         )
-        return header
+
+        self.verifyFunc = CppVerifyFuncDeclaration(
+            funcname=self.stencil_name,
+            out_fields=output_fields,
+        )
+
+        self.runAndVerifyFunc = CppRunAndVerifyFuncDeclaration(
+            funcname=self.stencil_name, fields=self.fields, out_fields=output_fields
+        )
+
+        self.setupFunc = CppSetupFuncDeclaration(
+            funcname=self.stencil_name, out_fields=output_fields
+        )
+
+        self.freeFunc = CppFreeFunc(funcname=self.stencil_name)
+
+
+def generate_cpp_header(stencil_name: str, fields: list[Field], outpath: Path):
+    header = CppHeaderFile(stencil_name=stencil_name, fields=fields)
+    source = format_source("cpp", CppHeaderGenerator.apply(header), style="LLVM")
+    write_string(source, outpath, f"{stencil_name}.h")

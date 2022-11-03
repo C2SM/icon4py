@@ -11,17 +11,31 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
+from icon4py.bindings.codegen.types import Entity
 from icon4py.bindings.locations import BasicLocation, ChainedLocation
 
 
-if TYPE_CHECKING:
-    from icon4py.bindings.entities import Offset
-
-
+@dataclass(frozen=True)
 class OffsetRenderer:
     """A class to render Offset attributes for their the respective c++ or f90 bindings."""
+
+    entity: Entity
+
+    def render_lowercase_shorthand(self) -> str:
+        return self.lowercase_shorthand(
+            self.entity.is_compound_location(),
+            self.entity.includes_center,
+            self.entity.target,
+        )
+
+    def render_uppercase_shorthand(self) -> str:
+        return self.uppercase_shorthand(
+            self.entity.is_compound_location(),
+            self.entity.includes_center,
+            self.entity.target,
+        )
 
     @staticmethod
     def lowercase_shorthand(
@@ -55,7 +69,7 @@ class OffsetRenderer:
 class GpuTriMeshOffsetRenderer:
     """A helper class to render a GpuTriMeshOffset for the c++ bindings."""
 
-    def __init__(self, offsets: list["Offset"]):  # :
+    def __init__(self, offsets: list[Entity]):
         self.offsets = offsets
         self.has_offsets = True if len(offsets) > 0 else False
 
@@ -83,11 +97,11 @@ class GpuTriMeshOffsetRenderer:
         return list(unique_locations)
 
     @staticmethod
-    def _make_table_var(offset: "Offset") -> str:
+    def _make_table_var(offset: Entity) -> str:
         return f"{offset.target[1].__str__().replace('2', '').lower()}{'o' if offset.includes_center else ''}"
 
     @staticmethod
-    def _make_location_type(offset: "Offset") -> list[str]:
+    def _make_location_type(offset: Entity) -> list[str]:
         return [
             f"dawn::LocationType::{loc.render_location_type()}"
             for loc in offset.target[1].chain

@@ -14,6 +14,7 @@
 from pathlib import Path
 from typing import Sequence
 
+import eve
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import Node, TemplatedGenerator, format_source
 
@@ -57,10 +58,9 @@ class CppDefGenerator(TemplatedGenerator):
         #include "driver-includes/unstructured_domain.hpp"
         #include "driver-includes/unstructured_interface.hpp"
         #include "driver-includes/verification_metrics.hpp"
+        #include <gridtools/fn/backend/gpu.hpp>
         #include \"{{ funcname }}.hpp\"
         #include <gridtools/common/array.hpp>
-        #include <gridtools/fn/backend/gpu.hpp>
-        #include <gridtools/fn/cartesian.hpp>
         #include <gridtools/stencil/global_parameter.hpp>
         #define GRIDTOOLS_DAWN_NO_INCLUDE
         #include "driver-includes/math.hpp"
@@ -149,7 +149,7 @@ class CppDefGenerator(TemplatedGenerator):
         """
       void copy_pointers(
         {%- for field in _this_node.fields %}
-          {{field.render_ctype('c++')}}{{field.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
+          {{field.renderer.render_ctype('c++')}}{{field.renderer.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
         {% endfor %}
       ) {
         {% for field in _this_node.fields -%}
@@ -239,7 +239,7 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         private:
         {%- for field in _this_node.fields -%}
-        {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_;
+        {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_;
         {%- endfor -%}
         inline static int kSize_;
         inline static GpuTriMesh mesh_;
@@ -271,12 +271,12 @@ class CppDefGenerator(TemplatedGenerator):
       using namespace fn;
       {% for field in _this_node.all_fields -%}
         {% if field.is_sparse() == False %}
-          auto {{field.name}}_sid = {{ field.render_sid() }};
+          auto {{field.name}}_sid = {{ field.renderer.render_sid() }};
         {% endif %}
       {% endfor -%}
       {%- for field in _this_node.sparse_fields -%}
         {%- for i in range(0, field.get_num_neighbors()) -%}
-            double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.render_stride_type()}}];
+            double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.renderer.render_stride_type()}}];
         {% endfor -%}
         {%- for i in range(0, field.get_num_neighbors()) -%}
             auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, gridtools::hymap::keys<unstructured::dim::horizontal>::make_values(1));
@@ -296,17 +296,17 @@ class CppDefGenerator(TemplatedGenerator):
       fn_backend_t cuda_backend{};
       cuda_backend.stream = stream_;
       {% for connection in _this_node.sparse_connections -%}
-        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.render_lowercase_shorthand()}}Table};
+        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.renderer.render_lowercase_shorthand()}}Table};
       {% endfor -%}
       {%- for connection in _this_node.strided_connections -%}
-        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.render_lowercase_shorthand()}}_ptr{};
+        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{};
       {% endfor -%}
       auto connectivities = gridtools::hymap::keys<
       {%- for connection in _this_node.all_connections -%}
-        generated::{{connection.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
+        generated::{{connection.renderer.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
       {%- endfor -%}>::make_values(
       {%- for connection in _this_node.all_connections -%}
-        {{connection.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
+        {{connection.renderer.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
       {% endfor -%});
       generated::{{stencil_name}}(connectivities)(cuda_backend,
       {%- for field in _this_node.all_fields -%}
@@ -356,8 +356,8 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
-        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_dsl,
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
         const double {{ field.name }}_rel_tol,
@@ -387,7 +387,7 @@ class CppDefGenerator(TemplatedGenerator):
         int {{ field.name }}_kSize = dawn_generated::cuda_ico::{{ funcname }}::
         get_{{ field.name }}_KSize();
         stencilMetrics = ::dawn::verify_field(
-            stream, (mesh.{{ field.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
+            stream, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
             \"{{ field.name }}\", {{ field.name }}_rel_tol, {{ field.name }}_abs_tol, iteration);
         #ifdef __SERIALIZE_METRICS
         MetricsSerialiser serialiser_{{ field.name }}(
@@ -397,11 +397,11 @@ class CppDefGenerator(TemplatedGenerator):
         #endif
         if (!stencilMetrics.isValid) {
         #ifdef __SERIALIZE_ON_ERROR
-        {{ field.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
-                              (mesh.{{ field.render_stride_type() }}), {{ field.name }},
+        {{ field.renderer.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
+                              (mesh.{{ field.renderer.render_stride_type() }}), {{ field.name }},
                               \"{{ funcname }}\", \"{{ field.name }}\", iteration);
-        {{ field.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
-                              (mesh.{{ field.render_stride_type() }}), {{ field.name }}_dsl,
+        {{ field.renderer.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
+                              (mesh.{{ field.renderer.render_stride_type() }}), {{ field.name }}_dsl,
                               \"{{ funcname }}\", \"{{ field.name }}_dsl\",
                               iteration);
         std::cout << "[DSL] serializing {{ field.name }} as error is high.\\n" << std::flush;
@@ -607,36 +607,20 @@ class FreeFunc(CppFreeFunc):
 
 
 class CppDefTemplate(Node):
-    includes: IncludeStatements
-    utility_functions: UtilityFunctions
-    stencil_class: StencilClass
-    run_func: RunFunc
-    verify_func: VerifyFunc
-    run_verify_func: RunAndVerifyFunc
-    setup_func: SetupFunc
-    free_func: FreeFunc
+    stencil_name: str
+    fields: Sequence[Field]
+    offsets: Sequence[Offset]
+    levels_per_thread: int
+    block_size: int
 
-
-class CppDef:
-    def __init__(
-        self,
-        stencil_name: str,
-        fields: list[Field],
-        offsets: list[Offset],
-        levels_per_thread: int,
-        block_size: int,
-    ):
-        self.stencil_name = stencil_name
-        self.fields = fields
-        self.levels_per_thread = levels_per_thread
-        self.block_size = block_size
-        self.offset_renderer = GpuTriMeshOffsetRenderer(offsets)
-        self.offsets = offsets
-
-    def write(self, outpath: Path) -> None:
-        definition = self._generate_definition()
-        source = format_source("cpp", CppDefGenerator.apply(definition), style="LLVM")
-        write_string(source, outpath, f"{self.stencil_name}.cpp")
+    includes: IncludeStatements = eve.datamodels.field(init=False)
+    utility_functions: UtilityFunctions = eve.datamodels.field(init=False)
+    stencil_class: StencilClass = eve.datamodels.field(init=False)
+    run_func: RunFunc = eve.datamodels.field(init=False)
+    verify_func: VerifyFunc = eve.datamodels.field(init=False)
+    run_verify_func: RunAndVerifyFunc = eve.datamodels.field(init=False)
+    setup_func: SetupFunc = eve.datamodels.field(init=False)
+    free_func: FreeFunc = eve.datamodels.field(init=False)
 
     def _get_field_data(self) -> tuple:
         output_fields = [field for field in self.fields if field.intent.out]
@@ -668,80 +652,102 @@ class CppDef:
         )
         return fields, offsets
 
-    def _generate_definition(self):
+    def __post_init__(self):
         fields, offsets = self._get_field_data()
+        offset_renderer = GpuTriMeshOffsetRenderer(self.offsets)
 
-        definition = CppDefTemplate(
-            includes=IncludeStatements(
-                funcname=self.stencil_name,
-                levels_per_thread=self.levels_per_thread,
-                block_size=self.block_size,
-            ),
-            utility_functions=UtilityFunctions(),
-            stencil_class=StencilClass(
-                funcname=self.stencil_name,
-                gpu_tri_mesh=GpuTriMesh(
-                    table_vars=self.offset_renderer.make_table_vars(),
-                    neighbor_tables=self.offset_renderer.make_neighbor_tables(),
-                    has_offsets=self.offset_renderer.has_offsets,
-                ),
-                run_fun=StenClassRunFun(
-                    stencil_name=self.stencil_name,
-                    all_fields=fields["without_params"],
-                    dense_fields=fields["dense"],
-                    sparse_fields=fields["sparse"],
-                    compound_fields=fields["compound"],
-                    sparse_connections=offsets["sparse"],
-                    strided_connections=offsets["strided"],
-                    all_connections=self.offsets,
-                    parameters=fields["parameters"],
-                ),
-                public_utilities=PublicUtilities(fields=fields["output"]),
-                copy_pointers=CopyPointers(fields=self.fields),
-                private_members=PrivateMembers(
-                    fields=self.fields, out_fields=fields["output"]
-                ),
-                setup_func=StencilClassSetupFunc(
-                    funcname=self.stencil_name, out_fields=fields["output"]
-                ),
-            ),
-            run_func=RunFunc(
-                funcname=self.stencil_name,
-                params=Params(fields=self.fields),
-                run_func_declaration=CppRunFuncDeclaration(
-                    funcname=self.stencil_name, fields=self.fields
-                ),
-            ),
-            verify_func=VerifyFunc(
-                funcname=self.stencil_name,
-                verify_func_declaration=CppVerifyFuncDeclaration(
-                    funcname=self.stencil_name, out_fields=fields["output"]
-                ),
-                metrics_serialisation=MetricsSerialisation(
-                    funcname=self.stencil_name, out_fields=fields["output"]
-                ),
-            ),
-            run_verify_func=RunAndVerifyFunc(
-                funcname=self.stencil_name,
-                run_verify_func_declaration=CppRunAndVerifyFuncDeclaration(
-                    funcname=self.stencil_name,
-                    fields=self.fields,
-                    out_fields=fields["output"],
-                ),
-                run_func_call=RunFuncCall(
-                    funcname=self.stencil_name, fields=self.fields
-                ),
-                verify_func_call=VerifyFuncCall(
-                    funcname=self.stencil_name, out_fields=fields["output"]
-                ),
-            ),
-            setup_func=SetupFunc(
-                funcname=self.stencil_name,
-                out_fields=fields["output"],
-                func_declaration=CppSetupFuncDeclaration(
-                    funcname=self.stencil_name, out_fields=fields["output"]
-                ),
-            ),
-            free_func=FreeFunc(funcname=self.stencil_name),
+        self.includes = IncludeStatements(
+            funcname=self.stencil_name,
+            levels_per_thread=self.levels_per_thread,
+            block_size=self.block_size,
         )
-        return definition
+
+        self.utility_functions = UtilityFunctions()
+
+        self.stencil_class = StencilClass(
+            funcname=self.stencil_name,
+            gpu_tri_mesh=GpuTriMesh(
+                table_vars=offset_renderer.make_table_vars(),
+                neighbor_tables=offset_renderer.make_neighbor_tables(),
+                has_offsets=offset_renderer.has_offsets,
+            ),
+            run_fun=StenClassRunFun(
+                stencil_name=self.stencil_name,
+                all_fields=fields["without_params"],
+                dense_fields=fields["dense"],
+                sparse_fields=fields["sparse"],
+                compound_fields=fields["compound"],
+                sparse_connections=offsets["sparse"],
+                strided_connections=offsets["strided"],
+                all_connections=self.offsets,
+                parameters=fields["parameters"],
+            ),
+            public_utilities=PublicUtilities(fields=fields["output"]),
+            copy_pointers=CopyPointers(fields=self.fields),
+            private_members=PrivateMembers(
+                fields=self.fields, out_fields=fields["output"]
+            ),
+            setup_func=StencilClassSetupFunc(
+                funcname=self.stencil_name, out_fields=fields["output"]
+            ),
+        )
+
+        self.run_func = RunFunc(
+            funcname=self.stencil_name,
+            params=Params(fields=self.fields),
+            run_func_declaration=CppRunFuncDeclaration(
+                funcname=self.stencil_name, fields=self.fields
+            ),
+        )
+
+        self.verify_func = VerifyFunc(
+            funcname=self.stencil_name,
+            verify_func_declaration=CppVerifyFuncDeclaration(
+                funcname=self.stencil_name, out_fields=fields["output"]
+            ),
+            metrics_serialisation=MetricsSerialisation(
+                funcname=self.stencil_name, out_fields=fields["output"]
+            ),
+        )
+
+        self.run_verify_func = RunAndVerifyFunc(
+            funcname=self.stencil_name,
+            run_verify_func_declaration=CppRunAndVerifyFuncDeclaration(
+                funcname=self.stencil_name,
+                fields=self.fields,
+                out_fields=fields["output"],
+            ),
+            run_func_call=RunFuncCall(funcname=self.stencil_name, fields=self.fields),
+            verify_func_call=VerifyFuncCall(
+                funcname=self.stencil_name, out_fields=fields["output"]
+            ),
+        )
+
+        self.setup_func = SetupFunc(
+            funcname=self.stencil_name,
+            out_fields=fields["output"],
+            func_declaration=CppSetupFuncDeclaration(
+                funcname=self.stencil_name, out_fields=fields["output"]
+            ),
+        )
+
+        self.free_func = FreeFunc(funcname=self.stencil_name)
+
+
+def generate_cpp_definition(
+    stencil_name: str,
+    fields: Sequence[Field],
+    offsets: Sequence[Offset],
+    levels_per_thread: int,
+    block_size: int,
+    outpath: Path,
+) -> None:
+    definition = CppDefTemplate(
+        stencil_name=stencil_name,
+        fields=fields,
+        offsets=offsets,
+        levels_per_thread=levels_per_thread,
+        block_size=block_size,
+    )
+    source = format_source("cpp", CppDefGenerator.apply(definition), style="LLVM")
+    write_string(source, outpath, f"{stencil_name}.cpp")

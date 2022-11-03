@@ -13,9 +13,9 @@
 
 from pathlib import Path
 
-from icon4py.bindings.codegen.cpp import CppDef
-from icon4py.bindings.codegen.f90 import F90Iface
-from icon4py.bindings.codegen.header import CppHeader
+from icon4py.bindings.codegen.cpp import generate_cpp_definition
+from icon4py.bindings.codegen.f90 import generate_f90_file
+from icon4py.bindings.codegen.header import generate_cpp_header
 from icon4py.bindings.entities import Field, Offset
 from icon4py.bindings.utils import check_dir_exists
 from icon4py.pyutils.metadata import StencilInfo, get_field_infos
@@ -54,12 +54,13 @@ class PyBindGen:
 
     def __call__(self, outpath: Path) -> None:
         check_dir_exists(outpath)
-        F90Iface(self.stencil_name, self.fields, self.offsets).write(outpath)
-        CppHeader(self.stencil_name, self.fields).write(outpath)
-        CppDef(
+        generate_f90_file(self.stencil_name, self.fields, self.offsets, outpath)
+        generate_cpp_header(self.stencil_name, self.fields, outpath)
+        generate_cpp_definition(
             self.stencil_name,
             self.fields,
             self.offsets,
             self.levels_per_thread,
             self.block_size,
-        ).write(outpath)
+            outpath,
+        )

@@ -11,107 +11,97 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Union
+from dataclasses import dataclass
 
 from icon4py.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
+from icon4py.bindings.codegen.types import Entity
 from icon4py.bindings.exceptions import BindingsRenderingException
-from icon4py.bindings.locations import (
-    BasicLocation,
-    ChainedLocation,
-    CompoundLocation,
-)
 
 
+@dataclass(frozen=True)
 class FieldRenderer:
     """A class to render Field attributes for their the respective c++ or f90 bindings."""
 
-    @staticmethod
-    def pointer(rank: int) -> str:
-        return "" if rank == 0 else "*"
+    entity: Entity
 
-    @staticmethod
-    def dim_tags(
-        is_sparse: bool, is_dense: bool, is_compound: bool, has_vertical_dimension: bool
-    ) -> str:
-        if is_sparse:
+    def render_pointer(self) -> str:
+        """Render c++ pointer."""
+        return "" if self.entity.rank() == 0 else "*"
+
+    def render_dim_tags(self) -> str:
+        """Render c++ dimension tags."""
+        if self.entity.is_sparse():
             raise BindingsRenderingException(
                 "can not render dimension tags for sparse field"
             )
         tags = []
-        if is_dense or is_compound:
+        if self.entity.is_dense() or self.entity.is_compound():
             tags.append("unstructured::dim::horizontal")
-        if has_vertical_dimension:
+        if self.entity.has_vertical_dimension:
             tags.append("unstructured::dim::vertical")
         return ",".join(tags)
 
-    @staticmethod
-    def sid(
-        is_sparse: bool,
-        is_dense: bool,
-        is_compound: bool,
-        has_vertical_dimension: bool,
-        name: str,
-        rank: int,
-        location: Union[BasicLocation, CompoundLocation, ChainedLocation],
-    ) -> str:
-        if is_sparse:
+    def render_sid(self) -> str:
+        """Render c++ gridtools sid for field."""
+        if self.entity.is_sparse():
             raise BindingsRenderingException("can not render sid of sparse field")
 
-        if rank == 0:
+        if self.entity.rank() == 0:
             raise BindingsRenderingException("can not render sid of a scalar")
 
         values_str = (
             "1"
-            if rank == 1 or is_compound
-            else f"1, mesh_.{FieldRenderer.stride_type(is_dense, is_sparse, location)}"
+            if self.entity.rank() == 1 or self.entity.is_compound()
+            else f"1, mesh_.{self.render_stride_type()}"
         )
-        return f"get_sid({name}_, gridtools::hymap::keys<{FieldRenderer.dim_tags(is_sparse, is_dense, is_compound, has_vertical_dimension)}>::make_values({values_str}))"
+        return f"get_sid({self.entity.name}_, gridtools::hymap::keys<{self.render_dim_tags()}>::make_values({values_str}))"
 
-    @staticmethod
-    def ranked_dim_string(rank: int) -> str:
-        return "dimension(" + ",".join([":"] * rank) + ")" if rank != 0 else "value"
+    def render_ranked_dim_string(self) -> str:
+        """Render f90 ranked dimension string."""
+        return (
+            "dimension(" + ",".join([":"] * self.entity.rank()) + ")"
+            if self.entity.rank() != 0
+            else "value"
+        )
 
-    @staticmethod
-    def serialise_func(location: str) -> str:
+    def render_serialise_func(self) -> str:
+        """Render c++ serialisation function."""
         _serializers = {
             "E": "serialize_dense_edges",
             "C": "serialize_dense_cells",
             "V": "serialize_dense_verts",
         }
+        location = str(self.entity.location)
         if location not in _serializers:
             raise BindingsRenderingException(f"location {location} is not E,C or V")
         return _serializers[location]
 
-    @staticmethod
-    def dim_string(rank: int):
-        return "dimension(*)" if rank != 0 else "value"
+    def render_dim_string(self) -> str:
+        """Render f90 dimension string."""
+        return "dimension(*)" if self.entity.rank() != 0 else "value"
 
-    @staticmethod
-    def stride_type(
-        is_dense: bool,
-        is_sparse: bool,
-        location: Union[BasicLocation, CompoundLocation, ChainedLocation],
-    ):
+    def render_stride_type(self) -> str:
+        """Render c++ stride type."""
         _strides = {"E": "EdgeStride", "C": "CellStride", "V": "VertexStride"}
-        if is_dense:
-            return _strides[str(location)]
-        elif is_sparse:
-            return _strides[str(location[0])]
+        if self.entity.is_dense():
+            return _strides[str(self.entity.location)]
+        elif self.entity.is_sparse():
+            return _strides[str(self.entity.location[0])]
         else:
             raise BindingsRenderingException(
                 "stride type called on compound location or scalar"
             )
 
-    @staticmethod
-    def ctype(binding_type: str, field_type: str):
+    def render_ctype(self, binding_type: str) -> str:
+        """Render C datatype for a corresponding binding type."""
         match binding_type:
             case "f90":
-                return BUILTIN_TO_ISO_C_TYPE[field_type]
+                return BUILTIN_TO_ISO_C_TYPE[self.entity.field_type]
             case "c++":
-                return BUILTIN_TO_CPP_TYPE[field_type]
+                return BUILTIN_TO_CPP_TYPE[self.entity.field_type]
             case _:
                 raise BindingsRenderingException(
                     f"binding_type {binding_type} needs to be either c++ or f90"
