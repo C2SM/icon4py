@@ -27,7 +27,7 @@ run_func_declaration = as_jinja(
     """\
     void run_{{funcname}}(
     {%- for field in _this_node.fields -%}
-    {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
     {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd)
     """
@@ -37,10 +37,10 @@ run_verify_func_declaration = as_jinja(
     """\
     void run_and_verify_{{funcname}}(
     {%- for field in _this_node.fields -%}
-    {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+    {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
     {%- endfor -%}
     {%- for field in _this_node.out_fields -%}
-    {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_before,
+    {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_before,
     {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
     {%- for field in _this_node.out_fields -%}
@@ -78,8 +78,8 @@ class CppHeaderGenerator(TemplatedGenerator):
         """\
         bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
-        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_dsl,
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
         const double {{ field.name }}_rel_tol,

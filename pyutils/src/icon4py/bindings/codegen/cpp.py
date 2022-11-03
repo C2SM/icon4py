@@ -149,7 +149,7 @@ class CppDefGenerator(TemplatedGenerator):
         """
       void copy_pointers(
         {%- for field in _this_node.fields %}
-          {{field.renderer.render_ctype('c++')}}{{field.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
+          {{field.renderer.render_ctype('c++')}}{{field.renderer.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
         {% endfor %}
       ) {
         {% for field in _this_node.fields -%}

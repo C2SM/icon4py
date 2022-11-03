@@ -29,16 +29,16 @@ class FieldRenderer:
 
     def render_pointer(self) -> str:
         """Render c++ pointer."""
-        return "" if self.entity.rank == 0 else "*"
+        return "" if self.entity.rank() == 0 else "*"
 
     def render_dim_tags(self) -> str:
         """Render c++ dimension tags."""
-        if self.entity.is_sparse:
+        if self.entity.is_sparse():
             raise BindingsRenderingException(
                 "can not render dimension tags for sparse field"
             )
         tags = []
-        if self.entity.is_dense or self.entity.is_compound:
+        if self.entity.is_dense() or self.entity.is_compound():
             tags.append("unstructured::dim::horizontal")
         if self.entity.has_vertical_dimension:
             tags.append("unstructured::dim::vertical")
@@ -46,15 +46,15 @@ class FieldRenderer:
 
     def render_sid(self) -> str:
         """Render c++ gridtools sid for field."""
-        if self.entity.is_sparse:
+        if self.entity.is_sparse():
             raise BindingsRenderingException("can not render sid of sparse field")
 
-        if self.entity.rank == 0:
+        if self.entity.rank() == 0:
             raise BindingsRenderingException("can not render sid of a scalar")
 
         values_str = (
             "1"
-            if self.entity.rank == 1 or self.entity.is_compound
+            if self.entity.rank() == 1 or self.entity.is_compound()
             else f"1, mesh_.{self.render_stride_type()}"
         )
         return f"get_sid({self.entity.name}_, gridtools::hymap::keys<{self.render_dim_tags()}>::make_values({values_str}))"
@@ -62,8 +62,8 @@ class FieldRenderer:
     def render_ranked_dim_string(self) -> str:
         """Render f90 ranked dimension string."""
         return (
-            "dimension(" + ",".join([":"] * self.entity.rank) + ")"
-            if self.entity.rank != 0
+            "dimension(" + ",".join([":"] * self.entity.rank()) + ")"
+            if self.entity.rank() != 0
             else "value"
         )
 
@@ -81,14 +81,14 @@ class FieldRenderer:
 
     def render_dim_string(self) -> str:
         """Render f90 dimension string."""
-        return "dimension(*)" if self.entity.rank != 0 else "value"
+        return "dimension(*)" if self.entity.rank() != 0 else "value"
 
     def render_stride_type(self) -> str:
         """Render c++ stride type."""
         _strides = {"E": "EdgeStride", "C": "CellStride", "V": "VertexStride"}
-        if self.entity.is_dense:
+        if self.entity.is_dense():
             return _strides[str(self.entity.location)]
-        elif self.entity.is_sparse:
+        elif self.entity.is_sparse():
             return _strides[str(self.entity.location[0])]
         else:
             raise BindingsRenderingException(
