@@ -149,7 +149,7 @@ class CppDefGenerator(TemplatedGenerator):
         """
       void copy_pointers(
         {%- for field in _this_node.fields %}
-          {{field.render_ctype('c++')}}{{field.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
+          {{field.renderer.render_ctype('c++')}}{{field.render_pointer()}} {{field.name}} {%- if not loop.last -%}, {%- endif -%}
         {% endfor %}
       ) {
         {% for field in _this_node.fields -%}
@@ -239,7 +239,7 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         private:
         {%- for field in _this_node.fields -%}
-        {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_;
+        {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_;
         {%- endfor -%}
         inline static int kSize_;
         inline static GpuTriMesh mesh_;
@@ -271,12 +271,12 @@ class CppDefGenerator(TemplatedGenerator):
       using namespace fn;
       {% for field in _this_node.all_fields -%}
         {% if field.is_sparse() == False %}
-          auto {{field.name}}_sid = {{ field.render_sid() }};
+          auto {{field.name}}_sid = {{ field.renderer.render_sid() }};
         {% endif %}
       {% endfor -%}
       {%- for field in _this_node.sparse_fields -%}
         {%- for i in range(0, field.get_num_neighbors()) -%}
-            double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.render_stride_type()}}];
+            double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.renderer.render_stride_type()}}];
         {% endfor -%}
         {%- for i in range(0, field.get_num_neighbors()) -%}
             auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, gridtools::hymap::keys<unstructured::dim::horizontal>::make_values(1));
@@ -356,8 +356,8 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }}_dsl,
-        const {{ field.render_ctype('c++') }} {{ field.render_pointer() }} {{ field.name }},
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_dsl,
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
         const double {{ field.name }}_rel_tol,
@@ -387,7 +387,7 @@ class CppDefGenerator(TemplatedGenerator):
         int {{ field.name }}_kSize = dawn_generated::cuda_ico::{{ funcname }}::
         get_{{ field.name }}_KSize();
         stencilMetrics = ::dawn::verify_field(
-            stream, (mesh.{{ field.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
+            stream, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
             \"{{ field.name }}\", {{ field.name }}_rel_tol, {{ field.name }}_abs_tol, iteration);
         #ifdef __SERIALIZE_METRICS
         MetricsSerialiser serialiser_{{ field.name }}(
@@ -397,11 +397,11 @@ class CppDefGenerator(TemplatedGenerator):
         #endif
         if (!stencilMetrics.isValid) {
         #ifdef __SERIALIZE_ON_ERROR
-        {{ field.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
-                              (mesh.{{ field.render_stride_type() }}), {{ field.name }},
+        {{ field.renderer.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
+                              (mesh.{{ field.renderer.render_stride_type() }}), {{ field.name }},
                               \"{{ funcname }}\", \"{{ field.name }}\", iteration);
-        {{ field.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
-                              (mesh.{{ field.render_stride_type() }}), {{ field.name }}_dsl,
+        {{ field.renderer.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
+                              (mesh.{{ field.renderer.render_stride_type() }}), {{ field.name }}_dsl,
                               \"{{ funcname }}\", \"{{ field.name }}_dsl\",
                               iteration);
         std::cout << "[DSL] serializing {{ field.name }} as error is high.\\n" << std::flush;

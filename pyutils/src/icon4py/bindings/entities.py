@@ -106,8 +106,8 @@ class Field(Node):
         self.intent = Intent(inp=field_info.inp, out=field_info.out)
         self.has_vertical_dimension = self._has_vertical_dimension(field_info.field)
         self.includes_center = False
-        self.renderer = FieldRenderer
         self._update_horizontal_location(field_info.field)
+        self.renderer = FieldRenderer(self)
 
     def is_sparse(self) -> bool:
         return isinstance(self.location, ChainedLocation)
@@ -117,9 +117,6 @@ class Field(Node):
 
     def is_compound(self) -> bool:
         return isinstance(self.location, CompoundLocation)
-
-    def render_ctype(self, binding_type: str) -> str:
-        return self.renderer.ctype(binding_type, self.field_type)
 
     def rank(self) -> int:
         rank = int(self.has_vertical_dimension) + int(self.location is not None)
@@ -135,34 +132,6 @@ class Field(Node):
                 "num nbh only defined for sparse fields"
             )
         return calc_num_neighbors(self.location.to_dim_list(), self.includes_center)
-
-    def render_pointer(self) -> str:
-        return self.renderer.pointer(self.rank())
-
-    def render_ranked_dim_string(self) -> str:
-        return self.renderer.ranked_dim_string(self.rank())
-
-    def render_dim_string(self) -> str:
-        return self.renderer.dim_string(self.rank())
-
-    def render_stride_type(self) -> str:
-        return self.renderer.stride_type(
-            self.is_dense(), self.is_sparse(), self.location
-        )
-
-    def render_serialise_func(self) -> str:
-        return self.renderer.serialise_func(str(self.location))
-
-    def render_sid(self) -> str:
-        return self.renderer.sid(
-            self.is_sparse(),
-            self.is_dense(),
-            self.is_compound(),
-            self.has_vertical_dimension,
-            self.name,
-            self.rank(),
-            self.location,
-        )
 
     @staticmethod
     def _extract_field_type(field: past.DataSymbol) -> ScalarKind:
