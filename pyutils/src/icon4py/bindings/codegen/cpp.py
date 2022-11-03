@@ -58,10 +58,9 @@ class CppDefGenerator(TemplatedGenerator):
         #include "driver-includes/unstructured_domain.hpp"
         #include "driver-includes/unstructured_interface.hpp"
         #include "driver-includes/verification_metrics.hpp"
+        #include <gridtools/fn/backend/gpu.hpp>
         #include \"{{ funcname }}.hpp\"
         #include <gridtools/common/array.hpp>
-        #include <gridtools/fn/backend/gpu.hpp>
-        #include <gridtools/fn/cartesian.hpp>
         #include <gridtools/stencil/global_parameter.hpp>
         #define GRIDTOOLS_DAWN_NO_INCLUDE
         #include "driver-includes/math.hpp"
