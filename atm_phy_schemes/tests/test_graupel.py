@@ -20,6 +20,8 @@ TODO:
 import os
 from sys import exit, stderr
 
+import numpy as np
+
 
 try:
     import serialbox as ser
@@ -187,6 +189,17 @@ def test_graupel_serialized_data():
             for name in paramNames
         ]
 
+        rain_gsp_rate, snow_gsp_rate, ice_gsp_rate, graupel_gsp_rate, qnc_s = [
+            np.broadcast_to(rain_gsp_rate, (nlev, nproma * nblks_c)).transpose()
+            for fld in (
+                rain_gsp_rate,
+                snow_gsp_rate,
+                ice_gsp_rate,
+                graupel_gsp_rate,
+                qnc_s,
+            )
+        ]
+
         # Out
         if ldiag_ttend:
             ddt_tend_t = (
@@ -230,7 +243,7 @@ def test_graupel_serialized_data():
         ]
 
         rain_gsp_rate, snow_gsp_rate, graupel_gsp_rate, ice_gsp_rate, qnc_s = [
-            to_icon4py_field(field, CellDim)
+            to_icon4py_field(field, CellDim, KDim)
             for field in (
                 rain_gsp_rate,
                 snow_gsp_rate,
@@ -258,6 +271,11 @@ def test_graupel_serialized_data():
 
         # Local automatic arrays TODO:remove
         temporaries = [zero_field((nproma, nlev), CellDim, KDim) for _ in range(14)]
+
+        # Workaround for missing index Fields in GT4Py.
+        is_surface = np.zeros((nproma, nlev), dtype=bool)
+        is_surface[:, -1] = True
+        is_surface = to_icon4py_field(is_surface, CellDim, KDim)
 
         graupel(
             float(tcall_gscp_jg),
@@ -287,6 +305,7 @@ def test_graupel_serialized_data():
             ddt_tend_qi,
             ddt_tend_qr,
             ddt_tend_qs,
+            is_surface,
             l_cv,
             True,
             ldiag_ttend,
@@ -338,10 +357,10 @@ def test_graupel_serialized_data():
         )
 
         testFields = (
-            (rain_gsp_rate, "precipitation rate of rain"),
-            (snow_gsp_rate, "precipitation rate of snow"),
-            (ice_gsp_rate, "precipitation rate of ice"),
-            (graupel_gsp_rate, "precipitation rate of graupel"),
+            (rain_gsp_rate[:, -1], "precipitation rate of rain"),
+            (snow_gsp_rate[:, -1], "precipitation rate of snow"),
+            (ice_gsp_rate[:, -1], "precipitation rate of ice"),
+            (graupel_gsp_rate[:, -1], "precipitation rate of graupel"),
         )
         numErrors = reduce(
             add,

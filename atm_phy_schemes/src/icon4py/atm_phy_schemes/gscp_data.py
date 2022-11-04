@@ -255,8 +255,9 @@ gscp_data: Final = GscpData()
 
 
 class GscpCoefficients(FrozenNamespace):
-    """Workaround until we can pass scalars to scan()"""
+    """Workaround until we can pass scalars to scan()."""
 
+    zdt = 600.0  #
     zceff_min = 0.075
     v0snow = 20.0
     zvz0i = 1.25
@@ -293,6 +294,13 @@ class GscpCoefficients(FrozenNamespace):
     zbev = 14.152467883390491
     zvzxp = 0.5 / (mu_rain + 4.0)
     zvz0r = 12.63008787548925
+
+    # DL: Temporary workaround! Is actually a 2D Field!
+    qnc = 2e8
+
+    # DL: Temporary workaround since I cant pass 2D constants
+    qi0 = -2.91727579e-08
+    qc0 = -3.90868735e-08
 
 
 gscp_coefficients: Final = GscpCoefficients()
