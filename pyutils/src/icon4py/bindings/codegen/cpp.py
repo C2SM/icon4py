@@ -19,11 +19,15 @@ from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import Node, TemplatedGenerator, format_source
 
 from icon4py.bindings.codegen.header import (
+    DOMAIN_PARAMS,
     CppFreeFunc,
     CppRunAndVerifyFuncDeclaration,
     CppRunFuncDeclaration,
     CppSetupFuncDeclaration,
     CppVerifyFuncDeclaration,
+    DomainParams,
+    cpp_verify_func_declaration,
+    domain_params,
     run_func_declaration,
     run_verify_func_declaration,
 )
@@ -262,7 +266,7 @@ class CppDefGenerator(TemplatedGenerator):
 
     StenClassRunFun = as_jinja(
         """
-      void run(const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) {
+      void run({{ domain_params }}) {
       if (!is_setup_) {
           printf("{{stencil_name}} has not been set up! make sure setup() is called before run!\\n");
           return;
@@ -319,7 +323,7 @@ class CppDefGenerator(TemplatedGenerator):
             {%- for field in _this_node.parameters -%}
         {{field.name}}_gp,
       {%- endfor -%}
-      horizontalStart, horizontalEnd, verticalStart, verticalEnd);
+      {{ untyped_domain_params }});
       #ifndef NDEBUG
         gpuErrchk(cudaPeekAtLastError());
         gpuErrchk(cudaDeviceSynchronize());
@@ -328,6 +332,8 @@ class CppDefGenerator(TemplatedGenerator):
       """
     )
 
+    DomainParams = domain_params
+
     CppRunFuncDeclaration = run_func_declaration
 
     RunFunc = as_jinja(
@@ -335,7 +341,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{run_func_declaration }} {
         dawn_generated::cuda_ico::{{ funcname }} s;
         s.copy_pointers({{ params }});
-        s.run(verticalStart, verticalEnd, horizontalStart, horizontalEnd);
+        s.run({{ domain_params }});
         return;
         }
         """
@@ -352,20 +358,7 @@ class CppDefGenerator(TemplatedGenerator):
         """
     )
 
-    CppVerifyFuncDeclaration = as_jinja(
-        """\
-        bool verify_{{funcname}}(
-        {%- for field in _this_node.out_fields -%}
-        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_dsl,
-        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
-        {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
-        const double {{ field.name }}_rel_tol,
-        const double {{ field.name }}_abs_tol,
-        {%- endfor -%}
-        const int iteration)
-        """
-    )
+    CppVerifyFuncDeclaration = cpp_verify_func_declaration
 
     VerifyFunc = as_jinja(
         """\
@@ -433,7 +426,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{ field.name }},
         {%- endif -%}
         {%- endfor -%}
-        verticalStart, verticalEnd, horizontalStart, horizontalEnd) ;
+        {{ domain_params }}) ;
         """
     )
 
@@ -441,7 +434,7 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_before,
+        {{ field.name }}_{{ suffix }},
         {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
@@ -476,7 +469,7 @@ class CppDefGenerator(TemplatedGenerator):
         void setup_{{funcname}}(
         dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
         {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_k_size
+        const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
         ,
         {%- endif -%}
@@ -489,7 +482,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{ func_declaration }} {
         dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream,
         {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_k_size
+        {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
         ,
         {%- endif -%}
@@ -526,6 +519,8 @@ class GpuTriMesh(Node):
 
 class StenClassRunFun(Node):
     stencil_name: str
+    domain_params: DomainParams
+    untyped_domain_params: DomainParams
     all_fields: Sequence[Field]
     dense_fields: Sequence[Field]
     sparse_fields: Sequence[Field]
@@ -571,10 +566,12 @@ class RunFunc(Node):
     funcname: str
     params: Params
     run_func_declaration: CppRunFuncDeclaration
+    domain_params: DomainParams
 
 
-class MetricsSerialisation(CppVerifyFuncDeclaration):
-    ...
+class MetricsSerialisation(Node):
+    funcname: str
+    out_fields: Sequence[Field]
 
 
 class VerifyFunc(Node):
@@ -673,6 +670,8 @@ class CppDefTemplate(Node):
             ),
             run_fun=StenClassRunFun(
                 stencil_name=self.stencil_name,
+                domain_params=DomainParams(params=DOMAIN_PARAMS, typed=True),
+                untyped_domain_params=DomainParams(params=DOMAIN_PARAMS, typed=False),
                 all_fields=fields["without_params"],
                 dense_fields=fields["dense"],
                 sparse_fields=fields["sparse"],
@@ -688,7 +687,7 @@ class CppDefTemplate(Node):
                 fields=self.fields, out_fields=fields["output"]
             ),
             setup_func=StencilClassSetupFunc(
-                funcname=self.stencil_name, out_fields=fields["output"]
+                funcname=self.stencil_name, out_fields=fields["output"], suffix="k_size"
             ),
         )
 
@@ -696,14 +695,17 @@ class CppDefTemplate(Node):
             funcname=self.stencil_name,
             params=Params(fields=self.fields),
             run_func_declaration=CppRunFuncDeclaration(
-                funcname=self.stencil_name, fields=self.fields
+                funcname=self.stencil_name,
+                fields=self.fields,
+                domain_params=DomainParams(params=DOMAIN_PARAMS, typed=True),
             ),
+            domain_params=DomainParams(params=DOMAIN_PARAMS, typed=False),
         )
 
         self.verify_func = VerifyFunc(
             funcname=self.stencil_name,
             verify_func_declaration=CppVerifyFuncDeclaration(
-                funcname=self.stencil_name, out_fields=fields["output"]
+                funcname=self.stencil_name, out_fields=fields["output"], suffix="dsl"
             ),
             metrics_serialisation=MetricsSerialisation(
                 funcname=self.stencil_name, out_fields=fields["output"]
@@ -717,10 +719,15 @@ class CppDefTemplate(Node):
                 fields=self.fields,
                 out_fields=fields["output"],
                 suffix="before",
+                domain_params=DomainParams(params=DOMAIN_PARAMS, typed=True),
             ),
-            run_func_call=RunFuncCall(funcname=self.stencil_name, fields=self.fields),
+            run_func_call=RunFuncCall(
+                funcname=self.stencil_name,
+                fields=self.fields,
+                domain_params=DomainParams(params=DOMAIN_PARAMS, typed=True),
+            ),
             verify_func_call=VerifyFuncCall(
-                funcname=self.stencil_name, out_fields=fields["output"]
+                funcname=self.stencil_name, out_fields=fields["output"], suffix="before"
             ),
         )
 
@@ -728,8 +735,9 @@ class CppDefTemplate(Node):
             funcname=self.stencil_name,
             out_fields=fields["output"],
             func_declaration=CppSetupFuncDeclaration(
-                funcname=self.stencil_name, out_fields=fields["output"]
+                funcname=self.stencil_name, out_fields=fields["output"], suffix="k_size"
             ),
+            suffix="k_size",
         )
 
         self.free_func = FreeFunc(funcname=self.stencil_name)

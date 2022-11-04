@@ -23,13 +23,26 @@ from icon4py.bindings.entities import Field
 from icon4py.bindings.utils import write_string
 
 
+DOMAIN_PARAMS = ["verticalStart", "verticalEnd", "horizontalStart", "horizontalEnd"]
+
+domain_params = as_jinja(
+    """\
+    {%- for p in params -%}
+    {% if typed == 'True' %} const int {%- endif %} {{ p }}
+    {%- if not loop.last -%}
+    ,
+    {%- endif -%}
+    {%- endfor -%}
+    """
+)
+
 run_func_declaration = as_jinja(
     """\
     void run_{{funcname}}(
     {%- for field in _this_node.fields -%}
     {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
     {%- endfor -%}
-    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd)
+    {{ domain_params }})
     """
 )
 
@@ -42,7 +55,7 @@ run_verify_func_declaration = as_jinja(
     {%- for field in _this_node.out_fields -%}
     {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
     {%- endfor -%}
-    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
+    {{ domain_params }},
     {%- for field in _this_node.out_fields -%}
     const double {{ field.name }}_rel_tol,
     const double {{ field.name }}_abs_tol
@@ -51,6 +64,21 @@ run_verify_func_declaration = as_jinja(
     {%- endif -%}
     {%- endfor -%}
     )
+    """
+)
+
+cpp_verify_func_declaration = as_jinja(
+    """\
+    bool verify_{{funcname}}(
+    {%- for field in _this_node.out_fields -%}
+    const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
+    const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
+    {%- endfor -%}
+    {%- for field in _this_node.out_fields -%}
+    const double {{ field.name }}_rel_tol,
+    const double {{ field.name }}_abs_tol,
+    {%- endfor -%}
+    const int iteration)
     """
 )
 
@@ -74,20 +102,7 @@ class CppHeaderGenerator(TemplatedGenerator):
 
     CppRunAndVerifyFuncDeclaration = run_verify_func_declaration
 
-    CppVerifyFuncDeclaration = as_jinja(
-        """\
-        bool verify_{{funcname}}(
-        {%- for field in _this_node.out_fields -%}
-        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
-        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
-        {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
-        const double {{ field.name }}_rel_tol,
-        const double {{ field.name }}_abs_tol,
-        {%- endfor -%}
-        const int iteration)
-        """
-    )
+    CppVerifyFuncDeclaration = cpp_verify_func_declaration
 
     CppSetupFuncDeclaration = as_jinja(
         """\
@@ -108,6 +123,8 @@ class CppHeaderGenerator(TemplatedGenerator):
         """
     )
 
+    DomainParams = domain_params
+
 
 class CppFunc(Node):
     funcname: str
@@ -117,8 +134,14 @@ class CppFreeFunc(CppFunc):
     ...
 
 
+class DomainParams(Node):
+    params: Sequence[str]
+    typed: bool
+
+
 class CppRunFuncDeclaration(CppFunc):
     fields: Sequence[Field]
+    domain_params: DomainParams
 
 
 class CppVerifyFuncDeclaration(CppFunc):
@@ -150,6 +173,7 @@ class CppHeaderFile(Node):
         self.runFunc = CppRunFuncDeclaration(
             funcname=self.stencil_name,
             fields=self.fields,
+            domain_params=DomainParams(params=DOMAIN_PARAMS, typed=True),
         )
 
         self.verifyFunc = CppVerifyFuncDeclaration(
@@ -161,6 +185,7 @@ class CppHeaderFile(Node):
             fields=self.fields,
             out_fields=output_fields,
             suffix="before",
+            domain_params=DomainParams(params=DOMAIN_PARAMS, typed=True),
         )
 
         self.setupFunc = CppSetupFuncDeclaration(
@@ -174,6 +199,3 @@ def generate_cpp_header(stencil_name: str, fields: list[Field], outpath: Path):
     header = CppHeaderFile(stencil_name=stencil_name, fields=fields)
     source = format_source("cpp", CppHeaderGenerator.apply(header), style="LLVM")
     write_string(source, outpath, f"{stencil_name}.h")
-
-
-# todo: put horizontal bounds into a node
