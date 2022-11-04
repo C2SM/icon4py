@@ -30,6 +30,7 @@ TODO: Removed Features
 1. lsuper_coolw = False, lred_depgrow = False, lsedi_ice = False
 2. isnow_n0temp == 1, and zn0s = const.
 3. iautocon == 0 (Kessler)
+4. l_cv = False. Now, we always use cv instead of cp
 
 TODO: David
     1. Test if runnign with GPU backend. normalize
@@ -38,7 +39,8 @@ TODO: David
     4. Remove workaround for qnc (--> scheme does validate!!!), qc0, qi0 from gscp_data.py and pass explicitly
     5. Remove namespacing, i.e. z and c prefixes
     6. Replace 2D Fields by 1D fields qnc, prr_gsp et al.
-    7. Do we really wanna diagnose pri_gsp ?
+    7. Remove lpri_gscp = False
+    8. Implement qrsflux, ldass_lhn
 
 TODO: GT4Py team
     1. Call field operators from scan --> sat_pres_ice
@@ -68,7 +70,7 @@ from icon4py.shared.mo_physical_constants import phy_const
 
 
 # DL TODO
-sys.setrecursionlimit(2000)
+sys.setrecursionlimit(3000)
 
 
 class GraupelParametersAndConfiguration(FrozenNamespace):
@@ -79,6 +81,12 @@ class GraupelParametersAndConfiguration(FrozenNamespace):
     lstickeff = True  # switch for sticking coeff. (work from Guenther Zaengl)
     # lsuper_coolw = True  # switch for supercooled liquid water (work from Felix Rieper)
     # lred_depgrow = True  # separate switch for reduced depositional growth near tops of water clouds (now also used in ICON after correcting the cloud top diagnosis)
+
+    lthermo_water_const = True
+
+    # DL: TODO Pass explicitly
+    lldiag_ttend = True
+    lldiag_ttend = True
 
     # Local Parameters
     zcsg = 0.5  # coefficient for snow-graupel conversion by riming
@@ -154,10 +162,12 @@ local_param: Final = GraupelParametersAndConfiguration()
         0.0,
         0.0,
         0.0,
+        0.0,
     ),  # DL TODO: Use ellipsis operator?
 )
 def _graupel(
     carry: tuple[
+        float,
         float,
         float,
         float,
@@ -225,20 +235,17 @@ def _graupel(
     # icesedi_exp: float,
     # zceff_min: float,
     # Optional Fields: TODO: Pass optional fields to program
-    # ithermo_water: int32,  # TODO: Pass int to prgram
     ddt_tend_t: float,
     ddt_tend_qv: float,
     ddt_tend_qc: float,
     ddt_tend_qi: float,
     ddt_tend_qr: float,
     ddt_tend_qs: float,
-    # ddt_tend_qg: float, # DL: Missing from FORTRAN interface
+    ddt_tend_qg: float,  # DL: Missing from FORTRAN interface
     is_surface: bool,
     # Option Switches
-    # l_cv: bool = False,  # if true, cv is used instead of cp
-    # lpres_pri: bool = False,  # if true, precipitation rate of ice shall be diagnosed
-    # lldiag_ttend: bool = False,  # if true, temperature tendency shall be diagnosed
-    # lldiag_qtend: bool = False,  # if true, moisture tendencies shall be diagnosed
+    # lldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
+    # lldiag_qtend: bool,  # if true, moisture tendencies shall be diagnosed
 ):
 
     # ------------------------------------------------------------------------------
@@ -247,6 +254,7 @@ def _graupel(
 
     # unpack carry
     (
+        _,
         qv_kminus1,
         qc_kminus1,
         qi_kminus1,
@@ -416,12 +424,6 @@ def _graupel(
         if llqs
         else (0.0, 0.0, 0.0, 0.0)
     )
-
-    # Alternative implementaion
-    # zcrim = ccsrim * zn0s if llqs else 0.0
-    # zcagg = ccsagg * zn0s if llqs else 0.0
-    # zbsdep = ccsdep * sqrt(v0snow) if llqs else 0.0
-    # zvz0s = ccsvel * exp(ccsvxp * log(zn0s)) if llqs else 0.0
 
     # sedimentation fluxes
     # -------------------------------------------------------------------------
@@ -767,110 +769,120 @@ def _graupel(
     zprvg = 0.0 if qgg * rhog * zvzg <= gscp_data.zqmin else qgg * rhog * zvzg
     zprvi = 0.0 if qig * rhog * zvzi <= gscp_data.zqmin else qig * rhog * zvzi
 
-    # # # DL: This code block inflates errors from 1e-14 to 1e-10
-    # # # DL: Also, it is rather expensive
-    # # zvzr = (
-    # #     0.0
-    # #     if qrg + qr[0, 0, +1] <= zqmin
-    # #     else zvz0r * exp(zvzxp * log((qrg + qr[0, 0, +1]) * 0.5 * rhog)) * zrho1o2
-    # # )
-    # # zvzs = (
-    # #     0.0
-    # #     if qsg + qs[0, 0, +1] <= zqmin
-    # #     else zvz0s * exp(ccswxp * log((qsg + qs[0, 0, +1]) * 0.5 * rhog)) * zrho1o2
-    # # )
-    # # zvzg = (
-    # #     0.0
-    # #     if qgg + qg[0, 0, +1] <= zqmin
-    # #     else zvz0g * exp(zexpsedg * log((qgg + qg[0, 0, +1]) * 0.5 * rhog)) * zrho1o2
-    # # )
-    # # zvzi = (
-    # #     0.0
-    # #     if qig + qi[0, 0, +1] <= zqmin
-    # #     else zvz0i * exp(zbvi * log((qig + qi[0, 0, +1]) * 0.5 * rhog)) * zrhofac_qi
-    # # )
+    # DL: This code block inflates errors from 1e-14 to 1e-10
+    zvzr = (
+        0.0
+        if qrg + qr_kminus1 <= gscp_data.zqmin
+        else gscp_coefficients.zvz0r
+        * exp(gscp_coefficients.zvzxp * log((qrg + qr_kminus1) * 0.5 * rhog))
+        * zrho1o2
+    )
+    zvzs = (
+        0.0
+        if qsg + qs_kminus1 <= gscp_data.zqmin
+        else zvz0s
+        * exp(gscp_coefficients.ccswxp * log((qsg + qs_kminus1) * 0.5 * rhog))
+        * zrho1o2
+    )
+    zvzg = (
+        0.0
+        if qgg + qg_kminus1 <= gscp_data.zqmin
+        else local_param.zvz0g
+        * exp(local_param.zexpsedg * log((qgg + qg_kminus1) * 0.5 * rhog))
+        * zrho1o2
+    )
+    zvzi = (
+        0.0
+        if qig + qi_kminus1 <= gscp_data.zqmin
+        else gscp_coefficients.zvz0i
+        * exp(gscp_data.zbvi * log((qig + qi_kminus1) * 0.5 * rhog))
+        * zrhofac_qi
+    )
 
-    # # #----------------------------------------------------------------------
-    # # # Section 11: Update Tendencies
-    # # #----------------------------------------------------------------------
+    # #----------------------------------------------------------------------
+    # # Section 11: Update Tendencies
+    # #----------------------------------------------------------------------
 
-    # # z_heat_cap_r = cvdr if l_cv else cpdr
-    # # lvariable_lh = ithermo_water != 0
+    # # Calculate Latent heats if necessary
+    # if local_param.lthermo_water_const:
+    #     # Initialize latent heats to constant values.
+    #     zlhv = phy_const.alv
+    #     zlhs = phy_const.als
+    # else:
+    #     tg = make_normalized(t)
+    #     zlhv = latent_heat_vaporization(tg)
+    #     zlhs = latent_heat_sublimation(tg)
 
-    # # # Calculate Latent heats if necessary
-    # # if lvariable_lh:
-    # #     tg = make_normalized(t)
-    # #     zlhv = latent_heat_vaporization(tg)
-    # #     zlhs = latent_heat_sublimation(tg)
-    # # else:
-    # #     # Initialize latent heats to constant values.
-    # #     zlhv = lh_v
-    # #     zlhs = lh_s
+    lhv = (
+        phy_const.alv
+        + (1850.0 - phy_const.clw) * (tg - phy_const.tmelt)
+        - phy_const.rv * tg
+    )
+    lhs = (
+        phy_const.als + (1850.0 - 2108.0) * (tg - phy_const.tmelt) - phy_const.rdv * tg
+    )
 
-    # # # DL: zlhv and zlhs are rather big numbers. Validates badly for a couple of gridpoints
-    # # ztt = z_heat_cap_r * (zlhv * (zqct + zqrt) + zlhs * (zqit + zqst + zqgt))
+    (zlhv, zlhs) = (
+        (phy_const.alv, phy_const.als)
+        if local_param.lthermo_water_const
+        else (lhv, lhs)
+    )
 
-    # # # save input arrays for final tendency calculation
-    # # if lldiag_ttend:
-    # #     t_in = t
+    # DL: zlhv and zlhs are rather big numbers. Validates badly for a couple of gridpoints
+    ztt = phy_const.rcvd * (zlhv * (zqct + zqrt) + zlhs * (zqit + zqst + zqgt))
 
-    # # if lldiag_qtend:
-    # #     qv_in = qv
-    # #     qc_in = qc
-    # #     qi_in = qi
-    # #     qr_in = qr
-    # #     qs_in = qs
-    # #     # qg_in = qg
+    # # save input arrays for final tendency calculation
+    # if lldiag_ttend:
+    #     t_in = t
 
-    # # # Update of prognostic variables or tendencies
-    # # qr = max(0.0, qrg)
-    # # qs = max(0.0, qsg)
-    # # qi = max(0.0, qig)
-    # # qg = max(0.0, qgg)
-    # # t = t + ztt * zdt
-    # # qv = max(0.0, qv + zqvt * zdt)
-    # # qc = max(0.0, qc + zqct * zdt)
+    # if lldiag_qtend:
+    #     qv_in = qv
+    #     qc_in = qc
+    #     qi_in = qi
+    #     qr_in = qr
+    #     qs_in = qs
+    #     qg_in = qg
 
-    # # #  ddt_tend_qg = max(-qg_in*zdtr,(qg - qg_in)*zdtr)
+    # Update of prognostic variables or tendencies
+    qr = maximum(0.0, qrg)
+    qs = maximum(0.0, qsg)
+    qi = maximum(0.0, qig)
+    qg = maximum(0.0, qgg)
+    temp = temp + ztt * gscp_coefficients.zdt
+    qv = maximum(0.0, qv + zqvt * gscp_coefficients.zdt)
+    qc = maximum(0.0, qc + zqct * gscp_coefficients.zdt)
 
-    # # if lldiag_ttend:
-    # #     ddt_tend_t = (t - t_in) * zdtr
+    # if lldiag_ttend:
+    #     ddt_tend_t = (t - t_in) * zdtr
 
-    # # if lldiag_qtend:
-    # #     ddt_tend_qv = max(-qv_in * zdtr, (qv - qv_in) * zdtr)
-    # #     ddt_tend_qc = max(-qc_in * zdtr, (qc - qc_in) * zdtr)
-    # #     ddt_tend_qi = max(-qi_in * zdtr, (qi - qi_in) * zdtr)
-    # #     ddt_tend_qr = max(-qr_in * zdtr, (qr - qr_in) * zdtr)
-    # #     ddt_tend_qs = max(-qs_in * zdtr, (qs - qs_in) * zdtr)
+    # if lldiag_qtend:
+    #     ddt_tend_qv = max(-qv_in * zdtr, (qv - qv_in) * zdtr)
+    #     ddt_tend_qc = max(-qc_in * zdtr, (qc - qc_in) * zdtr)
+    #     ddt_tend_qi = max(-qi_in * zdtr, (qi - qi_in) * zdtr)
+    #     ddt_tend_qr = max(-qr_in * zdtr, (qr - qr_in) * zdtr)
+    #     ddt_tend_qs = max(-qs_in * zdtr, (qs - qs_in) * zdtr)
+    #     ddt_tend_qg = max(-qg_in*zdtr,(qg - qg_in)*zdtr)
 
-    # # DL TODO: Temporary REMOVE ONCE IMPLEMENZED!!
-
-    qv = 0.0
-    qc = 0.0
-    qi = 0.0
-    qr = 0.0
-    qs = 0.0
-    qg = 0.0
+    # # DL TODO: Temporary REMOVE ONCE DONE!!
 
     zpkr = 0.0
     zpks = 0.0
     zpkg = 0.0
     zpki = 0.0
-
     zprvr = 0.0
     zprvs = 0.0
     zprvg = 0.0
     zprvi = 0.0
-
     zvzr = 0.0
     zvzs = 0.0
-    zvzg = 0.0
     zvzi = 0.0
+    zvzg = 0.0
 
     dist_cldtop = 0.0
     zqvsw_up = 0.0
 
     return (
+        temp,
         qv,
         qc,
         qi,
@@ -914,6 +926,7 @@ def graupel(
     qi0: float,
     qc0: float,
     # Precipitation Fluxes
+    pri_gsp: Field[[CellDim, KDim], float],
     prr_gsp: Field[[CellDim, KDim], float],
     prs_gsp: Field[[CellDim, KDim], float],
     prg_gsp: Field[[CellDim, KDim], float],
@@ -957,21 +970,19 @@ def graupel(
     icesedi_exp: float,
     zceff_min: float,
     # Optional Fields: TODO: Pass optional fields to program
-    ithermo_water: int32,
-    pri_gsp: Field[[CellDim, KDim], float],
     ddt_tend_t: Field[[CellDim, KDim], float],
     ddt_tend_qv: Field[[CellDim, KDim], float],
     ddt_tend_qc: Field[[CellDim, KDim], float],
     ddt_tend_qi: Field[[CellDim, KDim], float],
     ddt_tend_qr: Field[[CellDim, KDim], float],
     ddt_tend_qs: Field[[CellDim, KDim], float],
-    is_surface: Field[[CellDim, KDim], bool],
-    # ddt_tend_qg: Field[[CellDim, KDim], float], # DL: Missing from FORTRAN interface
+    ddt_tend_qg: Field[[CellDim, KDim], float],  # DL: Missing from FORTRAN interface
+    is_surface: Field[
+        [CellDim, KDim], bool
+    ],  # DL: TODO: Replace once GT4Py feature avail
     # Option Switches
-    l_cv: bool = False,  # if true, cv is used instead of cp
-    lpres_pri: bool = False,  # if true, precipitation rate of ice shall be diagnosed
-    lldiag_ttend: bool = False,  # if true, temperature tendency shall be diagnosed
-    lldiag_qtend: bool = False,  # if true, moisture tendencies shall be diagnosed
+    lldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
+    lldiag_qtend: bool,  # if true, moisture tendencies shall be diagnosed
 ):
     # Writing to several output fields currently breaks due to gt4py bugs
     _graupel(
@@ -1021,21 +1032,19 @@ def graupel(
         # icesedi_exp,
         # zceff_min,
         # # Optional Fields: TODO: Pass optional fields to program
-        # ithermo_water,  # TODO: Pass int to prgram
         ddt_tend_t,
         ddt_tend_qv,
         ddt_tend_qc,
         ddt_tend_qi,
         ddt_tend_qr,
         ddt_tend_qs,
+        ddt_tend_qg,
         is_surface,
-        # # ddt_tend_qg, # DL: Missing from FORTRAN interface
         # # Option Switches
-        # l_cv,
-        # lpres_pri,
         # lldiag_ttend,
         # lldiag_qtend,
         out=(
+            temp,
             qv,
             qc,
             qi,

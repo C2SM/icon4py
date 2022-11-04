@@ -226,6 +226,7 @@ def test_graupel_serialized_data():
                 )
                 for name in paramNames
             ]
+            ddt_tend_qg = zero_field((nproma * nblks_c, nlev), CellDim, KDim)
         else:
             (
                 ddt_tend_qv,
@@ -258,7 +259,14 @@ def test_graupel_serialized_data():
             ddt_tend_t = to_icon4py_field(ddt_tend_t, CellDim, KDim)
 
         if ldiag_qtend:
-            ddt_tend_qv, ddt_tend_qc, ddt_tend_qi, ddt_tend_qr, ddt_tend_qs = [
+            (
+                ddt_tend_qv,
+                ddt_tend_qc,
+                ddt_tend_qi,
+                ddt_tend_qr,
+                ddt_tend_qs,
+                ddt_tend_qg,
+            ) = [
                 to_icon4py_field(field, CellDim, KDim)
                 for field in (
                     ddt_tend_qv,
@@ -266,6 +274,7 @@ def test_graupel_serialized_data():
                     ddt_tend_qi,
                     ddt_tend_qr,
                     ddt_tend_qs,
+                    ddt_tend_qg,
                 )
             ]
 
@@ -294,22 +303,20 @@ def test_graupel_serialized_data():
             qnc_s,
             float(qi0),
             float(qc0),
+            ice_gsp_rate,
             rain_gsp_rate,
             snow_gsp_rate,
             graupel_gsp_rate,
             *temporaries,
             *gscp_coefficients,
-            ithermo_water,
-            ice_gsp_rate,
             ddt_tend_t,
             ddt_tend_qv,
             ddt_tend_qc,
             ddt_tend_qi,
             ddt_tend_qr,
             ddt_tend_qs,
+            ddt_tend_qg,
             is_surface,
-            l_cv,
-            True,
             ldiag_ttend,
             ldiag_qtend,
             offset_provider={},
