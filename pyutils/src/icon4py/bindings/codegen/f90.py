@@ -259,25 +259,30 @@ class F90Generator(TemplatedGenerator):
         """
         subroutine &
         run_and_verify_{{stencil_name}}( &
-        {{field_names}}
-        {{field_names_before}}
-        vertical_lower, &
-        vertical_upper, &
-        horizontal_lower, &
-        horizontal_upper, &
-        {{tolerance_args}}
+        {{params}}
         ) bind(c)
         use, intrinsic :: iso_c_binding
         use openacc
-        {{typed_field_names}}
-        {{typed_field_names_before}}
-        integer(c_int), value, target :: vertical_lower
-        integer(c_int), value, target :: vertical_upper
-        integer(c_int), value, target :: horizontal_lower
-        integer(c_int), value, target :: horizontal_upper
-        {{typed_tolerance_args}}
+        {{binds}}
         end subroutine
         """
+    )
+
+    F90FieldList = as_jinja(
+        """
+        {%- for field in fields -%}
+        {{ field }}{% if not loop.last %}{{ line_end }}
+        {% else %}{{ line_end_last }}{% endif %}
+        {%- endfor -%}
+        """
+    )
+    
+    F90Field = as_jinja(
+        "{{ name }}{% if suffix %}_{{ suffix }}{% endif %}"
+    )
+
+    F90TypedField = as_jinja(
+        "{{ type }}, {{ dims }}, target :: {{ name }}{% if suffix %}_{{ suffix }}{% endif %} "
     )
 
     F90SetupFun = as_jinja(
@@ -475,14 +480,62 @@ class F90RunFun(Node):
     typed_field_names: F90TypedFieldNames
 
 
-class F90RunAndVerifyFun(Node):
+# class Field(eve.Node):
+#     name: str
+    
+#     def render_ctype(self, dummy: str) -> str:
+#         return f"{self.name}_type"
+    
+#     def render_dim_string(self) -> str:
+#         return f"{self.name}_dims"
+    
+    
+class F90Field(eve.Node):
+    name: str
+    suffix: str = ""
+    
+    
+class F90TypedField(F90Field):
+    type: str
+    dims: str
+    
+    
+class F90FieldList(eve.Node):
+    fields: Sequence[F90Field]
+    line_end: str = ""
+    line_end_last: str = ""
+    
+
+class F90RunAndVerifyFun(eve.Node):
     stencil_name: str
-    field_names: F90FieldNames
-    field_names_before: F90FieldNamesBefore
-    tolerance_args: F90ToleranceArgs
-    typed_field_names: F90TypedFieldNames
-    typed_field_names_before: F90TypedFieldNamesBefore
-    typed_tolerance_args: F90TypedToleranceArgs
+    all_fields: Sequence[Field]
+    out_fields: Sequence[Field]
+    
+    params: F90FieldList = eve.datamodels.field(init=False)
+    binds: F90FieldList = eve.datamodels.field(init=False)
+    
+    def __post_init__(self):
+        param_decls = (
+            [F90Field(name=field.name) for field in self.all_fields]
+            + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
+            + [F90Field(name=name) for name in ["vertical_lower", "vertical_upper", "horizontal_lower", "horizontal_upper"]]
+        )
+        bind_decls = (
+            [F90TypedField(name=field.name, type=field.renderer.render_ctype("f90"), dims=field.renderer.render_dim_string()) for field in self.all_fields]
+            + [F90TypedField(name=field.name, suffix="before", type=field.renderer.render_ctype("f90"), dims=field.renderer.render_dim_string()) for field in self.out_fields]
+            + [F90TypedField(name=name, type="integer(c_int)", dims="value") for name in ["vertical_lower", "vertical_upper", "horizontal_lower", "horizontal_upper"]]
+        )
+            
+        for field in self.out_fields:
+            param_decls += [F90Field(name=field.name, suffix=s) for s in ["rel_tol", "abs_tol"]]
+            bind_decls += [F90TypedField(name=field.name, suffix=s, type="real(c_double)", dims="value") for s in ["rel_tol", "abs_tol"]]
+        
+        self.params = F90FieldList(
+            fields=param_decls, line_end=", &", line_end_last = " &"
+        )
+        self.binds = F90FieldList(
+            fields=bind_decls
+        )
 
 
 class F90SetupFun(Node):
@@ -537,12 +590,8 @@ class F90File(Node):
 
         self.run_and_verify_fun = F90RunAndVerifyFun(
             stencil_name=self.stencil_name,
-            field_names=F90FieldNames(fields=all_fields),
-            field_names_before=F90FieldNamesBefore(fields=out_fields),
-            tolerance_args=F90ToleranceArgs(fields=out_fields),
-            typed_field_names=F90TypedFieldNames(fields=all_fields),
-            typed_field_names_before=F90TypedFieldNamesBefore(fields=out_fields),
-            typed_tolerance_args=F90TypedToleranceArgs(fields=out_fields),
+            all_fields=all_fields,
+            out_fields=out_fields,
         )
 
         self.setup_fun = F90SetupFun(
