@@ -716,6 +716,7 @@ class CppDefTemplate(Node):
                 funcname=self.stencil_name,
                 fields=self.fields,
                 out_fields=fields["output"],
+                suffix="before",
             ),
             run_func_call=RunFuncCall(funcname=self.stencil_name, fields=self.fields),
             verify_func_call=VerifyFuncCall(
