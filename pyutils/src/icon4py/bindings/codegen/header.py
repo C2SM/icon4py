@@ -23,7 +23,7 @@ from icon4py.bindings.entities import Field
 from icon4py.bindings.utils import write_string
 
 
-DOMAIN_PARAMS = ["verticalStart", "verticalEnd", "horizontalStart", "horizontalEnd"]
+DOMAIN_PARAMS = ["horizontalStart", "horizontalEnd", "verticalStart", "verticalEnd"]
 
 domain_params = as_jinja(
     """\
