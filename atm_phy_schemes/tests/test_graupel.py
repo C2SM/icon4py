@@ -190,7 +190,7 @@ def test_graupel_serialized_data():
         ]
 
         rain_gsp_rate, snow_gsp_rate, ice_gsp_rate, graupel_gsp_rate, qnc_s = [
-            np.broadcast_to(rain_gsp_rate, (nlev, nproma * nblks_c)).transpose()
+            np.broadcast_to(fld, (nlev, nproma * nblks_c)).transpose()
             for fld in (
                 rain_gsp_rate,
                 snow_gsp_rate,
