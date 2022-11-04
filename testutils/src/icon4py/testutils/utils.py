@@ -81,6 +81,14 @@ def zero_field(
     )
 
 
+def constant_field(
+    mesh: simple_mesh.SimpleMesh, value: float, *dims: gt_common.Dimension, dtype=float
+) -> it_embedded.MutableLocatedField:
+    return it_embedded.np_as_located_field(*dims)(
+        value * np.ones(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)
+    )
+
+
 def as_1D_sparse_field(
     field: it_embedded.MutableLocatedField, dim: gt_common.Dimension
 ) -> it_embedded.MutableLocatedField:
