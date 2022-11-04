@@ -172,7 +172,7 @@ def test_graupel_serialized_data():
             for name in paramNames
         ]
 
-        # 2D Fields
+        # 1D Fields
 
         paramNames = (
             "precipitation rate of rain",
@@ -189,6 +189,7 @@ def test_graupel_serialized_data():
             for name in paramNames
         ]
 
+        # DL: Workaround Convert to 2D
         rain_gsp_rate, snow_gsp_rate, ice_gsp_rate, graupel_gsp_rate, qnc_s = [
             np.broadcast_to(fld, (nlev, nproma * nblks_c)).transpose()
             for fld in (
@@ -208,7 +209,7 @@ def test_graupel_serialized_data():
                 .reshape(nproma * nblks_c, nlev)
             )
         else:
-            ddt_tend_t = zero_field((nproma, nlev), CellDim, KDim)
+            ddt_tend_t = zero_field((nproma * nblks_c, nlev), CellDim, KDim)
 
         if ldiag_qtend:
             paramNames = (
@@ -221,12 +222,11 @@ def test_graupel_serialized_data():
 
             ddt_tend_qv, ddt_tend_qc, ddt_tend_qi, ddt_tend_qr, ddt_tend_qs = [
                 serializer.read_async(name, savepoint=savepoints[2]).reshape(
-                    nproma * nblks_c
+                    nproma * nblks_c, nlev
                 )
                 for name in paramNames
             ]
         else:
-            var2D = (nproma, nlev)
             (
                 ddt_tend_qv,
                 ddt_tend_qc,
@@ -234,7 +234,7 @@ def test_graupel_serialized_data():
                 ddt_tend_qr,
                 ddt_tend_qs,
                 ddt_tend_qg,
-            ) = [zero_field(var2D, CellDim, KDim) for _ in range(6)]
+            ) = [zero_field((nproma * nblks_c, nlev), CellDim, KDim) for _ in range(6)]
 
         # In
         ddqz_z_full, pres, rho, qv, qc, qi, qr, qs, qg, temp = [
@@ -270,10 +270,12 @@ def test_graupel_serialized_data():
             ]
 
         # Local automatic arrays TODO:remove
-        temporaries = [zero_field((nproma, nlev), CellDim, KDim) for _ in range(14)]
+        temporaries = [
+            zero_field((nproma * nblks_c, nlev), CellDim, KDim) for _ in range(14)
+        ]
 
         # Workaround for missing index Fields in GT4Py.
-        is_surface = np.zeros((nproma, nlev), dtype=bool)
+        is_surface = np.zeros((nproma * nblks_c, nlev), dtype=bool)
         is_surface[:, -1] = True
         is_surface = to_icon4py_field(is_surface, CellDim, KDim)
 

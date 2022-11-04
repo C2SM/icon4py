@@ -34,7 +34,7 @@ TODO: Removed Features
 TODO: David
     1. Test if runnign with GPU backend. normalize
     2. Replace exp(A * log(B)) by B**A. Needs performance check and maybe optimization pass.
-    3. Put scan in field operator. --> Disregard *_
+    3. Put scan in field operator. --> Disregard unneeded output
     4. Remove workaround for qnc (--> scheme does validate!!!), qc0, qi0 from gscp_data.py and pass explicitly
     5. Remove namespacing, i.e. z and c prefixes
     6. Replace 2D Fields by 1D fields qnc, prr_gsp et al.
@@ -134,12 +134,12 @@ local_param: Final = GraupelParametersAndConfiguration()
     axis=KDim,
     forward=True,
     init=(
-        # 0.0,
-        # 0.0,
-        # 0.0,
-        # 0.0,
-        # 0.0,
-        # 0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
         0.0,
         0.0,
         0.0,
@@ -158,12 +158,12 @@ local_param: Final = GraupelParametersAndConfiguration()
 )
 def _graupel(
     carry: tuple[
-        # float,
-        # float,
-        # float,
-        # float,
-        # float,
-        # float,
+        float,
+        float,
+        float,
+        float,
+        float,
+        float,
         float,
         float,
         float,
@@ -247,12 +247,12 @@ def _graupel(
 
     # unpack carry
     (
-        # qv_kminus1,
-        # qc_kminus1,
-        # qi_kminus1,
-        # qr_kminus1,
-        # qs_kminus1,
-        # qg_kminus1,
+        qv_kminus1,
+        qc_kminus1,
+        qi_kminus1,
+        qr_kminus1,
+        qs_kminus1,
+        qg_kminus1,
         zpkr_kminus1,
         zpks_kminus1,
         zpkg_kminus1,
@@ -871,12 +871,12 @@ def _graupel(
     zqvsw_up = 0.0
 
     return (
-        # qv,
-        # qc,
-        # qi,
-        # qr,
-        # qs,
-        # qg,
+        qv,
+        qc,
+        qi,
+        qr,
+        qs,
+        qg,
         zpkr,
         zpks,
         zpkg,
@@ -1036,12 +1036,12 @@ def graupel(
         # lldiag_ttend,
         # lldiag_qtend,
         out=(
-            # qv,
-            # qc,
-            # qi,
-            # qr,
-            # qs,
-            # qg,
+            qv,
+            qc,
+            qi,
+            qr,
+            qs,
+            qg,
             zpkr,
             zpks,
             zpkg,
