@@ -724,7 +724,7 @@ class CppDefTemplate(Node):
             run_func_call=RunFuncCall(
                 funcname=self.stencil_name,
                 fields=self.fields,
-                domain_params=DomainParams(params=DOMAIN_PARAMS, typed=True),
+                domain_params=DomainParams(params=DOMAIN_PARAMS, typed=False),
             ),
             verify_func_call=VerifyFuncCall(
                 funcname=self.stencil_name, out_fields=fields["output"], suffix="before"
