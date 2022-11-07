@@ -91,7 +91,7 @@ def test_ctype_rendering_exception():
     with pytest.raises(BindingsRenderingException):
         stencil_info = get_stencil_info(bad_program)
         bindgen = PyBindGen(stencil_info, 128, 1)
-        [field.render_ctype("py") for field in bindgen.fields]
+        [field.renderer.render_ctype("py") for field in bindgen.fields]
 
 
 def test_sparse_field_sid_rendering_exception():
@@ -108,7 +108,7 @@ def test_sparse_field_sid_rendering_exception():
     with pytest.raises(BindingsRenderingException):
         stencil_info = get_stencil_info(reduction_prog)
         bindgen = PyBindGen(stencil_info, 128, 1)
-        [field.render_sid() for field in bindgen.fields]
+        [field.renderer.render_sid() for field in bindgen.fields]
 
 
 def test_scalar_sid_rendering_exception():
@@ -124,10 +124,10 @@ def test_scalar_sid_rendering_exception():
     bindgen = PyBindGen(stencil_info, 128, 1)
 
     with pytest.raises(BindingsRenderingException):
-        [field.render_sid() for field in bindgen.fields]
+        [field.renderer.render_sid() for field in bindgen.fields]
 
     with pytest.raises(BindingsRenderingException):
-        [field.render_stride_type() for field in bindgen.fields]
+        [field.renderer.render_stride_type() for field in bindgen.fields]
 
 
 def test_serialise_func_rendering_exception():
@@ -146,7 +146,7 @@ def test_serialise_func_rendering_exception():
     with pytest.raises(BindingsRenderingException):
         stencil_info = get_stencil_info(bad_program)
         bindgen = PyBindGen(stencil_info, 128, 1)
-        [field.render_serialise_func() for field in bindgen.fields]
+        [field.renderer.render_serialise_func() for field in bindgen.fields]
 
 
 def test_invalid_location_type():
