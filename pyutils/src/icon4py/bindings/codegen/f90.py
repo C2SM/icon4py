@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Union
 
 import eve
 from eve import Node
@@ -21,6 +21,14 @@ from eve.codegen import TemplatedGenerator
 
 from icon4py.bindings.entities import Field, Offset
 from icon4py.bindings.utils import format_fortran_code, write_string
+
+
+_DOMAIN_ARGS = [
+    "vertical_lower",
+    "vertical_upper",
+    "horizontal_lower",
+    "horizontal_upper",
+]
 
 
 class F90Generator(TemplatedGenerator):
@@ -49,208 +57,15 @@ class F90Generator(TemplatedGenerator):
     """
     )
 
-    F90FieldNames = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            {{field.name}}, & {% if not loop.last %}
-            {% else %}{% endif %}
-           {%- endfor -%}
-        """
-    )
-
-    F90FieldNamesBefore = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            {{field.name}}_before, & {% if not loop.last %}
-            {% else %}{% endif %}
-           {%- endfor -%}
-        """
-    )
-
-    F90TypedFieldNames = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            {{field.renderer.render_ctype('f90')}}, {{ field.renderer.render_dim_string() }}, target :: {{field.name}} {% if not loop.last %}
-            {% else %}{% endif %}
-           {%- endfor -%}
-        """
-    )
-
-    F90TypedFieldNamesBefore = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            {{field.renderer.render_ctype('f90')}}, {{ field.renderer.render_dim_string() }}, target :: {{field.name}}_before {% if not loop.last %}
-            {% else %}{% endif %}
-           {%- endfor -%}
-        """
-    )
-
-    F90RankedFieldNames = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            {{field.renderer.render_ctype('f90')}}, {{field.renderer.render_ranked_dim_string()}}, target :: {{field.name}} {% if not loop.last %}
-            {% else %}{% endif %}
-           {%- endfor -%}
-        """
-    )
-
-    F90RankedFieldNamesBefore = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            {{field.renderer.render_ctype('f90')}}, {{field.renderer.render_ranked_dim_string()}}, target :: {{field.name}}_before {% if not loop.last %}
-            {% else %}{% endif %}
-           {%- endfor -%}
-        """
-    )
-
-    F90ToleranceArgs = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-        {{field.name}}_rel_tol, &
-        {{field.name}}_abs_tol {% if not loop.last %}, &
-        {% else %} & {% endif %}
-        {% endfor -%}
-      """
-    )
-
-    F90ErrToleranceArgs = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-        {{field.name}}_rel_err_tol, &
-        {{field.name}}_abs_err_tol {% if not loop.last %}, &
-        {% else %} & {% endif %}
-        {%- endfor -%}
-      """
-    )
-
-    F90TypedToleranceArgs = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-          real(c_double), value, target :: {{field.name}}_rel_tol
-          real(c_double), value, target :: {{field.name}}_abs_tol
-        {% endfor -%}
-      """
-    )
-
-    F90TypedToleranceArgsOptional = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-          real(c_double), value, target, optional :: {{field.name}}_rel_tol
-          real(c_double), value, target, optional :: {{field.name}}_abs_tol
-        {% endfor -%}
-      """
-    )
-
-    F90ErrToleranceDeclarations = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-        real(c_double) :: {{field.name}}_rel_err_tol
-        real(c_double) :: {{field.name}}_abs_err_tol
-        {% endfor -%}
-        """
-    )
-
-    F90ToleranceConditionals = as_jinja(
-        """{%- for field in _this_node.fields -%}
-        if (present({{field.name}}_rel_tol)) then
-            {{field.name}}_rel_err_tol = {{field.name}}_rel_tol
-        else
-            {{field.name}}_rel_err_tol = DEFAULT_RELATIVE_ERROR_THRESHOLD
-        endif
-
-        if (present({{field.name}}_abs_tol)) then
-            {{field.name}}_abs_err_tol = {{field.name}}_abs_tol
-        else
-            {{field.name}}_abs_err_tol = DEFAULT_ABSOLUTE_ERROR_THRESHOLD
-        endif
-        {% endfor %}
-        """
-    )
-
-    F90OpenACCSection = as_jinja(
-        """{%- for field in _this_node.all_fields -%}
-        !$ACC {{field.name}}, &
-        {% endfor -%}
-        {%- for field in _this_node.out_fields -%}
-        !$ACC {{field.name}}_before{% if not loop.last %}, &
-        {% else %} & {% endif %}
-        {%- endfor -%}
-        """
-    )
-
-    F90KNames = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            {{field.name}}_kmax{% if not loop.last %}, &
-            {% else %} &
-            {% endif %}
-        {% endfor -%}
-        """
-    )
-
-    F90TypedKNamesOptional = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            integer(c_int), value, target, optional :: {{field.name}}_kmax
-        {% endfor -%}
-        """
-    )
-
-    F90TypedKNames = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            integer(c_int), value, target :: {{field.name}}_kmax
-        {% endfor -%}
-        """
-    )
-
-    F90VertDeclarations = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            integer(c_int) :: {{field.name}}_kvert_max
-        {% endfor -%}
-        """
-    )
-
-    F90VertNames = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-            {{field.name}}_kvert_max{% if not loop.last %}, &
-        {% else %} &
-        {% endif %}
-        {%- endfor -%}
-        """
-    )
-
-    F90VertConditionals = as_jinja(
-        """
-        {%- for field in _this_node.fields -%}
-        if (present({{field.name}}_kmax)) then
-            {{field.name}}_kvert_max = {{field.name}}_kmax
-        else
-            {{field.name}}_kvert_max = k_size
-        endif
-        {% endfor -%}
-        """
-    )
-
     F90RunFun = as_jinja(
         """\
         subroutine &
         run_{{stencil_name}}( &
-        {{field_names}}
-        vertical_lower, &
-        vertical_upper, &
-        horizontal_lower, &
-        horizontal_upper &
+        {{params}}
         ) bind(c)
         use, intrinsic :: iso_c_binding
         use openacc
-        {{typed_field_names}}
-        integer(c_int), value, target :: vertical_lower
-        integer(c_int), value, target :: vertical_upper
-        integer(c_int), value, target :: horizontal_lower
-        integer(c_int), value, target :: horizontal_upper
+        {{binds}}
         end subroutine
         """
     )
@@ -259,23 +74,11 @@ class F90Generator(TemplatedGenerator):
         """
         subroutine &
         run_and_verify_{{stencil_name}}( &
-        {{field_names}}
-        {{field_names_before}}
-        vertical_lower, &
-        vertical_upper, &
-        horizontal_lower, &
-        horizontal_upper, &
-        {{tolerance_args}}
+        {{params}}
         ) bind(c)
         use, intrinsic :: iso_c_binding
         use openacc
-        {{typed_field_names}}
-        {{typed_field_names_before}}
-        integer(c_int), value, target :: vertical_lower
-        integer(c_int), value, target :: vertical_upper
-        integer(c_int), value, target :: horizontal_lower
-        integer(c_int), value, target :: horizontal_upper
-        {{typed_tolerance_args}}
+        {{binds}}
         end subroutine
         """
     )
@@ -284,17 +87,11 @@ class F90Generator(TemplatedGenerator):
         """\
         subroutine &
         setup_{{stencil_name}}( &
-        mesh, &
-        k_size, &
-        stream, &
-        {{vert_names}}
+        {{params}}
         ) bind(c)
         use, intrinsic :: iso_c_binding
         use openacc
-        type(c_ptr), value, target :: mesh
-        integer(c_int), value, target :: k_size
-        integer(kind=acc_handle_kind), value, target :: stream
-        {{typed_k_names}}
+        {{binds}}
         end subroutine
         """
     )
@@ -303,24 +100,12 @@ class F90Generator(TemplatedGenerator):
         """\
         subroutine &
         wrap_run_{{stencil_name}}( &
-        {{field_names}}
-        {{field_names_before}}
-        vertical_lower, &
-        vertical_upper, &
-        horizontal_lower, &
-        horizontal_upper, &
-        {{tolerance_args}}
+        {{params}}
         )
         use, intrinsic :: iso_c_binding
         use openacc
-        {{ranked_field_names}}
-        {{ranked_field_names_before}}
-        integer(c_int), value, target :: vertical_lower
-        integer(c_int), value, target :: vertical_upper
-        integer(c_int), value, target :: horizontal_lower
-        integer(c_int), value, target :: horizontal_upper
-        {{typed_tolerance_args_optional}}
-        {{error_tolerance_declarations}}
+        {{binds}}
+        {{tol_decls}}
         integer(c_int) :: vertical_start
         integer(c_int) :: vertical_end
         integer(c_int) :: horizontal_start
@@ -329,29 +114,19 @@ class F90Generator(TemplatedGenerator):
         vertical_end = vertical_upper
         horizontal_start = horizontal_lower-1
         horizontal_end = horizontal_upper
-        {{tolerance_conditionals}}
+        {{conditionals}}
         !$ACC host_data use_device( &
-        {{openacc_section}}
+        {{openacc}}
         !$ACC )
         #ifdef __DSL_VERIFY
             call run_and_verify_{{stencil_name}} &
             ( &
-            {{field_names}}
-            {{field_names_before}}
-            vertical_start, &
-            vertical_end, &
-            horizontal_start, &
-            horizontal_end, &
-            {{err_tolerance_args}}
+            {{run_ver_params}}
             )
         #else
             call run_{{stencil_name}} &
             ( &
-            {{field_names}}
-            vertical_start, &
-            vertical_end, &
-            horizontal_start, &
-            horizontal_end &
+            {{run_params}}
             )
         #endif
         !$ACC end host_data
@@ -363,155 +138,371 @@ class F90Generator(TemplatedGenerator):
         """\
         subroutine &
         wrap_setup_{{stencil_name}}( &
-        mesh, &
-        k_size, &
-        stream, &
-        {{k_names}}
+        {{params}}
         )
         use, intrinsic :: iso_c_binding
         use openacc
-        type(c_ptr), value, target :: mesh
-        integer(c_int), value, target :: k_size
-        integer(kind=acc_handle_kind), value, target :: stream
-        {{typed_k_names_optional}}
-        {{vert_declarations}}
+        {{binds}}
+        {{vert_decls}}
         {{vert_conditionals}}
         call setup_{{stencil_name}} &
         ( &
-            mesh, &
-            k_size, &
-            stream, &
-            {{vert_names}}
+            {{setup_params}}
         )
         end subroutine
         """
     )
 
+    F90EntityList = as_jinja(
+        """
+        {%- for field in fields -%}
+        {{ field }}{% if not loop.last %}{{ line_end }}
+        {% else %}{{ line_end_last }}{% endif %}
+        {%- endfor -%}
+        """
+    )
 
-class F90FieldContainer(Node):
-    fields: Sequence[Field]
+    F90Field = as_jinja("{{ name }}{% if suffix %}_{{ suffix }}{% endif %}")
+
+    F90OpenACCField = as_jinja(
+        "!$ACC    {{ name }}{% if suffix %}_{{ suffix }}{% endif %}"
+    )
+
+    F90TypedField = as_jinja(
+        "{{ dtype }}, {% if dims %}{{ dims }},{% endif %} target {% if _this_node.optional %} , optional {% endif %}:: {{ name }}{% if suffix %}_{{ suffix }}{% endif %} "
+    )
+
+    F90Conditional = as_jinja(
+        """if ({{ predicate }}) then
+         {{ if_branch }}
+      else
+         {{ else_branch }}
+      end if"""
+    )
 
 
-class F90FieldNames(F90FieldContainer):
+class F90Field(eve.Node):
+    name: str
+    suffix: str = ""
+
+
+class F90OpenACCField(F90Field):
     ...
 
 
-class F90FieldNamesBefore(F90FieldContainer):
-    ...
+class F90TypedField(F90Field):
+    dtype: str
+    dims: str = ""
+    optional: bool = False
 
 
-class F90TypedFieldNames(F90FieldContainer):
-    ...
+class F90Conditional(eve.Node):
+    predicate: str
+    if_branch: str
+    else_branch: str
 
 
-class F90TypedFieldNamesBefore(F90FieldContainer):
-    ...
+class F90EntityList(eve.Node):
+    fields: Sequence[Union[F90Field, F90Conditional]]
+    line_end: str = ""
+    line_end_last: str = ""
 
 
-class F90RankedFieldNames(F90FieldContainer):
-    ...
-
-
-class F90RankedFieldNamesBefore(F90FieldContainer):
-    ...
-
-
-class F90ToleranceArgs(F90FieldContainer):
-    ...
-
-
-class F90ErrToleranceArgs(F90FieldContainer):
-    ...
-
-
-class F90TypedToleranceArgs(F90FieldContainer):
-    ...
-
-
-class F90TypedToleranceArgsOptional(F90FieldContainer):
-    ...
-
-
-class F90ErrToleranceDeclarations(F90FieldContainer):
-    ...
-
-
-class F90ToleranceConditionals(F90FieldContainer):
-    ...
-
-
-class F90KNames(F90FieldContainer):
-    ...
-
-
-class F90TypedKNames(F90FieldContainer):
-    ...
-
-
-class F90TypedKNamesOptional(F90FieldContainer):
-    ...
-
-
-class F90VertDeclarations(F90FieldContainer):
-    ...
-
-
-class F90VertNames(F90FieldContainer):
-    ...
-
-
-class F90VertConditionals(F90FieldContainer):
-    ...
-
-
-class F90OpenACCSection(Node):
+class F90RunFun(eve.Node):
+    stencil_name: str
     all_fields: Sequence[Field]
     out_fields: Sequence[Field]
 
+    params: F90EntityList = eve.datamodels.field(init=False)
+    binds: F90EntityList = eve.datamodels.field(init=False)
 
-class F90RunFun(Node):
+    def __post_init__(self):
+        param_fields = [F90Field(name=field.name) for field in self.all_fields] + [
+            F90Field(name=name) for name in _DOMAIN_ARGS
+        ]
+        bind_fields = [
+            F90TypedField(
+                name=field.name,
+                dtype=field.renderer.render_ctype("f90"),
+                dims=field.renderer.render_dim_string(),
+            )
+            for field in self.all_fields
+        ] + [
+            F90TypedField(name=name, dtype="integer(c_int)", dims="value")
+            for name in _DOMAIN_ARGS
+        ]
+
+        self.params = F90EntityList(
+            fields=param_fields, line_end=", &", line_end_last=" &"
+        )
+        self.binds = F90EntityList(fields=bind_fields)
+
+
+class F90RunAndVerifyFun(eve.Node):
     stencil_name: str
-    field_names: F90FieldNames
-    typed_field_names: F90TypedFieldNames
+    all_fields: Sequence[Field]
+    out_fields: Sequence[Field]
 
+    params: F90EntityList = eve.datamodels.field(init=False)
+    binds: F90EntityList = eve.datamodels.field(init=False)
 
-class F90RunAndVerifyFun(Node):
-    stencil_name: str
-    field_names: F90FieldNames
-    field_names_before: F90FieldNamesBefore
-    tolerance_args: F90ToleranceArgs
-    typed_field_names: F90TypedFieldNames
-    typed_field_names_before: F90TypedFieldNamesBefore
-    typed_tolerance_args: F90TypedToleranceArgs
+    def __post_init__(self):
+        param_fields = (
+            [F90Field(name=field.name) for field in self.all_fields]
+            + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
+            + [F90Field(name=name) for name in _DOMAIN_ARGS]
+        )
+        bind_fields = (
+            [
+                F90TypedField(
+                    name=field.name,
+                    dtype=field.renderer.render_ctype("f90"),
+                    dims=field.renderer.render_dim_string(),
+                )
+                for field in self.all_fields
+            ]
+            + [
+                F90TypedField(
+                    name=field.name,
+                    suffix="before",
+                    dtype=field.renderer.render_ctype("f90"),
+                    dims=field.renderer.render_dim_string(),
+                )
+                for field in self.out_fields
+            ]
+            + [
+                F90TypedField(name=name, dtype="integer(c_int)", dims="value")
+                for name in _DOMAIN_ARGS
+            ]
+        )
+
+        for field in self.out_fields:
+            param_fields += [
+                F90Field(name=field.name, suffix=s) for s in ["rel_tol", "abs_tol"]
+            ]
+            bind_fields += [
+                F90TypedField(
+                    name=field.name, suffix=s, dtype="real(c_double)", dims="value"
+                )
+                for s in ["rel_tol", "abs_tol"]
+            ]
+
+        self.params = F90EntityList(
+            fields=param_fields, line_end=", &", line_end_last=" &"
+        )
+        self.binds = F90EntityList(fields=bind_fields)
 
 
 class F90SetupFun(Node):
     stencil_name: str
-    vert_names: F90KNames
-    typed_k_names: F90TypedKNames
+    out_fields: Sequence[Field]
+
+    params: F90EntityList = eve.datamodels.field(init=False)
+    binds: F90EntityList = eve.datamodels.field(init=False)
+
+    def __post_init__(self):
+        param_fields = [
+            F90Field(name=name) for name in ["mesh", "k_size", "stream"]
+        ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
+        bind_fields = [
+            F90TypedField(name="mesh", dtype="type(c_ptr)", dims="value"),
+            F90TypedField(name="k_size", dtype="integer(c_int)", dims="value"),
+            F90TypedField(
+                name="stream", dtype="integer(kind=acc_handle_kind)", dims="value"
+            ),
+        ] + [
+            F90TypedField(
+                name=field.name, dtype="integer(c_int)", dims="value", suffix="kmax"
+            )
+            for field in self.out_fields
+        ]
+
+        self.params = F90EntityList(
+            fields=param_fields, line_end=", &", line_end_last=" &"
+        )
+        self.binds = F90EntityList(fields=bind_fields)
 
 
 class F90WrapRunFun(Node):
     stencil_name: str
-    field_names: F90FieldNames
-    field_names_before: F90FieldNamesBefore
-    tolerance_args: F90ToleranceArgs
-    ranked_field_names: F90RankedFieldNames
-    ranked_field_names_before: F90RankedFieldNamesBefore
-    typed_tolerance_args_optional: F90TypedToleranceArgsOptional
-    error_tolerance_declarations: F90ErrToleranceDeclarations
-    tolerance_conditionals: F90ToleranceConditionals
-    openacc_section: F90OpenACCSection
-    err_tolerance_args: F90ErrToleranceArgs
+    all_fields: Sequence[Field]
+    out_fields: Sequence[Field]
+
+    params: F90EntityList = eve.datamodels.field(init=False)
+    binds: F90EntityList = eve.datamodels.field(init=False)
+    conditionals: F90EntityList = eve.datamodels.field(init=False)
+    openacc: F90EntityList = eve.datamodels.field(init=False)
+    tol_decls: F90EntityList = eve.datamodels.field(init=False)
+    run_ver_params: F90EntityList = eve.datamodels.field(init=False)
+    run_params: F90EntityList = eve.datamodels.field(init=False)
+
+    def __post_init__(self):
+        param_fields = (
+            [F90Field(name=field.name) for field in self.all_fields]
+            + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
+            + [F90Field(name=name) for name in _DOMAIN_ARGS]
+        )
+        bind_fields = (
+            [
+                F90TypedField(
+                    name=field.name,
+                    dtype=field.renderer.render_ctype("f90"),
+                    dims=field.renderer.render_ranked_dim_string(),
+                )
+                for field in self.all_fields
+            ]
+            + [
+                F90TypedField(
+                    name=field.name,
+                    suffix="before",
+                    dtype=field.renderer.render_ctype("f90"),
+                    dims=field.renderer.render_ranked_dim_string(),
+                )
+                for field in self.out_fields
+            ]
+            + [
+                F90TypedField(name=name, dtype="integer(c_int)", dims="value")
+                for name in _DOMAIN_ARGS
+            ]
+        )
+        tol_fields = [
+            F90TypedField(name=field.name, suffix=s, dtype="real(c_double)")
+            for s in ["rel_err_tol", "abs_err_tol"]
+            for field in self.out_fields
+        ]
+        cond_fields = [
+            F90Conditional(
+                predicate=f"present({field.name}_{short}_tol)",
+                if_branch=f"{field.name}_{short}_err_tol = {field.name}_{short}_tol",
+                else_branch=f"{field.name}_{short}_err_tol = DEFAULT_{long}_ERROR_THRESHOLD",
+            )
+            for short, long in [("rel", "RELATIVE"), ("abs", "ABSOLUTE")]
+            for field in self.out_fields
+        ]
+        open_acc_fields = [
+            F90OpenACCField(name=field.name)
+            for field in self.all_fields
+            if field.rank() != 0
+        ] + [
+            F90OpenACCField(name=field.name, suffix="before")
+            for field in self.out_fields
+            if field.rank() != 0
+        ]
+        run_ver_param_fields = (
+            [F90Field(name=field.name) for field in self.all_fields]
+            + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
+            + [
+                F90Field(name=name)
+                for name in [
+                    "vertical_start",
+                    "vertical_end",
+                    "horizontal_start",
+                    "horizontal_end",
+                ]
+            ]
+        )
+        run_param_fields = [F90Field(name=field.name) for field in self.all_fields] + [
+            F90Field(name=name)
+            for name in [
+                "vertical_start",
+                "vertical_end",
+                "horizontal_start",
+                "horizontal_end",
+            ]
+        ]
+
+        for field in self.out_fields:
+            param_fields += [
+                F90Field(name=field.name, suffix=s) for s in ["rel_tol", "abs_tol"]
+            ]
+            bind_fields += [
+                F90TypedField(
+                    name=field.name,
+                    suffix=s,
+                    dtype="real(c_double)",
+                    dims="value",
+                    optional=True,
+                )
+                for s in ["rel_tol", "abs_tol"]
+            ]
+            run_ver_param_fields += [
+                F90Field(name=field.name, suffix=s)
+                for s in ["rel_err_tol", "abs_err_tol"]
+            ]
+
+        self.params = F90EntityList(
+            fields=param_fields, line_end=", &", line_end_last=" &"
+        )
+        self.binds = F90EntityList(fields=bind_fields)
+        self.tol_decls = F90EntityList(fields=tol_fields)
+        self.conditionals = F90EntityList(fields=cond_fields)
+        self.openacc = F90EntityList(
+            fields=open_acc_fields, line_end=", &", line_end_last=" &"
+        )
+        self.run_ver_params = F90EntityList(
+            fields=run_ver_param_fields, line_end=", &", line_end_last=" &"
+        )
+        self.run_params = F90EntityList(
+            fields=run_param_fields, line_end=", &", line_end_last=" &"
+        )
 
 
 class F90WrapSetupFun(Node):
     stencil_name: str
-    k_names: F90KNames
-    typed_k_names_optional: F90TypedKNamesOptional
-    vert_declarations: F90VertDeclarations
-    vert_conditionals: F90VertConditionals
-    vert_names: F90VertNames
+    all_fields: Sequence[Field]
+    out_fields: Sequence[Field]
+
+    params: F90EntityList = eve.datamodels.field(init=False)
+    binds: F90EntityList = eve.datamodels.field(init=False)
+    vert_decls: F90EntityList = eve.datamodels.field(init=False)
+    vert_conditionals: F90EntityList = eve.datamodels.field(init=False)
+    setup_params: F90EntityList = eve.datamodels.field(init=False)
+
+    def __post_init__(self):
+        param_fields = [
+            F90Field(name=name) for name in ["mesh", "k_size", "stream"]
+        ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
+        bind_fields = [
+            F90TypedField(name="mesh", dtype="type(c_ptr)", dims="value"),
+            F90TypedField(name="k_size", dtype="integer(c_int)", dims="value"),
+            F90TypedField(
+                name="stream", dtype="integer(kind=acc_handle_kind)", dims="value"
+            ),
+        ] + [
+            F90TypedField(
+                name=field.name,
+                dtype="integer(c_int)",
+                dims="value",
+                suffix="kmax",
+                optional=True,
+            )
+            for field in self.out_fields
+        ]
+        vert_fields = [
+            F90TypedField(name=field.name, suffix="kvert_max", dtype="integer(c_int)")
+            for field in self.out_fields
+        ]
+        vert_conditionals_fields = [
+            F90Conditional(
+                predicate=f"present({field.name}_kmax)",
+                if_branch=f"{field.name}_kvert_max = {field.name}_kmax",
+                else_branch=f"{field.name}_kvert_max = k_size",
+            )
+            for field in self.out_fields
+        ]
+        setup_params_fields = [
+            F90Field(name=name) for name in ["mesh", "k_size", "stream"]
+        ] + [F90Field(name=field.name, suffix="kvert_max") for field in self.out_fields]
+
+        self.params = F90EntityList(
+            fields=param_fields, line_end=", &", line_end_last=" &"
+        )
+        self.binds = F90EntityList(fields=bind_fields)
+        self.vert_decls = F90EntityList(fields=vert_fields)
+        self.vert_conditionals = F90EntityList(fields=vert_conditionals_fields)
+        self.setup_params = F90EntityList(
+            fields=setup_params_fields, line_end=", &", line_end_last=" &"
+        )
 
 
 class F90File(Node):
@@ -531,52 +522,31 @@ class F90File(Node):
 
         self.run_fun = F90RunFun(
             stencil_name=self.stencil_name,
-            field_names=F90FieldNames(fields=all_fields),
-            typed_field_names=F90TypedFieldNames(fields=all_fields),
+            all_fields=all_fields,
+            out_fields=out_fields,
         )
 
         self.run_and_verify_fun = F90RunAndVerifyFun(
             stencil_name=self.stencil_name,
-            field_names=F90FieldNames(fields=all_fields),
-            field_names_before=F90FieldNamesBefore(fields=out_fields),
-            tolerance_args=F90ToleranceArgs(fields=out_fields),
-            typed_field_names=F90TypedFieldNames(fields=all_fields),
-            typed_field_names_before=F90TypedFieldNamesBefore(fields=out_fields),
-            typed_tolerance_args=F90TypedToleranceArgs(fields=out_fields),
+            all_fields=all_fields,
+            out_fields=out_fields,
         )
 
         self.setup_fun = F90SetupFun(
             stencil_name=self.stencil_name,
-            vert_names=F90KNames(fields=out_fields),
-            typed_k_names=F90TypedKNames(fields=out_fields),
+            out_fields=out_fields,
         )
 
         self.wrap_run_fun = F90WrapRunFun(
             stencil_name=self.stencil_name,
-            field_names=F90FieldNames(fields=all_fields),
-            field_names_before=F90FieldNamesBefore(fields=out_fields),
-            tolerance_args=F90ToleranceArgs(fields=out_fields),
-            ranked_field_names=F90RankedFieldNames(fields=all_fields),
-            ranked_field_names_before=F90RankedFieldNamesBefore(fields=out_fields),
-            typed_tolerance_args_optional=F90TypedToleranceArgsOptional(
-                fields=out_fields
-            ),
-            error_tolerance_declarations=F90ErrToleranceDeclarations(fields=out_fields),
-            tolerance_conditionals=F90ToleranceConditionals(fields=out_fields),
-            openacc_section=F90OpenACCSection(
-                all_fields=[field for field in all_fields if field.rank() != 0],
-                out_fields=[field for field in out_fields if field.rank() != 0],
-            ),
-            err_tolerance_args=F90ErrToleranceArgs(fields=out_fields),
+            all_fields=all_fields,
+            out_fields=out_fields,
         )
 
         self.wrap_setup_fun = F90WrapSetupFun(
             stencil_name=self.stencil_name,
-            k_names=F90KNames(fields=out_fields),
-            typed_k_names_optional=F90TypedKNamesOptional(fields=out_fields),
-            vert_declarations=F90VertDeclarations(fields=out_fields),
-            vert_conditionals=F90VertConditionals(fields=out_fields),
-            vert_names=F90VertNames(fields=out_fields),
+            all_fields=all_fields,
+            out_fields=out_fields,
         )
 
 

@@ -174,6 +174,3 @@ def generate_cpp_header(stencil_name: str, fields: list[Field], outpath: Path):
     header = CppHeaderFile(stencil_name=stencil_name, fields=fields)
     source = format_source("cpp", CppHeaderGenerator.apply(header), style="LLVM")
     write_string(source, outpath, f"{stencil_name}.h")
-
-
-# todo: put horizontal bounds into a node
