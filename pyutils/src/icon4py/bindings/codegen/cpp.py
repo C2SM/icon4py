@@ -219,17 +219,17 @@ class CppDefGenerator(TemplatedGenerator):
         static void setup(
         const dawn::GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream,
         {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_kSize
+        const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
         ,
         {%- endif -%}
         {%- endfor %}) {
         mesh_ = GpuTriMesh(mesh);
-        kSize_ = kSize;
+        {{ suffix }}_ = {{ suffix }};
         is_setup_ = true;
         stream_ = stream;
         {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_kSize_ = {{ field.name }}_kSize;
+        {{ field.name }}_{{ suffix }}_ = {{ field.name }}_{{ suffix }};
         {%- endfor -%}
         }
         """
@@ -356,7 +356,7 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_dsl,
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
         const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
@@ -441,7 +441,7 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_before,
+        {{ field.name }}_{{ suffix }},
         {{ field.name }},
         {%- endfor -%}
         {%- for field in _this_node.out_fields -%}
@@ -476,7 +476,7 @@ class CppDefGenerator(TemplatedGenerator):
         void setup_{{funcname}}(
         dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
         {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_k_size
+        const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
         ,
         {%- endif -%}
@@ -489,7 +489,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{ func_declaration }} {
         dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream,
         {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_k_size
+        {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
         ,
         {%- endif -%}
@@ -573,8 +573,9 @@ class RunFunc(Node):
     run_func_declaration: CppRunFuncDeclaration
 
 
-class MetricsSerialisation(CppVerifyFuncDeclaration):
-    ...
+class MetricsSerialisation(Node):
+    funcname: str
+    out_fields: Sequence[Field]
 
 
 class VerifyFunc(Node):
@@ -688,7 +689,7 @@ class CppDefTemplate(Node):
                 fields=self.fields, out_fields=fields["output"]
             ),
             setup_func=StencilClassSetupFunc(
-                funcname=self.stencil_name, out_fields=fields["output"]
+                funcname=self.stencil_name, out_fields=fields["output"], suffix="kSize"
             ),
         )
 
@@ -703,7 +704,7 @@ class CppDefTemplate(Node):
         self.verify_func = VerifyFunc(
             funcname=self.stencil_name,
             verify_func_declaration=CppVerifyFuncDeclaration(
-                funcname=self.stencil_name, out_fields=fields["output"]
+                funcname=self.stencil_name, out_fields=fields["output"], suffix="dsl"
             ),
             metrics_serialisation=MetricsSerialisation(
                 funcname=self.stencil_name, out_fields=fields["output"]
@@ -716,10 +717,11 @@ class CppDefTemplate(Node):
                 funcname=self.stencil_name,
                 fields=self.fields,
                 out_fields=fields["output"],
+                suffix="before",
             ),
             run_func_call=RunFuncCall(funcname=self.stencil_name, fields=self.fields),
             verify_func_call=VerifyFuncCall(
-                funcname=self.stencil_name, out_fields=fields["output"]
+                funcname=self.stencil_name, out_fields=fields["output"], suffix="before"
             ),
         )
 
@@ -727,8 +729,9 @@ class CppDefTemplate(Node):
             funcname=self.stencil_name,
             out_fields=fields["output"],
             func_declaration=CppSetupFuncDeclaration(
-                funcname=self.stencil_name, out_fields=fields["output"]
+                funcname=self.stencil_name, out_fields=fields["output"], suffix="k_size"
             ),
+            suffix="k_size",
         )
 
         self.free_func = FreeFunc(funcname=self.stencil_name)
