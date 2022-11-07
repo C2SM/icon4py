@@ -22,6 +22,7 @@ from eve.codegen import TemplatedGenerator
 from icon4py.bindings.entities import Field, Offset
 from icon4py.bindings.utils import format_fortran_code, write_string
 
+
 _DOMAIN_ARGS = [
     "vertical_lower",
     "vertical_upper",
@@ -64,7 +65,7 @@ class F90Generator(TemplatedGenerator):
         ) bind(c)
         use, intrinsic :: iso_c_binding
         use openacc
-        {{binds}}        
+        {{binds}}
         end subroutine
         """
     )
@@ -140,7 +141,7 @@ class F90Generator(TemplatedGenerator):
         {{params}}
         )
         use, intrinsic :: iso_c_binding
-        use openacc        
+        use openacc
         {{binds}}
         {{vert_decls}}
         {{vert_conditionals}}
@@ -168,13 +169,13 @@ class F90Generator(TemplatedGenerator):
     )
 
     F90TypedField = as_jinja(
-        "{{ type }}, {% if dims %}{{ dims }},{% endif %} target {% if _this_node.optional %} , optional {% endif %}:: {{ name }}{% if suffix %}_{{ suffix }}{% endif %} "
+        "{{ dtype }}, {% if dims %}{{ dims }},{% endif %} target {% if _this_node.optional %} , optional {% endif %}:: {{ name }}{% if suffix %}_{{ suffix }}{% endif %} "
     )
 
     F90Conditional = as_jinja(
         """if ({{ predicate }}) then
          {{ if_branch }}
-      else 
+      else
          {{ else_branch }}
       end if"""
     )
@@ -190,7 +191,7 @@ class F90OpenACCField(F90Field):
 
 
 class F90TypedField(F90Field):
-    type: str
+    dtype: str
     dims: str = ""
     optional: bool = False
 
@@ -222,12 +223,12 @@ class F90RunFun(eve.Node):
         bind_fields = [
             F90TypedField(
                 name=field.name,
-                type=field.renderer.render_ctype("f90"),
+                dtype=field.renderer.render_ctype("f90"),
                 dims=field.renderer.render_dim_string(),
             )
             for field in self.all_fields
         ] + [
-            F90TypedField(name=name, type="integer(c_int)", dims="value")
+            F90TypedField(name=name, dtype="integer(c_int)", dims="value")
             for name in _DOMAIN_ARGS
         ]
 
@@ -255,7 +256,7 @@ class F90RunAndVerifyFun(eve.Node):
             [
                 F90TypedField(
                     name=field.name,
-                    type=field.renderer.render_ctype("f90"),
+                    dtype=field.renderer.render_ctype("f90"),
                     dims=field.renderer.render_dim_string(),
                 )
                 for field in self.all_fields
@@ -264,13 +265,13 @@ class F90RunAndVerifyFun(eve.Node):
                 F90TypedField(
                     name=field.name,
                     suffix="before",
-                    type=field.renderer.render_ctype("f90"),
+                    dtype=field.renderer.render_ctype("f90"),
                     dims=field.renderer.render_dim_string(),
                 )
                 for field in self.out_fields
             ]
             + [
-                F90TypedField(name=name, type="integer(c_int)", dims="value")
+                F90TypedField(name=name, dtype="integer(c_int)", dims="value")
                 for name in _DOMAIN_ARGS
             ]
         )
@@ -281,7 +282,7 @@ class F90RunAndVerifyFun(eve.Node):
             ]
             bind_fields += [
                 F90TypedField(
-                    name=field.name, suffix=s, type="real(c_double)", dims="value"
+                    name=field.name, suffix=s, dtype="real(c_double)", dims="value"
                 )
                 for s in ["rel_tol", "abs_tol"]
             ]
@@ -300,18 +301,18 @@ class F90SetupFun(Node):
     binds: F90EntityList = eve.datamodels.field(init=False)
 
     def __post_init__(self):
-        param_fields = [F90Field(name=name) for name in ["mesh", "k_size", "stream"]] + [
-            F90Field(name=field.name, suffix="kmax") for field in self.out_fields
-        ]
+        param_fields = [
+            F90Field(name=name) for name in ["mesh", "k_size", "stream"]
+        ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
         bind_fields = [
-            F90TypedField(name="mesh", type="type(c_ptr)", dims="value"),
-            F90TypedField(name="k_size", type="integer(c_int)", dims="value"),
+            F90TypedField(name="mesh", dtype="type(c_ptr)", dims="value"),
+            F90TypedField(name="k_size", dtype="integer(c_int)", dims="value"),
             F90TypedField(
-                name="stream", type="integer(kind=acc_handle_kind)", dims="value"
+                name="stream", dtype="integer(kind=acc_handle_kind)", dims="value"
             ),
         ] + [
             F90TypedField(
-                name=field.name, type="integer(c_int)", dims="value", suffix="kmax"
+                name=field.name, dtype="integer(c_int)", dims="value", suffix="kmax"
             )
             for field in self.out_fields
         ]
@@ -345,7 +346,7 @@ class F90WrapRunFun(Node):
             [
                 F90TypedField(
                     name=field.name,
-                    type=field.renderer.render_ctype("f90"),
+                    dtype=field.renderer.render_ctype("f90"),
                     dims=field.renderer.render_ranked_dim_string(),
                 )
                 for field in self.all_fields
@@ -354,28 +355,28 @@ class F90WrapRunFun(Node):
                 F90TypedField(
                     name=field.name,
                     suffix="before",
-                    type=field.renderer.render_ctype("f90"),
+                    dtype=field.renderer.render_ctype("f90"),
                     dims=field.renderer.render_ranked_dim_string(),
                 )
                 for field in self.out_fields
             ]
             + [
-                F90TypedField(name=name, type="integer(c_int)", dims="value")
+                F90TypedField(name=name, dtype="integer(c_int)", dims="value")
                 for name in _DOMAIN_ARGS
             ]
         )
         tol_fields = [
-            F90TypedField(name=field.name, suffix=s, type="real(c_double)")
+            F90TypedField(name=field.name, suffix=s, dtype="real(c_double)")
             for s in ["rel_err_tol", "abs_err_tol"]
             for field in self.out_fields
         ]
         cond_fields = [
             F90Conditional(
-                predicate=f"present({field.name}_{s}_tol)",
-                if_branch=f"{field.name}_{s}_err_tol = {field.name}_{s}_tol",
-                else_branch=f"{field.name}_{s}_err_tol = DEFAULT_RELATIVE_ERROR_THRESHOLD",
+                predicate=f"present({field.name}_{short}_tol)",
+                if_branch=f"{field.name}_{short}_err_tol = {field.name}_{short}_tol",
+                else_branch=f"{field.name}_{short}_err_tol = DEFAULT_{long}_ERROR_THRESHOLD",
             )
-            for s in ["rel", "abs"]
+            for short, long in [("rel", "RELATIVE"), ("abs", "ABSOLUTE")]
             for field in self.out_fields
         ]
         open_acc_fields = [
@@ -383,7 +384,7 @@ class F90WrapRunFun(Node):
             for field in self.all_fields
             if field.rank() != 0
         ] + [
-            F90OpenACCField(name=field.name)
+            F90OpenACCField(name=field.name, suffix="before")
             for field in self.out_fields
             if field.rank() != 0
         ]
@@ -418,7 +419,7 @@ class F90WrapRunFun(Node):
                 F90TypedField(
                     name=field.name,
                     suffix=s,
-                    type="real(c_double)",
+                    dtype="real(c_double)",
                     dims="value",
                     optional=True,
                 )
@@ -458,19 +459,19 @@ class F90WrapSetupFun(Node):
     setup_params: F90EntityList = eve.datamodels.field(init=False)
 
     def __post_init__(self):
-        param_fields = [F90Field(name=name) for name in ["mesh", "k_size", "stream"]] + [
-            F90Field(name=field.name, suffix="kmax") for field in self.out_fields
-        ]
+        param_fields = [
+            F90Field(name=name) for name in ["mesh", "k_size", "stream"]
+        ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
         bind_fields = [
-            F90TypedField(name="mesh", type="type(c_ptr)", dims="value"),
-            F90TypedField(name="k_size", type="integer(c_int)", dims="value"),
+            F90TypedField(name="mesh", dtype="type(c_ptr)", dims="value"),
+            F90TypedField(name="k_size", dtype="integer(c_int)", dims="value"),
             F90TypedField(
-                name="stream", type="integer(kind=acc_handle_kind)", dims="value"
+                name="stream", dtype="integer(kind=acc_handle_kind)", dims="value"
             ),
         ] + [
             F90TypedField(
                 name=field.name,
-                type="integer(c_int)",
+                dtype="integer(c_int)",
                 dims="value",
                 suffix="kmax",
                 optional=True,
@@ -478,7 +479,7 @@ class F90WrapSetupFun(Node):
             for field in self.out_fields
         ]
         vert_fields = [
-            F90TypedField(name=field.name, suffix="kvert_max", type="integer(c_int)")
+            F90TypedField(name=field.name, suffix="kvert_max", dtype="integer(c_int)")
             for field in self.out_fields
         ]
         vert_conditionals_fields = [
