@@ -1,5 +1,5 @@
 # VCS
--e git+https://github.com/BenWeber42/gt4py.git@t4py-scalar-if#egg=gt4py-functional
+-e git+https://github.com/BenWeber42/gt4py.git@gt4py-scalar-if#egg=gt4py-functional
 
 # PyPI
 flake8>=3.8
