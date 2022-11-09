@@ -26,7 +26,9 @@ import numpy as np
 try:
     import serialbox as ser
 except ImportError:
-    os.system("../../install_serialbox.sh")
+    os.system(
+        "git clone --recursive https://github.com/GridTools/serialbox; CC=`which gcc` CXX=`which g++` pip install serialbox/src/serialbox-python"
+    )
     import serialbox as ser
 
 from functools import reduce
@@ -47,7 +49,9 @@ NUM_MPI_RANKS = 1  # TODO: Set to 6
 def test_graupel_serialized_data():
     """Test graupel() against refernce data serialized from a FORTRAN run."""
     if not os.path.exists(SER_DATA):
-        os.system("./get_data.sh")
+        os.system(
+            "wget -r --no-parent -nH -nc --cut-dirs=3 -q ftp://iacftp.ethz.ch/pub_read/davidle/ser_data_icon_graupel/ser_data/"
+        )
 
     for rank in range(NUM_MPI_RANKS):
         print("=======================")
