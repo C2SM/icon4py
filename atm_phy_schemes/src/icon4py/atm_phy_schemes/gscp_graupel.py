@@ -32,6 +32,9 @@ TODO: Removed Features
 3. iautocon == 0 (Kessler)
 4. l_cv = False. Now, we always use cv instead of cp
 
+TODO: Currently unsupported features:
+1. lldiag_ttend = True, lldiag_qtend = True (Need IF statment for return in GT4Py)
+
 TODO: David
     1. Test if runnign with GPU backend. normalize
     2. Replace exp(A * log(B)) by B**A. Needs performance check and maybe optimization pass.
@@ -45,6 +48,7 @@ TODO: David
 TODO: GT4Py team
     1. Call field operators from scan --> sat_pres_ice
     2. Re-interate into FORTRAN
+    3. IF statements in return
 """
 # DL. Set somewhere else
 import sys
@@ -70,7 +74,7 @@ from icon4py.shared.mo_physical_constants import phy_const
 
 
 # DL TODO
-sys.setrecursionlimit(3000)
+sys.setrecursionlimit(2500)
 
 
 class GraupelParametersAndConfiguration(FrozenNamespace):
@@ -85,8 +89,8 @@ class GraupelParametersAndConfiguration(FrozenNamespace):
     lthermo_water_const = True
 
     # DL: TODO Pass explicitly
-    lldiag_ttend = True
-    lldiag_ttend = True
+    lldiag_ttend = False
+    lldiag_qtend = False
 
     # Local Parameters
     zcsg = 0.5  # coefficient for snow-graupel conversion by riming
@@ -373,154 +377,120 @@ def _graupel(
     # qs_prepare:
     # -------------------------------------------------------------------------
 
-    # DL: TODO Refactor: Move into function
-    ztc = maximum(minimum(tg - phy_const.tmelt, 0.0), -40.0)
-    nnr = 3.0
+    if llqs:
+        # DL: TODO Refactor: Move computation of zn0s into function
+        ztc = maximum(minimum(tg - phy_const.tmelt, 0.0), -40.0)
+        nnr = 3.0
 
-    hlp = (
-        5.065339
-        - 0.062659 * ztc
-        - 3.032362 * nnr
-        + 0.029469 * ztc * nnr
-        - 0.000285 * ztc**2
-        + 0.312550 * nnr**2
-        + 0.000204 * ztc**2 * nnr
-        + 0.003199 * ztc * nnr**2
-        + 0.000000 * ztc**3
-        - 0.015952 * nnr**3
-    )
-    alf = exp(hlp * zlog_10)
-    bet = (
-        0.476221
-        - 0.015896 * ztc
-        + 0.165977 * nnr
-        + 0.007468 * ztc * nnr
-        - 0.000141 * ztc**2
-        + 0.060366 * nnr**2
-        + 0.000079 * ztc**2 * nnr
-        + 0.000594 * ztc * nnr**2
-        + 0.000000 * ztc**3
-        - 0.003577 * nnr**3
-    )
-
-    # Here is the exponent bms=2.0 hardwired! not ideal! (Uli Blahak)
-    m2s = qsg * rhog / gscp_data.zams  # UB rho added as bugfix
-    m3s = alf * exp(bet * log(m2s))
-
-    hlp = gscp_data.zn0s1 * exp(gscp_data.zn0s2 * ztc)
-    zn0s = 13.50 * m2s * (m2s / m3s) ** 3  # DL: **3 super bad for validation
-    zn0s = maximum(zn0s, 0.5 * hlp)
-    zn0s = minimum(zn0s, 1.0e2 * hlp)
-    zn0s = minimum(zn0s, 1.0e9)
-    zn0s = maximum(zn0s, 1.0e6)
-
-    (zcrim, zcagg, zbsdep, zvz0s) = (
-        (
-            gscp_coefficients.ccsrim * zn0s,
-            gscp_coefficients.ccsagg * zn0s,
-            gscp_coefficients.ccsdep * sqrt(gscp_coefficients.v0snow),
-            gscp_coefficients.ccsvel * exp(gscp_coefficients.ccsvxp * log(zn0s)),
+        hlp = (
+            5.065339
+            - 0.062659 * ztc
+            - 3.032362 * nnr
+            + 0.029469 * ztc * nnr
+            - 0.000285 * ztc**2
+            + 0.312550 * nnr**2
+            + 0.000204 * ztc**2 * nnr
+            + 0.003199 * ztc * nnr**2
+            + 0.000000 * ztc**3
+            - 0.015952 * nnr**3
         )
-        if llqs
-        else (0.0, 0.0, 0.0, 0.0)
-    )
+        alf = exp(hlp * zlog_10)
+        bet = (
+            0.476221
+            - 0.015896 * ztc
+            + 0.165977 * nnr
+            + 0.007468 * ztc * nnr
+            - 0.000141 * ztc**2
+            + 0.060366 * nnr**2
+            + 0.000079 * ztc**2 * nnr
+            + 0.000594 * ztc * nnr**2
+            + 0.000000 * ztc**3
+            - 0.003577 * nnr**3
+        )
+
+        # Here is the exponent bms=2.0 hardwired! not ideal! (Uli Blahak)
+        m2s = qsg * rhog / gscp_data.zams  # UB rho added as bugfix
+        m3s = alf * exp(bet * log(m2s))
+
+        hlp = gscp_data.zn0s1 * exp(gscp_data.zn0s2 * ztc)
+        zn0s = 13.50 * m2s * (m2s / m3s) ** 3  # DL: **3 super bad for validation
+        zn0s = maximum(zn0s, 0.5 * hlp)
+        zn0s = minimum(zn0s, 1.0e2 * hlp)
+        zn0s = minimum(zn0s, 1.0e9)
+        zn0s = maximum(zn0s, 1.0e6)
+
+        zcrim = gscp_coefficients.ccsrim * zn0s
+        zcagg = gscp_coefficients.ccsagg * zn0s
+        zbsdep = gscp_coefficients.ccsdep * sqrt(gscp_coefficients.v0snow)
+        zvz0s = gscp_coefficients.ccsvel * exp(gscp_coefficients.ccsvxp * log(zn0s))
+    else:
+        (zcrim, zcagg, zbsdep, zvz0s) = (0.0, 0.0, 0.0, 0.0)
 
     # sedimentation fluxes
     # -------------------------------------------------------------------------
     # qs_sedi:
     # -------------------------------------------------------------------------
-    # if llqs:
-    zlnqsk = (
-        zvz0s * exp(gscp_coefficients.ccswxp * log(zqsk)) * zrho1o2 if llqs else 0.0
-    )
+    if llqs:
+        zlnqsk = zvz0s * exp(gscp_coefficients.ccswxp * log(zqsk)) * zrho1o2
 
-    # Prevent terminal fall speed of snow from being zero at the surface level
-    zlnqsk = (
-        maximum(zlnqsk, gscp_data.v_sedi_snow_min)
-        if is_surface
-        else zlnqsk
-        if llqs
-        else 0.0
-    )
+        # Prevent terminal fall speed of snow from being zero at the surface level
+        zlnqsk = maximum(zlnqsk, gscp_data.v_sedi_snow_min) if is_surface else zlnqsk
 
-    zpks = zqsk * zlnqsk if llqs else 0.0
-    zvzs = (
-        zlnqsk * ccswxp_ln1o2 if zvzs_kminus1 == 0.0 else zvzs_kminus1 if llqs else 0.0
-    )
+        zpks = zqsk * zlnqsk
+        zvzs = zlnqsk * ccswxp_ln1o2 if zvzs_kminus1 == 0.0 else zvzs_kminus1
+    else:
+        (zpks, zvzs) = (0.0, 0.0)
 
     # -------------------------------------------------------------------------
     # qr_sedi:
     # -------------------------------------------------------------------------
-    # if llqr:
-    zlnqrk = (
-        gscp_coefficients.zvz0r * exp(gscp_coefficients.zvzxp * log(zqrk)) * zrho1o2
-        if llqr
-        else 0.0
-    )
+    if llqr:
+        zlnqrk = (
+            gscp_coefficients.zvz0r * exp(gscp_coefficients.zvzxp * log(zqrk)) * zrho1o2
+        )
 
-    # Prevent terminal fall speed of rain from being zero at the surface level
-    zlnqrk = (
-        maximum(zlnqrk, gscp_data.v_sedi_rain_min)
-        if is_surface
-        else zlnqrk
-        if llqr
-        else 0.0
-    )
-    zpkr = zqrk * zlnqrk if llqr else 0.0
+        # Prevent terminal fall speed of rain from being zero at the surface level
+        zlnqrk = maximum(zlnqrk, gscp_data.v_sedi_rain_min) if is_surface else zlnqrk
+        zpkr = zqrk * zlnqrk
 
-    zvzr = (
-        zlnqrk * zvzxp_ln1o2 if zvzr_kminus1 == 0.0 else zvzr_kminus1 if llqr else 0.0
-    )
+        zvzr = zlnqrk * zvzxp_ln1o2 if zvzr_kminus1 == 0.0 else zvzr_kminus1
+    else:
+        (zpkr, zvzr) = (0.0, 0.0)
 
     # -------------------------------------------------------------------------
     # qg_sedi:
     # -------------------------------------------------------------------------
-    # if llqg:
+    if llqg:
 
-    zlnqgk = (
-        local_param.zvz0g * exp(local_param.zexpsedg * log(zqgk)) * zrho1o2
-        if llqg
-        else 0.0
-    )
+        zlnqgk = local_param.zvz0g * exp(local_param.zexpsedg * log(zqgk)) * zrho1o2
 
-    # Prevent terminal fall speed of graupel from being zero at the surface level
-    zlnqgk = (
-        maximum(zlnqgk, gscp_data.v_sedi_graupel_min)
-        if is_surface
-        else zlnqgk
-        if llqg
-        else 0.0
-    )
-    zpkg = zqgk * zlnqgk if llqg else 0.0
+        # Prevent terminal fall speed of graupel from being zero at the surface level
+        zlnqgk = maximum(zlnqgk, gscp_data.v_sedi_graupel_min) if is_surface else zlnqgk
+        zpkg = zqgk * zlnqgk if llqg else 0.0
 
-    zvzg = (
-        zlnqgk * zexpsedg_ln1o2
-        if zvzg_kminus1 == 0.0
-        else zvzg_kminus1
-        if llqg
-        else 0.0
-    )
+        zvzg = zlnqgk * zexpsedg_ln1o2 if zvzg_kminus1 == 0.0 else zvzg_kminus1
+    else:
+        (zpkg, zvzg) = (0.0, 0.0)
 
     # -------------------------------------------------------------------------
     # qi_sedi:
     # -------------------------------------------------------------------------
-    # IF llqi:
-    zlnqik = (
-        gscp_coefficients.zvz0i * exp(gscp_data.zbvi * log(zqik)) * zrhofac_qi
-        if llqi
-        else 0.0
-    )
-    zpki = zqik * zlnqik if llqi else 0.0
+    if llqi:
+        zlnqik = gscp_coefficients.zvz0i * exp(gscp_data.zbvi * log(zqik)) * zrhofac_qi
+        zpki = zqik * zlnqik
 
-    zvzi = zlnqik * zbvi_ln1o2 if zvzi_kminus1 == 0.0 else zvzi_kminus1 if llqi else 0.0
+        zvzi = zlnqik * zbvi_ln1o2 if zvzi_kminus1 == 0.0 else zvzi_kminus1
+    else:
+        (zpki, zvzi) = (0.0, 0.0)
 
     # -------------------------------------------------------------------------
     # Prevent terminal fall speeds from being zero at the surface level
     # -------------------------------------------------------------------------
 
-    zvzr = maximum(zvzr, gscp_data.v_sedi_rain_min) if is_surface else zvzr
-    zvzs = maximum(zvzs, gscp_data.v_sedi_snow_min) if is_surface else zvzs
-    zvzg = maximum(zvzg, gscp_data.v_sedi_graupel_min) if is_surface else zvzg
+    if is_surface:
+        zvzr = maximum(zvzr, gscp_data.v_sedi_rain_min)
+        zvzs = maximum(zvzs, gscp_data.v_sedi_snow_min)
+        zvzg = maximum(zvzg, gscp_data.v_sedi_graupel_min)
 
     # --------------------------------------------------------------------------
     # 2.3: Second part of preparations
@@ -597,109 +567,97 @@ def _graupel(
     # ----------------------------------------------------------------------------
     # 2.4: IF (llqr): ic1
     # ----------------------------------------------------------------------------
-    # if llqr:
-    zlnqrk = log(zqrk) if llqr else zlnqrk  # DL: TODO: Replace below?
-    zsrmax = zzar / rhog * zdtr if llqr else 0.0
 
-    zeln7o8qrk = exp(gscp_data.x7o8 * zlnqrk) if qig + qcg > gscp_data.zqmin else 0.0
+    if llqr:
+        zlnqrk = log(zqrk)  # DL: TODO: Implement below?
 
-    (zeln7o4qrk, zeln27o16qrk) = (
-        (exp(gscp_data.x7o4 * zlnqrk), exp(gscp_data.x27o16 * zlnqrk))
-        if tg < gscp_data.ztrfrz
-        else (0.0, 0.0)
-        if llqr
-        else (0.0, 0.0)
-    )
-    zeln13o8qrk = exp(gscp_data.x13o8 * zlnqrk) if llqi else 0.0 if llqr else 0.0
+        # GZ: shifting this computation ahead of the IF condition changes results!
+        zsrmax = zzar / rhog * zdtr
+
+        zeln7o8qrk = (
+            exp(gscp_data.x7o8 * zlnqrk) if qig + qcg > gscp_data.zqmin else 0.0
+        )
+        (zeln7o4qrk, zeln27o16qrk) = (
+            (exp(gscp_data.x7o4 * zlnqrk), exp(gscp_data.x27o16 * zlnqrk))
+            if tg < gscp_data.ztrfrz
+            else (0.0, 0.0)
+        )
+        zeln13o8qrk = exp(gscp_data.x13o8 * zlnqrk) if llqi else 0.0 if llqr else 0.0
+    else:
+        zeln7o8qrk = 0.0
+        zeln7o4qrk = 0.0
+        zeln27o16qrk = 0.0
+        zeln13o8qrk = 0.0
+        zsrmax = 0.0
 
     # ----------------------------------------------------------------------------
     # 2.5: IF (llqs): ic2
     # ----------------------------------------------------------------------------
 
-    # if llqs:
-    zlnqsk = (
-        log(zqsk) if llqs else zlnqsk
-    )  # GZ: shifting this computation ahead of the IF condition changes results! #DL: Replace below?
-    zssmax = zzas / rhog * zdtr if llqs else 0.0
-    zeln3o4qsk = (
-        exp(gscp_data.x3o4 * zlnqsk)
-        if qig + qcg > gscp_data.zqmin
-        else 0.0
-        if llqs
-        else 0.0
-    )
-    zeln8qsk = exp(0.8 * zlnqsk) if llqr else 0.0
+    if llqs:
+        zlnqsk = log(zqsk)  # DL: TODO: Implement below?
+        # GZ: shifting this computation ahead of the IF condition changes results!
+        zssmax = zzas / rhog * zdtr
+
+        zeln3o4qsk = (
+            exp(gscp_data.x3o4 * zlnqsk) if qig + qcg > gscp_data.zqmin else 0.0
+        )
+        zeln8qsk = exp(0.8 * zlnqsk)
+    else:
+        zeln3o4qsk, zeln8qsk, zssmax = (0.0, 0.0, 0.0)
 
     # ----------------------------------------------------------------------------
     # 2.6: IF (llqg): ic3
     # ----------------------------------------------------------------------------
 
-    # if zqgk > zqmin:
-    zlnqgk = log(zqgk) if zqgk > gscp_data.zqmin else zlnqgk  # DL: Move below?
-    zsgmax = zzag / rhog * zdtr if zqgk > gscp_data.zqmin else 0.0
-    zelnrimexp_g = (
-        exp(local_param.zrimexp_g * zlnqgk)
-        if qig + qcg > gscp_data.zqmin > gscp_data.zqmin
-        else 0.0
-        if zqgk > gscp_data.zqmin
-        else 0.0
-    )
-    zeln6qgk = exp(0.6 * zlnqgk) if zqgk > gscp_data.zqmin else 0.0
+    if zqgk > gscp_data.zqmin:
+        zlnqgk = log(zqgk)
+        zsgmax = zzag / rhog * zdtr
+        zelnrimexp_g = (
+            exp(local_param.zrimexp_g * zlnqgk) if qig + qcg > gscp_data.zqmin else 0.0
+        )
 
-    # # ----------------------------------------------------------------------------
-    # # 2.7:  slope of snow PSD and coefficients for depositional growth (llqi,llqs)
-    # # ----------------------------------------------------------------------------
+        zeln6qgk = exp(0.6 * zlnqgk)
+    else:
+        zelnrimexp_g = 0.0
+        zeln6qgk = 0.0
+        zsgmax = 0.0
 
-    # DL Todo: replace below
-    zcsdep = 3.367e-2
-    zcidep = 1.3e-5
-    zcslam = 1e10
+    # ----------------------------------------------------------------------------
+    # 2.7:  slope of snow PSD and coefficients for depositional growth (llqi,llqs)
+    # ----------------------------------------------------------------------------
 
-    # if qig > zqmin or zqsk > zqmin:  # DL: Actually the same llqi and llqs
-    hlp_bool = True if qig > gscp_data.zqmin else False
-    hlp_bool = True if zqsk > gscp_data.zqmin else hlp_bool
+    if (qig > gscp_data.zqmin) | (
+        zqsk > gscp_data.zqmin
+    ):  # DL: TODO FIXFORTRAN same as llqi and llqs
+        zdvtp = gscp_coefficients.ccdvtp * exp(1.94 * log(tg)) / ppg
+        zhi = gscp_coefficients.ccshi1 * zdvtp * rhog * zqvsi / (tg * tg)
+        hlp = zdvtp / (1.0 + zhi)
+        zcidep = gscp_coefficients.ccidep * hlp
 
-    zdvtp = gscp_coefficients.ccdvtp * exp(1.94 * log(tg)) / ppg if hlp_bool else 0.0
-    zhi = (
-        gscp_coefficients.ccshi1 * zdvtp * rhog * zqvsi / (tg * tg) if hlp_bool else 0.0
-    )
-    hlp = zdvtp / (1.0 + zhi) if hlp_bool else 0.0
-    zcidep = gscp_coefficients.ccidep * hlp if hlp_bool else zcidep
+        if llqs:
+            zcslam = exp(
+                gscp_coefficients.ccslxp * log(gscp_coefficients.ccslam * zn0s / zqsk)
+            )
+            zcslam = minimum(zcslam, 1.0e15)
+            zcsdep = 4.0 * zn0s * hlp
 
-    # if llqs: #DL: TODO Refactor below?
-    hlp_bool2 = True if hlp_bool else False if llqs else False
-    zcslam = (
-        exp(gscp_coefficients.ccslxp * log(gscp_coefficients.ccslam * zn0s / zqsk))
-        if hlp_bool2
-        else zcslam
-    )
-    zcslam = minimum(zcslam, 1.0e15) if hlp_bool2 else zcslam
-    zcsdep = 4.0 * zn0s * hlp if hlp_bool2 else zcsdep
-
-    zcslam = (
-        exp(gscp_coefficients.ccslxp * log(gscp_coefficients.ccslam * zn0s / zqsk))
-        if hlp_bool
-        else zcslam
-    )
-    zcslam = minimum(zcslam, 1.0e15) if hlp_bool else zcslam
-    zcsdep = 4.0 * zn0s * hlp if hlp_bool else zcsdep
+    else:
+        zcsdep = 3.367e-2
+        zcidep = 1.3e-5
+        zcslam = 1e10
 
     # # ----------------------------------------------------------------------------
     # # 2.8: Deposition nucleation for low temperatures below a threshold (llqv)
     # # ----------------------------------------------------------------------------
 
-    # if tg < zthet and qvg > 8.0e-6 and qig <= 0.0 and qvg > zqvsi:
-    hlp_bool = True if tg < gscp_data.zthet else False
-    hlp_bool = False if qvg <= 8.0e-6 else hlp_bool
-    hlp_bool = False if qig > 0.0 else hlp_bool
+    if (tg < gscp_data.zthet) & (qvg > 8.0e-6) & (qig <= 0.0) & (qvg > zqvsi):
+        # znin = min(fxna_cooper(tg), znimax) #DL: TODO
+        znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
+        snuc = gscp_data.zmi0 * z1orhog * znin * zdtr
+    else:
+        snuc = 0.0
 
-    # DL: Refactor
-    # znin = minimum(fxna_cooper(tg), znimax)
-    # snuc = zmi0 * z1orhog * znin * zdtr
-    znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
-    snuc = gscp_data.zmi0 * z1orhog * znin * zdtr if hlp_bool else 0.0
-
-    # TODO
     # --------------------------------------------------------------------------
     # Section 3: Search for cloudy grid points with cloud water and
     #            calculation of the conversion rates involving qc (ic6)
@@ -732,19 +690,22 @@ def _graupel(
     srfrz = srfrz * zcorr
     srcri = srcri * zcorr
 
-    # TODO
-    # # limit snow depletion in order to avoid negative values of qs
-    # if ssdep <= 0.0:
-    #     zcorr = (
-    #         zssmax / max(zssmax, ssmelt + sconsg - ssdep) if ssmelt + sconsg - ssdep > 0.0 else 1.0
-    #     )
-    #     ssmelt = ssmelt * zcorr
-    #     sconsg = sconsg *zcorr
-    #     ssdep = ssdep * zcorr
-    # else:
-    #     zcorr = zssmax / max(zssmax, ssmelt + sconsg) if ssmelt + sconsg > 0.0 else 1.0
-    #     ssmelt = ssmelt * zcorr
-    #     sconsg = sconsg * zcorr
+    # limit snow depletion in order to avoid negative values of qs
+    if ssdep <= 0.0:
+        zcorr = (
+            zssmax / maximum(zssmax, ssmelt + sconsg - ssdep)
+            if ssmelt + sconsg - ssdep > 0.0
+            else 1.0
+        )
+        ssmelt = ssmelt * zcorr
+        sconsg = sconsg * zcorr
+        ssdep = ssdep * zcorr
+    else:
+        zcorr = (
+            zssmax / maximum(zssmax, ssmelt + sconsg) if ssmelt + sconsg > 0.0 else 1.0
+        )
+        ssmelt = ssmelt * zcorr
+        sconsg = sconsg * zcorr
 
     zqvt = sev - sidep - ssdep - sgdep - snuc - sconr
     zqct = simelt - scau - scfrz - scac - sshed - srim - srim2
@@ -753,11 +714,17 @@ def _graupel(
     zqst = siau + sdau - ssmelt + srim + ssdep + sagg - sconsg
     zqgt = sagg2 - sgmelt + sicri + srcri + sgdep + srfrz + srim2 + sconsg
 
-    # Update variables
-    qig = maximum(0.0, (zzai * z1orhog + zqit * gscp_coefficients.zdt) * zimi)
-    qrg = maximum(0.0, (zzar * z1orhog + zqrt * gscp_coefficients.zdt) * zimr)
-    qsg = maximum(0.0, (zzas * z1orhog + zqst * gscp_coefficients.zdt) * zims)
-    qgg = maximum(0.0, (zzag * z1orhog + zqgt * gscp_coefficients.zdt) * zimg)
+    # Compute tendencies
+    qi_t = (zzai * z1orhog + zqit * gscp_coefficients.zdt) * zimi
+    qr_t = (zzar * z1orhog + zqrt * gscp_coefficients.zdt) * zimr
+    qs_t = (zzas * z1orhog + zqst * gscp_coefficients.zdt) * zims
+    qg_t = (zzag * z1orhog + zqgt * gscp_coefficients.zdt) * zimg
+
+    # Update Variables DL: Remove?
+    # qig = maximum(0.0, qi_t)
+    # qrg = maximum(0.0, qr_t)
+    # qsg = maximum(0.0, qs_t)
+    # qgg = maximum(0.0, qg_t)
 
     # ----------------------------------------------------------------------
     # Section 10: Complete time step
@@ -799,51 +766,46 @@ def _graupel(
         * zrhofac_qi
     )
 
-    # #----------------------------------------------------------------------
-    # # Section 11: Update Tendencies
-    # #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # Section 11: Update Tendencies
+    # ----------------------------------------------------------------------
 
-    # # Calculate Latent heats if necessary
-    # if local_param.lthermo_water_const:
-    #     # Initialize latent heats to constant values.
-    #     zlhv = phy_const.alv
-    #     zlhs = phy_const.als
-    # else:
-    #     tg = make_normalized(t)
-    #     zlhv = latent_heat_vaporization(tg)
-    #     zlhs = latent_heat_sublimation(tg)
-
-    lhv = (
-        phy_const.alv
-        + (1850.0 - phy_const.clw) * (tg - phy_const.tmelt)
-        - phy_const.rv * tg
-    )
-    lhs = (
-        phy_const.als + (1850.0 - 2108.0) * (tg - phy_const.tmelt) - phy_const.rdv * tg
-    )
-
-    (zlhv, zlhs) = (
-        (phy_const.alv, phy_const.als)
-        if local_param.lthermo_water_const
-        else (lhv, lhs)
-    )
+    # Calculate Latent heats if necessary
+    if local_param.lthermo_water_const:
+        # Initialize latent heats to constant values.
+        zlhv = phy_const.alv
+        zlhs = phy_const.als
+    else:
+        # tg = make_normalized(t)
+        # zlhv = latent_heat_vaporization(tg)
+        # zlhs = latent_heat_sublimation(tg)
+        zlhv = (
+            phy_const.alv
+            + (1850.0 - phy_const.clw) * (tg - phy_const.tmelt)
+            - phy_const.rv * tg
+        )
+        zlhs = (
+            phy_const.als
+            + (1850.0 - 2108.0) * (tg - phy_const.tmelt)
+            - phy_const.rdv * tg
+        )
 
     # DL: zlhv and zlhs are rather big numbers. Validates badly for a couple of gridpoints
     ztt = phy_const.rcvd * (zlhv * (zqct + zqrt) + zlhs * (zqit + zqst + zqgt))
 
-    # # save input arrays for final tendency calculation
-    # if lldiag_ttend:
-    #     t_in = t
+    # Save tendencies, if desiered
+    if local_param.lldiag_ttend:
+        ddt_tend_t = ztt
 
-    # if lldiag_qtend:
-    #     qv_in = qv
-    #     qc_in = qc
-    #     qi_in = qi
-    #     qr_in = qr
-    #     qs_in = qs
-    #     qg_in = qg
+    if local_param.lldiag_qtend:
+        ddt_tend_qv = maximum(0.0, qvg - zqvt)
+        ddt_tend_qc = maximum(0.0, qcg - zqct)
+        ddt_tend_qi = maximum(0.0, qig - qi_t)
+        ddt_tend_qr = maximum(0.0, qrg - qr_t)
+        ddt_tend_qs = maximum(0.0, qsg - qs_t)
+        ddt_tend_qg = maximum(0.0, qgg - qg_t)
 
-    # Update of prognostic variables or tendencies
+    # Update of prognostic variables
     qr = maximum(0.0, qrg)
     qs = maximum(0.0, qsg)
     qi = maximum(0.0, qig)
@@ -852,18 +814,7 @@ def _graupel(
     qv = maximum(0.0, qv + zqvt * gscp_coefficients.zdt)
     qc = maximum(0.0, qc + zqct * gscp_coefficients.zdt)
 
-    # if lldiag_ttend:
-    #     ddt_tend_t = (t - t_in) * zdtr
-
-    # if lldiag_qtend:
-    #     ddt_tend_qv = max(-qv_in * zdtr, (qv - qv_in) * zdtr)
-    #     ddt_tend_qc = max(-qc_in * zdtr, (qc - qc_in) * zdtr)
-    #     ddt_tend_qi = max(-qi_in * zdtr, (qi - qi_in) * zdtr)
-    #     ddt_tend_qr = max(-qr_in * zdtr, (qr - qr_in) * zdtr)
-    #     ddt_tend_qs = max(-qs_in * zdtr, (qs - qs_in) * zdtr)
-    #     ddt_tend_qg = max(-qg_in*zdtr,(qg - qg_in)*zdtr)
-
-    # # DL TODO: Temporary REMOVE ONCE DONE!!
+    # # # DL TODO: Temporary REMOVE ONCE DONE!!
 
     zpkr = 0.0
     zpks = 0.0
