@@ -316,7 +316,7 @@ def _graupel(
     # zvz0s = 0.0
 
     zn0s = gscp_data.zn0s0  # TODO: Cleanup
-    reduce_dep = 1.0  # FR: Reduction coeff. for dep. growth of rain and ice TODO: Uncomment, cleanup
+    # reduce_dep = 1.0  # FR: Reduction coeff. for dep. growth of rain and ice DL: Implemented below in Sec 3
 
     # ----------------------------------------------------------------------------
     # 2.1: Preparations for computations and to check the different conditions
@@ -627,6 +627,7 @@ def _graupel(
     # 2.7:  slope of snow PSD and coefficients for depositional growth (llqi,llqs)
     # ----------------------------------------------------------------------------
 
+    # DL: TODO Refactor this?
     if (qig > gscp_data.zqmin) | (
         zqsk > gscp_data.zqmin
     ):  # DL: TODO FIXFORTRAN same as llqi and llqs
@@ -642,6 +643,10 @@ def _graupel(
             zcslam = minimum(zcslam, 1.0e15)
             zcsdep = 4.0 * zn0s * hlp
 
+        else:
+            zcsdep = 3.367e-2
+            zcidep = 1.3e-5
+            zcslam = 1e10
     else:
         zcsdep = 3.367e-2
         zcidep = 1.3e-5
@@ -663,19 +668,160 @@ def _graupel(
     #            calculation of the conversion rates involving qc (ic6)
     # --------------------------------------------------------------------------
 
+    if qcg > gscp_data.zqmin:
+        llqs = (
+            zqsk > gscp_data.zqmin
+        )  # DL: TODO FIXFORTRAN: Why is this recalculated here?
+
+        zscmax = qcg * zdtr
+        if tg > gscp_data.zthn:
+
+            # TODO: Candidate for a function
+            # Seifert and Beheng (2001) autoconversion rate
+            # with constant cloud droplet number concentration qnc
+            if qcg > 1.0e-6:
+                ztau = minimum(1.0 - qcg / (qcg + qrg), 0.9)
+                ztau = maximum(ztau, 1.0e-30)
+                hlp = exp(gscp_data.zkphi2 * log(ztau))
+                zphi = gscp_data.zkphi1 * hlp * (1.0 - hlp) ** 3
+                scau = (
+                    gscp_coefficients.zconst
+                    * qcg
+                    * qcg
+                    * qcg
+                    * qcg
+                    / (qnc * qnc)
+                    * (1.0 + zphi / (1.0 - ztau) ** 2)
+                )
+                zphi = (ztau / (ztau + gscp_data.zkphi3)) ** 4
+                scac = gscp_data.zkcac * qcg * qrg * zphi
+            else:
+                scau = 0.0
+                scac = 0.0
+
+            if llqr & (tg < gscp_data.ztrfrz) & (qrg > 0.1 * qcg):
+                srfrz = (
+                    gscp_data.zcrfrz1
+                    * (exp(gscp_data.zcrfrz2 * (gscp_data.ztrfrz - tg)) - 1.0)
+                    * zeln7o4qrk
+                )
+
+            srim = (
+                zcrim * qcg * exp(gscp_coefficients.ccsaxp * log(zcslam))
+                if llqs
+                else 0.0
+            )
+
+            srim2 = local_param.zcrim_g * qcg * zelnrimexp_g
+            if tg >= phy_const.tmelt:
+                sshed = srim + srim2
+                srim = 0.0
+                srim2 = 0.0
+            else:
+                if qcg >= gscp_coefficients.qc0:
+                    sconsg = local_param.zcsg * qcg * zeln3o4qsk
+
+            # Check for maximum depletion of cloud water and adjust the
+            # transfer rates accordingly
+            zcorr = zscmax / maximum(zscmax, scau + scac + srim + srim2 + sshed)
+            scau = scau * zcorr
+            scac = scac * zcorr
+            srim = srim * zcorr
+            srim2 = srim2 * zcorr
+            sshed = sshed * zcorr
+            sconsg = minimum(sconsg, srim + zssmax)
+
+        else:  # hom. freezing of cloud and rain water
+            scfrz = zscmax
+            srfrz = zsrmax
+
+        # Calculation of heterogeneous nucleation of cloud ice.
+        # This is done in this section, because we require water saturation
+        # for this process (i.e. the existence of cloud water) to exist.
+        # Heterogeneous nucleation is assumed to occur only when no
+        # cloud ice is present and the temperature is below a nucleation
+        # threshold.
+
+        if (tg <= 267.15) & (
+            qig <= gscp_data.zqmin
+        ):  # TODO: Replace second conditional by llqi
+            # znin = min(fxna_cooper(tg), znimax)
+            znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
+            snuc = gscp_data.zmi0 * z1orhog * znin * zdtr
+
+        # # Calculation of reduction of depositional growth at cloud top (Forbes 2012)
+        reduce_dep = 1.0  # DL: TODO
+        # if (is_surface == False):
+        # znin = min(fxna_cooper(tg), znimax)
+        # znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
+        # fnuc = minimum(znin / znimix, 1.0)
+
+        # qcgk_1 = qi_kminus1 + qs_kminus1 + qg_kminus1
+
+        # # distance from cloud top
+        # if (qv_kminus1 + qc_kminus1 < zqvsw_up_kminus1) & (qcgk_1 < gscp_data.zqmin):
+        #     dist_cldtop = 0.0  # reset distance to upper cloud layer
+        # else:
+        #     dist_cldtop = dist_cldtop_kminus1 + dz
+
+        # reduce_dep = minimum(
+        #     fnuc + (1.0 - fnuc) * ( gscp_data.reduce_dep_ref + dist_cldtop_kminus1 / gscp_data.dist_cldtop_ref),
+        #     1.0,
+        # )
+        # else:
+        #     reduce_dep = 1.0
+
     # TODO
     # ------------------------------------------------------------------------
     # Section 4: Search for cold grid points with cloud ice and/or snow and
     #            calculation of the conversion rates involving qi, qs and qg
     # ------------------------------------------------------------------------
 
-    # TODO
     # --------------------------------------------------------------------------
     # Section 6: Search for grid points with rain in subsaturated areas
     #            and calculation of the evaporation rate of rain
     # --------------------------------------------------------------------------
 
-    # TODO
+    # zqvsw = sat_pres_water(tg) / (rhog * phy_const.rv * tg) #DL: TODO
+    sat_pres_water = conv_table.c1es * exp(
+        conv_table.c3les * (temp - phy_const.tmelt) / (temp - conv_table.c4les)
+    )
+    zqvsw = sat_pres_water / (rhog * phy_const.rv * tg)
+
+    zqvsw_up = zqvsw  # DL TODO: refactor?
+
+    if llqr & (qvg + qcg <= zqvsw):
+
+        zlnqrk = log(zqrk)
+        zx1 = 1.0 + gscp_coefficients.zbev * exp(gscp_coefficients.zbevxp * zlnqrk)
+        # sev  = zcev*zx1*(zqvsw - qvg) * exp(zcevxp  * zlnqrk)
+        # Limit evaporation rate in order to avoid overshoots towards supersaturation
+        # the pre-factor approximates (esat(T_wb)-e)/(esat(T)-e) at temperatures between 0 degC and 30 degC
+        temp_c = tg - phy_const.tmelt
+        maxevap = (
+            (0.61 - 0.0163 * temp_c + 1.111e-4 * temp_c**2)
+            * (zqvsw - qvg)
+            / gscp_coefficients.zdt
+        )
+        sev = minimum(
+            gscp_coefficients.zcev
+            * zx1
+            * (zqvsw - qvg)
+            * exp(gscp_coefficients.zcevxp * zlnqrk),
+            maxevap,
+        )
+
+        # Calculation of below-cloud rainwater freezing
+        if (tg > gscp_data.zthn) & (tg < gscp_data.ztrfrz) :
+            srfrz = (
+                gscp_data.zcrfrz1
+                * (exp(gscp_data.zcrfrz2 * (gscp_data.ztrfrz - tg)) - 1.0)
+                * zeln7o4qrk
+            )
+
+        else:  # Hom. freezing of rain water
+            srfrz = zsrmax
+
     # --------------------------------------------------------------------------
     # Section 7: Calculate the total tendencies of the prognostic variables.
     #            Update the prognostic variables in the interior domain.
@@ -816,18 +962,18 @@ def _graupel(
 
     # # # DL TODO: Temporary REMOVE ONCE DONE!!
 
-    zpkr = 0.0
-    zpks = 0.0
-    zpkg = 0.0
-    zpki = 0.0
-    zprvr = 0.0
-    zprvs = 0.0
-    zprvg = 0.0
-    zprvi = 0.0
-    zvzr = 0.0
-    zvzs = 0.0
-    zvzi = 0.0
-    zvzg = 0.0
+    # zpkr = 0.0
+    # zpks = 0.0
+    # zpkg = 0.0
+    # zpki = 0.0
+    # zprvr = 0.0
+    # zprvs = 0.0
+    # zprvg = 0.0
+    # zprvi = 0.0
+    # zvzr = 0.0
+    # zvzs = 0.0
+    # zvzi = 0.0
+    # zvzg = 0.0
 
     dist_cldtop = 0.0
     zqvsw_up = 0.0
