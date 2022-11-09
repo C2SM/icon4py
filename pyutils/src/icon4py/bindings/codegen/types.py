@@ -11,11 +11,54 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Generic, TypeVar
+from abc import ABC
+
+from functional.ffront.common_types import ScalarKind
+
+from icon4py.bindings.locations import (
+    BasicLocation,
+    ChainedLocation,
+    CompoundLocation,
+)
 
 
-T = TypeVar("T")
+class FieldEntity(ABC):
+    location: ChainedLocation | CompoundLocation | BasicLocation | None
+    field_type: ScalarKind
+    name: str
+    has_vertical_dimension: bool
+
+    def rank(self) -> int:
+        ...
+
+    def is_sparse(self) -> bool:
+        ...
+
+    def is_dense(self) -> bool:
+        ...
+
+    def is_compound(self) -> bool:
+        ...
 
 
-class Entity(Generic[T]):
-    pass
+class OffsetEntity(ABC):
+    includes_center: bool
+    target: tuple[BasicLocation, ChainedLocation]
+
+    def is_compound_location(self) -> bool:
+        ...
+
+    def is_compound(self) -> bool:
+        ...
+
+    def has_vertical_dimension(self) -> bool:
+        ...
+
+    def name(self) -> str:
+        ...
+
+    def location(self) -> str:
+        ...
+
+    def field_type(self) -> ScalarKind:
+        ...
