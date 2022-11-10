@@ -27,7 +27,7 @@ Doms, Foerstner, Heise, Herzog, Raschendorfer, Schrodin, Reinhardt, Vogel
 (September 2005): "A Description of the Nonhydrostatic Regional Model LM",
 
 TODO: Removed Features
-1. lsuper_coolw = False, lred_depgrow = False, lsedi_ice = False
+1. lsuper_coolw = False, lred_depgrow = False, lsedi_ice = False, lstickeff = Flase, lstickeff = False
 2. isnow_n0temp == 1, and zn0s = const.
 3. iautocon == 0 (Kessler)
 4. l_cv = False. Now, we always use cv instead of cp
@@ -81,8 +81,8 @@ class GraupelParametersAndConfiguration(FrozenNamespace):
     """Configuration and local parameters of the graupel scheme."""
 
     # Configuration
-    lsedi_ice = True  # sedimentation of cloud ice (Heymsfield & Donner 1990 *1/3)
-    lstickeff = True  # switch for sticking coeff. (work from Guenther Zaengl)
+    # lsedi_ice = True  # sedimentation of cloud ice (Heymsfield & Donner 1990 *1/3)
+    # lstickeff = True  # switch for sticking coeff. (work from Guenther Zaengl)
     # lsuper_coolw = True  # switch for supercooled liquid water (work from Felix Rieper)
     # lred_depgrow = True  # separate switch for reduced depositional growth near tops of water clouds (now also used in ICON after correcting the cloud top diagnosis)
 
@@ -498,7 +498,6 @@ def _graupel(
 
     # zeln7o8qrk = 0.0 #DL: Implemented below in IF (llqr): ic1
     # zeln7o4qrk = 0.0 # Dl: Implemented below in IF (llqr): ic1
-    # zeln27o16qrk = 0.0 #DL: Implemented below in IF (llqr): ic1
     # zeln13o8qrk = 0.0 #DL: Implemented below in IF (llqr): ic1
     # zeln3o4qsk = 0.0 #DL: Implemented below 2.5: IF (llqs): ic2
     # zeln8qsk = 0.0 #DL: Implemented below 2.5: IF (llqs): ic2
@@ -577,16 +576,12 @@ def _graupel(
         zeln7o8qrk = (
             exp(gscp_data.x7o8 * zlnqrk) if qig + qcg > gscp_data.zqmin else 0.0
         )
-        (zeln7o4qrk, zeln27o16qrk) = (
-            (exp(gscp_data.x7o4 * zlnqrk), exp(gscp_data.x27o16 * zlnqrk))
-            if tg < gscp_data.ztrfrz
-            else (0.0, 0.0)
-        )
+        zeln7o4qrk = exp(gscp_data.x7o4 * zlnqrk) if tg < gscp_data.ztrfrz else 0.0
+
         zeln13o8qrk = exp(gscp_data.x13o8 * zlnqrk) if llqi else 0.0 if llqr else 0.0
     else:
         zeln7o8qrk = 0.0
         zeln7o4qrk = 0.0
-        zeln27o16qrk = 0.0
         zeln13o8qrk = 0.0
         zsrmax = 0.0
 
@@ -742,40 +737,191 @@ def _graupel(
         # cloud ice is present and the temperature is below a nucleation
         # threshold.
 
-        if (tg <= 267.15) & (
-            qig <= gscp_data.zqmin
-        ):  # TODO: Replace second conditional by llqi
+        if (tg <= 267.15) & (not llqi):
             # znin = min(fxna_cooper(tg), znimax)
             znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
             snuc = gscp_data.zmi0 * z1orhog * znin * zdtr
 
         # # Calculation of reduction of depositional growth at cloud top (Forbes 2012)
-        reduce_dep = 1.0  # DL: TODO
-        # if (is_surface == False):
-        # znin = min(fxna_cooper(tg), znimax)
-        # znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
-        # fnuc = minimum(znin / znimix, 1.0)
+        if not is_surface:
+            # znin = minimum(fxna_cooper(tg), znimax)
+            znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
+            fnuc = minimum(znin / znimix, 1.0)
 
-        # qcgk_1 = qi_kminus1 + qs_kminus1 + qg_kminus1
+            qcgk_1 = qi_kminus1 + qs_kminus1 + qg_kminus1
 
-        # # distance from cloud top
-        # if (qv_kminus1 + qc_kminus1 < zqvsw_up_kminus1) & (qcgk_1 < gscp_data.zqmin):
-        #     dist_cldtop = 0.0  # reset distance to upper cloud layer
-        # else:
-        #     dist_cldtop = dist_cldtop_kminus1 + dz
+            # distance from cloud top
+            if (qv_kminus1 + qc_kminus1 < zqvsw_up_kminus1) & (
+                qcgk_1 < gscp_data.zqmin
+            ):
+                dist_cldtop = 0.0  # reset distance to upper cloud layer
+            else:
+                dist_cldtop = dist_cldtop_kminus1 + dz
 
-        # reduce_dep = minimum(
-        #     fnuc + (1.0 - fnuc) * ( gscp_data.reduce_dep_ref + dist_cldtop_kminus1 / gscp_data.dist_cldtop_ref),
-        #     1.0,
-        # )
-        # else:
-        #     reduce_dep = 1.0
+            reduce_dep = minimum(
+                fnuc
+                + (1.0 - fnuc)
+                * (
+                    gscp_data.reduce_dep_ref
+                    + dist_cldtop_kminus1 / gscp_data.dist_cldtop_ref
+                ),
+                1.0,
+            )
+        else:
+            reduce_dep = 1.0
+            dist_cldtop = 0.0
+            zqvsw_up = 0.0
+    else:
+        reduce_dep = 1.0
+        dist_cldtop = 0.0
+        zqvsw_up = 0.0
 
-    # TODO
     # ------------------------------------------------------------------------
     # Section 4: Search for cold grid points with cloud ice and/or snow and
     #            calculation of the conversion rates involving qi, qs and qg
     # ------------------------------------------------------------------------
+    if (qig > gscp_data.zqmin) | (zqsk > gscp_data.zqmin) | (zqgk > gscp_data.zqmin):
+        llqs = zqsk > gscp_data.zqmin  # DL: FIXFORTRAN remove?
+        llqi = qig > gscp_data.zqmin  # DL: FIXFORTRAN remove?
+
+        if tg <= phy_const.tmelt:  # cold case
+
+            zqvsidiff = qvg - zqvsi
+            zsvmax = zqvsidiff * zdtr
+            zsvidep = 0.0
+            zsvisub = 0.0
+            if llqi:
+
+                # znin = minimum(fxna_cooper(tg), znimax) # DL: TODO
+                znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
+
+                # Change in sticking efficiency needed in case of cloud ice sedimentation
+                zeff = minimum(exp(0.09 * (tg - phy_const.tmelt)), 1.0)
+                zeff = maximum(
+                    maximum(zeff, gscp_coefficients.zceff_min),
+                    gscp_data.zceff_fac * (tg - gscp_data.tmin_iceautoconv),
+                )
+
+                sagg = zeff * qig * zcagg * exp(gscp_coefficients.ccsaxp * log(zcslam))
+                sagg2 = zeff * qig * local_param.zcagg_g * zelnrimexp_g
+                siau = (
+                    zeff * gscp_data.zciau * maximum(qig - gscp_coefficients.qi0, 0.0)
+                )
+                zmi = maximum(
+                    gscp_data.zmi0, minimum(rhog * qig / znin, gscp_data.zmimax)
+                )
+                znid = rhog * qig / zmi
+                zlnlogmi = log(zmi)  # DL: TODO
+                sidep = zcidep * znid * exp(0.33 * zlnlogmi) * zqvsidiff
+
+                # for sedimenting quantities the maximum
+                # allowed depletion is determined by the predictor value.
+                zsimax = zzai * z1orhog * zdtr
+
+                if sidep > 0.0:
+                    zsvidep = minimum(sidep * reduce_dep, zsvmax)
+                if sidep < 0.0:
+                    zsvisub = maximum(sidep, zsvmax)
+                    zsvisub = -maximum(zsvisub, -zsimax)
+
+                zlnlogmi = log(gscp_data.zmsmin / zmi)
+                zztau = 1.5 * (exp(0.66 * zlnlogmi) - 1.0)
+                sdau = zsvidep / zztau
+                sicri = gscp_data.zcicri * qig * zeln7o8qrk
+                srcri = (
+                    gscp_data.zcrcri * (qig / zmi) * zeln13o8qrk
+                    if qsg > 1.0e-7
+                    else srcri
+                )
+            else:
+                zsimax = 0.0
+
+            zxfac = 1.0 + zbsdep * exp(gscp_coefficients.ccsdxp * log(zcslam))
+            ssdep = zcsdep * zxfac * zqvsidiff / (zcslam + gscp_data.zeps) ** 2
+            # FR new: depositional growth reduction
+            if ssdep > 0.0:
+                ssdep = ssdep * reduce_dep
+
+            # GZ: This limitation, which was missing in the original graupel scheme,
+            # is crucial for numerical stability in the tropics
+            ssdep = minimum(ssdep, zsvmax - zsvidep) if ssdep > 0.0 else ssdep
+
+            # Suppress depositional growth of snow if the existing amount is too small for a
+            # a meaningful distiction between cloud ice and snow
+            ssdep = minimum(ssdep, 0.0) if qsg <= 1.0e-7 else ssdep
+
+            # ** GZ: this numerical fit should be replaced with a physically more meaningful formulation **
+            sgdep = (
+                (0.398561 - 0.00152398 * tg + 2554.99 / ppg + 2.6531e-7 * ppg)
+                * zqvsidiff
+                * zeln6qgk
+            )
+            # Check for maximal depletion of cloud ice
+            # No check is done for depositional autoconversion because
+            # this is a always a fraction of the gain rate due to
+            # deposition (i.e the sum of this rates is always positive)
+            zsisum = siau + sagg + sagg2 + sicri + zsvisub
+            zcorr = zsimax / maximum(zsimax, zsisum) if zsimax > 0.0 else 0.0
+            sidep = zsvidep - zcorr * zsvisub
+            siau = siau * zcorr
+            sagg = sagg * zcorr
+            sagg2 = sagg2 * zcorr
+            sicri = sicri * zcorr
+            if zqvsidiff < 0.0:
+                ssdep = maximum(ssdep, -zssmax)
+                sgdep = maximum(sgdep, -zsgmax)
+
+        else:  # tg > 0 - warm case
+
+            # cloud ice melts instantaneously
+            simelt = zzai * z1orhog * zdtr
+
+            zqvsw0 = zpvsw0 / (rhog * phy_const.rv * phy_const.tmelt)
+            zqvsw0diff = qvg - zqvsw0
+            # ** GZ: several numerical fits in this section should be replaced with physically more meaningful formulations **
+            if tg > (phy_const.tmelt - local_param.ztcrit * zqvsw0diff):
+                # calculate melting rate
+                zx1 = (tg - phy_const.tmelt) + local_param.zasmel * zqvsw0diff
+                ssmelt = (79.6863 / ppg + 0.612654e-3) * zx1 * zeln8qsk
+                ssmelt = minimum(ssmelt, zssmax)
+                sgmelt = (12.31698 / ppg + 7.39441e-05) * zx1 * zeln6qgk
+                sgmelt = minimum(sgmelt, zsgmax)
+                # deposition + melting, ice particle temperature: t0
+                # calculation without howell-factor#
+                ssdep = (31282.3 / ppg + 0.241897) * zqvsw0diff * zeln8qsk
+                sgdep = (0.153907 - ppg * 7.86703e-07) * zqvsw0diff * zeln6qgk
+                if zqvsw0diff < 0.0:
+                    # melting + evaporation of snow/graupel
+                    ssdep = maximum(-zssmax, ssdep)
+                    sgdep = maximum(-zsgmax, sgdep)
+                    # melt water evaporates
+                    ssmelt = ssmelt + ssdep
+                    sgmelt = sgmelt + sgdep
+                    ssmelt = maximum(ssmelt, 0.0)
+                    sgmelt = maximum(sgmelt, 0.0)
+                else:
+                    # deposition on snow/graupel is interpreted as increase
+                    # in rain water ( qv --> qr, sconr)
+                    # therefore,  sconr=(zssdep+zsgdep)
+                    sconr = ssdep + sgdep
+                    ssdep = 0.0
+                    sgdep = 0.0
+            else:  # if t<t_crit
+                # no melting, only evaporation of snow/graupel
+                # zqvsw = sat_pres_water(tg) / (rhog * r_v * tg) #DL: TODO
+                sat_pres_water = conv_table.c1es * exp(
+                    conv_table.c3les
+                    * (temp - phy_const.tmelt)
+                    / (temp - conv_table.c4les)
+                )
+                zqvsw = sat_pres_water / (rhog * phy_const.rv * tg)
+
+                zqvsw_up = zqvsw  # DL: TODO refactor?
+                zqvsidiff = qvg - zqvsw
+                ssdep = (0.28003 - ppg * 0.146293e-6) * zqvsidiff * zeln8qsk
+                sgdep = (0.0418521 - ppg * 4.7524e-8) * zqvsidiff * zeln6qgk
+                ssdep = maximum(-zssmax, ssdep)
+                sgdep = maximum(-zsgmax, sgdep)
 
     # --------------------------------------------------------------------------
     # Section 6: Search for grid points with rain in subsaturated areas
@@ -812,7 +958,7 @@ def _graupel(
         )
 
         # Calculation of below-cloud rainwater freezing
-        if (tg > gscp_data.zthn) & (tg < gscp_data.ztrfrz) :
+        if (tg > gscp_data.zthn) & (tg < gscp_data.ztrfrz):
             srfrz = (
                 gscp_data.zcrfrz1
                 * (exp(gscp_data.zcrfrz2 * (gscp_data.ztrfrz - tg)) - 1.0)
@@ -959,24 +1105,6 @@ def _graupel(
     temp = temp + ztt * gscp_coefficients.zdt
     qv = maximum(0.0, qv + zqvt * gscp_coefficients.zdt)
     qc = maximum(0.0, qc + zqct * gscp_coefficients.zdt)
-
-    # # # DL TODO: Temporary REMOVE ONCE DONE!!
-
-    # zpkr = 0.0
-    # zpks = 0.0
-    # zpkg = 0.0
-    # zpki = 0.0
-    # zprvr = 0.0
-    # zprvs = 0.0
-    # zprvg = 0.0
-    # zprvi = 0.0
-    # zvzr = 0.0
-    # zvzs = 0.0
-    # zvzi = 0.0
-    # zvzg = 0.0
-
-    dist_cldtop = 0.0
-    zqvsw_up = 0.0
 
     return (
         temp,
