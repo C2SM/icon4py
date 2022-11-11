@@ -216,7 +216,7 @@ class F90RunFun(eve.Node):
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         param_fields = [F90Field(name=field.name) for field in self.all_fields] + [
             F90Field(name=name) for name in _DOMAIN_ARGS
         ]
@@ -246,7 +246,7 @@ class F90RunAndVerifyFun(eve.Node):
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         param_fields = (
             [F90Field(name=field.name) for field in self.all_fields]
             + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
@@ -300,7 +300,7 @@ class F90SetupFun(Node):
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         param_fields = [
             F90Field(name=name) for name in ["mesh", "k_size", "stream"]
         ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
@@ -336,7 +336,7 @@ class F90WrapRunFun(Node):
     run_ver_params: F90EntityList = eve.datamodels.field(init=False)
     run_params: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         param_fields = (
             [F90Field(name=field.name) for field in self.all_fields]
             + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
@@ -458,7 +458,7 @@ class F90WrapSetupFun(Node):
     vert_conditionals: F90EntityList = eve.datamodels.field(init=False)
     setup_params: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         param_fields = [
             F90Field(name=name) for name in ["mesh", "k_size", "stream"]
         ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
