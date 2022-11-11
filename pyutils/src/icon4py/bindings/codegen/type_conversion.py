@@ -14,14 +14,14 @@
 from functional.ffront.common_types import ScalarKind
 
 
-BUILTIN_TO_ISO_C_TYPE = {
+BUILTIN_TO_ISO_C_TYPE: dict[ScalarKind, str] = {
     ScalarKind.FLOAT64: "real(c_double)",
     ScalarKind.FLOAT32: "real(c_float)",
     ScalarKind.BOOL: "logical(c_int)",
     ScalarKind.INT32: "integer(c_int)",
     ScalarKind.INT64: "integer(c_long)",
 }
-BUILTIN_TO_CPP_TYPE = {
+BUILTIN_TO_CPP_TYPE: dict[ScalarKind, str] = {
     ScalarKind.FLOAT64: "double",
     ScalarKind.FLOAT32: "float",
     ScalarKind.BOOL: "int",

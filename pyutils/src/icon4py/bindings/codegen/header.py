@@ -144,7 +144,7 @@ class CppHeaderFile(Node):
     setupFunc: CppSetupFuncDeclaration = eve.datamodels.field(init=False)
     freeFunc: CppFreeFunc = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         output_fields = [field for field in self.fields if field.intent.out]
 
         self.runFunc = CppRunFuncDeclaration(
@@ -170,7 +170,7 @@ class CppHeaderFile(Node):
         self.freeFunc = CppFreeFunc(funcname=self.stencil_name)
 
 
-def generate_cpp_header(stencil_name: str, fields: list[Field], outpath: Path):
+def generate_cpp_header(stencil_name: str, fields: list[Field], outpath: Path) -> None:
     header = CppHeaderFile(stencil_name=stencil_name, fields=fields)
     source = format_source("cpp", CppHeaderGenerator.apply(header), style="LLVM")
     write_string(source, outpath, f"{stencil_name}.h")

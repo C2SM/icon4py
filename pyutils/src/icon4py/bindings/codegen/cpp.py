@@ -653,7 +653,7 @@ class CppDefTemplate(Node):
         )
         return fields, offsets
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         fields, offsets = self._get_field_data()
         offset_renderer = GpuTriMeshOffsetRenderer(self.offsets)
 

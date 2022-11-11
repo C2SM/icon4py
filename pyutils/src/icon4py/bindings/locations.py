@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Iterator
+
 from functional.ffront.fbuiltins import Dimension
 
 from icon4py.bindings.codegen.render.location import LocationRenderer
@@ -79,7 +81,7 @@ class ChainedLocation:
                 f"chain {chain} contains two of the same elements in succession"
             )
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[BasicLocation]:
         return iter(self.chain)
 
     def __getitem__(self, item: int) -> BasicLocation:

@@ -17,7 +17,7 @@ from icon4py.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4py.bindings.codegen.types import Entity
+from icon4py.bindings.codegen.types import FieldEntity
 from icon4py.bindings.exceptions import BindingsRenderingException
 
 
@@ -25,7 +25,7 @@ from icon4py.bindings.exceptions import BindingsRenderingException
 class FieldRenderer:
     """A class to render Field attributes for their the respective c++ or f90 bindings."""
 
-    entity: Entity
+    entity: FieldEntity
 
     def render_pointer(self) -> str:
         """Render c++ pointer."""
@@ -89,7 +89,7 @@ class FieldRenderer:
         if self.entity.is_dense():
             return _strides[str(self.entity.location)]
         elif self.entity.is_sparse():
-            return _strides[str(self.entity.location[0])]
+            return _strides[str(self.entity.location[0])]  # type: ignore
         else:
             raise BindingsRenderingException(
                 "stride type called on compound location or scalar"

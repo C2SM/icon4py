@@ -516,7 +516,7 @@ class F90File(Node):
     wrap_run_fun: F90WrapRunFun = eve.datamodels.field(init=False)
     wrap_setup_fun: F90WrapSetupFun = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         all_fields = self.fields
         out_fields = [field for field in self.fields if field.intent.out]
 

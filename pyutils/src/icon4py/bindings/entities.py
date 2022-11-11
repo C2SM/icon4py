@@ -20,6 +20,7 @@ from functional.ffront.common_types import FieldType, ScalarKind
 
 from icon4py.bindings.codegen.render.field import FieldRenderer
 from icon4py.bindings.codegen.render.offset import OffsetRenderer
+from icon4py.bindings.codegen.types import FieldEntity, OffsetEntity
 from icon4py.bindings.exceptions import BindingsTypeConsistencyException
 from icon4py.bindings.locations import (
     BASIC_LOCATIONS,
@@ -37,7 +38,7 @@ from icon4py.pyutils.metadata import FieldInfo
 Intent = namedtuple("Intent", ["inp", "out"])
 
 
-def chain_from_str(chain: str) -> list[BasicLocation]:
+def chain_from_str(chain: list[str] | str) -> list[BasicLocation]:
     chain_ctor_dispatcher = {"E": Edge, "C": Cell, "V": Vertex}
     if not all(c in chain_ctor_dispatcher for c in chain):
         raise BindingsTypeConsistencyException(
@@ -46,7 +47,7 @@ def chain_from_str(chain: str) -> list[BasicLocation]:
     return [chain_ctor_dispatcher[c]() for c in chain]
 
 
-class Offset(Node):
+class Offset(Node, OffsetEntity):
     def __init__(self, chain: str) -> None:
         self.includes_center = self._includes_center(chain)
         self.source = self._handle_source(chain)
@@ -60,7 +61,7 @@ class Offset(Node):
         return calc_num_neighbors(self.target[1].to_dim_list(), self.includes_center)
 
     @staticmethod
-    def _includes_center(chain) -> bool:
+    def _includes_center(chain: str) -> bool:
         if chain.endswith("O"):
             return True
         return False
@@ -92,14 +93,12 @@ class Offset(Node):
         if isinstance(source, CompoundLocation):
             target_1 = ChainedLocation(chain_from_str(str(source)))
         else:
-            target_1 = ChainedLocation(
-                chain_from_str("".join(chain).split("2"))
-            )  # todo: make str
+            target_1 = ChainedLocation(chain_from_str("".join(chain).split("2")))
 
         return target_0, target_1
 
 
-class Field(Node):
+class Field(Node, FieldEntity):
     def __init__(self, name: str, field_info: FieldInfo) -> None:
         self.name = str(name)
         self.field_type = self._extract_field_type(field_info.field)
@@ -131,13 +130,13 @@ class Field(Node):
             raise BindingsTypeConsistencyException(
                 "num nbh only defined for sparse fields"
             )
-        return calc_num_neighbors(self.location.to_dim_list(), self.includes_center)
+        return calc_num_neighbors(self.location.to_dim_list(), self.includes_center)  # type: ignore
 
     @staticmethod
     def _extract_field_type(field: past.DataSymbol) -> ScalarKind:
         """Handle extraction of field types for different fields e.g. Scalar."""
         if not isinstance(field.type, FieldType):
-            return field.type.kind
+            return field.type.kind  # type: ignore
         return field.type.dtype.kind
 
     @staticmethod

@@ -35,7 +35,7 @@ from icon4py.pyutils.icochainsize import IcoChainSize
 @dataclasses.dataclass(frozen=True)
 class StencilInfo:
     fvprog: Program
-    connectivity_chains: list[str]
+    connectivity_chains: list[eve.concepts.SymbolRef]
     offset_provider: dict
 
 
@@ -60,7 +60,7 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     out_arg = fvprog.past_node.body[0].kwargs["out"]
     assert isinstance(out_arg, (past.Name, past.TupleExpr))
     output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
-    output_arg_ids = set(arg.id for arg in output_fields)
+    output_arg_ids = set(arg.id for arg in output_fields)  # type: ignore
 
     fields: dict[str, FieldInfo] = {
         field_node.id: FieldInfo(
@@ -85,12 +85,10 @@ def import_definition(name: str) -> Program | FieldOperator | types.FunctionType
     return fencil
 
 
-def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Program:
+def get_fvprog(fencil_def: Program | Any) -> Program:
     match fencil_def:
         case Program():
             fvprog = fencil_def
-        case FieldOperator():
-            fvprog = fencil_def.as_program()
         case _:
             fvprog = program(fencil_def)
 
@@ -100,7 +98,7 @@ def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Prog
     return fvprog
 
 
-def provide_offset(offset: str) -> type.SimpleNamespace | Dimension:
+def provide_offset(offset: str) -> types.SimpleNamespace | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
