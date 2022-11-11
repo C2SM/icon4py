@@ -85,12 +85,10 @@ def import_definition(name: str) -> Program | FieldOperator | types.FunctionType
     return fencil
 
 
-def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Program:
+def get_fvprog(fencil_def: Program | Any) -> Program:
     match fencil_def:
         case Program():
             fvprog = fencil_def
-        case FieldOperator():
-            fvprog = fencil_def.as_program()
         case _:
             fvprog = program(fencil_def)
 
