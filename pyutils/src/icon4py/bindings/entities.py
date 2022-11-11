@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from collections import namedtuple
 from typing import Union
 
 from eve import Node
@@ -20,7 +19,7 @@ from functional.ffront.common_types import FieldType, ScalarKind
 
 from icon4py.bindings.codegen.render.field import FieldRenderer
 from icon4py.bindings.codegen.render.offset import OffsetRenderer
-from icon4py.bindings.codegen.types import FieldEntity, OffsetEntity
+from icon4py.bindings.codegen.types import FieldEntity, FieldIntent, OffsetEntity
 from icon4py.bindings.exceptions import BindingsTypeConsistencyException
 from icon4py.bindings.locations import (
     BASIC_LOCATIONS,
@@ -33,9 +32,6 @@ from icon4py.bindings.locations import (
 )
 from icon4py.bindings.utils import calc_num_neighbors
 from icon4py.pyutils.metadata import FieldInfo
-
-
-Intent = namedtuple("Intent", ["inp", "out"])
 
 
 def chain_from_str(chain: list[str] | str) -> list[BasicLocation]:
@@ -102,7 +98,7 @@ class Field(Node, FieldEntity):
     def __init__(self, name: str, field_info: FieldInfo) -> None:
         self.name = str(name)
         self.field_type = self._extract_field_type(field_info.field)
-        self.intent = Intent(inp=field_info.inp, out=field_info.out)
+        self.intent = FieldIntent(inp=field_info.inp, out=field_info.out)
         self.has_vertical_dimension = self._has_vertical_dimension(field_info.field)
         self.includes_center = False
         self._update_horizontal_location(field_info.field)

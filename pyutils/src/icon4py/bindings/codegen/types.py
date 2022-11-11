@@ -10,8 +10,10 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import abc
 from abc import ABC
+from dataclasses import dataclass
+from typing import Union
 
 from functional.ffront.common_types import ScalarKind
 
@@ -22,43 +24,50 @@ from icon4py.bindings.locations import (
 )
 
 
+@dataclass(frozen=True)
+class FieldIntent:
+    inp: bool
+    out: bool
+
+
 class FieldEntity(ABC):
-    location: ChainedLocation | CompoundLocation | BasicLocation | None
-    field_type: ScalarKind
     name: str
+    field_type: ScalarKind
+    intent: FieldIntent
     has_vertical_dimension: bool
+    includes_center: bool
+    location: ChainedLocation | CompoundLocation | BasicLocation | None
 
-    def rank(self) -> int:
-        ...
-
+    @abc.abstractmethod
     def is_sparse(self) -> bool:
         ...
 
+    @abc.abstractmethod
     def is_dense(self) -> bool:
         ...
 
+    @abc.abstractmethod
     def is_compound(self) -> bool:
+        ...
+
+    @abc.abstractmethod
+    def rank(self) -> int:
+        ...
+
+    @abc.abstractmethod
+    def get_num_neighbors(self) -> int:
         ...
 
 
 class OffsetEntity(ABC):
     includes_center: bool
+    source: Union[BasicLocation, CompoundLocation]
     target: tuple[BasicLocation, ChainedLocation]
 
+    @abc.abstractmethod
     def is_compound_location(self) -> bool:
         ...
 
-    def is_compound(self) -> bool:
-        ...
-
-    def has_vertical_dimension(self) -> bool:
-        ...
-
-    def name(self) -> str:
-        ...
-
-    def location(self) -> str:
-        ...
-
-    def field_type(self) -> ScalarKind:
+    @abc.abstractmethod
+    def get_num_neighbors(self) -> int:
         ...
