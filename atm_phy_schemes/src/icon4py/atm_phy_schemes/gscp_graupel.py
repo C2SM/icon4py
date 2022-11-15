@@ -239,13 +239,13 @@ def _graupel(
     # icesedi_exp: float,
     # zceff_min: float,
     # Optional Fields: TODO: Pass optional fields to program
-    ddt_tend_t: float,
-    ddt_tend_qv: float,
-    ddt_tend_qc: float,
-    ddt_tend_qi: float,
-    ddt_tend_qr: float,
-    ddt_tend_qs: float,
-    ddt_tend_qg: float,  # DL: Missing from FORTRAN interface
+    # ddt_tend_t: float,
+    # ddt_tend_qv: float,
+    # ddt_tend_qc: float,
+    # ddt_tend_qi: float,
+    # ddt_tend_qr: float,
+    # ddt_tend_qs: float,
+    # ddt_tend_qg: float,  # DL: Missing from FORTRAN interface
     is_surface: bool,
     # Option Switches
     # lldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
@@ -1257,13 +1257,13 @@ def graupel(
         # icesedi_exp,
         # zceff_min,
         # # Optional Fields: TODO: Pass optional fields to program
-        ddt_tend_t,
-        ddt_tend_qv,
-        ddt_tend_qc,
-        ddt_tend_qi,
-        ddt_tend_qr,
-        ddt_tend_qs,
-        ddt_tend_qg,
+        # ddt_tend_t,
+        # ddt_tend_qv,
+        # ddt_tend_qc,
+        # ddt_tend_qi,
+        # ddt_tend_qr,
+        # ddt_tend_qs,
+        # ddt_tend_qg,
         is_surface,
         # # Option Switches
         # lldiag_ttend,
