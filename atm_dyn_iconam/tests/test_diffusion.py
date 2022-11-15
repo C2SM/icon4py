@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.diffusion import init_diffusion_local_fields
 from icon4py.common.dimension import KDim
@@ -55,3 +56,13 @@ def test_init_diff_multifac_vn_k4_substeps():
     )
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
     assert np.allclose(expected_smag_limit, smag_limit)
+
+
+@pytest.mark.xfail
+def test_diffusion_init():
+    pytest.fail("not implemented yet")
+
+
+@pytest.mark.xfail
+def test_diffusion_run():
+    pytest.fail("not implemented yet")

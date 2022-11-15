@@ -26,19 +26,21 @@ from icon4py.common.dimension import KDim
 
 DiffusionTupleVT = namedtuple("DiffusionParamVT", "v t")
 
-# TODO
+# TODO [ml] initial RUN linit = TRUE
 # def _setup_initial_diff_multfac_vn
 
 
 @field_operator
-def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float):
+def _setup_runtime_diff_multfac_vn(
+    k4: float, dyn_substeps: float
+) -> Field[[KDim], float]:
     con = 1.0 / 128.0
     dyn = k4 * dyn_substeps / 3.0
     return broadcast(minimum(con, dyn), (KDim,))
 
 
 @field_operator
-def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]):
+def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]) -> Field[[KDim], float]:
     return 0.125 - 4.0 * diff_multfac_vn
 
 
@@ -48,7 +50,7 @@ def init_diffusion_local_fields(
     dyn_substeps: float,
     diff_multfac_vn: Field[[KDim], float],
     smag_limit: Field[[KDim], float],
-) -> tuple[Field[[KDim], float], Field[[KDim], float]]:
+):
     _setup_runtime_diff_multfac_vn(k4, dyn_substeps, out=diff_multfac_vn)
     _setup_smag_limit(diff_multfac_vn, out=smag_limit)
 
@@ -67,8 +69,10 @@ class DiffusionConfig:
     lateral_boundary_denominator = DiffusionTupleVT(v=200.0, t=135.0)
 
     # TODO [ml] keep those derived params in config or move to diffustion.__init__
+
     K2: Final[float] = 1.0 / (hdiff_efdt_ratio * 8.0)
     K4: Final[float] = K2 / 8.0
+    K4W: Final[float] = K2 / 4.0
     K8: Final[float] = K4 / 8.0
 
     def substep_as_float(self):
@@ -76,15 +80,22 @@ class DiffusionConfig:
 
 
 class Diffusion:
-    """class that configures diffusion and does one diffusion step."""
+    """Class that configures diffusion and does one diffusion step."""
 
     def __init__(self, config: DiffusionConfig):
         """
-        TODO [ml]: handle initial run: linit = .TRUE.:  smag_offset and diff_multfac_vn are defined
-                differently.
+        Initialize Diffusion granule.
+
+        TODO [ml]: initial run: linit = .TRUE.:  smag_offset and diff_multfac_vn are defined
+        differently.
         """
-        # different for init call smag_offset = 0
+        if not config:
+            raise
+        # different for init call: smag_offset = 0
         self.smag_offset = 0.25 * config.K4 * config.substep_as_float()
+        self.diff_multfac_w = np.minimum(
+            1.0 / 48.0, config.K4W * config.substep_as_float()
+        )
 
         # different for initial run!, through diff_multfac_vn
         self.diff_multfac_vn = np_as_located_field(KDim)(
@@ -99,3 +110,44 @@ class Diffusion:
             self.smag_limit,
             offset_provider={},
         )
+
+        self.diff_multfac_n2w = np_as_located_field(KDim)(
+            np.zeros(config.grid.get_k_size())
+        )
+        # TODO [ml] init diff_multfac_n2w
+
+    def do_step(
+        self,
+        diagnostic_state,
+        prognostic_state,
+        metric_state,
+        interpolation_state,
+        dtime,
+    ):
+        """
+        Run a diffusion step.
+
+            inputs are
+            - output fields:
+            - input fields that have changed from one time step to another:
+            - simulation parameters: dtime - timestep
+        """
+        # -------
+        # OUTLINE
+        # -------
+        # 1. CALL rbf_vec_interpol_vertex
+        # 2. HALO EXCHANGE -- CALL sync_patch_array_mult
+        # 3. CALL wrap_run_mo_nh_diffusion_stencil_01, CALL wrap_run_mo_nh_diffusion_stencil_02,
+        #   CALL wrap_run_mo_nh_diffusion_stencil_03
+        # 4. IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
+        # 5. CALL rbf_vec_interpol_vertex_wp
+        # 6. HALO EXCHANGE -- CALL sync_patch_array_mult
+        # 7. CALL wrap_run_mo_nh_diffusion_stencil_04, wrap_run_mo_nh_diffusion_stencil_05
+        # 7a. IF (l_limited_area .OR. jg > 1) CALL wrap_run_mo_nh_diffusion_stencil_06
+        # 7b. call wrap_run_mo_nh_diffusion_stencil_07, wrap_run_mo_nh_diffusion_stencil_08,
+        #     wrap_run_mo_nh_diffusion_stencil_09, wrap_run_mo_nh_diffusion_stencil_10
+        # 8. HALO EXCHANGE: CALL sync_patch_array
+        # 9. call wrap_run_mo_nh_diffusion_stencil_11, wrap_run_mo_nh_diffusion_stencil_12,
+        #    wrap_run_mo_nh_diffusion_stencil_13, wrap_run_mo_nh_diffusion_stencil_14,
+        #    wrap_run_mo_nh_diffusion_stencil_15, wrap_run_mo_nh_diffusion_stencil_16
+        # 10. HALO EXCHANGE sync_patch_array
