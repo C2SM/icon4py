@@ -14,11 +14,15 @@
 import numpy as np
 import pytest
 
-from icon4py.atm_dyn_iconam.diffusion import init_diffusion_local_fields, DiffusionConfig, \
-    DiffusionParams, init_nabla2_factor_in_upper_damping_zone
+from icon4py.atm_dyn_iconam.diffusion import (
+    DiffusionConfig,
+    DiffusionParams,
+    init_diffusion_local_fields,
+    init_nabla2_factor_in_upper_damping_zone,
+)
 from icon4py.common.dimension import KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import zero_field, random_field
+from icon4py.testutils.utils import random_field, zero_field
 
 
 def _smag_limit_numpy(diff_multfac_vn: np.array):
@@ -66,6 +70,7 @@ def test_init_nabla2_factor_in_upper_damping_zone():
 
     assert np.allclose(0, diff_multfac_n2w)
 
+
 @pytest.mark.xfail
 def test_diffusion_init():
     pytest.fail("not implemented yet")
@@ -77,15 +82,15 @@ def test_diffusion_run():
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio():
-    config :DiffusionConfig = DiffusionConfig()
+    config: DiffusionConfig = DiffusionConfig()
     config.hdiff_efdt_ratio = 1.0
 
-    params  = DiffusionParams(config)
+    params = DiffusionParams(config)
 
     assert params.K2 == pytest.approx(0.125, abs=1e-12)
     assert params.K4 == pytest.approx(0.125 / 8.0, abs=1e-12)
-    assert params.K8 == pytest.approx(0.125/64.0, abs=1e-12)
-    assert params.K4W == pytest.approx(0.125/4.0, abs=1e-12)
+    assert params.K8 == pytest.approx(0.125 / 64.0, abs=1e-12)
+    assert params.K4W == pytest.approx(0.125 / 4.0, abs=1e-12)
 
 
 def test_diffusion_coefficients_without_hdiff_efdt_ratio():
@@ -98,3 +103,23 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio():
     assert params.K4 == 0.0
     assert params.K8 == 0.0
     assert params.K4W == 0.0
+
+
+def test_smagorinski_factor_for_diffusion_type_4():
+    config: DiffusionConfig = DiffusionConfig()
+    config.hdiff_smag_fac = 0.15
+    config.diffusion_type = 4
+
+    params = DiffusionParams(config)
+    assert len(params.smagorinski_factor) == 1
+    assert params.smagorinski_factor[0] == pytest.approx(0.15, abs=1e-16)
+    assert params.smagorinski_height is None
+
+
+def test_smagorinsik_factor_diffusion_type_5():
+    config: DiffusionConfig = DiffusionConfig()
+    config.hdiff_smag_fac = 0.15
+    config.diffusion_type = 5
+
+    params = DiffusionParams(config)
+    assert len(params.smagorinski_factor) == 4

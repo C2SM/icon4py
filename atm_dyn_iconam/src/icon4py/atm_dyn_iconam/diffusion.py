@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import math
 from collections import namedtuple
 from typing import Final
 
@@ -25,6 +25,7 @@ from icon4py.common.dimension import KDim
 
 
 DiffusionTupleVT = namedtuple("DiffusionParamVT", "v t")
+
 
 # TODO [ml] initial RUN linit = TRUE
 # def _setup_initial_diff_multfac_vn
@@ -54,47 +55,115 @@ def init_diffusion_local_fields(
     _setup_runtime_diff_multfac_vn(k4, dyn_substeps, out=diff_multfac_vn)
     _setup_smag_limit(diff_multfac_vn, out=smag_limit)
 
+
 @field_operator
 def _set_zero_k():
-    return broadcast(0.0, (KDim, ))
+    return broadcast(0.0, (KDim,))
+
 
 @program
 def init_nabla2_factor_in_upper_damping_zone(diff_multfac_n2w: Field[[KDim], float]):
     # fix missing the  IF (nrdmax(jg) > 1) (l.332 following)
     _set_zero_k(out=diff_multfac_n2w)
 
-#@field_operator
-def _diff_multfac_n2w(shift: int, nrdmax: Field[[],float]):#  -> Field[[KDim], float]:
-    pass
 
 class DiffusionConfig:
     """contains necessary parameter to configure a diffusion run.
 
     - encapsulates namelist parameters and derived parameters (for now)
+
+    currently we use the MCH r04b09_dsl experiment as constants here. These should
+    be read from config and the default from mo_diffusion_nml.f90 set as defaults.
+
+    TODO: [ml] read from config
+    TODO: [ml] handle dependencies on other namelists (below...)
     """
-    grid = GridConfig()
-    ndyn_substeps = 5  # namelist mo_nonhydro_nml
-    horizontal_diffusion_order = 5  # namelist
+
+    # from namelist diffusion_nml
+    diffusion_type = 5  # hdiff_order ! order of nabla operator for diffusion
+    lhdiff_vn = True  # ! diffusion on the horizontal wind field
+    lhdiff_temp = True  # ! diffusion on the temperature field
+    lhdiff_w = True  # ! diffusion on the vertical wind field
     lhdiff_rcf = True  # namelist, remove if always true
-    hdiff_efdt_ratio = 24.0  # namelist
+    itype_vn_diffu = 1  # ! reconstruction method used for Smagorinsky diffusion
+    itype_t_diffu = 2  # ! discretization of temperature diffusion
+    hdiff_efdt_ratio = 24.0  # ! ratio of e-folding time to time step
+    hdiff_smag_fac = 0.025  # ! scaling factor for Smagorinsky diffusion
+    # defaults:
+
+    # TODO [ml]: external stuff, p_patch, other than diffusion namelist
+    grid = GridConfig()
+
+    # namelist nonhydrostatic_nml
+    l_zdiffu_t = (
+        True  # ! l_zdiffu_t: specifies computation of Smagorinsky temperature diffusion
+    )
+    ndyn_substeps = 5
+
+    # from namelist gridref_nml
+    # denom_diffu_v = 150   ! denominator for lateral boundary diffusion of velocity
     lateral_boundary_denominator = DiffusionTupleVT(v=200.0, t=135.0)
-    hdiff_smag_fac = 0.025 # namelist
+
+    # from namelist grid_nml
+    l_limited_area = True
 
     def substep_as_float(self):
         return float(self.ndyn_substeps)
 
 
-
 class DiffusionParams:
-    def __init__(self, config:DiffusionConfig):
-        #TODO [ml] logging for case KX == 0
-        #TODO [ml] calculation for x_dom (jg) > 2..n_dom
+    def __init__(self, config: DiffusionConfig):
+        # TODO [ml] logging for case KX == 0
+        # TODO [ml] generrally calculation for x_dom (jg) > 2..n_dom, why is jg special
 
-        self.K2: Final[float] = 1.0 / (config.hdiff_efdt_ratio * 8.0) \
-            if config.hdiff_efdt_ratio > 0.0 else 0.0
+        self.K2: Final[float] = (
+            1.0 / (config.hdiff_efdt_ratio * 8.0)
+            if config.hdiff_efdt_ratio > 0.0
+            else 0.0
+        )
         self.K4: Final[float] = self.K2 / 8.0
         self.K8: Final[float] = self.K2 / 64.0
         self.K4W: Final[float] = self.K2 / 4.0
+        (
+            self.smagorinski_factor,
+            self.smagorinski_height,
+        ) = self.determine_enhanced_smagorinski_factor(config)
+
+    def determine_enhanced_smagorinski_factor(self, config: DiffusionConfig):
+        """Enhanced Smagorinsky diffusion factor.
+
+        Smagorinsky diffusion factor is defined as a profile in height
+        above sea level with 4 height sections.
+
+        It is calculated/used only in the case of diffusion_type 3 or 5
+        """
+        match config.diffusion_type:
+            case 5:
+                (
+                    smagorinski_factor,
+                    smagorinski_height,
+                ) = self._calculate_enhanced_smagorinski_factor(config)
+            case 4:
+                # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
+                # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
+                smagorinski_factor = (
+                    config.hdiff_smag_fac if config.hdiff_smag_fac else 0.15,
+                )
+                smagorinski_height = None
+            case _:
+                pass
+        return smagorinski_factor, smagorinski_height
+
+    @staticmethod
+    def _calculate_enhanced_smagorinski_factor(config: DiffusionConfig):
+        magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
+        magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
+        magic_z2 = 1600.0 + 50000.0 + magic_sqrt
+        initial_smagorinski_factor = (config.hdiff_smag_fac, magic_fac2_value, 0.0, 1.0)
+        hdiff_smagorinski_heights = (32500.0, magic_z2, 50000.0, 90000)
+
+        enhanced_factor = initial_smagorinski_factor
+        return enhanced_factor, hdiff_smagorinski_heights
 
 
 class Diffusion:
@@ -133,18 +202,13 @@ class Diffusion:
             np.zeros(config.grid.get_k_size())
         )
 
-
-
-
         self.diff_multfac_n2w = np_as_located_field(KDim)(
             np.zeros(config.grid.get_k_size())
         )
-        ## TODO [ml] missing parts... related to nrdmax
-        init_enhanced_smagorinski_factor(self.diff_multfac_n2w, offset_provider={})
-        # TODO [ml] init diff_multfac_n2w
-
-
-
+        # TODO [ml] missing parts... related to nrdmax
+        init_nabla2_factor_in_upper_damping_zone(
+            self.diff_multfac_n2w, offset_provider={}
+        )
 
     def do_step(
         self,
