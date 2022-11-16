@@ -5,3 +5,4 @@
 ./pyutils
 ./testutils
 ./atm_dyn_iconam
+./liskov
