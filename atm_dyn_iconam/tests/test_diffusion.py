@@ -14,7 +14,8 @@
 import numpy as np
 import pytest
 
-from icon4py.atm_dyn_iconam.diffusion import init_diffusion_local_fields
+from icon4py.atm_dyn_iconam.diffusion import init_diffusion_local_fields, DiffusionConfig, \
+    DiffusionParams
 from icon4py.common.dimension import KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import zero_field
@@ -66,3 +67,27 @@ def test_diffusion_init():
 @pytest.mark.xfail
 def test_diffusion_run():
     pytest.fail("not implemented yet")
+
+
+def test_diffusion_coefficients_with_hdiff_efdt_ratio():
+    config :DiffusionConfig = DiffusionConfig()
+    config.hdiff_efdt_ratio = 1.0
+
+    params  = DiffusionParams(config)
+
+    assert params.K2 == pytest.approx(0.125, abs=1e-12)
+    assert params.K4 == pytest.approx(0.125 / 8.0, abs=1e-12)
+    assert params.K8 == pytest.approx(0.125/64.0, abs=1e-12)
+    assert params.K4W == pytest.approx(0.125/4.0, abs=1e-12)
+
+
+def test_diffusion_coefficients_without_hdiff_efdt_ratio():
+    config: DiffusionConfig = DiffusionConfig()
+    config.hdiff_efdt_ratio = 0.0
+
+    params = DiffusionParams(config)
+
+    assert params.K2 == 0.0
+    assert params.K4 == 0.0
+    assert params.K8 == 0.0
+    assert params.K4W == 0.0

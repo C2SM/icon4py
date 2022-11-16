@@ -54,11 +54,19 @@ def init_diffusion_local_fields(
     _setup_runtime_diff_multfac_vn(k4, dyn_substeps, out=diff_multfac_vn)
     _setup_smag_limit(diff_multfac_vn, out=smag_limit)
 
+#@field_operator
+def _enhanced_smagorinski_factor():
+    # aka diff_multfac_smag
+    pass
+
+#@field_operator
+def _diff_multfac_n2w(shift: int):#  -> Field[[KDim], float]:
+    pass
 
 class DiffusionConfig:
     """contains necessary parameter to configure a diffusion run.
 
-    - encapsulates namelist parameters
+    - encapsulates namelist parameters and derived parameters (for now)
     """
 
     grid = GridConfig()
@@ -67,34 +75,41 @@ class DiffusionConfig:
     lhdiff_rcf = True  # namelist, remove if always true
     hdiff_efdt_ratio = 24.0  # namelist
     lateral_boundary_denominator = DiffusionTupleVT(v=200.0, t=135.0)
-
-    # TODO [ml] keep those derived params in config or move to diffustion.__init__
-
-    K2: Final[float] = 1.0 / (hdiff_efdt_ratio * 8.0)
-    K4: Final[float] = K2 / 8.0
-    K4W: Final[float] = K2 / 4.0
-    K8: Final[float] = K4 / 8.0
+    hdiff_smag_fac = 0.025 # namelist
 
     def substep_as_float(self):
         return float(self.ndyn_substeps)
 
 
+
+class DiffusionParams:
+    def __init__(self, config:DiffusionConfig):
+        #TODO [ml] logging for case KX == 0
+        #TODO [ml] calculation for x_dom (jg) > 2..n_dom
+
+        self.K2: Final[float] = 1.0 / (config.hdiff_efdt_ratio * 8.0) \
+            if config.hdiff_efdt_ratio > 0.0 else 0.0
+        self.K4: Final[float] = self.K2 / 8.0
+        self.K8: Final[float] = self.K2 / 64.0
+        self.K4W: Final[float] = self.K2 / 4.0
+
+
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def __init__(self, config: DiffusionConfig):
+    def __init__(self, config: DiffusionConfig, params: DiffusionParams):
         """
         Initialize Diffusion granule.
 
         TODO [ml]: initial run: linit = .TRUE.:  smag_offset and diff_multfac_vn are defined
         differently.
         """
-        if not config:
-            raise
+        self.params: params
+
         # different for init call: smag_offset = 0
-        self.smag_offset = 0.25 * config.K4 * config.substep_as_float()
+        self.smag_offset = 0.25 * params.K4 * config.substep_as_float()
         self.diff_multfac_w = np.minimum(
-            1.0 / 48.0, config.K4W * config.substep_as_float()
+            1.0 / 48.0, params.K4W * config.substep_as_float()
         )
 
         # different for initial run!, through diff_multfac_vn
@@ -104,7 +119,7 @@ class Diffusion:
         self.smag_limit = np_as_located_field(KDim)(np.zeros(config.grid.get_k_size()))
 
         init_diffusion_local_fields(
-            config.K4,
+            params.K4,
             config.substep_as_float(),
             self.diff_multfac_vn,
             self.smag_limit,
@@ -115,6 +130,11 @@ class Diffusion:
             np.zeros(config.grid.get_k_size())
         )
         # TODO [ml] init diff_multfac_n2w
+
+        self.enh_smag_fac = np_as_located_field(KDim)(
+            np.zeros(config.grid.get_k_size())
+        )
+        # TODO [ml] init enh_smag_fac
 
     def do_step(
         self,
@@ -135,19 +155,17 @@ class Diffusion:
         # -------
         # OUTLINE
         # -------
-        # 1. CALL rbf_vec_interpol_vertex
-        # 2. HALO EXCHANGE -- CALL sync_patch_array_mult
-        # 3. CALL wrap_run_mo_nh_diffusion_stencil_01, CALL wrap_run_mo_nh_diffusion_stencil_02,
-        #   CALL wrap_run_mo_nh_diffusion_stencil_03
-        # 4. IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
-        # 5. CALL rbf_vec_interpol_vertex_wp
-        # 6. HALO EXCHANGE -- CALL sync_patch_array_mult
-        # 7. CALL wrap_run_mo_nh_diffusion_stencil_04, wrap_run_mo_nh_diffusion_stencil_05
-        # 7a. IF (l_limited_area .OR. jg > 1) CALL wrap_run_mo_nh_diffusion_stencil_06
-        # 7b. call wrap_run_mo_nh_diffusion_stencil_07, wrap_run_mo_nh_diffusion_stencil_08,
-        #     wrap_run_mo_nh_diffusion_stencil_09, wrap_run_mo_nh_diffusion_stencil_10
-        # 8. HALO EXCHANGE: CALL sync_patch_array
-        # 9. call wrap_run_mo_nh_diffusion_stencil_11, wrap_run_mo_nh_diffusion_stencil_12,
-        #    wrap_run_mo_nh_diffusion_stencil_13, wrap_run_mo_nh_diffusion_stencil_14,
-        #    wrap_run_mo_nh_diffusion_stencil_15, wrap_run_mo_nh_diffusion_stencil_16
+        # 1.  CALL rbf_vec_interpol_vertex
+        # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
+        # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
+        # 4.  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
+        # 5.  CALL rbf_vec_interpol_vertex_wp
+        # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
+        # 7.  mo_nh_diffusion_stencil_04, mo_nh_diffusion_stencil_05
+        # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
+        # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
+        #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
+        # 8.  HALO EXCHANGE: CALL sync_patch_array
+        # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
+        #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
         # 10. HALO EXCHANGE sync_patch_array
