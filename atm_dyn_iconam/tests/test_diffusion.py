@@ -13,12 +13,13 @@
 
 import numpy as np
 import pytest
+from numpy import int32
 
 from icon4py.atm_dyn_iconam.diffusion import (
     DiffusionConfig,
     DiffusionParams,
     init_diffusion_local_fields,
-    init_nabla2_factor_in_upper_damping_zone,
+    init_nabla2_factor_in_upper_damping_zone, _en_smag_fac, enhanced_smagorinski_factor,
 )
 from icon4py.common.dimension import KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -27,7 +28,6 @@ from icon4py.testutils.utils import random_field, zero_field
 
 def _smag_limit_numpy(diff_multfac_vn: np.array):
     return 0.125 - 4.0 * diff_multfac_vn
-
 
 def test_init_diff_multifac_vn_const():
     mesh = SimpleMesh()
@@ -69,6 +69,18 @@ def test_init_nabla2_factor_in_upper_damping_zone():
     init_nabla2_factor_in_upper_damping_zone(diff_multfac_n2w, offset_provider={})
 
     assert np.allclose(0, diff_multfac_n2w)
+
+
+def test_enhanced_smagorinski_factor():
+    mesh = SimpleMesh()
+    a_vec = random_field(mesh, KDim)
+    result = zero_field(mesh, KDim)
+    z = (0.1,0.2,0.3, 0.4)
+    fac = (1./3, 0.5, 1.33,0.077)
+    enhanced_smagorinski_factor(*fac, *z, a_vec, result, offset_provider={"Koff":KDim})
+    #enhanced_smagorinski_factor(nshift, fac[0], fac[1], fac[2], fac[3], z[0], z[1], z[2], z[3],
+    #                            a_vec, result, offset_provider={"Koff": KDim})
+
 
 
 @pytest.mark.xfail
@@ -116,10 +128,22 @@ def test_smagorinski_factor_for_diffusion_type_4():
     assert params.smagorinski_height is None
 
 
-def test_smagorinsik_factor_diffusion_type_5():
+def test_smagorinski_heights_diffusion_type_5_are_consistent():
+    config: DiffusionConfig = DiffusionConfig()
+    config.hdiff_smag_fac = 0.15
+    config.diffusion_type = 5
+
+    params = DiffusionParams(config)
+    assert len(params.smagorinski_height) == 4
+    assert min(params.smagorinski_height) == params.smagorinski_height[0]
+    assert max(params.smagorinski_height) == params.smagorinski_height[-1]
+    assert np.all(params.smagorinski_height[1:] > params.smagorinski_height[:-1])
+
+def test_smagorinski_factor_diffusion_type_5():
     config: DiffusionConfig = DiffusionConfig()
     config.hdiff_smag_fac = 0.15
     config.diffusion_type = 5
 
     params = DiffusionParams(config)
     assert len(params.smagorinski_factor) == 4
+

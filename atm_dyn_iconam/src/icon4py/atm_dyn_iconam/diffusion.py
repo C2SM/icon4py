@@ -15,14 +15,12 @@ from collections import namedtuple
 from typing import Final
 
 import numpy as np
-from functional.common import Field
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import broadcast, minimum
+from functional.ffront.fbuiltins import broadcast, minimum, maximum, Field
 from functional.iterator.embedded import np_as_located_field
 
 from icon4py.atm_dyn_iconam.grid import GridConfig
-from icon4py.common.dimension import KDim
-
+from icon4py.common.dimension import KDim, Koff
 
 DiffusionTupleVT = namedtuple("DiffusionParamVT", "v t")
 
@@ -55,7 +53,26 @@ def init_diffusion_local_fields(
     _setup_runtime_diff_multfac_vn(k4, dyn_substeps, out=diff_multfac_vn)
     _setup_smag_limit(diff_multfac_vn, out=smag_limit)
 
+@field_operator
+def _en_smag_fac(hdiff_smag_fac:float, hdiff_smag_fac2:float, hdiff_smag_fac3:float, hdiff_smag_fac4:float, hdiff_smag_z:float, hdiff_smag_z2:float, hdiff_smag_z3:float, hdiff_smag_z4:float, vect_a:Field[[KDim],float])->Field[[KDim], float]:
+    dz21 = hdiff_smag_z2 - hdiff_smag_z
+    alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
+    df32 = hdiff_smag_fac3 - hdiff_smag_fac2
+    df42 = hdiff_smag_fac4 - hdiff_smag_fac2
+    dz32 = hdiff_smag_z3 - hdiff_smag_z2
+    dz42 = hdiff_smag_z4 - hdiff_smag_z2
+    bsq = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
+    asq = df32 / dz32 - bsq * dz32
+    zf = 0.5 * (vect_a + vect_a(Koff[1]))
 
+    dzlin = minimum(dz21, maximum(0., zf - hdiff_smag_z ))
+    dzqdr = minimum(dz42, maximum(0., zf - hdiff_smag_z2))
+    enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (asq + dzqdr * bsq)
+    return enh_smag_fac
+
+@program
+def enhanced_smagorinski_factor(hdiff_smag_fac:float, hdiff_smag_fac2:float, hdiff_smag_fac3:float, hdiff_smag_fac4:float, hdiff_smag_z:float, hdiff_smag_z2:float, hdiff_smag_z3:float, hdiff_smag_z4:float, vect_a:Field[[KDim],float], enh_smag_fac:Field[[KDim], float]):
+    _en_smag_fac(hdiff_smag_fac,hdiff_smag_fac2, hdiff_smag_fac3, hdiff_smag_fac4, hdiff_smag_z, hdiff_smag_z2, hdiff_smag_z3, hdiff_smag_z4, vect_a, out=enh_smag_fac)
 @field_operator
 def _set_zero_k():
     return broadcast(0.0, (KDim,))
@@ -154,16 +171,33 @@ class DiffusionParams:
                 pass
         return smagorinski_factor, smagorinski_height
 
+
     @staticmethod
     def _calculate_enhanced_smagorinski_factor(config: DiffusionConfig):
+        # initial values from mo_diffusion_nml.f90
         magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
         magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
         magic_z2 = 1600.0 + 50000.0 + magic_sqrt
-        initial_smagorinski_factor = (config.hdiff_smag_fac, magic_fac2_value, 0.0, 1.0)
-        hdiff_smagorinski_heights = (32500.0, magic_z2, 50000.0, 90000)
+        factor = (config.hdiff_smag_fac, magic_fac2_value, 0.0, 1.0)
+        heights = (32500.0, magic_z2, 50000.0, 90000.0)
+        # enhance factors according to mo_nh_diffusion.f90/diffusion
 
-        enhanced_factor = initial_smagorinski_factor
-        return enhanced_factor, hdiff_smagorinski_heights
+        df32 = factor[2] - factor[1]
+        df42 = factor[3] - factor[1]
+
+        dz32 = heights[2]- heights[1]
+        dz42 = heights[3] - heights[1]
+
+        alin = (factor[1] - factor[0]) / heights[1] - heights[0]
+        bsquare = (df42 * dz32 - df32 * dz42) / (dz32*dz42*(dz42-dz32))
+        asquare = df32/dz32-bsquare*dz32
+
+
+
+
+
+        enhanced_factor = factor
+        return enhanced_factor, heights
 
 
 class Diffusion:
