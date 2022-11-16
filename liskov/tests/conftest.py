@@ -18,7 +18,7 @@ from click.testing import CliRunner
 
 
 @pytest.fixture
-def make_f90_tmpfile(tmp_path_factory) -> Path:
+def make_f90_tmpfile(tmp_path) -> Path:
     """Fixture factory which creates a temporary Fortran file.
 
     Args:
@@ -26,8 +26,9 @@ def make_f90_tmpfile(tmp_path_factory) -> Path:
     """
 
     def _make_f90_tmpfile(content: str):
-        fn = tmp_path_factory.mktemp("testfiles") / "tmp.f90"
-        fn.write_text(content)
+        fn = tmp_path / "tmp.f90"
+        with open(fn, "w") as f:
+            f.write(content)
         return fn
 
     return _make_f90_tmpfile

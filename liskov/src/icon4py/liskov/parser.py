@@ -34,22 +34,19 @@ class IntegrationClassInput(Protocol):
 
 class DirectivesParser:
     _DIRECTIVE_START = "!#DSL"
-    directives = []
 
     def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
+        self.directives = self._scan_file()
 
-    def __call__(self, *args, **kwargs) -> DirectivesInput:
-        self._scan_lines()
-        ...
-        # todo: invokes f90 directives parser and return DirectivesInput
-
-    def _scan_lines(self) -> None:
+    def _scan_file(self) -> list[Directive]:
         """Scan file for preprocessor directives and collect them."""
+        directives = []
         with self.filepath.open() as f:
             for lnumber, string in enumerate(f):
                 if self._DIRECTIVE_START in string:
-                    self.directives.append(Directive(lnumber, string))
+                    directives.append(Directive(lnumber, string))
+        return directives
 
 
 class IntegrationClassParser:

@@ -25,9 +25,9 @@ class ExternalInputs:
     """With this class we can specify a configurable list of external inputs to icon liskov."""
 
     def __init__(self, filepath: Path):
-        self.directives = DirectivesParser(filepath)
+        self.directive_parser = DirectivesParser(filepath)
         self.class_conf = IntegrationClassParser()
 
     def fetch(self) -> tuple[DirectivesInput, IntegrationClassInput]:
         # todo: create IntegrationInfo
-        return self.directives(), self.class_conf()
+        return self.directive_parser.directives, self.class_conf()

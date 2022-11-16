@@ -18,8 +18,6 @@ from icon4py.testutils.fortran_samples import SIMPLE_STENCIL
 def test_directive_parser(make_f90_tmpfile):
     fpath = make_f90_tmpfile(content=SIMPLE_STENCIL)
     parser = DirectivesParser(fpath)
-    parser()
-
     assert len(parser.directives) == 2
 
 
