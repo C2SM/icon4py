@@ -15,6 +15,11 @@
 class GridConfig:
     def __init__(self):
         self._n_lev = 65
+        # see mo_model_domimp_patches.f90 l. 405
+        self.n_shift_total = 0
 
     def get_k_size(self):
         return self._n_lev
+
+    def get_n_shift(self):
+        return self.n_shift_total

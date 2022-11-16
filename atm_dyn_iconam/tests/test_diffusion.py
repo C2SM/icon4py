@@ -15,10 +15,10 @@ import numpy as np
 import pytest
 
 from icon4py.atm_dyn_iconam.diffusion import init_diffusion_local_fields, DiffusionConfig, \
-    DiffusionParams
+    DiffusionParams, init_nabla2_factor_in_upper_damping_zone
 from icon4py.common.dimension import KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import zero_field
+from icon4py.testutils.utils import zero_field, random_field
 
 
 def _smag_limit_numpy(diff_multfac_vn: np.array):
@@ -58,6 +58,13 @@ def test_init_diff_multifac_vn_k4_substeps():
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
     assert np.allclose(expected_smag_limit, smag_limit)
 
+
+def test_init_nabla2_factor_in_upper_damping_zone():
+    mesh = SimpleMesh()
+    diff_multfac_n2w = random_field(mesh, KDim)
+    init_nabla2_factor_in_upper_damping_zone(diff_multfac_n2w, offset_provider={})
+
+    assert np.allclose(0, diff_multfac_n2w)
 
 @pytest.mark.xfail
 def test_diffusion_init():

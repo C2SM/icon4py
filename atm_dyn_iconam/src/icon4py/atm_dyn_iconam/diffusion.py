@@ -54,13 +54,17 @@ def init_diffusion_local_fields(
     _setup_runtime_diff_multfac_vn(k4, dyn_substeps, out=diff_multfac_vn)
     _setup_smag_limit(diff_multfac_vn, out=smag_limit)
 
-#@field_operator
-def _enhanced_smagorinski_factor():
-    # aka diff_multfac_smag
-    pass
+@field_operator
+def _set_zero_k():
+    return broadcast(0.0, (KDim, ))
+
+@program
+def init_nabla2_factor_in_upper_damping_zone(diff_multfac_n2w: Field[[KDim], float]):
+    # fix missing the  IF (nrdmax(jg) > 1) (l.332 following)
+    _set_zero_k(out=diff_multfac_n2w)
 
 #@field_operator
-def _diff_multfac_n2w(shift: int):#  -> Field[[KDim], float]:
+def _diff_multfac_n2w(shift: int, nrdmax: Field[[],float]):#  -> Field[[KDim], float]:
     pass
 
 class DiffusionConfig:
@@ -68,7 +72,6 @@ class DiffusionConfig:
 
     - encapsulates namelist parameters and derived parameters (for now)
     """
-
     grid = GridConfig()
     ndyn_substeps = 5  # namelist mo_nonhydro_nml
     horizontal_diffusion_order = 5  # namelist
@@ -126,15 +129,22 @@ class Diffusion:
             offset_provider={},
         )
 
-        self.diff_multfac_n2w = np_as_located_field(KDim)(
-            np.zeros(config.grid.get_k_size())
-        )
-        # TODO [ml] init diff_multfac_n2w
-
         self.enh_smag_fac = np_as_located_field(KDim)(
             np.zeros(config.grid.get_k_size())
         )
-        # TODO [ml] init enh_smag_fac
+
+
+
+
+        self.diff_multfac_n2w = np_as_located_field(KDim)(
+            np.zeros(config.grid.get_k_size())
+        )
+        ## TODO [ml] missing parts... related to nrdmax
+        init_enhanced_smagorinski_factor(self.diff_multfac_n2w, offset_provider={})
+        # TODO [ml] init diff_multfac_n2w
+
+
+
 
     def do_step(
         self,
