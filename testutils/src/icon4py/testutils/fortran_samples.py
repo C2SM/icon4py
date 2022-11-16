@@ -11,12 +11,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
-from icon4py.liskov.cli import main
-from icon4py.testutils.fortran_samples import SIMPLE_STENCIL
-
-
-def test_cli(make_f90_tmpfile, cli):
-    fpath = str(make_f90_tmpfile(content=SIMPLE_STENCIL))
-    result = cli.invoke(main, [fpath])
-    assert result.exit_code == 0
+SIMPLE_STENCIL = """\
+    !#DSL STENCIL START(mo_nh_diffusion_stencil_06)
+    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
+    DO jk = 1, nlev
+    !DIR$ IVDEP
+      DO je = i_startidx, i_endidx
+        p_nh_prog%vn(je,jk,jb) =   &
+        p_nh_prog%vn(je,jk,jb) + &
+        z_nabla2_e(je,jk,jb) * &
+        p_patch%edges%area_edge(je,jb)*fac_bdydiff_v
+      ENDDO
+    ENDDO
+    !$ACC END PARALLEL LOOP
+    !#DSL STENCIL END(mo_nh_diffusion_stencil_06)
+    """

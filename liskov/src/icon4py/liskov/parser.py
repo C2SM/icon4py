@@ -11,8 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+
+
+@dataclass
+class Directive:
+    lnumber: int
+    string: str
 
 
 class DirectivesInput(Protocol):
@@ -26,12 +33,23 @@ class IntegrationClassInput(Protocol):
 
 
 class DirectivesParser:
-    def __init__(self, filepath: Path):
+    _DIRECTIVE_START = "!#DSL"
+    directives = []
+
+    def __init__(self, filepath: Path) -> None:
         self.filepath = filepath
 
     def __call__(self, *args, **kwargs) -> DirectivesInput:
+        self._scan_lines()
         ...
         # todo: invokes f90 directives parser and return DirectivesInput
+
+    def _scan_lines(self) -> None:
+        """Scan file for preprocessor directives and collect them."""
+        with self.filepath.open() as f:
+            for lnumber, string in enumerate(f):
+                if self._DIRECTIVE_START in string:
+                    self.directives.append(Directive(lnumber, string))
 
 
 class IntegrationClassParser:

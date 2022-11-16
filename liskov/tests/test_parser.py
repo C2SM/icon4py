@@ -11,4 +11,16 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from icon4py.liskov.parser import DirectivesParser
+from icon4py.testutils.fortran_samples import SIMPLE_STENCIL
+
+
+def test_directive_parser(make_f90_tmpfile):
+    fpath = make_f90_tmpfile(content=SIMPLE_STENCIL)
+    parser = DirectivesParser(fpath)
+    parser()
+
+    assert len(parser.directives) == 2
+
+
 # todo: test simple directive parsing (start and end directives), F90 template is written to file, then parsed.

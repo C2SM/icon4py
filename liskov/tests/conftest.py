@@ -11,14 +11,26 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from pathlib import Path
+
 import pytest
 from click.testing import CliRunner
 
 
-@pytest.fixture(scope="session")
-def tmp_f90_file(tmp_path_factory):
-    fn = tmp_path_factory.mktemp("src") / "test.f90"
-    return fn
+@pytest.fixture
+def make_f90_tmpfile(tmp_path_factory) -> Path:
+    """Fixture factory which creates a temporary Fortran file.
+
+    Args:
+        content: Content to be present in the file.
+    """
+
+    def _make_f90_tmpfile(content: str):
+        fn = tmp_path_factory.mktemp("testfiles") / "tmp.f90"
+        fn.write_text(content)
+        return fn
+
+    return _make_f90_tmpfile
 
 
 @pytest.fixture
