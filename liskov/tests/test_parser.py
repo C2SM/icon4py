@@ -12,13 +12,27 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from icon4py.liskov.parser import DirectivesParser
-from icon4py.testutils.fortran_samples import SIMPLE_STENCIL
+from icon4py.testutils.fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
 
 
-def test_directive_parser(make_f90_tmpfile):
-    fpath = make_f90_tmpfile(content=SIMPLE_STENCIL)
+def test_directive_parser_single_stencil(make_f90_tmpfile):
+    fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
     parser = DirectivesParser(fpath)
-    assert len(parser.directives) == 2
+    directives = parser.parsed_directives
+
+    assert len(directives.stencils) == 1
+    assert directives.declare_line == 1
+    assert directives.create_line == 2
 
 
-# todo: test simple directive parsing (start and end directives), F90 template is written to file, then parsed.
+def test_directive_parser_multiple_stencils(make_f90_tmpfile):
+    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
+    parser = DirectivesParser(fpath)
+    directives = parser.parsed_directives
+
+    assert len(directives.stencils) == 2
+    assert directives.declare_line == 1
+    assert directives.create_line == 3
+
+
+# todo: add tests for invalid preprocessor directives (should yield correct syntax errors)

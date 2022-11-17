@@ -11,14 +11,31 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from dataclasses import dataclass
 from pathlib import Path
 
-from icon4py.liskov.parser import (
-    DirectivesInput,
-    DirectivesParser,
-    IntegrationClassInput,
-    IntegrationClassParser,
-)
+from icon4py.liskov.parser import DirectivesParser, IntegrationClassParser
+
+
+@dataclass(frozen=True)
+class FieldData:
+    inputs: str  # todo: some field class
+    outputs: str  # todo: some field class
+    associations: str  # todo: association class
+
+
+@dataclass(frozen=True)
+class BoundsData:
+    hlower: str | int
+    hupper: str | int
+    vlower: str | int
+    vupper: str | int
+
+
+@dataclass(frozen=True)
+class IntegrationData:
+    fields: FieldData
+    bounds: BoundsData
 
 
 class ExternalInputs:
@@ -28,6 +45,6 @@ class ExternalInputs:
         self.directive_parser = DirectivesParser(filepath)
         self.class_conf = IntegrationClassParser()
 
-    def fetch(self) -> tuple[DirectivesInput, IntegrationClassInput]:
-        # todo: create IntegrationInfo
-        return self.directive_parser.directives, self.class_conf()
+    def fetch(self) -> tuple:
+        # todo: create IntegrationInfo and combine it with parsed directives
+        return self.directive_parser.parsed_directives

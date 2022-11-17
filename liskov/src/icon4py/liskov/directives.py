@@ -11,12 +11,33 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from dataclasses import dataclass
+from typing import Protocol
 
-from icon4py.liskov.cli import main
-from icon4py.testutils.fortran_samples import SINGLE_STENCIL
+
+IDENTIFIER = "!#DSL"
+STENCIL = "STENCIL"
 
 
-def test_cli(make_f90_tmpfile, cli):
-    fpath = str(make_f90_tmpfile(content=SINGLE_STENCIL))
-    result = cli.invoke(main, [fpath])
-    assert result.exit_code == 0
+class DirectiveType(Protocol):
+    pattern: str
+
+
+@dataclass
+class StartStencil:
+    pattern: str = f"{IDENTIFIER} {STENCIL} START"
+
+
+@dataclass
+class EndStencil:
+    pattern: str = f"{IDENTIFIER} {STENCIL} END"
+
+
+@dataclass
+class Declare:
+    pattern: str = f"{IDENTIFIER} DECLARE"
+
+
+@dataclass
+class Create:
+    pattern: str = f"{IDENTIFIER} CREATE"
