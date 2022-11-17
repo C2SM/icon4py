@@ -13,13 +13,13 @@
 
 import numpy as np
 import pytest
-from numpy import int32
 
 from icon4py.atm_dyn_iconam.diffusion import (
     DiffusionConfig,
     DiffusionParams,
+    enhanced_smagorinski_factor,
     init_diffusion_local_fields,
-    init_nabla2_factor_in_upper_damping_zone, _en_smag_fac, enhanced_smagorinski_factor,
+    init_nabla2_factor_in_upper_damping_zone,
 )
 from icon4py.common.dimension import KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -28,6 +28,7 @@ from icon4py.testutils.utils import random_field, zero_field
 
 def _smag_limit_numpy(diff_multfac_vn: np.array):
     return 0.125 - 4.0 * diff_multfac_vn
+
 
 def test_init_diff_multifac_vn_const():
     mesh = SimpleMesh()
@@ -72,15 +73,29 @@ def test_init_nabla2_factor_in_upper_damping_zone():
 
 
 def test_enhanced_smagorinski_factor():
-    mesh = SimpleMesh()
-    a_vec = random_field(mesh, KDim)
-    result = zero_field(mesh, KDim)
-    z = (0.1,0.2,0.3, 0.4)
-    fac = (1./3, 0.5, 1.33,0.077)
-    enhanced_smagorinski_factor(*fac, *z, a_vec, result, offset_provider={"Koff":KDim})
-    #enhanced_smagorinski_factor(nshift, fac[0], fac[1], fac[2], fac[3], z[0], z[1], z[2], z[3],
-    #                            a_vec, result, offset_provider={"Koff": KDim})
+    def enhanced_smagorinski_factor_np(factor_in, heigths_in, a_vec):
+        alin = (factor_in[1] - factor_in[0]) / (heigths_in[1] - heigths_in[0])
+        df32 = factor_in[2] - factor_in[1]
+        df42 = factor_in[3] - factor_in[1]
+        dz32 = heigths_in[2] - heigths_in[1]
+        dz42 = heigths_in[3] - heigths_in[1]
+        bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
+        aqdr = df32 / dz32 - bqdr * dz32
+        zf = 0.5 * (a_vec[:-1] + a_vec[1:])
+        max0 = np.maximum(0.0, zf - heigths_in[0])
+        dzlin = np.minimum(heigths_in[1] - heigths_in[0], max0)
+        max1 = np.maximum(0.0, zf - heigths_in[1])
+        dzqdr = np.minimum(heigths_in[3] - heigths_in[1], max1)
+        return factor_in[0] + dzlin * alin + dzqdr * (aqdr + dzqdr * bqdr)
 
+    mesh = SimpleMesh()
+    a_vec = random_field(mesh, KDim, low=1.0, high=10.0)
+    result = zero_field(mesh, KDim)
+    fac = (0.67, 0.5, 1.3, 0.8)
+    z = (0.1, 0.2, 0.3, 0.4)
+    enhanced_smagorinski_factor(*fac, *z, a_vec, result, offset_provider={"Koff": KDim})
+    enhanced_smag_fac_np = enhanced_smagorinski_factor_np(fac, z, np.asarray(a_vec))
+    assert np.allclose(enhanced_smag_fac_np, np.asarray(result[:-1]))
 
 
 @pytest.mark.xfail
@@ -137,7 +152,11 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent():
     assert len(params.smagorinski_height) == 4
     assert min(params.smagorinski_height) == params.smagorinski_height[0]
     assert max(params.smagorinski_height) == params.smagorinski_height[-1]
-    assert np.all(params.smagorinski_height[1:] > params.smagorinski_height[:-1])
+    assert params.smagorinski_height[0] < params.smagorinski_height[1]
+    assert params.smagorinski_height[1] < params.smagorinski_height[3]
+    assert params.smagorinski_height[2] != params.smagorinski_height[1]
+    assert params.smagorinski_height[2] != params.smagorinski_height[3]
+
 
 def test_smagorinski_factor_diffusion_type_5():
     config: DiffusionConfig = DiffusionConfig()
@@ -145,5 +164,6 @@ def test_smagorinski_factor_diffusion_type_5():
     config.diffusion_type = 5
 
     params = DiffusionParams(config)
+    assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
-
+    assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))

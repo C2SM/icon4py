@@ -16,11 +16,12 @@ from typing import Final
 
 import numpy as np
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import broadcast, minimum, maximum, Field
+from functional.ffront.fbuiltins import Field, broadcast, maximum, minimum
 from functional.iterator.embedded import np_as_located_field
 
 from icon4py.atm_dyn_iconam.grid import GridConfig
 from icon4py.common.dimension import KDim, Koff
+
 
 DiffusionTupleVT = namedtuple("DiffusionParamVT", "v t")
 
@@ -53,26 +54,63 @@ def init_diffusion_local_fields(
     _setup_runtime_diff_multfac_vn(k4, dyn_substeps, out=diff_multfac_vn)
     _setup_smag_limit(diff_multfac_vn, out=smag_limit)
 
+
 @field_operator
-def _en_smag_fac(hdiff_smag_fac:float, hdiff_smag_fac2:float, hdiff_smag_fac3:float, hdiff_smag_fac4:float, hdiff_smag_z:float, hdiff_smag_z2:float, hdiff_smag_z3:float, hdiff_smag_z4:float, vect_a:Field[[KDim],float])->Field[[KDim], float]:
+def _en_smag_fac_for_zero_nshift(
+    hdiff_smag_fac: float,
+    hdiff_smag_fac2: float,
+    hdiff_smag_fac3: float,
+    hdiff_smag_fac4: float,
+    hdiff_smag_z: float,
+    hdiff_smag_z2: float,
+    hdiff_smag_z3: float,
+    hdiff_smag_z4: float,
+    vect_a: Field[[KDim], float],
+) -> Field[[KDim], float]:
     dz21 = hdiff_smag_z2 - hdiff_smag_z
     alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
     df32 = hdiff_smag_fac3 - hdiff_smag_fac2
     df42 = hdiff_smag_fac4 - hdiff_smag_fac2
     dz32 = hdiff_smag_z3 - hdiff_smag_z2
     dz42 = hdiff_smag_z4 - hdiff_smag_z2
-    bsq = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
-    asq = df32 / dz32 - bsq * dz32
+
+    bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
+    aqdr = df32 / dz32 - bqdr * dz32
     zf = 0.5 * (vect_a + vect_a(Koff[1]))
 
-    dzlin = minimum(dz21, maximum(0., zf - hdiff_smag_z ))
-    dzqdr = minimum(dz42, maximum(0., zf - hdiff_smag_z2))
-    enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (asq + dzqdr * bsq)
+    dzlin = minimum(dz21, maximum(0.0, zf - hdiff_smag_z))
+    dzqdr = minimum(dz42, maximum(0.0, zf - hdiff_smag_z2))
+    enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (aqdr + dzqdr * bqdr)
     return enh_smag_fac
 
+
 @program
-def enhanced_smagorinski_factor(hdiff_smag_fac:float, hdiff_smag_fac2:float, hdiff_smag_fac3:float, hdiff_smag_fac4:float, hdiff_smag_z:float, hdiff_smag_z2:float, hdiff_smag_z3:float, hdiff_smag_z4:float, vect_a:Field[[KDim],float], enh_smag_fac:Field[[KDim], float]):
-    _en_smag_fac(hdiff_smag_fac,hdiff_smag_fac2, hdiff_smag_fac3, hdiff_smag_fac4, hdiff_smag_z, hdiff_smag_z2, hdiff_smag_z3, hdiff_smag_z4, vect_a, out=enh_smag_fac)
+def enhanced_smagorinski_factor(
+    hdiff_smag_fac: float,
+    hdiff_smag_fac2: float,
+    hdiff_smag_fac3: float,
+    hdiff_smag_fac4: float,
+    hdiff_smag_z: float,
+    hdiff_smag_z2: float,
+    hdiff_smag_z3: float,
+    hdiff_smag_z4: float,
+    vect_a: Field[[KDim], float],
+    enh_smag_fac: Field[[KDim], float],
+):
+    _en_smag_fac_for_zero_nshift(
+        hdiff_smag_fac,
+        hdiff_smag_fac2,
+        hdiff_smag_fac3,
+        hdiff_smag_fac4,
+        hdiff_smag_z,
+        hdiff_smag_z2,
+        hdiff_smag_z3,
+        hdiff_smag_z4,
+        vect_a,
+        out=enh_smag_fac,
+    )
+
+
 @field_operator
 def _set_zero_k():
     return broadcast(0.0, (KDim,))
@@ -144,9 +182,9 @@ class DiffusionParams:
         (
             self.smagorinski_factor,
             self.smagorinski_height,
-        ) = self.determine_enhanced_smagorinski_factor(config)
+        ) = self.determine_smagorinski_factor(config)
 
-    def determine_enhanced_smagorinski_factor(self, config: DiffusionConfig):
+    def determine_smagorinski_factor(self, config: DiffusionConfig):
         """Enhanced Smagorinsky diffusion factor.
 
         Smagorinsky diffusion factor is defined as a profile in height
@@ -159,7 +197,7 @@ class DiffusionParams:
                 (
                     smagorinski_factor,
                     smagorinski_height,
-                ) = self._calculate_enhanced_smagorinski_factor(config)
+                ) = self.diffusion_type_5_smagorinski_factor(config)
             case 4:
                 # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
                 # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
@@ -171,39 +209,26 @@ class DiffusionParams:
                 pass
         return smagorinski_factor, smagorinski_height
 
-
     @staticmethod
-    def _calculate_enhanced_smagorinski_factor(config: DiffusionConfig):
+    def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
         # initial values from mo_diffusion_nml.f90
         magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
         magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
         magic_z2 = 1600.0 + 50000.0 + magic_sqrt
         factor = (config.hdiff_smag_fac, magic_fac2_value, 0.0, 1.0)
         heights = (32500.0, magic_z2, 50000.0, 90000.0)
-        # enhance factors according to mo_nh_diffusion.f90/diffusion
-
-        df32 = factor[2] - factor[1]
-        df42 = factor[3] - factor[1]
-
-        dz32 = heights[2]- heights[1]
-        dz42 = heights[3] - heights[1]
-
-        alin = (factor[1] - factor[0]) / heights[1] - heights[0]
-        bsquare = (df42 * dz32 - df32 * dz42) / (dz32*dz42*(dz42-dz32))
-        asquare = df32/dz32-bsquare*dz32
-
-
-
-
-
-        enhanced_factor = factor
-        return enhanced_factor, heights
+        return factor, heights
 
 
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def __init__(self, config: DiffusionConfig, params: DiffusionParams):
+    def __init__(
+        self,
+        config: DiffusionConfig,
+        params: DiffusionParams,
+        a_vect: Field[[KDim], float],
+    ):
         """
         Initialize Diffusion granule.
 
@@ -234,6 +259,13 @@ class Diffusion:
 
         self.enh_smag_fac = np_as_located_field(KDim)(
             np.zeros(config.grid.get_k_size())
+        )
+        enhanced_smagorinski_factor(
+            *params.smagorinski_factor,
+            *params.smagorinski_height,
+            a_vect,
+            self.enh_smag_fac,
+            offset_provider={"Koff", KDim},
         )
 
         self.diff_multfac_n2w = np_as_located_field(KDim)(
