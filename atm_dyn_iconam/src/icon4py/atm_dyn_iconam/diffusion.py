@@ -44,6 +44,15 @@ def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]) -> Field[[KDim], fl
     return 0.125 - 4.0 * diff_multfac_vn
 
 
+@field_operator
+def _init_diffusion_local_fields(
+    k4: float, dyn_substeps: float
+) -> tuple[Field[[KDim], float], Field[[KDim], float]]:
+    diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
+    smag_limit = _setup_smag_limit(diff_multfac_vn)
+    return diff_multfac_vn, smag_limit
+
+
 @program
 def init_diffusion_local_fields(
     k4: float,
@@ -51,8 +60,7 @@ def init_diffusion_local_fields(
     diff_multfac_vn: Field[[KDim], float],
     smag_limit: Field[[KDim], float],
 ):
-    _setup_runtime_diff_multfac_vn(k4, dyn_substeps, out=diff_multfac_vn)
-    _setup_smag_limit(diff_multfac_vn, out=smag_limit)
+    _init_diffusion_local_fields(k4, dyn_substeps, out=(diff_multfac_vn, smag_limit))
 
 
 @field_operator
@@ -116,6 +124,16 @@ def _set_zero_k():
     return broadcast(0.0, (KDim,))
 
 
+@field_operator
+def _init_diff_multifac_n2w(
+    offset: int, vct_a: Field[[KDim], float]
+) -> Field[[KDim], float]:
+    # offset = nshift + nrdmax, but we assume nshift=0
+    init_diff_multifac_n2w = _set_zero_k()
+    # 1.0 / 12.0 * (vct_a - vct_a(Koff[offset + 1])) / (vct_a(2) - vct_a(Koff[offset]))**4
+    return init_diff_multifac_n2w
+
+
 @program
 def init_nabla2_factor_in_upper_damping_zone(diff_multfac_n2w: Field[[KDim], float]):
     # fix missing the  IF (nrdmax(jg) > 1) (l.332 following)
@@ -130,9 +148,14 @@ class DiffusionConfig:
     currently we use the MCH r04b09_dsl experiment as constants here. These should
     be read from config and the default from mo_diffusion_nml.f90 set as defaults.
 
+
+
     TODO: [ml] read from config
     TODO: [ml] handle dependencies on other namelists (below...)
     """
+
+    # TODO [ml]: external stuff grid related, p_patch,
+    grid = GridConfig()
 
     # from namelist diffusion_nml
     diffusion_type = 5  # hdiff_order ! order of nabla operator for diffusion
@@ -146,20 +169,20 @@ class DiffusionConfig:
     hdiff_smag_fac = 0.025  # ! scaling factor for Smagorinsky diffusion
     # defaults:
 
-    # TODO [ml]: external stuff, p_patch, other than diffusion namelist
-    grid = GridConfig()
-
-    # namelist nonhydrostatic_nml
+    #
+    # from parent namelist nonhydrostatic_nml
     l_zdiffu_t = (
         True  # ! l_zdiffu_t: specifies computation of Smagorinsky temperature diffusion
     )
+    damp_height = 12500
     ndyn_substeps = 5
 
-    # from namelist gridref_nml
+    # from other namelists
+    # namelist gridref_nml
     # denom_diffu_v = 150   ! denominator for lateral boundary diffusion of velocity
     lateral_boundary_denominator = DiffusionTupleVT(v=200.0, t=135.0)
 
-    # from namelist grid_nml
+    # namelist grid_nml -> TODO [ml] could go to grid config?
     l_limited_area = True
 
     def substep_as_float(self):
@@ -167,6 +190,8 @@ class DiffusionConfig:
 
 
 class DiffusionParams:
+    """Calculates derived quantities depending on the diffusion config."""
+
     def __init__(self, config: DiffusionConfig):
         # TODO [ml] logging for case KX == 0
         # TODO [ml] generrally calculation for x_dom (jg) > 2..n_dom, why is jg special
@@ -295,6 +320,13 @@ class Diffusion:
         # -------
         # OUTLINE
         # -------
+        # Oa logging
+        # 0b call timer start
+        # 0c. apply dtime to enh_smag_factor
+        # TODO does not work because the self.enh_smag_fact is a field: do this where the factor is used, ie inside stencil
+
+        timestep_scaled_smagorinski_factor = self.enh_smag_fac * dtime
+
         # 1.  CALL rbf_vec_interpol_vertex
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
