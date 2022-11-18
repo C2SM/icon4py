@@ -13,6 +13,7 @@
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Match, Pattern
 
 from icon4py.liskov.directives import (
     IDENTIFIER,
@@ -21,6 +22,11 @@ from icon4py.liskov.directives import (
     DirectiveType,
     EndStencil,
     StartStencil,
+)
+from icon4py.liskov.exceptions import (
+    DirectiveSyntaxError,
+    NoDirectivesFound,
+    ParsingException,
 )
 
 
@@ -50,20 +56,18 @@ class ParsedDirectives:
     create_line: int
 
 
-class ParsingException(Exception):
-    pass
-
-
-class DirectiveSyntaxError(Exception):
-    pass
-
-
 class DirectivesCollector:
     def __init__(self, filepath: Path) -> None:
+        """Class which collects all DSL directives in a given file.
+
+        Args:
+            filepath: Path to file to scan for directives.
+        """
         self.filepath = filepath
         self.directives = self._collect_directives()
 
-    def _collect_directives(self):
+    def _collect_directives(self) -> list[RawDirective]:
+        """Scan filepath for directives and returns them."""
         directives = []
         with self.filepath.open() as f:
             for lnumber, string in enumerate(f):
@@ -73,20 +77,30 @@ class DirectivesCollector:
         return directives
 
 
-class NoDirectivesFound:
-    pass
-
-
 class DirectivesParser:
     _SUPPORTED_DIRECTIVES = [StartStencil, EndStencil, Create, Declare]
 
     def __init__(self, filepath: Path) -> None:
+        """Class which carries out end-to-end parsing of a file with regards to DSL directives.
+
+            Handles collection and validation of preprocessor directives, returning a ParsedDirectives
+            object which can be used for code generation.
+
+        Args:
+            filepath: Path to file to parse.
+
+        Note:
+            Directives which are supported by the parser can be modified by editing the self._SUPPORTED_DIRECTIVES class
+            attribute.
+        """
         self.filepath = filepath
         self.collector = DirectivesCollector(filepath)
+        self.validator = DirectiveSyntaxValidator()
+        self.exception_handler = ParsingExceptionHandler
         self.parsed_directives = self._parse_directives()
 
     def _parse_directives(self) -> ParsedDirectives | NoDirectivesFound:
-        """Parse collected directives."""
+        """Execute end-to-end parsing of collected directives."""
         if len(self.collector.directives) != 0:
             typed = self._determine_type(self._preprocess(self.collector.directives))
             self._validate_syntax(typed)
@@ -96,6 +110,7 @@ class DirectivesParser:
         return NoDirectivesFound
 
     def _preprocess(self, directives: list[RawDirective]) -> list[RawDirective]:
+        """Apply preprocessing steps to directive strings."""
         preprocessed = []
         for d in directives:
             preprocessed.append(RawDirective(d.string.strip(), d.lnumber))
@@ -109,16 +124,14 @@ class DirectivesParser:
                 if directive_type.pattern in d.string:
                     typed.append(TypedDirective(d.string, d.lnumber, directive_type()))
 
-        if len(directives) != len(typed):
-            print("Used unsupported directive")  # todo: raise exception
+        self.exception_handler.find_unsupported_directives(directives, typed)
         return typed
 
-    @staticmethod
-    def _validate_syntax(directives: list[TypedDirective]) -> None:
+    def _validate_syntax(self, directives: list[TypedDirective]) -> None:
         """Validate the directive syntax using a validator."""
         for d in directives:
             type_name = d.directive_type.__class__.__name__
-            getattr(DirectiveSyntaxValidator(), type_name)(d)
+            getattr(self.validator, type_name)(d)
 
     @staticmethod
     def _validate_semantics(directives: list[TypedDirective]) -> None:
@@ -129,10 +142,10 @@ class DirectivesParser:
     def extract_stencils(self, directives: list[TypedDirective]) -> list[Stencil]:
         """Extract all stencils from typed and validated directives."""
         stencils = []
-        stencils_directives = self._extract_directive(
+        stencil_directives = self._extract_directive(
             directives, (StartStencil, EndStencil)
         )
-        it = iter(stencils_directives)
+        it = iter(stencil_directives)
         for s in it:
             start, end = s, next(it)
             string = start.string
@@ -150,63 +163,78 @@ class DirectivesParser:
     def _build_parsed_directives(
         self, stencils: list[Stencil], directives: list[TypedDirective]
     ) -> ParsedDirectives:
-        declare = self._extract_directive(directives, Declare)[0]
-        create = self._extract_directive(directives, Create)[0]
+        """Build ParsedDirectives object."""
+        declare = self._extract_directive(directives, Declare)
+        create = self._extract_directive(directives, Create)
         return ParsedDirectives(stencils, declare.lnumber, create.lnumber)
 
+    @staticmethod
     def _extract_directive(
-        self,
         directives: list[TypedDirective],
         required_type: tuple[DirectiveType] | DirectiveType,
-    ):
-        return [d for d in directives if isinstance(d.directive_type, required_type)]
+    ) -> list[TypedDirective] | TypedDirective:
+        directives = [
+            d for d in directives if isinstance(d.directive_type, required_type)
+        ]
+        if len(directives) == 1:
+            return directives[0]
+        return directives
 
 
 class DirectiveSyntaxValidator:
     """Syntax validation method dispatcher for each directive type."""
 
-    # todo: refactor functions
-
     def __init__(self):
-        self.parentheses_regex = r"\(.*?\)"
+        self.parentheses_regex = r"\((\w*?)\)"
+        self.exception_handler = SyntaxExceptionHandler
 
     def StartStencil(self, directive: TypedDirective):
-        # todo: implement check and exception raise
-        pattern = directive.directive_type.pattern
-        regex = rf"{pattern}\((\w*?)\)"
-        matches = re.fullmatch(regex, directive.string)
-        if not matches:
-            raise DirectiveSyntaxError(
-                f"""DirectiveSyntaxError at {directive.lnumber}\n
-                                            {directive.string} is invalid, expected {regex}\n
-                                        """
-            )
+        regex = rf"{directive.directive_type.pattern}{self.parentheses_regex}"
+        self._validate_syntax(directive, regex)
 
     def EndStencil(self, directive: TypedDirective):
-        # todo: implement check and exception raise
-        pattern = directive.directive_type.pattern
-        regex = rf"{pattern}\((\w*?)\)"
+        regex = rf"{directive.directive_type.pattern}{self.parentheses_regex}"
+        self._validate_syntax(directive, regex)
+
+    def Create(self, directive: TypedDirective):
+        regex = directive.directive_type.pattern
+        self._validate_syntax(directive, regex)
+
+    def Declare(self, directive: TypedDirective):
+        regex = directive.directive_type.pattern
+        self._validate_syntax(directive, regex)
+
+    def _validate_syntax(self, directive, regex):
         matches = re.fullmatch(regex, directive.string)
+        self.exception_handler.check_for_matches(directive, matches, regex)
+
+
+class ParsingExceptionHandler:
+    @staticmethod
+    def find_unsupported_directives(
+        directives: list[RawDirective], typed: list[TypedDirective]
+    ) -> None:
+        raw_dirs = set([d.string for d in directives])
+        typed_dirs = set([t.string for t in typed])
+        diff = raw_dirs.difference(typed_dirs)
+        if len(diff) > 0:
+            bad_directives = [d.string for d in directives if d.string in list(diff)]
+            bad_lines = [str(d.lnumber) for d in directives if d.string in list(diff)]
+            raise ParsingException(
+                f"Used unsupported directive(s): {''.join(bad_directives)} on lines {''.join(bad_lines)}"
+            )
+
+
+class SyntaxExceptionHandler:
+    @staticmethod
+    def check_for_matches(
+        directive: TypedDirective, matches: Match[str], regex: Pattern[str]
+    ) -> None:
         if not matches:
             raise DirectiveSyntaxError(
                 f"""DirectiveSyntaxError on line {directive.lnumber}\n
-                                            {directive.string} is invalid, expected {regex}\n
-                                        """
+                    {directive.string} is invalid, expected {regex}\n"""
             )
-
-    def Create(self, directive: TypedDirective):
-        # todo: implement check and exception raise
-        pattern = directive.directive_type.pattern
-        matches = re.fullmatch(rf"{pattern}", directive.string)
-        if not matches:
-            raise Exception
-
-    def Declare(self, directive: TypedDirective):
-        # todo: implement check and exception raise
-        pattern = directive.directive_type.pattern
-        matches = re.fullmatch(rf"{pattern}", directive.string)
-        if not matches:
-            raise Exception
 
 
 class DirectiveSemanticsValidator:

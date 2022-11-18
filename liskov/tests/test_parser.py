@@ -35,4 +35,10 @@ def test_directive_parser_multiple_stencils(make_f90_tmpfile):
     assert directives.create_line == 3
 
 
-# todo: add tests for invalid preprocessor directives (should yield correct syntax errors)
+# todo: add tests for invalid preprocessor directives (should raise DirectiveSyntaxError)
+
+# todo: add test for case where no directives are found (should return NoDirectives)
+
+# todo: add test for use of an unsupported directive (should raise ParsingException)
+
+# todo: add test for multiple unsupported directives (should raise ParsingException)
