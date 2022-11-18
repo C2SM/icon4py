@@ -16,19 +16,15 @@ import math
 import numpy as np
 import pytest
 
-from icon4py.atm_dyn_iconam.vertical import (
-    VerticalModelConfig,
-    VerticalModelParams,
-)
+from icon4py.atm_dyn_iconam.vertical import VerticalModelParams
 
 
 @pytest.mark.parametrize(
     "max_h,damping,delta",
     [(60000, 34000, 612), (12000, 10000, 100), (109000, 45000, 123)],
 )
+# TODO [ml] klevels run from num_lev (ground) to 1 (top most)
 def test_nrdmax_calculation(max_h, damping, delta):
-    vertical_model_config = VerticalModelConfig()
-    vertical_model_config.rayleigh_damping_height = damping
-    vertical_model_config.vct_a = np.arange(0, max_h, delta)
-    vertical_params = VerticalModelParams(vertical_model_config=vertical_model_config)
+    vct_a = np.arange(0, max_h, delta)
+    vertical_params = VerticalModelParams(rayleigh_damping_height=damping, vct_a=vct_a)
     assert vertical_params.get_index_of_damping_layer() == math.ceil(damping / delta)

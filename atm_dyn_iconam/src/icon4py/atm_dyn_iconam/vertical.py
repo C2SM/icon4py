@@ -12,22 +12,57 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from functional.common import Field
+from functional.iterator.embedded import np_as_located_field
+
+from icon4py.common.dimension import KDim
 
 
 class VerticalGridConfig:
-    num_k_levels = 65
+    def __init__(self):
+        self.num_k_levels = 65
+        self.n_shift_total = 0
 
+    def get_k_size(self):
+        return self.num_k_levels
 
-class VerticalModelConfig:
-    rayleigh_damping_height = 12500  # height of rayleigh damping in [m]
-    vct_a = []  # read from vertical_coord_tables
+    def get_n_shift(self):
+        return self.n_shift_total
 
 
 class VerticalModelParams:
-    def __init__(self, vertical_model_config: VerticalModelConfig):
+    def __init__(self, vct_a: np.ndarray, rayleigh_damping_height: float = 12500.0):
+        """
+        Arguments.
+
+        - vct_a: # read from vertical_coord_tables
+        - rayleigh_damping_height height of rayleigh damping in [m] mo_nonhydro_nml
+        """
+        self.rayleigh_damping_height = rayleigh_damping_height
+        self.vct_a = vct_a
+        # TODO klevels in ICON are inversed
         self.index_of_damping_height = np.argmax(
-            vertical_model_config.vct_a >= vertical_model_config.rayleigh_damping_height
+            self.vct_a >= self.rayleigh_damping_height
         )
 
     def get_index_of_damping_layer(self):
         return self.index_of_damping_height
+
+    def get_physical_heights(self) -> Field[[KDim], float]:
+        return np_as_located_field(KDim)(self.vct_a)
+
+    def init_nabla2_factor_in_upper_damping_zone(
+        self, k_size: int
+    ) -> Field[[KDim], float]:
+        # this assumes n_shift == 0
+        buffer = np.zeros(k_size)
+        buffer[2 : self.index_of_damping_height] = (
+            1.0
+            / 12.0
+            * (
+                self.vct_a[2 : self.index_of_damping_height]
+                - self.vct_a[self.index_of_damping_height + 1]
+            )
+            / (self.vct_a[2] - self.vct_a[self.index_of_damping_height + 1])
+        )
+        return np_as_located_field(KDim)(buffer)

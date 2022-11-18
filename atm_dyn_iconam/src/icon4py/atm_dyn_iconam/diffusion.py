@@ -19,7 +19,10 @@ from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, broadcast, maximum, minimum
 from functional.iterator.embedded import np_as_located_field
 
-from icon4py.atm_dyn_iconam.grid import GridConfig
+from icon4py.atm_dyn_iconam.vertical import (
+    VerticalGridConfig,
+    VerticalModelParams,
+)
 from icon4py.common.dimension import KDim, Koff
 
 
@@ -124,22 +127,6 @@ def _set_zero_k():
     return broadcast(0.0, (KDim,))
 
 
-@field_operator
-def _init_diff_multifac_n2w(
-    offset: int, vct_a: Field[[KDim], float]
-) -> Field[[KDim], float]:
-    # offset = nshift + nrdmax, but we assume nshift=0
-    init_diff_multifac_n2w = _set_zero_k()
-    # 1.0 / 12.0 * (vct_a - vct_a(Koff[offset + 1])) / (vct_a(2) - vct_a(Koff[offset]))**4
-    return init_diff_multifac_n2w
-
-
-@program
-def init_nabla2_factor_in_upper_damping_zone(diff_multfac_n2w: Field[[KDim], float]):
-    # fix missing the  IF (nrdmax(jg) > 1) (l.332 following)
-    _set_zero_k(out=diff_multfac_n2w)
-
-
 class DiffusionConfig:
     """contains necessary parameter to configure a diffusion run.
 
@@ -155,7 +142,10 @@ class DiffusionConfig:
     """
 
     # TODO [ml]: external stuff grid related, p_patch,
-    grid = GridConfig()
+    grid = VerticalGridConfig()
+    vertical_params = VerticalModelParams(
+        rayleigh_damping_height=12500, vct_a=np.zeros(grid.get_k_size())
+    )
 
     # from namelist diffusion_nml
     diffusion_type = 5  # hdiff_order ! order of nabla operator for diffusion
@@ -293,12 +283,10 @@ class Diffusion:
             offset_provider={"Koff", KDim},
         )
 
-        self.diff_multfac_n2w = np_as_located_field(KDim)(
-            np.zeros(config.grid.get_k_size())
-        )
-        # TODO [ml] missing parts... related to nrdmax
-        init_nabla2_factor_in_upper_damping_zone(
-            self.diff_multfac_n2w, offset_provider={}
+        self.diff_multfac_n2w = (
+            config.vertical_params.init_nabla2_factor_in_upper_damping_zone(
+                k_size=config.grid.get_k_size()
+            )
         )
 
     def do_step(
