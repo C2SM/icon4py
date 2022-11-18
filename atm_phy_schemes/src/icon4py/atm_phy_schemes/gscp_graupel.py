@@ -49,6 +49,7 @@ TODO: GT4Py team
     1. Call field operators from scan --> sat_pres_ice
     2. Re-interate into FORTRAN
     3. IF statements in return
+    4. Allow scan_operator init to initialize to None if no init is needed
 """
 # DL. Set somewhere else
 import sys
@@ -170,7 +171,7 @@ local_param: Final = GraupelParametersAndConfiguration()
     ),  # DL TODO: Use ellipsis operator?
 )
 def _graupel(
-    carry: tuple[
+    state_kMinus1: tuple[
         float,
         float,
         float,
@@ -279,7 +280,7 @@ def _graupel(
         zvzg_kminus1,
         dist_cldtop_kminus1,
         zqvsw_up_kminus1,
-    ) = carry
+    ) = state_kMinus1
 
     # # Some constant coefficients
     # znimax = znimax_Thom # number of ice crystals at temp threshold for mixed-phase clouds
