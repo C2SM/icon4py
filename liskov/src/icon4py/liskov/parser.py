@@ -21,13 +21,10 @@ from icon4py.liskov.directives import (
     Declare,
     DirectiveType,
     EndStencil,
+    NoDirectivesFound,
     StartStencil,
 )
-from icon4py.liskov.exceptions import (
-    DirectiveSyntaxError,
-    NoDirectivesFound,
-    ParsingException,
-)
+from icon4py.liskov.exceptions import DirectiveSyntaxError, ParsingException
 
 
 @dataclass(frozen=True)
@@ -107,7 +104,7 @@ class DirectivesParser:
             self._validate_semantics(typed)
             stencils = self.extract_stencils(typed)
             return self._build_parsed_directives(stencils, typed)
-        return NoDirectivesFound
+        return NoDirectivesFound()
 
     def _preprocess(self, directives: list[RawDirective]) -> list[RawDirective]:
         """Apply preprocessing steps to directive strings."""

@@ -19,6 +19,10 @@ IDENTIFIER = "!#DSL"
 STENCIL = "STENCIL"
 
 
+class NoDirectivesFound:
+    pass
+
+
 class DirectiveType(Protocol):
     pattern: str
 

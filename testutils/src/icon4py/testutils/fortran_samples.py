@@ -11,6 +11,21 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+
+NO_DIRECTIVES_STENCIL = """\
+    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
+    DO jk = 1, nlev
+    !DIR$ IVDEP
+      DO je = i_startidx, i_endidx
+        p_nh_prog%vn(je,jk,jb) =   &
+        p_nh_prog%vn(je,jk,jb) + &
+        z_nabla2_e(je,jk,jb) * &
+        p_patch%edges%area_edge(je,jb)*fac_bdydiff_v
+      ENDDO
+    ENDDO
+    !$ACC END PARALLEL LOOP
+    """
+
 SINGLE_STENCIL = """\
     !#DSL DECLARE
     !#DSL CREATE

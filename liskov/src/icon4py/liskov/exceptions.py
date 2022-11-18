@@ -18,7 +18,3 @@ class ParsingException(Exception):
 
 class DirectiveSyntaxError(Exception):
     pass
-
-
-class NoDirectivesFound:
-    pass

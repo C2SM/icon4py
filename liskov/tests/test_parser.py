@@ -10,9 +10,24 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from pathlib import Path
 
+import pytest
+
+from icon4py.liskov.directives import NoDirectivesFound
+from icon4py.liskov.exceptions import DirectiveSyntaxError, ParsingException
 from icon4py.liskov.parser import DirectivesParser
-from icon4py.testutils.fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
+from icon4py.testutils.fortran_samples import (
+    MULTIPLE_STENCILS,
+    NO_DIRECTIVES_STENCIL,
+    SINGLE_STENCIL,
+)
+
+
+def insert_new_lines(fname: Path, lines: list[str]):
+    with open(fname, "a") as f:
+        for ln in lines:
+            f.write(f"{ln}\n")
 
 
 def test_directive_parser_single_stencil(make_f90_tmpfile):
@@ -35,10 +50,39 @@ def test_directive_parser_multiple_stencils(make_f90_tmpfile):
     assert directives.create_line == 3
 
 
-# todo: add tests for invalid preprocessor directives (should raise DirectiveSyntaxError)
+@pytest.mark.parametrize(
+    "directive",
+    [
+        "!#DSL FOO_DIRECTIVE",
+        "!#DSL BAR_DIRECTIVE",
+    ],
+)
+def test_directive_parser_parsing_exception(make_f90_tmpfile, directive):
+    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
+    insert_new_lines(fpath, [directive])
 
-# todo: add test for case where no directives are found (should return NoDirectives)
+    with pytest.raises(ParsingException):
+        DirectivesParser(fpath)
 
-# todo: add test for use of an unsupported directive (should raise ParsingException)
 
-# todo: add test for multiple unsupported directives (should raise ParsingException)
+@pytest.mark.parametrize(
+    "directive",
+    [
+        "!#DSL STENCIL START(stencil1, stencil2)",
+        "!#DSL DECLARE FOO",
+        "!#DSL CREATE DATA",
+    ],
+)
+def test_directive_parser_invalid_directive_syntax(make_f90_tmpfile, directive):
+    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
+    insert_new_lines(fpath, [directive])
+
+    with pytest.raises(DirectiveSyntaxError):
+        DirectivesParser(fpath)
+
+
+def test_directive_parser_no_directives_found(make_f90_tmpfile):
+    fpath = make_f90_tmpfile(content=NO_DIRECTIVES_STENCIL)
+    parser = DirectivesParser(fpath)
+    directives = parser.parsed_directives
+    assert isinstance(directives, NoDirectivesFound)
