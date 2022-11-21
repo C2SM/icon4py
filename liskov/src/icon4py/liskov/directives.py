@@ -45,3 +45,14 @@ class Declare:
 @dataclass
 class Create:
     pattern: str = f"{IDENTIFIER} CREATE"
+
+
+@dataclass(frozen=True)
+class RawDirective:
+    string: str
+    lnumber: int
+
+
+@dataclass(frozen=True)
+class TypedDirective(RawDirective):
+    directive_type: DirectiveType

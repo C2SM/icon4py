@@ -10,6 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Match, Pattern
+
+from icon4py.liskov.directives import RawDirective, TypedDirective
 
 
 class ParsingException(Exception):
@@ -18,3 +21,31 @@ class ParsingException(Exception):
 
 class DirectiveSyntaxError(Exception):
     pass
+
+
+class ParsingExceptionHandler:
+    @staticmethod
+    def find_unsupported_directives(
+        directives: list[RawDirective], typed: list[TypedDirective]
+    ) -> None:
+        raw_dirs = set([d.string for d in directives])
+        typed_dirs = set([t.string for t in typed])
+        diff = raw_dirs.difference(typed_dirs)
+        if len(diff) > 0:
+            bad_directives = [d.string for d in directives if d.string in list(diff)]
+            bad_lines = [str(d.lnumber) for d in directives if d.string in list(diff)]
+            raise ParsingException(
+                f"Used unsupported directive(s): {''.join(bad_directives)} on lines {''.join(bad_lines)}"
+            )
+
+
+class SyntaxExceptionHandler:
+    @staticmethod
+    def check_for_matches(
+        directive: TypedDirective, matches: Match[str], regex: Pattern[str]
+    ) -> None:
+        if not matches:
+            raise DirectiveSyntaxError(
+                f"""DirectiveSyntaxError on line {directive.lnumber}\n
+                    {directive.string} is invalid, expected {regex}\n"""
+            )

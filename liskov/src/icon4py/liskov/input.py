@@ -14,7 +14,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from icon4py.liskov.parser import DirectivesParser, IntegrationClassParser
+from icon4py.liskov.parser import DirectivesParser
 
 
 @dataclass(frozen=True)
@@ -43,8 +43,7 @@ class ExternalInputs:
 
     def __init__(self, filepath: Path):
         self.directive_parser = DirectivesParser(filepath)
-        self.class_conf = IntegrationClassParser()
 
     def fetch(self) -> tuple:
-        # todo: create IntegrationInfo and combine it with parsed directives
+        # todo: create IntegrationData and combine it with parsed directives
         return self.directive_parser.parsed_directives
