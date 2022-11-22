@@ -17,7 +17,7 @@ from icon4py.liskov.directives import (
     IDENTIFIER,
     Create,
     Declare,
-    DirectiveType,
+    Directive,
     EndStencil,
     NoDirectivesFound,
     RawDirective,
@@ -148,7 +148,7 @@ class DirectivesParser:
     @staticmethod
     def _extract_directive(
         directives: list[TypedDirective],
-        required_type: tuple[DirectiveType] | DirectiveType,
+        required_type: tuple[Directive] | Directive,
     ) -> list[TypedDirective] | TypedDirective:
         directives = [
             d for d in directives if isinstance(d.directive_type, required_type)

@@ -86,3 +86,51 @@ def test_directive_parser_no_directives_found(make_f90_tmpfile):
     parser = DirectivesParser(fpath)
     directives = parser.parsed_directives
     assert isinstance(directives, NoDirectivesFound)
+
+
+@pytest.mark.parametrize(
+    "directive",
+    [
+        "!$DSL DECLARE",
+        "!$DSL CREATE",
+        "!$DSL STENCIL START(mo_nh_diffusion_stencil_06)",
+    ],
+)
+def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
+    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
+    insert_new_lines(fpath, [directive])
+
+    with pytest.raises(ParsingException):
+        DirectivesParser(fpath)
+
+
+@pytest.mark.parametrize(
+    "directive",
+    [
+        "!$DSL DECLARE",
+        "!$DSL CREATE",
+        "!$DSL STENCIL START(mo_nh_diffusion_stencil_06)",
+        "!$DSL STENCIL END(mo_nh_diffusion_stencil_06)",
+    ],
+)
+def test_directive_parser_required_directives(make_f90_tmpfile, directive):
+    new = SINGLE_STENCIL.replace(directive, "")
+    fpath = make_f90_tmpfile(content=new)
+
+    with pytest.raises(ParsingException):
+        DirectivesParser(fpath)
+
+
+@pytest.mark.parametrize(
+    "directive",
+    [
+        "!$DSL STENCIL START(unmatched_stencil_10)",
+        "!$DSL STENCIL END(unmatched_stencil_23)",
+    ],
+)
+def test_directive_parser_unbalanced_stencil_directives(make_f90_tmpfile, directive):
+    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
+    insert_new_lines(fpath, [directive])
+
+    with pytest.raises(ParsingException):
+        DirectivesParser(fpath)

@@ -23,36 +23,38 @@ class NoDirectivesFound:
     pass
 
 
-class DirectiveType(Protocol):
+class Directive(Protocol):
     pattern: str
 
 
 @dataclass
-class StartStencil:
-    pattern: str = f"{IDENTIFIER} {STENCIL} START"
-
-
-@dataclass
-class EndStencil:
-    pattern: str = f"{IDENTIFIER} {STENCIL} END"
-
-
-@dataclass
-class Declare:
-    pattern: str = f"{IDENTIFIER} DECLARE"
-
-
-@dataclass
-class Create:
-    pattern: str = f"{IDENTIFIER} CREATE"
-
-
-@dataclass(frozen=True)
 class RawDirective:
     string: str
     lnumber: int
 
 
-@dataclass(frozen=True)
+@dataclass
 class TypedDirective(RawDirective):
-    directive_type: DirectiveType
+    directive_type: Directive
+
+    def __hash__(self):
+        return hash(self.string)
+
+    def __eq__(self, other):
+        return self.string == other.string
+
+
+class StartStencil:
+    pattern = f"{IDENTIFIER} {STENCIL} START"
+
+
+class EndStencil:
+    pattern = f"{IDENTIFIER} {STENCIL} END"
+
+
+class Declare:
+    pattern = f"{IDENTIFIER} DECLARE"
+
+
+class Create:
+    pattern = f"{IDENTIFIER} CREATE"

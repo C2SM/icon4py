@@ -13,8 +13,14 @@
 
 import re
 
-from icon4py.liskov.directives import TypedDirective
-from icon4py.liskov.exceptions import SyntaxExceptionHandler
+from icon4py.liskov.directives import (
+    Create,
+    Declare,
+    EndStencil,
+    StartStencil,
+    TypedDirective,
+)
+from icon4py.liskov.exceptions import ParsingException, SyntaxExceptionHandler
 from icon4py.liskov.utils import escape_dollar
 
 
@@ -53,10 +59,40 @@ class DirectiveSyntaxValidator:
 
 
 class DirectiveSemanticsValidator:
-    # todo: check not more than one declare directive (at least 1)
-    # todo: check not more than one create directive (at least 1)
-    # todo: number of StencilStart and StencilEnd must be the same
-    # todo: stencil names for StencilStart must be unique
-    # todo: stencil names for StencilEnd must be unique
-    def validate(self, directives: list[TypedDirective]):
-        pass
+    """Validates semantics of preprocessor directives."""
+
+    def validate(self, directives: list[TypedDirective]) -> None:
+        self._validate_directive_uniqueness(directives)
+        self._validate_declare_create(directives)
+        self._validate_stencil_directives(directives)
+
+    @staticmethod
+    def _validate_directive_uniqueness(directives: list[TypedDirective]) -> None:
+        """Check that all used directives are unique."""
+        unique_directives = set(directives)
+        if len(unique_directives) != len(directives):
+            raise ParsingException("Found same directive more than once.")
+
+    @staticmethod
+    def _validate_declare_create(directives: list[TypedDirective]) -> None:
+        """Check that expected directives are used once in the code."""
+        expected = [Declare, Create, StartStencil, EndStencil]
+        for expected_type in expected:
+            if not any(
+                [isinstance(d.directive_type, expected_type) for d in directives]
+            ):
+                raise ParsingException("Did not use Declare or Create directive.")
+
+    @staticmethod
+    def _validate_stencil_directives(directives: list[TypedDirective]) -> None:
+        """Check that number of start and end stencil directives match."""
+        start_stencil_directives = [
+            d for d in directives if isinstance(d.directive_type, (StartStencil))
+        ]
+        end_stencil_directives = [
+            d for d in directives if isinstance(d.directive_type, (EndStencil))
+        ]
+        if len(start_stencil_directives) != len(end_stencil_directives):
+            raise ParsingException(
+                "Not matching number of start and end stencil directives."
+            )
