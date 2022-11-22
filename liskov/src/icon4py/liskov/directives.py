@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 
-IDENTIFIER = "!#DSL"
+IDENTIFIER = "!$DSL"
 STENCIL = "STENCIL"
 
 

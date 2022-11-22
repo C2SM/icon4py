@@ -15,6 +15,7 @@ import re
 
 from icon4py.liskov.directives import TypedDirective
 from icon4py.liskov.exceptions import SyntaxExceptionHandler
+from icon4py.liskov.utils import escape_dollar
 
 
 class DirectiveSyntaxValidator:
@@ -46,7 +47,8 @@ class DirectiveSyntaxValidator:
         self._validate_syntax(directive, regex)
 
     def _validate_syntax(self, directive, regex):
-        matches = re.fullmatch(regex, directive.string)
+        escaped = escape_dollar(regex)
+        matches = re.fullmatch(escaped, directive.string)
         self.exception_handler.check_for_matches(directive, matches, regex)
 
 

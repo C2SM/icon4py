@@ -53,8 +53,8 @@ def test_directive_parser_multiple_stencils(make_f90_tmpfile):
 @pytest.mark.parametrize(
     "directive",
     [
-        "!#DSL FOO_DIRECTIVE",
-        "!#DSL BAR_DIRECTIVE",
+        "!$DSL FOO_DIRECTIVE",
+        "!$DSL BAR_DIRECTIVE",
     ],
 )
 def test_directive_parser_parsing_exception(make_f90_tmpfile, directive):
@@ -68,9 +68,9 @@ def test_directive_parser_parsing_exception(make_f90_tmpfile, directive):
 @pytest.mark.parametrize(
     "directive",
     [
-        "!#DSL STENCIL START(stencil1, stencil2)",
-        "!#DSL DECLARE FOO",
-        "!#DSL CREATE DATA",
+        "!$DSL STENCIL START(stencil1, stencil2)",
+        "!$DSL DECLARE FOO",
+        "!$DSL CREATE DATA",
     ],
 )
 def test_directive_parser_invalid_directive_syntax(make_f90_tmpfile, directive):

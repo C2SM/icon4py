@@ -27,9 +27,9 @@ NO_DIRECTIVES_STENCIL = """\
     """
 
 SINGLE_STENCIL = """\
-    !#DSL DECLARE
-    !#DSL CREATE
-    !#DSL STENCIL START(mo_nh_diffusion_stencil_06)
+    !$DSL DECLARE
+    !$DSL CREATE
+    !$DSL STENCIL START(mo_nh_diffusion_stencil_06)
     !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
     DO jk = 1, nlev
     !DIR$ IVDEP
@@ -41,15 +41,15 @@ SINGLE_STENCIL = """\
       ENDDO
     ENDDO
     !$ACC END PARALLEL LOOP
-    !#DSL STENCIL END(mo_nh_diffusion_stencil_06)
+    !$DSL STENCIL END(mo_nh_diffusion_stencil_06)
     """
 
 MULTIPLE_STENCILS = """\
-    !#DSL DECLARE
+    !$DSL DECLARE
 
-    !#DSL CREATE
+    !$DSL CREATE
 
-    !#DSL STENCIL START(mo_nh_diffusion_stencil_06)
+    !$DSL STENCIL START(mo_nh_diffusion_stencil_06)
     !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
     DO jk = 1, nlev
     !DIR$ IVDEP
@@ -61,9 +61,9 @@ MULTIPLE_STENCILS = """\
       ENDDO
     ENDDO
     !$ACC END PARALLEL LOOP
-    !#DSL STENCIL END(mo_nh_diffusion_stencil_06)
+    !$DSL STENCIL END(mo_nh_diffusion_stencil_06)
 
-    !#DSL STENCIL START(mo_nh_diffusion_stencil_07)
+    !$DSL STENCIL START(mo_nh_diffusion_stencil_07)
     !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
     #ifdef __LOOP_EXCHANGE
         DO jc = i_startidx, i_endidx
@@ -84,5 +84,5 @@ MULTIPLE_STENCILS = """\
           ENDDO
         ENDDO
         !$ACC END PARALLEL LOOP
-        !#DSL STENCIL END(mo_nh_diffusion_stencil_07)
+        !$DSL STENCIL END(mo_nh_diffusion_stencil_07)
     """
