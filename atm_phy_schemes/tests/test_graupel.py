@@ -64,8 +64,8 @@ def test_graupel_serialized_data():
         # ------------------------------
         # The data input is a bit cumbersome due to the inconsistent way it was originally serialized from ICON.
 
-        # Read tech. config
-        config_parameters = {}
+        # Read serialized tech. config
+        ser_config_parameters = {}
         for param in (
             "tcall_gscp_jg",
             "mu_rain",
@@ -93,26 +93,26 @@ def test_graupel_serialized_data():
             "ivend",
             "kstart_moist",
         ):
-            config_parameters[param] = serializer.read_async(
+            ser_config_parameters[param] = serializer.read_async(
                 param, savepoint=savepoints[0]
             )
 
             # Some parameters were saved as ndarrays and need to be unpacked
-            if isinstance(config_parameters[param], np.ndarray):
-                config_parameters[param] = config_parameters[param][0]
+            if isinstance(ser_config_parameters[param], np.ndarray):
+                ser_config_parameters[param] = ser_config_parameters[param][0]
 
             # Need to subtract 1 from some parameters to account for FORTRAN indexing
             if param in ["i_startblk", "i_endblk", "ivstart", "ivend", "kstart_moist"]:
-                config_parameters[param] -= 1
+                ser_config_parameters[param] -= 1
 
-        # Read Fields
-        fields = {}
-        shape_1D = config_parameters["nproma"] * config_parameters["nblks_c"]
-        shape_2D = (shape_1D, config_parameters["nlev"])
+        # Read serialized fields
+        ser_fields = {}
+        shape_1D = ser_config_parameters["nproma"] * ser_config_parameters["nblks_c"]
+        shape_2D = (shape_1D, ser_config_parameters["nlev"])
 
         # In
         for field in ("layer thickness", "pres", "moist air density"):
-            fields[field] = (
+            ser_fields[field] = (
                 serializer.read_async(field, savepoint=savepoints[1])
                 .swapaxes(1, 2)
                 .reshape(shape_2D)
@@ -128,7 +128,7 @@ def test_graupel_serialized_data():
             "specific graupel content",
             "temperature",
         ):
-            fields[field] = (
+            ser_fields[field] = (
                 serializer.read_async(field, savepoint=savepoints[2])
                 .swapaxes(1, 2)
                 .reshape(shape_2D)
@@ -146,17 +146,17 @@ def test_graupel_serialized_data():
 
             data = serializer.read_async(field, savepoint=savepoints[2])
             data = np.expand_dims(data.reshape(shape_1D), 1)
-            fields[field] = np.broadcast_to(data, shape_2D)
+            ser_fields[field] = np.broadcast_to(data, shape_2D)
 
         # Out
-        if config_parameters["ldiag_ttend"]:
-            fields["tendency temperature"] = (
+        if ser_config_parameters["ldiag_ttend"]:
+            ser_fields["tendency temperature"] = (
                 serializer.read_async("tendency temperature", savepoint=savepoints[2])
                 .swapaxes(1, 2)
                 .reshape(shape_2D)
             )
         else:  # DL: TODO Remove Workaround. No optional fields in GT4Py
-            fields["tendency temperature"] = np.zeros(shape_2D)
+            ser_fields["tendency temperature"] = np.zeros(shape_2D)
 
         field_names = (
             "tendency specific water vapor content",
@@ -165,27 +165,27 @@ def test_graupel_serialized_data():
             "tendency specific rain content",
             "tendency specific snow content",
         )
-        if config_parameters["ldiag_qtend"]:
+        if ser_config_parameters["ldiag_qtend"]:
 
             for field in field_names:
-                fields[field] = serializer.read_async(
+                ser_fields[field] = serializer.read_async(
                     field, savepoint=savepoints[2]
                 ).reshape(shape_2D)
 
         else:  # DL: TODO Remove Workaround. No optional fields in GT4Py
             for field in field_names:
-                fields[field] = np.zeros(shape_2D)
+                ser_fields[field] = np.zeros(shape_2D)
 
-        fields["tendency specific graupel content"] = np.zeros(
+        ser_fields["tendency specific graupel content"] = np.zeros(
             shape_2D
         )  # DL: Not serialized
 
         # Convert Numpy Arrays to GT4Py storages
-        for fieldname, field in fields.items():
+        for fieldname, field in ser_fields.items():
             if field.ndim == 1:  # DL: TODO  Workaroudn above
-                fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
+                ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
             elif field.ndim == 2:
-                fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
+                ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
             else:
                 assert "Field dimension not supported"
 
@@ -199,47 +199,47 @@ def test_graupel_serialized_data():
 
         # Compute Coefficients
         gscp_coefficients = gscp_set_coefficients(
-            config_parameters["inwp_gscp"],
-            zceff_min=config_parameters["tune_zceff_min"],
-            v0snow=config_parameters["tune_v0snow"],
-            zvz0i=config_parameters["tune_zvz0i"],
-            mu_rain=config_parameters["mu_rain"],
-            rain_n0_factor=config_parameters["rain_n0_factor"],
-            icesedi_exp=config_parameters["tune_icesedi_exp"],
+            ser_config_parameters["inwp_gscp"],
+            zceff_min=ser_config_parameters["tune_zceff_min"],
+            v0snow=ser_config_parameters["tune_v0snow"],
+            zvz0i=ser_config_parameters["tune_zvz0i"],
+            mu_rain=ser_config_parameters["mu_rain"],
+            rain_n0_factor=ser_config_parameters["rain_n0_factor"],
+            icesedi_exp=ser_config_parameters["tune_icesedi_exp"],
         )
 
         # Run scheme
         graupel(
-            float(config_parameters["tcall_gscp_jg"]),
-            fields["layer thickness"],
-            fields["temperature"],
-            fields["pres"],
-            fields["moist air density"],
-            fields["specific water vapor content"],
-            fields["specific cloud ice content"],
-            fields["specific cloud water content"],
-            fields["specific rain content"],
-            fields["specific snow content"],
-            fields["specific graupel content"],
-            fields["cloud number concentration"],
-            float(config_parameters["qi0"]),
-            float(config_parameters["qc0"]),
-            fields["precipitation rate of ice"],
-            fields["precipitation rate of rain"],
-            fields["precipitation rate of snow"],
-            fields["precipitation rate of graupel"],
+            float(ser_config_parameters["tcall_gscp_jg"]),
+            ser_fields["layer thickness"],
+            ser_fields["temperature"],
+            ser_fields["pres"],
+            ser_fields["moist air density"],
+            ser_fields["specific water vapor content"],
+            ser_fields["specific cloud ice content"],
+            ser_fields["specific cloud water content"],
+            ser_fields["specific rain content"],
+            ser_fields["specific snow content"],
+            ser_fields["specific graupel content"],
+            ser_fields["cloud number concentration"],
+            float(ser_config_parameters["qi0"]),
+            float(ser_config_parameters["qc0"]),
+            ser_fields["precipitation rate of ice"],
+            ser_fields["precipitation rate of rain"],
+            ser_fields["precipitation rate of snow"],
+            ser_fields["precipitation rate of graupel"],
             *temporaries,
             *gscp_coefficients,
-            fields["tendency temperature"],
-            fields["tendency specific water vapor content"],
-            fields["tendency specific cloud water content"],
-            fields["tendency specific ice content"],
-            fields["tendency specific rain content"],
-            fields["tendency specific snow content"],
-            fields["tendency specific graupel content"],
+            ser_fields["tendency temperature"],
+            ser_fields["tendency specific water vapor content"],
+            ser_fields["tendency specific cloud water content"],
+            ser_fields["tendency specific ice content"],
+            ser_fields["tendency specific rain content"],
+            ser_fields["tendency specific snow content"],
+            ser_fields["tendency specific graupel content"],
             is_surface,
-            config_parameters["ldiag_ttend"],
-            config_parameters["ldiag_ttend"],
+            ser_config_parameters["ldiag_ttend"],
+            ser_config_parameters["ldiag_ttend"],
             offset_provider={},
         )
 
@@ -251,7 +251,7 @@ def test_graupel_serialized_data():
         except NameError:
             numErrors = 0
 
-        for fieldname, field in fields.items():
+        for fieldname, field in ser_fields.items():
             if fieldname in ("layer thickness", "moist air density", "pres"):
                 numErrors = field_test(
                     field,
