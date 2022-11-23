@@ -42,15 +42,26 @@ def print_comparison(fld, ref, idx, n):
     )
 
 
-def field_test(fld, fld_string, serializer, savepoint, numErrors, atol=0.0, rtol=1e-15):
+def field_test(
+    field, fieldname, serializer, savepoint, numErrors, atol=0.0, rtol=1e-15
+):
     """Test fields against serialized field."""
-    fld = np.asarray(fld)
-    ref = serializer.read(fld_string, savepoint).reshape(fld.shape)
+    fld = np.asarray(field)  # Convert Gt4Py array to numpy
+    ref = serializer.read(fieldname, savepoint)
+
+    if ref.ndim == 3:
+        ref = ref.swapaxes(1, 2).reshape(fld.shape)
+    elif ref.ndim == 2:  # DL: TODO Remove workaround for 1D fields
+        CellDimSize = fld.shape[0]
+
+        ref = ref.reshape(CellDimSize)
+        ref = np.expand_dims(ref, 1)
+        ref = np.broadcast_to(ref, fld.shape)
 
     try:
         np.testing.assert_allclose(fld, ref, atol=atol, rtol=rtol, verbose=False)
     except AssertionError as msg:
-        print(f"[ {bcolors.FAIL}FAILED{bcolors.ENDC} ] {fld_string}")
+        print(f"[ {bcolors.FAIL}FAILED{bcolors.ENDC} ] {fieldname}")
         print(msg)
 
         isclose = np.isclose(fld, ref, atol=atol, rtol=rtol)
@@ -69,6 +80,5 @@ def field_test(fld, fld_string, serializer, savepoint, numErrors, atol=0.0, rtol
 
         return numErrors + 1
 
-    else:
-        print(f"[   {bcolors.OKGREEN}OK{bcolors.ENDC}   ] {fld_string}")
-        return numErrors
+    print(f"[   {bcolors.OKGREEN}OK{bcolors.ENDC}   ] {fieldname}")
+    return numErrors
