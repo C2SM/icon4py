@@ -90,8 +90,8 @@ class GraupelParametersAndConfiguration(FrozenNamespace):
     lthermo_water_const = True
 
     # DL: TODO Pass explicitly
-    lldiag_ttend = False
-    lldiag_qtend = False
+    lldiag_ttend = True
+    lldiag_qtend = True
 
     # Local Parameters
     zcsg = 0.5  # coefficient for snow-graupel conversion by riming
@@ -168,10 +168,24 @@ local_param: Final = GraupelParametersAndConfiguration()
         0.0,
         0.0,
         0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
     ),  # DL TODO: Use ellipsis operator?
 )
 def _graupel(
     state_kMinus1: tuple[
+        float,
+        float,
+        float,
+        float,
+        float,
+        float,
+        float,
         float,
         float,
         float,
@@ -240,13 +254,13 @@ def _graupel(
     # icesedi_exp: float,
     # zceff_min: float,
     # Optional Fields: TODO: Pass optional fields to program
-    # ddt_tend_t: float,
-    # ddt_tend_qv: float,
-    # ddt_tend_qc: float,
-    # ddt_tend_qi: float,
-    # ddt_tend_qr: float,
-    # ddt_tend_qs: float,
-    # ddt_tend_qg: float,  # DL: Missing from FORTRAN interface
+    ddt_tend_t: float,
+    ddt_tend_qv: float,
+    ddt_tend_qc: float,
+    ddt_tend_qi: float,
+    ddt_tend_qr: float,
+    ddt_tend_qs: float,
+    ddt_tend_qg: float,  # DL: Missing from FORTRAN interface
     is_surface: bool,
     # Option Switches
     # lldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
@@ -266,6 +280,13 @@ def _graupel(
         qr_kminus1,
         qs_kminus1,
         qg_kminus1,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
         zpkr_kminus1,
         zpks_kminus1,
         zpkg_kminus1,
@@ -1013,11 +1034,11 @@ def _graupel(
     qs_t = (zzas * z1orhog + zqst * gscp_coefficients.zdt) * zims
     qg_t = (zzag * z1orhog + zqgt * gscp_coefficients.zdt) * zimg
 
-    # Update Variables DL: Remove?
-    # qig = maximum(0.0, qi_t)
-    # qrg = maximum(0.0, qr_t)
-    # qsg = maximum(0.0, qs_t)
-    # qgg = maximum(0.0, qg_t)
+    # Update Variables DL: Refactor?
+    qig = maximum(0.0, qi_t)
+    qrg = maximum(0.0, qr_t)
+    qsg = maximum(0.0, qs_t)
+    qgg = maximum(0.0, qg_t)
 
     # ----------------------------------------------------------------------
     # Section 10: Complete time step
@@ -1091,12 +1112,12 @@ def _graupel(
         ddt_tend_t = ztt
 
     if local_param.lldiag_qtend:
-        ddt_tend_qv = maximum(0.0, qvg - zqvt)
-        ddt_tend_qc = maximum(0.0, qcg - zqct)
-        ddt_tend_qi = maximum(0.0, qig - qi_t)
-        ddt_tend_qr = maximum(0.0, qrg - qr_t)
-        ddt_tend_qs = maximum(0.0, qsg - qs_t)
-        ddt_tend_qg = maximum(0.0, qgg - qg_t)
+        ddt_tend_qv = maximum(0.0, qv - zqvt)
+        ddt_tend_qc = maximum(0.0, qc - zqct)
+        ddt_tend_qi = maximum(0.0, qi - qi_t)
+        ddt_tend_qr = maximum(0.0, qr - qr_t)
+        ddt_tend_qs = maximum(0.0, qs - qs_t)
+        ddt_tend_qg = maximum(0.0, qg - qg_t)
 
     # Update of prognostic variables
     qr = maximum(0.0, qrg)
@@ -1115,6 +1136,13 @@ def _graupel(
         qr,
         qs,
         qg,
+        ddt_tend_t,
+        ddt_tend_qv,
+        ddt_tend_qc,
+        ddt_tend_qi,
+        ddt_tend_qr,
+        ddt_tend_qs,
+        ddt_tend_qg,
         zpkr,
         zpks,
         zpkg,
@@ -1258,13 +1286,13 @@ def graupel(
         # icesedi_exp,
         # zceff_min,
         # # Optional Fields: TODO: Pass optional fields to program
-        # ddt_tend_t,
-        # ddt_tend_qv,
-        # ddt_tend_qc,
-        # ddt_tend_qi,
-        # ddt_tend_qr,
-        # ddt_tend_qs,
-        # ddt_tend_qg,
+        ddt_tend_t,
+        ddt_tend_qv,
+        ddt_tend_qc,
+        ddt_tend_qi,
+        ddt_tend_qr,
+        ddt_tend_qs,
+        ddt_tend_qg,
         is_surface,
         # # Option Switches
         # lldiag_ttend,
@@ -1277,6 +1305,13 @@ def graupel(
             qr,
             qs,
             qg,
+            ddt_tend_t,
+            ddt_tend_qv,
+            ddt_tend_qc,
+            ddt_tend_qi,
+            ddt_tend_qr,
+            ddt_tend_qs,
+            ddt_tend_qg,
             zpkr,
             zpks,
             zpkg,

@@ -10,14 +10,14 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Test graupel in standalone mode using data serialized from ICON."""
-""" GT4Py hotfix:
-    
-    In _external_src/gt4py-functional/src/functional/iterator/transforms/pass_manager.py
-    1. Exchange L49 with:
-     inlined = InlineLambdas.apply(inlined, opcount_preserving=True) 
-    2. Add "return inlined" below
-    """
+"""Test graupel in standalone mode using data serialized from ICON.
+
+GT4Py hotfix:
+   
+In _external_src/gt4py-functional/src/functional/iterator/transforms/pass_manager.py
+1. Exchange L49 with: inlined = InlineLambdas.apply(inlined, opcount_preserving=True)
+2. Add "return inlined" below
+"""
 
 import os
 from sys import exit, stderr
@@ -142,7 +142,6 @@ def test_graupel_serialized_data():
             )
 
         # 1D Fields
-
         for field in (
             "precipitation rate of rain",
             "precipitation rate of snow",
@@ -155,47 +154,28 @@ def test_graupel_serialized_data():
             data = np.expand_dims(data.reshape(shape_1D), 1)
             ser_fields[field] = np.broadcast_to(data, shape_2D)
 
-        # Out
-        if ser_config_parameters["ldiag_ttend"]:
-            ser_fields["tendency temperature"] = (
-                serializer.read_async("tendency temperature", savepoint=savepoints[2])
-                .swapaxes(1, 2)
-                .reshape(shape_2D)
-            )
-        else:  # DL: TODO Remove Workaround. No optional fields in GT4Py
-            ser_fields["tendency temperature"] = np.zeros(shape_2D)
+        # Convert Numpy Arrays to GT4Py storages
+        for fieldname, field in ser_fields.items():
+            # ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
+            ser_fields[fieldname] = to_icon4py_field(
+                field[3231:3232, :], CellDim, KDim
+            )  # DL: Debug single column
 
-        field_names = (
+        # Init diagnostics to 0.0
+        for field in (
+            "tendency temperature",
             "tendency specific water vapor content",
             "tendency specific cloud water content",
             "tendency specific ice content",
             "tendency specific rain content",
             "tendency specific snow content",
-        )
-        if ser_config_parameters["ldiag_qtend"]:
-
-            for field in field_names:
-                ser_fields[field] = serializer.read_async(
-                    field, savepoint=savepoints[2]
-                ).reshape(shape_2D)
-
-        else:  # DL: TODO Remove Workaround. No optional fields in GT4Py
-            for field in field_names:
-                ser_fields[field] = np.zeros(shape_2D)
-
-        ser_fields["tendency specific graupel content"] = np.zeros(
-            shape_2D
-        )  # DL: Not serialized
-
-        # Convert Numpy Arrays to GT4Py storages
-        for fieldname, field in ser_fields.items():
-            # ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
-            ser_fields[fieldname] = to_icon4py_field(
-                field[3157:3158, :], CellDim, KDim
-            )  # DL: Debug single column
+            "tendency specific graupel content",
+        ):
+            # ser_fields[field] = zero_field((shape_2D), CellDim, KDim)   # DL: Debug single column
+            ser_fields[field] = zero_field((1, 90), CellDim, KDim)
 
         # Local automatic arrays TODO:remove after scan is wrapped in fieldview
-        # temporaries = [zero_field((shape_2D), CellDim, KDim) for _ in range(14)]
+        # temporaries = [zero_field((shape_2D), CellDim, KDim) for _ in range(14)]  # DL: Debug single column
         temporaries = [
             zero_field((1, 90), CellDim, KDim) for _ in range(14)
         ]  # DL: Debug single column
@@ -272,7 +252,9 @@ def test_graupel_serialized_data():
                     shape_1D=shape_1D,
                 )
             elif fieldname.startswith("tendency"):
-                continue  # DL: TODO Dont test tenencies, feature not supported in GT4Py
+                # DL: graupel tendency is not in output data
+                if fieldname == "tendency specific graupel content":
+                    continue
 
                 numErrors = field_test(
                     field,
