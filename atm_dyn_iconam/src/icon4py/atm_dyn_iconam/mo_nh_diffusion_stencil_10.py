@@ -21,10 +21,10 @@ from icon4py.common.dimension import CellDim, KDim
 def _mo_nh_diffusion_stencil_10(
     w: Field[[CellDim, KDim], float],
     diff_multfac_n2w: Field[[KDim], float],
-    cell_area: Field[[CellDim], float],
+    area: Field[[CellDim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    w = w + diff_multfac_n2w * (cell_area * z_nabla2_c)
+    w = w + diff_multfac_n2w * (area * z_nabla2_c)
     return w
 
 
@@ -32,7 +32,7 @@ def _mo_nh_diffusion_stencil_10(
 def mo_nh_diffusion_stencil_10(
     w: Field[[CellDim, KDim], float],
     diff_multfac_n2w: Field[[KDim], float],
-    cell_area: Field[[CellDim], float],
+    area: Field[[CellDim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_10(w, diff_multfac_n2w, cell_area, z_nabla2_c, out=w)
+    _mo_nh_diffusion_stencil_10(w, diff_multfac_n2w, area, z_nabla2_c, out=w)
