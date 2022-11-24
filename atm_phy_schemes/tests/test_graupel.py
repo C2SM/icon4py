@@ -11,6 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Test graupel in standalone mode using data serialized from ICON."""
+""" GT4Py hotfix:
+    
+    In _external_src/gt4py-functional/src/functional/iterator/transforms/pass_manager.py
+    1. Exchange L49 with:
+     inlined = InlineLambdas.apply(inlined, opcount_preserving=True) 
+    2. Add "return inlined" below
+    """
 
 import os
 from sys import exit, stderr
@@ -182,17 +189,17 @@ def test_graupel_serialized_data():
 
         # Convert Numpy Arrays to GT4Py storages
         for fieldname, field in ser_fields.items():
-            # ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
-            ser_fields[fieldname] = to_icon4py_field(field[15:16, :], CellDim, KDim) # DL: Debug single column
+            ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
+            #ser_fields[fieldname] = to_icon4py_field(field[15:16, :], CellDim, KDim) # DL: Debug single column
          
 
         # Local automatic arrays TODO:remove after scan is wrapped in fieldview
-        # temporaries = [zero_field((shape_2D), CellDim, KDim) for _ in range(14)]
-        temporaries = [zero_field((1,90), CellDim, KDim) for _ in range(14)] # DL: Debug single column
+        temporaries = [zero_field((shape_2D), CellDim, KDim) for _ in range(14)]
+        #temporaries = [zero_field((1,90), CellDim, KDim) for _ in range(14)] # DL: Debug single column
 
         # Create index field. TODO: Remove after index fields are avail in fieldview
-        # is_surface = np.zeros((shape_2D), dtype=bool)
-        is_surface = np.zeros((1, 90), dtype=bool) # DL: Debug single column
+        is_surface = np.zeros((shape_2D), dtype=bool)
+        # is_surface = np.zeros((1, 90), dtype=bool) # DL: Debug single column
         is_surface[:, -1] = True
         is_surface = to_icon4py_field(is_surface, CellDim, KDim)
 
