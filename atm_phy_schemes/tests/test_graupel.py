@@ -112,18 +112,17 @@ def test_graupel_serialized_data():
             if param in ["i_startblk", "i_endblk", "ivstart", "ivend", "kstart_moist"]:
                 ser_config_parameters[param] -= 1
 
-        # Read serialized fields
-        ser_fields = {}
         shape_1D = ser_config_parameters["nproma"] * ser_config_parameters["nblks_c"]
         shape_2D = (shape_1D, ser_config_parameters["nlev"])
 
-        # In
-        for field in ("layer thickness", "pres", "moist air density"):
-            ser_fields[field] = (
+        ser_fields = {
+            field: (
                 serializer.read_async(field, savepoint=savepoints[1])
                 .swapaxes(1, 2)
                 .reshape(shape_2D)
             )
+            for field in ("layer thickness", "pres", "moist air density")
+        }
 
         # 3D fields
         for field in (
@@ -189,22 +188,22 @@ def test_graupel_serialized_data():
 
         # Convert Numpy Arrays to GT4Py storages
         for fieldname, field in ser_fields.items():
-            ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
-            #ser_fields[fieldname] = to_icon4py_field(field[15:16, :], CellDim, KDim) # DL: Debug single column
-         
+            # ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
+            ser_fields[fieldname] = to_icon4py_field(
+                field[15:16, :], CellDim, KDim
+            )  # DL: Debug single column
 
         # Local automatic arrays TODO:remove after scan is wrapped in fieldview
-        temporaries = [zero_field((shape_2D), CellDim, KDim) for _ in range(14)]
-        #temporaries = [zero_field((1,90), CellDim, KDim) for _ in range(14)] # DL: Debug single column
+        # temporaries = [zero_field((shape_2D), CellDim, KDim) for _ in range(14)]
+        temporaries = [
+            zero_field((1, 90), CellDim, KDim) for _ in range(14)
+        ]  # DL: Debug single column
 
         # Create index field. TODO: Remove after index fields are avail in fieldview
-        is_surface = np.zeros((shape_2D), dtype=bool)
-        # is_surface = np.zeros((1, 90), dtype=bool) # DL: Debug single column
+        # is_surface = np.zeros((shape_2D), dtype=bool)
+        is_surface = np.zeros((1, 90), dtype=bool)  # DL: Debug single column
         is_surface[:, -1] = True
         is_surface = to_icon4py_field(is_surface, CellDim, KDim)
-
-
-
 
         # Compute Coefficients
         gscp_coefficients = gscp_set_coefficients(
@@ -268,18 +267,32 @@ def test_graupel_serialized_data():
                     serializer,
                     savepoints[-3],
                     numErrors=numErrors,
+                    shape_2D=shape_2D,
+                    shape_1D=shape_1D,
                 )
             elif fieldname.startswith("tendency"):
                 if fieldname == "tendency specific graupel content":
                     continue
 
                 numErrors = field_test(
-                    field, fieldname, serializer, savepoints[-1], numErrors=numErrors
+                    field,
+                    fieldname,
+                    serializer,
+                    savepoints[-1],
+                    numErrors=numErrors,
+                    shape_2D=shape_2D,
+                    shape_1D=shape_1D,
                 )
 
             else:
                 numErrors = field_test(
-                    field, fieldname, serializer, savepoints[-2], numErrors=numErrors
+                    field,
+                    fieldname,
+                    serializer,
+                    savepoints[-2],
+                    numErrors=numErrors,
+                    shape_2D=shape_2D,
+                    shape_1D=shape_1D,
                 )
 
     assert (
