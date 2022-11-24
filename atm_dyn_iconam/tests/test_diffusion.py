@@ -19,8 +19,9 @@ from icon4py.atm_dyn_iconam.diffusion import (
     DiffusionParams,
     enhanced_smagorinski_factor,
     init_diffusion_local_fields,
+    set_zero_v_k,
 )
-from icon4py.common.dimension import KDim
+from icon4py.common.dimension import KDim, VertexDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
@@ -89,6 +90,13 @@ def test_enhanced_smagorinski_factor():
     assert np.allclose(enhanced_smag_fac_np, np.asarray(result[:-1]))
 
 
+def test_set_zero_vertex_k():
+    mesh = SimpleMesh()
+    f = random_field(mesh, VertexDim, KDim)
+    set_zero_v_k(f, offset_provider={})
+    assert np.allclose(0.0, f)
+
+
 @pytest.mark.xfail
 def test_diffusion_init():
     pytest.fail("not implemented yet")
@@ -100,7 +108,7 @@ def test_diffusion_run():
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio():
-    config: DiffusionConfig = DiffusionConfig()
+    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
     config.hdiff_efdt_ratio = 1.0
 
     params = DiffusionParams(config)
@@ -112,7 +120,7 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio():
 
 
 def test_diffusion_coefficients_without_hdiff_efdt_ratio():
-    config: DiffusionConfig = DiffusionConfig()
+    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
     config.hdiff_efdt_ratio = 0.0
 
     params = DiffusionParams(config)
@@ -124,7 +132,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio():
 
 
 def test_smagorinski_factor_for_diffusion_type_4():
-    config: DiffusionConfig = DiffusionConfig()
+    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
     config.hdiff_smag_fac = 0.15
     config.diffusion_type = 4
 
@@ -135,7 +143,7 @@ def test_smagorinski_factor_for_diffusion_type_4():
 
 
 def test_smagorinski_heights_diffusion_type_5_are_consistent():
-    config: DiffusionConfig = DiffusionConfig()
+    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
     config.hdiff_smag_fac = 0.15
     config.diffusion_type = 5
 
@@ -150,7 +158,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent():
 
 
 def test_smagorinski_factor_diffusion_type_5():
-    config: DiffusionConfig = DiffusionConfig()
+    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
     config.hdiff_smag_fac = 0.15
     config.diffusion_type = 5
 
