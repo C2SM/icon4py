@@ -269,7 +269,8 @@ def get_fvprog(fencil_def: Program | FieldOperator | types.FunctionType) -> Prog
     help="file path for optional metadata output",
 )
 @click.argument("fencil", type=str)
-def main(output_metadata: pathlib.Path, fencil: str) -> None:
+@click.option("--imperative", is_flag=True, help="emit imperative code")
+def main(output_metadata: pathlib.Path, fencil: str, imperative: bool) -> None:
     """
     Generate metadata and C++ code for an icon4py fencil.
 
@@ -285,4 +286,12 @@ def main(output_metadata: pathlib.Path, fencil: str) -> None:
     if output_metadata:
         connectivity_chains = [offset for offset in offsets if offset != Koff.value]
         output_metadata.write_text(format_metadata(fvprog, connectivity_chains))
-    click.echo(generate_cpp_code(adapt_domain(fvprog.itir), offset_provider))
+    click.echo(
+        generate_cpp_code(
+            adapt_domain(fvprog.itir), offset_provider, imperative=imperative
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()
