@@ -1,4 +1,2 @@
 -r ../base-requirements-dev.txt
 -e ../common
-matplotlib
-#git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
