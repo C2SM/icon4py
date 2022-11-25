@@ -90,8 +90,8 @@ class GraupelParametersAndConfiguration(FrozenNamespace):
     lthermo_water_const = True
 
     # DL: TODO Pass explicitly
-    lldiag_ttend = True
-    lldiag_qtend = True
+    lldiag_ttend = False
+    lldiag_qtend = False
 
     # Local Parameters
     zcsg = 0.5  # coefficient for snow-graupel conversion by riming
@@ -1028,6 +1028,15 @@ def _graupel(
     zqst = siau + sdau - ssmelt + srim + ssdep + sagg - sconsg
     zqgt = sagg2 - sgmelt + sicri + srcri + sgdep + srfrz + srim2 + sconsg
 
+    # # Save input arrays for final tendency calculation DL: TODO refactor
+    # t_in = temp
+    # qv_in = qv
+    # qc_in = qc
+    # qi_in = qi
+    # qr_in = qr
+    # qs_in = qs
+    # qg_in = qg
+
     # Compute tendencies
     qi_t = (zzai * z1orhog + zqit * gscp_coefficients.zdt) * zimi
     qr_t = (zzar * z1orhog + zqrt * gscp_coefficients.zdt) * zimr
@@ -1044,41 +1053,62 @@ def _graupel(
     # Section 10: Complete time step
     # ----------------------------------------------------------------------
 
-    # Store precipitation fluxes and sedimentation velocities for the next level
-    zprvr = 0.0 if qrg * rhog * zvzr <= gscp_data.zqmin else qrg * rhog * zvzr
-    zprvs = 0.0 if qsg * rhog * zvzs <= gscp_data.zqmin else qsg * rhog * zvzs
-    zprvg = 0.0 if qgg * rhog * zvzg <= gscp_data.zqmin else qgg * rhog * zvzg
-    zprvi = 0.0 if qig * rhog * zvzi <= gscp_data.zqmin else qig * rhog * zvzi
+    if not is_surface:  #  DL: if not surface needed with scan?
+        # Store precipitation fluxes and sedimentation velocities for the next level
+        zprvr = 0.0 if qrg * rhog * zvzr <= gscp_data.zqmin else qrg * rhog * zvzr
+        zprvs = 0.0 if qsg * rhog * zvzs <= gscp_data.zqmin else qsg * rhog * zvzs
+        zprvg = 0.0 if qgg * rhog * zvzg <= gscp_data.zqmin else qgg * rhog * zvzg
+        zprvi = 0.0 if qig * rhog * zvzi <= gscp_data.zqmin else qig * rhog * zvzi
 
-    # DL: This code block inflates errors from 1e-14 to 1e-10
-    zvzr = (
-        0.0
-        if qrg + qr_kminus1 <= gscp_data.zqmin
-        else gscp_coefficients.zvz0r
-        * exp(gscp_coefficients.zvzxp * log((qrg + qr_kminus1) * 0.5 * rhog))
-        * zrho1o2
-    )
-    zvzs = (
-        0.0
-        if qsg + qs_kminus1 <= gscp_data.zqmin
-        else zvz0s
-        * exp(gscp_coefficients.ccswxp * log((qsg + qs_kminus1) * 0.5 * rhog))
-        * zrho1o2
-    )
-    zvzg = (
-        0.0
-        if qgg + qg_kminus1 <= gscp_data.zqmin
-        else local_param.zvz0g
-        * exp(local_param.zexpsedg * log((qgg + qg_kminus1) * 0.5 * rhog))
-        * zrho1o2
-    )
-    zvzi = (
-        0.0
-        if qig + qi_kminus1 <= gscp_data.zqmin
-        else gscp_coefficients.zvz0i
-        * exp(gscp_data.zbvi * log((qig + qi_kminus1) * 0.5 * rhog))
-        * zrhofac_qi
-    )
+        # DL: This code block inflates errors from 1e-14 to 1e-10
+        zvzr = (
+            0.0
+            if qrg + qr_kminus1 <= gscp_data.zqmin
+            else gscp_coefficients.zvz0r
+            * exp(gscp_coefficients.zvzxp * log((qrg + qr_kminus1) * 0.5 * rhog))
+            * zrho1o2
+        )
+        zvzs = (
+            0.0
+            if qsg + qs_kminus1 <= gscp_data.zqmin
+            else zvz0s
+            * exp(gscp_coefficients.ccswxp * log((qsg + qs_kminus1) * 0.5 * rhog))
+            * zrho1o2
+        )
+        zvzg = (
+            0.0
+            if qgg + qg_kminus1 <= gscp_data.zqmin
+            else local_param.zvz0g
+            * exp(local_param.zexpsedg * log((qgg + qg_kminus1) * 0.5 * rhog))
+            * zrho1o2
+        )
+        zvzi = (
+            0.0
+            if qig + qi_kminus1 <= gscp_data.zqmin
+            else gscp_coefficients.zvz0i
+            * exp(gscp_data.zbvi * log((qig + qi_kminus1) * 0.5 * rhog))
+            * zrhofac_qi
+        )
+
+    else:
+
+        # DL: TODO, Reset really needed?
+        # Delete precipitation fluxes from previous timestep
+        prr_gsp = 0.0
+        prs_gsp = 0.0
+        prg_gsp = 0.0
+        pri_gsp = 0.0
+
+        # DL: TODO return precip fluxes
+        prr_gsp = 0.5 * (qrg * rhog * zvzr + zpkr)
+        prs_gsp = 0.5 * (rhog * qsg * zvzs + zpks)
+        pri_gsp = 0.5 * (rhog * qig * zvzi + zpki)
+        prg_gsp = 0.5 * (qgg * rhog * zvzg + zpkg)
+
+        zprvr = 0.0
+        zprvs = 0.0
+        zprvg = 0.0
+        zprvi = 0.0
 
     # ----------------------------------------------------------------------
     # Section 11: Update Tendencies
@@ -1107,17 +1137,7 @@ def _graupel(
     # DL: zlhv and zlhs are rather big numbers. Validates badly for a couple of gridpoints
     ztt = phy_const.rcvd * (zlhv * (zqct + zqrt) + zlhs * (zqit + zqst + zqgt))
 
-    # Save tendencies, if desiered
-    if local_param.lldiag_ttend:
-        ddt_tend_t = ztt
-
-    if local_param.lldiag_qtend:
-        ddt_tend_qv = maximum(0.0, qv - zqvt)
-        ddt_tend_qc = maximum(0.0, qc - zqct)
-        ddt_tend_qi = maximum(0.0, qi - qi_t)
-        ddt_tend_qr = maximum(0.0, qr - qr_t)
-        ddt_tend_qs = maximum(0.0, qs - qs_t)
-        ddt_tend_qg = maximum(0.0, qg - qg_t)
+    # Diagnose pseudo-tendencies
 
     # Update of prognostic variables
     qr = maximum(0.0, qrg)
@@ -1127,6 +1147,17 @@ def _graupel(
     temp = temp + ztt * gscp_coefficients.zdt
     qv = maximum(0.0, qv + zqvt * gscp_coefficients.zdt)
     qc = maximum(0.0, qc + zqct * gscp_coefficients.zdt)
+
+    # if local_param.lldiag_ttend:
+    #     ddt_tend_t = temp - t_in * zdtr
+
+    # if local_param.lldiag_ttend:
+    #     ddt_tend_qv = maximum(-qv_in * zdtr, (qv - qv_in) * zdtr)
+    #     ddt_tend_qc = maximum(-qc_in * zdtr, (qc - qc_in) * zdtr)
+    #     ddt_tend_qi = maximum(-qi_in * zdtr, (qi - qi_in) * zdtr)
+    #     ddt_tend_qr = maximum(-qr_in * zdtr, (qr - qr_in) * zdtr)
+    #     ddt_tend_qs = maximum(-qs_in * zdtr, (qs - qs_in) * zdtr)
+    #     ddt_tend_qg = maximum(-qg_in * zdtr, (qg - qg_in) * zdtr)
 
     return (
         temp,
@@ -1237,6 +1268,7 @@ def graupel(
     # Option Switches
     lldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
     lldiag_qtend: bool,  # if true, moisture tendencies shall be diagnosed
+    kstart_moist: int32,
 ):
     # Writing to several output fields currently breaks due to gt4py bugs
     _graupel(
@@ -1252,11 +1284,11 @@ def graupel(
         qr,
         qs,
         qg,
-        # # Number Densities
+        # Number Densities
         qnc,
         # qi0,
         # qc0,
-        # # Precipitation Fluxes
+        # Precipitation Fluxes
         pri_gsp,
         prr_gsp,
         prs_gsp,
@@ -1327,4 +1359,5 @@ def graupel(
             dist_cldtop,
             zqvsw_up,
         ),
+        domain={CellDim: (0, -1), KDim: (kstart_moist, -1)},
     )

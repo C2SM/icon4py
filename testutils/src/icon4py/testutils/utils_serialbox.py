@@ -58,17 +58,17 @@ def field_test(
     ref = serializer.read(fieldname, savepoint)
 
     if ref.ndim == 3:
-        # ref = ref.swapaxes(1, 2).reshape(fld.shape)
-        ref = ref.swapaxes(1, 2).reshape(shape_2D)[3231:3232, :] # DL: Debug single column
+        ref = ref.swapaxes(1, 2).reshape(fld.shape)
+        # ref = ref.swapaxes(1, 2).reshape(shape_2D)[3231:3232, 29:] # DL: Debug single column
     elif ref.ndim == 2:  # DL: Debug single column
-        # CellDimSize = fld.shape[0] # DL: Debug single column
-        CellDimSize = shape_1D
+        CellDimSize = fld.shape[0] 
+        # CellDimSize = shape_1D # DL: Debug single column
 
         ref = ref.reshape(CellDimSize)
         ref = np.expand_dims(ref, 1)
 
-        # ref = np.broadcast_to(ref, fld.shape) # DL: Debug single column
-        ref = np.broadcast_to(ref, shape_2D)[3231:3232, :]
+        ref = np.broadcast_to(ref, fld.shape) 
+        # ref = np.broadcast_to(ref, shape_2D)[3231:3232, 29:] # DL: Debug single column
 
     try:
         np.testing.assert_allclose(fld, ref, atol=atol, rtol=rtol, verbose=False)
