@@ -328,6 +328,9 @@ class DiffusionParams:
                 )
                 smagorinski_height = None
             case _:
+                print("not implemented")
+                smagorinski_factor = None
+                smagorinski_height = None
                 pass
         return smagorinski_factor, smagorinski_height
 
@@ -360,8 +363,8 @@ class Diffusion:
         self.params: params
 
         # different for init call: smag_offset = 0
-        self.smag_offset = 0.25 * params.K4 * config.substep_as_float()
-        self.diff_multfac_w = np.minimum(
+        self.smag_offset:float = 0.25 * params.K4 * config.substep_as_float()
+        self.diff_multfac_w :float = min(
             1.0 / 48.0, params.K4W * config.substep_as_float()
         )
 
@@ -389,7 +392,7 @@ class Diffusion:
             *params.smagorinski_height,
             a_vect,
             self.enh_smag_fac,
-            offset_provider={"Koff", KDim},
+            offset_provider={"Koff": KDim},
         )
 
         self.diff_multfac_n2w = (
@@ -397,14 +400,16 @@ class Diffusion:
                 k_size=config.grid.get_num_k_levels()
             )
         )
+        shape_vk = (config.grid.get_num_vertices(), config.grid.get_num_k_levels())
         self.u_vert = np_as_located_field(VertexDim, KDim)(
-            np.zeros(config.grid.get_num_vertices(), config.grid.get_num_k_levels())
+            np.zeros(shape_vk, float)
         )
         self.v_vert = np_as_located_field(VertexDim, KDim)(
-            np.zeros(config.grid.get_num_vertices(), config.grid.get_num_k_levels())
+            np.zeros(shape_vk, float)
         )
+        shape_ek = (config.grid.get_num_edges(), config.grid.get_num_k_levels())
         allocate_ek = np_as_located_field(VertexDim, KDim)(
-            np.zeros(config.grid.get_num_edges(), config.grid.get_num_k_levels())
+            np.zeros(shape_ek, float)
         )
         self.kh_smag_e = allocate_ek
         self.kh_smag_ec = allocate_ek

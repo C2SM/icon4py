@@ -26,19 +26,19 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def _smag_limit_numpy(diff_multfac_vn: np.array):
-    return 0.125 - 4.0 * diff_multfac_vn
+def smag_limit_numpy(shape, k4, substeps):
+    return 0.125 - 4.0 * diff_multfac_vn_numpy(shape, k4, substeps)
 
 
 def test_init_diff_multifac_vn_const():
     mesh = SimpleMesh()
     diff_multfac_vn = zero_field(mesh, KDim)
     smag_offset = zero_field(mesh, KDim)
-    expected_diff_multfac_vn = 1.0 / 128.0 * np.ones(np.asarray(diff_multfac_vn).shape)
-    expected_smag_limit = _smag_limit_numpy(expected_diff_multfac_vn)
-
     k4 = 1.0
     substeps = 5.0
+    expected_diff_multfac_vn = diff_multfac_vn_numpy(np.asarray(diff_multfac_vn).shape, k4, substeps)
+    expected_smag_limit = smag_limit_numpy(expected_diff_multfac_vn)
+
     init_diffusion_local_fields(
         k4, substeps, diff_multfac_vn, smag_offset, offset_provider={}
     )
@@ -52,10 +52,9 @@ def test_init_diff_multifac_vn_k4_substeps():
     smag_limit = zero_field(mesh, KDim)
     k4 = 0.003
     substeps = 1.0
-    expected_diff_multfac_vn = (
-        k4 * substeps / 3.0 * np.ones(np.asarray(diff_multfac_vn).shape)
-    )
-    expected_smag_limit = _smag_limit_numpy(expected_diff_multfac_vn)
+    expected_diff_multfac_vn = diff_multfac_vn_numpy(np.asarray(diff_multfac_vn).shape, k4, substeps)
+
+    expected_smag_limit = smag_limit_numpy(expected_diff_multfac_vn)
 
     init_diffusion_local_fields(
         k4, substeps, diff_multfac_vn, smag_limit, offset_provider={}
@@ -64,22 +63,27 @@ def test_init_diff_multifac_vn_k4_substeps():
     assert np.allclose(expected_smag_limit, smag_limit)
 
 
-def test_enhanced_smagorinski_factor():
-    def enhanced_smagorinski_factor_np(factor_in, heigths_in, a_vec):
-        alin = (factor_in[1] - factor_in[0]) / (heigths_in[1] - heigths_in[0])
-        df32 = factor_in[2] - factor_in[1]
-        df42 = factor_in[3] - factor_in[1]
-        dz32 = heigths_in[2] - heigths_in[1]
-        dz42 = heigths_in[3] - heigths_in[1]
-        bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
-        aqdr = df32 / dz32 - bqdr * dz32
-        zf = 0.5 * (a_vec[:-1] + a_vec[1:])
-        max0 = np.maximum(0.0, zf - heigths_in[0])
-        dzlin = np.minimum(heigths_in[1] - heigths_in[0], max0)
-        max1 = np.maximum(0.0, zf - heigths_in[1])
-        dzqdr = np.minimum(heigths_in[3] - heigths_in[1], max1)
-        return factor_in[0] + dzlin * alin + dzqdr * (aqdr + dzqdr * bqdr)
+def diff_multfac_vn_numpy(shape, k4, substeps):
+    factor = min(1.0/128.0, k4 * substeps / 3.0)
+    return factor * np.ones(shape)
 
+
+def enhanced_smagorinski_factor_np(factor_in, heigths_in, a_vec):
+    alin = (factor_in[1] - factor_in[0]) / (heigths_in[1] - heigths_in[0])
+    df32 = factor_in[2] - factor_in[1]
+    df42 = factor_in[3] - factor_in[1]
+    dz32 = heigths_in[2] - heigths_in[1]
+    dz42 = heigths_in[3] - heigths_in[1]
+    bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
+    aqdr = df32 / dz32 - bqdr * dz32
+    zf = 0.5 * (a_vec[:-1] + a_vec[1:])
+    max0 = np.maximum(0.0, zf - heigths_in[0])
+    dzlin = np.minimum(heigths_in[1] - heigths_in[0], max0)
+    max1 = np.maximum(0.0, zf - heigths_in[1])
+    dzqdr = np.minimum(heigths_in[3] - heigths_in[1], max1)
+    return factor_in[0] + dzlin * alin + dzqdr * (aqdr + dzqdr * bqdr)
+
+def test_enhanced_smagorinski_factor():
     mesh = SimpleMesh()
     a_vec = random_field(mesh, KDim, low=1.0, high=10.0)
     result = zero_field(mesh, KDim)
