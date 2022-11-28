@@ -21,41 +21,39 @@ from icon4py.liskov.directives import (
     TypedDirective,
 )
 from icon4py.liskov.exceptions import ParsingException, SyntaxExceptionHandler
-from icon4py.liskov.utils import escape_dollar
 
 
 class DirectiveSyntaxValidator:
     """Syntax validation method dispatcher for each directive type."""
 
     def __init__(self):
-        self.parentheses_regex = r"\((\w*?)\)"
         self.exception_handler = SyntaxExceptionHandler
 
     def validate(self, directives: list[TypedDirective]) -> None:
         for d in directives:
-            type_name = d.directive_type.__class__.__name__
-            getattr(self, type_name)(d)
+            to_validate = d.string
+            pattern = d.directive_type.pattern
+            self._validate_outer(to_validate, pattern, d)
+            self._validate_inner(to_validate, pattern, d)
 
-    def StartStencil(self, directive: TypedDirective):
-        regex = rf"{directive.directive_type.pattern}{self.parentheses_regex}"
-        self._validate_syntax(directive, regex)
+    def _validate_outer(self, to_validate: str, pattern: str, d: TypedDirective):
+        regex = f"{pattern}\\((.+)\\)"
+        match = re.fullmatch(regex, to_validate)
+        self.exception_handler.check_for_matches(d, match, regex)
 
-    def EndStencil(self, directive: TypedDirective):
-        regex = rf"{directive.directive_type.pattern}{self.parentheses_regex}"
-        self._validate_syntax(directive, regex)
+    def _validate_inner(self, to_validate: str, pattern: str, d: TypedDirective):
 
-    def Create(self, directive: TypedDirective):
-        regex = directive.directive_type.pattern
-        self._validate_syntax(directive, regex)
+        inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
 
-    def Declare(self, directive: TypedDirective):
-        regex = directive.directive_type.pattern
-        self._validate_syntax(directive, regex)
+        match d.directive_type.__class__.__name__:
+            case "Create":
+                regex = r"[ A-Za-z0-9_]+"
+            case _:
+                regex = r"(.+?)=(.+?)"
 
-    def _validate_syntax(self, directive, regex):
-        escaped = escape_dollar(regex)
-        matches = re.fullmatch(escaped, directive.string)
-        self.exception_handler.check_for_matches(directive, matches, regex)
+        for arg in inner:
+            match = re.fullmatch(regex, arg)
+            self.exception_handler.check_for_matches(d, match, regex)
 
 
 class DirectiveSemanticsValidator:

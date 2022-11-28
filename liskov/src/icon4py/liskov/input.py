@@ -12,16 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from pathlib import Path
-
-from icon4py.liskov.parser import DirectivesParser
-
-
-@dataclass(frozen=True)
-class FieldData:
-    inputs: str  # todo: some field class
-    outputs: str  # todo: some field class
-    associations: str  # todo: association class
 
 
 @dataclass(frozen=True)
@@ -32,18 +22,31 @@ class BoundsData:
     vupper: str | int
 
 
+@dataclass(frozen=False)
+class FieldAssociationData:
+    variable_name: str
+    variable_association: str
+    # todo: think about whether relative/absolute tolerances and intent is necessary for codegen
+
+
 @dataclass(frozen=True)
-class IntegrationData:
-    fields: FieldData
+class StencilData:
+    name: str
+    fields: list[FieldAssociationData]
     bounds: BoundsData
+    startln: int
+    endln: int
 
 
-class ExternalInputs:
-    """With this class we can specify a configurable list of external inputs to icon liskov."""
+@dataclass(frozen=True)
+class DeclareData:
+    startln: int
+    endln: int
+    declarations: list[str]
 
-    def __init__(self, filepath: Path):
-        self.directive_parser = DirectivesParser(filepath)
 
-    def fetch(self) -> tuple:
-        # todo: create IntegrationData and combine it with parsed directives
-        return self.directive_parser.parsed_directives
+@dataclass(frozen=True)
+class CreateData:
+    startln: int
+    endln: int
+    variables: dict
