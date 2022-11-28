@@ -25,6 +25,7 @@ from icon4py.liskov.directives import (
     TypedDirective,
 )
 from icon4py.liskov.exceptions import ParsingExceptionHandler
+from icon4py.liskov.input import CreateData, DeclareData, StencilData
 from icon4py.liskov.validation import (
     DirectiveSemanticsValidator,
     DirectiveSyntaxValidator,
@@ -32,18 +33,10 @@ from icon4py.liskov.validation import (
 
 
 @dataclass(frozen=True)
-class Stencil:
-    name: str
-    startln: int
-    endln: int
-    filename: Path
-
-
-@dataclass(frozen=True)
 class ParsedDirectives:
-    stencils: list[Stencil]
-    declare_line: int
-    create_line: int
+    stencil_directive: list[StencilData]
+    declare_directive: DeclareData
+    create_directive: CreateData
 
 
 class DirectivesCollector:
@@ -56,14 +49,30 @@ class DirectivesCollector:
         self.filepath = filepath
         self.directives = self._collect_directives()
 
+    def _process_collected(self, collected):
+        directive_string = "\n".join([c[0] for c in collected])
+        abs_startln = collected[0][-1] + 1
+        abs_endln = collected[-1][-1] + 1
+        return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)
+
     def _collect_directives(self) -> list[RawDirective]:
-        """Scan filepath for directives and returns them."""
+        """Scan filepath for directives and returns them along with their line numbers."""
         directives = []
         with self.filepath.open() as f:
+
+            collected = []
             for lnumber, string in enumerate(f):
+
                 if IDENTIFIER in string:
-                    abs_lnumber = lnumber + 1
-                    directives.append(RawDirective(string, abs_lnumber))
+                    stripped = string.strip()
+                    collected.append([stripped, lnumber])
+
+                    match stripped[-1]:
+                        case ")":
+                            directives.append(self._process_collected(collected))
+                            collected = []
+                        case "&":
+                            continue
         return directives
 
 
@@ -116,7 +125,7 @@ class DirectivesParser:
         self.exception_handler.find_unsupported_directives(directives, typed)
         return typed
 
-    def extract_stencils(self, directives: list[TypedDirective]) -> list[Stencil]:
+    def extract_stencils(self, directives: list[TypedDirective]) -> list[StencilData]:
         """Extract all stencils from typed and validated directives."""
         stencils = []
         stencil_directives = self._extract_directive(
@@ -128,7 +137,7 @@ class DirectivesParser:
             string = start.string
             stencil_name = string[string.find("(") + 1 : string.find(")")]
             stencils.append(
-                Stencil(
+                StencilData(
                     name=stencil_name,
                     startln=start.lnumber,
                     endln=end.lnumber,
@@ -138,7 +147,7 @@ class DirectivesParser:
         return stencils
 
     def _build_parsed_directives(
-        self, stencils: list[Stencil], directives: list[TypedDirective]
+        self, stencils: list[StencilData], directives: list[TypedDirective]
     ) -> ParsedDirectives:
         """Build ParsedDirectives object."""
         declare = self._extract_directive(directives, Declare)

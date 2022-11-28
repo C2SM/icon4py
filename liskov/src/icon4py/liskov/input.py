@@ -13,15 +13,9 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
-from icon4py.liskov.parser import DirectivesParser
-
-
-@dataclass(frozen=True)
-class FieldData:
-    inputs: str  # todo: some field class
-    outputs: str  # todo: some field class
-    associations: str  # todo: association class
+from icon4py.bindings.codegen.types import FieldIntent
 
 
 @dataclass(frozen=True)
@@ -32,18 +26,36 @@ class BoundsData:
     vupper: str | int
 
 
+@dataclass(
+    frozen=False
+)  # needs to be modifiable as intent comes from gt4py stencil parsing step.
+class FieldAssociationData:
+    variable_name: str
+    variable_association: str
+    absolute_tolerance: Optional[str]
+    relative_tolerance: Optional[str]
+    intent: Optional[FieldIntent]
+
+
 @dataclass(frozen=True)
-class IntegrationData:
-    fields: FieldData
+class StencilData:
+    name: str
+    fields: list[FieldAssociationData]
     bounds: BoundsData
+    startln: int
+    endln: int
+    filename: Path
 
 
-class ExternalInputs:
-    """With this class we can specify a configurable list of external inputs to icon liskov."""
+@dataclass(frozen=True)
+class DeclareData:
+    startln: int
+    endln: int
+    declarations: list[str]
 
-    def __init__(self, filepath: Path):
-        self.directive_parser = DirectivesParser(filepath)
 
-    def fetch(self) -> tuple:
-        # todo: create IntegrationData and combine it with parsed directives
-        return self.directive_parser.parsed_directives
+@dataclass(frozen=True)
+class CreateData:
+    startln: int
+    endln: int
+    variables: list[str]

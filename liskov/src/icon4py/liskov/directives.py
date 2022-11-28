@@ -16,7 +16,6 @@ from typing import Protocol
 
 
 IDENTIFIER = "!$DSL"
-STENCIL = "STENCIL"
 
 
 class NoDirectivesFound:
@@ -30,7 +29,8 @@ class Directive(Protocol):
 @dataclass
 class RawDirective:
     string: str
-    lnumber: int
+    startln: int
+    endln: int
 
 
 @dataclass
@@ -45,11 +45,11 @@ class TypedDirective(RawDirective):
 
 
 class StartStencil:
-    pattern = f"{IDENTIFIER} {STENCIL} START"
+    pattern = f"{IDENTIFIER} START"
 
 
 class EndStencil:
-    pattern = f"{IDENTIFIER} {STENCIL} END"
+    pattern = f"{IDENTIFIER} END"
 
 
 class Declare:

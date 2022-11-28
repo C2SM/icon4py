@@ -12,39 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pathlib
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Protocol
 
 import click
 
-from icon4py.liskov.input import ExternalInputs
-
-
-class LiskovInterface(Protocol):
-    filepath: Path
-
-    def run(self) -> None:
-        ...
-
-
-@dataclass(frozen=True)
-class Liskov:
-    """Class which exposes the main interface to the preprocessing tool-chain.
-
-    Args:
-        filepath: Path to the file to be preprocessed.
-    """
-
-    filepath: Path
-
-    def run(self) -> None:
-        """Execute the preprocessing tool-chain."""
-        integration_info = ExternalInputs(self.filepath).fetch()
-        print(integration_info)
-        # todo: generate code using IntegrationGenerator
-        # todo: write code using IntegrationWriter
-        pass
+from icon4py.liskov.parser import DirectivesParser
 
 
 @click.command("icon_liskov")
@@ -56,4 +27,7 @@ class Liskov:
 )
 def main(filepath: pathlib.Path) -> None:
     """Command line interface to interact with the ICON-Liskov DSL Preprocessor."""
-    Liskov(filepath).run()
+    parser = DirectivesParser(filepath)
+    directives = parser.parsed_directives  # noqa: F841
+    # todo: generate code using IntegrationGenerator
+    # todo: write code using IntegrationWriter
