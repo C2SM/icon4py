@@ -29,12 +29,14 @@ NO_DIRECTIVES_STENCIL = """\
 SINGLE_STENCIL = """\
     !$DSL DECLARE(vt=(nproma, p_patch%nlev, p_patch%nblks_e), &
     !$DSL         vn_ie=(nproma, p_patch%nlevp1, p_patch%nblks_e))
-    !$DSL CREATE()
-    !$DSL START(name=run_mo_velocity_advection_stencil_07, &
-    !$DSL               vn_ie=p_diag&vn_ie(:, :, 1), w=p_prog%w(:,:,1), &
-    !$DSL               z_v_grad_w:z_v_grad_w(:,:,:):1e-16_wp:1e-12_wp), &
-    !$DSL               vertical_lower=1, vertical_upper=nlev, &
-    !$DSL               horizontal_lower=i_startidx, horizontal_upper=i_endidx)
+
+    !$DSL CREATE(something; som_field_2)
+
+    !$DSL START(name=run_mo_velocity_advection_stencil_07; &
+    !$DSL       vn_ie=p_diag&vn_ie(:, :, 1); w=p_prog%w(:,:,1); &
+    !$DSL       z_v_grad_w=z_v_grad_w(:,:,:); vn_ie_abs_tol=1e-12_wp; &
+    !$DSL       vertical_lower=1; vertical_upper=nlev; &
+    !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
     !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
     DO jk = 1, nlev
     !DIR$ IVDEP
@@ -46,7 +48,7 @@ SINGLE_STENCIL = """\
       ENDDO
     ENDDO
     !$ACC END PARALLEL LOOP
-    !$DSL END(run_mo_velocity_advection_stencil_07)
+    !$DSL END(name=run_mo_velocity_advection_stencil_07)
     """
 
 MULTIPLE_STENCILS = """\

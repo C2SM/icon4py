@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Optional
 
 from icon4py.bindings.codegen.types import FieldIntent
@@ -44,7 +43,6 @@ class StencilData:
     bounds: BoundsData
     startln: int
     endln: int
-    filename: Path
 
 
 @dataclass(frozen=True)

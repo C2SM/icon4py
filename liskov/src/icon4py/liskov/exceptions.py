@@ -33,7 +33,7 @@ class ParsingExceptionHandler:
         diff = raw_dirs.difference(typed_dirs)
         if len(diff) > 0:
             bad_directives = [d.string for d in directives if d.string in list(diff)]
-            bad_lines = [str(d.lnumber) for d in directives if d.string in list(diff)]
+            bad_lines = [str(d.startln) for d in directives if d.string in list(diff)]
             raise ParsingException(
                 f"Used unsupported directive(s): {''.join(bad_directives)} on lines {''.join(bad_lines)}"
             )
@@ -42,10 +42,10 @@ class ParsingExceptionHandler:
 class SyntaxExceptionHandler:
     @staticmethod
     def check_for_matches(
-        directive: TypedDirective, matches: Match[str], regex: Pattern[str]
+        directive: TypedDirective, match: Match[str], regex: Pattern[str]
     ) -> None:
-        if not matches:
+        if not match:
             raise DirectiveSyntaxError(
-                f"""DirectiveSyntaxError on line {directive.lnumber}\n
+                f"""DirectiveSyntaxError on line {directive.startln}\n
                     {directive.string} is invalid, expected {regex}\n"""
             )

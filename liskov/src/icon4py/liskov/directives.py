@@ -45,16 +45,16 @@ class TypedDirective(RawDirective):
 
 
 class StartStencil:
-    pattern = f"{IDENTIFIER} START"
+    pattern = "START"
 
 
 class EndStencil:
-    pattern = f"{IDENTIFIER} END"
+    pattern = "END"
 
 
 class Declare:
-    pattern = f"{IDENTIFIER} DECLARE"
+    pattern = "DECLARE"
 
 
 class Create:
-    pattern = f"{IDENTIFIER} CREATE"
+    pattern = "CREATE"
