@@ -43,11 +43,11 @@ class DirectiveSyntaxValidator:
 
     def _validate_inner(self, to_validate: str, pattern: str, d: TypedDirective):
 
-        inner = to_validate.replace(f"{pattern}", "").split(";")
+        inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
 
         match d.directive_type.__class__.__name__:
             case "Create":
-                regex = r"[ A-Za-z0-9_()]+"
+                regex = r"[ A-Za-z0-9_]+"
             case _:
                 regex = r"(.+?)=(.+?)"
 

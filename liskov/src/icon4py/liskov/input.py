@@ -12,9 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from typing import Optional
-
-from icon4py.bindings.codegen.types import FieldIntent
 
 
 @dataclass(frozen=True)
@@ -25,15 +22,11 @@ class BoundsData:
     vupper: str | int
 
 
-@dataclass(
-    frozen=False
-)  # needs to be modifiable as intent comes from gt4py stencil parsing step.
+@dataclass(frozen=False)
 class FieldAssociationData:
     variable_name: str
     variable_association: str
-    absolute_tolerance: Optional[str]
-    relative_tolerance: Optional[str]
-    intent: Optional[FieldIntent]
+    # todo: think about whether relative/absolute tolerances and intent is necessary for codegen
 
 
 @dataclass(frozen=True)
@@ -56,4 +49,4 @@ class DeclareData:
 class CreateData:
     startln: int
     endln: int
-    variables: list[str]
+    variables: dict

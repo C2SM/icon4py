@@ -13,10 +13,10 @@
 
 
 from icon4py.liskov.cli import main
-from icon4py.testutils.fortran_samples import SINGLE_STENCIL
+from icon4py.testutils.fortran_samples import MULTIPLE_STENCILS
 
 
 def test_cli(make_f90_tmpfile, cli):
-    fpath = str(make_f90_tmpfile(content=SINGLE_STENCIL))
+    fpath = str(make_f90_tmpfile(content=MULTIPLE_STENCILS))
     result = cli.invoke(main, [fpath])
     assert result.exit_code == 0

@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import copy
 from dataclasses import dataclass
 
 from icon4py.liskov.directives import (
@@ -23,7 +24,13 @@ from icon4py.liskov.directives import (
     TypedDirective,
 )
 from icon4py.liskov.exceptions import ParsingExceptionHandler
-from icon4py.liskov.input import CreateData, DeclareData, StencilData
+from icon4py.liskov.input import (
+    BoundsData,
+    CreateData,
+    DeclareData,
+    FieldAssociationData,
+    StencilData,
+)
 from icon4py.liskov.validation import (
     DirectiveSemanticsValidator,
     DirectiveSyntaxValidator,
@@ -32,9 +39,9 @@ from icon4py.liskov.validation import (
 
 @dataclass(frozen=True)
 class ParsedDirectives:
-    stencil_directive: list[StencilData]
-    declare_directive: DeclareData
-    create_directive: CreateData
+    stencils: list[StencilData]
+    declare: DeclareData
+    create: CreateData
 
 
 class DirectivesParser:
@@ -60,6 +67,7 @@ class DirectivesParser:
     def _parse_directives(self) -> ParsedDirectives | NoDirectivesFound:
         """Execute end-to-end parsing of collected directives."""
         if len(self.directives) != 0:
+            # run type deduction
             typed = self._determine_type(self.directives)
 
             # run validation passes
@@ -67,22 +75,13 @@ class DirectivesParser:
             DirectiveSyntaxValidator().validate(preprocessed)
             DirectiveSemanticsValidator().validate(preprocessed)
 
-            stencils = self.extract_stencils(preprocessed)
-            return self._build_parsed_directives(stencils, preprocessed)
-        return NoDirectivesFound()
+            # extract directive data
+            stencils = self._extract_stencils(preprocessed)
+            declare = self._extract_declare(preprocessed)
+            create = self._extract_create(preprocessed)
 
-    def _preprocess(self, directives: list[TypedDirective]) -> list[TypedDirective]:
-        """Apply preprocessing steps to directive strings."""
-        preprocessed = []
-        for d in directives:
-            string = (
-                d.string.strip().replace("&", "").replace("\n", "").replace("!$DSL", "")
-            )
-            string = " ".join(string.split())
-            preprocessed.append(
-                TypedDirective(string, d.startln, d.endln, d.directive_type)
-            )
-        return preprocessed
+            return ParsedDirectives(stencils, declare, create)
+        return NoDirectivesFound()
 
     def _determine_type(self, directives: list[RawDirective]) -> list[TypedDirective]:
         """Determine type of directive used and whether it is supported."""
@@ -97,33 +96,84 @@ class DirectivesParser:
         self.exception_handler.find_unsupported_directives(directives, typed)
         return typed
 
-    def extract_stencils(self, directives: list[TypedDirective]) -> list[StencilData]:
+    @staticmethod
+    def _preprocess(directives: list[TypedDirective]) -> list[TypedDirective]:
+        """Apply preprocessing steps to directive strings."""
+        preprocessed = []
+        for d in directives:
+            string = (
+                d.string.strip().replace("&", "").replace("\n", "").replace("!$DSL", "")
+            )
+            string = " ".join(string.split())
+            preprocessed.append(
+                TypedDirective(string, d.startln, d.endln, d.directive_type)
+            )
+        return preprocessed
+
+    def _extract_stencils(self, directives: list[TypedDirective]) -> list[StencilData]:
         """Extract all stencils from typed and validated directives."""
         stencils = []
-        stencil_directives = self._extract_directive(
-            directives, (StartStencil, EndStencil)
-        )
-        it = iter(stencil_directives)
-        for s in it:
-            start, end = s, next(it)
-            string = start.string
-            stencil_name = string[string.find("(") + 1 : string.find(")")]
-            stencils.append(
-                StencilData(
-                    name=stencil_name,
-                    startln=start.lnumber,
-                    endln=end.lnumber,
-                )
+        stencil_directives = self._extract_directive(directives, StartStencil)
+        for d in stencil_directives:
+
+            named_args = self._parse_directive_string(d)
+
+            # extract fields
+            field_args = copy.copy(named_args)
+            entries_to_remove = (
+                "name",
+                "horizontal_lower",
+                "horizontal_upper",
+                "vertical_lower",
+                "vertical_upper",
             )
+            list(map(field_args.pop, entries_to_remove))
+
+            fields = [
+                FieldAssociationData(
+                    variable_name=varname, variable_association=association
+                )
+                for varname, association in field_args.items()
+            ]
+            bounds = BoundsData(
+                hlower=named_args["horizontal_lower"],
+                hupper=named_args["horizontal_upper"],
+                vlower=named_args["vertical_lower"],
+                vupper=named_args["vertical_upper"],
+            )
+            try:
+                stencils.append(
+                    StencilData(
+                        name=named_args["name"],
+                        fields=fields,
+                        bounds=bounds,
+                        startln=d.startln,
+                        endln=d.endln,
+                    )
+                )
+            except Exception as e:
+                raise e
         return stencils
 
-    def _build_parsed_directives(
-        self, stencils: list[StencilData], directives: list[TypedDirective]
-    ) -> ParsedDirectives:
-        """Build ParsedDirectives object."""
-        declare = self._extract_directive(directives, Declare)
-        create = self._extract_directive(directives, Create)
-        return ParsedDirectives(stencils, declare.lnumber, create.lnumber)
+    @staticmethod
+    def _parse_directive_string(d: TypedDirective):
+        # clean string (remove outer parentheses and pattern)
+        string = d.string.replace(f"{d.directive_type.pattern}", "")
+        args = string[1:-1].split(";")
+        named_args = {a.split("=")[0].strip(): a.split("=")[1] for a in args}
+        return named_args
+
+    def _extract_declare(self, directives: list[TypedDirective]) -> DeclareData:
+        declare = self._extract_directive(directives, Declare)[0]
+        declarations = self._parse_directive_string(declare)
+        return DeclareData(declare.startln, declare.endln, declarations)
+
+    def _extract_create(self, directives: list[TypedDirective]) -> DeclareData:
+        create = self._extract_directive(directives, Create)[0]
+        string = create.string.replace(f"{create.directive_type.pattern}", "")
+        args = string[1:-1].split(";")
+        variables = [s.strip() for s in args]
+        return CreateData(create.startln, create.endln, variables)
 
     @staticmethod
     def _extract_directive(
@@ -133,6 +183,4 @@ class DirectivesParser:
         directives = [
             d for d in directives if isinstance(d.directive_type, required_type)
         ]
-        if len(directives) == 1:
-            return directives[0]
         return directives
