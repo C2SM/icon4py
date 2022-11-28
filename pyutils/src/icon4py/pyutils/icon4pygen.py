@@ -34,11 +34,13 @@ from icon4py.pyutils.metadata import get_stencil_info, import_definition
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
 )
+@click.option("--imperative", is_flag=True, type=bool)
 def main(
     fencil: str,
     block_size: int,
     levels_per_thread: int,
     outpath: pathlib.Path,
+    imperative: bool,
 ) -> None:
     """
     Generate Gridtools C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
@@ -55,5 +57,9 @@ def main(
     """
     fencil_def = import_definition(fencil)
     stencil_info = get_stencil_info(fencil_def)
-    GTHeader(stencil_info)(outpath)
+    GTHeader(stencil_info)(outpath, imperative)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+
+
+if __name__ == "__main__":
+    main()

@@ -179,6 +179,8 @@ def get_stencil_info(
     offsets = scan_for_offsets(fvprog)
     offset_provider = {}
     for offset in offsets:
+        if offset.endswith("Dim"):
+            continue
         offset_provider[offset] = provide_offset(offset)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
     return StencilInfo(fvprog, connectivity_chains, offset_provider)
