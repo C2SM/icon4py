@@ -13,7 +13,7 @@
 """Test graupel in standalone mode using data serialized from ICON.
 
 GT4Py hotfix:
-   
+
 In _external_src/gt4py-functional/src/functional/iterator/transforms/pass_manager.py
 1. Exchange L49 with: inlined = InlineLambdas.apply(inlined, opcount_preserving=True)
 2. Add "return inlined" below
@@ -53,10 +53,9 @@ def test_graupel_serialized_data():
             "wget -r --no-parent -nH -nc --cut-dirs=3 -q ftp://iacftp.ethz.ch/pub_read/davidle/ser_data_icon_graupel/ser_data/"
         )
 
-    # for rank in range(NUM_MPI_RANKS): #DL: Workaround
-    for rank in range(2, 3):
+    for rank in range(NUM_MPI_RANKS):  # DL TODO: Workaround
         print("=======================")
-        print(f"Runing rank {str(rank)}")
+        print(f"Runing rank {str(rank + 1)}")
 
         # Open Files
         try:
@@ -156,10 +155,10 @@ def test_graupel_serialized_data():
 
         # Convert Numpy Arrays to GT4Py storages
         for fieldname, field in ser_fields.items():
-            # ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
-            ser_fields[fieldname] = to_icon4py_field(
-                field[3231:3232, :], CellDim, KDim
-            )  # DL: Debug single column
+            ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
+            # ser_fields[fieldname] = to_icon4py_field(
+            #     field[:, 29:], CellDim, KDim
+            # )  # DL: Debug single column
 
         # Init diagnostics to 0.0
         for field in (
@@ -170,19 +169,20 @@ def test_graupel_serialized_data():
             "tendency specific rain content",
             "tendency specific snow content",
             "tendency specific graupel content",
+            "qrsflux"
         ):
-            # ser_fields[field] = zero_field((shape_2D), CellDim, KDim)   # DL: Debug single column
-            ser_fields[field] = zero_field((1, 90), CellDim, KDim)
+            ser_fields[field] = zero_field(shape_2D, CellDim, KDim)
+            # ser_fields[field] = zero_field((shape_1D, ser_config_parameters["nlev"] - ser_config_parameters["kstart_moist"]), CellDim, KDim)  # DL: Debug single column
 
         # Local automatic arrays TODO:remove after scan is wrapped in fieldview
-        # temporaries = [zero_field((shape_2D), CellDim, KDim) for _ in range(14)]  # DL: Debug single column
-        temporaries = [
-            zero_field((1, 90), CellDim, KDim) for _ in range(14)
-        ]  # DL: Debug single column
+        temporaries = [zero_field(shape_2D, CellDim, KDim) for _ in range(14)]
+        # temporaries = [
+        #     zero_field((shape_1D, ser_config_parameters["nlev"] - ser_config_parameters["kstart_moist"]), CellDim, KDim) for _ in range(14)
+        # ]  # DL: Debug single column
 
         # Create index field. TODO: Remove after index fields are avail in fieldview
-        # is_surface = np.zeros((shape_2D), dtype=bool)
-        is_surface = np.zeros((1, 90), dtype=bool)  # DL: Debug single column
+        is_surface = np.zeros(shape_2D, dtype=bool)
+        # is_surface = np.zeros((shape_1D, ser_config_parameters["nlev"] - ser_config_parameters["kstart_moist"]), dtype=bool)  # DL: Debug single column
         is_surface[:, -1] = True
         is_surface = to_icon4py_field(is_surface, CellDim, KDim)
 
@@ -217,6 +217,7 @@ def test_graupel_serialized_data():
             ser_fields["precipitation rate of rain"],
             ser_fields["precipitation rate of snow"],
             ser_fields["precipitation rate of graupel"],
+            ser_fields["qrsflux"],
             *temporaries,
             *gscp_coefficients,
             ser_fields["tendency temperature"],
@@ -229,6 +230,7 @@ def test_graupel_serialized_data():
             is_surface,
             ser_config_parameters["ldiag_ttend"],
             ser_config_parameters["ldiag_ttend"],
+            np.int32(ser_config_parameters["kstart_moist"]),
             offset_provider={},
         )
 
@@ -251,20 +253,21 @@ def test_graupel_serialized_data():
                     shape_2D=shape_2D,
                     shape_1D=shape_1D,
                 )
+            elif fieldname in ("tendency specific graupel content", "qrsflux"):
+                # is not in output data
+                continue
             elif fieldname.startswith("tendency"):
-                # DL: graupel tendency is not in output data
-                if fieldname == "tendency specific graupel content":
-                    continue
+                continue
 
-                numErrors = field_test(
-                    field,
-                    fieldname,
-                    serializer,
-                    savepoints[-1],
-                    numErrors=numErrors,
-                    shape_2D=shape_2D,
-                    shape_1D=shape_1D,
-                )
+                # numErrors = field_test(
+                #     field,
+                #     fieldname,
+                #     serializer,
+                #     savepoints[-1],
+                #     numErrors=numErrors,
+                #     shape_2D=shape_2D,
+                #     shape_1D=shape_1D,
+                # )
 
             else:
                 numErrors = field_test(

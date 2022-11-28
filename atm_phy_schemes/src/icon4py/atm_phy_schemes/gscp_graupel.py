@@ -42,8 +42,6 @@ TODO: David
     4. Remove workaround for qnc (--> scheme does validate!!!), qc0, qi0 from gscp_data.py and pass explicitly
     5. Remove namespacing, i.e. z and c prefixes
     6. Replace 2D Fields by 1D fields qnc, prr_gsp et al.
-    7. Remove lpri_gscp = False
-    8. Implement qrsflux, ldass_lhn
 
 TODO: GT4Py team
     1. Call field operators from scan --> sat_pres_ice
@@ -92,6 +90,7 @@ class GraupelParametersAndConfiguration(FrozenNamespace):
     # DL: TODO Pass explicitly
     lldiag_ttend = False
     lldiag_qtend = False
+    ldass_lhn = True
 
     # Local Parameters
     zcsg = 0.5  # coefficient for snow-graupel conversion by riming
@@ -175,10 +174,12 @@ local_param: Final = GraupelParametersAndConfiguration()
         0.0,
         0.0,
         0.0,
+        0.0,
     ),  # DL TODO: Use ellipsis operator?
 )
 def _graupel(
     state_kMinus1: tuple[
+        float,
         float,
         float,
         float,
@@ -229,6 +230,7 @@ def _graupel(
     prr_gsp: float,  # 2D Field
     prs_gsp: float,  # 2D Field
     prg_gsp: float,  # 2D Field
+    qrsflux: float,
     # # Precomputed Parameters
     # ccsrim: float,
     # ccsagg: float,
@@ -280,6 +282,7 @@ def _graupel(
         qr_kminus1,
         qs_kminus1,
         qg_kminus1,
+        _,
         _,
         _,
         _,
@@ -391,7 +394,7 @@ def _graupel(
 
     # Reset terminal fall speeds
     zpkr = 0.0
-    # zpks = 0.0
+    zpks = 0.0
     zpkg = 0.0
     zpki = 0.0
 
@@ -1054,11 +1057,19 @@ def _graupel(
     # ----------------------------------------------------------------------
 
     if not is_surface:  #  DL: if not surface needed with scan?
+
         # Store precipitation fluxes and sedimentation velocities for the next level
         zprvr = 0.0 if qrg * rhog * zvzr <= gscp_data.zqmin else qrg * rhog * zvzr
         zprvs = 0.0 if qsg * rhog * zvzs <= gscp_data.zqmin else qsg * rhog * zvzs
         zprvg = 0.0 if qgg * rhog * zvzg <= gscp_data.zqmin else qgg * rhog * zvzg
         zprvi = 0.0 if qig * rhog * zvzi <= gscp_data.zqmin else qig * rhog * zvzi
+
+        # for the latent heat nudging
+        if local_param.ldass_lhn:
+            qrsflux = zprvr + zprvs + zprvg + zprvi
+            qrsflux = 0.5 * (qrsflux + zpkr + zpks + zpkg + zpki)
+        else:
+            qrsflux = 0.0
 
         # DL: This code block inflates errors from 1e-14 to 1e-10
         zvzr = (
@@ -1099,16 +1110,15 @@ def _graupel(
         prg_gsp = 0.0
         pri_gsp = 0.0
 
-        # DL: TODO return precip fluxes
         prr_gsp = 0.5 * (qrg * rhog * zvzr + zpkr)
         prs_gsp = 0.5 * (rhog * qsg * zvzs + zpks)
         pri_gsp = 0.5 * (rhog * qig * zvzi + zpki)
         prg_gsp = 0.5 * (qgg * rhog * zvzg + zpkg)
 
-        zprvr = 0.0
-        zprvs = 0.0
-        zprvg = 0.0
-        zprvi = 0.0
+        #  for the latent heat nudging
+        qrsflux = prr_gsp + prs_gsp + prg_gsp if local_param.ldass_lhn else 0.0
+
+        (zprvr, zprvs, zprvg, zprvi) = (0.0, 0.0, 0.0, 0.0)
 
     # ----------------------------------------------------------------------
     # Section 11: Update Tendencies
@@ -1174,6 +1184,11 @@ def _graupel(
         ddt_tend_qr,
         ddt_tend_qs,
         ddt_tend_qg,
+        prr_gsp,
+        prs_gsp,
+        prg_gsp,
+        pri_gsp,
+        qrsflux,
         zpkr,
         zpks,
         zpkg,
@@ -1215,6 +1230,7 @@ def graupel(
     prr_gsp: Field[[CellDim, KDim], float],
     prs_gsp: Field[[CellDim, KDim], float],
     prg_gsp: Field[[CellDim, KDim], float],
+    qrsflux: Field[[CellDim, KDim], float],
     # Temporaries
     zpkr: Field[[CellDim, KDim], float],
     zpks: Field[[CellDim, KDim], float],
@@ -1293,6 +1309,7 @@ def graupel(
         prr_gsp,
         prs_gsp,
         prg_gsp,
+        qrsflux,
         # Precomputed Parameters
         # ccsrim,
         # ccsagg,
@@ -1344,6 +1361,11 @@ def graupel(
             ddt_tend_qr,
             ddt_tend_qs,
             ddt_tend_qg,
+            prr_gsp,
+            prs_gsp,
+            prg_gsp,
+            pri_gsp,
+            qrsflux,
             zpkr,
             zpks,
             zpkg,
