@@ -14,14 +14,27 @@ from pathlib import Path
 
 import pytest
 
-from icon4py.liskov.directives import NoDirectivesFound
+from icon4py.liskov.collect import DirectivesCollector
+from icon4py.liskov.directives import NoDirectivesFound, RawDirective
 from icon4py.liskov.exceptions import DirectiveSyntaxError, ParsingException
-from icon4py.liskov.parser import DirectivesParser
+from icon4py.liskov.input import (
+    BoundsData,
+    CreateData,
+    DeclareData,
+    FieldAssociationData,
+    StencilData,
+)
+from icon4py.liskov.parser import DirectivesParser, ParsedDirectives
 from icon4py.testutils.fortran_samples import (
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,
 )
+
+
+def collect_directives(fpath: Path) -> list[RawDirective]:
+    collector = DirectivesCollector(fpath)
+    return collector.directives
 
 
 def insert_new_lines(fname: Path, lines: list[str]):
@@ -32,105 +45,171 @@ def insert_new_lines(fname: Path, lines: list[str]):
 
 def test_directive_parser_single_stencil(make_f90_tmpfile):
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
-    parser = DirectivesParser(fpath)
-    directives = parser.parsed_directives
+    directives = collect_directives(fpath)
+    parser = DirectivesParser(directives)
+    parsed = parser.parsed_directives
 
-    assert len(directives.stencils) == 1
-    assert directives.declare_line == 1
-    assert directives.create_line == 2
+    # type checks
+    assert isinstance(parsed, ParsedDirectives)
+
+    # create checks
+    assert isinstance(parsed.create, CreateData)
+    assert parsed.create.variables == ["something", "som_field_2"]
+    assert parsed.create.startln == 4
+    assert parsed.create.endln == 4
+
+    # declare checks
+    assert isinstance(parsed.declare, DeclareData)
+    assert parsed.declare.declarations == {
+        "vt": "(nproma, p_patch%nlev, p_patch%nblks_e)",
+        "vn_ie": "(nproma, p_patch%nlevp1, p_patch%nblks_e)",
+    }
+    assert parsed.declare.startln == 1
+    assert parsed.declare.endln == 2
+
+    # stencil checks
+    assert isinstance(parsed.stencils[0], StencilData)
+    assert isinstance(parsed.stencils[0].bounds, BoundsData)
+    assert isinstance(parsed.stencils[0].fields[0], FieldAssociationData)
+
+    assert len(parsed.stencils) == 1
+    assert len(parsed.stencils[0].fields) == 4
+    assert parsed.stencils[0].bounds.__dict__ == {
+        "hlower": "i_startidx",
+        "hupper": "i_endidx",
+        "vlower": "1",
+        "vupper": "nlev",
+    }
+    assert parsed.stencils[0].startln == 6
+    assert parsed.stencils[0].endln == 10
+    assert parsed.stencils[0].name == "run_mo_velocity_advection_stencil_07"
 
 
 def test_directive_parser_multiple_stencils(make_f90_tmpfile):
     fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
-    parser = DirectivesParser(fpath)
-    directives = parser.parsed_directives
+    directives = collect_directives(fpath)
+    parser = DirectivesParser(directives)
+    parsed = parser.parsed_directives
 
-    assert len(directives.stencils) == 2
-    assert directives.declare_line == 1
-    assert directives.create_line == 3
+    # type checks
+    assert isinstance(parsed, ParsedDirectives)
+
+    # create checks
+    assert isinstance(parsed.create, CreateData)
+    assert parsed.create.variables == ["something", "som_field_2"]
+    assert parsed.create.startln == 4
+    assert parsed.create.endln == 4
+
+    # declare checks
+    assert isinstance(parsed.declare, DeclareData)
+    assert parsed.declare.declarations == {
+        "vt": "(nproma, p_patch%nlev, p_patch%nblks_e)",
+        "vn_ie": "(nproma, p_patch%nlevp1, p_patch%nblks_e)",
+    }
+    assert parsed.declare.startln == 1
+    assert parsed.declare.endln == 2
+
+    # stencil checks
+    assert isinstance(parsed.stencils[1], StencilData)
+    assert isinstance(parsed.stencils[1].bounds, BoundsData)
+    assert isinstance(parsed.stencils[1].fields[0], FieldAssociationData)
+
+    assert len(parsed.stencils) == 2
+    assert len(parsed.stencils[1].fields) == 4
+    assert parsed.stencils[1].bounds.__dict__ == {
+        "hlower": "i_startidx",
+        "hupper": "i_endidx",
+        "vlower": "1",
+        "vupper": "nlev",
+    }
+    assert parsed.stencils[1].startln == 24
+    assert parsed.stencils[1].endln == 28
+    assert parsed.stencils[1].name == "run_mo_velocity_advection_stencil_07"
 
 
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL FOO_DIRECTIVE",
-        "!$DSL BAR_DIRECTIVE",
+        "!$DSL FOO_DIRECTIVE()",
+        "!$DSL BAR_DIRECTIVE()",
     ],
 )
 def test_directive_parser_parsing_exception(make_f90_tmpfile, directive):
     fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
     insert_new_lines(fpath, [directive])
+    directives = collect_directives(fpath)
 
     with pytest.raises(ParsingException):
-        DirectivesParser(fpath)
+        DirectivesParser(directives)
 
 
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL STENCIL START(stencil1, stencil2)",
-        "!$DSL DECLARE FOO",
-        "!$DSL CREATE DATA",
+        "!$DSL START(stencil1, stencil2)",
+        "!$DSL DECLARE(somefield; another_field)",
+        "!$DSL CREATE(field=field)",
     ],
 )
 def test_directive_parser_invalid_directive_syntax(make_f90_tmpfile, directive):
     fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
     insert_new_lines(fpath, [directive])
+    directives = collect_directives(fpath)
 
     with pytest.raises(DirectiveSyntaxError):
-        DirectivesParser(fpath)
+        DirectivesParser(directives)
 
 
 def test_directive_parser_no_directives_found(make_f90_tmpfile):
     fpath = make_f90_tmpfile(content=NO_DIRECTIVES_STENCIL)
-    parser = DirectivesParser(fpath)
-    directives = parser.parsed_directives
-    assert isinstance(directives, NoDirectivesFound)
+    directives = collect_directives(fpath)
+    parser = DirectivesParser(directives)
+    parsed = parser.parsed_directives
+    assert isinstance(parsed, NoDirectivesFound)
 
 
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL DECLARE",
-        "!$DSL CREATE",
-        "!$DSL STENCIL START(mo_nh_diffusion_stencil_06)",
+        "!$DSL CREATE(something; som_field_2)",
+        "!$DSL END(name=run_mo_velocity_advection_stencil_07)",
     ],
 )
 def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
-    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
+    fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
     insert_new_lines(fpath, [directive])
+    directives = collect_directives(fpath)
 
     with pytest.raises(ParsingException):
-        DirectivesParser(fpath)
+        DirectivesParser(directives)
 
 
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL DECLARE",
-        "!$DSL CREATE",
-        "!$DSL STENCIL START(mo_nh_diffusion_stencil_06)",
-        "!$DSL STENCIL END(mo_nh_diffusion_stencil_06)",
+        """!$DSL CREATE(something; som_field_2)""",
+        """!$DSL END(name=run_mo_velocity_advection_stencil_07)""",
     ],
 )
 def test_directive_parser_required_directives(make_f90_tmpfile, directive):
     new = SINGLE_STENCIL.replace(directive, "")
     fpath = make_f90_tmpfile(content=new)
+    directives = collect_directives(fpath)
 
     with pytest.raises(ParsingException):
-        DirectivesParser(fpath)
+        DirectivesParser(directives)
 
 
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL STENCIL START(unmatched_stencil_10)",
-        "!$DSL STENCIL END(unmatched_stencil_23)",
+        """!$DSL END(name=unmatched_stencil)""",
     ],
 )
 def test_directive_parser_unbalanced_stencil_directives(make_f90_tmpfile, directive):
     fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
     insert_new_lines(fpath, [directive])
+    directives = collect_directives(fpath)
 
     with pytest.raises(ParsingException):
-        DirectivesParser(fpath)
+        DirectivesParser(directives)

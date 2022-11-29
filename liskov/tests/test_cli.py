@@ -11,12 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import pytest
 
 from icon4py.liskov.cli import main
-from icon4py.testutils.fortran_samples import MULTIPLE_STENCILS
+from icon4py.testutils.fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
 
 
-def test_cli(make_f90_tmpfile, cli):
-    fpath = str(make_f90_tmpfile(content=MULTIPLE_STENCILS))
+@pytest.mark.parametrize("file", [SINGLE_STENCIL, MULTIPLE_STENCILS])
+def test_cli(make_f90_tmpfile, cli, file):
+    fpath = str(make_f90_tmpfile(content=file))
     result = cli.invoke(main, [fpath])
     assert result.exit_code == 0
