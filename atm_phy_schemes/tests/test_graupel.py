@@ -230,6 +230,8 @@ def test_graupel_serialized_data():
             is_surface,
             ser_config_parameters["ldiag_ttend"],
             ser_config_parameters["ldiag_ttend"],
+            np.int32(shape_1D),
+            np.int32(ser_config_parameters["nlev"]),
             np.int32(ser_config_parameters["kstart_moist"]),
             offset_provider={},
         )
@@ -280,7 +282,7 @@ def test_graupel_serialized_data():
                     shape_1D=shape_1D,
                 )
 
-    print(np.asarray(ser_fields["temperature"]))
+
     assert (
         numErrors == 0
     ), f"{bcolors.FAIL}{numErrors} tests failed validation{bcolors.ENDC}"

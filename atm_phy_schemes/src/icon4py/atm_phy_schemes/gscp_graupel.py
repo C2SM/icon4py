@@ -1328,6 +1328,8 @@ def graupel(
     # Option Switches
     lldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
     lldiag_qtend: bool,  # if true, moisture tendencies shall be diagnosed
+    num_cells: int32,
+    num_levels: int32,
     kstart_moist: int32,
 ):
     # Writing to several output fields currently breaks due to gt4py bugs
@@ -1425,5 +1427,5 @@ def graupel(
             dist_cldtop,
             zqvsw_up,
         ),
-        # domain={CellDim: (0, -1), KDim: (kstart_moist, -1)},
+        domain={CellDim: (0, num_cells), KDim: (kstart_moist, num_levels)},
     )
