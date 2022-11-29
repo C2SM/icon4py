@@ -25,7 +25,9 @@ from icon4py.atm_dyn_iconam.diffusion import (
     set_zero_v_k,
 )
 from icon4py.common.dimension import KDim, VertexDim
-from icon4py.testutils.serialbox_utils import read_from_ser_data
+from icon4py.testutils.serialbox_utils import (
+    read_from_call_diffusion_init_ser_data,
+)
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
@@ -176,14 +178,21 @@ def test_smagorinski_factor_diffusion_type_5():
 
 def test_diffusion_init():
     data_path = os.path.join(os.path.dirname(__file__), "ser_data")
-    meta, fields = read_from_ser_data(data_path, metadata=["nproma"], fields=["a_vect"])
-
+    physical_heights_name = "vct_a"
+    fields, meta = read_from_call_diffusion_init_ser_data(
+        data_path,
+        "icon_diffusion",
+        metadata=["nlev", "linit", "date"],
+        fields=[physical_heights_name],
+    )
+    print(f"meta  {meta}")
+    assert meta["nlev"] == 65
+    assert meta["linit"] is False
+    assert meta["date"] == "2021-06-20T12:00:10.000"
     config = DiffusionConfig.create_with_defaults()
     additional_parameters = DiffusionParams(config)
-    vct_a = np_as_located_field(KDim)(np.zeros(config.grid.get_num_k_levels()))
-    # diffusion = Diffusion(config, additional_parameters, fields["vct_a"])
+    vct_a = np_as_located_field(KDim)(fields[physical_heights_name])
     diffusion = Diffusion(config, additional_parameters, vct_a)
-
     # assert static local fields are initialized and correct:
     assert (
         diffusion.smag_offset
@@ -214,4 +223,4 @@ def test_diffusion_init():
         additional_parameters.smagorinski_height,
         vct_a,
     )
-    assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac)[:-1])
+    assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))

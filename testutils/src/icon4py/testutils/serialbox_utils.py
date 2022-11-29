@@ -26,22 +26,27 @@ except ImportError:
     import serialbox as ser
 
 
-def read_from_ser_data(path, metadata: List[str], fields: List[str]):
+def read_from_call_diffusion_init_ser_data(
+    path, fname_prefix, metadata: List[str], fields: List[str]
+):
     rank = 0
-    serializer = ser.Serializer(
-        ser.OpenModeKind.Read, path, f"reference_icon_rank{str(rank)}"
-    )
+    fname = f"{fname_prefix}_rank{str(rank)}"
+    serializer = ser.Serializer(ser.OpenModeKind.Read, path, fname)
     save_points = serializer.savepoint_list()
     print(save_points)
     field_names = serializer.fieldnames()
     print(field_names)
-    savepoint = serializer.savepoint["diffusion-in"].id[0].as_savepoint()
-    print(type(savepoint))
-    print(savepoint)
+    savepoint = (
+        serializer.savepoint["call-diffusion-init"]
+        .linit[False]
+        .date["2021-06-20T12:00:10.000"]
+        .as_savepoint()
+    )
+    print(savepoint.metainfo)
     meta_present = {}
     meta_absent = []
     for md in metadata:
-        if md in savepoint.metainfo:
+        if md in savepoint.metainfo.to_dict():
             meta_present[md] = savepoint.metainfo[md]
         else:
             meta_absent.append(md)
