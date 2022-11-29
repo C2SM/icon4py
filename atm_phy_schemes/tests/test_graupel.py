@@ -124,7 +124,7 @@ def test_graupel_serialized_data():
             for field in ("layer thickness", "pres", "moist air density")
         }
 
-        # 3D fields
+        # 3D fields: Note that the serialized data has all zeros in block 202 ([:,:,202])
         for field in (
             "specific water vapor content",
             "specific cloud ice content",
@@ -280,6 +280,8 @@ def test_graupel_serialized_data():
                     shape_1D=shape_1D,
                 )
 
+    print(np.asarray(ser_fields["temperature"]))
     assert (
         numErrors == 0
     ), f"{bcolors.FAIL}{numErrors} tests failed validation{bcolors.ENDC}"
+
