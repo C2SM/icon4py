@@ -57,7 +57,7 @@ def to_icon4py_field(
     dtype=float,
 ) -> it_embedded.MutableLocatedField:
     """Copy a numpy field into an field with named dimensions."""
-    return it_embedded.np_as_located_field(*dims)(field)
+    return it_embedded.np_as_located_field(*dims)(field.copy())
 
 
 def random_field(
