@@ -25,7 +25,7 @@ Comment from FORTRAN version:
 - Suggested by U. Blahak: Replace pres_sat_water, pres_sat_ice and spec_humi by
 lookup tables in mo_convect_tables. Bit incompatible change!
 """
-from functional.ffront.decorator import field_operator, program
+from functional.ffront.decorator import field_operator, program, scalar_operator
 from functional.ffront.fbuiltins import Field, abs, exp, maximum, where
 
 from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
@@ -45,18 +45,24 @@ def _latent_heat_vaporization(
     cp_v = 1850.0
 
     return (
-        phy_const.alv
-        + (cp_v - phy_const.clw) * (t - phy_const.tmelt)
-        - phy_const.rv * t
+        2.5008e6 + (cp_v - (3.1733 + 1.0) * 1004.64) * (t - 273.15) - phy_const.rv * t
     )
+
+    # return (
+    #     phy_const.alv
+    #     + (cp_v - phy_const.clw) * (t - phy_const.tmelt)
+    #     - phy_const.rv * t
+    # )
 
 
 @field_operator
 def _sat_pres_water(t: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
     """Return saturation water vapour pressure."""
-    return conv_table.c1es * exp(
-        conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les)
-    )
+    return 610.78 * exp(17.269 * (t - 273.15) / (t - 35.86))
+
+    # return conv_table.c1es * exp(
+    #     conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les)
+    # )
 
 
 @field_operator
@@ -64,7 +70,7 @@ def _qsat_rho(
     t: Field[[CellDim, KDim], float], rho: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
     """Return specific humidity at water saturation (with respect to flat surface)."""
-    return _sat_pres_water(t) / (rho * phy_const.rv * t)
+    return _sat_pres_water(t) / (rho * 461.51 * t)
 
 
 @field_operator
@@ -76,7 +82,7 @@ def _dqsatdT_rho(
 
     Computed with respect to the temperature at constant total density.
     """
-    beta = conv_table.c5les / (t - conv_table.c4les) ** 2 - 1.0 / t
+    beta = 17.269 * (273.15 - 35.86) / (t - 35.86) ** 2 - 1.0 / t
     return beta * zqsat
 
 
@@ -112,7 +118,7 @@ def _conditional_newtonian_for_body(
 
 
 @field_operator
-def _newtonian_iteration_temp(
+def _newtonian_iteration_temp_old(
     t: Field[[CellDim, KDim], float],
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
@@ -133,6 +139,28 @@ def _newtonian_iteration_temp(
     # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
     # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
     # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
+    return tWork
+
+
+@scalar_operator
+def _newtonian_iteration_temp(t: float, qv: float, rho: float) -> float:
+
+    # Remains const. during iteration
+    lwdocvd = _latent_heat_vaporization(t) / phy_const.cvd
+
+    tWork = t + 10.0
+    for _ in range(maxiter):
+        if abs(twork - tworkold) > tol:
+            # Here we still have to iterate ...
+            tworkold = twork
+            qwd = qsat_rho(twork, rho)
+            dqwd = dqsatdT_rho(twork, qwd)
+
+            # Newton
+            fT = twork - t + lwdocvd * (qwd - qv)
+            dfT = 1.0 + lwdocvd * dqwd
+            twork = twork - fT / dfT
+
     return tWork
 
 
