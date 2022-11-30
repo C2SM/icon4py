@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -26,7 +27,10 @@ class BoundsData:
 class FieldAssociationData:
     variable_name: str
     variable_association: str
-    # todo: think about whether relative/absolute tolerances and intent is necessary for codegen
+    inp: bool
+    out: bool
+    abs_tol: Optional[str] = None
+    rel_tol: Optional[str] = None
 
 
 @dataclass(frozen=True)

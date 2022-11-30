@@ -13,6 +13,7 @@
 import copy
 from dataclasses import dataclass
 
+from icon4py.liskov.collect import StencilCollector
 from icon4py.liskov.directives import (
     Create,
     Declare,
@@ -35,6 +36,7 @@ from icon4py.liskov.validation import (
     DirectiveSemanticsValidator,
     DirectiveSyntaxValidator,
 )
+from icon4py.pyutils.metadata import get_field_infos
 
 
 @dataclass(frozen=True)
@@ -129,12 +131,28 @@ class DirectivesParser:
             )
             list(map(field_args.pop, entries_to_remove))
 
-            fields = [
-                FieldAssociationData(
-                    variable_name=varname, variable_association=association
+            # get4py stencil and update intent
+            stencil_collector = StencilCollector(named_args["name"])
+            gt4py_stencil_info = get_field_infos(stencil_collector.fvprog)
+
+            # creation of fields
+            # todo: handle KeyError with exception
+            fields = []
+            for field_name, association in field_args.items():
+
+                # todo: correctly handle tolerance arguments
+
+                gt4py_field_info = gt4py_stencil_info[field_name]
+
+                fields.append(
+                    FieldAssociationData(
+                        variable_name=field_name,
+                        variable_association=association,
+                        inp=gt4py_field_info.inp,
+                        out=gt4py_field_info.out,
+                    )
                 )
-                for varname, association in field_args.items()
-            ]
+
             bounds = BoundsData(
                 hlower=named_args["horizontal_lower"],
                 hupper=named_args["horizontal_upper"],

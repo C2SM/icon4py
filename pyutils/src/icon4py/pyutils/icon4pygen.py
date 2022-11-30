@@ -21,13 +21,13 @@ import click
 
 from icon4py.bindings.workflow import PyBindGen
 from icon4py.pyutils.backend import GTHeader
-from icon4py.pyutils.metadata import get_stencil_info, import_definition
+from icon4py.pyutils.metadata import StencilImporter
 
 
 @click.command(
     "icon4pygen",
 )
-@click.argument("fencil", type=str)
+@click.argument("fencil_import_path", type=str)
 @click.argument("block_size", type=int)
 @click.argument("levels_per_thread", type=int)
 @click.argument(
@@ -35,7 +35,7 @@ from icon4py.pyutils.metadata import get_stencil_info, import_definition
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
 )
 def main(
-    fencil: str,
+    fencil_import_path: str,
     block_size: int,
     levels_per_thread: int,
     outpath: pathlib.Path,
@@ -44,7 +44,7 @@ def main(
     Generate Gridtools C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
 
     Args:
-        fencil: may be specified as <module>:<member>, where <module> is the dotted name of the containing module
+        fencil_import_path: may be specified as <module>:<member>, where <module> is the dotted name of the containing module
             and <member> is the name of the fencil.
 
         block_size: refers to the number of threads per block to use in a cuda kernel.
@@ -53,7 +53,10 @@ def main(
 
         outpath: represents a path to the folder in which to write all generated code.
     """
-    fencil_def = import_definition(fencil)
-    stencil_info = get_stencil_info(fencil_def)
-    GTHeader(stencil_info)(outpath)
-    PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+    importer = StencilImporter(fencil_import_path)
+    GTHeader(importer.stencil_info)(outpath)
+    PyBindGen(importer.stencil_info, levels_per_thread, block_size)(outpath)
+
+
+if __name__ == "__main__":
+    main()

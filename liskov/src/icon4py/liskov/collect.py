@@ -10,11 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import importlib
 from dataclasses import dataclass
+from inspect import getmembers
 from pathlib import Path
 
 from icon4py.liskov.directives import IDENTIFIER, RawDirective
+from icon4py.pyutils.metadata import StencilInfo
 
 
 @dataclass(frozen=True)
@@ -63,3 +65,37 @@ class DirectivesCollector:
                         case "&":
                             continue
         return directives
+
+
+class StencilCollector:
+    _STENCIL_PACKAGES = ["atm_dyn_iconam", "advection"]
+
+    def __init__(self, name: str):
+        self.name = name
+
+    @property
+    def fvprog(self):
+        return self._collect_stencil()[1]
+
+    def _collect_stencil(self) -> StencilInfo:
+        err_counter = 0
+        for pkg in self._STENCIL_PACKAGES:
+
+            try:
+                module_name = f"icon4py.{pkg}.{self.name}"
+                module = importlib.import_module(module_name)
+            except ModuleNotFoundError:
+                err_counter += 1
+
+        if err_counter == len(self._STENCIL_PACKAGES):
+            raise Exception(f"Did not find module: {self.name}")
+
+        module_members = getmembers(module)
+        found_stencil = [elt for elt in module_members if elt[0] == self.name]
+
+        if len(found_stencil) == 0:
+            raise Exception(
+                f"Did not find member: {self.name} in module: {module_name}"
+            )
+
+        return found_stencil[0]
