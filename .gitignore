@@ -3,6 +3,7 @@ _build
 _local
 _external_src
 _reports
+tmp
 
 ### GT4Py ####
 .gt_cache/
