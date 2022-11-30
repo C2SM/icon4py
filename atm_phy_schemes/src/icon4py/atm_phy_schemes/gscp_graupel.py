@@ -1043,14 +1043,14 @@ def _graupel(
     zqst = siau + sdau - ssmelt + srim + ssdep + sagg - sconsg
     zqgt = sagg2 - sgmelt + sicri + srcri + sgdep + srfrz + srim2 + sconsg
 
-    # # Save input arrays for final tendency calculation DL: TODO refactor
-    # t_in = temp
-    # qv_in = qv
-    # qc_in = qc
-    # qi_in = qi
-    # qr_in = qr
-    # qs_in = qs
-    # qg_in = qg
+    # Save input arrays for final tendency calculation DL: TODO refactor
+    t_in = temp
+    qv_in = qv
+    qc_in = qc
+    qi_in = qi
+    qr_in = qr
+    qs_in = qs
+    qg_in = qg
 
     # Compute tendencies
     qi_t = (zzai * z1orhog + zqit * gscp_coefficients.zdt) * zimi
