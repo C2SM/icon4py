@@ -17,13 +17,13 @@ TODO Cleanup:
 - Put back gamma_fct
 """
 
-from math import gamma as gamma_fct
 from typing import Final
 
 import numpy as np
 from eve.utils import FrozenNamespace
 
 from icon4py.shared.mo_math_constants import math_const
+from icon4py.shared.mo_math_utilities import gamma_fct
 from icon4py.shared.mo_physical_constants import phy_const
 
 
@@ -189,7 +189,7 @@ class GscpData(FrozenNamespace):
     # Constant exponents in the transfer rate equations
     # -------------------------------------------------
 
-    # DL: TODO. Repalce
+    # DL: TODO. Inline into graupel scheme
     x1o12 = 1.0 / 12.0
     x3o16 = 3.0 / 16.0
     x7o8 = 7.0 / 8.0
@@ -204,32 +204,6 @@ class GscpData(FrozenNamespace):
     x3o4 = 0.75
     x7o4 = 7.0 / 4.0
 
-    # DL: TODO: Unneeded
-    # mma = (
-    #     5.065339,
-    #     -0.062659,
-    #     -3.032362,
-    #     0.029469,
-    #     -0.000285,
-    #     0.312550,
-    #     0.000204,
-    #     0.003199,
-    #     0.000000,
-    #     -0.015952,
-    # )
-    # mmb = (
-    #     0.476221,
-    #     -0.015896,
-    #     0.165977,
-    #     0.007468,
-    #     -0.000141,
-    #     0.060366,
-    #     0.000079,
-    #     0.000594,
-    #     0.000000,
-    #     -0.003577,
-    # )
-
     # Parameters relevant to support supercooled liquid water (SLW), sticking efficiency, ...
     # ---------------------------------------------------------------------------------------
 
@@ -241,16 +215,6 @@ class GscpData(FrozenNamespace):
     """Scaling factor [1/K] for temperature-dependent cloud ice sticking efficiency"""
     tmin_iceautoconv = 188.15
     """Temperature at which cloud ice autoconversion starts"""
-
-    # # Parameters for Segal-Khain parameterization (aerosol-microphysics coupling)
-    # # ---------------------------------------------------------------------------
-    # r2_fix = 0.03
-    # """Parameters for simplified lookup table computation"""
-    # lsigs_fix = 0.3
-    # """relevant for r2_lsigs_are_fixed = .TRUE."""
-
-    # r2_lsigs_are_fixed = True
-    # lincloud = False  # ignore in-cloud nucleation
 
 
 gscp_data: Final = GscpData()
@@ -323,6 +287,14 @@ def gscp_set_coefficients(
     Default for optional parameters:
     Values from COSMO
     """
+
+    # For compatilibility TODO: Cleanup
+    if v0snow <= -1:
+        if igscp == 2:
+            v0snow = 20.0
+        else:
+            assert "Only inwp_gscp supported"
+
     zconst = (
         gscp_data.zkcau
         / (20.0 * gscp_data.zxstar)
@@ -330,19 +302,32 @@ def gscp_set_coefficients(
         * (gscp_data.zcnue + 4.0)
         / (gscp_data.zcnue + 1.0) ** 2
     )
-    ccsrim = 46.98276746732905  # DL (gamma): 0.25 * math_constants.pi * zecs * v0snow * gamma_fct(zv1s + 3.0)
-    ccsagg = 52.20307496369895  # DL (gamma): 0.25 * math_constants.pi * v0snow * gamma_fct(zv1s + 3.0)
-    ccsdep = 99.96257414250321  # DL (gamma): 0.26 * gamma_fct((zv1s + 5.0) / 2.0) * np.sqrt(1.0 / zeta)
+    ccsrim = (
+        0.25 * math_const.pi * gscp_data.zecs * v0snow * gamma_fct(gscp_data.zv1s + 3.0)
+    )
+    ccsagg = (
+        0.25 * math_const.pi * v0snow * gamma_fct(gscp_data.zv1s + 3.0)
+    )  # DL: off by -7.105427357601002e-15 (last 2 digits) FORTRAN value is 52.20307496369895
+    ccsdep = (
+        0.26 * gamma_fct((gscp_data.zv1s + 5.0) / 2.0) * np.sqrt(1.0 / gscp_data.zeta)
+    )
     ccsvxp = -(gscp_data.zv1s / (gscp_data.zbms + 1.0) + 1.0)
-    ccsvel = 46.23061746664488  # DL (gamma): zams * v0snow * gamma_fct(zbms + zv1s + 1.0) * (zams * gamma_fct(zbms + 1.0)) ** ccsvxp
+    ccsvel = (
+        gscp_data.zams
+        * v0snow
+        * gamma_fct(gscp_data.zbms + gscp_data.zv1s + 1.0)
+        * (gscp_data.zams * gamma_fct(gscp_data.zbms + 1.0)) ** ccsvxp
+    )  # 46.23061746664488
     ccsvxp = ccsvxp + 1.0
-    ccslam = 0.1379999999844696  # DL (gamma): zams * gamma_fct(zbms + 1.0)
+    ccslam = gscp_data.zams * gamma_fct(gscp_data.zbms + 1.0)
     ccslxp = 1.0 / (gscp_data.zbms + 1.0)
-    ccswxp = 0.1666666666666667  # zv1s * ccslxp
+    ccswxp = (
+        gscp_data.zv1s * ccslxp
+    )  # Off by -5.551115123125783e-17 original FORTRAN is 0.1666666666666667
     ccsaxp = -(gscp_data.zv1s + 3.0)
     ccsdxp = -(gscp_data.zv1s + 1.0) / 2.0
     ccshi1 = phy_const.als**2 / (gscp_data.zlheat * phy_const.rv)
-    ccdvtp = 4.2213489078749271e-5  # 2.22e-5 * tmelt ** (-1.94) * 101325.0
+    ccdvtp = 2.22e-5 * phy_const.tmelt ** (-1.94) * 101325.0
     ccidep = 4.0 * gscp_data.zami ** (-gscp_data.x1o3)
     zn0r = (
         8.0e6 * np.exp(3.2 * mu_rain) * (0.01) ** (-mu_rain)
@@ -352,12 +337,29 @@ def gscp_set_coefficients(
         math_const.pi * gscp_data.zrhow / 6.0 * zn0r * gamma_fct(mu_rain + 4.0)
     )  # pre-factor in lambda of rain
     zcevxp = (mu_rain + 2.0) / (mu_rain + 4.0)
-    zcev = 3.0999999914053263e-3  # DL (gamma): 2.0 * math_constants.pi * zdv / zhw * zn0r * zar ** (-zcevxp) * gamma_fct(mu_rain + 2.0)
+
+    zcev = (
+        2.0
+        * math_const.pi
+        * gscp_data.zdv
+        / gscp_data.zhw
+        * zn0r
+        * zar ** (-zcevxp)
+        * gamma_fct(mu_rain + 2.0)
+    )  # off by 2.168404344971009e-18 FORTRAN: 3.0999999914053263e-3
     zbevxp = (2.0 * mu_rain + 5.5) / (2.0 * mu_rain + 8.0) - zcevxp
-    zbev = 14.152467883390491  # DL: (gamma): ( 0.26 * np.sqrt(zrho0 * 130.0 / zeta) * zar ** (-zbevxp) * gamma_fct((2.0 * mu_rain + 5.5) / 2.0)  / gamma_fct(mu_rain + 2.0)  )
+    zbev = (
+        0.26
+        * np.sqrt(gscp_data.zrho0 * 130.0 / gscp_data.zeta)
+        * zar ** (-zbevxp)
+        * gamma_fct((2.0 * mu_rain + 5.5) / 2.0)
+        / gamma_fct(mu_rain + 2.0)
+    )  # 14.152467883390491
 
     zvzxp = 0.5 / (mu_rain + 4.0)  # DL: same
-    zvz0r = 12.63008787548925  # DL: gamma different was: 130.0 * gamma_fct(mu_rain + 4.5) / gamma_fct(mu_rain + 4.0) * zar ** (-zvzxp)
+    zvz0r = (
+        130.0 * gamma_fct(mu_rain + 4.5) / gamma_fct(mu_rain + 4.0) * zar ** (-zvzxp)
+    )  #  Off by 2.6645352591003757e-14 FORTRAN is 12.63008787548925
 
     return (
         ccsrim,
