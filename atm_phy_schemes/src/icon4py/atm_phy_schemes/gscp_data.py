@@ -261,9 +261,6 @@ class GscpCoefficients(FrozenNamespace):
     zvzxp = 0.5 / (mu_rain + 4.0)
     zvz0r = 12.63008787548925
 
-    # DL: Temporary workaround! Is actually a 2D Field!
-    qnc = 2e8
-
     # DL: Temporary workaround since I cant pass 2D constants
     qi0 = -2.91727579e-08
     qc0 = -3.90868735e-08
