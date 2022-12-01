@@ -90,7 +90,7 @@ MULTIPLE_STENCILS = """\
 
 
     !$DSL START(name=mo_nh_diffusion_stencil_07; &
-    !$DSL       w=p_nh_prog%w(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1) &
+    !$DSL       w=p_nh_prog%w(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1); &
     !$DSL       z_nabla2_c=z_nabla2_c(:,:,1); z_nabla2_c_abs_tol=1e-21_wp; &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
     !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)

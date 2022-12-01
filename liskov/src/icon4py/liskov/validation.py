@@ -26,7 +26,7 @@ from icon4py.liskov.exceptions import ParsingException, SyntaxExceptionHandler
 class DirectiveSyntaxValidator:
     """Syntax validation method dispatcher for each directive type."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.exception_handler = SyntaxExceptionHandler
 
     def validate(self, directives: list[TypedDirective]) -> None:
@@ -36,20 +36,23 @@ class DirectiveSyntaxValidator:
             self._validate_outer(to_validate, pattern, d)
             self._validate_inner(to_validate, pattern, d)
 
-    def _validate_outer(self, to_validate: str, pattern: str, d: TypedDirective):
+    def _validate_outer(
+        self, to_validate: str, pattern: str, d: TypedDirective
+    ) -> None:
         regex = f"{pattern}\\((.+)\\)"
         match = re.fullmatch(regex, to_validate)
         self.exception_handler.check_for_matches(d, match, regex)
 
-    def _validate_inner(self, to_validate: str, pattern: str, d: TypedDirective):
+    def _validate_inner(
+        self, to_validate: str, pattern: str, d: TypedDirective
+    ) -> None:
 
         inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
 
-        match d.directive_type.__class__.__name__:
-            case "Create":
-                regex = r"[ A-Za-z0-9_]+"
-            case _:
-                regex = r"(.+?)=(.+?)"
+        if type(d.directive_type) == Create:
+            regex = r"[ A-Za-z0-9_]+"
+        else:
+            regex = r"(.+?)=(.+?)"
 
         for arg in inner:
             match = re.fullmatch(regex, arg)

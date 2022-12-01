@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Match, Pattern
+from typing import Match, Optional
 
 from icon4py.liskov.directives import RawDirective, TypedDirective
 
@@ -42,9 +42,9 @@ class ParsingExceptionHandler:
 class SyntaxExceptionHandler:
     @staticmethod
     def check_for_matches(
-        directive: TypedDirective, match: Match[str], regex: Pattern[str]
+        directive: TypedDirective, match: Optional[Match[str]], regex: str
     ) -> None:
-        if not match:
+        if match is None:
             raise DirectiveSyntaxError(
                 f"""DirectiveSyntaxError on line {directive.startln}\n
                     {directive.string} is invalid, expected {regex}\n"""

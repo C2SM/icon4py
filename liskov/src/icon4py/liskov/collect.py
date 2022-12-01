@@ -15,8 +15,9 @@ from dataclasses import dataclass
 from inspect import getmembers
 from pathlib import Path
 
+from functional.ffront.decorator import Program
+
 from icon4py.liskov.directives import IDENTIFIER, RawDirective
-from icon4py.pyutils.metadata import StencilInfo
 
 
 @dataclass(frozen=True)
@@ -74,10 +75,10 @@ class StencilCollector:
         self.name = name
 
     @property
-    def fvprog(self):
-        return self._collect_stencil()[1]
+    def fvprog(self) -> Program:
+        return self._collect_stencil_program()[1]
 
-    def _collect_stencil(self) -> StencilInfo:
+    def _collect_stencil_program(self) -> tuple[str, Program]:
         err_counter = 0
         for pkg in self._STENCIL_PACKAGES:
 

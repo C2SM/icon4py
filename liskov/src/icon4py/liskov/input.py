@@ -23,7 +23,7 @@ class BoundsData:
     vupper: str | int
 
 
-@dataclass(frozen=False)
+@dataclass(frozen=False)  # not frozen as tolerances are updated after object creation
 class FieldAssociationData:
     variable_name: str
     variable_association: str
@@ -46,11 +46,11 @@ class StencilData:
 class DeclareData:
     startln: int
     endln: int
-    declarations: list[str]
+    declarations: dict[str, str]
 
 
 @dataclass(frozen=True)
 class CreateData:
     startln: int
     endln: int
-    variables: dict
+    variables: list[str]
