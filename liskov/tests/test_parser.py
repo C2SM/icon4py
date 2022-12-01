@@ -54,13 +54,12 @@ def test_directive_parser_single_stencil(make_f90_tmpfile):
 
     # create checks
     assert isinstance(parsed.create, CreateData)
-    assert parsed.create.variables == ["vn_before"]
     assert parsed.create.startln == 3
     assert parsed.create.endln == 3
 
     # declare checks
     assert isinstance(parsed.declare, DeclareData)
-    assert parsed.declare.declarations == {
+    assert parsed.declare.declarations[0] == {
         "vn": "(nproma,p_patch%nlev,p_patch%nblks_e)"
     }
     assert parsed.declare.startln == 1
@@ -96,13 +95,12 @@ def test_directive_parser_multiple_stencils(make_f90_tmpfile):
     # Stencil 1
     # create checks
     assert isinstance(parsed.create, CreateData)
-    assert parsed.create.variables == ["vn_before"]
     assert parsed.create.startln == 3
     assert parsed.create.endln == 3
 
     # declare checks
     assert isinstance(parsed.declare, DeclareData)
-    assert parsed.declare.declarations == {
+    assert parsed.declare.declarations[0] == {
         "vn": "(nproma,p_patch%nlev,p_patch%nblks_e)"
     }
     assert parsed.declare.startln == 1
@@ -165,7 +163,7 @@ def test_directive_parser_parsing_exception(make_f90_tmpfile, directive):
     [
         "!$DSL START(stencil1, stencil2)",
         "!$DSL DECLARE(somefield; another_field)",
-        "!$DSL CREATE(field=field)",
+        "!$DSL CREATE(field)",
     ],
 )
 def test_directive_parser_invalid_directive_syntax(make_f90_tmpfile, directive):
@@ -188,7 +186,7 @@ def test_directive_parser_no_directives_found(make_f90_tmpfile):
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL CREATE(vn_before)",
+        "!$DSL CREATE()",
         "!$DSL END(name=mo_nh_diffusion_stencil_06)",
     ],
 )
@@ -204,7 +202,7 @@ def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
 @pytest.mark.parametrize(
     "directive",
     [
-        """!$DSL CREATE(vn_before)""",
+        """!$DSL CREATE()""",
         """!$DSL END(name=mo_nh_diffusion_stencil_06)""",
     ],
 )
