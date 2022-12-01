@@ -36,8 +36,8 @@ def main(filepath: pathlib.Path) -> None:
 
     parser = DirectivesParser(directives_collector.directives)
 
-    parsed_directives = parser.parsed_directives  # noqa: F841
-
+    parsed_directives = parser.parsed_directives
+    print(parsed_directives)
     # todo: generate code using IntegrationGenerator
 
     # todo: write code using IntegrationWriter
