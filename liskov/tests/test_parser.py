@@ -54,18 +54,17 @@ def test_directive_parser_single_stencil(make_f90_tmpfile):
 
     # create checks
     assert isinstance(parsed.create, CreateData)
-    assert parsed.create.variables == ["something", "som_field_2"]
-    assert parsed.create.startln == 4
-    assert parsed.create.endln == 4
+    assert parsed.create.variables == ["vn_before"]
+    assert parsed.create.startln == 3
+    assert parsed.create.endln == 3
 
     # declare checks
     assert isinstance(parsed.declare, DeclareData)
     assert parsed.declare.declarations == {
-        "vt": "(nproma, p_patch%nlev, p_patch%nblks_e)",
-        "vn_ie": "(nproma, p_patch%nlevp1, p_patch%nblks_e)",
+        "vn": "(nproma,p_patch%nlev,p_patch%nblks_e)"
     }
     assert parsed.declare.startln == 1
-    assert parsed.declare.endln == 2
+    assert parsed.declare.endln == 1
 
     # stencil checks
     assert isinstance(parsed.stencils[0], StencilData)
@@ -80,9 +79,9 @@ def test_directive_parser_single_stencil(make_f90_tmpfile):
         "vlower": "1",
         "vupper": "nlev",
     }
-    assert parsed.stencils[0].startln == 6
-    assert parsed.stencils[0].endln == 10
-    assert parsed.stencils[0].name == "run_mo_velocity_advection_stencil_07"
+    assert parsed.stencils[0].startln == 5
+    assert parsed.stencils[0].endln == 9
+    assert parsed.stencils[0].name == "mo_nh_diffusion_stencil_06"
 
 
 def test_directive_parser_multiple_stencils(make_f90_tmpfile):
@@ -94,37 +93,55 @@ def test_directive_parser_multiple_stencils(make_f90_tmpfile):
     # type checks
     assert isinstance(parsed, ParsedDirectives)
 
+    # Stencil 1
     # create checks
     assert isinstance(parsed.create, CreateData)
-    assert parsed.create.variables == ["something", "som_field_2"]
-    assert parsed.create.startln == 4
-    assert parsed.create.endln == 4
+    assert parsed.create.variables == ["vn_before"]
+    assert parsed.create.startln == 3
+    assert parsed.create.endln == 3
 
     # declare checks
     assert isinstance(parsed.declare, DeclareData)
     assert parsed.declare.declarations == {
-        "vt": "(nproma, p_patch%nlev, p_patch%nblks_e)",
-        "vn_ie": "(nproma, p_patch%nlevp1, p_patch%nblks_e)",
+        "vn": "(nproma,p_patch%nlev,p_patch%nblks_e)"
     }
     assert parsed.declare.startln == 1
-    assert parsed.declare.endln == 2
+    assert parsed.declare.endln == 1
 
+    # stencil checks
+    assert isinstance(parsed.stencils[0], StencilData)
+    assert isinstance(parsed.stencils[0].bounds, BoundsData)
+    assert isinstance(parsed.stencils[0].fields[0], FieldAssociationData)
+
+    assert len(parsed.stencils) == 2
+    assert len(parsed.stencils[0].fields) == 4
+    assert parsed.stencils[0].bounds.__dict__ == {
+        "hlower": "i_startidx",
+        "hupper": "i_endidx",
+        "vlower": "1",
+        "vupper": "nlev",
+    }
+    assert parsed.stencils[0].startln == 5
+    assert parsed.stencils[0].endln == 9
+    assert parsed.stencils[0].name == "mo_nh_diffusion_stencil_06"
+
+    # Stencil 2
     # stencil checks
     assert isinstance(parsed.stencils[1], StencilData)
     assert isinstance(parsed.stencils[1].bounds, BoundsData)
     assert isinstance(parsed.stencils[1].fields[0], FieldAssociationData)
 
-    assert len(parsed.stencils) == 2
-    assert len(parsed.stencils[1].fields) == 4
+    assert len(parsed.stencils[1].fields) == 3
     assert parsed.stencils[1].bounds.__dict__ == {
         "hlower": "i_startidx",
         "hupper": "i_endidx",
         "vlower": "1",
         "vupper": "nlev",
     }
-    assert parsed.stencils[1].startln == 24
-    assert parsed.stencils[1].endln == 28
-    assert parsed.stencils[1].name == "run_mo_velocity_advection_stencil_07"
+    assert parsed.stencils[1].fields[-1].abs_tol == "1e-21_wp"
+    assert parsed.stencils[1].startln == 29
+    assert parsed.stencils[1].endln == 33
+    assert parsed.stencils[1].name == "mo_nh_diffusion_stencil_07"
 
 
 @pytest.mark.parametrize(
@@ -171,8 +188,8 @@ def test_directive_parser_no_directives_found(make_f90_tmpfile):
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL CREATE(something; som_field_2)",
-        "!$DSL END(name=run_mo_velocity_advection_stencil_07)",
+        "!$DSL CREATE(vn_before)",
+        "!$DSL END(name=mo_nh_diffusion_stencil_06)",
     ],
 )
 def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
@@ -187,8 +204,8 @@ def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
 @pytest.mark.parametrize(
     "directive",
     [
-        """!$DSL CREATE(something; som_field_2)""",
-        """!$DSL END(name=run_mo_velocity_advection_stencil_07)""",
+        """!$DSL CREATE(vn_before)""",
+        """!$DSL END(name=mo_nh_diffusion_stencil_06)""",
     ],
 )
 def test_directive_parser_required_directives(make_f90_tmpfile, directive):

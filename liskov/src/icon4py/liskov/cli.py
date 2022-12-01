@@ -27,10 +27,14 @@ from icon4py.liskov.parser import DirectivesParser
     ),
 )
 def main(filepath: pathlib.Path) -> None:
-    """Command line interface to interact with the ICON-Liskov DSL Preprocessor."""
-    collector = DirectivesCollector(filepath)
+    """Command line interface to interact with the ICON-Liskov DSL Preprocessor.
 
-    parser = DirectivesParser(collector.directives)
+    Args:
+        filepath: path to Fortran file.
+    """
+    directives_collector = DirectivesCollector(filepath)
+
+    parser = DirectivesParser(directives_collector.directives)
 
     parsed_directives = parser.parsed_directives  # noqa: F841
 

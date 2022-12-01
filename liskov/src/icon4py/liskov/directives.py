@@ -37,24 +37,33 @@ class RawDirective:
 class TypedDirective(RawDirective):
     directive_type: Directive
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.string)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TypedDirective):
+            raise NotImplementedError
         return self.string == other.string
 
 
-class StartStencil:
+class DirectiveType:
+    pattern: str
+
+    def __str__(self) -> str:
+        return self.pattern.capitalize()
+
+
+class StartStencil(DirectiveType):
     pattern = "START"
 
 
-class EndStencil:
+class EndStencil(DirectiveType):
     pattern = "END"
 
 
-class Declare:
+class Declare(DirectiveType):
     pattern = "DECLARE"
 
 
-class Create:
+class Create(DirectiveType):
     pattern = "CREATE"
