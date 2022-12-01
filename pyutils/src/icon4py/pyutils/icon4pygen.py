@@ -21,7 +21,7 @@ import click
 
 from icon4py.bindings.workflow import PyBindGen
 from icon4py.pyutils.backend import GTHeader
-from icon4py.pyutils.metadata import StencilImporter
+from icon4py.pyutils.metadata import StencilImporter, get_stencil_info
 
 
 @click.command(
@@ -53,9 +53,10 @@ def main(
 
         outpath: represents a path to the folder in which to write all generated code.
     """
-    importer = StencilImporter(fencil_import_path)
-    GTHeader(importer.stencil_info)(outpath)
-    PyBindGen(importer.stencil_info, levels_per_thread, block_size)(outpath)
+    fvprog = StencilImporter(fencil_import_path).fvprog
+    stencil_info = get_stencil_info(fvprog)
+    GTHeader(stencil_info)(outpath)
+    PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
 
 
 if __name__ == "__main__":
