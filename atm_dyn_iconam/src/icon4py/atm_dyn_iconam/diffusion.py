@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import math
+import sys
 from collections import namedtuple
 from typing import Final
 
@@ -19,18 +20,32 @@ from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, broadcast, maximum, minimum
 from functional.iterator.embedded import np_as_located_field
 
+from icon4py.atm_dyn_iconam.constants import GAS_CONSTANT_DRY_AIR, CPD
+from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
+from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import \
+    fused_mo_nh_diffusion_stencil_02_03
+from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import \
+    fused_mo_nh_diffusion_stencil_04_05_06
+from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_07_08_09_10 import \
+    fused_mo_nh_diffusion_stencil_07_08_09_10
+from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import \
+    fused_mo_nh_diffusion_stencil_11_12
+from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import \
+    fused_mo_nh_diffusion_stencil_13_14
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
 from icon4py.atm_dyn_iconam.icon_mesh import MeshConfig, VerticalModelParams
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
+from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_01 import (
-    _mo_nh_diffusion_stencil_01,
+    _mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_01,
 )
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import mo_nh_diffusion_stencil_16
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
-from icon4py.common.dimension import ECVDim, EdgeDim, KDim, Koff, VertexDim
-
+from icon4py.common.dimension import ECVDim, EdgeDim, KDim, Koff, VertexDim, CellDim, \
+    C2E2CDim, C2E2CODim
 
 DiffusionTupleVT = namedtuple("DiffusionParamVT", "v t")
 CartesianVectorTuple = namedtuple("CartesianVectorTuple", "x y")
@@ -52,6 +67,16 @@ def _setup_runtime_diff_multfac_vn(
 @field_operator
 def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]) -> Field[[KDim], float]:
     return 0.125 - 4.0 * diff_multfac_vn
+
+
+@field_operator
+def _scale_k(field: Field[[KDim], float], factor:float) -> Field[[KDim], float]:
+    return field * factor
+
+@program
+def scale_k(field: Field[[KDim], float], factor:float, scaled_field: Field[[KDim],float]):
+    _scale_k(field, factor, out=scaled_field)
+
 
 
 # TODO [ml] rename!
@@ -76,7 +101,7 @@ def _mo_nh_diffusion_stencil_01_scale_dtime(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-    diff_multfac_smag = enh_smag_fac * dtime
+    diff_multfac_smag = _scale_k(enh_smag_fac, dtime)
     return _mo_nh_diffusion_stencil_01(
         diff_multfac_smag,
         tangent_orientation,
@@ -263,9 +288,9 @@ class DiffusionConfig:
         self.lhdiff_temp = True  # ! diffusion on the temperature field
         self.lhdiff_w = True  # ! diffusion on the vertical wind field
         self.lhdiff_rcf = True  # namelist, remove if always true
-        self.itype_vn_diffu = (
-            1  # ! reconstruction method used for Smagorinsky diffusion
-        )
+        self.itype_vn_diffu = 1  # ! reconstruction method used for Smagorinsky diffusion
+        self.l_smag_d = False #namelist lsmag_d,  if `true`, compute 3D Smagorinsky diffusion coefficient.
+
         self.itype_t_diffu = 2  # ! discretization of temperature diffusion
         self.hdiff_efdt_ratio = 24.0  # ! ratio of e-folding time to time step
         self.hdiff_smag_fac = 0.025  # ! scaling factor for Smagorinsky diffusion
@@ -281,6 +306,9 @@ class DiffusionConfig:
 
         # namelist grid_nml -> TODO [ml] should go to grid config?
         self.l_limited_area = True
+
+        #name list: interpol_nml
+        self.nudge_max_coeff = 0.075
 
     def substep_as_float(self):
         return float(self.ndyn_substeps)
@@ -345,6 +373,18 @@ class DiffusionParams:
         return factor, heights
 
 
+
+def mo_nh_diffusion_stencil_15_numpy(mask_hdiff: Field[[CellDim, KDim], int],
+                                     zd_vertidx: Field[[CellDim,  C2E2CDim, KDim], int],
+                                     zd_diffcoef: Field[[CellDim, KDim], float],
+                                     geofac_n2s: Field[[CellDim, C2E2CODim], float],
+                                     vcoef: Field[[C2E2CDim, KDim], float],
+                                     theta_v: Field[[CellDim, KDim], float],
+                                     z_temp: Field[[CellDim, KDim], float]
+                                     ):
+    pass
+
+
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
@@ -360,7 +400,15 @@ class Diffusion:
         TODO [ml]: initial run: linit = .TRUE.:  smag_offset and diff_multfac_vn are defined
         differently.
         """
-        self.params: params
+
+        self.params = params
+        self.config = config
+        self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
+        self.nudgezone_diff = 0.04 / (config.nudge_max_coeff + sys.float_info.epsilon)
+        self.bdy_diff = 0.015/(config.nudge_max_coeff + sys.float_info.epsilon)
+        self.fac_bdydiff_v = math.sqrt(config.substep_as_float())/config.lateral_boundary_denominator.v if config.lhdiff_rcf else 1. /config.lateral_boundary_denominator.v
+        self.thresh_tdiff = - 5.0 # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+
 
         # different for init call: smag_offset = 0
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float()
@@ -400,24 +448,30 @@ class Diffusion:
                 k_size=config.grid.get_num_k_levels()
             )
         )
+        self.diff_multfac_smag = np_as_located_field(KDim)(
+            np.zeros(config.grid.get_num_k_levels())
+        )
         shape_vk = (config.grid.get_num_vertices(), config.grid.get_num_k_levels())
+        shape_ck =  (config.grid.get_num_cells(), config.grid.get_num_k_levels())
         self.u_vert = np_as_located_field(VertexDim, KDim)(np.zeros(shape_vk, float))
         self.v_vert = np_as_located_field(VertexDim, KDim)(np.zeros(shape_vk, float))
         shape_ek = (config.grid.get_num_edges(), config.grid.get_num_k_levels())
-        allocate_ek = np_as_located_field(VertexDim, KDim)(np.zeros(shape_ek, float))
+        allocate_ek = np_as_located_field(EdgeDim, KDim)(np.zeros(shape_ek, float))
         self.kh_smag_e = allocate_ek
         self.kh_smag_ec = allocate_ek
         self.z_nabla2_e = allocate_ek
+        self.z_temp = np_as_located_field(CellDim, KDim)(np.zeros(shape_ck, float))
 
     def run(
         self,
-        diagnostic_state,
+        diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
-        metric_state,
+        metric_state: MetricState,
         interpolation_state: InterpolationState,
-        dtime,
+        dtime:float,
         tangent_orientation: Field[[EdgeDim], float],
         inverse_primal_edge_lengths: Field[[EdgeDim], float],
+        inv_dual_edge_length: Field[[EdgeDim], float],
         inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
         primal_normal_vert: CartesianVectorTuple[
             Field[[ECVDim], float], Field[[ECVDim], float]
@@ -425,6 +479,8 @@ class Diffusion:
         dual_normal_vert: CartesianVectorTuple[
             Field[[ECVDim], float], Field[[ECVDim], float]
         ],
+        area_edges: Field[[EdgeDim], float],
+        cell_areas: Field[[CellDim], float]
     ):
         """
         Run a diffusion step.
@@ -439,8 +495,9 @@ class Diffusion:
         # -------
         # Oa logging
         # 0b call timer start
-        # ~~0c. apply dtime to enh_smag_factor~~ done inside stencil
-
+        # 0c. dtime dependent stuff: enh_smag_factor, r_dtimensubsteps
+        r_dtimensubsteps = 1.0 / dtime if self.config.lhdiff_rcf else 1./ (dtime * self.config.substep_as_float)
+        klevels = self.config.grid.get_num_k_levels()
         # TODO is this needed?
         set_zero_v_k(self.u_vert)
         set_zero_v_k(self.v_vert)
@@ -456,17 +513,11 @@ class Diffusion:
         )
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
+        # 0c. dtime dependent stuff: enh_smag_factor, ~~r_dtimensubsteps~~
+        scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
 
-        # tangent_orientation = p_patch % edges % tangent_orientation(:, 1)
-        # inv_primal_edge_length=p_patch%edges%inv_primal_edge_length(:,1)
-        # inv_vert_vert_length = p_patch % edges % inv_vert_vert_length(:, 1),
-        # primal_normal_vert_x = p_patch % edges % primal_normal_vert_x(:,:, 1)
-        # primal_normal_vert_y = p_patch % edges % primal_normal_vert_y(:,:, 1)
-        # dual_normal_vert_x=p_patch%edges%dual_normal_vert_x(:,:,1)
-        # dual_normal_vert_x = p_patch % edges % dual_normal_vert_x(:,:, 1)
-
-        mo_nh_diffusion_stencil_01_scaled_dtime(
-            self.enh_smag_fac,
+        mo_nh_diffusion_stencil_01(
+            self.diff_multfac_smag,
             tangent_orientation,
             inverse_primal_edge_lengths,
             inverse_vertical_vertex_lengths,
@@ -482,19 +533,102 @@ class Diffusion:
             self.kh_smag_ec,
             self.z_nabla2_e,
             self.smag_offset,
-            dtime,
+            dtime, domain={KDim:(0, klevels), EdgeDim:(), VertexDim:()}
         )
+
+        fused_mo_nh_diffusion_stencil_02_03(self.kh_smag_ec,
+                                            prognostic_state.normal_wind,
+                                            interpolation_state.e_bln_c_s, #:Field[[CellDim, C2EDim], float],
+                                            interpolation_state.geofac_div, # Field[[CellDim, C2EDim], float],
+                                            self.diff_multfac_smag, # Field[[KDim], float],
+                                            metric_state.wgtfac_c, # Field[[CellDim, KDim], float],
+                                            diagnostic_state.div_ic, #Field[[CellDim, KDim], float],
+                                            diagnostic_state.hdef_ic, #: Field[[CellDim, KDim], float])
+                                            offset_provider={"C2E": "TODO_C2E"})
 
         # 4.  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
 
         # 5.  CALL rbf_vec_interpol_vertex_wp
-
+        mo_intp_rbf_rbf_vec_interpol_vertex(self.z_nabla2_e,
+            interpolation_state.rbf_coeff_1,
+            interpolation_state.rbf_coeff_2,
+            self.u_vert,
+            self.v_vert)
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
+
         # 7.  mo_nh_diffusion_stencil_04, mo_nh_diffusion_stencil_05
         # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
+        #TODO where to get index field from
+        #horz_idx: Field[[EdgeDim], int32],
+        #start_2nd_nudge_line_idx_e: int32,
+
+        fused_mo_nh_diffusion_stencil_04_05_06(u_vert=self.u_vert,
+                                               v_vert=self.v_vert,
+                                               primal_normal_vert_v1=primal_normal_vert.x,
+                                               primal_normal_vert_v2=primal_normal_vert.y,
+                                               z_nabla2_e=self.z_nabla2_e,
+                                               inv_vert_vert_length = inverse_vertical_vertex_lengths,
+                                               inv_primal_edge_length = inverse_primal_edge_lengths,
+                                               area_edges=area_edges,
+                                               kh_smag_e=self.kh_smag_e,
+                                               diff_multfac_vn=self.diff_multfac_vn,
+                                               nudgecoeff_e=interpolation_state.nudgecoeff_e,
+                                               vn=prognostic_state.normal_wind,
+                                               horz_idx = horizontal_index,
+                                               nudgezone_diff=self.nudgezone_diff,
+                                               fac_bdydiff_v= self.fac_bdydiff_v,
+                                               start_2nd_nudge_line_idx_e = s
+                                               )
         # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
         #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
+
+        fused_mo_nh_diffusion_stencil_07_08_09_10(area = cell_areas, geofac_n2s=interpolation_state.geofac_n2s,
+                                                  geofac_grg_x=interpolation_state.geofac_grg_x,
+                                                  geofac_grg_y=interpolation_state.geofac_grg_y,
+                                                  w_old=prognostic_state.vertical_wind,
+                                                  w=prognostic_state.vertical_wind,
+                                                  dwdx=diagnostic_state.dwdx,
+                                                  dwdy=diagnostic_state.dwdy,
+                                                  diff_multfac_w=self.diff_multfac_w,
+                                                  diff_multfac_n2w=self.diff_multfac_n2w,
+                                                  vert_idx=,
+                                                  horz_idx=,
+                                                  nrdmax=self.config.vertical_params.index_of_damping_height,
+                                                  interior_idx=,
+                                                  halo_idx=,
+                                                  )
         # 8.  HALO EXCHANGE: CALL sync_patch_array
         # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
         #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
+
+        # TODO check: kh_smag_e is an out field, should  not be calculated in init?
+        fused_mo_nh_diffusion_stencil_11_12(theta_v=prognostic_state.theta_v,
+                                            theta_ref_mc=metric_state.theta_ref_mc,
+                                            thresh_tdiff=self.thresh_tdiff,
+                                            kh_smag_e=self.kh_smag_e,
+                                            )
+
+
+        fused_mo_nh_diffusion_stencil_13_14(kh_smag_e=self.kh_smag_e,
+                                            inv_dual_edge_length=inv_dual_edge_length,
+                                            theta_v=prognostic_state.theta_v,
+                                            geofac_div=interpolation_state.geofac_div,
+                                            z_temp=self.z_temp
+                                            )
+
+        mo_nh_diffusion_stencil_15_numpy(mask_hdiff=metric_state.mask_hdiff,
+                                         zd_vertidx=metric_state.zd_vertidx_dsl,
+                                         vcoef=metric_state.zd_diffcoef,
+                                         zd_diffcoef=metric_state.zd_diffcoef,
+                                         geofac_n2s=interpolation_state.geofac_n2s,
+                                         theta_v=prognostic_state.theta_v,
+                                         z_temp=self.z_temp
+                                         )
+
+        mo_nh_diffusion_stencil_16(z_temp = self.z_temp,
+                                   area=cell_areas,
+                                   theta_v=prognostic_state.theta_v,
+                                   exner=prognostic_state.exner_pressure,
+                                    rd_o_cvd=self.rd_o_cvd
+                                   )
         # 10. HALO EXCHANGE sync_patch_array

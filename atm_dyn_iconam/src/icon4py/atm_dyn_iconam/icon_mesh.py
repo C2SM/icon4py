@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from enum import Enum
 
 import numpy as np
 from functional.common import Field
@@ -17,6 +18,10 @@ from functional.iterator.embedded import np_as_located_field
 
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
 from icon4py.common.dimension import EdgeDim, KDim
+
+
+
+
 
 
 class MeshConfig:
@@ -36,6 +41,10 @@ class MeshConfig:
 
     def get_num_edges(self):
         return self.horizontal._num_edges
+
+    def get_num_cells(self):
+        return self.horizontal._num_cells
+
 
 
 class IconMesh:
@@ -111,3 +120,5 @@ class VerticalModelParams:
             / (self.vct_a[2] - self.vct_a[self.index_of_damping_height + 1])
         )
         return np_as_located_field(KDim)(buffer)
+
+

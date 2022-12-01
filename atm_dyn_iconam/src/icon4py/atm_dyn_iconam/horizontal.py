@@ -10,7 +10,19 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from enum import Enum
 
+from functional.common import Dimension, DimensionKind
+
+
+# rather use DSL (dusk) names
+class HorizontalIndexMarker(Enum):
+    INTERIOR = "0"
+    NUDGING = "grf_bdywidth"
+    HALO= "min_rl_int"
+    END="min_rl"
+    LOCAL_BOUNDARY="1"
+    MAX_RL="max_rl"
 
 class HorizontalMeshConfig:
     def __init__(self, num_vertices: int, num_edges: int, num_cells: int):
@@ -26,3 +38,12 @@ class HorizontalMeshConfig:
 
     def get_num_cells(self):
         return self._num_cells
+
+    def get_index(self, dim:Dimension, marker:HorizontalIndexMarker) -> int:
+        if dim.kind != DimensionKind.HORIZONTAL:
+            raise ValueError("only defined for {} dimension kind ", DimensionKind.HORIZONTAL)
+        return 0
+
+
+
+

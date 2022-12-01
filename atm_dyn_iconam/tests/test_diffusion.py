@@ -16,21 +16,33 @@ import numpy as np
 import pytest
 from functional.iterator.embedded import np_as_located_field
 
+from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
     enhanced_smagorinski_factor,
     init_diffusion_local_fields,
-    set_zero_v_k,
+    set_zero_v_k, scale_k, CartesianVectorTuple,
 )
+from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
+from icon4py.atm_dyn_iconam.metric_state import MetricState
+from icon4py.atm_dyn_iconam.prognostic import PrognosticState
 from icon4py.common.dimension import KDim, VertexDim
 from icon4py.testutils.serialbox_utils import (
-    read_from_call_diffusion_init_ser_data,
+    read_from_call_diffusion_init_ser_data, SerializedDataProvider,
 )
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
+
+def test_scale_k():
+    mesh = SimpleMesh()
+    field = random_field(mesh, KDim)
+    scaled_field = zero_field(mesh, KDim)
+    factor = 2.0
+    scale_k(field, factor, scaled_field, offset_provider = {})
+    assert np.allclose(factor * np.asarray(field), scaled_field)
 
 def smag_limit_numpy(shape, k4, substeps):
     return 0.125 - 4.0 * diff_multfac_vn_numpy(shape, k4, substeps)
@@ -177,14 +189,12 @@ def test_smagorinski_factor_diffusion_type_5():
 
 
 def test_diffusion_init():
-    data_path = os.path.join(os.path.dirname(__file__), "ser_data")
+    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     physical_heights_name = "vct_a"
-    fields, meta = read_from_call_diffusion_init_ser_data(
-        data_path,
-        "icon_diffusion",
-        metadata=["nlev", "linit", "date"],
-        fields=[physical_heights_name],
-    )
+    serializer = SerializedDataProvider("icon_diffusion", data_path)
+    serializer.print_info()
+    meta, fields = serializer.get_fields(metadata=["nlev", "linit", "date"], fields=[physical_heights_name])
+
     print(f"meta  {meta}")
     assert meta["nlev"] == 65
     assert meta["linit"] is False
@@ -224,3 +234,42 @@ def test_diffusion_init():
         vct_a,
     )
     assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))
+
+
+def test_diffusion_run():
+    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
+    physical_heights_name = "vct_a"
+    serializer = SerializedDataProvider("icon_diffusion", data_path)
+    serializer.print_info()
+    meta, fields = serializer.get_fields(metadata=["nlev", "linit", "dtime"],
+                                         fields=[physical_heights_name, "tangent_orientation"])
+    config = DiffusionConfig.create_with_defaults()
+    additional_parameters = DiffusionParams(config)
+    vct_a = np_as_located_field(KDim)(fields[physical_heights_name])
+    diffusion = Diffusion(config, additional_parameters, vct_a)
+
+    diagnostic_state = DiagnosticState()
+    prognostic_state = PrognosticState()
+    interpolation_state = InterpolationState()
+    metric_state = MetricState()
+    dtime = meta["dtime"]
+    orientation = fields["tangent_orientation"]
+
+    # inverse_primal_edge_lengths: Field[[EdgeDim], float],
+    inverse_vertical_vertex_lengths = fields["inv_vert_vert_length"]
+    primal_normal_vert: CartesianVectorTuple = (fields["primal_normal_vert_x"], fields["primal_normal_vert_y"])
+    dual_normal_vert: CartesianVectorTuple = (fields["dual_normal_vert_x"], fields["dual_normal_vert_y"])
+
+
+
+    diffusion.run(diagnostic_state=diagnostic_state,
+                  prognostic_state=prognostic_state,
+                  metric_state=metric_state,
+                  interpolation_state=interpolation_state,
+                  dtime=dtime,
+                  tangent_orientation=orientation,
+                  inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+                  inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+                  primal_normal_vert=primal_normal_vert,
+                  dual_normal_vert=dual_normal_vert
+                  )
