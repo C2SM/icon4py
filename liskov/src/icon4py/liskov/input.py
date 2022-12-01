@@ -15,6 +15,10 @@ from dataclasses import dataclass
 from typing import Optional
 
 
+class CodeGenInput:
+    ...
+
+
 @dataclass(frozen=True)
 class BoundsData:
     hlower: str | int
@@ -24,7 +28,7 @@ class BoundsData:
 
 
 @dataclass(frozen=False)  # not frozen as tolerances are updated after object creation
-class FieldAssociationData:
+class FieldAssociationData(CodeGenInput):
     variable_name: str
     variable_association: str
     inp: bool
@@ -34,7 +38,7 @@ class FieldAssociationData:
 
 
 @dataclass(frozen=True)
-class StencilData:
+class StencilData(CodeGenInput):
     name: str
     fields: list[FieldAssociationData]
     bounds: BoundsData
@@ -43,14 +47,13 @@ class StencilData:
 
 
 @dataclass(frozen=True)
-class DeclareData:
+class DeclareData(CodeGenInput):
     startln: int
     endln: int
     declarations: dict[str, str]
 
 
 @dataclass(frozen=True)
-class CreateData:
+class CreateData(CodeGenInput):
     startln: int
     endln: int
-    variables: list[str]

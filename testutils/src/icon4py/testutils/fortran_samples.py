@@ -29,7 +29,7 @@ NO_DIRECTIVES_STENCIL = """\
 SINGLE_STENCIL = """\
     !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e))
 
-    !$DSL CREATE(vn_before)
+    !$DSL CREATE()
 
     !$DSL START(name=mo_nh_diffusion_stencil_06; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
@@ -63,7 +63,7 @@ SINGLE_STENCIL = """\
 MULTIPLE_STENCILS = """\
     !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e))
 
-    !$DSL CREATE(vn_before)
+    !$DSL CREATE()
 
     !$DSL START(name=mo_nh_diffusion_stencil_06; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &

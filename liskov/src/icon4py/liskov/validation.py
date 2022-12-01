@@ -39,7 +39,7 @@ class DirectiveSyntaxValidator:
     def _validate_outer(
         self, to_validate: str, pattern: str, d: TypedDirective
     ) -> None:
-        regex = f"{pattern}\\((.+)\\)"
+        regex = f"{pattern}\\((.*)\\)"
         match = re.fullmatch(regex, to_validate)
         self.exception_handler.check_for_matches(d, match, regex)
 
@@ -50,7 +50,7 @@ class DirectiveSyntaxValidator:
         inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
 
         if type(d.directive_type) == Create:
-            regex = r"[ A-Za-z0-9_]+"
+            regex = r"^(?![\s\S])"
         else:
             regex = r"(.+?)=(.+?)"
 
