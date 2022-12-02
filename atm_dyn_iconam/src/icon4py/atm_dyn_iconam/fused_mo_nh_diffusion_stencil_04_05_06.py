@@ -77,6 +77,7 @@ def fused_mo_nh_diffusion_stencil_04_05_06(
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
 ):
-    _fused_mo_nh_diffusion_stencil_04_05_06(u_vert, v_vert, primal_normal_vert_v1, primal_normal_vert_v2, z_nabla2_e, inv_vert_vert_length,
+    _fused_mo_nh_diffusion_stencil_04_05_06(u_vert, v_vert, primal_normal_vert_v1,
+                                            primal_normal_vert_v2, z_nabla2_e, inv_vert_vert_length,
             inv_primal_edge_length, area_edge, kh_smag_e, diff_multfac_vn, nudgecoeff_e, vn, horz_idx, nudgezone_diff, fac_bdydiff_v,
             start_2nd_nudge_line_idx_e, out=vn)

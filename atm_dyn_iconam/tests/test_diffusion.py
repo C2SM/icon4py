@@ -30,7 +30,7 @@ from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
 from icon4py.common.dimension import KDim, VertexDim
 from icon4py.testutils.serialbox_utils import (
-    read_from_call_diffusion_init_ser_data, SerializedDataProvider,
+    IconSerialDataProvider,
 )
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
@@ -122,11 +122,6 @@ def test_set_zero_vertex_k():
     assert np.allclose(0.0, f)
 
 
-@pytest.mark.xfail
-def test_diffusion_run():
-    pytest.fail("not implemented yet")
-
-
 def test_diffusion_coefficients_with_hdiff_efdt_ratio():
     config: DiffusionConfig = DiffusionConfig.create_with_defaults()
     config.hdiff_efdt_ratio = 1.0
@@ -190,18 +185,20 @@ def test_smagorinski_factor_diffusion_type_5():
 
 def test_diffusion_init():
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    physical_heights_name = "vct_a"
-    serializer = SerializedDataProvider("icon_diffusion", data_path)
+    serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
     serializer.print_info()
-    meta, fields = serializer.get_fields(metadata=["nlev", "linit", "date"], fields=[physical_heights_name])
+    first_run_date = "2021-06-20T12:00:10.000"
+    savepoint = serializer.from_savepoint(linit=False, date=first_run_date)
+    vct_a = savepoint.physical_height_field()
+    meta = savepoint.get_metadata("nlev", "linit", "date")
 
     print(f"meta  {meta}")
     assert meta["nlev"] == 65
     assert meta["linit"] is False
-    assert meta["date"] == "2021-06-20T12:00:10.000"
+    assert meta["date"] == first_run_date
     config = DiffusionConfig.create_with_defaults()
     additional_parameters = DiffusionParams(config)
-    vct_a = np_as_located_field(KDim)(fields[physical_heights_name])
+
     diffusion = Diffusion(config, additional_parameters, vct_a)
     # assert static local fields are initialized and correct:
     assert (
@@ -236,31 +233,32 @@ def test_diffusion_init():
     assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))
 
 
+@pytest.mark.xfail
 def test_diffusion_run():
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    physical_heights_name = "vct_a"
-    serializer = SerializedDataProvider("icon_diffusion", data_path)
-    serializer.print_info()
-    meta, fields = serializer.get_fields(metadata=["nlev", "linit", "dtime"],
-                                         fields=[physical_heights_name, "tangent_orientation"])
+    data_provider = IconSerialDataProvider("icon_diffusion_init", data_path)
+    data_provider.print_info()
+    sp = data_provider.from_savepoint(linit=False, date="2021-06-20T12:00:10.000")
+
     config = DiffusionConfig.create_with_defaults()
     additional_parameters = DiffusionParams(config)
-    vct_a = np_as_located_field(KDim)(fields[physical_heights_name])
-    diffusion = Diffusion(config, additional_parameters, vct_a)
+    vct_a = sp.physical_height_field()
 
+    diffusion = Diffusion(config, additional_parameters, vct_a)
     diagnostic_state = DiagnosticState()
     prognostic_state = PrognosticState()
     interpolation_state = InterpolationState()
     metric_state = MetricState()
-    dtime = meta["dtime"]
-    orientation = fields["tangent_orientation"]
+    dtime = sp.get_metadata("dtime")
+    orientation = sp.tangent_orientation()
 
-    # inverse_primal_edge_lengths: Field[[EdgeDim], float],
-    inverse_vertical_vertex_lengths = fields["inv_vert_vert_length"]
-    primal_normal_vert: CartesianVectorTuple = (fields["primal_normal_vert_x"], fields["primal_normal_vert_y"])
-    dual_normal_vert: CartesianVectorTuple = (fields["dual_normal_vert_x"], fields["dual_normal_vert_y"])
-
-
+    inverse_primal_edge_lengths= sp.inverse_primal_edge_lengths()
+    inverse_vertical_vertex_lengths = sp.inv_vert_vert_length()
+    inverse_dual_edge_length = sp.inv_dual_edge_length()
+    primal_normal_vert: CartesianVectorTuple = (sp.primal_normal_vert_x(), sp.primal_normal_vert_y())
+    dual_normal_vert: CartesianVectorTuple = (sp.dual_normal_vert_x(), sp.dual_normal_vert_y())
+    edge_areas = sp.edge_areas()
+    cell_areas = sp.cell_areas()
 
     diffusion.run(diagnostic_state=diagnostic_state,
                   prognostic_state=prognostic_state,
@@ -269,7 +267,14 @@ def test_diffusion_run():
                   dtime=dtime,
                   tangent_orientation=orientation,
                   inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+                  inv_dual_edge_length=inverse_dual_edge_length,
                   inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
                   primal_normal_vert=primal_normal_vert,
-                  dual_normal_vert=dual_normal_vert
+                  dual_normal_vert=dual_normal_vert,
+                  edge_areas=edge_areas,
+                  cell_areas=cell_areas
                   )
+
+    pytest.fail("not implemented yet")
+
+

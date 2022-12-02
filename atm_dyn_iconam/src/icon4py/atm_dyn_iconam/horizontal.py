@@ -10,19 +10,30 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from dataclasses import dataclass
 from enum import Enum
+from typing import Final
 
 from functional.common import Dimension, DimensionKind
 
+@dataclass(frozen=True)
+class HorizontalMeshParams:
+    NUM_GHOST_ROWS:Final[int] = 2
+    GRF_BOUNDARY_WIDTH_CELL:Final[int] = 12
+    MIN_RL_CELL_INT:Final[int] = 4
+    MIN_RL_CELL:Final[int] = MIN_RL_CELL_INT - 2 * NUM_GHOST_ROWS
+    MAX_RL_CELL:Final[int] = 13
+    MIN_RL_VERTEX_INT:Final[int] = MIN_RL_CELL_INT
+    MIN_RL_VERTEX:Final[int] = MIN_RL_VERTEX_INT - (NUM_GHOST_ROWS + 1)
+    MAX_RL_VERTEX:Final[int] = MAX_RL_CELL
+    MIN_RL_EDGE_INT:Final[int] = 2 * MIN_RL_CELL_INT
+    MIN_RL_EDGE:Final[int] = MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)
+    MAX_RL_EDGE:Final[int] = 2 * MAX_RL_CELL
+    GRF_BOUNDARY_WIDTH_EDGES: Final[int] = 9
 
-# rather use DSL (dusk) names
-class HorizontalIndexMarker(Enum):
-    INTERIOR = "0"
-    NUDGING = "grf_bdywidth"
-    HALO= "min_rl_int"
-    END="min_rl"
-    LOCAL_BOUNDARY="1"
-    MAX_RL="max_rl"
+class HorizontalMarkerIndex(Enum):
+    START_PROG_CELL = HorizontalMeshParams.GRF_BOUNDARY_WIDTH_CELL + 1
+    END_PROG_CELL = HorizontalMeshParams.MIN_RL_CELL_INT
 
 class HorizontalMeshConfig:
     def __init__(self, num_vertices: int, num_edges: int, num_cells: int):
@@ -39,10 +50,7 @@ class HorizontalMeshConfig:
     def get_num_cells(self):
         return self._num_cells
 
-    def get_index(self, dim:Dimension, marker:HorizontalIndexMarker) -> int:
-        if dim.kind != DimensionKind.HORIZONTAL:
-            raise ValueError("only defined for {} dimension kind ", DimensionKind.HORIZONTAL)
-        return 0
+
 
 
 

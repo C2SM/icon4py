@@ -16,7 +16,7 @@ import math
 import numpy as np
 import pytest
 
-from icon4py.atm_dyn_iconam.icon_mesh import VerticalModelParams
+from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
 
 
 @pytest.mark.parametrize(

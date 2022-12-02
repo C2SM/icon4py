@@ -16,6 +16,7 @@ from collections import namedtuple
 from typing import Final
 
 import numpy as np
+from functional.common import Dimension
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, broadcast, maximum, minimum
 from functional.iterator.embedded import np_as_located_field
@@ -33,7 +34,7 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import \
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import \
     fused_mo_nh_diffusion_stencil_13_14
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
-from icon4py.atm_dyn_iconam.icon_mesh import MeshConfig, VerticalModelParams
+from icon4py.atm_dyn_iconam.icon_grid import MeshConfig, VerticalModelParams, IconGrid
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
@@ -272,15 +273,16 @@ class DiffusionConfig:
         horizontal = HorizontalMeshConfig(
             num_vertices=50000, num_cells=50000, num_edges=50000
         )
-        gridConfig = MeshConfig(horizontalMesh=horizontal)
-        verticalParams = VerticalModelParams(
-            rayleigh_damping_height=12500, vct_a=np.zeros(gridConfig.get_num_k_levels())
-        )
-        return cls(grid_config=gridConfig, vertical_params=verticalParams)
 
-    def __init__(self, grid_config: MeshConfig, vertical_params: VerticalModelParams):
+        grid = IconGrid().with_config(MeshConfig(horizontalMesh=horizontal))
+        verticalParams = VerticalModelParams(
+            rayleigh_damping_height=12500, vct_a=np.zeros(grid.get_num_k_levels())
+        )
+        return cls(grid=grid, vertical_params=verticalParams)
+
+    def __init__(self, grid: IconGrid, vertical_params: VerticalModelParams):
         # TODO [ml]: external stuff grid related, p_patch,
-        self.grid = grid_config
+        self.grid = grid
         self.vertical_params = vertical_params
         # from namelist diffusion_nml
         self.diffusion_type = 5  # hdiff_order ! order of nabla operator for diffusion
@@ -312,6 +314,8 @@ class DiffusionConfig:
 
     def substep_as_float(self):
         return float(self.ndyn_substeps)
+
+
 
 
 class DiffusionParams:
@@ -403,6 +407,7 @@ class Diffusion:
 
         self.params = params
         self.config = config
+        self.grid = config.grid
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
         self.nudgezone_diff = 0.04 / (config.nudge_max_coeff + sys.float_info.epsilon)
         self.bdy_diff = 0.015/(config.nudge_max_coeff + sys.float_info.epsilon)
@@ -479,7 +484,7 @@ class Diffusion:
         dual_normal_vert: CartesianVectorTuple[
             Field[[ECVDim], float], Field[[ECVDim], float]
         ],
-        area_edges: Field[[EdgeDim], float],
+        edge_areas: Field[[EdgeDim], float],
         cell_areas: Field[[CellDim], float]
     ):
         """
@@ -497,7 +502,7 @@ class Diffusion:
         # 0b call timer start
         # 0c. dtime dependent stuff: enh_smag_factor, r_dtimensubsteps
         r_dtimensubsteps = 1.0 / dtime if self.config.lhdiff_rcf else 1./ (dtime * self.config.substep_as_float)
-        klevels = self.config.grid.get_num_k_levels()
+        klevels = self.config.grid.k_levels()
         # TODO is this needed?
         set_zero_v_k(self.u_vert)
         set_zero_v_k(self.v_vert)
@@ -544,7 +549,7 @@ class Diffusion:
                                             metric_state.wgtfac_c, # Field[[CellDim, KDim], float],
                                             diagnostic_state.div_ic, #Field[[CellDim, KDim], float],
                                             diagnostic_state.hdef_ic, #: Field[[CellDim, KDim], float])
-                                            offset_provider={"C2E": "TODO_C2E"})
+                                            offset_provider={"C2E": self.grid.get_c2e_connectivity()})
 
         # 4.  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
 
@@ -569,15 +574,16 @@ class Diffusion:
                                                z_nabla2_e=self.z_nabla2_e,
                                                inv_vert_vert_length = inverse_vertical_vertex_lengths,
                                                inv_primal_edge_length = inverse_primal_edge_lengths,
-                                               area_edges=area_edges,
+                                               area_edges=edge_areas,
                                                kh_smag_e=self.kh_smag_e,
                                                diff_multfac_vn=self.diff_multfac_vn,
                                                nudgecoeff_e=interpolation_state.nudgecoeff_e,
                                                vn=prognostic_state.normal_wind,
-                                               horz_idx = horizontal_index,
+                                               horz_idx = None,
                                                nudgezone_diff=self.nudgezone_diff,
                                                fac_bdydiff_v= self.fac_bdydiff_v,
-                                               start_2nd_nudge_line_idx_e = s
+                                               start_2nd_nudge_line_idx_e = None,
+                                               offset_provider={}
                                                )
         # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
         #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
@@ -591,11 +597,12 @@ class Diffusion:
                                                   dwdy=diagnostic_state.dwdy,
                                                   diff_multfac_w=self.diff_multfac_w,
                                                   diff_multfac_n2w=self.diff_multfac_n2w,
-                                                  vert_idx=,
-                                                  horz_idx=,
+                                                  vert_idx= None,
+                                                  horz_idx=None,
                                                   nrdmax=self.config.vertical_params.index_of_damping_height,
-                                                  interior_idx=,
-                                                  halo_idx=,
+                                                  interior_idx=None,
+                                                  halo_idx=None,
+                                                  offset_provider={"C2E2CO": self.grid.get_c2e2c0_connectivity()}
                                                   )
         # 8.  HALO EXCHANGE: CALL sync_patch_array
         # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
@@ -606,6 +613,7 @@ class Diffusion:
                                             theta_ref_mc=metric_state.theta_ref_mc,
                                             thresh_tdiff=self.thresh_tdiff,
                                             kh_smag_e=self.kh_smag_e,
+                                            offset_provider={"E2C":self.grid.get_e2c_connectivity(), "C2E2C":self.grid.get_c2e2c_connectivity()}
                                             )
 
 
@@ -613,7 +621,8 @@ class Diffusion:
                                             inv_dual_edge_length=inv_dual_edge_length,
                                             theta_v=prognostic_state.theta_v,
                                             geofac_div=interpolation_state.geofac_div,
-                                            z_temp=self.z_temp
+                                            z_temp=self.z_temp,
+                                            offset_provider={"C2E":self.grid.get_c2e_connectivity(), "E2C":self.grid.get_e2c_connectivity()}
                                             )
 
         mo_nh_diffusion_stencil_15_numpy(mask_hdiff=metric_state.mask_hdiff,
@@ -622,13 +631,15 @@ class Diffusion:
                                          zd_diffcoef=metric_state.zd_diffcoef,
                                          geofac_n2s=interpolation_state.geofac_n2s,
                                          theta_v=prognostic_state.theta_v,
-                                         z_temp=self.z_temp
+                                         z_temp=self.z_temp,
+                                         offset_provider={}
                                          )
 
         mo_nh_diffusion_stencil_16(z_temp = self.z_temp,
                                    area=cell_areas,
                                    theta_v=prognostic_state.theta_v,
                                    exner=prognostic_state.exner_pressure,
-                                    rd_o_cvd=self.rd_o_cvd
+                                    rd_o_cvd=self.rd_o_cvd,
+                                   offset_provider={}
                                    )
         # 10. HALO EXCHANGE sync_patch_array
