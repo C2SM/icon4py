@@ -134,6 +134,10 @@ class CppDefGenerator(TemplatedGenerator):
         return kSize_;
       }
 
+      static json *getJsonRecord() {
+        return jsonRecord_;
+      }
+
       {% for field in _this_node.fields %}
       static int get_{{field.name}}_KSize() {
       return {{field.name}}_kSize_;
@@ -217,7 +221,7 @@ class CppDefGenerator(TemplatedGenerator):
     StencilClassSetupFunc = as_jinja(
         """\
         static void setup(
-        const dawn::GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream,
+        const dawn::GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream, json *jsonRecord,
         {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -228,6 +232,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{ suffix }}_ = {{ suffix }};
         is_setup_ = true;
         stream_ = stream;
+        jsonRecord_ = jsonRecord;
         {%- for field in _this_node.out_fields -%}
         {{ field.name }}_{{ suffix }}_ = {{ field.name }}_{{ suffix }};
         {%- endfor -%}
@@ -245,6 +250,7 @@ class CppDefGenerator(TemplatedGenerator):
         inline static GpuTriMesh mesh_;
         inline static bool is_setup_;
         inline static cudaStream_t stream_;
+        inline static json* jsonRecord_;
         {%- for field in _this_node.out_fields -%}
         inline static int {{ field.name }}_kSize_;
         {%- endfor %}
@@ -391,7 +397,7 @@ class CppDefGenerator(TemplatedGenerator):
             \"{{ field.name }}\", {{ field.name }}_rel_tol, {{ field.name }}_abs_tol, iteration);
         #ifdef __SERIALIZE_METRICS
         MetricsSerialiser serialiser_{{ field.name }}(
-            stencilMetrics, metricsNameFromEnvVar("SLURM_JOB_ID"),
+            dawn_generated::cuda_ico::{{ funcname }}::getJsonRecord(), stencilMetrics,
             \"{{ funcname }}\", \"{{ field.name }}\");
         serialiser_{{ field.name }}.writeJson(iteration);
         #endif
@@ -474,7 +480,7 @@ class CppDefGenerator(TemplatedGenerator):
     CppSetupFuncDeclaration = as_jinja(
         """\
         void setup_{{funcname}}(
-        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
+        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record,
         {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -487,7 +493,7 @@ class CppDefGenerator(TemplatedGenerator):
     SetupFunc = as_jinja(
         """\
         {{ func_declaration }} {
-        dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream,
+        dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream, json_record,
         {%- for field in _this_node.out_fields -%}
         {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
