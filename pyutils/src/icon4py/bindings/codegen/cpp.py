@@ -79,7 +79,6 @@ class CppDefGenerator(TemplatedGenerator):
             gridtools::fn::backend::gpu<block_sizes_t<BLOCK_SIZE, LEVELS_PER_THREAD>>;
         } // namespace
         using namespace gridtools::dawn;
-        #define nproma 50000
         """
     )
 
@@ -87,22 +86,24 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         template <int N> struct neighbor_table_fortran {
           const int *raw_ptr_fortran;
+          const int nproma;
           __device__ friend inline constexpr gridtools::array<int, N>
           neighbor_table_neighbors(neighbor_table_fortran const &table, int index) {
             gridtools::array<int, N> ret{};
             for (int i = 0; i < N; i++) {
-              ret[i] = table.raw_ptr_fortran[index + nproma * i];
+              ret[i] = table.raw_ptr_fortran[index + table.nproma * i];
             }
             return ret;
           }
         };
 
         template <int N> struct neighbor_table_strided {
+          const int nproma;
           __device__ friend inline constexpr gridtools::array<int, N>
-          neighbor_table_neighbors(neighbor_table_strided const &, int index) {
+          neighbor_table_neighbors(neighbor_table_strided const &table, int index) {
             gridtools::array<int, N> ret{};
             for (int i = 0; i < N; i++) {
-              ret[i] = index + nproma * i;
+              ret[i] = index + table.nproma * i;
             }
             return ret;
           }
@@ -187,6 +188,7 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         public:
           struct GpuTriMesh {
+            int Nproma;
             int NumVertices;
             int NumEdges;
             int NumCells;
@@ -202,6 +204,7 @@ class CppDefGenerator(TemplatedGenerator):
             GpuTriMesh() {}
 
             GpuTriMesh(const dawn::GlobalGpuTriMesh *mesh) {
+              Nproma = mesh->Nproma;
               NumVertices = mesh->NumVertices;
               NumCells = mesh->NumCells;
               NumEdges = mesh->NumEdges;
@@ -302,10 +305,10 @@ class CppDefGenerator(TemplatedGenerator):
       fn_backend_t cuda_backend{};
       cuda_backend.stream = stream_;
       {% for connection in _this_node.sparse_connections -%}
-        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.renderer.render_lowercase_shorthand()}}Table};
+        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.renderer.render_lowercase_shorthand()}}Table, .nproma = mesh_.Nproma};
       {% endfor -%}
       {%- for connection in _this_node.strided_connections -%}
-        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{};
+        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.nproma = mesh_.Nproma};
       {% endfor -%}
       auto connectivities = gridtools::hymap::keys<
       {%- for connection in _this_node.all_connections -%}
