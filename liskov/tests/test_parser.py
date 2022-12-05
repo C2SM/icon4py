@@ -17,14 +17,7 @@ import pytest
 from icon4py.liskov.collect import DirectivesCollector
 from icon4py.liskov.directives import NoDirectivesFound, RawDirective
 from icon4py.liskov.exceptions import DirectiveSyntaxError, ParsingException
-from icon4py.liskov.input import (
-    BoundsData,
-    CreateData,
-    DeclareData,
-    FieldAssociationData,
-    StencilData,
-)
-from icon4py.liskov.parser import DirectivesParser, ParsedDirectives
+from icon4py.liskov.parser import DirectivesParser
 from icon4py.testutils.fortran_samples import (
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
@@ -49,39 +42,12 @@ def test_directive_parser_single_stencil(make_f90_tmpfile):
     parser = DirectivesParser(directives)
     parsed = parser.parsed_directives
 
-    # type checks
-    assert isinstance(parsed, ParsedDirectives)
+    directives = parsed["directives"]
+    content = parsed["content"]
 
-    # create checks
-    assert isinstance(parsed.create, CreateData)
-    assert parsed.create.variables == ["vn_before"]
-    assert parsed.create.startln == 3
-    assert parsed.create.endln == 3
-
-    # declare checks
-    assert isinstance(parsed.declare, DeclareData)
-    assert parsed.declare.declarations == {
-        "vn": "(nproma,p_patch%nlev,p_patch%nblks_e)"
-    }
-    assert parsed.declare.startln == 1
-    assert parsed.declare.endln == 1
-
-    # stencil checks
-    assert isinstance(parsed.stencils[0], StencilData)
-    assert isinstance(parsed.stencils[0].bounds, BoundsData)
-    assert isinstance(parsed.stencils[0].fields[0], FieldAssociationData)
-
-    assert len(parsed.stencils) == 1
-    assert len(parsed.stencils[0].fields) == 4
-    assert parsed.stencils[0].bounds.__dict__ == {
-        "hlower": "i_startidx",
-        "hupper": "i_endidx",
-        "vlower": "1",
-        "vupper": "nlev",
-    }
-    assert parsed.stencils[0].startln == 5
-    assert parsed.stencils[0].endln == 9
-    assert parsed.stencils[0].name == "mo_nh_diffusion_stencil_06"
+    # todo: check each element
+    assert len(directives) == 4
+    assert len(content) == 4
 
 
 def test_directive_parser_multiple_stencils(make_f90_tmpfile):
@@ -90,58 +56,11 @@ def test_directive_parser_multiple_stencils(make_f90_tmpfile):
     parser = DirectivesParser(directives)
     parsed = parser.parsed_directives
 
-    # type checks
-    assert isinstance(parsed, ParsedDirectives)
+    directives = parsed["directives"]
+    content = parsed["content"]
 
-    # Stencil 1
-    # create checks
-    assert isinstance(parsed.create, CreateData)
-    assert parsed.create.variables == ["vn_before"]
-    assert parsed.create.startln == 3
-    assert parsed.create.endln == 3
-
-    # declare checks
-    assert isinstance(parsed.declare, DeclareData)
-    assert parsed.declare.declarations == {
-        "vn": "(nproma,p_patch%nlev,p_patch%nblks_e)"
-    }
-    assert parsed.declare.startln == 1
-    assert parsed.declare.endln == 1
-
-    # stencil checks
-    assert isinstance(parsed.stencils[0], StencilData)
-    assert isinstance(parsed.stencils[0].bounds, BoundsData)
-    assert isinstance(parsed.stencils[0].fields[0], FieldAssociationData)
-
-    assert len(parsed.stencils) == 2
-    assert len(parsed.stencils[0].fields) == 4
-    assert parsed.stencils[0].bounds.__dict__ == {
-        "hlower": "i_startidx",
-        "hupper": "i_endidx",
-        "vlower": "1",
-        "vupper": "nlev",
-    }
-    assert parsed.stencils[0].startln == 5
-    assert parsed.stencils[0].endln == 9
-    assert parsed.stencils[0].name == "mo_nh_diffusion_stencil_06"
-
-    # Stencil 2
-    # stencil checks
-    assert isinstance(parsed.stencils[1], StencilData)
-    assert isinstance(parsed.stencils[1].bounds, BoundsData)
-    assert isinstance(parsed.stencils[1].fields[0], FieldAssociationData)
-
-    assert len(parsed.stencils[1].fields) == 3
-    assert parsed.stencils[1].bounds.__dict__ == {
-        "hlower": "i_startidx",
-        "hupper": "i_endidx",
-        "vlower": "1",
-        "vupper": "nlev",
-    }
-    assert parsed.stencils[1].fields[-1].abs_tol == "1e-21_wp"
-    assert parsed.stencils[1].startln == 29
-    assert parsed.stencils[1].endln == 33
-    assert parsed.stencils[1].name == "mo_nh_diffusion_stencil_07"
+    assert len(directives) == 6
+    assert len(content) == 4
 
 
 @pytest.mark.parametrize(
@@ -165,7 +84,7 @@ def test_directive_parser_parsing_exception(make_f90_tmpfile, directive):
     [
         "!$DSL START(stencil1, stencil2)",
         "!$DSL DECLARE(somefield; another_field)",
-        "!$DSL CREATE(field=field)",
+        "!$DSL CREATE(field)",
     ],
 )
 def test_directive_parser_invalid_directive_syntax(make_f90_tmpfile, directive):
@@ -188,7 +107,7 @@ def test_directive_parser_no_directives_found(make_f90_tmpfile):
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL CREATE(vn_before)",
+        "!$DSL CREATE()",
         "!$DSL END(name=mo_nh_diffusion_stencil_06)",
     ],
 )
@@ -204,7 +123,7 @@ def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
 @pytest.mark.parametrize(
     "directive",
     [
-        """!$DSL CREATE(vn_before)""",
+        """!$DSL CREATE()""",
         """!$DSL END(name=mo_nh_diffusion_stencil_06)""",
     ],
 )

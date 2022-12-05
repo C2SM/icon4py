@@ -17,6 +17,7 @@ import click
 
 from icon4py.liskov.collect import DirectivesCollector
 from icon4py.liskov.parser import DirectivesParser
+from icon4py.liskov.serialise import DirectiveSerialiser
 
 
 @click.command("icon_liskov")
@@ -36,8 +37,10 @@ def main(filepath: pathlib.Path) -> None:
 
     parser = DirectivesParser(directives_collector.directives)
 
-    parsed_directives = parser.parsed_directives
-    print(parsed_directives)
+    serialiser = DirectiveSerialiser(parser.parsed_directives)
+
+    print(serialiser.directives)
+
     # todo: generate code using IntegrationGenerator
 
     # todo: write code using IntegrationWriter
