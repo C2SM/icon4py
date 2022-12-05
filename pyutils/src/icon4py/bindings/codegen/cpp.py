@@ -270,7 +270,7 @@ class CppDefGenerator(TemplatedGenerator):
       using namespace gridtools;
       using namespace fn;
       {% for field in _this_node.all_fields -%}
-        {% if field.is_sparse() == False %}
+        {% if field.is_sparse() == False and field.rank() > 0 %}
           auto {{field.name}}_sid = {{ field.renderer.render_sid() }};
         {% endif %}
       {% endfor -%}
@@ -290,8 +290,10 @@ class CppDefGenerator(TemplatedGenerator):
         {%- endfor -%}
         );
       {%- endfor %}
-      {% for parameter in _this_node.parameters -%}
-        gridtools::stencil::global_parameter {{parameter.name}}_gp { {{parameter.name}}_ };
+      {% for field in _this_node.all_fields -%}
+        {%- if field.rank() == 0 -%}
+          gridtools::stencil::global_parameter {{field.name}}_gp { {{field.name}}_ };
+        {%- endif -%}
       {% endfor -%}
       fn_backend_t cuda_backend{};
       cuda_backend.stream = stream_;
@@ -311,13 +313,12 @@ class CppDefGenerator(TemplatedGenerator):
       generated::{{stencil_name}}(connectivities)(cuda_backend,
       {%- for field in _this_node.all_fields -%}
         {%- if field.is_sparse() -%}
-        {{field.name}}_sid_comp,
+          {{field.name}}_sid_comp,
+        {%- elif field.rank() == 0 -%}
+          {{field.name}}_gp,
         {%- else -%}
-        {{field.name}}_sid,
+          {{field.name}}_sid,
         {%- endif -%}
-      {%- endfor -%}
-            {%- for field in _this_node.parameters -%}
-        {{field.name}}_gp,
       {%- endfor -%}
       horizontalStart, horizontalEnd, verticalStart, verticalEnd);
       #ifndef NDEBUG
@@ -530,7 +531,6 @@ class StenClassRunFun(Node):
     dense_fields: Sequence[Field]
     sparse_fields: Sequence[Field]
     compound_fields: Sequence[Field]
-    parameters: Sequence[Field]
     sparse_connections: Sequence[Offset]
     strided_connections: Sequence[Offset]
     all_connections: Sequence[Offset]
@@ -639,8 +639,7 @@ class CppDefTemplate(Node):
         strided_offsets = [
             offset for offset in self.offsets if offset.is_compound_location()
         ]
-        parameters = [field for field in self.fields if field.rank() == 0]
-        fields_without_params = [field for field in self.fields if field.rank() != 0]
+        all_fields = self.fields
 
         offsets = dict(sparse=sparse_offsets, strided=strided_offsets)
         fields = dict(
@@ -648,8 +647,7 @@ class CppDefTemplate(Node):
             dense=dense_fields,
             sparse=sparse_fields,
             compound=compound_fields,
-            parameters=parameters,
-            without_params=fields_without_params,
+            all_fields=all_fields,
         )
         return fields, offsets
 
@@ -674,14 +672,13 @@ class CppDefTemplate(Node):
             ),
             run_fun=StenClassRunFun(
                 stencil_name=self.stencil_name,
-                all_fields=fields["without_params"],
+                all_fields=fields["all_fields"],
                 dense_fields=fields["dense"],
                 sparse_fields=fields["sparse"],
                 compound_fields=fields["compound"],
                 sparse_connections=offsets["sparse"],
                 strided_connections=offsets["strided"],
                 all_connections=self.offsets,
-                parameters=fields["parameters"],
             ),
             public_utilities=PublicUtilities(fields=fields["output"]),
             copy_pointers=CopyPointers(fields=self.fields),
