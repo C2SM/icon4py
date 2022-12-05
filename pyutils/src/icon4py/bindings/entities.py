@@ -105,13 +105,13 @@ class Field(Node, FieldEntity):
         self.renderer = FieldRenderer(self)
 
     def is_sparse(self) -> bool:
-        return isinstance(self.location, ChainedLocation)
+        return self.location is not None and isinstance(self.location, ChainedLocation)
 
     def is_dense(self) -> bool:
-        return isinstance(self.location, BasicLocation)
+        return self.location is not None and isinstance(self.location, BasicLocation)
 
     def is_compound(self) -> bool:
-        return isinstance(self.location, CompoundLocation)
+        return self.location is not None and isinstance(self.location, CompoundLocation)
 
     def rank(self) -> int:
         rank = int(self.has_vertical_dimension) + int(self.location is not None)
