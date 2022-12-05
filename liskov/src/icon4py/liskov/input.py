@@ -11,23 +11,23 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
 from typing import Optional
 
+from eve import Node
 
-class CodeGenInput:
+
+class CodeGenInput(Node):
     ...
 
 
-@dataclass(frozen=True)
-class BoundsData:
-    hlower: str | int
-    hupper: str | int
-    vlower: str | int
-    vupper: str | int
+class BoundsData(CodeGenInput):
+    hlower: str
+    hupper: str
+    vlower: str
+    vupper: str
 
 
-@dataclass(frozen=False)  # not frozen as tolerances are updated after object creation
+# not frozen as tolerances are updated after object creation
 class FieldAssociationData(CodeGenInput):
     variable_name: str
     variable_association: str
@@ -37,7 +37,6 @@ class FieldAssociationData(CodeGenInput):
     rel_tol: Optional[str] = None
 
 
-@dataclass(frozen=True)
 class StencilData(CodeGenInput):
     name: str
     fields: list[FieldAssociationData]
@@ -46,14 +45,12 @@ class StencilData(CodeGenInput):
     endln: int
 
 
-@dataclass(frozen=True)
 class DeclareData(CodeGenInput):
     startln: int
     endln: int
-    declarations: dict[str, str]
+    declarations: list[dict[str, str]]
 
 
-@dataclass(frozen=True)
 class CreateData(CodeGenInput):
     startln: int
     endln: int

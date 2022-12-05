@@ -37,14 +37,16 @@ class DirectiveInputFactory(Protocol):
 class CreateDataFactory:
     def __call__(self, parsed: dict) -> CreateData:
         create = extract_directive(parsed["directives"], Create)[0]
-        return CreateData(create.startln, create.endln)
+        return CreateData(startln=create.startln, endln=create.endln)
 
 
 class DeclareDataFactory:
     def __call__(self, parsed: dict) -> DeclareData:
         declare = extract_directive(parsed["directives"], Declare)[0]
         declarations = parsed["content"]["Declare"]
-        return DeclareData(declare.startln, declare.endln, declarations)
+        return DeclareData(
+            startln=declare.startln, endln=declare.endln, declarations=declarations
+        )
 
 
 class StencilDataFactory:
