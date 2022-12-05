@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import collections
-from dataclasses import dataclass
 
 from icon4py.liskov.directives import (
     Create,
@@ -24,23 +23,13 @@ from icon4py.liskov.directives import (
     TypedDirective,
 )
 from icon4py.liskov.exceptions import ParsingExceptionHandler
-from icon4py.liskov.factory import FACTORIES
-from icon4py.liskov.input import CreateData, DeclareData, StencilData
 from icon4py.liskov.validation import (
     DirectiveSemanticsValidator,
     DirectiveSyntaxValidator,
 )
 
 
-@dataclass(frozen=True)
-class ParsedDirectives:
-    stencils: list[StencilData]
-    declare: DeclareData
-    create: CreateData
-
-
 class DirectivesParser:
-
     _SUPPORTED_DIRECTIVES: list[Directive] = [
         StartStencil(),
         EndStencil(),
@@ -48,11 +37,13 @@ class DirectivesParser:
         Declare(),
     ]
 
+    _VALIDATORS = [DirectiveSyntaxValidator(), DirectiveSemanticsValidator()]
+
     def __init__(self, directives: list[RawDirective]) -> None:
         """Class which carries out end-to-end parsing of a file with regards to DSL directives.
 
-            Handles parsing and validation of preprocessor directives, returning a ParsedDirectives
-            object which can be used for code generation.
+            Handles parsing and validation of preprocessor directives, returning a dictionary
+            which can be used for code generation.
 
         Args:
             directives: A list of directives collected by the DirectivesCollector.
@@ -65,28 +56,22 @@ class DirectivesParser:
         self.exception_handler = ParsingExceptionHandler
         self.parsed_directives = self._parse_directives()
 
-    def _parse_directives(self) -> ParsedDirectives | NoDirectivesFound:
-        """Execute end-to-end parsing of collected directives."""
+    def _parse_directives(self) -> dict | NoDirectivesFound:
+        """Execute end-to-end parsing of collected directives.
+
+        This includes type deduction, preprocessing of directives, validation, parsing, and serialisation.
+        """
         if len(self.directives) != 0:
-            # run type deduction
             typed = self._determine_type(self.directives)
-
-            # run validation passes
             preprocessed = self._preprocess(typed)
-            DirectiveSyntaxValidator().validate(preprocessed)
-            DirectiveSemanticsValidator().validate(preprocessed)
-
-            # extract directive data
-            parsed = {
-                "directives": preprocessed,
-                "content": self.parse_directive(preprocessed),
-            }
-            stencils = FACTORIES["Stencil"].build(parsed)
-            declare = FACTORIES["Declare"].build(parsed)
-            create = FACTORIES["Create"].build(parsed)
-
-            return ParsedDirectives(stencils, declare, create)
+            self._run_validation_passes(preprocessed)
+            return dict(directives=preprocessed, content=self._parse(preprocessed))
         return NoDirectivesFound()
+
+    def _run_validation_passes(self, preprocessed: list[TypedDirective]) -> None:
+        """Run validation passes on Typed Directives."""
+        for v in self._VALIDATORS:
+            v.validate(preprocessed)
 
     def _determine_type(self, directives: list[RawDirective]) -> list[TypedDirective]:
         """Determine type of directive used and whether it is supported."""
@@ -116,7 +101,7 @@ class DirectivesParser:
         return preprocessed
 
     @staticmethod
-    def parse_directive(directives: TypedDirective) -> dict[str, list]:
+    def _parse(directives: list[TypedDirective]) -> dict[str, list]:
         """Parse directive into a dictionary of keys and their corresponding values."""
         parsed_content = collections.defaultdict(list)
 

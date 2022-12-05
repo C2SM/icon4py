@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import copy
+from dataclasses import dataclass
 from typing import Protocol
 
 from icon4py.liskov.collect import StencilCollector
@@ -29,20 +30,18 @@ from icon4py.pyutils.metadata import get_field_infos
 
 
 class DirectiveInputFactory(Protocol):
-    def build(self, parsed: dict) -> list[CodeGenInput] | CodeGenInput:
+    def __call__(self, parsed: dict) -> list[CodeGenInput] | CodeGenInput:
         ...
 
 
 class CreateDataFactory:
-    @staticmethod
-    def build(parsed: dict) -> CreateData:
+    def __call__(self, parsed: dict) -> CreateData:
         create = extract_directive(parsed["directives"], Create)[0]
         return CreateData(create.startln, create.endln)
 
 
 class DeclareDataFactory:
-    @staticmethod
-    def build(parsed: dict) -> DeclareData:
+    def __call__(self, parsed: dict) -> DeclareData:
         declare = extract_directive(parsed["directives"], Declare)[0]
         declarations = parsed["content"]["Declare"]
         return DeclareData(declare.startln, declare.endln, declarations)
@@ -51,7 +50,7 @@ class DeclareDataFactory:
 class StencilDataFactory:
     TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 
-    def build(self, parsed: dict) -> list[StencilData]:
+    def __call__(self, parsed: dict) -> list[StencilData]:
         stencils = []
         stencil_directives = extract_directive(parsed["directives"], StartStencil)
         for i, directive in enumerate(stencil_directives):
@@ -151,8 +150,28 @@ class StencilDataFactory:
         return fields
 
 
-FACTORIES = {
-    "Create": CreateDataFactory(),
-    "Declare": DeclareDataFactory(),
-    "Stencil": StencilDataFactory(),
-}
+@dataclass(frozen=True)
+class SerialisedDirectives:
+    stencil: list[StencilData]
+    declare: DeclareData
+    create: CreateData
+
+
+class DirectiveSerialiser:
+    def __init__(self, parsed: dict):
+        self.directives = self.serialise(parsed)
+
+    _FACTORIES = {
+        "create": CreateDataFactory(),
+        "declare": DeclareDataFactory(),
+        "stencil": StencilDataFactory(),
+    }
+
+    def serialise(self, directives):
+        serialised = dict()
+
+        for key, func in self._FACTORIES.items():
+            ser = func(directives)
+            serialised[key] = ser
+
+        return SerialisedDirectives(**serialised)
