@@ -10,15 +10,17 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from enum import Enum
 from typing import Tuple
 
 import numpy as np
-from functional.common import Field, Dimension, DimensionKind
-from functional.iterator.embedded import np_as_located_field, NeighborTableOffsetProvider
+from functional.common import Dimension, DimensionKind, Field
+from functional.iterator.embedded import (
+    NeighborTableOffsetProvider,
+    np_as_located_field,
+)
 
-from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig, HorizontalMarkerIndex
-from icon4py.common.dimension import EdgeDim, KDim, CellDim, VertexDim
+from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 
 
 class MeshConfig:
@@ -45,25 +47,30 @@ class MeshConfig:
     def get_num_cells(self):
         return self._horizontal._num_cells
 
+
 def builder(func):
     def wrapper(self, *args, **kwargs):
         func(self, *args, **kwargs)
         return self
+
     return wrapper
+
 
 class IconGrid:
     def __init__(self):
-        self.config:MeshConfig = None
+        self.config: MeshConfig = None
         self.start_indices = {}
         self.end_indices = {}
-        self.connectivities={}
+        self.connectivities = {}
 
     @builder
     def with_config(self, config: MeshConfig):
         self.config = config
 
     @builder
-    def with_start_end_indices(self, dim:Dimension, start_indices:np.ndarray, end_indices: np.ndarray):
+    def with_start_end_indices(
+        self, dim: Dimension, start_indices: np.ndarray, end_indices: np.ndarray
+    ):
         self.start_indices[dim] = start_indices
         self.end_indices[dim] = end_indices
 
@@ -74,13 +81,22 @@ class IconGrid:
     def k_levels(self):
         return self.config.num_k_levels
 
+    def num_cells(self):
+        return self.config.get_num_cells()
 
+    def num_vertices(self):
+        return self.config.get_num_cells()
 
-    def get_indices_from_to(self, dim:Dimension, start_marker:int, end_marker: int) -> Tuple[int, int]:
+    def num_edges(self):
+        return self.config.get_num_edges()
+
+    def get_indices_from_to(
+        self, dim: Dimension, start_marker: int, end_marker: int
+    ) -> Tuple[int, int]:
         if dim.kind != DimensionKind.HORIZONTAL:
-            raise ValueError("only defined for {} dimension kind ", DimensionKind.HORIZONTAL)
-        #print(self.start_indices[dim])
-        #print(self.end_indices[dim])
+            raise ValueError(
+                "only defined for {} dimension kind ", DimensionKind.HORIZONTAL
+            )
         return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
 
     def get_c2e_connectivity(self):
@@ -102,6 +118,13 @@ class IconGrid:
     def get_c2e2c0_connectivity(self):
         table = self.connectivities["c2e2c0"]
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
+
+    def get_e2c2v_connectivity(self):
+        return self.get_e2v_connectivity()
+
+    def get_v2e_offset_provider(self):
+        table = self.connectivities["v2e"]
+        return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
 
 
 class VerticalModelParams:
@@ -141,5 +164,3 @@ class VerticalModelParams:
             / (self.vct_a[2] - self.vct_a[self.index_of_damping_height + 1])
         )
         return np_as_located_field(KDim)(buffer)
-
-

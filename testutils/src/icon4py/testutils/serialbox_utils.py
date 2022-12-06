@@ -12,13 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import os
-from typing import List
 
 from functional.common import Dimension
 from functional.iterator.embedded import np_as_located_field
 from serialbox import Savepoint
 
-from icon4py.common.dimension import KDim, EdgeDim, ECVDim, CellDim, VertexDim
+from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
+
 
 try:
     import serialbox as ser
@@ -29,8 +29,6 @@ except ImportError:
         "git clone --recursive https://github.com/GridTools/serialbox; CC=`which gcc` CXX=`which g++` pip install serialbox/src/serialbox-python"
     )
     import serialbox as ser
-
-
 
 
 class IconDiffusionSavepoint:
@@ -45,11 +43,12 @@ class IconDiffusionSavepoint:
         return self._get_field("vct_a", KDim)
 
     def _get_field(self, name, *dimensions):
-        return np_as_located_field(dimensions)(self.serializer.read(name, self.savepoint))
+        buffer = self.serializer.read(name, self.savepoint)
+        return np_as_located_field(*dimensions)(buffer)
 
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()
-        return {n:metadata[n] for n in names if n in metadata}
+        return {n: metadata[n] for n in names if n in metadata}
 
     def tangent_orientation(self):
         return self._get_field("tangent_orientation", EdgeDim)
@@ -108,6 +107,7 @@ class IconDiffusionSavepoint:
             return self.serializer.read("v_refin_ctl", self.savepoint)
         else:
             return None
+
     def c2e(self):
         return self.serializer.read("c2e", self.savepoint)
 
@@ -116,10 +116,12 @@ class IconDiffusionSavepoint:
 
     def e2c(self):
         return self.serializer.read("e2c", self.savepoint)
+
     def e2v(self):
         return self.serializer.read("e2v", self.savepoint)
-class IconSerialDataProvider:
 
+
+class IconSerialDataProvider:
     def __init__(self, fname_prefix, path="."):
         self.rank = 0
         self.serializer: ser.Serializer = None
@@ -130,13 +132,15 @@ class IconSerialDataProvider:
     def _init_serializer(self):
         if not self.fname:
             print(" WARNING: no filename! closing serializer")
-        self.serializer = ser.Serializer(ser.OpenModeKind.Read, self.file_path, self.fname)
+        self.serializer = ser.Serializer(
+            ser.OpenModeKind.Read, self.file_path, self.fname
+        )
 
     def print_info(self):
         print(f"SAVEPOINTS: {self.serializer.savepoint_list()}")
         print(f"FIELDNAMES: {self.serializer.fieldnames()}")
 
-    def from_savepoint(self, linit:bool, date:str) -> IconDiffusionSavepoint:
+    def from_savepoint(self, linit: bool, date: str) -> IconDiffusionSavepoint:
         savepoint = (
             self.serializer.savepoint["call-diffusion-init"]
             .linit[linit]
@@ -144,37 +148,3 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconDiffusionSavepoint(savepoint, self.serializer)
-
-
-
-    def get_fields(self, metadata: List[str], fields: List[str]):
-        savepoint = (
-            self.serializer.savepoint["call-diffusion-init"]
-            .linit[False]
-            .date["2021-06-20T12:00:10.000"]
-            .as_savepoint()
-        )
-        print(savepoint.metainfo)
-        meta_present = {}
-        meta_absent = []
-        for md in metadata:
-            if md in savepoint.metainfo.to_dict():
-                meta_present[md] = savepoint.metainfo[md]
-            else:
-                meta_absent.append(md)
-
-        fields_present = {}
-        fields_absent = []
-        for field_name in fields:
-            if field_name in self.serializer.fieldnames():
-                fields_present[field_name] = self.serializer.read(field_name, savepoint)
-            else:
-                fields_absent.append(field_name)
-        [print(f"field  {f} not present in savepoint") for f in fields_absent]
-        [print(f"metadata  {f} not present in savepoint") for f in meta_absent]
-        return meta_present, fields_present
-
-
-
-
-

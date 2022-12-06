@@ -14,24 +14,23 @@ import os
 
 import numpy as np
 import pytest
-from functional.iterator.embedded import np_as_located_field
 
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.diffusion import (
+    CartesianVectorTuple,
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
     enhanced_smagorinski_factor,
     init_diffusion_local_fields,
-    set_zero_v_k, scale_k, CartesianVectorTuple,
+    scale_k,
+    set_zero_v_k,
 )
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
 from icon4py.common.dimension import KDim, VertexDim
-from icon4py.testutils.serialbox_utils import (
-    IconSerialDataProvider,
-)
+from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
@@ -41,8 +40,9 @@ def test_scale_k():
     field = random_field(mesh, KDim)
     scaled_field = zero_field(mesh, KDim)
     factor = 2.0
-    scale_k(field, factor, scaled_field, offset_provider = {})
+    scale_k(field, factor, scaled_field, offset_provider={})
     assert np.allclose(factor * np.asarray(field), scaled_field)
+
 
 def smag_limit_numpy(shape, k4, substeps):
     return 0.125 - 4.0 * diff_multfac_vn_numpy(shape, k4, substeps)
@@ -252,29 +252,34 @@ def test_diffusion_run():
     dtime = sp.get_metadata("dtime")
     orientation = sp.tangent_orientation()
 
-    inverse_primal_edge_lengths= sp.inverse_primal_edge_lengths()
+    inverse_primal_edge_lengths = sp.inverse_primal_edge_lengths()
     inverse_vertical_vertex_lengths = sp.inv_vert_vert_length()
     inverse_dual_edge_length = sp.inv_dual_edge_length()
-    primal_normal_vert: CartesianVectorTuple = (sp.primal_normal_vert_x(), sp.primal_normal_vert_y())
-    dual_normal_vert: CartesianVectorTuple = (sp.dual_normal_vert_x(), sp.dual_normal_vert_y())
+    primal_normal_vert: CartesianVectorTuple = (
+        sp.primal_normal_vert_x(),
+        sp.primal_normal_vert_y(),
+    )
+    dual_normal_vert: CartesianVectorTuple = (
+        sp.dual_normal_vert_x(),
+        sp.dual_normal_vert_y(),
+    )
     edge_areas = sp.edge_areas()
     cell_areas = sp.cell_areas()
 
-    diffusion.run(diagnostic_state=diagnostic_state,
-                  prognostic_state=prognostic_state,
-                  metric_state=metric_state,
-                  interpolation_state=interpolation_state,
-                  dtime=dtime,
-                  tangent_orientation=orientation,
-                  inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-                  inv_dual_edge_length=inverse_dual_edge_length,
-                  inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
-                  primal_normal_vert=primal_normal_vert,
-                  dual_normal_vert=dual_normal_vert,
-                  edge_areas=edge_areas,
-                  cell_areas=cell_areas
-                  )
+    diffusion.run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        dtime=dtime,
+        tangent_orientation=orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inv_dual_edge_length=inverse_dual_edge_length,
+        inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+        primal_normal_vert=primal_normal_vert,
+        dual_normal_vert=dual_normal_vert,
+        edge_areas=edge_areas,
+        cell_areas=cell_areas,
+    )
 
     pytest.fail("not implemented yet")
-
-
