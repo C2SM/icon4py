@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import asdict
-from typing import Optional
+from typing import Collection, Optional
 
 import eve
 from eve.codegen import JinjaTemplate as as_jinja
@@ -58,7 +58,7 @@ class WrapRunFunc(eve.Node):
     tolerance_fields: ToleranceFields = eve.datamodels.field(init=False)
     bounds_fields: BoundsFields = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
         self.name = self.stencil_data.name
@@ -89,7 +89,7 @@ class WrapRunFuncGenerator(TemplatedGenerator):
         """
     )
 
-    def visit_OutputFields(self, out: OutputFields):
+    def visit_OutputFields(self, out: OutputFields) -> Collection[str] | str:
         f = out.fields[0]
         start_idx = f.association.find("(")
         end_idx = f.association.find(")")

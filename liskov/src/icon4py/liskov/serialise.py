@@ -13,7 +13,7 @@
 
 import copy
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Callable, Protocol
 
 from icon4py.liskov.collect import StencilCollector
 from icon4py.liskov.directives import Create, Declare, StartStencil
@@ -25,6 +25,7 @@ from icon4py.liskov.input import (
     FieldAssociationData,
     StencilData,
 )
+from icon4py.liskov.types import ParsedType
 from icon4py.liskov.utils import extract_directive
 from icon4py.pyutils.metadata import get_field_infos
 
@@ -160,16 +161,16 @@ class SerialisedDirectives:
 
 
 class DirectiveSerialiser:
-    def __init__(self, parsed: dict):
+    def __init__(self, parsed: ParsedType):
         self.directives = self.serialise(parsed)
 
-    _FACTORIES = {
+    _FACTORIES: dict[str, Callable] = {
         "create": CreateDataFactory(),
         "declare": DeclareDataFactory(),
         "stencil": StencilDataFactory(),
     }
 
-    def serialise(self, directives):
+    def serialise(self, directives: ParsedType) -> SerialisedDirectives:
         serialised = dict()
 
         for key, func in self._FACTORIES.items():

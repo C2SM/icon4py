@@ -23,9 +23,11 @@ from icon4py.liskov.directives import (
     TypedDirective,
 )
 from icon4py.liskov.exceptions import ParsingExceptionHandler
+from icon4py.liskov.types import ParsedType
 from icon4py.liskov.validation import (
     DirectiveSemanticsValidator,
     DirectiveSyntaxValidator,
+    Validator,
 )
 
 
@@ -37,7 +39,10 @@ class DirectivesParser:
         Declare(),
     ]
 
-    _VALIDATORS = [DirectiveSyntaxValidator(), DirectiveSemanticsValidator()]
+    _VALIDATORS: list[Validator] = [
+        DirectiveSyntaxValidator(),
+        DirectiveSemanticsValidator(),
+    ]
 
     def __init__(self, directives: list[RawDirective]) -> None:
         """Class which carries out end-to-end parsing of a file with regards to DSL directives.
@@ -56,7 +61,7 @@ class DirectivesParser:
         self.exception_handler = ParsingExceptionHandler
         self.parsed_directives = self._parse_directives()
 
-    def _parse_directives(self) -> dict | NoDirectivesFound:
+    def _parse_directives(self) -> ParsedType:
         """Execute end-to-end parsing of collected directives.
 
         This includes type deduction, preprocessing of directives, validation, parsing, and serialisation.
