@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import re
+from typing import Protocol
 
 from icon4py.liskov.directives import (
     Create,
@@ -23,7 +24,12 @@ from icon4py.liskov.directives import (
 from icon4py.liskov.exceptions import ParsingException, SyntaxExceptionHandler
 
 
-class DirectiveSyntaxValidator:
+class Validator(Protocol):
+    def validate(self, directives: list[TypedDirective]) -> None:
+        ...
+
+
+class DirectiveSyntaxValidator(Validator):
     """Syntax validation method dispatcher for each directive type."""
 
     def __init__(self) -> None:
@@ -59,7 +65,7 @@ class DirectiveSyntaxValidator:
             self.exception_handler.check_for_matches(d, match, regex)
 
 
-class DirectiveSemanticsValidator:
+class DirectiveSemanticsValidator(Validator):
     """Validates semantics of preprocessor directives."""
 
     def validate(self, directives: list[TypedDirective]) -> None:

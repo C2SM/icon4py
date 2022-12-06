@@ -11,26 +11,28 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Protocol
 
 
-class CodeGenInput:
-    ...
+class CodeGenInput(Protocol):
+    startln: int
+    endln: int
 
 
 @dataclass(frozen=True)
 class BoundsData:
-    hlower: str | int
-    hupper: str | int
-    vlower: str | int
-    vupper: str | int
+    hlower: str
+    hupper: str
+    vlower: str
+    vupper: str
 
 
 @dataclass(frozen=False)  # not frozen as tolerances are updated after object creation
-class FieldAssociationData(CodeGenInput):
-    variable_name: str
-    variable_association: str
+class FieldAssociationData:
+    variable: str
+    association: str
     inp: bool
     out: bool
     abs_tol: Optional[str] = None
@@ -38,22 +40,22 @@ class FieldAssociationData(CodeGenInput):
 
 
 @dataclass(frozen=True)
-class StencilData(CodeGenInput):
+class DeclareData:
+    startln: int
+    endln: int
+    declarations: list[dict[str, str]]
+
+
+@dataclass(frozen=True)
+class CreateData:
+    startln: int
+    endln: int
+
+
+@dataclass(frozen=True)
+class StencilData:
     name: str
     fields: list[FieldAssociationData]
     bounds: BoundsData
-    startln: int
-    endln: int
-
-
-@dataclass(frozen=True)
-class DeclareData(CodeGenInput):
-    startln: int
-    endln: int
-    declarations: dict[str, str]
-
-
-@dataclass(frozen=True)
-class CreateData(CodeGenInput):
     startln: int
     endln: int

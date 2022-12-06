@@ -13,7 +13,7 @@
 
 import copy
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Callable, Protocol
 
 from icon4py.liskov.collect import StencilCollector
 from icon4py.liskov.directives import Create, Declare, StartStencil
@@ -25,6 +25,7 @@ from icon4py.liskov.input import (
     FieldAssociationData,
     StencilData,
 )
+from icon4py.liskov.types import ParsedType
 from icon4py.liskov.utils import extract_directive
 from icon4py.pyutils.metadata import get_field_infos
 
@@ -37,14 +38,16 @@ class DirectiveInputFactory(Protocol):
 class CreateDataFactory:
     def __call__(self, parsed: dict) -> CreateData:
         create = extract_directive(parsed["directives"], Create)[0]
-        return CreateData(create.startln, create.endln)
+        return CreateData(startln=create.startln, endln=create.endln)
 
 
 class DeclareDataFactory:
     def __call__(self, parsed: dict) -> DeclareData:
         declare = extract_directive(parsed["directives"], Declare)[0]
         declarations = parsed["content"]["Declare"]
-        return DeclareData(declare.startln, declare.endln, declarations)
+        return DeclareData(
+            startln=declare.startln, endln=declare.endln, declarations=declarations
+        )
 
 
 class StencilDataFactory:
@@ -123,8 +126,8 @@ class StencilDataFactory:
             gt4py_field_info = gt4py_stencil_info[field_name]
 
             field_association_data = FieldAssociationData(
-                variable_name=field_name,
-                variable_association=association,
+                variable=field_name,
+                association=association,
                 inp=gt4py_field_info.inp,
                 out=gt4py_field_info.out,
             )
@@ -145,7 +148,7 @@ class StencilDataFactory:
                     name = field_name.replace(_tol, "")
 
                     for f in fields:
-                        if f.variable_name == name:
+                        if f.variable == name:
                             setattr(f, tol, association)
         return fields
 
@@ -158,16 +161,16 @@ class SerialisedDirectives:
 
 
 class DirectiveSerialiser:
-    def __init__(self, parsed: dict):
+    def __init__(self, parsed: ParsedType):
         self.directives = self.serialise(parsed)
 
-    _FACTORIES = {
+    _FACTORIES: dict[str, Callable] = {
         "create": CreateDataFactory(),
         "declare": DeclareDataFactory(),
         "stencil": StencilDataFactory(),
     }
 
-    def serialise(self, directives):
+    def serialise(self, directives: ParsedType) -> SerialisedDirectives:
         serialised = dict()
 
         for key, func in self._FACTORIES.items():
