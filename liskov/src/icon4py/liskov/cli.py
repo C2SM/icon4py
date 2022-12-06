@@ -15,6 +15,8 @@ import pathlib
 
 import click
 
+from icon4py.bindings.utils import format_fortran_code
+from icon4py.liskov.codegen import WrapRunFunc, WrapRunFuncGenerator
 from icon4py.liskov.collect import DirectivesCollector
 from icon4py.liskov.parser import DirectivesParser
 from icon4py.liskov.serialise import DirectiveSerialiser
@@ -42,5 +44,10 @@ def main(filepath: pathlib.Path) -> None:
     print(serialiser.directives)
 
     # todo: generate code using IntegrationGenerator
+    for stencil in serialiser.directives.stencil:
+        wrap_run_func = WrapRunFunc(stencil_data=stencil)
+        source = WrapRunFuncGenerator.apply(wrap_run_func)
+        formatted_source = format_fortran_code(source)
+        print(formatted_source)
 
     # todo: write code using IntegrationWriter

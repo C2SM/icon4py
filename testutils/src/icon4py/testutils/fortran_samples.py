@@ -67,7 +67,7 @@ MULTIPLE_STENCILS = """\
 
     !$DSL START(name=mo_nh_diffusion_stencil_06; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
-    !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); &
+    !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); vn_abs_tol=1e-21_wp; &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
     !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
 
@@ -92,6 +92,7 @@ MULTIPLE_STENCILS = """\
     !$DSL START(name=mo_nh_diffusion_stencil_07; &
     !$DSL       w=p_nh_prog%w(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1); &
     !$DSL       z_nabla2_c=z_nabla2_c(:,:,1); z_nabla2_c_abs_tol=1e-21_wp; &
+    !$DSL       z_nabla2_c_rel_tol=1e-21_wp; &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
     !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
     !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )

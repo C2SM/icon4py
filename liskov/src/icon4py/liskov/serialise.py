@@ -125,8 +125,8 @@ class StencilDataFactory:
             gt4py_field_info = gt4py_stencil_info[field_name]
 
             field_association_data = FieldAssociationData(
-                variable_name=field_name,
-                variable_association=association,
+                variable=field_name,
+                association=association,
                 inp=gt4py_field_info.inp,
                 out=gt4py_field_info.out,
             )
@@ -147,7 +147,7 @@ class StencilDataFactory:
                     name = field_name.replace(_tol, "")
 
                     for f in fields:
-                        if f.variable_name == name:
+                        if f.variable == name:
                             setattr(f, tol, association)
         return fields
 
