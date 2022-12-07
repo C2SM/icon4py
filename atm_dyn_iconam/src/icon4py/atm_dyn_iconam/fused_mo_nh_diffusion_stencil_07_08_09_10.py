@@ -40,7 +40,7 @@ def _fused_mo_nh_diffusion_stencil_07_08_09_10(
     halo_idx: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
 
-    vert_idx = broadcast(vert_idx, (CellDim, KDim)) 
+    vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     dwdx, dwdy = where(
         vert_idx > int32(0),
