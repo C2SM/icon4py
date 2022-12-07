@@ -14,18 +14,20 @@ import os
 
 import numpy as np
 import pytest
+from icon_grid_test_utils import with_grid
 
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.diffusion import (
-    CartesianVectorTuple,
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
-    enhanced_smagorinski_factor,
+    VectorTuple,
+    _en_smag_fac_for_zero_nshift,
     init_diffusion_local_fields,
     scale_k,
     set_zero_v_k,
 )
+from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
@@ -110,7 +112,9 @@ def test_enhanced_smagorinski_factor():
     result = zero_field(mesh, KDim)
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
-    enhanced_smagorinski_factor(*fac, *z, a_vec, result, offset_provider={"Koff": KDim})
+    _en_smag_fac_for_zero_nshift(
+        *fac, *z, a_vec, out=result, offset_provider={"Koff": KDim}
+    )
     enhanced_smag_fac_np = enhanced_smagorinski_factor_np(fac, z, np.asarray(a_vec))
     assert np.allclose(enhanced_smag_fac_np, np.asarray(result[:-1]))
 
@@ -192,7 +196,6 @@ def test_diffusion_init():
     vct_a = savepoint.physical_height_field()
     meta = savepoint.get_metadata("nlev", "linit", "date")
 
-    print(f"meta  {meta}")
     assert meta["nlev"] == 65
     assert meta["linit"] is False
     assert meta["date"] == first_run_date
@@ -234,32 +237,65 @@ def test_diffusion_init():
 
 
 @pytest.mark.xfail
-def test_diffusion_run():
+def test_diffusion_run(with_grid):
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     data_provider = IconSerialDataProvider("icon_diffusion_init", data_path)
     data_provider.print_info()
     sp = data_provider.from_savepoint(linit=False, date="2021-06-20T12:00:10.000")
-
-    config = DiffusionConfig.create_with_defaults()
-    additional_parameters = DiffusionParams(config)
     vct_a = sp.physical_height_field()
 
+    config = DiffusionConfig(
+        with_grid,
+        vertical_params=VerticalModelParams(
+            vct_a=vct_a, rayleigh_damping_height=12500.0
+        ),
+    )
+
+    additional_parameters = DiffusionParams(config)
+
     diffusion = Diffusion(config, additional_parameters, vct_a)
-    diagnostic_state = DiagnosticState()
-    prognostic_state = PrognosticState()
-    interpolation_state = InterpolationState()
-    metric_state = MetricState()
-    dtime = sp.get_metadata("dtime")
+
+    diagnostic_state = DiagnosticState(
+        hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
+    )
+    prognostic_state = PrognosticState(
+        vertical_wind=sp.vn(),
+        normal_wind=sp.w(),
+        exner_pressure=sp.exner(),
+        theta_v=sp.theta_v(),
+    )
+    grg = sp.geofac_grg()
+
+    rbf_coef = sp.rbf_coeff()
+    interpolation_state = InterpolationState(
+        e_bln_c_s=sp.e_bln_c_s(),
+        rbf_coeff_1=rbf_coef[0],
+        rbf_coeff_2=sp.rbf_coeff[1],
+        geofac_div=sp.geofac_div(),
+        geofac_n2s=sp.geofac_n2s(),
+        geofac_grg_x=grg[0],
+        geofac_grg_y=grg[1],
+        nudgecoeff_e=sp.nudgecoeff_e(),
+    )
+    metric_state = MetricState(
+        mask_hdiff=sp.theta_ref_mc(),
+        theta_ref_mc=sp.theta_ref_mc(),
+        wgtfac_c=sp.wgtfac_c(),
+        zd_intcoef=sp.zd_intcoef(),
+        zd_vertidx=sp.zd_vertidx(),
+        zd_diffcoef=sp.zd_diffcoef(),
+    )
+    dtime = sp.get_metadata("dtime").get("dtime")
     orientation = sp.tangent_orientation()
 
     inverse_primal_edge_lengths = sp.inverse_primal_edge_lengths()
     inverse_vertical_vertex_lengths = sp.inv_vert_vert_length()
     inverse_dual_edge_length = sp.inv_dual_edge_length()
-    primal_normal_vert: CartesianVectorTuple = (
+    primal_normal_vert: VectorTuple = (
         sp.primal_normal_vert_x(),
         sp.primal_normal_vert_y(),
     )
-    dual_normal_vert: CartesianVectorTuple = (
+    dual_normal_vert: VectorTuple = (
         sp.dual_normal_vert_x(),
         sp.dual_normal_vert_y(),
     )
@@ -274,7 +310,7 @@ def test_diffusion_run():
         dtime=dtime,
         tangent_orientation=orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inv_dual_edge_length=inverse_dual_edge_length,
+        inverse_dual_edge_length=inverse_dual_edge_length,
         inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
         primal_normal_vert=primal_normal_vert,
         dual_normal_vert=dual_normal_vert,

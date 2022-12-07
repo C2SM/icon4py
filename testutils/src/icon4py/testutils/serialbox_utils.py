@@ -13,11 +13,22 @@
 
 import os
 
+import numpy as np
 from functional.common import Dimension
 from functional.iterator.embedded import np_as_located_field
 from serialbox import Savepoint
 
-from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.common.dimension import (
+    C2E2CDim,
+    C2E2CODim,
+    C2EDim,
+    CellDim,
+    E2C2VDim,
+    EdgeDim,
+    KDim,
+    V2EDim,
+    VertexDim,
+)
 
 
 try:
@@ -43,7 +54,8 @@ class IconDiffusionSavepoint:
         return self._get_field("vct_a", KDim)
 
     def _get_field(self, name, *dimensions):
-        buffer = self.serializer.read(name, self.savepoint)
+        buffer = np.squeeze(self.serializer.read(name, self.savepoint))
+        print(f"{name} {buffer.shape}")
         return np_as_located_field(*dimensions)(buffer)
 
     def get_metadata(self, *names):
@@ -54,22 +66,22 @@ class IconDiffusionSavepoint:
         return self._get_field("tangent_orientation", EdgeDim)
 
     def inverse_primal_edge_lengths(self):
-        return self._get_field("inverse_primal_edge_lengths", EdgeDim)
+        return self._get_field("inv_primal_edge_length", EdgeDim)
 
     def inv_vert_vert_length(self):
         return self._get_field("inv_vert_vert_length", EdgeDim)
 
     def primal_normal_vert_x(self):
-        return self._get_field("primal_normal_vert_x", ECVDim)
+        return self._get_field("primal_normal_vert_x", VertexDim, E2C2VDim)
 
     def primal_normal_vert_y(self):
-        return self._get_field("primal_normal_vert_y", ECVDim)
+        return self._get_field("primal_normal_vert_y", VertexDim, E2C2VDim)
 
     def dual_normal_vert_y(self):
-        return self._get_field("dual_normal_vert_y", ECVDim)
+        return self._get_field("dual_normal_vert_y", VertexDim, E2C2VDim)
 
     def dual_normal_vert_x(self):
-        return self._get_field("dual_normal_vert_x", ECVDim)
+        return self._get_field("dual_normal_vert_x", VertexDim, E2C2VDim)
 
     def cell_areas(self):
         return self._get_field("cell_areas", CellDim)
@@ -81,7 +93,7 @@ class IconDiffusionSavepoint:
         return self._get_field("inv_dual_edge_length", EdgeDim)
 
     def cells_start_index(self):
-        return self.serializer.read("cells_start_index", self.savepoint)
+        return self.serializer.read("c_start_index", self.savepoint)
 
     def cells_end_index(self):
         return self.serializer.read("c_end_index", self.savepoint)
@@ -120,21 +132,94 @@ class IconDiffusionSavepoint:
     def e2v(self):
         return self.serializer.read("e2v", self.savepoint)
 
+    def hdef_ic(self):
+        return self._get_field("hdef_ic", CellDim, KDim)
+
+    def div_ic(self):
+        return self._get_field("div_ic", CellDim, KDim)
+
+    def dwdx(self):
+        return self._get_field("dwdx", CellDim, KDim)
+
+    def dwdy(self):
+        return self._get_field("dwdy", CellDim, KDim)
+
+    def vn(self):
+        return self._get_field("vn", CellDim, KDim)
+
+    def theta_v(self):
+        return self._get_field("theta_v", CellDim, KDim)
+
+    def w(self):
+        return self._get_field("w", CellDim, KDim)
+
+    def exner(self):
+        return self._get_field("exner", CellDim, KDim)
+
+    def theta_ref_mc(self):
+        return self._get_field("theta_ref_mc", CellDim, KDim)
+
+    def wgtfac_c(self):
+        return self._get_field("wgtfac_c", CellDim, KDim)
+
+    def wgtfac_e(self):
+        return self._get_field("wgtfac_e", EdgeDim, KDim)
+
+    def mask_diff(self):
+        return self._get_field("mask_diff", CellDim, KDim)
+
+    def zd_diffcoef(self):
+        return self._get_field("zd_diffcoef", CellDim, KDim)
+
+    def zd_intcoef(self):
+        return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
+
+    def e_bln_c_s(self):
+        return self._get_field("e_bln_c_s", CellDim, C2EDim)
+
+    def geofac_div(self):
+        return self._get_field("geofac_div", CellDim, C2EDim)
+
+    def geofac_n2s(self):
+        return self._get_field("geofac_n2s", CellDim, C2E2CODim)
+
+    def geofac_grg(self):
+        grg = self.serializer.read("geofac_grg", self.savepoint)
+        return grg[:, :, :, 0], grg[:, :, :, 1]
+
+    def nudgecoeff_e(self):
+        return self._get_field("nudgecoeff_e", EdgeDim)
+
+    def zd_vertidx(self):
+        return self._get_field("zd_vertidx", CellDim, C2E2CDim, KDim)
+
+    def rbf_coeff(self):
+        rbf_coef = self.serializer.read("rbf_vec_coeff_v", self.savepoint)
+        return (
+            np_as_located_field(VertexDim, V2EDim)(rbf_coef[:, :, 0]),
+            np_as_located_field(VertexDim, V2EDim)(rbf_coef)[:, :, 1],
+        )
+
+    def v2e(self):
+        return self.serializer.read("v2e", self.savepoint)
+
 
 class IconSerialDataProvider:
-    def __init__(self, fname_prefix, path="."):
+    def __init__(self, fname_prefix, path=".", do_print=False):
         self.rank = 0
         self.serializer: ser.Serializer = None
         self.file_path: str = path
         self.fname = f"{fname_prefix}_rank{str(self.rank)}"
-        self._init_serializer()
+        self._init_serializer(do_print)
 
-    def _init_serializer(self):
+    def _init_serializer(self, do_print: bool):
         if not self.fname:
             print(" WARNING: no filename! closing serializer")
         self.serializer = ser.Serializer(
             ser.OpenModeKind.Read, self.file_path, self.fname
         )
+        if do_print:
+            self.print_info()
 
     def print_info(self):
         print(f"SAVEPOINTS: {self.serializer.savepoint_list()}")

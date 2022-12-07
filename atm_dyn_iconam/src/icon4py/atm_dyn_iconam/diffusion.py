@@ -72,7 +72,7 @@ from icon4py.common.dimension import (
 
 
 DiffusionTupleVT = namedtuple("DiffusionParamVT", "v t")
-CartesianVectorTuple = namedtuple("CartesianVectorTuple", "x y")
+VectorTuple = namedtuple("CartesianVectorTuple", "x y")
 
 
 # TODO [ml] initial RUN linit = TRUE
@@ -105,7 +105,6 @@ def scale_k(
     _scale_k(field, factor, out=scaled_field)
 
 
-# TODO [ml] rename!
 @field_operator
 def _mo_nh_diffusion_stencil_01_scale_dtime(
     enh_smag_fac: Field[[KDim], float],
@@ -286,6 +285,7 @@ class DiffusionConfig:
 
     TODO: [ml] read from config
     TODO: [ml] handle dependencies on other namelists (below...)
+    TODO: move this to test: it sets up the mch_ch_r04b09_dsl experiment
     """
 
     @classmethod
@@ -514,14 +514,10 @@ class Diffusion:
         dtime: float,
         tangent_orientation: Field[[EdgeDim], float],
         inverse_primal_edge_lengths: Field[[EdgeDim], float],
-        inv_dual_edge_length: Field[[EdgeDim], float],
+        inverse_dual_edge_length: Field[[EdgeDim], float],
         inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
-        primal_normal_vert: CartesianVectorTuple[
-            Field[[ECVDim], float], Field[[ECVDim], float]
-        ],
-        dual_normal_vert: CartesianVectorTuple[
-            Field[[ECVDim], float], Field[[ECVDim], float]
-        ],
+        primal_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
+        dual_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
         edge_areas: Field[[EdgeDim], float],
         cell_areas: Field[[CellDim], float],
     ):
@@ -546,8 +542,8 @@ class Diffusion:
         )
         klevels = self.grid.k_levels()
         # TODO is this needed?
-        set_zero_v_k(self.u_vert)
-        set_zero_v_k(self.v_vert)
+        set_zero_v_k(self.u_vert, offset_provider={})
+        set_zero_v_k(self.v_vert, offset_provider={})
 
         # 1.  CALL rbf_vec_interpol_vertex
 
@@ -567,10 +563,11 @@ class Diffusion:
             },
             offset_provider={"V2E": self.grid.get_v2e_offset_provider()},
         )
+
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
         # 0c. dtime dependent stuff: enh_smag_factor, ~~r_dtimensubsteps~~
-        scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag)
+        scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         mo_nh_diffusion_stencil_01(
             self.diff_multfac_smag,
@@ -579,10 +576,10 @@ class Diffusion:
             inverse_vertical_vertex_lengths,
             self.u_vert,
             self.v_vert,
-            primal_normal_vert.x,
-            primal_normal_vert.y,
-            dual_normal_vert.x,
-            dual_normal_vert.y,
+            primal_normal_vert[0],
+            primal_normal_vert[1],
+            dual_normal_vert[0],
+            dual_normal_vert[1],
             prognostic_state.normal_wind,
             self.smag_limit,
             self.kh_smag_e,
@@ -739,7 +736,7 @@ class Diffusion:
 
         fused_mo_nh_diffusion_stencil_13_14(
             kh_smag_e=self.kh_smag_e,
-            inv_dual_edge_length=inv_dual_edge_length,
+            inv_dual_edge_length=inverse_dual_edge_length,
             theta_v=prognostic_state.theta_v,
             geofac_div=interpolation_state.geofac_div,
             z_temp=self.z_temp,

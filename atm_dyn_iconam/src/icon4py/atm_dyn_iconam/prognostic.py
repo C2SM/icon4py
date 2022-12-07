@@ -27,6 +27,5 @@ class PrognosticState:
 
     vertical_wind: Field[[CellDim, KDim], float]  # w(nproma, nlevp1, nblks_c) [m/s]
     normal_wind: Field[[EdgeDim, KDim], float]  # vn(nproma, nlev, nblks_e)  [m/s]
-    density: Field[[CellDim, KDim], float]  # rho(nproma, nlev, nblks_c)  [kg/m^3]
     exner_pressure: Field[[CellDim, KDim], float]  # exner(nrpoma, nlev, nblks_c)
     theta_v: Field[[CellDim, KDim], float]  # (nproma, nlev, nlbks_c) [K]

@@ -19,7 +19,6 @@ from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
     CellDim,
-    E2CDim,
     EdgeDim,
     V2EDim,
     VertexDim,
@@ -28,14 +27,12 @@ from icon4py.common.dimension import (
 
 @dataclass
 class InterpolationState:
-    def __init__(self):
-        self.g = None
-
     """
-    represents
+    represents the ICON interpolation state.
+
+    TODO: keep? does this state make sense at all?
     """
 
-    c_lin_e: Field[[EdgeDim, E2CDim], float]  # (nproma, 2, nblks_e)
     e_bln_c_s: Field[
         [CellDim, C2EDim], float
     ]  # coefficent for bilinear interpolation from edge to cell ()
@@ -58,4 +55,3 @@ class InterpolationState:
     ]  # factor for green gauss gradient (nproma,4,nblks_c,2)
     geofac_grg_y: Field[[CellDim, C2E2CODim], float]  # TODO combine to tuple
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
-    nudgecoeff_c: Field[[CellDim], float]  # nudgeing coeffiecients for cells

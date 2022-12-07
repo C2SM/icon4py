@@ -133,14 +133,14 @@ class VerticalModelParams:
         Contains physical parameters defined on the grid.
 
         Args:
-            vct_a:
-            rayleigh_damping_height height of rayleigh damping in [m] mo_nonhydro_nml
+            vct_a:  field containing the physical heights of the k level
+            rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
         """
         self.rayleigh_damping_height = rayleigh_damping_height
         self.vct_a = vct_a
         # TODO klevels in ICON are inverted!
         self.index_of_damping_height = np.argmax(
-            self.vct_a >= self.rayleigh_damping_height
+            np.asarray(self.vct_a) >= self.rayleigh_damping_height
         )
 
     def get_index_of_damping_layer(self):
