@@ -14,7 +14,6 @@
 
 TODO Cleanup:
 - Remove unused constants
-- Put back gamma_fct
 """
 
 from typing import Final
@@ -220,55 +219,6 @@ class GscpData(FrozenNamespace):
 gscp_data: Final = GscpData()
 
 
-class GscpCoefficients(FrozenNamespace):
-    """Workaround until we can pass scalars to scan()."""
-
-    zdt = 600.0  #
-    zceff_min = 0.075
-    v0snow = 20.0
-    zvz0i = 1.25
-    mu_rain = 0.0
-    rain_n0_factor = 1.0
-    icesedi_exp = 0.33
-
-    zconst = (
-        gscp_data.zkcau
-        / (20.0 * gscp_data.zxstar)
-        * (gscp_data.zcnue + 2.0)
-        * (gscp_data.zcnue + 4.0)
-        / (gscp_data.zcnue + 1.0) ** 2
-    )
-    ccsrim = 46.98276746732905
-    ccsagg = 52.20307496369895
-    ccsdep = 99.96257414250321
-    ccsvxp = -(gscp_data.zv1s / (gscp_data.zbms + 1.0) + 1.0)
-    ccsvel = 46.23061746664488
-    ccsvxp = ccsvxp + 1.0
-    ccslam = 0.1379999999844696
-    ccslxp = 1.0 / (gscp_data.zbms + 1.0)
-    ccswxp = 0.1666666666666667
-    ccsaxp = -(gscp_data.zv1s + 3.0)
-    ccsdxp = -(gscp_data.zv1s + 1.0) / 2.0
-    ccshi1 = phy_const.als**2 / (gscp_data.zlheat * phy_const.rv)
-    ccdvtp = 4.2213489078749271e-5
-    ccidep = 4.0 * gscp_data.zami ** (-gscp_data.x1o3)
-    zn0r = 8.0e6 * np.exp(3.2 * mu_rain) * (0.01) ** (-mu_rain)
-    zn0r = zn0r * rain_n0_factor
-    zcevxp = (mu_rain + 2.0) / (mu_rain + 4.0)
-    zcev = 3.0999999914053263e-3
-    zbevxp = (2.0 * mu_rain + 5.5) / (2.0 * mu_rain + 8.0) - zcevxp
-    zbev = 14.152467883390491
-    zvzxp = 0.5 / (mu_rain + 4.0)
-    zvz0r = 12.63008787548925
-
-    # DL: Temporary workaround until we can pass floats to scan
-    qc0 = 0.0
-    qi0 = 0.0
-
-
-gscp_coefficients: Final = GscpCoefficients()
-
-
 def gscp_set_coefficients(
     igscp,
     zceff_min=0.075,
@@ -279,11 +229,7 @@ def gscp_set_coefficients(
     icesedi_exp=0.33,
     idbg=0,
 ):
-    """Calculate some coefficients for the microphysics schemes.  Usually called only once at model startup.
-
-    Default for optional parameters:
-    Values from COSMO
-    """
+    """Calculate some coefficients for the microphysics schemes.  Usually called only once at model startup."""
 
     # For compatilibility TODO: Cleanup
     if v0snow <= -1:
@@ -302,9 +248,7 @@ def gscp_set_coefficients(
     ccsrim = (
         0.25 * math_const.pi * gscp_data.zecs * v0snow * gamma_fct(gscp_data.zv1s + 3.0)
     )
-    ccsagg = (
-        0.25 * math_const.pi * v0snow * gamma_fct(gscp_data.zv1s + 3.0)
-    )  # DL: off by -7.105427357601002e-15 (last 2 digits) FORTRAN value is 52.20307496369895
+    ccsagg = 0.25 * math_const.pi * v0snow * gamma_fct(gscp_data.zv1s + 3.0)
     ccsdep = (
         0.26 * gamma_fct((gscp_data.zv1s + 5.0) / 2.0) * np.sqrt(1.0 / gscp_data.zeta)
     )
@@ -314,13 +258,11 @@ def gscp_set_coefficients(
         * v0snow
         * gamma_fct(gscp_data.zbms + gscp_data.zv1s + 1.0)
         * (gscp_data.zams * gamma_fct(gscp_data.zbms + 1.0)) ** ccsvxp
-    )  # 46.23061746664488
+    )
     ccsvxp = ccsvxp + 1.0
     ccslam = gscp_data.zams * gamma_fct(gscp_data.zbms + 1.0)
     ccslxp = 1.0 / (gscp_data.zbms + 1.0)
-    ccswxp = (
-        gscp_data.zv1s * ccslxp
-    )  # Off by -5.551115123125783e-17 original FORTRAN is 0.1666666666666667
+    ccswxp = gscp_data.zv1s * ccslxp
     ccsaxp = -(gscp_data.zv1s + 3.0)
     ccsdxp = -(gscp_data.zv1s + 1.0) / 2.0
     ccshi1 = phy_const.als**2 / (gscp_data.zlheat * phy_const.rv)
@@ -343,7 +285,7 @@ def gscp_set_coefficients(
         * zn0r
         * zar ** (-zcevxp)
         * gamma_fct(mu_rain + 2.0)
-    )  # off by 2.168404344971009e-18 FORTRAN: 3.0999999914053263e-3
+    )
     zbevxp = (2.0 * mu_rain + 5.5) / (2.0 * mu_rain + 8.0) - zcevxp
     zbev = (
         0.26
@@ -351,14 +293,15 @@ def gscp_set_coefficients(
         * zar ** (-zbevxp)
         * gamma_fct((2.0 * mu_rain + 5.5) / 2.0)
         / gamma_fct(mu_rain + 2.0)
-    )  # 14.152467883390491
+    )
 
     zvzxp = 0.5 / (mu_rain + 4.0)
     zvz0r = (
         130.0 * gamma_fct(mu_rain + 4.5) / gamma_fct(mu_rain + 4.0) * zar ** (-zvzxp)
-    )  #  Off by 2.6645352591003757e-14 FORTRAN is 12.63008787548925
+    )
 
     return (
+        v0snow,
         ccsrim,
         ccsagg,
         ccsdep,

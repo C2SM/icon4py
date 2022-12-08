@@ -66,7 +66,7 @@ from functional.ffront.fbuiltins import (
     sqrt,
 )
 
-from icon4py.atm_phy_schemes.gscp_data import gscp_coefficients, gscp_data
+from icon4py.atm_phy_schemes.gscp_data import gscp_data
 from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.shared.mo_physical_constants import phy_const
@@ -217,8 +217,8 @@ def _graupel(
         float,
         float,
     ],  # DL TODO: Use ellipsis operator?
-    # zdt: float,  # time step
-    dz: float,  # level thickness
+    zdt: float,
+    dz: float,
     # Prognostics
     temp: float,
     pres: float,
@@ -231,38 +231,39 @@ def _graupel(
     qg: float,
     # Number Densities
     qnc: float,  # TODO: shold be 2D Field
-    #   qi0: float,
-    #   qc0: float,
+    qi0: float,
+    qc0: float,
     # Precipitation Fluxes
     pri_gsp: float,  # TODO: shold be 2D Field
     prr_gsp: float,  # TODO: shold be 2D Field
     prs_gsp: float,  # TODO: shold be 2D Field
     prg_gsp: float,  # TODO: shold be 2D Field
     qrsflux: float,
-    # # Precomputed Parameters
-    # ccsrim: float,
-    # ccsagg: float,
-    # ccsdep: float,
-    # ccsvel: float,
-    # ccsvxp: float,
-    # ccslam: float,
-    # ccslxp: float,
-    # ccsaxp: float,
-    # ccsdxp: float,
-    # ccshi1: float,
-    # ccdvtp: float,
-    # ccidep: float,
-    # ccswxp: float,
-    # zconst: float,
-    # zcev: float,
-    # zbev: float,
-    # zcevxp: float,
-    # zbevxp: float,
-    # zvzxp: float,
-    # zvz0r: float,
-    # zvz0i: float,
-    # icesedi_exp: float,
-    # zceff_min: float,
+    # Precomputed Parameters
+    v0snow: float,
+    ccsrim: float,
+    ccsagg: float,
+    ccsdep: float,
+    ccsvel: float,
+    ccsvxp: float,
+    ccslam: float,
+    ccslxp: float,
+    ccsaxp: float,
+    ccsdxp: float,
+    ccshi1: float,
+    ccdvtp: float,
+    ccidep: float,
+    ccswxp: float,
+    zconst: float,
+    zcev: float,
+    zbev: float,
+    zcevxp: float,
+    zbevxp: float,
+    zvzxp: float,
+    zvz0r: float,
+    zvz0i: float,
+    icesedi_exp: float,
+    zceff_min: float,
     # Optional Fields: TODO: Pass optional fields to program
     ddt_tend_t: float,
     ddt_tend_qv: float,
@@ -333,13 +334,13 @@ def _graupel(
     )
     zlog_10 = log(10.0)  # Natural logarithm  of 10
 
-    ccswxp_ln1o2 = exp(gscp_coefficients.ccswxp * log(0.5))
-    zvzxp_ln1o2 = exp(gscp_coefficients.zvzxp * log(0.5))
+    ccswxp_ln1o2 = exp(ccswxp * log(0.5))
+    zvzxp_ln1o2 = exp(zvzxp * log(0.5))
     zbvi_ln1o2 = exp(gscp_data.zbvi * log(0.5))
     zexpsedg_ln1o2 = exp(local_param.zexpsedg * log(0.5))
 
     # timestep for calculations
-    zdtr = 1.0 / gscp_coefficients.zdt
+    zdtr = 1.0 / zdt
 
     # ----------------------------------------------------------------------------
     # Section 2: Check for existence of rain and snow
@@ -383,7 +384,7 @@ def _graupel(
     z1orhog = 1.0 / rhog
     hlp = log(gscp_data.zrho0 * z1orhog)
     zrho1o2 = exp(hlp * gscp_data.x1o2)
-    zrhofac_qi = exp(hlp * gscp_coefficients.icesedi_exp)
+    zrhofac_qi = exp(hlp * icesedi_exp)
 
     zqrk = qrg * rhog
     zqsk = qsg * rhog
@@ -396,7 +397,7 @@ def _graupel(
     llqg = True if zqgk > gscp_data.zqmin else False
     llqi = True if zqik > gscp_data.zqmin else False
 
-    zdtdh = 0.5 * gscp_coefficients.zdt / dz
+    zdtdh = 0.5 * zdt / dz
 
     # # DL:  2D arrays that accumulate in k
     zzar = zqrk / zdtdh + zprvr_kminus1 + zpkr_kminus1
@@ -456,10 +457,10 @@ def _graupel(
         zn0s = minimum(zn0s, 1.0e9)
         zn0s = maximum(zn0s, 1.0e6)
 
-        zcrim = gscp_coefficients.ccsrim * zn0s
-        zcagg = gscp_coefficients.ccsagg * zn0s
-        zbsdep = gscp_coefficients.ccsdep * sqrt(gscp_coefficients.v0snow)
-        zvz0s = gscp_coefficients.ccsvel * exp(gscp_coefficients.ccsvxp * log(zn0s))
+        zcrim = ccsrim * zn0s
+        zcagg = ccsagg * zn0s
+        zbsdep = ccsdep * sqrt(v0snow)
+        zvz0s = ccsvel * exp(ccsvxp * log(zn0s))
     else:
         (zcrim, zcagg, zbsdep, zvz0s) = (0.0, 0.0, 0.0, 0.0)
 
@@ -468,7 +469,7 @@ def _graupel(
     # qs_sedi:
     # -------------------------------------------------------------------------
     if llqs:
-        zlnqsk = zvz0s * exp(gscp_coefficients.ccswxp * log(zqsk)) * zrho1o2
+        zlnqsk = zvz0s * exp(ccswxp * log(zqsk)) * zrho1o2
 
         # Prevent terminal fall speed of snow from being zero at the surface level
         zlnqsk = maximum(zlnqsk, gscp_data.v_sedi_snow_min) if is_surface else zlnqsk
@@ -483,7 +484,7 @@ def _graupel(
     # -------------------------------------------------------------------------
     if llqr:
         zlnqrk = (
-            gscp_coefficients.zvz0r * exp(gscp_coefficients.zvzxp * log(zqrk)) * zrho1o2
+            zvz0r * exp(zvzxp * log(zqrk)) * zrho1o2
         )
 
         # Prevent terminal fall speed of rain from being zero at the surface level
@@ -513,7 +514,7 @@ def _graupel(
     # qi_sedi:
     # -------------------------------------------------------------------------
     if llqi:
-        zlnqik = gscp_coefficients.zvz0i * exp(gscp_data.zbvi * log(zqik)) * zrhofac_qi
+        zlnqik = zvz0i * exp(gscp_data.zbvi * log(zqik)) * zrhofac_qi
         zpki = zqik * zlnqik
 
         zvzi = zlnqik * zbvi_ln1o2 if zvzi_kminus1 == 0.0 else zvzi_kminus1
@@ -663,14 +664,14 @@ def _graupel(
     if (qig > gscp_data.zqmin) | (
         zqsk > gscp_data.zqmin
     ):  # DL: TODO FIXFORTRAN same as llqi and llqs
-        zdvtp = gscp_coefficients.ccdvtp * exp(1.94 * log(tg)) / ppg
-        zhi = gscp_coefficients.ccshi1 * zdvtp * rhog * zqvsi / (tg * tg)
+        zdvtp = ccdvtp * exp(1.94 * log(tg)) / ppg
+        zhi = ccshi1 * zdvtp * rhog * zqvsi / (tg * tg)
         hlp = zdvtp / (1.0 + zhi)
-        zcidep = gscp_coefficients.ccidep * hlp
+        zcidep = ccidep * hlp
 
         if llqs:
             zcslam = exp(
-                gscp_coefficients.ccslxp * log(gscp_coefficients.ccslam * zn0s / zqsk)
+                ccslxp * log(ccslam * zn0s / zqsk)
             )
             zcslam = minimum(zcslam, 1.0e15)
             zcsdep = 4.0 * zn0s * hlp
@@ -717,7 +718,7 @@ def _graupel(
                 hlp = exp(gscp_data.zkphi2 * log(ztau))
                 zphi = gscp_data.zkphi1 * hlp * (1.0 - hlp) ** 3
                 scau = (
-                    gscp_coefficients.zconst
+                    zconst
                     * qcg
                     * qcg
                     * qcg
@@ -739,7 +740,7 @@ def _graupel(
                 )
 
             srim = (
-                zcrim * qcg * exp(gscp_coefficients.ccsaxp * log(zcslam))
+                zcrim * qcg * exp(ccsaxp * log(zcslam))
                 if llqs
                 else 0.0
             )
@@ -750,7 +751,7 @@ def _graupel(
                 srim = 0.0
                 srim2 = 0.0
             else:
-                if qcg >= gscp_coefficients.qc0:
+                if qcg >= qc0:
                     sconsg = local_param.zcsg * qcg * zeln3o4qsk
 
             # Check for maximum depletion of cloud water and adjust the
@@ -835,14 +836,14 @@ def _graupel(
                 # Change in sticking efficiency needed in case of cloud ice sedimentation
                 zeff = minimum(exp(0.09 * (tg - phy_const.tmelt)), 1.0)
                 zeff = maximum(
-                    maximum(zeff, gscp_coefficients.zceff_min),
+                    maximum(zeff, zceff_min),
                     gscp_data.zceff_fac * (tg - gscp_data.tmin_iceautoconv),
                 )
 
-                sagg = zeff * qig * zcagg * exp(gscp_coefficients.ccsaxp * log(zcslam))
+                sagg = zeff * qig * zcagg * exp(ccsaxp * log(zcslam))
                 sagg2 = zeff * qig * local_param.zcagg_g * zelnrimexp_g
                 siau = (
-                    zeff * gscp_data.zciau * maximum(qig - gscp_coefficients.qi0, 0.0)
+                    zeff * gscp_data.zciau * maximum(qig - qi0, 0.0)
                 )
                 zmi = maximum(
                     gscp_data.zmi0, minimum(rhog * qig / znin, gscp_data.zmimax)
@@ -873,7 +874,7 @@ def _graupel(
             else:
                 zsimax = 0.0
 
-            zxfac = 1.0 + zbsdep * exp(gscp_coefficients.ccsdxp * log(zcslam))
+            zxfac = 1.0 + zbsdep * exp(ccsdxp * log(zcslam))
             ssdep = zcsdep * zxfac * zqvsidiff / (zcslam + gscp_data.zeps) ** 2
             # FR new: depositional growth reduction
             if ssdep > 0.0:
@@ -976,7 +977,7 @@ def _graupel(
     if llqr & (qvg + qcg <= zqvsw):
 
         zlnqrk = log(zqrk)
-        zx1 = 1.0 + gscp_coefficients.zbev * exp(gscp_coefficients.zbevxp * zlnqrk)
+        zx1 = 1.0 + zbev * exp(zbevxp * zlnqrk)
         # sev  = zcev*zx1*(zqvsw - qvg) * exp(zcevxp  * zlnqrk)
         # Limit evaporation rate in order to avoid overshoots towards supersaturation
         # the pre-factor approximates (esat(T_wb)-e)/(esat(T)-e) at temperatures between 0 degC and 30 degC
@@ -984,13 +985,13 @@ def _graupel(
         maxevap = (
             (0.61 - 0.0163 * temp_c + 1.111e-4 * temp_c**2)
             * (zqvsw - qvg)
-            / gscp_coefficients.zdt
+            / zdt
         )
         sev = minimum(
-            gscp_coefficients.zcev
+            zcev
             * zx1
             * (zqvsw - qvg)
-            * exp(gscp_coefficients.zcevxp * zlnqrk),
+            * exp(zcevxp * zlnqrk),
             maxevap,
         )
 
@@ -1053,10 +1054,10 @@ def _graupel(
     qg_in = qg
 
     # Compute tendencies
-    qi_t = (zzai * z1orhog + zqit * gscp_coefficients.zdt) * zimi
-    qr_t = (zzar * z1orhog + zqrt * gscp_coefficients.zdt) * zimr
-    qs_t = (zzas * z1orhog + zqst * gscp_coefficients.zdt) * zims
-    qg_t = (zzag * z1orhog + zqgt * gscp_coefficients.zdt) * zimg
+    qi_t = (zzai * z1orhog + zqit * zdt) * zimi
+    qr_t = (zzar * z1orhog + zqrt * zdt) * zimr
+    qs_t = (zzas * z1orhog + zqst * zdt) * zims
+    qg_t = (zzag * z1orhog + zqgt * zdt) * zimg
 
     # Update Variables DL: Refactor?
     qig = maximum(0.0, qi_t)
@@ -1087,15 +1088,15 @@ def _graupel(
         zvzr = (
             0.0
             if qrg + qr_kminus1 <= gscp_data.zqmin
-            else gscp_coefficients.zvz0r
-            * exp(gscp_coefficients.zvzxp * log((qrg + qr_kminus1) * 0.5 * rhog))
+            else zvz0r
+            * exp(zvzxp * log((qrg + qr_kminus1) * 0.5 * rhog))
             * zrho1o2
         )
         zvzs = (
             0.0
             if qsg + qs_kminus1 <= gscp_data.zqmin
             else zvz0s
-            * exp(gscp_coefficients.ccswxp * log((qsg + qs_kminus1) * 0.5 * rhog))
+            * exp(ccswxp * log((qsg + qs_kminus1) * 0.5 * rhog))
             * zrho1o2
         )
         zvzg = (
@@ -1108,7 +1109,7 @@ def _graupel(
         zvzi = (
             0.0
             if qig + qi_kminus1 <= gscp_data.zqmin
-            else gscp_coefficients.zvz0i
+            else zvz0i
             * exp(gscp_data.zbvi * log((qig + qi_kminus1) * 0.5 * rhog))
             * zrhofac_qi
         )
@@ -1166,9 +1167,9 @@ def _graupel(
     qs = maximum(0.0, qsg)
     qi = maximum(0.0, qig)
     qg = maximum(0.0, qgg)
-    temp = temp + ztt * gscp_coefficients.zdt
-    qv = maximum(0.0, qv + zqvt * gscp_coefficients.zdt)
-    qc = maximum(0.0, qc + zqct * gscp_coefficients.zdt)
+    temp = temp + ztt * zdt
+    qv = maximum(0.0, qv + zqvt * zdt)
+    qc = maximum(0.0, qc + zqct * zdt)
 
     if local_param.lldiag_ttend:
         ddt_tend_t = temp - t_in * zdtr
@@ -1260,6 +1261,7 @@ def graupel(
     dist_cldtop: Field[[CellDim, KDim], float],
     zqvsw_up: Field[[CellDim, KDim], float],
     # Precomputed Parameters
+    v0snow: float,
     ccsrim: float,
     ccsagg: float,
     ccsdep: float,
@@ -1301,7 +1303,7 @@ def graupel(
 ):
     # Writing to several output fields currently breaks due to gt4py bugs
     _graupel(
-        # zdt,
+        zdt,
         dz,
         # Prognostics
         temp,
@@ -1315,8 +1317,8 @@ def graupel(
         qg,
         # Number Densities
         qnc,
-        # qi0,
-        # qc0,
+        qi0,
+        qc0,
         # Precipitation Fluxes
         pri_gsp,
         prr_gsp,
@@ -1324,29 +1326,30 @@ def graupel(
         prg_gsp,
         qrsflux,
         # Precomputed Parameters
-        # ccsrim,
-        # ccsagg,
-        # ccsdep,
-        # ccsvel,
-        # ccsvxp,
-        # ccslam,
-        # ccslxp,
-        # ccsaxp,
-        # ccsdxp,
-        # ccshi1,
-        # ccdvtp,
-        # ccidep,
-        # ccswxp,
-        # zconst,
-        # zcev,
-        # zbev,
-        # zcevxp,
-        # zbevxp,
-        # zvzxp,
-        # zvz0r,
-        # zvz0i,
-        # icesedi_exp,
-        # zceff_min,
+        v0snow,
+        ccsrim,
+        ccsagg,
+        ccsdep,
+        ccsvel,
+        ccsvxp,
+        ccslam,
+        ccslxp,
+        ccsaxp,
+        ccsdxp,
+        ccshi1,
+        ccdvtp,
+        ccidep,
+        ccswxp,
+        zconst,
+        zcev,
+        zbev,
+        zcevxp,
+        zbevxp,
+        zvzxp,
+        zvz0r,
+        zvz0i,
+        icesedi_exp,
+        zceff_min,
         # # Optional Fields: TODO: Pass optional fields to program
         ddt_tend_t,
         ddt_tend_qv,
