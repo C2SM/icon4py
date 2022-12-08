@@ -27,7 +27,8 @@ NO_DIRECTIVES_STENCIL = """\
     """
 
 SINGLE_STENCIL = """\
-    !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e))
+    !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e); a=(nproma,p_patch%nlev,p_patch%nblks_e); &
+    !$DSL         b=(nproma,p_patch%nlev,p_patch%nblks_e))
 
     !$DSL CREATE()
 
@@ -64,6 +65,14 @@ MULTIPLE_STENCILS = """\
     !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e))
 
     !$DSL CREATE()
+
+    !$DSL START(name=mo_solve_nonhydro_stencil_16; p_vn=p_nh%prog(nnow)%vn(:,:,1); rho_ref_me=p_nh%metrics%rho_ref_me(:,:,1); &
+    !$DSL          theta_ref_me=p_nh%metrics%theta_ref_me(:,:,1); p_distv_bary_1=p_distv_bary(:,:,1,1); p_distv_bary_2=p_distv_bary(:,:,1,2); &
+    !$DSL          z_grad_rth_1=z_grad_rth(:,:,1,1); z_grad_rth_2=z_grad_rth(:,:,1,2); z_grad_rth_3=z_grad_rth(:,:,1,3); z_grad_rth_4=z_grad_rth(:,:,1,4); &
+    !$DSL          z_rth_pr_1=z_rth_pr(:,:,1,1); z_rth_pr_2=z_rth_pr(:,:,1,2); z_rho_e=z_rho_e(:,:,1); z_theta_v_e=z_theta_v_e(:,:,1); &
+    !$DSL          vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+    !$DSL END(name=mo_solve_nonhydro_stencil_16)
+
 
     !$DSL START(name=mo_nh_diffusion_stencil_06; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &

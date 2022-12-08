@@ -15,16 +15,17 @@ import copy
 from dataclasses import dataclass
 from typing import Callable, Protocol
 
-from icon4py.liskov.collect import StencilCollector
-from icon4py.liskov.directives import Create, Declare, StartStencil
-from icon4py.liskov.input import (
+from icon4py.liskov.codegen.input import (
     BoundsData,
     CodeGenInput,
     CreateData,
     DeclareData,
+    EndStencilData,
     FieldAssociationData,
-    StencilData,
+    StartStencilData,
 )
+from icon4py.liskov.collect import StencilCollector
+from icon4py.liskov.directives import Create, Declare, EndStencil, StartStencil
 from icon4py.liskov.types import ParsedType
 from icon4py.liskov.utils import extract_directive
 from icon4py.pyutils.metadata import get_field_infos
@@ -37,34 +38,34 @@ class DirectiveInputFactory(Protocol):
 
 class CreateDataFactory:
     def __call__(self, parsed: dict) -> CreateData:
-        create = extract_directive(parsed["directives"], Create)[0]
-        return CreateData(startln=create.startln, endln=create.endln)
+        extracted = extract_directive(parsed["directives"], Create)[0]
+        return CreateData(startln=extracted.startln, endln=extracted.endln)
 
 
 class DeclareDataFactory:
     def __call__(self, parsed: dict) -> DeclareData:
-        declare = extract_directive(parsed["directives"], Declare)[0]
+        extracted = extract_directive(parsed["directives"], Declare)[0]
         declarations = parsed["content"]["Declare"]
         return DeclareData(
-            startln=declare.startln, endln=declare.endln, declarations=declarations
+            startln=extracted.startln, endln=extracted.endln, declarations=declarations
         )
 
 
-class StencilDataFactory:
+class StartStencilDataFactory:
     TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 
-    def __call__(self, parsed: dict) -> list[StencilData]:
-        stencils = []
-        stencil_directives = extract_directive(parsed["directives"], StartStencil)
-        for i, directive in enumerate(stencil_directives):
+    def __call__(self, parsed: dict) -> list[StartStencilData]:
+        serialised = []
+        directives = extract_directive(parsed["directives"], StartStencil)
+        for i, directive in enumerate(directives):
             named_args = parsed["content"]["Start"][i]
             stencil_name = named_args["name"]
             fields = self._get_field_associations(named_args)
             fields_w_tolerance = self._update_field_tolerances(named_args, fields)
             bounds = self._get_bounds(named_args)
             try:
-                stencils.append(
-                    StencilData(
+                serialised.append(
+                    StartStencilData(
                         name=stencil_name,
                         fields=fields_w_tolerance,
                         bounds=bounds,
@@ -74,7 +75,7 @@ class StencilDataFactory:
                 )
             except Exception as e:
                 raise e
-        return stencils
+        return serialised
 
     @staticmethod
     def _get_bounds(named_args: dict) -> BoundsData:
@@ -153,9 +154,25 @@ class StencilDataFactory:
         return fields
 
 
+class EndStencilDataFactory:
+    def __call__(self, parsed: dict) -> list[EndStencilData]:
+        serialised = []
+        extracted = extract_directive(parsed["directives"], EndStencil)
+        for i, directive in enumerate(extracted):
+            named_args = parsed["content"]["End"][i]
+            stencil_name = named_args["name"]
+            serialised.append(
+                EndStencilData(
+                    name=stencil_name, startln=directive.startln, endln=directive.endln
+                )
+            )
+        return serialised
+
+
 @dataclass(frozen=True)
 class SerialisedDirectives:
-    stencil: list[StencilData]
+    start: list[StartStencilData]
+    end: list[EndStencilDataFactory]
     declare: DeclareData
     create: CreateData
 
@@ -167,7 +184,8 @@ class DirectiveSerialiser:
     _FACTORIES: dict[str, Callable] = {
         "create": CreateDataFactory(),
         "declare": DeclareDataFactory(),
-        "stencil": StencilDataFactory(),
+        "start": StartStencilDataFactory(),
+        "end": EndStencilDataFactory(),
     }
 
     def serialise(self, directives: ParsedType) -> SerialisedDirectives:

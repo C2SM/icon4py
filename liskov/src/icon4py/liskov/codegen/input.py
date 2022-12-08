@@ -53,9 +53,16 @@ class CreateData:
 
 
 @dataclass(frozen=True)
-class StencilData:
+class StartStencilData:
     name: str
     fields: list[FieldAssociationData]
     bounds: BoundsData
+    startln: int
+    endln: int
+
+
+@dataclass(frozen=True)
+class EndStencilData:
+    name: str
     startln: int
     endln: int
