@@ -33,9 +33,10 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_10 import (
     _mo_nh_diffusion_stencil_10,
 )
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from functional.program_processors.runners import gtfn_cpu
 
 
-@field_operator
+@field_operator(backend=gtfn_cpu.run_gtfn)
 def _fused_mo_nh_diffusion_stencil_07_08_09_10(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
@@ -65,14 +66,6 @@ def _fused_mo_nh_diffusion_stencil_07_08_09_10(
         _mo_nh_diffusion_stencil_08(w_old, geofac_grg_x, geofac_grg_y),
         (dwdx, dwdy),
     )
-    num_lev = 10
-
-    # _mo_nh_diffusion_stencil_08(
-    #     w_old,
-    #     geofac_grg_x,
-    #     geofac_grg_y,
-    #     out=(dwdx, dwdy),
-    #     domain={KDim: (0, num_lev)})
 
     z_nabla2_c = _mo_nh_diffusion_stencil_07(w_old, geofac_n2s)
 
@@ -84,16 +77,6 @@ def _fused_mo_nh_diffusion_stencil_07_08_09_10(
         w_old,
     )
 
-    # _mo_nh_diffusion_stencil_07(
-    #     area,
-    #     z_nabla2_c,
-    #     geofac_n2s,
-    #     w_old,
-    #     diff_multfac_w,
-    #     out=w_old,
-    #     domain={CellDim: (interior_idx, halo_idx)}
-    # )
-
     w = where(
         (vert_idx > int32(0))
         & (vert_idx < nrdmax)
@@ -102,20 +85,10 @@ def _fused_mo_nh_diffusion_stencil_07_08_09_10(
         _mo_nh_diffusion_stencil_10(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
-
-    # _mo_nh_diffusion_stencil_10(
-    #     w_old, diff_multfac_n2w,
-    #     area,
-    #     z_nabla2_c,
-    #     out=w_old,
-    #     domain={CellDim: (interior_idx, halo_idx), KDim:(0, num_lev)}
-    # )
-
-    w = w_old
     return w, dwdx, dwdy
 
 
-@program
+
 def fused_mo_nh_diffusion_stencil_07_08_09_10(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],

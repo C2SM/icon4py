@@ -14,7 +14,10 @@ import os
 
 import numpy as np
 import pytest
-from icon_grid_test_utils import with_grid
+
+from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import \
+    mo_intp_rbf_rbf_vec_interpol_vertex
+from icon_grid_test_utils import with_icon_grid, with_r04b09_diffusion_config
 
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.diffusion import (
@@ -126,8 +129,8 @@ def test_set_zero_vertex_k():
     assert np.allclose(0.0, f)
 
 
-def test_diffusion_coefficients_with_hdiff_efdt_ratio():
-    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
+def test_diffusion_coefficients_with_hdiff_efdt_ratio(with_r04b09_diffusion_config):
+    config = with_r04b09_diffusion_config
     config.hdiff_efdt_ratio = 1.0
 
     params = DiffusionParams(config)
@@ -138,8 +141,8 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio():
     assert params.K4W == pytest.approx(0.125 / 4.0, abs=1e-12)
 
 
-def test_diffusion_coefficients_without_hdiff_efdt_ratio():
-    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
+def test_diffusion_coefficients_without_hdiff_efdt_ratio(with_r04b09_diffusion_config):
+    config = with_r04b09_diffusion_config
     config.hdiff_efdt_ratio = 0.0
 
     params = DiffusionParams(config)
@@ -150,8 +153,8 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio():
     assert params.K4W == 0.0
 
 
-def test_smagorinski_factor_for_diffusion_type_4():
-    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
+def test_smagorinski_factor_for_diffusion_type_4(with_r04b09_diffusion_config):
+    config = with_r04b09_diffusion_config
     config.hdiff_smag_fac = 0.15
     config.diffusion_type = 4
 
@@ -161,8 +164,8 @@ def test_smagorinski_factor_for_diffusion_type_4():
     assert params.smagorinski_height is None
 
 
-def test_smagorinski_heights_diffusion_type_5_are_consistent():
-    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
+def test_smagorinski_heights_diffusion_type_5_are_consistent(with_r04b09_diffusion_config):
+    config = with_r04b09_diffusion_config
     config.hdiff_smag_fac = 0.15
     config.diffusion_type = 5
 
@@ -176,30 +179,27 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent():
     assert params.smagorinski_height[2] != params.smagorinski_height[3]
 
 
-def test_smagorinski_factor_diffusion_type_5():
-    config: DiffusionConfig = DiffusionConfig.create_with_defaults()
-    config.hdiff_smag_fac = 0.15
-    config.diffusion_type = 5
-
+def test_smagorinski_factor_diffusion_type_5(with_r04b09_diffusion_config):
+    config = with_r04b09_diffusion_config
     params = DiffusionParams(config)
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
-def test_diffusion_init():
+def test_diffusion_init(with_r04b09_diffusion_config):
+    config = with_r04b09_diffusion_config
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
     serializer.print_info()
     first_run_date = "2021-06-20T12:00:10.000"
-    savepoint = serializer.from_savepoint(linit=False, date=first_run_date)
-    vct_a = savepoint.physical_height_field()
+    savepoint = serializer.from_savepoint_init(linit=False, date=first_run_date)
+    vct_a = savepoint.vct_a()
     meta = savepoint.get_metadata("nlev", "linit", "date")
 
     assert meta["nlev"] == 65
     assert meta["linit"] is False
     assert meta["date"] == first_run_date
-    config = DiffusionConfig.create_with_defaults()
     additional_parameters = DiffusionParams(config)
 
     diffusion = Diffusion(config, additional_parameters, vct_a)
@@ -214,11 +214,14 @@ def test_diffusion_init():
 
     assert np.allclose(0.0, np.asarray(diffusion.v_vert))
     assert np.allclose(0.0, np.asarray(diffusion.u_vert))
-    assert np.allclose(0.0, np.asarray(diffusion.diff_multfac_n2w))
+    #TODO test against ICON serialized
+    #assert np.allclose(0.0, np.asarray(diffusion.diff_multfac_n2w))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_ec))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_e))
 
     shape_k = np.asarray(diffusion.diff_multfac_vn.shape)
+
+
     expected_smag_limit = smag_limit_numpy(
         shape_k, additional_parameters.K4, config.substep_as_float()
     )
@@ -237,15 +240,15 @@ def test_diffusion_init():
 
 
 @pytest.mark.xfail
-def test_diffusion_run(with_grid):
+def test_diffusion_run(with_icon_grid):
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     data_provider = IconSerialDataProvider("icon_diffusion_init", data_path)
     data_provider.print_info()
-    sp = data_provider.from_savepoint(linit=False, date="2021-06-20T12:00:10.000")
-    vct_a = sp.physical_height_field()
+    sp = data_provider.from_savepoint_init(linit=False, date="2021-06-20T12:00:10.000")
+    vct_a = sp.vct_a()
 
     config = DiffusionConfig(
-        with_grid,
+        with_icon_grid,
         vertical_params=VerticalModelParams(
             vct_a=vct_a, rayleigh_damping_height=12500.0
         ),
@@ -259,24 +262,24 @@ def test_diffusion_run(with_grid):
         hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
     )
     prognostic_state = PrognosticState(
-        vertical_wind=sp.vn(),
-        normal_wind=sp.w(),
+        vertical_wind=sp.w(),
+        normal_wind=sp.vn(),
         exner_pressure=sp.exner(),
         theta_v=sp.theta_v(),
     )
     grg = sp.geofac_grg()
 
-    rbf_coef = sp.rbf_coeff()
     interpolation_state = InterpolationState(
         e_bln_c_s=sp.e_bln_c_s(),
-        rbf_coeff_1=rbf_coef[0],
-        rbf_coeff_2=sp.rbf_coeff[1],
+        rbf_coeff_1=sp.rbf_vec_coeff_v1(),
+        rbf_coeff_2=sp.rbf_vec_coeff_v2(),
         geofac_div=sp.geofac_div(),
         geofac_n2s=sp.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=sp.nudgecoeff_e(),
     )
+
     metric_state = MetricState(
         mask_hdiff=sp.theta_ref_mc(),
         theta_ref_mc=sp.theta_ref_mc(),
@@ -302,20 +305,32 @@ def test_diffusion_run(with_grid):
     edge_areas = sp.edge_areas()
     cell_areas = sp.cell_areas()
 
-    diffusion.run(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
-        dtime=dtime,
-        tangent_orientation=orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_length=inverse_dual_edge_length,
-        inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
-        primal_normal_vert=primal_normal_vert,
-        dual_normal_vert=dual_normal_vert,
-        edge_areas=edge_areas,
-        cell_areas=cell_areas,
-    )
 
-    pytest.fail("not implemented yet")
+    # diffusion.run(
+    #     diagnostic_state=diagnostic_state,
+    #     prognostic_state=prognostic_state,
+    #     metric_state=metric_state,
+    #     interpolation_state=interpolation_state,
+    #     dtime=dtime,
+    #     tangent_orientation=orientation,
+    #     inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+    #     inverse_dual_edge_length=inverse_dual_edge_length,
+    #     inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+    #     primal_normal_vert=primal_normal_vert,
+    #     dual_normal_vert=dual_normal_vert,
+    #     edge_areas=edge_areas,
+    #     cell_areas=cell_areas,
+    # )
+
+    exit_savepoint = data_provider.from_save_point_exit(linit=False, date="2021-06-20T12:00:10.000")
+    icon_result_exner = exit_savepoint.exner()
+    icon_result_vn = exit_savepoint.vn()
+    icon_result_w = exit_savepoint.w()
+    icon_result_theta_w = exit_savepoint.theta_v()
+
+    assert np.allclose(icon_result_w, np.asarray(prognostic_state.vertical_wind))
+    assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.normal_wind))
+    assert np.allclose(np.asarray(icon_result_theta_w), np.asarray(prognostic_state.theta_v))
+    assert np.allclose(np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure))
+
+    pytest.fail("not finished yet")

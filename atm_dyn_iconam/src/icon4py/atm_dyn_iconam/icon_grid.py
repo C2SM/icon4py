@@ -138,10 +138,11 @@ class VerticalModelParams:
         """
         self.rayleigh_damping_height = rayleigh_damping_height
         self.vct_a = vct_a
-        # TODO klevels in ICON are inverted!
+        # TODO klevels in ICON are inverted! TODO test against ICON LOG.exp...
         self.index_of_damping_height = np.argmax(
-            np.asarray(self.vct_a) >= self.rayleigh_damping_height
+            np.where(np.asarray(self.vct_a) >= self.rayleigh_damping_height)
         )
+
 
     def get_index_of_damping_layer(self):
         return self.index_of_damping_height
@@ -149,18 +150,3 @@ class VerticalModelParams:
     def get_physical_heights(self) -> Field[[KDim], float]:
         return np_as_located_field(KDim)(self.vct_a)
 
-    def init_nabla2_factor_in_upper_damping_zone(
-        self, k_size: int
-    ) -> Field[[KDim], float]:
-        # this assumes n_shift == 0
-        buffer = np.zeros(k_size)
-        buffer[2 : self.index_of_damping_height] = (
-            1.0
-            / 12.0
-            * (
-                self.vct_a[2 : self.index_of_damping_height]
-                - self.vct_a[self.index_of_damping_height + 1]
-            )
-            / (self.vct_a[2] - self.vct_a[self.index_of_damping_height + 1])
-        )
-        return np_as_located_field(KDim)(buffer)

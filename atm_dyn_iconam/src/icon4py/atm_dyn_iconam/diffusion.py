@@ -19,23 +19,24 @@ import numpy as np
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, broadcast, maximum, minimum
 from functional.iterator.embedded import np_as_located_field
+from functional.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.constants import CPD, GAS_CONSTANT_DRY_AIR
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
-    fused_mo_nh_diffusion_stencil_02_03,
+     _fused_mo_nh_diffusion_stencil_02_03,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
-    fused_mo_nh_diffusion_stencil_04_05_06,
+    _fused_mo_nh_diffusion_stencil_04_05_06,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_07_08_09_10 import (
-    fused_mo_nh_diffusion_stencil_07_08_09_10,
+    _fused_mo_nh_diffusion_stencil_07_08_09_10,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import (
     fused_mo_nh_diffusion_stencil_11_12,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
-    fused_mo_nh_diffusion_stencil_13_14,
+    _fused_mo_nh_diffusion_stencil_13_14,
 )
 from icon4py.atm_dyn_iconam.horizontal import (
     HorizontalMarkerIndex,
@@ -49,14 +50,13 @@ from icon4py.atm_dyn_iconam.icon_grid import (
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    mo_intp_rbf_rbf_vec_interpol_vertex,
+    _mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_01 import (
     _mo_nh_diffusion_stencil_01,
-    mo_nh_diffusion_stencil_01,
 )
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import (
-    mo_nh_diffusion_stencil_16,
+    _mo_nh_diffusion_stencil_16,
 )
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
 from icon4py.common.dimension import (
@@ -272,6 +272,35 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
 
+def init_nabla2_factor_in_upper_damping_zone(
+    k_size: int,
+    nrdmax:int,
+    nshift: int,
+    physical_heights: np.ndarray
+) -> Field[[KDim], float]:
+    """
+    calculated diff_multfac_n2w
+
+    numpy version gt4py does not allow non-constant indexing into fields
+
+    Args
+        k_size: number of vertical levels
+        nrdmax: index of the level where rayleigh dampint starts
+        nshift:
+        physcial_heights: vector of physical heights [m] of the height levels
+    """
+    buffer = np.zeros(k_size)
+    buffer[2: nrdmax + 1] = (
+        1.0
+        / 12.0
+        * ((
+            physical_heights[2 + nshift: nrdmax + 1 + nshift]
+            - physical_heights[nshift + nrdmax + 1]
+        )
+        / (physical_heights[2] - physical_heights[nshift + nrdmax + 1]))**4
+    )
+    return np_as_located_field(KDim)(buffer)
+
 
 class DiffusionConfig:
     """contains necessary parameter to configure a diffusion run.
@@ -281,48 +310,39 @@ class DiffusionConfig:
     currently we use the MCH r04b09_dsl experiment as constants here. These should
     be read from config and the default from mo_diffusion_nml.f90 set as defaults.
 
-
-
     TODO: [ml] read from config
-    TODO: [ml] handle dependencies on other namelists (below...)
-    TODO: move this to test: it sets up the mch_ch_r04b09_dsl experiment
+    TODO: [ml] handle dependencies on other namelists (see below...)
     """
-
-    @classmethod
-    def create_with_defaults(cls):
-        """
-        Create DiffusionConfig.
-
-        initialize with values from exp.mch_ch_r04b09_dsl namelist
-        """
-        horizontal = HorizontalMeshConfig(
-            num_vertices=50000, num_cells=50000, num_edges=50000
-        )
-
-        grid = IconGrid().with_config(MeshConfig(horizontalMesh=horizontal))
-        verticalParams = VerticalModelParams(
-            rayleigh_damping_height=12500, vct_a=np.zeros(grid.k_levels())
-        )
-        return cls(grid=grid, vertical_params=verticalParams)
-
-    def __init__(self, grid: IconGrid, vertical_params: VerticalModelParams):
-        # TODO [ml]: external stuff grid related, p_patch,
+    def __init__(self,
+                 grid: IconGrid,
+                 vertical_params: VerticalModelParams,
+                 diffusion_type:int = 5,
+                 apply_to_horizontal_wind: bool = True,
+                 apply_to_vertical_wind: bool = True,
+                 apply_to_temperature: bool = True,
+                 reconstruction_type_smag: int = 1,
+                 compute_3d_smag_coeff:bool = False,
+                 temperature_discretization: int=2,
+                 horizontal_efdt_ratio: float = 24.0,
+                 smag_scaling_factor: float = 0.025
+                 ):
+        # TODO [ml]: move external stuff out: grid related stuff, other than diffusion namelists (see below
         self.grid = grid
         self.vertical_params = vertical_params
         # from namelist diffusion_nml
-        self.diffusion_type = 5  # hdiff_order ! order of nabla operator for diffusion
-        self.lhdiff_vn = True  # ! diffusion on the horizontal wind field
-        self.lhdiff_temp = True  # ! diffusion on the temperature field
-        self.lhdiff_w = True  # ! diffusion on the vertical wind field
+        self.diffusion_type = diffusion_type  # hdiff_order ! order of nabla operator for diffusion
+        self.lhdiff_vn = apply_to_horizontal_wind  # ! diffusion on the horizontal wind field
+        self.lhdiff_temp = apply_to_temperature  # ! diffusion on the temperature field
+        self.lhdiff_w = apply_to_vertical_wind  # ! diffusion on the vertical wind field
         self.lhdiff_rcf = True  # namelist, remove if always true
         self.itype_vn_diffu = (
-            1  # ! reconstruction method used for Smagorinsky diffusion
+            reconstruction_type_smag  # ! reconstruction method used for Smagorinsky diffusion
         )
-        self.l_smag_d = False  # namelist lsmag_d,  if `true`, compute 3D Smagorinsky diffusion coefficient.
+        self.l_smag_d = compute_3d_smag_coeff  # namelist lsmag_d,  if `true`, compute 3D Smagorinsky diffusion coefficient.
 
-        self.itype_t_diffu = 2  # ! discretization of temperature diffusion
-        self.hdiff_efdt_ratio = 24.0  # ! ratio of e-folding time to time step
-        self.hdiff_smag_fac = 0.025  # ! scaling factor for Smagorinsky diffusion
+        self.itype_t_diffu = temperature_discretization  # ! discretization of temperature diffusion
+        self.hdiff_efdt_ratio = horizontal_efdt_ratio  # ! ratio of e-folding time to time step
+        self.hdiff_smag_fac = smag_scaling_factor  # ! scaling factor for Smagorinsky diffusion
 
         # from other namelists
         # from parent namelist nonhydrostatic_nml
@@ -333,7 +353,7 @@ class DiffusionConfig:
         # denom_diffu_v = 150   ! denominator for lateral boundary diffusion of velocity
         self.lateral_boundary_denominator = DiffusionTupleVT(v=200.0, t=135.0)
 
-        # namelist grid_nml -> TODO [ml] should go to grid config?
+        # namelist grid_nml
         self.l_limited_area = True
 
         # name list: interpol_nml
@@ -426,7 +446,7 @@ class Diffusion:
         self,
         config: DiffusionConfig,
         params: DiffusionParams,
-        a_vect: Field[[KDim], float],
+        vct_a: Field[[KDim], float],
     ):
         """
         Initialize Diffusion granule.
@@ -475,15 +495,15 @@ class Diffusion:
         enhanced_smagorinski_factor(
             *params.smagorinski_factor,
             *params.smagorinski_height,
-            a_vect,
+            vct_a,
             self.enh_smag_fac,
             offset_provider={"Koff": KDim},
         )
 
-        self.diff_multfac_n2w = (
-            config.vertical_params.init_nabla2_factor_in_upper_damping_zone(
-                k_size=config.grid.k_levels()
-            )
+        self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
+                k_size=config.grid.k_levels(), nshift = 0, physical_heights=np.asarray(vct_a),
+            nrdmax=self.config.vertical_params.index_of_damping_height
+
         )
         self.diff_multfac_smag = np_as_located_field(KDim)(
             np.zeros(config.grid.k_levels())
@@ -504,6 +524,9 @@ class Diffusion:
         self.horizontal_cell_index = np_as_located_field(CellDim)(
             np.arange((shape_ck[0]))
         )
+        self.horizontal_edge_index = np_as_located_field(EdgeDim)(np.arange((shape_ek[0])))
+
+
 
     def run(
         self,
@@ -547,12 +570,11 @@ class Diffusion:
 
         # 1.  CALL rbf_vec_interpol_vertex
 
-        mo_intp_rbf_rbf_vec_interpol_vertex(
+        _mo_intp_rbf_rbf_vec_interpol_vertex(
             prognostic_state.normal_wind,
             interpolation_state.rbf_coeff_1,
             interpolation_state.rbf_coeff_2,
-            self.u_vert,
-            self.v_vert,
+            out=(self.u_vert, self.v_vert),
             domain={
                 KDim: (0, klevels),
                 VertexDim: self.grid.get_indices_from_to(
@@ -562,6 +584,7 @@ class Diffusion:
                 ),
             },
             offset_provider={"V2E": self.grid.get_v2e_offset_provider()},
+
         )
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
@@ -569,7 +592,7 @@ class Diffusion:
         # 0c. dtime dependent stuff: enh_smag_factor, ~~r_dtimensubsteps~~
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
-        mo_nh_diffusion_stencil_01(
+        _mo_nh_diffusion_stencil_01(
             self.diff_multfac_smag,
             tangent_orientation,
             inverse_primal_edge_lengths,
@@ -582,11 +605,7 @@ class Diffusion:
             dual_normal_vert[1],
             prognostic_state.normal_wind,
             self.smag_limit,
-            self.kh_smag_e,
-            self.kh_smag_ec,
-            self.z_nabla2_e,
             self.smag_offset,
-            dtime,
             domain={
                 KDim: (0, klevels),
                 EdgeDim: (
@@ -597,74 +616,80 @@ class Diffusion:
                     )
                 ),
             },
+            out=(self.kh_smag_e, self.kh_smag_ec, self.z_nabla2_e),
             offset_provider={"E2C2V": self.grid.get_e2c2v_connectivity()},
-        )
+            backend = gtfn_cpu.run_gtfn
+         )
 
-        fused_mo_nh_diffusion_stencil_02_03(
+        _fused_mo_nh_diffusion_stencil_02_03(
             self.kh_smag_ec,
             prognostic_state.normal_wind,
             interpolation_state.e_bln_c_s,
             interpolation_state.geofac_div,
             self.diff_multfac_smag,
             metric_state.wgtfac_c,
-            diagnostic_state.div_ic,
-            diagnostic_state.hdef_ic,
+            out=(
+                diagnostic_state.div_ic,
+                diagnostic_state.hdef_ic,
+            ),
             domain={
                 KDim: (0, klevels),
                 CellDim: (
-                    self.grid.get_indices_from_to(
-                        HorizontalMarkerIndex._NUDGING_CELLS,
-                        HorizontalMarkerIndex._HALO_CELLS,
+                    self.grid.get_indices_from_to(CellDim,
+                        HorizontalMarkerIndex.nudging(CellDim),
+                        HorizontalMarkerIndex.halo(CellDim)
                     )
                 ),
             },
             offset_provider={"C2E": self.grid.get_c2e_connectivity()},
+            backend=gtfn_cpu.run_gtfn
         )
 
         # 4.  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
 
         # 5.  CALL rbf_vec_interpol_vertex_wp
-        mo_intp_rbf_rbf_vec_interpol_vertex(
+        _mo_intp_rbf_rbf_vec_interpol_vertex(
             self.z_nabla2_e,
             interpolation_state.rbf_coeff_1,
             interpolation_state.rbf_coeff_2,
-            self.u_vert,
-            self.v_vert,
-            domain={
-                KDim: (0, klevels),
-                VertexDim: self.grid.get_indices_from_to(
-                    VertexDim,
-                    HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
-                    HorizontalMarkerIndex.halo(VertexDim),
-                ),
-            },
+            out=(self.u_vert, self.v_vert),
+            # domain={
+            #     KDim: (0, klevels),
+            #     VertexDim: self.grid.get_indices_from_to(
+            #         VertexDim,
+            #         HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+            #         HorizontalMarkerIndex.halo(VertexDim),
+            #     ),
+            # },
             offset_provider={"V2E": self.grid.get_e2v_connectivity()},
         )
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
 
         # 7.  mo_nh_diffusion_stencil_04, mo_nh_diffusion_stencil_05
         # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
-        # TODO where to get index field from
-        # horz_idx: Field[[EdgeDim], int32],
-        # start_2nd_nudge_line_idx_e: int32,
 
-        fused_mo_nh_diffusion_stencil_04_05_06(
-            u_vert=self.u_vert,
-            v_vert=self.v_vert,
-            primal_normal_vert_v1=primal_normal_vert.x,
-            primal_normal_vert_v2=primal_normal_vert.y,
-            z_nabla2_e=self.z_nabla2_e,
-            inv_vert_vert_length=inverse_vertical_vertex_lengths,
-            inv_primal_edge_length=inverse_primal_edge_lengths,
-            area_edges=edge_areas,
-            kh_smag_e=self.kh_smag_e,
-            diff_multfac_vn=self.diff_multfac_vn,
-            nudgecoeff_e=interpolation_state.nudgecoeff_e,
-            vn=prognostic_state.normal_wind,
-            horz_idx=None,
-            nudgezone_diff=self.nudgezone_diff,
-            fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=None,
+        start_2nd_nudge_line = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.nudging(EdgeDim)-1,
+            HorizontalMarkerIndex.nudging(EdgeDim)-1)[0]
+        _fused_mo_nh_diffusion_stencil_04_05_06(
+            self.u_vert,
+            self.v_vert,
+            primal_normal_vert.x,
+            primal_normal_vert.y,
+            self.z_nabla2_e,
+            inverse_vertical_vertex_lengths,
+            inverse_primal_edge_lengths,
+            edge_areas,
+            self.kh_smag_e,
+            self.diff_multfac_vn,
+            interpolation_state.nudgecoeff_e,
+            prognostic_state.normal_wind,
+            self.horizontal_edge_index,
+            self.nudgezone_diff,
+            self.fac_bdydiff_v,
+            start_2nd_nudge_line,
+            out=prognostic_state.normal_wind,
             domain={
                 KDim: (0, klevels),
                 EdgeDim: self.grid.get_indices_from_to(
@@ -677,23 +702,28 @@ class Diffusion:
         )
         # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
         #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
+        interior_start_index, halo_endindex = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.interior(CellDim),
+            HorizontalMarkerIndex.halo(CellDim))
 
-        fused_mo_nh_diffusion_stencil_07_08_09_10(
-            area=cell_areas,
-            geofac_n2s=interpolation_state.geofac_n2s,
-            geofac_grg_x=interpolation_state.geofac_grg_x,
-            geofac_grg_y=interpolation_state.geofac_grg_y,
-            w_old=prognostic_state.vertical_wind,
-            w=prognostic_state.vertical_wind,
-            dwdx=diagnostic_state.dwdx,
-            dwdy=diagnostic_state.dwdy,
-            diff_multfac_w=self.diff_multfac_w,
-            diff_multfac_n2w=self.diff_multfac_n2w,
-            vert_idx=self.vertical_index,
-            horz_idx=self.horizontal_cell_index,
-            nrdmax=self.config.vertical_params.index_of_damping_height,
-            interior_idx=HorizontalMarkerIndex.interior(CellDim),
-            halo_idx=HorizontalMarkerIndex.halo(CellDim),
+        _fused_mo_nh_diffusion_stencil_07_08_09_10(
+            cell_areas,
+            interpolation_state.geofac_n2s,
+            interpolation_state.geofac_grg_x,
+            interpolation_state.geofac_grg_y,
+            prognostic_state.vertical_wind,
+            prognostic_state.vertical_wind,
+            diagnostic_state.dwdx,
+            diagnostic_state.dwdy,
+            self.diff_multfac_w,
+            self.diff_multfac_n2w,
+            self.vertical_index,
+            self.horizontal_cell_index,
+            self.config.vertical_params.index_of_damping_height,
+            interior_start_index,
+            halo_endindex,
+            out=(prognostic_state.vertical_wind, diagnostic_state.dwdx, diagnostic_state.dwdy),
             domain={
                 KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(
@@ -711,10 +741,10 @@ class Diffusion:
 
         # TODO check: kh_smag_e is an out field, should  not be calculated in init?
         fused_mo_nh_diffusion_stencil_11_12(
-            theta_v=prognostic_state.theta_v,
-            theta_ref_mc=metric_state.theta_ref_mc,
-            thresh_tdiff=self.thresh_tdiff,
-            kh_smag_e=self.kh_smag_e,
+            prognostic_state.theta_v,
+            metric_state.theta_ref_mc,
+            self.thresh_tdiff,
+            out=self.kh_smag_e,
             domain={
                 KDim: (klevels - 2, klevels),
                 CellDim: self.grid.get_indices_from_to(
@@ -734,12 +764,12 @@ class Diffusion:
             },
         )
 
-        fused_mo_nh_diffusion_stencil_13_14(
-            kh_smag_e=self.kh_smag_e,
-            inv_dual_edge_length=inverse_dual_edge_length,
-            theta_v=prognostic_state.theta_v,
-            geofac_div=interpolation_state.geofac_div,
-            z_temp=self.z_temp,
+        _fused_mo_nh_diffusion_stencil_13_14(
+            self.kh_smag_e,
+            inverse_dual_edge_length,
+            prognostic_state.theta_v,
+            interpolation_state.geofac_div,
+            out = self.z_temp,
             domain={
                 KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(
@@ -761,7 +791,7 @@ class Diffusion:
 
         mo_nh_diffusion_stencil_15_numpy(
             mask_hdiff=metric_state.mask_hdiff,
-            zd_vertidx=metric_state.zd_vertidx_dsl,
+            zd_vertidx=metric_state.zd_vertidx,
             vcoef=metric_state.zd_diffcoef,
             zd_diffcoef=metric_state.zd_diffcoef,
             geofac_n2s=interpolation_state.geofac_n2s,
@@ -771,19 +801,20 @@ class Diffusion:
                 KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(
                     CellDim,
-                    HorizontalMarkerIndex.nudging(CellDim).value,
+                    HorizontalMarkerIndex.nudging(CellDim),
                     HorizontalMarkerIndex.halo(CellDim),
                 ),
             },
             offset_provider={},
         )
 
-        mo_nh_diffusion_stencil_16(
-            z_temp=self.z_temp,
-            area=cell_areas,
-            theta_v=prognostic_state.theta_v,
-            exner=prognostic_state.exner_pressure,
-            rd_o_cvd=self.rd_o_cvd,
+        _mo_nh_diffusion_stencil_16(
+            self.z_temp,
+            cell_areas,
+            prognostic_state.theta_v,
+            prognostic_state.exner_pressure,
+            self.rd_o_cvd,
+            out=(prognostic_state.theta_v, prognostic_state.exner_pressure),
             domain={
                 KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(

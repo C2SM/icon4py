@@ -12,19 +12,35 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import math
+import os
 
 import numpy as np
 import pytest
 
 from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
+from icon4py.testutils.serialbox_utils import IconSerialDataProvider
+from icon_grid_test_utils import with_icon_grid
 
 
 @pytest.mark.parametrize(
     "max_h,damping,delta",
-    [(60000, 34000, 612), (12000, 10000, 100), (109000, 45000, 123)],
+    [(60000, 34000, 612), (12000, 10000, 100), (109050, 45000, 123)],
 )
-# TODO [ml] klevels run from num_lev (ground) to 1 (top most)
 def test_nrdmax_calculation(max_h, damping, delta):
     vct_a = np.arange(0, max_h, delta)
+    vct_a = vct_a[::-1]
     vertical_params = VerticalModelParams(rayleigh_damping_height=damping, vct_a=vct_a)
-    assert vertical_params.get_index_of_damping_layer() == math.ceil(damping / delta)
+    assert vertical_params.get_index_of_damping_layer() == vct_a.shape[0] -  math.ceil(damping / delta) -1
+
+def test_nrdmax_calculation_from_icon_input(with_icon_grid):
+    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
+    sp = IconSerialDataProvider("icon_diffusion_init", data_path, True).from_savepoint_init(
+        linit=True, date="2021-06-20T12:00:10.000"
+    )
+    a = sp.vct_a()
+    damping_height = 12500
+    vertical_params = VerticalModelParams(rayleigh_damping_height=damping_height, vct_a=a)
+    assert 9 == vertical_params.get_index_of_damping_layer()
+    a_array = np.asarray(a)
+    assert a_array[9] > damping_height
+    assert a_array[10] < damping_height

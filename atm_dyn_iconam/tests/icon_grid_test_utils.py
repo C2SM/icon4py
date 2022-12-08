@@ -16,16 +16,17 @@ import os
 import numpy as np
 from _pytest.fixtures import fixture
 
+from icon4py.atm_dyn_iconam.diffusion import DiffusionConfig
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
-from icon4py.atm_dyn_iconam.icon_grid import IconGrid, MeshConfig
+from icon4py.atm_dyn_iconam.icon_grid import IconGrid, MeshConfig, VerticalModelParams
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
 @fixture
-def with_grid():
+def with_icon_grid():
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    sp = IconSerialDataProvider("icon_diffusion_init", data_path, True).from_savepoint(
+    sp = IconSerialDataProvider("icon_diffusion_init", data_path, True).from_savepoint_init(
         linit=True, date="2021-06-20T12:00:10.000"
     )
 
@@ -38,13 +39,22 @@ def with_grid():
     edge_starts = sp.edge_start_index()
     edge_ends = sp.edge_end_index()
 
+    # config = MeshConfig(
+    #     HorizontalMeshConfig(
+    #         num_vertices=sp_meta["num_vert"],
+    #         num_cells=sp_meta["num_cells"],
+    #         num_edges=sp_meta["num_edges"],
+    #     )
+    # )
+
     config = MeshConfig(
         HorizontalMeshConfig(
-            num_vertices=sp_meta["num_vert"],
-            num_cells=sp_meta["num_cells"],
-            num_edges=sp_meta["num_edges"],
+            num_vertices=sp_meta["nproma"],
+            num_cells=sp_meta["nproma"],
+            num_edges=sp_meta["nproma"],
         )
     )
+
     c2e2c = sp.c2e2c()
     c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
     grid = (
@@ -59,5 +69,28 @@ def with_grid():
         .with_connectivity(e2v=sp.e2v())
         .with_connectivity(c2e2c0=c2e2c0)
         .with_connectivity(v2e=sp.v2e())
+        .with_connectivity(e2v=sp.e2v())
     )
     return grid
+
+@fixture
+def with_r04b09_diffusion_config()->DiffusionConfig:
+    """
+        Create DiffusionConfig.
+
+        that uses the parameters of MCH.CH_r04b09_dsl experiment
+    """
+    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
+    sp = IconSerialDataProvider("icon_diffusion_init", data_path, True).from_savepoint_init(
+        linit=True, date="2021-06-20T12:00:10.000"
+    )
+    nproma =  sp.get_metadata("nproma")["nproma"]
+    horizontalConfig = HorizontalMeshConfig(
+        num_vertices=nproma, num_cells=nproma, num_edges=nproma
+    )
+
+    grid = IconGrid().with_config(MeshConfig(horizontalMesh=horizontalConfig))
+    verticalParams = VerticalModelParams(
+        rayleigh_damping_height=12500, vct_a=sp.vct_a()
+    )
+    return DiffusionConfig(grid=grid, vertical_params=verticalParams)
