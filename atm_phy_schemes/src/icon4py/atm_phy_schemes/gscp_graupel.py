@@ -964,7 +964,7 @@ def _graupel(
 
     if llqr & (qvg + qcg <= zqvsw):
 
-        zlnqrk = log(zqrk)
+        zlnqrk = log(zqrk)  # DL: BUG? Warning gscp_data.zqmin
         zx1 = 1.0 + zbev * exp(zbevxp * zlnqrk)
         # sev  = zcev*zx1*(zqvsw - qvg) * exp(zcevxp  * zlnqrk)
         # Limit evaporation rate in order to avoid overshoots towards supersaturation
