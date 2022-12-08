@@ -14,9 +14,6 @@ import os
 
 import numpy as np
 import pytest
-
-from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import \
-    mo_intp_rbf_rbf_vec_interpol_vertex
 from icon_grid_test_utils import with_icon_grid, with_r04b09_diffusion_config
 
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
@@ -33,6 +30,9 @@ from icon4py.atm_dyn_iconam.diffusion import (
 from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
+from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
+    mo_intp_rbf_rbf_vec_interpol_vertex,
+)
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
 from icon4py.common.dimension import KDim, VertexDim
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
@@ -164,7 +164,9 @@ def test_smagorinski_factor_for_diffusion_type_4(with_r04b09_diffusion_config):
     assert params.smagorinski_height is None
 
 
-def test_smagorinski_heights_diffusion_type_5_are_consistent(with_r04b09_diffusion_config):
+def test_smagorinski_heights_diffusion_type_5_are_consistent(
+    with_r04b09_diffusion_config,
+):
     config = with_r04b09_diffusion_config
     config.hdiff_smag_fac = 0.15
     config.diffusion_type = 5
@@ -214,13 +216,12 @@ def test_diffusion_init(with_r04b09_diffusion_config):
 
     assert np.allclose(0.0, np.asarray(diffusion.v_vert))
     assert np.allclose(0.0, np.asarray(diffusion.u_vert))
-    #TODO test against ICON serialized
-    #assert np.allclose(0.0, np.asarray(diffusion.diff_multfac_n2w))
+    # TODO test against ICON serialized
+    # assert np.allclose(0.0, np.asarray(diffusion.diff_multfac_n2w))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_ec))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_e))
 
     shape_k = np.asarray(diffusion.diff_multfac_vn.shape)
-
 
     expected_smag_limit = smag_limit_numpy(
         shape_k, additional_parameters.K4, config.substep_as_float()
@@ -305,7 +306,6 @@ def test_diffusion_run(with_icon_grid):
     edge_areas = sp.edge_areas()
     cell_areas = sp.cell_areas()
 
-
     # diffusion.run(
     #     diagnostic_state=diagnostic_state,
     #     prognostic_state=prognostic_state,
@@ -322,15 +322,23 @@ def test_diffusion_run(with_icon_grid):
     #     cell_areas=cell_areas,
     # )
 
-    exit_savepoint = data_provider.from_save_point_exit(linit=False, date="2021-06-20T12:00:10.000")
+    exit_savepoint = data_provider.from_save_point_exit(
+        linit=False, date="2021-06-20T12:00:10.000"
+    )
     icon_result_exner = exit_savepoint.exner()
     icon_result_vn = exit_savepoint.vn()
     icon_result_w = exit_savepoint.w()
     icon_result_theta_w = exit_savepoint.theta_v()
 
     assert np.allclose(icon_result_w, np.asarray(prognostic_state.vertical_wind))
-    assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.normal_wind))
-    assert np.allclose(np.asarray(icon_result_theta_w), np.asarray(prognostic_state.theta_v))
-    assert np.allclose(np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure))
+    assert np.allclose(
+        np.asarray(icon_result_vn), np.asarray(prognostic_state.normal_wind)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_theta_w), np.asarray(prognostic_state.theta_v)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure)
+    )
 
     pytest.fail("not finished yet")

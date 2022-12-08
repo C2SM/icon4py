@@ -12,13 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import (
-    Field,
-    broadcast,
-    int32,
-    neighbor_sum,
-    where,
-)
+from functional.ffront.fbuiltins import Field, broadcast, int32, where
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_07 import (
     _mo_nh_diffusion_stencil_07,
@@ -32,11 +26,10 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_09 import (
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_10 import (
     _mo_nh_diffusion_stencil_10,
 )
-from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
-from functional.program_processors.runners import gtfn_cpu
+from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
 
-@field_operator(backend=gtfn_cpu.run_gtfn)
+@field_operator
 def _fused_mo_nh_diffusion_stencil_07_08_09_10(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
@@ -85,10 +78,11 @@ def _fused_mo_nh_diffusion_stencil_07_08_09_10(
         _mo_nh_diffusion_stencil_10(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
+
     return w, dwdx, dwdy
 
 
-
+@program
 def fused_mo_nh_diffusion_stencil_07_08_09_10(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],

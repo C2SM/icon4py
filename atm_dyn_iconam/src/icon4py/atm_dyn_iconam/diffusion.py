@@ -24,7 +24,7 @@ from functional.program_processors.runners import gtfn_cpu
 from icon4py.atm_dyn_iconam.constants import CPD, GAS_CONSTANT_DRY_AIR
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
-     _fused_mo_nh_diffusion_stencil_02_03,
+    _fused_mo_nh_diffusion_stencil_02_03,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
     _fused_mo_nh_diffusion_stencil_04_05_06,
@@ -40,11 +40,9 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
 )
 from icon4py.atm_dyn_iconam.horizontal import (
     HorizontalMarkerIndex,
-    HorizontalMeshConfig,
 )
 from icon4py.atm_dyn_iconam.icon_grid import (
     IconGrid,
-    MeshConfig,
     VerticalModelParams,
 )
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
@@ -272,14 +270,12 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
 
+
 def init_nabla2_factor_in_upper_damping_zone(
-    k_size: int,
-    nrdmax:int,
-    nshift: int,
-    physical_heights: np.ndarray
+    k_size: int, nrdmax: int, nshift: int, physical_heights: np.ndarray
 ) -> Field[[KDim], float]:
     """
-    calculated diff_multfac_n2w
+    Calculate diff_multfac_n2w.
 
     numpy version gt4py does not allow non-constant indexing into fields
 
@@ -290,14 +286,17 @@ def init_nabla2_factor_in_upper_damping_zone(
         physcial_heights: vector of physical heights [m] of the height levels
     """
     buffer = np.zeros(k_size)
-    buffer[2: nrdmax + 1] = (
+    buffer[2 : nrdmax + 1] = (
         1.0
         / 12.0
-        * ((
-            physical_heights[2 + nshift: nrdmax + 1 + nshift]
-            - physical_heights[nshift + nrdmax + 1]
+        * (
+            (
+                physical_heights[2 + nshift : nrdmax + 1 + nshift]
+                - physical_heights[nshift + nrdmax + 1]
+            )
+            / (physical_heights[2] - physical_heights[nshift + nrdmax + 1])
         )
-        / (physical_heights[2] - physical_heights[nshift + nrdmax + 1]))**4
+        ** 4
     )
     return np_as_located_field(KDim)(buffer)
 
@@ -313,36 +312,46 @@ class DiffusionConfig:
     TODO: [ml] read from config
     TODO: [ml] handle dependencies on other namelists (see below...)
     """
-    def __init__(self,
-                 grid: IconGrid,
-                 vertical_params: VerticalModelParams,
-                 diffusion_type:int = 5,
-                 apply_to_horizontal_wind: bool = True,
-                 apply_to_vertical_wind: bool = True,
-                 apply_to_temperature: bool = True,
-                 reconstruction_type_smag: int = 1,
-                 compute_3d_smag_coeff:bool = False,
-                 temperature_discretization: int=2,
-                 horizontal_efdt_ratio: float = 24.0,
-                 smag_scaling_factor: float = 0.025
-                 ):
+
+    def __init__(
+        self,
+        grid: IconGrid,
+        vertical_params: VerticalModelParams,
+        diffusion_type: int = 5,
+        apply_to_horizontal_wind: bool = True,
+        apply_to_vertical_wind: bool = True,
+        apply_to_temperature: bool = True,
+        reconstruction_type_smag: int = 1,
+        compute_3d_smag_coeff: bool = False,
+        temperature_discretization: int = 2,
+        horizontal_efdt_ratio: float = 24.0,
+        smag_scaling_factor: float = 0.025,
+    ):
         # TODO [ml]: move external stuff out: grid related stuff, other than diffusion namelists (see below
         self.grid = grid
         self.vertical_params = vertical_params
         # from namelist diffusion_nml
-        self.diffusion_type = diffusion_type  # hdiff_order ! order of nabla operator for diffusion
-        self.lhdiff_vn = apply_to_horizontal_wind  # ! diffusion on the horizontal wind field
+        self.diffusion_type = (
+            diffusion_type  # hdiff_order ! order of nabla operator for diffusion
+        )
+        self.lhdiff_vn = (
+            apply_to_horizontal_wind  # ! diffusion on the horizontal wind field
+        )
         self.lhdiff_temp = apply_to_temperature  # ! diffusion on the temperature field
         self.lhdiff_w = apply_to_vertical_wind  # ! diffusion on the vertical wind field
         self.lhdiff_rcf = True  # namelist, remove if always true
-        self.itype_vn_diffu = (
-            reconstruction_type_smag  # ! reconstruction method used for Smagorinsky diffusion
-        )
+        self.itype_vn_diffu = reconstruction_type_smag  # ! reconstruction method used for Smagorinsky diffusion
         self.l_smag_d = compute_3d_smag_coeff  # namelist lsmag_d,  if `true`, compute 3D Smagorinsky diffusion coefficient.
 
-        self.itype_t_diffu = temperature_discretization  # ! discretization of temperature diffusion
-        self.hdiff_efdt_ratio = horizontal_efdt_ratio  # ! ratio of e-folding time to time step
-        self.hdiff_smag_fac = smag_scaling_factor  # ! scaling factor for Smagorinsky diffusion
+        self.itype_t_diffu = (
+            temperature_discretization  # ! discretization of temperature diffusion
+        )
+        self.hdiff_efdt_ratio = (
+            horizontal_efdt_ratio  # ! ratio of e-folding time to time step
+        )
+        self.hdiff_smag_fac = (
+            smag_scaling_factor  # ! scaling factor for Smagorinsky diffusion
+        )
 
         # from other namelists
         # from parent namelist nonhydrostatic_nml
@@ -501,9 +510,10 @@ class Diffusion:
         )
 
         self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
-                k_size=config.grid.k_levels(), nshift = 0, physical_heights=np.asarray(vct_a),
-            nrdmax=self.config.vertical_params.index_of_damping_height
-
+            k_size=config.grid.k_levels(),
+            nshift=0,
+            physical_heights=np.asarray(vct_a),
+            nrdmax=self.config.vertical_params.index_of_damping_height,
         )
         self.diff_multfac_smag = np_as_located_field(KDim)(
             np.zeros(config.grid.k_levels())
@@ -524,9 +534,9 @@ class Diffusion:
         self.horizontal_cell_index = np_as_located_field(CellDim)(
             np.arange((shape_ck[0]))
         )
-        self.horizontal_edge_index = np_as_located_field(EdgeDim)(np.arange((shape_ek[0])))
-
-
+        self.horizontal_edge_index = np_as_located_field(EdgeDim)(
+            np.arange((shape_ek[0]))
+        )
 
     def run(
         self,
@@ -584,7 +594,6 @@ class Diffusion:
                 ),
             },
             offset_provider={"V2E": self.grid.get_v2e_offset_provider()},
-
         )
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
@@ -618,8 +627,8 @@ class Diffusion:
             },
             out=(self.kh_smag_e, self.kh_smag_ec, self.z_nabla2_e),
             offset_provider={"E2C2V": self.grid.get_e2c2v_connectivity()},
-            backend = gtfn_cpu.run_gtfn
-         )
+            backend=gtfn_cpu.run_gtfn,
+        )
 
         _fused_mo_nh_diffusion_stencil_02_03(
             self.kh_smag_ec,
@@ -635,14 +644,15 @@ class Diffusion:
             domain={
                 KDim: (0, klevels),
                 CellDim: (
-                    self.grid.get_indices_from_to(CellDim,
+                    self.grid.get_indices_from_to(
+                        CellDim,
                         HorizontalMarkerIndex.nudging(CellDim),
-                        HorizontalMarkerIndex.halo(CellDim)
+                        HorizontalMarkerIndex.halo(CellDim),
                     )
                 ),
             },
             offset_provider={"C2E": self.grid.get_c2e_connectivity()},
-            backend=gtfn_cpu.run_gtfn
+            backend=gtfn_cpu.run_gtfn,
         )
 
         # 4.  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
@@ -653,14 +663,14 @@ class Diffusion:
             interpolation_state.rbf_coeff_1,
             interpolation_state.rbf_coeff_2,
             out=(self.u_vert, self.v_vert),
-            # domain={
-            #     KDim: (0, klevels),
-            #     VertexDim: self.grid.get_indices_from_to(
-            #         VertexDim,
-            #         HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
-            #         HorizontalMarkerIndex.halo(VertexDim),
-            #     ),
-            # },
+            domain={
+                KDim: (0, klevels),
+                VertexDim: self.grid.get_indices_from_to(
+                    VertexDim,
+                    HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+                    HorizontalMarkerIndex.halo(VertexDim),
+                ),
+            },
             offset_provider={"V2E": self.grid.get_e2v_connectivity()},
         )
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
@@ -670,8 +680,9 @@ class Diffusion:
 
         start_2nd_nudge_line = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim)-1,
-            HorizontalMarkerIndex.nudging(EdgeDim)-1)[0]
+            HorizontalMarkerIndex.nudging(EdgeDim) - 1,
+            HorizontalMarkerIndex.nudging(EdgeDim) - 1,
+        )[0]
         _fused_mo_nh_diffusion_stencil_04_05_06(
             self.u_vert,
             self.v_vert,
@@ -705,7 +716,8 @@ class Diffusion:
         interior_start_index, halo_endindex = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.interior(CellDim),
-            HorizontalMarkerIndex.halo(CellDim))
+            HorizontalMarkerIndex.halo(CellDim),
+        )
 
         _fused_mo_nh_diffusion_stencil_07_08_09_10(
             cell_areas,
@@ -723,7 +735,11 @@ class Diffusion:
             self.config.vertical_params.index_of_damping_height,
             interior_start_index,
             halo_endindex,
-            out=(prognostic_state.vertical_wind, diagnostic_state.dwdx, diagnostic_state.dwdy),
+            out=(
+                prognostic_state.vertical_wind,
+                diagnostic_state.dwdx,
+                diagnostic_state.dwdy,
+            ),
             domain={
                 KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(
@@ -769,7 +785,7 @@ class Diffusion:
             inverse_dual_edge_length,
             prognostic_state.theta_v,
             interpolation_state.geofac_div,
-            out = self.z_temp,
+            out=self.z_temp,
             domain={
                 KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(

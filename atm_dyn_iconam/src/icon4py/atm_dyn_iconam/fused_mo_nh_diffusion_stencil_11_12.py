@@ -12,13 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import (
-    Field,
-    max_over,
-    maximum,
-    neighbor_sum,
-    where,
-)
+from functional.ffront.fbuiltins import Field
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_11 import (
     _mo_nh_diffusion_stencil_11,
@@ -26,15 +20,7 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_11 import (
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_12 import (
     _mo_nh_diffusion_stencil_12,
 )
-from icon4py.common.dimension import (
-    C2E2C,
-    E2C,
-    C2E2CDim,
-    CellDim,
-    E2CDim,
-    EdgeDim,
-    KDim,
-)
+from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 
 @field_operator

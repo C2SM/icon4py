@@ -143,10 +143,8 @@ class VerticalModelParams:
             np.where(np.asarray(self.vct_a) >= self.rayleigh_damping_height)
         )
 
-
     def get_index_of_damping_layer(self):
         return self.index_of_damping_height
 
     def get_physical_heights(self) -> Field[[KDim], float]:
         return np_as_located_field(KDim)(self.vct_a)
-

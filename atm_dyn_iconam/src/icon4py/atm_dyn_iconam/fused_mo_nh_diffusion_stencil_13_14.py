@@ -12,40 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, neighbor_sum
+from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import (
-    C2CE,
-    C2E,
-    C2E2C,
-    E2C,
-    C2E2CDim,
-    C2EDim,
-    CEDim,
-    CellDim,
-    E2CDim,
-    EdgeDim,
-    KDim,
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_13 import (
+    _mo_nh_diffusion_stencil_13,
 )
-
-
-@field_operator
-def _mo_nh_diffusion_stencil_13(
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    inv_dual_edge_length: Field[[EdgeDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    z_nabla2_e = kh_smag_e * inv_dual_edge_length * (theta_v(E2C[1]) - theta_v(E2C[0]))
-    return z_nabla2_e
-
-
-@field_operator
-def _mo_nh_diffusion_stencil_14(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CEDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)
-    return z_temp
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_14 import (
+    _mo_nh_diffusion_stencil_14,
+)
+from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
 
 @field_operator

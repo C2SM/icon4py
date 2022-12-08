@@ -66,7 +66,7 @@ class HorizontalMarkerIndex:
                 return cls._LOCAL_BOUNDARY_VERTICES
 
     @classmethod
-    #TODO should be renamed "halo" in dusk means "after this the halo starts", so is essentially local
+    # TODO should be renamed "halo" in dusk means "after this the halo starts", so is essentially local
     def halo(cls, dim: Dimension) -> int:
         match (dim):
             case (dimension.CellDim):

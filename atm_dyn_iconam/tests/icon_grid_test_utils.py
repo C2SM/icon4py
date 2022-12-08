@@ -18,7 +18,11 @@ from _pytest.fixtures import fixture
 
 from icon4py.atm_dyn_iconam.diffusion import DiffusionConfig
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
-from icon4py.atm_dyn_iconam.icon_grid import IconGrid, MeshConfig, VerticalModelParams
+from icon4py.atm_dyn_iconam.icon_grid import (
+    IconGrid,
+    MeshConfig,
+    VerticalModelParams,
+)
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
@@ -26,9 +30,9 @@ from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 @fixture
 def with_icon_grid():
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    sp = IconSerialDataProvider("icon_diffusion_init", data_path, True).from_savepoint_init(
-        linit=True, date="2021-06-20T12:00:10.000"
-    )
+    sp = IconSerialDataProvider(
+        "icon_diffusion_init", data_path, True
+    ).from_savepoint_init(linit=True, date="2021-06-20T12:00:10.000")
 
     sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
 
@@ -73,18 +77,19 @@ def with_icon_grid():
     )
     return grid
 
-@fixture
-def with_r04b09_diffusion_config()->DiffusionConfig:
-    """
-        Create DiffusionConfig.
 
-        that uses the parameters of MCH.CH_r04b09_dsl experiment
+@fixture
+def with_r04b09_diffusion_config() -> DiffusionConfig:
+    """
+    Create DiffusionConfig.
+
+    that uses the parameters of MCH.CH_r04b09_dsl experiment
     """
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    sp = IconSerialDataProvider("icon_diffusion_init", data_path, True).from_savepoint_init(
-        linit=True, date="2021-06-20T12:00:10.000"
-    )
-    nproma =  sp.get_metadata("nproma")["nproma"]
+    sp = IconSerialDataProvider(
+        "icon_diffusion_init", data_path, True
+    ).from_savepoint_init(linit=True, date="2021-06-20T12:00:10.000")
+    nproma = sp.get_metadata("nproma")["nproma"]
     horizontalConfig = HorizontalMeshConfig(
         num_vertices=nproma, num_cells=nproma, num_edges=nproma
     )

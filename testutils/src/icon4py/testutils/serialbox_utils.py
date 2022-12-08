@@ -41,10 +41,12 @@ except ImportError:
     )
     import serialbox as ser
 
+
 class IconDiffustionSavepoint:
     def __init__(self, sp: Savepoint, ser: ser.Serializer):
         self.savepoint = sp
         self.serializer = ser
+
     def print_meta_info(self):
         print(self.savepoint.metainfo)
 
@@ -57,11 +59,10 @@ class IconDiffustionSavepoint:
         metadata = self.savepoint.metainfo.to_dict()
         return {n: metadata[n] for n in names if n in metadata}
 
-class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
 
+class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
     def vct_a(self):
         return self._get_field("vct_a", KDim)
-
 
     def tangent_orientation(self):
         return self._get_field("tangent_orientation", EdgeDim)
@@ -94,7 +95,7 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
         return self._get_field("inv_dual_edge_length", EdgeDim)
 
     def cells_start_index(self):
-        #subtract 1 for python 0 based indexing
+        # subtract 1 for python 0 based indexing
         return self.serializer.read("c_start_index", self.savepoint) - 1
 
     def cells_end_index(self):
@@ -131,24 +132,24 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
             return None
 
     def c2e(self):
-        #subtract 1 to account for python being 0 based
-        return self.serializer.read("c2e", self.savepoint)-1
+        # subtract 1 to account for python being 0 based
+        return self.serializer.read("c2e", self.savepoint) - 1
 
     def c2e2c(self):
         # subtract 1 to account for python being 0 based
-        return self.serializer.read("c2e2c", self.savepoint)-1
+        return self.serializer.read("c2e2c", self.savepoint) - 1
 
     def e2c(self):
         # subtract 1 to account for python being 0 based
-        return self.serializer.read("e2c", self.savepoint)-1
+        return self.serializer.read("e2c", self.savepoint) - 1
 
     def e2v(self):
         # subtract 1 to account for python being 0 based
-        return self.serializer.read("e2v", self.savepoint)-1
+        return self.serializer.read("e2v", self.savepoint) - 1
 
     def v2e(self):
         # subtract 1 to account for python being 0 based
-        return self.serializer.read("v2e", self.savepoint)-1
+        return self.serializer.read("v2e", self.savepoint) - 1
 
     def hdef_ic(self):
         return self._get_field("hdef_ic", CellDim, KDim)
@@ -203,7 +204,9 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
 
     def geofac_grg(self):
         grg = np.squeeze(self.serializer.read("geofac_grg", self.savepoint))
-        return np_as_located_field(CellDim, C2E2CODim)(grg[:, :, 0]), np_as_located_field(CellDim, C2E2CODim)(grg[:, :,1])
+        return np_as_located_field(CellDim, C2E2CODim)(
+            grg[:, :, 0]
+        ), np_as_located_field(CellDim, C2E2CODim)(grg[:, :, 1])
 
     def nudgecoeff_e(self):
         return self._get_field("nudgecoeff_e", EdgeDim)
@@ -218,9 +221,7 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
         return self._get_field("rbf_vec_coeff_v2", VertexDim, V2EDim)
 
 
-
 class IconDiffusionExitSavepoint(IconDiffustionSavepoint):
-
     def vn(self):
         return self._get_field("x_vn", EdgeDim, KDim)
 
@@ -232,6 +233,7 @@ class IconDiffusionExitSavepoint(IconDiffustionSavepoint):
 
     def exner(self):
         return self._get_field("x_exner", CellDim, KDim)
+
 
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False):
@@ -263,7 +265,9 @@ class IconSerialDataProvider:
         )
         return IconDiffusionInitSavepoint(savepoint, self.serializer)
 
-    def from_save_point_exit(self, linit: bool, date: str) -> IconDiffusionExitSavepoint:
+    def from_save_point_exit(
+        self, linit: bool, date: str
+    ) -> IconDiffusionExitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-diffusion-exit"]
             .linit[linit]
@@ -271,11 +275,3 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconDiffusionExitSavepoint(savepoint, self.serializer)
-
-
-
-
-
-
-
-
