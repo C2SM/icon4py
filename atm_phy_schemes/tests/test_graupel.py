@@ -33,11 +33,13 @@ except ImportError:
     )
     import serialbox as ser
 
-
 from icon4py.atm_phy_schemes.gscp_data import gscp_set_coefficients
 from icon4py.atm_phy_schemes.gscp_graupel import graupel
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.utils import convert_numpy_field_to_icon4py_field, zero_field
+from icon4py.testutils.utils import (
+    convert_numpy_field_to_icon4py_field,
+    zero_field,
+)
 from icon4py.testutils.utils_serialbox import bcolors, field_test
 
 
@@ -47,9 +49,11 @@ NUM_MPI_RANKS = 1
 
 
 def read_serialized_fields(fields: dict, fieldname: str, serializer) -> dict:
-    """Return dict of Gt4Py arrays containing the field with name fieldname.
-    Only works for 1D and 2D Fields. Assumes shape is nproma, nlev, nblocks"""
+    """
+    Return dict of Gt4Py arrays containing the field with name fieldname.
 
+    Only works for 1D and 2D Fields. Assumes shape is nproma, nlev, nblocks
+    """
     savepoints = serializer.savepoint_list()
 
     field = serializer.read_async(fieldname, savepoint=savepoints[1])
@@ -59,13 +63,12 @@ def read_serialized_fields(fields: dict, fieldname: str, serializer) -> dict:
 
     # Drop Last column since they are all 0.0
     field = np.delete(field, -1, axis=-1)
-    
+
     # Special case for qnc_s, since in ICON it is obtained in the block loop
     if fieldname == "qnc_s" and np.all(field == 0):
         field[...] = float(serializer.read_async("cloud_num", savepoint=savepoints[1]))
 
     shape = np.shape(field)  # Assume shape is nproma, nlev, nblocks
-    nblocks = np.shape(field)[-1]
 
     nCells = shape[0] * shape[-1]  # shape is ncells
     shape_2D = (nCells, int(nlev))  # shape os ncells, nlev
@@ -222,7 +225,7 @@ def test_graupel_serialized_data():
         is_surface[:, -1] = True
         is_surface = convert_numpy_field_to_icon4py_field(is_surface, CellDim, KDim)
 
-        # # Initialize runtime-constant coefficients
+        # Initialize runtime-constant coefficients
         gscp_coefficients = gscp_set_coefficients(
             in_config_parameters["inwp_gscp"],
             zceff_min=in_config_parameters["tune_zceff_min"],
@@ -244,7 +247,7 @@ def test_graupel_serialized_data():
             in_fields["rho"],
             inout_fields["qv"],
             inout_fields["qi"],
-            inout_fields["qv"],
+            inout_fields["qc"],
             inout_fields["qr"],
             inout_fields["qs"],
             inout_fields["qg"],
