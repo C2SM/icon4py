@@ -26,22 +26,20 @@ Equation numbers refer to
 Doms, Foerstner, Heise, Herzog, Raschendorfer, Schrodin, Reinhardt, Vogel
 (September 2005): "A Description of the Nonhydrostatic Regional Model LM",
 
-TODO: Removed Features
+Removed Features
+----------------
 1. lsuper_coolw = False, lred_depgrow = False, lsedi_ice = False, lstickeff = Flase, lstickeff = False
 2. isnow_n0temp == 1, and zn0s = const.
 3. iautocon == 0 (Kessler)
 4. l_cv = False. Now, we always use cv instead of cp
 
-TODO: Currently unsupported features:
-1. lldiag_ttend = True, lldiag_qtend = True (Need IF statment for return in GT4Py)
-
 TODO: David
-    1. Test if runnign with GPU backend. normalize
-    2. Replace exp(A * log(B)) by B**A. Needs performance check and maybe optimization pass.
-    3. Put scan in field operator. --> Disregard unneeded output
-    4. Remove workaround for qnc (--> scheme does validate!!!), qc0, qi0 from gscp_data.py and pass explicitly
-    5. Remove namespacing, i.e. z and c prefixes
-    6. Replace 2D Fields by 1D fields qnc, prr_gsp et al.
+    -. Assess if make_normalized is still needed. 
+    -. Replace exp(A * log(B)) by B**A. Needs performance check and maybe optimization pass.
+    -. Put scan in field operator. --> Disregard unneeded output
+    -. Replace 2D Fields by 1D fields qnc, prr_gsp et al.
+    - Explicitly pass logicals (lldiag_ttend, lldiag_qtend)
+    - Handle Optional fields (ddt_tend*, qrsflux)
 
 TODO: GT4Py team
     1. Call field operators from scan --> sat_pres_ice
@@ -483,9 +481,7 @@ def _graupel(
     # qr_sedi:
     # -------------------------------------------------------------------------
     if llqr:
-        zlnqrk = (
-            zvz0r * exp(zvzxp * log(zqrk)) * zrho1o2
-        )
+        zlnqrk = zvz0r * exp(zvzxp * log(zqrk)) * zrho1o2
 
         # Prevent terminal fall speed of rain from being zero at the surface level
         zlnqrk = maximum(zlnqrk, gscp_data.v_sedi_rain_min) if is_surface else zlnqrk
@@ -670,9 +666,7 @@ def _graupel(
         zcidep = ccidep * hlp
 
         if llqs:
-            zcslam = exp(
-                ccslxp * log(ccslam * zn0s / zqsk)
-            )
+            zcslam = exp(ccslxp * log(ccslam * zn0s / zqsk))
             zcslam = minimum(zcslam, 1.0e15)
             zcsdep = 4.0 * zn0s * hlp
 
@@ -739,11 +733,7 @@ def _graupel(
                     * zeln7o4qrk
                 )
 
-            srim = (
-                zcrim * qcg * exp(ccsaxp * log(zcslam))
-                if llqs
-                else 0.0
-            )
+            srim = zcrim * qcg * exp(ccsaxp * log(zcslam)) if llqs else 0.0
 
             srim2 = local_param.zcrim_g * qcg * zelnrimexp_g
             if tg >= phy_const.tmelt:
@@ -842,9 +832,7 @@ def _graupel(
 
                 sagg = zeff * qig * zcagg * exp(ccsaxp * log(zcslam))
                 sagg2 = zeff * qig * local_param.zcagg_g * zelnrimexp_g
-                siau = (
-                    zeff * gscp_data.zciau * maximum(qig - qi0, 0.0)
-                )
+                siau = zeff * gscp_data.zciau * maximum(qig - qi0, 0.0)
                 zmi = maximum(
                     gscp_data.zmi0, minimum(rhog * qig / znin, gscp_data.zmimax)
                 )
@@ -983,15 +971,10 @@ def _graupel(
         # the pre-factor approximates (esat(T_wb)-e)/(esat(T)-e) at temperatures between 0 degC and 30 degC
         temp_c = tg - phy_const.tmelt
         maxevap = (
-            (0.61 - 0.0163 * temp_c + 1.111e-4 * temp_c**2)
-            * (zqvsw - qvg)
-            / zdt
+            (0.61 - 0.0163 * temp_c + 1.111e-4 * temp_c**2) * (zqvsw - qvg) / zdt
         )
         sev = minimum(
-            zcev
-            * zx1
-            * (zqvsw - qvg)
-            * exp(zcevxp * zlnqrk),
+            zcev * zx1 * (zqvsw - qvg) * exp(zcevxp * zlnqrk),
             maxevap,
         )
 
@@ -1088,16 +1071,12 @@ def _graupel(
         zvzr = (
             0.0
             if qrg + qr_kminus1 <= gscp_data.zqmin
-            else zvz0r
-            * exp(zvzxp * log((qrg + qr_kminus1) * 0.5 * rhog))
-            * zrho1o2
+            else zvz0r * exp(zvzxp * log((qrg + qr_kminus1) * 0.5 * rhog)) * zrho1o2
         )
         zvzs = (
             0.0
             if qsg + qs_kminus1 <= gscp_data.zqmin
-            else zvz0s
-            * exp(ccswxp * log((qsg + qs_kminus1) * 0.5 * rhog))
-            * zrho1o2
+            else zvz0s * exp(ccswxp * log((qsg + qs_kminus1) * 0.5 * rhog)) * zrho1o2
         )
         zvzg = (
             0.0
@@ -1181,7 +1160,6 @@ def _graupel(
         ddt_tend_qr = maximum(-qr_in * zdtr, (qr - qr_in) * zdtr)
         ddt_tend_qs = maximum(-qs_in * zdtr, (qs - qs_in) * zdtr)
         ddt_tend_qg = maximum(-qg_in * zdtr, (qg - qg_in) * zdtr)
-
 
     return (
         temp,
