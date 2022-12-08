@@ -43,19 +43,11 @@ def with_icon_grid():
     edge_starts = sp.edge_start_index()
     edge_ends = sp.edge_end_index()
 
-    # config = MeshConfig(
-    #     HorizontalMeshConfig(
-    #         num_vertices=sp_meta["num_vert"],
-    #         num_cells=sp_meta["num_cells"],
-    #         num_edges=sp_meta["num_edges"],
-    #     )
-    # )
-
     config = MeshConfig(
         HorizontalMeshConfig(
-            num_vertices=sp_meta["nproma"],
-            num_cells=sp_meta["nproma"],
-            num_edges=sp_meta["nproma"],
+            num_vertices=sp_meta["nproma"],  # or rather "num_vert"
+            num_cells=sp_meta["nproma"],  # or rather "num_cells"
+            num_edges=sp_meta["nproma"],  # or rather "num_edges"
         )
     )
 

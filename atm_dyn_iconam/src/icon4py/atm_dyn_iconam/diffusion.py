@@ -38,13 +38,8 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import (
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
     _fused_mo_nh_diffusion_stencil_13_14,
 )
-from icon4py.atm_dyn_iconam.horizontal import (
-    HorizontalMarkerIndex,
-)
-from icon4py.atm_dyn_iconam.icon_grid import (
-    IconGrid,
-    VerticalModelParams,
-)
+from icon4py.atm_dyn_iconam.horizontal import HorizontalMarkerIndex
+from icon4py.atm_dyn_iconam.icon_grid import IconGrid, VerticalModelParams
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
@@ -69,8 +64,8 @@ from icon4py.common.dimension import (
 )
 
 
-DiffusionTupleVT = namedtuple("DiffusionParamVT", "v t")
-VectorTuple = namedtuple("CartesianVectorTuple", "x y")
+TupleVT = namedtuple("TupleVT", "v t")
+VectorTuple = namedtuple("VectorTuple", "x y")
 
 
 # TODO [ml] initial RUN linit = TRUE
@@ -286,15 +281,15 @@ def init_nabla2_factor_in_upper_damping_zone(
         physcial_heights: vector of physical heights [m] of the height levels
     """
     buffer = np.zeros(k_size)
-    buffer[2 : nrdmax + 1] = (
+    buffer[1 : nrdmax + 1] = (
         1.0
         / 12.0
         * (
             (
-                physical_heights[2 + nshift : nrdmax + 1 + nshift]
+                physical_heights[1 + nshift : nrdmax + 1 + nshift]
                 - physical_heights[nshift + nrdmax + 1]
             )
-            / (physical_heights[2] - physical_heights[nshift + nrdmax + 1])
+            / (physical_heights[1] - physical_heights[nshift + nrdmax + 1])
         )
         ** 4
     )
@@ -306,7 +301,7 @@ class DiffusionConfig:
 
     - encapsulates namelist parameters and derived parameters (for now)
 
-    currently we use the MCH r04b09_dsl experiment as constants here. These should
+    currently we use the MCH r04b09_dsl experiment as defaults here. These should
     be read from config and the default from mo_diffusion_nml.f90 set as defaults.
 
     TODO: [ml] read from config
@@ -325,6 +320,7 @@ class DiffusionConfig:
         compute_3d_smag_coeff: bool = False,
         temperature_discretization: int = 2,
         horizontal_efdt_ratio: float = 24.0,
+        horizontal_w_efdt_ratio: float = 15.0,
         smag_scaling_factor: float = 0.025,
     ):
         # TODO [ml]: move external stuff out: grid related stuff, other than diffusion namelists (see below
@@ -349,6 +345,7 @@ class DiffusionConfig:
         self.hdiff_efdt_ratio = (
             horizontal_efdt_ratio  # ! ratio of e-folding time to time step
         )
+        self.hdiff_w_efdt_ratio = horizontal_w_efdt_ratio  # ratio of e-folding time to time step for w diffusion (NH only)
         self.hdiff_smag_fac = (
             smag_scaling_factor  # ! scaling factor for Smagorinsky diffusion
         )
@@ -359,8 +356,8 @@ class DiffusionConfig:
         self.ndyn_substeps = 5
 
         # namelist gridref_nml
-        # denom_diffu_v = 150   ! denominator for lateral boundary diffusion of velocity
-        self.lateral_boundary_denominator = DiffusionTupleVT(v=200.0, t=135.0)
+        # default is  v=200.0, t=135.0
+        self.lateral_boundary_denominator = TupleVT(v=150.0, t=135.0)
 
         # namelist grid_nml
         self.l_limited_area = True
@@ -388,8 +385,14 @@ class DiffusionParams:
             else 0.0
         )
         self.K4: Final[float] = self.K2 / 8.0
-        self.K8: Final[float] = self.K2 / 64.0
-        self.K4W: Final[float] = self.K2 / 4.0
+        self.K6: Final[float] = self.K2 / 64.0
+
+        self.K4W: Final[float] = (
+            1.0 / (config.hdiff_w_efdt_ratio * 36.0)
+            if config.hdiff_w_efdt_ratio > 0
+            else 0.0
+        )
+
         (
             self.smagorinski_factor,
             self.smagorinski_height,
@@ -435,6 +438,7 @@ class DiffusionParams:
 
 
 def mo_nh_diffusion_stencil_15_numpy(
+    c2e2c,
     mask_hdiff: Field[[CellDim, KDim], int],
     zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int],
     zd_diffcoef: Field[[CellDim, KDim], float],
@@ -445,7 +449,12 @@ def mo_nh_diffusion_stencil_15_numpy(
     domain,
     offset_provider,
 ):
-    pass
+
+    z_temp = np.sum(
+        geofac_n2s * vcoef * theta_v[c2e2c[zd_vertidx]]
+        + (1.0 - vcoef)
+        + theta_v[c2e2c[zd_vertidx + 1]]
+    )
 
 
 class Diffusion:
@@ -485,10 +494,8 @@ class Diffusion:
         )
 
         # different for initial run!, through diff_multfac_vn
-        self.diff_multfac_vn = np_as_located_field(KDim)(
-            np.zeros(config.grid.k_levels())
-        )
-        self.smag_limit = np_as_located_field(KDim)(np.zeros(config.grid.k_levels()))
+        self.diff_multfac_vn = np_as_located_field(KDim)(np.zeros(config.grid.n_lev()))
+        self.smag_limit = np_as_located_field(KDim)(np.zeros(config.grid.n_lev()))
 
         init_diffusion_local_fields(
             params.K4,
@@ -499,7 +506,7 @@ class Diffusion:
         )
 
         self.enh_smag_fac = np_as_located_field(KDim)(
-            np.zeros(config.grid.k_levels(), float)
+            np.zeros(config.grid.n_lev(), float)
         )
         enhanced_smagorinski_factor(
             *params.smagorinski_factor,
@@ -510,26 +517,26 @@ class Diffusion:
         )
 
         self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
-            k_size=config.grid.k_levels(),
+            k_size=config.grid.n_lev(),
             nshift=0,
             physical_heights=np.asarray(vct_a),
             nrdmax=self.config.vertical_params.index_of_damping_height,
         )
         self.diff_multfac_smag = np_as_located_field(KDim)(
-            np.zeros(config.grid.k_levels())
+            np.zeros(config.grid.n_lev())
         )
-        shape_vk = (config.grid.num_vertices(), config.grid.k_levels())
-        shape_ck = (config.grid.num_cells(), config.grid.k_levels())
+        shape_vk = (config.grid.num_vertices(), config.grid.n_lev())
+        shape_ck = (config.grid.num_cells(), config.grid.n_lev())
         self.u_vert = np_as_located_field(VertexDim, KDim)(np.zeros(shape_vk, float))
         self.v_vert = np_as_located_field(VertexDim, KDim)(np.zeros(shape_vk, float))
-        shape_ek = (config.grid.num_edges(), config.grid.k_levels())
+        shape_ek = (config.grid.num_edges(), config.grid.n_lev())
         allocate_ek = np_as_located_field(EdgeDim, KDim)(np.zeros(shape_ek, float))
         self.kh_smag_e = allocate_ek
         self.kh_smag_ec = allocate_ek
         self.z_nabla2_e = allocate_ek
         self.z_temp = np_as_located_field(CellDim, KDim)(np.zeros(shape_ck, float))
         self.vertical_index = np_as_located_field(KDim)(
-            np.arange(self.grid.k_levels() + 1)
+            np.arange(self.grid.n_lev() + 1)
         )
         self.horizontal_cell_index = np_as_located_field(CellDim)(
             np.arange((shape_ck[0]))
@@ -573,7 +580,7 @@ class Diffusion:
             if self.config.lhdiff_rcf
             else 1.0 / (dtime * self.config.substep_as_float())
         )
-        klevels = self.grid.k_levels()
+        klevels = self.grid.n_lev()
         # TODO is this needed?
         set_zero_v_k(self.u_vert, offset_provider={})
         set_zero_v_k(self.v_vert, offset_provider={})

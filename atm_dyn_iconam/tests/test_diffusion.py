@@ -30,12 +30,12 @@ from icon4py.atm_dyn_iconam.diffusion import (
 from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
-from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    mo_intp_rbf_rbf_vec_interpol_vertex,
-)
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
 from icon4py.common.dimension import KDim, VertexDim
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
+from icon4py.testutils.serialbox_utils import (
+    IconDiffusionInitSavepoint,
+    IconSerialDataProvider,
+)
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
@@ -132,24 +132,26 @@ def test_set_zero_vertex_k():
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(with_r04b09_diffusion_config):
     config = with_r04b09_diffusion_config
     config.hdiff_efdt_ratio = 1.0
+    config.hdiff_w_efdt_ratio = 2.0
 
     params = DiffusionParams(config)
 
     assert params.K2 == pytest.approx(0.125, abs=1e-12)
     assert params.K4 == pytest.approx(0.125 / 8.0, abs=1e-12)
-    assert params.K8 == pytest.approx(0.125 / 64.0, abs=1e-12)
-    assert params.K4W == pytest.approx(0.125 / 4.0, abs=1e-12)
+    assert params.K6 == pytest.approx(0.125 / 64.0, abs=1e-12)
+    assert params.K4W == pytest.approx(1.0 / 72.0, abs=1e-12)
 
 
 def test_diffusion_coefficients_without_hdiff_efdt_ratio(with_r04b09_diffusion_config):
     config = with_r04b09_diffusion_config
     config.hdiff_efdt_ratio = 0.0
+    config.hdiff_w_efdt_ratio = 0.0
 
     params = DiffusionParams(config)
 
     assert params.K2 == 0.0
     assert params.K4 == 0.0
-    assert params.K8 == 0.0
+    assert params.K6 == 0.0
     assert params.K4W == 0.0
 
 
@@ -216,8 +218,6 @@ def test_diffusion_init(with_r04b09_diffusion_config):
 
     assert np.allclose(0.0, np.asarray(diffusion.v_vert))
     assert np.allclose(0.0, np.asarray(diffusion.u_vert))
-    # TODO test against ICON serialized
-    # assert np.allclose(0.0, np.asarray(diffusion.diff_multfac_n2w))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_ec))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_e))
 
@@ -238,6 +238,63 @@ def test_diffusion_init(with_r04b09_diffusion_config):
         vct_a,
     )
     assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))
+
+
+def verify_init_values_against_savepoint(
+    savepoint: IconDiffusionInitSavepoint, diffusion: Diffusion
+):
+    dtime = savepoint.get_metadata("dtime")["dtime"]
+    assert savepoint.nudgezone_diff() == diffusion.nudgezone_diff
+    assert savepoint.bdy_diff() == diffusion.bdy_diff
+    assert savepoint.fac_bdydiff_v() == diffusion.fac_bdydiff_v
+    assert savepoint.smag_offset() == diffusion.smag_offset
+    assert savepoint.diff_multfac_w() == diffusion.diff_multfac_w
+
+    # this is done in diffusion.run(...) because it depends on the dtime
+    scale_k(
+        diffusion.enh_smag_fac, dtime, diffusion.diff_multfac_smag, offset_provider={}
+    )
+    assert np.allclose(savepoint.diff_multfac_smag(), diffusion.diff_multfac_smag)
+
+    assert np.allclose(savepoint.smag_limit(), diffusion.smag_limit)
+    assert np.allclose(
+        savepoint.diff_multfac_n2w(), np.asarray(diffusion.diff_multfac_n2w)
+    )
+    assert np.allclose(savepoint.diff_multfac_vn(), diffusion.diff_multfac_vn)
+
+
+def test_verify_diffusion_init_against_first_regular_savepoint(
+    with_r04b09_diffusion_config,
+):
+    config = with_r04b09_diffusion_config
+    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
+    serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
+    serializer.print_info()
+    first_run_date = "2021-06-20T12:00:10.000"
+    savepoint = serializer.from_savepoint_init(linit=False, date=first_run_date)
+    vct_a = savepoint.vct_a()
+
+    additional_parameters = DiffusionParams(config)
+    diffusion = Diffusion(config, additional_parameters, vct_a)
+
+    verify_init_values_against_savepoint(savepoint, diffusion)
+
+
+def test_verify_diffusion_init_against_other_regular_savepoint(
+    with_r04b09_diffusion_config,
+):
+    config = with_r04b09_diffusion_config
+    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
+    serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
+    serializer.print_info()
+    run_date = "2021-06-20T12:00:50.000"
+    savepoint = serializer.from_savepoint_init(linit=False, date=run_date)
+    vct_a = savepoint.vct_a()
+
+    additional_parameters = DiffusionParams(config)
+    diffusion = Diffusion(config, additional_parameters, vct_a)
+
+    verify_init_values_against_savepoint(savepoint, diffusion)
 
 
 @pytest.mark.xfail
@@ -306,21 +363,21 @@ def test_diffusion_run(with_icon_grid):
     edge_areas = sp.edge_areas()
     cell_areas = sp.cell_areas()
 
-    # diffusion.run(
-    #     diagnostic_state=diagnostic_state,
-    #     prognostic_state=prognostic_state,
-    #     metric_state=metric_state,
-    #     interpolation_state=interpolation_state,
-    #     dtime=dtime,
-    #     tangent_orientation=orientation,
-    #     inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-    #     inverse_dual_edge_length=inverse_dual_edge_length,
-    #     inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
-    #     primal_normal_vert=primal_normal_vert,
-    #     dual_normal_vert=dual_normal_vert,
-    #     edge_areas=edge_areas,
-    #     cell_areas=cell_areas,
-    # )
+    diffusion.run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        dtime=dtime,
+        tangent_orientation=orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inverse_dual_edge_length=inverse_dual_edge_length,
+        inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+        primal_normal_vert=primal_normal_vert,
+        dual_normal_vert=dual_normal_vert,
+        edge_areas=edge_areas,
+        cell_areas=cell_areas,
+    )
 
     exit_savepoint = data_provider.from_save_point_exit(
         linit=False, date="2021-06-20T12:00:10.000"
@@ -340,5 +397,3 @@ def test_diffusion_run(with_icon_grid):
     assert np.allclose(
         np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure)
     )
-
-    pytest.fail("not finished yet")

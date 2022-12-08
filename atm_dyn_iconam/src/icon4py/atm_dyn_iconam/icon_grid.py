@@ -38,14 +38,16 @@ class MeshConfig:
         return self._n_shift_total
 
     @property
-    def get_num_vertices(self):
-        return self._horizontal._num_vertices
+    def num_vertices(self):
+        return self._horizontal.num_vertices
 
-    def get_num_edges(self):
-        return self._horizontal._num_edges
+    @property
+    def num_edges(self):
+        return self._horizontal.num_edges
 
-    def get_num_cells(self):
-        return self._horizontal._num_cells
+    @property
+    def num_cells(self):
+        return self._horizontal.num_cells
 
 
 def builder(func):
@@ -78,17 +80,17 @@ class IconGrid:
     def with_connectivity(self, **connectivity):
         self.connectivities.update(**connectivity)
 
-    def k_levels(self):
+    def n_lev(self):
         return self.config.num_k_levels
 
     def num_cells(self):
-        return self.config.get_num_cells()
+        return self.config.num_cells
 
     def num_vertices(self):
-        return self.config.get_num_cells()
+        return self.config.num_vertices
 
     def num_edges(self):
-        return self.config.get_num_edges()
+        return self.config.num_edges
 
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int

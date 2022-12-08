@@ -113,11 +113,14 @@ class HorizontalMeshConfig:
         self._num_edges = num_edges
         self._num_cells = num_cells
 
-    def get_num_vertices(self):
+    @property
+    def num_vertices(self):
         return self._num_vertices
 
-    def get_num_edges(self):
+    @property
+    def num_edges(self):
         return self._num_edges
 
-    def get_num_cells(self):
+    @property
+    def num_cells(self):
         return self._num_cells

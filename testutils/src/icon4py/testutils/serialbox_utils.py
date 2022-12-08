@@ -220,6 +220,36 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
     def rbf_vec_coeff_v2(self):
         return self._get_field("rbf_vec_coeff_v2", VertexDim, V2EDim)
 
+    def diff_multfac_smag(self):
+        return np.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint))
+
+    def smag_limit(self):
+        return np.squeeze(self.serializer.read("smag_limit", self.savepoint))
+
+    def diff_multfac_n2w(self):
+        return np.squeeze(self.serializer.read("diff_multfac_n2w", self.savepoint))
+
+    def nrdmax(self):
+        return self.serializer.read("nrdmax", self.savepoint)[0]
+
+    def nudgezone_diff(self) -> int:
+        return self.serializer.read("nudgezone_diff", self.savepoint)[0]
+
+    def bdy_diff(self) -> int:
+        return self.serializer.read("bdy_diff", self.savepoint)[0]
+
+    def fac_bdydiff_v(self) -> int:
+        return self.serializer.read("fac_bdydiff_v", self.savepoint)[0]
+
+    def smag_offset(self):
+        return self.serializer.read("smag_offset", self.savepoint)[0]
+
+    def diff_multfac_w(self):
+        return self.serializer.read("diff_multfac_w", self.savepoint)[0]
+
+    def diff_multfac_vn(self):
+        return self.serializer.read("diff_multfac_vn", self.savepoint)
+
 
 class IconDiffusionExitSavepoint(IconDiffustionSavepoint):
     def vn(self):
