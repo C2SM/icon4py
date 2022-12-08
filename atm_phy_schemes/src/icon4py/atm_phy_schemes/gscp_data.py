@@ -261,9 +261,9 @@ class GscpCoefficients(FrozenNamespace):
     zvzxp = 0.5 / (mu_rain + 4.0)
     zvz0r = 12.63008787548925
 
-    # DL: Temporary workaround since I cant pass 2D constants
-    qi0 = -2.91727579e-08
-    qc0 = -3.90868735e-08
+    # DL: Temporary workaround until we can pass floats to scan
+    qc0 = 0.0
+    qi0 = 0.0
 
 
 gscp_coefficients: Final = GscpCoefficients()
@@ -290,7 +290,7 @@ def gscp_set_coefficients(
         if igscp == 2:
             v0snow = 20.0
         else:
-            assert "Only inwp_gscp supported"
+            assert "Only inwp_gscp = 2 supported"
 
     zconst = (
         gscp_data.zkcau
@@ -353,7 +353,7 @@ def gscp_set_coefficients(
         / gamma_fct(mu_rain + 2.0)
     )  # 14.152467883390491
 
-    zvzxp = 0.5 / (mu_rain + 4.0)  # DL: same
+    zvzxp = 0.5 / (mu_rain + 4.0)
     zvz0r = (
         130.0 * gamma_fct(mu_rain + 4.5) / gamma_fct(mu_rain + 4.0) * zar ** (-zvzxp)
     )  #  Off by 2.6645352591003757e-14 FORTRAN is 12.63008787548925

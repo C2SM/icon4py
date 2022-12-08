@@ -230,14 +230,14 @@ def _graupel(
     qs: float,
     qg: float,
     # Number Densities
-    qnc: float,  # 2D Field
+    qnc: float,  # TODO: shold be 2D Field
     #   qi0: float,
     #   qc0: float,
     # Precipitation Fluxes
-    pri_gsp: float,  # 2D Field
-    prr_gsp: float,  # 2D Field
-    prs_gsp: float,  # 2D Field
-    prg_gsp: float,  # 2D Field
+    pri_gsp: float,  # TODO: shold be 2D Field
+    prr_gsp: float,  # TODO: shold be 2D Field
+    prs_gsp: float,  # TODO: shold be 2D Field
+    prg_gsp: float,  # TODO: shold be 2D Field
     qrsflux: float,
     # # Precomputed Parameters
     # ccsrim: float,
@@ -1181,39 +1181,6 @@ def _graupel(
         ddt_tend_qs = maximum(-qs_in * zdtr, (qs - qs_in) * zdtr)
         ddt_tend_qg = maximum(-qg_in * zdtr, (qg - qg_in) * zdtr)
 
-    temp = 10000000.0
-    qv = 1.0
-    qc = 1.0
-    qi = 1.0
-    qr = 1.0
-    qs = 1.0
-    qg = 1.0
-    ddt_tend_t = 1.0
-    ddt_tend_qv = 1.0
-    ddt_tend_qc = 1.0
-    ddt_tend_qi = 1.0
-    ddt_tend_qr = 1.0
-    ddt_tend_qs = 1.0
-    ddt_tend_qg = 1.0
-    prr_gsp = 1.0
-    prs_gsp = 1.0
-    prg_gsp = 1.0
-    pri_gsp = 1.0
-    qrsflux = 1.0
-    zpkr = 1.0
-    zpks = 1.0
-    zpkg = 1.0
-    zpki = 1.0
-    zprvr = 1.0
-    zprvs = 1.0
-    zprvg = 1.0
-    zprvi = 1.0
-    zvzr = 1.0
-    zvzs = 1.0
-    zvzi = 1.0
-    zvzg = 1.0
-    dist_cldtop = 1.0
-    zqvsw_up = 1.0
 
     return (
         temp,

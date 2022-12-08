@@ -54,26 +54,21 @@ def field_test(
     shape_2D=None,
 ):
     """Test fields against serialized field."""
-    fld = np.asarray(field)  # Convert Gt4Py array to numpy
+    fld = np.asarray(field)
     ref = serializer.read(fieldname, savepoint)
+
+    # Drop Last column since they are all 0.0
+    ref = np.delete(ref, -1, axis=-1)
 
     if ref.ndim == 3:
         ref = ref.swapaxes(1, 2).reshape(fld.shape)
-        # ref = ref.swapaxes(1, 2).reshape(shape_2D)[3231:3232, 29:] # DL: Debug single column
-    elif ref.ndim == 2:  # DL: Debug single column
+    elif ref.ndim == 2:
         CellDimSize = fld.shape[0]
-        # CellDimSize = shape_1D # DL: Debug single column
 
         ref = ref.reshape(CellDimSize)
         ref = np.expand_dims(ref, 1)
 
         ref = np.broadcast_to(ref, fld.shape)
-        # ref = np.broadcast_to(ref, shape_2D)[3231:3232, 29:] # DL: Debug single column
-
-    # DL HACK: TODO Delete grid column with errornous input: rho=0.0
-    delgp = np.arange(2029, np.shape(fld)[0], 203)
-    fld = np.delete(fld, delgp, axis=0)
-    ref = np.delete(ref, delgp, axis=0)
 
     try:
         np.testing.assert_allclose(fld, ref, atol=atol, rtol=rtol, verbose=False)

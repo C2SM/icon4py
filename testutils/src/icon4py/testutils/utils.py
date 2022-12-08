@@ -51,7 +51,7 @@ def random_mask(
     return it_embedded.np_as_located_field(*dims)(arr)
 
 
-def to_icon4py_field(
+def convert_numpy_field_to_icon4py_field(
     field: Union[tuple, np.ndarray, simple_mesh.SimpleMesh],
     *dims: gt_common.Dimension,
     dtype=float,

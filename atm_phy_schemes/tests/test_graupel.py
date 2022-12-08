@@ -37,13 +37,52 @@ except ImportError:
 from icon4py.atm_phy_schemes.gscp_data import gscp_set_coefficients
 from icon4py.atm_phy_schemes.gscp_graupel import graupel
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.utils import to_icon4py_field, zero_field
+from icon4py.testutils.utils import convert_numpy_field_to_icon4py_field, zero_field
 from icon4py.testutils.utils_serialbox import bcolors, field_test
 
 
 # Configuration of serialized data
 SER_DATA = os.path.join(os.path.dirname(__file__), "ser_data")
-NUM_MPI_RANKS = 1  # TODO: Set to 6
+NUM_MPI_RANKS = 1
+
+
+def read_serialized_fields(fields: dict, fieldname: str, serializer) -> dict:
+    """Return dict of Gt4Py arrays containing the field with name fieldname.
+    Only works for 1D and 2D Fields. Assumes shape is nproma, nlev, nblocks"""
+
+    savepoints = serializer.savepoint_list()
+
+    field = serializer.read_async(fieldname, savepoint=savepoints[1])
+    nlev = serializer.read_async(
+        "nlev", savepoint=savepoints[1]
+    )  # Needed for broadcasting 1D -> 2D below
+
+    # Drop Last column since they are all 0.0
+    field = np.delete(field, -1, axis=-1)
+    
+    # Special case for qnc_s, since in ICON it is obtained in the block loop
+    if fieldname == "qnc_s" and np.all(field == 0):
+        field[...] = float(serializer.read_async("cloud_num", savepoint=savepoints[1]))
+
+    shape = np.shape(field)  # Assume shape is nproma, nlev, nblocks
+    nblocks = np.shape(field)[-1]
+
+    nCells = shape[0] * shape[-1]  # shape is ncells
+    shape_2D = (nCells, int(nlev))  # shape os ncells, nlev
+
+    if field.ndim == 2:
+        field = np.expand_dims(field.reshape(nCells), 1)
+        # TODO: For now, scan_operator currently does not accept 1D fields -> boradcast here
+        field = np.broadcast_to(field, shape_2D)
+    else:
+
+        # Data was written from CPU run that employed blocking.  Thus they need to be unblocked.
+        field = field.swapaxes(1, 2).reshape(shape_2D)
+
+    # Convert to GT4Py array and append to dict
+    fields[fieldname] = convert_numpy_field_to_icon4py_field(field, CellDim, KDim)
+
+    return fields
 
 
 def test_graupel_serialized_data():
@@ -53,28 +92,29 @@ def test_graupel_serialized_data():
             "wget -r --no-parent -nH -nc --cut-dirs=3 -q ftp://iacftp.ethz.ch/pub_read/davidle/ser_data_icon_graupel/ser_data/"
         )
 
-    for rank in range(NUM_MPI_RANKS):  # DL TODO: Workaround
+    for rank in range(NUM_MPI_RANKS):
         print("=======================")
-        print(f"Runing rank {str(rank + 1)}")
+        print(f"Runing rank {str(rank)}")
 
         # Open Files
         try:
             serializer = ser.Serializer(
-                ser.OpenModeKind.Read, SER_DATA, f"ref_rank_{str(rank + 1)}"
+                ser.OpenModeKind.Read,
+                SER_DATA,
+                f"reference_graupel_call_rank{str(rank)}",
             )
             savepoints = serializer.savepoint_list()
         except ser.SerialboxError as e:
             print(f"serializer: error: {e}", file=stderr)
             exit(1)
 
-        # Read serialized data for init.
-        # ------------------------------
-        # The data input is a bit cumbersome due to the inconsistent way it was originally serialized from ICON.
+        # Read serialized data
+        # --------------------
 
         # Read serialized tech. config
-        ser_config_parameters = {}
+        in_config_parameters = {}
+
         for param in (
-            "tcall_gscp_jg",
             "mu_rain",
             "rain_n0_factor",
             "tune_zceff_min",
@@ -82,9 +122,16 @@ def test_graupel_serialized_data():
             "tune_v0snow",
             "tune_zvz0i",
             "tune_icesedi_exp",
+            "inwp_gscp",
+        ):
+            in_config_parameters[param] = serializer.read_async(
+                param, savepoint=savepoints[0]
+            )
+
+        for param in (
+            "tcall_gscp_jg",
             "qi0",
             "qc0",
-            "inwp_gscp",
             "jg",
             "nproma",
             "nlev",
@@ -96,147 +143,139 @@ def test_graupel_serialized_data():
             "ldiag_qtend",
             "i_startblk",
             "i_endblk",
-            "ivstart",
-            "ivend",
+            "i_startidx",
+            "i_endidx",
             "kstart_moist",
         ):
-            ser_config_parameters[param] = serializer.read_async(
-                param, savepoint=savepoints[0]
+
+            in_config_parameters[param] = serializer.read_async(
+                param, savepoint=savepoints[1]
             )
+
+        # Apply some corrections to input data
+        for param_name, param in in_config_parameters.items():
 
             # Some parameters were saved as ndarrays and need to be unpacked
-            if isinstance(ser_config_parameters[param], np.ndarray):
-                ser_config_parameters[param] = ser_config_parameters[param][0]
+            if isinstance(param, np.ndarray):
+                in_config_parameters[param_name] = param[0]
 
             # Need to subtract 1 from some parameters to account for FORTRAN indexing
-            if param in ["i_startblk", "i_endblk", "ivstart", "ivend", "kstart_moist"]:
-                ser_config_parameters[param] -= 1
+            if param_name in [
+                "i_startblk",
+                "i_endblk",
+                "ivstart",
+                "ivend",
+                "kstart_moist",
+            ]:
+                in_config_parameters[param_name] -= 1
 
-        shape_1D = ser_config_parameters["nproma"] * ser_config_parameters["nblks_c"]
-        shape_2D = (shape_1D, ser_config_parameters["nlev"])
+        # Obtain shapes of 1D and 2D fields as needed for GT4Py implementaion
 
-        ser_fields = {
-            field: (
-                serializer.read_async(field, savepoint=savepoints[1])
-                .swapaxes(1, 2)
-                .reshape(shape_2D)
-            )
-            for field in ("layer thickness", "pres", "moist air density")
-        }
+        # Read fields that wont be changed in routine
+        in_fields = {}
+        for fieldname in ("ddqz_z_full", "pres", "rho", "qnc_s"):
+            in_fields = read_serialized_fields(in_fields, fieldname, serializer)
 
-        # 3D fields: Note that the serialized data has all zeros in block 202 ([:,:,202])
-        for field in (
-            "specific water vapor content",
-            "specific cloud ice content",
-            "specific cloud water content",
-            "specific rain content",
-            "specific snow content",
-            "specific graupel content",
-            "temperature",
+        # Read fields that will be changed in routine
+        inout_fields = {}
+        for fieldname in (
+            # 1D Fields
+            "rain_gsp_rate",
+            "snow_gsp_rate",
+            "ice_gsp_rate",
+            "graupel_gsp_rate",
+            # 2D Fields
+            "temp",
+            "qv",
+            "qc",
+            "qi",
+            "qr",
+            "qs",
+            "qg",
+            "temp",
         ):
-            ser_fields[field] = (
-                serializer.read_async(field, savepoint=savepoints[2])
-                .swapaxes(1, 2)
-                .reshape(shape_2D)
-            )
+            inout_fields = read_serialized_fields(inout_fields, fieldname, serializer)
 
-        # 1D Fields
-        for field in (
-            "precipitation rate of rain",
-            "precipitation rate of snow",
-            "precipitation rate of ice",
-            "precipitation rate of graupel",
-            "cloud number concentration",
+        # Init diagnostics to 0.0.
+        #  Needed in routine (optional fields not yet supported in GT4Py), but output not tested.
+        nCells = np.shape(inout_fields["temp"])[0]
+        shape_2D = np.shape(inout_fields["temp"])
+
+        tendency_fields = {}
+        for fieldname in (
+            "ddt_tend_t",
+            "ddt_tend_qv",
+            "ddt_tend_qc",
+            "ddt_tend_qi",
+            "ddt_tend_qr",
+            "ddt_tend_qs",
+            "ddt_tend_qg",
+            "qrsflux",
         ):
-
-            data = serializer.read_async(field, savepoint=savepoints[2])
-            data = np.expand_dims(data.reshape(shape_1D), 1)
-            ser_fields[field] = np.broadcast_to(data, shape_2D)
-
-        # Convert Numpy Arrays to GT4Py storages
-        for fieldname, field in ser_fields.items():
-            ser_fields[fieldname] = to_icon4py_field(field, CellDim, KDim)
-            # ser_fields[fieldname] = to_icon4py_field(
-            #     field[:, 29:], CellDim, KDim
-            # )  # DL: Debug single column
-
-        # Init diagnostics to 0.0
-        for field in (
-            "tendency temperature",
-            "tendency specific water vapor content",
-            "tendency specific cloud water content",
-            "tendency specific ice content",
-            "tendency specific rain content",
-            "tendency specific snow content",
-            "tendency specific graupel content",
-            "qrsflux"
-        ):
-            ser_fields[field] = zero_field(shape_2D, CellDim, KDim)
-            # ser_fields[field] = zero_field((shape_1D, ser_config_parameters["nlev"] - ser_config_parameters["kstart_moist"]), CellDim, KDim)  # DL: Debug single column
+            tendency_fields[fieldname] = zero_field(shape_2D, CellDim, KDim)
 
         # Local automatic arrays TODO:remove after scan is wrapped in fieldview
         temporaries = [zero_field(shape_2D, CellDim, KDim) for _ in range(14)]
-        # temporaries = [
-        #     zero_field((shape_1D, ser_config_parameters["nlev"] - ser_config_parameters["kstart_moist"]), CellDim, KDim) for _ in range(14)
-        # ]  # DL: Debug single column
 
         # Create index field. TODO: Remove after index fields are avail in fieldview
         is_surface = np.zeros(shape_2D, dtype=bool)
-        # is_surface = np.zeros((shape_1D, ser_config_parameters["nlev"] - ser_config_parameters["kstart_moist"]), dtype=bool)  # DL: Debug single column
         is_surface[:, -1] = True
-        is_surface = to_icon4py_field(is_surface, CellDim, KDim)
+        is_surface = convert_numpy_field_to_icon4py_field(is_surface, CellDim, KDim)
 
-        # Compute Coefficients
+        # # Initialize runtime-constant coefficients
         gscp_coefficients = gscp_set_coefficients(
-            ser_config_parameters["inwp_gscp"],
-            zceff_min=ser_config_parameters["tune_zceff_min"],
-            v0snow=ser_config_parameters["tune_v0snow"],
-            zvz0i=ser_config_parameters["tune_zvz0i"],
-            mu_rain=ser_config_parameters["mu_rain"],
-            rain_n0_factor=ser_config_parameters["rain_n0_factor"],
-            icesedi_exp=ser_config_parameters["tune_icesedi_exp"],
+            in_config_parameters["inwp_gscp"],
+            zceff_min=in_config_parameters["tune_zceff_min"],
+            v0snow=in_config_parameters["tune_v0snow"],
+            zvz0i=in_config_parameters["tune_zvz0i"],
+            mu_rain=in_config_parameters["mu_rain"],
+            rain_n0_factor=in_config_parameters["rain_n0_factor"],
+            icesedi_exp=in_config_parameters["tune_icesedi_exp"],
         )
 
         # Run scheme
+        # ----------
+
         graupel(
-            float(ser_config_parameters["tcall_gscp_jg"]),
-            ser_fields["layer thickness"],
-            ser_fields["temperature"],
-            ser_fields["pres"],
-            ser_fields["moist air density"],
-            ser_fields["specific water vapor content"],
-            ser_fields["specific cloud ice content"],
-            ser_fields["specific cloud water content"],
-            ser_fields["specific rain content"],
-            ser_fields["specific snow content"],
-            ser_fields["specific graupel content"],
-            ser_fields["cloud number concentration"],
-            float(ser_config_parameters["qi0"]),
-            float(ser_config_parameters["qc0"]),
-            ser_fields["precipitation rate of ice"],
-            ser_fields["precipitation rate of rain"],
-            ser_fields["precipitation rate of snow"],
-            ser_fields["precipitation rate of graupel"],
-            ser_fields["qrsflux"],
+            float(in_config_parameters["tcall_gscp_jg"]),
+            in_fields["ddqz_z_full"],
+            inout_fields["temp"],
+            in_fields["pres"],
+            in_fields["rho"],
+            inout_fields["qv"],
+            inout_fields["qi"],
+            inout_fields["qv"],
+            inout_fields["qr"],
+            inout_fields["qs"],
+            inout_fields["qg"],
+            in_fields["qnc_s"],
+            float(in_config_parameters["qi0"]),
+            float(in_config_parameters["qc0"]),
+            inout_fields["ice_gsp_rate"],
+            inout_fields["rain_gsp_rate"],
+            inout_fields["snow_gsp_rate"],
+            inout_fields["graupel_gsp_rate"],
+            tendency_fields["qrsflux"],
             *temporaries,
             *gscp_coefficients,
-            ser_fields["tendency temperature"],
-            ser_fields["tendency specific water vapor content"],
-            ser_fields["tendency specific cloud water content"],
-            ser_fields["tendency specific ice content"],
-            ser_fields["tendency specific rain content"],
-            ser_fields["tendency specific snow content"],
-            ser_fields["tendency specific graupel content"],
+            tendency_fields["ddt_tend_t"],
+            tendency_fields["ddt_tend_qv"],
+            tendency_fields["ddt_tend_qc"],
+            tendency_fields["ddt_tend_qi"],
+            tendency_fields["ddt_tend_qr"],
+            tendency_fields["ddt_tend_qs"],
+            tendency_fields["ddt_tend_qg"],
             is_surface,
-            ser_config_parameters["ldiag_ttend"],
-            ser_config_parameters["ldiag_ttend"],
-            np.int32(shape_1D),
-            np.int32(ser_config_parameters["nlev"]),
-            np.int32(ser_config_parameters["kstart_moist"]),
+            in_config_parameters["ldiag_ttend"],
+            in_config_parameters["ldiag_ttend"],
+            np.int32(nCells),
+            np.int32(in_config_parameters["nlev"]),
+            np.int32(in_config_parameters["kstart_moist"]),
             offset_provider={},
         )
 
-        # Test Fields against refernce
+        # Test fields against reference
+        # -----------------------------
 
         # Initialize numErrors
         try:
@@ -244,46 +283,17 @@ def test_graupel_serialized_data():
         except NameError:
             numErrors = 0
 
-        for fieldname, field in ser_fields.items():
-            if fieldname in ("layer thickness", "moist air density", "pres"):
-                numErrors = field_test(
-                    field,
-                    fieldname,
-                    serializer,
-                    savepoints[-3],
-                    numErrors=numErrors,
-                    shape_2D=shape_2D,
-                    shape_1D=shape_1D,
-                )
-            elif fieldname in ("tendency specific graupel content", "qrsflux"):
-                # is not in output data
-                continue
-            elif fieldname.startswith("tendency"):
-                continue
-
-                # numErrors = field_test(
-                #     field,
-                #     fieldname,
-                #     serializer,
-                #     savepoints[-1],
-                #     numErrors=numErrors,
-                #     shape_2D=shape_2D,
-                #     shape_1D=shape_1D,
-                # )
-
-            else:
-                numErrors = field_test(
-                    field,
-                    fieldname,
-                    serializer,
-                    savepoints[-2],
-                    numErrors=numErrors,
-                    shape_2D=shape_2D,
-                    shape_1D=shape_1D,
-                )
-
+        for fieldname, field in inout_fields.items():
+            numErrors = field_test(
+                field,
+                fieldname,
+                serializer,
+                savepoints[-1],
+                numErrors=numErrors,
+                shape_2D=shape_2D,
+                shape_1D=nCells,
+            )
 
     assert (
         numErrors == 0
     ), f"{bcolors.FAIL}{numErrors} tests failed validation{bcolors.ENDC}"
-
