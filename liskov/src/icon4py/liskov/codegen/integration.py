@@ -32,8 +32,9 @@ class GeneratedCode:
 
 
 class IntegrationGenerator:
-    def __init__(self, directives: SerialisedDirectives):
+    def __init__(self, directives: SerialisedDirectives, profile: bool):
         self.generated = []
+        self.profile = profile
         self.directives = directives
         self._generate_code()
 
@@ -52,7 +53,10 @@ class IntegrationGenerator:
         for i, stencil in enumerate(self.directives.start):
             # generate output field copies
             output_field_copy_source = generate_fortran_code(
-                OutputFieldCopy, OutputFieldCopyGenerator, stencil_data=stencil
+                OutputFieldCopy,
+                OutputFieldCopyGenerator,
+                stencil_data=stencil,
+                profile=self.profile,
             )
             output_field_copy_code = GeneratedCode(
                 gen=output_field_copy_source, target_ln=self.directives.start[i].startln
@@ -61,7 +65,10 @@ class IntegrationGenerator:
 
             # generate wrap run call
             wrap_run_source = generate_fortran_code(
-                WrapRunFunc, WrapRunFuncGenerator, stencil_data=stencil
+                WrapRunFunc,
+                WrapRunFuncGenerator,
+                stencil_data=stencil,
+                profile=self.profile,
             )
             wrap_run_code = GeneratedCode(
                 gen=wrap_run_source, target_ln=self.directives.end[i].startln

@@ -29,12 +29,11 @@ from icon4py.liskov.serialise import DirectiveSerialiser
         exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
     ),
 )
-def main(filepath: pathlib.Path) -> None:
-    """Command line interface to interact with the ICON-Liskov DSL Preprocessor.
-
-    Args:
-        filepath: path to Fortran file.
-    """
+@click.option(
+    "--profile", "-p", is_flag=True, help="Add nvtx profile statements to stencils."
+)
+def main(filepath: pathlib.Path, profile: bool) -> None:
+    """Command line interface to interact with the ICON-Liskov DSL Preprocessor."""
     directives_collector = DirectivesCollector(filepath)
 
     parser = DirectivesParser(directives_collector.directives)
@@ -44,7 +43,7 @@ def main(filepath: pathlib.Path) -> None:
 
     serialiser = DirectiveSerialiser(parsed_directives)
 
-    integrator = IntegrationGenerator(serialiser.directives)
+    integrator = IntegrationGenerator(serialiser.directives, profile=profile)
 
     print(integrator.generated)
 

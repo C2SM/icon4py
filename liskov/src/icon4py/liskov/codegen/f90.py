@@ -62,6 +62,7 @@ class ToleranceFields(InputFields):
 
 class WrapRunFunc(eve.Node):
     stencil_data: StartStencilData
+    profile: bool
 
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -83,6 +84,9 @@ class WrapRunFunc(eve.Node):
 class WrapRunFuncGenerator(TemplatedGenerator):
     WrapRunFunc = as_jinja(
         """
+        {%- if _this_node.profile %}
+        call nvtxEndRange()
+        {%- endif %}
         #endif
         call wrap_run_{{ name }}( &
             {{ input_fields }}
@@ -182,6 +186,7 @@ class CopyDeclaration(Declaration):
 
 class OutputFieldCopy(eve.Node):
     stencil_data: StartStencilData
+    profile: bool
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
     def __post_init__(self):
@@ -215,14 +220,13 @@ class OutputFieldCopyGenerator(TemplatedGenerator):
         {{ d.variable }}_before{{ d.array_index }} = {{ d.variable }}{{ d.array_index }}
         {%- endfor %}
         !$ACC END PARALLEL
+
+        {%- if _this_node.profile %}
+        call nvtxStartRange("{{ _this_node.stencil_data.name }}")
+        {%- endif %}
         """
     )
 
-
-# todo: Generation of profile call (requires adding command-line flag).
-#   call nvtxStartRange("mo_solve_nonhydro_stencil_01")
-#   ! Fortran stencil code goes here
-#   call nvtxEndRange()
 
 # todo: Generation of wrapped function call import statements (requires adding IMPORT directive).
 #   USE mo_velocity_advection_stencil_01, ONLY: wrap_run_mo_velocity_advection_stencil_01
