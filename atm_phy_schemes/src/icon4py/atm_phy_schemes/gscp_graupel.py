@@ -445,7 +445,7 @@ def _graupel(
         )
 
         # Here is the exponent bms=2.0 hardwired! not ideal! (Uli Blahak)
-        m2s = qsg * rhog / gscp_data.zams  # UB rho added as bugfix
+        m2s = qsg * rhog / gscp_data.zams_gr  # UB rho added as bugfix
         m3s = alf * exp(bet * log(m2s))
 
         hlp = gscp_data.zn0s1 * exp(gscp_data.zn0s2 * ztc)
