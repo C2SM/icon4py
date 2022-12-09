@@ -171,7 +171,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(with_r04b09_diffusion_c
 
 def test_smagorinski_factor_for_diffusion_type_4(with_r04b09_diffusion_config):
     config = with_r04b09_diffusion_config
-    config.hdiff_smag_fac = 0.15
+    config.hdiff_smag_factor = 0.15
     config.diffusion_type = 4
 
     params = DiffusionParams(config)
@@ -184,7 +184,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
     with_r04b09_diffusion_config,
 ):
     config = with_r04b09_diffusion_config
-    config.hdiff_smag_fac = 0.15
+    config.hdiff_smag_factor = 0.15
     config.diffusion_type = 5
 
     params = DiffusionParams(config)

@@ -34,10 +34,15 @@ class VerticalMeshConfig:
 
 
 class MeshConfig:
-    def __init__(self, horizontal_config: HorizontalMeshConfig, vertical_config: VerticalMeshConfig):
+    def __init__(self, horizontal_config: HorizontalMeshConfig, vertical_config: VerticalMeshConfig, limited_area = True):
         self._vertical = vertical_config
         self._n_shift_total = 0
+        self._limited_area = limited_area
         self._horizontal = horizontal_config
+
+    @property
+    def limited_area(self):
+        return self._limited_area
 
     @property
     def num_k_levels(self):
@@ -105,6 +110,8 @@ class IconGrid:
         self.size.update({d:t.shape[1] for d, t in connectivity.items()})
 
 
+    def limited_area(self):
+        return self.config.limited_area
     def n_lev(self):
         return self.config.num_k_levels if self.config else 0
 

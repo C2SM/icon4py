@@ -93,4 +93,14 @@ def with_r04b09_diffusion_config() -> DiffusionConfig:
     verticalParams = VerticalModelParams(
         rayleigh_damping_height=12500, vct_a=sp.vct_a()
     )
-    return DiffusionConfig(grid=grid, vertical_params=verticalParams)
+
+    return DiffusionConfig(grid=grid,
+                           vertical_params=verticalParams,
+                           diffusion_type=5,
+                           hdiff_w=True,
+                           type_t_diffu=2,
+                           type_vn_diffu=1,
+                           hdiff_efdt_ratio=24.0,
+                           hdiff_w_efdt_ratio=15.0,
+                           smag_scaling_fac=0.025,
+                           zdiffu_t=True)

@@ -287,58 +287,75 @@ class DiffusionConfig:
         self,
         grid: IconGrid,
         vertical_params: VerticalModelParams,
-        diffusion_type: int = 5,
-        apply_to_horizontal_wind: bool = True,
-        apply_to_vertical_wind: bool = True,
-        apply_to_temperature: bool = True,
-        reconstruction_type_smag: int = 1,
-        compute_3d_smag_coeff: bool = False,
-        temperature_discretization: int = 2,
-        horizontal_efdt_ratio: float = 24.0,
-        horizontal_w_efdt_ratio: float = 15.0,
-        smag_scaling_factor: float = 0.025,
+        diffusion_type: int = 5, # TODO: use enum
+        hdiff_w = True,
+        type_vn_diffu: int = 1,
+        smag_3d: bool = False,
+        type_t_diffu: int = 2,
+        hdiff_efdt_ratio: float = 36.0,
+        hdiff_w_efdt_ratio: float = 15.0,
+        smag_scaling_fac: float = 0.015,
+        zdiffu_t = True
     ):
         # TODO [ml]: move external stuff out: grid related stuff, other than diffusion namelists (see below
         self.grid = grid
         self.vertical_params = vertical_params
-        # from namelist diffusion_nml
-        self.diffusion_type = (
-            diffusion_type  # hdiff_order ! order of nabla operator for diffusion
-        )
-        self.lhdiff_vn = (
-            apply_to_horizontal_wind  # ! diffusion on the horizontal wind field
-        )
-        self.lhdiff_temp = apply_to_temperature  # ! diffusion on the temperature field
-        self.lhdiff_w = apply_to_vertical_wind  # ! diffusion on the vertical wind field
-        self.lhdiff_rcf = True  # namelist, remove if always true
-        self.itype_vn_diffu = reconstruction_type_smag  # ! reconstruction method used for Smagorinsky diffusion
-        self.l_smag_d = compute_3d_smag_coeff  # namelist lsmag_d,  if `true`, compute 3D Smagorinsky diffusion coefficient.
 
+        # parameters from namelist diffusion_nml
+        self.diffusion_type = (
+            diffusion_type  # hdiff_order :  order of nabla operator for diffusion
+        )
+        self.apply_to_vertical_wind = hdiff_w # lhdiff_w, diffusion on the vertical wind field
+        self.apply_to_horizontal_wind = True  # lhdiff_vn,  diffusion on horizonal wind field, ONLY used in mo_nh_stepping.f90
+        self.apply_to_temperature = True  # lhdiff_temp,  apply horizontal diffusion to temperature
+
+        self.compute_3d_smag_coeff = smag_3d  # lsmag_3d,  if `true`, compute 3D Smagorinsky diffusion coefficient.
+        self.itype_vn_diffu = type_vn_diffu  # itype_vn_diffu, options for discretizing the Smagorinsky momentum diffusion
         self.itype_t_diffu = (
-            temperature_discretization  # ! discretization of temperature diffusion
+            type_t_diffu  # itype_t_diffu, options for discretizing the Smagorinsky temperature diffusion
         )
         self.hdiff_efdt_ratio = (
-            horizontal_efdt_ratio  # ! ratio of e-folding time to time step
+            hdiff_efdt_ratio  # hdiff_efdt_ratio, ratio of e-folding time to (2*)time step
         )
-        self.hdiff_w_efdt_ratio = horizontal_w_efdt_ratio  # ratio of e-folding time to time step for w diffusion (NH only)
-        self.hdiff_smag_fac = (
-            smag_scaling_factor  # ! scaling factor for Smagorinsky diffusion
+        self.hdiff_w_efdt_ratio = hdiff_w_efdt_ratio  # hdiff_w_efdt_ratio,  ratio of e-folding time to time step for w diffusion (NH only)
+        self.hdiff_smag_factor = (
+            smag_scaling_fac  # hdiff_smag_fac, scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
         )
 
+        self.zdiffu_t = zdiffu_t  #l_zdiffu_t, apply truly horizontal temperature diffusion, from parent namelist nonhydrostatic_nml, but is only used in diffusion, and in mo_vertical_grid.prepare_zdiffu.
+
+
         # from other namelists
-        # from parent namelist nonhydrostatic_nml
-        self.l_zdiffu_t = True  # ! l_zdiffu_t: specifies computation of Smagorinsky temperature diffusion
+        #from parent namelist nonhydrostatic_nml
         self.ndyn_substeps = 5
+        self.lhdiff_rcf = True
 
         # namelist gridref_nml
         # default is  v=200.0, t=135.0
         self.lateral_boundary_denominator = TupleVT(v=150.0, t=135.0)
 
-        # namelist grid_nml
-        self.l_limited_area = True
-
         # name list: interpol_nml
         self.nudge_max_coeff = 0.075
+        self._validate()
+
+    def _validate(self):
+        if self.diffusion_type != 5:
+            raise NotImplementedError("only diffusion type 5 : `Smagorinsky diffusion with fourth-order background diffusion` is implemented")
+
+        if not self.grid.limited_area:
+            raise NotImplementedError("only limited area mode is implemented")
+
+        if self.diffusion_type < 0:
+            self.apply_to_temperature = False
+            self.apply_to_horizontal_wind = False
+            self.apply_to_vertical_wind = False
+        else:
+            self.apply_to_temperature = True
+            self.apply_to_horizontal_wind = True
+
+        if not self.zdiffu_t:
+            raise NotImplementedError("zdiffu_t = False is not implemented (leaves out stencil_15)")
+
 
     def substep_as_float(self):
         return float(self.ndyn_substeps)
@@ -389,11 +406,11 @@ class DiffusionParams:
                 # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
                 # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
                 smagorinski_factor = (
-                    config.hdiff_smag_fac if config.hdiff_smag_fac else 0.15,
+                    config.hdiff_smag_factor if config.hdiff_smag_factor else 0.15,
                 )
                 smagorinski_height = None
             case _:
-                print("not implemented")
+                raise NotImplementedError("Only implemented for diffusion type 4 and 5")
                 smagorinski_factor = None
                 smagorinski_height = None
                 pass
@@ -405,7 +422,7 @@ class DiffusionParams:
         magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
         magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
         magic_z2 = 1600.0 + 50000.0 + magic_sqrt
-        factor = (config.hdiff_smag_fac, magic_fac2_value, 0.0, 1.0)
+        factor = (config.hdiff_smag_factor, magic_fac2_value, 0.0, 1.0)
         heights = (32500.0, magic_z2, 50000.0, 90000.0)
         return factor, heights
 
