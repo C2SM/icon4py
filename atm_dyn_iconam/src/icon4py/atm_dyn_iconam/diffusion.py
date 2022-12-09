@@ -16,6 +16,7 @@ from collections import namedtuple
 from typing import Final
 
 import numpy as np
+from functional.common import Dimension
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, broadcast, maximum, minimum
 from functional.iterator.embedded import np_as_located_field
@@ -52,6 +53,7 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import (
     _mo_nh_diffusion_stencil_16,
 )
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
+from icon4py.atm_dyn_iconam.utils import zero_field
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -467,34 +469,7 @@ class Diffusion:
         )
 
         # TODO different for initial run!, through diff_multfac_vn
-        self.diff_multfac_vn = np_as_located_field(KDim)(np.zeros(config.grid.n_lev()))
-        self.smag_limit = np_as_located_field(KDim)(np.zeros(config.grid.n_lev()))
-        self.enh_smag_fac = np_as_located_field(KDim)(
-            np.zeros(config.grid.n_lev(), float)
-        )
-        shape_vk = (config.grid.num_vertices(), config.grid.n_lev())
-        shape_ck = (config.grid.num_cells(), config.grid.n_lev())
-        self.u_vert = np_as_located_field(VertexDim, KDim)(np.zeros(shape_vk, float))
-        self.v_vert = np_as_located_field(VertexDim, KDim)(np.zeros(shape_vk, float))
-        shape_ek = (config.grid.num_edges(), config.grid.n_lev())
-        allocate_ek = np_as_located_field(EdgeDim, KDim)(np.zeros(shape_ek, float))
-        self.kh_smag_e = allocate_ek
-        self.kh_smag_ec = allocate_ek
-        self.z_nabla2_e = allocate_ek
-        self.z_temp = np_as_located_field(CellDim, KDim)(np.zeros(shape_ck, float))
-        self.vertical_index = np_as_located_field(KDim)(
-            np.arange(self.grid.n_lev() + 1)
-        )
-        self.horizontal_cell_index = np_as_located_field(CellDim)(
-            np.arange((shape_ck[0]))
-        )
-        self.horizontal_edge_index = np_as_located_field(EdgeDim)(
-            np.arange((shape_ek[0]))
-        )
-
-        self.diff_multfac_smag = np_as_located_field(KDim)(
-            np.zeros(config.grid.n_lev())
-        )
+        self._allocate_local_fields()
 
         init_diffusion_local_fields(
             params.K4,
@@ -514,6 +489,31 @@ class Diffusion:
             physical_heights=np.asarray(vct_a),
             nrdmax=self.config.vertical_params.index_of_damping_height,
         )
+
+    def _allocate_local_fields(self):
+        def _allocate(*dims: Dimension):
+            return zero_field(self.grid, *dims)
+
+        def _index_field(dim:Dimension, size=None):
+            size = size if size else self.grid.size[dim]
+            return np_as_located_field(dim)(
+                np.arange(size)
+            )
+
+        self.diff_multfac_vn = _allocate(KDim)
+        self.smag_limit =  _allocate(KDim)
+        self.enh_smag_fac = _allocate(KDim)
+        self.u_vert = _allocate(VertexDim, KDim)
+        self.v_vert = _allocate(VertexDim, KDim)
+        self.kh_smag_e = _allocate(EdgeDim, KDim)
+        self.kh_smag_ec = _allocate(EdgeDim, KDim)
+        self.z_nabla2_e = _allocate(EdgeDim, KDim)
+        self.z_temp = _allocate(EdgeDim, KDim)
+        self.diff_multfac_smag = _allocate(KDim)
+        self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
+        self.horizontal_cell_index = _index_field(CellDim)
+        self.horizontal_edge_index = _index_field(EdgeDim)
+
 
     def run(
         self,

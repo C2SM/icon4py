@@ -10,7 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Tuple
+from dataclasses import dataclass
+from typing import Tuple, Dict
 
 import numpy as np
 from functional.common import Dimension, DimensionKind, Field
@@ -20,18 +21,27 @@ from functional.iterator.embedded import (
 )
 
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim, E2CDim
+
+
+class VerticalMeshConfig:
+    def __init__(self, num_lev: int):
+        self._num_lev = num_lev
+
+    @property
+    def num_lev(self)->int:
+        return self._num_lev
 
 
 class MeshConfig:
-    def __init__(self, horizontalMesh: HorizontalMeshConfig):
-        self._num_k_levels = 65
+    def __init__(self, horizontal_config: HorizontalMeshConfig, vertical_config: VerticalMeshConfig):
+        self._vertical = vertical_config
         self._n_shift_total = 0
-        self._horizontal = horizontalMesh
+        self._horizontal = horizontal_config
 
     @property
     def num_k_levels(self):
-        return self._num_k_levels
+        return self._vertical.num_lev
 
     @property
     def n_shift_total(self):
@@ -63,11 +73,24 @@ class IconGrid:
         self.config: MeshConfig = None
         self.start_indices = {}
         self.end_indices = {}
-        self.connectivities = {}
+        self.connectivities: Dict[Dimension, np.ndarray] = {}
+        self.size: Dict[Dimension, int] = {}
+
+
+    def _update_size(self, config: MeshConfig):
+        self.size[VertexDim]= config.num_vertices
+        self.size[CellDim] = config.num_cells
+        self.size[EdgeDim] = config.num_edges
+        self.size[KDim] = config.num_k_levels
+
+
 
     @builder
     def with_config(self, config: MeshConfig):
         self.config = config
+        self._update_size(config)
+
+
 
     @builder
     def with_start_end_indices(
@@ -77,17 +100,19 @@ class IconGrid:
         self.end_indices[dim] = end_indices
 
     @builder
-    def with_connectivity(self, **connectivity):
-        self.connectivities.update(**connectivity)
+    def with_connectivities(self, connectivity:Dict[Dimension, np.ndarray]):
+        self.connectivities.update({d.value.lower(): k for d, k in connectivity.items()})
+        self.size.update({d:t.shape[1] for d, t in connectivity.items()})
+
 
     def n_lev(self):
-        return self.config.num_k_levels
+        return self.config.num_k_levels if self.config else 0
 
     def num_cells(self):
-        return self.config.num_cells
+        return self.config.num_cells if self.config else 0
 
     def num_vertices(self):
-        return self.config.num_vertices
+        return self.config.num_vertices if self.config else 0
 
     def num_edges(self):
         return self.config.num_edges
@@ -130,7 +155,7 @@ class IconGrid:
 
 
 class VerticalModelParams:
-    def __init__(self, vct_a: np.ndarray, rayleigh_damping_height: float = 12500.0):
+    def __init__(self, vct_a: np.ndarray, rayleigh_damping_height: float):
         """
         Contains physical parameters defined on the grid.
 
@@ -140,7 +165,6 @@ class VerticalModelParams:
         """
         self.rayleigh_damping_height = rayleigh_damping_height
         self.vct_a = vct_a
-        # TODO klevels in ICON are inverted! TODO test against ICON LOG.exp...
         self.index_of_damping_height = np.argmax(
             np.where(np.asarray(self.vct_a) >= self.rayleigh_damping_height)
         )

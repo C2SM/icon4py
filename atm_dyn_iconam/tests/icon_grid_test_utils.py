@@ -21,10 +21,13 @@ from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
 from icon4py.atm_dyn_iconam.icon_grid import (
     IconGrid,
     MeshConfig,
-    VerticalModelParams,
+    VerticalModelParams, VerticalMeshConfig,
 )
-from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.common.dimension import CellDim, EdgeDim, VertexDim, E2CDim, C2EDim, C2E2CDim, \
+    C2E2CODim, E2VDim, V2EDim
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
+
+
 
 
 @fixture
@@ -48,7 +51,7 @@ def with_icon_grid():
             num_vertices=sp_meta["nproma"],  # or rather "num_vert"
             num_cells=sp_meta["nproma"],  # or rather "num_cells"
             num_edges=sp_meta["nproma"],  # or rather "num_edges"
-        )
+        ), VerticalMeshConfig(num_lev=sp_meta["nlev"])
     )
 
     c2e2c = sp.c2e2c()
@@ -59,14 +62,9 @@ def with_icon_grid():
         .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
         .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
         .with_start_end_indices(CellDim, cell_starts, cell_ends)
-        .with_connectivity(c2e=sp.c2e())
-        .with_connectivity(e2c=sp.e2c())
-        .with_connectivity(c2e2c=c2e2c)
-        .with_connectivity(e2v=sp.e2v())
-        .with_connectivity(c2e2c0=c2e2c0)
-        .with_connectivity(v2e=sp.v2e())
-        .with_connectivity(e2v=sp.e2v())
-    )
+        .with_connectivities({C2EDim:sp.c2e(), E2CDim:sp.e2c(), C2E2CDim:c2e2c, C2E2CODim:c2e2c0})
+        .with_connectivities({E2VDim:sp.e2v(), V2EDim:sp.v2e()})
+        )
     return grid
 
 
@@ -82,11 +80,16 @@ def with_r04b09_diffusion_config() -> DiffusionConfig:
         "icon_diffusion_init", data_path, True
     ).from_savepoint_init(linit=True, date="2021-06-20T12:00:10.000")
     nproma = sp.get_metadata("nproma")["nproma"]
-    horizontalConfig = HorizontalMeshConfig(
+    num_lev = sp.get_metadata("nlev")["nlev"]
+    horizontal_config = HorizontalMeshConfig(
         num_vertices=nproma, num_cells=nproma, num_edges=nproma
     )
+    vertical_config = VerticalMeshConfig(num_lev = num_lev)
 
-    grid = IconGrid().with_config(MeshConfig(horizontalMesh=horizontalConfig))
+    grid = IconGrid().with_config(MeshConfig(
+        horizontal_config=horizontal_config,
+        vertical_config = vertical_config))
+
     verticalParams = VerticalModelParams(
         rayleigh_damping_height=12500, vct_a=sp.vct_a()
     )
