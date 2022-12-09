@@ -52,7 +52,7 @@ import sys
 from typing import Final
 
 from eve.utils import FrozenNamespace
-from functional.ffront.decorator import program, scan_operator
+from functional.ffront.decorator import field_operator, program, scan_operator
 from functional.ffront.fbuiltins import (
     Field,
     abs,
@@ -105,19 +105,24 @@ class GraupelParametersAndConfiguration(FrozenNamespace):
 # -------------------
 
 
-def fpvsw(ztx):
+@field_operator()
+def fpvsw(ztx: float) -> float:
     """Return saturation vapour pressure over water from temperature."""
     return conv_table.c1es * exp(
-        conv_table.c3les * (ztx - conv_table.tmelt) / (ztx - conv_table.c4les)
+        conv_table.c3les * (ztx - phy_const.tmelt) / (ztx - conv_table.c4les)
     )
 
 
-def fxna(ztx):  # DL: Remove
+# DL: Remove
+@field_operator()
+def fxna(ztx: float) -> float:
     """Return number of activate ice crystals from temperature."""
     return 1.0e2 * exp(0.2 * (phy_const.tmelt - ztx))
 
 
-def fxna_cooper(ztx):  # Dl: Rename
+# Dl: Rename
+@field_operator()
+def fxna_cooper(ztx: float) -> float:
     """Return number of activate ice crystals from temperature.
 
     Method: Cooper (1986) used by Greg Thompson(2008)
@@ -125,12 +130,12 @@ def fxna_cooper(ztx):  # Dl: Rename
     return 5.0 * exp(0.304 * (phy_const.tmelt - ztx))
 
 
-def make_normalized(v):
+@field_operator()
+def make_normalized(v: float) -> float:
     """
     Set denormals to zero.
 
     GPU code can't flush to zero double precision denormals. To avoid CPU-GPU differences we'll do it manually.
-    TODO: Add pass that replaces exact IF by soft IF that tresholds on denormal.
     """
     # if GT4PyConfig.gpu: #TODO: Test if running with GPU backend
     v = 0.0 if abs(v) <= 2.225073858507201e-308 else v
@@ -317,11 +322,11 @@ def _graupel(
         zqvsw_up_kminus1,
     ) = state_kMinus1
 
-    # # Some constant coefficients
-    # znimax = znimax_Thom # number of ice crystals at temp threshold for mixed-phase clouds
-    # znimix = fxna_cooper(ztmix)
-    znimax = gscp_data.znimax_Thom
-    znimix = 5.0 * exp(0.304 * (phy_const.tmelt - gscp_data.ztmix))
+    # Some constant coefficients
+    znimax = (
+        gscp_data.znimax_Thom
+    )  # number of ice crystals at temp threshold for mixed-phase clouds
+    znimix = fxna_cooper(znimax)
 
     # # Precomputations for optimization TODO: Could be done by the GT4PY optimizers?
     # zpvsw0 = fpvsw(t0)  # sat. vap. pressure for t = t0 #DL: This computes to just c3les, no?
@@ -684,8 +689,7 @@ def _graupel(
     # # ----------------------------------------------------------------------------
 
     if (tg < gscp_data.zthet) & (qvg > 8.0e-6) & (qig <= 0.0) & (qvg > zqvsi):
-        # znin = min(fxna_cooper(tg), znimax) #DL: TODO
-        znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
+        znin = minimum(fxna_cooper(tg), znimax)
         snuc = gscp_data.zmi0 * z1orhog * znin * zdtr
     else:
         snuc = 0.0
@@ -766,14 +770,12 @@ def _graupel(
         # threshold.
 
         if (tg <= 267.15) & (not llqi):
-            # znin = min(fxna_cooper(tg), znimax)
-            znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
+            znin = minimum(fxna_cooper(tg), znimax)
             snuc = gscp_data.zmi0 * z1orhog * znin * zdtr
 
         # # Calculation of reduction of depositional growth at cloud top (Forbes 2012)
         if not is_surface:
-            # znin = minimum(fxna_cooper(tg), znimax)
-            znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
+            znin = minimum(fxna_cooper(tg), znimax)
             fnuc = minimum(znin / znimix, 1.0)
 
             qcgk_1 = qi_kminus1 + qs_kminus1 + qg_kminus1
@@ -820,8 +822,7 @@ def _graupel(
             zsvisub = 0.0
             if llqi:
 
-                # znin = minimum(fxna_cooper(tg), znimax) # DL: TODO
-                znin = minimum(5.0 * exp(0.304 * (phy_const.tmelt - tg)), znimax)
+                znin = minimum(fxna_cooper(tg), znimax)
 
                 # Change in sticking efficiency needed in case of cloud ice sedimentation
                 zeff = minimum(exp(0.09 * (tg - phy_const.tmelt)), 1.0)
