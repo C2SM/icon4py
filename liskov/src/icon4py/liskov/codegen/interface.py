@@ -21,7 +21,7 @@ class CodeGenInput(Protocol):
     endln: int
 
 
-@dataclass(frozen=True)
+@dataclass
 class BoundsData:
     hlower: str
     hupper: str
@@ -29,7 +29,7 @@ class BoundsData:
     vupper: str
 
 
-@dataclass(frozen=False)  # not frozen as tolerances are updated after object creation
+@dataclass
 class FieldAssociationData:
     variable: str
     association: str
@@ -39,20 +39,20 @@ class FieldAssociationData:
     rel_tol: Optional[str] = None
 
 
-@dataclass(frozen=True)
+@dataclass
 class DeclareData:
     startln: int
     endln: int
     declarations: list[dict[str, str]]
 
 
-@dataclass(frozen=True)
+@dataclass
 class ImportsData:
     startln: int
     endln: int
 
 
-@dataclass(frozen=True)
+@dataclass
 class StartStencilData:
     name: str
     fields: list[FieldAssociationData]
@@ -61,8 +61,16 @@ class StartStencilData:
     endln: int
 
 
-@dataclass(frozen=True)
+@dataclass
 class EndStencilData:
     name: str
     startln: int
     endln: int
+
+
+@dataclass
+class SerialisedDirectives:
+    start: list[StartStencilData]
+    end: list[EndStencilData]
+    declare: DeclareData
+    imports: ImportsData

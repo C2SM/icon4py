@@ -20,12 +20,18 @@ from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator
 
 from icon4py.bindings.utils import format_fortran_code
-from icon4py.liskov.codegen.interface import DeclareData, StartStencilData
+from icon4py.liskov.codegen.interface import (
+    CodeGenInput,
+    DeclareData,
+    StartStencilData,
+)
 
 
 def generate_fortran_code(
-    parent_node: Type[eve.Node], code_generator: Type[TemplatedGenerator], **kwargs
-):
+    parent_node: Type[eve.Node],
+    code_generator: Type[TemplatedGenerator],
+    **kwargs: CodeGenInput | bool | list[str],
+) -> str:
     parent = parent_node(**kwargs)
     source = code_generator.apply(parent)
     formatted_source = format_fortran_code(source)
@@ -159,7 +165,7 @@ class DeclareStatement(eve.Node):
     declare_data: DeclareData
     declarations: list[Declaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         self.declarations = [
             Declaration(variable=k, association=v)
             for dic in self.declare_data.declarations
@@ -189,7 +195,7 @@ class OutputFieldCopy(eve.Node):
     profile: bool
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:  # type: ignore
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         out_fields = [
             Declaration(variable=f.variable, association=f.association)
@@ -199,7 +205,7 @@ class OutputFieldCopy(eve.Node):
         self.copy_declarations = [self.make_copy_declaration(out) for out in out_fields]
 
     @staticmethod
-    def make_copy_declaration(declr: Declaration) -> tuple[str]:
+    def make_copy_declaration(declr: Declaration) -> CopyDeclaration:
         dims = re.findall("\\(([^)]+)", declr.association)[0]
         copy_dim_params = list(dims)
         copy_dim_params[-1] = ":"

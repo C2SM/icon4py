@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import copy
-from dataclasses import dataclass
 from typing import Callable, Protocol
 
 from icon4py.liskov.codegen.interface import (
@@ -22,6 +21,7 @@ from icon4py.liskov.codegen.interface import (
     EndStencilData,
     FieldAssociationData,
     ImportsData,
+    SerialisedDirectives,
     StartStencilData,
 )
 from icon4py.liskov.directives import Declare, EndStencil, Imports, StartStencil
@@ -166,14 +166,6 @@ class EndStencilDataFactory:
                 )
             )
         return serialised
-
-
-@dataclass(frozen=True)
-class SerialisedDirectives:
-    start: list[StartStencilData]
-    end: list[EndStencilDataFactory]
-    declare: DeclareData
-    imports: ImportsData
 
 
 class DirectiveSerialiser:
