@@ -31,7 +31,7 @@ from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
-from icon4py.common.dimension import KDim, VertexDim
+from icon4py.common.dimension import KDim, Koff, VertexDim
 from icon4py.testutils.serialbox_utils import (
     IconDiffusionInitSavepoint,
     IconSerialDataProvider,
@@ -56,18 +56,33 @@ def smag_limit_numpy(shape, k4, substeps):
 def test_init_diff_multifac_vn_const():
     mesh = SimpleMesh()
     diff_multfac_vn = zero_field(mesh, KDim)
-    smag_offset = zero_field(mesh, KDim)
+    smag_limit = zero_field(mesh, KDim)
     k4 = 1.0
     substeps = 5.0
     shape = np.asarray(diff_multfac_vn).shape
-    expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
+    enh_smag_fac = zero_field(mesh, KDim)
+    a_vec = random_field(mesh, KDim, low=1.0, high=10.0)
+    fac = (0.67, 0.5, 1.3, 0.8)
+    z = (0.1, 0.2, 0.3, 0.4)
+
     expected_smag_limit = smag_limit_numpy(shape, k4, substeps)
+    expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
+    enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, np.asarray(a_vec))
 
     init_diffusion_local_fields(
-        k4, substeps, diff_multfac_vn, smag_offset, offset_provider={}
+        k4,
+        substeps,
+        *fac,
+        *z,
+        a_vec,
+        diff_multfac_vn,
+        smag_limit,
+        enh_smag_fac,
+        offset_provider={"Koff": KDim},
     )
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
-    assert np.allclose(expected_smag_limit, smag_offset)
+    assert np.allclose(expected_smag_limit, smag_limit)
+    assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac[:-1]))
 
 
 def test_init_diff_multifac_vn_k4_substeps():
@@ -76,13 +91,25 @@ def test_init_diff_multifac_vn_k4_substeps():
     smag_limit = zero_field(mesh, KDim)
     k4 = 0.003
     substeps = 1.0
+    enh_smag_fac = zero_field(mesh, KDim)
+    a_vec = random_field(mesh, KDim, low=1.0, high=10.0)
+    fac = (0.67, 0.5, 1.3, 0.8)
+    z = (0.1, 0.2, 0.3, 0.4)
+
     shape = np.asarray(diff_multfac_vn).shape
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
-
     expected_smag_limit = smag_limit_numpy(shape, k4, substeps)
 
     init_diffusion_local_fields(
-        k4, substeps, diff_multfac_vn, smag_limit, offset_provider={}
+        k4,
+        substeps,
+        *fac,
+        *z,
+        a_vec,
+        diff_multfac_vn,
+        smag_limit,
+        enh_smag_fac,
+        offset_provider={"Koff": KDim},
     )
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
     assert np.allclose(expected_smag_limit, smag_limit)
@@ -93,7 +120,7 @@ def diff_multfac_vn_numpy(shape, k4, substeps):
     return factor * np.ones(shape)
 
 
-def enhanced_smagorinski_factor_np(factor_in, heigths_in, a_vec):
+def enhanced_smagorinski_factor_numpy(factor_in, heigths_in, a_vec):
     alin = (factor_in[1] - factor_in[0]) / (heigths_in[1] - heigths_in[0])
     df32 = factor_in[2] - factor_in[1]
     df42 = factor_in[3] - factor_in[1]
@@ -107,19 +134,6 @@ def enhanced_smagorinski_factor_np(factor_in, heigths_in, a_vec):
     max1 = np.maximum(0.0, zf - heigths_in[1])
     dzqdr = np.minimum(heigths_in[3] - heigths_in[1], max1)
     return factor_in[0] + dzlin * alin + dzqdr * (aqdr + dzqdr * bqdr)
-
-
-def test_enhanced_smagorinski_factor():
-    mesh = SimpleMesh()
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0)
-    result = zero_field(mesh, KDim)
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
-    _en_smag_fac_for_zero_nshift(
-        *fac, *z, a_vec, out=result, offset_provider={"Koff": KDim}
-    )
-    enhanced_smag_fac_np = enhanced_smagorinski_factor_np(fac, z, np.asarray(a_vec))
-    assert np.allclose(enhanced_smag_fac_np, np.asarray(result[:-1]))
 
 
 def test_set_zero_vertex_k():
@@ -232,7 +246,7 @@ def test_diffusion_init(with_r04b09_diffusion_config):
         shape_k, additional_parameters.K4, config.substep_as_float()
     )
     assert np.allclose(expected_diff_multfac_vn, np.asarray(diffusion.diff_multfac_vn))
-    expected_enh_smag_fac = enhanced_smagorinski_factor_np(
+    expected_enh_smag_fac = enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
         vct_a,

@@ -137,66 +137,9 @@ def _mo_nh_diffusion_stencil_01_scale_dtime(
     )
 
 
-@program
-def mo_nh_diffusion_stencil_01_scaled_dtime(
-    enh_smag_fac: Field[[KDim], float],
-    tangent_orientation: Field[[EdgeDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    inv_vert_vert_length: Field[[EdgeDim], float],
-    u_vert: Field[[VertexDim, KDim], float],
-    v_vert: Field[[VertexDim, KDim], float],
-    primal_normal_vert_x: Field[[ECVDim], float],
-    primal_normal_vert_y: Field[[ECVDim], float],
-    dual_normal_vert_x: Field[[ECVDim], float],
-    dual_normal_vert_y: Field[[ECVDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    smag_limit: Field[[KDim], float],
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    kh_smag_ec: Field[[EdgeDim, KDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    smag_offset: float,
-    dtime: float,
-):
-    _mo_nh_diffusion_stencil_01_scale_dtime(
-        enh_smag_fac,
-        tangent_orientation,
-        inv_primal_edge_length,
-        inv_vert_vert_length,
-        u_vert,
-        v_vert,
-        primal_normal_vert_x,
-        primal_normal_vert_y,
-        dual_normal_vert_x,
-        dual_normal_vert_y,
-        vn,
-        smag_limit,
-        smag_offset,
-        dtime,
-        out=(kh_smag_e, kh_smag_ec, z_nabla2_e),
-    )
-
-
-@field_operator
-def _init_diffusion_local_fields(
-    k4: float, dyn_substeps: float
-) -> tuple[Field[[KDim], float], Field[[KDim], float]]:
-    diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
-    smag_limit = _setup_smag_limit(diff_multfac_vn)
-    return diff_multfac_vn, smag_limit
-
-
-@program
-def init_diffusion_local_fields(
-    k4: float,
-    dyn_substeps: float,
-    diff_multfac_vn: Field[[KDim], float],
-    smag_limit: Field[[KDim], float],
-):
-    _init_diffusion_local_fields(k4, dyn_substeps, out=(diff_multfac_vn, smag_limit))
-
-
 @field_operator
 def _en_smag_fac_for_zero_nshift(
+    vect_a: Field[[KDim], float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -205,7 +148,6 @@ def _en_smag_fac_for_zero_nshift(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    vect_a: Field[[KDim], float],
 ) -> Field[[KDim], float]:
     dz21 = hdiff_smag_z2 - hdiff_smag_z
     alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
@@ -224,8 +166,10 @@ def _en_smag_fac_for_zero_nshift(
     return enh_smag_fac
 
 
-@program
-def enhanced_smagorinski_factor(
+@field_operator
+def _init_diffusion_local_fields(
+    k4: float,
+    dyn_substeps: float,
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -235,9 +179,43 @@ def enhanced_smagorinski_factor(
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
     vect_a: Field[[KDim], float],
+) -> tuple[Field[[KDim], float], Field[[KDim], float], Field[[KDim], float]]:
+    diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
+    smag_limit = _setup_smag_limit(diff_multfac_vn)
+    enh_smag_fac = _en_smag_fac_for_zero_nshift(
+        vect_a,
+        hdiff_smag_fac,
+        hdiff_smag_fac2,
+        hdiff_smag_fac3,
+        hdiff_smag_fac4,
+        hdiff_smag_z,
+        hdiff_smag_z2,
+        hdiff_smag_z3,
+        hdiff_smag_z4,
+    )
+    return diff_multfac_vn, smag_limit, enh_smag_fac
+
+
+@program
+def init_diffusion_local_fields(
+    k4: float,
+    dyn_substeps: float,
+    hdiff_smag_fac: float,
+    hdiff_smag_fac2: float,
+    hdiff_smag_fac3: float,
+    hdiff_smag_fac4: float,
+    hdiff_smag_z: float,
+    hdiff_smag_z2: float,
+    hdiff_smag_z3: float,
+    hdiff_smag_z4: float,
+    vect_a: Field[[KDim], float],
+    diff_multfac_vn: Field[[KDim], float],
+    smag_limit: Field[[KDim], float],
     enh_smag_fac: Field[[KDim], float],
 ):
-    _en_smag_fac_for_zero_nshift(
+    _init_diffusion_local_fields(
+        k4,
+        dyn_substeps,
         hdiff_smag_fac,
         hdiff_smag_fac2,
         hdiff_smag_fac3,
@@ -247,13 +225,8 @@ def enhanced_smagorinski_factor(
         hdiff_smag_z3,
         hdiff_smag_z4,
         vect_a,
-        out=enh_smag_fac,
+        out=(diff_multfac_vn, smag_limit, enh_smag_fac),
     )
-
-
-@field_operator
-def _set_zero_k() -> Field[[KDim], float]:
-    return broadcast(0.0, (KDim,))
 
 
 @field_operator
@@ -373,8 +346,6 @@ class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
 
     def __init__(self, config: DiffusionConfig):
-        # TODO [ml] logging for case KX == 0
-        # TODO [ml] generrally calculation for x_dom (jg) > 2..n_dom, why is jg special
         self.boundary_diffusion_start_index_edges = (
             5  # mo_nh_diffusion.start_bdydiff_e - 1 = 5 -1
         )
@@ -411,7 +382,7 @@ class DiffusionParams:
                 (
                     smagorinski_factor,
                     smagorinski_height,
-                ) = self.diffusion_type_5_smagorinski_factor(config)
+                ) = self._diffusion_type_5_smagorinski_factor(config)
             case 4:
                 # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
                 # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
@@ -427,7 +398,7 @@ class DiffusionParams:
         return smagorinski_factor, smagorinski_height
 
     @staticmethod
-    def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
+    def _diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
         # initial values from mo_diffusion_nml.f90
         magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
         magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
@@ -472,18 +443,20 @@ class Diffusion:
         TODO [ml]: initial run: linit = .TRUE.:  smag_offset and diff_multfac_vn are defined
         differently.
         """
-        self.params = params
-        self.config = config
+        self.params: DiffusionParams = params
+        self.config: DiffusionConfig = config
         self.grid = config.grid
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
-        self.nudgezone_diff = 0.04 / (config.nudge_max_coeff + sys.float_info.epsilon)
-        self.bdy_diff = 0.015 / (config.nudge_max_coeff + sys.float_info.epsilon)
-        self.fac_bdydiff_v = (
+        self.nudgezone_diff: float = 0.04 / (
+            config.nudge_max_coeff + sys.float_info.epsilon
+        )
+        self.bdy_diff: float = 0.015 / (config.nudge_max_coeff + sys.float_info.epsilon)
+        self.fac_bdydiff_v: float = (
             math.sqrt(config.substep_as_float()) / config.lateral_boundary_denominator.v
             if config.lhdiff_rcf
             else 1.0 / config.lateral_boundary_denominator.v
         )
-        self.thresh_tdiff = (
+        self.thresh_tdiff: float = (
             -5.0
         )  # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
 
@@ -493,37 +466,11 @@ class Diffusion:
             1.0 / 48.0, params.K4W * config.substep_as_float()
         )
 
-        # different for initial run!, through diff_multfac_vn
+        # TODO different for initial run!, through diff_multfac_vn
         self.diff_multfac_vn = np_as_located_field(KDim)(np.zeros(config.grid.n_lev()))
         self.smag_limit = np_as_located_field(KDim)(np.zeros(config.grid.n_lev()))
-
-        init_diffusion_local_fields(
-            params.K4,
-            config.substep_as_float(),
-            self.diff_multfac_vn,
-            self.smag_limit,
-            offset_provider={},
-        )
-
         self.enh_smag_fac = np_as_located_field(KDim)(
             np.zeros(config.grid.n_lev(), float)
-        )
-        enhanced_smagorinski_factor(
-            *params.smagorinski_factor,
-            *params.smagorinski_height,
-            vct_a,
-            self.enh_smag_fac,
-            offset_provider={"Koff": KDim},
-        )
-
-        self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
-            k_size=config.grid.n_lev(),
-            nshift=0,
-            physical_heights=np.asarray(vct_a),
-            nrdmax=self.config.vertical_params.index_of_damping_height,
-        )
-        self.diff_multfac_smag = np_as_located_field(KDim)(
-            np.zeros(config.grid.n_lev())
         )
         shape_vk = (config.grid.num_vertices(), config.grid.n_lev())
         shape_ck = (config.grid.num_cells(), config.grid.n_lev())
@@ -543,6 +490,29 @@ class Diffusion:
         )
         self.horizontal_edge_index = np_as_located_field(EdgeDim)(
             np.arange((shape_ek[0]))
+        )
+
+        self.diff_multfac_smag = np_as_located_field(KDim)(
+            np.zeros(config.grid.n_lev())
+        )
+
+        init_diffusion_local_fields(
+            params.K4,
+            config.substep_as_float(),
+            *params.smagorinski_factor,
+            *params.smagorinski_height,
+            vct_a,
+            self.diff_multfac_vn,
+            self.smag_limit,
+            self.enh_smag_fac,
+            offset_provider={"Koff": KDim},
+        )
+
+        self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
+            k_size=config.grid.n_lev(),
+            nshift=0,
+            physical_heights=np.asarray(vct_a),
+            nrdmax=self.config.vertical_params.index_of_damping_height,
         )
 
     def run(
