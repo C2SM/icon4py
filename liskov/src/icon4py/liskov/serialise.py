@@ -18,14 +18,14 @@ from typing import Callable, Protocol
 from icon4py.liskov.codegen.input import (
     BoundsData,
     CodeGenInput,
-    CreateData,
     DeclareData,
     EndStencilData,
     FieldAssociationData,
+    ImportsData,
     StartStencilData,
 )
 from icon4py.liskov.collect import StencilCollector
-from icon4py.liskov.directives import Create, Declare, EndStencil, StartStencil
+from icon4py.liskov.directives import Declare, EndStencil, Imports, StartStencil
 from icon4py.liskov.types import ParsedType
 from icon4py.liskov.utils import extract_directive
 from icon4py.pyutils.metadata import get_field_infos
@@ -36,10 +36,10 @@ class DirectiveInputFactory(Protocol):
         ...
 
 
-class CreateDataFactory:
-    def __call__(self, parsed: dict) -> CreateData:
-        extracted = extract_directive(parsed["directives"], Create)[0]
-        return CreateData(startln=extracted.startln, endln=extracted.endln)
+class ImportsDataFactory:
+    def __call__(self, parsed: dict) -> ImportsData:
+        extracted = extract_directive(parsed["directives"], Imports)[0]
+        return ImportsData(startln=extracted.startln, endln=extracted.endln)
 
 
 class DeclareDataFactory:
@@ -174,7 +174,7 @@ class SerialisedDirectives:
     start: list[StartStencilData]
     end: list[EndStencilDataFactory]
     declare: DeclareData
-    create: CreateData
+    imports: ImportsData
 
 
 class DirectiveSerialiser:
@@ -182,7 +182,7 @@ class DirectiveSerialiser:
         self.directives = self.serialise(parsed)
 
     _FACTORIES: dict[str, Callable] = {
-        "create": CreateDataFactory(),
+        "imports": ImportsDataFactory(),
         "declare": DeclareDataFactory(),
         "start": StartStencilDataFactory(),
         "end": EndStencilDataFactory(),

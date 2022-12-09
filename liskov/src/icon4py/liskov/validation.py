@@ -15,9 +15,9 @@ import re
 from typing import Protocol
 
 from icon4py.liskov.directives import (
-    Create,
     Declare,
     EndStencil,
+    Imports,
     StartStencil,
     TypedDirective,
 )
@@ -55,7 +55,7 @@ class DirectiveSyntaxValidator(Validator):
 
         inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
 
-        if type(d.directive_type) == Create:
+        if type(d.directive_type) == Imports:
             regex = r"^(?![\s\S])"
         else:
             regex = r"(.+?)=(.+?)"
@@ -83,7 +83,7 @@ class DirectiveSemanticsValidator(Validator):
     @staticmethod
     def _validate_declare_create(directives: list[TypedDirective]) -> None:
         """Check that expected directives are used once in the code."""
-        expected = [Declare, Create, StartStencil, EndStencil]
+        expected = [Declare, Imports, StartStencil, EndStencil]
         for expected_type in expected:
             if not any(
                 [isinstance(d.directive_type, expected_type) for d in directives]

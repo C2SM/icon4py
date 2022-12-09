@@ -228,7 +228,15 @@ class OutputFieldCopyGenerator(TemplatedGenerator):
     )
 
 
-# todo: Generation of wrapped function call import statements (requires adding IMPORT directive).
-#   USE mo_velocity_advection_stencil_01, ONLY: wrap_run_mo_velocity_advection_stencil_01
+class ImportsStatement(eve.Node):
+    names: list[str]
 
-# todo: Generation/modification of DATA CREATE statement in Fortran code.
+
+class ImportsStatementGenerator(TemplatedGenerator):
+    ImportsStatement = as_jinja(
+        """
+        {%- for name in names %}
+        USE {{ name }}, ONLY: wrap_run_{{ name }}
+        {%- endfor %}
+        """
+    )

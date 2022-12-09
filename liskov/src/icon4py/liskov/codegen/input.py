@@ -47,7 +47,7 @@ class DeclareData:
 
 
 @dataclass(frozen=True)
-class CreateData:
+class ImportsData:
     startln: int
     endln: int
 
