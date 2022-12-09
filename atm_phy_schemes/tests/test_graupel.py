@@ -238,7 +238,6 @@ def test_graupel_serialized_data():
 
         # Run scheme
         # ----------
-
         graupel(
             float(in_config_parameters["tcall_gscp_jg"]),
             in_fields["ddqz_z_full"],
@@ -277,26 +276,4 @@ def test_graupel_serialized_data():
             offset_provider={},
         )
 
-        # Test fields against reference
-        # -----------------------------
 
-        # Initialize numErrors
-        try:
-            numErrors
-        except NameError:
-            numErrors = 0
-
-        for fieldname, field in inout_fields.items():
-            numErrors = field_test(
-                field,
-                fieldname,
-                serializer,
-                savepoints[-1],
-                numErrors=numErrors,
-                shape_2D=shape_2D,
-                shape_1D=nCells,
-            )
-
-    assert (
-        numErrors == 0
-    ), f"{bcolors.FAIL}{numErrors} tests failed validation{bcolors.ENDC}"
