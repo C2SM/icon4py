@@ -34,12 +34,13 @@ Removed Features
 4. l_cv = False. Now, we always use cv instead of cp
 
 TODO: David
-    -. Assess if make_normalized is still needed. 
+    -. Assess if make_normalized is still needed.
     -. Replace exp(A * log(B)) by B**A. Needs performance check and maybe optimization pass.
     -. Put scan in field operator. --> Disregard unneeded output
     -. Replace 2D Fields by 1D fields qnc, prr_gsp et al.
     - Explicitly pass logicals (lldiag_ttend, lldiag_qtend)
     - Handle Optional fields (ddt_tend*, qrsflux)
+    - Resolve copying thermo field operators from mo_satad (scalar operators?)
 
 TODO: GT4Py team
     1. Call field operators from scan --> sat_pres_ice
@@ -78,11 +79,6 @@ class GraupelParametersAndConfiguration(FrozenNamespace):
     """Configuration and local parameters of the graupel scheme."""
 
     # Configuration
-    # lsedi_ice = True  # sedimentation of cloud ice (Heymsfield & Donner 1990 *1/3)
-    # lstickeff = True  # switch for sticking coeff. (work from Guenther Zaengl)
-    # lsuper_coolw = True  # switch for supercooled liquid water (work from Felix Rieper)
-    # lred_depgrow = True  # separate switch for reduced depositional growth near tops of water clouds (now also used in ICON after correcting the cloud top diagnosis)
-
     lthermo_water_const = True
 
     # DL: TODO Pass explicitly
@@ -104,25 +100,70 @@ class GraupelParametersAndConfiguration(FrozenNamespace):
 # Statement functions
 # -------------------
 
+# DL: TODO Copied from satad. Problem there it needs Field[[CellDim, KDim], float].
+@field_operator
+def _sat_pres_water(t: float) -> float:
+    """Return saturation water vapour pressure."""
+    return conv_table.c1es * exp(
+        conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les)
+    )
+
+
+# DL: TODO Put into satad. Problem there it needs Field[[CellDim, KDim], float].
+@field_operator()
+def _sat_pres_ice(temp: float) -> float:
+    return conv_table.c1es * exp(
+        conv_table.c3ies * (temp - phy_const.tmelt) / (temp - conv_table.c4ies)
+    )
+
+
+# DL: TODO Put into satad. Problem there it needs Field[[CellDim, KDim], float].
+@field_operator
+def _latent_heat_vaporization(temp: float) -> float:
+    """Return latent heat of vaporization.
+
+    Computed as internal energy and taking into account Kirchoff's relations
+    """
+    # specific heat of water vapor at constant pressure (Landolt-Bornstein)
+    cp_v = 1850.0
+
+    return (
+        phy_const.alv
+        + (cp_v - phy_const.clw) * (temp - phy_const.tmelt)
+        - phy_const.rv * temp
+    )
+
+
+# DL: TODO Put into satad. Problem there it needs Field[[CellDim, KDim], float].
+@field_operator
+def _latent_heat_sublimation(temp: float) -> float:
+    """Return latent heat of sublimation as internal energy and taking into account Kirchoff's relations."""
+    # specific heat of ice
+    ci = 2108.0
+
+    # specific heat of water vapor at constant pressure (Landolt-Bornstein)
+    cp_v = 1850.0
+    return phy_const.als + (cp_v - ci) * (temp - phy_const.tmelt) - phy_const.rv * temp
+
 
 @field_operator()
-def fpvsw(ztx: float) -> float:
+def _fpvsw(ztx: float) -> float:
     """Return saturation vapour pressure over water from temperature."""
     return conv_table.c1es * exp(
         conv_table.c3les * (ztx - phy_const.tmelt) / (ztx - conv_table.c4les)
     )
 
 
-# DL: Remove
+# DL: TODO Remove
 @field_operator()
-def fxna(ztx: float) -> float:
+def _fxna(ztx: float) -> float:
     """Return number of activate ice crystals from temperature."""
     return 1.0e2 * exp(0.2 * (phy_const.tmelt - ztx))
 
 
-# Dl: Rename
+# Dl: TODO Rename
 @field_operator()
-def fxna_cooper(ztx: float) -> float:
+def _fxna_cooper(ztx: float) -> float:
     """Return number of activate ice crystals from temperature.
 
     Method: Cooper (1986) used by Greg Thompson(2008)
@@ -131,7 +172,7 @@ def fxna_cooper(ztx: float) -> float:
 
 
 @field_operator()
-def make_normalized(v: float) -> float:
+def _make_normalized(v: float) -> float:
     """
     Set denormals to zero.
 
@@ -326,15 +367,11 @@ def _graupel(
     znimax = (
         gscp_data.znimax_Thom
     )  # number of ice crystals at temp threshold for mixed-phase clouds
-    znimix = fxna_cooper(znimax)
+    znimix = _fxna_cooper(znimax)
 
-    # # Precomputations for optimization TODO: Could be done by the GT4PY optimizers?
-    # zpvsw0 = fpvsw(t0)  # sat. vap. pressure for t = t0 #DL: This computes to just c3les, no?
-    zpvsw0 = conv_table.c1es * exp(
-        conv_table.c3les
-        * (phy_const.tmelt - phy_const.tmelt)
-        / (phy_const.tmelt - conv_table.c4les)
-    )
+    # Precomputations for optimization TODO: Could be done by the GT4PY optimizers?
+    # sat. vap. pressure for t = t0 #DL: This computes to just c3les, no?
+    zpvsw0 = _fpvsw(phy_const.tmelt)
     zlog_10 = log(10.0)  # Natural logarithm  of 10
 
     ccswxp_ln1o2 = exp(ccswxp * log(0.5))
@@ -363,16 +400,7 @@ def _graupel(
     # 2.1: Preparations for computations and to check the different conditions
     # ----------------------------------------------------------------------------
 
-    # DL: In F90 code, this also serves as scalar replacement at the same time
-    # qrg = make_normalized(qr)
-    # qsg = make_normalized(qs)
-    # qgg = make_normalized(qg)
-    # qvg = make_normalized(qv)
-    # qcg = make_normalized(qc)
-    # qig = make_normalized(qi)
-    # tg = make_normalized(t)
-    # ppg = make_normalized(p)
-    # rhog = make_normalized(rho)
+    # DL: In F90 code, here make_normalized is called. It also serves as scalar replacement at the same time.
     qrg = qr
     qsg = qs
     qgg = qg
@@ -590,11 +618,7 @@ def _graupel(
     zqgk = zzag * zimg
     zqik = zzai * zimi
 
-    # zqvsi = sat_pres_ice(tg) / (rhog * r_v * tg) #DL: Todo: Replace
-    sat_pres_ice = conv_table.c1es * exp(
-        conv_table.c3ies * (tg - phy_const.tmelt) / (tg - conv_table.c4ies)
-    )
-    zqvsi = sat_pres_ice / (rhog * phy_const.rv * tg)
+    zqvsi = _sat_pres_ice(tg) / (rhog * phy_const.rv * tg)
 
     llqr = zqrk > gscp_data.zqmin
     llqs = zqsk > gscp_data.zqmin
@@ -689,7 +713,7 @@ def _graupel(
     # # ----------------------------------------------------------------------------
 
     if (tg < gscp_data.zthet) & (qvg > 8.0e-6) & (qig <= 0.0) & (qvg > zqvsi):
-        znin = minimum(fxna_cooper(tg), znimax)
+        znin = minimum(_fxna_cooper(tg), znimax)
         snuc = gscp_data.zmi0 * z1orhog * znin * zdtr
     else:
         snuc = 0.0
@@ -770,12 +794,12 @@ def _graupel(
         # threshold.
 
         if (tg <= 267.15) & (not llqi):
-            znin = minimum(fxna_cooper(tg), znimax)
+            znin = minimum(_fxna_cooper(tg), znimax)
             snuc = gscp_data.zmi0 * z1orhog * znin * zdtr
 
         # # Calculation of reduction of depositional growth at cloud top (Forbes 2012)
         if not is_surface:
-            znin = minimum(fxna_cooper(tg), znimax)
+            znin = minimum(_fxna_cooper(tg), znimax)
             fnuc = minimum(znin / znimix, 1.0)
 
             qcgk_1 = qi_kminus1 + qs_kminus1 + qg_kminus1
@@ -822,7 +846,7 @@ def _graupel(
             zsvisub = 0.0
             if llqi:
 
-                znin = minimum(fxna_cooper(tg), znimax)
+                znin = minimum(_fxna_cooper(tg), znimax)
 
                 # Change in sticking efficiency needed in case of cloud ice sedimentation
                 zeff = minimum(exp(0.09 * (tg - phy_const.tmelt)), 1.0)
@@ -927,21 +951,13 @@ def _graupel(
                     ssmelt = maximum(ssmelt, 0.0)
                     sgmelt = maximum(sgmelt, 0.0)
                 else:
-                    # deposition on snow/graupel is interpreted as increase
-                    # in rain water ( qv --> qr, sconr)
-                    # therefore,  sconr=(zssdep+zsgdep)
+                    # deposition on snow/graupel is interpreted as increase in rain water
                     sconr = ssdep + sgdep
                     ssdep = 0.0
                     sgdep = 0.0
             else:  # if t<t_crit
                 # no melting, only evaporation of snow/graupel
-                # zqvsw = sat_pres_water(tg) / (rhog * r_v * tg) #DL: TODO
-                sat_pres_water = conv_table.c1es * exp(
-                    conv_table.c3les
-                    * (temp - phy_const.tmelt)
-                    / (temp - conv_table.c4les)
-                )
-                zqvsw = sat_pres_water / (rhog * phy_const.rv * tg)
+                zqvsw = _sat_pres_water(tg) / (rhog * phy_const.rv * tg)
 
                 zqvsw_up = zqvsw  # DL: TODO refactor?
                 zqvsidiff = qvg - zqvsw
@@ -967,7 +983,7 @@ def _graupel(
 
         zlnqrk = log(zqrk)  # DL: BUG? Warning gscp_data.zqmin
         zx1 = 1.0 + zbev * exp(zbevxp * zlnqrk)
-        # sev  = zcev*zx1*(zqvsw - qvg) * exp(zcevxp  * zlnqrk)
+
         # Limit evaporation rate in order to avoid overshoots towards supersaturation
         # the pre-factor approximates (esat(T_wb)-e)/(esat(T)-e) at temperatures between 0 degC and 30 degC
         temp_c = tg - phy_const.tmelt
@@ -1053,7 +1069,7 @@ def _graupel(
     # Section 10: Complete time step
     # ----------------------------------------------------------------------
 
-    if not is_surface:  #  DL: if not surface needed with scan?
+    if not is_surface:
 
         # Store precipitation fluxes and sedimentation velocities for the next level
         zprvr = 0.0 if qrg * rhog * zvzr <= gscp_data.zqmin else qrg * rhog * zvzr
@@ -1123,19 +1139,8 @@ def _graupel(
         zlhv = phy_const.alv
         zlhs = phy_const.als
     else:
-        # tg = make_normalized(t)
-        # zlhv = latent_heat_vaporization(tg)
-        # zlhs = latent_heat_sublimation(tg)
-        zlhv = (
-            phy_const.alv
-            + (1850.0 - phy_const.clw) * (tg - phy_const.tmelt)
-            - phy_const.rv * tg
-        )
-        zlhs = (
-            phy_const.als
-            + (1850.0 - 2108.0) * (tg - phy_const.tmelt)
-            - phy_const.rdv * tg
-        )
+        zlhv = _latent_heat_vaporization(tg)
+        zlhs = _latent_heat_sublimation(tg)
 
     # DL: zlhv and zlhs are rather big numbers. Validates badly for a couple of gridpoints
     ztt = phy_const.rcvd * (zlhv * (zqct + zqrt) + zlhs * (zqit + zqst + zqgt))
