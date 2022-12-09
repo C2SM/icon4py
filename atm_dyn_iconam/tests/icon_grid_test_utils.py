@@ -21,13 +21,21 @@ from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
 from icon4py.atm_dyn_iconam.icon_grid import (
     IconGrid,
     MeshConfig,
-    VerticalModelParams, VerticalMeshConfig,
+    VerticalMeshConfig,
+    VerticalModelParams,
 )
-from icon4py.common.dimension import CellDim, EdgeDim, VertexDim, E2CDim, C2EDim, C2E2CDim, \
-    C2E2CODim, E2VDim, V2EDim
+from icon4py.common.dimension import (
+    C2E2CDim,
+    C2E2CODim,
+    C2EDim,
+    CellDim,
+    E2CDim,
+    E2VDim,
+    EdgeDim,
+    V2EDim,
+    VertexDim,
+)
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
-
-
 
 
 @fixture
@@ -51,7 +59,8 @@ def with_icon_grid():
             num_vertices=sp_meta["nproma"],  # or rather "num_vert"
             num_cells=sp_meta["nproma"],  # or rather "num_cells"
             num_edges=sp_meta["nproma"],  # or rather "num_edges"
-        ), VerticalMeshConfig(num_lev=sp_meta["nlev"])
+        ),
+        VerticalMeshConfig(num_lev=sp_meta["nlev"]),
     )
 
     c2e2c = sp.c2e2c()
@@ -62,9 +71,11 @@ def with_icon_grid():
         .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
         .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
         .with_start_end_indices(CellDim, cell_starts, cell_ends)
-        .with_connectivities({C2EDim:sp.c2e(), E2CDim:sp.e2c(), C2E2CDim:c2e2c, C2E2CODim:c2e2c0})
-        .with_connectivities({E2VDim:sp.e2v(), V2EDim:sp.v2e()})
+        .with_connectivities(
+            {C2EDim: sp.c2e(), E2CDim: sp.e2c(), C2E2CDim: c2e2c, C2E2CODim: c2e2c0}
         )
+        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e()})
+    )
     return grid
 
 
@@ -84,23 +95,25 @@ def with_r04b09_diffusion_config() -> DiffusionConfig:
     horizontal_config = HorizontalMeshConfig(
         num_vertices=nproma, num_cells=nproma, num_edges=nproma
     )
-    vertical_config = VerticalMeshConfig(num_lev = num_lev)
+    vertical_config = VerticalMeshConfig(num_lev=num_lev)
 
-    grid = IconGrid().with_config(MeshConfig(
-        horizontal_config=horizontal_config,
-        vertical_config = vertical_config))
+    grid = IconGrid().with_config(
+        MeshConfig(horizontal_config=horizontal_config, vertical_config=vertical_config)
+    )
 
     verticalParams = VerticalModelParams(
         rayleigh_damping_height=12500, vct_a=sp.vct_a()
     )
 
-    return DiffusionConfig(grid=grid,
-                           vertical_params=verticalParams,
-                           diffusion_type=5,
-                           hdiff_w=True,
-                           type_t_diffu=2,
-                           type_vn_diffu=1,
-                           hdiff_efdt_ratio=24.0,
-                           hdiff_w_efdt_ratio=15.0,
-                           smag_scaling_fac=0.025,
-                           zdiffu_t=True)
+    return DiffusionConfig(
+        grid=grid,
+        vertical_params=verticalParams,
+        diffusion_type=5,
+        hdiff_w=True,
+        type_t_diffu=2,
+        type_vn_diffu=1,
+        hdiff_efdt_ratio=24.0,
+        hdiff_w_efdt_ratio=15.0,
+        smag_scaling_fac=0.025,
+        zdiffu_t=True,
+    )

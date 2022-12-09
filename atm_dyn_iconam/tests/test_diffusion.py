@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 from icon_grid_test_utils import with_icon_grid, with_r04b09_diffusion_config
 
+from icon4py.atm_dyn_iconam import utils
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.diffusion import (
     Diffusion,
@@ -23,15 +24,17 @@ from icon4py.atm_dyn_iconam.diffusion import (
     DiffusionParams,
     VectorTuple,
     _en_smag_fac_for_zero_nshift,
-    init_diffusion_local_fields,
+    _setup_runtime_diff_multfac_vn,
+    _setup_smag_limit,
     scale_k,
     set_zero_v_k,
+    setup_fields_for_initial_step,
 )
 from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
-from icon4py.common.dimension import KDim, Koff, VertexDim
+from icon4py.common.dimension import KDim, VertexDim
 from icon4py.testutils.serialbox_utils import (
     IconDiffusionInitSavepoint,
     IconSerialDataProvider,
@@ -49,70 +52,88 @@ def test_scale_k():
     assert np.allclose(factor * np.asarray(field), scaled_field)
 
 
-def smag_limit_numpy(shape, k4, substeps):
-    return 0.125 - 4.0 * diff_multfac_vn_numpy(shape, k4, substeps)
+def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
+    return k4 * hdiff_efdt_ratio / 3.0 * np.ones(shape)
 
 
-def test_init_diff_multifac_vn_const():
+def smag_limit_numpy(func, *args):
+    return 0.125 - 4.0 * func(*args)
+
+
+def test_diff_multfac_vn_and_smag_limit_for_initial_step():
+    mesh = SimpleMesh()
+    diff_multfac_vn_init = zero_field(mesh, KDim)
+    smag_limit_init = zero_field(mesh, KDim)
+    k4 = 1.0
+    efdt_ratio = 24.0
+    shape = np.asarray(diff_multfac_vn_init).shape
+
+    expected_diff_multfac_vn_init = initial_diff_multfac_vn_numpy(shape, k4, efdt_ratio)
+    expected_smag_limit_init = smag_limit_numpy(
+        initial_diff_multfac_vn_numpy, shape, k4, efdt_ratio
+    )
+
+    setup_fields_for_initial_step(
+        k4, efdt_ratio, out=(diff_multfac_vn_init, smag_limit_init), offset_provider={}
+    )
+
+    assert np.allclose(expected_diff_multfac_vn_init, diff_multfac_vn_init)
+    assert np.allclose(expected_smag_limit_init, smag_limit_init)
+
+
+def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value():
     mesh = SimpleMesh()
     diff_multfac_vn = zero_field(mesh, KDim)
     smag_limit = zero_field(mesh, KDim)
     k4 = 1.0
     substeps = 5.0
+    efdt_ratio = 24.0
     shape = np.asarray(diff_multfac_vn).shape
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0)
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
 
-    expected_smag_limit = smag_limit_numpy(shape, k4, substeps)
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
-    enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, np.asarray(a_vec))
+    expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
 
-    init_diffusion_local_fields(
-        k4,
-        substeps,
-        *fac,
-        *z,
-        a_vec,
-        diff_multfac_vn,
-        smag_limit,
-        enh_smag_fac,
-        offset_provider={"Koff": KDim},
+    _setup_runtime_diff_multfac_vn(
+        k4, efdt_ratio, out=diff_multfac_vn, offset_provider={}
     )
+    _setup_smag_limit(diff_multfac_vn, out=smag_limit, offset_provider={})
+
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
     assert np.allclose(expected_smag_limit, smag_limit)
-    assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac[:-1]))
 
 
-def test_init_diff_multifac_vn_k4_substeps():
+def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps():
     mesh = SimpleMesh()
     diff_multfac_vn = zero_field(mesh, KDim)
     smag_limit = zero_field(mesh, KDim)
     k4 = 0.003
     substeps = 1.0
+
+    shape = np.asarray(diff_multfac_vn).shape
+    expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
+    expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
+    _setup_runtime_diff_multfac_vn(
+        k4, substeps, out=diff_multfac_vn, offset_provider={}
+    )
+    _setup_smag_limit(diff_multfac_vn, out=smag_limit, offset_provider={})
+
+    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
+    assert np.allclose(expected_smag_limit, smag_limit)
+
+
+def test_init_enh_smag_fac():
+    mesh = SimpleMesh()
     enh_smag_fac = zero_field(mesh, KDim)
     a_vec = random_field(mesh, KDim, low=1.0, high=10.0)
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
-    shape = np.asarray(diff_multfac_vn).shape
-    expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
-    expected_smag_limit = smag_limit_numpy(shape, k4, substeps)
+    enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, np.asarray(a_vec))
 
-    init_diffusion_local_fields(
-        k4,
-        substeps,
-        *fac,
-        *z,
-        a_vec,
-        diff_multfac_vn,
-        smag_limit,
-        enh_smag_fac,
-        offset_provider={"Koff": KDim},
+    _en_smag_fac_for_zero_nshift(
+        a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
     )
-    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
-    assert np.allclose(expected_smag_limit, smag_limit)
+    assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac[:-1]))
 
 
 def diff_multfac_vn_numpy(shape, k4, substeps):
@@ -221,11 +242,7 @@ def test_diffusion_init(with_r04b09_diffusion_config):
     additional_parameters = DiffusionParams(config)
 
     diffusion = Diffusion(config, additional_parameters, vct_a)
-    # assert static local fields are initialized and correct:
-    assert (
-        diffusion.smag_offset
-        == 0.25 * additional_parameters.K4 * config.substep_as_float()
-    )
+
     assert diffusion.diff_multfac_w == min(
         1.0 / 48.0, additional_parameters.K4W * config.substep_as_float()
     )
@@ -235,17 +252,24 @@ def test_diffusion_init(with_r04b09_diffusion_config):
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_ec))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_e))
 
-    shape_k = np.asarray(diffusion.diff_multfac_vn.shape)
-
+    shape_k = (config.grid.n_lev(),)
     expected_smag_limit = smag_limit_numpy(
-        shape_k, additional_parameters.K4, config.substep_as_float()
+        diff_multfac_vn_numpy,
+        shape_k,
+        additional_parameters.K4,
+        config.substep_as_float(),
     )
-    assert np.allclose(expected_smag_limit, np.asarray(diffusion.smag_limit))
+
+    assert (
+        diffusion._smag_offset
+        == 0.25 * additional_parameters.K4 * config.substep_as_float()
+    )
+    assert np.allclose(expected_smag_limit, diffusion._smag_limit)
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(
         shape_k, additional_parameters.K4, config.substep_as_float()
     )
-    assert np.allclose(expected_diff_multfac_vn, np.asarray(diffusion.diff_multfac_vn))
+    assert np.allclose(expected_diff_multfac_vn, diffusion._diff_multfac_vn)
     expected_enh_smag_fac = enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
@@ -254,14 +278,15 @@ def test_diffusion_init(with_r04b09_diffusion_config):
     assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))
 
 
-def verify_init_values_against_savepoint(
+def _verify_init_values_against_savepoint(
     savepoint: IconDiffusionInitSavepoint, diffusion: Diffusion
 ):
     dtime = savepoint.get_metadata("dtime")["dtime"]
+
     assert savepoint.nudgezone_diff() == diffusion.nudgezone_diff
     assert savepoint.bdy_diff() == diffusion.bdy_diff
     assert savepoint.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    assert savepoint.smag_offset() == diffusion.smag_offset
+    assert savepoint.smag_offset() == diffusion._smag_offset
     assert savepoint.diff_multfac_w() == diffusion.diff_multfac_w
 
     # this is done in diffusion.run(...) because it depends on the dtime
@@ -270,11 +295,37 @@ def verify_init_values_against_savepoint(
     )
     assert np.allclose(savepoint.diff_multfac_smag(), diffusion.diff_multfac_smag)
 
-    assert np.allclose(savepoint.smag_limit(), diffusion.smag_limit)
-    assert np.allclose(
-        savepoint.diff_multfac_n2w(), np.asarray(diffusion.diff_multfac_n2w)
+    assert np.allclose(savepoint.smag_limit(), diffusion._smag_limit)
+    np.allclose(savepoint.diff_multfac_n2w(), np.asarray(diffusion.diff_multfac_n2w))
+    assert np.allclose(savepoint.diff_multfac_vn(), diffusion._diff_multfac_vn)
+
+
+def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
+    with_r04b09_diffusion_config,
+):
+    config = with_r04b09_diffusion_config
+
+    params = DiffusionParams(config)
+    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
+    serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
+    serializer.print_info()
+    first_run_date = "2021-06-20T12:00:10.000"
+    savepoint = serializer.from_savepoint_init(linit=True, date=first_run_date)
+    expected_diff_multfac_vn = savepoint.diff_multfac_vn()
+    expected_smag_limit = savepoint.smag_limit()
+    exptected_smag_offset = savepoint.smag_offset()
+
+    diff_multfac_vn = utils.zero_field(config.grid, KDim)
+    smag_limit = utils.zero_field(config.grid, KDim)
+    setup_fields_for_initial_step(
+        params.K4,
+        config.hdiff_efdt_ratio,
+        out=(diff_multfac_vn, smag_limit),
+        offset_provider={},
     )
-    assert np.allclose(savepoint.diff_multfac_vn(), diffusion.diff_multfac_vn)
+    assert np.allclose(expected_smag_limit, smag_limit)
+    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
+    assert exptected_smag_offset == 0.0
 
 
 def test_verify_diffusion_init_against_first_regular_savepoint(
@@ -291,7 +342,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     additional_parameters = DiffusionParams(config)
     diffusion = Diffusion(config, additional_parameters, vct_a)
 
-    verify_init_values_against_savepoint(savepoint, diffusion)
+    _verify_init_values_against_savepoint(savepoint, diffusion)
 
 
 def test_verify_diffusion_init_against_other_regular_savepoint(
@@ -308,7 +359,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     additional_parameters = DiffusionParams(config)
     diffusion = Diffusion(config, additional_parameters, vct_a)
 
-    verify_init_values_against_savepoint(savepoint, diffusion)
+    _verify_init_values_against_savepoint(savepoint, diffusion)
 
 
 @pytest.mark.xfail
@@ -377,7 +428,7 @@ def test_diffusion_run(with_icon_grid):
     edge_areas = sp.edge_areas()
     cell_areas = sp.cell_areas()
 
-    diffusion.run(
+    diffusion.time_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         metric_state=metric_state,

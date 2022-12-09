@@ -70,8 +70,9 @@ TupleVT = namedtuple("TupleVT", "v t")
 VectorTuple = namedtuple("VectorTuple", "x y")
 
 
-# TODO [ml] initial RUN linit = TRUE
-# def _setup_initial_diff_multfac_vn
+@field_operator
+def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]) -> Field[[KDim], float]:
+    return 0.125 - 4.0 * diff_multfac_vn
 
 
 @field_operator
@@ -84,8 +85,17 @@ def _setup_runtime_diff_multfac_vn(
 
 
 @field_operator
-def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]) -> Field[[KDim], float]:
-    return 0.125 - 4.0 * diff_multfac_vn
+def _setup_initial_diff_multfac_vn(
+    k4: float, hdiff_efdt_ratio: float
+) -> Field[[KDim], float]:
+    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
+
+
+@field_operator
+def setup_fields_for_initial_step(k4: float, hdiff_efdt_ratio: float):
+    diff_multfac_vn = _setup_initial_diff_multfac_vn(k4, hdiff_efdt_ratio)
+    smag_limit = _setup_smag_limit(diff_multfac_vn)
+    return diff_multfac_vn, smag_limit
 
 
 @field_operator
@@ -195,7 +205,11 @@ def _init_diffusion_local_fields(
         hdiff_smag_z3,
         hdiff_smag_z4,
     )
-    return diff_multfac_vn, smag_limit, enh_smag_fac
+    return (
+        diff_multfac_vn,
+        smag_limit,
+        enh_smag_fac,
+    )
 
 
 @program
@@ -227,7 +241,11 @@ def init_diffusion_local_fields(
         hdiff_smag_z3,
         hdiff_smag_z4,
         vect_a,
-        out=(diff_multfac_vn, smag_limit, enh_smag_fac),
+        out=(
+            diff_multfac_vn,
+            smag_limit,
+            enh_smag_fac,
+        ),
     )
 
 
@@ -287,15 +305,15 @@ class DiffusionConfig:
         self,
         grid: IconGrid,
         vertical_params: VerticalModelParams,
-        diffusion_type: int = 5, # TODO: use enum
-        hdiff_w = True,
+        diffusion_type: int = 5,  # TODO: use enum
+        hdiff_w=True,
         type_vn_diffu: int = 1,
         smag_3d: bool = False,
         type_t_diffu: int = 2,
         hdiff_efdt_ratio: float = 36.0,
         hdiff_w_efdt_ratio: float = 15.0,
         smag_scaling_fac: float = 0.015,
-        zdiffu_t = True
+        zdiffu_t=True,
     ):
         # TODO [ml]: move external stuff out: grid related stuff, other than diffusion namelists (see below
         self.grid = grid
@@ -305,28 +323,25 @@ class DiffusionConfig:
         self.diffusion_type = (
             diffusion_type  # hdiff_order :  order of nabla operator for diffusion
         )
-        self.apply_to_vertical_wind = hdiff_w # lhdiff_w, diffusion on the vertical wind field
+        self.apply_to_vertical_wind = (
+            hdiff_w  # lhdiff_w, diffusion on the vertical wind field
+        )
         self.apply_to_horizontal_wind = True  # lhdiff_vn,  diffusion on horizonal wind field, ONLY used in mo_nh_stepping.f90
-        self.apply_to_temperature = True  # lhdiff_temp,  apply horizontal diffusion to temperature
+        self.apply_to_temperature = (
+            True  # lhdiff_temp,  apply horizontal diffusion to temperature
+        )
 
         self.compute_3d_smag_coeff = smag_3d  # lsmag_3d,  if `true`, compute 3D Smagorinsky diffusion coefficient.
         self.itype_vn_diffu = type_vn_diffu  # itype_vn_diffu, options for discretizing the Smagorinsky momentum diffusion
-        self.itype_t_diffu = (
-            type_t_diffu  # itype_t_diffu, options for discretizing the Smagorinsky temperature diffusion
-        )
-        self.hdiff_efdt_ratio = (
-            hdiff_efdt_ratio  # hdiff_efdt_ratio, ratio of e-folding time to (2*)time step
-        )
+        self.itype_t_diffu = type_t_diffu  # itype_t_diffu, options for discretizing the Smagorinsky temperature diffusion
+        self.hdiff_efdt_ratio = hdiff_efdt_ratio  # hdiff_efdt_ratio, ratio of e-folding time to (2*)time step
         self.hdiff_w_efdt_ratio = hdiff_w_efdt_ratio  # hdiff_w_efdt_ratio,  ratio of e-folding time to time step for w diffusion (NH only)
-        self.hdiff_smag_factor = (
-            smag_scaling_fac  # hdiff_smag_fac, scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
-        )
+        self.hdiff_smag_factor = smag_scaling_fac  # hdiff_smag_fac, scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
 
-        self.zdiffu_t = zdiffu_t  #l_zdiffu_t, apply truly horizontal temperature diffusion, from parent namelist nonhydrostatic_nml, but is only used in diffusion, and in mo_vertical_grid.prepare_zdiffu.
-
+        self.zdiffu_t = zdiffu_t  # l_zdiffu_t, apply truly horizontal temperature diffusion, from parent namelist nonhydrostatic_nml, but is only used in diffusion, and in mo_vertical_grid.prepare_zdiffu.
 
         # from other namelists
-        #from parent namelist nonhydrostatic_nml
+        # from parent namelist nonhydrostatic_nml
         self.ndyn_substeps = 5
         self.lhdiff_rcf = True
 
@@ -340,7 +355,9 @@ class DiffusionConfig:
 
     def _validate(self):
         if self.diffusion_type != 5:
-            raise NotImplementedError("only diffusion type 5 : `Smagorinsky diffusion with fourth-order background diffusion` is implemented")
+            raise NotImplementedError(
+                "only diffusion type 5 : `Smagorinsky diffusion with fourth-order background diffusion` is implemented"
+            )
 
         if not self.grid.limited_area:
             raise NotImplementedError("only limited area mode is implemented")
@@ -354,8 +371,9 @@ class DiffusionConfig:
             self.apply_to_horizontal_wind = True
 
         if not self.zdiffu_t:
-            raise NotImplementedError("zdiffu_t = False is not implemented (leaves out stencil_15)")
-
+            raise NotImplementedError(
+                "zdiffu_t = False is not implemented (leaves out stencil_15)"
+            )
 
     def substep_as_float(self):
         return float(self.ndyn_substeps)
@@ -459,8 +477,7 @@ class Diffusion:
         """
         Initialize Diffusion granule.
 
-        TODO [ml]: initial run: linit = .TRUE.:  smag_offset and diff_multfac_vn are defined
-        differently.
+        calculates all local fields that are used in diffusion within the time loop
         """
         self.params: DiffusionParams = params
         self.config: DiffusionConfig = config
@@ -479,23 +496,22 @@ class Diffusion:
             -5.0
         )  # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
 
-        # different for init call: smag_offset = 0
-        self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float()
+        self._smag_offset: float = 0.25 * params.K4 * config.substep_as_float()
         self.diff_multfac_w: float = min(
             1.0 / 48.0, params.K4W * config.substep_as_float()
         )
 
-        # TODO different for initial run!, through diff_multfac_vn
         self._allocate_local_fields()
 
+        # TODO different for initial run!, through diff_multfac_vn
         init_diffusion_local_fields(
             params.K4,
             config.substep_as_float(),
             *params.smagorinski_factor,
             *params.smagorinski_height,
             vct_a,
-            self.diff_multfac_vn,
-            self.smag_limit,
+            self._diff_multfac_vn,
+            self._smag_limit,
             self.enh_smag_fac,
             offset_provider={"Koff": KDim},
         )
@@ -511,14 +527,13 @@ class Diffusion:
         def _allocate(*dims: Dimension):
             return zero_field(self.grid, *dims)
 
-        def _index_field(dim:Dimension, size=None):
+        def _index_field(dim: Dimension, size=None):
             size = size if size else self.grid.size[dim]
-            return np_as_located_field(dim)(
-                np.arange(size)
-            )
+            return np_as_located_field(dim)(np.arange(size))
 
-        self.diff_multfac_vn = _allocate(KDim)
-        self.smag_limit =  _allocate(KDim)
+        self._diff_multfac_vn = _allocate(KDim)
+
+        self._smag_limit = _allocate(KDim)
         self.enh_smag_fac = _allocate(KDim)
         self.u_vert = _allocate(VertexDim, KDim)
         self.v_vert = _allocate(VertexDim, KDim)
@@ -531,8 +546,7 @@ class Diffusion:
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
 
-
-    def run(
+    def initial_step(
         self,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
@@ -549,38 +563,144 @@ class Diffusion:
         cell_areas: Field[[CellDim], float],
     ):
         """
+        Calculate initial diffusion step.
+
+        In ICON at the start of the simulation diffusion is run with a parameter linit = True:
+
+        'For real-data runs, perform an extra diffusion call before the first time
+        step because no other filtering of the interpolated velocity field is done'
+
+        This run uses special values for diff_multfac_vn, smag_limit and smag_offset
+
+        """
+        diff_multfac_vn = zero_field(self.grid, KDim)
+        smag_limit = zero_field(self.grid, KDim)
+
+        setup_fields_for_initial_step(
+            self.params.K4,
+            self.config.hdiff_efdt_ratio,
+            out=(diff_multfac_vn, smag_limit),
+        )
+        self._do_diffusion_step(
+            diagnostic_state,
+            prognostic_state,
+            metric_state,
+            interpolation_state,
+            dtime,
+            tangent_orientation,
+            inverse_primal_edge_lengths,
+            inverse_dual_edge_length,
+            inverse_vertical_vertex_lengths,
+            primal_normal_vert,
+            dual_normal_vert,
+            edge_areas,
+            cell_areas,
+            diff_multfac_vn,
+            smag_limit,
+            0.0,
+        )
+
+    def time_step(
+        self,
+        diagnostic_state: DiagnosticState,
+        prognostic_state: PrognosticState,
+        metric_state: MetricState,
+        interpolation_state: InterpolationState,
+        dtime: float,
+        tangent_orientation: Field[[EdgeDim], float],
+        inverse_primal_edge_lengths: Field[[EdgeDim], float],
+        inverse_dual_edge_length: Field[[EdgeDim], float],
+        inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
+        primal_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
+        dual_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
+        edge_areas: Field[[EdgeDim], float],
+        cell_areas: Field[[CellDim], float],
+    ):
+        """
+        Do one diffusion step within regular time loop.
+
+        runs a diffusion step for the parameter linit=False, within regular time loop.
+        """
+        self._do_diffusion_step(
+            diagnostic_state,
+            prognostic_state,
+            metric_state,
+            interpolation_state,
+            dtime,
+            tangent_orientation,
+            inverse_primal_edge_lengths,
+            inverse_dual_edge_length,
+            inverse_vertical_vertex_lengths,
+            primal_normal_vert,
+            dual_normal_vert,
+            edge_areas,
+            cell_areas,
+            self._diff_multfac_vn,
+            self._smag_limit,
+            self._smag_offset,
+        )
+
+    def _do_diffusion_step(
+        self,
+        diagnostic_state: DiagnosticState,
+        prognostic_state: PrognosticState,
+        metric_state: MetricState,
+        interpolation_state: InterpolationState,
+        dtime: float,
+        tangent_orientation: Field[[EdgeDim], float],
+        inverse_primal_edge_lengths: Field[[EdgeDim], float],
+        inverse_dual_edge_length: Field[[EdgeDim], float],
+        inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
+        primal_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
+        dual_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
+        edge_areas: Field[[EdgeDim], float],
+        cell_areas: Field[[CellDim], float],
+        diff_multfac_vn: Field[[KDim], float],
+        smag_limit: Field[[KDim], float],
+        smag_offset: float,
+    ):
+        """
         Run a diffusion step.
 
-            inputs are
-            - output fields:
-            - input fields that have changed from one time step to another:
-            - simulation parameters: dtime - timestep
+        Args:
+            diagnostic_state: output argument, data class that contains diagnostic variables
+            prognostic_state: output argument, data class that contains prognostic variables
+            metric_state:
+            interpolation_state:
+            dtime: the time step,
+            tangent_orientation:
+            inverse_primal_edge_lengths:
+            inverse_dual_edge_length:
+            inverse_vertical_vertex_lengths:
+            primal_normal_vert:
+            dual_normal_vert:
+            edge_areas:
+            cell_areas:
+            diff_multfac_vn:
+            smag_limit:
+            smag_offset:
+
         """
         # -------
         # OUTLINE
         # -------
-        # Oa logging
-        # 0b call timer start
-        # 0c. dtime dependent stuff: enh_smag_factor, r_dtimensubsteps
-        r_dtimensubsteps = (
-            1.0 / dtime
-            if self.config.lhdiff_rcf
-            else 1.0 / (dtime * self.config.substep_as_float())
-        )
-        klevels = self.grid.n_lev()
-        # TODO is this needed?
+        # Oa TODO: logging
+        # 0b TODO: call timer start
+        #
+        # 0c. dtime dependent stuff: enh_smag_factor,
+        scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
+
+        # TODO: is this needed, if not remove
         set_zero_v_k(self.u_vert, offset_provider={})
         set_zero_v_k(self.v_vert, offset_provider={})
 
         # 1.  CALL rbf_vec_interpol_vertex
-
         _mo_intp_rbf_rbf_vec_interpol_vertex(
             prognostic_state.normal_wind,
             interpolation_state.rbf_coeff_1,
             interpolation_state.rbf_coeff_2,
             out=(self.u_vert, self.v_vert),
             domain={
-                KDim: (0, klevels),
                 VertexDim: self.grid.get_indices_from_to(
                     VertexDim,
                     HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
@@ -592,9 +712,6 @@ class Diffusion:
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
-        # 0c. dtime dependent stuff: enh_smag_factor, ~~r_dtimensubsteps~~
-        scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
-
         _mo_nh_diffusion_stencil_01(
             self.diff_multfac_smag,
             tangent_orientation,
@@ -607,10 +724,9 @@ class Diffusion:
             dual_normal_vert[0],
             dual_normal_vert[1],
             prognostic_state.normal_wind,
-            self.smag_limit,
-            self.smag_offset,
+            smag_limit,
+            smag_offset,
             domain={
-                KDim: (0, klevels),
                 EdgeDim: (
                     self.grid.get_indices_from_to(
                         EdgeDim,
@@ -636,7 +752,6 @@ class Diffusion:
                 diagnostic_state.hdef_ic,
             ),
             domain={
-                KDim: (0, klevels),
                 CellDim: (
                     self.grid.get_indices_from_to(
                         CellDim,
@@ -658,7 +773,6 @@ class Diffusion:
             interpolation_state.rbf_coeff_2,
             out=(self.u_vert, self.v_vert),
             domain={
-                KDim: (0, klevels),
                 VertexDim: self.grid.get_indices_from_to(
                     VertexDim,
                     HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
@@ -677,6 +791,7 @@ class Diffusion:
             HorizontalMarkerIndex.nudging(EdgeDim) - 1,
             HorizontalMarkerIndex.nudging(EdgeDim) - 1,
         )[0]
+
         _fused_mo_nh_diffusion_stencil_04_05_06(
             self.u_vert,
             self.v_vert,
@@ -687,7 +802,7 @@ class Diffusion:
             inverse_primal_edge_lengths,
             edge_areas,
             self.kh_smag_e,
-            self.diff_multfac_vn,
+            diff_multfac_vn,
             interpolation_state.nudgecoeff_e,
             prognostic_state.normal_wind,
             self.horizontal_edge_index,
@@ -696,7 +811,6 @@ class Diffusion:
             start_2nd_nudge_line,
             out=prognostic_state.normal_wind,
             domain={
-                KDim: (0, klevels),
                 EdgeDim: self.grid.get_indices_from_to(
                     EdgeDim,
                     HorizontalMarkerIndex.nudging(EdgeDim) + 1,
@@ -735,7 +849,6 @@ class Diffusion:
                 diagnostic_state.dwdy,
             ),
             domain={
-                KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(
                     CellDim,
                     # TODO: global mode is from NUDGING - 1
@@ -750,6 +863,7 @@ class Diffusion:
         #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
 
         # TODO check: kh_smag_e is an out field, should  not be calculated in init?
+        klevels = self.grid.n_lev()
         fused_mo_nh_diffusion_stencil_11_12(
             prognostic_state.theta_v,
             metric_state.theta_ref_mc,
@@ -781,7 +895,6 @@ class Diffusion:
             interpolation_state.geofac_div,
             out=self.z_temp,
             domain={
-                KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(
                     CellDim,
                     HorizontalMarkerIndex.nudging(CellDim),
@@ -808,7 +921,6 @@ class Diffusion:
             theta_v=prognostic_state.theta_v,
             z_temp=self.z_temp,
             domain={
-                KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(
                     CellDim,
                     HorizontalMarkerIndex.nudging(CellDim),
@@ -826,7 +938,6 @@ class Diffusion:
             self.rd_o_cvd,
             out=(prognostic_state.theta_v, prognostic_state.exner_pressure),
             domain={
-                KDim: (0, klevels),
                 CellDim: self.grid.get_indices_from_to(
                     CellDim,
                     HorizontalMarkerIndex.nudging(CellDim),

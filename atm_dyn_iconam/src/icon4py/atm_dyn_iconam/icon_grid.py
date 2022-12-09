@@ -10,8 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from dataclasses import dataclass
-from typing import Tuple, Dict
+
+from typing import Dict, Tuple
 
 import numpy as np
 from functional.common import Dimension, DimensionKind, Field
@@ -21,7 +21,7 @@ from functional.iterator.embedded import (
 )
 
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim, E2CDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 
 
 class VerticalMeshConfig:
@@ -29,12 +29,17 @@ class VerticalMeshConfig:
         self._num_lev = num_lev
 
     @property
-    def num_lev(self)->int:
+    def num_lev(self) -> int:
         return self._num_lev
 
 
 class MeshConfig:
-    def __init__(self, horizontal_config: HorizontalMeshConfig, vertical_config: VerticalMeshConfig, limited_area = True):
+    def __init__(
+        self,
+        horizontal_config: HorizontalMeshConfig,
+        vertical_config: VerticalMeshConfig,
+        limited_area=True,
+    ):
         self._vertical = vertical_config
         self._n_shift_total = 0
         self._limited_area = limited_area
@@ -81,21 +86,16 @@ class IconGrid:
         self.connectivities: Dict[Dimension, np.ndarray] = {}
         self.size: Dict[Dimension, int] = {}
 
-
     def _update_size(self, config: MeshConfig):
-        self.size[VertexDim]= config.num_vertices
+        self.size[VertexDim] = config.num_vertices
         self.size[CellDim] = config.num_cells
         self.size[EdgeDim] = config.num_edges
         self.size[KDim] = config.num_k_levels
-
-
 
     @builder
     def with_config(self, config: MeshConfig):
         self.config = config
         self._update_size(config)
-
-
 
     @builder
     def with_start_end_indices(
@@ -105,13 +105,15 @@ class IconGrid:
         self.end_indices[dim] = end_indices
 
     @builder
-    def with_connectivities(self, connectivity:Dict[Dimension, np.ndarray]):
-        self.connectivities.update({d.value.lower(): k for d, k in connectivity.items()})
-        self.size.update({d:t.shape[1] for d, t in connectivity.items()})
-
+    def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
+        self.connectivities.update(
+            {d.value.lower(): k for d, k in connectivity.items()}
+        )
+        self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     def limited_area(self):
         return self.config.limited_area
+
     def n_lev(self):
         return self.config.num_k_levels if self.config else 0
 
