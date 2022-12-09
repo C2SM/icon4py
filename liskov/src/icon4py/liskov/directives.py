@@ -65,5 +65,5 @@ class Declare(DirectiveType):
     pattern = "DECLARE"
 
 
-class Create(DirectiveType):
-    pattern = "CREATE"
+class Imports(DirectiveType):
+    pattern = "IMPORT"

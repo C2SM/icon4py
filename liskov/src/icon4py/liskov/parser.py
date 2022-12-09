@@ -13,10 +13,10 @@
 import collections
 
 from icon4py.liskov.directives import (
-    Create,
     Declare,
     Directive,
     EndStencil,
+    Imports,
     NoDirectivesFound,
     RawDirective,
     StartStencil,
@@ -35,7 +35,7 @@ class DirectivesParser:
     _SUPPORTED_DIRECTIVES: list[Directive] = [
         StartStencil(),
         EndStencil(),
-        Create(),
+        Imports(),
         Declare(),
     ]
 
@@ -116,7 +116,7 @@ class DirectivesParser:
 
             string = d.string.replace(f"{d.directive_type.pattern}", "")
 
-            if directive_name != "Create":
+            if directive_name != "Import":
                 args = string[1:-1].split(";")
                 content = {a.split("=")[0].strip(): a.split("=")[1] for a in args}
 

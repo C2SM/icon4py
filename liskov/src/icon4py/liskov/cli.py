@@ -15,9 +15,9 @@ import pathlib
 
 import click
 
-from icon4py.bindings.utils import format_fortran_code
-from icon4py.liskov.codegen import WrapRunFunc, WrapRunFuncGenerator
+from icon4py.liskov.codegen.integration import IntegrationGenerator
 from icon4py.liskov.collect import DirectivesCollector
+from icon4py.liskov.directives import NoDirectivesFound
 from icon4py.liskov.parser import DirectivesParser
 from icon4py.liskov.serialise import DirectiveSerialiser
 
@@ -29,25 +29,22 @@ from icon4py.liskov.serialise import DirectiveSerialiser
         exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
     ),
 )
-def main(filepath: pathlib.Path) -> None:
-    """Command line interface to interact with the ICON-Liskov DSL Preprocessor.
-
-    Args:
-        filepath: path to Fortran file.
-    """
+@click.option(
+    "--profile", "-p", is_flag=True, help="Add nvtx profile statements to stencils."
+)
+def main(filepath: pathlib.Path, profile: bool) -> None:
+    """Command line interface to interact with the ICON-Liskov DSL Preprocessor."""
     directives_collector = DirectivesCollector(filepath)
 
     parser = DirectivesParser(directives_collector.directives)
 
-    serialiser = DirectiveSerialiser(parser.parsed_directives)
+    if isinstance(parsed_directives := parser.parsed_directives, NoDirectivesFound):
+        print(f"No directives found in {filepath}")  # todo: use logger.
 
-    print(serialiser.directives)
+    serialiser = DirectiveSerialiser(parsed_directives)
 
-    # todo: generate code using IntegrationGenerator
-    for stencil in serialiser.directives.stencil:
-        wrap_run_func = WrapRunFunc(stencil_data=stencil)
-        source = WrapRunFuncGenerator.apply(wrap_run_func)
-        formatted_source = format_fortran_code(source)
-        print(formatted_source)
+    integrator = IntegrationGenerator(serialiser.directives, profile=profile)
+
+    print(integrator.generated)
 
     # todo: write code using IntegrationWriter

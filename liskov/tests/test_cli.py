@@ -22,3 +22,10 @@ def test_cli(make_f90_tmpfile, cli, file):
     fpath = str(make_f90_tmpfile(content=file))
     result = cli.invoke(main, [fpath])
     assert result.exit_code == 0
+
+
+@pytest.mark.parametrize("file", [SINGLE_STENCIL, MULTIPLE_STENCILS])
+def test_cli_profile(make_f90_tmpfile, cli, file):
+    fpath = str(make_f90_tmpfile(content=file))
+    result = cli.invoke(main, [fpath, "--profile"])
+    assert result.exit_code == 0

@@ -11,14 +11,25 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import re
 from dataclasses import asdict
-from typing import Collection, Optional
+from typing import Collection, Optional, Type
 
 import eve
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator
 
-from icon4py.liskov.input import StencilData
+from icon4py.bindings.utils import format_fortran_code
+from icon4py.liskov.codegen.input import DeclareData, StartStencilData
+
+
+def generate_fortran_code(
+    parent_node: Type[eve.Node], code_generator: Type[TemplatedGenerator], **kwargs
+):
+    parent = parent_node(**kwargs)
+    source = code_generator.apply(parent)
+    formatted_source = format_fortran_code(source)
+    return formatted_source
 
 
 class BoundsFields(eve.Node):
@@ -50,7 +61,8 @@ class ToleranceFields(InputFields):
 
 
 class WrapRunFunc(eve.Node):
-    stencil_data: StencilData
+    stencil_data: StartStencilData
+    profile: bool
 
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -72,6 +84,9 @@ class WrapRunFunc(eve.Node):
 class WrapRunFuncGenerator(TemplatedGenerator):
     WrapRunFunc = as_jinja(
         """
+        {%- if _this_node.profile %}
+        call nvtxEndRange()
+        {%- endif %}
         #endif
         call wrap_run_{{ name }}( &
             {{ input_fields }}
@@ -135,24 +150,93 @@ class WrapRunFuncGenerator(TemplatedGenerator):
     )
 
 
-# todo: Generation of in/out field declarations.
-#   REAL(wp), DIMENSION(nproma,p_patch%nlev,p_patch%nblks_e) :: vt_before
-#   REAL(wp), DIMENSION(nproma,p_patch%nlevp1,p_patch%nblks_e) :: vn_ie_before
-#   REAL(wp), DIMENSION(nproma,p_patch%nlev,p_patch%nblks_e) :: z_kin_hor_e_before
+class Declaration(eve.Node):
+    variable: str
+    association: str
 
 
-# todo: Copying of output fields.
-#   !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
-#   z_rth_pr_1_before(:,:,:) = z_rth_pr(:,:,:,1)
-#   z_rth_pr_2_before(:,:,:) = z_rth_pr(:,:,:,2)
-#   !$ACC END PARALLEL
+class DeclareStatement(eve.Node):
+    declare_data: DeclareData
+    declarations: list[Declaration] = eve.datamodels.field(init=False)
 
-# todo: Generation of profile call (requires adding command-line flag).
-#   call nvtxStartRange("mo_solve_nonhydro_stencil_01")
-#   ! Fortran stencil code goes here
-#   call nvtxEndRange()
+    def __post_init__(self):
+        self.declarations = [
+            Declaration(variable=k, association=v)
+            for dic in self.declare_data.declarations
+            for k, v in dic.items()
+        ]
 
-# todo: Generation of wrapped function call import statements (requires adding IMPORT directive).
-#   USE mo_velocity_advection_stencil_01, ONLY: wrap_run_mo_velocity_advection_stencil_01
 
-# todo: Generation/modification of DATA CREATE statement in Fortran code.
+class DeclareStatementGenerator(TemplatedGenerator):
+    DeclareStatement = as_jinja(
+        """
+        !--------------------------------------------------------------------------
+        ! OUT/INOUT FIELDS DSL
+        !
+        {%- for d in _this_node.declarations %}
+        REAL(wp), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
+        {%- endfor %}
+        """
+    )
+
+
+class CopyDeclaration(Declaration):
+    array_index: str
+
+
+class OutputFieldCopy(eve.Node):
+    stencil_data: StartStencilData
+    profile: bool
+    copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
+
+    def __post_init__(self):
+        all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
+        out_fields = [
+            Declaration(variable=f.variable, association=f.association)
+            for f in all_fields
+            if f.out
+        ]
+        self.copy_declarations = [self.make_copy_declaration(out) for out in out_fields]
+
+    @staticmethod
+    def make_copy_declaration(declr: Declaration) -> tuple[str]:
+        dims = re.findall("\\(([^)]+)", declr.association)[0]
+        copy_dim_params = list(dims)
+        copy_dim_params[-1] = ":"
+        copy_field_dims = f"({''.join(copy_dim_params)})"
+        return CopyDeclaration(
+            variable=declr.variable,
+            association=declr.association,
+            array_index=copy_field_dims,
+        )
+
+
+class OutputFieldCopyGenerator(TemplatedGenerator):
+    OutputFieldCopy = as_jinja(
+        """
+        #ifdef __DSL_VERIFY
+        !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+        {%- for d in _this_node.copy_declarations %}
+        {{ d.variable }}_before{{ d.array_index }} = {{ d.variable }}{{ d.array_index }}
+        {%- endfor %}
+        !$ACC END PARALLEL
+
+        {%- if _this_node.profile %}
+        call nvtxStartRange("{{ _this_node.stencil_data.name }}")
+        {%- endif %}
+        """
+    )
+
+
+class ImportsStatement(eve.Node):
+    names: list[str]
+
+
+class ImportsStatementGenerator(TemplatedGenerator):
+    ImportsStatement = as_jinja(
+        """
+        {%- for name in names %}
+        USE {{ name }}, ONLY: wrap_run_{{ name }}
+        {%- endfor %}
+        """
+    )
