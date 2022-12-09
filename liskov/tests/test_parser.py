@@ -59,7 +59,7 @@ def test_directive_parser_multiple_stencils(make_f90_tmpfile):
     directives = parsed["directives"]
     content = parsed["content"]
 
-    assert len(directives) == 6
+    assert len(directives) == 8
     assert len(content) == 4
 
 
@@ -84,7 +84,7 @@ def test_directive_parser_parsing_exception(make_f90_tmpfile, directive):
     [
         "!$DSL START(stencil1, stencil2)",
         "!$DSL DECLARE(somefield; another_field)",
-        "!$DSL CREATE(field)",
+        "!$DSL IMPORT(field)",
     ],
 )
 def test_directive_parser_invalid_directive_syntax(make_f90_tmpfile, directive):
@@ -107,7 +107,7 @@ def test_directive_parser_no_directives_found(make_f90_tmpfile):
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL CREATE()",
+        "!$DSL IMPORT()",
         "!$DSL END(name=mo_nh_diffusion_stencil_06)",
     ],
 )
@@ -123,7 +123,7 @@ def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
 @pytest.mark.parametrize(
     "directive",
     [
-        """!$DSL CREATE()""",
+        """!$DSL IMPORT()""",
         """!$DSL END(name=mo_nh_diffusion_stencil_06)""",
     ],
 )
