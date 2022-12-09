@@ -14,10 +14,10 @@ from pathlib import Path
 
 import pytest
 
-from icon4py.liskov.collect import DirectivesCollector
 from icon4py.liskov.directives import NoDirectivesFound, RawDirective
 from icon4py.liskov.exceptions import DirectiveSyntaxError, ParsingException
-from icon4py.liskov.parser import DirectivesParser
+from icon4py.liskov.parse import DirectivesParser
+from icon4py.liskov.scan import DirectivesScanner
 from icon4py.testutils.fortran_samples import (
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
@@ -26,7 +26,7 @@ from icon4py.testutils.fortran_samples import (
 
 
 def collect_directives(fpath: Path) -> list[RawDirective]:
-    collector = DirectivesCollector(fpath)
+    collector = DirectivesScanner(fpath)
     return collector.directives
 
 

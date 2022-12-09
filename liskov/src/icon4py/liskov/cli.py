@@ -16,9 +16,9 @@ import pathlib
 import click
 
 from icon4py.liskov.codegen.integration import IntegrationGenerator
-from icon4py.liskov.collect import DirectivesCollector
 from icon4py.liskov.directives import NoDirectivesFound
-from icon4py.liskov.parser import DirectivesParser
+from icon4py.liskov.parse import DirectivesParser
+from icon4py.liskov.scan import DirectivesScanner
 from icon4py.liskov.serialise import DirectiveSerialiser
 
 
@@ -34,7 +34,7 @@ from icon4py.liskov.serialise import DirectiveSerialiser
 )
 def main(filepath: pathlib.Path, profile: bool) -> None:
     """Command line interface to interact with the ICON-Liskov DSL Preprocessor."""
-    directives_collector = DirectivesCollector(filepath)
+    directives_collector = DirectivesScanner(filepath)
 
     parser = DirectivesParser(directives_collector.directives)
 

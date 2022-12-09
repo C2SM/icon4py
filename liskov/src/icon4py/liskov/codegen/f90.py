@@ -20,7 +20,7 @@ from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator
 
 from icon4py.bindings.utils import format_fortran_code
-from icon4py.liskov.codegen.input import DeclareData, StartStencilData
+from icon4py.liskov.codegen.interface import DeclareData, StartStencilData
 
 
 def generate_fortran_code(
