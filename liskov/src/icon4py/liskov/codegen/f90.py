@@ -122,9 +122,9 @@ class WrapRunFuncGenerator(TemplatedGenerator):
 
     OutputFields = as_jinja(
         """
-        {%- for field in _this_node.fields -%}
+        {%- for field in _this_node.fields %}
             {{ field.variable }}_before={{ output_association }},&
-        {%- endfor -%}
+        {%- endfor %}
         """
     )
 
@@ -176,9 +176,7 @@ class DeclareStatement(eve.Node):
 class DeclareStatementGenerator(TemplatedGenerator):
     DeclareStatement = as_jinja(
         """
-        !--------------------------------------------------------------------------
-        ! OUT/INOUT FIELDS DSL
-        !
+        ! DSL INPUT / OUTPUT FIELDS
         {%- for d in _this_node.declarations %}
         REAL(wp), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
         {%- endfor %}
@@ -240,9 +238,5 @@ class ImportsStatement(eve.Node):
 
 class ImportsStatementGenerator(TemplatedGenerator):
     ImportsStatement = as_jinja(
-        """
-        {%- for name in names %}
-        USE {{ name }}, ONLY: wrap_run_{{ name }}
-        {%- endfor %}
-        """
+        """{% for name in names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
     )

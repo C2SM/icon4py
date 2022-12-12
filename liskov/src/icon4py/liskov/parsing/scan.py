@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from icon4py.liskov.directives import IDENTIFIER, RawDirective
+from icon4py.liskov.parsing.types import IDENTIFIER, RawDirective
 
 
 @dataclass(frozen=True)
@@ -35,8 +35,8 @@ class DirectivesScanner:
     @staticmethod
     def _process_scanned(collected: list[Scanned]) -> RawDirective:
         directive_string = "".join([c.string for c in collected])
-        abs_startln = collected[0].lnumber + 1
-        abs_endln = collected[-1].lnumber + 1
+        abs_startln = collected[0].lnumber
+        abs_endln = collected[-1].lnumber
         return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)
 
     def _scan_for_directives(self) -> list[RawDirective]:

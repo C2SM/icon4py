@@ -27,10 +27,11 @@ from icon4py.liskov.codegen.f90 import (
 from icon4py.liskov.codegen.interface import SerialisedDirectives
 
 
-@dataclass(frozen=True)
+@dataclass
 class GeneratedCode:
-    gen: str
-    target_ln: int
+    source: str
+    startln: int
+    endln: int
 
 
 class IntegrationGenerator:
@@ -47,7 +48,9 @@ class IntegrationGenerator:
             declare_data=self.directives.declare,
         )
         declare_code = GeneratedCode(
-            gen=declare_source, target_ln=self.directives.declare.startln
+            source=declare_source,
+            startln=self.directives.declare.startln,
+            endln=self.directives.declare.endln,
         )
         self.generated.append(declare_code)
 
@@ -61,7 +64,9 @@ class IntegrationGenerator:
                 profile=self.profile,
             )
             output_field_copy_code = GeneratedCode(
-                gen=output_field_copy_source, target_ln=self.directives.start[i].startln
+                source=output_field_copy_source,
+                startln=self.directives.start[i].startln,
+                endln=self.directives.start[i].endln,
             )
             self.generated.append(output_field_copy_code)
 
@@ -73,7 +78,9 @@ class IntegrationGenerator:
                 profile=self.profile,
             )
             wrap_run_code = GeneratedCode(
-                gen=wrap_run_source, target_ln=self.directives.end[i].startln
+                source=wrap_run_source,
+                startln=self.directives.end[i].startln,
+                endln=self.directives.end[i].endln,
             )
             self.generated.append(wrap_run_code)
 
@@ -85,7 +92,9 @@ class IntegrationGenerator:
             names=names,
         )
         imports_code = GeneratedCode(
-            gen=imports_source, target_ln=self.directives.imports.startln
+            source=imports_source,
+            startln=self.directives.imports.startln,
+            endln=self.directives.imports.endln,
         )
         self.generated.append(imports_code)
 

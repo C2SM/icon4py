@@ -16,7 +16,7 @@ from typing import Type
 
 from functional.ffront.decorator import Program
 
-from icon4py.liskov.directives import DirectiveType, TypedDirective
+from icon4py.liskov.parsing.types import DirectiveType, TypedDirective
 
 
 def extract_directive(

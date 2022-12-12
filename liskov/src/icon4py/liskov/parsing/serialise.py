@@ -24,9 +24,14 @@ from icon4py.liskov.codegen.interface import (
     SerialisedDirectives,
     StartStencilData,
 )
-from icon4py.liskov.directives import Declare, EndStencil, Imports, StartStencil
-from icon4py.liskov.types import ParsedType
-from icon4py.liskov.utils import StencilCollector, extract_directive
+from icon4py.liskov.parsing.types import (
+    Declare,
+    EndStencil,
+    Imports,
+    ParsedType,
+    StartStencil,
+)
+from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
 from icon4py.pyutils.metadata import get_field_infos
 
 

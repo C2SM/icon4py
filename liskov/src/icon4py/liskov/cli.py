@@ -16,10 +16,11 @@ import pathlib
 import click
 
 from icon4py.liskov.codegen.integration import IntegrationGenerator
-from icon4py.liskov.directives import NoDirectivesFound
-from icon4py.liskov.parse import DirectivesParser
-from icon4py.liskov.scan import DirectivesScanner
-from icon4py.liskov.serialise import DirectiveSerialiser
+from icon4py.liskov.codegen.write import IntegrationWriter
+from icon4py.liskov.parsing.parse import DirectivesParser
+from icon4py.liskov.parsing.scan import DirectivesScanner
+from icon4py.liskov.parsing.serialise import DirectiveSerialiser
+from icon4py.liskov.parsing.types import NoDirectivesFound
 
 
 @click.command("icon_liskov")
@@ -34,17 +35,17 @@ from icon4py.liskov.serialise import DirectiveSerialiser
 )
 def main(filepath: pathlib.Path, profile: bool) -> None:
     """Command line interface to interact with the ICON-Liskov DSL Preprocessor."""
-    directives_collector = DirectivesScanner(filepath)
+    scanner = DirectivesScanner(filepath)
 
-    parser = DirectivesParser(directives_collector.directives)
+    parser = DirectivesParser(scanner.directives)
 
     if isinstance(parsed_directives := parser.parsed_directives, NoDirectivesFound):
         print(f"No directives found in {filepath}")  # todo: use logger.
 
     serialiser = DirectiveSerialiser(parsed_directives)
 
-    integrator = IntegrationGenerator(serialiser.directives, profile=profile)
+    generator = IntegrationGenerator(serialiser.directives, profile=profile)
 
-    print(integrator.generated)
+    writer = IntegrationWriter(generator.generated)
 
-    # todo: write code using IntegrationWriter
+    writer.write_from(filepath)
