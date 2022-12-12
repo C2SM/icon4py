@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Match, Optional
 
-from icon4py.liskov.directives import RawDirective, TypedDirective
+from icon4py.liskov.parsing.types import RawDirective, TypedDirective
 
 
 class ParsingException(Exception):

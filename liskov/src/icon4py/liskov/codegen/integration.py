@@ -24,34 +24,37 @@ from icon4py.liskov.codegen.f90 import (
     WrapRunFuncGenerator,
     generate_fortran_code,
 )
-from icon4py.liskov.serialise import SerialisedDirectives
+from icon4py.liskov.codegen.interface import SerialisedDirectives
 
 
-@dataclass(frozen=True)
+@dataclass
 class GeneratedCode:
-    gen: str
-    target_ln: int
+    source: str
+    startln: int
+    endln: int
 
 
 class IntegrationGenerator:
     def __init__(self, directives: SerialisedDirectives, profile: bool):
-        self.generated = []
+        self.generated: list[GeneratedCode] = []
         self.profile = profile
         self.directives = directives
         self._generate_code()
 
-    def _generate_declare(self):
+    def _generate_declare(self) -> None:
         declare_source = generate_fortran_code(
             DeclareStatement,
             DeclareStatementGenerator,
             declare_data=self.directives.declare,
         )
         declare_code = GeneratedCode(
-            gen=declare_source, target_ln=self.directives.declare.startln
+            source=declare_source,
+            startln=self.directives.declare.startln,
+            endln=self.directives.declare.endln,
         )
         self.generated.append(declare_code)
 
-    def _generate_stencil(self):
+    def _generate_stencil(self) -> None:
         for i, stencil in enumerate(self.directives.start):
             # generate output field copies
             output_field_copy_source = generate_fortran_code(
@@ -61,7 +64,9 @@ class IntegrationGenerator:
                 profile=self.profile,
             )
             output_field_copy_code = GeneratedCode(
-                gen=output_field_copy_source, target_ln=self.directives.start[i].startln
+                source=output_field_copy_source,
+                startln=self.directives.start[i].startln,
+                endln=self.directives.start[i].endln,
             )
             self.generated.append(output_field_copy_code)
 
@@ -73,11 +78,13 @@ class IntegrationGenerator:
                 profile=self.profile,
             )
             wrap_run_code = GeneratedCode(
-                gen=wrap_run_source, target_ln=self.directives.end[i].startln
+                source=wrap_run_source,
+                startln=self.directives.end[i].startln,
+                endln=self.directives.end[i].endln,
             )
             self.generated.append(wrap_run_code)
 
-    def _generate_imports(self):
+    def _generate_imports(self) -> None:
         names = [stencil.name for stencil in self.directives.start]
         imports_source = generate_fortran_code(
             ImportsStatement,
@@ -85,11 +92,13 @@ class IntegrationGenerator:
             names=names,
         )
         imports_code = GeneratedCode(
-            gen=imports_source, target_ln=self.directives.imports.startln
+            source=imports_source,
+            startln=self.directives.imports.startln,
+            endln=self.directives.imports.endln,
         )
         self.generated.append(imports_code)
 
-    def _generate_code(self):
+    def _generate_code(self) -> None:
         """Generate all f90 code snippets for integration."""
         self._generate_imports()
         self._generate_declare()

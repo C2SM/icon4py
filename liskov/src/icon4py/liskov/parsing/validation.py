@@ -14,14 +14,17 @@
 import re
 from typing import Protocol
 
-from icon4py.liskov.directives import (
+from icon4py.liskov.parsing.exceptions import (
+    ParsingException,
+    SyntaxExceptionHandler,
+)
+from icon4py.liskov.parsing.types import (
     Declare,
     EndStencil,
     Imports,
     StartStencil,
     TypedDirective,
 )
-from icon4py.liskov.exceptions import ParsingException, SyntaxExceptionHandler
 
 
 class Validator(Protocol):

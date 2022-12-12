@@ -12,22 +12,26 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import copy
-from dataclasses import dataclass
 from typing import Callable, Protocol
 
-from icon4py.liskov.codegen.input import (
+from icon4py.liskov.codegen.interface import (
     BoundsData,
     CodeGenInput,
     DeclareData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
+    SerialisedDirectives,
     StartStencilData,
 )
-from icon4py.liskov.collect import StencilCollector
-from icon4py.liskov.directives import Declare, EndStencil, Imports, StartStencil
-from icon4py.liskov.types import ParsedType
-from icon4py.liskov.utils import extract_directive
+from icon4py.liskov.parsing.types import (
+    Declare,
+    EndStencil,
+    Imports,
+    ParsedType,
+    StartStencil,
+)
+from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
 from icon4py.pyutils.metadata import get_field_infos
 
 
@@ -167,14 +171,6 @@ class EndStencilDataFactory:
                 )
             )
         return serialised
-
-
-@dataclass(frozen=True)
-class SerialisedDirectives:
-    start: list[StartStencilData]
-    end: list[EndStencilDataFactory]
-    declare: DeclareData
-    imports: ImportsData
 
 
 class DirectiveSerialiser:

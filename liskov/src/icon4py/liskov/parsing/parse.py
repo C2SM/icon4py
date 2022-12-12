@@ -12,19 +12,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import collections
 
-from icon4py.liskov.directives import (
+from icon4py.liskov.parsing.exceptions import ParsingExceptionHandler
+from icon4py.liskov.parsing.types import (
     Declare,
     Directive,
     EndStencil,
     Imports,
     NoDirectivesFound,
+    ParsedType,
     RawDirective,
     StartStencil,
     TypedDirective,
 )
-from icon4py.liskov.exceptions import ParsingExceptionHandler
-from icon4py.liskov.types import ParsedType
-from icon4py.liskov.validation import (
+from icon4py.liskov.parsing.validation import (
     DirectiveSemanticsValidator,
     DirectiveSyntaxValidator,
     Validator,

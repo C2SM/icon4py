@@ -10,9 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol, TypeAlias
 
 
 IDENTIFIER = "!$DSL"
@@ -20,6 +19,9 @@ IDENTIFIER = "!$DSL"
 
 class NoDirectivesFound:
     pass
+
+
+ParsedType: TypeAlias = dict[Any, Any] | NoDirectivesFound
 
 
 class Directive(Protocol):
