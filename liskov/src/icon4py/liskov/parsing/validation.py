@@ -19,6 +19,7 @@ from icon4py.liskov.parsing.exceptions import (
     SyntaxExceptionHandler,
 )
 from icon4py.liskov.parsing.types import (
+    Create,
     Declare,
     EndStencil,
     Imports,
@@ -58,7 +59,7 @@ class DirectiveSyntaxValidator(Validator):
 
         inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
 
-        if type(d.directive_type) == Imports:
+        if type(d.directive_type) in [Imports, Create]:
             regex = r"^(?![\s\S])"
         else:
             regex = r"(.+?)=(.+?)"

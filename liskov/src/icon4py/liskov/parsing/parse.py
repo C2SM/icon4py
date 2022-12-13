@@ -14,6 +14,7 @@ import collections
 
 from icon4py.liskov.parsing.exceptions import ParsingExceptionHandler
 from icon4py.liskov.parsing.types import (
+    Create,
     Declare,
     Directive,
     EndStencil,
@@ -37,6 +38,7 @@ class DirectivesParser:
         EndStencil(),
         Imports(),
         Declare(),
+        Create(),
     ]
 
     _VALIDATORS: list[Validator] = [
@@ -116,7 +118,7 @@ class DirectivesParser:
 
             string = d.string.replace(f"{d.directive_type.pattern}", "")
 
-            if directive_name != "Import":
+            if directive_name not in ["Import", "Create"]:
                 args = string[1:-1].split(";")
                 content = {a.split("=")[0].strip(): a.split("=")[1] for a in args}
 

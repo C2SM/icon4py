@@ -15,7 +15,7 @@ from pathlib import Path
 
 from icon4py.bindings.utils import format_fortran_code
 from icon4py.liskov.codegen.integration import GeneratedCode
-from icon4py.liskov.parsing.types import IDENTIFIER
+from icon4py.liskov.parsing.types import DIRECTIVE_TOKEN
 
 
 class IntegrationWriter:
@@ -25,7 +25,11 @@ class IntegrationWriter:
         self.generated = generated
 
     def write_from(self, filepath: Path) -> None:
-        """Write a file containing generated code, with the DSL directives removed in the same directory as filepath."""
+        """Write a file containing generated code, with the DSL directives removed in the same directory as filepath using a new suffix.
+
+        Args:
+            filepath: Path to file containing directives.
+        """
         with open(filepath, "r") as f:
             current_file = f.readlines()
 
@@ -42,23 +46,36 @@ class IntegrationWriter:
         with open(new_file_path, "w") as f:
             f.write(formatted)
 
-    def _insert_generated_code(self, current_file):
-        # Keep track of the current line number in the current file
+    def _insert_generated_code(self, current_file: list[str]) -> list[str]:
+        """Insert generated code into the current file at the specified line numbers.
+
+            The generated code is sorted in ascending order of the start line number to ensure that
+            it is inserted into the current file in the correct order. The `cur_line_num` variable is
+            used to keep track of the current line number in the current file, and is updated after
+            each generated code block is inserted to account for any additional lines that have been
+            added to the file.
+
+        Args:
+            current_file: A list of strings representing the lines of the current file.
+
+        Returns:
+            A list of strings representing the current file with the generated code inserted at the
+            specified line numbers.
+        """
+        self.generated.sort(key=lambda gen: gen.startln)
         cur_line_num = 0
+
         for gen in self.generated:
-            # Update start and end line numbers in gen to account for any lines
-            # that have been inserted into the current file so far
             gen.startln += cur_line_num
 
             to_insert = gen.source.split("\n")
 
             current_file[gen.startln : gen.startln] = to_insert
 
-            # Update cur_line_num to account for any lines that have been inserted
             cur_line_num += len(to_insert)
         return current_file
 
     @staticmethod
-    def _remove_directives(current_file):
-        """Remove the directives."""
-        return [ln for ln in current_file if IDENTIFIER not in ln]
+    def _remove_directives(current_file: list[str]) -> list[str]:
+        """Remove the directives from the current file."""
+        return [ln for ln in current_file if DIRECTIVE_TOKEN not in ln]

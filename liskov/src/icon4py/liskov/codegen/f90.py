@@ -240,3 +240,35 @@ class ImportsStatementGenerator(TemplatedGenerator):
     ImportsStatement = as_jinja(
         """{% for name in names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
     )
+
+
+class CreateStatement(eve.Node):
+    stencils: list[StartStencilData]
+    out_field_names: list[str] = eve.datamodels.field(init=False)
+
+    def __post_init__(self):
+        self.out_field_names = [
+            field.variable
+            for stencil in self.stencils
+            for field in stencil.fields
+            if field.out
+        ]
+
+
+class CreateStatementGenerator(TemplatedGenerator):
+    CreateStatement = as_jinja(
+        """
+        #ifdef __DSL_VERIFY
+        LOGICAL dsl_verify = .TRUE.
+        #elif
+        LOGICAL dsl_verify = .FALSE.
+        #endif
+
+        !$ACC DATA CREATE( &
+        {%- for name in out_field_names %}
+        !$ACC   {{ name }}_before, &
+        {%- endfor %}
+        !$ACC   ) &
+        !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
+        """
+    )

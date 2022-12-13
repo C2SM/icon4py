@@ -52,6 +52,10 @@ class ImportsData:
     endln: int
 
 
+class CreateData(ImportsData):
+    ...
+
+
 @dataclass
 class StartStencilData:
     name: str
@@ -74,3 +78,4 @@ class SerialisedDirectives:
     end: list[EndStencilData]
     declare: DeclareData
     imports: ImportsData
+    create: CreateData
