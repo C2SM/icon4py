@@ -46,9 +46,7 @@ def test_mo_math_divrot_rot_vertex_ri_dsl_numpy():
         vec_e,
         geofac_rot,
         rot_vec,
-        offset_provider={
-            "V2E": mesh.get_v2e_offset_provider(),
-        },
+        offset_provider={"V2E": mesh.get_v2e_offset_provider(), "V2EDim": V2EDim},
     )
 
     assert np.allclose(rot_vec, ref)

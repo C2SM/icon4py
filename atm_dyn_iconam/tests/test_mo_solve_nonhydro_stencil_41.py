@@ -51,7 +51,7 @@ def test_mo_solve_nonhydro_stencil_41_z_flxdiv_theta():
         z_theta_v_fl_e,
         z_flxdiv_mass,
         z_flxdiv_theta,
-        offset_provider={"C2E": mesh.get_c2e_offset_provider()},
+        offset_provider={"C2E": mesh.get_c2e_offset_provider(), "C2EDim": C2EDim},
     )
 
     assert np.allclose(z_flxdiv_mass, z_flxdiv_mass_ref)

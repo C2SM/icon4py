@@ -13,11 +13,12 @@
 
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, neighbor_sum
+from functional.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 
 
-@field_operator
+@field_operator(backend=run_gtfn)
 def _mo_nh_diffusion_stencil_02(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],

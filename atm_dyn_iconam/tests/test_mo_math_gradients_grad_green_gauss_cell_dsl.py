@@ -74,7 +74,10 @@ def test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy():
         p_ccpr2,
         geofac_grg_x,
         geofac_grg_y,
-        offset_provider={"C2E2CO": mesh.get_c2e2cO_offset_provider()},
+        offset_provider={
+            "C2E2CO": mesh.get_c2e2cO_offset_provider(),
+            "C2E2CODim": C2E2CODim,
+        },
     )
     assert np.allclose(p_grad_1_u_ref, p_grad_1_u)
     assert np.allclose(p_grad_1_v_ref, p_grad_1_v)

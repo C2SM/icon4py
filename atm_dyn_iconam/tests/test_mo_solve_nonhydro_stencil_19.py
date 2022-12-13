@@ -67,8 +67,6 @@ def test_mo_solve_nonhydro_stencil_19():
         c_lin_e,
         z_dexner_dz_c_1,
         z_gradh_exner,
-        offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
-        },
+        offset_provider={"E2C": mesh.get_e2c_offset_provider(), "E2CDim": E2CDim},
     )
     assert np.allclose(z_gradh_exner, ref)

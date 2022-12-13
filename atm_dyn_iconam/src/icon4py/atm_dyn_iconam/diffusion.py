@@ -21,6 +21,7 @@ from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, broadcast, maximum, minimum
 from functional.iterator.embedded import np_as_located_field
 from functional.program_processors.runners import gtfn_cpu
+from functional.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.atm_dyn_iconam.constants import CPD, GAS_CONSTANT_DRY_AIR
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
@@ -84,6 +85,7 @@ def _setup_runtime_diff_multfac_vn(
     return broadcast(minimum(con, dyn), (KDim,))
 
 
+# @field_operator(backend=run_gtfn)
 @field_operator
 def _setup_initial_diff_multfac_vn(
     k4: float, hdiff_efdt_ratio: float

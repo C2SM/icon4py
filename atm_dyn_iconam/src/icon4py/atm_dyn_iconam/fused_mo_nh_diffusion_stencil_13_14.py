@@ -20,7 +20,7 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_13 import (
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_14 import (
     _mo_nh_diffusion_stencil_14,
 )
-from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -28,7 +28,7 @@ def _fused_mo_nh_diffusion_stencil_13_14(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
     theta_v: Field[[CellDim, KDim], float],
-    geofac_div: Field[[CEDim], float],
+    geofac_div: Field[[CellDim, C2EDim], float],
 ) -> Field[[CellDim, KDim], float]:
     z_nabla2_e = _mo_nh_diffusion_stencil_13(kh_smag_e, inv_dual_edge_length, theta_v)
     z_temp = _mo_nh_diffusion_stencil_14(z_nabla2_e, geofac_div)
@@ -40,7 +40,7 @@ def fused_mo_nh_diffusion_stencil_13_14(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
     theta_v: Field[[CellDim, KDim], float],
-    geofac_div: Field[[CEDim], float],
+    geofac_div: Field[[CellDim, C2EDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ):
     _fused_mo_nh_diffusion_stencil_13_14(

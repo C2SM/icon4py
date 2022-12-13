@@ -43,7 +43,7 @@ def test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl():
         p_cell_in,
         c_intp,
         p_vert_out,
-        offset_provider={"V2C": mesh.get_v2c_offset_provider()},
+        offset_provider={"V2C": mesh.get_v2c_offset_provider(), "V2CDim": V2CDim},
     )
 
     assert np.allclose(p_vert_out, ref)

@@ -45,6 +45,6 @@ def test_mo_velocity_advection_stencil_09():
         z_w_concorr_me,
         e_bln_c_s,
         z_w_concorr_mc,
-        offset_provider={"C2E": mesh.get_c2e_offset_provider()},
+        offset_provider={"C2E": mesh.get_c2e_offset_provider(), "C2EDim": C2EDim},
     )
     assert np.allclose(z_w_concorr_mc, ref)

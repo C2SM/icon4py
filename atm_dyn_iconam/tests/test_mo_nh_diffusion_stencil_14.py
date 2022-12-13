@@ -19,7 +19,7 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_14 import (
 )
 from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
+from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_nh_diffusion_stencil_14_numpy(
@@ -35,7 +35,6 @@ def test_mo_nh_diffusion_stencil_14():
 
     z_nabla2_e = random_field(mesh, EdgeDim, KDim)
     geofac_div = random_field(mesh, CellDim, C2EDim)
-    geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
 
     out = zero_field(mesh, CellDim, KDim)
 
@@ -44,11 +43,13 @@ def test_mo_nh_diffusion_stencil_14():
     )
     mo_nh_diffusion_stencil_14(
         z_nabla2_e,
-        geofac_div_new,
+        geofac_div,
         out,
         offset_provider={
             "C2E": mesh.get_c2e_offset_provider(),
             "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
+            "C2EDim": C2EDim,
+            "CEDim": CEDim,
         },
     )
     assert np.allclose(out, ref)

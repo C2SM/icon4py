@@ -43,6 +43,6 @@ def test_mo_velocity_advection_stencil_17():
         e_bln_c_s,
         z_v_grad_w,
         ddt_w_adv,
-        offset_provider={"C2E": mesh.get_c2e_offset_provider()},
+        offset_provider={"C2E": mesh.get_c2e_offset_provider(), "C2EDim": C2EDim},
     )
     assert np.allclose(ddt_w_adv, ref)

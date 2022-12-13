@@ -43,6 +43,9 @@ def test_mo_solve_nonhydro_stencil_31():
         e_flx_avg,
         vn,
         z_vn_avg,
-        offset_provider={"E2C2EO": mesh.get_e2c2eO_offset_provider()},
+        offset_provider={
+            "E2C2EO": mesh.get_e2c2eO_offset_provider(),
+            "E2C2EODim": E2C2EODim,
+        },
     )
     assert np.allclose(z_vn_avg, ref)

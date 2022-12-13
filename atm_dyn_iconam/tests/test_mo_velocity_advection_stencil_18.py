@@ -105,7 +105,10 @@ def test_mo_velocity_advection_stencil_18():
         scalfac_exdiff,
         cfl_w_limit,
         dtime,
-        offset_provider={"C2E2CO": mesh.get_c2e2cO_offset_provider()},
+        offset_provider={
+            "C2E2CO": mesh.get_c2e2cO_offset_provider(),
+            "C2E2CODim": C2E2CODim,
+        },
     )
 
     assert np.allclose(ddt_w_adv, ref)

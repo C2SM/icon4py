@@ -43,6 +43,9 @@ def test_mo_solve_nonhydro_stencil_25():
         geofac_grdiv,
         z_graddiv_vn,
         z_graddiv2_vn,
-        offset_provider={"E2C2EO": mesh.get_e2c2eO_offset_provider()},
+        offset_provider={
+            "E2C2EO": mesh.get_e2c2eO_offset_provider(),
+            "E2C2EODim": E2C2EODim,
+        },
     )
     assert np.allclose(z_graddiv2_vn, ref)

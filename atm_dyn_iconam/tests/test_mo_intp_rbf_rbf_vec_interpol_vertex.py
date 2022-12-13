@@ -51,7 +51,7 @@ def test_mo_intp_rbf_rbf_vec_interpol_vertex():
         ptr_coeff_2,
         p_v_out,
         p_u_out,
-        offset_provider={"V2E": mesh.get_v2e_offset_provider()},
+        offset_provider={"V2E": mesh.get_v2e_offset_provider(), "V2EDim": V2EDim},
     )
 
     assert np.allclose(p_v_out, p_v_out_ref)

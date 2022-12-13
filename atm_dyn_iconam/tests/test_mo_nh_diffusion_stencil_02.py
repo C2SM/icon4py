@@ -73,6 +73,7 @@ def test_mo_nh_diffusion_stencil_02():
         div,
         offset_provider={
             "C2E": mesh.get_c2e_offset_provider(),
+            "C2EDim": C2EDim,
         },
     )
     assert np.allclose(kh_c, kh_c_ref)

@@ -43,6 +43,9 @@ def test_mo_nh_diffusion_stencil_07():
         w,
         geofac_n2s,
         z_nabla2_c,
-        offset_provider={"C2E2CO": mesh.get_c2e2cO_offset_provider()},
+        offset_provider={
+            "C2E2CO": mesh.get_c2e2cO_offset_provider(),
+            "C2E2CODim": C2E2CODim,
+        },
     )
     assert np.allclose(z_nabla2_c, ref)

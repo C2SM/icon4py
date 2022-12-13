@@ -53,7 +53,10 @@ def test_mo_nh_diffusion_stencil_08():
         geofac_grg_y,
         dwdx,
         dwdy,
-        offset_provider={"C2E2CO": mesh.get_c2e2cO_offset_provider()},
+        offset_provider={
+            "C2E2CO": mesh.get_c2e2cO_offset_provider(),
+            "C2E2CODim": C2E2CODim,
+        },
     )
 
     assert np.allclose(dwdx, dwdx_ref)
