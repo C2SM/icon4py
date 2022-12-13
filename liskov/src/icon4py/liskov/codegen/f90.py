@@ -13,7 +13,7 @@
 
 import re
 from dataclasses import asdict
-from typing import Collection, Optional, Type
+from typing import Collection, Optional, Sequence, Type
 
 import eve
 from eve.codegen import JinjaTemplate as as_jinja
@@ -30,7 +30,7 @@ from icon4py.liskov.codegen.interface import (
 def generate_fortran_code(
     parent_node: Type[eve.Node],
     code_generator: Type[TemplatedGenerator],
-    **kwargs: CodeGenInput | bool | list[str],
+    **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
 ) -> str:
     parent = parent_node(**kwargs)
     source = code_generator.apply(parent)
@@ -233,10 +233,46 @@ class OutputFieldCopyGenerator(TemplatedGenerator):
 
 
 class ImportsStatement(eve.Node):
-    names: list[str]
+    stencils: list[StartStencilData]
+    stencil_names: list[str] = eve.datamodels.field(init=False)
+
+    def __post_init__(self) -> None:  # type: ignore
+        self.stencil_names = [stencil.name for stencil in self.stencils]
 
 
 class ImportsStatementGenerator(TemplatedGenerator):
     ImportsStatement = as_jinja(
-        """{% for name in names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
+        """{% for name in stencil_names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
+    )
+
+
+class CreateStatement(eve.Node):
+    stencils: list[StartStencilData]
+    out_field_names: list[str] = eve.datamodels.field(init=False)
+
+    def __post_init__(self) -> None:  # type: ignore
+        self.out_field_names = [
+            field.variable
+            for stencil in self.stencils
+            for field in stencil.fields
+            if field.out
+        ]
+
+
+class CreateStatementGenerator(TemplatedGenerator):
+    CreateStatement = as_jinja(
+        """
+        #ifdef __DSL_VERIFY
+        LOGICAL dsl_verify = .TRUE.
+        #elif
+        LOGICAL dsl_verify = .FALSE.
+        #endif
+
+        !$ACC DATA CREATE( &
+        {%- for name in out_field_names %}
+        !$ACC   {{ name }}_before, &
+        {%- endfor %}
+        !$ACC   ) &
+        !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
+        """
     )

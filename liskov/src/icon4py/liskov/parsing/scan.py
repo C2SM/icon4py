@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from icon4py.liskov.parsing.types import IDENTIFIER, RawDirective
+from icon4py.liskov.parsing.types import DIRECTIVE_TOKEN, RawDirective
 
 
 @dataclass(frozen=True)
@@ -47,7 +47,7 @@ class DirectivesScanner:
             scanned_directives = []
             for lnumber, string in enumerate(f):
 
-                if IDENTIFIER in string:
+                if DIRECTIVE_TOKEN in string:
                     stripped = string.strip()
                     eol = stripped[-1]
                     scanned = Scanned(string, lnumber)

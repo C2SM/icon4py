@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol, TypeAlias
 
 
-IDENTIFIER = "!$DSL"
+DIRECTIVE_TOKEN = "!$DSL"
 
 
 class NoDirectivesFound:
@@ -69,3 +69,7 @@ class Declare(DirectiveType):
 
 class Imports(DirectiveType):
     pattern = "IMPORT"
+
+
+class Create(DirectiveType):
+    pattern = "CREATE"

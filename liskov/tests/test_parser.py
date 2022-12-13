@@ -49,8 +49,8 @@ def test_directive_parser_single_stencil(make_f90_tmpfile):
     content = parsed["content"]
 
     # todo: check each element
-    assert len(directives) == 4
-    assert len(content) == 4
+    assert len(directives) == 5
+    assert len(content) == 5
 
 
 def test_directive_parser_multiple_stencils(make_f90_tmpfile):
@@ -62,8 +62,8 @@ def test_directive_parser_multiple_stencils(make_f90_tmpfile):
     directives = parsed["directives"]
     content = parsed["content"]
 
-    assert len(directives) == 8
-    assert len(content) == 4
+    assert len(directives) == 9
+    assert len(content) == 5
 
 
 @pytest.mark.parametrize(

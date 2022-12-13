@@ -29,6 +29,8 @@ NO_DIRECTIVES_STENCIL = """\
 SINGLE_STENCIL = """\
     !$DSL IMPORT()
 
+    !$DSL CREATE()
+
     !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e); a=(nproma,p_patch%nlev,p_patch%nblks_e); &
     !$DSL         b=(nproma,p_patch%nlev,p_patch%nblks_e))
 
@@ -63,6 +65,8 @@ SINGLE_STENCIL = """\
 
 MULTIPLE_STENCILS = """\
     !$DSL IMPORT()
+
+    !$DSL CREATE()
 
     !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e))
 

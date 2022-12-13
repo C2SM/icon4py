@@ -14,6 +14,8 @@
 from dataclasses import dataclass
 
 from icon4py.liskov.codegen.f90 import (
+    CreateStatement,
+    CreateStatementGenerator,
     DeclareStatement,
     DeclareStatementGenerator,
     ImportsStatement,
@@ -85,11 +87,10 @@ class IntegrationGenerator:
             self.generated.append(wrap_run_code)
 
     def _generate_imports(self) -> None:
-        names = [stencil.name for stencil in self.directives.start]
         imports_source = generate_fortran_code(
             ImportsStatement,
             ImportsStatementGenerator,
-            names=names,
+            stencils=self.directives.start,
         )
         imports_code = GeneratedCode(
             source=imports_source,
@@ -98,8 +99,20 @@ class IntegrationGenerator:
         )
         self.generated.append(imports_code)
 
+    def _generate_create(self) -> None:
+        create_source = generate_fortran_code(
+            CreateStatement, CreateStatementGenerator, stencils=self.directives.start
+        )
+        create_code = GeneratedCode(
+            source=create_source,
+            startln=self.directives.create.startln,
+            endln=self.directives.create.endln,
+        )
+        self.generated.append(create_code)
+
     def _generate_code(self) -> None:
         """Generate all f90 code snippets for integration."""
+        self._generate_create()
         self._generate_imports()
         self._generate_declare()
         self._generate_stencil()

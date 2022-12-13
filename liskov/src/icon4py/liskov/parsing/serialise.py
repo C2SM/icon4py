@@ -17,6 +17,7 @@ from typing import Callable, Protocol
 from icon4py.liskov.codegen.interface import (
     BoundsData,
     CodeGenInput,
+    CreateData,
     DeclareData,
     EndStencilData,
     FieldAssociationData,
@@ -25,6 +26,7 @@ from icon4py.liskov.codegen.interface import (
     StartStencilData,
 )
 from icon4py.liskov.parsing.types import (
+    Create,
     Declare,
     EndStencil,
     Imports,
@@ -38,6 +40,12 @@ from icon4py.pyutils.metadata import get_field_infos
 class DirectiveInputFactory(Protocol):
     def __call__(self, parsed: dict) -> list[CodeGenInput] | CodeGenInput:
         ...
+
+
+class CreateDataFactory:
+    def __call__(self, parsed: dict) -> CreateData:
+        extracted = extract_directive(parsed["directives"], Create)[0]
+        return CreateData(startln=extracted.startln, endln=extracted.endln)
 
 
 class ImportsDataFactory:
@@ -178,6 +186,7 @@ class DirectiveSerialiser:
         self.directives = self.serialise(parsed)
 
     _FACTORIES: dict[str, Callable] = {
+        "create": CreateDataFactory(),
         "imports": ImportsDataFactory(),
         "declare": DeclareDataFactory(),
         "start": StartStencilDataFactory(),
