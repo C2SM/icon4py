@@ -87,11 +87,10 @@ class IntegrationGenerator:
             self.generated.append(wrap_run_code)
 
     def _generate_imports(self) -> None:
-        names = [stencil.name for stencil in self.directives.start]
         imports_source = generate_fortran_code(
             ImportsStatement,
             ImportsStatementGenerator,
-            names=names,
+            stencils=self.directives.start,
         )
         imports_code = GeneratedCode(
             source=imports_source,

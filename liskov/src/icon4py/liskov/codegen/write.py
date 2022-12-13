@@ -40,11 +40,11 @@ class IntegrationWriter:
 
     def _to_file(self, filepath: Path, generated_code: list[str]) -> None:
         """Format and write generated code to a file."""
-        f = "\n".join(generated_code)
-        formatted = format_fortran_code(f)
+        code = "\n".join(generated_code)
+        formatted_code = format_fortran_code(code)
         new_file_path = filepath.with_suffix(self.SUFFIX)
         with open(new_file_path, "w") as f:
-            f.write(formatted)
+            f.write(formatted_code)
 
     def _insert_generated_code(self, current_file: list[str]) -> list[str]:
         """Insert generated code into the current file at the specified line numbers.
