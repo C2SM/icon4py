@@ -15,7 +15,7 @@ import pathlib
 
 import click
 
-from icon4py.liskov.codegen.integration import IntegrationGenerator
+from icon4py.liskov.codegen.generate import IntegrationGenerator
 from icon4py.liskov.codegen.write import IntegrationWriter
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.scan import DirectivesScanner

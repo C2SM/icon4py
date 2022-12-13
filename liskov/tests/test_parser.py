@@ -28,11 +28,13 @@ from icon4py.testutils.fortran_samples import (
 )
 
 
+# todo: change naming of helper function to reflect scanning
 def collect_directives(fpath: Path) -> list[RawDirective]:
     collector = DirectivesScanner(fpath)
     return collector.directives
 
 
+# todo: move this to testutils?
 def insert_new_lines(fname: Path, lines: list[str]):
     with open(fname, "a") as f:
         for ln in lines:
@@ -48,7 +50,8 @@ def test_directive_parser_single_stencil(make_f90_tmpfile):
     directives = parsed["directives"]
     content = parsed["content"]
 
-    # todo: check each element
+    # todo: check that each element is the expected one.
+    # todo: combine stencil cases with expected elements using pytest parametrise
     assert len(directives) == 5
     assert len(content) == 5
 
@@ -62,6 +65,7 @@ def test_directive_parser_multiple_stencils(make_f90_tmpfile):
     directives = parsed["directives"]
     content = parsed["content"]
 
+    # todo: same as above
     assert len(directives) == 9
     assert len(content) == 5
 
@@ -80,6 +84,9 @@ def test_directive_parser_parsing_exception(make_f90_tmpfile, directive):
 
     with pytest.raises(ParsingException):
         DirectivesParser(directives)
+        # todo: test for more specific exception
+        # todo: check for specific error message
+        # todo: introduce more stencil cases
 
 
 @pytest.mark.parametrize(
@@ -97,6 +104,7 @@ def test_directive_parser_invalid_directive_syntax(make_f90_tmpfile, directive):
 
     with pytest.raises(DirectiveSyntaxError):
         DirectivesParser(directives)
+        # todo: introduce more stencil cases
 
 
 def test_directive_parser_no_directives_found(make_f90_tmpfile):
@@ -121,6 +129,9 @@ def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
 
     with pytest.raises(ParsingException):
         DirectivesParser(directives)
+        # todo: introduce more stencil cases
+        # todo: exception should be more specific
+        # todo: check for error message.
 
 
 @pytest.mark.parametrize(
@@ -137,6 +148,9 @@ def test_directive_parser_required_directives(make_f90_tmpfile, directive):
 
     with pytest.raises(ParsingException):
         DirectivesParser(directives)
+        # todo: introduce more stencil cases
+        # todo: exception should be more specific
+        # todo: check for error message.
 
 
 @pytest.mark.parametrize(
@@ -152,3 +166,6 @@ def test_directive_parser_unbalanced_stencil_directives(make_f90_tmpfile, direct
 
     with pytest.raises(ParsingException):
         DirectivesParser(directives)
+        # todo: introduce more stencil cases
+        # todo: exception should be more specific
+        # todo: check for error message.

@@ -107,3 +107,5 @@ class DirectiveSemanticsValidator(Validator):
             raise ParsingException(
                 "Not matching number of start and end stencil directives."
             )
+
+    # todo: be more specific about the exceptions here.

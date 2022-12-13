@@ -32,6 +32,21 @@ def generate_fortran_code(
     code_generator: Type[TemplatedGenerator],
     **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
 ) -> str:
+    """
+    Generate Fortran code for the given parent node and code generator.
+
+    Args:
+        parent_node: A subclass of eve.Node that represents the parent node.
+        code_generator: A subclass of TemplatedGenerator that will be used
+            to generate the code.
+        **kwargs: Arguments to be passed to the parent node constructor.
+            This can be a single CodeGenInput value, a sequence of CodeGenInput
+            values, or a boolean value, which is required by some parent nodes which
+            require a profile argument.
+
+    Returns:
+        A string containing the formatted Fortran code.
+    """
     parent = parent_node(**kwargs)
     source = code_generator.apply(parent)
     formatted_source = format_fortran_code(source)

@@ -29,3 +29,6 @@ def test_cli_profile(make_f90_tmpfile, cli, file):
     fpath = str(make_f90_tmpfile(content=file))
     result = cli.invoke(main, [fpath, "--profile"])
     assert result.exit_code == 0
+
+
+# todo: introduce more stencil cases (check dycore for different cases)

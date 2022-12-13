@@ -14,7 +14,7 @@
 from pathlib import Path
 
 from icon4py.bindings.utils import format_fortran_code
-from icon4py.liskov.codegen.integration import GeneratedCode
+from icon4py.liskov.codegen.generate import GeneratedCode
 from icon4py.liskov.parsing.types import DIRECTIVE_TOKEN
 
 
@@ -37,14 +37,6 @@ class IntegrationWriter:
         without_directives = self._remove_directives(with_generated_code)
 
         self._to_file(filepath, without_directives)
-
-    def _to_file(self, filepath: Path, generated_code: list[str]) -> None:
-        """Format and write generated code to a file."""
-        code = "\n".join(generated_code)
-        formatted_code = format_fortran_code(code)
-        new_file_path = filepath.with_suffix(self.SUFFIX)
-        with open(new_file_path, "w") as f:
-            f.write(formatted_code)
 
     def _insert_generated_code(self, current_file: list[str]) -> list[str]:
         """Insert generated code into the current file at the specified line numbers.
@@ -74,6 +66,14 @@ class IntegrationWriter:
 
             cur_line_num += len(to_insert)
         return current_file
+
+    def _to_file(self, filepath: Path, generated_code: list[str]) -> None:
+        """Format and write generated code to a file."""
+        code = "\n".join(generated_code)
+        formatted_code = format_fortran_code(code)
+        new_file_path = filepath.with_suffix(self.SUFFIX)
+        with open(new_file_path, "w") as f:
+            f.write(formatted_code)
 
     @staticmethod
     def _remove_directives(current_file: list[str]) -> list[str]:
