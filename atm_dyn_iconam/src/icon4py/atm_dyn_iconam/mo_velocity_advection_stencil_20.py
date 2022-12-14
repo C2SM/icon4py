@@ -116,5 +116,5 @@ def mo_velocity_advection_stencil_20(
         cfl_w_limit,
         scalfac_exdiff,
         d_time,
-        out=ddt_vn_adv,
+        out=ddt_vn_adv[:, :-1],
     )

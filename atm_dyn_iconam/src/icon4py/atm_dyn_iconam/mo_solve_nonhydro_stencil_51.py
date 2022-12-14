@@ -63,5 +63,5 @@ def mo_solve_nonhydro_stencil_51(
         z_exner_expl,
         dtime,
         cpd,
-        out=(z_q, w_nnew),
+        out=(z_q[:, 1:], w_nnew[:, 1:]),
     )
