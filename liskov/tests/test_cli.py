@@ -12,9 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
+from samples.fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
 
 from icon4py.liskov.cli import main
-from icon4py.testutils.fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
 
 
 @pytest.mark.parametrize("file", [SINGLE_STENCIL, MULTIPLE_STENCILS])

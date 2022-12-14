@@ -15,7 +15,7 @@ from pathlib import Path
 
 from icon4py.bindings.utils import format_fortran_code
 from icon4py.liskov.codegen.generate import GeneratedCode
-from icon4py.liskov.parsing.types import DIRECTIVE_TOKEN
+from icon4py.liskov.parsing.types import DIRECTIVE_IDENT
 
 
 class IntegrationWriter:
@@ -78,4 +78,4 @@ class IntegrationWriter:
     @staticmethod
     def _remove_directives(current_file: list[str]) -> list[str]:
         """Remove the directives from the current file."""
-        return [ln for ln in current_file if DIRECTIVE_TOKEN not in ln]
+        return [ln for ln in current_file if DIRECTIVE_IDENT not in ln]

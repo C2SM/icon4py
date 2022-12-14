@@ -19,6 +19,10 @@ from functional.ffront.decorator import Program
 from icon4py.liskov.parsing.types import DirectiveType, TypedDirective
 
 
+def pretty_print_typed_directive(directive: TypedDirective):
+    return f"Directive: {directive.string}, start line: {directive.startln}, end line: {directive.endln}\n"
+
+
 def extract_directive(
     directives: list[TypedDirective],
     required_type: Type[DirectiveType],

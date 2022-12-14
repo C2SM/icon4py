@@ -16,6 +16,9 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+from icon4py.liskov.parsing.scan import DirectivesScanner
+from icon4py.liskov.parsing.types import RawDirective
+
 
 @pytest.fixture
 def make_f90_tmpfile(tmp_path) -> Path:
@@ -37,3 +40,14 @@ def make_f90_tmpfile(tmp_path) -> Path:
 @pytest.fixture
 def cli():
     return CliRunner()
+
+
+def scan_for_directives(fpath: Path) -> list[RawDirective]:
+    collector = DirectivesScanner(fpath)
+    return collector.directives
+
+
+def insert_new_lines(fname: Path, lines: list[str]):
+    with open(fname, "a") as f:
+        for ln in lines:
+            f.write(f"{ln}\n")

@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol, TypeAlias
 
 
-DIRECTIVE_TOKEN = "!$DSL"
+DIRECTIVE_IDENT = "!$DSL"
 
 
 class NoDirectivesFound:
