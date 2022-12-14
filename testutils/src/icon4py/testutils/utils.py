@@ -21,12 +21,26 @@ from functional.iterator import embedded as it_embedded
 from . import simple_mesh
 
 
+def _shape(
+    mesh,
+    *dims: gt_common.Dimension,
+    extend: Optional[dict[gt_common.Dimension, int]] = None,
+):
+    if extend is None:
+        extend = {}
+    for d in dims:
+        if d not in extend.keys():
+            extend[d] = 0
+    return tuple(mesh.size[dim] + extend[dim] for dim in dims)
+
+
 def random_mask(
     mesh: simple_mesh.SimpleMesh,
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
+    extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> it_embedded.MutableLocatedField:
-    shape = tuple(map(lambda x: mesh.size[x], dims))
+    shape = _shape(mesh, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
     np.random.shuffle(arr)
@@ -37,20 +51,27 @@ def random_mask(
 
 
 def random_field(
-    mesh, *dims, low: float = -1.0, high: float = 1.0
+    mesh,
+    *dims,
+    low: float = -1.0,
+    high: float = 1.0,
+    extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
         np.random.default_rng().uniform(
-            low=low, high=high, size=tuple(map(lambda x: mesh.size[x], dims))
+            low=low, high=high, size=_shape(mesh, *dims, extend=extend)
         )
     )
 
 
 def zero_field(
-    mesh: simple_mesh.SimpleMesh, *dims: gt_common.Dimension, dtype=float
+    mesh: simple_mesh.SimpleMesh,
+    *dims: gt_common.Dimension,
+    dtype=float,
+    extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.zeros(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)
+        np.zeros(shape=_shape(mesh, *dims, extend=extend), dtype=dtype)
     )
 
 
