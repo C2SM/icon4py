@@ -35,6 +35,18 @@ class UnbalancedStencilDirectiveError(Exception):
     pass
 
 
+class MissingBoundsError(Exception):
+    pass
+
+
+class MissingDirectiveArgumentError(Exception):
+    pass
+
+
+class IncompatibleFieldError(Exception):
+    pass
+
+
 class ParsingExceptionHandler:
     @staticmethod
     def find_unsupported_directives(

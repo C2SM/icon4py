@@ -25,6 +25,11 @@ from icon4py.liskov.codegen.interface import (
     SerialisedDirectives,
     StartStencilData,
 )
+from icon4py.liskov.parsing.exceptions import (
+    IncompatibleFieldError,
+    MissingBoundsError,
+    MissingDirectiveArgumentError,
+)
 from icon4py.liskov.parsing.types import (
     Create,
     Declare,
@@ -72,21 +77,19 @@ class StartStencilDataFactory:
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["Start"][i]
             stencil_name = named_args["name"]
+            bounds = self._get_bounds(named_args)
             fields = self._get_field_associations(named_args)
             fields_w_tolerance = self._update_field_tolerances(named_args, fields)
-            bounds = self._get_bounds(named_args)
-            try:
-                serialised.append(
-                    StartStencilData(
-                        name=stencil_name,
-                        fields=fields_w_tolerance,
-                        bounds=bounds,
-                        startln=directive.startln,
-                        endln=directive.endln,
-                    )
+
+            serialised.append(
+                StartStencilData(
+                    name=stencil_name,
+                    fields=fields_w_tolerance,
+                    bounds=bounds,
+                    startln=directive.startln,
+                    endln=directive.endln,
                 )
-            except Exception as e:
-                raise e
+            )
         return serialised
 
     @staticmethod
@@ -99,9 +102,10 @@ class StartStencilDataFactory:
                 vlower=named_args["vertical_lower"],
                 vupper=named_args["vertical_upper"],
             )
-        except Exception as e:
-            # todo: more specific exception
-            raise e
+        except Exception:
+            raise MissingBoundsError(
+                f"Missing or invalid bounds provided in stencil: {named_args['name']}"
+            )
         return bounds
 
     def _get_field_associations(
@@ -112,6 +116,54 @@ class StartStencilDataFactory:
         For each directive, the corresponding gt4py stencil is parsed, which is used to infer the
         input and output intent of each field.
         """
+        field_args = self._create_field_args(named_args)
+        fields = self._combine_field_info(field_args, named_args)
+        return fields
+
+    def _combine_field_info(
+        self, field_args: dict[str, str], named_args: dict[str, str]
+    ) -> list[FieldAssociationData]:
+        """Combine directive field info with field info extracted from the corresponding icon4py stencil.
+
+        Args:
+            field_args: A dictionary of field names and their associations as extracted from the StartStencil
+                directive arguments.
+            named_args: A dictionary of named arguments as extracted from the StartStencil directive.
+
+        Returns:
+            A list of FieldAssociationData objects containing the combined field info.
+
+        Raises:
+            IncompatibleFieldError: If a used field variable name is incompatible with the expected field
+                names defined in the corresponding icon4py stencil.
+        """
+        stencil_collector = StencilCollector(named_args["name"])
+        gt4py_stencil_info = get_field_infos(stencil_collector.fvprog)
+        fields = []
+        for field_name, association in field_args.items():
+
+            if any([field_name.endswith(tol) for tol in self.TOLERANCE_ARGS]):
+                continue
+
+            try:
+                gt4py_field_info = gt4py_stencil_info[field_name]
+            except KeyError:
+                raise IncompatibleFieldError(
+                    f"Used field variable name that is incompatible with the expected field names defined in {named_args['name']} in icon4py."
+                )
+
+            field_association_data = FieldAssociationData(
+                variable=field_name,
+                association=association,
+                inp=gt4py_field_info.inp,
+                out=gt4py_field_info.out,
+            )
+
+            fields.append(field_association_data)
+        return fields
+
+    @staticmethod
+    def _create_field_args(named_args: dict[str, str]) -> dict[str, str]:
         try:
             field_args = copy.copy(named_args)
             entries_to_remove = (
@@ -123,30 +175,10 @@ class StartStencilDataFactory:
             )
             list(map(field_args.pop, entries_to_remove))
         except Exception as e:
-            # todo: more specific exception
-            raise e
-
-        stencil_collector = StencilCollector(named_args["name"])
-        gt4py_stencil_info = get_field_infos(stencil_collector.fvprog)
-
-        # todo: handle KeyError with exception
-        fields = []
-        for field_name, association in field_args.items():
-
-            if any([field_name.endswith(tol) for tol in self.TOLERANCE_ARGS]):
-                continue
-
-            gt4py_field_info = gt4py_stencil_info[field_name]
-
-            field_association_data = FieldAssociationData(
-                variable=field_name,
-                association=association,
-                inp=gt4py_field_info.inp,
-                out=gt4py_field_info.out,
+            raise MissingDirectiveArgumentError(
+                f"Missing argument {e} in a StartStencil directive."
             )
-
-            fields.append(field_association_data)
-        return fields
+        return field_args
 
     def _update_field_tolerances(
         self, named_args: dict, fields: list[FieldAssociationData]
@@ -182,7 +214,7 @@ class EndStencilDataFactory:
 
 
 class DirectiveSerialiser:
-    def __init__(self, parsed: ParsedType):
+    def __init__(self, parsed: ParsedType) -> None:
         self.directives = self.serialise(parsed)
 
     _FACTORIES: dict[str, Callable] = {
@@ -194,6 +226,20 @@ class DirectiveSerialiser:
     }
 
     def serialise(self, directives: ParsedType) -> SerialisedDirectives:
+        """Serialise the provided parsed directives to a SerialisedDirectives object.
+
+        Args:
+            directives: The parsed directives to serialise.
+
+        Returns:
+            A SerialisedDirectives object containing the serialised directives.
+
+        Note:
+            The method uses the `_FACTORIES` class attribute to create the appropriate
+            factory object for each directive type, and uses these objects to serialise
+            the parsed directives. The SerialisedDirectives class is a named tuple
+            containing the serialised versions of the different directive types.
+        """
         serialised = dict()
 
         for key, func in self._FACTORIES.items():
