@@ -229,3 +229,23 @@ MULTIPLE_STENCILS = """\
         !$ACC END PARALLEL LOOP
     !$DSL END(name=mo_nh_diffusion_stencil_07)
     """
+
+
+DIRECTIVES_SAMPLE = """\
+!$DSL IMPORT()
+
+!$DSL CREATE()
+
+!$DSL DECLARE(vn=p_patch%vn; vn2=p_patch%vn2)
+
+!$DSL START(name=mo_nh_diffusion_06; vn=p_patch%vn; &
+!$DSL       a=a; b=c)
+
+!$DSL END(name=mo_nh_diffusion_06)
+
+!$DSL START(name=mo_nh_diffusion_07; xn=p_patch%xn)
+
+!$DSL END(name=mo_nh_diffusion_07)
+
+!$DSL UNKNOWN_DIRECTIVE()
+"""

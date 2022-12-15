@@ -61,5 +61,6 @@ class StencilCollector:
             raise Exception(
                 f"Did not find member: {self.name} in module: {module_name}"
             )
+        # todo: More specific exception
 
         return found_stencil[0]

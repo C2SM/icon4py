@@ -40,7 +40,11 @@ class DirectivesScanner:
         return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)
 
     def _scan_for_directives(self) -> list[RawDirective]:
-        """Scan filepath for directives and returns them along with their line numbers."""
+        """Scan `filepath` for directives and return them along with their line numbers.
+
+        Returns:
+            A list of `RawDirective` objects containing the scanned directives and their line numbers.
+        """
         directives = []
         with self.filepath.open() as f:
 
