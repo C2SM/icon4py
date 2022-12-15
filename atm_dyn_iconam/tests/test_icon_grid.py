@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Tuple
+
 from icon_grid_test_utils import with_icon_grid
 
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMarkerIndex
@@ -19,16 +21,16 @@ from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 def test_horizontal_grid_cell_indices(with_icon_grid):
     assert with_icon_grid.get_indices_from_to(
         CellDim,
-        HorizontalMarkerIndex.halo(CellDim) - 1,
-        HorizontalMarkerIndex.halo(CellDim) - 1,
+        HorizontalMarkerIndex.local(CellDim) - 1,
+        HorizontalMarkerIndex.local(CellDim) - 1,
     ) == (
         20896,
         20896,
     )  # halo +1
     assert with_icon_grid.get_indices_from_to(
         CellDim,
-        HorizontalMarkerIndex.halo(CellDim),
-        HorizontalMarkerIndex.halo(CellDim),
+        HorizontalMarkerIndex.local(CellDim),
+        HorizontalMarkerIndex.local(CellDim),
     ) == (
         -1,
         20896,
@@ -88,18 +90,18 @@ def test_horizontal_edge_indices(with_icon_grid):
     ) == (6176, 31558)
     assert with_icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.halo(EdgeDim) - 2,
-        HorizontalMarkerIndex.halo(EdgeDim) - 2,
+        HorizontalMarkerIndex.local(EdgeDim) - 2,
+        HorizontalMarkerIndex.local(EdgeDim) - 2,
     ) == (31558, 31558)
     assert with_icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.halo(EdgeDim) - 1,
-        HorizontalMarkerIndex.halo(EdgeDim) - 1,
+        HorizontalMarkerIndex.local(EdgeDim) - 1,
+        HorizontalMarkerIndex.local(EdgeDim) - 1,
     ) == (31558, 31558)
     assert with_icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.halo(EdgeDim),
-        HorizontalMarkerIndex.halo(EdgeDim),
+        HorizontalMarkerIndex.local(EdgeDim),
+        HorizontalMarkerIndex.local(EdgeDim),
     ) == (
         -1,
         31558,
@@ -194,13 +196,13 @@ def test_horizontal_vertex_indices(with_icon_grid):
     ) == (10663, 10663)
     assert with_icon_grid.get_indices_from_to(
         VertexDim,
-        HorizontalMarkerIndex.halo(VertexDim),
-        HorizontalMarkerIndex.halo(VertexDim),
+        HorizontalMarkerIndex.local(VertexDim),
+        HorizontalMarkerIndex.local(VertexDim),
     ) == (-1, 10663)
     assert with_icon_grid.get_indices_from_to(
         VertexDim,
-        HorizontalMarkerIndex.halo(VertexDim) - 1,
-        HorizontalMarkerIndex.halo(VertexDim) - 1,
+        HorizontalMarkerIndex.local(VertexDim) - 1,
+        HorizontalMarkerIndex.local(VertexDim) - 1,
     ) == (10663, 10663)
 
     assert with_icon_grid.get_indices_from_to(

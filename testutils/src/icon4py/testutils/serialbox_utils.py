@@ -15,6 +15,7 @@ import os
 
 import numpy as np
 from functional.common import Dimension
+from functional.ffront.fbuiltins import int32
 from functional.iterator.embedded import np_as_located_field
 from serialbox import Savepoint
 
@@ -50,10 +51,11 @@ class IconDiffustionSavepoint:
     def print_meta_info(self):
         print(self.savepoint.metainfo)
 
-    def _get_field(self, name, *dimensions):
-        buffer = np.squeeze(self.serializer.read(name, self.savepoint))
+    def _get_field(self, name, *dimensions, dtype=float):
+        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
         print(f"{name} {buffer.shape}")
         return np_as_located_field(*dimensions)(buffer)
+
 
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()
@@ -95,26 +97,43 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
         return self._get_field("inv_dual_edge_length", EdgeDim)
 
     def cells_start_index(self):
-        # subtract 1 for python 0 based indexing
-        return self.serializer.read("c_start_index", self.savepoint) - 1
+        return self._read_int32_shift1("c_start_index")
+
+    def _read_int32_shift1(self, name:str):
+        """
+        Read a index field and shift it by -1.
+
+        use for start indeces: the shift accounts for the zero based python
+        values are converted to int32
+        """
+        return (self.serializer.read(name, self.savepoint) - 1).astype(int32)
 
     def cells_end_index(self):
-        # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
-        # one off accounts for being exclusive [from:to)
-        return self.serializer.read("c_end_index", self.savepoint)
+        return self._read_int32("c_end_index")
+
+    def read_int(self, name:str):
+        buffer = self.serializer.read(name, self.savepoint).astype(int)
+        print(f"{name} {buffer.shape}")
+        return buffer
+
+    def _read_int32(self, name:str):
+        """
+        Read a int field by name
+
+        use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
+        this accounts for being exclusive python exclusive bounds: [from:to)
+        field values are convert to int32
+        """
+        return self.serializer.read(name, self.savepoint).astype(int32)
 
     def vertex_start_index(self):
-
-        return self.serializer.read("v_start_index", self.savepoint) - 1
+        return self._read_int32_shift1("v_start_index")
 
     def vertex_end_index(self):
-        # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
-        # one off accounts for being exclusive [from:to)
-        return self.serializer.read("v_end_index", self.savepoint)
+        return self._read_int32("v_end_index")
 
     def edge_start_index(self):
-        # subtract 1 for python 0 based indexing
-        return self.serializer.read("e_start_index", self.savepoint) - 1
+        return self._read_int32_shift1("e_start_index")
 
     def edge_end_index(self):
         # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
@@ -185,7 +204,7 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
         return self._get_field("wgtfac_e", EdgeDim, KDim)
 
     def mask_diff(self):
-        return self._get_field("mask_diff", CellDim, KDim)
+        return self._get_field("mask_hdiff", CellDim, KDim, dtype=int)
 
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)
@@ -212,7 +231,7 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
         return self._get_field("nudgecoeff_e", EdgeDim)
 
     def zd_vertidx(self):
-        return self._get_field("zd_vertidx", CellDim, C2E2CDim, KDim)
+        return self._get_field("zd_vertidx", CellDim, C2E2CDim, KDim, dtype=int)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", VertexDim, V2EDim)

@@ -14,7 +14,7 @@
 import os
 
 import numpy as np
-from _pytest.fixtures import fixture
+import pytest
 
 from icon4py.atm_dyn_iconam.diffusion import DiffusionConfig
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
@@ -38,7 +38,7 @@ from icon4py.common.dimension import (
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
-@fixture
+@pytest.fixture
 def with_icon_grid():
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     sp = IconSerialDataProvider(
@@ -79,7 +79,7 @@ def with_icon_grid():
     return grid
 
 
-@fixture
+@pytest.fixture
 def with_r04b09_diffusion_config() -> DiffusionConfig:
     """
     Create DiffusionConfig.

@@ -27,4 +27,4 @@ class MetricState:
     mask_hdiff: Field[[CellDim, KDim], int]
     zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int]
     zd_diffcoef: Field[[CellDim, KDim], float]
-    zd_intcoef: Field[[CellDim, KDim], float]
+    zd_intcoef: Field[[CellDim,C2E2CDim, KDim], float]

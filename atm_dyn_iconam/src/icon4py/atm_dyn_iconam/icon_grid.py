@@ -14,6 +14,7 @@
 from typing import Dict, Tuple
 
 import numpy as np
+from functional.ffront.fbuiltins import int32, int64
 from functional.common import Dimension, DimensionKind, Field
 from functional.iterator.embedded import (
     NeighborTableOffsetProvider,
@@ -21,7 +22,8 @@ from functional.iterator.embedded import (
 )
 
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim, C2E2CODim, C2EDim, C2E2CDim, \
+    E2VDim, E2CDim
 
 
 class VerticalMeshConfig:
@@ -78,12 +80,14 @@ def builder(func):
     return wrapper
 
 
+
+
 class IconGrid:
     def __init__(self):
         self.config: MeshConfig = None
         self.start_indices = {}
         self.end_indices = {}
-        self.connectivities: Dict[Dimension, np.ndarray] = {}
+        self.connectivities: Dict[str, np.ndarray] = {}
         self.size: Dict[Dimension, int] = {}
 
     def _update_size(self, config: MeshConfig):
@@ -128,12 +132,21 @@ class IconGrid:
 
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
-    ) -> Tuple[int, int]:
+    ) -> Tuple[int32, int32]:
+        """
+        Use to specifzy domains of a field for field_operator.
+
+        For a given dimension, returns the start and end index if a
+        horizontal region in a field given by the markers.
+
+        field operators will then run from start of the region given by the
+        start_marker to the end of the region given by the end_marker
+        """
         if dim.kind != DimensionKind.HORIZONTAL:
             raise ValueError(
                 "only defined for {} dimension kind ", DimensionKind.HORIZONTAL
             )
-        return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
+        return self.start_indices[dim][start_marker],self.end_indices[dim][end_marker]
 
     def get_c2e_connectivity(self):
         table = self.connectivities["c2e"]
@@ -151,14 +164,18 @@ class IconGrid:
         table = self.connectivities["c2e2c"]
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
 
-    def get_c2e2c0_connectivity(self):
-        table = self.connectivities["c2e2c0"]
+    def get_c2e2co_connectivity(self):
+        table = self.connectivities["c2e2co"]
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
 
     def get_e2c2v_connectivity(self):
         return self.get_e2v_connectivity()
 
-    def get_v2e_offset_provider(self):
+    def get_e2c2v_size(self):
+        self.connectivities["e2v"].shape[1]
+
+
+    def get_v2e_connectivity(self):
         table = self.connectivities["v2e"]
         return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
 
@@ -174,8 +191,8 @@ class VerticalModelParams:
         """
         self.rayleigh_damping_height = rayleigh_damping_height
         self.vct_a = vct_a
-        self.index_of_damping_height = np.argmax(
-            np.where(np.asarray(self.vct_a) >= self.rayleigh_damping_height)
+        self.index_of_damping_height = int32(np.argmax(
+            np.where(np.asarray(self.vct_a) >= self.rayleigh_damping_height))
         )
 
     def get_index_of_damping_layer(self):

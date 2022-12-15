@@ -15,7 +15,7 @@ import os
 import numpy as np
 import pytest
 from icon_grid_test_utils import with_icon_grid, with_r04b09_diffusion_config
-
+from functional.ffront.fbuiltins import int32
 from icon4py.atm_dyn_iconam import utils
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.diffusion import (
@@ -28,20 +28,34 @@ from icon4py.atm_dyn_iconam.diffusion import (
     _setup_smag_limit,
     scale_k,
     set_zero_v_k,
-    setup_fields_for_initial_step,
+    setup_fields_for_initial_step, mo_nh_diffusion_stencil_15_numpy,
 )
 from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
-from icon4py.common.dimension import KDim, VertexDim
+from icon4py.common.dimension import KDim, VertexDim, ECVDim, CellDim, C2E2CODim, C2E2CDim
 from icon4py.testutils.serialbox_utils import (
     IconDiffusionInitSavepoint,
     IconSerialDataProvider,
 )
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import random_field, zero_field, as_1D_sparse_field, constant_field, \
+    random_mask
 
+
+def test_mo_nh_diffusion_stencil_15():
+    mesh = SimpleMesh()
+    mask_diff = constant_field(mesh, 1, CellDim, KDim, dtype=int32)
+    zd_vertidx = constant_field(mesh, 1, C2E2CDim, KDim, dtype=int32)
+    zd_diffcoef = random_field(mesh, CellDim, KDim)
+    geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
+    vcoef = random_field(mesh, C2E2CDim, KDim)
+    theta_v = random_field(mesh, CellDim, KDim)
+    z_temp = random_field(mesh, CellDim, KDim)
+
+    # mo_nh_diffusion_stencil_15_numpy(mesh.c2e2c,
+    #                                  mask_diff, zd_vertidx, zd_diffcoef, geofac_n2s, vcoef, theta_v, z_temp)
 
 def test_scale_k():
     mesh = SimpleMesh()
@@ -362,7 +376,6 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(savepoint, diffusion)
 
 
-@pytest.mark.xfail
 def test_diffusion_run(with_icon_grid):
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     data_provider = IconSerialDataProvider("icon_diffusion_init", data_path)
@@ -404,7 +417,7 @@ def test_diffusion_run(with_icon_grid):
     )
 
     metric_state = MetricState(
-        mask_hdiff=sp.theta_ref_mc(),
+        mask_hdiff=sp.mask_diff(),
         theta_ref_mc=sp.theta_ref_mc(),
         wgtfac_c=sp.wgtfac_c(),
         zd_intcoef=sp.zd_intcoef(),
@@ -418,12 +431,12 @@ def test_diffusion_run(with_icon_grid):
     inverse_vertical_vertex_lengths = sp.inv_vert_vert_length()
     inverse_dual_edge_length = sp.inv_dual_edge_length()
     primal_normal_vert: VectorTuple = (
-        sp.primal_normal_vert_x(),
-        sp.primal_normal_vert_y(),
+        as_1D_sparse_field(sp.primal_normal_vert_x(), ECVDim),
+        as_1D_sparse_field(sp.primal_normal_vert_y(), ECVDim),
     )
     dual_normal_vert: VectorTuple = (
-        sp.dual_normal_vert_x(),
-        sp.dual_normal_vert_y(),
+        as_1D_sparse_field(sp.dual_normal_vert_x(), ECVDim),
+        as_1D_sparse_field(sp.dual_normal_vert_y(), ECVDim),
     )
     edge_areas = sp.edge_areas()
     cell_areas = sp.cell_areas()
