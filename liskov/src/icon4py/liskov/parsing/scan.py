@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from icon4py.liskov.parsing.types import DIRECTIVE_TOKEN, RawDirective
+from icon4py.liskov.parsing.types import DIRECTIVE_IDENT, RawDirective
 
 
 @dataclass(frozen=True)
@@ -40,14 +40,18 @@ class DirectivesScanner:
         return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)
 
     def _scan_for_directives(self) -> list[RawDirective]:
-        """Scan filepath for directives and returns them along with their line numbers."""
+        """Scan `filepath` for directives and return them along with their line numbers.
+
+        Returns:
+            A list of `RawDirective` objects containing the scanned directives and their line numbers.
+        """
         directives = []
         with self.filepath.open() as f:
 
             scanned_directives = []
             for lnumber, string in enumerate(f):
 
-                if DIRECTIVE_TOKEN in string:
+                if DIRECTIVE_IDENT in string:
                     stripped = string.strip()
                     eol = stripped[-1]
                     scanned = Scanned(string, lnumber)

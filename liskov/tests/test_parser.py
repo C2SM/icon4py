@@ -10,98 +10,143 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from pathlib import Path
+from collections import defaultdict
 
 import pytest
-
-from icon4py.liskov.parsing.exceptions import (
-    DirectiveSyntaxError,
-    ParsingException,
-)
-from icon4py.liskov.parsing.parse import DirectivesParser
-from icon4py.liskov.parsing.scan import DirectivesScanner
-from icon4py.liskov.parsing.types import NoDirectivesFound, RawDirective
-from icon4py.testutils.fortran_samples import (
+from conftest import insert_new_lines, scan_for_directives
+from pytest import mark
+from samples.fortran_samples import (
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,
 )
 
+from icon4py.liskov.parsing.exceptions import (
+    DirectiveSyntaxError,
+    RepeatedDirectiveError,
+    RequiredDirectivesError,
+    UnbalancedStencilDirectiveError,
+    UnsupportedDirectiveError,
+)
+from icon4py.liskov.parsing.parse import DirectivesParser
+from icon4py.liskov.parsing.types import (
+    Create,
+    Imports,
+    NoDirectivesFound,
+    StartStencil,
+    TypedDirective,
+)
 
-def collect_directives(fpath: Path) -> list[RawDirective]:
-    collector = DirectivesScanner(fpath)
-    return collector.directives
+
+def test_parse_no_input():
+    directives = []
+    assert DirectivesParser._parse(directives) == defaultdict(list)
 
 
-def insert_new_lines(fname: Path, lines: list[str]):
-    with open(fname, "a") as f:
-        for ln in lines:
-            f.write(f"{ln}\n")
+@mark.parametrize(
+    "directive_type, string, startln, endln, expected_content",
+    [
+        (Imports(), "IMPORT()", 1, 1, defaultdict(list, {"Import": [None]})),
+        (Create(), "CREATE()", 2, 2, defaultdict(list, {"Create": [None]})),
+        (
+            StartStencil(),
+            "START(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)",
+            3,
+            4,
+            defaultdict(
+                list,
+                {
+                    "Start": [
+                        {
+                            "name": "mo_nh_diffusion_06",
+                            "vn": "p_patch%p%vn",
+                            "foo": "abc",
+                        }
+                    ]
+                },
+            ),
+        ),
+    ],
+)
+def test_parse_single_directive(
+    directive_type, string, startln, endln, expected_content
+):
+    directives = [
+        TypedDirective(
+            directive_type=directive_type, string=string, startln=startln, endln=endln
+        )
+    ]
+    assert DirectivesParser._parse(directives) == expected_content
 
 
-def test_directive_parser_single_stencil(make_f90_tmpfile):
-    fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
-    directives = collect_directives(fpath)
+@mark.parametrize(
+    "stencil, num_directives, num_content",
+    [(SINGLE_STENCIL, 5, 5), (MULTIPLE_STENCILS, 9, 5)],
+)
+def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
+    fpath = make_f90_tmpfile(content=stencil)
+    directives = scan_for_directives(fpath)
     parser = DirectivesParser(directives)
     parsed = parser.parsed_directives
 
     directives = parsed["directives"]
     content = parsed["content"]
 
-    # todo: check each element
-    assert len(directives) == 5
-    assert len(content) == 5
+    assert len(directives) == num_directives
+    assert len(content) == num_content
 
-
-def test_directive_parser_multiple_stencils(make_f90_tmpfile):
-    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
-    directives = collect_directives(fpath)
-    parser = DirectivesParser(directives)
-    parsed = parser.parsed_directives
-
-    directives = parsed["directives"]
-    content = parsed["content"]
-
-    assert len(directives) == 9
-    assert len(content) == 5
+    assert isinstance(content, defaultdict)
+    assert all([isinstance(d, TypedDirective) for d in directives])
 
 
 @pytest.mark.parametrize(
-    "directive",
+    "stencil, directive",
     [
-        "!$DSL FOO_DIRECTIVE()",
-        "!$DSL BAR_DIRECTIVE()",
+        (SINGLE_STENCIL, "!$DSL FOO_DIRECTIVE()"),
+        (MULTIPLE_STENCILS, "!$DSL BAR_DIRECTIVE()"),
     ],
 )
-def test_directive_parser_parsing_exception(make_f90_tmpfile, directive):
-    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
+def test_unsupported_directives(
+    make_f90_tmpfile,
+    stencil,
+    directive,
+):
+    fpath = make_f90_tmpfile(content=stencil)
     insert_new_lines(fpath, [directive])
-    directives = collect_directives(fpath)
+    directives = scan_for_directives(fpath)
+    directive_name = directive.replace("!$DSL ", "")
 
-    with pytest.raises(ParsingException):
+    with pytest.raises(
+        UnsupportedDirectiveError,
+        match=rf"\s+!\$DSL {directive_name}\(\)\n on lines (\d+)",
+    ):
         DirectivesParser(directives)
 
 
 @pytest.mark.parametrize(
-    "directive",
+    "stencil, directive",
     [
-        "!$DSL START(stencil1, stencil2)",
-        "!$DSL DECLARE(somefield; another_field)",
-        "!$DSL IMPORT(field)",
+        (SINGLE_STENCIL, "!$DSL START(stencil1, stencil2)"),
+        (MULTIPLE_STENCILS, "!$DSL DECLARE(somefield; another_field)"),
+        (SINGLE_STENCIL, "!$DSL IMPORT(field)"),
     ],
 )
-def test_directive_parser_invalid_directive_syntax(make_f90_tmpfile, directive):
-    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
+def test_directive_parser_invalid_directive_syntax(
+    make_f90_tmpfile, stencil, directive
+):
+    fpath = make_f90_tmpfile(content=stencil)
     insert_new_lines(fpath, [directive])
-    directives = collect_directives(fpath)
+    directives = scan_for_directives(fpath)
 
-    with pytest.raises(DirectiveSyntaxError):
+    with pytest.raises(
+        DirectiveSyntaxError, match=r"DirectiveSyntaxError on line \d+\n"
+    ):
         DirectivesParser(directives)
 
 
 def test_directive_parser_no_directives_found(make_f90_tmpfile):
     fpath = make_f90_tmpfile(content=NO_DIRECTIVES_STENCIL)
-    directives = collect_directives(fpath)
+    directives = scan_for_directives(fpath)
     parser = DirectivesParser(directives)
     parsed = parser.parsed_directives
     assert isinstance(parsed, NoDirectivesFound)
@@ -112,14 +157,18 @@ def test_directive_parser_no_directives_found(make_f90_tmpfile):
     [
         "!$DSL IMPORT()",
         "!$DSL END(name=mo_nh_diffusion_stencil_06)",
+        "!$DSL CREATE()",
     ],
 )
 def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
     insert_new_lines(fpath, [directive])
-    directives = collect_directives(fpath)
+    directives = scan_for_directives(fpath)
 
-    with pytest.raises(ParsingException):
+    with pytest.raises(
+        RepeatedDirectiveError,
+        match="Found same directive more than once in the following directives:\n",
+    ):
         DirectivesParser(directives)
 
 
@@ -127,28 +176,38 @@ def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
     "directive",
     [
         """!$DSL IMPORT()""",
+        """!$DSL CREATE()""",
         """!$DSL END(name=mo_nh_diffusion_stencil_06)""",
     ],
 )
 def test_directive_parser_required_directives(make_f90_tmpfile, directive):
     new = SINGLE_STENCIL.replace(directive, "")
     fpath = make_f90_tmpfile(content=new)
-    directives = collect_directives(fpath)
+    directives = scan_for_directives(fpath)
 
-    with pytest.raises(ParsingException):
+    with pytest.raises(
+        RequiredDirectivesError,
+        match=r"Missing required directive of type (\w*) in source.",
+    ):
         DirectivesParser(directives)
 
 
 @pytest.mark.parametrize(
-    "directive",
+    "stencil, directive",
     [
-        """!$DSL END(name=unmatched_stencil)""",
+        (MULTIPLE_STENCILS, "!$DSL END(name=mo_nh_diffusion_stencil_06)"),
+        (MULTIPLE_STENCILS, "!$DSL END(name=mo_solve_nonhydro_stencil_16)"),
     ],
 )
-def test_directive_parser_unbalanced_stencil_directives(make_f90_tmpfile, directive):
-    fpath = make_f90_tmpfile(content=MULTIPLE_STENCILS)
-    insert_new_lines(fpath, [directive])
-    directives = collect_directives(fpath)
+def test_directive_parser_unbalanced_stencil_directives(
+    make_f90_tmpfile, stencil, directive
+):
+    new = stencil.replace(directive, "")
+    fpath = make_f90_tmpfile(content=new)
+    directives = scan_for_directives(fpath)
 
-    with pytest.raises(ParsingException):
+    with pytest.raises(
+        UnbalancedStencilDirectiveError,
+        match=r"Found (\d*) unbalanced START or END directive(s).\n",
+    ):
         DirectivesParser(directives)

@@ -12,16 +12,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from pathlib import Path
+from typing import List
 
 from icon4py.bindings.utils import format_fortran_code
-from icon4py.liskov.codegen.integration import GeneratedCode
-from icon4py.liskov.parsing.types import DIRECTIVE_TOKEN
+from icon4py.liskov.codegen.generate import GeneratedCode
+from icon4py.liskov.parsing.types import DIRECTIVE_IDENT
 
 
 class IntegrationWriter:
     SUFFIX = ".gen.f90"
 
-    def __init__(self, generated: list[GeneratedCode]) -> None:
+    def __init__(self, generated: List[GeneratedCode]) -> None:
+        """Initialize an IntegrationWriter instance with a list of generated code.
+
+        Args:
+            generated: A list of GeneratedCode instances representing the generated code that will be written to a file.
+        """
         self.generated = generated
 
     def write_from(self, filepath: Path) -> None:
@@ -30,42 +36,49 @@ class IntegrationWriter:
         Args:
             filepath: Path to file containing directives.
         """
-        with open(filepath, "r") as f:
-            current_file = f.readlines()
-
-        with_generated_code = self._insert_generated_code(current_file)
+        current_file = self._read_file(filepath)
+        with_generated_code = self._insert_generated_code(current_file, self.generated)
         without_directives = self._remove_directives(with_generated_code)
+        self._write_file(filepath, without_directives)
 
-        self._to_file(filepath, without_directives)
+    @staticmethod
+    def _read_file(filepath: Path) -> List[str]:
+        """Read the lines of a file into a list.
 
-    def _to_file(self, filepath: Path, generated_code: list[str]) -> None:
-        """Format and write generated code to a file."""
-        code = "\n".join(generated_code)
-        formatted_code = format_fortran_code(code)
-        new_file_path = filepath.with_suffix(self.SUFFIX)
-        with open(new_file_path, "w") as f:
-            f.write(formatted_code)
+        Args:
+            filepath: Path to the file to be read.
 
-    def _insert_generated_code(self, current_file: list[str]) -> list[str]:
+        Returns:
+            A list of strings representing the lines of the file.
+        """
+        with filepath.open("r") as f:
+            lines = f.readlines()
+        return lines
+
+    @staticmethod
+    def _insert_generated_code(
+        current_file: List[str], generated_code: List[GeneratedCode]
+    ) -> List[str]:
         """Insert generated code into the current file at the specified line numbers.
 
-            The generated code is sorted in ascending order of the start line number to ensure that
-            it is inserted into the current file in the correct order. The `cur_line_num` variable is
-            used to keep track of the current line number in the current file, and is updated after
-            each generated code block is inserted to account for any additional lines that have been
-            added to the file.
+        The generated code is sorted in ascending order of the start line number to ensure that
+        it is inserted into the current file in the correct order. The `cur_line_num` variable is
+        used to keep track of the current line number in the current file, and is updated after
+        each generated code block is inserted to account for any additional lines that have been
+        added to the file.
 
         Args:
             current_file: A list of strings representing the lines of the current file.
+            generated_code: A list of GeneratedCode instances representing the generated code to be inserted into the current file.
 
         Returns:
             A list of strings representing the current file with the generated code inserted at the
             specified line numbers.
         """
-        self.generated.sort(key=lambda gen: gen.startln)
+        generated_code.sort(key=lambda gen: gen.startln)
         cur_line_num = 0
 
-        for gen in self.generated:
+        for gen in generated_code:
             gen.startln += cur_line_num
 
             to_insert = gen.source.split("\n")
@@ -76,6 +89,27 @@ class IntegrationWriter:
         return current_file
 
     @staticmethod
-    def _remove_directives(current_file: list[str]) -> list[str]:
-        """Remove the directives from the current file."""
-        return [ln for ln in current_file if DIRECTIVE_TOKEN not in ln]
+    def _write_file(filepath: Path, generated_code: List[str]) -> None:
+        """Format and write generated code to a file.
+
+        Args:
+            filepath: Path to the file where the generated code will be written.
+            generated_code: A list of strings representing the generated code to be written to the file.
+        """
+        code = "\n".join(generated_code)
+        formatted_code = format_fortran_code(code)
+        new_file_path = filepath.with_suffix(IntegrationWriter.SUFFIX)
+        with new_file_path.open("w") as f:
+            f.write(formatted_code)
+
+    @staticmethod
+    def _remove_directives(current_file: List[str]) -> List[str]:
+        """Remove the directives from the current file.
+
+        Args:
+            current_file: A list of strings representing the lines of the current file.
+
+        Returns:
+            A list of strings representing the current file with the directives removed.
+        """
+        return [ln for ln in current_file if DIRECTIVE_IDENT not in ln]

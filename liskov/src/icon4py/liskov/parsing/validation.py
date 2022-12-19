@@ -15,8 +15,10 @@ import re
 from typing import Protocol
 
 from icon4py.liskov.parsing.exceptions import (
-    ParsingException,
+    RepeatedDirectiveError,
+    RequiredDirectivesError,
     SyntaxExceptionHandler,
+    UnbalancedStencilDirectiveError,
 )
 from icon4py.liskov.parsing.types import (
     Create,
@@ -26,6 +28,7 @@ from icon4py.liskov.parsing.types import (
     StartStencil,
     TypedDirective,
 )
+from icon4py.liskov.parsing.utils import format_typed_directive
 
 
 class Validator(Protocol):
@@ -34,12 +37,21 @@ class Validator(Protocol):
 
 
 class DirectiveSyntaxValidator(Validator):
-    """Syntax validation method dispatcher for each directive type."""
+    """Validates syntax of preprocessor directives."""
 
     def __init__(self) -> None:
         self.exception_handler = SyntaxExceptionHandler
 
     def validate(self, directives: list[TypedDirective]) -> None:
+        """Validate the syntax of preprocessor directives.
+
+            Checks that each directive's pattern and inner contents, if any, match the expected syntax.
+            If a syntax error is detected an appropriate exception using the exception_handler attribute
+            is raised.
+
+        Args:
+            directives: A list of typed directives to validate.
+        """
         for d in directives:
             to_validate = d.string
             pattern = d.directive_type.pattern
@@ -60,8 +72,10 @@ class DirectiveSyntaxValidator(Validator):
         inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
 
         if type(d.directive_type) in [Imports, Create]:
+            # matches an empty string at the beginning of a line
             regex = r"^(?![\s\S])"
         else:
+            # match sequences of characters separated by an equal sign
             regex = r"(.+?)=(.+?)"
 
         for arg in inner:
@@ -73,8 +87,16 @@ class DirectiveSemanticsValidator(Validator):
     """Validates semantics of preprocessor directives."""
 
     def validate(self, directives: list[TypedDirective]) -> None:
+        """Validate the semantics of preprocessor directives.
+
+        Checks that all used directives are unique, that all required directives
+        are used at least once, and that the number of start and end stencil directives match.
+
+        Args:
+            directives: A list of typed directives to validate.
+        """
         self._validate_directive_uniqueness(directives)
-        self._validate_declare_create(directives)
+        self._validate_required_directives(directives)
         self._validate_stencil_directives(directives)
 
     @staticmethod
@@ -82,28 +104,36 @@ class DirectiveSemanticsValidator(Validator):
         """Check that all used directives are unique."""
         unique_directives = set(directives)
         if len(unique_directives) != len(directives):
-            raise ParsingException("Found same directive more than once.")
+            repeated = [d for d in directives if directives.count(d) >= 2]
+            pretty_printed = " ".join([format_typed_directive(d) for d in repeated])
+            raise RepeatedDirectiveError(
+                f"Found same directive more than once in the following directives:\n {pretty_printed} "
+            )
 
     @staticmethod
-    def _validate_declare_create(directives: list[TypedDirective]) -> None:
-        """Check that expected directives are used once in the code."""
-        expected = [Declare, Imports, StartStencil, EndStencil]
+    def _validate_required_directives(directives: list[TypedDirective]) -> None:
+        """Check that all required directives are used at least once."""
+        expected = [Declare, Imports, Create, StartStencil, EndStencil]
         for expected_type in expected:
             if not any(
                 [isinstance(d.directive_type, expected_type) for d in directives]
             ):
-                raise ParsingException("Did not use Declare or Create directive.")
+                raise RequiredDirectivesError(
+                    f"Missing required directive of type {expected_type()} in source."
+                )
 
     @staticmethod
     def _validate_stencil_directives(directives: list[TypedDirective]) -> None:
         """Check that number of start and end stencil directives match."""
-        start_stencil_directives = [
-            d for d in directives if isinstance(d.directive_type, (StartStencil))
-        ]
-        end_stencil_directives = [
-            d for d in directives if isinstance(d.directive_type, (EndStencil))
-        ]
-        if len(start_stencil_directives) != len(end_stencil_directives):
-            raise ParsingException(
-                "Not matching number of start and end stencil directives."
+        start_directives = list(
+            filter(lambda d: isinstance(d.directive_type, StartStencil), directives)
+        )
+        end_directives = list(
+            filter(lambda d: isinstance(d.directive_type, EndStencil), directives)
+        )
+        diff = abs(len(start_directives) - len(end_directives))
+
+        if diff >= 1:
+            raise UnbalancedStencilDirectiveError(
+                f"Found {diff} unbalanced START or END directives.\n"
             )

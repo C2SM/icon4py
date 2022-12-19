@@ -64,9 +64,15 @@ class DirectivesParser:
         self.parsed_directives = self._parse_directives()
 
     def _parse_directives(self) -> ParsedType:
-        """Execute end-to-end parsing of collected directives.
+        """Parse a list of directives and returns the parsed result.
 
-        This includes type deduction, preprocessing of directives, validation, parsing, and serialisation.
+        This function performs the following steps:
+            - Determines the type of each directive in the input list.
+            - Preprocesses the typed directives to prepare them for validation and parsing.
+            - Runs validation passes on the preprocessed directives to check for errors or inconsistencies.
+            - Parses the preprocessed directives and returns the parsed result.
+
+        If the input list of directives is empty, the function returns a NoDirectivesFound exception.
         """
         if len(self.directives) != 0:
             typed = self._determine_type(self.directives)
@@ -113,19 +119,15 @@ class DirectivesParser:
         parsed_content = collections.defaultdict(list)
 
         for d in directives:
-            content = None
             directive_name = d.directive_type.__str__()
+            pattern = d.directive_type.pattern
+            string = d.string.replace(f"{pattern}", "")
 
-            string = d.string.replace(f"{d.directive_type.pattern}", "")
-
-            if directive_name not in ["Import", "Create"]:
+            if directive_name in ["Import", "Create"]:
+                content = None
+            else:
                 args = string[1:-1].split(";")
                 content = {a.split("=")[0].strip(): a.split("=")[1] for a in args}
 
-            try:
-                parsed_content[directive_name].append(content)
-            except Exception as e:
-                raise e
-
+            parsed_content[directive_name].append(content)
         return parsed_content
-        # todo: add exception in case parsing fails.

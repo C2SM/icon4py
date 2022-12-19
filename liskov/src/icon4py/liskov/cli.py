@@ -15,7 +15,7 @@ import pathlib
 
 import click
 
-from icon4py.liskov.codegen.integration import IntegrationGenerator
+from icon4py.liskov.codegen.generate import IntegrationGenerator
 from icon4py.liskov.codegen.write import IntegrationWriter
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.scan import DirectivesScanner
@@ -44,8 +44,8 @@ def main(filepath: pathlib.Path, profile: bool) -> None:
 
     serialiser = DirectiveSerialiser(parsed_directives)
 
-    generator = IntegrationGenerator(serialiser.directives, profile=profile)
+    generator = IntegrationGenerator(serialiser.directives)
+    generator.generate(profile)
 
     writer = IntegrationWriter(generator.generated)
-
     writer.write_from(filepath)
