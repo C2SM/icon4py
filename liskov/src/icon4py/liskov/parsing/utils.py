@@ -16,10 +16,12 @@ from typing import Type
 
 from functional.ffront.decorator import Program
 
+from icon4py.liskov.parsing.exceptions import UnknownStencilError
 from icon4py.liskov.parsing.types import DirectiveType, TypedDirective
 
 
-def pretty_print_typed_directive(directive: TypedDirective):
+def format_typed_directive(directive: TypedDirective) -> str:
+    """Format a typed directive, including its contents, and start and end line numbers."""
     return f"Directive: {directive.string}, start line: {directive.startln}, end line: {directive.endln}\n"
 
 
@@ -34,7 +36,12 @@ def extract_directive(
 class StencilCollector:
     _STENCIL_PACKAGES = ["atm_dyn_iconam", "advection"]
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
+        """Initialise a StencilCollector for an icon4py stencil.
+
+        Args:
+            name: Name of the icon4py stencil.
+        """
         self.name = name
 
     @property
@@ -52,15 +59,14 @@ class StencilCollector:
                 err_counter += 1
 
         if err_counter == len(self._STENCIL_PACKAGES):
-            raise Exception(f"Did not find module: {self.name}")
+            raise UnknownStencilError(f"Did not find module: {self.name}")
 
         module_members = getmembers(module)
         found_stencil = [elt for elt in module_members if elt[0] == self.name]
 
         if len(found_stencil) == 0:
-            raise Exception(
-                f"Did not find member: {self.name} in module: {module_name}"
+            raise UnknownStencilError(
+                f"Did not find member: {self.name} in module: {module.__name__}"
             )
-        # todo: More specific exception
 
         return found_stencil[0]

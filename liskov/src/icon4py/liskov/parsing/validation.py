@@ -28,7 +28,7 @@ from icon4py.liskov.parsing.types import (
     StartStencil,
     TypedDirective,
 )
-from icon4py.liskov.parsing.utils import pretty_print_typed_directive
+from icon4py.liskov.parsing.utils import format_typed_directive
 
 
 class Validator(Protocol):
@@ -105,9 +105,7 @@ class DirectiveSemanticsValidator(Validator):
         unique_directives = set(directives)
         if len(unique_directives) != len(directives):
             repeated = [d for d in directives if directives.count(d) >= 2]
-            pretty_printed = " ".join(
-                [pretty_print_typed_directive(d) for d in repeated]
-            )
+            pretty_printed = " ".join([format_typed_directive(d) for d in repeated])
             raise RepeatedDirectiveError(
                 f"Found same directive more than once in the following directives:\n {pretty_printed} "
             )

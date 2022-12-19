@@ -13,6 +13,7 @@
 from collections import defaultdict
 
 import pytest
+from conftest import insert_new_lines, scan_for_directives
 from pytest import mark
 from samples.fortran_samples import (
     MULTIPLE_STENCILS,
@@ -35,7 +36,6 @@ from icon4py.liskov.parsing.types import (
     StartStencil,
     TypedDirective,
 )
-from liskov.tests.conftest import insert_new_lines, scan_for_directives
 
 
 def test_parse_no_input():

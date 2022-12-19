@@ -14,13 +14,10 @@ import tempfile
 from pathlib import Path
 
 from pytest import mark
+from samples.fortran_samples import DIRECTIVES_SAMPLE, NO_DIRECTIVES_STENCIL
 
 from icon4py.liskov.parsing.scan import DirectivesScanner
 from icon4py.liskov.parsing.types import RawDirective
-from liskov.tests.samples.fortran_samples import (
-    DIRECTIVES_SAMPLE,
-    NO_DIRECTIVES_STENCIL,
-)
 
 
 def scan_tempfile(string: str, expected: list):

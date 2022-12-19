@@ -47,6 +47,10 @@ class IncompatibleFieldError(Exception):
     pass
 
 
+class UnknownStencilError(Exception):
+    pass
+
+
 class ParsingExceptionHandler:
     @staticmethod
     def find_unsupported_directives(
