@@ -35,6 +35,8 @@ from icon4py.liskov.codegen.interface import CodeGenInput, SerialisedDirectives
 
 @dataclass
 class GeneratedCode:
+    """A class for storing generated f90 code and its line number information."""
+
     source: str
     startln: int
     endln: int
@@ -46,7 +48,11 @@ class IntegrationGenerator:
         self.directives = directives
 
     def generate(self, profile: bool) -> None:
-        """Generate all f90 code snippets for integration."""
+        """Generate all f90 code for integration.
+
+        Args:
+            profile: A boolean indicating whether to include profiling calls in the generated code.
+        """
         self._generate_create()
         self._generate_imports()
         self._generate_declare()
@@ -60,11 +66,21 @@ class IntegrationGenerator:
         endln: int,
         **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
     ):
+        """Add a GeneratedCode object to the `generated` attribute with the given source code and line number information.
+
+        Args:
+            parent_node: The parent node of the code to be generated.
+            code_generator: The code generator to use for generating the code.
+            startln: The start line number of the generated code.
+            endln: The end line number of the generated code.
+            **kwargs: Additional keyword arguments to be passed to the code generator.
+        """
         source = generate_fortran_code(parent_node, code_generator, **kwargs)
         code = GeneratedCode(source=source, startln=startln, endln=endln)
         self.generated.append(code)
 
     def _generate_declare(self) -> None:
+        """Generate f90 code for declaration statements."""
         self._add_generated_code(
             DeclareStatement,
             DeclareStatementGenerator,
@@ -74,6 +90,11 @@ class IntegrationGenerator:
         )
 
     def _generate_stencil(self, profile: bool) -> None:
+        """Generate f90 integration code surrounding a stencil.
+
+        Args:
+            profile: A boolean indicating whether to include profiling calls in the generated code.
+        """
         for i, stencil in enumerate(self.directives.start):
             self._add_generated_code(
                 OutputFieldCopy,
@@ -93,6 +114,7 @@ class IntegrationGenerator:
             )
 
     def _generate_imports(self) -> None:
+        """Generate f90 code for import statements."""
         self._add_generated_code(
             ImportsStatement,
             ImportsStatementGenerator,
@@ -102,6 +124,7 @@ class IntegrationGenerator:
         )
 
     def _generate_create(self) -> None:
+        """Generate f90 code for OpenACC DATA CREATE statements."""
         self._add_generated_code(
             CreateStatement,
             CreateStatementGenerator,
