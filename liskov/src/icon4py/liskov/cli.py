@@ -44,8 +44,8 @@ def main(filepath: pathlib.Path, profile: bool) -> None:
 
     serialiser = DirectiveSerialiser(parsed_directives)
 
-    generator = IntegrationGenerator(serialiser.directives, profile=profile)
+    generator = IntegrationGenerator(serialiser.directives)
+    generator.generate(profile)
 
     writer = IntegrationWriter(generator.generated)
-
     writer.write_from(filepath)

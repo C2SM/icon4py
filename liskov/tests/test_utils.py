@@ -45,7 +45,7 @@ def test_stencil_collector():
 def test_stencil_collector_invalid_module():
     name = "non_existent_module"
     collector = StencilCollector(name)
-    with pytest.raises(UnknownStencilError):
+    with pytest.raises(UnknownStencilError, match=r"Did not find module: (\w*)"):
         collector.fvprog
 
 
@@ -61,7 +61,7 @@ def test_stencil_collector_invalid_member():
     with open(path, "w") as f:
         f.write("")
 
-    with pytest.raises(UnknownStencilError):
+    with pytest.raises(UnknownStencilError, match=r"Did not find member: (\w*)"):
         collector.fvprog
 
     os.remove(path)

@@ -120,6 +120,24 @@ class StartStencilDataFactory:
         fields = self._combine_field_info(field_args, named_args)
         return fields
 
+    @staticmethod
+    def _create_field_args(named_args: dict[str, str]) -> dict[str, str]:
+        try:
+            field_args = copy.copy(named_args)
+            entries_to_remove = (
+                "name",
+                "horizontal_lower",
+                "horizontal_upper",
+                "vertical_lower",
+                "vertical_upper",
+            )
+            list(map(field_args.pop, entries_to_remove))
+        except Exception as e:
+            raise MissingDirectiveArgumentError(
+                f"Missing argument {e} in a StartStencil directive."
+            )
+        return field_args
+
     def _combine_field_info(
         self, field_args: dict[str, str], named_args: dict[str, str]
     ) -> list[FieldAssociationData]:
@@ -142,6 +160,7 @@ class StartStencilDataFactory:
         fields = []
         for field_name, association in field_args.items():
 
+            # skipped as handled by _update_field_tolerances
             if any([field_name.endswith(tol) for tol in self.TOLERANCE_ARGS]):
                 continue
 
@@ -161,24 +180,6 @@ class StartStencilDataFactory:
 
             fields.append(field_association_data)
         return fields
-
-    @staticmethod
-    def _create_field_args(named_args: dict[str, str]) -> dict[str, str]:
-        try:
-            field_args = copy.copy(named_args)
-            entries_to_remove = (
-                "name",
-                "horizontal_lower",
-                "horizontal_upper",
-                "vertical_lower",
-                "vertical_upper",
-            )
-            list(map(field_args.pop, entries_to_remove))
-        except Exception as e:
-            raise MissingDirectiveArgumentError(
-                f"Missing argument {e} in a StartStencil directive."
-            )
-        return field_args
 
     def _update_field_tolerances(
         self, named_args: dict, fields: list[FieldAssociationData]
