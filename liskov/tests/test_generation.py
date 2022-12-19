@@ -11,9 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# todo: test multiple different cases that occur in the dycore and document
-#   what is currently supported/still needs to be supported.
-
 
 import pytest
 
@@ -36,7 +33,9 @@ def serialised_directives():
         name="stencil1",
         fields=[
             FieldAssociationData("field1", "field1(:, :, 1)", True, False),
-            FieldAssociationData("field2", "field2(:, :, 1)", False, True),
+            FieldAssociationData(
+                "field2", "field2(:, :, 1)", False, True, abs_tol="0.5"
+            ),
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
         startln=1,
@@ -110,6 +109,7 @@ def expected_stencil_end_source():
         call wrap_run_stencil1( &
            field1=field1(:, :, 1), &
            field2_before=field2_before(:, :, 1), &
+           field2_abs_tol=0.5, &
            vertical_lower=-1, &
            vertical_upper=-10, &
            horizontal_lower=1, &
