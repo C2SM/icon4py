@@ -20,7 +20,8 @@ from icon4py.liskov.parsing.types import (
     EndStencil,
     Imports,
     NoDirectivesFound,
-    ParsedType,
+    ParsedContent,
+    ParsedDict,
     RawDirective,
     StartStencil,
     TypedDirective,
@@ -32,47 +33,42 @@ from icon4py.liskov.parsing.validation import (
 )
 
 
+_SUPPORTED_DIRECTIVES: list[Directive] = [
+    StartStencil(),
+    EndStencil(),
+    Imports(),
+    Declare(),
+    Create(),
+]
+
+_VALIDATORS: list[Validator] = [
+    DirectiveSyntaxValidator(),
+    DirectiveSemanticsValidator(),
+]
+
+
 class DirectivesParser:
-    _SUPPORTED_DIRECTIVES: list[Directive] = [
-        StartStencil(),
-        EndStencil(),
-        Imports(),
-        Declare(),
-        Create(),
-    ]
-
-    _VALIDATORS: list[Validator] = [
-        DirectiveSyntaxValidator(),
-        DirectiveSemanticsValidator(),
-    ]
-
     def __init__(self, directives: list[RawDirective]) -> None:
-        """Class which carries out end-to-end parsing of a file with regards to DSL directives.
+        """Initialize a DirectivesParser instance.
 
-            Handles parsing and validation of preprocessor directives, returning a dictionary
-            which can be used for code generation.
+        This class parses a list of RawDirective objects and returns a dictionary of parsed directives and their associated content.
 
         Args:
-            directives: A list of directives collected by the DirectivesCollector.
+            directives: List of RawDirective objects to parse.
 
-        Note:
-            Directives which are supported by the parser can be modified by editing the self._SUPPORTED_DIRECTIVES class
-            attribute.
+        Attributes:
+        exception_handler: Exception handler for handling errors.
+        parsed_directives: Dictionary of parsed directives and their associated content, or NoDirectivesFound if no directives were found.
         """
         self.directives = directives
         self.exception_handler = ParsingExceptionHandler
         self.parsed_directives = self._parse_directives()
 
-    def _parse_directives(self) -> ParsedType:
-        """Parse a list of directives and returns the parsed result.
+    def _parse_directives(self) -> ParsedDict | NoDirectivesFound:
+        """Parse the directives and return a dictionary of parsed directives and their associated content.
 
-        This function performs the following steps:
-            - Determines the type of each directive in the input list.
-            - Preprocesses the typed directives to prepare them for validation and parsing.
-            - Runs validation passes on the preprocessed directives to check for errors or inconsistencies.
-            - Parses the preprocessed directives and returns the parsed result.
-
-        If the input list of directives is empty, the function returns a NoDirectivesFound exception.
+        Returns:
+            ParsedType: Dictionary of parsed directives and their associated content.
         """
         if len(self.directives) != 0:
             typed = self._determine_type(self.directives)
@@ -81,16 +77,11 @@ class DirectivesParser:
             return dict(directives=preprocessed, content=self._parse(preprocessed))
         return NoDirectivesFound()
 
-    def _run_validation_passes(self, preprocessed: list[TypedDirective]) -> None:
-        """Run validation passes on Typed Directives."""
-        for v in self._VALIDATORS:
-            v.validate(preprocessed)
-
     def _determine_type(self, directives: list[RawDirective]) -> list[TypedDirective]:
-        """Determine type of directive used and whether it is supported."""
+        """Determine the type of each directive and return a list of TypedDirective objects."""
         typed = []
         for d in directives:
-            for directive_type in self._SUPPORTED_DIRECTIVES:
+            for directive_type in _SUPPORTED_DIRECTIVES:
                 if directive_type.pattern in d.string:
                     typed.append(
                         TypedDirective(d.string, d.startln, d.endln, directive_type)
@@ -101,7 +92,7 @@ class DirectivesParser:
 
     @staticmethod
     def _preprocess(directives: list[TypedDirective]) -> list[TypedDirective]:
-        """Apply preprocessing steps to directive strings."""
+        """Preprocess the directives by removing unnecessary characters and formatting the directive strings."""
         preprocessed = []
         for d in directives:
             string = (
@@ -114,8 +105,14 @@ class DirectivesParser:
         return preprocessed
 
     @staticmethod
-    def _parse(directives: list[TypedDirective]) -> dict[str, list]:
-        """Parse directive into a dictionary of keys and their corresponding values."""
+    def _run_validation_passes(preprocessed: list[TypedDirective]) -> None:
+        """Run validation passes on the preprocessed directives."""
+        for v in _VALIDATORS:
+            v.validate(preprocessed)
+
+    @staticmethod
+    def _parse(directives: list[TypedDirective]) -> ParsedContent:
+        """Parse the directives and return a dictionary of parsed directives and their associated content."""
         parsed_content = collections.defaultdict(list)
 
         for d in directives:
@@ -124,7 +121,7 @@ class DirectivesParser:
             string = d.string.replace(f"{pattern}", "")
 
             if directive_name in ["Import", "Create"]:
-                content = None
+                content = {}
             else:
                 args = string[1:-1].split(";")
                 content = {a.split("=")[0].strip(): a.split("=")[1] for a in args}

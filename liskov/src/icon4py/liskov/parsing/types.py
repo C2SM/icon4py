@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
-from typing import Any, Protocol, TypeAlias
+from typing import Protocol, TypeAlias, TypedDict
 
 
 DIRECTIVE_IDENT = "!$DSL"
@@ -19,9 +19,6 @@ DIRECTIVE_IDENT = "!$DSL"
 
 class NoDirectivesFound:
     pass
-
-
-ParsedType: TypeAlias = dict[Any, Any] | NoDirectivesFound
 
 
 class Directive(Protocol):
@@ -73,3 +70,11 @@ class Imports(DirectiveType):
 
 class Create(DirectiveType):
     pattern = "CREATE"
+
+
+ParsedContent: TypeAlias = dict[str, list[dict[str, str]]]
+
+
+class ParsedDict(TypedDict):
+    directives: list[TypedDirective]
+    content: ParsedContent

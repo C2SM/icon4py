@@ -24,7 +24,7 @@ class Scanned:
 
 class DirectivesScanner:
     def __init__(self, filepath: Path) -> None:
-        """Class which collects all DSL directives as is in a given file.
+        """Class for scanning a file for ICON-Liskov DSL directives.
 
         Args:
             filepath: Path to file to scan for directives.
@@ -32,18 +32,11 @@ class DirectivesScanner:
         self.filepath = filepath
         self.directives = self._scan_for_directives()
 
-    @staticmethod
-    def _process_scanned(collected: list[Scanned]) -> RawDirective:
-        directive_string = "".join([c.string for c in collected])
-        abs_startln = collected[0].lnumber
-        abs_endln = collected[-1].lnumber
-        return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)
-
     def _scan_for_directives(self) -> list[RawDirective]:
-        """Scan `filepath` for directives and return them along with their line numbers.
+        """Scan filepath for directives and return them along with their line numbers.
 
         Returns:
-            A list of `RawDirective` objects containing the scanned directives and their line numbers.
+            A list of RawDirective objects containing the scanned directives and their line numbers.
         """
         directives = []
         with self.filepath.open() as f:
@@ -64,3 +57,14 @@ class DirectivesScanner:
                         case "&":
                             continue
         return directives
+
+    @staticmethod
+    def _process_scanned(collected: list[Scanned]) -> RawDirective:
+        """Process a list of scanned directives.
+
+        Returns
+            A RawDirective object containing the concatenated directive string and its line numbers.
+        """
+        directive_string = "".join([c.string for c in collected])
+        abs_startln, abs_endln = collected[0].lnumber, collected[-1].lnumber
+        return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)

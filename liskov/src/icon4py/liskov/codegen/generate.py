@@ -65,7 +65,7 @@ class IntegrationGenerator:
         startln: int,
         endln: int,
         **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
-    ):
+    ) -> None:
         """Add a GeneratedCode object to the `generated` attribute with the given source code and line number information.
 
         Args:

@@ -57,9 +57,9 @@ class ParsingExceptionHandler:
         directives: list[RawDirective], typed: list[TypedDirective]
     ) -> None:
         """Check for unsupported directives and raises an exception if any are found."""
-        raw_dirs = set([d.string for d in directives])
-        typed_dirs = set([t.string for t in typed])
-        diff = raw_dirs.difference(typed_dirs)
+        diff = set([d.string for d in directives]).difference(
+            set([t.string for t in typed])
+        )
         if len(diff) > 0:
             bad_directives = [d.string for d in directives if d.string in list(diff)]
             bad_lines = [str(d.startln) for d in directives if d.string in list(diff)]
