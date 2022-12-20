@@ -46,8 +46,8 @@ def test_parse_no_input():
 @mark.parametrize(
     "directive_type, string, startln, endln, expected_content",
     [
-        (Imports(), "IMPORT()", 1, 1, defaultdict(list, {"Import": [None]})),
-        (Create(), "CREATE()", 2, 2, defaultdict(list, {"Create": [None]})),
+        (Imports(), "IMPORT()", 1, 1, defaultdict(list, {"Import": [{}]})),
+        (Create(), "CREATE()", 2, 2, defaultdict(list, {"Create": [{}]})),
         (
             StartStencil(),
             "START(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)",

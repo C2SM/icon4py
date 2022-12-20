@@ -34,13 +34,24 @@ from icon4py.liskov.parsing.types import NoDirectivesFound
     "--profile", "-p", is_flag=True, help="Add nvtx profile statements to stencils."
 )
 def main(filepath: pathlib.Path, profile: bool) -> None:
-    """Command line interface to interact with the ICON-Liskov DSL Preprocessor."""
+    """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
+
+    Usage:
+        icon_liskov <filepath> [--profile]
+
+    Options:
+        -p --profile Add nvtx profile statements to stencils.
+
+    Arguments:
+        filepath Path to the input file to process.
+    """
     scanner = DirectivesScanner(filepath)
 
     parser = DirectivesParser(scanner.directives)
 
     if isinstance(parsed_directives := parser.parsed_directives, NoDirectivesFound):
         print(f"No directives found in {filepath}")  # todo: use logger.
+        return
 
     serialiser = DirectiveSerialiser(parsed_directives)
 

@@ -35,7 +35,7 @@ from icon4py.liskov.parsing.types import (
     Declare,
     EndStencil,
     Imports,
-    ParsedType,
+    ParsedDict,
     StartStencil,
 )
 from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
@@ -43,24 +43,24 @@ from icon4py.pyutils.metadata import get_field_infos
 
 
 class DirectiveInputFactory(Protocol):
-    def __call__(self, parsed: dict) -> list[CodeGenInput] | CodeGenInput:
+    def __call__(self, parsed: ParsedDict) -> list[CodeGenInput] | CodeGenInput:
         ...
 
 
 class CreateDataFactory:
-    def __call__(self, parsed: dict) -> CreateData:
+    def __call__(self, parsed: ParsedDict) -> CreateData:
         extracted = extract_directive(parsed["directives"], Create)[0]
         return CreateData(startln=extracted.startln, endln=extracted.endln)
 
 
 class ImportsDataFactory:
-    def __call__(self, parsed: dict) -> ImportsData:
+    def __call__(self, parsed: ParsedDict) -> ImportsData:
         extracted = extract_directive(parsed["directives"], Imports)[0]
         return ImportsData(startln=extracted.startln, endln=extracted.endln)
 
 
 class DeclareDataFactory:
-    def __call__(self, parsed: dict) -> DeclareData:
+    def __call__(self, parsed: ParsedDict) -> DeclareData:
         extracted = extract_directive(parsed["directives"], Declare)[0]
         declarations = parsed["content"]["Declare"]
         return DeclareData(
@@ -71,7 +71,7 @@ class DeclareDataFactory:
 class StartStencilDataFactory:
     TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 
-    def __call__(self, parsed: dict) -> list[StartStencilData]:
+    def __call__(self, parsed: ParsedDict) -> list[StartStencilData]:
         serialised = []
         directives = extract_directive(parsed["directives"], StartStencil)
         for i, directive in enumerate(directives):
@@ -200,7 +200,7 @@ class StartStencilDataFactory:
 
 
 class EndStencilDataFactory:
-    def __call__(self, parsed: dict) -> list[EndStencilData]:
+    def __call__(self, parsed: ParsedDict) -> list[EndStencilData]:
         serialised = []
         extracted = extract_directive(parsed["directives"], EndStencil)
         for i, directive in enumerate(extracted):
@@ -215,7 +215,7 @@ class EndStencilDataFactory:
 
 
 class DirectiveSerialiser:
-    def __init__(self, parsed: ParsedType) -> None:
+    def __init__(self, parsed: ParsedDict) -> None:
         self.directives = self.serialise(parsed)
 
     _FACTORIES: dict[str, Callable] = {
@@ -226,7 +226,7 @@ class DirectiveSerialiser:
         "end": EndStencilDataFactory(),
     }
 
-    def serialise(self, directives: ParsedType) -> SerialisedDirectives:
+    def serialise(self, directives: ParsedDict) -> SerialisedDirectives:
         """Serialise the provided parsed directives to a SerialisedDirectives object.
 
         Args:
