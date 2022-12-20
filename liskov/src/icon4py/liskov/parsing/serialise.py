@@ -72,6 +72,14 @@ class StartStencilDataFactory:
     TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 
     def __call__(self, parsed: ParsedDict) -> list[StartStencilData]:
+        """Create and return a list of StartStencilData objects from the parsed directives.
+
+        Args:
+            parsed (ParsedDict): Dictionary of parsed directives and their associated content.
+
+        Returns:
+            List[StartStencilData]: List of StartStencilData objects created from the parsed directives.
+        """
         serialised = []
         directives = extract_directive(parsed["directives"], StartStencil)
         for i, directive in enumerate(directives):
@@ -111,17 +119,18 @@ class StartStencilDataFactory:
     def _get_field_associations(
         self, named_args: dict[str, str]
     ) -> list[FieldAssociationData]:
-        """Extract all fields from directive arguments and create corresponding field association data.
-
-        For each directive, the corresponding gt4py stencil is parsed, which is used to infer the
-        input and output intent of each field.
-        """
+        """Extract all fields from directive arguments and create corresponding field association data."""
         field_args = self._create_field_args(named_args)
         fields = self._combine_field_info(field_args, named_args)
         return fields
 
     @staticmethod
     def _create_field_args(named_args: dict[str, str]) -> dict[str, str]:
+        """Create a dictionary of field names and their associations from named_args.
+
+        Raises:
+            MissingDirectiveArgumentError: If a required argument is missing in the named_args.
+        """
         try:
             field_args = copy.copy(named_args)
             entries_to_remove = (
@@ -142,14 +151,6 @@ class StartStencilDataFactory:
         self, field_args: dict[str, str], named_args: dict[str, str]
     ) -> list[FieldAssociationData]:
         """Combine directive field info with field info extracted from the corresponding icon4py stencil.
-
-        Args:
-            field_args: A dictionary of field names and their associations as extracted from the StartStencil
-                directive arguments.
-            named_args: A dictionary of named arguments as extracted from the StartStencil directive.
-
-        Returns:
-            A list of FieldAssociationData objects containing the combined field info.
 
         Raises:
             IncompatibleFieldError: If a used field variable name is incompatible with the expected field
@@ -238,8 +239,8 @@ class DirectiveSerialiser:
         Note:
             The method uses the `_FACTORIES` class attribute to create the appropriate
             factory object for each directive type, and uses these objects to serialise
-            the parsed directives. The SerialisedDirectives class is a named tuple
-            containing the serialised versions of the different directive types.
+            the parsed directives. The SerialisedDirectives class is a dataclass
+            containing the serialised versions of the different directives.
         """
         serialised = dict()
 

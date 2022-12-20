@@ -60,7 +60,11 @@ class DirectivesScanner:
 
     @staticmethod
     def _process_scanned(collected: list[Scanned]) -> RawDirective:
-        """Process a list of scanned directives and returns a RawDirective object containing the concatenated directive string and its line numbers."""
+        """Process a list of scanned directives.
+
+        Returns
+            A RawDirective object containing the concatenated directive string and its line numbers.
+        """
         directive_string = "".join([c.string for c in collected])
         abs_startln, abs_endln = collected[0].lnumber, collected[-1].lnumber
         return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)

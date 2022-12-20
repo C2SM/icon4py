@@ -29,6 +29,7 @@ def extract_directive(
     directives: list[TypedDirective],
     required_type: Type[DirectiveType],
 ) -> list[TypedDirective]:
+    """Extract a directive type from a list of directives."""
     directives = [d for d in directives if type(d.directive_type) == required_type]
     return directives
 
@@ -37,10 +38,13 @@ class StencilCollector:
     _STENCIL_PACKAGES = ["atm_dyn_iconam", "advection"]
 
     def __init__(self, name: str) -> None:
-        """Initialise a StencilCollector for an icon4py stencil.
+        """Initialize a StencilCollector instance.
+
+        This class is responsible for collecting an ICON4PY stencil program with the given name.
 
         Args:
-            name: Name of the icon4py stencil.
+        name (str): Name of the ICON4PY stencil program to collect.
+                self.name = name
         """
         self.name = name
 
@@ -49,6 +53,7 @@ class StencilCollector:
         return self._collect_stencil_program()[1]
 
     def _collect_stencil_program(self) -> tuple[str, Program]:
+        """Collect and return the ICON4PY stencil program with the given name."""
         err_counter = 0
         for pkg in self._STENCIL_PACKAGES:
 
