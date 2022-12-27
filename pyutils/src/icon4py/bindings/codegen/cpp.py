@@ -79,7 +79,6 @@ class CppDefGenerator(TemplatedGenerator):
             gridtools::fn::backend::gpu<block_sizes_t<BLOCK_SIZE, LEVELS_PER_THREAD>>;
         } // namespace
         using namespace gridtools::dawn;
-        #define nproma 50000
         """
     )
 
@@ -87,22 +86,24 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         template <int N> struct neighbor_table_fortran {
           const int *raw_ptr_fortran;
+          const int nproma;
           __device__ friend inline constexpr gridtools::array<int, N>
           neighbor_table_neighbors(neighbor_table_fortran const &table, int index) {
             gridtools::array<int, N> ret{};
             for (int i = 0; i < N; i++) {
-              ret[i] = table.raw_ptr_fortran[index + nproma * i];
+              ret[i] = table.raw_ptr_fortran[index + table.nproma * i];
             }
             return ret;
           }
         };
 
         template <int N> struct neighbor_table_strided {
+          const int nproma;
           __device__ friend inline constexpr gridtools::array<int, N>
-          neighbor_table_neighbors(neighbor_table_strided const &, int index) {
+          neighbor_table_neighbors(neighbor_table_strided const &table, int index) {
             gridtools::array<int, N> ret{};
             for (int i = 0; i < N; i++) {
-              ret[i] = index + nproma * i;
+              ret[i] = index + table.nproma * i;
             }
             return ret;
           }
@@ -132,6 +133,10 @@ class CppDefGenerator(TemplatedGenerator):
 
       static int getKSize() {
         return kSize_;
+      }
+
+      static json *getJsonRecord() {
+        return jsonRecord_;
       }
 
       {% for field in _this_node.fields %}
@@ -183,6 +188,7 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         public:
           struct GpuTriMesh {
+            int Nproma;
             int NumVertices;
             int NumEdges;
             int NumCells;
@@ -198,6 +204,7 @@ class CppDefGenerator(TemplatedGenerator):
             GpuTriMesh() {}
 
             GpuTriMesh(const dawn::GlobalGpuTriMesh *mesh) {
+              Nproma = mesh->Nproma;
               NumVertices = mesh->NumVertices;
               NumCells = mesh->NumCells;
               NumEdges = mesh->NumEdges;
@@ -217,7 +224,7 @@ class CppDefGenerator(TemplatedGenerator):
     StencilClassSetupFunc = as_jinja(
         """\
         static void setup(
-        const dawn::GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream,
+        const dawn::GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream, json *jsonRecord,
         {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -228,6 +235,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{ suffix }}_ = {{ suffix }};
         is_setup_ = true;
         stream_ = stream;
+        jsonRecord_ = jsonRecord;
         {%- for field in _this_node.out_fields -%}
         {{ field.name }}_{{ suffix }}_ = {{ field.name }}_{{ suffix }};
         {%- endfor -%}
@@ -245,6 +253,7 @@ class CppDefGenerator(TemplatedGenerator):
         inline static GpuTriMesh mesh_;
         inline static bool is_setup_;
         inline static cudaStream_t stream_;
+        inline static json* jsonRecord_;
         {%- for field in _this_node.out_fields -%}
         inline static int {{ field.name }}_kSize_;
         {%- endfor %}
@@ -270,7 +279,7 @@ class CppDefGenerator(TemplatedGenerator):
       using namespace gridtools;
       using namespace fn;
       {% for field in _this_node.all_fields -%}
-        {% if field.is_sparse() == False %}
+        {% if field.is_sparse() == False and field.rank() > 0 %}
           auto {{field.name}}_sid = {{ field.renderer.render_sid() }};
         {% endif %}
       {% endfor -%}
@@ -290,16 +299,18 @@ class CppDefGenerator(TemplatedGenerator):
         {%- endfor -%}
         );
       {%- endfor %}
-      {% for parameter in _this_node.parameters -%}
-        gridtools::stencil::global_parameter {{parameter.name}}_gp { {{parameter.name}}_ };
+      {% for field in _this_node.all_fields -%}
+        {%- if field.rank() == 0 -%}
+          gridtools::stencil::global_parameter {{field.name}}_gp { {{field.name}}_ };
+        {%- endif -%}
       {% endfor -%}
       fn_backend_t cuda_backend{};
       cuda_backend.stream = stream_;
       {% for connection in _this_node.sparse_connections -%}
-        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.renderer.render_lowercase_shorthand()}}Table};
+        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.renderer.render_lowercase_shorthand()}}Table, .nproma = mesh_.Nproma};
       {% endfor -%}
       {%- for connection in _this_node.strided_connections -%}
-        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{};
+        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.nproma = mesh_.Nproma};
       {% endfor -%}
       auto connectivities = gridtools::hymap::keys<
       {%- for connection in _this_node.all_connections -%}
@@ -311,13 +322,12 @@ class CppDefGenerator(TemplatedGenerator):
       generated::{{stencil_name}}(connectivities)(cuda_backend,
       {%- for field in _this_node.all_fields -%}
         {%- if field.is_sparse() -%}
-        {{field.name}}_sid_comp,
+          {{field.name}}_sid_comp,
+        {%- elif field.rank() == 0 -%}
+          {{field.name}}_gp,
         {%- else -%}
-        {{field.name}}_sid,
+          {{field.name}}_sid,
         {%- endif -%}
-      {%- endfor -%}
-            {%- for field in _this_node.parameters -%}
-        {{field.name}}_gp,
       {%- endfor -%}
       horizontalStart, horizontalEnd, verticalStart, verticalEnd);
       #ifndef NDEBUG
@@ -391,7 +401,7 @@ class CppDefGenerator(TemplatedGenerator):
             \"{{ field.name }}\", {{ field.name }}_rel_tol, {{ field.name }}_abs_tol, iteration);
         #ifdef __SERIALIZE_METRICS
         MetricsSerialiser serialiser_{{ field.name }}(
-            stencilMetrics, metricsNameFromEnvVar("SLURM_JOB_ID"),
+            dawn_generated::cuda_ico::{{ funcname }}::getJsonRecord(), stencilMetrics,
             \"{{ funcname }}\", \"{{ field.name }}\");
         serialiser_{{ field.name }}.writeJson(iteration);
         #endif
@@ -474,7 +484,7 @@ class CppDefGenerator(TemplatedGenerator):
     CppSetupFuncDeclaration = as_jinja(
         """\
         void setup_{{funcname}}(
-        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream,
+        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record,
         {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -487,7 +497,7 @@ class CppDefGenerator(TemplatedGenerator):
     SetupFunc = as_jinja(
         """\
         {{ func_declaration }} {
-        dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream,
+        dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream, json_record,
         {%- for field in _this_node.out_fields -%}
         {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -530,7 +540,6 @@ class StenClassRunFun(Node):
     dense_fields: Sequence[Field]
     sparse_fields: Sequence[Field]
     compound_fields: Sequence[Field]
-    parameters: Sequence[Field]
     sparse_connections: Sequence[Offset]
     strided_connections: Sequence[Offset]
     all_connections: Sequence[Offset]
@@ -639,8 +648,7 @@ class CppDefTemplate(Node):
         strided_offsets = [
             offset for offset in self.offsets if offset.is_compound_location()
         ]
-        parameters = [field for field in self.fields if field.rank() == 0]
-        fields_without_params = [field for field in self.fields if field.rank() != 0]
+        all_fields = self.fields
 
         offsets = dict(sparse=sparse_offsets, strided=strided_offsets)
         fields = dict(
@@ -648,8 +656,7 @@ class CppDefTemplate(Node):
             dense=dense_fields,
             sparse=sparse_fields,
             compound=compound_fields,
-            parameters=parameters,
-            without_params=fields_without_params,
+            all_fields=all_fields,
         )
         return fields, offsets
 
@@ -674,14 +681,13 @@ class CppDefTemplate(Node):
             ),
             run_fun=StenClassRunFun(
                 stencil_name=self.stencil_name,
-                all_fields=fields["without_params"],
+                all_fields=fields["all_fields"],
                 dense_fields=fields["dense"],
                 sparse_fields=fields["sparse"],
                 compound_fields=fields["compound"],
                 sparse_connections=offsets["sparse"],
                 strided_connections=offsets["strided"],
                 all_connections=self.offsets,
-                parameters=fields["parameters"],
             ),
             public_utilities=PublicUtilities(fields=fields["output"]),
             copy_pointers=CopyPointers(fields=self.fields),

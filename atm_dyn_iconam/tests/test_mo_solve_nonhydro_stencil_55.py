@@ -37,18 +37,18 @@ def mo_solve_nonhydro_stencil_55_numpy(
     dtime,
     cvd_o_rd,
 ) -> tuple[np.array]:
-    rho_ic_offset_1 = np.roll(rho_ic, shift=-1, axis=1)
-    w_offset_0 = np.roll(w, shift=0, axis=1)
-    w_offset_1 = np.roll(w, shift=-1, axis=1)
-    z_alpha_offset_1 = np.roll(z_alpha, shift=-1, axis=1)
+    rho_ic_offset_1 = rho_ic[:, 1:]
+    w_offset_0 = w[:, :-1]
+    w_offset_1 = w[:, 1:]
+    z_alpha_offset_1 = z_alpha[:, 1:]
     vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
     rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
-        rho_ic * w_offset_0 - rho_ic_offset_1 * w_offset_1
+        rho_ic[:, :-1] * w_offset_0 - rho_ic_offset_1 * w_offset_1
     )
     exner_new = (
         z_exner_expl
         + exner_ref_mc
-        - z_beta * (z_alpha * w_offset_0 - z_alpha_offset_1 * w_offset_1)
+        - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
     )
     theta_v_new = (
         rho_now
@@ -65,11 +65,11 @@ def test_mo_solve_nonhydro_stencil_55():
     z_rho_expl = random_field(mesh, CellDim, KDim)
     vwind_impl_wgt = random_field(mesh, CellDim)
     inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-    rho_ic = random_field(mesh, CellDim, KDim)
-    w = random_field(mesh, CellDim, KDim)
+    rho_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1})
+    w = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     z_exner_expl = random_field(mesh, CellDim, KDim)
     exner_ref_mc = random_field(mesh, CellDim, KDim)
-    z_alpha = random_field(mesh, CellDim, KDim)
+    z_alpha = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     z_beta = random_field(mesh, CellDim, KDim)
     rho_now = random_field(mesh, CellDim, KDim)
     theta_v_now = random_field(mesh, CellDim, KDim)
@@ -118,6 +118,6 @@ def test_mo_solve_nonhydro_stencil_55():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(rho_new[:, :-1], rho_new_ref[:, :-1])
-    assert np.allclose(exner_new[:, :-1], exner_new_ref[:, :-1])
-    assert np.allclose(theta_v_new[:, :-1], theta_v_new_ref[:, :-1])
+    assert np.allclose(rho_new, rho_new_ref)
+    assert np.allclose(exner_new, exner_new_ref)
+    assert np.allclose(theta_v_new, theta_v_new_ref)

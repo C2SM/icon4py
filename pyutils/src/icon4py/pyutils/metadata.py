@@ -50,6 +50,10 @@ def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
     return isinstance(obj, list) and all(isinstance(i, past.Name) for i in obj)
 
 
+def _ignore_subscript(node: past.Name | past.Subscript) -> past.Name:
+    return node if isinstance(node, past.Name) else node.value
+
+
 def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     """Extract and format the in/out fields from a Program."""
     assert is_list_of_names(
@@ -58,8 +62,12 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
 
     out_arg = fvprog.past_node.body[0].kwargs["out"]
-    assert isinstance(out_arg, (past.Name, past.TupleExpr))
-    output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
+    output_fields = (
+        [_ignore_subscript(f) for f in out_arg.elts]
+        if isinstance(out_arg, past.TupleExpr)
+        else [_ignore_subscript(out_arg)]
+    )
+    assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)  # type: ignore
 
     fields: dict[str, FieldInfo] = {

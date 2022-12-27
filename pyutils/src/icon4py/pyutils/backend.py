@@ -40,6 +40,7 @@ class GTHeader:
         return generate(
             fencil,
             offset_provider=self.stencil_info.offset_provider,
+            column_axis=self.stencil_info.fvprog._column_axis,
             **kwargs,
         )
 
