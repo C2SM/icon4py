@@ -19,8 +19,8 @@ from typing import Any, TypeGuard
 
 import eve
 from functional.common import Dimension, DimensionKind
-from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
+from functional.ffront import type_specifications as ts
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 
@@ -163,7 +163,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     all_field_types = [
         symbol_type
         for symbol_type in all_types
-        if isinstance(symbol_type, ct.FieldType)
+        if isinstance(symbol_type, ts.FieldType)
     ]
     all_dims = set(i for j in all_field_types for i in j.dims)
     all_offset_labels = (

@@ -15,7 +15,7 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import Union
 
-from functional.ffront.common_types import ScalarKind
+from functional.ffront import type_specifications as ts
 
 from icon4py.bindings.locations import (
     BasicLocation,
@@ -32,7 +32,7 @@ class FieldIntent:
 
 class FieldEntity(ABC):
     name: str
-    field_type: ScalarKind
+    field_type: ts.ScalarKind
     intent: FieldIntent
     has_vertical_dimension: bool
     includes_center: bool
