@@ -15,7 +15,7 @@ from typing import Union
 
 from eve import Node
 from functional.ffront import program_ast as past
-from functional.ffront.common_types import FieldType, ScalarKind
+from functional.ffront import type_specifications as ts
 
 from icon4py.bindings.codegen.render.field import FieldRenderer
 from icon4py.bindings.codegen.render.offset import OffsetRenderer
@@ -129,15 +129,15 @@ class Field(Node, FieldEntity):
         return calc_num_neighbors(self.location.to_dim_list(), self.includes_center)  # type: ignore
 
     @staticmethod
-    def _extract_field_type(field: past.DataSymbol) -> ScalarKind:
+    def _extract_field_type(field: past.DataSymbol) -> ts.ScalarKind:
         """Handle extraction of field types for different fields e.g. Scalar."""
-        if not isinstance(field.type, FieldType):
+        if not isinstance(field.type, ts.FieldType):
             return field.type.kind  # type: ignore
         return field.type.dtype.kind
 
     @staticmethod
     def _has_vertical_dimension(field: past.DataSymbol) -> bool:
-        if not isinstance(field.type, FieldType):
+        if not isinstance(field.type, ts.FieldType):
             return False
         return any(dim.value == "K" for dim in field.type.dims)
 
@@ -145,7 +145,7 @@ class Field(Node, FieldEntity):
         self.location = None
 
         # early abort if field is in fact scalar
-        if not isinstance(field.type, FieldType):
+        if not isinstance(field.type, ts.FieldType):
             return
 
         maybe_horizontal_dimension = list(
