@@ -70,16 +70,33 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)  # type: ignore
 
+    domain_arg_ids = _get_domain_arg_ids(fvprog)
+
     fields: dict[str, FieldInfo] = {
         field_node.id: FieldInfo(
             field=field_node,
             inp=(field_node.id in input_arg_ids),
             out=(field_node.id in output_arg_ids),
         )
-        for field_node in fvprog.past_node.params
+        for field_node in fvprog.past_node.params if field_node.id not in domain_arg_ids
     }
 
     return fields
+
+
+def _get_domain_arg_ids(fvprog):
+    domain_arg_ids = []
+    if "domain" in fvprog.past_node.body[0].kwargs.keys():
+        domain_arg = fvprog.past_node.body[0].kwargs["domain"]
+        assert isinstance(domain_arg, past.Dict)
+        for arg in domain_arg.values_:
+            for arg_elts in arg.elts:
+                if isinstance(arg_elts, past.Name):
+                    domain_arg_ids.append(arg_elts.id)
+                elif isinstance(arg_elts, past.Constant):
+                    domain_arg_ids.append(arg_elts.value)
+        domain_arg_ids = set(domain_arg_ids)
+    return domain_arg_ids
 
 
 def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
