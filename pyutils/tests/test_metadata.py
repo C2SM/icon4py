@@ -68,7 +68,6 @@ def test_get_field_infos_does_not_contain_domain_args(program):
     assert len(field_info) == 3
     assert not field_info["a"].out
     assert field_info["a"].inp
-
     assert not field_info["b"].out
     assert field_info["b"].inp
     assert field_info["result"].out
