@@ -10,9 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from pathlib import Path
-from typing import Any
+from typing import Any, List
 
 from functional.iterator import ir as itir
 from functional.program_processors.codegens.gtfn.gtfn_backend import generate
@@ -75,10 +74,7 @@ class GTHeader:
             function_definitions=fencil.function_definitions,
             params=[
                 *(p for p in fencil.params if not self._is_size_param(p)),
-                itir.Sym(id="horizontal_start"),
-                itir.Sym(id="horizontal_end"),
-                itir.Sym(id="vertical_start"),
-                itir.Sym(id="vertical_end"),
+                *(p for p in self._missing_domain_params(fencil.params)),
             ],
             closures=fencil.closures,
         )
@@ -87,3 +83,8 @@ class GTHeader:
     def _is_size_param(param: itir.Sym) -> bool:
         """Check if parameter is a size parameter introduced by field view frontend."""
         return param.id.startswith("__") and "_size_" in param.id
+
+    @staticmethod
+    def _missing_domain_params(params:List[itir.Sym]):
+        """add domain limits params that not present not param list"""
+        return filter(lambda s: s not in map(lambda p:p.id, params), ["horizontal_start", "horizontal_end", "vertical_start", "vertical_end" ])
