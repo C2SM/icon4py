@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from enum import Enum
 from pathlib import Path
 from typing import Any, List
 
@@ -22,13 +21,13 @@ from icon4py.common.dimension import Koff
 from icon4py.pyutils.exceptions import MultipleFieldOperatorException
 from icon4py.pyutils.metadata import StencilInfo
 
+
 H_START = "horizontal_start"
 H_END = "horizontal_end"
 V_START = "vertical_start"
 V_END = "vertical_end"
 
 _DOMAIN_ARGS = [H_START, H_END, V_START, V_END]
-
 
 
 class GTHeader:
@@ -94,6 +93,9 @@ class GTHeader:
         return param.id.startswith("__") and "_size_" in param.id
 
     @staticmethod
-    def _missing_domain_params(params:List[itir.Sym]):
-        """add domain limits params that not present not param list"""
-        return filter(lambda s: s not in map(lambda p:p.id, params), _DOMAIN_ARGS)
+    def _missing_domain_params(params: List[itir.Sym]):
+        """Get domain limit params that are not present in param list."""
+        return map(
+            lambda p: itir.Sym(id=p),
+            filter(lambda s: s not in map(lambda p: p.id, params), _DOMAIN_ARGS),
+        )

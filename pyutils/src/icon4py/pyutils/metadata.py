@@ -78,7 +78,8 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
             inp=(field_node.id in input_arg_ids),
             out=(field_node.id in output_arg_ids),
         )
-        for field_node in fvprog.past_node.params if field_node.id not in domain_arg_ids
+        for field_node in fvprog.past_node.params
+        if field_node.id not in domain_arg_ids
     }
 
     return fields

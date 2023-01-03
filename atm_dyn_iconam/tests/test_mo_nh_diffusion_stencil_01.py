@@ -201,9 +201,9 @@ def test_mo_nh_diffusion_stencil_01():
         z_nabla2_e,
         smag_offset,
         0,
-        mesh.k_level,
-        0,
         mesh.n_edges,
+        0,
+        mesh.k_level,
         offset_provider={
             "E2C2V": mesh.get_e2c2v_offset_provider(),
             "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, mesh.n_e2c2v),

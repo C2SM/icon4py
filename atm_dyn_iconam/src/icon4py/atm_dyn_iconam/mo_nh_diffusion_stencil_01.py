@@ -153,10 +153,10 @@ def mo_nh_diffusion_stencil_01(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     smag_offset: float,
+    horizontal_start: int,
+    horizontal_end: int,
     vertical_start: int,
-    vertical_end:int,
-    horizontal_start:int,
-    horizontal_end:int
+    vertical_end: int,
 ):
     _mo_nh_diffusion_stencil_01(
         diff_multfac_smag,
@@ -174,6 +174,7 @@ def mo_nh_diffusion_stencil_01(
         smag_offset,
         out=(kh_smag_e, kh_smag_ec, z_nabla2_e),
         domain={
-            EdgeDim:(horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end)}
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
