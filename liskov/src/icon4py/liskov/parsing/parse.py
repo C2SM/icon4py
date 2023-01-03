@@ -11,7 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import collections
+from pathlib import Path
 
+from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import ParsingExceptionHandler
 from icon4py.liskov.parsing.types import (
     Create,
@@ -42,24 +44,28 @@ _SUPPORTED_DIRECTIVES: list[Directive] = [
 ]
 
 _VALIDATORS: list[Validator] = [
-    DirectiveSyntaxValidator(),
-    DirectiveSemanticsValidator(),
+    DirectiveSyntaxValidator,
+    DirectiveSemanticsValidator,
 ]
+
+logger = setup_logger(__name__)
 
 
 class DirectivesParser:
-    def __init__(self, directives: list[RawDirective]) -> None:
+    def __init__(self, directives: list[RawDirective], filepath: Path) -> None:
         """Initialize a DirectivesParser instance.
 
         This class parses a list of RawDirective objects and returns a dictionary of parsed directives and their associated content.
 
         Args:
             directives: List of RawDirective objects to parse.
+            filepath: Path to file being parsed.
 
         Attributes:
         exception_handler: Exception handler for handling errors.
         parsed_directives: Dictionary of parsed directives and their associated content, or NoDirectivesFound if no directives were found.
         """
+        self.filepath = filepath
         self.directives = directives
         self.exception_handler = ParsingExceptionHandler
         self.parsed_directives = self._parse_directives()
@@ -70,6 +76,7 @@ class DirectivesParser:
         Returns:
             ParsedType: Dictionary of parsed directives and their associated content.
         """
+        logger.info(f"Parsing DSL Preprocessor directives at {self.filepath}")
         if len(self.directives) != 0:
             typed = self._determine_type(self.directives)
             preprocessed = self._preprocess(typed)
@@ -104,11 +111,10 @@ class DirectivesParser:
             )
         return preprocessed
 
-    @staticmethod
-    def _run_validation_passes(preprocessed: list[TypedDirective]) -> None:
+    def _run_validation_passes(self, preprocessed: list[TypedDirective]) -> None:
         """Run validation passes on the preprocessed directives."""
-        for v in _VALIDATORS:
-            v.validate(preprocessed)
+        for validator in _VALIDATORS:
+            validator(self.filepath).validate(preprocessed)
 
     @staticmethod
     def _parse(directives: list[TypedDirective]) -> ParsedContent:

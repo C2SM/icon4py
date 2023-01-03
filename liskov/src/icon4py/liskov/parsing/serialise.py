@@ -37,6 +37,7 @@ from icon4py.liskov.parsing.types import (
     Imports,
     ParsedDict,
     StartStencil,
+    TypedDirective,
 )
 from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
 from icon4py.pyutils.metadata import get_field_infos
@@ -68,6 +69,17 @@ class DeclareDataFactory:
         )
 
 
+def _extract_stencil_name(named_args: dict, directive: TypedDirective) -> str:
+    """Extract stencil name from directive arguments."""
+    try:
+        stencil_name = named_args["name"]
+    except KeyError as e:
+        raise MissingDirectiveArgumentError(
+            f"Missing argument {e} in {directive.directive_type} directive on line {directive.startln}."
+        )
+    return stencil_name
+
+
 class StartStencilDataFactory:
     TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 
@@ -84,7 +96,7 @@ class StartStencilDataFactory:
         directives = extract_directive(parsed["directives"], StartStencil)
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["Start"][i]
-            stencil_name = named_args["name"]
+            stencil_name = _extract_stencil_name(named_args, directive)
             bounds = self._get_bounds(named_args)
             fields = self._get_field_associations(named_args)
             fields_w_tolerance = self._update_field_tolerances(named_args, fields)
@@ -206,7 +218,7 @@ class EndStencilDataFactory:
         extracted = extract_directive(parsed["directives"], EndStencil)
         for i, directive in enumerate(extracted):
             named_args = parsed["content"]["End"][i]
-            stencil_name = named_args["name"]
+            stencil_name = _extract_stencil_name(named_args, directive)
             serialised.append(
                 EndStencilData(
                     name=stencil_name, startln=directive.startln, endln=directive.endln

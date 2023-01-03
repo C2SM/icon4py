@@ -60,11 +60,6 @@ def serialised_directives():
 
 
 @pytest.fixture
-def make_generator(serialised_directives):
-    return IntegrationGenerator(serialised_directives)
-
-
-@pytest.fixture
 def expected_create_source():
     return """
 #ifdef __DSL_VERIFY
@@ -117,26 +112,19 @@ def expected_stencil_end_source():
         )"""
 
 
-def test_init(make_generator, serialised_directives):
-    # Test that the IntegrationGenerator instance is initialized correctly
-    generator = make_generator
-    assert generator.directives == serialised_directives
-    assert generator.generated == []
+@pytest.fixture
+def generator(serialised_directives):
+    return IntegrationGenerator(serialised_directives, profile=True)
 
 
 def test_generate(
-    make_generator,
+    generator,
     expected_create_source,
     expected_imports_source,
     expected_declare_source,
     expected_stencil_start_source,
     expected_stencil_end_source,
 ):
-    # Test that the generate method generates the expected code snippets
-    profile = True
-    generator = make_generator
-    generator.generate(profile)
-
     # Check that the generated code snippets are as expected
     assert len(generator.generated) == 5
     assert generator.generated[0].source == expected_create_source

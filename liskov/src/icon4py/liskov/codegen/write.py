@@ -16,7 +16,11 @@ from typing import List
 
 from icon4py.bindings.utils import format_fortran_code
 from icon4py.liskov.codegen.generate import GeneratedCode
+from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.types import DIRECTIVE_IDENT
+
+
+logger = setup_logger(__name__)
 
 
 class IntegrationWriter:
@@ -101,6 +105,7 @@ class IntegrationWriter:
         new_file_path = filepath.with_suffix(IntegrationWriter.SUFFIX)
         with new_file_path.open("w") as f:
             f.write(formatted_code)
+        logger.info(f"Wrote new file to {new_file_path}")
 
     @staticmethod
     def _remove_directives(current_file: List[str]) -> List[str]:

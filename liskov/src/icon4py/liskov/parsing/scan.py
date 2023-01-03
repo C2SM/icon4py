@@ -13,7 +13,11 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.types import DIRECTIVE_IDENT, RawDirective
+
+
+logger = setup_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -56,6 +60,7 @@ class DirectivesScanner:
                             scanned_directives = []
                         case "&":
                             continue
+        logger.info(f"Scanning for directives at {self.filepath}")
         return directives
 
     @staticmethod

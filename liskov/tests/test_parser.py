@@ -86,7 +86,7 @@ def test_parse_single_directive(
 def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
     fpath = make_f90_tmpfile(content=stencil)
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(directives)
+    parser = DirectivesParser(directives, fpath)
     parsed = parser.parsed_directives
 
     directives = parsed["directives"]
@@ -114,13 +114,12 @@ def test_unsupported_directives(
     fpath = make_f90_tmpfile(content=stencil)
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
-    directive_name = directive.replace("!$DSL ", "")
 
     with pytest.raises(
         UnsupportedDirectiveError,
-        match=rf"\s+!\$DSL {directive_name}\(\)\n on lines (\d+)",
+        match=r"Used unsupported directive\(s\):.",
     ):
-        DirectivesParser(directives)
+        DirectivesParser(directives, fpath)
 
 
 @pytest.mark.parametrize(
@@ -138,16 +137,14 @@ def test_directive_parser_invalid_directive_syntax(
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
 
-    with pytest.raises(
-        DirectiveSyntaxError, match=r"DirectiveSyntaxError on line \d+\n"
-    ):
-        DirectivesParser(directives)
+    with pytest.raises(DirectiveSyntaxError, match=r"Error in .+ on line \d+\.\s+."):
+        DirectivesParser(directives, fpath)
 
 
 def test_directive_parser_no_directives_found(make_f90_tmpfile):
     fpath = make_f90_tmpfile(content=NO_DIRECTIVES_STENCIL)
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(directives)
+    parser = DirectivesParser(directives, fpath)
     parsed = parser.parsed_directives
     assert isinstance(parsed, NoDirectivesFound)
 
@@ -169,7 +166,7 @@ def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
         RepeatedDirectiveError,
         match="Found same directive more than once in the following directives:\n",
     ):
-        DirectivesParser(directives)
+        DirectivesParser(directives, fpath)
 
 
 @pytest.mark.parametrize(
@@ -189,7 +186,7 @@ def test_directive_parser_required_directives(make_f90_tmpfile, directive):
         RequiredDirectivesError,
         match=r"Missing required directive of type (\w*) in source.",
     ):
-        DirectivesParser(directives)
+        DirectivesParser(directives, fpath)
 
 
 @pytest.mark.parametrize(
@@ -210,4 +207,4 @@ def test_directive_parser_unbalanced_stencil_directives(
         UnbalancedStencilDirectiveError,
         match=r"Found (\d*) unbalanced START or END directive(s).\n",
     ):
-        DirectivesParser(directives)
+        DirectivesParser(directives, fpath)

@@ -43,11 +43,12 @@ class GeneratedCode:
 
 
 class IntegrationGenerator:
-    def __init__(self, directives: SerialisedDirectives):
-        self.generated: list[GeneratedCode] = []
+    def __init__(self, directives: SerialisedDirectives, profile: bool):
         self.directives = directives
+        self.generated: list[GeneratedCode] = []
+        self._generate(profile)
 
-    def generate(self, profile: bool) -> None:
+    def _generate(self, profile: bool) -> None:
         """Generate all f90 code for integration.
 
         Args:

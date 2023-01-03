@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import re
+from pathlib import Path
 from typing import Protocol
 
 from icon4py.liskov.parsing.exceptions import (
@@ -39,7 +40,13 @@ class Validator(Protocol):
 class DirectiveSyntaxValidator(Validator):
     """Validates syntax of preprocessor directives."""
 
-    def __init__(self) -> None:
+    def __init__(self, filepath: Path) -> None:
+        """Initialise a DirectiveSyntaxValidator.
+
+        Args:
+            filepath: Path to file being parsed.
+        """
+        self.filepath = filepath
         self.exception_handler = SyntaxExceptionHandler
 
     def validate(self, directives: list[TypedDirective]) -> None:
@@ -63,7 +70,7 @@ class DirectiveSyntaxValidator(Validator):
     ) -> None:
         regex = f"{pattern}\\((.*)\\)"
         match = re.fullmatch(regex, to_validate)
-        self.exception_handler.check_for_matches(d, match, regex)
+        self.exception_handler.check_for_matches(d, match, regex, self.filepath)
 
     def _validate_inner(
         self, to_validate: str, pattern: str, d: TypedDirective
@@ -80,11 +87,19 @@ class DirectiveSyntaxValidator(Validator):
 
         for arg in inner:
             match = re.fullmatch(regex, arg)
-            self.exception_handler.check_for_matches(d, match, regex)
+            self.exception_handler.check_for_matches(d, match, regex, self.filepath)
 
 
 class DirectiveSemanticsValidator(Validator):
     """Validates semantics of preprocessor directives."""
+
+    def __init__(self, filepath: Path) -> None:
+        """Initialise a DirectiveSyntaxValidator.
+
+        Args:
+            filepath: Path to file being parsed.
+        """
+        self.filepath = filepath
 
     def validate(self, directives: list[TypedDirective]) -> None:
         """Validate the semantics of preprocessor directives.
@@ -99,19 +114,17 @@ class DirectiveSemanticsValidator(Validator):
         self._validate_required_directives(directives)
         self._validate_stencil_directives(directives)
 
-    @staticmethod
-    def _validate_directive_uniqueness(directives: list[TypedDirective]) -> None:
+    def _validate_directive_uniqueness(self, directives: list[TypedDirective]) -> None:
         """Check that all used directives are unique."""
         unique_directives = set(directives)
         if len(unique_directives) != len(directives):
             repeated = [d for d in directives if directives.count(d) >= 2]
             pretty_printed = " ".join([format_typed_directive(d) for d in repeated])
             raise RepeatedDirectiveError(
-                f"Found same directive more than once in the following directives:\n {pretty_printed} "
+                f"Error in {self.filepath}.\n Found same directive more than once in the following directives:\n {pretty_printed} "
             )
 
-    @staticmethod
-    def _validate_required_directives(directives: list[TypedDirective]) -> None:
+    def _validate_required_directives(self, directives: list[TypedDirective]) -> None:
         """Check that all required directives are used at least once."""
         expected = [Declare, Imports, Create, StartStencil, EndStencil]
         for expected_type in expected:
@@ -119,11 +132,10 @@ class DirectiveSemanticsValidator(Validator):
                 [isinstance(d.directive_type, expected_type) for d in directives]
             ):
                 raise RequiredDirectivesError(
-                    f"Missing required directive of type {expected_type()} in source."
+                    f"Error in {self.filepath}.\n Missing required directive of type {expected_type().pattern} in source."
                 )
 
-    @staticmethod
-    def _validate_stencil_directives(directives: list[TypedDirective]) -> None:
+    def _validate_stencil_directives(self, directives: list[TypedDirective]) -> None:
         """Check that number of start and end stencil directives match."""
         start_directives = list(
             filter(lambda d: isinstance(d.directive_type, StartStencil), directives)
@@ -135,5 +147,5 @@ class DirectiveSemanticsValidator(Validator):
 
         if diff >= 1:
             raise UnbalancedStencilDirectiveError(
-                f"Found {diff} unbalanced START or END directives.\n"
+                f"Error in {self.filepath}.\n Found {diff} unbalanced START or END directives.\n"
             )
