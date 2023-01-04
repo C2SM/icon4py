@@ -13,7 +13,6 @@
 
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
-from functional.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import (
     _mo_nh_diffusion_stencil_02,

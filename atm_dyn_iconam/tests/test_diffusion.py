@@ -14,8 +14,7 @@ import os
 
 import numpy as np
 import pytest
-from icon_grid_test_utils import with_icon_grid, with_r04b09_diffusion_config
-from functional.ffront.fbuiltins import int32
+
 from icon4py.atm_dyn_iconam import utils
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.diffusion import (
@@ -28,34 +27,20 @@ from icon4py.atm_dyn_iconam.diffusion import (
     _setup_smag_limit,
     scale_k,
     set_zero_v_k,
-    setup_fields_for_initial_step, mo_nh_diffusion_stencil_15_numpy,
+    setup_fields_for_initial_step,
 )
 from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
 from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
 from icon4py.atm_dyn_iconam.metric_state import MetricState
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
-from icon4py.common.dimension import KDim, VertexDim, ECVDim, CellDim, C2E2CODim, C2E2CDim
+from icon4py.common.dimension import ECVDim, KDim, VertexDim
 from icon4py.testutils.serialbox_utils import (
     IconDiffusionInitSavepoint,
     IconSerialDataProvider,
 )
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field, as_1D_sparse_field, constant_field, \
-    random_mask
+from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
-
-def test_mo_nh_diffusion_stencil_15():
-    mesh = SimpleMesh()
-    mask_diff = constant_field(mesh, 1, CellDim, KDim, dtype=int32)
-    zd_vertidx = constant_field(mesh, 1, C2E2CDim, KDim, dtype=int32)
-    zd_diffcoef = random_field(mesh, CellDim, KDim)
-    geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
-    vcoef = random_field(mesh, C2E2CDim, KDim)
-    theta_v = random_field(mesh, CellDim, KDim)
-    z_temp = random_field(mesh, CellDim, KDim)
-
-    # mo_nh_diffusion_stencil_15_numpy(mesh.c2e2c,
-    #                                  mask_diff, zd_vertidx, zd_diffcoef, geofac_n2s, vcoef, theta_v, z_temp)
 
 def test_scale_k():
     mesh = SimpleMesh()
@@ -178,8 +163,8 @@ def test_set_zero_vertex_k():
     assert np.allclose(0.0, f)
 
 
-def test_diffusion_coefficients_with_hdiff_efdt_ratio(with_r04b09_diffusion_config):
-    config = with_r04b09_diffusion_config
+def test_diffusion_coefficients_with_hdiff_efdt_ratio(r04b09_diffusion_config):
+    config = r04b09_diffusion_config
     config.hdiff_efdt_ratio = 1.0
     config.hdiff_w_efdt_ratio = 2.0
 
@@ -191,8 +176,8 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio(with_r04b09_diffusion_conf
     assert params.K4W == pytest.approx(1.0 / 72.0, abs=1e-12)
 
 
-def test_diffusion_coefficients_without_hdiff_efdt_ratio(with_r04b09_diffusion_config):
-    config = with_r04b09_diffusion_config
+def test_diffusion_coefficients_without_hdiff_efdt_ratio(r04b09_diffusion_config):
+    config = r04b09_diffusion_config
     config.hdiff_efdt_ratio = 0.0
     config.hdiff_w_efdt_ratio = 0.0
 
@@ -204,8 +189,8 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(with_r04b09_diffusion_c
     assert params.K4W == 0.0
 
 
-def test_smagorinski_factor_for_diffusion_type_4(with_r04b09_diffusion_config):
-    config = with_r04b09_diffusion_config
+def test_smagorinski_factor_for_diffusion_type_4(r04b09_diffusion_config):
+    config = r04b09_diffusion_config
     config.hdiff_smag_factor = 0.15
     config.diffusion_type = 4
 
@@ -216,9 +201,9 @@ def test_smagorinski_factor_for_diffusion_type_4(with_r04b09_diffusion_config):
 
 
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
-    with_r04b09_diffusion_config,
+    r04b09_diffusion_config,
 ):
-    config = with_r04b09_diffusion_config
+    config = r04b09_diffusion_config
     config.hdiff_smag_factor = 0.15
     config.diffusion_type = 5
 
@@ -232,16 +217,16 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
     assert params.smagorinski_height[2] != params.smagorinski_height[3]
 
 
-def test_smagorinski_factor_diffusion_type_5(with_r04b09_diffusion_config):
-    config = with_r04b09_diffusion_config
+def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
+    config = r04b09_diffusion_config
     params = DiffusionParams(config)
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
-def test_diffusion_init(with_r04b09_diffusion_config):
-    config = with_r04b09_diffusion_config
+def test_diffusion_init(r04b09_diffusion_config):
+    config = r04b09_diffusion_config
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
     serializer.print_info()
@@ -315,9 +300,9 @@ def _verify_init_values_against_savepoint(
 
 
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    with_r04b09_diffusion_config,
+    r04b09_diffusion_config,
 ):
-    config = with_r04b09_diffusion_config
+    config = r04b09_diffusion_config
 
     params = DiffusionParams(config)
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
@@ -343,9 +328,9 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 
 
 def test_verify_diffusion_init_against_first_regular_savepoint(
-    with_r04b09_diffusion_config,
+    r04b09_diffusion_config,
 ):
-    config = with_r04b09_diffusion_config
+    config = r04b09_diffusion_config
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
     serializer.print_info()
@@ -360,9 +345,9 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 
 
 def test_verify_diffusion_init_against_other_regular_savepoint(
-    with_r04b09_diffusion_config,
+    r04b09_diffusion_config,
 ):
-    config = with_r04b09_diffusion_config
+    config = r04b09_diffusion_config
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
     serializer.print_info()
@@ -375,8 +360,9 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
     _verify_init_values_against_savepoint(savepoint, diffusion)
 
-@pytest.mark.xfail
-def test_diffusion_run(with_icon_grid):
+
+@pytest.mark.skip
+def test_diffusion_run(icon_grid):
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     data_provider = IconSerialDataProvider("icon_diffusion_init", data_path)
     data_provider.print_info()
@@ -384,7 +370,7 @@ def test_diffusion_run(with_icon_grid):
     vct_a = sp.vct_a()
 
     config = DiffusionConfig(
-        with_icon_grid,
+        icon_grid,
         vertical_params=VerticalModelParams(
             vct_a=vct_a, rayleigh_damping_height=12500.0
         ),

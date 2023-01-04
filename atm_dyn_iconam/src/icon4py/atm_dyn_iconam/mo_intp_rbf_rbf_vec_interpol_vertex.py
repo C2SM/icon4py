@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Tuple
 
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, neighbor_sum
@@ -39,8 +38,15 @@ def mo_intp_rbf_rbf_vec_interpol_vertex(
     horizontal_start: int,
     horizontal_end: int,
     vertical_start: int,
-    vertical_end:int,
+    vertical_end: int,
 ):
     _mo_intp_rbf_rbf_vec_interpol_vertex(
-        p_e_in, ptr_coeff_1, ptr_coeff_2, out=(p_u_out, p_v_out), domain={VertexDim: (horizontal_start, horizontal_end), KDim:(vertical_start, vertical_end)}
+        p_e_in,
+        ptr_coeff_1,
+        ptr_coeff_2,
+        out=(p_u_out, p_v_out),
+        domain={
+            VertexDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

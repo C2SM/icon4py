@@ -14,16 +14,15 @@
 from typing import Dict, Tuple
 
 import numpy as np
-from functional.ffront.fbuiltins import int32, int64
 from functional.common import Dimension, DimensionKind, Field
+from functional.ffront.fbuiltins import int32
 from functional.iterator.embedded import (
     NeighborTableOffsetProvider,
     np_as_located_field,
 )
 
 from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim, C2E2CODim, C2EDim, C2E2CDim, \
-    E2VDim, E2CDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 
 
 class VerticalMeshConfig:
@@ -78,8 +77,6 @@ def builder(func):
         return self
 
     return wrapper
-
-
 
 
 class IconGrid:
@@ -146,7 +143,7 @@ class IconGrid:
             raise ValueError(
                 "only defined for {} dimension kind ", DimensionKind.HORIZONTAL
             )
-        return self.start_indices[dim][start_marker],self.end_indices[dim][end_marker]
+        return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
 
     def get_c2e_connectivity(self):
         table = self.connectivities["c2e"]
@@ -174,7 +171,6 @@ class IconGrid:
     def get_e2c2v_size(self):
         self.connectivities["e2v"].shape[1]
 
-
     def get_v2e_connectivity(self):
         table = self.connectivities["v2e"]
         return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
@@ -191,8 +187,8 @@ class VerticalModelParams:
         """
         self.rayleigh_damping_height = rayleigh_damping_height
         self.vct_a = vct_a
-        self.index_of_damping_height = int32(np.argmax(
-            np.where(np.asarray(self.vct_a) >= self.rayleigh_damping_height))
+        self.index_of_damping_height = int32(
+            np.argmax(np.where(np.asarray(self.vct_a) >= self.rayleigh_damping_height))
         )
 
     def get_index_of_damping_layer(self):

@@ -16,7 +16,6 @@ import os
 
 import numpy as np
 import pytest
-from icon_grid_test_utils import with_icon_grid
 
 from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
@@ -36,7 +35,7 @@ def test_nrdmax_calculation(max_h, damping, delta):
     )
 
 
-def test_nrdmax_calculation_from_icon_input(with_icon_grid):
+def test_nrdmax_calculation_from_icon_input(icon_grid):
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     sp = IconSerialDataProvider(
         "icon_diffusion_init", data_path, True

@@ -51,6 +51,10 @@ def test_mo_intp_rbf_rbf_vec_interpol_vertex():
         ptr_coeff_2,
         p_v_out,
         p_u_out,
+        0,
+        mesh.n_vertices,
+        0,
+        mesh.k_level,
         offset_provider={"V2E": mesh.get_v2e_offset_provider(), "V2EDim": V2EDim},
     )
 

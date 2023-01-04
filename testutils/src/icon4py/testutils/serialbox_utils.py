@@ -56,7 +56,6 @@ class IconDiffustionSavepoint:
         print(f"{name} {buffer.shape}")
         return np_as_located_field(*dimensions)(buffer)
 
-
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()
         return {n: metadata[n] for n in names if n in metadata}
@@ -99,7 +98,7 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
     def cells_start_index(self):
         return self._read_int32_shift1("c_start_index")
 
-    def _read_int32_shift1(self, name:str):
+    def _read_int32_shift1(self, name: str):
         """
         Read a index field and shift it by -1.
 
@@ -111,14 +110,14 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
     def cells_end_index(self):
         return self._read_int32("c_end_index")
 
-    def read_int(self, name:str):
+    def read_int(self, name: str):
         buffer = self.serializer.read(name, self.savepoint).astype(int)
         print(f"{name} {buffer.shape}")
         return buffer
 
-    def _read_int32(self, name:str):
+    def _read_int32(self, name: str):
         """
-        Read a int field by name
+        Read a int field by name.
 
         use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
         this accounts for being exclusive python exclusive bounds: [from:to)

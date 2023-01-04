@@ -38,9 +38,12 @@ from icon4py.common.dimension import (
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
+data_path = os.path.join(os.path.dirname(__file__), "./ser_icondata")
+
+
 @pytest.fixture
-def with_icon_grid():
-    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
+def icon_grid():
+
     sp = IconSerialDataProvider(
         "icon_diffusion_init", data_path, True
     ).from_savepoint_init(linit=True, date="2021-06-20T12:00:10.000")
@@ -80,13 +83,12 @@ def with_icon_grid():
 
 
 @pytest.fixture
-def with_r04b09_diffusion_config() -> DiffusionConfig:
+def r04b09_diffusion_config() -> DiffusionConfig:
     """
     Create DiffusionConfig.
 
     that uses the parameters of MCH.CH_r04b09_dsl experiment
     """
-    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     sp = IconSerialDataProvider(
         "icon_diffusion_init", data_path, True
     ).from_savepoint_init(linit=True, date="2021-06-20T12:00:10.000")
