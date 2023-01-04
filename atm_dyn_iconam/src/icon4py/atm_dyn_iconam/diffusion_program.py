@@ -55,7 +55,8 @@ from icon4py.common.dimension import (
 )
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+#@program(backend=gtfn_cpu.run_gtfn)
+@program
 def diffusion_run(
     diagnostic_hdef_ic: Field[[CellDim, KDim], float],
     diagnostic_div_ic: Field[[CellDim, KDim], float],
@@ -107,10 +108,9 @@ def diffusion_run(
     local_nudgezone_diff: float,
     local_fac_bdydiff_v: float,
     local_diff_multfac_w: float,
-    local_vertical_index: Field[[KDim], int32],  # local_grid.n_lev() + 1
+    local_vertical_index: Field[[KDim], int32],
     local_horizontal_cell_index: Field[[CellDim], int32],
     local_horizontal_edge_index: Field[[EdgeDim], int32],
-    cell_startindex_nudging_minus1: int32,
     cell_startindex_interior: int32,
     cell_startindex_nudging: int32,
     cell_endindex_local_plus1: int32,

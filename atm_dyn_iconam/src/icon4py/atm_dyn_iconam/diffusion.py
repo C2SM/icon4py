@@ -597,59 +597,45 @@ class Diffusion:
         #     self._smag_offset,
         # )
 
-        cell_start_nudging_minus1, cell_end_local_plus1 = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim) - 1,
-            HorizontalMarkerIndex.local(CellDim) + 1,
-        )
-
-        cell_start_interior, cell_end_halo = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.interior(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
-
-        cell_start_nudging, cell_end_local = self.grid.get_indices_from_to(
+        cell_startindex_nudging, cell_endindex_local = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.nudging(CellDim),
             HorizontalMarkerIndex.local(CellDim),
         )
 
-        edge_start_nudging_plus_one, edge_end_local = self.grid.get_indices_from_to(
+        cell_startindex_interior, cell_endindex_local_plus1 = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.interior(CellDim),
+            HorizontalMarkerIndex.local(CellDim) + 1,
+        )
+
+        edge_startindex_nudging_plus1, edge_endindex_local = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.nudging(EdgeDim) + 1,
             HorizontalMarkerIndex.local(EdgeDim),
         )
 
-        (
-            edge_start_nudging_minus1,
-            edge_end_local_minus2,
-        ) = self.grid.get_indices_from_to(
+        edge_startindex_nudging_minus1, edge_endindex_local_minus2 = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.nudging(EdgeDim) - 1,
             HorizontalMarkerIndex.local(EdgeDim) - 2,
         )
 
-        (
-            vertex_start_local_boundary_plus3,
-            vertex_end_local,
-        ) = self.grid.get_indices_from_to(
+        vertex_startindex_lb_plus3, vertex_endindex_local = self.grid.get_indices_from_to(
             VertexDim,
             HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
             HorizontalMarkerIndex.local(VertexDim),
         )
-        (
-            vertex_start_local_boundary_plus1,
-            vertex_end_local_minus1,
-        ) = self.grid.get_indices_from_to(
+
+        vertex_startindex_lb_plus1, vertex_endindex_local_minus1= self.grid.get_indices_from_to(
             VertexDim,
             HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
         diffusion_run(
-            diagnostic_state.div_ic,
             diagnostic_state.hdef_ic,
+            diagnostic_state.div_ic,
             diagnostic_state.dwdx,
             diagnostic_state.dwdy,
             prognostic_state.vertical_wind,
@@ -701,19 +687,18 @@ class Diffusion:
             self.vertical_index,
             self.horizontal_cell_index,
             self.horizontal_edge_index,
-            cell_start_nudging_minus1,
-            cell_start_interior,
-            cell_start_nudging,
-            cell_end_local_plus1,
-            cell_end_local,
-            edge_start_nudging_plus_one,
-            edge_start_nudging_minus1,
-            edge_end_local,
-            edge_end_local_minus2,
-            vertex_start_local_boundary_plus3,
-            vertex_start_local_boundary_plus1,
-            vertex_end_local,
-            vertex_end_local_minus1,
+            cell_startindex_interior,
+            cell_startindex_nudging,
+            cell_endindex_local_plus1,
+            cell_endindex_local,
+            edge_startindex_nudging_plus1,
+            edge_startindex_nudging_minus1,
+            edge_endindex_local,
+            edge_endindex_local_minus2,
+            vertex_startindex_lb_plus3,
+            vertex_startindex_lb_plus1,
+            vertex_endindex_local,
+            vertex_endindex_local_minus1,
             self.config.vertical_params.index_of_damping_height,
             self.grid.n_lev(),
             self.params.boundary_diffusion_start_index_edges,
