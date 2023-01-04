@@ -21,7 +21,7 @@ from functional.iterator.embedded import (
     np_as_located_field,
 )
 
-from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
+from icon4py.diffusion.horizontal import HorizontalMeshConfig
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 
 

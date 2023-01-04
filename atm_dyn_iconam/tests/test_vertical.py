@@ -17,7 +17,7 @@ import os
 import numpy as np
 import pytest
 
-from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
+from icon4py.diffusion.icon_grid import VerticalModelParams
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 

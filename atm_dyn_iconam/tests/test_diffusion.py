@@ -15,9 +15,9 @@ import os
 import numpy as np
 import pytest
 
-from icon4py.atm_dyn_iconam import utils
-from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
-from icon4py.atm_dyn_iconam.diffusion import (
+from icon4py.diffusion import utils
+from icon4py.diffusion.diagnostic import DiagnosticState
+from icon4py.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
@@ -29,10 +29,10 @@ from icon4py.atm_dyn_iconam.diffusion import (
     set_zero_v_k,
     setup_fields_for_initial_step,
 )
-from icon4py.atm_dyn_iconam.icon_grid import VerticalModelParams
-from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
-from icon4py.atm_dyn_iconam.metric_state import MetricState
-from icon4py.atm_dyn_iconam.prognostic import PrognosticState
+from icon4py.diffusion.icon_grid import VerticalModelParams
+from icon4py.diffusion.interpolation_state import InterpolationState
+from icon4py.diffusion.metric_state import MetricState
+from icon4py.diffusion.prognostic import PrognosticState
 from icon4py.common.dimension import ECVDim, KDim, VertexDim
 from icon4py.testutils.serialbox_utils import (
     IconDiffusionInitSavepoint,

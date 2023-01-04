@@ -25,9 +25,9 @@ from functional.iterator.embedded import (
 )
 
 from icon4py.common.constants import CPD, GAS_CONSTANT_DRY_AIR
-from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
-from icon4py.atm_dyn_iconam.diffusion_program import diffusion_run
-from icon4py.atm_dyn_iconam.utils import scale_k, set_zero_v_k
+from icon4py.diffusion.diagnostic import DiagnosticState
+from icon4py.diffusion.diffusion_program import diffusion_run
+from icon4py.diffusion.utils import scale_k, set_zero_v_k
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
     _fused_mo_nh_diffusion_stencil_02_03,
 )
@@ -43,10 +43,10 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import (
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
     _fused_mo_nh_diffusion_stencil_13_14,
 )
-from icon4py.atm_dyn_iconam.horizontal import HorizontalMarkerIndex
-from icon4py.atm_dyn_iconam.icon_grid import IconGrid, VerticalModelParams
-from icon4py.atm_dyn_iconam.interpolation_state import InterpolationState
-from icon4py.atm_dyn_iconam.metric_state import MetricState
+from icon4py.diffusion.horizontal import HorizontalMarkerIndex
+from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
+from icon4py.diffusion.interpolation_state import InterpolationState
+from icon4py.diffusion.metric_state import MetricState
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
@@ -56,8 +56,8 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_01 import (
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import (
     _mo_nh_diffusion_stencil_16,
 )
-from icon4py.atm_dyn_iconam.prognostic import PrognosticState
-from icon4py.atm_dyn_iconam.utils import zero_field
+from icon4py.diffusion.prognostic import PrognosticState
+from icon4py.diffusion.utils import zero_field
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,

@@ -15,9 +15,8 @@
 from functional.common import Field
 from functional.ffront.decorator import program
 from functional.ffront.fbuiltins import int32
-from functional.program_processors.runners import gtfn_cpu
 
-from icon4py.atm_dyn_iconam.utils import _scale_k, _set_zero_v_k
+from icon4py.diffusion.utils import _scale_k, _set_zero_v_k
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
     _fused_mo_nh_diffusion_stencil_02_03,
 )

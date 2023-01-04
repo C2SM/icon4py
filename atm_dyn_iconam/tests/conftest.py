@@ -16,9 +16,9 @@ import os
 import numpy as np
 import pytest
 
-from icon4py.atm_dyn_iconam.diffusion import DiffusionConfig
-from icon4py.atm_dyn_iconam.horizontal import HorizontalMeshConfig
-from icon4py.atm_dyn_iconam.icon_grid import (
+from icon4py.diffusion.diffusion import DiffusionConfig
+from icon4py.diffusion.horizontal import HorizontalMeshConfig
+from icon4py.diffusion.icon_grid import (
     IconGrid,
     MeshConfig,
     VerticalMeshConfig,
