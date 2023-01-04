@@ -113,7 +113,7 @@ class WrapRunFuncGenerator(TemplatedGenerator):
             {{ input_fields }}
             {{ output_fields }}
             {{ tolerance_fields }}
-            {{ bounds_fields }})
+            {{ bounds_fields }}
         """
     )
 
@@ -166,7 +166,7 @@ class WrapRunFuncGenerator(TemplatedGenerator):
         """vertical_lower={{ vlower }}, &
            vertical_upper={{ vupper }}, &
            horizontal_lower={{ hlower }}, &
-           horizontal_upper={{ hupper }}
+           horizontal_upper={{ hupper }})
         """
     )
 
@@ -195,6 +195,12 @@ class DeclareStatementGenerator(TemplatedGenerator):
         {%- for d in _this_node.declarations %}
         REAL(wp), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
         {%- endfor %}
+        
+        #ifdef __DSL_VERIFY
+        LOGICAL dsl_verify = .TRUE.
+        #elif
+        LOGICAL dsl_verify = .FALSE.
+        #endif
         """
     )
 
@@ -223,9 +229,12 @@ class OutputFieldCopy(eve.Node):
         copy_dim_params = list(dims)
         copy_dim_params[-1] = ":"
         copy_field_dims = f"({''.join(copy_dim_params)})"
+        old_dims = f"({dims})"
+        new_association = declr.association.strip(old_dims)
+
         return CopyDeclaration(
             variable=declr.variable,
-            association=declr.association,
+            association=new_association,
             array_index=copy_field_dims,
         )
 
@@ -236,7 +245,7 @@ class OutputFieldCopyGenerator(TemplatedGenerator):
         #ifdef __DSL_VERIFY
         !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
-        {{ d.variable }}_before{{ d.array_index }} = {{ d.variable }}{{ d.array_index }}
+        {{ d.variable }}_before{{ d.array_index }} = {{ d.association }}{{ d.array_index }}
         {%- endfor %}
         !$ACC END PARALLEL
 
@@ -277,12 +286,6 @@ class CreateStatement(eve.Node):
 class CreateStatementGenerator(TemplatedGenerator):
     CreateStatement = as_jinja(
         """
-        #ifdef __DSL_VERIFY
-        LOGICAL dsl_verify = .TRUE.
-        #elif
-        LOGICAL dsl_verify = .FALSE.
-        #endif
-
         !$ACC DATA CREATE( &
         {%- for name in out_field_names %}
         !$ACC   {{ name }}_before, &

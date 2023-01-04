@@ -31,6 +31,10 @@ from icon4py.liskov.codegen.f90 import (
     generate_fortran_code,
 )
 from icon4py.liskov.codegen.interface import CodeGenInput, SerialisedDirectives
+from icon4py.liskov.logger import setup_logger
+
+
+logger = setup_logger(__name__)
 
 
 @dataclass
@@ -54,9 +58,9 @@ class IntegrationGenerator:
         Args:
             profile: A boolean indicating whether to include profiling calls in the generated code.
         """
-        self._generate_create()
-        self._generate_imports()
-        self._generate_declare()
+        # self._generate_create()
+        # self._generate_imports()
+        # self._generate_declare()
         self._generate_stencil(profile)
 
     def _add_generated_code(
@@ -82,6 +86,7 @@ class IntegrationGenerator:
 
     def _generate_declare(self) -> None:
         """Generate f90 code for declaration statements."""
+        logger.info("Generating DECLARE statement.")
         self._add_generated_code(
             DeclareStatement,
             DeclareStatementGenerator,
@@ -97,6 +102,7 @@ class IntegrationGenerator:
             profile: A boolean indicating whether to include profiling calls in the generated code.
         """
         for i, stencil in enumerate(self.directives.start):
+            logger.info(f"Generating START statement for {stencil.name}")
             self._add_generated_code(
                 OutputFieldCopy,
                 OutputFieldCopyGenerator,
@@ -105,6 +111,7 @@ class IntegrationGenerator:
                 stencil_data=stencil,
                 profile=profile,
             )
+            logger.info(f"Generating END statement for {stencil.name}")
             self._add_generated_code(
                 WrapRunFunc,
                 WrapRunFuncGenerator,
@@ -116,6 +123,7 @@ class IntegrationGenerator:
 
     def _generate_imports(self) -> None:
         """Generate f90 code for import statements."""
+        logger.info("Generating IMPORT statement.")
         self._add_generated_code(
             ImportsStatement,
             ImportsStatementGenerator,
@@ -126,6 +134,7 @@ class IntegrationGenerator:
 
     def _generate_create(self) -> None:
         """Generate f90 code for OpenACC DATA CREATE statements."""
+        logger.info("Generating DATA CREATE statement.")
         self._add_generated_code(
             CreateStatement,
             CreateStatementGenerator,

@@ -50,23 +50,26 @@ class DirectiveInputFactory(Protocol):
 
 class CreateDataFactory:
     def __call__(self, parsed: ParsedDict) -> CreateData:
-        extracted = extract_directive(parsed["directives"], Create)[0]
-        return CreateData(startln=extracted.startln, endln=extracted.endln)
+        # extracted = extract_directive(parsed["directives"], Create)[0]
+        # return CreateData(startln=extracted.startln, endln=extracted.endln)
+        return None
 
 
 class ImportsDataFactory:
     def __call__(self, parsed: ParsedDict) -> ImportsData:
-        extracted = extract_directive(parsed["directives"], Imports)[0]
-        return ImportsData(startln=extracted.startln, endln=extracted.endln)
+        # extracted = extract_directive(parsed["directives"], Imports)[0]
+        # return ImportsData(startln=extracted.startln, endln=extracted.endln)
+        return None
 
 
 class DeclareDataFactory:
     def __call__(self, parsed: ParsedDict) -> DeclareData:
-        extracted = extract_directive(parsed["directives"], Declare)[0]
-        declarations = parsed["content"]["Declare"]
-        return DeclareData(
-            startln=extracted.startln, endln=extracted.endln, declarations=declarations
-        )
+        # extracted = extract_directive(parsed["directives"], Declare)[0]
+        # declarations = parsed["content"]["Declare"]
+        # return DeclareData(
+        #     startln=extracted.startln, endln=extracted.endln, declarations=declarations
+        # )
+        return None
 
 
 def _extract_stencil_name(named_args: dict, directive: TypedDirective) -> str:
