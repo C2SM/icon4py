@@ -25,7 +25,8 @@ from icon4py.common.dimension import CellDim, KDim, EdgeDim, C2E2CDim, C2EDim, V
     C2E2CODim, ECVDim
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+#@program(backend=gtfn_cpu.run_gtfn)
+@program
 def diffusion_run(
     diagnostic_hdef_ic: Field[[CellDim, KDim], float],
     diagnostic_div_ic: Field[[CellDim, KDim], float],
@@ -242,7 +243,6 @@ def diffusion_run(
         local_kh_smag_e,
         out=local_kh_smag_e,
         domain={
-            #CellDim: (cell_startindex_nudging_minus1, cell_endindex_local_plus1),
             EdgeDim: (edge_startindex_nudging_plus1, edge_endindex_local),
             KDim: (nlev-2, nlev)
         }

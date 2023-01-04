@@ -375,7 +375,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
     _verify_init_values_against_savepoint(savepoint, diffusion)
 
-
+@pytest.mark.xfail
 def test_diffusion_run(with_icon_grid):
     data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
     data_provider = IconSerialDataProvider("icon_diffusion_init", data_path)

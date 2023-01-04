@@ -36,11 +36,11 @@ def mo_intp_rbf_rbf_vec_interpol_vertex(
     ptr_coeff_2: Field[[VertexDim, V2EDim], float],
     p_u_out: Field[[VertexDim, KDim], float],
     p_v_out: Field[[VertexDim, KDim], float],
-    v_start: int,
-    v_end: int,
-    k_start: int,
-    k_end:int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end:int,
 ):
     _mo_intp_rbf_rbf_vec_interpol_vertex(
-        p_e_in, ptr_coeff_1, ptr_coeff_2, out=(p_u_out, p_v_out), domain={VertexDim: (v_start, v_end), KDim:(k_start, k_end)}
+        p_e_in, ptr_coeff_1, ptr_coeff_2, out=(p_u_out, p_v_out), domain={VertexDim: (horizontal_start, horizontal_end), KDim:(vertical_start, vertical_end)}
     )
