@@ -24,10 +24,10 @@ from functional.iterator.embedded import (
     np_as_located_field,
 )
 
-from icon4py.atm_dyn_iconam.constants import CPD, GAS_CONSTANT_DRY_AIR
+from icon4py.common.constants import CPD, GAS_CONSTANT_DRY_AIR
 from icon4py.atm_dyn_iconam.diagnostic import DiagnosticState
 from icon4py.atm_dyn_iconam.diffusion_program import diffusion_run
-from icon4py.atm_dyn_iconam.diffusion_utils import scale_k, set_zero_v_k
+from icon4py.atm_dyn_iconam.utils import scale_k, set_zero_v_k
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
     _fused_mo_nh_diffusion_stencil_02_03,
 )
@@ -59,7 +59,6 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import (
 from icon4py.atm_dyn_iconam.prognostic import PrognosticState
 from icon4py.atm_dyn_iconam.utils import zero_field
 from icon4py.common.dimension import (
-    E2ECV,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
