@@ -159,6 +159,7 @@ def test_set_zero_vertex_k():
     assert np.allclose(0.0, f)
 
 
+@pytest.mark.datatest
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(r04b09_diffusion_config):
     config = r04b09_diffusion_config
     config.hdiff_efdt_ratio = 1.0
@@ -172,6 +173,7 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio(r04b09_diffusion_config):
     assert params.K4W == pytest.approx(1.0 / 72.0, abs=1e-12)
 
 
+@pytest.mark.datatest
 def test_diffusion_coefficients_without_hdiff_efdt_ratio(r04b09_diffusion_config):
     config = r04b09_diffusion_config
     config.hdiff_efdt_ratio = 0.0
@@ -185,6 +187,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(r04b09_diffusion_config
     assert params.K4W == 0.0
 
 
+@pytest.mark.datatest
 def test_smagorinski_factor_for_diffusion_type_4(r04b09_diffusion_config):
     config = r04b09_diffusion_config
     config.hdiff_smag_factor = 0.15
@@ -196,6 +199,7 @@ def test_smagorinski_factor_for_diffusion_type_4(r04b09_diffusion_config):
     assert params.smagorinski_height is None
 
 
+@pytest.mark.datatest
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
     r04b09_diffusion_config,
 ):
@@ -213,6 +217,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
     assert params.smagorinski_height[2] != params.smagorinski_height[3]
 
 
+@pytest.mark.datatest
 def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
     config = r04b09_diffusion_config
     params = DiffusionParams(config)
@@ -221,6 +226,7 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
+@pytest.mark.datatest
 def test_diffusion_init(savepoint_init, r04b09_diffusion_config, step_date):
     savepoint = savepoint_init
     vct_a = savepoint.vct_a()
@@ -291,6 +297,7 @@ def _verify_init_values_against_savepoint(
     assert np.allclose(savepoint.diff_multfac_vn(), diffusion._diff_multfac_vn)
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     savepoint_init,
@@ -317,6 +324,7 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     assert exptected_smag_offset == 0.0
 
 
+@pytest.mark.datatest
 def test_verify_diffusion_init_against_first_regular_savepoint(
     savepoint_init,
     r04b09_diffusion_config,
@@ -331,6 +339,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     _verify_init_values_against_savepoint(savepoint, diffusion)
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize("step_date", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
     r04b09_diffusion_config, savepoint_init
@@ -346,6 +355,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 
 @pytest.mark.skip
+@pytest.mark.datatest
 def test_diffusion_run(savepoint_init, save_point_exit, icon_grid):
     sp = savepoint_init
     vct_a = sp.vct_a()

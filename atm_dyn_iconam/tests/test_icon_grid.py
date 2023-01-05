@@ -10,11 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import pytest
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.diffusion.horizontal import HorizontalMarkerIndex
 
 
+@pytest.mark.datatest
 def test_horizontal_grid_cell_indices(icon_grid):
     assert icon_grid.get_indices_from_to(
         CellDim,
@@ -79,6 +81,7 @@ def test_horizontal_grid_cell_indices(icon_grid):
     )  # nudging
 
 
+@pytest.mark.datatest
 def test_horizontal_edge_indices(icon_grid):
     assert icon_grid.get_indices_from_to(
         EdgeDim,
@@ -185,6 +188,7 @@ def test_horizontal_edge_indices(icon_grid):
     )  # lb +0
 
 
+@pytest.mark.datatest
 def test_horizontal_vertex_indices(icon_grid):
     assert icon_grid.get_indices_from_to(
         VertexDim,
