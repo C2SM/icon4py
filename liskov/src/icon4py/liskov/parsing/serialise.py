@@ -57,19 +57,17 @@ class CreateDataFactory:
 
 class ImportsDataFactory:
     def __call__(self, parsed: ParsedDict) -> ImportsData:
-        # extracted = extract_directive(parsed["directives"], Imports)[0]
-        # return ImportsData(startln=extracted.startln, endln=extracted.endln)
-        return None
+        extracted = extract_directive(parsed["directives"], Imports)[0]
+        return ImportsData(startln=extracted.startln, endln=extracted.endln)
 
 
 class DeclareDataFactory:
     def __call__(self, parsed: ParsedDict) -> DeclareData:
-        # extracted = extract_directive(parsed["directives"], Declare)[0]
-        # declarations = parsed["content"]["Declare"]
-        # return DeclareData(
-        #     startln=extracted.startln, endln=extracted.endln, declarations=declarations
-        # )
-        return None
+        extracted = extract_directive(parsed["directives"], Declare)[0]
+        declarations = parsed["content"]["Declare"]
+        return DeclareData(
+            startln=extracted.startln, endln=extracted.endln, declarations=declarations
+        )
 
 
 def _extract_stencil_name(named_args: dict, directive: TypedDirective) -> str:
@@ -132,7 +130,7 @@ class StartStencilDataFactory:
         return bounds
 
     def _get_field_associations(
-        self, named_args: dict[str, str]
+            self, named_args: dict[str, str]
     ) -> list[FieldAssociationData]:
         """Extract all fields from directive arguments and create corresponding field association data."""
         field_args = self._create_field_args(named_args)
@@ -163,7 +161,7 @@ class StartStencilDataFactory:
         return field_args
 
     def _combine_field_info(
-        self, field_args: dict[str, str], named_args: dict[str, str]
+            self, field_args: dict[str, str], named_args: dict[str, str]
     ) -> list[FieldAssociationData]:
         """Combine directive field info with field info extracted from the corresponding icon4py stencil.
 
@@ -198,7 +196,7 @@ class StartStencilDataFactory:
         return fields
 
     def _update_field_tolerances(
-        self, named_args: dict, fields: list[FieldAssociationData]
+            self, named_args: dict, fields: list[FieldAssociationData]
     ) -> list[FieldAssociationData]:
         """Set relative and absolute tolerance for a given field if set in the directives."""
         for field_name, association in named_args.items():

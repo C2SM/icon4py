@@ -28,9 +28,9 @@ from icon4py.liskov.codegen.interface import (
 
 
 def generate_fortran_code(
-    parent_node: Type[eve.Node],
-    code_generator: Type[TemplatedGenerator],
-    **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
+        parent_node: Type[eve.Node],
+        code_generator: Type[TemplatedGenerator],
+        **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
 ) -> str:
     """
     Generate Fortran code for the given parent node and code generator.
@@ -120,28 +120,31 @@ class WrapRunFuncGenerator(TemplatedGenerator):
     InputFields = as_jinja(
         """
         {%- for field in _this_node.fields %}
+            {%- if field.out %}
+            
+            {%- else %}
             {{ field.variable }}={{ field.association }},&
+            {%- endif -%}
         {%- endfor %}
         """
     )
-
-    def visit_OutputFields(self, out: OutputFields) -> Collection[str] | str:
-        f = out.fields[0]
-        start_idx = f.association.find("(")
-        end_idx = f.association.find(")")
-        out_index = f.association[start_idx : end_idx + 1]
-
-        return self.generic_visit(
-            out, output_association=f"{f.variable}_before{out_index}"
-        )
 
     OutputFields = as_jinja(
         """
         {%- for field in _this_node.fields %}
-            {{ field.variable }}_before={{ output_association }},&
+            {{ field.variable }}={{ field.association }},&
+            {{ field.variable }}_before={{ field.variable }}_before{{ field.out_index }},&
         {%- endfor %}
         """
     )
+
+    def visit_OutputFields(self, out: OutputFields):
+        for f in out.fields:
+            start_idx = f.association.find("(")
+            end_idx = f.association.find(")")
+            out_index = f.association[start_idx: end_idx + 1]
+            f.out_index = out_index
+        return self.generic_visit(out)
 
     ToleranceFields = as_jinja(
         """
@@ -196,10 +199,12 @@ class DeclareStatementGenerator(TemplatedGenerator):
         REAL(wp), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
         {%- endfor %}
         
+        LOGICAL :: dsl_verify
+        
         #ifdef __DSL_VERIFY
-        LOGICAL dsl_verify = .TRUE.
+        dsl_verify = .TRUE.
         #elif
-        LOGICAL dsl_verify = .FALSE.
+        dsl_verify = .FALSE.
         #endif
         """
     )
@@ -266,7 +271,7 @@ class ImportsStatement(eve.Node):
 
 class ImportsStatementGenerator(TemplatedGenerator):
     ImportsStatement = as_jinja(
-        """{% for name in stencil_names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
+        """  {% for name in stencil_names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
     )
 
 
