@@ -113,6 +113,15 @@ class Field(Node, FieldEntity):
     def is_compound(self) -> bool:
         return self.location is not None and isinstance(self.location, CompoundLocation)
 
+    def is_integral(self) -> bool:
+        scalar_types = [
+            ts.ScalarKind.INT,
+            ts.ScalarKind.INT32,
+            ts.ScalarKind.INT64,
+            ts.ScalarKind.BOOL,
+        ]
+        return self.field_type in scalar_types
+
     def rank(self) -> int:
         rank = int(self.has_vertical_dimension) + int(self.location is not None)
         if self.location is not None:

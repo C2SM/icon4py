@@ -372,7 +372,7 @@ class CppDefGenerator(TemplatedGenerator):
         const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
         const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
         {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
+        {%- for field in _this_node.tol_fields -%}
         const double {{ field.name }}_rel_tol,
         const double {{ field.name }}_abs_tol,
         {%- endfor -%}
@@ -400,9 +400,15 @@ class CppDefGenerator(TemplatedGenerator):
         {%- for field in _this_node.out_fields %}
         int {{ field.name }}_kSize = dawn_generated::cuda_ico::{{ funcname }}::
         get_{{ field.name }}_KSize();
+        {% if field.is_integral() %}
+        stencilMetrics = ::dawn::verify_field(
+            stream, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
+            \"{{ field.name }}\", iteration);
+        {% else %}
         stencilMetrics = ::dawn::verify_field(
             stream, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
             \"{{ field.name }}\", {{ field.name }}_rel_tol, {{ field.name }}_abs_tol, iteration);
+        {% endif %}
         #ifdef __SERIALIZE_METRICS
         MetricsSerialiser serialiser_{{ field.name }}(
             dawn_generated::cuda_ico::{{ funcname }}::getJsonRecord(), stencilMetrics,
@@ -458,7 +464,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{ field.name }}_{{ suffix }},
         {{ field.name }},
         {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
+        {%- for field in _this_node.tol_fields -%}
         {{ field.name }}_rel_tol,
         {{ field.name }}_abs_tol,
         {%- endfor -%}
@@ -638,6 +644,7 @@ class CppDefTemplate(Node):
 
     def _get_field_data(self) -> tuple:
         output_fields = [field for field in self.fields if field.intent.out]
+        tolerance_fields = [field for field in output_fields if not field.is_integral()]
         # since we can vertical fields as dense fields for the purpose of this function, lets include them here
         dense_fields = [
             field
@@ -661,6 +668,7 @@ class CppDefTemplate(Node):
             sparse=sparse_fields,
             compound=compound_fields,
             all_fields=all_fields,
+            tolerance=tolerance_fields,
         )
         return fields, offsets
 
@@ -699,7 +707,10 @@ class CppDefTemplate(Node):
                 fields=self.fields, out_fields=fields["output"]
             ),
             setup_func=StencilClassSetupFunc(
-                funcname=self.stencil_name, out_fields=fields["output"], suffix="kSize"
+                funcname=self.stencil_name,
+                out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
+                suffix="kSize",
             ),
         )
 
@@ -714,7 +725,10 @@ class CppDefTemplate(Node):
         self.verify_func = VerifyFunc(
             funcname=self.stencil_name,
             verify_func_declaration=CppVerifyFuncDeclaration(
-                funcname=self.stencil_name, out_fields=fields["output"], suffix="dsl"
+                funcname=self.stencil_name,
+                out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
+                suffix="dsl",
             ),
             metrics_serialisation=MetricsSerialisation(
                 funcname=self.stencil_name, out_fields=fields["output"]
@@ -727,19 +741,27 @@ class CppDefTemplate(Node):
                 funcname=self.stencil_name,
                 fields=self.fields,
                 out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
                 suffix="before",
             ),
             run_func_call=RunFuncCall(funcname=self.stencil_name, fields=self.fields),
             verify_func_call=VerifyFuncCall(
-                funcname=self.stencil_name, out_fields=fields["output"], suffix="before"
+                funcname=self.stencil_name,
+                out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
+                suffix="before",
             ),
         )
 
         self.setup_func = SetupFunc(
             funcname=self.stencil_name,
             out_fields=fields["output"],
+            tol_fields=fields["tolerance"],
             func_declaration=CppSetupFuncDeclaration(
-                funcname=self.stencil_name, out_fields=fields["output"], suffix="k_size"
+                funcname=self.stencil_name,
+                out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
+                suffix="k_size",
             ),
             suffix="k_size",
         )

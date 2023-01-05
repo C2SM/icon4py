@@ -43,7 +43,7 @@ run_verify_func_declaration = as_jinja(
     {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
     {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
-    {%- for field in _this_node.out_fields -%}
+    {%- for field in _this_node.tol_fields -%}
     const double {{ field.name }}_rel_tol,
     const double {{ field.name }}_abs_tol
     {%- if not loop.last -%}
@@ -81,7 +81,7 @@ class CppHeaderGenerator(TemplatedGenerator):
         const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
         const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
         {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
+        {%- for field in _this_node.tol_fields -%}
         const double {{ field.name }}_rel_tol,
         const double {{ field.name }}_abs_tol,
         {%- endfor -%}
@@ -123,6 +123,7 @@ class CppRunFuncDeclaration(CppFunc):
 
 class CppVerifyFuncDeclaration(CppFunc):
     out_fields: Sequence[Field]
+    tol_fields: Sequence[Field]
     suffix: str
 
 
@@ -146,6 +147,7 @@ class CppHeaderFile(Node):
 
     def __post_init__(self) -> None:  # type: ignore
         output_fields = [field for field in self.fields if field.intent.out]
+        tolerance_fields = [field for field in output_fields if not field.is_integral()]
 
         self.runFunc = CppRunFuncDeclaration(
             funcname=self.stencil_name,
@@ -153,18 +155,25 @@ class CppHeaderFile(Node):
         )
 
         self.verifyFunc = CppVerifyFuncDeclaration(
-            funcname=self.stencil_name, out_fields=output_fields, suffix="dsl"
+            funcname=self.stencil_name,
+            out_fields=output_fields,
+            tol_fields=tolerance_fields,
+            suffix="dsl",
         )
 
         self.runAndVerifyFunc = CppRunAndVerifyFuncDeclaration(
             funcname=self.stencil_name,
             fields=self.fields,
             out_fields=output_fields,
+            tol_fields=tolerance_fields,
             suffix="before",
         )
 
         self.setupFunc = CppSetupFuncDeclaration(
-            funcname=self.stencil_name, out_fields=output_fields, suffix="k_size"
+            funcname=self.stencil_name,
+            out_fields=output_fields,
+            tol_fields=tolerance_fields,
+            suffix="k_size",
         )
 
         self.freeFunc = CppFreeFunc(funcname=self.stencil_name)

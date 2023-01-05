@@ -242,6 +242,7 @@ class F90RunAndVerifyFun(eve.Node):
     stencil_name: str
     all_fields: Sequence[Field]
     out_fields: Sequence[Field]
+    tol_fields: Sequence[Field]
 
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
@@ -276,7 +277,7 @@ class F90RunAndVerifyFun(eve.Node):
             ]
         )
 
-        for field in self.out_fields:
+        for field in self.tol_fields:
             param_fields += [
                 F90Field(name=field.name, suffix=s) for s in ["rel_tol", "abs_tol"]
             ]
@@ -330,6 +331,7 @@ class F90WrapRunFun(Node):
     stencil_name: str
     all_fields: Sequence[Field]
     out_fields: Sequence[Field]
+    tol_fields: Sequence[Field]
 
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
@@ -371,7 +373,7 @@ class F90WrapRunFun(Node):
         tol_fields = [
             F90TypedField(name=field.name, suffix=s, dtype="real(c_double)")
             for s in ["rel_err_tol", "abs_err_tol"]
-            for field in self.out_fields
+            for field in self.tol_fields
         ]
         cond_fields = [
             F90Conditional(
@@ -380,7 +382,7 @@ class F90WrapRunFun(Node):
                 else_branch=f"{field.name}_{short}_err_tol = DEFAULT_{long}_ERROR_THRESHOLD",
             )
             for short, long in [("rel", "RELATIVE"), ("abs", "ABSOLUTE")]
-            for field in self.out_fields
+            for field in self.tol_fields
         ]
         open_acc_fields = [
             F90OpenACCField(name=field.name)
@@ -414,7 +416,7 @@ class F90WrapRunFun(Node):
             ]
         ]
 
-        for field in self.out_fields:
+        for field in self.tol_fields:
             param_fields += [
                 F90Field(name=field.name, suffix=s) for s in ["rel_tol", "abs_tol"]
             ]
@@ -526,6 +528,7 @@ class F90File(Node):
     def __post_init__(self) -> None:  # type: ignore
         all_fields = self.fields
         out_fields = [field for field in self.fields if field.intent.out]
+        tol_fields = [field for field in out_fields if not field.is_integral()]
 
         self.run_fun = F90RunFun(
             stencil_name=self.stencil_name,
@@ -537,6 +540,7 @@ class F90File(Node):
             stencil_name=self.stencil_name,
             all_fields=all_fields,
             out_fields=out_fields,
+            tol_fields=tol_fields,
         )
 
         self.setup_fun = F90SetupFun(
@@ -548,6 +552,7 @@ class F90File(Node):
             stencil_name=self.stencil_name,
             all_fields=all_fields,
             out_fields=out_fields,
+            tol_fields=tol_fields,
         )
 
         self.wrap_setup_fun = F90WrapSetupFun(
