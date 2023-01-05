@@ -10,20 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import os
+import tarfile
 
 import numpy as np
 import pytest
+import wget
 
-from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.diffusion.horizontal import HorizontalMeshConfig
-from icon4py.diffusion.icon_grid import (
-    IconGrid,
-    MeshConfig,
-    VerticalMeshConfig,
-    VerticalModelParams,
-)
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -35,18 +28,69 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.diffusion.diffusion import DiffusionConfig
+from icon4py.diffusion.horizontal import HorizontalMeshConfig
+from icon4py.diffusion.icon_grid import (
+    IconGrid,
+    MeshConfig,
+    VerticalMeshConfig,
+    VerticalModelParams,
+)
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
+data_uri = "https://polybox.ethz.ch/index.php/s/kP0Q2dDU6DytEqI/download"
 data_path = os.path.join(os.path.dirname(__file__), "./ser_icondata")
+extracted_path = os.path.join(data_path, "mch_ch_r04b09_dsl/ser_data")
+data_file = os.path.join(data_path, "ser_data_diffusion.tar.gz")
+
+
+@pytest.fixture(scope="session")
+def setup_icon_data():
+    os.makedirs(data_path, exist_ok=True)
+    if len(os.listdir(data_path)) == 0:
+        print(
+            f"directory {data_path} is empty: downloading data from {data_uri} and extracting"
+        )
+
+        wget.download(data_uri, out=data_file)
+        # extract downloaded file
+        if not tarfile.is_tarfile(data_file):
+            raise NotImplementedError(f"{data_file} needs to be a valid tar file")
+        with tarfile.open(data_file, mode="r:*") as tf:
+            tf.extractall(path=data_path)
+        os.remove(data_file)
 
 
 @pytest.fixture
-def icon_grid():
+def linit():
+    return False
 
+
+@pytest.fixture
+def step_date():
+    return "2021-06-20T12:00:10.000"
+
+
+@pytest.fixture
+def savepoint_init(setup_icon_data, linit, step_date):
     sp = IconSerialDataProvider(
-        "icon_diffusion_init", data_path, True
-    ).from_savepoint_init(linit=True, date="2021-06-20T12:00:10.000")
+        "icon_diffusion_init", extracted_path, True
+    ).from_savepoint_init(linit=linit, date=step_date)
+    return sp
+
+
+@pytest.fixture
+def savepoint_exit(setup_icon_data, step_date):
+    sp = IconSerialDataProvider(
+        "icon_diffusion_exit", extracted_path, True
+    ).from_savepoint_init(linit=False, date=step_date)
+    return sp
+
+
+@pytest.fixture
+def icon_grid(savepoint_init):
+    sp = savepoint_init
 
     sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
 
@@ -83,14 +127,14 @@ def icon_grid():
 
 
 @pytest.fixture
-def r04b09_diffusion_config() -> DiffusionConfig:
+def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
     """
     Create DiffusionConfig.
 
     that uses the parameters of MCH.CH_r04b09_dsl experiment
     """
     sp = IconSerialDataProvider(
-        "icon_diffusion_init", data_path, True
+        "icon_diffusion_init", extracted_path, True
     ).from_savepoint_init(linit=True, date="2021-06-20T12:00:10.000")
     nproma = sp.get_metadata("nproma")["nproma"]
     num_lev = sp.get_metadata("nlev")["nlev"]

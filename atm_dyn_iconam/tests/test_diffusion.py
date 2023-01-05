@@ -10,11 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import os
 
 import numpy as np
 import pytest
 
+from icon4py.common.dimension import ECVDim, KDim, VertexDim
 from icon4py.diffusion import utils
 from icon4py.diffusion.diagnostic import DiagnosticState
 from icon4py.diffusion.diffusion import (
@@ -33,11 +33,7 @@ from icon4py.diffusion.icon_grid import VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic import PrognosticState
-from icon4py.common.dimension import ECVDim, KDim, VertexDim
-from icon4py.testutils.serialbox_utils import (
-    IconDiffusionInitSavepoint,
-    IconSerialDataProvider,
-)
+from icon4py.testutils.serialbox_utils import IconDiffusionInitSavepoint
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
@@ -225,19 +221,15 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
-def test_diffusion_init(r04b09_diffusion_config):
-    config = r04b09_diffusion_config
-    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
-    serializer.print_info()
-    first_run_date = "2021-06-20T12:00:10.000"
-    savepoint = serializer.from_savepoint_init(linit=False, date=first_run_date)
+def test_diffusion_init(savepoint_init, r04b09_diffusion_config, step_date):
+    savepoint = savepoint_init
     vct_a = savepoint.vct_a()
+    config = r04b09_diffusion_config
     meta = savepoint.get_metadata("nlev", "linit", "date")
 
     assert meta["nlev"] == 65
     assert meta["linit"] is False
-    assert meta["date"] == first_run_date
+    assert meta["date"] == step_date
     additional_parameters = DiffusionParams(config)
 
     diffusion = Diffusion(config, additional_parameters, vct_a)
@@ -299,17 +291,15 @@ def _verify_init_values_against_savepoint(
     assert np.allclose(savepoint.diff_multfac_vn(), diffusion._diff_multfac_vn)
 
 
+@pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
+    savepoint_init,
     r04b09_diffusion_config,
 ):
+    savepoint = savepoint_init
     config = r04b09_diffusion_config
 
     params = DiffusionParams(config)
-    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
-    serializer.print_info()
-    first_run_date = "2021-06-20T12:00:10.000"
-    savepoint = serializer.from_savepoint_init(linit=True, date=first_run_date)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()
     expected_smag_limit = savepoint.smag_limit()
     exptected_smag_offset = savepoint.smag_offset()
@@ -328,14 +318,11 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 
 
 def test_verify_diffusion_init_against_first_regular_savepoint(
+    savepoint_init,
     r04b09_diffusion_config,
 ):
     config = r04b09_diffusion_config
-    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
-    serializer.print_info()
-    first_run_date = "2021-06-20T12:00:10.000"
-    savepoint = serializer.from_savepoint_init(linit=False, date=first_run_date)
+    savepoint = savepoint_init
     vct_a = savepoint.vct_a()
 
     additional_parameters = DiffusionParams(config)
@@ -344,15 +331,12 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     _verify_init_values_against_savepoint(savepoint, diffusion)
 
 
+@pytest.mark.parametrize("step_date", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
-    r04b09_diffusion_config,
+    r04b09_diffusion_config, savepoint_init
 ):
     config = r04b09_diffusion_config
-    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    serializer = IconSerialDataProvider("icon_diffusion_init", data_path)
-    serializer.print_info()
-    run_date = "2021-06-20T12:00:50.000"
-    savepoint = serializer.from_savepoint_init(linit=False, date=run_date)
+    savepoint = savepoint_init
     vct_a = savepoint.vct_a()
 
     additional_parameters = DiffusionParams(config)
@@ -362,11 +346,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 
 @pytest.mark.skip
-def test_diffusion_run(icon_grid):
-    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    data_provider = IconSerialDataProvider("icon_diffusion_init", data_path)
-    data_provider.print_info()
-    sp = data_provider.from_savepoint_init(linit=False, date="2021-06-20T12:00:10.000")
+def test_diffusion_run(savepoint_init, save_point_exit, icon_grid):
+    sp = savepoint_init
     vct_a = sp.vct_a()
 
     config = DiffusionConfig(
@@ -443,13 +424,10 @@ def test_diffusion_run(icon_grid):
         cell_areas=cell_areas,
     )
 
-    exit_savepoint = data_provider.from_save_point_exit(
-        linit=False, date="2021-06-20T12:00:10.000"
-    )
-    icon_result_exner = exit_savepoint.exner()
-    icon_result_vn = exit_savepoint.vn()
-    icon_result_w = exit_savepoint.w()
-    icon_result_theta_w = exit_savepoint.theta_v()
+    icon_result_exner = save_point_exit.exner()
+    icon_result_vn = save_point_exit.vn()
+    icon_result_w = save_point_exit.w()
+    icon_result_theta_w = save_point_exit.theta_v()
 
     assert np.allclose(icon_result_w, np.asarray(prognostic_state.vertical_wind))
     assert np.allclose(

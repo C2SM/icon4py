@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.diffusion.horizontal import HorizontalMarkerIndex
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.diffusion.horizontal import HorizontalMarkerIndex
 
 
 def test_horizontal_grid_cell_indices(icon_grid):

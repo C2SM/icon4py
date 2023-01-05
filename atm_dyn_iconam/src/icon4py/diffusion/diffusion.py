@@ -24,10 +24,6 @@ from functional.iterator.embedded import (
     np_as_located_field,
 )
 
-from icon4py.common.constants import CPD, GAS_CONSTANT_DRY_AIR
-from icon4py.diffusion.diagnostic import DiagnosticState
-from icon4py.diffusion.diffusion_program import diffusion_run
-from icon4py.diffusion.utils import scale_k, set_zero_v_k
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
     _fused_mo_nh_diffusion_stencil_02_03,
 )
@@ -43,10 +39,6 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import (
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
     _fused_mo_nh_diffusion_stencil_13_14,
 )
-from icon4py.diffusion.horizontal import HorizontalMarkerIndex
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
@@ -56,8 +48,7 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_01 import (
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import (
     _mo_nh_diffusion_stencil_16,
 )
-from icon4py.diffusion.prognostic import PrognosticState
-from icon4py.diffusion.utils import zero_field
+from icon4py.common.constants import CPD, GAS_CONSTANT_DRY_AIR
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -70,6 +61,14 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.diffusion.diagnostic import DiagnosticState
+from icon4py.diffusion.diffusion_program import diffusion_run
+from icon4py.diffusion.horizontal import HorizontalMarkerIndex
+from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
+from icon4py.diffusion.interpolation_state import InterpolationState
+from icon4py.diffusion.metric_state import MetricState
+from icon4py.diffusion.prognostic import PrognosticState
+from icon4py.diffusion.utils import scale_k, set_zero_v_k, zero_field
 
 
 TupleVT = namedtuple("TupleVT", "v t")
@@ -602,31 +601,46 @@ class Diffusion:
             HorizontalMarkerIndex.local(CellDim),
         )
 
-        cell_startindex_interior, cell_endindex_local_plus1 = self.grid.get_indices_from_to(
+        (
+            cell_startindex_interior,
+            cell_endindex_local_plus1,
+        ) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.interior(CellDim),
             HorizontalMarkerIndex.local(CellDim) + 1,
         )
 
-        edge_startindex_nudging_plus1, edge_endindex_local = self.grid.get_indices_from_to(
+        (
+            edge_startindex_nudging_plus1,
+            edge_endindex_local,
+        ) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.nudging(EdgeDim) + 1,
             HorizontalMarkerIndex.local(EdgeDim),
         )
 
-        edge_startindex_nudging_minus1, edge_endindex_local_minus2 = self.grid.get_indices_from_to(
+        (
+            edge_startindex_nudging_minus1,
+            edge_endindex_local_minus2,
+        ) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.nudging(EdgeDim) - 1,
             HorizontalMarkerIndex.local(EdgeDim) - 2,
         )
 
-        vertex_startindex_lb_plus3, vertex_endindex_local = self.grid.get_indices_from_to(
+        (
+            vertex_startindex_lb_plus3,
+            vertex_endindex_local,
+        ) = self.grid.get_indices_from_to(
             VertexDim,
             HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
             HorizontalMarkerIndex.local(VertexDim),
         )
 
-        vertex_startindex_lb_plus1, vertex_endindex_local_minus1= self.grid.get_indices_from_to(
+        (
+            vertex_startindex_lb_plus1,
+            vertex_endindex_local_minus1,
+        ) = self.grid.get_indices_from_to(
             VertexDim,
             HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
             HorizontalMarkerIndex.local(VertexDim) - 1,

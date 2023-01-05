@@ -12,13 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import math
-import os
 
 import numpy as np
 import pytest
 
 from icon4py.diffusion.icon_grid import VerticalModelParams
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
 @pytest.mark.parametrize(
@@ -35,11 +33,8 @@ def test_nrdmax_calculation(max_h, damping, delta):
     )
 
 
-def test_nrdmax_calculation_from_icon_input(icon_grid):
-    data_path = os.path.join(os.path.dirname(__file__), "ser_icondata")
-    sp = IconSerialDataProvider(
-        "icon_diffusion_init", data_path, True
-    ).from_savepoint_init(linit=True, date="2021-06-20T12:00:10.000")
+def test_nrdmax_calculation_from_icon_input(icon_grid, savepoint_init):
+    sp = savepoint_init
     a = sp.vct_a()
     damping_height = 12500
     vertical_params = VerticalModelParams(

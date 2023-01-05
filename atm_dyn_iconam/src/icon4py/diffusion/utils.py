@@ -12,11 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from functional.common import Dimension
-from functional.iterator.embedded import np_as_located_field
-from functional.common import Field
+from functional.common import Dimension, Field
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import broadcast
+from functional.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import KDim, VertexDim
 

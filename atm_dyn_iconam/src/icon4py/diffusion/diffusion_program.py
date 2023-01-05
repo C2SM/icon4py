@@ -16,7 +16,6 @@ from functional.common import Field
 from functional.ffront.decorator import program
 from functional.ffront.fbuiltins import int32
 
-from icon4py.diffusion.utils import _scale_k, _set_zero_v_k
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
     _fused_mo_nh_diffusion_stencil_02_03,
 )
@@ -52,9 +51,10 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.diffusion.utils import _scale_k, _set_zero_v_k
 
 
-#@program(backend=gtfn_cpu.run_gtfn)
+# @program(backend=gtfn_cpu.run_gtfn)
 @program
 def diffusion_run(
     diagnostic_hdef_ic: Field[[CellDim, KDim], float],
