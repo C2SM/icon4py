@@ -63,15 +63,8 @@ MODULE mo_nh_diffusion
   USE mo_mpi,                 ONLY: i_am_accel_node
 #endif
 ! DSL stencil injection test
-  USE mo_nh_diffusion_stencil_01,   ONLY: wrap_run_mo_nh_diffusion_stencil_01
-  USE mo_nh_diffusion_stencil_02,   ONLY: wrap_run_mo_nh_diffusion_stencil_02
   USE mo_nh_diffusion_stencil_03,   ONLY: wrap_run_mo_nh_diffusion_stencil_03
-  USE mo_nh_diffusion_stencil_04,   ONLY: wrap_run_mo_nh_diffusion_stencil_04
-  USE mo_nh_diffusion_stencil_05,   ONLY: wrap_run_mo_nh_diffusion_stencil_05
-  USE mo_nh_diffusion_stencil_07,   ONLY: wrap_run_mo_nh_diffusion_stencil_07
   USE mo_nh_diffusion_stencil_08,   ONLY: wrap_run_mo_nh_diffusion_stencil_08
-  USE mo_nh_diffusion_stencil_09,   ONLY: wrap_run_mo_nh_diffusion_stencil_09
-  USE mo_nh_diffusion_stencil_10,   ONLY: wrap_run_mo_nh_diffusion_stencil_10
   USE mo_nh_diffusion_stencil_11,   ONLY: wrap_run_mo_nh_diffusion_stencil_11
   USE mo_nh_diffusion_stencil_12,   ONLY: wrap_run_mo_nh_diffusion_stencil_12
   USE mo_nh_diffusion_stencil_13,   ONLY: wrap_run_mo_nh_diffusion_stencil_13
@@ -464,16 +457,21 @@ MODULE mo_nh_diffusion
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
         i_startidx, i_endidx, rl_start, rl_end)
         
-#ifdef __DSL_VERIFY
-        !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
-        kh_smag_e_before(:,:,:)  = kh_smag_e(:,:,:)
-        kh_smag_ec_before(:,:,:) = kh_smag_ec(:,:,:)
-        z_nabla2_e_before(:,:,:) = z_nabla2_e(:,:,:)
-        !$ACC END PARALLEL
+!$DSL START(name=mo_nh_diffusion_stencil_01; smag_offset=smag_offset; diff_multfac_smag=diff_multfac_smag; &
+!$DSL       tangent_orientation=p_patch%edges%tangent_orientation(:,1); &
+!$DSL       inv_primal_edge_length=p_patch%edges%inv_primal_edge_length(:,1); &
+!$DSL       inv_vert_vert_length=p_patch%edges%inv_vert_vert_length(:,1); u_vert=u_vert(:,:,1); &
+!$DSL       v_vert=v_vert(:,:,1); primal_normal_vert_x=p_patch%edges%primal_normal_vert_x(:,:,1); &
+!$DSL       primal_normal_vert_y=p_patch%edges%primal_normal_vert_y(:,:,1); &
+!$DSL       dual_normal_vert_x=p_patch%edges%dual_normal_vert_x(:,:,1); &
+!$DSL       dual_normal_vert_y=p_patch%edges%dual_normal_vert_y(:,:,1); &
+!$DSL       vn=p_nh_prog%vn(:,:,1); smag_limit=smag_limit(:); kh_smag_e=kh_smag_e(:,:,1); &
+!$DSL       kh_smag_ec=kh_smag_ec(:,:,1); z_nabla2_e=z_nabla2_e(:,:,1); kh_smag_e_abs_tol=1e-18_wp; &
+!$DSL       kh_smag_ec_abs_tol=1e-18_wp; z_nabla2_e_abs_tol=1e-20_wp; vertical_lower=1; &
+!$DSL       vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
 
         ! Computation of wind field deformation
 
-call nvtxStartRange("mo_nh_diffusion_stencil_01")
 !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
 #ifdef __LOOP_EXCHANGE
         DO je = i_startidx, i_endidx
@@ -554,28 +552,11 @@ call nvtxStartRange("mo_nh_diffusion_stencil_01")
           ENDDO
         ENDDO
 !$ACC END PARALLEL LOOP
-call nvtxEndRange()
 
-#endif
       ENDDO ! block jb
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
-
-      CALL wrap_run_mo_nh_diffusion_stencil_01(smag_offset=smag_offset, &
-            diff_multfac_smag=diff_multfac_smag, &
-            tangent_orientation=p_patch%edges%tangent_orientation(:,1), &
-            inv_primal_edge_length=p_patch%edges%inv_primal_edge_length(:,1), &
-            inv_vert_vert_length=p_patch%edges%inv_vert_vert_length(:,1), u_vert=u_vert(:,:,1), &
-            v_vert=v_vert(:,:,1), primal_normal_vert_x=p_patch%edges%primal_normal_vert_x(:,:,1), &
-            primal_normal_vert_y=p_patch%edges%primal_normal_vert_y(:,:,1), &
-            dual_normal_vert_x=p_patch%edges%dual_normal_vert_x(:,:,1), &
-            dual_normal_vert_y=p_patch%edges%dual_normal_vert_y(:,:,1), &
-            vn=p_nh_prog%vn(:,:,1), smag_limit=smag_limit(:), kh_smag_e=kh_smag_e(:,:,1), &
-            kh_smag_ec=kh_smag_ec(:,:,1), z_nabla2_e=z_nabla2_e(:,:,1), &
-            kh_smag_e_before=kh_smag_e_before(:,:,1), kh_smag_ec_before=kh_smag_ec_before(:,:,1), &
-            z_nabla2_e_before=z_nabla2_e_before(:,:,1), kh_smag_e_abs_tol=1e-18_wp, &
-            kh_smag_ec_abs_tol=1e-18_wp, z_nabla2_e_abs_tol=1e-20_wp, vertical_lower=1, &
-            vertical_upper=nlev, horizontal_lower=i_startidx, horizontal_upper=i_endidx)
+!$DSL END(name=mo_nh_diffusion_stencil_01)
 
 
     ELSE IF ((diffu_type == 3 .OR. diffu_type == 5) .AND. discr_vn == 1) THEN ! 3D Smagorinsky diffusion
@@ -1040,13 +1021,16 @@ call nvtxEndRange()
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, rl_start, rl_end)
 
-#ifdef __DSL_VERIFY
-        !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
-        z_nabla4_e2_before(:,:) = z_nabla4_e2(:,:)
-        !$ACC END PARALLEL
+!$DSL START(name=mo_nh_diffusion_stencil_04; u_vert=u_vert(:,:,1); v_vert=v_vert(:,:,1); &
+!$DSL       primal_normal_vert_v1=p_patch%edges%primal_normal_vert_x(:,:,1); &
+!$DSL       primal_normal_vert_v2=p_patch%edges%primal_normal_vert_y(:,:,1); &
+!$DSL       z_nabla2_e=z_nabla2_e(:,:,1); inv_vert_vert_length=p_patch%edges%inv_vert_vert_length(:,1); &
+!$DSL       inv_primal_edge_length=p_patch%edges%inv_primal_edge_length(:,1); z_nabla4_e2_abs_tol=1e-27_wp; &
+!$DSL       z_nabla4_e2=z_nabla4_e2(:, :); vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; &
+!$DSL       horizontal_upper=i_endidx)
 
          ! Compute nabla4(v)
-call nvtxStartRange("mo_nh_diffusion_stencil_04")
+
 !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
 #ifdef __LOOP_EXCHANGE
         DO je = i_startidx, i_endidx
@@ -1085,32 +1069,20 @@ call nvtxStartRange("mo_nh_diffusion_stencil_04")
           ENDDO
         ENDDO
 !$ACC END PARALLEL LOOP
-call nvtxEndRange()
-#endif
-        CALL wrap_run_mo_nh_diffusion_stencil_04(u_vert=u_vert(:,:,1), v_vert=v_vert(:,:,1),  &
-              primal_normal_vert_v1=p_patch%edges%primal_normal_vert_x(:,:,1), &
-              primal_normal_vert_v2=p_patch%edges%primal_normal_vert_y(:,:,1), &
-              z_nabla2_e=z_nabla2_e(:,:,1), &
-              inv_vert_vert_length=p_patch%edges%inv_vert_vert_length(:,1), &
-              inv_primal_edge_length=p_patch%edges%inv_primal_edge_length(:,1), &
-              z_nabla4_e2=z_nabla4_e2, z_nabla4_e2_before=z_nabla4_e2_before, &
-              z_nabla4_e2_abs_tol=1e-27_wp, &
-              vertical_lower=1, &
-              vertical_upper=nlev, &
-              horizontal_lower=i_startidx, &
-              horizontal_upper=i_endidx)
+!$DSL END(name=mo_nh_diffusion_stencil_04)
 
         ! Apply diffusion for the case of diffu_type = 5
         IF ( jg == 1 .AND. l_limited_area .OR. jg > 1 .AND. .NOT. lfeedback(jg)) THEN
-#ifdef __DSL_VERIFY
-!$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
-vn_before(:,:,:) = p_nh_prog%vn(:,:,:)
-!$ACC END PARALLEL
+
+!$DSL START(name=mo_nh_diffusion_stencil_05; nudgezone_diff=nudgezone_diff; area_edge=p_patch%edges%area_edge(:,1); &
+!$DSL       kh_smag_e=kh_smag_e(:,:,1); z_nabla2_e=z_nabla2_e(:,:,1); z_nabla4_e2=z_nabla4_e2(:,:); &
+!$DSL       diff_multfac_vn=diff_multfac_vn(:); nudgecoeff_e=p_int%nudgecoeff_e(:,1); vn=p_nh_prog%vn(:,:,1); vn_rel_tol=1e-11_wp; &
+!$DSL       vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
 
           !
           ! Domains with lateral boundary and nests without feedback
           !
-call nvtxStartRange("mo_nh_diffusion_stencil_05")
+
 !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(z_d_vn_hdf) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
           DO jk = 1, nlev
 !DIR$ IVDEP
@@ -1137,14 +1109,7 @@ call nvtxStartRange("mo_nh_diffusion_stencil_05")
             ENDDO
           ENDDO
 !$ACC END PARALLEL LOOP
-call nvtxEndRange()
-#endif
-        call wrap_run_mo_nh_diffusion_stencil_05(nudgezone_diff=nudgezone_diff, &
-              area_edge=p_patch%edges%area_edge(:,1), kh_smag_e=kh_smag_e(:,:,1), &
-              z_nabla2_e=z_nabla2_e(:,:,1), z_nabla4_e2=z_nabla4_e2(:,:), &
-              diff_multfac_vn=diff_multfac_vn(:), nudgecoeff_e=p_int%nudgecoeff_e(:,1), &
-              vn=p_nh_prog%vn(:,:,1), vn_before=vn_before(:,:,1), vn_rel_tol=1e-11_wp, &
-              vertical_lower=1, vertical_upper=nlev, horizontal_lower=i_startidx, horizontal_upper=i_endidx)
+!$DSL END(name=mo_nh_diffusion_stencil_05)
 
         ELSE IF (jg > 1) THEN
           !
@@ -1393,11 +1358,11 @@ DO jk = 1, nlev
         
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __DSL_VERIFY
-!$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
-z_nabla2_c_before(:,:,:) = z_nabla2_c(:,:,:)
-!$ACC END PARALLEL
-call nvtxStartRange("mo_nh_diffusion_stencil_07")
+
+!$DSL START(name=mo_nh_diffusion_stencil_07; w=p_nh_prog%w(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1); &
+!$DSL       z_nabla2_c=z_nabla2_c(:,:,1); z_nabla2_c_abs_tol=1e-21_wp; vertical_lower=1; vertical_upper=nlev; &
+!$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
 !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
 #ifdef __LOOP_EXCHANGE
         DO jc = i_startidx, i_endidx
@@ -1419,14 +1384,7 @@ call nvtxStartRange("mo_nh_diffusion_stencil_07")
         ENDDO
         !$ACC END PARALLEL LOOP
 call nvtxEndRange()
-#endif
-      CALL wrap_run_mo_nh_diffusion_stencil_07(w=p_nh_prog%w(:,:,1), &
-            geofac_n2s=p_int%geofac_n2s(:,:,1), z_nabla2_c=z_nabla2_c(:,:,1), &
-            z_nabla2_c_before=z_nabla2_c_before(:,:,1), z_nabla2_c_abs_tol=1e-21_wp, &
-            vertical_lower=1, &
-            vertical_upper=nlev, &
-            horizontal_lower=i_startidx, &
-            horizontal_upper=i_endidx)
+!$DSL END(name=mo_nh_diffusion_stencil_07)
 
         IF (turbdiff_config(jg)%itype_sher == 2) THEN ! compute horizontal gradients of w
 
@@ -1484,12 +1442,12 @@ call nvtxEndRange()
       DO jb = i_startblk,i_endblk
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __DSL_VERIFY
 
-!$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
-  w_before(:,:,:) = p_nh_prog%w(:,:,:)
-!$ACC END PARALLEL
-call nvtxStartRange("mo_nh_diffusion_stencil_09")
+!$DSL START(name=mo_nh_diffusion_stencil_09; diff_multfac_w=diff_multfac_w; area=p_patch%cells%area(:,1); &
+!$DSL       z_nabla2_c=z_nabla2_c(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1); w=p_nh_prog%w(:,:,1); &
+!$DSL       w_abs_tol=1e-15_wp; vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; &
+!$DSL       horizontal_upper=i_endidx)
+
 !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
 #ifdef __LOOP_EXCHANGE
         DO jc = i_startidx, i_endidx
@@ -1507,19 +1465,14 @@ call nvtxStartRange("mo_nh_diffusion_stencil_09")
           ENDDO
         ENDDO
 !$ACC END PARALLEL LOOP
-call nvtxEndRange()
-#endif
-        CALL wrap_run_mo_nh_diffusion_stencil_09(diff_multfac_w=diff_multfac_w, &
-              area=p_patch%cells%area(:,1), z_nabla2_c=z_nabla2_c(:,:,1), &
-              geofac_n2s=p_int%geofac_n2s(:,:,1), w=p_nh_prog%w(:,:,1), &
-              w_before=w_before(:,:,1), w_abs_tol=1e-15_wp, vertical_lower=1, vertical_upper=nlev, horizontal_lower=i_startidx, horizontal_upper=i_endidx)
+!$DSL END(name=mo_nh_diffusion_stencil_09)
 
         ! Add nabla2 diffusion in upper damping layer (if present)
-#ifdef __DSL_VERIFY
-!$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
-  w_before(:,:,:) = p_nh_prog%w(:,:,:)
-!$ACC END PARALLEL
-call nvtxStartRange("mo_nh_diffusion_stencil_10")
+
+!$DSL START(name=mo_nh_diffusion_stencil_10; w=p_nh_prog%w(:,:,1); diff_multfac_n2w=diff_multfac_n2w(:); &
+!$DSL       cell_area=p_patch%cells%area(:,1); z_nabla2_c=z_nabla2_c(:,:,1); vertical_lower=2; &
+!$DSL       vertical_upper=nrdmax(jg); horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
 !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
         DO jk = 2, nrdmax(jg)
 !DIR$ IVDEP
@@ -1529,12 +1482,7 @@ call nvtxStartRange("mo_nh_diffusion_stencil_10")
           ENDDO
         ENDDO
 !$ACC END PARALLEL LOOP
-call nvtxEndRange()
-#endif
-        CALL wrap_run_mo_nh_diffusion_stencil_10(w=p_nh_prog%w(:,:,1), &
-              diff_multfac_n2w=diff_multfac_n2w(:), cell_area=p_patch%cells%area(:,1), &
-              z_nabla2_c=z_nabla2_c(:,:,1), w_before=w_before(:,:,1), &
-              vertical_lower=2, vertical_upper=nrdmax(jg), horizontal_lower=i_startidx, horizontal_upper=i_endidx)
+!$DSL END(name=mo_nh_diffusion_stencil_10)
 
       ENDDO
 !$OMP END DO
@@ -1906,12 +1854,10 @@ call nvtxEndRange()
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
         i_startidx, i_endidx, rl_start, rl_end)
         
-#ifdef __DSL_VERIFY
-        !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
-          theta_v_before(:,:,:) = p_nh_prog%theta_v(:,:,:);
-          exner_before(:,:,:) = p_nh_prog%exner(:,:,:);
-        !$ACC END PARALLEL
-    call nvtxStartRange("mo_nh_diffusion_stencil_16")
+!$DSL START(name=mo_nh_diffusion_stencil_16; rd_o_cvd=rd_o_cvd; z_temp=z_temp(:,:,1); area=p_patch%cells%area(:,1); &
+!$DSL       theta_v=p_nh_prog%theta_v(:,:,1); exner=p_nh_prog%exner(:,:,1); vertical_lower=1; vertical_upper=nlev; &
+!$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
 !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
         DO jk = 1, nlev
 !DIR$ IVDEP
@@ -1927,15 +1873,11 @@ call nvtxEndRange()
           ENDDO
         ENDDO
 !$ACC END PARALLEL LOOP
-call nvtxEndRange()
-#endif
+
       ENDDO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
-  CALL wrap_run_mo_nh_diffusion_stencil_16(rd_o_cvd=rd_o_cvd, z_temp=z_temp(:,:,1), &
-        area=p_patch%cells%area(:,1), theta_v=p_nh_prog%theta_v(:,:,1), exner=p_nh_prog%exner(:,:,1), &
-        theta_v_before=theta_v_before(:,:,1), exner_before=exner_before(:,:,1), &
-        vertical_lower=1, vertical_upper=nlev, horizontal_lower=i_startidx, horizontal_upper=i_endidx)
+!$DSL END(name=mo_nh_diffusion_stencil_16)
 
 
       ! This could be further optimized, but applications without physics are quite rare;
