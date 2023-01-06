@@ -33,18 +33,16 @@ def mo_solve_nonhydro_stencil_49_numpy(
     ddt_exner_phy: np.array,
     dtime,
 ) -> tuple[np.array]:
-    z_contr_w_fl_l_offset = np.roll(z_contr_w_fl_l, shift=-1, axis=1)
-    theta_v_ic_offset = np.roll(theta_v_ic, shift=-1, axis=1)
     z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
-        z_flxdiv_mass + z_contr_w_fl_l - z_contr_w_fl_l_offset
+        z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
     )
     z_exner_expl = (
         exner_pr
         - z_beta
         * (
             z_flxdiv_theta
-            + theta_v_ic * z_contr_w_fl_l
-            - theta_v_ic_offset * z_contr_w_fl_l_offset
+            + (theta_v_ic * z_contr_w_fl_l)[:, :-1]
+            - (theta_v_ic * z_contr_w_fl_l)[:, 1:]
         )
         + dtime * ddt_exner_phy
     )
@@ -59,11 +57,11 @@ def test_mo_solve_nonhydro_stencil_49():
     rho_nnow = random_field(mesh, CellDim, KDim)
     inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
     z_flxdiv_mass = random_field(mesh, CellDim, KDim)
-    z_contr_w_fl_l = random_field(mesh, CellDim, KDim)
+    z_contr_w_fl_l = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     exner_pr = random_field(mesh, CellDim, KDim)
     z_beta = random_field(mesh, CellDim, KDim)
     z_flxdiv_theta = random_field(mesh, CellDim, KDim)
-    theta_v_ic = random_field(mesh, CellDim, KDim)
+    theta_v_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     ddt_exner_phy = random_field(mesh, CellDim, KDim)
 
     z_rho_expl = zero_field(mesh, CellDim, KDim)

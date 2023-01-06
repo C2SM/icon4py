@@ -11,20 +11,20 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.common_types import ScalarKind
+from functional.ffront import type_specifications as ts
 
 
-BUILTIN_TO_ISO_C_TYPE: dict[ScalarKind, str] = {
-    ScalarKind.FLOAT64: "real(c_double)",
-    ScalarKind.FLOAT32: "real(c_float)",
-    ScalarKind.BOOL: "logical(c_int)",
-    ScalarKind.INT32: "integer(c_int)",
-    ScalarKind.INT64: "integer(c_long)",
+BUILTIN_TO_ISO_C_TYPE: dict[ts.ScalarKind, str] = {
+    ts.ScalarKind.FLOAT64: "real(c_double)",
+    ts.ScalarKind.FLOAT32: "real(c_float)",
+    ts.ScalarKind.BOOL: "logical(c_int)",
+    ts.ScalarKind.INT32: "integer(c_int)",
+    ts.ScalarKind.INT64: "integer(c_long)",
 }
-BUILTIN_TO_CPP_TYPE: dict[ScalarKind, str] = {
-    ScalarKind.FLOAT64: "double",
-    ScalarKind.FLOAT32: "float",
-    ScalarKind.BOOL: "int",
-    ScalarKind.INT32: "int",
-    ScalarKind.INT64: "long",
+BUILTIN_TO_CPP_TYPE: dict[ts.ScalarKind, str] = {
+    ts.ScalarKind.FLOAT64: "double",
+    ts.ScalarKind.FLOAT32: "float",
+    ts.ScalarKind.BOOL: "int",
+    ts.ScalarKind.INT32: "int",
+    ts.ScalarKind.INT64: "long",
 }

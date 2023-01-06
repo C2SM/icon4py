@@ -25,15 +25,13 @@ def mo_solve_nonhydro_stencil_06_numpy(
     z_exner_ic: np.array,
     inv_ddqz_z_full: np.array,
 ) -> np.array:
-    z_dexner_dz_c_1 = (
-        z_exner_ic - np.roll(z_exner_ic, shift=-1, axis=1)
-    ) * inv_ddqz_z_full
+    z_dexner_dz_c_1 = (z_exner_ic[:, :-1] - z_exner_ic[:, 1:]) * inv_ddqz_z_full
     return z_dexner_dz_c_1
 
 
 def test_mo_solve_nonhydro_stencil_06():
     mesh = SimpleMesh()
-    z_exner_ic = random_field(mesh, CellDim, KDim)
+    z_exner_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
     z_dexner_dz_c_1 = zero_field(mesh, CellDim, KDim)
 
@@ -49,8 +47,4 @@ def test_mo_solve_nonhydro_stencil_06():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(
-        # work around problem with field[:,:-1], i.e. without the `np.asarray`
-        np.asarray(z_dexner_dz_c_1)[:, :-1],
-        np.asarray(z_dexner_dz_c_1_ref)[:, :-1],
-    )
+    assert np.allclose(z_dexner_dz_c_1, z_dexner_dz_c_1_ref)

@@ -60,9 +60,9 @@ def test_insert_generated_code():
     ]
     expected_output = [
         "some code",
-        "generated code1",
+        "generated code1\n",
         "another line",
-        "generated code2",
+        "generated code2\n",
     ]
     assert (
         IntegrationWriter._insert_generated_code(current_file, generated)

@@ -62,28 +62,31 @@ def serialised_directives():
 @pytest.fixture
 def expected_create_source():
     return """
-#ifdef __DSL_VERIFY
-        LOGICAL dsl_verify = .TRUE.
-#elif
-        LOGICAL dsl_verify = .FALSE.
-#endif
-
-        !$ACC DATA CREATE( &
-        !$ACC   field2_before, &
-        !$ACC   ) &
-        !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
+!TODO: Correctly implement data create
+!ACC DATA CREATE( &
+!ACC   field2_before, &
+!ACC   ) &
+!ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
 
 
 @pytest.fixture
 def expected_imports_source():
-    return "USE stencil1, ONLY: wrap_run_stencil1"
+    return "  USE stencil1, ONLY: wrap_run_stencil1"
 
 
 @pytest.fixture
 def expected_declare_source():
     return """
         ! DSL INPUT / OUTPUT FIELDS
-        REAL(wp), DIMENSION((nproma, p_patch%nlev, p_patch%nblks_e)) :: field2_before"""
+        REAL(wp), DIMENSION((nproma, p_patch%nlev, p_patch%nblks_e)) :: field2_before
+
+        LOGICAL :: dsl_verify
+
+#ifdef __DSL_VERIFY
+        dsl_verify = .TRUE.
+#elif
+        dsl_verify = .FALSE.
+#endif"""
 
 
 @pytest.fixture
@@ -103,13 +106,13 @@ def expected_stencil_end_source():
 #endif
         call wrap_run_stencil1( &
            field1=field1(:, :, 1), &
+           field2=field2(:, :, 1), &
            field2_before=field2_before(:, :, 1), &
            field2_abs_tol=0.5, &
            vertical_lower=-1, &
            vertical_upper=-10, &
            horizontal_lower=1, &
-           horizontal_upper=10
-        )"""
+           horizontal_upper=10)"""
 
 
 @pytest.fixture
