@@ -54,6 +54,7 @@ class DummyConnectivity:
     origin_axis: Dimension
 
     def mapped_index(_, __) -> int:
+        raise AssertionError("unreachable")
         return 0
 
 
