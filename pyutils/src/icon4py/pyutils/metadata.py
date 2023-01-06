@@ -46,6 +46,16 @@ class FieldInfo:
     out: bool
 
 
+@dataclasses.dataclass
+class Connectivity:
+    max_neighbors: int
+    has_skip_values: int
+    origin_axis: Dimension = Dimension("dummy")
+
+    def mapped_index(_, __) -> int:
+        return 0
+
+
 def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
     return isinstance(obj, list) and all(isinstance(i, past.Name) for i in obj)
 
@@ -106,7 +116,7 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(offset: str) -> types.SimpleNamespace | Dimension:
+def provide_offset(offset: str) -> Connectivity | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
@@ -115,7 +125,7 @@ def provide_offset(offset: str) -> types.SimpleNamespace | Dimension:
         return provide_neighbor_table(offset)
 
 
-def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
+def provide_neighbor_table(chain: str) -> Connectivity:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -149,7 +159,7 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
             pass
         else:
             raise InvalidConnectivityException(location_chain)
-    return types.SimpleNamespace(
+    return Connectivity(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
         has_skip_values=False,
     )
