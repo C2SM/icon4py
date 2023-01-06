@@ -47,7 +47,8 @@ class FieldInfo:
 
 
 @dataclasses.dataclass
-class Connectivity:
+class DummyConnectivity:
+    """Provides static information to the code generator (`max_neighbors`, `has_skip_values`)"""
     max_neighbors: int
     has_skip_values: int
     origin_axis: Dimension
