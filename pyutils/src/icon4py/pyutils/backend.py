@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Iterable, List
 
 from functional.iterator import ir as itir
 from functional.program_processors.codegens.gtfn.gtfn_backend import generate
@@ -93,7 +93,7 @@ class GTHeader:
         return param.id.startswith("__") and "_size_" in param.id
 
     @staticmethod
-    def _missing_domain_params(params: List[itir.Sym]):
+    def _missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
         """Get domain limit params that are not present in param list."""
         return map(
             lambda p: itir.Sym(id=p),

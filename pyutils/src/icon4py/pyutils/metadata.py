@@ -15,7 +15,7 @@ from __future__ import annotations
 import dataclasses
 import importlib
 import types
-from typing import Any, TypeGuard
+from typing import Any, List, TypeGuard
 
 import eve
 from functional.common import Dimension, DimensionKind
@@ -85,17 +85,16 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     return fields
 
 
-def _get_domain_arg_ids(fvprog):
+def _get_domain_arg_ids(fvprog: Program) -> List[str]:
+    """Collect all argument names that are used within the 'domain' keyword argument."""
     domain_arg_ids = []
     if "domain" in fvprog.past_node.body[0].kwargs.keys():
         domain_arg = fvprog.past_node.body[0].kwargs["domain"]
         assert isinstance(domain_arg, past.Dict)
         for arg in domain_arg.values_:
-            for arg_elts in arg.elts:
-                if isinstance(arg_elts, past.Name):
-                    domain_arg_ids.append(arg_elts.id)
-                elif isinstance(arg_elts, past.Constant):
-                    domain_arg_ids.append(arg_elts.value)
+            for arg_elt in arg.elts:
+                if isinstance(arg_elt, past.Name):
+                    domain_arg_ids.append(arg_elt.id)
         domain_arg_ids = set(domain_arg_ids)
     return domain_arg_ids
 

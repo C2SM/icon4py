@@ -10,48 +10,26 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import pytest
 from functional.iterator import ir as itir
 
 from icon4py.pyutils import backend
 from icon4py.pyutils.backend import GTHeader
 
 
-def test_missing_domain_args():
-    params = [itir.Sym(id=backend.H_START)]
-    domain_boundaries = list(
-        map(lambda s: s.id, GTHeader._missing_domain_params(params))
+@pytest.mark.parametrize(
+    "input_params, expected_complement",
+    [
+        ([backend.H_START], [backend.H_END, backend.V_START, backend.V_END]),
+        ([backend.H_START, backend.H_END], [backend.V_END, backend.V_START]),
+        (backend._DOMAIN_ARGS, []),
+        ([], backend._DOMAIN_ARGS),
+    ],
+)
+def test_missing_domain_args(input_params, expected_complement):
+    params = [itir.Sym(id=p) for p in input_params]
+    domain_boundaries = set(
+        map(lambda s: str(s.id), GTHeader._missing_domain_params(params))
     )
-    assert len(domain_boundaries) == 3
-    assert backend.V_END in domain_boundaries
-    assert backend.V_START in domain_boundaries
-    assert backend.H_END in domain_boundaries
-
-
-def test_missing_domain_args_remove_horizontal():
-    params = [itir.Sym(id=backend.H_START), itir.Sym(id=backend.H_END)]
-    domain_boundaries = list(
-        map(lambda s: s.id, GTHeader._missing_domain_params(params))
-    )
-    assert len(domain_boundaries) == 2
-    assert backend.V_END in domain_boundaries
-    assert backend.V_START in domain_boundaries
-
-
-def test_missing_domain_args_is_empty():
-    params = [
-        itir.Sym(id=backend.V_END),
-        itir.Sym(id=backend.V_START),
-        itir.Sym(id=backend.H_END),
-        itir.Sym(id=backend.H_START),
-    ]
-    domain_boundaries = list(
-        map(lambda s: s.id, GTHeader._missing_domain_params(params))
-    )
-    assert len(domain_boundaries) == 0
-
-
-def test_missing_domain_args_contains_all():
-    domain_boundaries = list(map(lambda s: s.id, GTHeader._missing_domain_params([])))
-    assert len(domain_boundaries) == len(backend._DOMAIN_ARGS)
-    assert domain_boundaries == backend._DOMAIN_ARGS
+    assert len(domain_boundaries) == len(expected_complement)
+    assert domain_boundaries == set(expected_complement)
