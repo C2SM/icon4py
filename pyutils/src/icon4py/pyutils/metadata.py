@@ -50,7 +50,7 @@ class FieldInfo:
 class Connectivity:
     max_neighbors: int
     has_skip_values: int
-    origin_axis: Dimension = Dimension("dummy")
+    origin_axis: Dimension
 
     def mapped_index(_, __) -> int:
         return 0
@@ -162,6 +162,7 @@ def provide_neighbor_table(chain: str) -> Connectivity:
     return Connectivity(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
         has_skip_values=False,
+        origin_axis=location_chain[0],
     )
 
 
