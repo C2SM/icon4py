@@ -12,9 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
-import dataclasses
 import importlib
 import types
+from dataclasses import dataclass
 from typing import Any, TypeGuard
 
 import eve
@@ -32,18 +32,31 @@ from icon4py.pyutils.exceptions import (
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class StencilInfo:
     fvprog: Program
     connectivity_chains: list[eve.concepts.SymbolRef]
     offset_provider: dict
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class FieldInfo:
     field: past.DataSymbol
     inp: bool
     out: bool
+
+
+@dataclass
+class DummyConnectivity:
+    """Provides static information to the code generator (`max_neighbors`, `has_skip_values`)."""
+
+    max_neighbors: int
+    has_skip_values: int
+    origin_axis: Dimension
+
+    def mapped_index(_, __) -> int:
+        raise AssertionError("Unreachable")
+        return 0
 
 
 def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
@@ -106,7 +119,7 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(offset: str) -> types.SimpleNamespace | Dimension:
+def provide_offset(offset: str) -> DummyConnectivity | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
@@ -115,7 +128,7 @@ def provide_offset(offset: str) -> types.SimpleNamespace | Dimension:
         return provide_neighbor_table(offset)
 
 
-def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
+def provide_neighbor_table(chain: str) -> DummyConnectivity:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -149,9 +162,10 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
             pass
         else:
             raise InvalidConnectivityException(location_chain)
-    return types.SimpleNamespace(
+    return DummyConnectivity(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
         has_skip_values=False,
+        origin_axis=location_chain[0],
     )
 
 
