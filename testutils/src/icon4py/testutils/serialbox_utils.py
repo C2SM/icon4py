@@ -17,7 +17,6 @@ import numpy as np
 from functional.common import Dimension
 from functional.ffront.fbuiltins import int32
 from functional.iterator.embedded import np_as_located_field
-from serialbox import Savepoint
 
 from icon4py.common.dimension import (
     C2E2CDim,
@@ -35,16 +34,18 @@ from icon4py.common.dimension import (
 try:
     import serialbox as ser
 except ImportError:
-    external_src = os.path.join(os.path.dirname(__file__), "../../_external_src/")
+    external_src = os.path.join(os.path.dirname(__file__), "../../../../_external_src/")
     os.chdir(external_src)
-    os.system(
-        "git clone --recursive https://github.com/GridTools/serialbox; CC=`which gcc` CXX=`which g++` pip install serialbox/src/serialbox-python"
-    )
+    if not os.path.exists(os.path.join(external_src, "serialbox")):
+        os.system(
+            "git clone --recursive https://github.com/GridTools/serialbox"
+        )
+    os.system("CC=`which gcc` CXX=`which g++` pip install serialbox/src/serialbox-python")
     import serialbox as ser
 
 
-class IconDiffustionSavepoint:
-    def __init__(self, sp: Savepoint, ser: ser.Serializer):
+class IconDiffusionSavepoint:
+    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer):
         self.savepoint = sp
         self.serializer = ser
 
@@ -61,7 +62,7 @@ class IconDiffustionSavepoint:
         return {n: metadata[n] for n in names if n in metadata}
 
 
-class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
+class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 
@@ -269,7 +270,7 @@ class IconDiffusionInitSavepoint(IconDiffustionSavepoint):
         return self.serializer.read("diff_multfac_vn", self.savepoint)
 
 
-class IconDiffusionExitSavepoint(IconDiffustionSavepoint):
+class IconDiffusionExitSavepoint(IconDiffusionSavepoint):
     def vn(self):
         return self._get_field("x_vn", EdgeDim, KDim)
 
