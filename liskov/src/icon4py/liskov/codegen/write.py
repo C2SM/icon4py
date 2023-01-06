@@ -87,6 +87,8 @@ class IntegrationWriter:
 
             to_insert = gen.source.split("\n")
 
+            to_insert = [f"{s}\n" for s in to_insert]
+
             current_file[gen.startln : gen.startln] = to_insert
 
             cur_line_num += len(to_insert)
@@ -100,11 +102,11 @@ class IntegrationWriter:
             filepath: Path to the file where the generated code will be written.
             generated_code: A list of strings representing the generated code to be written to the file.
         """
-        code = "\n".join(generated_code)
-        formatted_code = format_fortran_code(code)
+        code = "".join(generated_code)
+        # formatted_code = format_fortran_code(code)
         new_file_path = filepath.with_suffix(IntegrationWriter.SUFFIX)
         with new_file_path.open("w") as f:
-            f.write(formatted_code)
+            f.write(code)
         logger.info(f"Wrote new file to {new_file_path}")
 
     @staticmethod

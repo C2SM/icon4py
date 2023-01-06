@@ -13,7 +13,7 @@
 
 import re
 from dataclasses import asdict
-from typing import Collection, Optional, Sequence, Type
+from typing import Optional, Sequence, Type
 
 import eve
 from eve.codegen import JinjaTemplate as as_jinja
@@ -113,35 +113,38 @@ class WrapRunFuncGenerator(TemplatedGenerator):
             {{ input_fields }}
             {{ output_fields }}
             {{ tolerance_fields }}
-            {{ bounds_fields }})
+            {{ bounds_fields }}
         """
     )
 
     InputFields = as_jinja(
         """
         {%- for field in _this_node.fields %}
+            {%- if field.out %}
+
+            {%- else %}
             {{ field.variable }}={{ field.association }},&
+            {%- endif -%}
         {%- endfor %}
         """
     )
-
-    def visit_OutputFields(self, out: OutputFields) -> Collection[str] | str:
-        f = out.fields[0]
-        start_idx = f.association.find("(")
-        end_idx = f.association.find(")")
-        out_index = f.association[start_idx : end_idx + 1]
-
-        return self.generic_visit(
-            out, output_association=f"{f.variable}_before{out_index}"
-        )
 
     OutputFields = as_jinja(
         """
         {%- for field in _this_node.fields %}
-            {{ field.variable }}_before={{ output_association }},&
+            {{ field.variable }}={{ field.association }},&
+            {{ field.variable }}_before={{ field.variable }}_before{{ field.out_index }},&
         {%- endfor %}
         """
     )
+
+    def visit_OutputFields(self, out: OutputFields):
+        for f in out.fields:
+            start_idx = f.association.find("(")
+            end_idx = f.association.find(")")
+            out_index = f.association[start_idx : end_idx + 1]
+            f.out_index = out_index
+        return self.generic_visit(out)
 
     ToleranceFields = as_jinja(
         """
@@ -166,7 +169,7 @@ class WrapRunFuncGenerator(TemplatedGenerator):
         """vertical_lower={{ vlower }}, &
            vertical_upper={{ vupper }}, &
            horizontal_lower={{ hlower }}, &
-           horizontal_upper={{ hupper }}
+           horizontal_upper={{ hupper }})
         """
     )
 
@@ -195,6 +198,14 @@ class DeclareStatementGenerator(TemplatedGenerator):
         {%- for d in _this_node.declarations %}
         REAL(wp), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
         {%- endfor %}
+
+        LOGICAL :: dsl_verify
+
+        #ifdef __DSL_VERIFY
+        dsl_verify = .TRUE.
+        #elif
+        dsl_verify = .FALSE.
+        #endif
         """
     )
 
@@ -223,9 +234,12 @@ class OutputFieldCopy(eve.Node):
         copy_dim_params = list(dims)
         copy_dim_params[-1] = ":"
         copy_field_dims = f"({''.join(copy_dim_params)})"
+        old_dims = f"({dims})"
+        new_association = declr.association.strip(old_dims)
+
         return CopyDeclaration(
             variable=declr.variable,
-            association=declr.association,
+            association=new_association,
             array_index=copy_field_dims,
         )
 
@@ -236,7 +250,7 @@ class OutputFieldCopyGenerator(TemplatedGenerator):
         #ifdef __DSL_VERIFY
         !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
-        {{ d.variable }}_before{{ d.array_index }} = {{ d.variable }}{{ d.array_index }}
+        {{ d.variable }}_before{{ d.array_index }} = {{ d.association }}{{ d.array_index }}
         {%- endfor %}
         !$ACC END PARALLEL
 
@@ -257,7 +271,7 @@ class ImportsStatement(eve.Node):
 
 class ImportsStatementGenerator(TemplatedGenerator):
     ImportsStatement = as_jinja(
-        """{% for name in stencil_names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
+        """  {% for name in stencil_names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
     )
 
 
@@ -277,17 +291,12 @@ class CreateStatement(eve.Node):
 class CreateStatementGenerator(TemplatedGenerator):
     CreateStatement = as_jinja(
         """
-        #ifdef __DSL_VERIFY
-        LOGICAL dsl_verify = .TRUE.
-        #elif
-        LOGICAL dsl_verify = .FALSE.
-        #endif
-
-        !$ACC DATA CREATE( &
+        !TODO: Correctly implement data create
+        !ACC DATA CREATE( &
         {%- for name in out_field_names %}
-        !$ACC   {{ name }}_before, &
+        !ACC   {{ name }}_before, &
         {%- endfor %}
-        !$ACC   ) &
-        !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
+        !ACC   ) &
+        !ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
         """
     )
