@@ -129,9 +129,10 @@ def icon_grid(savepoint_init):
 @pytest.fixture
 def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
     """
-    Create DiffusionConfig.
+    Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
-    that uses the parameters of MCH.CH_r04b09_dsl experiment
+    Sets values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
+    from the default.
     """
     sp = IconSerialDataProvider(
         "icon_diffusion_init", extracted_path, True
@@ -156,10 +157,13 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
         vertical_params=verticalParams,
         diffusion_type=5,
         hdiff_w=True,
+        hdiff_vn=True,
         type_t_diffu=2,
         type_vn_diffu=1,
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
-        smag_scaling_fac=0.025,
+        smagorinski_scaling_factor=0.025,
         zdiffu_t=True,
+        velocity_boundary_diffusion_denom=150.0,
+        max_nudging_coeff=0.075,
     )

@@ -190,7 +190,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(r04b09_diffusion_config
 @pytest.mark.datatest
 def test_smagorinski_factor_for_diffusion_type_4(r04b09_diffusion_config):
     config = r04b09_diffusion_config
-    config.hdiff_smag_factor = 0.15
+    config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 4
 
     params = DiffusionParams(config)
@@ -204,7 +204,7 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
     r04b09_diffusion_config,
 ):
     config = r04b09_diffusion_config
-    config.hdiff_smag_factor = 0.15
+    config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 5
 
     params = DiffusionParams(config)
