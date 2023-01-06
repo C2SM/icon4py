@@ -126,15 +126,14 @@ class DirectiveSemanticsValidator(Validator):
 
     def _validate_required_directives(self, directives: list[TypedDirective]) -> None:
         """Check that all required directives are used at least once."""
-        # expected = [Declare, Imports, Create, StartStencil, EndStencil]
-        # for expected_type in expected:
-        #     if not any(
-        #         [isinstance(d.directive_type, expected_type) for d in directives]
-        #     ):
-        #         raise RequiredDirectivesError(
-        #             f"Error in {self.filepath}.\n Missing required directive of type {expected_type().pattern} in source."
-        #         )
-        pass
+        expected = [Declare, Imports, Create, StartStencil, EndStencil]
+        for expected_type in expected:
+            if not any(
+                [isinstance(d.directive_type, expected_type) for d in directives]
+            ):
+                raise RequiredDirectivesError(
+                    f"Error in {self.filepath}.\n Missing required directive of type {expected_type().pattern} in source."
+                )
 
     def _validate_stencil_directives(self, directives: list[TypedDirective]) -> None:
         """Check that number of start and end stencil directives match."""

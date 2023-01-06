@@ -13,7 +13,7 @@
 
 import re
 from dataclasses import asdict
-from typing import Collection, Optional, Sequence, Type
+from typing import Optional, Sequence, Type
 
 import eve
 from eve.codegen import JinjaTemplate as as_jinja
@@ -28,9 +28,9 @@ from icon4py.liskov.codegen.interface import (
 
 
 def generate_fortran_code(
-        parent_node: Type[eve.Node],
-        code_generator: Type[TemplatedGenerator],
-        **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
+    parent_node: Type[eve.Node],
+    code_generator: Type[TemplatedGenerator],
+    **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
 ) -> str:
     """
     Generate Fortran code for the given parent node and code generator.
@@ -121,7 +121,7 @@ class WrapRunFuncGenerator(TemplatedGenerator):
         """
         {%- for field in _this_node.fields %}
             {%- if field.out %}
-            
+
             {%- else %}
             {{ field.variable }}={{ field.association }},&
             {%- endif -%}
@@ -142,7 +142,7 @@ class WrapRunFuncGenerator(TemplatedGenerator):
         for f in out.fields:
             start_idx = f.association.find("(")
             end_idx = f.association.find(")")
-            out_index = f.association[start_idx: end_idx + 1]
+            out_index = f.association[start_idx : end_idx + 1]
             f.out_index = out_index
         return self.generic_visit(out)
 
@@ -198,9 +198,9 @@ class DeclareStatementGenerator(TemplatedGenerator):
         {%- for d in _this_node.declarations %}
         REAL(wp), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
         {%- endfor %}
-        
+
         LOGICAL :: dsl_verify
-        
+
         #ifdef __DSL_VERIFY
         dsl_verify = .TRUE.
         #elif
@@ -291,11 +291,12 @@ class CreateStatement(eve.Node):
 class CreateStatementGenerator(TemplatedGenerator):
     CreateStatement = as_jinja(
         """
-        !$ACC DATA CREATE( &
+        !TODO: Correctly implement data create
+        !ACC DATA CREATE( &
         {%- for name in out_field_names %}
-        !$ACC   {{ name }}_before, &
+        !ACC   {{ name }}_before, &
         {%- endfor %}
-        !$ACC   ) &
-        !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
+        !ACC   ) &
+        !ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
         """
     )

@@ -58,7 +58,7 @@ class IntegrationGenerator:
         Args:
             profile: A boolean indicating whether to include profiling calls in the generated code.
         """
-        # self._generate_create()
+        self._generate_create()
         self._generate_imports()
         self._generate_declare()
         self._generate_stencil(profile)
