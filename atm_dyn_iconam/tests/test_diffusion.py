@@ -23,11 +23,11 @@ from icon4py.diffusion.diffusion import (
     DiffusionParams,
     VectorTuple,
     _en_smag_fac_for_zero_nshift,
+    _setup_fields_for_initial_step,
     _setup_runtime_diff_multfac_vn,
     _setup_smag_limit,
     scale_k,
     set_zero_v_k,
-    setup_fields_for_initial_step,
 )
 from icon4py.diffusion.icon_grid import VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
@@ -68,7 +68,7 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step():
         initial_diff_multfac_vn_numpy, shape, k4, efdt_ratio
     )
 
-    setup_fields_for_initial_step(
+    _setup_fields_for_initial_step(
         k4, efdt_ratio, out=(diff_multfac_vn_init, smag_limit_init), offset_provider={}
     )
 
@@ -313,7 +313,7 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 
     diff_multfac_vn = utils.zero_field(config.grid, KDim)
     smag_limit = utils.zero_field(config.grid, KDim)
-    setup_fields_for_initial_step(
+    _setup_fields_for_initial_step(
         params.K4,
         config.hdiff_efdt_ratio,
         out=(diff_multfac_vn, smag_limit),

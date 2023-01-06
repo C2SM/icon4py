@@ -99,7 +99,7 @@ def _setup_initial_diff_multfac_vn(
 
 
 @field_operator
-def setup_fields_for_initial_step(k4: float, hdiff_efdt_ratio: float):
+def _setup_fields_for_initial_step(k4: float, hdiff_efdt_ratio: float):
     diff_multfac_vn = _setup_initial_diff_multfac_vn(k4, hdiff_efdt_ratio)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     return diff_multfac_vn, smag_limit
@@ -135,7 +135,7 @@ def _en_smag_fac_for_zero_nshift(
 
 
 @field_operator
-def _init_diffusion_local_fields(
+def _init_diffusion_local_fields_for_regular_timestemp(
     k4: float,
     dyn_substeps: float,
     hdiff_smag_fac: float,
@@ -169,7 +169,7 @@ def _init_diffusion_local_fields(
 
 
 @program
-def init_diffusion_local_fields(
+def init_diffusion_local_fields_for_regular_timestep(
     k4: float,
     dyn_substeps: float,
     hdiff_smag_fac: float,
@@ -185,7 +185,7 @@ def init_diffusion_local_fields(
     smag_limit: Field[[KDim], float],
     enh_smag_fac: Field[[KDim], float],
 ):
-    _init_diffusion_local_fields(
+    _init_diffusion_local_fields_for_regular_timestemp(
         k4,
         dyn_substeps,
         hdiff_smag_fac,
@@ -211,7 +211,8 @@ def init_nabla2_factor_in_upper_damping_zone(
     """
     Calculate diff_multfac_n2w.
 
-    numpy version gt4py does not allow non-constant indexing into fields
+    numpy version, since gt4py does not allow non-constant indexing into fields
+    TODO: [ml] fix this once IndexedFields are implemented
 
     Args
         k_size: number of vertical levels
@@ -241,9 +242,8 @@ class DiffusionConfig:
 
     Encapsulates namelist parameters and derived parameters.
     Values should be read from configuration.
-    Default values are taken from the defaults in the ICON Fortran namelist files.
-    TODO: be read from config and the default from mo_diffusion_nml.f90 set as defaults.
-    TODO: [ml] read from config
+    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
+    TODO: [ml] to be read from config
     TODO: [ml] handle dependencies on other namelists (see below...)
     """
 
@@ -251,7 +251,7 @@ class DiffusionConfig:
         self,
         grid: IconGrid,
         vertical_params: VerticalModelParams,
-        diffusion_type: int = 5,  # TODO: use enum
+        diffusion_type: int = 5,
         hdiff_w=True,
         hdiff_vn=True,
         hdiff_temp=True,
@@ -269,7 +269,6 @@ class DiffusionConfig:
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
     ):
-        # TODO [ml]: move external stuff out: grid related stuff, other than diffusion namelists (see below
         self.grid = grid
         self.vertical_params = vertical_params
 
@@ -287,6 +286,7 @@ class DiffusionConfig:
         - 5: Smagorinsky diffusion with fourth-order background diffusion
 
         We only support type 5.
+        TODO: [ml] use enum
         """
 
         self.apply_to_vertical_wind: bool = hdiff_w
@@ -505,7 +505,11 @@ class DiffusionParams:
 
     @staticmethod
     def _diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
-        # initial values from mo_diffusion_nml.f90
+        """
+        Initialize smagorinski factors used in diffusion type 5.
+
+        The calculation and magic numbers are taken from mo_diffusion_nml.f90
+        """
         magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
         magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
         magic_z2 = 1600.0 + 50000.0 + magic_sqrt
@@ -583,8 +587,7 @@ class Diffusion:
 
         self._allocate_local_fields()
 
-        # TODO different for initial run!, through diff_multfac_vn
-        init_diffusion_local_fields(
+        init_diffusion_local_fields_for_regular_timestep(
             params.K4,
             config.substep_as_float(),
             *params.smagorinski_factor,
@@ -656,7 +659,7 @@ class Diffusion:
         diff_multfac_vn = zero_field(self.grid, KDim)
         smag_limit = zero_field(self.grid, KDim)
 
-        setup_fields_for_initial_step(
+        _setup_fields_for_initial_step(
             self.params.K4,
             self.config.hdiff_efdt_ratio,
             out=(diff_multfac_vn, smag_limit),
