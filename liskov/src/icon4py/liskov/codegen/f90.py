@@ -138,8 +138,8 @@ class WrapRunFuncGenerator(TemplatedGenerator):
         """
     )
 
-    def visit_OutputFields(self, out: OutputFields):
-        for f in out.fields:
+    def visit_OutputFields(self, out: OutputFields) -> OutputFields:  # type: ignore
+        for f in out.fields:  # type: ignore
             start_idx = f.association.find("(")
             end_idx = f.association.find(")")
             out_index = f.association[start_idx : end_idx + 1]

@@ -31,7 +31,6 @@ from icon4py.liskov.parsing.types import (
 from icon4py.liskov.parsing.validation import (
     DirectiveSemanticsValidator,
     DirectiveSyntaxValidator,
-    Validator,
 )
 
 
@@ -43,7 +42,7 @@ _SUPPORTED_DIRECTIVES: list[Directive] = [
     Create(),
 ]
 
-_VALIDATORS: list[Validator] = [
+_VALIDATORS = [
     DirectiveSyntaxValidator,
     DirectiveSemanticsValidator,
 ]

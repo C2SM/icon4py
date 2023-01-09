@@ -14,7 +14,6 @@
 from pathlib import Path
 from typing import List
 
-from icon4py.bindings.utils import format_fortran_code
 from icon4py.liskov.codegen.generate import GeneratedCode
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.types import DIRECTIVE_IDENT
@@ -96,14 +95,13 @@ class IntegrationWriter:
 
     @staticmethod
     def _write_file(filepath: Path, generated_code: List[str]) -> None:
-        """Format and write generated code to a file.
+        """Write generated code to a file.
 
         Args:
             filepath: Path to the file where the generated code will be written.
             generated_code: A list of strings representing the generated code to be written to the file.
         """
         code = "".join(generated_code)
-        # formatted_code = format_fortran_code(code)
         new_file_path = filepath.with_suffix(IntegrationWriter.SUFFIX)
         with new_file_path.open("w") as f:
             f.write(code)

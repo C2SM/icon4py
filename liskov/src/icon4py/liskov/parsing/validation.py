@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import re
+from abc import abstractmethod
 from pathlib import Path
 from typing import Protocol
 
@@ -33,11 +34,14 @@ from icon4py.liskov.parsing.utils import format_typed_directive
 
 
 class Validator(Protocol):
+    filepath: Path
+
+    @abstractmethod
     def validate(self, directives: list[TypedDirective]) -> None:
         ...
 
 
-class DirectiveSyntaxValidator(Validator):
+class DirectiveSyntaxValidator:
     """Validates syntax of preprocessor directives."""
 
     def __init__(self, filepath: Path) -> None:
@@ -90,7 +94,7 @@ class DirectiveSyntaxValidator(Validator):
             self.exception_handler.check_for_matches(d, match, regex, self.filepath)
 
 
-class DirectiveSemanticsValidator(Validator):
+class DirectiveSemanticsValidator:
     """Validates semantics of preprocessor directives."""
 
     def __init__(self, filepath: Path) -> None:
