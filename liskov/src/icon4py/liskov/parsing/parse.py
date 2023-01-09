@@ -42,7 +42,7 @@ _SUPPORTED_DIRECTIVES: list[Directive] = [
     Create(),
 ]
 
-_VALIDATORS = [
+_VALIDATORS: list = [
     DirectiveSyntaxValidator,
     DirectiveSemanticsValidator,
 ]
