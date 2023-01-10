@@ -97,7 +97,6 @@ def step_date_exit():
     return "2021-06-20T12:00:10.000"
 
 
-
 @pytest.fixture
 def savepoint_init(setup_icon_data, linit, step_date_init):
     """

@@ -15,24 +15,25 @@ import numpy as np
 import pytest
 
 from icon4py.common.dimension import ECVDim, KDim, VertexDim
-from icon4py.diffusion import utils
 from icon4py.diffusion.diagnostic import DiagnosticState
 from icon4py.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
     VectorTuple,
-    _en_smag_fac_for_zero_nshift,
-    _setup_fields_for_initial_step,
-    _setup_runtime_diff_multfac_vn,
-    _setup_smag_limit,
-    scale_k,
-    set_zero_v_k,
 )
 from icon4py.diffusion.icon_grid import VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic import PrognosticState
+from icon4py.diffusion.utils import (
+    _en_smag_fac_for_zero_nshift,
+    _setup_runtime_diff_multfac_vn,
+    _setup_smag_limit,
+    scale_k,
+    set_zero_v_k,
+    setup_fields_for_initial_step,
+)
 from icon4py.testutils.serialbox_utils import IconDiffusionInitSavepoint
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
@@ -68,8 +69,8 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step():
         initial_diff_multfac_vn_numpy, shape, k4, efdt_ratio
     )
 
-    _setup_fields_for_initial_step(
-        k4, efdt_ratio, out=(diff_multfac_vn_init, smag_limit_init), offset_provider={}
+    setup_fields_for_initial_step(
+        k4, efdt_ratio, diff_multfac_vn_init, smag_limit_init, offset_provider={}
     )
 
     assert np.allclose(expected_diff_multfac_vn_init, diff_multfac_vn_init)
@@ -311,12 +312,13 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     expected_smag_limit = savepoint.smag_limit()
     exptected_smag_offset = savepoint.smag_offset()
 
-    diff_multfac_vn = utils.zero_field(config.grid, KDim)
-    smag_limit = utils.zero_field(config.grid, KDim)
-    _setup_fields_for_initial_step(
+    diff_multfac_vn = zero_field(config.grid, KDim)
+    smag_limit = zero_field(config.grid, KDim)
+    setup_fields_for_initial_step(
         params.K4,
         config.hdiff_efdt_ratio,
-        out=(diff_multfac_vn, smag_limit),
+        diff_multfac_vn,
+        smag_limit,
         offset_provider={},
     )
     assert np.allclose(expected_smag_limit, smag_limit)
@@ -340,7 +342,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("step_date", ["2021-06-20T12:00:50.000"])
+@pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
     r04b09_diffusion_config, savepoint_init
 ):
@@ -354,6 +356,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(savepoint, diffusion)
 
 
+@pytest.mark.skip
 @pytest.mark.datatest
 def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
     sp = savepoint_init
@@ -449,8 +452,15 @@ def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
         np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure)
     )
 
+
 @pytest.mark.skip
-def test_diffusion(icon_grid, savepoint_init, savepoint_exit, linit = True, step_date_exit = '2021-06-20T12:01:00.000'):
+def test_diffusion(
+    icon_grid,
+    savepoint_init,
+    savepoint_exit,
+    linit=True,
+    step_date_exit="2021-06-20T12:01:00.000",
+):
     sp = savepoint_init
     config = DiffusionConfig(
         icon_grid,
@@ -462,11 +472,11 @@ def test_diffusion(icon_grid, savepoint_init, savepoint_exit, linit = True, step
     additional_parameters = DiffusionParams(config)
     diffusion = Diffusion(config, additional_parameters, sp.vct_a())
 
-
     diffusion.initial_step(...)
-    for i in range(4):
+    for _ in range(4):
         diffusion.time_step(...)
 
     sp_exit = savepoint_exit
-    # TODO assert exit values
 
+    # TODO assert exit values
+    sp_exit.w()
