@@ -78,9 +78,9 @@ def linit():
 
 
 @pytest.fixture
-def step_date():
+def step_date_init():
     """
-    Set the step date for the loaded ICON time stamp.
+    Set the step date for the loaded ICON time stamp at start of module.
 
     Defaults to 2021-06-20T12:00:10.000'
     """
@@ -88,7 +88,18 @@ def step_date():
 
 
 @pytest.fixture
-def savepoint_init(setup_icon_data, linit, step_date):
+def step_date_exit():
+    """
+    Set the step date for the loaded ICON time stamp at the end of module.
+
+    Defaults to 2021-06-20T12:00:10.000'
+    """
+    return "2021-06-20T12:00:10.000"
+
+
+
+@pytest.fixture
+def savepoint_init(setup_icon_data, linit, step_date_init):
     """
     Load data from ICON savepoint at start of diffusion module.
 
@@ -99,12 +110,12 @@ def savepoint_init(setup_icon_data, linit, step_date):
     """
     sp = IconSerialDataProvider(
         "icon_diffusion_init", extracted_path, True
-    ).from_savepoint_init(linit=linit, date=step_date)
+    ).from_savepoint_init(linit=linit, date=step_date_init)
     return sp
 
 
 @pytest.fixture
-def savepoint_exit(setup_icon_data, step_date):
+def savepoint_exit(setup_icon_data, step_date_exit):
     """
     Load data from ICON savepoint at exist of diffusion module.
 
@@ -113,7 +124,7 @@ def savepoint_exit(setup_icon_data, step_date):
     """
     sp = IconSerialDataProvider(
         "icon_diffusion_init", extracted_path, True
-    ).from_save_point_exit(linit=False, date=step_date)
+    ).from_save_point_exit(linit=False, date=step_date_exit)
     return sp
 
 

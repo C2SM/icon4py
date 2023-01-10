@@ -227,7 +227,7 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
 
 
 @pytest.mark.datatest
-def test_diffusion_init(savepoint_init, r04b09_diffusion_config, step_date):
+def test_diffusion_init(savepoint_init, r04b09_diffusion_config, step_date_init):
     savepoint = savepoint_init
     vct_a = savepoint.vct_a()
     config = r04b09_diffusion_config
@@ -235,7 +235,7 @@ def test_diffusion_init(savepoint_init, r04b09_diffusion_config, step_date):
 
     assert meta["nlev"] == 65
     assert meta["linit"] is False
-    assert meta["date"] == step_date
+    assert meta["date"] == step_date_init
     additional_parameters = DiffusionParams(config)
 
     diffusion = Diffusion(config, additional_parameters, vct_a)
@@ -355,7 +355,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 
 @pytest.mark.datatest
-def test_diffusion_run(savepoint_init, savepoint_exit, icon_grid):
+def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
     sp = savepoint_init
     vct_a = sp.vct_a()
 
@@ -448,3 +448,25 @@ def test_diffusion_run(savepoint_init, savepoint_exit, icon_grid):
     assert np.allclose(
         np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure)
     )
+
+@pytest.mark.skip
+def test_diffusion(icon_grid, savepoint_init, savepoint_exit, linit = True, step_date_exit = '2021-06-20T12:01:00.000'):
+    sp = savepoint_init
+    config = DiffusionConfig(
+        icon_grid,
+        vertical_params=VerticalModelParams(
+            vct_a=(sp.vct_a()), rayleigh_damping_height=12500.0
+        ),
+    )
+
+    additional_parameters = DiffusionParams(config)
+    diffusion = Diffusion(config, additional_parameters, sp.vct_a())
+
+
+    diffusion.initial_step(...)
+    for i in range(4):
+        diffusion.time_step(...)
+
+    sp_exit = savepoint_exit
+    # TODO assert exit values
+
