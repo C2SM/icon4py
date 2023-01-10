@@ -355,7 +355,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 
 @pytest.mark.datatest
-def test_diffusion_run(savepoint_init, save_point_exit, icon_grid):
+def test_diffusion_run(savepoint_init, savepoint_exit, icon_grid):
     sp = savepoint_init
     vct_a = sp.vct_a()
 
@@ -433,10 +433,10 @@ def test_diffusion_run(savepoint_init, save_point_exit, icon_grid):
         cell_areas=cell_areas,
     )
 
-    icon_result_exner = save_point_exit.exner()
-    icon_result_vn = save_point_exit.vn()
-    icon_result_w = save_point_exit.w()
-    icon_result_theta_w = save_point_exit.theta_v()
+    icon_result_exner = savepoint_exit.exner()
+    icon_result_vn = savepoint_exit.vn()
+    icon_result_w = savepoint_exit.w()
+    icon_result_theta_w = savepoint_exit.theta_v()
 
     assert np.allclose(icon_result_w, np.asarray(prognostic_state.vertical_wind))
     assert np.allclose(

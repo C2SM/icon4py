@@ -112,8 +112,8 @@ def savepoint_exit(setup_icon_data, step_date):
     fixture, passing 'step_data=<iso_string>'
     """
     sp = IconSerialDataProvider(
-        "icon_diffusion_exit", extracted_path, True
-    ).from_savepoint_init(linit=False, date=step_date)
+        "icon_diffusion_init", extracted_path, True
+    ).from_save_point_exit(linit=False, date=step_date)
     return sp
 
 
