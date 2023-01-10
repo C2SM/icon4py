@@ -47,6 +47,11 @@ data_file = os.path.join(data_path, "ser_data_diffusion.tar.gz")
 
 @pytest.fixture(scope="session")
 def setup_icon_data():
+    """
+    Get the binary ICON data from a remote server.
+
+    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
+    """
     os.makedirs(data_path, exist_ok=True)
     if len(os.listdir(data_path)) == 0:
         print(
@@ -64,16 +69,34 @@ def setup_icon_data():
 
 @pytest.fixture
 def linit():
+    """
+    Set the 'linit' flag for the ICON diffusion data savepoint.
+
+    Defaults to False
+    """
     return False
 
 
 @pytest.fixture
 def step_date():
+    """
+    Set the step date for the loaded ICON time stamp.
+
+    Defaults to 2021-06-20T12:00:10.000'
+    """
     return "2021-06-20T12:00:10.000"
 
 
 @pytest.fixture
 def savepoint_init(setup_icon_data, linit, step_date):
+    """
+    Load data from ICON savepoint at start of diffusion module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+
+    linit flag can be set by overriding the 'linit' fixture
+    """
     sp = IconSerialDataProvider(
         "icon_diffusion_init", extracted_path, True
     ).from_savepoint_init(linit=linit, date=step_date)
@@ -82,6 +105,12 @@ def savepoint_init(setup_icon_data, linit, step_date):
 
 @pytest.fixture
 def savepoint_exit(setup_icon_data, step_date):
+    """
+    Load data from ICON savepoint at exist of diffusion module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
     sp = IconSerialDataProvider(
         "icon_diffusion_exit", extracted_path, True
     ).from_savepoint_init(linit=False, date=step_date)
@@ -90,6 +119,12 @@ def savepoint_exit(setup_icon_data, step_date):
 
 @pytest.fixture
 def icon_grid(savepoint_init):
+    """
+    Load the icon grid from an ICON savepoint.
+
+    Uses the default save_point from 'savepoint_init' fixture, however these data don't change for
+    different time steps.
+    """
     sp = savepoint_init
 
     sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
@@ -131,7 +166,7 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
-    Sets values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
+    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
     sp = IconSerialDataProvider(
