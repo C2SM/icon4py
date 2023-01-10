@@ -22,4 +22,3 @@ setuptools>=40.8.0
 wheel>=0.37.1
 tox >= 3.25
 wget >= 3.2
-numpy == 1.23.3
