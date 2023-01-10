@@ -98,7 +98,7 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     return fields
 
 
-def _get_domain_arg_ids(fvprog: Program) -> List[str]:
+def _get_domain_arg_ids(fvprog: Program) -> list | set[str]:
     """Collect all argument names that are used within the 'domain' keyword argument."""
     domain_arg_ids = []
     if "domain" in fvprog.past_node.body[0].kwargs.keys():
