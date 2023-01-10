@@ -15,7 +15,7 @@ from __future__ import annotations
 import importlib
 import types
 from dataclasses import dataclass
-from typing import Any, List, TypeGuard
+from typing import Any, TypeGuard
 
 import eve
 from functional.common import Dimension, DimensionKind
