@@ -1,5 +1,5 @@
 # VCS
--e git+https://github.com/havogt/gt4py.git@scan_branch#egg=gt4py-functional
+-e git+https://github.com/havogt/gt4py.git@yet_another_column_fix#egg=gt4py-functional
 
 # PyPI
 flake8>=3.8

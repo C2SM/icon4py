@@ -81,5 +81,5 @@ def mo_velocity_advection_stencil_19(
         z_w_con_c_full,
         vn_ie,
         ddqz_z_full_e,
-        out=ddt_vn_adv[:, :-1],
+        out=ddt_vn_adv,
     )

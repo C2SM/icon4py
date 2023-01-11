@@ -30,4 +30,4 @@ def mo_velocity_advection_stencil_15(
     z_w_con_c: Field[[CellDim, KDim], float],
     z_w_con_c_full: Field[[CellDim, KDim], float],
 ):
-    _mo_velocity_advection_stencil_15(z_w_con_c, out=z_w_con_c_full[:, :-1])
+    _mo_velocity_advection_stencil_15(z_w_con_c, out=z_w_con_c_full)
