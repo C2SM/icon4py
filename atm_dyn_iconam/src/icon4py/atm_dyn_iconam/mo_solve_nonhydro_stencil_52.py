@@ -118,22 +118,7 @@ def mo_solve_nonhydro_stencil_52(
     cpd: float,
 ):
 
-    # _mo_solve_nonhydro_stencil_52(
-    #     vwind_impl_wgt,
-    #     theta_v_ic,
-    #     ddqz_z_half,
-    #     z_alpha,
-    #     z_beta,
-    #     z_w_expl,
-    #     z_exner_expl,
-    #     z_q,
-    #     w,
-    #     dtime,
-    #     cpd,
-    #     out=(z_q[:, 1:], w[:, 1:]),
-    # )
-
-    _mo_solve_nonhydro_stencil_52_z_q(
+    _mo_solve_nonhydro_stencil_52(
         vwind_impl_wgt,
         theta_v_ic,
         ddqz_z_half,
@@ -145,19 +130,5 @@ def mo_solve_nonhydro_stencil_52(
         w,
         dtime,
         cpd,
-        out=z_q[:, 1:],
-    )
-    _mo_solve_nonhydro_stencil_52_w(
-        vwind_impl_wgt,
-        theta_v_ic,
-        ddqz_z_half,
-        z_alpha,
-        z_beta,
-        z_w_expl,
-        z_exner_expl,
-        z_q,
-        w,
-        dtime,
-        cpd,
-        out=w[:, 1:],
+        out=(z_q[:, 1:], w[:, 1:]),
     )
