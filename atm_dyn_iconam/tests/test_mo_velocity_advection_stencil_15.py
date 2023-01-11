@@ -24,15 +24,14 @@ from icon4py.testutils.utils import random_field, zero_field
 def mo_velocity_advection_stencil_15_numpy(
     z_w_con_c: np.array,
 ):
-    z_w_con_c_offset = np.roll(z_w_con_c, shift=-1, axis=1)
-    z_w_con_c_full = 0.5 * (z_w_con_c + z_w_con_c_offset)
+    z_w_con_c_full = 0.5 * (z_w_con_c[:, :-1] + z_w_con_c[:, 1:])
     return z_w_con_c_full
 
 
 def test_mo_velocity_advection_stencil_15():
     mesh = SimpleMesh()
 
-    z_w_con_c = random_field(mesh, CellDim, KDim)
+    z_w_con_c = random_field(mesh, CellDim, KDim, extend={KDim: 1})
 
     z_w_con_c_full = zero_field(mesh, CellDim, KDim)
 
@@ -46,4 +45,4 @@ def test_mo_velocity_advection_stencil_15():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(z_w_con_c_full[:, :-1], z_w_con_c_full_ref[:, :-1])
+    assert np.allclose(z_w_con_c_full, z_w_con_c_full_ref)

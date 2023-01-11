@@ -145,4 +145,4 @@ def test_mo_velocity_advection_stencil_20():
         },
     )
 
-    assert np.allclose(ddt_vn_adv[:, 1:-1], ddt_vn_adv_ref[:, 1:-1])
+    assert np.allclose(ddt_vn_adv[:, :-1], ddt_vn_adv_ref[:, :-1])

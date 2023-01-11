@@ -58,7 +58,6 @@ def mo_velocity_advection_stencil_19_numpy(
     z_ekinh_e2c = z_ekinh[e2c]
     coeff_gradekin = np.expand_dims(coeff_gradekin, axis=-1)
     f_e = np.expand_dims(f_e, axis=-1)
-    vn_ie_offset_1 = np.roll(vn_ie, shift=-1, axis=1)
     c_lin_e = np.expand_dims(c_lin_e, axis=-1)
 
     ddt_vn_adv = -(
@@ -69,7 +68,7 @@ def mo_velocity_advection_stencil_19_numpy(
         )
         + vt * (f_e + 0.5 * np.sum(zeta[e2v], axis=1))
         + np.sum(z_w_con_c_full[e2c] * c_lin_e, axis=1)
-        * (vn_ie - vn_ie_offset_1)
+        * (vn_ie[:, :-1] - vn_ie[:, 1:])
         / ddqz_z_full_e
     )
     return ddt_vn_adv
@@ -87,7 +86,7 @@ def test_mo_velocity_advection_stencil_19():
     f_e = random_field(mesh, EdgeDim)
     c_lin_e = random_field(mesh, EdgeDim, E2CDim)
     z_w_con_c_full = random_field(mesh, CellDim, KDim)
-    vn_ie = random_field(mesh, EdgeDim, KDim)
+    vn_ie = random_field(mesh, EdgeDim, KDim, extend={KDim: 1})
     ddqz_z_full_e = random_field(mesh, EdgeDim, KDim)
     ddt_vn_adv = zero_field(mesh, EdgeDim, KDim)
 
@@ -126,4 +125,4 @@ def test_mo_velocity_advection_stencil_19():
         },
     )
 
-    assert np.allclose(ddt_vn_adv[:, :-1], ddt_vn_adv_ref[:, :-1])
+    assert np.allclose(ddt_vn_adv, ddt_vn_adv_ref)

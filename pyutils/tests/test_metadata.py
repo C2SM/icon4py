@@ -11,121 +11,64 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import re
-from typing import List
-
 import pytest
+from functional.common import Field
+from functional.ffront.decorator import field_operator, program
 
-from icon4py.pyutils.icon4pygen import (
-    format_metadata,
-    get_fvprog,
-    import_definition,
-    scan_for_offsets,
-)
-from icon4py.testutils.utils import get_stencil_module_path
+from icon4py.common.dimension import CellDim, KDim
+from icon4py.pyutils.metadata import get_field_infos
 
 
-def get_stencil_metadata(stencil_module: str, stencil_name: str) -> str:
-    fencil = import_definition(get_stencil_module_path(stencil_module, stencil_name))
-    fvprog = get_fvprog(fencil)
-    chains = scan_for_offsets(fvprog)
-    return format_metadata(fvprog, chains)
+@field_operator
+def _add(
+    field1: Field[[CellDim, KDim], float], field2: Field[[CellDim, KDim], float]
+) -> Field[[CellDim, KDim], float]:
+    return field1 + field2
 
 
-def parse_tabulated(tabulated: str, col: str) -> List[str]:
-    tabulated_list = [re.split(r"\s\s+", line) for line in tabulated.splitlines()]
-    offsets = tabulated_list.pop(0)
-
-    parsed = [
-        dict(zip(["name", "type", "io"], tabulated_list[i]))
-        for i in range(len(tabulated_list))
-    ]
-
-    if col == "offsets":
-        return offsets[0].split(", ")
-
-    return [arg[col] for arg in parsed]
-
-
-@pytest.mark.parametrize(
-    (
-        "stencil_module",
-        "stencil_name",
-        "exp_offsets",
-        "exp_names",
-        "exp_types",
-        "exp_in",
-        "exp_out",
-        "exp_inout",
-    ),
-    [
-        (
-            "atm_dyn_iconam",
-            "mo_nh_diffusion_stencil_14",
-            {"C2CE", "C2E"},
-            ["z_nabla2_e", "geofac_div", "z_temp"],
-            [
-                "Field[[Edge, K], dtype=float64]",
-                "Field[[CE], dtype=float64]",
-                "Field[[Cell, K], dtype=float64]",
-            ],
-            2,
-            1,
-            0,
-        ),
-        (
-            "atm_dyn_iconam",
-            "mo_solve_nonhydro_stencil_29",
-            {""},
-            ["grf_tend_vn", "vn_now", "vn_new", "dtime"],
-            [
-                "Field[[Edge, K], dtype=float64]",
-                "Field[[Edge, K], dtype=float64]",
-                "Field[[Edge, K], dtype=float64]",
-                "Field[[], dtype=float64]",
-            ],
-            3,
-            1,
-            0,
-        ),
-        (
-            "atm_dyn_iconam",
-            "mo_nh_diffusion_stencil_06",
-            {""},
-            ["z_nabla2_e", "area_edge", "vn", "fac_bdydiff_v"],
-            [
-                "Field[[Edge, K], dtype=float64]",
-                "Field[[Edge], dtype=float64]",
-                "Field[[Edge, K], dtype=float64]",
-                "Field[[], dtype=float64]",
-            ],
-            3,
-            0,
-            1,
-        ),
-    ],
-)
-def test_tabulation(
-    stencil_module,
-    stencil_name,
-    exp_offsets,
-    exp_names,
-    exp_types,
-    exp_in,
-    exp_out,
-    exp_inout,
+@program
+def with_domain(
+    a: Field[[CellDim, KDim], float],
+    b: Field[[CellDim, KDim], float],
+    result: Field[[CellDim, KDim], float],
+    vertical_start: int,
+    vertical_end: int,
+    k_start: int,
+    k_end: int,
 ):
-    tabulated = get_stencil_metadata(stencil_module, stencil_name)
-    parsed_names = parse_tabulated(tabulated, "name")
-    parsed_types = parse_tabulated(tabulated, "type")
-    parsed_io = parse_tabulated(tabulated, "io")
-    parsed_offsets = set(parse_tabulated(tabulated, "offsets"))
-
-    assert len(parsed_offsets - exp_offsets) == 0
-    assert parsed_names == exp_names
-    assert parsed_types == exp_types
-    assert (
-        parsed_io.count("in") == exp_in
-        and parsed_io.count("out") == exp_out
-        and parsed_io.count("inout") == exp_inout
+    _add(
+        a,
+        b,
+        out=result,
+        domain={CellDim: (k_start, k_end), KDim: (vertical_start, vertical_end)},
     )
+
+
+@program
+def without_domain(
+    a: Field[[CellDim, KDim], float],
+    b: Field[[CellDim, KDim], float],
+    result: Field[[CellDim, KDim], float],
+):
+    _add(a, b, out=result)
+
+
+@program
+def with_constant_domain(
+    a: Field[[CellDim, KDim], float],
+    b: Field[[CellDim, KDim], float],
+    result: Field[[CellDim, KDim], float],
+):
+    _add(a, b, out=result, domain={CellDim: (0, 3), KDim: (1, 8)})
+
+
+@pytest.mark.parametrize("program", [with_domain, without_domain, with_constant_domain])
+def test_get_field_infos_does_not_contain_domain_args(program):
+    field_info = get_field_infos(program)
+    assert len(field_info) == 3
+    assert not field_info["a"].out
+    assert field_info["a"].inp
+    assert not field_info["b"].out
+    assert field_info["b"].inp
+    assert field_info["result"].out
+    assert not field_info["result"].inp

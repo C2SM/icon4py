@@ -33,11 +33,8 @@ def mo_solve_nonhydro_stencil_48_numpy(
     ddt_exner_phy: np.array,
     dtime,
 ) -> tuple[np.array, np.array]:
-    z_contr_w_fl_l_offset_1 = np.roll(z_contr_w_fl_l, shift=-1, axis=1)
-    theta_v_ic_offset_1 = np.roll(theta_v_ic, shift=-1, axis=1)
-
     z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
-        z_flxdiv_mass + z_contr_w_fl_l - z_contr_w_fl_l_offset_1
+        z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
     )
 
     z_exner_expl = (
@@ -45,8 +42,8 @@ def mo_solve_nonhydro_stencil_48_numpy(
         - z_beta
         * (
             z_flxdiv_theta
-            + theta_v_ic * z_contr_w_fl_l
-            - theta_v_ic_offset_1 * z_contr_w_fl_l_offset_1
+            + (theta_v_ic * z_contr_w_fl_l)[:, :-1]
+            - (theta_v_ic * z_contr_w_fl_l)[:, 1:]
         )
         + dtime * ddt_exner_phy
     )
@@ -60,17 +57,17 @@ def test_mo_solve_nonhydro_stencil_48():
     rho_nnow = random_field(mesh, CellDim, KDim)
     inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
     z_flxdiv_mass = random_field(mesh, CellDim, KDim)
-    z_contr_w_fl_l = random_field(mesh, CellDim, KDim)
+    z_contr_w_fl_l = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     exner_pr = random_field(mesh, CellDim, KDim)
     z_beta = random_field(mesh, CellDim, KDim)
     z_flxdiv_theta = random_field(mesh, CellDim, KDim)
-    theta_v_ic = random_field(mesh, CellDim, KDim)
+    theta_v_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     ddt_exner_phy = random_field(mesh, CellDim, KDim)
 
     z_rho_expl = zero_field(mesh, CellDim, KDim)
     z_exner_expl = zero_field(mesh, CellDim, KDim)
 
-    (z_rho_expl_ref, z_exner_expl_ref) = mo_solve_nonhydro_stencil_48_numpy(
+    z_rho_expl_ref, z_exner_expl_ref = mo_solve_nonhydro_stencil_48_numpy(
         np.asarray(rho_nnow),
         np.asarray(inv_ddqz_z_full),
         np.asarray(z_flxdiv_mass),
@@ -99,5 +96,5 @@ def test_mo_solve_nonhydro_stencil_48():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(z_rho_expl_ref[:, :-1], z_rho_expl[:, :-1])
-    assert np.allclose(z_exner_expl_ref[:, :-1], z_exner_expl[:, :-1])
+    assert np.allclose(z_rho_expl_ref, z_rho_expl)
+    assert np.allclose(z_exner_expl_ref, z_exner_expl)
