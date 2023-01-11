@@ -25,12 +25,12 @@ def mo_intp_rbf_rbf_vec_interpol_vertex_numpy(
     v2e: np.array, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array
 ) -> tuple[np.array]:
     ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
-    p_v_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
+    p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
 
     ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
-    p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_2, axis=1)
+    p_v_out = np.sum(p_e_in[v2e] * ptr_coeff_2, axis=1)
 
-    return p_v_out, p_u_out
+    return p_u_out, p_v_out
 
 
 def test_mo_intp_rbf_rbf_vec_interpol_vertex():
@@ -42,20 +42,20 @@ def test_mo_intp_rbf_rbf_vec_interpol_vertex():
     p_v_out = zero_field(mesh, VertexDim, KDim)
     p_u_out = zero_field(mesh, VertexDim, KDim)
 
-    p_v_out_ref, p_u_out_ref = mo_intp_rbf_rbf_vec_interpol_vertex_numpy(
-        mesh.v2e, np.asarray(p_e_in), np.asarray(ptr_coeff_1), np.asarray(ptr_coeff_2)
-    )
     mo_intp_rbf_rbf_vec_interpol_vertex(
         p_e_in,
         ptr_coeff_1,
         ptr_coeff_2,
-        p_v_out,
         p_u_out,
+        p_v_out,
         0,
         mesh.n_vertices,
         0,
         mesh.k_level,
         offset_provider={"V2E": mesh.get_v2e_offset_provider(), "V2EDim": V2EDim},
+    )
+    p_u_out_ref, p_v_out_ref = mo_intp_rbf_rbf_vec_interpol_vertex_numpy(
+        mesh.v2e, np.asarray(p_e_in), np.asarray(ptr_coeff_1), np.asarray(ptr_coeff_2)
     )
 
     assert np.allclose(p_v_out, p_v_out_ref)

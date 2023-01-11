@@ -13,6 +13,7 @@
 
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
+from functional.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import (
     _mo_nh_diffusion_stencil_02,
@@ -39,7 +40,7 @@ def _fused_mo_nh_diffusion_stencil_02_03(
     return div_ic, hdef_ic
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def fused_mo_nh_diffusion_stencil_02_03(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
@@ -49,6 +50,10 @@ def fused_mo_nh_diffusion_stencil_02_03(
     wgtfac_c: Field[[CellDim, KDim], float],
     div_ic: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _fused_mo_nh_diffusion_stencil_02_03(
         kh_smag_ec,
@@ -58,4 +63,8 @@ def fused_mo_nh_diffusion_stencil_02_03(
         diff_multfac_smag,
         wgtfac_c,
         out=(div_ic, hdef_ic),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

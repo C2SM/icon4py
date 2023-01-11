@@ -57,6 +57,10 @@ def test_mo_nh_diffusion_stencil_16():
         theta_v,
         exner,
         rd_o_cvd,
+        horizontal_start=0,
+        horizontal_end=mesh.n_cells,
+        vertical_start=0,
+        vertical_end=mesh.k_level,
         offset_provider={},
     )
     assert np.allclose(theta_v, theta_v_ref)

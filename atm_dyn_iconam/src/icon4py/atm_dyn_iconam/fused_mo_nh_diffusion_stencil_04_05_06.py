@@ -13,6 +13,7 @@
 
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, int32, where
+from functional.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_04 import (
     _mo_nh_diffusion_stencil_04,
@@ -74,7 +75,7 @@ def _fused_mo_nh_diffusion_stencil_04_05_06(
     return vn
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def fused_mo_nh_diffusion_stencil_04_05_06(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],
@@ -92,6 +93,10 @@ def fused_mo_nh_diffusion_stencil_04_05_06(
     nudgezone_diff: float,
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _fused_mo_nh_diffusion_stencil_04_05_06(
         u_vert,
@@ -111,4 +116,8 @@ def fused_mo_nh_diffusion_stencil_04_05_06(
         fac_bdydiff_v,
         start_2nd_nudge_line_idx_e,
         out=vn,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

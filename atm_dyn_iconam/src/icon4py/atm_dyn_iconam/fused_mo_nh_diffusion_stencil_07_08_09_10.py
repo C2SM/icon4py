@@ -13,6 +13,7 @@
 
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, broadcast, int32, where
+from functional.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_07 import (
     _mo_nh_diffusion_stencil_07,
@@ -82,7 +83,7 @@ def _fused_mo_nh_diffusion_stencil_07_08_09_10(
     return w, dwdx, dwdy
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def fused_mo_nh_diffusion_stencil_07_08_09_10(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
@@ -99,6 +100,10 @@ def fused_mo_nh_diffusion_stencil_07_08_09_10(
     nrdmax: int32,
     interior_idx: int32,
     halo_idx: int32,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _fused_mo_nh_diffusion_stencil_07_08_09_10(
         area,
@@ -117,4 +122,8 @@ def fused_mo_nh_diffusion_stencil_07_08_09_10(
         interior_idx,
         halo_idx,
         out=(w, dwdx, dwdy),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

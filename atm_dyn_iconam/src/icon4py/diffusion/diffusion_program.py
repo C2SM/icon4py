@@ -15,6 +15,7 @@
 from functional.common import Field
 from functional.ffront.decorator import program
 from functional.ffront.fbuiltins import int32
+from functional.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
     _fused_mo_nh_diffusion_stencil_02_03,
@@ -54,8 +55,7 @@ from icon4py.common.dimension import (
 from icon4py.diffusion.utils import _scale_k, _set_zero_v_k
 
 
-# @program(backend=gtfn_cpu.run_gtfn)
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def diffusion_run(
     diagnostic_hdef_ic: Field[[CellDim, KDim], float],
     diagnostic_div_ic: Field[[CellDim, KDim], float],
@@ -81,7 +81,7 @@ def diffusion_run(
     interpolation_geofac_n2s: Field[[CellDim, C2E2CODim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inverse_primal_edge_lengths: Field[[EdgeDim], float],
-    inverse_dual_edge_length: Field[[EdgeDim], float],
+    inverse_dual_edge_lengths: Field[[EdgeDim], float],
     inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
     primal_normal_vert_1: Field[[ECVDim], float],
     primal_normal_vert_2: Field[[ECVDim], float],
@@ -275,7 +275,7 @@ def diffusion_run(
     )
     _fused_mo_nh_diffusion_stencil_13_14(
         local_kh_smag_e,
-        inverse_dual_edge_length,
+        inverse_dual_edge_lengths,
         prognostic_theta_v,
         interpolation_geofac_div,
         out=local_z_temp,

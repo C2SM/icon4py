@@ -38,7 +38,20 @@ def mo_nh_diffusion_stencil_16(
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _mo_nh_diffusion_stencil_16(
-        z_temp, area, theta_v, exner, rd_o_cvd, out=(theta_v, exner)
+        z_temp,
+        area,
+        theta_v,
+        exner,
+        rd_o_cvd,
+        out=(theta_v, exner),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

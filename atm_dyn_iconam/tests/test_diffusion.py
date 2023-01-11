@@ -259,15 +259,15 @@ def test_diffusion_init(savepoint_init, r04b09_diffusion_config, step_date_init)
     )
 
     assert (
-        diffusion._smag_offset
+        diffusion.smag_offset
         == 0.25 * additional_parameters.K4 * config.substep_as_float()
     )
-    assert np.allclose(expected_smag_limit, diffusion._smag_limit)
+    assert np.allclose(expected_smag_limit, diffusion.smag_limit)
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(
         shape_k, additional_parameters.K4, config.substep_as_float()
     )
-    assert np.allclose(expected_diff_multfac_vn, diffusion._diff_multfac_vn)
+    assert np.allclose(expected_diff_multfac_vn, diffusion.diff_multfac_vn)
     expected_enh_smag_fac = enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
@@ -284,7 +284,7 @@ def _verify_init_values_against_savepoint(
     assert savepoint.nudgezone_diff() == diffusion.nudgezone_diff
     assert savepoint.bdy_diff() == diffusion.bdy_diff
     assert savepoint.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    assert savepoint.smag_offset() == diffusion._smag_offset
+    assert savepoint.smag_offset() == diffusion.smag_offset
     assert savepoint.diff_multfac_w() == diffusion.diff_multfac_w
 
     # this is done in diffusion.run(...) because it depends on the dtime
@@ -293,9 +293,9 @@ def _verify_init_values_against_savepoint(
     )
     assert np.allclose(savepoint.diff_multfac_smag(), diffusion.diff_multfac_smag)
 
-    assert np.allclose(savepoint.smag_limit(), diffusion._smag_limit)
+    assert np.allclose(savepoint.smag_limit(), diffusion.smag_limit)
     np.allclose(savepoint.diff_multfac_n2w(), np.asarray(diffusion.diff_multfac_n2w))
-    assert np.allclose(savepoint.diff_multfac_vn(), diffusion._diff_multfac_vn)
+    assert np.allclose(savepoint.diff_multfac_vn(), diffusion.diff_multfac_vn)
 
 
 @pytest.mark.datatest
@@ -356,8 +356,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(savepoint, diffusion)
 
 
-@pytest.mark.skip
 @pytest.mark.datatest
+@pytest.mark.skip
 def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
     sp = savepoint_init
     vct_a = sp.vct_a()
@@ -371,7 +371,7 @@ def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
 
     additional_parameters = DiffusionParams(config)
 
-    diffusion = Diffusion(config, additional_parameters, vct_a)
+    diffusion = Diffusion(config, additional_parameters, vct_a, run_program=False)
 
     diagnostic_state = DiagnosticState(
         hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
@@ -454,7 +454,8 @@ def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
 
 
 @pytest.mark.skip
-def test_diffusion(
+@pytest.mark.datatest
+def test_diffusion_five_steps(
     icon_grid,
     savepoint_init,
     savepoint_exit,
@@ -462,21 +463,104 @@ def test_diffusion(
     step_date_exit="2021-06-20T12:01:00.000",
 ):
     sp = savepoint_init
+
+    diagnostic_state = DiagnosticState(
+        hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
+    )
+    prognostic_state = PrognosticState(
+        vertical_wind=sp.w(),
+        normal_wind=sp.vn(),
+        exner_pressure=sp.exner(),
+        theta_v=sp.theta_v(),
+    )
+    grg = sp.geofac_grg()
+
+    interpolation_state = InterpolationState(
+        e_bln_c_s=sp.e_bln_c_s(),
+        rbf_coeff_1=sp.rbf_vec_coeff_v1(),
+        rbf_coeff_2=sp.rbf_vec_coeff_v2(),
+        geofac_div=sp.geofac_div(),
+        geofac_n2s=sp.geofac_n2s(),
+        geofac_grg_x=grg[0],
+        geofac_grg_y=grg[1],
+        nudgecoeff_e=sp.nudgecoeff_e(),
+    )
+
+    metric_state = MetricState(
+        mask_hdiff=sp.mask_diff(),
+        theta_ref_mc=sp.theta_ref_mc(),
+        wgtfac_c=sp.wgtfac_c(),
+        zd_intcoef=sp.zd_intcoef(),
+        zd_vertidx=sp.zd_vertidx(),
+        zd_diffcoef=sp.zd_diffcoef(),
+    )
+    dtime = sp.get_metadata("dtime").get("dtime")
+    orientation = sp.tangent_orientation()
+    inverse_primal_edge_lengths = sp.inverse_primal_edge_lengths()
+    inverse_vertical_vertex_lengths = sp.inv_vert_vert_length()
+    inverse_dual_edge_length = sp.inv_dual_edge_length()
+    primal_normal_vert: VectorTuple = (
+        as_1D_sparse_field(sp.primal_normal_vert_x(), ECVDim),
+        as_1D_sparse_field(sp.primal_normal_vert_y(), ECVDim),
+    )
+    dual_normal_vert: VectorTuple = (
+        as_1D_sparse_field(sp.dual_normal_vert_x(), ECVDim),
+        as_1D_sparse_field(sp.dual_normal_vert_y(), ECVDim),
+    )
+    edge_areas = sp.edge_areas()
+    cell_areas = sp.cell_areas()
+
     config = DiffusionConfig(
         icon_grid,
         vertical_params=VerticalModelParams(
             vct_a=(sp.vct_a()), rayleigh_damping_height=12500.0
         ),
     )
-
     additional_parameters = DiffusionParams(config)
     diffusion = Diffusion(config, additional_parameters, sp.vct_a())
-
-    diffusion.initial_step(...)
+    diffusion.initial_step(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        dtime=dtime,
+        tangent_orientation=orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inverse_dual_edge_length=inverse_dual_edge_length,
+        inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+        primal_normal_vert=primal_normal_vert,
+        dual_normal_vert=dual_normal_vert,
+        edge_areas=edge_areas,
+        cell_areas=cell_areas,
+    )
     for _ in range(4):
-        diffusion.time_step(...)
+        diffusion.time_step(
+            diagnostic_state=diagnostic_state,
+            prognostic_state=prognostic_state,
+            metric_state=metric_state,
+            interpolation_state=interpolation_state,
+            dtime=dtime,
+            tangent_orientation=orientation,
+            inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+            inverse_dual_edge_length=inverse_dual_edge_length,
+            inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+            primal_normal_vert=primal_normal_vert,
+            dual_normal_vert=dual_normal_vert,
+            edge_areas=edge_areas,
+            cell_areas=cell_areas,
+        )
 
-    sp_exit = savepoint_exit
-
-    # TODO assert exit values
-    sp_exit.w()
+    icon_result_exner = savepoint_exit.exner()
+    icon_result_vn = savepoint_exit.vn()
+    icon_result_w = savepoint_exit.w()
+    icon_result_theta_w = savepoint_exit.theta_v()
+    assert np.allclose(icon_result_w, np.asarray(prognostic_state.vertical_wind))
+    assert np.allclose(
+        np.asarray(icon_result_vn), np.asarray(prognostic_state.normal_wind)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_theta_w), np.asarray(prognostic_state.theta_v)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure)
+    )
