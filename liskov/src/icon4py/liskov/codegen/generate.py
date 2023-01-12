@@ -18,14 +18,16 @@ import eve
 from eve.codegen import TemplatedGenerator
 
 from icon4py.liskov.codegen.f90 import (
-    CreateStatement,
-    CreateStatementGenerator,
     DeclareStatement,
     DeclareStatementGenerator,
+    EndCreateStatement,
+    EndCreateStatementGenerator,
     ImportsStatement,
     ImportsStatementGenerator,
     OutputFieldCopy,
     OutputFieldCopyGenerator,
+    StartCreateStatement,
+    StartCreateStatementGenerator,
     WrapRunFunc,
     WrapRunFuncGenerator,
     generate_fortran_code,
@@ -90,9 +92,9 @@ class IntegrationGenerator:
         self._add_generated_code(
             DeclareStatement,
             DeclareStatementGenerator,
-            self.directives.declare.startln,
-            self.directives.declare.endln,
-            declare_data=self.directives.declare,
+            self.directives.Declare.startln,
+            self.directives.Declare.endln,
+            declare_data=self.directives.Declare,
         )
 
     def _generate_stencil(self, profile: bool) -> None:
@@ -101,13 +103,13 @@ class IntegrationGenerator:
         Args:
             profile: A boolean indicating whether to include profiling calls in the generated code.
         """
-        for i, stencil in enumerate(self.directives.start):
+        for i, stencil in enumerate(self.directives.StartStencil):
             logger.info(f"Generating START statement for {stencil.name}")
             self._add_generated_code(
                 OutputFieldCopy,
                 OutputFieldCopyGenerator,
-                self.directives.start[i].startln,
-                self.directives.start[i].endln,
+                self.directives.StartStencil[i].startln,
+                self.directives.StartStencil[i].endln,
                 stencil_data=stencil,
                 profile=profile,
             )
@@ -115,8 +117,8 @@ class IntegrationGenerator:
             self._add_generated_code(
                 WrapRunFunc,
                 WrapRunFuncGenerator,
-                self.directives.end[i].startln,
-                self.directives.end[i].endln,
+                self.directives.EndStencil[i].startln,
+                self.directives.EndStencil[i].endln,
                 stencil_data=stencil,
                 profile=profile,
             )
@@ -127,18 +129,25 @@ class IntegrationGenerator:
         self._add_generated_code(
             ImportsStatement,
             ImportsStatementGenerator,
-            self.directives.imports.startln,
-            self.directives.imports.endln,
-            stencils=self.directives.start,
+            self.directives.Imports.startln,
+            self.directives.Imports.endln,
+            stencils=self.directives.StartStencil,
         )
 
     def _generate_create(self) -> None:
         """Generate f90 code for OpenACC DATA CREATE statements."""
         logger.info("Generating DATA CREATE statement.")
         self._add_generated_code(
-            CreateStatement,
-            CreateStatementGenerator,
-            self.directives.create.startln,
-            self.directives.create.endln,
-            stencils=self.directives.start,
+            StartCreateStatement,
+            StartCreateStatementGenerator,
+            self.directives.StartCreate.startln,
+            self.directives.StartCreate.endln,
+            stencils=self.directives.StartStencil,
+        )
+
+        self._add_generated_code(
+            EndCreateStatement,
+            EndCreateStatementGenerator,
+            self.directives.EndCreate.startln,
+            self.directives.EndCreate.endln,
         )

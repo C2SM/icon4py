@@ -49,15 +49,15 @@ class DirectiveType:
     pattern: str
 
     def __str__(self) -> str:
-        return self.pattern.capitalize()
+        return self.pattern
 
 
 class StartStencil(DirectiveType):
-    pattern = "START"
+    pattern = "START STENCIL"
 
 
 class EndStencil(DirectiveType):
-    pattern = "END"
+    pattern = "END STENCIL"
 
 
 class Declare(DirectiveType):
@@ -65,11 +65,15 @@ class Declare(DirectiveType):
 
 
 class Imports(DirectiveType):
-    pattern = "IMPORT"
+    pattern = "IMPORTS"
 
 
-class Create(DirectiveType):
-    pattern = "CREATE"
+class StartCreate(DirectiveType):
+    pattern = "START CREATE"
+
+
+class EndCreate(DirectiveType):
+    pattern = "END CREATE"
 
 
 ParsedContent: TypeAlias = dict[str, list[dict[str, str]]]

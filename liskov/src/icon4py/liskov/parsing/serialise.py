@@ -17,12 +17,13 @@ from typing import Callable, Protocol
 from icon4py.liskov.codegen.interface import (
     BoundsData,
     CodeGenInput,
-    CreateData,
     DeclareData,
+    EndCreateData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
     SerialisedDirectives,
+    StartCreateData,
     StartStencilData,
 )
 from icon4py.liskov.parsing.exceptions import (
@@ -31,11 +32,12 @@ from icon4py.liskov.parsing.exceptions import (
     MissingDirectiveArgumentError,
 )
 from icon4py.liskov.parsing.types import (
-    Create,
     Declare,
+    EndCreate,
     EndStencil,
     Imports,
     ParsedDict,
+    StartCreate,
     StartStencil,
     TypedDirective,
 )
@@ -48,10 +50,16 @@ class DirectiveInputFactory(Protocol):
         ...
 
 
-class CreateDataFactory:
-    def __call__(self, parsed: ParsedDict) -> CreateData:
-        extracted = extract_directive(parsed["directives"], Create)[0]
-        return CreateData(startln=extracted.startln, endln=extracted.endln)
+class StartCreateDataFactory:
+    def __call__(self, parsed: ParsedDict) -> StartCreateData:
+        extracted = extract_directive(parsed["directives"], StartCreate)[0]
+        return StartCreateData(startln=extracted.startln, endln=extracted.endln)
+
+
+class EndCreateDataFactory:
+    def __call__(self, parsed: ParsedDict) -> EndCreateData:
+        extracted = extract_directive(parsed["directives"], EndCreate)[0]
+        return EndCreateData(startln=extracted.startln, endln=extracted.endln)
 
 
 class ImportsDataFactory:
@@ -95,7 +103,7 @@ class StartStencilDataFactory:
         serialised = []
         directives = extract_directive(parsed["directives"], StartStencil)
         for i, directive in enumerate(directives):
-            named_args = parsed["content"]["Start"][i]
+            named_args = parsed["content"]["StartStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
             bounds = self._get_bounds(named_args)
             fields = self._get_field_associations(named_args)
@@ -217,7 +225,7 @@ class EndStencilDataFactory:
         serialised = []
         extracted = extract_directive(parsed["directives"], EndStencil)
         for i, directive in enumerate(extracted):
-            named_args = parsed["content"]["End"][i]
+            named_args = parsed["content"]["EndStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
             serialised.append(
                 EndStencilData(
@@ -232,11 +240,12 @@ class DirectiveSerialiser:
         self.directives = self.serialise(parsed)
 
     _FACTORIES: dict[str, Callable] = {
-        "create": CreateDataFactory(),
-        "imports": ImportsDataFactory(),
-        "declare": DeclareDataFactory(),
-        "start": StartStencilDataFactory(),
-        "end": EndStencilDataFactory(),
+        "StartCreate": StartCreateDataFactory(),
+        "EndCreate": EndCreateDataFactory(),
+        "Imports": ImportsDataFactory(),
+        "Declare": DeclareDataFactory(),
+        "StartStencil": StartStencilDataFactory(),
+        "EndStencil": EndStencilDataFactory(),
     }
 
     def serialise(self, directives: ParsedDict) -> SerialisedDirectives:

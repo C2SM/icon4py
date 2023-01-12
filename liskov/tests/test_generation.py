@@ -17,12 +17,13 @@ import pytest
 from icon4py.liskov.codegen.generate import IntegrationGenerator
 from icon4py.liskov.codegen.interface import (
     BoundsData,
-    CreateData,
     DeclareData,
+    EndCreateData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
     SerialisedDirectives,
+    StartCreateData,
     StartStencilData,
 )
 
@@ -48,24 +49,31 @@ def serialised_directives():
         declarations=[{"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"}],
     )
     imports_data = ImportsData(startln=7, endln=8)
-    create_data = CreateData(startln=9, endln=10)
+    start_create_data = StartCreateData(startln=9, endln=10)
+    end_create_data = EndCreateData(startln=11, endln=11)
 
     return SerialisedDirectives(
-        start=[start_stencil_data],
-        end=[end_stencil_data],
-        declare=declare_data,
-        imports=imports_data,
-        create=create_data,
+        StartStencil=[start_stencil_data],
+        EndStencil=[end_stencil_data],
+        Declare=declare_data,
+        Imports=imports_data,
+        StartCreate=start_create_data,
+        EndCreate=end_create_data,
     )
 
 
 @pytest.fixture
-def expected_create_source():
+def expected_start_create_source():
     return """
 !$ACC DATA CREATE( &
 !$ACC   field2_before &
 !$ACC   ), &
 !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
+
+
+@pytest.fixture
+def expected_end_create_source():
+    return "!$ACC END DATA"
 
 
 @pytest.fixture
@@ -89,7 +97,7 @@ def expected_declare_source():
 
 
 @pytest.fixture
-def expected_stencil_start_source():
+def expected_start_stencil_source():
     return """
 #ifdef __DSL_VERIFY
         !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
@@ -99,7 +107,7 @@ def expected_stencil_start_source():
 
 
 @pytest.fixture
-def expected_stencil_end_source():
+def expected_end_stencil_source():
     return """
         call nvtxEndRange()
 #endif
@@ -121,16 +129,18 @@ def generator(serialised_directives):
 
 def test_generate(
     generator,
-    expected_create_source,
+    expected_start_create_source,
+    expected_end_create_source,
     expected_imports_source,
     expected_declare_source,
-    expected_stencil_start_source,
-    expected_stencil_end_source,
+    expected_start_stencil_source,
+    expected_end_stencil_source,
 ):
     # Check that the generated code snippets are as expected
-    assert len(generator.generated) == 5
-    assert generator.generated[0].source == expected_create_source
-    assert generator.generated[1].source == expected_imports_source
-    assert generator.generated[2].source == expected_declare_source
-    assert generator.generated[3].source == expected_stencil_start_source
-    assert generator.generated[4].source == expected_stencil_end_source
+    assert len(generator.generated) == 6
+    assert generator.generated[0].source == expected_start_create_source
+    assert generator.generated[1].source == expected_end_create_source
+    assert generator.generated[2].source == expected_imports_source
+    assert generator.generated[3].source == expected_declare_source
+    assert generator.generated[4].source == expected_start_stencil_source
+    assert generator.generated[5].source == expected_end_stencil_source
