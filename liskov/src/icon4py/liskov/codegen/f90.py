@@ -275,7 +275,7 @@ class ImportsStatementGenerator(TemplatedGenerator):
     )
 
 
-class CreateStatement(eve.Node):
+class StartCreateStatement(eve.Node):
     stencils: list[StartStencilData]
     out_field_names: list[str] = eve.datamodels.field(init=False)
 
@@ -288,8 +288,8 @@ class CreateStatement(eve.Node):
         ]
 
 
-class CreateStatementGenerator(TemplatedGenerator):
-    CreateStatement = as_jinja(
+class StartCreateStatementGenerator(TemplatedGenerator):
+    StartCreateStatement = as_jinja(
         """
         !$ACC DATA CREATE( &
         {%- for name in out_field_names %}
@@ -299,3 +299,11 @@ class CreateStatementGenerator(TemplatedGenerator):
         !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
         """
     )
+
+
+class EndCreateStatement(eve.Node):
+    ...
+
+
+class EndCreateStatementGenerator(TemplatedGenerator):
+    EndCreateStatement = as_jinja("!$ACC END DATA")

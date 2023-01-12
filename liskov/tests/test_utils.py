@@ -17,14 +17,14 @@ import pytest
 from functional.ffront.decorator import Program
 
 from icon4py.liskov.parsing.exceptions import UnknownStencilError
-from icon4py.liskov.parsing.types import Create, Imports, TypedDirective
+from icon4py.liskov.parsing.types import Imports, StartCreate, TypedDirective
 from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
 
 
 def test_extract_directive():
     directives = [
         TypedDirective(
-            string="!$DSL CREATE()", startln=1, endln=1, directive_type=Create()
+            string="!$DSL CREATE()", startln=1, endln=1, directive_type=StartCreate()
         ),
         TypedDirective(
             string="!$DSL IMPORT()", startln=2, endln=2, directive_type=Imports()
@@ -32,7 +32,7 @@ def test_extract_directive():
     ]
 
     # Test that only the expected directive is extracted.
-    assert extract_directive(directives, Create) == [directives[0]]
+    assert extract_directive(directives, StartCreate) == [directives[0]]
     assert extract_directive(directives, Imports) == [directives[1]]
 
 

@@ -35,20 +35,23 @@ def scan_tempfile(string: str, expected: list):
         (
             DIRECTIVES_SAMPLE,
             [
-                RawDirective("!$DSL IMPORT()\n", 0, 0),
-                RawDirective("!$DSL CREATE()\n", 2, 2),
+                RawDirective("!$DSL IMPORTS()\n", 0, 0),
+                RawDirective("!$DSL START CREATE()\n", 2, 2),
                 RawDirective("!$DSL DECLARE(vn=p_patch%vn; vn2=p_patch%vn2)\n", 4, 4),
                 RawDirective(
-                    "!$DSL START(name=mo_nh_diffusion_06; vn=p_patch%vn; &\n!$DSL       a=a; b=c)\n",
+                    "!$DSL START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%vn; &\n!$DSL       a=a; b=c)\n",
                     6,
                     7,
                 ),
-                RawDirective("!$DSL END(name=mo_nh_diffusion_06)\n", 9, 9),
+                RawDirective("!$DSL END STENCIL(name=mo_nh_diffusion_06)\n", 9, 9),
                 RawDirective(
-                    "!$DSL START(name=mo_nh_diffusion_07; xn=p_patch%xn)\n", 11, 11
+                    "!$DSL START STENCIL(name=mo_nh_diffusion_07; xn=p_patch%xn)\n",
+                    11,
+                    11,
                 ),
-                RawDirective("!$DSL END(name=mo_nh_diffusion_07)\n", 13, 13),
+                RawDirective("!$DSL END STENCIL(name=mo_nh_diffusion_07)\n", 13, 13),
                 RawDirective("!$DSL UNKNOWN_DIRECTIVE()\n", 15, 15),
+                RawDirective("!$DSL END CREATE()\n", 16, 16),
             ],
         ),
     ],

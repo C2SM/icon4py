@@ -27,14 +27,14 @@ NO_DIRECTIVES_STENCIL = """\
     """
 
 SINGLE_STENCIL = """\
-    !$DSL IMPORT()
+    !$DSL IMPORTS()
 
-    !$DSL CREATE()
+    !$DSL START CREATE()
 
     !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e); a=(nproma,p_patch%nlev,p_patch%nblks_e); &
     !$DSL         b=(nproma,p_patch%nlev,p_patch%nblks_e))
 
-    !$DSL START(name=mo_nh_diffusion_stencil_06; &
+    !$DSL START STENCIL(name=mo_nh_diffusion_stencil_06; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
     !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
@@ -60,17 +60,18 @@ SINGLE_STENCIL = """\
               ENDDO
             ENDDO
     !$ACC END PARALLEL LOOP
-    !$DSL END(name=mo_nh_diffusion_stencil_06)
+    !$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)
+    !$DSL END CREATE()
     """
 
 MULTIPLE_STENCILS = """\
-    !$DSL IMPORT()
+    !$DSL IMPORTS()
 
-    !$DSL CREATE()
+    !$DSL START CREATE()
 
     !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e))
 
-    !$DSL START(name=mo_solve_nonhydro_stencil_16; p_vn=p_nh%prog(nnow)%vn(:,:,1); rho_ref_me=p_nh%metrics%rho_ref_me(:,:,1); &
+    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_16; p_vn=p_nh%prog(nnow)%vn(:,:,1); rho_ref_me=p_nh%metrics%rho_ref_me(:,:,1); &
     !$DSL          theta_ref_me=p_nh%metrics%theta_ref_me(:,:,1); p_distv_bary_1=p_distv_bary(:,:,1,1); p_distv_bary_2=p_distv_bary(:,:,1,2); &
     !$DSL          z_grad_rth_1=z_grad_rth(:,:,1,1); z_grad_rth_2=z_grad_rth(:,:,1,2); z_grad_rth_3=z_grad_rth(:,:,1,3); z_grad_rth_4=z_grad_rth(:,:,1,4); &
     !$DSL          z_rth_pr_1=z_rth_pr(:,:,1,1); z_rth_pr_2=z_rth_pr(:,:,1,2); z_rho_e=z_rho_e(:,:,1); z_theta_v_e=z_theta_v_e(:,:,1); &
@@ -179,10 +180,10 @@ MULTIPLE_STENCILS = """\
                   ENDDO   ! loop over vertical levels
     #endif
     !$ACC END PARALLEL
-    !$DSL END(name=mo_solve_nonhydro_stencil_16)
+    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_16)
 
 
-    !$DSL START(name=mo_nh_diffusion_stencil_06; &
+    !$DSL START STENCIL(name=mo_nh_diffusion_stencil_06; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
     !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); vn_abs_tol=1e-21_wp; &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
@@ -198,10 +199,10 @@ MULTIPLE_STENCILS = """\
               ENDDO
             ENDDO
     !$ACC END PARALLEL LOOP
-    !$DSL END(name=mo_nh_diffusion_stencil_06)
+    !$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)
 
 
-    !$DSL START(name=mo_nh_diffusion_stencil_07; &
+    !$DSL START STENCIL(name=mo_nh_diffusion_stencil_07; &
     !$DSL       w=p_nh_prog%w(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1); &
     !$DSL       z_nabla2_c=z_nabla2_c(:,:,1); z_nabla2_c_abs_tol=1e-21_wp; &
     !$DSL       z_nabla2_c_rel_tol=1e-21_wp; &
@@ -227,25 +228,27 @@ MULTIPLE_STENCILS = """\
           ENDDO
         ENDDO
         !$ACC END PARALLEL LOOP
-    !$DSL END(name=mo_nh_diffusion_stencil_07)
+    !$DSL END STENCIL(name=mo_nh_diffusion_stencil_07)
+    !$DSL END CREATE()
     """
 
 
 DIRECTIVES_SAMPLE = """\
-!$DSL IMPORT()
+!$DSL IMPORTS()
 
-!$DSL CREATE()
+!$DSL START CREATE()
 
 !$DSL DECLARE(vn=p_patch%vn; vn2=p_patch%vn2)
 
-!$DSL START(name=mo_nh_diffusion_06; vn=p_patch%vn; &
+!$DSL START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%vn; &
 !$DSL       a=a; b=c)
 
-!$DSL END(name=mo_nh_diffusion_06)
+!$DSL END STENCIL(name=mo_nh_diffusion_06)
 
-!$DSL START(name=mo_nh_diffusion_07; xn=p_patch%xn)
+!$DSL START STENCIL(name=mo_nh_diffusion_07; xn=p_patch%xn)
 
-!$DSL END(name=mo_nh_diffusion_07)
+!$DSL END STENCIL(name=mo_nh_diffusion_07)
 
 !$DSL UNKNOWN_DIRECTIVE()
+!$DSL END CREATE()
 """

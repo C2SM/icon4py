@@ -23,10 +23,11 @@ from icon4py.liskov.parsing.exceptions import (
     UnbalancedStencilDirectiveError,
 )
 from icon4py.liskov.parsing.types import (
-    Create,
     Declare,
+    EndCreate,
     EndStencil,
     Imports,
+    StartCreate,
     StartStencil,
     TypedDirective,
 )
@@ -82,7 +83,7 @@ class DirectiveSyntaxValidator:
 
         inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
 
-        if type(d.directive_type) in [Imports, Create]:
+        if type(d.directive_type) in [Imports, StartCreate, EndCreate]:
             # matches an empty string at the beginning of a line
             regex = r"^(?![\s\S])"
         else:
@@ -130,7 +131,7 @@ class DirectiveSemanticsValidator:
 
     def _validate_required_directives(self, directives: list[TypedDirective]) -> None:
         """Check that all required directives are used at least once."""
-        expected = [Declare, Imports, Create, StartStencil, EndStencil]
+        expected = [Declare, Imports, StartCreate, EndCreate, StartStencil, EndStencil]
         for expected_type in expected:
             if not any(
                 [isinstance(d.directive_type, expected_type) for d in directives]

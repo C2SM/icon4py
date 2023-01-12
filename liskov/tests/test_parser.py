@@ -30,9 +30,9 @@ from icon4py.liskov.parsing.exceptions import (
 )
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.types import (
-    Create,
     Imports,
     NoDirectivesFound,
+    StartCreate,
     StartStencil,
     TypedDirective,
 )
@@ -46,17 +46,23 @@ def test_parse_no_input():
 @mark.parametrize(
     "directive_type, string, startln, endln, expected_content",
     [
-        (Imports(), "IMPORT()", 1, 1, defaultdict(list, {"Import": [{}]})),
-        (Create(), "CREATE()", 2, 2, defaultdict(list, {"Create": [{}]})),
+        (Imports(), "IMPORTS()", 1, 1, defaultdict(list, {"Imports": [{}]})),
+        (
+            StartCreate(),
+            "START CREATE()",
+            2,
+            2,
+            defaultdict(list, {"StartCreate": [{}]}),
+        ),
         (
             StartStencil(),
-            "START(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)",
+            "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)",
             3,
             4,
             defaultdict(
                 list,
                 {
-                    "Start": [
+                    "StartStencil": [
                         {
                             "name": "mo_nh_diffusion_06",
                             "vn": "p_patch%p%vn",
@@ -81,7 +87,7 @@ def test_parse_single_directive(
 
 @mark.parametrize(
     "stencil, num_directives, num_content",
-    [(SINGLE_STENCIL, 5, 5), (MULTIPLE_STENCILS, 9, 5)],
+    [(SINGLE_STENCIL, 6, 6), (MULTIPLE_STENCILS, 10, 6)],
 )
 def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
     fpath = make_f90_tmpfile(content=stencil)
@@ -125,9 +131,9 @@ def test_unsupported_directives(
 @pytest.mark.parametrize(
     "stencil, directive",
     [
-        (SINGLE_STENCIL, "!$DSL START(stencil1, stencil2)"),
+        (SINGLE_STENCIL, "!$DSL START STENCIL(stencil1, stencil2)"),
         (MULTIPLE_STENCILS, "!$DSL DECLARE(somefield; another_field)"),
-        (SINGLE_STENCIL, "!$DSL IMPORT(field)"),
+        (SINGLE_STENCIL, "!$DSL IMPORTS(field)"),
     ],
 )
 def test_directive_parser_invalid_directive_syntax(
@@ -152,9 +158,9 @@ def test_directive_parser_no_directives_found(make_f90_tmpfile):
 @pytest.mark.parametrize(
     "directive",
     [
-        "!$DSL IMPORT()",
-        "!$DSL END(name=mo_nh_diffusion_stencil_06)",
-        "!$DSL CREATE()",
+        "!$DSL IMPORTS()",
+        "!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)",
+        "!$DSL START CREATE()",
     ],
 )
 def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
@@ -172,9 +178,9 @@ def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
 @pytest.mark.parametrize(
     "directive",
     [
-        """!$DSL IMPORT()""",
-        """!$DSL CREATE()""",
-        """!$DSL END(name=mo_nh_diffusion_stencil_06)""",
+        """!$DSL IMPORTS()""",
+        """!$DSL START CREATE()""",
+        """!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)""",
     ],
 )
 def test_directive_parser_required_directives(make_f90_tmpfile, directive):
@@ -184,7 +190,7 @@ def test_directive_parser_required_directives(make_f90_tmpfile, directive):
 
     with pytest.raises(
         RequiredDirectivesError,
-        match=r"Missing required directive of type (\w*) in source.",
+        match=r"Missing required directive of type (\w.*) in source.",
     ):
         DirectivesParser(directives, fpath)
 
@@ -192,8 +198,8 @@ def test_directive_parser_required_directives(make_f90_tmpfile, directive):
 @pytest.mark.parametrize(
     "stencil, directive",
     [
-        (MULTIPLE_STENCILS, "!$DSL END(name=mo_nh_diffusion_stencil_06)"),
-        (MULTIPLE_STENCILS, "!$DSL END(name=mo_solve_nonhydro_stencil_16)"),
+        (MULTIPLE_STENCILS, "!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)"),
+        (MULTIPLE_STENCILS, "!$DSL END STENCIL(name=mo_solve_nonhydro_stencil_16)"),
     ],
 )
 def test_directive_parser_unbalanced_stencil_directives(

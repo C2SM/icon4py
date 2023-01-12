@@ -52,7 +52,11 @@ class ImportsData:
     endln: int
 
 
-class CreateData(ImportsData):
+class StartCreateData(ImportsData):
+    ...
+
+
+class EndCreateData(ImportsData):
     ...
 
 
@@ -74,8 +78,9 @@ class EndStencilData:
 
 @dataclass
 class SerialisedDirectives:
-    start: list[StartStencilData]
-    end: list[EndStencilData]
-    declare: DeclareData
-    imports: ImportsData
-    create: CreateData
+    StartStencil: list[StartStencilData]
+    EndStencil: list[EndStencilData]
+    Declare: DeclareData
+    Imports: ImportsData
+    StartCreate: StartCreateData
+    EndCreate: EndCreateData

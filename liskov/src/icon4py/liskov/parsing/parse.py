@@ -16,15 +16,16 @@ from pathlib import Path
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import ParsingExceptionHandler
 from icon4py.liskov.parsing.types import (
-    Create,
     Declare,
     Directive,
+    EndCreate,
     EndStencil,
     Imports,
     NoDirectivesFound,
     ParsedContent,
     ParsedDict,
     RawDirective,
+    StartCreate,
     StartStencil,
     TypedDirective,
 )
@@ -39,7 +40,8 @@ _SUPPORTED_DIRECTIVES: list[Directive] = [
     EndStencil(),
     Imports(),
     Declare(),
-    Create(),
+    StartCreate(),
+    EndCreate(),
 ]
 
 _VALIDATORS: list = [
@@ -121,14 +123,14 @@ class DirectivesParser:
         parsed_content = collections.defaultdict(list)
 
         for d in directives:
-            directive_name = d.directive_type.__str__()
+            directive_name = d.directive_type.__class__.__name__
             pattern = d.directive_type.pattern
-            string = d.string.replace(f"{pattern}", "")
+            passed_args = d.string.replace(f"{pattern}", "")
 
-            if directive_name in ["Import", "Create"]:
+            if type in ["Imports", "StartCreate", "EndCreate"]:
                 content = {}
             else:
-                args = string[1:-1].split(";")
+                args = passed_args[1:-1].split(";")
                 content = {a.split("=")[0].strip(): a.split("=")[1] for a in args}
 
             parsed_content[directive_name].append(content)
