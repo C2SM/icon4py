@@ -291,12 +291,11 @@ class CreateStatement(eve.Node):
 class CreateStatementGenerator(TemplatedGenerator):
     CreateStatement = as_jinja(
         """
-        !TODO: Correctly implement data create
-        !ACC DATA CREATE( &
+        !$ACC DATA CREATE( &
         {%- for name in out_field_names %}
-        !ACC   {{ name }}_before, &
+        !$ACC   {{ name }}_before {%- if not loop.last -%}, & {% else %} & {%- endif -%}
         {%- endfor %}
-        !ACC   ) &
-        !ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
+        !$ACC   ), &
+        !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
         """
     )
