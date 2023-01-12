@@ -127,7 +127,7 @@ class DirectivesParser:
             pattern = d.directive_type.pattern
             passed_args = d.string.replace(f"{pattern}", "")
 
-            if type in ["Imports", "StartCreate", "EndCreate"]:
+            if directive_name in ["Imports", "StartCreate", "EndCreate"]:
                 content = {}
             else:
                 args = passed_args[1:-1].split(";")
