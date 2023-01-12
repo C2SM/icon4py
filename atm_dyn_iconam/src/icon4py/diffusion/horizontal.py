@@ -67,7 +67,6 @@ class HorizontalMarkerIndex:
 
     @classmethod
     def local(cls, dim: Dimension) -> int:
-        """ """
         match (dim):
             case (dimension.CellDim):
                 return cls._HALO_CELLS

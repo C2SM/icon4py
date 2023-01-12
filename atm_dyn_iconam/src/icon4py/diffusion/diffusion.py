@@ -985,23 +985,23 @@ class Diffusion:
             },
         )
 
-        # mo_nh_diffusion_stencil_15_numpy(
-        #     mask_hdiff=metric_state.mask_hdiff,
-        #     zd_vertidx=metric_state.zd_vertidx,
-        #     vcoef=metric_state.zd_diffcoef,
-        #     zd_diffcoef=metric_state.zd_diffcoef,
-        #     geofac_n2s=interpolation_state.geofac_n2s,
-        #     theta_v=prognostic_state.theta_v,
-        #     z_temp=self.z_temp,
-        #     domain={
-        #         CellDim: self.grid.get_indices_from_to(
-        #             CellDim,
-        #             HorizontalMarkerIndex.nudging(CellDim),
-        #             HorizontalMarkerIndex.halo(CellDim),
-        #         ),
-        #     },
-        #     offset_provider={},
-        # )
+        mo_nh_diffusion_stencil_15_numpy(
+            mask_hdiff=metric_state.mask_hdiff,
+            zd_vertidx=metric_state.zd_vertidx,
+            vcoef=metric_state.zd_diffcoef,
+            zd_diffcoef=metric_state.zd_diffcoef,
+            geofac_n2s=interpolation_state.geofac_n2s,
+            theta_v=prognostic_state.theta_v,
+            z_temp=self.z_temp,
+            domain={
+                CellDim: self.grid.get_indices_from_to(
+                    CellDim,
+                    HorizontalMarkerIndex.nudging(CellDim),
+                    HorizontalMarkerIndex.halo(CellDim),
+                ),
+            },
+            offset_provider={},
+        )
 
         mo_nh_diffusion_stencil_16(
             z_temp=self.z_temp,
