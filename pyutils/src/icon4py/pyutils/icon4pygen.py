@@ -19,20 +19,36 @@ import pathlib
 
 import click
 
-from icon4py.bindings.workflow import PyBindGen
-from icon4py.pyutils.backend import GTHeader
-from icon4py.pyutils.metadata import get_stencil_info, import_definition
+
+class ModuleType(click.ParamType):
+    names = [
+        "icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_",
+        "icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_",
+        "icon4py.atm_dyn_iconam.mo_velocitiy_advection_stencil_",
+    ]
+
+    def shell_complete(self, ctx, param, incomplete):
+        if len(incomplete) > 0 and incomplete.endswith(":"):
+            completions = [incomplete + incomplete[:-1].split(".")[-1]]
+        else:
+            completions = self.names
+        return [
+            click.shell_completion.CompletionItem(name)
+            for name in completions
+            if name.startswith(incomplete)
+        ]
 
 
 @click.command(
     "icon4pygen",
 )
-@click.argument("fencil", type=str)
-@click.argument("block_size", type=int)
-@click.argument("levels_per_thread", type=int)
+@click.argument("fencil", type=ModuleType())
+@click.argument("block_size", type=int, default="32")
+@click.argument("levels_per_thread", type=int, default="60")
 @click.argument(
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
+    default=".",
 )
 def main(
     fencil: str,
@@ -53,6 +69,10 @@ def main(
 
         outpath: represents a path to the folder in which to write all generated code.
     """
+    from icon4py.bindings.workflow import PyBindGen
+    from icon4py.pyutils.backend import GTHeader
+    from icon4py.pyutils.metadata import get_stencil_info, import_definition
+
     fencil_def = import_definition(fencil)
     stencil_info = get_stencil_info(fencil_def)
     GTHeader(stencil_info)(outpath)
