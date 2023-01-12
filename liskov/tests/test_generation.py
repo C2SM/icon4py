@@ -62,11 +62,10 @@ def serialised_directives():
 @pytest.fixture
 def expected_create_source():
     return """
-!TODO: Correctly implement data create
-!ACC DATA CREATE( &
-!ACC   field2_before, &
-!ACC   ) &
-!ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
+!$ACC DATA CREATE( &
+!$ACC   field2_before &
+!$ACC   ), &
+!$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
 
 
 @pytest.fixture
