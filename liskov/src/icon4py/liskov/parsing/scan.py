@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from icon4py.liskov.logger import setup_logger
+from icon4py.liskov.parsing.exceptions import DirectiveSyntaxError
 from icon4py.liskov.parsing.types import DIRECTIVE_IDENT, RawDirective
 
 
@@ -28,7 +29,20 @@ class Scanned:
 
 class DirectivesScanner:
     def __init__(self, filepath: Path) -> None:
-        """Class for scanning a file for ICON-Liskov DSL directives.
+        r"""Class for scanning a file for ICON-Liskov DSL directives.
+
+        A directive must start with !$DSL <DIRECTIVE_NAME>( with the
+        directive arguments delimited by a ;. The directive if on multiple
+        lines must include a & at the end of the line. The directive
+        must always be closed by a closing bracket ).
+
+        Example:
+            !$DSL IMPORTS()
+
+            !$DSL START STENCIL(name=single; b=test)
+
+            !$DSL START STENCIL(name=multi; &\n
+            !$DSL               b=test)
 
         Args:
             filepath: Path to file to scan for directives.
@@ -46,7 +60,8 @@ class DirectivesScanner:
         with self.filepath.open() as f:
 
             scanned_directives = []
-            for lnumber, string in enumerate(f):
+            lines = f.readlines()
+            for lnumber, string in enumerate(lines):
 
                 if DIRECTIVE_IDENT in string:
                     stripped = string.strip()
@@ -59,7 +74,12 @@ class DirectivesScanner:
                             directives.append(self._process_scanned(scanned_directives))
                             scanned_directives = []
                         case "&":
+                            self._peek_directive(lines, lnumber)
                             continue
+                        case _:
+                            raise DirectiveSyntaxError(
+                                f"Error in directive on line number {lnumber}\n"
+                            )
         logger.info(f"Scanning for directives at {self.filepath}")
         return directives
 
@@ -73,3 +93,12 @@ class DirectivesScanner:
         directive_string = "".join([c.string for c in collected])
         abs_startln, abs_endln = collected[0].lnumber, collected[-1].lnumber
         return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)
+
+    @staticmethod
+    def _peek_directive(lines: list[str], lnumber: int):
+        next_line = lines[lnumber + 1]
+
+        if DIRECTIVE_IDENT not in next_line:
+            raise DirectiveSyntaxError(
+                f"Error in directive on line number: {lnumber}\n"
+            )

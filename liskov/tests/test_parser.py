@@ -130,12 +130,15 @@ def test_unsupported_directives(
         DirectivesParser(directives, fpath)
 
 
+# todo: improve validation tests
 @pytest.mark.parametrize(
     "stencil, directive",
     [
         (SINGLE_STENCIL, "!$DSL START STENCIL(stencil1, stencil2)"),
         (MULTIPLE_STENCILS, "!$DSL DECLARE(somefield; another_field)"),
         (SINGLE_STENCIL, "!$DSL IMPORTS(field)"),
+        (SINGLE_STENCIL, "!$DSL IMPORTS())"),
+        # (SINGLE_STENCIL, "!$DSL START CREATE(;)"),  # todo: single not allowed
     ],
 )
 def test_directive_parser_invalid_directive_syntax(

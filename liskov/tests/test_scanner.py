@@ -10,22 +10,36 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import string
 import tempfile
 from pathlib import Path
 
+import pytest
 from pytest import mark
 from samples.fortran_samples import DIRECTIVES_SAMPLE, NO_DIRECTIVES_STENCIL
 
+from icon4py.liskov.parsing.exceptions import DirectiveSyntaxError
 from icon4py.liskov.parsing.scan import DirectivesScanner
 from icon4py.liskov.parsing.types import RawDirective
 
 
-def scan_tempfile(string: str, expected: list):
+ALLOWED_EOL_CHARS = [")", "&"]
+
+
+def scan_tempfile(string: str):
     with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(string.encode())
         tmp.flush()
         scanner = DirectivesScanner(Path(tmp.name))
-        assert scanner.directives == expected
+        return scanner
+
+
+def special_char():
+    def special_chars_generator():
+        for char in string.punctuation:
+            yield char
+
+    return special_chars_generator()
 
 
 @mark.parametrize(
@@ -57,4 +71,21 @@ def scan_tempfile(string: str, expected: list):
     ],
 )
 def test_directives_scanning(string, expected):
-    scan_tempfile(string, expected)
+    scanner = scan_tempfile(string)
+    assert scanner.directives == expected
+
+
+@pytest.mark.parametrize("special_char", special_char())
+def test_directive_eol(special_char):
+    if special_char in ALLOWED_EOL_CHARS:
+        pytest.skip()
+    else:
+        directive = "!$DSL IMPORT(" + special_char
+        with pytest.raises(DirectiveSyntaxError):
+            scan_tempfile(directive)
+
+
+def test_directive_unclosed():
+    directive = "!$DSL IMPORT(&\n!CALL foo()"
+    with pytest.raises(DirectiveSyntaxError):
+        scan_tempfile(directive)

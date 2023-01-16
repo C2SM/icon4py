@@ -51,7 +51,8 @@ class TypedDirective(RawDirective, DirectiveType):
 
 
 class WithArguments(TypedDirective):
-    # matches an empty string at the beginning of a line
+    # regex enforces default Fortran variable naming standard and includes arithmetic operators and pointer access
+    # https://gcc.gnu.org/onlinedocs/gfortran/Naming-conventions.html
     regex = r"(.+?)=(.+?)"
 
     def get_content(self):
