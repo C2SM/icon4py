@@ -55,7 +55,6 @@ def main(filepath: pathlib.Path, profile: bool) -> None:
 
     if isinstance(parsed_directives := parser.parsed_directives, NoDirectivesFound):
         logger.warning(f"No DSL Preprocessor directives found in {filepath}")
-        return
     else:
         logger.info(f"Serialising and generating code for directives at {filepath} ...")
         serialiser = DirectiveSerialiser(parsed_directives)

@@ -65,10 +65,8 @@ class DirectiveSyntaxValidator:
             directives: A list of typed directives to validate.
         """
         for d in directives:
-            to_validate = d.string
-            pattern = d.directive_type.pattern
-            self._validate_outer(to_validate, pattern, d)
-            self._validate_inner(to_validate, pattern, d)
+            self._validate_outer(d.string, d.pattern, d)
+            self._validate_inner(d.string, d.pattern, d)
 
     def _validate_outer(
         self, to_validate: str, pattern: str, d: TypedDirective
@@ -80,19 +78,10 @@ class DirectiveSyntaxValidator:
     def _validate_inner(
         self, to_validate: str, pattern: str, d: TypedDirective
     ) -> None:
-
         inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
-
-        if type(d.directive_type) in [Imports, StartCreate, EndCreate]:
-            # matches an empty string at the beginning of a line
-            regex = r"^(?![\s\S])"
-        else:
-            # match sequences of characters separated by an equal sign
-            regex = r"(.+?)=(.+?)"
-
         for arg in inner:
-            match = re.fullmatch(regex, arg)
-            self.exception_handler.check_for_matches(d, match, regex, self.filepath)
+            match = re.fullmatch(d.regex, arg)
+            self.exception_handler.check_for_matches(d, match, d.regex, self.filepath)
 
 
 class DirectiveSemanticsValidator:
@@ -121,33 +110,28 @@ class DirectiveSemanticsValidator:
 
     def _validate_directive_uniqueness(self, directives: list[TypedDirective]) -> None:
         """Check that all used directives are unique."""
-        unique_directives = set(directives)
-        if len(unique_directives) != len(directives):
-            repeated = [d for d in directives if directives.count(d) >= 2]
+        repeated = [d for d in directives if directives.count(d) > 1]
+        if repeated:
             pretty_printed = " ".join([format_typed_directive(d) for d in repeated])
             raise RepeatedDirectiveError(
-                f"Error in {self.filepath}.\n Found same directive more than once in the following directives:\n {pretty_printed} "
+                f"Error in {self.filepath}.\n Found same directive more than once in the following directives:\n {pretty_printed}"
             )
 
     def _validate_required_directives(self, directives: list[TypedDirective]) -> None:
         """Check that all required directives are used at least once."""
         expected = [Declare, Imports, StartCreate, EndCreate, StartStencil, EndStencil]
         for expected_type in expected:
-            if not any(
-                [isinstance(d.directive_type, expected_type) for d in directives]
-            ):
+            if not any([isinstance(d, expected_type) for d in directives]):
                 raise RequiredDirectivesError(
-                    f"Error in {self.filepath}.\n Missing required directive of type {expected_type().pattern} in source."
+                    f"Error in {self.filepath}.\n Missing required directive of type {expected_type.pattern} in source."
                 )
 
     def _validate_stencil_directives(self, directives: list[TypedDirective]) -> None:
         """Check that number of start and end stencil directives match."""
         start_directives = list(
-            filter(lambda d: isinstance(d.directive_type, StartStencil), directives)
+            filter(lambda d: isinstance(d, StartStencil), directives)
         )
-        end_directives = list(
-            filter(lambda d: isinstance(d.directive_type, EndStencil), directives)
-        )
+        end_directives = list(filter(lambda d: isinstance(d, EndStencil), directives))
         diff = abs(len(start_directives) - len(end_directives))
 
         if diff >= 1:

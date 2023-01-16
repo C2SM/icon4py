@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import collections
+from copy import deepcopy
 from pathlib import Path
 
 from icon4py.liskov.logger import setup_logger
@@ -18,6 +19,7 @@ from icon4py.liskov.parsing.exceptions import ParsingExceptionHandler
 from icon4py.liskov.parsing.types import (
     Declare,
     Directive,
+    DirectiveType,
     EndCreate,
     EndStencil,
     Imports,
@@ -27,7 +29,6 @@ from icon4py.liskov.parsing.types import (
     RawDirective,
     StartCreate,
     StartStencil,
-    TypedDirective,
 )
 from icon4py.liskov.parsing.validation import (
     DirectiveSemanticsValidator,
@@ -36,12 +37,12 @@ from icon4py.liskov.parsing.validation import (
 
 
 _SUPPORTED_DIRECTIVES: list[Directive] = [
-    StartStencil(),
-    EndStencil(),
-    Imports(),
-    Declare(),
-    StartCreate(),
-    EndCreate(),
+    StartStencil,
+    EndStencil,
+    Imports,
+    Declare,
+    StartCreate,
+    EndCreate,
 ]
 
 _VALIDATORS: list = [
@@ -85,53 +86,43 @@ class DirectivesParser:
             return dict(directives=preprocessed, content=self._parse(preprocessed))
         return NoDirectivesFound()
 
-    def _determine_type(self, directives: list[RawDirective]) -> list[TypedDirective]:
+    def _determine_type(
+        self, raw_directives: list[RawDirective]
+    ) -> list[DirectiveType]:
         """Determine the type of each directive and return a list of TypedDirective objects."""
         typed = []
-        for d in directives:
-            for directive_type in _SUPPORTED_DIRECTIVES:
-                if directive_type.pattern in d.string:
-                    typed.append(
-                        TypedDirective(d.string, d.startln, d.endln, directive_type)
-                    )
-
-        self.exception_handler.find_unsupported_directives(directives, typed)
+        for raw in raw_directives:
+            for d in _SUPPORTED_DIRECTIVES:
+                if d.pattern in raw.string:
+                    typed.append(d(raw.string, raw.startln, raw.endln))
+        self.exception_handler.find_unsupported_directives(raw_directives, typed)
         return typed
 
     @staticmethod
-    def _preprocess(directives: list[TypedDirective]) -> list[TypedDirective]:
+    def _preprocess(directives: list[DirectiveType]) -> list[DirectiveType]:
         """Preprocess the directives by removing unnecessary characters and formatting the directive strings."""
+        copy = deepcopy(directives)
         preprocessed = []
-        for d in directives:
-            string = (
+        for d in copy:
+            new_string = (
                 d.string.strip().replace("&", "").replace("\n", "").replace("!$DSL", "")
             )
-            string = " ".join(string.split())
-            preprocessed.append(
-                TypedDirective(string, d.startln, d.endln, d.directive_type)
-            )
+            new_string = " ".join(new_string.split())
+            d.string = new_string
+            preprocessed.append(d)
         return preprocessed
 
-    def _run_validation_passes(self, preprocessed: list[TypedDirective]) -> None:
+    def _run_validation_passes(self, preprocessed: list[DirectiveType]) -> None:
         """Run validation passes on the preprocessed directives."""
         for validator in _VALIDATORS:
             validator(self.filepath).validate(preprocessed)
 
     @staticmethod
-    def _parse(directives: list[TypedDirective]) -> ParsedContent:
+    def _parse(directives: list[DirectiveType]) -> ParsedContent:
         """Parse the directives and return a dictionary of parsed directives and their associated content."""
         parsed_content = collections.defaultdict(list)
-
         for d in directives:
-            directive_name = d.directive_type.__class__.__name__
-            pattern = d.directive_type.pattern
-            passed_args = d.string.replace(f"{pattern}", "")
-
-            if directive_name in ["Imports", "StartCreate", "EndCreate"]:
-                content = {}
-            else:
-                args = passed_args[1:-1].split(";")
-                content = {a.split("=")[0].strip(): a.split("=")[1] for a in args}
-
-            parsed_content[directive_name].append(content)
+            name = d.__class__.__name__
+            content = d.get_content()
+            parsed_content[name].append(content)
         return parsed_content

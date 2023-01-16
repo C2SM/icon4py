@@ -24,6 +24,9 @@ class NoDirectivesFound:
 class Directive(Protocol):
     pattern: str
 
+    def __str__(self) -> str:
+        return self.pattern
+
 
 @dataclass
 class RawDirective:
@@ -33,46 +36,61 @@ class RawDirective:
 
 
 @dataclass
-class TypedDirective(RawDirective):
-    directive_type: Directive
+class DirectiveType:
+    @property
+    def type_name(self):
+        return self.__class__.__name__
 
-    def __hash__(self) -> int:
-        return hash(self.string)
 
+@dataclass
+class TypedDirective(RawDirective, DirectiveType):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TypedDirective):
             raise NotImplementedError
         return self.string == other.string
 
 
-class DirectiveType:
-    pattern: str
+class WithArguments(TypedDirective):
+    # matches an empty string at the beginning of a line
+    regex = r"(.+?)=(.+?)"
 
-    def __str__(self) -> str:
-        return self.pattern
+    def get_content(self):
+        args = self.string.replace(f"{self.pattern}", "")
+        delimited = args[1:-1].split(";")
+        content = {a.split("=")[0].strip(): a.split("=")[1] for a in delimited}
+        return content
 
 
-class StartStencil(DirectiveType):
+class WithoutArguments(TypedDirective):
+    # matches an empty string at the beginning of a line
+    regex = r"^(?![\s\S])"
+
+    @staticmethod
+    def get_content():
+        return {}
+
+
+class StartStencil(WithArguments):
     pattern = "START STENCIL"
 
 
-class EndStencil(DirectiveType):
+class EndStencil(WithArguments):
     pattern = "END STENCIL"
 
 
-class Declare(DirectiveType):
+class Declare(WithArguments):
     pattern = "DECLARE"
 
 
-class Imports(DirectiveType):
+class Imports(WithoutArguments):
     pattern = "IMPORTS"
 
 
-class StartCreate(DirectiveType):
+class StartCreate(WithoutArguments):
     pattern = "START CREATE"
 
 
-class EndCreate(DirectiveType):
+class EndCreate(WithoutArguments):
     pattern = "END CREATE"
 
 

@@ -31,8 +31,8 @@ SINGLE_STENCIL = """\
 
     !$DSL START CREATE()
 
-    !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e); a=(nproma,p_patch%nlev,p_patch%nblks_e); &
-    !$DSL         b=(nproma,p_patch%nlev,p_patch%nblks_e))
+    !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; a=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL         b=nproma,p_patch%nlev,p_patch%nblks_e)
 
     !$DSL START STENCIL(name=mo_nh_diffusion_stencil_06; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
@@ -69,7 +69,7 @@ MULTIPLE_STENCILS = """\
 
     !$DSL START CREATE()
 
-    !$DSL DECLARE(vn=(nproma,p_patch%nlev,p_patch%nblks_e))
+    !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e)
 
     !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_16; p_vn=p_nh%prog(nnow)%vn(:,:,1); rho_ref_me=p_nh%metrics%rho_ref_me(:,:,1); &
     !$DSL          theta_ref_me=p_nh%metrics%theta_ref_me(:,:,1); p_distv_bary_1=p_distv_bary(:,:,1,1); p_distv_bary_2=p_distv_bary(:,:,1,2); &

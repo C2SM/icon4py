@@ -30,7 +30,7 @@ def extract_directive(
     required_type: Type[DirectiveType],
 ) -> list[TypedDirective]:
     """Extract a directive type from a list of directives."""
-    directives = [d for d in directives if type(d.directive_type) == required_type]
+    directives = [d for d in directives if type(d) == required_type]
     return directives
 
 

@@ -44,18 +44,26 @@ def test_parse_no_input():
 
 
 @mark.parametrize(
-    "directive_type, string, startln, endln, expected_content",
+    "directive, string, startln, endln, expected_content",
     [
-        (Imports(), "IMPORTS()", 1, 1, defaultdict(list, {"Imports": [{}]})),
         (
-            StartCreate(),
+            Imports("IMPORTS()", 1, 1),
+            "IMPORTS()",
+            1,
+            1,
+            defaultdict(list, {"Imports": [{}]}),
+        ),
+        (
+            StartCreate("START CREATE()", 2, 2),
             "START CREATE()",
             2,
             2,
             defaultdict(list, {"StartCreate": [{}]}),
         ),
         (
-            StartStencil(),
+            StartStencil(
+                "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)", 3, 4
+            ),
             "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)",
             3,
             4,
@@ -74,14 +82,8 @@ def test_parse_no_input():
         ),
     ],
 )
-def test_parse_single_directive(
-    directive_type, string, startln, endln, expected_content
-):
-    directives = [
-        TypedDirective(
-            directive_type=directive_type, string=string, startln=startln, endln=endln
-        )
-    ]
+def test_parse_single_directive(directive, string, startln, endln, expected_content):
+    directives = [directive]
     assert DirectivesParser._parse(directives) == expected_content
 
 

@@ -82,5 +82,5 @@ class SyntaxExceptionHandler:
         if match is None:
             raise DirectiveSyntaxError(
                 f"Error in {filepath} on line {directive.startln + 1}.\n {directive.string} is invalid, "
-                f"expected the following regex pattern {directive.directive_type.pattern}({regex}).\n"
+                f"expected the following regex pattern {directive.pattern}({regex}).\n"
             )
