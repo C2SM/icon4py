@@ -24,7 +24,7 @@ class ModuleType(click.ParamType):
     names = [
         "icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_",
         "icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_",
-        "icon4py.atm_dyn_iconam.mo_velocitiy_advection_stencil_",
+        "icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_",
     ]
 
     def shell_complete(self, ctx, param, incomplete):
@@ -43,8 +43,8 @@ class ModuleType(click.ParamType):
     "icon4pygen",
 )
 @click.argument("fencil", type=ModuleType())
-@click.argument("block_size", type=int, default="32")
-@click.argument("levels_per_thread", type=int, default="60")
+@click.argument("block_size", type=int, default=128)
+@click.argument("levels_per_thread", type=int, default=4)
 @click.argument(
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
