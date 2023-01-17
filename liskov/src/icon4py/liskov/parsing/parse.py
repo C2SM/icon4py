@@ -14,66 +14,46 @@ import collections
 from copy import deepcopy
 from itertools import product
 from pathlib import Path
+from typing import Sequence
 
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import ParsingExceptionHandler
 from icon4py.liskov.parsing.types import (
-    Declare,
-    Directive,
-    DirectiveType,
-    EndCreate,
-    EndStencil,
-    Imports,
-    NoDirectivesFound,
+    DIRECTIVE_IDENT,
+    SUPPORTED_DIRECTIVES,
     ParsedContent,
     ParsedDict,
+    ParsedDirective,
     RawDirective,
-    StartCreate,
-    StartStencil,
 )
-from icon4py.liskov.parsing.validation import (
-    DirectiveSemanticsValidator,
-    DirectiveSyntaxValidator,
-)
+from icon4py.liskov.parsing.validation import VALIDATORS
 
 
-_SUPPORTED_DIRECTIVES: list[Directive] = [
-    StartStencil,
-    EndStencil,
-    Imports,
-    Declare,
-    StartCreate,
-    EndCreate,
-]
-
-_VALIDATORS: list = [
-    DirectiveSyntaxValidator,
-    DirectiveSemanticsValidator,
-]
+REPLACE_CHARS = [DIRECTIVE_IDENT, "&", "\n"]
 
 logger = setup_logger(__name__)
 
 
 class DirectivesParser:
-    def __init__(self, directives: list[RawDirective], filepath: Path) -> None:
+    def __init__(self, directives: Sequence[RawDirective], filepath: Path) -> None:
         """Initialize a DirectivesParser instance.
 
-        This class parses a list of RawDirective objects and returns a dictionary of parsed directives and their associated content.
+        This class parses a Sequence of RawDirective objects and returns a dictionary of parsed directives and their associated content.
 
         Args:
-            directives: List of RawDirective objects to parse.
+            directives: Sequence of RawDirective objects to parse.
             filepath: Path to file being parsed.
 
         Attributes:
         exception_handler: Exception handler for handling errors.
-        parsed_directives: Dictionary of parsed directives and their associated content, or NoDirectivesFound if no directives were found.
+        parsed_directives: Dictionary of parsed directives and their associated content.
         """
         self.filepath = filepath
         self.directives = directives
         self.exception_handler = ParsingExceptionHandler
         self.parsed_directives = self._parse_directives()
 
-    def _parse_directives(self) -> ParsedDict | NoDirectivesFound:
+    def _parse_directives(self) -> ParsedDict:
         """Parse the directives and return a dictionary of parsed directives and their associated content.
 
         Returns:
@@ -85,46 +65,38 @@ class DirectivesParser:
             preprocessed = self._preprocess(typed)
             self._run_validation_passes(preprocessed)
             return dict(directives=preprocessed, content=self._parse(preprocessed))
-        return NoDirectivesFound()
+        logger.warning(f"No DSL Preprocessor directives found in {self.filepath}")
+        raise SystemExit
 
     def _determine_type(
-        self, raw_directives: list[RawDirective]
-    ) -> list[DirectiveType]:
-        """Determine the type of each directive and return a list of TypedDirective objects."""
+        self, raw_directives: Sequence[RawDirective]
+    ) -> Sequence[ParsedDirective]:
+        """Determine the type of each directive and return a Sequence of TypedDirective objects."""
         typed = [
-            d(raw.string, raw.startln, raw.endln)
-            for raw, d in product(raw_directives, _SUPPORTED_DIRECTIVES)
-            if d.pattern in raw.string
+            directive(raw.string, raw.startln, raw.endln)  # type: ignore
+            for raw, directive in product(raw_directives, SUPPORTED_DIRECTIVES)
+            if directive.pattern in raw.string
         ]
-        unsupported = [
-            raw
-            for raw in raw_directives
-            if all(d.pattern not in raw.string for d in _SUPPORTED_DIRECTIVES)
-        ]
-        self.exception_handler.find_unsupported_directives(unsupported)
+        self.exception_handler.find_unsupported_directives(raw_directives)
         return typed
 
     @staticmethod
-    def _preprocess(directives: list[DirectiveType]) -> list[DirectiveType]:
+    def _preprocess(directives: Sequence[ParsedDirective]) -> Sequence[ParsedDirective]:
         """Preprocess the directives by removing unnecessary characters and formatting the directive strings."""
         copy = deepcopy(directives)
-        preprocessed = []
-        for d in copy:
-            new_string = (
-                d.string.strip().replace("&", "").replace("\n", "").replace("!$DSL", "")
-            )
-            new_string = " ".join(new_string.split())
-            d.string = new_string
-            preprocessed.append(d)
-        return preprocessed
+        for c in copy:
+            for r in REPLACE_CHARS:
+                c.string = c.string.replace(r, "").strip()
+            c.string = " ".join(c.string.strip().split())
+        return copy
 
-    def _run_validation_passes(self, preprocessed: list[DirectiveType]) -> None:
+    def _run_validation_passes(self, preprocessed: Sequence[ParsedDirective]) -> None:
         """Run validation passes on the preprocessed directives."""
-        for validator in _VALIDATORS:
+        for validator in VALIDATORS:
             validator(self.filepath).validate(preprocessed)
 
     @staticmethod
-    def _parse(directives: list[DirectiveType]) -> ParsedContent:
+    def _parse(directives: Sequence[ParsedDirective]) -> ParsedContent:
         """Parse the directives and return a dictionary of parsed directives and their associated content."""
         parsed_content = collections.defaultdict(list)
         for d in directives:

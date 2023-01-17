@@ -12,23 +12,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import importlib
 from inspect import getmembers
-from typing import Type
+from typing import Sequence, Type
 
 from functional.ffront.decorator import Program
 
 from icon4py.liskov.parsing.exceptions import UnknownStencilError
-from icon4py.liskov.parsing.types import DirectiveType, TypedDirective
+from icon4py.liskov.parsing.types import ParsedDirective
 
 
-def format_typed_directive(directive: TypedDirective) -> str:
-    """Format a typed directive, including its contents, and start and end line numbers."""
+def print_parsed_directive(directive: ParsedDirective) -> str:
+    """Print a parsed directive, including its contents, and start and end line numbers."""
     return f"Directive: {directive.string}, start line: {directive.startln}, end line: {directive.endln}\n"
 
 
 def extract_directive(
-    directives: list[TypedDirective],
-    required_type: Type[DirectiveType],
-) -> list[TypedDirective]:
+    directives: Sequence[ParsedDirective],
+    required_type: Type[ParsedDirective],
+) -> Sequence[ParsedDirective]:
     """Extract a directive type from a list of directives."""
     directives = [d for d in directives if type(d) == required_type]
     return directives

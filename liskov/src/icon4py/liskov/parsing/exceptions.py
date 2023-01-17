@@ -11,9 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
-from typing import Match, Optional
+from typing import Match, Optional, Sequence
 
-from icon4py.liskov.parsing.types import RawDirective, TypedDirective
+from icon4py.liskov.parsing.types import (
+    SUPPORTED_DIRECTIVES,
+    ParsedDirective,
+    RawDirective,
+)
 
 
 class UnsupportedDirectiveError(Exception):
@@ -54,8 +58,13 @@ class UnknownStencilError(Exception):
 
 class ParsingExceptionHandler:
     @staticmethod
-    def find_unsupported_directives(unsupported: list[RawDirective]) -> None:
+    def find_unsupported_directives(raw_directives: Sequence[RawDirective]) -> None:
         """Check for unsupported directives and raises an exception if any are found."""
+        unsupported = [
+            raw
+            for raw in raw_directives
+            if all(d.pattern not in raw.string for d in SUPPORTED_DIRECTIVES)
+        ]
         if len(u := unsupported) >= 1:
             raise UnsupportedDirectiveError(
                 f"Used unsupported directive(s): {''.join([d.string for d in u])} on line(s) {','.join([str(d.startln) for d in u])}."
@@ -65,7 +74,7 @@ class ParsingExceptionHandler:
 class SyntaxExceptionHandler:
     @staticmethod
     def check_for_matches(
-        directive: TypedDirective,
+        directive: ParsedDirective,
         match: Optional[Match[str]],
         regex: str,
         filepath: Path,

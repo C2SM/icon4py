@@ -27,7 +27,6 @@ from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.types import (
     Imports,
-    NoDirectivesFound,
     StartCreate,
     StartStencil,
     TypedDirective,
@@ -106,9 +105,8 @@ def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
 def test_directive_parser_no_directives_found(make_f90_tmpfile):
     fpath = make_f90_tmpfile(content=NO_DIRECTIVES_STENCIL)
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(directives, fpath)
-    parsed = parser.parsed_directives
-    assert isinstance(parsed, NoDirectivesFound)
+    with pytest.raises(SystemExit):
+        DirectivesParser(directives, fpath)
 
 
 @mark.parametrize(

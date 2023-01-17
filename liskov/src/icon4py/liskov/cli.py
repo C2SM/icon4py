@@ -21,7 +21,6 @@ from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.scan import DirectivesScanner
 from icon4py.liskov.parsing.serialise import DirectiveSerialiser
-from icon4py.liskov.parsing.types import NoDirectivesFound
 
 
 logger = setup_logger(__name__)
@@ -50,17 +49,12 @@ def main(filepath: pathlib.Path, profile: bool) -> None:
         filepath Path to the input file to process.
     """
     scanner = DirectivesScanner(filepath)
-
     parser = DirectivesParser(scanner.directives, filepath)
-
-    if isinstance(parsed_directives := parser.parsed_directives, NoDirectivesFound):
-        logger.warning(f"No DSL Preprocessor directives found in {filepath}")
-    else:
-        logger.info(f"Serialising and generating code for directives at {filepath} ...")
-        serialiser = DirectiveSerialiser(parsed_directives)
-        generator = IntegrationGenerator(serialiser.directives, profile)
-        writer = IntegrationWriter(generator.generated)
-        writer.write_from(filepath)
+    logger.info(f"Serialising and generating code for directives at {filepath} ...")
+    serialiser = DirectiveSerialiser(parser.parsed_directives)
+    generator = IntegrationGenerator(serialiser.directives, profile)
+    writer = IntegrationWriter(generator.generated)
+    writer.write_from(filepath)
 
 
 if __name__ == "__main__":

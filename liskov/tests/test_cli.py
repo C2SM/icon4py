@@ -12,9 +12,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from samples.fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
+from samples.fortran_samples import (
+    MULTIPLE_STENCILS,
+    NO_DIRECTIVES_STENCIL,
+    SINGLE_STENCIL,
+)
 
 from icon4py.liskov.cli import main
+
+
+@pytest.mark.parametrize("file", [NO_DIRECTIVES_STENCIL])
+def test_cli_no_directives(make_f90_tmpfile, cli, file):
+    fpath = str(make_f90_tmpfile(content=file))
+    result = cli.invoke(main, [fpath])
+    assert result.exit_code == 0
 
 
 @pytest.mark.parametrize("file", [SINGLE_STENCIL, MULTIPLE_STENCILS])
@@ -29,6 +40,3 @@ def test_cli_profile(make_f90_tmpfile, cli, file):
     fpath = str(make_f90_tmpfile(content=file))
     result = cli.invoke(main, [fpath, "--profile"])
     assert result.exit_code == 0
-
-
-# todo: introduce more stencil cases (check dycore for different cases)

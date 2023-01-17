@@ -10,22 +10,38 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from dataclasses import dataclass
-from typing import Protocol, TypeAlias, TypedDict
+from dataclasses import dataclass, field
+from typing import Any, Protocol, Sequence, Type, TypeAlias, TypedDict
 
 
 DIRECTIVE_IDENT = "!$DSL"
 
 
-class NoDirectivesFound:
-    pass
+def noeq_dataclass(cls: Any) -> Any:
+    return dataclass(cls, eq=False)  # type: ignore
 
 
-class Directive(Protocol):
+class ParsedDirective(Protocol):
+    string: str
+    startln: int
+    endln: int
     pattern: str
+    regex: str
 
-    def __str__(self) -> str:
-        return self.pattern
+    @property
+    def type_name(self) -> str:
+        ...
+
+    def get_content(self) -> Any:
+        ...
+
+
+ParsedContent: TypeAlias = dict[str, list[dict[str, str]]]
+
+
+class ParsedDict(TypedDict):
+    directives: Sequence[ParsedDirective]
+    content: ParsedContent
 
 
 @dataclass
@@ -36,68 +52,77 @@ class RawDirective:
 
 
 @dataclass
-class DirectiveType:
+class TypedDirective(RawDirective):
+    pattern: str
+    regex: str
+
     @property
-    def type_name(self):
+    def type_name(self) -> str:
         return self.__class__.__name__
 
-
-@dataclass
-class TypedDirective(RawDirective, DirectiveType):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TypedDirective):
             raise NotImplementedError
         return self.string == other.string
 
 
+@noeq_dataclass
 class WithArguments(TypedDirective):
     # regex enforces default Fortran variable naming standard and includes arithmetic operators and pointer access
     # https://gcc.gnu.org/onlinedocs/gfortran/Naming-conventions.html
-    regex = r"(.+?)=(.+?)"
+    regex: str = field(default=r"(.+?)=(.+?)", init=False)
 
-    def get_content(self):
+    def get_content(self) -> dict[str, str]:
         args = self.string.replace(f"{self.pattern}", "")
         delimited = args[1:-1].split(";")
         content = {a.split("=")[0].strip(): a.split("=")[1] for a in delimited}
         return content
 
 
+@noeq_dataclass
 class WithoutArguments(TypedDirective):
     # matches an empty string at the beginning of a line
-    regex = r"^(?![\s\S])"
+    regex: str = field(default=r"^(?![\s\S])", init=False)
 
-    @staticmethod
-    def get_content():
+    def get_content(self) -> dict:
         return {}
 
 
+@noeq_dataclass
 class StartStencil(WithArguments):
-    pattern = "START STENCIL"
+    pattern: str = field(default="START STENCIL", init=False)
 
 
+@noeq_dataclass
 class EndStencil(WithArguments):
-    pattern = "END STENCIL"
+    pattern: str = field(default="END STENCIL", init=False)
 
 
+@noeq_dataclass
 class Declare(WithArguments):
-    pattern = "DECLARE"
+    pattern: str = field(default="DECLARE", init=False)
 
 
+@noeq_dataclass
 class Imports(WithoutArguments):
-    pattern = "IMPORTS"
+    pattern: str = field(default="IMPORTS", init=False)
 
 
+@noeq_dataclass
 class StartCreate(WithoutArguments):
-    pattern = "START CREATE"
+    pattern: str = field(default="START CREATE", init=False)
 
 
+@noeq_dataclass
 class EndCreate(WithoutArguments):
-    pattern = "END CREATE"
+    pattern: str = field(default="END CREATE", init=False)
 
 
-ParsedContent: TypeAlias = dict[str, list[dict[str, str]]]
-
-
-class ParsedDict(TypedDict):
-    directives: list[TypedDirective]
-    content: ParsedContent
+SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
+    StartStencil,
+    EndStencil,
+    Imports,
+    Declare,
+    StartCreate,
+    EndCreate,
+]

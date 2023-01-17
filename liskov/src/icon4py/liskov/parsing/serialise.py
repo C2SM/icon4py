@@ -37,9 +37,9 @@ from icon4py.liskov.parsing.types import (
     EndStencil,
     Imports,
     ParsedDict,
+    ParsedDirective,
     StartCreate,
     StartStencil,
-    TypedDirective,
 )
 from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
 from icon4py.pyutils.metadata import get_field_infos
@@ -77,13 +77,13 @@ class DeclareDataFactory:
         )
 
 
-def _extract_stencil_name(named_args: dict, directive: TypedDirective) -> str:
+def _extract_stencil_name(named_args: dict, directive: ParsedDirective) -> str:
     """Extract stencil name from directive arguments."""
     try:
         stencil_name = named_args["name"]
     except KeyError as e:
         raise MissingDirectiveArgumentError(
-            f"Missing argument {e} in {directive.directive_type} directive on line {directive.startln}."
+            f"Missing argument {e} in {directive.type_name} directive on line {directive.startln}."
         )
     return stencil_name
 
