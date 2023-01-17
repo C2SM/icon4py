@@ -47,7 +47,8 @@ def scan_for_directives(fpath: Path) -> list[RawDirective]:
     return collector.directives
 
 
-def insert_new_lines(fname: Path, lines: list[str]):
+def insert_new_lines(fname: Path, lines: list[str]) -> None:
+    """Append new lines into file."""
     with open(fname, "a") as f:
         for ln in lines:
             f.write(f"{ln}\n")

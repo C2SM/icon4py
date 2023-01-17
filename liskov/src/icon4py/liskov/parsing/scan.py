@@ -74,7 +74,11 @@ class DirectivesScanner:
                             directives.append(self._process_scanned(scanned_directives))
                             scanned_directives = []
                         case "&":
-                            self._peek_directive(lines, lnumber)
+                            next_line = self._peek_directive(lines, lnumber)
+                            if DIRECTIVE_IDENT not in next_line:
+                                raise DirectiveSyntaxError(
+                                    f"Error in directive on line number: {lnumber}\n"
+                                )
                             continue
                         case _:
                             raise DirectiveSyntaxError(
@@ -95,10 +99,16 @@ class DirectivesScanner:
         return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)
 
     @staticmethod
-    def _peek_directive(lines: list[str], lnumber: int):
-        next_line = lines[lnumber + 1]
+    def _peek_directive(lines: list[str], lnumber: int) -> str:
+        """Retrieve the next line in the input file.
 
-        if DIRECTIVE_IDENT not in next_line:
-            raise DirectiveSyntaxError(
-                f"Error in directive on line number: {lnumber}\n"
-            )
+        This method is used to check if a directive that spans multiple lines is still a valid directive.
+
+        Args:
+            lines: List of lines from the input file.
+            lnumber: Line number of the current line being processed.
+
+        Returns:
+            Next line in the input file.
+        """
+        return lines[lnumber + 1]

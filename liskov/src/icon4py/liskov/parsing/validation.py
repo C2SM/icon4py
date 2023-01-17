@@ -126,15 +126,41 @@ class DirectiveSemanticsValidator:
                     f"Error in {self.filepath}.\n Missing required directive of type {expected_type.pattern} in source."
                 )
 
-    def _validate_stencil_directives(self, directives: list[TypedDirective]) -> None:
-        """Check that number of start and end stencil directives match."""
-        start_directives = list(
-            filter(lambda d: isinstance(d, StartStencil), directives)
-        )
-        end_directives = list(filter(lambda d: isinstance(d, EndStencil), directives))
-        diff = abs(len(start_directives) - len(end_directives))
+    @staticmethod
+    def extract_arg_from_directive(directive: str, arg: str):
+        match = re.search(f"{arg}=([^;)]+)", directive)
+        if match:
+            return match.group(1)
+        else:
+            raise ValueError(
+                f"Invalid directive string, could not find '{arg}' parameter."
+            )
 
-        if diff >= 1:
+    def _validate_stencil_directives(self, directives: list[TypedDirective]) -> None:
+        """Validate that the number of start and end stencil directives match in the input `directives`.
+
+            Also verifies that each unique stencil has a corresponding start and end directive.
+            Raise an error if there are unbalanced START or END directives or if any unique stencil does not have corresponding start and end directive.
+
+        Args:
+            directives (list[TypedDirective]): List of stencil directives to validate.
+        """
+        start_directives = [d for d in directives if isinstance(d, StartStencil)]
+        end_directives = [d for d in directives if isinstance(d, EndStencil)]
+
+        if len(start_directives) != len(end_directives):
             raise UnbalancedStencilDirectiveError(
-                f"Error in {self.filepath}.\n Found {diff} unbalanced START or END directives.\n"
+                f"Error in {self.filepath}.\n Found {abs(len(start_directives) - len(end_directives))} unbalanced START STENCIL or END STENCIL directives.\n"
+            )
+
+        start_stencil_names = {
+            self.extract_arg_from_directive(d.string, "name") for d in start_directives
+        }
+        end_stencil_names = {
+            self.extract_arg_from_directive(d.string, "name") for d in end_directives
+        }
+
+        if start_stencil_names != end_stencil_names:
+            raise UnbalancedStencilDirectiveError(
+                f"Error in {self.filepath}.\n Each unique stencil must have a corresponding START STENCIL and END STENCIL directive.\n"
             )
