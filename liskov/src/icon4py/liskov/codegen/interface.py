@@ -77,7 +77,7 @@ class EndStencilData:
 
 
 @dataclass
-class SerialisedDirectives:
+class DeserialisedDirectives:
     StartStencil: list[StartStencilData]
     EndStencil: list[EndStencilData]
     Declare: DeclareData

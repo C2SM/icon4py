@@ -18,14 +18,15 @@ from icon4py.liskov.codegen.interface import (
     BoundsData,
     CodeGenInput,
     DeclareData,
+    DeserialisedDirectives,
     EndCreateData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
-    SerialisedDirectives,
     StartCreateData,
     StartStencilData,
 )
+from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import (
     IncompatibleFieldError,
     MissingBoundsError,
@@ -43,6 +44,9 @@ from icon4py.liskov.parsing.types import (
 )
 from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
 from icon4py.pyutils.metadata import get_field_infos
+
+
+logger = setup_logger(__name__)
 
 
 class DirectiveInputFactory(Protocol):
@@ -100,7 +104,7 @@ class StartStencilDataFactory:
         Returns:
             List[StartStencilData]: List of StartStencilData objects created from the parsed directives.
         """
-        serialised = []
+        deserialised = []
         directives = extract_directive(parsed["directives"], StartStencil)
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["StartStencil"][i]
@@ -109,7 +113,7 @@ class StartStencilDataFactory:
             fields = self._get_field_associations(named_args)
             fields_w_tolerance = self._update_field_tolerances(named_args, fields)
 
-            serialised.append(
+            deserialised.append(
                 StartStencilData(
                     name=stencil_name,
                     fields=fields_w_tolerance,
@@ -118,7 +122,7 @@ class StartStencilDataFactory:
                     endln=directive.endln,
                 )
             )
-        return serialised
+        return deserialised
 
     @staticmethod
     def _get_bounds(named_args: dict) -> BoundsData:
@@ -222,22 +226,22 @@ class StartStencilDataFactory:
 
 class EndStencilDataFactory:
     def __call__(self, parsed: ParsedDict) -> list[EndStencilData]:
-        serialised = []
+        deserialised = []
         extracted = extract_directive(parsed["directives"], EndStencil)
         for i, directive in enumerate(extracted):
             named_args = parsed["content"]["EndStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
-            serialised.append(
+            deserialised.append(
                 EndStencilData(
                     name=stencil_name, startln=directive.startln, endln=directive.endln
                 )
             )
-        return serialised
+        return deserialised
 
 
-class DirectiveSerialiser:
+class DirectiveDeserialiser:
     def __init__(self, parsed: ParsedDict) -> None:
-        self.directives = self.serialise(parsed)
+        self.directives = self.deserialise(parsed)
 
     _FACTORIES: dict[str, Callable] = {
         "StartCreate": StartCreateDataFactory(),
@@ -248,25 +252,26 @@ class DirectiveSerialiser:
         "EndStencil": EndStencilDataFactory(),
     }
 
-    def serialise(self, directives: ParsedDict) -> SerialisedDirectives:
-        """Serialise the provided parsed directives to a SerialisedDirectives object.
+    def deserialise(self, directives: ParsedDict) -> DeserialisedDirectives:
+        """Deserialise the provided parsed directives to a DeserialisedDirectives object.
 
         Args:
-            directives: The parsed directives to serialise.
+            directives: The parsed directives to deserialise.
 
         Returns:
-            A SerialisedDirectives object containing the serialised directives.
+            A DeserialisedDirectives object containing the deserialised directives.
 
         Note:
             The method uses the `_FACTORIES` class attribute to create the appropriate
-            factory object for each directive type, and uses these objects to serialise
-            the parsed directives. The SerialisedDirectives class is a dataclass
-            containing the serialised versions of the different directives.
+            factory object for each directive type, and uses these objects to deserialise
+            the parsed directives. The DeserialisedDirectives class is a dataclass
+            containing the deserialised versions of the different directives.
         """
-        serialised = dict()
+        logger.info("Deserialising directives ...")
+        deserialised = dict()
 
         for key, func in self._FACTORIES.items():
             ser = func(directives)
-            serialised[key] = ser
+            deserialised[key] = ser
 
-        return SerialisedDirectives(**serialised)
+        return DeserialisedDirectives(**deserialised)

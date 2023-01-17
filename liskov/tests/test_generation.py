@@ -18,11 +18,11 @@ from icon4py.liskov.codegen.generate import IntegrationGenerator
 from icon4py.liskov.codegen.interface import (
     BoundsData,
     DeclareData,
+    DeserialisedDirectives,
     EndCreateData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
-    SerialisedDirectives,
     StartCreateData,
     StartStencilData,
 )
@@ -52,7 +52,7 @@ def serialised_directives():
     start_create_data = StartCreateData(startln=9, endln=10)
     end_create_data = EndCreateData(startln=11, endln=11)
 
-    return SerialisedDirectives(
+    return DeserialisedDirectives(
         StartStencil=[start_stencil_data],
         EndStencil=[end_stencil_data],
         Declare=declare_data,

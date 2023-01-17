@@ -32,7 +32,7 @@ from icon4py.liskov.codegen.f90 import (
     WrapRunFuncGenerator,
     generate_fortran_code,
 )
-from icon4py.liskov.codegen.interface import CodeGenInput, SerialisedDirectives
+from icon4py.liskov.codegen.interface import CodeGenInput, DeserialisedDirectives
 from icon4py.liskov.logger import setup_logger
 
 
@@ -49,7 +49,7 @@ class GeneratedCode:
 
 
 class IntegrationGenerator:
-    def __init__(self, directives: SerialisedDirectives, profile: bool):
+    def __init__(self, directives: DeserialisedDirectives, profile: bool):
         self.directives = directives
         self.generated: list[GeneratedCode] = []
         self._generate(profile)

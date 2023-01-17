@@ -11,17 +11,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# todo: add tests for serialiser
-#   - check that each factory produces objects as expected.
 import pytest
 
 from icon4py.liskov.codegen.interface import BoundsData, FieldAssociationData
+from icon4py.liskov.parsing.deserialise import StartStencilDataFactory
 from icon4py.liskov.parsing.exceptions import (
     IncompatibleFieldError,
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
-from icon4py.liskov.parsing.serialise import StartStencilDataFactory
+
+
+# todo: add tests for other factories
 
 
 @pytest.fixture
