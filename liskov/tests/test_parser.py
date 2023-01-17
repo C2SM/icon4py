@@ -114,8 +114,8 @@ def test_directive_parser_no_directives_found(make_f90_tmpfile):
 @mark.parametrize(
     "stencil, directive",
     [
-        (SINGLE_STENCIL, "!$DSL FOO_DIRECTIVE()"),
-        (MULTIPLE_STENCILS, "!$DSL BAR_DIRECTIVE()"),
+        (SINGLE_STENCIL, "!$DSL FOO()"),
+        (MULTIPLE_STENCILS, "!$DSL BAR()"),
     ],
 )
 def test_unsupported_directives(

@@ -54,20 +54,11 @@ class UnknownStencilError(Exception):
 
 class ParsingExceptionHandler:
     @staticmethod
-    def find_unsupported_directives(
-        directives: list[RawDirective], typed: list[TypedDirective]
-    ) -> None:
+    def find_unsupported_directives(unsupported: list[RawDirective]) -> None:
         """Check for unsupported directives and raises an exception if any are found."""
-        diff = set([d.string for d in directives]).difference(
-            set([t.string for t in typed])
-        )
-        if len(diff) > 0:
-            bad_directives = [d.string for d in directives if d.string in list(diff)]
-            bad_lines = [
-                str(d.startln + 1) for d in directives if d.string in list(diff)
-            ]
+        if len(u := unsupported) >= 1:
             raise UnsupportedDirectiveError(
-                f"Used unsupported directive(s): {''.join(bad_directives)} on line(s) {','.join(bad_lines)}."
+                f"Used unsupported directive(s): {''.join([d.string for d in u])} on line(s) {','.join([str(d.startln) for d in u])}."
             )
 
 

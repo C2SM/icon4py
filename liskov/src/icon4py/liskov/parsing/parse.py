@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import collections
 from copy import deepcopy
+from itertools import product
 from pathlib import Path
 
 from icon4py.liskov.logger import setup_logger
@@ -90,12 +91,17 @@ class DirectivesParser:
         self, raw_directives: list[RawDirective]
     ) -> list[DirectiveType]:
         """Determine the type of each directive and return a list of TypedDirective objects."""
-        typed = []
-        for raw in raw_directives:
-            for d in _SUPPORTED_DIRECTIVES:
-                if d.pattern in raw.string:
-                    typed.append(d(raw.string, raw.startln, raw.endln))
-        self.exception_handler.find_unsupported_directives(raw_directives, typed)
+        typed = [
+            d(raw.string, raw.startln, raw.endln)
+            for raw, d in product(raw_directives, _SUPPORTED_DIRECTIVES)
+            if d.pattern in raw.string
+        ]
+        unsupported = [
+            raw
+            for raw in raw_directives
+            if all(d.pattern not in raw.string for d in _SUPPORTED_DIRECTIVES)
+        ]
+        self.exception_handler.find_unsupported_directives(unsupported)
         return typed
 
     @staticmethod
