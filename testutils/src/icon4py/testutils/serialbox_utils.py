@@ -11,10 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import os
-import pathlib
-
 import numpy as np
+import serialbox as ser
 from functional.common import Dimension
 from functional.ffront.fbuiltins import int32
 from functional.iterator.embedded import np_as_located_field
@@ -30,21 +28,6 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-
-
-try:
-    import serialbox as ser
-except ImportError:
-    external_src = pathlib.Path.joinpath(
-        pathlib.Path(__file__).parent, "../../../../_external_src/"
-    )
-    os.chdir(external_src)
-    if not pathlib.Path.exists(pathlib.Path.joinpath(external_src, "serialbox")):
-        os.system("git clone --recursive https://github.com/GridTools/serialbox")
-    os.system(
-        "CC=`which gcc` CXX=`which g++` pip install serialbox/src/serialbox-python"
-    )
-    import serialbox as ser
 
 
 class IconDiffusionSavepoint:
