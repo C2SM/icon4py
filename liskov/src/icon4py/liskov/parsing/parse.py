@@ -73,7 +73,7 @@ class DirectivesParser:
     ) -> Sequence[ts.ParsedDirective]:
         """Preprocess the directives by removing unnecessary characters and formatting the directive strings."""
         return [
-            d.__class__(self._clean_string(d.string), d.startln, d.endln)
+            d.__class__(self._clean_string(d.string), d.startln, d.endln)  # type: ignore
             for d in directives
         ]
 

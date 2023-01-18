@@ -23,6 +23,13 @@ from icon4py.liskov.parsing.exceptions import (
     UnbalancedStencilDirectiveError,
 )
 from icon4py.liskov.parsing.parse import DirectivesParser
+from icon4py.liskov.parsing.types import (
+    Declare,
+    Imports,
+    StartCreate,
+    StartStencil,
+)
+from icon4py.liskov.parsing.validation import DirectiveSyntaxValidator
 
 
 @mark.parametrize(
@@ -30,12 +37,12 @@ from icon4py.liskov.parsing.parse import DirectivesParser
     [
         (
             MULTIPLE_STENCILS,
-            "!$DSL START STENCIL(name=foo)\n!$DSL END STENCIL(name=moo)",
+            "!$DSL START STENCIL(name=foo)\n!$DSL END STENCIL(name=bar)",
         ),
         (MULTIPLE_STENCILS, "!$DSL END STENCIL(name=foo)"),
     ],
 )
-def test_directive_parser_unbalanced_stencil_directives(
+def test_directive_semantics_validation_unbalanced_stencil_directives(
     make_f90_tmpfile, stencil, directive
 ):
     fpath = make_f90_tmpfile(stencil + directive)
@@ -45,26 +52,22 @@ def test_directive_parser_unbalanced_stencil_directives(
         DirectivesParser(directives, fpath)
 
 
-# todo: improve validation tests
 @mark.parametrize(
-    "stencil, directive",
-    [
-        (SINGLE_STENCIL, "!$DSL START STENCIL(stencil1, stencil2)"),
-        (MULTIPLE_STENCILS, "!$DSL DECLARE(somefield; another_field)"),
-        (SINGLE_STENCIL, "!$DSL IMPORTS(field)"),
-        (SINGLE_STENCIL, "!$DSL IMPORTS())"),
-        # (SINGLE_STENCIL, "!$DSL START CREATE(;)"),  # todo: single not allowed
-    ],
+    "directive",
+    (
+        [StartStencil("!$DSL START STENCIL(name=foo, x=bar)", 0, 0)],
+        [StartStencil("!$DSL START STENCIL(name=foo, x=bar;)", 0, 0)],
+        [StartStencil("!$DSL START STENCIL(name=foo, x=bar;", 0, 0)],
+        [Declare("!$DSL DECLARE(name=foo; bar)", 0, 0)],
+        [Imports("!$DSL IMPORTS(foo)", 0, 0)],
+        [Imports("!$DSL IMPORTS())", 0, 0)],
+        [StartCreate("!$DSL START CREATE(;)", 0, 0)],
+    ),
 )
-def test_directive_parser_invalid_directive_syntax(
-    make_f90_tmpfile, stencil, directive
-):
-    fpath = make_f90_tmpfile(content=stencil)
-    insert_new_lines(fpath, [directive])
-    directives = scan_for_directives(fpath)
-
+def test_directive_syntax_validator(directive):
+    validator = DirectiveSyntaxValidator("test")
     with pytest.raises(DirectiveSyntaxError, match=r"Error in .+ on line \d+\.\s+."):
-        DirectivesParser(directives, fpath)
+        validator.validate(directive)
 
 
 @mark.parametrize(
@@ -75,7 +78,9 @@ def test_directive_parser_invalid_directive_syntax(
         "!$DSL START CREATE()",
     ],
 )
-def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
+def test_directive_semantics_validation_repeated_directives(
+    make_f90_tmpfile, directive
+):
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
@@ -95,7 +100,9 @@ def test_directive_parser_repeated_directives(make_f90_tmpfile, directive):
         """!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)""",
     ],
 )
-def test_directive_parser_required_directives(make_f90_tmpfile, directive):
+def test_directive_semantics_validation_required_directives(
+    make_f90_tmpfile, directive
+):
     new = SINGLE_STENCIL.replace(directive, "")
     fpath = make_f90_tmpfile(content=new)
     directives = scan_for_directives(fpath)
