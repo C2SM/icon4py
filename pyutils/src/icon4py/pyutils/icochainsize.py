@@ -194,6 +194,8 @@ def cell_to_edge(cell: Position) -> tuple[Position, Position, Position]:
 
 
 class IcoChainSize:
+    """A class to compute the number of neighbors for a given neighbor chain."""
+
     _CHAIN_DISPATCHER = {
         "vertex_to_edge": [VertexDim, EdgeDim],
         "vertex_to_cell": [VertexDim, CellDim],

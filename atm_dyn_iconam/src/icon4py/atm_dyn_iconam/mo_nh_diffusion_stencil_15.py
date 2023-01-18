@@ -21,7 +21,9 @@ from functional.iterator.builtins import (
 from functional.iterator.runtime import closure, fendef, fundef
 
 from icon4py.common.dimension import C2E2C, C2E2CDim, CellDim, KDim, Koff
-
+from icon4py.pyutils.metadata import FieldInfo
+from functional.ffront import program_ast as past
+from functional.ffront import type_specifications as ts
 
 @fundef
 def step(i, geofac_n2s_nbh, vcoef, theta_v, zd_vertidx):
@@ -83,14 +85,19 @@ def mo_nh_diffusion_stencil_15(
 
 
 _metadata = f"""{C2E2C.value}
-mask           Field[[{CellDim.value}, {KDim.value}], dtype=bool]  in
-zd_vertidx     Field[[{CellDim.value}, {C2E2CDim.value}, {KDim.value}], dtype=int32]  in
-zd_diffcoef    Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-geofac_n2s_c   Field[[{CellDim.value}], dtype=float64]  in
-geofac_n2s_nbh Field[[{CellDim.value}, {C2E2CDim.value}], dtype=float64]  in
-vcoef          Field[[{CellDim.value}, {C2E2CDim.value}, {KDim.value}], dtype=float64]  in
-theta_v        Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-z_temp         Field[[{CellDim.value}, {KDim.value}], dtype=float64]  inout"""
+
+#TODO
+{
+    "mask":           FieldInfo(field=past.FieldSymbol(id="mask", type=ts.FieldType(dims=[CellDim,KDim], dtype=bool)), inp = True, out=False)
+  } 
+
+# zd_vertidx     Field[[{CellDim.value}, {C2E2CDim.value}, {KDim.value}], dtype=int32]  in
+# zd_diffcoef    Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
+# geofac_n2s_c   Field[[{CellDim.value}], dtype=float64]  in
+# geofac_n2s_nbh Field[[{CellDim.value}, {C2E2CDim.value}], dtype=float64]  in
+# vcoef          Field[[{CellDim.value}, {C2E2CDim.value}, {KDim.value}], dtype=float64]  in
+# theta_v        Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
+# z_temp         Field[[{CellDim.value}, {KDim.value}], dtype=float64]  inout"""
 
 # patch the fendef with metainfo for icon4pygen
 mo_nh_diffusion_stencil_15.__dict__["offsets"] = [

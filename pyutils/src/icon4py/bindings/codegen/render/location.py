@@ -11,20 +11,17 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import program, scan_operator
-from functional.ffront.fbuiltins import Field
-
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.bindings.exceptions import BindingsRenderingException
 
 
-@scan_operator(axis=KDim, forward=False, init=0.0)
-def _mo_solve_nonhydro_stencil_53_scan(w_state: float, z_q: float, w: float) -> float:
-    return w + w_state * z_q
+class LocationRenderer:
 
+    type_dispatcher = {"Cell": "Cells", "Edge": "Edges", "Vertex": "Vertices"}
 
-@program
-def mo_solve_nonhydro_stencil_53(
-    z_q: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-):
-    _mo_solve_nonhydro_stencil_53_scan(z_q, w, out=w[:, 1:])
+    @classmethod
+    def location_type(cls, cls_name: str) -> str:
+        if cls_name not in cls.type_dispatcher.keys():
+            raise BindingsRenderingException(
+                f"cls name {cls_name} needs to be either 'Cell', 'Edge' or 'Vertex'"
+            )
+        return cls.type_dispatcher[cls_name]
