@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import collections
-from copy import deepcopy
+import sys
 from itertools import product
 from pathlib import Path
 from typing import Sequence
@@ -35,10 +35,6 @@ class DirectivesParser:
         Args:
             directives: Sequence of RawDirective objects to parse.
             filepath: Path to file being parsed.
-
-        Attributes:
-        exception_handler: Exception handler for handling errors.
-        parsed_directives: Dictionary of parsed directives and their associated content.
         """
         self.filepath = filepath
         self.directives = directives
@@ -58,12 +54,12 @@ class DirectivesParser:
             self._run_validation_passes(preprocessed)
             return dict(directives=preprocessed, content=self._parse(preprocessed))
         logger.warning(f"No DSL Preprocessor directives found in {self.filepath}")
-        raise SystemExit
+        sys.exit()
 
     def _determine_type(
         self, raw_directives: Sequence[ts.RawDirective]
     ) -> Sequence[ts.ParsedDirective]:
-        """Determine the type of each directive and return a Sequence of TypedDirective objects."""
+        """Determine the type of each RawDirective and return a Sequence of ParsedDirective objects."""
         typed = [
             directive(raw.string, raw.startln, raw.endln)  # type: ignore
             for raw, directive in product(raw_directives, ts.SUPPORTED_DIRECTIVES)
@@ -72,33 +68,32 @@ class DirectivesParser:
         self.exception_handler.find_unsupported_directives(raw_directives)
         return typed
 
-    @staticmethod
     def _preprocess(
-        directives: Sequence[ts.ParsedDirective],
+        self, directives: Sequence[ts.ParsedDirective]
     ) -> Sequence[ts.ParsedDirective]:
         """Preprocess the directives by removing unnecessary characters and formatting the directive strings."""
-        copy = deepcopy(
-            directives
-        )  # todo: create new instances of ParsedDirectives here?
-        for c in copy:
-            for r in REPLACE_CHARS:
-                c.string = c.string.replace(r, "").strip()
-            c.string = " ".join(c.string.strip().split())
-        return copy
+        return [
+            d.__class__(self._clean_string(d.string), d.startln, d.endln)
+            for d in directives
+        ]
 
     def _run_validation_passes(
         self, preprocessed: Sequence[ts.ParsedDirective]
     ) -> None:
-        """Run validation passes on the preprocessed directives."""
+        """Run validation passes on the directives."""
         for validator in VALIDATORS:
             validator(self.filepath).validate(preprocessed)
 
     @staticmethod
+    def _clean_string(string: str) -> str:
+        """Remove leading or trailing whitespaces, and words from the REPLACE_CHARS list."""
+        return " ".join([c for c in string.strip().split() if c not in REPLACE_CHARS])
+
+    @staticmethod
     def _parse(directives: Sequence[ts.ParsedDirective]) -> ts.ParsedContent:
-        """Parse the directives and return a dictionary of parsed directives and their associated content."""
+        """Parse directives and return a dictionary of parsed directives type names and their associated content."""
         parsed_content = collections.defaultdict(list)
         for d in directives:
-            name = d.__class__.__name__
             content = d.get_content()
-            parsed_content[name].append(content)
+            parsed_content[d.type_name].append(content)
         return parsed_content

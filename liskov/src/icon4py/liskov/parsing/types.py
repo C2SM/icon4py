@@ -159,6 +159,7 @@ class EndCreate(WithoutArguments, metaclass=CheckForDirectiveClasses):
     pattern = "END CREATE"
 
 
+# When adding a new directive this list must be updated.
 SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     StartStencil,
     EndStencil,
