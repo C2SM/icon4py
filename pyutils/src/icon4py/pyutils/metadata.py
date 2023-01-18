@@ -83,6 +83,8 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)  # type: ignore
 
+    domain_arg_ids = _get_domain_arg_ids(fvprog)
+
     fields: dict[str, FieldInfo] = {
         field_node.id: FieldInfo(
             field=field_node,
@@ -90,9 +92,24 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
             out=(field_node.id in output_arg_ids),
         )
         for field_node in fvprog.past_node.params
+        if field_node.id not in domain_arg_ids
     }
 
     return fields
+
+
+def _get_domain_arg_ids(fvprog: Program) -> list | set[str]:
+    """Collect all argument names that are used within the 'domain' keyword argument."""
+    domain_arg_ids = []
+    if "domain" in fvprog.past_node.body[0].kwargs.keys():
+        domain_arg = fvprog.past_node.body[0].kwargs["domain"]
+        assert isinstance(domain_arg, past.Dict)
+        for arg in domain_arg.values_:
+            for arg_elt in arg.elts:
+                if isinstance(arg_elt, past.Name):
+                    domain_arg_ids.append(arg_elt.id)
+        domain_arg_ids = set(domain_arg_ids)
+    return domain_arg_ids
 
 
 class StencilImporter:
