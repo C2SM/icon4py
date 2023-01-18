@@ -18,7 +18,7 @@ from icon4py.bindings.codegen.f90 import generate_f90_file
 from icon4py.bindings.codegen.header import generate_cpp_header
 from icon4py.bindings.entities import Field, Offset
 from icon4py.bindings.utils import check_dir_exists
-from icon4py.pyutils.metadata import StencilInfo, get_field_infos
+from icon4py.pyutils.metadata import StencilInfo
 
 
 class PyBindGen:
@@ -37,7 +37,7 @@ class PyBindGen:
     def __init__(
         self, stencil_info: StencilInfo, levels_per_thread: int, block_size: int
     ) -> None:
-        self.stencil_name = stencil_info.fvprog.itir.id
+        self.stencil_name = stencil_info.itir.id
         self.fields, self.offsets = self._stencil_info_to_binding_type(stencil_info)
         self.levels_per_thread = levels_per_thread
         self.block_size = block_size
@@ -47,7 +47,7 @@ class PyBindGen:
         stencil_info: StencilInfo,
     ) -> tuple[list[Field], list[Offset]]:
         chains = stencil_info.connectivity_chains
-        fields = get_field_infos(stencil_info.fvprog)
+        fields = stencil_info.fields
         binding_fields = [Field(name, info) for name, info in fields.items()]
         binding_offsets = [Offset(chain) for chain in chains]
         return binding_fields, binding_offsets

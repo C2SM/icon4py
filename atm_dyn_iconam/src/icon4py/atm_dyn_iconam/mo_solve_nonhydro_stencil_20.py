@@ -11,6 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from eve import SourceLocation
+from functional.ffront import program_ast as past
+from functional.ffront import type_specifications as ts
 from functional.iterator.builtins import (
     deref,
     named_range,
@@ -20,6 +23,7 @@ from functional.iterator.builtins import (
 from functional.iterator.runtime import closure, fendef, fundef
 
 from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim, Koff
+from icon4py.pyutils.metadata import FieldInfo
 
 
 @fundef
@@ -88,15 +92,88 @@ def mo_solve_nonhydro_stencil_20(
     )
 
 
-_metadata = f"""{E2C.value}
-inv_dual_edge_length  Field[[{EdgeDim.value}], dtype=float64]  in
-z_exner_ex_pr         Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-zdiff_gradp           Field[[{EdgeDim.value}, {E2CDim.value}, {KDim.value}], dtype=float64]  in
-ikidx                 Field[[{EdgeDim.value}, {E2CDim.value}, {KDim.value}], dtype=int32]  in
-z_dexner_dz_c_1       Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-z_dexner_dz_c_2       Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-z_gradh_exner         Field[[{EdgeDim.value}, {KDim.value}], dtype=float64]  out"""
-
+_dummy_loc = SourceLocation(1, 1, "")
+_metadata = {
+    "inv_dual_edge_length": FieldInfo(
+        field=past.FieldSymbol(
+            id="inv_dual_edge_length",
+            type=ts.FieldType(
+                dims=[EdgeDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "z_exner_ex_pr": FieldInfo(
+        field=past.FieldSymbol(
+            id="z_exner_ex_pr",
+            type=ts.FieldType(
+                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "zdiff_gradp": FieldInfo(
+        field=past.FieldSymbol(
+            id="zdiff_gradp",
+            type=ts.FieldType(
+                dims=[EdgeDim, E2CDim, KDim],
+                dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64),
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "ikidx": FieldInfo(
+        field=past.FieldSymbol(
+            id="ikidx",
+            type=ts.FieldType(
+                dims=[EdgeDim, E2CDim, KDim],
+                dtype=ts.ScalarType(kind=ts.ScalarKind.INT32),
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "z_dexner_dz_c_1": FieldInfo(
+        field=past.FieldSymbol(
+            id="z_dexner_dz_c_1",
+            type=ts.FieldType(
+                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "z_dexner_dz_c_2": FieldInfo(
+        field=past.FieldSymbol(
+            id="z_dexner_dz_c_2",
+            type=ts.FieldType(
+                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "z_gradh_exner": FieldInfo(
+        field=past.FieldSymbol(
+            id="z_gradh_exner",
+            type=ts.FieldType(
+                dims=[EdgeDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=False,
+        out=True,
+    ),
+}
 # patch the fendef with metainfo for icon4pygen
 mo_solve_nonhydro_stencil_20.__dict__["offsets"] = [
     Koff.value,

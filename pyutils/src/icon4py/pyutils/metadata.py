@@ -13,9 +13,10 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import types
 from dataclasses import dataclass
-from typing import Any, TypeGuard
+from typing import Any, Optional, TypeGuard
 
 import eve
 from functional.common import Dimension, DimensionKind
@@ -23,6 +24,7 @@ from functional.ffront import program_ast as past
 from functional.ffront import type_specifications as ts
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
+from functional.iterator.runtime import FendefDispatcher
 
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (
@@ -34,9 +36,11 @@ from icon4py.pyutils.icochainsize import IcoChainSize
 
 @dataclass(frozen=True)
 class StencilInfo:
-    fvprog: Program
+    itir: itir.FencilDefinition
+    fields: dict[str, FieldInfo]
     connectivity_chains: list[eve.concepts.SymbolRef]
     offset_provider: dict
+    column_axis: Optional[Dimension]
 
 
 @dataclass(frozen=True)
@@ -67,7 +71,7 @@ def _ignore_subscript(node: past.Name | past.Subscript) -> past.Name:
     return node if isinstance(node, past.Name) else node.value
 
 
-def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
+def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     """Extract and format the in/out fields from a Program."""
     assert is_list_of_names(
         fvprog.past_node.body[0].args
@@ -215,18 +219,22 @@ def get_stencil_info(
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     if isinstance(fencil_def, FendefDispatcher):
-        # TODO
-        params = signature(fencil_def.function).parameters
+        # this branch can be removed once we don't have plain itir programs
+        params = inspect.signature(fencil_def.function).parameters
         num_params = len(params)
         itir = fencil_def.itir(*[None] * num_params)  # TODO do this in GT4Py?
         offsets = fencil_def.offsets
-        metadata = fencil_def.metadata
+        fields = fencil_def.metadata
+        column_axis = None
     else:
         fvprog = get_fvprog(fencil_def)
         offsets = scan_for_offsets(fvprog)
+        itir = fvprog.itir
+        fields = _get_field_infos(fvprog)
+        column_axis = fvprog._column_axis
 
     offset_provider = {}
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-    return StencilInfo(fvprog, connectivity_chains, offset_provider)
+    return StencilInfo(itir, fields, connectivity_chains, offset_provider, column_axis)

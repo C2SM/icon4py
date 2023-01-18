@@ -11,6 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from eve import SourceLocation
+from functional.ffront import program_ast as past
+from functional.ffront import type_specifications as ts
 from functional.iterator.builtins import (
     deref,
     if_,
@@ -22,8 +25,7 @@ from functional.iterator.runtime import closure, fendef, fundef
 
 from icon4py.common.dimension import C2E2C, C2E2CDim, CellDim, KDim, Koff
 from icon4py.pyutils.metadata import FieldInfo
-from functional.ffront import program_ast as past
-from functional.ffront import type_specifications as ts
+
 
 @fundef
 def step(i, geofac_n2s_nbh, vcoef, theta_v, zd_vertidx):
@@ -84,20 +86,100 @@ def mo_nh_diffusion_stencil_15(
     )
 
 
-_metadata = f"""{C2E2C.value}
-
-#TODO
-{
-    "mask":           FieldInfo(field=past.FieldSymbol(id="mask", type=ts.FieldType(dims=[CellDim,KDim], dtype=bool)), inp = True, out=False)
-  } 
-
-# zd_vertidx     Field[[{CellDim.value}, {C2E2CDim.value}, {KDim.value}], dtype=int32]  in
-# zd_diffcoef    Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-# geofac_n2s_c   Field[[{CellDim.value}], dtype=float64]  in
-# geofac_n2s_nbh Field[[{CellDim.value}, {C2E2CDim.value}], dtype=float64]  in
-# vcoef          Field[[{CellDim.value}, {C2E2CDim.value}, {KDim.value}], dtype=float64]  in
-# theta_v        Field[[{CellDim.value}, {KDim.value}], dtype=float64]  in
-# z_temp         Field[[{CellDim.value}, {KDim.value}], dtype=float64]  inout"""
+_dummy_loc = SourceLocation(1, 1, "")
+_metadata = {
+    "mask": FieldInfo(
+        field=past.FieldSymbol(
+            id="mask",
+            type=ts.FieldType(
+                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.BOOL)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "zd_vertidx": FieldInfo(
+        field=past.FieldSymbol(
+            id="zd_vertidx",
+            type=ts.FieldType(
+                dims=[CellDim, C2E2CDim, KDim],
+                dtype=ts.ScalarType(kind=ts.ScalarKind.INT32),
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "zd_diffcoef": FieldInfo(
+        field=past.FieldSymbol(
+            id="zd_diffcoef",
+            type=ts.FieldType(
+                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "geofac_n2s_c": FieldInfo(
+        field=past.FieldSymbol(
+            id="geofac_n2s_c",
+            type=ts.FieldType(
+                dims=[CellDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "geofac_n2s_nbh": FieldInfo(
+        field=past.FieldSymbol(
+            id="geofac_n2s_nbh",
+            type=ts.FieldType(
+                dims=[CellDim, C2E2CDim],
+                dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64),
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "vcoef": FieldInfo(
+        field=past.FieldSymbol(
+            id="vcoef",
+            type=ts.FieldType(
+                dims=[CellDim, C2E2CDim, KDim],
+                dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64),
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "theta_v": FieldInfo(
+        field=past.FieldSymbol(
+            id="theta_v",
+            type=ts.FieldType(
+                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=False,
+    ),
+    "z_temp": FieldInfo(
+        field=past.FieldSymbol(
+            id="z_temp",
+            type=ts.FieldType(
+                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
+            ),
+            location=_dummy_loc,
+        ),
+        inp=True,
+        out=True,
+    ),
+}
 
 # patch the fendef with metainfo for icon4pygen
 mo_nh_diffusion_stencil_15.__dict__["offsets"] = [
