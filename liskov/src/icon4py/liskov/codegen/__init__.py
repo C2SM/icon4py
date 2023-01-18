@@ -10,3 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+# required import for CheckForDirectiveClasses metaclass
+import icon4py.liskov.parsing.types as ts  # noqa: F401
