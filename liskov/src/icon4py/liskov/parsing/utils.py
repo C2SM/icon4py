@@ -16,19 +16,19 @@ from typing import Sequence, Type
 
 from functional.ffront.decorator import Program
 
+import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.parsing.exceptions import UnknownStencilError
-from icon4py.liskov.parsing.types import ParsedDirective
 
 
-def print_parsed_directive(directive: ParsedDirective) -> str:
+def print_parsed_directive(directive: ts.ParsedDirective) -> str:
     """Print a parsed directive, including its contents, and start and end line numbers."""
     return f"Directive: {directive.string}, start line: {directive.startln}, end line: {directive.endln}\n"
 
 
 def extract_directive(
-    directives: Sequence[ParsedDirective],
-    required_type: Type[ParsedDirective],
-) -> Sequence[ParsedDirective]:
+    directives: Sequence[ts.ParsedDirective],
+    required_type: Type[ts.ParsedDirective],
+) -> Sequence[ts.ParsedDirective]:
     """Extract a directive type from a list of directives."""
     directives = [d for d in directives if type(d) == required_type]
     return directives

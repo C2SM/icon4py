@@ -13,9 +13,9 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import DirectiveSyntaxError
-from icon4py.liskov.parsing.types import DIRECTIVE_IDENT, RawDirective
 
 
 logger = setup_logger(__name__)
@@ -50,7 +50,7 @@ class DirectivesScanner:
         self.filepath = filepath
         self.directives = self._scan_for_directives()
 
-    def _scan_for_directives(self) -> list[RawDirective]:
+    def _scan_for_directives(self) -> list[ts.RawDirective]:
         """Scan filepath for directives and return them along with their line numbers.
 
         Returns:
@@ -63,7 +63,7 @@ class DirectivesScanner:
             lines = f.readlines()
             for lnumber, string in enumerate(lines):
 
-                if DIRECTIVE_IDENT in string:
+                if ts.DIRECTIVE_IDENT in string:
                     stripped = string.strip()
                     eol = stripped[-1]
                     scanned = Scanned(string, lnumber)
@@ -75,7 +75,7 @@ class DirectivesScanner:
                             scanned_directives = []
                         case "&":
                             next_line = self._peek_directive(lines, lnumber)
-                            if DIRECTIVE_IDENT not in next_line:
+                            if ts.DIRECTIVE_IDENT not in next_line:
                                 raise DirectiveSyntaxError(
                                     f"Error in directive on line number: {lnumber}\n"
                                 )
@@ -88,7 +88,7 @@ class DirectivesScanner:
         return directives
 
     @staticmethod
-    def _process_scanned(collected: list[Scanned]) -> RawDirective:
+    def _process_scanned(collected: list[Scanned]) -> ts.RawDirective:
         """Process a list of scanned directives.
 
         Returns
@@ -96,7 +96,7 @@ class DirectivesScanner:
         """
         directive_string = "".join([c.string for c in collected])
         abs_startln, abs_endln = collected[0].lnumber, collected[-1].lnumber
-        return RawDirective(directive_string, startln=abs_startln, endln=abs_endln)
+        return ts.RawDirective(directive_string, startln=abs_startln, endln=abs_endln)
 
     @staticmethod
     def _peek_directive(lines: list[str], lnumber: int) -> str:

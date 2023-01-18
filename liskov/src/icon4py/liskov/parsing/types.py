@@ -11,16 +11,65 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass, field
-from typing import Any, Protocol, Sequence, Type, TypeAlias, TypedDict
+from importlib import import_module
+from inspect import getmembers, isclass
+from typing import (
+    Any,
+    Dict,
+    Protocol,
+    Sequence,
+    Tuple,
+    Type,
+    TypeAlias,
+    TypedDict,
+    TypeVar,
+    runtime_checkable,
+)
 
 
 DIRECTIVE_IDENT = "!$DSL"
 
-
-def noeq_dataclass(cls: Any) -> Any:
-    return dataclass(cls, eq=False)  # type: ignore
+T = TypeVar("T", bound="CheckForDirectiveClasses")
 
 
+class CheckForDirectiveClasses(type):
+    """Metaclass to be used when defining a new class which implements the ParsedDirective protocol.
+
+    This class checks that the required classes in their respective modules are defined
+    according to their naming conventions. When adding a new directive, first a new subclass
+    which implements the ParsedDirective protocol must be defined. Then a corresponding
+    <directive_name>Data, <directive_name>DataFactory, <directive_name>Statement and
+    <directive_name>StatementGenerator class must be defined in their respective module
+    which can be seen in _CLS_REQS.
+    """
+
+    _CLS_REQS = (
+        ("interface", "Data"),
+        ("deserialise", "DataFactory"),
+        ("f90", "Statement"),
+        ("f90", "StatementGenerator"),
+    )
+
+    def __new__(
+        mcs: Type[T],
+        name: str,
+        bases: Tuple[Type, ...],
+        namespace: Dict[str, Any],
+        **kwargs: Any,
+    ) -> T:
+        for module_name, cls_suffix in mcs._CLS_REQS:
+            module = import_module(f"icon4py.liskov.codegen.{module_name}")
+            expected_cls_name = f"{name}{cls_suffix}"
+            if expected_cls_name not in [
+                cls_name for cls_name, _ in getmembers(module, predicate=isclass)
+            ]:
+                raise NotImplementedError(
+                    f"Required class of name {expected_cls_name} missing in {module}"
+                )
+        return super().__new__(mcs, name, bases, namespace, **kwargs)
+
+
+@runtime_checkable
 class ParsedDirective(Protocol):
     string: str
     startln: int
@@ -51,10 +100,8 @@ class RawDirective:
     endln: int
 
 
-@dataclass
 class TypedDirective(RawDirective):
     pattern: str
-    regex: str
 
     @property
     def type_name(self) -> str:
@@ -66,7 +113,7 @@ class TypedDirective(RawDirective):
         return self.string == other.string
 
 
-@noeq_dataclass
+@dataclass(eq=False)
 class WithArguments(TypedDirective):
     # regex enforces default Fortran variable naming standard and includes arithmetic operators and pointer access
     # https://gcc.gnu.org/onlinedocs/gfortran/Naming-conventions.html
@@ -79,7 +126,7 @@ class WithArguments(TypedDirective):
         return content
 
 
-@noeq_dataclass
+@dataclass(eq=False)
 class WithoutArguments(TypedDirective):
     # matches an empty string at the beginning of a line
     regex: str = field(default=r"^(?![\s\S])", init=False)
@@ -88,34 +135,28 @@ class WithoutArguments(TypedDirective):
         return {}
 
 
-@noeq_dataclass
-class StartStencil(WithArguments):
-    pattern: str = field(default="START STENCIL", init=False)
+class StartStencil(WithArguments, metaclass=CheckForDirectiveClasses):
+    pattern = "START STENCIL"
 
 
-@noeq_dataclass
-class EndStencil(WithArguments):
-    pattern: str = field(default="END STENCIL", init=False)
+class EndStencil(WithArguments, metaclass=CheckForDirectiveClasses):
+    pattern = "END STENCIL"
 
 
-@noeq_dataclass
-class Declare(WithArguments):
-    pattern: str = field(default="DECLARE", init=False)
+class Declare(WithArguments, metaclass=CheckForDirectiveClasses):
+    pattern = "DECLARE"
 
 
-@noeq_dataclass
-class Imports(WithoutArguments):
-    pattern: str = field(default="IMPORTS", init=False)
+class Imports(WithoutArguments, metaclass=CheckForDirectiveClasses):
+    pattern = "IMPORTS"
 
 
-@noeq_dataclass
-class StartCreate(WithoutArguments):
-    pattern: str = field(default="START CREATE", init=False)
+class StartCreate(WithoutArguments, metaclass=CheckForDirectiveClasses):
+    pattern = "START CREATE"
 
 
-@noeq_dataclass
-class EndCreate(WithoutArguments):
-    pattern: str = field(default="END CREATE", init=False)
+class EndCreate(WithoutArguments, metaclass=CheckForDirectiveClasses):
+    pattern = "END CREATE"
 
 
 SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [

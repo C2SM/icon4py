@@ -13,8 +13,8 @@
 
 import pytest
 
+from icon4py.liskov.codegen.deserialise import StartStencilDataFactory
 from icon4py.liskov.codegen.interface import BoundsData, FieldAssociationData
-from icon4py.liskov.parsing.deserialise import StartStencilDataFactory
 from icon4py.liskov.parsing.exceptions import (
     IncompatibleFieldError,
     MissingBoundsError,

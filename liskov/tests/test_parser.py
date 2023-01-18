@@ -23,14 +23,9 @@ from samples.fortran_samples import (
     SINGLE_STENCIL,
 )
 
+import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4py.liskov.parsing.parse import DirectivesParser
-from icon4py.liskov.parsing.types import (
-    Imports,
-    StartCreate,
-    StartStencil,
-    TypedDirective,
-)
 
 
 def test_parse_no_input():
@@ -42,21 +37,21 @@ def test_parse_no_input():
     "directive, string, startln, endln, expected_content",
     [
         (
-            Imports("IMPORTS()", 1, 1),
+            ts.Imports("IMPORTS()", 1, 1),
             "IMPORTS()",
             1,
             1,
             defaultdict(list, {"Imports": [{}]}),
         ),
         (
-            StartCreate("START CREATE()", 2, 2),
+            ts.StartCreate("START CREATE()", 2, 2),
             "START CREATE()",
             2,
             2,
             defaultdict(list, {"StartCreate": [{}]}),
         ),
         (
-            StartStencil(
+            ts.StartStencil(
                 "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)", 3, 4
             ),
             "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)",
@@ -99,7 +94,7 @@ def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
     assert len(content) == num_content
 
     assert isinstance(content, defaultdict)
-    assert all([isinstance(d, TypedDirective) for d in directives])
+    assert all([isinstance(d, ts.ParsedDirective) for d in directives])
 
 
 def test_directive_parser_no_directives_found(make_f90_tmpfile):

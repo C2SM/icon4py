@@ -14,6 +14,7 @@
 import copy
 from typing import Callable, Protocol
 
+import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.codegen.interface import (
     BoundsData,
     CodeGenInput,
@@ -32,16 +33,6 @@ from icon4py.liskov.parsing.exceptions import (
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
-from icon4py.liskov.parsing.types import (
-    Declare,
-    EndCreate,
-    EndStencil,
-    Imports,
-    ParsedDict,
-    ParsedDirective,
-    StartCreate,
-    StartStencil,
-)
 from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
 from icon4py.pyutils.metadata import get_field_infos
 
@@ -50,38 +41,38 @@ logger = setup_logger(__name__)
 
 
 class DirectiveInputFactory(Protocol):
-    def __call__(self, parsed: ParsedDict) -> list[CodeGenInput] | CodeGenInput:
+    def __call__(self, parsed: ts.ParsedDict) -> list[CodeGenInput] | CodeGenInput:
         ...
 
 
 class StartCreateDataFactory:
-    def __call__(self, parsed: ParsedDict) -> StartCreateData:
-        extracted = extract_directive(parsed["directives"], StartCreate)[0]
+    def __call__(self, parsed: ts.ParsedDict) -> StartCreateData:
+        extracted = extract_directive(parsed["directives"], ts.StartCreate)[0]
         return StartCreateData(startln=extracted.startln, endln=extracted.endln)
 
 
 class EndCreateDataFactory:
-    def __call__(self, parsed: ParsedDict) -> EndCreateData:
-        extracted = extract_directive(parsed["directives"], EndCreate)[0]
+    def __call__(self, parsed: ts.ParsedDict) -> EndCreateData:
+        extracted = extract_directive(parsed["directives"], ts.EndCreate)[0]
         return EndCreateData(startln=extracted.startln, endln=extracted.endln)
 
 
 class ImportsDataFactory:
-    def __call__(self, parsed: ParsedDict) -> ImportsData:
-        extracted = extract_directive(parsed["directives"], Imports)[0]
+    def __call__(self, parsed: ts.ParsedDict) -> ImportsData:
+        extracted = extract_directive(parsed["directives"], ts.Imports)[0]
         return ImportsData(startln=extracted.startln, endln=extracted.endln)
 
 
 class DeclareDataFactory:
-    def __call__(self, parsed: ParsedDict) -> DeclareData:
-        extracted = extract_directive(parsed["directives"], Declare)[0]
+    def __call__(self, parsed: ts.ParsedDict) -> DeclareData:
+        extracted = extract_directive(parsed["directives"], ts.Declare)[0]
         declarations = parsed["content"]["Declare"]
         return DeclareData(
             startln=extracted.startln, endln=extracted.endln, declarations=declarations
         )
 
 
-def _extract_stencil_name(named_args: dict, directive: ParsedDirective) -> str:
+def _extract_stencil_name(named_args: dict, directive: ts.ParsedDirective) -> str:
     """Extract stencil name from directive arguments."""
     try:
         stencil_name = named_args["name"]
@@ -95,7 +86,7 @@ def _extract_stencil_name(named_args: dict, directive: ParsedDirective) -> str:
 class StartStencilDataFactory:
     TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 
-    def __call__(self, parsed: ParsedDict) -> list[StartStencilData]:
+    def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
         """Create and return a list of StartStencilData objects from the parsed directives.
 
         Args:
@@ -105,7 +96,7 @@ class StartStencilDataFactory:
             List[StartStencilData]: List of StartStencilData objects created from the parsed directives.
         """
         deserialised = []
-        directives = extract_directive(parsed["directives"], StartStencil)
+        directives = extract_directive(parsed["directives"], ts.StartStencil)
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["StartStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
@@ -225,9 +216,9 @@ class StartStencilDataFactory:
 
 
 class EndStencilDataFactory:
-    def __call__(self, parsed: ParsedDict) -> list[EndStencilData]:
+    def __call__(self, parsed: ts.ParsedDict) -> list[EndStencilData]:
         deserialised = []
-        extracted = extract_directive(parsed["directives"], EndStencil)
+        extracted = extract_directive(parsed["directives"], ts.EndStencil)
         for i, directive in enumerate(extracted):
             named_args = parsed["content"]["EndStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
@@ -240,7 +231,7 @@ class EndStencilDataFactory:
 
 
 class DirectiveDeserialiser:
-    def __init__(self, parsed: ParsedDict) -> None:
+    def __init__(self, parsed: ts.ParsedDict) -> None:
         self.directives = self.deserialise(parsed)
 
     _FACTORIES: dict[str, Callable] = {
@@ -252,7 +243,7 @@ class DirectiveDeserialiser:
         "EndStencil": EndStencilDataFactory(),
     }
 
-    def deserialise(self, directives: ParsedDict) -> DeserialisedDirectives:
+    def deserialise(self, directives: ts.ParsedDict) -> DeserialisedDirectives:
         """Deserialise the provided parsed directives to a DeserialisedDirectives object.
 
         Args:

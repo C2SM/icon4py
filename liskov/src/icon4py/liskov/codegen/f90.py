@@ -81,7 +81,7 @@ class ToleranceFields(InputFields):
     ...
 
 
-class WrapRunFunc(eve.Node):
+class EndStencilStatement(eve.Node):
     stencil_data: StartStencilData
     profile: bool
 
@@ -102,8 +102,8 @@ class WrapRunFunc(eve.Node):
         )
 
 
-class WrapRunFuncGenerator(TemplatedGenerator):
-    WrapRunFunc = as_jinja(
+class EndStencilStatementGenerator(TemplatedGenerator):
+    EndStencilStatement = as_jinja(
         """
         {%- if _this_node.profile %}
         call nvtxEndRange()
@@ -214,7 +214,7 @@ class CopyDeclaration(Declaration):
     array_index: str
 
 
-class OutputFieldCopy(eve.Node):
+class StartStencilStatement(eve.Node):
     stencil_data: StartStencilData
     profile: bool
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
@@ -244,8 +244,8 @@ class OutputFieldCopy(eve.Node):
         )
 
 
-class OutputFieldCopyGenerator(TemplatedGenerator):
-    OutputFieldCopy = as_jinja(
+class StartStencilStatementGenerator(TemplatedGenerator):
+    StartStencilStatement = as_jinja(
         """
         #ifdef __DSL_VERIFY
         !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)

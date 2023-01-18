@@ -15,10 +15,10 @@ import pathlib
 
 import click
 
+from icon4py.liskov.codegen.deserialise import DirectiveDeserialiser
 from icon4py.liskov.codegen.generate import IntegrationGenerator
 from icon4py.liskov.codegen.write import IntegrationWriter
 from icon4py.liskov.logger import setup_logger
-from icon4py.liskov.parsing.deserialise import DirectiveDeserialiser
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.scan import DirectivesScanner
 

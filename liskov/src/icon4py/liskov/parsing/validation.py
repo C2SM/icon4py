@@ -14,22 +14,15 @@
 import re
 from abc import abstractmethod
 from pathlib import Path
-from typing import Protocol
+from typing import Match, Optional, Protocol, Sequence
 
+import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.parsing.exceptions import (
+    DirectiveSyntaxError,
     RepeatedDirectiveError,
     RequiredDirectivesError,
-    SyntaxExceptionHandler,
     UnbalancedStencilDirectiveError,
-)
-from icon4py.liskov.parsing.types import (
-    Declare,
-    EndCreate,
-    EndStencil,
-    Imports,
-    ParsedDirective,
-    StartCreate,
-    StartStencil,
+    UnsupportedDirectiveError,
 )
 from icon4py.liskov.parsing.utils import print_parsed_directive
 
@@ -38,7 +31,7 @@ class Validator(Protocol):
     filepath: Path
 
     @abstractmethod
-    def validate(self, directives: list[ParsedDirective]) -> None:
+    def validate(self, directives: list[ts.ParsedDirective]) -> None:
         ...
 
 
@@ -54,7 +47,7 @@ class DirectiveSyntaxValidator:
         self.filepath = filepath
         self.exception_handler = SyntaxExceptionHandler
 
-    def validate(self, directives: list[ParsedDirective]) -> None:
+    def validate(self, directives: list[ts.ParsedDirective]) -> None:
         """Validate the syntax of preprocessor directives.
 
             Checks that each directive's pattern and inner contents, if any, match the expected syntax.
@@ -69,14 +62,14 @@ class DirectiveSyntaxValidator:
             self._validate_inner(d.string, d.pattern, d)
 
     def _validate_outer(
-        self, to_validate: str, pattern: str, d: ParsedDirective
+        self, to_validate: str, pattern: str, d: ts.ParsedDirective
     ) -> None:
         regex = f"{pattern}\\((.*)\\)"
         match = re.fullmatch(regex, to_validate)
         self.exception_handler.check_for_matches(d, match, regex, self.filepath)
 
     def _validate_inner(
-        self, to_validate: str, pattern: str, d: ParsedDirective
+        self, to_validate: str, pattern: str, d: ts.ParsedDirective
     ) -> None:
         inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
         for arg in inner:
@@ -95,7 +88,7 @@ class DirectiveSemanticsValidator:
         """
         self.filepath = filepath
 
-    def validate(self, directives: list[ParsedDirective]) -> None:
+    def validate(self, directives: list[ts.ParsedDirective]) -> None:
         """Validate the semantics of preprocessor directives.
 
         Checks that all used directives are unique, that all required directives
@@ -108,7 +101,9 @@ class DirectiveSemanticsValidator:
         self._validate_required_directives(directives)
         self._validate_stencil_directives(directives)
 
-    def _validate_directive_uniqueness(self, directives: list[ParsedDirective]) -> None:
+    def _validate_directive_uniqueness(
+        self, directives: list[ts.ParsedDirective]
+    ) -> None:
         """Check that all used directives are unique."""
         repeated = [d for d in directives if directives.count(d) > 1]
         if repeated:
@@ -117,9 +112,18 @@ class DirectiveSemanticsValidator:
                 f"Error in {self.filepath}.\n Found same directive more than once in the following directives:\n {pretty_printed}"
             )
 
-    def _validate_required_directives(self, directives: list[ParsedDirective]) -> None:
+    def _validate_required_directives(
+        self, directives: list[ts.ParsedDirective]
+    ) -> None:
         """Check that all required directives are used at least once."""
-        expected = [Declare, Imports, StartCreate, EndCreate, StartStencil, EndStencil]
+        expected = [
+            ts.Declare,
+            ts.Imports,
+            ts.StartCreate,
+            ts.EndCreate,
+            ts.StartStencil,
+            ts.EndStencil,
+        ]
         for expected_type in expected:
             if not any([isinstance(d, expected_type) for d in directives]):
                 raise RequiredDirectivesError(
@@ -136,17 +140,19 @@ class DirectiveSemanticsValidator:
                 f"Invalid directive string, could not find '{arg}' parameter."
             )
 
-    def _validate_stencil_directives(self, directives: list[ParsedDirective]) -> None:
+    def _validate_stencil_directives(
+        self, directives: list[ts.ParsedDirective]
+    ) -> None:
         """Validate that the number of start and end stencil directives match in the input `directives`.
 
             Also verifies that each unique stencil has a corresponding start and end directive.
             Raise an error if there are unbalanced START or END directives or if any unique stencil does not have corresponding start and end directive.
 
         Args:
-            directives (list[ParsedDirective]): List of stencil directives to validate.
+            directives (list[ts.ParsedDirective]): List of stencil directives to validate.
         """
-        start_directives = [d for d in directives if isinstance(d, StartStencil)]
-        end_directives = [d for d in directives if isinstance(d, EndStencil)]
+        start_directives = [d for d in directives if isinstance(d, ts.StartStencil)]
+        end_directives = [d for d in directives if isinstance(d, ts.EndStencil)]
 
         if len(start_directives) != len(end_directives):
             raise UnbalancedStencilDirectiveError(
@@ -170,3 +176,33 @@ VALIDATORS: list = [
     DirectiveSyntaxValidator,
     DirectiveSemanticsValidator,
 ]
+
+
+class ParsingExceptionHandler:
+    @staticmethod
+    def find_unsupported_directives(raw_directives: Sequence[ts.RawDirective]) -> None:
+        """Check for unsupported directives and raises an exception if any are found."""
+        unsupported = [
+            raw
+            for raw in raw_directives
+            if all(d.pattern not in raw.string for d in ts.SUPPORTED_DIRECTIVES)
+        ]
+        if len(u := unsupported) >= 1:
+            raise UnsupportedDirectiveError(
+                f"Used unsupported directive(s): {''.join([d.string for d in u])} on line(s) {','.join([str(d.startln) for d in u])}."
+            )
+
+
+class SyntaxExceptionHandler:
+    @staticmethod
+    def check_for_matches(
+        directive: ts.ParsedDirective,
+        match: Optional[Match[str]],
+        regex: str,
+        filepath: Path,
+    ) -> None:
+        if match is None:
+            raise DirectiveSyntaxError(
+                f"Error in {filepath} on line {directive.startln + 1}.\n {directive.string} is invalid, "
+                f"expected the following regex pattern {directive.pattern}({regex}).\n"
+            )

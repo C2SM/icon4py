@@ -22,14 +22,14 @@ from icon4py.liskov.codegen.f90 import (
     DeclareStatementGenerator,
     EndCreateStatement,
     EndCreateStatementGenerator,
+    EndStencilStatement,
+    EndStencilStatementGenerator,
     ImportsStatement,
     ImportsStatementGenerator,
-    OutputFieldCopy,
-    OutputFieldCopyGenerator,
     StartCreateStatement,
     StartCreateStatementGenerator,
-    WrapRunFunc,
-    WrapRunFuncGenerator,
+    StartStencilStatement,
+    StartStencilStatementGenerator,
     generate_fortran_code,
 )
 from icon4py.liskov.codegen.interface import CodeGenInput, DeserialisedDirectives
@@ -106,8 +106,8 @@ class IntegrationGenerator:
         for i, stencil in enumerate(self.directives.StartStencil):
             logger.info(f"Generating START statement for {stencil.name}")
             self._add_generated_code(
-                OutputFieldCopy,
-                OutputFieldCopyGenerator,
+                StartStencilStatement,
+                StartStencilStatementGenerator,
                 self.directives.StartStencil[i].startln,
                 self.directives.StartStencil[i].endln,
                 stencil_data=stencil,
@@ -115,8 +115,8 @@ class IntegrationGenerator:
             )
             logger.info(f"Generating END statement for {stencil.name}")
             self._add_generated_code(
-                WrapRunFunc,
-                WrapRunFuncGenerator,
+                EndStencilStatement,
+                EndStencilStatementGenerator,
                 self.directives.EndStencil[i].startln,
                 self.directives.EndStencil[i].endln,
                 stencil_data=stencil,
