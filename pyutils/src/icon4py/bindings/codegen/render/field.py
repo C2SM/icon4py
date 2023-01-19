@@ -33,12 +33,12 @@ class FieldRenderer:
 
     def render_dim_tags(self) -> str:
         """Render c++ dimension tags."""
-        #if self.entity.is_sparse():
-        #    raise BindingsRenderingException(
-        #        "can not render dimension tags for sparse field"
-        #    )
         tags = []
-        if self.entity.is_dense() or self.entity.is_sparse() or self.entity.is_compound():
+        if (
+            self.entity.is_dense()
+            or self.entity.is_sparse()
+            or self.entity.is_compound()
+        ):
             tags.append("unstructured::dim::horizontal")
         if self.entity.has_vertical_dimension:
             tags.append("unstructured::dim::vertical")
@@ -46,9 +46,6 @@ class FieldRenderer:
 
     def render_sid(self) -> str:
         """Render c++ gridtools sid for field."""
-        #if self.entity.is_sparse():
-        #    raise BindingsRenderingException("can not render sid of sparse field")
-
         if self.entity.rank() == 0:
             raise BindingsRenderingException("can not render sid of a scalar")
 
