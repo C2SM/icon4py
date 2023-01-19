@@ -10,8 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import os
 import tarfile
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -40,9 +40,9 @@ from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
 data_uri = "https://polybox.ethz.ch/index.php/s/kP0Q2dDU6DytEqI/download"
-data_path = os.path.join(os.path.dirname(__file__), "./ser_icondata")
-extracted_path = os.path.join(data_path, "mch_ch_r04b09_dsl/ser_data")
-data_file = os.path.join(data_path, "ser_data_diffusion.tar.gz")
+data_path = Path(__file__).parent.joinpath("ser_icondata")
+extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
+data_file = data_path.joinpath("ser_data_diffusion.tar.gz").name
 
 
 @pytest.fixture(scope="session")
@@ -52,19 +52,18 @@ def setup_icon_data():
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
-    os.makedirs(data_path, exist_ok=True)
-    if len(os.listdir(data_path)) == 0:
+    data_path.mkdir(parents=True, exist_ok=True)
+    if not any(data_path.iterdir()):
         print(
             f"directory {data_path} is empty: downloading data from {data_uri} and extracting"
         )
-
         wget.download(data_uri, out=data_file)
         # extract downloaded file
         if not tarfile.is_tarfile(data_file):
             raise NotImplementedError(f"{data_file} needs to be a valid tar file")
         with tarfile.open(data_file, mode="r:*") as tf:
             tf.extractall(path=data_path)
-        os.remove(data_file)
+        Path(data_file).unlink(missing_ok=True)
 
 
 @pytest.fixture
