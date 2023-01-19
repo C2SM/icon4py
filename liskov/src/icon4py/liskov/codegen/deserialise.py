@@ -72,6 +72,21 @@ class DeclareDataFactory:
         )
 
 
+class EndStencilDataFactory:
+    def __call__(self, parsed: ts.ParsedDict) -> list[EndStencilData]:
+        deserialised = []
+        extracted = extract_directive(parsed["directives"], ts.EndStencil)
+        for i, directive in enumerate(extracted):
+            named_args = parsed["content"]["EndStencil"][i]
+            stencil_name = _extract_stencil_name(named_args, directive)
+            deserialised.append(
+                EndStencilData(
+                    name=stencil_name, startln=directive.startln, endln=directive.endln
+                )
+            )
+        return deserialised
+
+
 def _extract_stencil_name(named_args: dict, directive: ts.ParsedDirective) -> str:
     """Extract stencil name from directive arguments."""
     try:
@@ -213,21 +228,6 @@ class StartStencilDataFactory:
                         if f.variable == name:
                             setattr(f, tol, association)
         return fields
-
-
-class EndStencilDataFactory:
-    def __call__(self, parsed: ts.ParsedDict) -> list[EndStencilData]:
-        deserialised = []
-        extracted = extract_directive(parsed["directives"], ts.EndStencil)
-        for i, directive in enumerate(extracted):
-            named_args = parsed["content"]["EndStencil"][i]
-            stencil_name = _extract_stencil_name(named_args, directive)
-            deserialised.append(
-                EndStencilData(
-                    name=stencil_name, startln=directive.startln, endln=directive.endln
-                )
-            )
-        return deserialised
 
 
 class DirectiveDeserialiser:
