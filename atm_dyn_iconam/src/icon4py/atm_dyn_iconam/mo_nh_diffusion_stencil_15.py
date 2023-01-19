@@ -62,14 +62,15 @@ def mo_nh_diffusion_stencil_15(
     vcoef,
     theta_v,
     z_temp,
-    hstart,
-    hend,
-    kstart,
-    kend,
+    horizontal_start,
+    horizontal_end,
+    vertical_start,
+    vertical_end,
 ):
     closure(
         unstructured_domain(
-            named_range(CellDim, hstart, hend), named_range(KDim, kstart, kend)
+            named_range(CellDim, horizontal_start, horizontal_end),
+            named_range(KDim, vertical_start, vertical_end),
         ),
         _mo_nh_diffusion_stencil_15,
         z_temp,

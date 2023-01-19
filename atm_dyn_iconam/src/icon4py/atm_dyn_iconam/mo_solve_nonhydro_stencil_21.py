@@ -75,14 +75,15 @@ def mo_solve_nonhydro_stencil_21(
     inv_dual_edge_length,
     grav_o_cpd,
     z_hydro_corr,
-    hstart: int,
-    hend: int,
-    kstart: int,
-    kend: int,
+    horizontal_start,
+    horizontal_end,
+    vertical_start,
+    vertical_end,
 ):
     closure(
         unstructured_domain(
-            named_range(EdgeDim, hstart, hend), named_range(KDim, kstart, kend)
+            named_range(EdgeDim, horizontal_start, horizontal_end),
+            named_range(KDim, vertical_start, vertical_end),
         ),
         _mo_solve_nonhydro_stencil_21,
         z_hydro_corr,

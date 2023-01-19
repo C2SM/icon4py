@@ -70,14 +70,15 @@ def mo_solve_nonhydro_stencil_20(
     z_dexner_dz_c_1,
     z_dexner_dz_c_2,
     z_gradh_exner,
-    hstart: int,
-    hend: int,
-    kstart: int,
-    kend: int,
+    horizontal_start,
+    horizontal_end,
+    vertical_start,
+    vertical_end,
 ):
     closure(
         unstructured_domain(
-            named_range(EdgeDim, hstart, hend), named_range(KDim, kstart, kend)
+            named_range(EdgeDim, horizontal_start, horizontal_end),
+            named_range(KDim, vertical_start, vertical_end),
         ),
         _mo_solve_nonhydro_stencil_20,
         z_gradh_exner,
