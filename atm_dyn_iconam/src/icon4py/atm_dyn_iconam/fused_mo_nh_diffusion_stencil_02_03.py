@@ -14,7 +14,7 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim, Koff
+from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import _mo_nh_diffusion_stencil_02
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_03 import _mo_nh_diffusion_stencil_03

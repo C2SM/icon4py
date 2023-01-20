@@ -12,9 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, where, neighbor_sum, max_over, maximum
+from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import E2C, E2CDim, C2E2C, C2E2CDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_11 import _mo_nh_diffusion_stencil_11
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_12 import _mo_nh_diffusion_stencil_12

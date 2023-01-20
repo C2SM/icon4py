@@ -12,21 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, neighbor_sum
+from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import (
-    E2C,
-    E2CDim,
-    C2E2C,
-    C2E2CDim,
-    C2CE,
-    C2E,
-    C2EDim,
-    CEDim,
-    CellDim,
-    EdgeDim,
-    KDim,
-)
+from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_13 import _mo_nh_diffusion_stencil_13
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_14 import _mo_nh_diffusion_stencil_14
