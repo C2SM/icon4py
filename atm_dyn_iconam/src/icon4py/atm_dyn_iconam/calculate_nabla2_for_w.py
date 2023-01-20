@@ -18,25 +18,17 @@ from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_09(
-    area: Field[[CellDim], float],
-    z_nabla2_c: Field[[CellDim, KDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
-    w: Field[[CellDim, KDim], float],
-    diff_multfac_w: float,
+def _calculate_nabla2_for_w(
+    w: Field[[CellDim, KDim], float], geofac_n2s: Field[[CellDim, C2E2CODim], float]
 ) -> Field[[CellDim, KDim], float]:
-    w = w - diff_multfac_w * area * area * neighbor_sum(
-        z_nabla2_c(C2E2CO) * geofac_n2s, axis=C2E2CODim
-    )
-    return w
+    z_nabla2_c = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim)
+    return z_nabla2_c
 
 
 @program
-def mo_nh_diffusion_stencil_09(
-    area: Field[[CellDim], float],
-    z_nabla2_c: Field[[CellDim, KDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
+def calculate_nabla2_for_w(
     w: Field[[CellDim, KDim], float],
-    diff_multfac_w: float,
+    geofac_n2s: Field[[CellDim, C2E2CODim], float],
+    z_nabla2_c: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_09(area, z_nabla2_c, geofac_n2s, w, diff_multfac_w, out=w)
+    _calculate_nabla2_for_w(w, geofac_n2s, out=z_nabla2_c)

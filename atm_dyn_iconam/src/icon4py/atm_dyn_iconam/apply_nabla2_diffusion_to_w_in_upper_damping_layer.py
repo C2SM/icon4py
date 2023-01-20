@@ -12,23 +12,29 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, neighbor_sum
+from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_07(
-    w: Field[[CellDim, KDim], float], geofac_n2s: Field[[CellDim, C2E2CODim], float]
+def _apply_nabla2_diffusion_to_w_in_upper_damping_layer(
+    w: Field[[CellDim, KDim], float],
+    diff_multfac_n2w: Field[[KDim], float],
+    cell_area: Field[[CellDim], float],
+    z_nabla2_c: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    z_nabla2_c = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim)
-    return z_nabla2_c
+    w = w + diff_multfac_n2w * (cell_area * z_nabla2_c)
+    return w
 
 
 @program
-def mo_nh_diffusion_stencil_07(
+def apply_nabla2_diffusion_to_w_in_upper_damping_layer(
     w: Field[[CellDim, KDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
+    diff_multfac_n2w: Field[[KDim], float],
+    cell_area: Field[[CellDim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_07(w, geofac_n2s, out=z_nabla2_c)
+    _apply_nabla2_diffusion_to_w_in_upper_damping_layer(
+        w, diff_multfac_n2w, cell_area, z_nabla2_c, out=w
+    )

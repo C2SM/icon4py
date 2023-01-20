@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_10 import (
-    mo_nh_diffusion_stencil_10,
+from icon4py.atm_dyn_iconam.apply_nabla2_diffusion_to_w_in_upper_damping_layer import (
+    apply_nabla2_diffusion_to_w_in_upper_damping_layer,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_nh_diffusion_stencil_10_numpy(
+def apply_nabla2_diffusion_to_w_in_upper_damping_layer_numpy(
     w: np.array,
     diff_multfac_n2w: np.array,
     cell_area: np.array,
@@ -32,7 +32,7 @@ def mo_nh_diffusion_stencil_10_numpy(
     return w
 
 
-def test_mo_nh_diffusion_stencil_10():
+def test_apply_nabla2_diffusion_to_w_in_upper_damping_layer():
     mesh = SimpleMesh()
 
     w = random_field(mesh, CellDim, KDim)
@@ -40,13 +40,13 @@ def test_mo_nh_diffusion_stencil_10():
     cell_area = random_field(mesh, CellDim)
     z_nabla2_c = random_field(mesh, CellDim, KDim)
 
-    ref = mo_nh_diffusion_stencil_10_numpy(
+    ref = apply_nabla2_diffusion_to_w_in_upper_damping_layer_numpy(
         np.asarray(w),
         np.asarray(diff_multfac_n2w),
         np.asarray(cell_area),
         np.asarray(z_nabla2_c),
     )
-    mo_nh_diffusion_stencil_10(
+    apply_nabla2_diffusion_to_w_in_upper_damping_layer(
         w,
         diff_multfac_n2w,
         cell_area,

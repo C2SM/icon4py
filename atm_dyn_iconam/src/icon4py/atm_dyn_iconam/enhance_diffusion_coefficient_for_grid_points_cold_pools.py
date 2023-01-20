@@ -18,7 +18,7 @@ from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_12(
+def _enhance_diffusion_coefficient_for_grid_points_cold_pools(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     enh_diffu_3d: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
@@ -27,8 +27,10 @@ def _mo_nh_diffusion_stencil_12(
 
 
 @program
-def mo_nh_diffusion_stencil_12(
+def enhance_diffusion_coefficient_for_grid_points_cold_pools(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     enh_diffu_3d: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_12(kh_smag_e, enh_diffu_3d, out=kh_smag_e)
+    _enhance_diffusion_coefficient_for_grid_points_cold_pools(
+        kh_smag_e, enh_diffu_3d, out=kh_smag_e
+    )

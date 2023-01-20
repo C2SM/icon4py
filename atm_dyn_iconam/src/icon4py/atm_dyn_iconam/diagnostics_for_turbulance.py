@@ -18,7 +18,7 @@ from icon4py.common.dimension import CellDim, KDim, Koff
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_03(
+def _diagnostics_for_turbulance(
     div: Field[[CellDim, KDim], float],
     kh_c: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
@@ -29,11 +29,11 @@ def _mo_nh_diffusion_stencil_03(
 
 
 @program
-def mo_nh_diffusion_stencil_03(
+def diagnostics_for_turbulance(
     div: Field[[CellDim, KDim], float],
     kh_c: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     div_ic: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_03(div, kh_c, wgtfac_c, out=(div_ic, hdef_ic))
+    _diagnostics_for_turbulance(div, kh_c, wgtfac_c, out=(div_ic, hdef_ic))

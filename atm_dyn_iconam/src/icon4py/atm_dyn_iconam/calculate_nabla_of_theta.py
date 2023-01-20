@@ -12,27 +12,32 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from functional.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.common.dimension import EdgeDim, KDim
+from icon4py.common.dimension import (
+    C2CE,
+    C2E,
+    C2EDim,
+    CEDim,
+    CellDim,
+    EdgeDim,
+    KDim,
+)
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_06(
+def _calculate_nabla_of_theta(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
-    area_edge: Field[[EdgeDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    fac_bdydiff_v: float,
-) -> Field[[EdgeDim, KDim], float]:
-    vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
-    return vn
+    geofac_div: Field[[CEDim], float],
+) -> Field[[CellDim, KDim], float]:
+    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)
+    return z_temp
 
 
 @program
-def mo_nh_diffusion_stencil_06(
+def calculate_nabla_of_theta(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
-    area_edge: Field[[EdgeDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    fac_bdydiff_v: float,
+    geofac_div: Field[[CEDim], float],
+    z_temp: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, fac_bdydiff_v, out=vn)
+    _calculate_nabla_of_theta(z_nabla2_e, geofac_div, out=z_temp)
