@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, neighbor_sum
+from functional.ffront.fbuiltins import Field
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import (
     _mo_nh_diffusion_stencil_02,
