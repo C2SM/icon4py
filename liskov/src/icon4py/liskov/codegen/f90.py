@@ -153,7 +153,7 @@ class EndStencilStatementGenerator(TemplatedGenerator):
         {%- else -%}
 
             {%- for f in _this_node.fields -%}
-                {%- if f.rel_tol -%}
+                {% if f.rel_tol %}
                 {{ f.variable }}_rel_tol={{ f.rel_tol }}, &
                 {%- endif -%}
                 {% if f.abs_tol %}
