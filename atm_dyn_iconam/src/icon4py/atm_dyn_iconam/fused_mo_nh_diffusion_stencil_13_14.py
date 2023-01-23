@@ -14,10 +14,14 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
 
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_13 import (
+    _mo_nh_diffusion_stencil_13,
+)
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_14 import (
+    _mo_nh_diffusion_stencil_14,
+)
 from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_13 import _mo_nh_diffusion_stencil_13
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_14 import _mo_nh_diffusion_stencil_14
 
 @field_operator
 def _fused_mo_nh_diffusion_stencil_13_14(
@@ -30,6 +34,7 @@ def _fused_mo_nh_diffusion_stencil_13_14(
     z_temp = _mo_nh_diffusion_stencil_14(z_nabla2_e, geofac_div)
     return z_temp
 
+
 @program
 def fused_mo_nh_diffusion_stencil_13_14(
     kh_smag_e: Field[[EdgeDim, KDim], float],
@@ -38,4 +43,6 @@ def fused_mo_nh_diffusion_stencil_13_14(
     geofac_div: Field[[CEDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ):
-    _fused_mo_nh_diffusion_stencil_13_14(kh_smag_e, inv_dual_edge_length, theta_v, geofac_div, out=z_temp)
+    _fused_mo_nh_diffusion_stencil_13_14(
+        kh_smag_e, inv_dual_edge_length, theta_v, geofac_div, out=z_temp
+    )

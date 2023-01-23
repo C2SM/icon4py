@@ -12,14 +12,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, where, int32, broadcast
+from functional.ffront.fbuiltins import Field, broadcast, int32, where
 
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_07 import (
+    _mo_nh_diffusion_stencil_07,
+)
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_08 import (
+    _mo_nh_diffusion_stencil_08,
+)
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_09 import (
+    _mo_nh_diffusion_stencil_09,
+)
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_10 import (
+    _mo_nh_diffusion_stencil_10,
+)
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_07 import _mo_nh_diffusion_stencil_07
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_08 import _mo_nh_diffusion_stencil_08
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_09 import _mo_nh_diffusion_stencil_09
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_10 import _mo_nh_diffusion_stencil_10
 
 @field_operator
 def _fused_mo_nh_diffusion_stencil_07_08_09_10(
@@ -38,26 +46,35 @@ def _fused_mo_nh_diffusion_stencil_07_08_09_10(
     nrdmax: int32,
     interior_idx: int32,
     halo_idx: int32,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
 
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     dwdx, dwdy = where(
         vert_idx > int32(0),
         _mo_nh_diffusion_stencil_08(w_old, geofac_grg_x, geofac_grg_y),
-        (dwdx, dwdy)
+        (dwdx, dwdy),
     )
 
     z_nabla2_c = _mo_nh_diffusion_stencil_07(w_old, geofac_n2s)
 
     w = where(
         (horz_idx >= interior_idx) & (horz_idx < halo_idx),
-        _mo_nh_diffusion_stencil_09(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
+        _mo_nh_diffusion_stencil_09(
+            area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w
+        ),
         w_old,
     )
 
     w = where(
-        (vert_idx > int32(0)) & (vert_idx < nrdmax) & (horz_idx >= interior_idx) & (horz_idx < halo_idx),
+        (vert_idx > int32(0))
+        & (vert_idx < nrdmax)
+        & (horz_idx >= interior_idx)
+        & (horz_idx < halo_idx),
         _mo_nh_diffusion_stencil_10(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
@@ -83,4 +100,21 @@ def fused_mo_nh_diffusion_stencil_07_08_09_10(
     interior_idx: int32,
     halo_idx: int32,
 ):
-    _fused_mo_nh_diffusion_stencil_07_08_09_10(area, geofac_n2s, geofac_grg_x, geofac_grg_y, w_old, w, dwdx, dwdy, diff_multfac_w, diff_multfac_n2w, vert_idx, horz_idx, nrdmax, interior_idx, halo_idx, out = (w, dwdx, dwdy))
+    _fused_mo_nh_diffusion_stencil_07_08_09_10(
+        area,
+        geofac_n2s,
+        geofac_grg_x,
+        geofac_grg_y,
+        w_old,
+        w,
+        dwdx,
+        dwdy,
+        diff_multfac_w,
+        diff_multfac_n2w,
+        vert_idx,
+        horz_idx,
+        nrdmax,
+        interior_idx,
+        halo_idx,
+        out=(w, dwdx, dwdy),
+    )

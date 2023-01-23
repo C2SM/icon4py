@@ -14,12 +14,28 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import ECVDim, C2EDim, V2EDim, CellDim, EdgeDim, VertexDim, KDim
+from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
+    _mo_intp_rbf_rbf_vec_interpol_vertex,
+)
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_01 import (
+    _mo_nh_diffusion_stencil_01,
+)
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import (
+    _mo_nh_diffusion_stencil_02,
+)
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_03 import (
+    _mo_nh_diffusion_stencil_03,
+)
+from icon4py.common.dimension import (
+    C2EDim,
+    CellDim,
+    ECVDim,
+    EdgeDim,
+    KDim,
+    V2EDim,
+    VertexDim,
+)
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_01 import _mo_nh_diffusion_stencil_01
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import _mo_nh_diffusion_stencil_02
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_03 import _mo_nh_diffusion_stencil_03
-from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import _mo_intp_rbf_rbf_vec_interpol_vertex
 
 @field_operator
 def _fused_mo_nh_diffusion_stencil_01_02_03_rbf(
@@ -42,23 +58,38 @@ def _fused_mo_nh_diffusion_stencil_01_02_03_rbf(
     ptr_coeff_1: Field[[VertexDim, V2EDim], float],
     ptr_coeff_2: Field[[VertexDim, V2EDim], float],
 ) -> tuple[
-        Field[[EdgeDim, KDim], float],
-        Field[[CellDim, KDim], float],
-        Field[[CellDim, KDim], float],
-        Field[[VertexDim, KDim], float],
-        Field[[VertexDim, KDim], float],
-    ]:
+    Field[[EdgeDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[VertexDim, KDim], float],
+    Field[[VertexDim, KDim], float],
+]:
 
-    kh_smag_e, kh_smag_ec, z_nabla2_e = _mo_nh_diffusion_stencil_01( diff_multfac_smag,
-        tangent_orientation, inv_primal_edge_length, inv_vert_vert_length, u_vert_old, v_vert_old,
-        primal_normal_vert_x, primal_normal_vert_y, dual_normal_vert_x, dual_normal_vert_y,
-        vn, smag_limit, smag_offset)
+    kh_smag_e, kh_smag_ec, z_nabla2_e = _mo_nh_diffusion_stencil_01(
+        diff_multfac_smag,
+        tangent_orientation,
+        inv_primal_edge_length,
+        inv_vert_vert_length,
+        u_vert_old,
+        v_vert_old,
+        primal_normal_vert_x,
+        primal_normal_vert_y,
+        dual_normal_vert_x,
+        dual_normal_vert_y,
+        vn,
+        smag_limit,
+        smag_offset,
+    )
 
-    kh_c, div = _mo_nh_diffusion_stencil_02(kh_smag_ec, vn, e_bln_c_s, geofac_div, diff_multfac_smag)
+    kh_c, div = _mo_nh_diffusion_stencil_02(
+        kh_smag_ec, vn, e_bln_c_s, geofac_div, diff_multfac_smag
+    )
 
     div_ic, hdef_ic = _mo_nh_diffusion_stencil_03(div, kh_c, wgtfac_c)
 
-    u_vert, v_vert = _mo_intp_rbf_rbf_vec_interpol_vertex(z_nabla2_e, ptr_coeff_1, ptr_coeff_2)
+    u_vert, v_vert = _mo_intp_rbf_rbf_vec_interpol_vertex(
+        z_nabla2_e, ptr_coeff_1, ptr_coeff_2
+    )
 
     return kh_smag_e, div_ic, hdef_ic, u_vert, v_vert
 
@@ -89,4 +120,24 @@ def fused_mo_nh_diffusion_stencil_01_02_03_rbf(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],
 ):
-    _fused_mo_nh_diffusion_stencil_01_02_03_rbf(diff_multfac_smag, tangent_orientation, inv_primal_edge_length, inv_vert_vert_length, u_vert_old, v_vert_old, primal_normal_vert_x, primal_normal_vert_y, dual_normal_vert_x, dual_normal_vert_y, vn, smag_limit, smag_offset, e_bln_c_s, geofac_div, wgtfac_c, ptr_coeff_1, ptr_coeff_2, out=(kh_smag_e, div_ic, hdef_ic, u_vert, v_vert))
+    _fused_mo_nh_diffusion_stencil_01_02_03_rbf(
+        diff_multfac_smag,
+        tangent_orientation,
+        inv_primal_edge_length,
+        inv_vert_vert_length,
+        u_vert_old,
+        v_vert_old,
+        primal_normal_vert_x,
+        primal_normal_vert_y,
+        dual_normal_vert_x,
+        dual_normal_vert_y,
+        vn,
+        smag_limit,
+        smag_offset,
+        e_bln_c_s,
+        geofac_div,
+        wgtfac_c,
+        ptr_coeff_1,
+        ptr_coeff_2,
+        out=(kh_smag_e, div_ic, hdef_ic, u_vert, v_vert),
+    )
