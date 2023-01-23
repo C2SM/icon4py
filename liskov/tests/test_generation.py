@@ -65,10 +65,16 @@ def serialised_directives():
 @pytest.fixture
 def expected_start_create_source():
     return """
-!$ACC DATA CREATE( &
-!$ACC   field2_before &
-!$ACC   ), &
-!$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
+#ifdef __DSL_VERIFY
+        dsl_verify = .TRUE.
+#elif
+        dsl_verify = .FALSE.
+#endif
+
+        !$ACC DATA CREATE( &
+        !$ACC   field2_before &
+        !$ACC   ), &
+        !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
 
 
 @pytest.fixture
@@ -86,14 +92,7 @@ def expected_declare_source():
     return """
         ! DSL INPUT / OUTPUT FIELDS
         REAL(wp), DIMENSION((nproma, p_patch%nlev, p_patch%nblks_e)) :: field2_before
-
-        LOGICAL :: dsl_verify
-
-#ifdef __DSL_VERIFY
-        dsl_verify = .TRUE.
-#elif
-        dsl_verify = .FALSE.
-#endif"""
+        LOGICAL :: dsl_verify"""
 
 
 @pytest.fixture

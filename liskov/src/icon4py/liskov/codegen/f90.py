@@ -198,14 +198,7 @@ class DeclareStatementGenerator(TemplatedGenerator):
         {%- for d in _this_node.declarations %}
         REAL(wp), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
         {%- endfor %}
-
         LOGICAL :: dsl_verify
-
-        #ifdef __DSL_VERIFY
-        dsl_verify = .TRUE.
-        #elif
-        dsl_verify = .FALSE.
-        #endif
         """
     )
 
@@ -291,6 +284,12 @@ class StartCreateStatement(eve.Node):
 class StartCreateStatementGenerator(TemplatedGenerator):
     StartCreateStatement = as_jinja(
         """
+        #ifdef __DSL_VERIFY
+        dsl_verify = .TRUE.
+        #elif
+        dsl_verify = .FALSE.
+        #endif
+
         !$ACC DATA CREATE( &
         {%- for name in out_field_names %}
         !$ACC   {{ name }}_before {%- if not loop.last -%}, & {% else %} & {%- endif -%}
