@@ -16,13 +16,10 @@ from typing import Dict, Tuple
 import numpy as np
 from functional.common import Dimension, DimensionKind, Field
 from functional.ffront.fbuiltins import int32
-from functional.iterator.embedded import (
-    NeighborTableOffsetProvider,
-    np_as_located_field,
-)
+from functional.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.diffusion.horizontal import HorizontalMeshConfig
+from icon4py.diffusion.horizontal import HorizontalMeshSize
 
 
 class VerticalMeshConfig:
@@ -37,7 +34,7 @@ class VerticalMeshConfig:
 class MeshConfig:
     def __init__(
         self,
-        horizontal_config: HorizontalMeshConfig,
+        horizontal_config: HorizontalMeshSize,
         vertical_config: VerticalMeshConfig,
         limited_area=True,
     ):
@@ -178,22 +175,24 @@ class IconGrid:
 
 
 class VerticalModelParams:
-    def __init__(self, vct_a: np.ndarray, rayleigh_damping_height: float):
+    def __init__(self, vct_a: Field[[KDim], float], rayleigh_damping_height: float):
         """
-        Contains physical parameters defined on the grid.
+        Contains vertical physical parameters defined on the grid.
 
         Args:
             vct_a:  field containing the physical heights of the k level
             rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
         """
         self.rayleigh_damping_height = rayleigh_damping_height
-        self.vct_a = vct_a
-        self.index_of_damping_height = int32(
-            np.argmax(np.where(np.asarray(self.vct_a) >= self.rayleigh_damping_height))
+        self._vct_a = vct_a
+        self._index_of_damping_height = int32(
+            np.argmax(np.where(np.asarray(self._vct_a) >= self.rayleigh_damping_height))
         )
 
-    def get_index_of_damping_layer(self):
-        return self.index_of_damping_height
+    @property
+    def index_of_damping_layer(self):
+        return self._index_of_damping_height
 
-    def get_physical_heights(self) -> Field[[KDim], float]:
-        return np_as_located_field(KDim)(self.vct_a)
+    @property
+    def physical_heights(self) -> Field[[KDim], float]:
+        return self._vct_a

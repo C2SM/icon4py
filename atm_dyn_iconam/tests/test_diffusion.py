@@ -16,12 +16,7 @@ import pytest
 
 from icon4py.common.dimension import ECVDim, KDim, VertexDim
 from icon4py.diffusion.diagnostic_state import DiagnosticState
-from icon4py.diffusion.diffusion import (
-    Diffusion,
-    DiffusionConfig,
-    DiffusionParams,
-    VectorTuple,
-)
+from icon4py.diffusion.diffusion import Diffusion, DiffusionParams, VectorTuple
 from icon4py.diffusion.icon_grid import VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
@@ -200,7 +195,6 @@ def test_smagorinski_factor_for_diffusion_type_4(r04b09_diffusion_config):
     assert params.smagorinski_height is None
 
 
-@pytest.mark.datatest
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
     r04b09_diffusion_config,
 ):
@@ -218,7 +212,6 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
     assert params.smagorinski_height[2] != params.smagorinski_height[3]
 
 
-@pytest.mark.datatest
 def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
     config = r04b09_diffusion_config
     params = DiffusionParams(config)
@@ -228,18 +221,49 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
 
 
 @pytest.mark.datatest
-def test_diffusion_init(savepoint_init, r04b09_diffusion_config, step_date_init):
+def test_diffusion_init(
+    savepoint_init, icon_grid, r04b09_diffusion_config, step_date_init, damping_height
+):
     savepoint = savepoint_init
-    vct_a = savepoint.vct_a()
     config = r04b09_diffusion_config
+    additional_parameters = DiffusionParams(config)
+    vertical_params = VerticalModelParams(savepoint.vct_a(), damping_height)
+
     meta = savepoint.get_metadata("nlev", "linit", "date")
 
     assert meta["nlev"] == 65
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
-    additional_parameters = DiffusionParams(config)
 
-    diffusion = Diffusion(config, additional_parameters, vct_a)
+    grg = savepoint.geofac_grg()
+    interpolation_state = InterpolationState(
+        e_bln_c_s=savepoint.e_bln_c_s(),
+        rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
+        geofac_div=savepoint.geofac_div(),
+        geofac_n2s=savepoint.geofac_n2s(),
+        geofac_grg_x=grg[0],
+        geofac_grg_y=grg[1],
+        nudgecoeff_e=savepoint.nudgecoeff_e(),
+    )
+    metric_state = MetricState(
+        mask_hdiff=savepoint.mask_diff(),
+        theta_ref_mc=savepoint.theta_ref_mc(),
+        wgtfac_c=savepoint.wgtfac_c(),
+        zd_intcoef=savepoint.zd_intcoef(),
+        zd_vertidx=savepoint.zd_vertidx(),
+        zd_diffcoef=savepoint.zd_diffcoef(),
+    )
+
+    diffusion = Diffusion()
+    diffusion.init(
+        grid=icon_grid,
+        vertical_params=vertical_params,
+        config=config,
+        params=additional_parameters,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+    )
 
     assert diffusion.diff_multfac_w == min(
         1.0 / 48.0, additional_parameters.K4W * config.substep_as_float()
@@ -250,7 +274,7 @@ def test_diffusion_init(savepoint_init, r04b09_diffusion_config, step_date_init)
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_ec))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_e))
 
-    shape_k = (config.grid.n_lev(),)
+    shape_k = (icon_grid.n_lev(),)
     expected_smag_limit = smag_limit_numpy(
         diff_multfac_vn_numpy,
         shape_k,
@@ -271,7 +295,7 @@ def test_diffusion_init(savepoint_init, r04b09_diffusion_config, step_date_init)
     expected_enh_smag_fac = enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
-        vct_a,
+        savepoint.vct_a(),
     )
     assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))
 
@@ -301,8 +325,7 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_init,
-    r04b09_diffusion_config,
+    savepoint_init, r04b09_diffusion_config, icon_grid
 ):
     savepoint = savepoint_init
     config = r04b09_diffusion_config
@@ -312,8 +335,8 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     expected_smag_limit = savepoint.smag_limit()
     exptected_smag_offset = savepoint.smag_offset()
 
-    diff_multfac_vn = zero_field(config.grid, KDim)
-    smag_limit = zero_field(config.grid, KDim)
+    diff_multfac_vn = zero_field(icon_grid, KDim)
+    smag_limit = zero_field(icon_grid, KDim)
     setup_fields_for_initial_step(
         params.K4,
         config.hdiff_efdt_ratio,
@@ -328,8 +351,7 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 
 @pytest.mark.datatest
 def test_verify_diffusion_init_against_first_regular_savepoint(
-    savepoint_init,
-    r04b09_diffusion_config,
+    savepoint_init, r04b09_diffusion_config, icon_grid, damping_height
 ):
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
@@ -357,7 +379,14 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         zd_diffcoef=savepoint.zd_diffcoef(),
     )
     diffusion = Diffusion()
-    diffusion.init(config, additional_parameters, vct_a, metric_state, interpolation_state)
+    diffusion.init(
+        config=config,
+        grid=icon_grid,
+        params=additional_parameters,
+        vertical_params=VerticalModelParams(vct_a, damping_height),
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+    )
 
     _verify_init_values_against_savepoint(savepoint, diffusion)
 
@@ -365,13 +394,13 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 @pytest.mark.datatest
 @pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
-    r04b09_diffusion_config, savepoint_init
+    r04b09_diffusion_config, icon_grid, savepoint_init, damping_height
 ):
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 
     savepoint = savepoint_init
-    vct_a = savepoint.vct_a()
+    vertical_params = VerticalModelParams(savepoint.vct_a(), damping_height)
     grg = savepoint.geofac_grg()
     interpolation_state = InterpolationState(
         e_bln_c_s=savepoint.e_bln_c_s(),
@@ -393,25 +422,30 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     )
 
     diffusion = Diffusion()
-    diffusion.init(config, additional_parameters, vct_a, metric_state, interpolation_state)
+    diffusion.init(
+        icon_grid,
+        config,
+        additional_parameters,
+        vertical_params,
+        metric_state,
+        interpolation_state,
+    )
 
     _verify_init_values_against_savepoint(savepoint, diffusion)
 
 
 @pytest.mark.datatest
 @pytest.mark.skip
-def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
+def test_run_diffusion_single_step(
+    savepoint_init, savepoint_exit, icon_grid, r04b09_diffusion_config, damping_height
+):
     sp = savepoint_init
-    vct_a = sp.vct_a()
-
-    config = DiffusionConfig(
-        icon_grid,
-        vertical_params=VerticalModelParams(
-            vct_a=vct_a, rayleigh_damping_height=12500.0
-        ),
+    vct_a = sp._vct_a()
+    vertical_params = VerticalModelParams(
+        vct_a=vct_a, rayleigh_damping_height=damping_height
     )
 
-    additional_parameters = DiffusionParams(config)
+    additional_parameters = DiffusionParams(r04b09_diffusion_config)
 
     grg = sp.geofac_grg()
     interpolation_state = InterpolationState(
@@ -435,7 +469,14 @@ def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
     )
 
     diffusion = Diffusion(run_program=False)
-    diffusion.init(config, additional_parameters, vct_a, metric_state, interpolation_state)
+    diffusion.init(
+        grid=icon_grid,
+        config=r04b09_diffusion_config,
+        params=additional_parameters,
+        vertical_params=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+    )
 
     diagnostic_state = DiagnosticState(
         hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
@@ -467,8 +508,6 @@ def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
     diffusion.time_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
         dtime=dtime,
         tangent_orientation=orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
@@ -500,6 +539,7 @@ def test_run_diffusion_single_step(savepoint_init, savepoint_exit, icon_grid):
 @pytest.mark.skip
 @pytest.mark.datatest
 def test_diffusion_five_steps(
+    r04b09_diffusion_config,
     icon_grid,
     savepoint_init,
     savepoint_exit,
@@ -554,16 +594,21 @@ def test_diffusion_five_steps(
     edge_areas = sp.edge_areas()
     cell_areas = sp.cell_areas()
 
-    config = DiffusionConfig(
-        icon_grid,
-        vertical_params=VerticalModelParams(
-            vct_a=(sp.vct_a()), rayleigh_damping_height=12500.0
-        ),
+    vertical_params = VerticalModelParams(
+        vct_a=(sp._vct_a()), rayleigh_damping_height=12500.0
     )
-    additional_parameters = DiffusionParams(config)
+
+    additional_parameters = DiffusionParams(r04b09_diffusion_config)
 
     diffusion = Diffusion()
-    diffusion.init(config, additional_parameters, sp.vct_a(), metric_state, interpolation_state)
+    diffusion.init(
+        grid=icon_grid,
+        config=r04b09_diffusion_config,
+        params=additional_parameters,
+        vertical_params=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+    )
     diffusion.initial_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,

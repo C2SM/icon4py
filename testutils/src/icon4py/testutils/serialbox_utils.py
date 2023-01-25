@@ -234,9 +234,6 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
     def diff_multfac_n2w(self):
         return np.squeeze(self.serializer.read("diff_multfac_n2w", self.savepoint))
 
-    def nrdmax(self):
-        return self.serializer.read("nrdmax", self.savepoint)[0]
-
     def nudgezone_diff(self) -> int:
         return self.serializer.read("nudgezone_diff", self.savepoint)[0]
 

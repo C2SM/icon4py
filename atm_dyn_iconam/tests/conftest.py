@@ -29,13 +29,8 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.diffusion.horizontal import HorizontalMeshConfig
-from icon4py.diffusion.icon_grid import (
-    IconGrid,
-    MeshConfig,
-    VerticalMeshConfig,
-    VerticalModelParams,
-)
+from icon4py.diffusion.horizontal import HorizontalMeshSize
+from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
@@ -107,7 +102,7 @@ def savepoint_init(setup_icon_data, linit, step_date_init):
     linit flag can be set by overriding the 'linit' fixture
     """
     sp = IconSerialDataProvider(
-        "icon_diffusion_init", extracted_path, True
+        "icon_diffusion_init", str(extracted_path), True
     ).from_savepoint_init(linit=linit, date=step_date_init)
     return sp
 
@@ -146,7 +141,7 @@ def icon_grid(savepoint_init):
     edge_ends = sp.edge_end_index()
 
     config = MeshConfig(
-        HorizontalMeshConfig(
+        HorizontalMeshSize(
             num_vertices=sp_meta["nproma"],  # or rather "num_vert"
             num_cells=sp_meta["nproma"],  # or rather "num_cells"
             num_edges=sp_meta["nproma"],  # or rather "num_edges"
@@ -178,27 +173,7 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    sp = IconSerialDataProvider(
-        "icon_diffusion_init", extracted_path, True
-    ).from_savepoint_init(linit=True, date="2021-06-20T12:00:10.000")
-    nproma = sp.get_metadata("nproma")["nproma"]
-    num_lev = sp.get_metadata("nlev")["nlev"]
-    horizontal_config = HorizontalMeshConfig(
-        num_vertices=nproma, num_cells=nproma, num_edges=nproma
-    )
-    vertical_config = VerticalMeshConfig(num_lev=num_lev)
-
-    grid = IconGrid().with_config(
-        MeshConfig(horizontal_config=horizontal_config, vertical_config=vertical_config)
-    )
-
-    verticalParams = VerticalModelParams(
-        rayleigh_damping_height=12500, vct_a=sp.vct_a()
-    )
-
     return DiffusionConfig(
-        grid=grid,
-        vertical_params=verticalParams,
         diffusion_type=5,
         hdiff_w=True,
         hdiff_vn=True,
@@ -211,3 +186,8 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coeff=0.075,
     )
+
+
+@pytest.fixture
+def damping_height():
+    return 12500

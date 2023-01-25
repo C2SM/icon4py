@@ -10,11 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Final
+from dataclasses import dataclass
+from typing import Final, Tuple
 
-from functional.common import Dimension
+from functional.common import Dimension, Field
 
 from icon4py.common import dimension
+from icon4py.common.dimension import CellDim, ECVDim, EdgeDim
 
 
 class HorizontalMarkerIndex:
@@ -106,20 +108,107 @@ class HorizontalMarkerIndex:
                 return cls._END_VERTICES
 
 
-class HorizontalMeshConfig:
-    def __init__(self, num_vertices: int, num_edges: int, num_cells: int):
-        self._num_vertices = num_vertices
-        self._num_edges = num_edges
-        self._num_cells = num_cells
+@dataclass(frozen=True)
+class HorizontalMeshSize:
+    num_vertices: int
+    num_edges: int
+    num_cells: int
 
-    @property
-    def num_vertices(self):
-        return self._num_vertices
 
-    @property
-    def num_edges(self):
-        return self._num_edges
+@dataclass(frozen=True)
+class EdgeParams:
+    tangent_orientation: Field[[EdgeDim], float]
+    """
+    Orientation of vector product of the edge and the adjacent cell centers
+         v3
+        /  \
+       /    \
+      /  c1  \
+     /    |   \
+     v1----|--->v2
+     \    |   /
+      \   v  /
+       \ c2 /
+        \  /
+        v4
+    +1 or -1 depending on whether the vector product of
+    (v2-v1) x (c2-c1) points outside (+) or inside (-) the sphere
 
-    @property
-    def num_cells(self):
-        return self._num_cells
+    defined in ICON in mo_model_domain.f90:t_grid_edges%tangent_orientation
+    """
+
+    primal_edge_lengths: Field[[EdgeDim], float]
+    """
+    Length of the triangle edge.
+
+    defined int ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
+    """
+
+    inverse_primal_edge_lengths: Field[[EdgeDim], float]
+    """
+    Inverse of the triangle edge length: 1.0/primal_edge_length.
+
+    defined int ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
+    """
+
+    dual_edge_lengths: Field[[EdgeDim], float]
+    """
+    Length of the hexagon/pentagon edge.
+
+    defined int ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
+    """
+
+    inverse_dual_edge_lengths: Field[[EdgeDim], float]
+    """
+    Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
+
+    defined int ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
+    """
+
+    inverse_vertex_vertex_lengths: Field[[EdgeDim], float]
+    """
+    Inverse distance between outer vertices of adjacent cells.
+
+    v1--------
+    |       /|
+    |      / |
+    |    e   |
+    |  /     |
+    |/       |
+    --------v2
+
+    inverse_vertex_vertex_length(e) = 1.0/|v2-v1|
+
+    defined int ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
+    """
+
+    primal_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]]
+    """
+    Normal of the triangle edge, projected onto the location of the vertices
+
+    defined int ICON in mo_model_domain.f90:t_grid_edges%primal_normal_vert
+    """
+
+    dual_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]]
+    """
+    Tangent to the triangle edge, projected onto the location of vertices.
+
+     defined int ICON in mo_model_domain.f90:t_grid_edges%dual_normal_vert
+    """
+
+    edge_areas: Field[[EdgeDim], float]
+    """
+    Area of the quadrilateral (two triangles) adjacent to the edge.
+
+    defined int ICON in mo_model_domain.f90:t_grid_edges%area_edge
+    """
+
+
+@dataclass(frozen=True)
+class CellParams:
+    area: Field[[CellDim], float]
+    """
+    Area of a cell.
+
+    defined int ICON in mo_model_domain.f90:t_grid_cells%area
+    """

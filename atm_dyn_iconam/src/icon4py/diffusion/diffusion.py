@@ -15,7 +15,7 @@
 import math
 import sys
 from collections import namedtuple
-from typing import Final, Tuple, Optional
+from typing import Final, Optional, Tuple
 
 import numpy as np
 from functional.common import Dimension
@@ -94,8 +94,6 @@ class DiffusionConfig:
 
     def __init__(
         self,
-        grid: IconGrid,
-        vertical_params: VerticalModelParams,
         diffusion_type: int = 5,
         hdiff_w=True,
         hdiff_vn=True,
@@ -114,8 +112,6 @@ class DiffusionConfig:
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
     ):
-        self.grid = grid
-        self.vertical_params = vertical_params
 
         # parameters from namelist diffusion_nml
         self.diffusion_type: int = diffusion_type
@@ -135,7 +131,8 @@ class DiffusionConfig:
         """
 
         self.apply_to_vertical_wind: bool = hdiff_w
-        """Ff True, apply diffusion on the vertical wind field
+        """
+        If True, apply diffusion on the vertical wind field
 
         Called `lhdiff_w` in in mo_diffusion_nml.f90
         """
@@ -270,9 +267,6 @@ class DiffusionConfig:
                 "diffusion` is implemented"
             )
 
-        if not self.grid.limited_area:
-            raise NotImplementedError("Only limited area mode is implemented")
-
         if self.diffusion_type < 0:
             self.apply_to_temperature = False
             self.apply_to_horizontal_wind = False
@@ -395,7 +389,7 @@ def mo_nh_diffusion_stencil_15_numpy(
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def __init__(self, run_program = True):
+    def __init__(self, run_program=True):
 
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
@@ -404,38 +398,40 @@ class Diffusion:
         )  # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
         self._run_program = run_program
         self.grid: Optional[IconGrid] = None
-        self.config:Optional[DiffusionConfig] = None
-        self.params:Optional[DiffusionParams] = None
+        self.config: Optional[DiffusionConfig] = None
+        self.params: Optional[DiffusionParams] = None
+        self.vertical_params: Optional[VerticalModelParams] = None
         self.interpolation_state = None
         self.metric_state = None
-
         self.diff_multfac_w: Optional[float] = None
         self.smag_offset: Optional[float] = None
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
         self.nudgezone_diff: Optional[float] = None
-        self.diff_multfac_n2w:Optional[float] = None
-        self._allocate_local_fields()
+        self.diff_multfac_n2w: Optional[float] = None
 
     def init(
         self,
+        grid: IconGrid,
         config: DiffusionConfig,
         params: DiffusionParams,
-        vct_a: Field[[KDim], float],
+        vertical_params: VerticalModelParams,
         metric_state: MetricState,
-        interpolation_state: InterpolationState
+        interpolation_state: InterpolationState,
     ):
         """
         Initialize Diffusion granule with configuration.
 
         calculates all local fields that are used in diffusion within the time loop
         """
-
-        self.params: DiffusionParams = params
         self.config: DiffusionConfig = config
+        self.params: DiffusionParams = params
+        self.grid = grid
+        self.vertical_params = vertical_params
         self.metric_state: MetricState = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
-        self.grid = config.grid
+
+        self._allocate_local_fields()
 
         self.nudgezone_diff: float = 0.04 / (
             config.nudge_max_coeff + sys.float_info.epsilon
@@ -448,7 +444,6 @@ class Diffusion:
             else 1.0 / config.velocity_boundary_diffusion_denominator
         )
 
-
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float()
         self.diff_multfac_w: float = min(
             1.0 / 48.0, params.K4W * config.substep_as_float()
@@ -459,7 +454,7 @@ class Diffusion:
             config.substep_as_float(),
             *params.smagorinski_factor,
             *params.smagorinski_height,
-            vct_a,
+            self.vertical_params.physical_heights,
             self.diff_multfac_vn,
             self.smag_limit,
             self.enh_smag_fac,
@@ -467,10 +462,10 @@ class Diffusion:
         )
 
         self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
-            k_size=config.grid.n_lev(),
+            k_size=self.grid.n_lev(),
             nshift=0,
-            physical_heights=np.asarray(vct_a),
-            nrdmax=self.config.vertical_params.index_of_damping_height,
+            physical_heights=np.asarray(self.vertical_params.physical_heights),
+            nrdmax=self.vertical_params.index_of_damping_layer,
         )
         self._initialized = True
 
@@ -629,7 +624,7 @@ class Diffusion:
                 tangent_orientation=tangent_orientation,
                 inverse_primal_edge_lengths=inverse_primal_edge_lengths,
                 inverse_dual_edge_length=inverse_dual_edge_length,
-                inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+                inverse_vertex_vertex_lengths=inverse_vertical_vertex_lengths,
                 primal_normal_vert=primal_normal_vert,
                 dual_normal_vert=dual_normal_vert,
                 edge_areas=edge_areas,
@@ -705,7 +700,7 @@ class Diffusion:
                 vertex_startindex_lb_plus1=vertex_startindex_lb_plus1,
                 vertex_endindex_local=vertex_endindex_local,
                 vertex_endindex_local_minus1=vertex_endindex_local_minus1,
-                index_of_damping_height=self.config.vertical_params.index_of_damping_height,
+                index_of_damping_height=self.config.vertical_params._index_of_damping_height,
                 nlev=self.grid.n_lev(),
                 boundary_diffusion_start_index_edges=self.params.boundary_diffusion_start_index_edges,
                 offset_provider={
@@ -730,14 +725,18 @@ class Diffusion:
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
-        tangent_orientation: Field[[EdgeDim], float],
-        inverse_primal_edge_lengths: Field[[EdgeDim], float],
-        inverse_dual_edge_length: Field[[EdgeDim], float],
-        inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
-        primal_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        dual_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        edge_areas: Field[[EdgeDim], float],
-        cell_areas: Field[[CellDim], float],
+        tangent_orientation: Field[[EdgeDim], float],  # from p_patch%edges
+        inverse_primal_edge_lengths: Field[[EdgeDim], float],  # from p_patch%edges
+        inverse_dual_edge_length: Field[[EdgeDim], float],  # from p_patch%edges
+        inverse_vertex_vertex_lengths: Field[[EdgeDim], float],  # from p_patch%edges
+        primal_normal_vert: Tuple[
+            Field[[ECVDim], float], Field[[ECVDim], float]
+        ],  # from p_patch%edges
+        dual_normal_vert: Tuple[
+            Field[[ECVDim], float], Field[[ECVDim], float]
+        ],  # from p_patch%edges
+        edge_areas: Field[[EdgeDim], float],  # from p_patch%edges
+        cell_areas: Field[[CellDim], float],  # from p_atch%cells
         diff_multfac_vn: Field[[KDim], float],
         smag_limit: Field[[KDim], float],
         smag_offset: float,
@@ -752,7 +751,7 @@ class Diffusion:
             tangent_orientation:
             inverse_primal_edge_lengths:
             inverse_dual_edge_length:
-            inverse_vertical_vertex_lengths:
+            inverse_vertex_vertex_lengths:
             primal_normal_vert:
             dual_normal_vert:
             edge_areas:
@@ -846,7 +845,7 @@ class Diffusion:
             diff_multfac_smag=self.diff_multfac_smag,
             tangent_orientation=tangent_orientation,
             inv_primal_edge_length=inverse_primal_edge_lengths,
-            inv_vert_vert_length=inverse_vertical_vertex_lengths,
+            inv_vert_vert_length=inverse_vertex_vertex_lengths,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             primal_normal_vert_x=primal_normal_vert[0],
@@ -911,7 +910,7 @@ class Diffusion:
             primal_normal_vert[0],
             primal_normal_vert[1],
             self.z_nabla2_e,
-            inverse_vertical_vertex_lengths,
+            inverse_vertex_vertex_lengths,
             inverse_primal_edge_lengths,
             edge_areas,
             self.kh_smag_e,
@@ -949,7 +948,7 @@ class Diffusion:
             diff_multfac_n2w=self.diff_multfac_n2w,
             vert_idx=self.vertical_index,
             horz_idx=self.horizontal_cell_index,
-            nrdmax=self.config.vertical_params.index_of_damping_height,
+            nrdmax=self.config.vertical_params._index_of_damping_height,
             interior_idx=cell_start_interior,  # h end index for stencil_09 and stencil_10
             halo_idx=cell_end_local,  # h end index for stencil_09 and stencil_10,
             horizontal_start=cell_start_nudging,  # h start index for stencil_07 and stencil_08
