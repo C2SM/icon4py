@@ -163,9 +163,9 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     ) and not chain.endswith("O")
     if new_sparse_field:
         chain = chain.split("2")[1]
-    skip_values=False
+    skip_values = False
     if is_global and "V" in chain and not chain.endswith("V"):
-        skip_values=True
+        skip_values = True
     location_chain = []
     include_center = False
     for letter in chain:
@@ -213,8 +213,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 
 
 def get_stencil_info(
-    fencil_def: Program | FieldOperator | types.FunctionType,
-    is_global: bool
+    fencil_def: Program | FieldOperator | types.FunctionType, is_global: bool
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
