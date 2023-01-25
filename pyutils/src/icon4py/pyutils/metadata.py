@@ -136,16 +136,16 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(offset: str) -> DummyConnectivity | Dimension:
+def provide_offset(offset: str, is_global: bool) -> DummyConnectivity | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
         return Koff.source
     else:
-        return provide_neighbor_table(offset)
+        return provide_neighbor_table(offset, is_global)
 
 
-def provide_neighbor_table(chain: str) -> DummyConnectivity:
+def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -163,7 +163,9 @@ def provide_neighbor_table(chain: str) -> DummyConnectivity:
     ) and not chain.endswith("O")
     if new_sparse_field:
         chain = chain.split("2")[1]
-
+    skip_values=False
+    if is_global and "V" in chain and not chain.endswith("V"):
+        skip_values=True
     location_chain = []
     include_center = False
     for letter in chain:
@@ -181,7 +183,7 @@ def provide_neighbor_table(chain: str) -> DummyConnectivity:
             raise InvalidConnectivityException(location_chain)
     return DummyConnectivity(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
-        has_skip_values=False,
+        has_skip_values=skip_values,
         origin_axis=location_chain[0],
     )
 
@@ -212,12 +214,13 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 
 def get_stencil_info(
     fencil_def: Program | FieldOperator | types.FunctionType,
+    is_global: bool
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
     offsets = scan_for_offsets(fvprog)
     offset_provider = {}
     for offset in offsets:
-        offset_provider[offset] = provide_offset(offset)
+        offset_provider[offset] = provide_offset(offset, is_global)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
     return StencilInfo(fvprog, connectivity_chains, offset_provider)

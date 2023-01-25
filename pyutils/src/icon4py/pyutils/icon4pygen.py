@@ -45,6 +45,7 @@ class ModuleType(click.ParamType):
 @click.argument("fencil", type=ModuleType())
 @click.argument("block_size", type=int, default=128)
 @click.argument("levels_per_thread", type=int, default=4)
+@click.argument("is_global", type=bool, default=False)
 @click.argument(
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
@@ -54,6 +55,7 @@ def main(
     fencil: str,
     block_size: int,
     levels_per_thread: int,
+    is_global: bool,
     outpath: pathlib.Path,
 ) -> None:
     """
@@ -74,6 +76,10 @@ def main(
     from icon4py.pyutils.metadata import get_stencil_info, import_definition
 
     fencil_def = import_definition(fencil)
-    stencil_info = get_stencil_info(fencil_def)
+    stencil_info = get_stencil_info(fencil_def, is_global)
     GTHeader(stencil_info)(outpath)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+
+
+if __name__ == "__main__":
+     main()
