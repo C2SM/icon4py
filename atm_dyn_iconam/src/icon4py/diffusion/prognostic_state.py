@@ -25,7 +25,7 @@ class PrognosticState:
     corresponds to ICON t_nh_prog
     """
 
-    vertical_wind: Field[[CellDim, KDim], float]  # w(nproma, nlevp1, nblks_c) [m/s]
+    vertical_wind: Field[[CellDim, KDim], float]  #vertical_wind field w(nproma, nlevp1, nblks_c) [m/s]
     normal_wind: Field[[EdgeDim, KDim], float]  # vn(nproma, nlev, nblks_e)  [m/s]
     exner_pressure: Field[[CellDim, KDim], float]  # exner(nrpoma, nlev, nblks_c)
     theta_v: Field[[CellDim, KDim], float]  # (nproma, nlev, nlbks_c) [K]

@@ -15,7 +15,7 @@
 import math
 import sys
 from collections import namedtuple
-from typing import Final, Tuple
+from typing import Final, Tuple, Optional
 
 import numpy as np
 from functional.common import Dimension
@@ -62,12 +62,12 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.diagnostic import DiagnosticState
+from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import HorizontalMarkerIndex
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic import PrognosticState
+from icon4py.diffusion.prognostic_state import PrognosticState
 from icon4py.diffusion.utils import (
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
@@ -395,23 +395,48 @@ def mo_nh_diffusion_stencil_15_numpy(
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def __init__(
+    def __init__(self, run_program = True):
+
+        self._initialized = False
+        self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
+        self.thresh_tdiff: float = (
+            -5.0
+        )  # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        self._run_program = run_program
+        self.grid: Optional[IconGrid] = None
+        self.config:Optional[DiffusionConfig] = None
+        self.params:Optional[DiffusionParams] = None
+        self.interpolation_state = None
+        self.metric_state = None
+
+        self.diff_multfac_w: Optional[float] = None
+        self.smag_offset: Optional[float] = None
+        self.fac_bdydiff_v: Optional[float] = None
+        self.bdy_diff: Optional[float] = None
+        self.nudgezone_diff: Optional[float] = None
+        self.diff_multfac_n2w:Optional[float] = None
+        self._allocate_local_fields()
+
+    def init(
         self,
         config: DiffusionConfig,
         params: DiffusionParams,
         vct_a: Field[[KDim], float],
-        run_program=True,
+        metric_state: MetricState,
+        interpolation_state: InterpolationState
     ):
         """
-        Initialize Diffusion granule.
+        Initialize Diffusion granule with configuration.
 
         calculates all local fields that are used in diffusion within the time loop
         """
-        self._run_program = run_program
+
         self.params: DiffusionParams = params
         self.config: DiffusionConfig = config
+        self.metric_state: MetricState = metric_state
+        self.interpolation_state: InterpolationState = interpolation_state
         self.grid = config.grid
-        self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
+
         self.nudgezone_diff: float = 0.04 / (
             config.nudge_max_coeff + sys.float_info.epsilon
         )
@@ -422,16 +447,12 @@ class Diffusion:
             if config.lhdiff_rcf
             else 1.0 / config.velocity_boundary_diffusion_denominator
         )
-        self.thresh_tdiff: float = (
-            -5.0
-        )  # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+
 
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float()
         self.diff_multfac_w: float = min(
             1.0 / 48.0, params.K4W * config.substep_as_float()
         )
-
-        self._allocate_local_fields()
 
         init_diffusion_local_fields_for_regular_timestep(
             params.K4,
@@ -451,6 +472,11 @@ class Diffusion:
             physical_heights=np.asarray(vct_a),
             nrdmax=self.config.vertical_params.index_of_damping_height,
         )
+        self._initialized = True
+
+    @property
+    def initialized(self):
+        return self._initialized
 
     def _allocate_local_fields(self):
         def _allocate(*dims: Dimension):
@@ -479,8 +505,6 @@ class Diffusion:
         self,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
-        metric_state: MetricState,
-        interpolation_state: InterpolationState,
         dtime: float,
         tangent_orientation: Field[[EdgeDim], float],
         inverse_primal_edge_lengths: Field[[EdgeDim], float],
@@ -513,8 +537,6 @@ class Diffusion:
         self._do_diffusion_step(
             diagnostic_state,
             prognostic_state,
-            metric_state,
-            interpolation_state,
             dtime,
             tangent_orientation,
             inverse_primal_edge_lengths,
@@ -533,8 +555,6 @@ class Diffusion:
         self,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
-        metric_state: MetricState,
-        interpolation_state: InterpolationState,
         dtime: float,
         tangent_orientation: Field[[EdgeDim], float],
         inverse_primal_edge_lengths: Field[[EdgeDim], float],
@@ -605,8 +625,6 @@ class Diffusion:
             self._do_diffusion_step(
                 diagnostic_state=diagnostic_state,
                 prognostic_state=prognostic_state,
-                metric_state=metric_state,
-                interpolation_state=interpolation_state,
                 dtime=dtime,
                 tangent_orientation=tangent_orientation,
                 inverse_primal_edge_lengths=inverse_primal_edge_lengths,
@@ -630,20 +648,20 @@ class Diffusion:
                 prognostic_normal_wind=prognostic_state.normal_wind,
                 prognostic_exner_pressure=prognostic_state.exner_pressure,
                 prognostic_theta_v=prognostic_state.theta_v,
-                metric_theta_ref_mc=metric_state.theta_ref_mc,
-                metric_wgtfac_c=metric_state.wgtfac_c,
-                metric_mask_hdiff=metric_state.mask_hdiff,
-                metric_zd_vertidx=metric_state.zd_vertidx,
-                metric_zd_diffcoef=metric_state.zd_diffcoef,
-                metric_zd_intcoef=metric_state.zd_intcoef,
-                interpolation_e_bln_c_s=interpolation_state.e_bln_c_s,
-                interpolation_rbf_coeff_1=interpolation_state.rbf_coeff_1,
-                interpolation_rbf_coeff_2=interpolation_state.rbf_coeff_2,
-                interpolation_geofac_div=interpolation_state.geofac_div,
-                interpolation_geofac_grg_x=interpolation_state.geofac_grg_x,
-                interpolation_geofac_grg_y=interpolation_state.geofac_grg_y,
-                interpolation_nudgecoeff_e=interpolation_state.nudgecoeff_e,
-                interpolation_geofac_n2s=interpolation_state.geofac_n2s,
+                metric_theta_ref_mc=self.metric_state.theta_ref_mc,
+                metric_wgtfac_c=self.metric_state.wgtfac_c,
+                metric_mask_hdiff=self.metric_state.mask_hdiff,
+                metric_zd_vertidx=self.metric_state.zd_vertidx,
+                metric_zd_diffcoef=self.metric_state.zd_diffcoef,
+                metric_zd_intcoef=self.metric_state.zd_intcoef,
+                interpolation_e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                interpolation_rbf_coeff_1=self.interpolation_state.rbf_coeff_1,
+                interpolation_rbf_coeff_2=self.interpolation_state.rbf_coeff_2,
+                interpolation_geofac_div=self.interpolation_state.geofac_div,
+                interpolation_geofac_grg_x=self.interpolation_state.geofac_grg_x,
+                interpolation_geofac_grg_y=self.interpolation_state.geofac_grg_y,
+                interpolation_nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+                interpolation_geofac_n2s=self.interpolation_state.geofac_n2s,
                 tangent_orientation=tangent_orientation,
                 inverse_primal_edge_lengths=inverse_primal_edge_lengths,
                 inverse_dual_edge_lengths=inverse_dual_edge_length,
@@ -711,8 +729,6 @@ class Diffusion:
         self,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
-        metric_state: MetricState,
-        interpolation_state: InterpolationState,
         dtime: float,
         tangent_orientation: Field[[EdgeDim], float],
         inverse_primal_edge_lengths: Field[[EdgeDim], float],
@@ -732,8 +748,6 @@ class Diffusion:
         Args:
             diagnostic_state: output argument, data class that contains diagnostic variables
             prognostic_state: output argument, data class that contains prognostic variables
-            metric_state:
-            interpolation_state:
             dtime: the time step,
             tangent_orientation:
             inverse_primal_edge_lengths:
@@ -814,8 +828,8 @@ class Diffusion:
         # # 1.  CALL rbf_vec_interpol_vertex
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.normal_wind,
-            ptr_coeff_1=interpolation_state.rbf_coeff_1,
-            ptr_coeff_2=interpolation_state.rbf_coeff_2,
+            ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
+            ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
             horizontal_start=vertex_start_local_boundary_plus3,
@@ -858,10 +872,10 @@ class Diffusion:
         fused_mo_nh_diffusion_stencil_02_03(
             kh_smag_ec=self.kh_smag_ec,
             vn=prognostic_state.normal_wind,
-            e_bln_c_s=interpolation_state.e_bln_c_s,
-            geofac_div=interpolation_state.geofac_div,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            geofac_div=self.interpolation_state.geofac_div,
             diff_multfac_smag=self.diff_multfac_smag,
-            wgtfac_c=metric_state.wgtfac_c,
+            wgtfac_c=self.metric_state.wgtfac_c,
             div_ic=diagnostic_state.div_ic,
             hdef_ic=diagnostic_state.hdef_ic,
             horizontal_start=cell_start_nudging,
@@ -876,8 +890,8 @@ class Diffusion:
         # # 5.  CALL rbf_vec_interpol_vertex_wp
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e,
-            ptr_coeff_1=interpolation_state.rbf_coeff_1,
-            ptr_coeff_2=interpolation_state.rbf_coeff_2,
+            ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
+            ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
             horizontal_start=vertex_start_local_boundary_plus3,
@@ -902,7 +916,7 @@ class Diffusion:
             edge_areas,
             self.kh_smag_e,
             diff_multfac_vn,
-            interpolation_state.nudgecoeff_e,
+            self.interpolation_state.nudgecoeff_e,
             prognostic_state.normal_wind,
             self.horizontal_edge_index,
             self.nudgezone_diff,
@@ -924,9 +938,9 @@ class Diffusion:
 
         fused_mo_nh_diffusion_stencil_07_08_09_10(
             area=cell_areas,
-            geofac_n2s=interpolation_state.geofac_n2s,
-            geofac_grg_x=interpolation_state.geofac_grg_x,
-            geofac_grg_y=interpolation_state.geofac_grg_y,
+            geofac_n2s=self.interpolation_state.geofac_n2s,
+            geofac_grg_x=self.interpolation_state.geofac_grg_x,
+            geofac_grg_y=self.interpolation_state.geofac_grg_y,
             w_old=prognostic_state.vertical_wind,
             w=prognostic_state.vertical_wind,
             dwdx=diagnostic_state.dwdx,
@@ -955,7 +969,7 @@ class Diffusion:
         #
         fused_mo_nh_diffusion_stencil_11_12(
             theta_v=prognostic_state.theta_v,
-            theta_ref_mc=metric_state.theta_ref_mc,
+            theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
             kh_smag_e=self.kh_smag_e,
             horizontal_start=edge_start_nudging_plus_one,
@@ -972,7 +986,7 @@ class Diffusion:
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=inverse_dual_edge_length,
             theta_v=prognostic_state.theta_v,
-            geofac_div=interpolation_state.geofac_div,
+            geofac_div=self.interpolation_state.geofac_div,
             z_temp=self.z_temp,
             horizontal_start=cell_start_nudging,
             horizontal_end=cell_end_local,
@@ -986,11 +1000,11 @@ class Diffusion:
         )
 
         mo_nh_diffusion_stencil_15_numpy(
-            mask_hdiff=metric_state.mask_hdiff,
-            zd_vertidx=metric_state.zd_vertidx,
-            vcoef=metric_state.zd_diffcoef,
-            zd_diffcoef=metric_state.zd_diffcoef,
-            geofac_n2s=interpolation_state.geofac_n2s,
+            mask_hdiff=self.metric_state.mask_hdiff,
+            zd_vertidx=self.metric_state.zd_vertidx,
+            vcoef=self.metric_state.zd_diffcoef,
+            zd_diffcoef=self.metric_state.zd_diffcoef,
+            geofac_n2s=self.interpolation_state.geofac_n2s,
             theta_v=prognostic_state.theta_v,
             z_temp=self.z_temp,
             domain={
