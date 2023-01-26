@@ -18,7 +18,7 @@ from icon4py.common.dimension import EdgeDim, KDim
 
 
 @field_operator
-def _apply_nabla4_to_vn(
+def _apply_nabla2_and_nabla4_to_vn(
     area_edge: Field[[EdgeDim], float],
     kh_smag_e: Field[[EdgeDim, KDim], float],
     z_nabla2_e: Field[[EdgeDim, KDim], float],
@@ -36,7 +36,7 @@ def _apply_nabla4_to_vn(
 
 
 @program
-def apply_nabla4_to_vn(
+def apply_nabla2_and_nabla4_to_vn(
     area_edge: Field[[EdgeDim], float],
     kh_smag_e: Field[[EdgeDim, KDim], float],
     z_nabla2_e: Field[[EdgeDim, KDim], float],
@@ -46,7 +46,7 @@ def apply_nabla4_to_vn(
     vn: Field[[EdgeDim, KDim], float],
     nudgezone_diff: float,
 ):
-    _apply_nabla4_to_vn(
+    _apply_nabla2_and_nabla4_to_vn(
         area_edge,
         kh_smag_e,
         z_nabla2_e,
