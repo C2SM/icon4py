@@ -78,8 +78,6 @@ from icon4py.pyutils.metadata import get_field_infos, provide_neighbor_table
         ("C2E2C2E2C2E", True, False),
     ],
 )
-
-
 def test_provide_neighbor_table(chain, is_global, expected):
     actual = provide_neighbor_table(chain, is_global)
     assert actual.has_skip_values == expected
@@ -138,4 +136,3 @@ def test_get_field_infos_does_not_contain_domain_args(program):
     assert field_info["b"].inp
     assert field_info["result"].out
     assert not field_info["result"].inp
-

@@ -136,7 +136,9 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(offset: str, is_global: bool = False) -> DummyConnectivity | Dimension:
+def provide_offset(
+    offset: str, is_global: bool = False
+) -> DummyConnectivity | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
