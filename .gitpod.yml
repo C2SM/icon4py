@@ -13,7 +13,10 @@ tasks:
           pip install -r requirements-dev.txt
           pre-commit install --install-hooks
           deactivate
-      command: source .venv/bin/activate
+      command: |
+          source .venv/bin/activate
+          _ICON4PYGEN_COMPLETE=bash_source icon4pygen > ~/.bashrc.d/70-icon4pygen
+          echo "export COMP_WORDBREAKS=\${COMP_WORDBREAKS//:}" >> ~/.bashrc.d/70-icon4pygen
       env:
           PIP_SRC: _external_src
           PRE_COMMIT_HOME: /workspace/.caches/pre-commit
