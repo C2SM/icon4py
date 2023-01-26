@@ -182,14 +182,14 @@ class EdgeParams:
     defined int ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
     """
 
-    primal_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]]
+    primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]]
     """
     Normal of the triangle edge, projected onto the location of the vertices
 
     defined int ICON in mo_model_domain.f90:t_grid_edges%primal_normal_vert
     """
 
-    dual_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]]
+    dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]]
     """
     Tangent to the triangle edge, projected onto the location of vertices.
 
