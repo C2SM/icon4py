@@ -20,9 +20,8 @@ from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim, Koff
 @field_operator
 def _neighbor_sum_into_koff_bug(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    kh_c = neighbor_sum(kh_smag_ec(C2E) * e_bln_c_s, axis=C2EDim)
+    kh_c = neighbor_sum(kh_smag_ec(C2E), axis=C2EDim)
     hdef_ic = kh_c(Koff[-1])
     return hdef_ic
 
@@ -30,11 +29,9 @@ def _neighbor_sum_into_koff_bug(
 @program
 def neighbor_sum_into_koff_bug(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
 ):
     _neighbor_sum_into_koff_bug(
         kh_smag_ec,
-        e_bln_c_s,
         out=(hdef_ic),
     )
