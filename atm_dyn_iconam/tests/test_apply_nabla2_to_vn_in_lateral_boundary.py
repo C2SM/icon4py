@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.apply_nabla2_vn_in_lateral_boundary import (
-    apply_nabla2_vn_in_lateral_boundary,
+from icon4py.atm_dyn_iconam.apply_nabla2_to_vn_in_lateral_boundary import (
+    apply_nabla2_to_vn_in_lateral_boundary,
 )
 from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def apply_nabla2_vn_in_lateral_boundary_numpy(
+def apply_nabla2_to_vn_in_lateral_boundary_numpy(
     z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
 ) -> np.array:
     area_edge = np.expand_dims(area_edge, axis=-1)
@@ -29,7 +29,7 @@ def apply_nabla2_vn_in_lateral_boundary_numpy(
     return vn
 
 
-def test_apply_nabla2_vn_in_lateral_boundary():
+def test_apply_nabla2_to_vn_in_lateral_boundary():
     mesh = SimpleMesh()
 
     fac_bdydiff_v = 5.0
@@ -37,10 +37,10 @@ def test_apply_nabla2_vn_in_lateral_boundary():
     area_edge = random_field(mesh, EdgeDim)
     vn = random_field(mesh, EdgeDim, KDim)
 
-    ref = apply_nabla2_vn_in_lateral_boundary_numpy(
+    ref = apply_nabla2_to_vn_in_lateral_boundary_numpy(
         np.asarray(z_nabla2_e), np.asarray(area_edge), np.asarray(vn), fac_bdydiff_v
     )
-    apply_nabla2_vn_in_lateral_boundary(
+    apply_nabla2_to_vn_in_lateral_boundary(
         z_nabla2_e, area_edge, vn, fac_bdydiff_v, offset_provider={}
     )
     assert np.allclose(vn, ref)

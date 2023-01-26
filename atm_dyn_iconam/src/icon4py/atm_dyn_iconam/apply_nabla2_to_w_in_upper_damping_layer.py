@@ -18,7 +18,7 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _apply_nabla2_diffusion_to_w_in_upper_damping_layer(
+def _apply_nabla2_to_w_in_upper_damping_layer(
     w: Field[[CellDim, KDim], float],
     diff_multfac_n2w: Field[[KDim], float],
     cell_area: Field[[CellDim], float],
@@ -29,12 +29,12 @@ def _apply_nabla2_diffusion_to_w_in_upper_damping_layer(
 
 
 @program
-def apply_nabla2_diffusion_to_w_in_upper_damping_layer(
+def apply_nabla2_to_w_in_upper_damping_layer(
     w: Field[[CellDim, KDim], float],
     diff_multfac_n2w: Field[[KDim], float],
     cell_area: Field[[CellDim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
 ):
-    _apply_nabla2_diffusion_to_w_in_upper_damping_layer(
+    _apply_nabla2_to_w_in_upper_damping_layer(
         w, diff_multfac_n2w, cell_area, z_nabla2_c, out=w
     )

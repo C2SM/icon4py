@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.apply_nabla2_diffusion_to_w_in_upper_damping_layer import (
-    apply_nabla2_diffusion_to_w_in_upper_damping_layer,
+from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
+    apply_nabla2_to_w_in_upper_damping_layer,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def apply_nabla2_diffusion_to_w_in_upper_damping_layer_numpy(
+def apply_nabla2_to_w_in_upper_damping_layer_numpy(
     w: np.array,
     diff_multfac_n2w: np.array,
     cell_area: np.array,
@@ -32,7 +32,7 @@ def apply_nabla2_diffusion_to_w_in_upper_damping_layer_numpy(
     return w
 
 
-def test_apply_nabla2_diffusion_to_w_in_upper_damping_layer():
+def test_apply_nabla2_to_w_in_upper_damping_layer():
     mesh = SimpleMesh()
 
     w = random_field(mesh, CellDim, KDim)
@@ -40,13 +40,13 @@ def test_apply_nabla2_diffusion_to_w_in_upper_damping_layer():
     cell_area = random_field(mesh, CellDim)
     z_nabla2_c = random_field(mesh, CellDim, KDim)
 
-    ref = apply_nabla2_diffusion_to_w_in_upper_damping_layer_numpy(
+    ref = apply_nabla2_to_w_in_upper_damping_layer_numpy(
         np.asarray(w),
         np.asarray(diff_multfac_n2w),
         np.asarray(cell_area),
         np.asarray(z_nabla2_c),
     )
-    apply_nabla2_diffusion_to_w_in_upper_damping_layer(
+    apply_nabla2_to_w_in_upper_damping_layer(
         w,
         diff_multfac_n2w,
         cell_area,
