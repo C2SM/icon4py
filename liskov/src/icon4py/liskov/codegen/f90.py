@@ -60,9 +60,12 @@ class BoundsFields(eve.Node):
     hupper: str
 
 
-class Field(eve.Node):
+class Assign(eve.Node):
     variable: str
     association: str
+
+
+class Field(Assign):
     abs_tol: Optional[str] = None
     rel_tol: Optional[str] = None
     inp: bool
@@ -79,6 +82,20 @@ class OutputFields(InputFields):
 
 class ToleranceFields(InputFields):
     ...
+
+
+def get_array_dims(node: Assign, select_all: bool = False):
+    indexes = re.findall("\\(([^)]+)", node.association)
+    if len(indexes) > 1:
+        idx = indexes[-1]
+    else:
+        idx = indexes[0]
+
+    dims = list(idx)
+
+    if select_all:
+        dims[-1] = ":"
+    return f"({''.join(list(dims))})"
 
 
 class EndStencilStatement(eve.Node):
@@ -140,10 +157,8 @@ class EndStencilStatementGenerator(TemplatedGenerator):
 
     def visit_OutputFields(self, out: OutputFields) -> OutputFields:  # type: ignore
         for f in out.fields:  # type: ignore
-            start_idx = f.association.find("(")
-            end_idx = f.association.find(")")
-            out_index = f.association[start_idx : end_idx + 1]
-            f.out_index = out_index
+            new_dims = get_array_dims(f)
+            f.out_index = new_dims
         return self.generic_visit(out)
 
     ToleranceFields = as_jinja(
@@ -174,9 +189,8 @@ class EndStencilStatementGenerator(TemplatedGenerator):
     )
 
 
-class Declaration(eve.Node):
-    variable: str
-    association: str
+class Declaration(Assign):
+    ...
 
 
 class DeclareStatement(eve.Node):
@@ -223,12 +237,9 @@ class StartStencilStatement(eve.Node):
 
     @staticmethod
     def make_copy_declaration(declr: Declaration) -> CopyDeclaration:
-        dims = re.findall("\\(([^)]+)", declr.association)[0]
-        copy_dim_params = list(dims)
-        copy_dim_params[-1] = ":"
-        copy_field_dims = f"({''.join(copy_dim_params)})"
-        old_dims = f"({dims})"
-        new_association = declr.association.strip(old_dims)
+        copy_field_dims = get_array_dims(declr, select_all=True)
+        offset = len(declr.association) - len(copy_field_dims)
+        new_association = declr.association[:offset]
 
         return CopyDeclaration(
             variable=declr.variable,

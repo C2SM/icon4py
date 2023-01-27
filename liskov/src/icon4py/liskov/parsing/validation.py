@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Match, Optional, Protocol, Sequence
 
 import icon4py.liskov.parsing.types as ts
+from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     RepeatedDirectiveError,
@@ -25,6 +26,9 @@ from icon4py.liskov.parsing.exceptions import (
     UnsupportedDirectiveError,
 )
 from icon4py.liskov.parsing.utils import print_parsed_directive
+
+
+logger = setup_logger(__name__)
 
 
 class Validator(Protocol):
@@ -154,21 +158,19 @@ class DirectiveSemanticsValidator:
         start_directives = [d for d in directives if isinstance(d, ts.StartStencil)]
         end_directives = [d for d in directives if isinstance(d, ts.EndStencil)]
 
-        if len(start_directives) != len(end_directives):
-            raise UnbalancedStencilDirectiveError(
-                f"Error in {self.filepath}.\n Found {abs(len(start_directives) - len(end_directives))} unbalanced START STENCIL or END STENCIL directives.\n"
-            )
-
         start_stencil_names = {
             self.extract_arg_from_directive(d.string, "name") for d in start_directives
         }
         end_stencil_names = {
             self.extract_arg_from_directive(d.string, "name") for d in end_directives
         }
-
-        if start_stencil_names != end_stencil_names:
+        diff = start_stencil_names.symmetric_difference(end_stencil_names)
+        if len(diff) > 0:
+            error_msgs = ", ".join(diff)
             raise UnbalancedStencilDirectiveError(
                 f"Error in {self.filepath}.\n Each unique stencil must have a corresponding START STENCIL and END STENCIL directive.\n"
+                "\nErrors found in the following stencils:\n"
+                f"{error_msgs}"
             )
 
 

@@ -54,3 +54,7 @@ def main(filepath: pathlib.Path, profile: bool) -> None:
     generator = IntegrationGenerator(deserialiser.directives, profile)
     writer = IntegrationWriter(generator.generated)
     writer.write_from(filepath)
+
+
+if __name__ == "__main__":
+    main()

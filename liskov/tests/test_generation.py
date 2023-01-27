@@ -33,9 +33,10 @@ def serialised_directives():
     start_stencil_data = StartStencilData(
         name="stencil1",
         fields=[
-            FieldAssociationData("field1", "field1(:, :, 1)", True, False),
+            FieldAssociationData("field1", "field1(:,:,1)", True, False),
+            FieldAssociationData("field2", "field2(:,:,1)", False, True, abs_tol="0.5"),
             FieldAssociationData(
-                "field2", "field2(:, :, 1)", False, True, abs_tol="0.5"
+                "field3", "p_nh%prog(nnew)%field3(:,:,1)", False, True, abs_tol="0.2"
             ),
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
@@ -72,7 +73,8 @@ def expected_start_create_source():
 #endif
 
         !$ACC DATA CREATE( &
-        !$ACC   field2_before &
+        !$ACC   field2_before, &
+        !$ACC   field3_before &
         !$ACC   ), &
         !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
 
@@ -101,6 +103,7 @@ def expected_start_stencil_source():
 #ifdef __DSL_VERIFY
         !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
         field2_before(:, :, :) = field2(:, :, :)
+        field3_before(:, :, :) = p_nh%prog(nnew)%field3(:, :, :)
         !$ACC END PARALLEL
         call nvtxStartRange("stencil1")"""
 
@@ -114,7 +117,10 @@ def expected_end_stencil_source():
            field1=field1(:, :, 1), &
            field2=field2(:, :, 1), &
            field2_before=field2_before(:, :, 1), &
+           field3=p_nh%prog(nnew)%field3(:, :, 1), &
+           field3_before=field3_before(:, :, 1), &
            field2_abs_tol=0.5, &
+           field3_abs_tol=0.2, &
            vertical_lower=-1, &
            vertical_upper=-10, &
            horizontal_lower=1, &
