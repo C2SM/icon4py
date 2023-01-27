@@ -20,66 +20,89 @@ from icon4py.pyutils.metadata import get_field_infos, provide_neighbor_table
 
 
 @pytest.mark.parametrize(
-    ("chain", "is_global", "expected"),
+    "chain",
     [
-        ("C2E", False, False),
-        ("C2E", True, False),
-        ("C2V", False, False),
-        ("C2V", True, False),
-        ("E2C", False, False),
-        ("E2C", True, False),
-        ("E2V", False, False),
-        ("E2V", True, False),
-        ("V2C", False, False),
-        ("V2C", True, True),
-        ("V2E", False, False),
-        ("V2E", True, True),
-        ("E2C2E", False, False),
-        ("E2C2E", True, False),
-        ("E2C2EO", False, False),
-        ("E2C2EO", True, False),
-        ("E2C2V", False, False),
-        ("E2C2V", True, False),
-        ("E2C2V2C", False, False),
-        ("E2C2V2C", True, True),
-        ("C2V2C", False, False),
-        ("C2V2C", True, True),
-        ("C2V2CO", False, False),
-        ("C2V2CO", True, True),
-        ("C2V2C2E", False, False),
-        ("C2V2C2E", True, True),
-        ("E2V2E", False, False),
-        ("E2V2E", True, True),
-        ("E2V2EO", False, False),
-        ("E2V2EO", True, True),
-        ("E2V2E2C", False, False),
-        ("E2V2E2C", True, True),
-        ("V2E2C", False, False),
-        ("V2E2C", True, True),
-        ("V2E2C2V", False, False),
-        ("V2E2C2V", True, True),
-        ("V2E2C2VO", False, False),
-        ("V2E2C2VO", True, True),
-        ("V2E2C2V2E", False, False),
-        ("V2E2C2V2E", True, True),
-        ("V2E2C2V2E2C", False, False),
-        ("V2E2C2V2E2C", True, True),
-        ("C2E2C", False, False),
-        ("C2E2C", True, False),
-        ("C2E2CO", False, False),
-        ("C2E2CO", True, False),
-        ("C2E2C2E", False, False),
-        ("C2E2C2E", True, False),
-        ("C2E2C2E2C", False, False),
-        ("C2E2C2E2C", True, False),
-        ("C2E2C2E2CO", False, False),
-        ("C2E2C2E2CO", True, False),
-        ("C2E2C2E2C2E", False, False),
-        ("C2E2C2E2C2E", True, False),
+        "C2E",
+        "C2V",
+        "E2C",
+        "E2V",
+        "V2C",
+        "V2E",
+        "E2C2E",
+        "E2C2EO",
+        "E2C2V",
+        "E2C2V2C",
+        "C2V2C",
+        "C2V2CO",
+        "C2V2C2E",
+        "E2V2E",
+        "E2V2EO",
+        "E2V2E2C",
+        "V2E2C",
+        "V2E2C2V",
+        "V2E2C2VO",
+        "V2E2C2V2E",
+        "V2E2C2V2E2C",
+        "C2E2C",
+        "C2E2CO",
+        "C2E2C2E",
+        "C2E2C2E2C",
+        "C2E2C2E2CO",
+        "C2E2C2E2C2E",
     ],
 )
-def test_provide_neighbor_table(chain, is_global, expected):
-    actual = provide_neighbor_table(chain, is_global)
+def test_provide_neighbor_table_local(chain):
+    expected = False
+    actual = provide_neighbor_table(chain, is_global=False)
+    assert actual.has_skip_values == expected
+
+
+@pytest.mark.parametrize(
+    "chain",
+    [
+        "C2E",
+        "C2V",
+        "E2C",
+        "E2V",
+        "E2C2E",
+        "E2C2EO",
+        "E2C2V",
+        "C2E2C",
+        "C2E2CO",
+        "C2E2C2E",
+        "C2E2C2E2C",
+        "C2E2C2E2CO",
+        "C2E2C2E2C2E",
+    ],
+)
+def test_provide_neighbor_table_global_false_skipvalues(chain):
+    expected = False
+    actual = provide_neighbor_table(chain, is_global=True)
+    assert actual.has_skip_values == expected
+
+
+@pytest.mark.parametrize(
+    "chain",
+    [
+        "V2C",
+        "V2E",
+        "E2C2V2C",
+        "C2V2C",
+        "C2V2CO",
+        "C2V2C2E",
+        "E2V2E",
+        "E2V2EO",
+        "E2V2E2C",
+        "V2E2C",
+        "V2E2C2V",
+        "V2E2C2VO",
+        "V2E2C2V2E",
+        "V2E2C2V2E2C",
+    ],
+)
+def test_provide_neighbor_table_global_true_skipvalues(chain):
+    expected = True
+    actual = provide_neighbor_table(chain, is_global=True)
     assert actual.has_skip_values == expected
 
 
