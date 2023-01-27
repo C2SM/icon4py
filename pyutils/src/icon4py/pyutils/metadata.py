@@ -167,9 +167,7 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         chain = chain.split("2")[1]
     skip_values = False
     if is_global and "V" in chain:
-        if not chain.endswith("V"):
-            skip_values = True
-        elif chain.count("V") > 1:
+        if chain.count("V") > 1 or not chain.endswith("V") :
             skip_values = True
     location_chain = []
     include_center = False
