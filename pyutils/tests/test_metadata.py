@@ -19,37 +19,43 @@ from icon4py.common.dimension import CellDim, KDim
 from icon4py.pyutils.metadata import get_field_infos, provide_neighbor_table
 
 
+chain_false_skipvalues = [
+    "C2E",
+    "C2V",
+    "E2C",
+    "E2V",
+    "E2C2E",
+    "E2C2EO",
+    "E2C2V",
+    "C2E2C",
+    "C2E2CO",
+    "C2E2C2E",
+    "C2E2C2E2C",
+    "C2E2C2E2CO",
+    "C2E2C2E2C2E",
+]
+
+chain_true_skipvalues = [
+    "V2C",
+    "V2E",
+    "E2C2V2C",
+    "C2V2C",
+    "C2V2CO",
+    "C2V2C2E",
+    "E2V2E",
+    "E2V2EO",
+    "E2V2E2C",
+    "V2E2C",
+    "V2E2C2V",
+    "V2E2C2VO",
+    "V2E2C2V2E",
+    "V2E2C2V2E2C",
+]
+
+
 @pytest.mark.parametrize(
     "chain",
-    [
-        "C2E",
-        "C2V",
-        "E2C",
-        "E2V",
-        "V2C",
-        "V2E",
-        "E2C2E",
-        "E2C2EO",
-        "E2C2V",
-        "E2C2V2C",
-        "C2V2C",
-        "C2V2CO",
-        "C2V2C2E",
-        "E2V2E",
-        "E2V2EO",
-        "E2V2E2C",
-        "V2E2C",
-        "V2E2C2V",
-        "V2E2C2VO",
-        "V2E2C2V2E",
-        "V2E2C2V2E2C",
-        "C2E2C",
-        "C2E2CO",
-        "C2E2C2E",
-        "C2E2C2E2C",
-        "C2E2C2E2CO",
-        "C2E2C2E2C2E",
-    ],
+    chain_false_skipvalues + chain_true_skipvalues,
 )
 def test_provide_neighbor_table_local(chain):
     expected = False
@@ -59,21 +65,7 @@ def test_provide_neighbor_table_local(chain):
 
 @pytest.mark.parametrize(
     "chain",
-    [
-        "C2E",
-        "C2V",
-        "E2C",
-        "E2V",
-        "E2C2E",
-        "E2C2EO",
-        "E2C2V",
-        "C2E2C",
-        "C2E2CO",
-        "C2E2C2E",
-        "C2E2C2E2C",
-        "C2E2C2E2CO",
-        "C2E2C2E2C2E",
-    ],
+    chain_false_skipvalues,
 )
 def test_provide_neighbor_table_global_false_skipvalues(chain):
     expected = False
@@ -83,22 +75,7 @@ def test_provide_neighbor_table_global_false_skipvalues(chain):
 
 @pytest.mark.parametrize(
     "chain",
-    [
-        "V2C",
-        "V2E",
-        "E2C2V2C",
-        "C2V2C",
-        "C2V2CO",
-        "C2V2C2E",
-        "E2V2E",
-        "E2V2EO",
-        "E2V2E2C",
-        "V2E2C",
-        "V2E2C2V",
-        "V2E2C2VO",
-        "V2E2C2V2E",
-        "V2E2C2V2E2C",
-    ],
+    chain_true_skipvalues,
 )
 def test_provide_neighbor_table_global_true_skipvalues(chain):
     expected = True
