@@ -31,14 +31,14 @@ def step(
     i,
     z_exner_ex_pr,
     zdiff_gradp,
-    ikidx,
+    ikoffset,
     z_dexner_dz_c_1,
     z_dexner_dz_c_2,
 ):
-    d_ikidx = deref(shift(i)(ikidx))
-    d_z_exner_exp_pr = deref(shift(Koff, d_ikidx, E2C, i)(z_exner_ex_pr))
-    d_z_dexner_dz_c_1 = deref(shift(Koff, d_ikidx, E2C, i)(z_dexner_dz_c_1))
-    d_z_dexner_dz_c_2 = deref(shift(Koff, d_ikidx, E2C, i)(z_dexner_dz_c_2))
+    d_ikoffset = deref(shift(i)(ikoffset))
+    d_z_exner_exp_pr = deref(shift(Koff, d_ikoffset, E2C, i)(z_exner_ex_pr))
+    d_z_dexner_dz_c_1 = deref(shift(Koff, d_ikoffset, E2C, i)(z_dexner_dz_c_1))
+    d_z_dexner_dz_c_2 = deref(shift(Koff, d_ikoffset, E2C, i)(z_dexner_dz_c_2))
     d_zdiff_gradp = deref(shift(i)(zdiff_gradp))
 
     return d_z_exner_exp_pr + d_zdiff_gradp * (
@@ -51,13 +51,15 @@ def _mo_solve_nonhydro_stencil_20(
     inv_dual_edge_length,
     z_exner_ex_pr,
     zdiff_gradp,
-    ikidx,
+    ikoffset,
     z_dexner_dz_c_1,
     z_dexner_dz_c_2,
 ):
     return deref(inv_dual_edge_length) * (
-        step(1, z_exner_ex_pr, zdiff_gradp, ikidx, z_dexner_dz_c_1, z_dexner_dz_c_2)
-        - step(0, z_exner_ex_pr, zdiff_gradp, ikidx, z_dexner_dz_c_1, z_dexner_dz_c_2)
+        step(1, z_exner_ex_pr, zdiff_gradp, ikoffset, z_dexner_dz_c_1, z_dexner_dz_c_2)
+        - step(
+            0, z_exner_ex_pr, zdiff_gradp, ikoffset, z_dexner_dz_c_1, z_dexner_dz_c_2
+        )
     )
 
 
@@ -66,7 +68,7 @@ def mo_solve_nonhydro_stencil_20(
     inv_dual_edge_length,
     z_exner_ex_pr,
     zdiff_gradp,
-    ikidx,
+    ikoffset,
     z_dexner_dz_c_1,
     z_dexner_dz_c_2,
     z_gradh_exner,
@@ -86,7 +88,7 @@ def mo_solve_nonhydro_stencil_20(
             inv_dual_edge_length,
             z_exner_ex_pr,
             zdiff_gradp,
-            ikidx,
+            ikoffset,
             z_dexner_dz_c_1,
             z_dexner_dz_c_2,
         ],
@@ -129,9 +131,9 @@ _metadata = {
         inp=True,
         out=False,
     ),
-    "ikidx": FieldInfo(
+    "ikoffset": FieldInfo(
         field=past.FieldSymbol(
-            id="ikidx",
+            id="ikoffset",
             type=ts.FieldType(
                 dims=[EdgeDim, E2CDim, KDim],
                 dtype=ts.ScalarType(kind=ts.ScalarKind.INT32),

@@ -28,14 +28,14 @@ from icon4py.pyutils.metadata import FieldInfo
 
 
 @fundef
-def step(i, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full):
-    d_ikidx = deref(shift(i)(ikidx))
+def step(i, theta_v, ikoffset, zdiff_gradp, theta_v_ic, inv_ddqz_z_full):
+    d_ikoffset = deref(shift(i)(ikoffset))
 
-    d_theta_v = deref(shift(Koff, d_ikidx, E2C, i)(theta_v))
-    s_theta_v_ic = shift(Koff, d_ikidx, E2C, i)(theta_v_ic)
+    d_theta_v = deref(shift(Koff, d_ikoffset, E2C, i)(theta_v))
+    s_theta_v_ic = shift(Koff, d_ikoffset, E2C, i)(theta_v_ic)
     d_theta_v_ic = deref(s_theta_v_ic)
     d_theta_v_ic_p1 = deref(shift(Koff, 1)(s_theta_v_ic))
-    d_inv_ddqz_z_full = deref(shift(Koff, d_ikidx, E2C, i)(inv_ddqz_z_full))
+    d_inv_ddqz_z_full = deref(shift(Koff, d_ikoffset, E2C, i)(inv_ddqz_z_full))
     d_zdiff_gradp = deref(shift(i)(zdiff_gradp))
 
     return (
@@ -46,15 +46,15 @@ def step(i, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full):
 @fundef
 def _mo_solve_nonhydro_stencil_21(
     theta_v,
-    ikidx,
+    ikoffset,
     zdiff_gradp,
     theta_v_ic,
     inv_ddqz_z_full,
     inv_dual_edge_length,
     grav_o_cpd,
 ):
-    z_theta1 = step(0, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
-    z_theta2 = step(1, theta_v, ikidx, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
+    z_theta1 = step(0, theta_v, ikoffset, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
+    z_theta2 = step(1, theta_v, ikoffset, zdiff_gradp, theta_v_ic, inv_ddqz_z_full)
     z_hydro_corr = (
         deref(grav_o_cpd)
         * deref(inv_dual_edge_length)
@@ -68,7 +68,7 @@ def _mo_solve_nonhydro_stencil_21(
 @fendef
 def mo_solve_nonhydro_stencil_21(
     theta_v,
-    ikidx,
+    ikoffset,
     zdiff_gradp,
     theta_v_ic,
     inv_ddqz_z_full,
@@ -89,7 +89,7 @@ def mo_solve_nonhydro_stencil_21(
         z_hydro_corr,
         [
             theta_v,
-            ikidx,
+            ikoffset,
             zdiff_gradp,
             theta_v_ic,
             inv_ddqz_z_full,
@@ -112,9 +112,9 @@ _metadata = {
         inp=True,
         out=False,
     ),
-    "ikidx": FieldInfo(
+    "ikoffset": FieldInfo(
         field=past.FieldSymbol(
-            id="ikidx",
+            id="ikoffset",
             type=ts.FieldType(
                 dims=[EdgeDim, E2CDim, KDim],
                 dtype=ts.ScalarType(kind=ts.ScalarKind.INT32),

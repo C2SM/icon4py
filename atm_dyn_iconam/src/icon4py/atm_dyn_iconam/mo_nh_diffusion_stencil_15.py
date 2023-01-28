@@ -28,9 +28,9 @@ from icon4py.pyutils.metadata import FieldInfo
 
 
 @fundef
-def step(i, geofac_n2s_nbh, vcoef, theta_v, zd_vertidx):
+def step(i, geofac_n2s_nbh, vcoef, theta_v, zd_vertoffset):
     d_vcoef = deref(shift(i)(vcoef))
-    s_theta_v = shift(C2E2C, i, Koff, deref(shift(i)(zd_vertidx)))(theta_v)
+    s_theta_v = shift(C2E2C, i, Koff, deref(shift(i)(zd_vertoffset)))(theta_v)
     return deref(shift(i)(geofac_n2s_nbh)) * (
         d_vcoef * deref(s_theta_v) + (1.0 - d_vcoef) * deref(shift(Koff, 1)(s_theta_v))
     )
@@ -38,12 +38,19 @@ def step(i, geofac_n2s_nbh, vcoef, theta_v, zd_vertidx):
 
 @fundef
 def _mo_nh_diffusion_stencil_15(
-    mask, zd_vertidx, zd_diffcoef, geofac_n2s_c, geofac_n2s_nbh, vcoef, theta_v, z_temp
+    mask,
+    zd_vertoffset,
+    zd_diffcoef,
+    geofac_n2s_c,
+    geofac_n2s_nbh,
+    vcoef,
+    theta_v,
+    z_temp,
 ):
     summed = (
-        step(0, geofac_n2s_nbh, vcoef, theta_v, zd_vertidx)
-        + step(1, geofac_n2s_nbh, vcoef, theta_v, zd_vertidx)
-        + step(2, geofac_n2s_nbh, vcoef, theta_v, zd_vertidx)
+        step(0, geofac_n2s_nbh, vcoef, theta_v, zd_vertoffset)
+        + step(1, geofac_n2s_nbh, vcoef, theta_v, zd_vertoffset)
+        + step(2, geofac_n2s_nbh, vcoef, theta_v, zd_vertoffset)
     )
     update = deref(z_temp) + deref(zd_diffcoef) * (
         deref(theta_v) * deref(geofac_n2s_c) + summed
@@ -55,7 +62,7 @@ def _mo_nh_diffusion_stencil_15(
 @fendef
 def mo_nh_diffusion_stencil_15(
     mask,
-    zd_vertidx,
+    zd_vertoffset,
     zd_diffcoef,
     geofac_n2s_c,
     geofac_n2s_nbh,
@@ -76,7 +83,7 @@ def mo_nh_diffusion_stencil_15(
         z_temp,
         [
             mask,
-            zd_vertidx,
+            zd_vertoffset,
             zd_diffcoef,
             geofac_n2s_c,
             geofac_n2s_nbh,
@@ -100,9 +107,9 @@ _metadata = {
         inp=True,
         out=False,
     ),
-    "zd_vertidx": FieldInfo(
+    "zd_vertoffset": FieldInfo(
         field=past.FieldSymbol(
-            id="zd_vertidx",
+            id="zd_vertoffset",
             type=ts.FieldType(
                 dims=[CellDim, C2E2CDim, KDim],
                 dtype=ts.ScalarType(kind=ts.ScalarKind.INT32),
