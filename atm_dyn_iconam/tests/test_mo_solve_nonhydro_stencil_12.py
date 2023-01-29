@@ -27,9 +27,9 @@ def mo_solve_nonhydro_stencil_12_numpy(
     d2dexdz2_fac2_mc: np.array,
     z_rth_pr_2: np.array,
 ) -> np.array:
-    z_theta_v_pr_ic_offset_1 = np.roll(z_theta_v_pr_ic, shift=-1, axis=1)
+    z_theta_v_pr_ic_offset_1 = z_theta_v_pr_ic[:, 1:]
     z_dexner_dz_c_2 = -0.5 * (
-        (z_theta_v_pr_ic - z_theta_v_pr_ic_offset_1) * d2dexdz2_fac1_mc
+        (z_theta_v_pr_ic[:, :-1] - z_theta_v_pr_ic_offset_1) * d2dexdz2_fac1_mc
         + z_rth_pr_2 * d2dexdz2_fac2_mc
     )
     return z_dexner_dz_c_2
@@ -38,7 +38,7 @@ def mo_solve_nonhydro_stencil_12_numpy(
 def test_mo_solve_nonhydro_stencil_12():
     mesh = SimpleMesh()
 
-    z_theta_v_pr_ic = random_field(mesh, CellDim, KDim)
+    z_theta_v_pr_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     d2dexdz2_fac1_mc = random_field(mesh, CellDim, KDim)
     z_rth_pr_2 = random_field(mesh, CellDim, KDim)
     d2dexdz2_fac2_mc = random_field(mesh, CellDim, KDim)
@@ -61,8 +61,4 @@ def test_mo_solve_nonhydro_stencil_12():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(
-        # work around problem with field[:,:-1], i.e. without the `np.asarray`
-        np.asarray(z_dexner_dz_c_2)[:, :-1],
-        np.asarray(z_dexner_dz_c_2_ref)[:, :-1],
-    )
+    assert np.allclose(z_dexner_dz_c_2, z_dexner_dz_c_2_ref)

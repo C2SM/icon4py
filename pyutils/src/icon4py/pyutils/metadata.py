@@ -12,15 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
-import dataclasses
 import importlib
 import types
+from dataclasses import dataclass
 from typing import Any, TypeGuard
 
 import eve
 from functional.common import Dimension, DimensionKind
-from functional.ffront import common_types as ct
 from functional.ffront import program_ast as past
+from functional.ffront import type_specifications as ts
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
 
@@ -32,22 +32,39 @@ from icon4py.pyutils.exceptions import (
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class StencilInfo:
     fvprog: Program
     connectivity_chains: list[eve.concepts.SymbolRef]
     offset_provider: dict
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class FieldInfo:
     field: past.DataSymbol
     inp: bool
     out: bool
 
 
+@dataclass
+class DummyConnectivity:
+    """Provides static information to the code generator (`max_neighbors`, `has_skip_values`)."""
+
+    max_neighbors: int
+    has_skip_values: int
+    origin_axis: Dimension
+
+    def mapped_index(_, __) -> int:
+        raise AssertionError("Unreachable")
+        return 0
+
+
 def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
     return isinstance(obj, list) and all(isinstance(i, past.Name) for i in obj)
+
+
+def _ignore_subscript(node: past.Name | past.Subscript) -> past.Name:
+    return node if isinstance(node, past.Name) else node.value
 
 
 def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
@@ -58,9 +75,15 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
 
     out_arg = fvprog.past_node.body[0].kwargs["out"]
-    assert isinstance(out_arg, (past.Name, past.TupleExpr))
-    output_fields = out_arg.elts if isinstance(out_arg, past.TupleExpr) else [out_arg]
+    output_fields = (
+        [_ignore_subscript(f) for f in out_arg.elts]
+        if isinstance(out_arg, past.TupleExpr)
+        else [_ignore_subscript(out_arg)]
+    )
+    assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)  # type: ignore
+
+    domain_arg_ids = _get_domain_arg_ids(fvprog)
 
     fields: dict[str, FieldInfo] = {
         field_node.id: FieldInfo(
@@ -69,9 +92,24 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
             out=(field_node.id in output_arg_ids),
         )
         for field_node in fvprog.past_node.params
+        if field_node.id not in domain_arg_ids
     }
 
     return fields
+
+
+def _get_domain_arg_ids(fvprog: Program) -> list | set[str]:
+    """Collect all argument names that are used within the 'domain' keyword argument."""
+    domain_arg_ids = []
+    if "domain" in fvprog.past_node.body[0].kwargs.keys():
+        domain_arg = fvprog.past_node.body[0].kwargs["domain"]
+        assert isinstance(domain_arg, past.Dict)
+        for arg in domain_arg.values_:
+            for arg_elt in arg.elts:
+                if isinstance(arg_elt, past.Name):
+                    domain_arg_ids.append(arg_elt.id)
+        domain_arg_ids = set(domain_arg_ids)
+    return domain_arg_ids
 
 
 def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
@@ -98,7 +136,7 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(offset: str) -> types.SimpleNamespace | Dimension:
+def provide_offset(offset: str) -> DummyConnectivity | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
@@ -107,7 +145,7 @@ def provide_offset(offset: str) -> types.SimpleNamespace | Dimension:
         return provide_neighbor_table(offset)
 
 
-def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
+def provide_neighbor_table(chain: str) -> DummyConnectivity:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -141,9 +179,10 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
             pass
         else:
             raise InvalidConnectivityException(location_chain)
-    return types.SimpleNamespace(
+    return DummyConnectivity(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
         has_skip_values=False,
+        origin_axis=location_chain[0],
     )
 
 
@@ -155,7 +194,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     all_field_types = [
         symbol_type
         for symbol_type in all_types
-        if isinstance(symbol_type, ct.FieldType)
+        if isinstance(symbol_type, ts.FieldType)
     ]
     all_dims = set(i for j in all_field_types for i in j.dims)
     all_offset_labels = (
