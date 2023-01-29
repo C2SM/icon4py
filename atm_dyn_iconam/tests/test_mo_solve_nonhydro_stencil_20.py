@@ -26,7 +26,7 @@ def mo_solve_nonhydro_stencil_20_numpy(
     inv_dual_edge_length: np.array,
     z_exner_ex_pr: np.array,
     zdiff_gradp: np.array,
-    ikidx: np.array,
+    ikoffset: np.array,
     z_dexner_dz_c_1: np.array,
     z_dexner_dz_c_2: np.array,
 ) -> np.array:
@@ -44,12 +44,12 @@ def mo_solve_nonhydro_stencil_20_numpy(
     full_shape = zdiff_gradp.shape
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
-    z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, e2c, ikidx)
+    z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, e2c, ikoffset)
     z_dexner_dz_c_1_at_kidx = _apply_index_field(
-        full_shape, z_dexner_dz_c_1, e2c, ikidx
+        full_shape, z_dexner_dz_c_1, e2c, ikoffset
     )
     z_dexner_dz_c_2_at_kidx = _apply_index_field(
-        full_shape, z_dexner_dz_c_2, e2c, ikidx
+        full_shape, z_dexner_dz_c_2, e2c, ikoffset
     )
 
     def at_neighbor(i):
@@ -70,14 +70,14 @@ def test_mo_solve_nonhydro_stencil_20():
     inv_dual_edge_length = random_field(mesh, EdgeDim)
     z_exner_ex_pr = random_field(mesh, CellDim, KDim)
     zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
-    ikidx = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int)
+    ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int)
     rng = np.random.default_rng()
     for k in range(mesh.k_level):
         # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-        ikidx[:, :, k] = rng.integers(
+        ikoffset[:, :, k] = rng.integers(
             low=0 - k,
             high=mesh.k_level - k - 1,
-            size=(ikidx.shape[0], ikidx.shape[1]),
+            size=(ikoffset.shape[0], ikoffset.shape[1]),
         )
 
     z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim)
@@ -90,7 +90,7 @@ def test_mo_solve_nonhydro_stencil_20():
         np.asarray(inv_dual_edge_length),
         np.asarray(z_exner_ex_pr),
         np.asarray(zdiff_gradp),
-        np.asarray(ikidx),
+        np.asarray(ikoffset),
         np.asarray(z_dexner_dz_c_1),
         np.asarray(z_dexner_dz_c_2),
     )
@@ -104,7 +104,7 @@ def test_mo_solve_nonhydro_stencil_20():
         inv_dual_edge_length,
         z_exner_ex_pr,
         zdiff_gradp,
-        ikidx,
+        ikoffset,
         z_dexner_dz_c_1,
         z_dexner_dz_c_2,
         z_gradh_exner,

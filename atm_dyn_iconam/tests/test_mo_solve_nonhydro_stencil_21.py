@@ -25,7 +25,7 @@ from icon4py.testutils.utils import random_field, zero_field
 def mo_solve_nonhydro_stencil_21_numpy(
     e2c: np.array,
     theta_v: np.array,
-    ikidx: np.array,
+    ikoffset: np.array,
     zdiff_gradp: np.array,
     theta_v_ic: np.array,
     inv_ddqz_z_full: np.array,
@@ -50,14 +50,14 @@ def mo_solve_nonhydro_stencil_21_numpy(
     full_shape = zdiff_gradp.shape
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
-    theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikidx)
+    theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikoffset)
 
     theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
-        full_shape, theta_v_ic, e2c, ikidx
+        full_shape, theta_v_ic, e2c, ikoffset
     )
 
     inv_ddqz_z_full_at_kidx, _ = _apply_index_field(
-        full_shape, inv_ddqz_z_full, e2c, ikidx
+        full_shape, inv_ddqz_z_full, e2c, ikoffset
     )
 
     z_theta1 = (
@@ -88,14 +88,14 @@ def mo_solve_nonhydro_stencil_21_numpy(
 def test_mo_solve_nonhydro_stencil_21():
     mesh = SimpleMesh()
 
-    ikidx = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int)
+    ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int)
     rng = np.random.default_rng()
     for k in range(mesh.k_level):
         # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-        ikidx[:, :, k] = rng.integers(
+        ikoffset[:, :, k] = rng.integers(
             low=0 - k,
             high=mesh.k_level - k - 1,
-            size=(ikidx.shape[0], ikidx.shape[1]),
+            size=(ikoffset.shape[0], ikoffset.shape[1]),
         )
 
     theta_v = random_field(mesh, CellDim, KDim)
@@ -110,7 +110,7 @@ def test_mo_solve_nonhydro_stencil_21():
     z_hydro_corr_ref = mo_solve_nonhydro_stencil_21_numpy(
         mesh.e2c,
         np.asarray(theta_v),
-        np.asarray(ikidx),
+        np.asarray(ikoffset),
         np.asarray(zdiff_gradp),
         np.asarray(theta_v_ic),
         np.asarray(inv_ddqz_z_full),
@@ -125,7 +125,7 @@ def test_mo_solve_nonhydro_stencil_21():
 
     mo_solve_nonhydro_stencil_21(
         theta_v,
-        ikidx,
+        ikoffset,
         zdiff_gradp,
         theta_v_ic,
         inv_ddqz_z_full,

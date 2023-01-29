@@ -24,7 +24,7 @@ from icon4py.testutils.utils import random_field, random_mask, zero_field
 def mo_nh_diffusion_stencil_15_numpy(
     c2e2c: np.array,
     mask: np.array,
-    zd_vertidx: np.array,
+    zd_vertoffset: np.array,
     zd_diffcoef: np.array,
     geofac_n2s_c: np.array,
     geofac_n2s_nbh: np.array,
@@ -42,10 +42,10 @@ def mo_nh_diffusion_stencil_15_numpy(
         for isparse in range(full_shape[1]):
             for ik in range(full_shape[2]):
                 theta_v_at_zd_vertidx[ic, isparse, ik] = theta_v[
-                    c2e2c[ic, isparse], ik + zd_vertidx[ic, isparse, ik]
+                    c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
                 ]
                 theta_v_at_zd_vertidx_p1[ic, isparse, ik] = theta_v[
-                    c2e2c[ic, isparse], ik + zd_vertidx[ic, isparse, ik] + 1
+                    c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik] + 1
                 ]
 
     sum_over = np.sum(
@@ -65,14 +65,14 @@ def test_mo_nh_diffusion_stencil_15():
 
     mask = random_mask(mesh, CellDim, KDim)
 
-    zd_vertidx = zero_field(mesh, CellDim, C2E2CDim, KDim, dtype=int)
+    zd_vertoffset = zero_field(mesh, CellDim, C2E2CDim, KDim, dtype=int)
     rng = np.random.default_rng()
     for k in range(mesh.k_level):
         # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
-        zd_vertidx[:, :, k] = rng.integers(
+        zd_vertoffset[:, :, k] = rng.integers(
             low=0 - k,
             high=mesh.k_level - k - 1,
-            size=(zd_vertidx.shape[0], zd_vertidx.shape[1]),
+            size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
         )
 
     zd_diffcoef = random_field(mesh, CellDim, KDim)
@@ -85,7 +85,7 @@ def test_mo_nh_diffusion_stencil_15():
     ref = mo_nh_diffusion_stencil_15_numpy(
         mesh.c2e2c,
         np.asarray(mask),
-        np.asarray(zd_vertidx),
+        np.asarray(zd_vertoffset),
         np.asarray(zd_diffcoef),
         np.asarray(geofac_n2s_c),
         np.asarray(geofac_n2s_nbh),
@@ -101,7 +101,7 @@ def test_mo_nh_diffusion_stencil_15():
 
     mo_nh_diffusion_stencil_15(
         mask,
-        zd_vertidx,
+        zd_vertoffset,
         zd_diffcoef,
         geofac_n2s_c,
         geofac_n2s_nbh,
