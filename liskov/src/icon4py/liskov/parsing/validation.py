@@ -164,28 +164,23 @@ class DirectiveSemanticsValidator:
         Args:
             directives (list[ts.ParsedDirective]): List of stencil directives to validate.
         """
-        start_directives = [d for d in directives if isinstance(d, ts.StartStencil)]
-        end_directives = [d for d in directives if isinstance(d, ts.EndStencil)]
-
-        start_stencil_names = [
-            self.extract_arg_from_directive(d.string, "name") for d in start_directives
+        stencil_directives = [
+            d for d in directives if isinstance(d, (ts.StartStencil, ts.EndStencil))
         ]
-        end_stencil_names = [
-            self.extract_arg_from_directive(d.string, "name") for d in end_directives
-        ]
-        start_counts = {
-            name: start_stencil_names.count(name) for name in set(start_stencil_names)
-        }
-        end_counts = {
-            name: end_stencil_names.count(name) for name in set(end_stencil_names)
-        }
+        stencil_counts = {}
+        for directive in stencil_directives:
+            stencil_name = self.extract_arg_from_directive(directive.string, "name")
+            stencil_counts[stencil_name] = stencil_counts.get(stencil_name, 0) + (
+                1 if isinstance(directive, ts.StartStencil) else -1
+            )
 
-        if start_counts != end_counts:
+        unbalanced_stencils = [
+            stencil for stencil, count in stencil_counts.items() if count != 0
+        ]
+        if unbalanced_stencils:
             raise UnbalancedStencilDirectiveError(
-                f"Error in {self.filepath}.\n Each unique stencil must have a corresponding START STENCIL and END STENCIL directive.\n"
-                "\nErrors found in the following stencils:\n"
-                f"START STENCIL counts are as follows: {start_counts}\n"
-                f"END STENCIL counts are as follows: {end_counts}"
+                f"Error in {self.filepath}. Each unique stencil must have a corresponding START STENCIL and END STENCIL directive."
+                f" Errors found in the following stencils: {', '.join(unbalanced_stencils)}"
             )
 
 
