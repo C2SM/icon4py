@@ -74,7 +74,6 @@ def test_directive_syntax_validator(directive):
     "directive",
     [
         "!$DSL IMPORTS()",
-        "!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)",
         "!$DSL START CREATE()",
     ],
 )
@@ -90,6 +89,19 @@ def test_directive_semantics_validation_repeated_directives(
         match="Found same directive more than once in the following directives:\n",
     ):
         DirectivesParser(directives, fpath)
+
+
+@mark.parametrize(
+    "directive",
+    [
+        "!$DSL START STENCIL(name=mo_nh_diffusion_stencil_06)\n!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)"
+    ],
+)
+def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, directive):
+    fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
+    insert_new_lines(fpath, [directive])
+    directives = scan_for_directives(fpath)
+    DirectivesParser(directives, fpath)
 
 
 @mark.parametrize(

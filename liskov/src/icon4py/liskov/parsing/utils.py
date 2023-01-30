@@ -34,6 +34,14 @@ def extract_directive(
     return directives
 
 
+def remove_directive_types(
+    directives: Sequence[ts.ParsedDirective],
+    exclude_types: Sequence[Type[ts.ParsedDirective]],
+) -> Sequence[ts.ParsedDirective]:
+    """Remove specified directive types from a list of directives."""
+    return [d for d in directives if type(d) not in exclude_types]
+
+
 class StencilCollector:
     _STENCIL_PACKAGES = ["atm_dyn_iconam", "advection"]
 

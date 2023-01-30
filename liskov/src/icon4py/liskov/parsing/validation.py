@@ -25,7 +25,10 @@ from icon4py.liskov.parsing.exceptions import (
     UnbalancedStencilDirectiveError,
     UnsupportedDirectiveError,
 )
-from icon4py.liskov.parsing.utils import print_parsed_directive
+from icon4py.liskov.parsing.utils import (
+    print_parsed_directive,
+    remove_directive_types,
+)
 
 
 logger = setup_logger(__name__)
@@ -108,8 +111,14 @@ class DirectiveSemanticsValidator:
     def _validate_directive_uniqueness(
         self, directives: list[ts.ParsedDirective]
     ) -> None:
-        """Check that all used directives are unique."""
-        repeated = [d for d in directives if directives.count(d) > 1]
+        """Check that all used directives are unique.
+
+        Note: Allow repeated START STENCIL and END STENCIL directives.
+        """
+        repeated = remove_directive_types(
+            [d for d in directives if directives.count(d) > 1],
+            [ts.StartStencil, ts.EndStencil],
+        )
         if repeated:
             pretty_printed = " ".join([print_parsed_directive(d) for d in repeated])
             raise RepeatedDirectiveError(
@@ -158,19 +167,25 @@ class DirectiveSemanticsValidator:
         start_directives = [d for d in directives if isinstance(d, ts.StartStencil)]
         end_directives = [d for d in directives if isinstance(d, ts.EndStencil)]
 
-        start_stencil_names = {
+        start_stencil_names = [
             self.extract_arg_from_directive(d.string, "name") for d in start_directives
-        }
-        end_stencil_names = {
+        ]
+        end_stencil_names = [
             self.extract_arg_from_directive(d.string, "name") for d in end_directives
+        ]
+        start_counts = {
+            name: start_stencil_names.count(name) for name in set(start_stencil_names)
         }
-        diff = start_stencil_names.symmetric_difference(end_stencil_names)
-        if len(diff) > 0:
-            error_msgs = ", ".join(diff)
+        end_counts = {
+            name: end_stencil_names.count(name) for name in set(end_stencil_names)
+        }
+
+        if start_counts != end_counts:
             raise UnbalancedStencilDirectiveError(
                 f"Error in {self.filepath}.\n Each unique stencil must have a corresponding START STENCIL and END STENCIL directive.\n"
                 "\nErrors found in the following stencils:\n"
-                f"{error_msgs}"
+                f"START STENCIL counts are as follows: {start_counts}\n"
+                f"END STENCIL counts are as follows: {end_counts}"
             )
 
 
