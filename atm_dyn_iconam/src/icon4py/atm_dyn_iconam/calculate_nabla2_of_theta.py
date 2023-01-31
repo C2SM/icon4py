@@ -14,21 +14,30 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from icon4py.common.dimension import (
+    C2CE,
+    C2E,
+    C2EDim,
+    CEDim,
+    CellDim,
+    EdgeDim,
+    KDim,
+)
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_07(
-    w: Field[[CellDim, KDim], float], geofac_n2s: Field[[CellDim, C2E2CODim], float]
+def _calculate_nabla2_of_theta(
+    z_nabla2_e: Field[[EdgeDim, KDim], float],
+    geofac_div: Field[[CEDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    z_nabla2_c = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim)
-    return z_nabla2_c
+    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)
+    return z_temp
 
 
 @program
-def mo_nh_diffusion_stencil_07(
-    w: Field[[CellDim, KDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
-    z_nabla2_c: Field[[CellDim, KDim], float],
+def calculate_nabla2_of_theta(
+    z_nabla2_e: Field[[EdgeDim, KDim], float],
+    geofac_div: Field[[CEDim], float],
+    z_temp: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_07(w, geofac_n2s, out=z_nabla2_c)
+    _calculate_nabla2_of_theta(z_nabla2_e, geofac_div, out=z_temp)

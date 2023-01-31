@@ -12,23 +12,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, max_over, maximum
+from functional.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
+from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_12(
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    enh_diffu_3d: Field[[CellDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    kh_smag_e = maximum(kh_smag_e, max_over(enh_diffu_3d(E2C), axis=E2CDim))
-    return kh_smag_e
+def _calculate_nabla2_for_w(
+    w: Field[[CellDim, KDim], float], geofac_n2s: Field[[CellDim, C2E2CODim], float]
+) -> Field[[CellDim, KDim], float]:
+    z_nabla2_c = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim)
+    return z_nabla2_c
 
 
 @program
-def mo_nh_diffusion_stencil_12(
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    enh_diffu_3d: Field[[CellDim, KDim], float],
+def calculate_nabla2_for_w(
+    w: Field[[CellDim, KDim], float],
+    geofac_n2s: Field[[CellDim, C2E2CODim], float],
+    z_nabla2_c: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_12(kh_smag_e, enh_diffu_3d, out=kh_smag_e)
+    _calculate_nabla2_for_w(w, geofac_n2s, out=z_nabla2_c)

@@ -14,31 +14,29 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_16(
-    z_temp: Field[[CellDim, KDim], float],
-    area: Field[[CellDim], float],
+def _calculate_nabla2_for_z(
+    kh_smag_e: Field[[EdgeDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
     theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta = theta_v
-    theta_v = theta_v + (area * z_temp)
-    exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
-    return theta_v, exner
+) -> Field[[EdgeDim, KDim], float]:
+    z_nabla2_e = kh_smag_e * inv_dual_edge_length * (theta_v(E2C[1]) - theta_v(E2C[0]))
+    return z_nabla2_e
 
 
 @program
-def mo_nh_diffusion_stencil_16(
-    z_temp: Field[[CellDim, KDim], float],
-    area: Field[[CellDim], float],
+def calculate_nabla2_for_z(
+    kh_smag_e: Field[[EdgeDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
     theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
+    z_nabla2_e: Field[[EdgeDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_16(
-        z_temp, area, theta_v, exner, rd_o_cvd, out=(theta_v, exner)
+    _calculate_nabla2_for_z(
+        kh_smag_e,
+        inv_dual_edge_length,
+        theta_v,
+        out=z_nabla2_e,
     )
