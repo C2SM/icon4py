@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_points_cold_pools import (
-    enhance_diffusion_coefficient_for_grid_points_cold_pools,
+from icon4py.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
+    enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def enhance_diffusion_coefficient_for_grid_points_cold_pools_numpy(
+def enhance_diffusion_coefficient_for_grid_point_cold_pools_numpy(
     e2c: np.array,
     kh_smag_e: np.array,
     enh_diffu_3d: np.array,
@@ -30,16 +30,16 @@ def enhance_diffusion_coefficient_for_grid_points_cold_pools_numpy(
     return kh_smag_e
 
 
-def test_enhance_diffusion_coefficient_for_grid_points_cold_pools():
+def test_enhance_diffusion_coefficient_for_grid_point_cold_pools():
     mesh = SimpleMesh()
     kh_smag_e = random_field(mesh, EdgeDim, KDim)
     enh_diffu_3d = random_field(mesh, CellDim, KDim)
 
-    kh_smag_e_ref = enhance_diffusion_coefficient_for_grid_points_cold_pools_numpy(
+    kh_smag_e_ref = enhance_diffusion_coefficient_for_grid_point_cold_pools_numpy(
         mesh.e2c, np.asarray(kh_smag_e), np.asarray(enh_diffu_3d)
     )
 
-    enhance_diffusion_coefficient_for_grid_points_cold_pools(
+    enhance_diffusion_coefficient_for_grid_point_cold_pools(
         kh_smag_e, enh_diffu_3d, offset_provider={"E2C": mesh.get_e2c_offset_provider()}
     )
 

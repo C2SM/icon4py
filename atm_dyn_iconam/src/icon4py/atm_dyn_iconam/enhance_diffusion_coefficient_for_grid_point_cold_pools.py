@@ -18,7 +18,7 @@ from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
 
 
 @field_operator
-def _enhance_diffusion_coefficient_for_grid_points_cold_pools(
+def _enhance_diffusion_coefficient_for_grid_point_cold_pools(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     enh_diffu_3d: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
@@ -27,10 +27,10 @@ def _enhance_diffusion_coefficient_for_grid_points_cold_pools(
 
 
 @program
-def enhance_diffusion_coefficient_for_grid_points_cold_pools(
+def enhance_diffusion_coefficient_for_grid_point_cold_pools(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     enh_diffu_3d: Field[[CellDim, KDim], float],
 ):
-    _enhance_diffusion_coefficient_for_grid_points_cold_pools(
+    _enhance_diffusion_coefficient_for_grid_point_cold_pools(
         kh_smag_e, enh_diffu_3d, out=kh_smag_e
     )
