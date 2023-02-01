@@ -18,7 +18,7 @@ from icon4py.common.dimension import C2E2C, C2E2CDim, CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_11(
+def _temporary_field_for_grid_point_cold_pools_enhancement(
     theta_v: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],
     thresh_tdiff: float,
@@ -34,10 +34,12 @@ def _mo_nh_diffusion_stencil_11(
 
 
 @program
-def mo_nh_diffusion_stencil_11(
+def temporary_field_for_grid_point_cold_pools_enhancement(
     theta_v: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],
     enh_diffu_3d: Field[[CellDim, KDim], float],
     thresh_tdiff: float,
 ):
-    _mo_nh_diffusion_stencil_11(theta_v, theta_ref_mc, thresh_tdiff, out=enh_diffu_3d)
+    _temporary_field_for_grid_point_cold_pools_enhancement(
+        theta_v, theta_ref_mc, thresh_tdiff, out=enh_diffu_3d
+    )

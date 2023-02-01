@@ -18,25 +18,24 @@ from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_09(
-    area: Field[[CellDim], float],
-    z_nabla2_c: Field[[CellDim, KDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
+def _calculate_horizontal_gradients_for_turbulance(
     w: Field[[CellDim, KDim], float],
-    diff_multfac_w: float,
-) -> Field[[CellDim, KDim], float]:
-    w = w - diff_multfac_w * area * area * neighbor_sum(
-        z_nabla2_c(C2E2CO) * geofac_n2s, axis=C2E2CODim
-    )
-    return w
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    dwdx = neighbor_sum(geofac_grg_x * w(C2E2CO), axis=C2E2CODim)
+    dwdy = neighbor_sum(geofac_grg_y * w(C2E2CO), axis=C2E2CODim)
+    return dwdx, dwdy
 
 
 @program
-def mo_nh_diffusion_stencil_09(
-    area: Field[[CellDim], float],
-    z_nabla2_c: Field[[CellDim, KDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
+def calculate_horizontal_gradients_for_turbulance(
     w: Field[[CellDim, KDim], float],
-    diff_multfac_w: float,
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
+    dwdx: Field[[CellDim, KDim], float],
+    dwdy: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_09(area, z_nabla2_c, geofac_n2s, w, diff_multfac_w, out=w)
+    _calculate_horizontal_gradients_for_turbulance(
+        w, geofac_grg_x, geofac_grg_y, out=(dwdx, dwdy)
+    )

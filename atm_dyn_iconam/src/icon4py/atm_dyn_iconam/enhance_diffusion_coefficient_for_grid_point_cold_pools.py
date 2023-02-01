@@ -12,27 +12,25 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from functional.ffront.fbuiltins import Field, max_over, maximum
 
-from icon4py.common.dimension import EdgeDim, KDim
+from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_06(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    area_edge: Field[[EdgeDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    fac_bdydiff_v: float,
+def _enhance_diffusion_coefficient_for_grid_point_cold_pools(
+    kh_smag_e: Field[[EdgeDim, KDim], float],
+    enh_diffu_3d: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
-    return vn
+    kh_smag_e = maximum(kh_smag_e, max_over(enh_diffu_3d(E2C), axis=E2CDim))
+    return kh_smag_e
 
 
 @program
-def mo_nh_diffusion_stencil_06(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    area_edge: Field[[EdgeDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    fac_bdydiff_v: float,
+def enhance_diffusion_coefficient_for_grid_point_cold_pools(
+    kh_smag_e: Field[[EdgeDim, KDim], float],
+    enh_diffu_3d: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, fac_bdydiff_v, out=vn)
+    _enhance_diffusion_coefficient_for_grid_point_cold_pools(
+        kh_smag_e, enh_diffu_3d, out=kh_smag_e
+    )
