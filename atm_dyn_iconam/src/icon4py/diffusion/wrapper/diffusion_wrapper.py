@@ -14,6 +14,7 @@
 # flake8: noqa
 import numpy as np
 from functional.common import Field
+from functional.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
     C2E2CDim,
@@ -119,11 +120,6 @@ def diffusion_init(
     )
 
 
-# ELSE IF ((diffu_type == 3 .OR. diffu_type == 5) .AND. discr_vn == 1 .AND. .NOT. diffusion_config(jg)%lsmag_3d)
-# mch branch
-# ELSE IF ((diffu_type == 3 .OR. diffu_type == 5) .AND. discr_vn == 1) THEN t_nh_diag%vt AND t_nh_diag%theta_v_ic are used
-# matching but not mch branch
-# and I couldn't find discr_vn = mo_diffusion_nml:itype_vn_diffu != 1 in any experiment
 def diffusion_run(
     dtime: float,
     linit: bool,
@@ -131,16 +127,15 @@ def diffusion_run(
     w: np.ndarray,
     theta_v: np.ndarray,
     exner: np.ndarray,
-    # vt: np.ndarray(EdgeDim, KDim)  # not used in mch_ch_r04b09 see above
-    # theta_v_ic: np.ndarray (CellDim, KHalfDim) # not used in mch_ch_r04b09 see above
     div_ic: np.ndarray,
     hdef_ic: np.ndarray,
     dwdx: np.ndarray,
     dwdy: np.ndarray,
 ):
-    diagnostic_state = DiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
+    as_cell_k = np_as_located_field(CellDim, KDim)
+    diagnostic_state = DiagnosticState(as_cell_k(hdef_ic), as_cell_k(div_ic), as_cell_k(dwdx), as_cell_k(dwdy))
     prognostic_state = PrognosticState(
-        w=w, vn=vn, exner_pressure=exner, theta_v=theta_v
+        w=as_cell_k(w), vn=np_as_located_field(EdgeDim, KDim)(vn), exner_pressure=as_cell_k(exner), theta_v=as_cell_k(theta_v)
     )
     if linit:
         diffusion.initial_step(
