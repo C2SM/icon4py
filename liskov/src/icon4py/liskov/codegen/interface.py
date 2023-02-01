@@ -35,6 +35,7 @@ class FieldAssociationData:
     association: str
     inp: bool
     out: bool
+    dims: Optional[int]
     abs_tol: Optional[str] = None
     rel_tol: Optional[str] = None
 

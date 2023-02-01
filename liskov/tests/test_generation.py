@@ -14,6 +14,7 @@
 
 import pytest
 
+from icon4py.common.dimension import C2E2CODim, CellDim, EdgeDim, KDim, VertexDim
 from icon4py.liskov.codegen.generate import IntegrationGenerator
 from icon4py.liskov.codegen.interface import (
     BoundsData,
@@ -33,10 +34,32 @@ def serialised_directives():
     start_stencil_data = StartStencilData(
         name="stencil1",
         fields=[
-            FieldAssociationData("field1", "field1(:,:,1)", True, False),
-            FieldAssociationData("field2", "field2(:,:,1)", False, True, abs_tol="0.5"),
+            FieldAssociationData("scalar1", "scalar1", True, False, None),
             FieldAssociationData(
-                "field3", "p_nh%prog(nnew)%field3(:,:,1)", False, True, abs_tol="0.2"
+                "inp1", "inp1(:,:,1)", True, False, [CellDim, C2E2CODim]
+            ),
+            FieldAssociationData(
+                "out1", "out1(:,:,1)", False, True, [CellDim, KDim], abs_tol="0.5"
+            ),
+            FieldAssociationData(
+                "out2",
+                "p_nh%prog(nnew)%out2(:,:,1)",
+                False,
+                True,
+                [VertexDim, KDim],
+                abs_tol="0.2",
+            ),
+            FieldAssociationData(
+                "out3", "p_nh%prog(nnew)%w(:,:,jb)", False, True, [KDim]
+            ),
+            FieldAssociationData(
+                "out4", "p_nh%prog(nnew)%w(:,:,1,2)", False, True, [EdgeDim, KDim]
+            ),
+            FieldAssociationData(
+                "out5", "p_nh%prog(nnew)%w(:,:,:,ntnd)", False, True, [VertexDim, KDim]
+            ),
+            FieldAssociationData(
+                "out6", "p_nh%prog(nnew)%w(:,:,1,ntnd)", False, True, [CellDim, KDim]
             ),
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
@@ -73,8 +96,12 @@ def expected_start_create_source():
 #endif
 
         !$ACC DATA CREATE( &
-        !$ACC   field2_before, &
-        !$ACC   field3_before &
+        !$ACC   out1_before, &
+        !$ACC   out2_before, &
+        !$ACC   out3_before, &
+        !$ACC   out4_before, &
+        !$ACC   out5_before, &
+        !$ACC   out6_before &
         !$ACC   ), &
         !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
 
@@ -102,8 +129,12 @@ def expected_start_stencil_source():
     return """
 #ifdef __DSL_VERIFY
         !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
-        field2_before(:, :, :) = field2(:, :, :)
-        field3_before(:, :, :) = p_nh%prog(nnew)%field3(:, :, :)
+        out1_before(:, :, :) = out1(:, :, :)
+        out2_before(:, :, :) = p_nh%prog(nnew)%out2(:, :, :)
+        out3_before(:, :) = p_nh%prog(nnew)%w(:, :, jb)
+        out4_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, 2)
+        out5_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
+        out6_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
         !$ACC END PARALLEL
         call nvtxStartRange("stencil1")"""
 
@@ -114,17 +145,29 @@ def expected_end_stencil_source():
         call nvtxEndRange()
 #endif
         call wrap_run_stencil1( &
-           field1=field1(:, :, 1), &
-           field2=field2(:, :, 1), &
-           field2_before=field2_before(:, :, 1), &
-           field3=p_nh%prog(nnew)%field3(:, :, 1), &
-           field3_before=field3_before(:, :, 1), &
-           field2_abs_tol=0.5, &
-           field3_abs_tol=0.2, &
+           scalar1=scalar1, &
+           inp1=inp1(:, :, 1), &
+           out1=out1(:, :, 1), &
+           out1_before=out1_before(:, :, 1), &
+           out2=p_nh%prog(nnew)%out2(:, :, 1), &
+           out2_before=out2_before(:, :, 1), &
+           out3=p_nh%prog(nnew)%w(:, :, jb), &
+           out3_before=out3_before(:, 1), &
+           out4=p_nh%prog(nnew)%w(:, :, 1, 2), &
+           out4_before=out4_before(:, :, 1), &
+           out5=p_nh%prog(nnew)%w(:, :, :, ntnd), &
+           out5_before=out5_before(:, :, 1), &
+           out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
+           out6_before=out6_before(:, :, 1), &
+           out1_abs_tol=0.5, &
+           out2_abs_tol=0.2, &
            vertical_lower=-1, &
            vertical_upper=-10, &
            horizontal_lower=1, &
            horizontal_upper=10)"""
+
+
+# todo: look into this: out3_before=out3_before(:, :), & check if this works (out3_before(:, 1))
 
 
 @pytest.fixture

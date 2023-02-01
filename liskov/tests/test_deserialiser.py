@@ -92,8 +92,8 @@ class TestStartStencilFactory(unittest.TestCase):
     def setUp(self):
         self.factory = StartStencilDataFactory()
         self.mock_fields = [
-            FieldAssociationData("x", "i", True, False),
-            FieldAssociationData("y", "i", True, False),
+            FieldAssociationData("x", "i", 3, True, False),
+            FieldAssociationData("y", "i", 3, True, False),
         ]
 
     def test_get_bounds(self):
@@ -105,13 +105,13 @@ class TestStartStencilFactory(unittest.TestCase):
             "vertical_lower": -5,
             "vertical_upper": 15,
         }
-        assert self.factory._get_bounds(named_args) == BoundsData(0, 10, -5, 15)
+        assert self.factory._make_bounds(named_args) == BoundsData(0, 10, -5, 15)
 
     def test_get_bounds_missing_bounds(self):
         """Test that exception is raised if bounds are not provided."""
         named_args = {"name": "stencil1", "horizontal_upper": 10, "vertical_upper": 15}
         with pytest.raises(MissingBoundsError):
-            self.factory._get_bounds(named_args)
+            self.factory._make_bounds(named_args)
 
     def test_get_field_associations(self):
         """Test that field associations are extracted correctly."""
@@ -128,14 +128,14 @@ class TestStartStencilFactory(unittest.TestCase):
         }
 
         expected_fields = [
-            FieldAssociationData("z_nabla2_e", "z_nabla2_e(:,:,1)", True, False),
+            FieldAssociationData("z_nabla2_e", "z_nabla2_e(:,:,1)", 3, True, False),
             FieldAssociationData(
-                "area_edge", "p_patch%edges%area_edge(:,1)", True, False
+                "area_edge", "p_patch%edges%area_edge(:,1)", 3, True, False
             ),
-            FieldAssociationData("fac_bdydiff_v", "fac_bdydiff_v", True, False),
-            FieldAssociationData("vn", "p_nh_prog%vn(:,:,1)", True, True),
+            FieldAssociationData("fac_bdydiff_v", "fac_bdydiff_v", 3, True, False),
+            FieldAssociationData("vn", "p_nh_prog%vn(:,:,1)", 2, True, True),
         ]
-        assert self.factory._get_field_associations(named_args) == expected_fields
+        assert self.factory._make_fields(named_args) == expected_fields
 
     def test_missing_directive_argument_error(self):
         """Test that exception is raised if 'name' argument is not provided."""
@@ -147,7 +147,7 @@ class TestStartStencilFactory(unittest.TestCase):
             "horizontal_upper": "i_endidx",
         }
         with pytest.raises(MissingDirectiveArgumentError):
-            self.factory._get_field_associations(named_args)
+            self.factory._make_fields(named_args)
 
     def test_incompatible_field_error(self):
         named_args = {
@@ -159,7 +159,7 @@ class TestStartStencilFactory(unittest.TestCase):
             "horizontal_upper": "i_endidx",
         }
         with pytest.raises(IncompatibleFieldError):
-            self.factory._get_field_associations(named_args)
+            self.factory._make_fields(named_args)
 
     def test_update_field_tolerances(self):
         """Test that relative and absolute tolerances are set correctly for fields."""
@@ -169,11 +169,13 @@ class TestStartStencilFactory(unittest.TestCase):
             "y_rel_tol": "0.001",
         }
         expected_fields = [
-            FieldAssociationData("x", "i", True, False, rel_tol="0.01", abs_tol="0.1"),
-            FieldAssociationData("y", "i", True, False, rel_tol="0.001"),
+            FieldAssociationData(
+                "x", "i", True, False, 3, rel_tol="0.01", abs_tol="0.1"
+            ),
+            FieldAssociationData("y", "i", True, False, 3, rel_tol="0.001"),
         ]
         assert (
-            self.factory._update_field_tolerances(named_args, self.mock_fields)
+            self.factory._update_tolerances(named_args, self.mock_fields)
             == expected_fields
         )
 
@@ -184,11 +186,13 @@ class TestStartStencilFactory(unittest.TestCase):
             "x_abs_tol": "0.1",
         }
         expected_fields = [
-            FieldAssociationData("x", "i", True, False, rel_tol="0.01", abs_tol="0.1"),
-            FieldAssociationData("y", "i", True, False),
+            FieldAssociationData(
+                "x", "i", True, False, 3, rel_tol="0.01", abs_tol="0.1"
+            ),
+            FieldAssociationData("y", "i", True, False, 3),
         ]
         assert (
-            self.factory._update_field_tolerances(named_args, self.mock_fields)
+            self.factory._update_tolerances(named_args, self.mock_fields)
             == expected_fields
         )
 
@@ -196,6 +200,6 @@ class TestStartStencilFactory(unittest.TestCase):
         # Test that fields are not updated if named_args does not contain any tolerances.
         named_args = {}
         assert (
-            self.factory._update_field_tolerances(named_args, self.mock_fields)
+            self.factory._update_tolerances(named_args, self.mock_fields)
             == self.mock_fields
         )

@@ -14,6 +14,8 @@
 import copy
 from typing import Callable, Protocol
 
+from functional.type_system.type_specifications import FieldType
+
 import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.codegen.interface import (
     BoundsData,
@@ -64,6 +66,10 @@ class ImportsDataFactory:
 
 
 class DeclareDataFactory:
+    @staticmethod
+    def get_field_dimensions(declarations):
+        return {k: len(v.split(",")) for k, v in declarations.items()}
+
     def __call__(self, parsed: ts.ParsedDict) -> DeclareData:
         extracted = extract_directive(parsed["directives"], ts.Declare)[0]
         declarations = parsed["content"]["Declare"]
@@ -111,13 +117,16 @@ class StartStencilDataFactory:
             List[StartStencilData]: List of StartStencilData objects created from the parsed directives.
         """
         deserialised = []
+        field_dimensions = DeclareDataFactory.get_field_dimensions(
+            parsed["content"]["Declare"][0]
+        )
         directives = extract_directive(parsed["directives"], ts.StartStencil)
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["StartStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
-            bounds = self._get_bounds(named_args)
-            fields = self._get_field_associations(named_args)
-            fields_w_tolerance = self._update_field_tolerances(named_args, fields)
+            bounds = self._make_bounds(named_args)
+            fields = self._make_fields(named_args, field_dimensions)
+            fields_w_tolerance = self._update_tolerances(named_args, fields)
 
             deserialised.append(
                 StartStencilData(
@@ -131,7 +140,7 @@ class StartStencilDataFactory:
         return deserialised
 
     @staticmethod
-    def _get_bounds(named_args: dict) -> BoundsData:
+    def _make_bounds(named_args: dict) -> BoundsData:
         """Extract stencil bounds from directive arguments."""
         try:
             bounds = BoundsData(
@@ -146,12 +155,14 @@ class StartStencilDataFactory:
             )
         return bounds
 
-    def _get_field_associations(
-        self, named_args: dict[str, str]
+    def _make_fields(
+        self, named_args: dict[str, str], dimensions: dict
     ) -> list[FieldAssociationData]:
         """Extract all fields from directive arguments and create corresponding field association data."""
         field_args = self._create_field_args(named_args)
-        fields = self._combine_field_info(field_args, named_args)
+        fields = self._make_icon4py_compatible_fields(
+            field_args, named_args, dimensions
+        )
         return fields
 
     @staticmethod
@@ -177,8 +188,8 @@ class StartStencilDataFactory:
             )
         return field_args
 
-    def _combine_field_info(
-        self, field_args: dict[str, str], named_args: dict[str, str]
+    def _make_icon4py_compatible_fields(
+        self, field_args: dict[str, str], named_args: dict[str, str], dimensions: dict
     ) -> list[FieldAssociationData]:
         """Combine directive field info with field info extracted from the corresponding icon4py stencil.
 
@@ -197,6 +208,7 @@ class StartStencilDataFactory:
 
             try:
                 gt4py_field_info = gt4py_stencil_info[field_name]
+                gt4py_type = gt4py_field_info.field.type
             except KeyError:
                 raise IncompatibleFieldError(
                     f"Used field variable name that is incompatible with the expected field names defined in {named_args['name']} in icon4py."
@@ -207,12 +219,15 @@ class StartStencilDataFactory:
                 association=association,
                 inp=gt4py_field_info.inp,
                 out=gt4py_field_info.out,
+                dims=dimensions.get(field_name)
+                if isinstance(gt4py_type, FieldType)
+                else None,
             )
-
+            # todo: improve error handling
             fields.append(field_association_data)
         return fields
 
-    def _update_field_tolerances(
+    def _update_tolerances(
         self, named_args: dict, fields: list[FieldAssociationData]
     ) -> list[FieldAssociationData]:
         """Set relative and absolute tolerance for a given field if set in the directives."""
