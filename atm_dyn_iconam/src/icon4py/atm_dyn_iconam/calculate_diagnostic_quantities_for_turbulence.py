@@ -24,7 +24,7 @@ from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _fused_mo_nh_diffusion_stencil_02_03(
+def _calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
@@ -40,7 +40,7 @@ def _fused_mo_nh_diffusion_stencil_02_03(
 
 
 @program
-def fused_mo_nh_diffusion_stencil_02_03(
+def calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
@@ -50,7 +50,7 @@ def fused_mo_nh_diffusion_stencil_02_03(
     div_ic: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
 ):
-    _fused_mo_nh_diffusion_stencil_02_03(
+    _calculate_diagnostic_quantities_for_turbulence(
         kh_smag_ec,
         vn,
         e_bln_c_s,

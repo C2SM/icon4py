@@ -25,7 +25,7 @@ from icon4py.common.dimension import ECVDim, EdgeDim, KDim, VertexDim
 
 
 @field_operator
-def _fused_mo_nh_diffusion_stencil_04_05_06(
+def _apply_diffusion_to_vn(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],
     primal_normal_vert_v1: Field[[ECVDim], float],
@@ -75,7 +75,7 @@ def _fused_mo_nh_diffusion_stencil_04_05_06(
 
 
 @program
-def fused_mo_nh_diffusion_stencil_04_05_06(
+def apply_diffusion_to_vn(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],
     primal_normal_vert_v1: Field[[ECVDim], float],
@@ -93,7 +93,7 @@ def fused_mo_nh_diffusion_stencil_04_05_06(
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
 ):
-    _fused_mo_nh_diffusion_stencil_04_05_06(
+    _apply_diffusion_to_vn(
         u_vert,
         v_vert,
         primal_normal_vert_v1,
