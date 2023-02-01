@@ -140,7 +140,7 @@ def diffusion_run(
 ):
     diagnostic_state = DiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
     prognostic_state = PrognosticState(
-        vertical_wind=w, normal_wind=vn, exner_pressure=exner, theta_v=theta_v
+        w=w, vn=vn, exner_pressure=exner, theta_v=theta_v
     )
     if linit:
         diffusion.initial_step(

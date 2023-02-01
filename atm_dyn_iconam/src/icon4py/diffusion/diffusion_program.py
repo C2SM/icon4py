@@ -59,8 +59,8 @@ def diffusion_run(
     diagnostic_div_ic: Field[[CellDim, KDim], float],
     diagnostic_dwdx: Field[[CellDim, KDim], float],
     diagnostic_dwdy: Field[[CellDim, KDim], float],
-    prognostic_vertical_wind: Field[[CellDim, KDim], float],
-    prognostic_normal_wind: Field[[EdgeDim, KDim], float],
+    prognostic_w: Field[[CellDim, KDim], float],
+    prognostic_vn: Field[[EdgeDim, KDim], float],
     prognostic_exner_pressure: Field[[CellDim, KDim], float],
     prognostic_theta_v: Field[[CellDim, KDim], float],
     metric_theta_ref_mc: Field[[CellDim, KDim], float],
@@ -132,7 +132,7 @@ def diffusion_run(
 
     # # 1.  CALL rbf_vec_interpol_vertex
     _mo_intp_rbf_rbf_vec_interpol_vertex(
-        prognostic_normal_wind,
+        prognostic_vn,
         interpolation_rbf_coeff_1,
         interpolation_rbf_coeff_2,
         out=(local_u_vert, local_v_vert),
@@ -156,7 +156,7 @@ def diffusion_run(
         primal_normal_vert_2,
         dual_normal_vert_1,
         dual_normal_vert_2,
-        prognostic_normal_wind,
+        prognostic_vn,
         local_smag_limit,
         local_smag_offset,
         out=(local_kh_smag_e, local_kh_smag_ec, local_z_nabla2_e),
@@ -168,7 +168,7 @@ def diffusion_run(
 
     _fused_mo_nh_diffusion_stencil_02_03(
         local_kh_smag_ec,
-        prognostic_normal_wind,
+        prognostic_vn,
         interpolation_e_bln_c_s,
         interpolation_geofac_div,
         local_diff_multfac_smag,
@@ -213,12 +213,12 @@ def diffusion_run(
         local_kh_smag_e,
         diff_multfac_vn,
         interpolation_nudgecoeff_e,
-        prognostic_normal_wind,
+        prognostic_vn,
         local_horizontal_edge_index,
         local_nudgezone_diff,
         local_fac_bdydiff_v,
         edge_startindex_nudging_minus1,
-        out=prognostic_normal_wind,
+        out=prognostic_vn,
         domain={
             EdgeDim: (edge_startindex_nudging_plus1, edge_endindex_local),
             KDim: (0, nlev),
@@ -232,8 +232,8 @@ def diffusion_run(
         interpolation_geofac_n2s,
         interpolation_geofac_grg_x,
         interpolation_geofac_grg_y,
-        prognostic_vertical_wind,
-        prognostic_vertical_wind,
+        prognostic_w,
+        prognostic_w,
         diagnostic_dwdx,
         diagnostic_dwdy,
         local_diff_multfac_w,
@@ -244,7 +244,7 @@ def diffusion_run(
         cell_startindex_interior,
         cell_endindex_local,
         out=(
-            prognostic_vertical_wind,
+            prognostic_w,
             diagnostic_dwdx,
             diagnostic_dwdy,
         ),

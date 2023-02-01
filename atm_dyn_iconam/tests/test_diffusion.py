@@ -482,8 +482,8 @@ def test_run_diffusion_single_step(
         hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
     )
     prognostic_state = PrognosticState(
-        vertical_wind=sp.w(),
-        normal_wind=sp.vn(),
+        w=sp.w(),
+        vn=sp.vn(),
         exner_pressure=sp.exner(),
         theta_v=sp.theta_v(),
     )
@@ -524,10 +524,8 @@ def test_run_diffusion_single_step(
     icon_result_w = savepoint_exit.w()
     icon_result_theta_w = savepoint_exit.theta_v()
 
-    assert np.allclose(icon_result_w, np.asarray(prognostic_state.vertical_wind))
-    assert np.allclose(
-        np.asarray(icon_result_vn), np.asarray(prognostic_state.normal_wind)
-    )
+    assert np.allclose(icon_result_w, np.asarray(prognostic_state.w))
+    assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.vn))
     assert np.allclose(
         np.asarray(icon_result_theta_w), np.asarray(prognostic_state.theta_v)
     )
@@ -552,8 +550,8 @@ def test_diffusion_five_steps(
         hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
     )
     prognostic_state = PrognosticState(
-        vertical_wind=sp.w(),
-        normal_wind=sp.vn(),
+        w=sp.w(),
+        vn=sp.vn(),
         exner_pressure=sp.exner(),
         theta_v=sp.theta_v(),
     )
@@ -641,10 +639,8 @@ def test_diffusion_five_steps(
     icon_result_vn = savepoint_exit.vn()
     icon_result_w = savepoint_exit.w()
     icon_result_theta_w = savepoint_exit.theta_v()
-    assert np.allclose(icon_result_w, np.asarray(prognostic_state.vertical_wind))
-    assert np.allclose(
-        np.asarray(icon_result_vn), np.asarray(prognostic_state.normal_wind)
-    )
+    assert np.allclose(icon_result_w, np.asarray(prognostic_state.w))
+    assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.vn))
     assert np.allclose(
         np.asarray(icon_result_theta_w), np.asarray(prognostic_state.theta_v)
     )
