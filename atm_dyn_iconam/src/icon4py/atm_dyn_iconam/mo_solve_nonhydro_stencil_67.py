@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, exp, log
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, exp, log
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -38,7 +38,6 @@ def mo_solve_nonhydro_stencil_67(
     rd_o_cvd: float,
     rd_o_p0ref: float,
 ):
-
     _mo_solve_nonhydro_stencil_67(
         rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner)
     )
