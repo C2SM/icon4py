@@ -13,7 +13,7 @@
 
 from typing import Iterator
 
-from functional.ffront.fbuiltins import Dimension
+from gt4py.next.ffront.fbuiltins import Dimension
 
 from icon4py.bindings.codegen.render.location import LocationRenderer
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim

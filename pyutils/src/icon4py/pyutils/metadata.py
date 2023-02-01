@@ -17,12 +17,12 @@ import types
 from dataclasses import dataclass
 from typing import Any, TypeGuard
 
-import eve
-from functional.common import Dimension, DimensionKind
-from functional.ffront import program_ast as past
-from functional.ffront.decorator import FieldOperator, Program, program
-from functional.iterator import ir as itir
-from functional.type_system import type_specifications as ts
+from gt4py import eve
+from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.ffront import program_ast as past
+from gt4py.next.ffront.decorator import FieldOperator, Program, program
+from gt4py.next.iterator import ir as itir
+from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (

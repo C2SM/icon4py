@@ -15,8 +15,8 @@ from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
-from functional import common as gt_common
-from functional.iterator import embedded as it_embedded
+from gt4py.next import common as gt_common
+from gt4py.next.iterator import embedded as it_embedded
 
 from . import simple_mesh
 
