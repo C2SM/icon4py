@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront import type_specifications as ts
+from functional.type_system import type_specifications as ts
 
 
 BUILTIN_TO_ISO_C_TYPE: dict[ts.ScalarKind, str] = {
