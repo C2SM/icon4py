@@ -15,7 +15,7 @@ from typing import Union
 
 from eve import Node
 from functional.ffront import program_ast as past
-from functional.ffront import type_specifications as ts
+from functional.type_system import type_specifications as ts
 
 from icon4py.bindings.codegen.render.field import FieldRenderer
 from icon4py.bindings.codegen.render.offset import OffsetRenderer

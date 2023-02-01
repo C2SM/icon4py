@@ -20,9 +20,9 @@ from typing import Any, TypeGuard
 import eve
 from functional.common import Dimension, DimensionKind
 from functional.ffront import program_ast as past
-from functional.ffront import type_specifications as ts
 from functional.ffront.decorator import FieldOperator, Program, program
 from functional.iterator import ir as itir
+from functional.type_system import type_specifications as ts
 
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (
@@ -53,6 +53,8 @@ class DummyConnectivity:
     max_neighbors: int
     has_skip_values: int
     origin_axis: Dimension
+    neighbor_axis: Dimension = Dimension("unused")
+    index_type: type[int] = int
 
     def mapped_index(_, __) -> int:
         raise AssertionError("Unreachable")

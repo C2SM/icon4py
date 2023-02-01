@@ -15,7 +15,7 @@ from abc import ABC
 from dataclasses import dataclass
 from typing import Union
 
-from functional.ffront import type_specifications as ts
+from functional.type_system import type_specifications as ts
 
 from icon4py.bindings.locations import (
     BasicLocation,
