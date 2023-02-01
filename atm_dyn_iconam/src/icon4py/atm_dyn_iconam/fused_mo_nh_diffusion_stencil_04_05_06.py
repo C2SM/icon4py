@@ -14,15 +14,13 @@
 from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field, int32, where
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_04 import (
-    _mo_nh_diffusion_stencil_04,
+from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_to_vn import (
+    _apply_nabla2_and_nabla4_to_vn,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_05 import (
-    _mo_nh_diffusion_stencil_05,
+from icon4py.atm_dyn_iconam.apply_nabla2_to_vn_in_lateral_boundary import (
+    _apply_nabla2_to_vn_in_lateral_boundary,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_06 import (
-    _mo_nh_diffusion_stencil_06,
-)
+from icon4py.atm_dyn_iconam.calculate_nabla4 import _calculate_nabla4
 from icon4py.common.dimension import ECVDim, EdgeDim, KDim, VertexDim
 
 
@@ -46,7 +44,7 @@ def _fused_mo_nh_diffusion_stencil_04_05_06(
     start_2nd_nudge_line_idx_e: int32,
 ) -> Field[[EdgeDim, KDim], float]:
 
-    z_nabla4_e2 = _mo_nh_diffusion_stencil_04(
+    z_nabla4_e2 = _calculate_nabla4(
         u_vert,
         v_vert,
         primal_normal_vert_v1,
@@ -58,7 +56,7 @@ def _fused_mo_nh_diffusion_stencil_04_05_06(
 
     vn = where(
         horz_idx >= start_2nd_nudge_line_idx_e,
-        _mo_nh_diffusion_stencil_05(
+        _apply_nabla2_and_nabla4_to_vn(
             area_edge,
             kh_smag_e,
             z_nabla2_e,
@@ -68,7 +66,9 @@ def _fused_mo_nh_diffusion_stencil_04_05_06(
             vn,
             nudgezone_diff,
         ),
-        _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, fac_bdydiff_v),
+        _apply_nabla2_to_vn_in_lateral_boundary(
+            z_nabla2_e, area_edge, vn, fac_bdydiff_v
+        ),
     )
 
     return vn
