@@ -18,7 +18,7 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_16(
+def _update_theta_and_exner(
     z_temp: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],
     theta_v: Field[[CellDim, KDim], float],
@@ -32,7 +32,7 @@ def _mo_nh_diffusion_stencil_16(
 
 
 @program
-def mo_nh_diffusion_stencil_16(
+def update_theta_and_exner(
     z_temp: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],
     theta_v: Field[[CellDim, KDim], float],
@@ -43,7 +43,7 @@ def mo_nh_diffusion_stencil_16(
     vertical_start: int,
     vertical_end: int,
 ):
-    _mo_nh_diffusion_stencil_16(
+    _update_theta_and_exner(
         z_temp,
         area,
         theta_v,

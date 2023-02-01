@@ -13,15 +13,13 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_09 import (
-    mo_nh_diffusion_stencil_09,
-)
+from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_nh_diffusion_stencil_09_numpy(
+def mo_apply_nabla2_to_w(
     c2e2c0: np.array,
     area: np.array,
     z_nabla2_c: np.array,
@@ -37,7 +35,7 @@ def mo_nh_diffusion_stencil_09_numpy(
     return w
 
 
-def test_mo_nh_diffusion_stencil_09():
+def test_apply_nabla2_to_w():
     mesh = SimpleMesh()
 
     area = random_field(mesh, CellDim)
@@ -46,7 +44,7 @@ def test_mo_nh_diffusion_stencil_09():
     w = random_field(mesh, CellDim, KDim)
     diff_multfac_w = 5.0
 
-    ref = mo_nh_diffusion_stencil_09_numpy(
+    ref = mo_apply_nabla2_to_w(
         mesh.c2e2cO,
         np.asarray(area),
         np.asarray(z_nabla2_c),
@@ -55,7 +53,7 @@ def test_mo_nh_diffusion_stencil_09():
         diff_multfac_w,
     )
 
-    mo_nh_diffusion_stencil_09(
+    apply_nabla2_to_w(
         area,
         z_nabla2_c,
         geofac_n2s,

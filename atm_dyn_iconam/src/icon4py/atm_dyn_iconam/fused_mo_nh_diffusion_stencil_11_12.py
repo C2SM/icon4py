@@ -15,11 +15,11 @@ from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
 from functional.program_processors.runners import gtfn_cpu
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_11 import (
-    _mo_nh_diffusion_stencil_11,
+from icon4py.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
+    _enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_12 import (
-    _mo_nh_diffusion_stencil_12,
+from icon4py.atm_dyn_iconam.temporary_field_for_grid_point_cold_pools_enhancement import (
+    _temporary_field_for_grid_point_cold_pools_enhancement,
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
@@ -31,12 +31,16 @@ def _fused_mo_nh_diffusion_stencil_11_12(
     thresh_tdiff: float,
     kh_smag_e: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    enh_diffu_3d = _mo_nh_diffusion_stencil_11(theta_v, theta_ref_mc, thresh_tdiff)
-    kh_smag_e = _mo_nh_diffusion_stencil_12(kh_smag_e, enh_diffu_3d)
+    enh_diffu_3d = _temporary_field_for_grid_point_cold_pools_enhancement(
+        theta_v, theta_ref_mc, thresh_tdiff
+    )
+    kh_smag_e = _enhance_diffusion_coefficient_for_grid_point_cold_pools(
+        kh_smag_e, enh_diffu_3d
+    )
     return kh_smag_e
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program(backend=gtfn_cpu)
 def fused_mo_nh_diffusion_stencil_11_12(
     theta_v: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],

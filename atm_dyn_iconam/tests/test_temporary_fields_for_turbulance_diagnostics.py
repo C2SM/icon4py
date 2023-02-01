@@ -13,8 +13,8 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_02 import (
-    mo_nh_diffusion_stencil_02,
+from icon4py.atm_dyn_iconam.temporary_fields_for_turbulance_diagnostics import (
+    temporary_fields_for_turbulance_diagnostics,
 )
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -63,7 +63,7 @@ def test_mo_nh_diffusion_stencil_02():
         np.asarray(diff_multfac_smag),
     )
 
-    mo_nh_diffusion_stencil_02(
+    temporary_fields_for_turbulance_diagnostics(
         kh_smag_ec,
         vn,
         e_bln_c_s,

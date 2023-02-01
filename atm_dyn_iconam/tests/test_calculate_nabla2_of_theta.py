@@ -14,15 +14,15 @@
 import numpy as np
 from functional.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_14 import (
-    mo_nh_diffusion_stencil_14,
+from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import (
+    calculate_nabla2_of_theta,
 )
 from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_14_numpy(
+def calculate_nabla2_of_theta_numpy(
     c2e: np.array, z_nabla2_e: np.array, geofac_div: np.array
 ) -> np.array:
     geofac_div = np.expand_dims(geofac_div, axis=-1)
@@ -30,7 +30,7 @@ def mo_nh_diffusion_stencil_14_numpy(
     return z_temp
 
 
-def test_mo_nh_diffusion_stencil_14():
+def test_calculate_nabla2_of_theta():
     mesh = SimpleMesh()
 
     z_nabla2_e = random_field(mesh, EdgeDim, KDim)
@@ -38,10 +38,10 @@ def test_mo_nh_diffusion_stencil_14():
 
     out = zero_field(mesh, CellDim, KDim)
 
-    ref = mo_nh_diffusion_stencil_14_numpy(
+    ref = calculate_nabla2_of_theta_numpy(
         mesh.c2e, np.asarray(z_nabla2_e), np.asarray(geofac_div)
     )
-    mo_nh_diffusion_stencil_14(
+    calculate_nabla2_of_theta(
         z_nabla2_e,
         geofac_div,
         out,

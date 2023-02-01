@@ -18,7 +18,7 @@ from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_07(
+def _calculate_nabla2_for_w(
     w: Field[[CellDim, KDim], float], geofac_n2s: Field[[CellDim, C2E2CODim], float]
 ) -> Field[[CellDim, KDim], float]:
     z_nabla2_c = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim)
@@ -26,9 +26,9 @@ def _mo_nh_diffusion_stencil_07(
 
 
 @program
-def mo_nh_diffusion_stencil_07(
+def calculate_nabla2_for_w(
     w: Field[[CellDim, KDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_07(w, geofac_n2s, out=z_nabla2_c)
+    _calculate_nabla2_for_w(w, geofac_n2s, out=z_nabla2_c)

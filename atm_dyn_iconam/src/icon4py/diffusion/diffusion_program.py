@@ -17,6 +17,9 @@ from functional.ffront.decorator import program
 from functional.ffront.fbuiltins import int32
 from functional.program_processors.runners import gtfn_cpu
 
+from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
+    _calculate_nabla2_and_smag_coefficients_for_vn,
+)
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
     _fused_mo_nh_diffusion_stencil_02_03,
 )
@@ -35,12 +38,7 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     _mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_01 import (
-    _mo_nh_diffusion_stencil_01,
-)
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import (
-    _mo_nh_diffusion_stencil_16,
-)
+from icon4py.atm_dyn_iconam.update_theta_and_exner import _update_theta_and_exner
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -147,7 +145,7 @@ def diffusion_run(
     # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
     # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
 
-    _mo_nh_diffusion_stencil_01(
+    _calculate_nabla2_and_smag_coefficients_for_vn(
         local_diff_multfac_smag,
         tangent_orientation,
         inverse_primal_edge_lengths,
@@ -287,7 +285,7 @@ def diffusion_run(
 
     # MO_NH_DIFFUSION_STENCIL_15: needs index fields!
 
-    _mo_nh_diffusion_stencil_16(
+    _update_theta_and_exner(
         local_z_temp,
         cell_areas,
         prognostic_theta_v,

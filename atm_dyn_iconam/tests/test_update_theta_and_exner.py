@@ -13,15 +13,13 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import (
-    mo_nh_diffusion_stencil_16,
-)
+from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_nh_diffusion_stencil_16_numpy(
+def update_theta_and_exner_numpy(
     z_temp: np.array,
     area: np.array,
     theta_v: np.array,
@@ -35,7 +33,7 @@ def mo_nh_diffusion_stencil_16_numpy(
     return theta_v, exner
 
 
-def test_mo_nh_diffusion_stencil_16():
+def test_update_theta_and_exner():
     mesh = SimpleMesh()
 
     z_temp = random_field(mesh, CellDim, KDim)
@@ -44,14 +42,14 @@ def test_mo_nh_diffusion_stencil_16():
     exner = random_field(mesh, CellDim, KDim)
     rd_o_cvd = 5.0
 
-    theta_v_ref, exner_ref = mo_nh_diffusion_stencil_16_numpy(
+    theta_v_ref, exner_ref = update_theta_and_exner_numpy(
         np.asarray(z_temp),
         np.asarray(area),
         np.asarray(theta_v),
         np.asarray(exner),
         rd_o_cvd,
     )
-    mo_nh_diffusion_stencil_16(
+    update_theta_and_exner(
         z_temp,
         area,
         theta_v,

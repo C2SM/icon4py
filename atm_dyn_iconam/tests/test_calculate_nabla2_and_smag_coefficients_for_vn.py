@@ -14,15 +14,15 @@
 import numpy as np
 from functional.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_01 import (
-    mo_nh_diffusion_stencil_01,
+from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
+    calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_01_numpy(
+def calculate_nabla2_and_smag_coefficients_for_vn_numpy(
     e2c2v: np.array,
     diff_multfac_smag: np.array,
     tangent_orientation: np.array,
@@ -139,7 +139,7 @@ def mo_nh_diffusion_stencil_01_numpy(
     return kh_smag_e, kh_smag_ec, z_nabla2_e
 
 
-def test_mo_nh_diffusion_stencil_01():
+def test_calculate_nabla2_and_smag_coefficients_for_vn():
     mesh = SimpleMesh()
 
     u_vert = random_field(mesh, VertexDim, KDim)
@@ -166,7 +166,11 @@ def test_mo_nh_diffusion_stencil_01():
     kh_smag_e = zero_field(mesh, EdgeDim, KDim)
     kh_smag_ec = zero_field(mesh, EdgeDim, KDim)
 
-    kh_smag_e_ref, kh_smag_ec_ref, z_nabla2_e_ref = mo_nh_diffusion_stencil_01_numpy(
+    (
+        kh_smag_e_ref,
+        kh_smag_ec_ref,
+        z_nabla2_e_ref,
+    ) = calculate_nabla2_and_smag_coefficients_for_vn_numpy(
         mesh.e2c2v,
         np.asarray(diff_multfac_smag),
         np.asarray(tangent_orientation),
@@ -183,7 +187,7 @@ def test_mo_nh_diffusion_stencil_01():
         smag_offset,
     )
 
-    mo_nh_diffusion_stencil_01(
+    calculate_nabla2_and_smag_coefficients_for_vn(
         diff_multfac_smag,
         tangent_orientation,
         inv_primal_edge_length,

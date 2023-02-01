@@ -26,6 +26,9 @@ from functional.iterator.embedded import (
 )
 
 import icon4py.diffusion.diffusion_program as diff_prog
+from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
+    calculate_nabla2_and_smag_coefficients_for_vn,
+)
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
     fused_mo_nh_diffusion_stencil_02_03,
 )
@@ -44,12 +47,7 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_01 import (
-    mo_nh_diffusion_stencil_01,
-)
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_16 import (
-    mo_nh_diffusion_stencil_16,
-)
+from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.constants import CPD, GAS_CONSTANT_DRY_AIR
 from icon4py.common.dimension import (
     C2E2CDim,
@@ -841,7 +839,7 @@ class Diffusion:
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
 
-        mo_nh_diffusion_stencil_01(
+        calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
             tangent_orientation=tangent_orientation,
             inv_primal_edge_length=inverse_primal_edge_lengths,
@@ -1016,7 +1014,7 @@ class Diffusion:
             offset_provider={},
         )
 
-        mo_nh_diffusion_stencil_16(
+        update_theta_and_exner(
             z_temp=self.z_temp,
             area=cell_areas,
             theta_v=prognostic_state.theta_v,

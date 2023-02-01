@@ -13,8 +13,8 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_05 import (
-    mo_nh_diffusion_stencil_05,
+from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_to_vn import (
+    apply_nabla2_and_nabla4_to_vn,
     mo_nh_diffusion_stencil_05_global_mode,
 )
 from icon4py.common.dimension import EdgeDim, KDim
@@ -22,7 +22,7 @@ from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_nh_diffusion_stencil_05_numpy(
+def apply_nabla2_and_nabla4_to_vn_numpy(
     area_edge: np.array,
     kh_smag_e: np.array,
     z_nabla2_e: np.array,
@@ -42,7 +42,7 @@ def mo_nh_diffusion_stencil_05_numpy(
     return vn
 
 
-def test_mo_nh_diffusion_stencil_05():
+def test_apply_nabla2_and_nabla4_to_vn():
     mesh = SimpleMesh()
 
     area_edge = random_field(mesh, EdgeDim)
@@ -54,7 +54,7 @@ def test_mo_nh_diffusion_stencil_05():
     vn = random_field(mesh, EdgeDim, KDim)
     nudgezone_diff = 9.0
 
-    vn_ref = mo_nh_diffusion_stencil_05_numpy(
+    vn_ref = apply_nabla2_and_nabla4_to_vn_numpy(
         np.asarray(area_edge),
         np.asarray(kh_smag_e),
         np.asarray(z_nabla2_e),
@@ -65,7 +65,7 @@ def test_mo_nh_diffusion_stencil_05():
         nudgezone_diff,
     )
 
-    mo_nh_diffusion_stencil_05(
+    apply_nabla2_and_nabla4_to_vn(
         area_edge,
         kh_smag_e,
         z_nabla2_e,

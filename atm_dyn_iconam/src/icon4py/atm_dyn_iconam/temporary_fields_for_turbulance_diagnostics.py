@@ -18,7 +18,7 @@ from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_02(
+def _temporary_fields_for_turbulance_diagnostics(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
@@ -31,7 +31,7 @@ def _mo_nh_diffusion_stencil_02(
 
 
 @program
-def mo_nh_diffusion_stencil_02(
+def temporary_fields_for_turbulance_diagnostics(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
@@ -40,6 +40,6 @@ def mo_nh_diffusion_stencil_02(
     kh_c: Field[[CellDim, KDim], float],
     div: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_02(
+    _temporary_fields_for_turbulance_diagnostics(
         kh_smag_ec, vn, e_bln_c_s, geofac_div, diff_multfac_smag, out=(kh_c, div)
     )

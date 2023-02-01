@@ -22,4 +22,6 @@ CPD: Annotated[float, "specific heat at constant pressure [J/K/kg]"] = 1004.64
 GAS_CONSTANT_WATER_VAPOR: Annotated[
     float, "gas constant for water vapor [J/K/kg], rv in Icon"
 ] = 461.51
-GRAVITATIONAL_ACCELERATION: Annotated[float, "av. gravitational acceleration [m/s^2]"] = 9.8066
+GRAVITATIONAL_ACCELERATION: Annotated[
+    float, "av. gravitational acceleration [m/s^2]"
+] = 9.8066

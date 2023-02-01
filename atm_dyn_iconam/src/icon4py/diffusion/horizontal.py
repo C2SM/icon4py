@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
-from typing import Final, Tuple
+from typing import Final
 
 from functional.common import Dimension, Field
 

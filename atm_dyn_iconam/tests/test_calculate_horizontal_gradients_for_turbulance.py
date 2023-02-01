@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_08 import (
-    mo_nh_diffusion_stencil_08,
+from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulance import (
+    calculate_horizontal_gradients_for_turbulance,
 )
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_08_numpy(
+def calculate_horizontal_gradients_for_turbulance_numpy(
     c2e2c0: np.array,
     w: np.array,
     geofac_grg_x: np.array,
@@ -35,7 +35,7 @@ def mo_nh_diffusion_stencil_08_numpy(
     return dwdx, dwdy
 
 
-def test_mo_nh_diffusion_stencil_08():
+def test_calculate_horizontal_gradients_for_turbulance():
     mesh = SimpleMesh()
 
     w = random_field(mesh, CellDim, KDim)
@@ -44,10 +44,10 @@ def test_mo_nh_diffusion_stencil_08():
     dwdx = zero_field(mesh, CellDim, KDim)
     dwdy = zero_field(mesh, CellDim, KDim)
 
-    dwdx_ref, dwdy_ref = mo_nh_diffusion_stencil_08_numpy(
+    dwdx_ref, dwdy_ref = calculate_horizontal_gradients_for_turbulance_numpy(
         mesh.c2e2cO, np.asarray(w), np.asarray(geofac_grg_x), np.asarray(geofac_grg_y)
     )
-    mo_nh_diffusion_stencil_08(
+    calculate_horizontal_gradients_for_turbulance(
         w,
         geofac_grg_x,
         geofac_grg_y,
