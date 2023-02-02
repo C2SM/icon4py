@@ -12,9 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
-import dataclasses
 import importlib
 import types
+from dataclasses import dataclass
 from typing import Any, TypeGuard
 
 import eve
@@ -32,18 +32,31 @@ from icon4py.pyutils.exceptions import (
 from icon4py.pyutils.icochainsize import IcoChainSize
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class StencilInfo:
     fvprog: Program
     connectivity_chains: list[eve.concepts.SymbolRef]
     offset_provider: dict
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class FieldInfo:
     field: past.DataSymbol
     inp: bool
     out: bool
+
+
+@dataclass
+class DummyConnectivity:
+    """Provides static information to the code generator (`max_neighbors`, `has_skip_values`)."""
+
+    max_neighbors: int
+    has_skip_values: int
+    origin_axis: Dimension
+
+    def mapped_index(_, __) -> int:
+        raise AssertionError("Unreachable")
+        return 0
 
 
 def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
@@ -70,6 +83,8 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)  # type: ignore
 
+    domain_arg_ids = _get_domain_arg_ids(fvprog)
+
     fields: dict[str, FieldInfo] = {
         field_node.id: FieldInfo(
             field=field_node,
@@ -77,9 +92,24 @@ def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
             out=(field_node.id in output_arg_ids),
         )
         for field_node in fvprog.past_node.params
+        if field_node.id not in domain_arg_ids
     }
 
     return fields
+
+
+def _get_domain_arg_ids(fvprog: Program) -> list | set[str]:
+    """Collect all argument names that are used within the 'domain' keyword argument."""
+    domain_arg_ids = []
+    if "domain" in fvprog.past_node.body[0].kwargs.keys():
+        domain_arg = fvprog.past_node.body[0].kwargs["domain"]
+        assert isinstance(domain_arg, past.Dict)
+        for arg in domain_arg.values_:
+            for arg_elt in arg.elts:
+                if isinstance(arg_elt, past.Name):
+                    domain_arg_ids.append(arg_elt.id)
+        domain_arg_ids = set(domain_arg_ids)
+    return domain_arg_ids
 
 
 def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
@@ -106,16 +136,18 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(offset: str) -> types.SimpleNamespace | Dimension:
+def provide_offset(
+    offset: str, is_global: bool = False
+) -> DummyConnectivity | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
         return Koff.source
     else:
-        return provide_neighbor_table(offset)
+        return provide_neighbor_table(offset, is_global)
 
 
-def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
+def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -133,7 +165,10 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
     ) and not chain.endswith("O")
     if new_sparse_field:
         chain = chain.split("2")[1]
-
+    skip_values = False
+    if is_global and "V" in chain:
+        if chain.count("V") > 1 or not chain.endswith("V"):
+            skip_values = True
     location_chain = []
     include_center = False
     for letter in chain:
@@ -149,9 +184,10 @@ def provide_neighbor_table(chain: str) -> types.SimpleNamespace:
             pass
         else:
             raise InvalidConnectivityException(location_chain)
-    return types.SimpleNamespace(
+    return DummyConnectivity(
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
-        has_skip_values=False,
+        has_skip_values=skip_values,
+        origin_axis=location_chain[0],
     )
 
 
@@ -180,13 +216,13 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 
 
 def get_stencil_info(
-    fencil_def: Program | FieldOperator | types.FunctionType,
+    fencil_def: Program | FieldOperator | types.FunctionType, is_global: bool = False
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
     offsets = scan_for_offsets(fvprog)
     offset_provider = {}
     for offset in offsets:
-        offset_provider[offset] = provide_offset(offset)
+        offset_provider[offset] = provide_offset(offset, is_global)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
     return StencilInfo(fvprog, connectivity_chains, offset_provider)
