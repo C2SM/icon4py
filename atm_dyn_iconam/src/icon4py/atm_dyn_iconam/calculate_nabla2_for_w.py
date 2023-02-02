@@ -11,28 +11,24 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_10(
-    w: Field[[CellDim, KDim], float],
-    diff_multfac_n2w: Field[[KDim], float],
-    cell_area: Field[[CellDim], float],
-    z_nabla2_c: Field[[CellDim, KDim], float],
+def _calculate_nabla2_for_w(
+    w: Field[[CellDim, KDim], float], geofac_n2s: Field[[CellDim, C2E2CODim], float]
 ) -> Field[[CellDim, KDim], float]:
-    w = w + diff_multfac_n2w * (cell_area * z_nabla2_c)
-    return w
+    z_nabla2_c = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim)
+    return z_nabla2_c
 
 
 @program
-def mo_nh_diffusion_stencil_10(
+def calculate_nabla2_for_w(
     w: Field[[CellDim, KDim], float],
-    diff_multfac_n2w: Field[[KDim], float],
-    cell_area: Field[[CellDim], float],
+    geofac_n2s: Field[[CellDim, C2E2CODim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_10(w, diff_multfac_n2w, cell_area, z_nabla2_c, out=w)
+    _calculate_nabla2_for_w(w, geofac_n2s, out=z_nabla2_c)

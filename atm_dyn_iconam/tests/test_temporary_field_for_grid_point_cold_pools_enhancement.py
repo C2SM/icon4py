@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_11 import (
-    mo_nh_diffusion_stencil_11,
+from icon4py.atm_dyn_iconam.temporary_field_for_grid_point_cold_pools_enhancement import (
+    temporary_field_for_grid_point_cold_pools_enhancement,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_11_numpy(
+def temporary_field_for_grid_point_cold_pools_enhancement_numpy(
     c2e2c: np.array, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff
 ) -> np.array:
     tdiff = theta_v - np.sum(theta_v[c2e2c], axis=1) / 3
@@ -36,7 +36,7 @@ def mo_nh_diffusion_stencil_11_numpy(
     return enh_diffu_3d
 
 
-def test_mo_nh_diffusion_stencil_11():
+def test_temporary_field_for_grid_point_cold_pools_enhancement():
     mesh = SimpleMesh()
 
     theta_v = random_field(mesh, CellDim, KDim)
@@ -44,10 +44,10 @@ def test_mo_nh_diffusion_stencil_11():
     enh_diffu_3d = zero_field(mesh, CellDim, KDim)
     thresh_tdiff = 5.0
 
-    ref = mo_nh_diffusion_stencil_11_numpy(
+    ref = temporary_field_for_grid_point_cold_pools_enhancement_numpy(
         mesh.c2e2c, np.asarray(theta_v), np.asarray(theta_ref_mc), thresh_tdiff
     )
-    mo_nh_diffusion_stencil_11(
+    temporary_field_for_grid_point_cold_pools_enhancement(
         theta_v,
         theta_ref_mc,
         enh_diffu_3d,

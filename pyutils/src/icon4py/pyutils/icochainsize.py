@@ -14,7 +14,7 @@
 from dataclasses import dataclass
 from typing import List, TypeAlias
 
-from functional.common import Dimension
+from gt4py.next.common import Dimension
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 

@@ -11,14 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_16(
+def _update_theta_and_exner(
     z_temp: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],
     theta_v: Field[[CellDim, KDim], float],
@@ -32,13 +32,13 @@ def _mo_nh_diffusion_stencil_16(
 
 
 @program
-def mo_nh_diffusion_stencil_16(
+def update_theta_and_exner(
     z_temp: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
 ):
-    _mo_nh_diffusion_stencil_16(
+    _update_theta_and_exner(
         z_temp, area, theta_v, exner, rd_o_cvd, out=(theta_v, exner)
     )

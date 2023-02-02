@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import pytest
-from functional.iterator import ir as itir
+from gt4py.next.iterator import ir as itir
 
 from icon4py.pyutils import backend
 from icon4py.pyutils.backend import GTHeader
