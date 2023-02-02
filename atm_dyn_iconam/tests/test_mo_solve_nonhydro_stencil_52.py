@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_52 import (
     mo_solve_nonhydro_stencil_52,
@@ -91,7 +92,7 @@ def test_mo_solve_nonhydro_stencil_52():
         cpd,
     )
 
-    mo_solve_nonhydro_stencil_52(
+    mo_solve_nonhydro_stencil_52.with_backend(run_gtfn)(
         vwind_impl_wgt,
         theta_v_ic,
         ddqz_z_half,
