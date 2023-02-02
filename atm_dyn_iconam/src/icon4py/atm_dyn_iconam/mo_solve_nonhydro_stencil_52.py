@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program, scan_operator
-from functional.ffront.fbuiltins import Field
+from gt4py.next.ffront.decorator import field_operator, program, scan_operator
+from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import CellDim, KDim, Koff
 
@@ -47,14 +47,18 @@ def _mo_solve_nonhydro_stencil_52(
     w: Field[[CellDim, KDim], float],
     dtime: float,
     cpd: float,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], bool],
+]:
     z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
     z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[-1])
     z_c = -z_gamma * z_beta * z_alpha(Koff[1])
     z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
     w_prep = z_w_expl - z_gamma * (z_exner_expl(Koff[-1]) - z_exner_expl)
-    z_q_res, w_res, _ = _w(w, z_q, z_a, z_b, z_c, w_prep)
-    return z_q_res, w_res
+    z_q_res, w_res, dummy_bool = _w(w, z_q, z_a, z_b, z_c, w_prep)
+    return z_q_res, w_res, dummy_bool
 
 
 @field_operator
@@ -116,8 +120,8 @@ def mo_solve_nonhydro_stencil_52(
     w: Field[[CellDim, KDim], float],
     dtime: float,
     cpd: float,
+    dummy_bool: Field[[CellDim, KDim], bool],
 ):
-
     _mo_solve_nonhydro_stencil_52(
         vwind_impl_wgt,
         theta_v_ic,
@@ -130,5 +134,5 @@ def mo_solve_nonhydro_stencil_52(
         w,
         dtime,
         cpd,
-        out=(z_q[:, 1:], w[:, 1:]),
+        out=(z_q[:, 1:], w[:, 1:], dummy_bool[:, 1:]),
     )

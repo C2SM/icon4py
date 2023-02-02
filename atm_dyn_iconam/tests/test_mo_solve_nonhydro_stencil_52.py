@@ -18,7 +18,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_52 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_52_numpy(
@@ -75,6 +75,7 @@ def test_mo_solve_nonhydro_stencil_52():
 
     z_q = random_field(mesh, CellDim, KDim)
     w = random_field(mesh, CellDim, KDim)
+    dummy_bool = zero_field(mesh, CellDim, KDim, dtype=bool)
 
     z_q_ref, w_ref = mo_solve_nonhydro_stencil_52_numpy(
         np.asarray(vwind_impl_wgt),
@@ -102,6 +103,7 @@ def test_mo_solve_nonhydro_stencil_52():
         w,
         dtime,
         cpd,
+        dummy_bool,
         offset_provider={"Koff": KDim},
     )
 
