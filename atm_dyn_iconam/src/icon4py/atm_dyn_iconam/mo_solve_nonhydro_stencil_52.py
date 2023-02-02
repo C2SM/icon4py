@@ -29,7 +29,7 @@ def _w(
 ):
     z_q_m1, w_m1, first = state
     z_g = 1.0 / (z_b + z_a * z_q_m1)
-    z_q_new = -z_c * z_g
+    z_q_new = (0.0 - z_c) * z_g
     w_new = (w_prep - z_a * w_m1) * z_g
     return (z_q, w, False) if first else (z_q_new, w_new, False)
 
@@ -53,8 +53,8 @@ def _mo_solve_nonhydro_stencil_52(
     Field[[CellDim, KDim], bool],
 ]:
     z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
-    z_a = -z_gamma * z_beta(Koff[-1]) * z_alpha(Koff[-1])
-    z_c = -z_gamma * z_beta * z_alpha(Koff[1])
+    z_a = (0.0 - z_gamma) * z_beta(Koff[-1]) * z_alpha(Koff[-1])
+    z_c = (0.0 - z_gamma) * z_beta * z_alpha(Koff[1])
     z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
     w_prep = z_w_expl - z_gamma * (z_exner_expl(Koff[-1]) - z_exner_expl)
     z_q_res, w_res, dummy_bool = _w(w, z_q, z_a, z_b, z_c, w_prep)
