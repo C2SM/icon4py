@@ -12,16 +12,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, abs, minimum, neighbor_sum, where
+from functional.ffront.fbuiltins import Field, abs, minimum, neighbor_sum, where, int32
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
 def _mo_velocity_advection_stencil_18(
-    levelmask: Field[[KDim], bool],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    owner_mask: Field[[CellDim], bool],
+    levelmask: Field[[KDim], int32],
+    cfl_clipping: Field[[CellDim, KDim], int32],
+    owner_mask: Field[[CellDim], int32],
     z_w_con_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],
@@ -34,7 +34,7 @@ def _mo_velocity_advection_stencil_18(
 ) -> Field[[CellDim, KDim], float]:
 
     difcoef = where(
-        levelmask & cfl_clipping & owner_mask,
+        (levelmask == int32(1)) & (cfl_clipping == int32(1)) & (owner_mask == int32(1)),
         scalfac_exdiff
         * minimum(
             0.85 - cfl_w_limit * dtime,
@@ -44,7 +44,7 @@ def _mo_velocity_advection_stencil_18(
     )
 
     ddt_w_adv = where(
-        levelmask & cfl_clipping & owner_mask,
+        (levelmask == int32(1)) & (cfl_clipping == int32(1)) & (owner_mask == int32(1)),
         ddt_w_adv
         + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
         ddt_w_adv,
@@ -55,9 +55,9 @@ def _mo_velocity_advection_stencil_18(
 
 @program
 def mo_velocity_advection_stencil_18(
-    levelmask: Field[[KDim], bool],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    owner_mask: Field[[CellDim], bool],
+    levelmask: Field[[KDim], int32],
+    cfl_clipping: Field[[CellDim, KDim], int32],
+    owner_mask: Field[[CellDim], int32],
     z_w_con_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],
