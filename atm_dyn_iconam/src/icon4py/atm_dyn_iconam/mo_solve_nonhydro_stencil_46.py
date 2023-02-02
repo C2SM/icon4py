@@ -11,16 +11,16 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, broadcast
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, broadcast
 
 from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_46() -> tuple[
-    Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]
-]:
+def _mo_solve_nonhydro_stencil_46() -> (
+    tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]
+):
     w_nnew = broadcast(0.0, (CellDim, KDim))
     z_contr_w_fl_l = broadcast(0.0, (CellDim, KDim))
     return w_nnew, z_contr_w_fl_l
