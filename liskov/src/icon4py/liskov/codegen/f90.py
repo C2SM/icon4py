@@ -104,6 +104,7 @@ def get_array_dims(association: str, select_all: bool = False):
 class EndStencilStatement(eve.Node):
     stencil_data: StartStencilData
     profile: bool
+    noendif: bool
 
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -128,7 +129,7 @@ class EndStencilStatementGenerator(TemplatedGenerator):
         {%- if _this_node.profile %}
         call nvtxEndRange()
         {%- endif %}
-        #endif
+        {% if _this_node.noendif %}{% else %}#endif{% endif %}
         call wrap_run_{{ name }}( &
             {{ input_fields }}
             {{ output_fields }}
@@ -346,3 +347,11 @@ class EndCreateStatement(eve.Node):
 
 class EndCreateStatementGenerator(TemplatedGenerator):
     EndCreateStatement = as_jinja("!$ACC END DATA")
+
+
+class EndIfStatement(eve.Node):
+    ...
+
+
+class EndIfStatementGenerator(TemplatedGenerator):
+    EndIfStatement = as_jinja("#endif")

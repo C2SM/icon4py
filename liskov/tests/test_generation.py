@@ -29,6 +29,7 @@ from icon4py.liskov.codegen.interface import (
 )
 
 
+# TODO: fix tests to adapt to new custom output fields
 @pytest.fixture
 def serialised_directives():
     start_stencil_data = StartStencilData(

@@ -22,6 +22,8 @@ from icon4py.liskov.codegen.f90 import (
     DeclareStatementGenerator,
     EndCreateStatement,
     EndCreateStatementGenerator,
+    EndIfStatement,
+    EndIfStatementGenerator,
     EndStencilStatement,
     EndStencilStatementGenerator,
     ImportsStatement,
@@ -32,7 +34,11 @@ from icon4py.liskov.codegen.f90 import (
     StartStencilStatementGenerator,
     generate_fortran_code,
 )
-from icon4py.liskov.codegen.interface import CodeGenInput, DeserialisedDirectives
+from icon4py.liskov.codegen.interface import (
+    CodeGenInput,
+    DeserialisedDirectives,
+    UnusedDirective,
+)
 from icon4py.liskov.logger import setup_logger
 
 
@@ -64,6 +70,7 @@ class IntegrationGenerator:
         self._generate_imports()
         self._generate_declare()
         self._generate_stencil(profile)
+        self._generate_endif()
 
     def _add_generated_code(
         self,
@@ -121,6 +128,7 @@ class IntegrationGenerator:
                 self.directives.EndStencil[i].endln,
                 stencil_data=stencil,
                 profile=profile,
+                noendif=self.directives.EndStencil[i].noendif,
             )
 
     def _generate_imports(self) -> None:
@@ -151,3 +159,15 @@ class IntegrationGenerator:
             self.directives.EndCreate.startln,
             self.directives.EndCreate.endln,
         )
+
+    def _generate_endif(self) -> None:
+        """Generate f90 code for endif statements."""
+        if self.directives.EndIf != UnusedDirective:
+            for endif in self.directives.EndIf:
+                logger.info("Generating ENDIF statement.")
+                self._add_generated_code(
+                    EndIfStatement,
+                    EndIfStatementGenerator,
+                    endif.startln,
+                    endif.endln,
+                )

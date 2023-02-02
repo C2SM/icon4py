@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import copy
-from typing import Callable, Protocol
+from typing import Callable, Optional, Protocol, Type
 
 from functional.type_system.type_specifications import FieldType
 
@@ -23,11 +23,13 @@ from icon4py.liskov.codegen.interface import (
     DeclareData,
     DeserialisedDirectives,
     EndCreateData,
+    EndIfData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
     StartCreateData,
     StartStencilData,
+    UnusedDirective,
 )
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import (
@@ -35,7 +37,11 @@ from icon4py.liskov.parsing.exceptions import (
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
-from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
+from icon4py.liskov.parsing.utils import (
+    StencilCollector,
+    extract_directive,
+    string_to_bool,
+)
 from icon4py.pyutils.metadata import get_field_infos
 
 
@@ -65,6 +71,22 @@ class ImportsDataFactory:
         return ImportsData(startln=extracted.startln, endln=extracted.endln)
 
 
+class EndIfDataFactory:
+    def __call__(
+        self, parsed: ts.ParsedDict
+    ) -> Type[UnusedDirective] | list[EndIfData]:
+        extracted = extract_directive(parsed["directives"], ts.EndIf)
+        if len(extracted) < 1:
+            return UnusedDirective
+        else:
+            deserialised = []
+            for directive in extracted:
+                deserialised.append(
+                    EndIfData(startln=directive.startln, endln=directive.endln)
+                )
+            return deserialised
+
+
 class DeclareDataFactory:
     @staticmethod
     def get_field_dimensions(declarations):
@@ -85,9 +107,13 @@ class EndStencilDataFactory:
         for i, directive in enumerate(extracted):
             named_args = parsed["content"]["EndStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
+            noendif = _extract_boolean_kwarg(named_args, "noendif")
             deserialised.append(
                 EndStencilData(
-                    name=stencil_name, startln=directive.startln, endln=directive.endln
+                    name=stencil_name,
+                    startln=directive.startln,
+                    endln=directive.endln,
+                    noendif=noendif,
                 )
             )
         return deserialised
@@ -102,6 +128,13 @@ def _extract_stencil_name(named_args: dict, directive: ts.ParsedDirective) -> st
             f"Missing argument {e} in {directive.type_name} directive on line {directive.startln}."
         )
     return stencil_name
+
+
+def _extract_boolean_kwarg(args: dict, arg_name: str) -> Optional[bool]:
+    """Extract a boolean kwarg from the parsed dictionary. Kwargs are false by default."""
+    if a := args.get(arg_name):
+        return string_to_bool(a)
+    return False
 
 
 class StartStencilDataFactory:
@@ -256,6 +289,7 @@ class DirectiveDeserialiser:
         "Declare": DeclareDataFactory(),
         "StartStencil": StartStencilDataFactory(),
         "EndStencil": EndStencilDataFactory(),
+        "EndIf": EndIfDataFactory(),
     }
 
     def deserialise(self, directives: ts.ParsedDict) -> DeserialisedDirectives:

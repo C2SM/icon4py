@@ -113,11 +113,11 @@ class DirectiveSemanticsValidator:
     ) -> None:
         """Check that all used directives are unique.
 
-        Note: Allow repeated START STENCIL and END STENCIL directives.
+        Note: Allow repeated START STENCIL, END STENCIL and ENDIF directives.
         """
         repeated = remove_directive_types(
             [d for d in directives if directives.count(d) > 1],
-            [ts.StartStencil, ts.EndStencil],
+            [ts.StartStencil, ts.EndStencil, ts.EndIf],
         )
         if repeated:
             pretty_printed = " ".join([print_parsed_directive(d) for d in repeated])

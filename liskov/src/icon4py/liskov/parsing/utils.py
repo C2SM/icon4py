@@ -20,6 +20,15 @@ import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.parsing.exceptions import UnknownStencilError
 
 
+def string_to_bool(string):
+    if string.lower() == "true":
+        return True
+    elif string.lower() == "false":
+        return False
+    else:
+        raise ValueError(f"Cannot convert '{string}' to a boolean.")
+
+
 def print_parsed_directive(directive: ts.ParsedDirective) -> str:
     """Print a parsed directive, including its contents, and start and end line numbers."""
     return f"Directive: {directive.string}, start line: {directive.startln}, end line: {directive.endln}\n"

@@ -16,6 +16,10 @@ from dataclasses import dataclass
 from typing import Optional, Protocol
 
 
+class UnusedDirective:
+    ...
+
+
 class CodeGenInput(Protocol):
     startln: int
     endln: int
@@ -61,6 +65,10 @@ class EndCreateData(ImportsData):
     ...
 
 
+class EndIfData(ImportsData):
+    ...
+
+
 @dataclass
 class StartStencilData:
     name: str
@@ -75,6 +83,7 @@ class EndStencilData:
     name: str
     startln: int
     endln: int
+    noendif: Optional[bool]
 
 
 @dataclass
@@ -85,3 +94,4 @@ class DeserialisedDirectives:
     Imports: ImportsData
     StartCreate: StartCreateData
     EndCreate: EndCreateData
+    EndIf: EndIfData

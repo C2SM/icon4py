@@ -38,6 +38,7 @@ from icon4py.liskov.parsing.exceptions import (
 )
 
 
+# TODO: fix tests to adapt to new custom output fields interfaces
 @pytest.mark.parametrize(
     "factory_class, directive_type, startln, endln, string, expected",
     [

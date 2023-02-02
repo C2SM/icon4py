@@ -159,6 +159,10 @@ class EndCreate(WithoutArguments, metaclass=CheckForDirectiveClasses):
     pattern = "END CREATE"
 
 
+class EndIf(WithoutArguments, metaclass=CheckForDirectiveClasses):
+    pattern = "ENDIF"
+
+
 # When adding a new directive this list must be updated.
 SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     StartStencil,
@@ -167,4 +171,9 @@ SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     Declare,
     StartCreate,
     EndCreate,
+    EndIf,
 ]
+
+
+class UnusedDirective:
+    pass
