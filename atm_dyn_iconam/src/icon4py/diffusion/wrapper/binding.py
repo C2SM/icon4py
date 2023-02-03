@@ -23,7 +23,6 @@ from icon4py.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4py.bindings.utils import write_string
 
 
 class DimensionType(eve.Node):
@@ -113,10 +112,13 @@ class F90InterfaceGenerator(TemplatedGenerator):
     )
 
     def visit_FuncParameter(self, param: FuncParameter, param_names=""):
-        return self.generic_visit(param, rendered_type=to_f_type(param.d_type))
+        return self.generic_visit(param,
+                                  rendered_type=to_f_type(param.d_type),
+                                  dim=field_extension(param, "F")
+                                  )
 
     FuncParameter = as_jinja(
-        """{{rendered_type}}, intent(inout):: {{name}}
+        """{{rendered_type}}, intent(inout):: {{name}}{{dim}}
     """
     )
 
