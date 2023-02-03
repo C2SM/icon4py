@@ -22,37 +22,42 @@ from icon4py.diffusion.wrapper.binding import (
     F90InterfaceGenerator,
     Func,
     FuncParameter,
-    field_extension,
+    as_field, as_f90_value,
 )
 
 
-fieldParam2d = FuncParameter(
+field_2d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,
     dimensions=[DimensionType(name="K", length=13), DimensionType(name="J", length=13)],
 )
-fieldParam1d = FuncParameter(
+field_1d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,
     dimensions=[DimensionType(name="K", length=13)],
 )
 
-simpleType = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[])
+simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[])
 
+
+
+@pytest.mark.parametrize(("param", "expected"), ((simple_type, "value, "), (field_2d, ""), (field_1d, "")))
+def test_as_target(param, expected):
+    assert expected == as_f90_value(param)
 
 @pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "(:,:)")))
 def test_field_extension_2d(lang, expected):
-    assert field_extension(fieldParam2d, lang) == expected
+    assert as_field(field_2d, lang) == expected
 
 
 @pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "(:)")))
 def test_field_extension_1d(lang, expected):
-    assert field_extension(fieldParam1d, lang) == expected
+    assert as_field(field_1d, lang) == expected
 
 
 @pytest.mark.parametrize("lang", ("C", "F"))
 def test_is_field_simple_type(lang):
-    assert field_extension(simpleType, lang) == ""
+    assert as_field(simple_type, lang) == ""
 
 
 foo = Func(

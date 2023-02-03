@@ -46,15 +46,24 @@ class CffiPlugin(eve.Node):
     functions: Sequence[Func]
 
 
-def to_c_type(scalar_type: ScalarKind):
+def to_c_type(scalar_type: ScalarKind)->str:
     return BUILTIN_TO_CPP_TYPE[scalar_type]
 
 
-def to_f_type(scalar_type: ScalarKind):
+def to_f_type(scalar_type: ScalarKind)->str:
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
+def as_f90_value(param: FuncParameter)->str:
+    """
+    If param is a scalar type (dimension=0) then return the F90 'value' keyword.
 
-def field_extension(param: FuncParameter, language: str) -> str:
+    Used for F90 generation only.
+    """
+    return "value, " if len(param.dimensions) == 0 else ""
+
+
+
+def as_field(param: FuncParameter, language: str) -> str:
     size = len(param.dimensions)
     if size == 0:
         return ""
@@ -74,7 +83,7 @@ class CHeaderGenerator(TemplatedGenerator):
         return self.generic_visit(
             param,
             rendered_type=to_c_type(param.d_type),
-            dim=field_extension(param, "C"),
+            dim=as_field(param, "C"),
         )
 
     FuncParameter = as_jinja("""{{rendered_type}}{{dim}} {{name}}""")
@@ -112,13 +121,15 @@ class F90InterfaceGenerator(TemplatedGenerator):
     )
 
     def visit_FuncParameter(self, param: FuncParameter, param_names=""):
+        #kw-arg param_names needs to be present because it is present up the tree
         return self.generic_visit(param,
+                                  value = as_f90_value(param),
                                   rendered_type=to_f_type(param.d_type),
-                                  dim=field_extension(param, "F")
+                                  dim=as_field(param, "F")
                                   )
 
     FuncParameter = as_jinja(
-        """{{rendered_type}}, intent(inout):: {{name}}{{dim}}
+    """{{rendered_type}}, {{value}} intent(inout):: {{name}}{{dim}}
     """
     )
 
