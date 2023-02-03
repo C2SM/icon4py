@@ -11,14 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_09(
+def _apply_nabla2_to_w(
     area: Field[[CellDim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
@@ -32,11 +32,11 @@ def _mo_nh_diffusion_stencil_09(
 
 
 @program
-def mo_nh_diffusion_stencil_09(
+def apply_nabla2_to_w(
     area: Field[[CellDim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     w: Field[[CellDim, KDim], float],
     diff_multfac_w: float,
 ):
-    _mo_nh_diffusion_stencil_09(area, z_nabla2_c, geofac_n2s, w, diff_multfac_w, out=w)
+    _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w, diff_multfac_w, out=w)
