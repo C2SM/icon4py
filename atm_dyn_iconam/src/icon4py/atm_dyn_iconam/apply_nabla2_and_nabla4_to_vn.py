@@ -11,14 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, maximum
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, maximum
 
 from icon4py.common.dimension import EdgeDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_05(
+def _apply_nabla2_and_nabla4_to_vn(
     area_edge: Field[[EdgeDim], float],
     kh_smag_e: Field[[EdgeDim, KDim], float],
     z_nabla2_e: Field[[EdgeDim, KDim], float],
@@ -36,7 +36,7 @@ def _mo_nh_diffusion_stencil_05(
 
 
 @program
-def mo_nh_diffusion_stencil_05(
+def apply_nabla2_and_nabla4_to_vn(
     area_edge: Field[[EdgeDim], float],
     kh_smag_e: Field[[EdgeDim, KDim], float],
     z_nabla2_e: Field[[EdgeDim, KDim], float],
@@ -46,7 +46,7 @@ def mo_nh_diffusion_stencil_05(
     vn: Field[[EdgeDim, KDim], float],
     nudgezone_diff: float,
 ):
-    _mo_nh_diffusion_stencil_05(
+    _apply_nabla2_and_nabla4_to_vn(
         area_edge,
         kh_smag_e,
         z_nabla2_e,

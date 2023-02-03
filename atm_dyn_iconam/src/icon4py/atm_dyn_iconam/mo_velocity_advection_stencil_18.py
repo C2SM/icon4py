@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, abs, minimum, neighbor_sum, where
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, abs, minimum, neighbor_sum, where
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
@@ -32,7 +32,6 @@ def _mo_velocity_advection_stencil_18(
     cfl_w_limit: float,
     dtime: float,
 ) -> Field[[CellDim, KDim], float]:
-
     difcoef = where(
         levelmask & cfl_clipping & owner_mask,
         scalfac_exdiff

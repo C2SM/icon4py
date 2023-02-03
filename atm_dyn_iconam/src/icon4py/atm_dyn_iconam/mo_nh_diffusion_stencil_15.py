@@ -11,17 +11,17 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from eve import SourceLocation
-from functional.ffront import program_ast as past
-from functional.ffront import type_specifications as ts
-from functional.iterator.builtins import (
+from gt4py.eve import SourceLocation
+from gt4py.next.ffront import program_ast as past
+from gt4py.next.iterator.builtins import (
     deref,
     if_,
     named_range,
     shift,
     unstructured_domain,
 )
-from functional.iterator.runtime import closure, fendef, fundef
+from gt4py.next.iterator.runtime import closure, fendef, fundef
+from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.common.dimension import C2E2C, C2E2CDim, CellDim, KDim, Koff
 from icon4py.pyutils.metadata import FieldInfo

@@ -13,8 +13,8 @@
 from pathlib import Path
 from typing import Any, Iterable, List
 
-from functional.iterator import ir as itir
-from functional.program_processors.codegens.gtfn.gtfn_backend import generate
+from gt4py.next.iterator import ir as itir
+from gt4py.next.program_processors.codegens.gtfn.gtfn_backend import generate
 
 from icon4py.bindings.utils import write_string
 from icon4py.common.dimension import Koff

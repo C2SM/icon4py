@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
 from icon4py.common.dimension import (
     C2CE,
@@ -26,7 +26,7 @@ from icon4py.common.dimension import (
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_14(
+def _calculate_nabla2_of_theta(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     geofac_div: Field[[CEDim], float],
 ) -> Field[[CellDim, KDim], float]:
@@ -35,9 +35,9 @@ def _mo_nh_diffusion_stencil_14(
 
 
 @program
-def mo_nh_diffusion_stencil_14(
+def calculate_nabla2_of_theta(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     geofac_div: Field[[CEDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_14(z_nabla2_e, geofac_div, out=z_temp)
+    _calculate_nabla2_of_theta(z_nabla2_e, geofac_div, out=z_temp)
