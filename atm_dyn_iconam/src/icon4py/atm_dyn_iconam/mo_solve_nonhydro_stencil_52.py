@@ -12,14 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import CellDim, KDim, Koff
 
 
-@scan_operator(axis=KDim, forward=True, init=(0.0, 0.0, int32(1)))
+@scan_operator(axis=KDim, forward=True, init=(0.0, 0.0, True))
 def _w(
-    state: tuple[float, float, int32],
+    state: tuple[float, float, bool],
     w: float,
     z_q: float,
     z_a: float,
@@ -31,7 +31,7 @@ def _w(
     z_g = 1.0 / (z_b + z_a * z_q_m1)
     z_q_new = (0.0 - z_c) * z_g
     w_new = (w_prep - z_a * w_m1) * z_g
-    return (z_q, w, int32(0)) if first == int32(1) else (z_q_new, w_new, int32(0))
+    return (z_q, w, False) if first else (z_q_new, w_new, False)
 
 
 @field_operator
@@ -47,18 +47,14 @@ def _mo_solve_nonhydro_stencil_52(
     w: Field[[CellDim, KDim], float],
     dtime: float,
     cpd: float,
-) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], int32],
-]:
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
     z_a = (0.0 - z_gamma) * z_beta(Koff[-1]) * z_alpha(Koff[-1])
     z_c = (0.0 - z_gamma) * z_beta * z_alpha(Koff[1])
     z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
     w_prep = z_w_expl - z_gamma * (z_exner_expl(Koff[-1]) - z_exner_expl)
-    z_q_res, w_res, dummy_bool = _w(w, z_q, z_a, z_b, z_c, w_prep)
-    return z_q_res, w_res, dummy_bool
+    z_q_res, w_res, _ = _w(w, z_q, z_a, z_b, z_c, w_prep)
+    return z_q_res, w_res
 
 
 @field_operator
@@ -120,7 +116,6 @@ def mo_solve_nonhydro_stencil_52(
     w: Field[[CellDim, KDim], float],
     dtime: float,
     cpd: float,
-    dummy_bool: Field[[CellDim, KDim], int32],
 ):
     _mo_solve_nonhydro_stencil_52(
         vwind_impl_wgt,
@@ -134,5 +129,5 @@ def mo_solve_nonhydro_stencil_52(
         w,
         dtime,
         cpd,
-        out=(z_q[:, 1:], w[:, 1:], dummy_bool[:, 1:]),
+        out=(z_q[:, 1:], w[:, 1:]),
     )
