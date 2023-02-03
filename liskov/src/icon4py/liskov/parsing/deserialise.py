@@ -279,8 +279,6 @@ class StartStencilDataFactory:
 
 
 class DirectiveDeserialiser:
-    def __init__(self, parsed: ts.ParsedDict) -> None:
-        self.directives = self.deserialise(parsed)
 
     _FACTORIES: dict[str, Callable] = {
         "StartCreate": StartCreateDataFactory(),
@@ -292,7 +290,7 @@ class DirectiveDeserialiser:
         "EndIf": EndIfDataFactory(),
     }
 
-    def deserialise(self, directives: ts.ParsedDict) -> DeserialisedDirectives:
+    def __call__(self, directives: ts.ParsedDict) -> DeserialisedDirectives:
         """Deserialise the provided parsed directives to a DeserialisedDirectives object.
 
         Args:

@@ -25,24 +25,25 @@ logger = setup_logger(__name__)
 class IntegrationWriter:
     SUFFIX = ".gen.f90"
 
-    def __init__(self, generated: List[GeneratedCode]) -> None:
+    def __init__(self, filepath: Path) -> None:
         """Initialize an IntegrationWriter instance with a list of generated code.
-
-        Args:
-            generated: A list of GeneratedCode instances representing the generated code that will be written to a file.
-        """
-        self.generated = generated
-
-    def write_from(self, filepath: Path) -> None:
-        """Write a file containing generated code, with the DSL directives removed in the same directory as filepath using a new suffix.
 
         Args:
             filepath: Path to file containing directives.
         """
-        current_file = self._read_file(filepath)
-        with_generated_code = self._insert_generated_code(current_file, self.generated)
+        self.filepath = filepath
+
+    def __call__(self, generated: List[GeneratedCode]) -> None:
+        """Write a file containing generated code, with the DSL directives removed in the same directory as filepath using a new suffix.
+
+        Args:
+            generated: A list of GeneratedCode instances representing the generated code that will be written to a file.
+        """
+        current_file = self._read_file(self.filepath)
+        with_generated_code = self._insert_generated_code(current_file, generated)
         without_directives = self._remove_directives(with_generated_code)
-        self._write_file(filepath, without_directives)
+        self._write_file(self.filepath, without_directives)
+        # TODO: return exit status
 
     @staticmethod
     def _read_file(filepath: Path) -> List[str]:

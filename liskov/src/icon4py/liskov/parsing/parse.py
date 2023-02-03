@@ -27,7 +27,7 @@ logger = setup_logger(__name__)
 
 
 class DirectivesParser:
-    def __init__(self, directives: Sequence[ts.RawDirective], filepath: Path) -> None:
+    def __init__(self, filepath: Path) -> None:
         """Initialize a DirectivesParser instance.
 
         This class parses a Sequence of RawDirective objects and returns a dictionary of parsed directives and their associated content.
@@ -37,18 +37,16 @@ class DirectivesParser:
             filepath: Path to file being parsed.
         """
         self.filepath = filepath
-        self.directives = directives
-        self.parsed_directives = self._parse_directives()
 
-    def _parse_directives(self) -> ts.ParsedDict:
+    def __call__(self, directives: list[ts.RawDirective]) -> ts.ParsedDict:
         """Parse the directives and return a dictionary of parsed directives and their associated content.
 
         Returns:
             ParsedType: Dictionary of parsed directives and their associated content.
         """
         logger.info(f"Parsing DSL Preprocessor directives at {self.filepath}")
-        if len(self.directives) != 0:
-            typed = self._determine_type(self.directives)
+        if len(directives) != 0:
+            typed = self._determine_type(directives)
             preprocessed = self._preprocess(typed)
             self._run_validation_passes(preprocessed)
             return dict(directives=preprocessed, content=self._parse(preprocessed))

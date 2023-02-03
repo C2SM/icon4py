@@ -48,9 +48,8 @@ class DirectivesScanner:
             filepath: Path to file to scan for directives.
         """
         self.filepath = filepath
-        self.directives = self._scan_for_directives()
 
-    def _scan_for_directives(self) -> list[ts.RawDirective]:
+    def __call__(self, *args, **kwargs) -> list[ts.RawDirective]:
         """Scan filepath for directives and return them along with their line numbers.
 
         Returns:
