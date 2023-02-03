@@ -40,9 +40,7 @@ from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
 from icon4py.diffusion.wrapper.decorators import cffi_plugin
 
-
 diffusion: Diffusion(run_program=True)
-
 
 def diffusion_init(
     vct_a: Field[[KDim], float],
@@ -121,7 +119,6 @@ def diffusion_init(
         metric_state=metric_state,
         interpolation_state=interpolation_state,
     )
-
 
 def diffusion_run(
     dtime: float,

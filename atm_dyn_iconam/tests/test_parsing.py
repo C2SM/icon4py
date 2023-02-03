@@ -17,7 +17,7 @@ from icon4py.diffusion.wrapper.parsing import parse_functions_from_module
 def test_parse_functions():
     path = "icon4py.diffusion.wrapper.diffusion_wrapper"
     plugin = parse_functions_from_module(path, ["diffusion_init", "diffusion_run"])
-    assert plugin.name == path
+    assert plugin.name == "diffusion_wrapper"
     assert len(plugin.functions) == 2
     assert "diffusion_init" in map(lambda f: f.name, plugin.functions)
     assert "diffusion_run" in map(lambda f: f.name, plugin.functions)

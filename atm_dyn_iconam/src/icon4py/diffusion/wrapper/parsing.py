@@ -28,7 +28,8 @@ from icon4py.diffusion.wrapper.binding import (
 def parse_functions_from_module(module_name: str, func_names: list[str]) -> CffiPlugin:
     module = importlib.import_module(module_name)
     funcs = [_parse_function(module, fn) for fn in func_names]
-    return CffiPlugin(name=module_name, functions=funcs)
+    plugin_name=module_name.split(".")[-1]
+    return CffiPlugin(name=plugin_name, functions=funcs)
 
 
 def _parse_function(module, s):

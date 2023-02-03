@@ -14,6 +14,7 @@
 from typing import Sequence
 
 import eve
+from eve import codegen
 from eve.codegen import JinjaTemplate as as_jinja
 from eve.codegen import TemplatedGenerator
 from functional.type_system.type_specifications import ScalarKind
@@ -22,6 +23,7 @@ from icon4py.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
+from icon4py.bindings.utils import write_string
 
 
 class DimensionType(eve.Node):
@@ -79,7 +81,7 @@ class CHeaderGenerator(TemplatedGenerator):
     FuncParameter = as_jinja("""{{rendered_type}}{{dim}} {{name}}""")
 
 
-class FortranInterfaceGenerator(TemplatedGenerator):
+class F90InterfaceGenerator(TemplatedGenerator):
     CffiPlugin = as_jinja(
         """
     module {{name}}
@@ -117,3 +119,12 @@ class FortranInterfaceGenerator(TemplatedGenerator):
         """{{rendered_type}}, intent(inout):: {{name}}
     """
     )
+
+
+def generate_c_header(plugin: CffiPlugin)->str:
+    generated_code = CHeaderGenerator.apply(plugin)
+    return codegen.format_source("cpp", generated_code, style="LLVM")
+
+def generate_f90_interface(plugin: CffiPlugin)->str:
+    generated_code = F90InterfaceGenerator.apply(plugin)
+    return generated_code

@@ -19,7 +19,7 @@ from icon4py.diffusion.wrapper.binding import (
     CffiPlugin,
     CHeaderGenerator,
     DimensionType,
-    FortranInterfaceGenerator,
+    F90InterfaceGenerator,
     Func,
     FuncParameter,
     field_extension,
@@ -113,7 +113,7 @@ def test_cheader_with_several_functions():
 def test_fortran_interface():
     functions = [foo]
     plugin = CffiPlugin(name="libtest", functions=functions)
-    interface = FortranInterfaceGenerator.apply(plugin)
+    interface = F90InterfaceGenerator.apply(plugin)
     expteced = """
     module libtest
     use, intrinsic:: iso_c_binding
