@@ -16,13 +16,6 @@ import unittest
 import pytest
 
 import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.codegen.deserialise import (
-    EndCreateDataFactory,
-    EndStencilDataFactory,
-    ImportsDataFactory,
-    StartCreateDataFactory,
-    StartStencilDataFactory,
-)
 from icon4py.liskov.codegen.interface import (
     BoundsData,
     EndCreateData,
@@ -30,6 +23,13 @@ from icon4py.liskov.codegen.interface import (
     FieldAssociationData,
     ImportsData,
     StartCreateData,
+)
+from icon4py.liskov.parsing.deserialise import (
+    EndCreateDataFactory,
+    EndStencilDataFactory,
+    ImportsDataFactory,
+    StartCreateDataFactory,
+    StartStencilDataFactory,
 )
 from icon4py.liskov.parsing.exceptions import (
     IncompatibleFieldError,
