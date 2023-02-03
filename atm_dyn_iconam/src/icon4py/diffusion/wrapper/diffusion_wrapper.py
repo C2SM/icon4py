@@ -38,6 +38,7 @@ from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.diffusion.wrapper.decorators import cffi_plugin
 
 
 diffusion: Diffusion(run_program=True)
@@ -66,8 +67,10 @@ def diffusion_init(
     dual_edge_lengths: Field[[EdgeDim], float],
     inverse_dual_edge_lengths: Field[[EdgeDim], float],
     inverse_vertex_vertex_lengths: Field[[EdgeDim], float],
-    primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-    dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
+    primal_normal_vert_1: Field[[ECVDim], float],
+    primal_normal_vert_2: Field[[ECVDim], float],
+    dual_normal_vert_1: Field[[ECVDim], float],
+    dual_normal_vert_2: Field[[ECVDim], float],
     edge_areas: Field[[EdgeDim], float],
     cell_areas: Field[[CellDim], float],
 ):
@@ -83,11 +86,11 @@ def diffusion_init(
         tangent_orientation=tangent_orientation,
         primal_edge_lengths=primal_edge_lengths,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        dual_normal_vert=dual_normal_vert,
+        dual_normal_vert=(dual_normal_vert_1, dual_normal_vert_2),
         dual_edge_lengths=dual_edge_lengths,
         inverse_dual_edge_lengths=inverse_dual_edge_lengths,
         inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
-        primal_normal_vert=primal_normal_vert,
+        primal_normal_vert=(primal_normal_vert_1, primal_normal_vert_2),
         edge_areas=edge_areas,
     )
     cell_params = CellParams(cell_areas)
@@ -123,19 +126,21 @@ def diffusion_init(
 def diffusion_run(
     dtime: float,
     linit: bool,
-    vn: np.ndarray,
-    w: np.ndarray,
-    theta_v: np.ndarray,
-    exner: np.ndarray,
-    div_ic: np.ndarray,
-    hdef_ic: np.ndarray,
-    dwdx: np.ndarray,
-    dwdy: np.ndarray,
+    vn: Field[[EdgeDim, KDim], float],
+    w: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], float],
+    div_ic: Field[[CellDim, KDim], float],
+    hdef_ic: Field[[CellDim, KDim], float],
+    dwdx: Field[[CellDim, KDim], float],
+    dwdy: Field[[CellDim, KDim], float],
 ):
-    as_cell_k = np_as_located_field(CellDim, KDim)
-    diagnostic_state = DiagnosticState(as_cell_k(hdef_ic), as_cell_k(div_ic), as_cell_k(dwdx), as_cell_k(dwdy))
+    diagnostic_state = DiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
     prognostic_state = PrognosticState(
-        w=as_cell_k(w), vn=np_as_located_field(EdgeDim, KDim)(vn), exner_pressure=as_cell_k(exner), theta_v=as_cell_k(theta_v)
+        w=w,
+        vn=vn,
+        exner_pressure=exner,
+        theta_v=theta_v,
     )
     if linit:
         diffusion.initial_step(

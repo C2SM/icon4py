@@ -11,12 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from icon4py.diffusion.wrapper.parsing import parse_functions_from_module
 
-def cffi_plugin(plugin_name):
-    from plugin_name import ffi
 
-    def cffi_plugin_decorator(func):
-        def plugin_wrapper(*args, **kwargs):
-            return ffi.def_extern(func(*args, **kwargs))
-
-        return plugin_wrapper
+def test_parse_functions():
+    path = "icon4py.diffusion.wrapper.diffusion_wrapper"
+    plugin = parse_functions_from_module(path, ["diffusion_init", "diffusion_run"])
+    assert plugin.name == path
+    assert len(plugin.functions) == 2
+    assert "diffusion_init" in map(lambda f: f.name, plugin.functions)
+    assert "diffusion_run" in map(lambda f: f.name, plugin.functions)
