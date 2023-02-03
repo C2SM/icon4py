@@ -17,6 +17,11 @@ jobs:
 
         steps:
             - uses: actions/checkout@v2
+            
+            - name:  install boost for ubuntu
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install libboost-all-dev
 
             - name: Set up Python ${{ matrix.python-version }}
               uses: actions/setup-python@v2
