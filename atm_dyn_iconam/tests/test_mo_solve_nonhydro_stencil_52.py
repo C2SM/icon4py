@@ -76,7 +76,7 @@ def test_mo_solve_nonhydro_stencil_52():
 
     z_q = random_field(mesh, CellDim, KDim)
     w = random_field(mesh, CellDim, KDim)
-    dummy_bool = zero_field(mesh, CellDim, KDim, dtype=bool)
+    dummy_bool = zero_field(mesh, CellDim, KDim, dtype=int)
 
     z_q_ref, w_ref = mo_solve_nonhydro_stencil_52_numpy(
         np.asarray(vwind_impl_wgt),
