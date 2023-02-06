@@ -46,7 +46,7 @@ def mo_solve_nonhydro_stencil_52_numpy(
     z_g = np.zeros_like(z_gamma)
 
     k_size = w.shape[1]
-    for k in range(2, k_size):
+    for k in range(1, k_size):
         z_a[:, k] = -z_gamma[:, k] * z_beta[:, k - 1] * z_alpha[:, k - 1]
         z_c[:, k] = -z_gamma[:, k] * z_beta[:, k] * z_alpha[:, k + 1]
         z_b[:, k] = 1.0 + z_gamma[:, k] * z_alpha[:, k] * (
@@ -91,6 +91,7 @@ def test_mo_solve_nonhydro_stencil_52():
         cpd,
     )
 
+    # TODO we run this test with the C++ backend as the `embedded` backend doesn't handle this pattern
     mo_solve_nonhydro_stencil_52.with_backend(run_gtfn)(
         vwind_impl_wgt,
         theta_v_ic,
