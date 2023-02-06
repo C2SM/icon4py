@@ -16,9 +16,10 @@ from pathlib import Path
 import pytest
 from functional.ffront.decorator import Program
 
+from icon4py.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4py.liskov.parsing.exceptions import UnknownStencilError
 from icon4py.liskov.parsing.types import Imports, StartCreate
-from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
+from icon4py.liskov.parsing.utils import extract_directive
 
 
 def test_extract_directive():
@@ -34,13 +35,13 @@ def test_extract_directive():
 
 def test_stencil_collector():
     name = "mo_nh_diffusion_stencil_06"
-    collector = StencilCollector(name)
+    collector = UpdateFieldsWithGt4PyStencils(name)
     assert isinstance(collector.fvprog, Program)
 
 
 def test_stencil_collector_invalid_module():
     name = "non_existent_module"
-    collector = StencilCollector(name)
+    collector = UpdateFieldsWithGt4PyStencils(name)
     with pytest.raises(UnknownStencilError, match=r"Did not find module: (\w*)"):
         collector.fvprog
 
@@ -51,7 +52,7 @@ def test_stencil_collector_invalid_member():
     module_path = Path(mo_nh_diffusion_stencil_01.__file__)
     parents = module_path.parents[0]
 
-    collector = StencilCollector("foo")
+    collector = UpdateFieldsWithGt4PyStencils("foo")
 
     path = os.path.join(parents, "foo.py")
     with open(path, "w") as f:

@@ -17,8 +17,9 @@ import click
 
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.pipeline import (
-    run_code_generation_pipeline,
-    run_parsing_pipeline,
+    codegen_pipeline,
+    gt4py_pipeline,
+    parsing_pipeline,
 )
 
 
@@ -47,9 +48,9 @@ def main(filepath: pathlib.Path, profile: bool) -> None:
     Arguments:
         filepath Path to the input file to process.
     """
-    parsed = run_parsing_pipeline(filepath)
-    # TODO: add new pipeline for checking of parsed info against gt4py stencils
-    run_code_generation_pipeline(parsed, filepath, profile)
+    parsed = parsing_pipeline(filepath)
+    parsed_checked = gt4py_pipeline(parsed)
+    codegen_pipeline(parsed_checked, filepath, profile)
 
 
 if __name__ == "__main__":

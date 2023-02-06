@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Sequence
 
 import icon4py.liskov.parsing.types as ts
+from icon4py.liskov.common import Step
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4py.liskov.parsing.validation import VALIDATORS
@@ -26,7 +27,7 @@ REPLACE_CHARS = [ts.DIRECTIVE_IDENT, "&", "\n"]
 logger = setup_logger(__name__)
 
 
-class DirectivesParser:
+class DirectivesParser(Step):
     def __init__(self, filepath: Path) -> None:
         """Initialize a DirectivesParser instance.
 

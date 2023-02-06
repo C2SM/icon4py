@@ -12,10 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from typing import Sequence, Type
+from typing import Optional, Sequence, Type
 
 import eve
 from eve.codegen import TemplatedGenerator
+from typing_extensions import Any
 
 from icon4py.liskov.codegen.f90 import (
     DeclareStatement,
@@ -39,6 +40,7 @@ from icon4py.liskov.codegen.interface import (
     DeserialisedDirectives,
     UnusedDirective,
 )
+from icon4py.liskov.common import Step
 from icon4py.liskov.logger import setup_logger
 
 
@@ -54,13 +56,13 @@ class GeneratedCode:
     endln: int
 
 
-class IntegrationGenerator:
+class IntegrationGenerator(Step):
     def __init__(self, directives: DeserialisedDirectives, profile: bool):
         self.profile = profile
         self.directives = directives
         self.generated: list[GeneratedCode] = []
 
-    def __call__(self, *args, **kwargs) -> list[GeneratedCode]:
+    def __call__(self, data: Any = None) -> list[GeneratedCode]:
         """Generate all f90 code for integration.
 
         Args:
@@ -79,7 +81,7 @@ class IntegrationGenerator:
         code_generator: Type[TemplatedGenerator],
         startln: int,
         endln: int,
-        **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
+        **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool],
     ) -> None:
         """Add a GeneratedCode object to the `generated` attribute with the given source code and line number information.
 
@@ -97,7 +99,7 @@ class IntegrationGenerator:
     def _generate_declare(self) -> None:
         """Generate f90 code for declaration statements."""
         logger.info("Generating DECLARE statement.")
-        return self._generate(
+        self._generate(
             DeclareStatement,
             DeclareStatementGenerator,
             self.directives.Declare.startln,
@@ -135,7 +137,7 @@ class IntegrationGenerator:
     def _generate_imports(self) -> None:
         """Generate f90 code for import statements."""
         logger.info("Generating IMPORT statement.")
-        return self._generate(
+        self._generate(
             ImportsStatement,
             ImportsStatementGenerator,
             self.directives.Imports.startln,
@@ -146,7 +148,7 @@ class IntegrationGenerator:
     def _generate_create(self) -> None:
         """Generate f90 code for OpenACC DATA CREATE statements."""
         logger.info("Generating DATA CREATE statement.")
-        return self._generate(
+        self._generate(
             StartCreateStatement,
             StartCreateStatementGenerator,
             self.directives.StartCreate.startln,

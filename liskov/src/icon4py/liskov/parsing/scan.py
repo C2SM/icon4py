@@ -12,8 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import icon4py.liskov.parsing.types as ts
+from icon4py.liskov.common import Step
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import DirectiveSyntaxError
 
@@ -27,7 +29,7 @@ class Scanned:
     lnumber: int
 
 
-class DirectivesScanner:
+class DirectivesScanner(Step):
     def __init__(self, filepath: Path) -> None:
         r"""Class for scanning a file for ICON-Liskov DSL directives.
 
@@ -49,7 +51,7 @@ class DirectivesScanner:
         """
         self.filepath = filepath
 
-    def __call__(self, *args, **kwargs) -> list[ts.RawDirective]:
+    def __call__(self, data: Any = None) -> list[ts.RawDirective]:
         """Scan filepath for directives and return them along with their line numbers.
 
         Returns:

@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import List
 
 from icon4py.liskov.codegen.generate import GeneratedCode
+from icon4py.liskov.common import Step
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.types import DIRECTIVE_IDENT
 
@@ -22,7 +23,7 @@ from icon4py.liskov.parsing.types import DIRECTIVE_IDENT
 logger = setup_logger(__name__)
 
 
-class IntegrationWriter:
+class IntegrationWriter(Step):
     SUFFIX = ".gen.f90"
 
     def __init__(self, filepath: Path) -> None:
