@@ -31,7 +31,7 @@ def scan_tempfile(string: str):
         tmp.write(string.encode())
         tmp.flush()
         scanner = DirectivesScanner(Path(tmp.name))
-        return scanner
+        return scanner()
 
 
 def special_char():
@@ -71,8 +71,8 @@ def special_char():
     ],
 )
 def test_directives_scanning(string, expected):
-    scanner = scan_tempfile(string)
-    assert scanner.directives == expected
+    scanned = scan_tempfile(string)
+    assert scanned == expected
 
 
 @pytest.mark.parametrize("special_char", special_char())

@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import collections
 import sys
-from itertools import product
 from pathlib import Path
 from typing import Sequence
 
 import icon4py.liskov.parsing.types as ts
+from icon4py.liskov.common import Step
 from icon4py.liskov.logger import setup_logger
-from icon4py.liskov.parsing.validation import VALIDATORS, ParsingExceptionHandler
+from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
+from icon4py.liskov.parsing.validation import VALIDATORS
 
 
 REPLACE_CHARS = [ts.DIRECTIVE_IDENT, "&", "\n"]
@@ -26,8 +27,8 @@ REPLACE_CHARS = [ts.DIRECTIVE_IDENT, "&", "\n"]
 logger = setup_logger(__name__)
 
 
-class DirectivesParser:
-    def __init__(self, directives: Sequence[ts.RawDirective], filepath: Path) -> None:
+class DirectivesParser(Step):
+    def __init__(self, filepath: Path) -> None:
         """Initialize a DirectivesParser instance.
 
         This class parses a Sequence of RawDirective objects and returns a dictionary of parsed directives and their associated content.
@@ -37,35 +38,39 @@ class DirectivesParser:
             filepath: Path to file being parsed.
         """
         self.filepath = filepath
-        self.directives = directives
-        self.exception_handler = ParsingExceptionHandler
-        self.parsed_directives = self._parse_directives()
 
-    def _parse_directives(self) -> ts.ParsedDict:
+    def __call__(self, directives: list[ts.RawDirective]) -> ts.ParsedDict:
         """Parse the directives and return a dictionary of parsed directives and their associated content.
 
         Returns:
             ParsedType: Dictionary of parsed directives and their associated content.
         """
         logger.info(f"Parsing DSL Preprocessor directives at {self.filepath}")
-        if len(self.directives) != 0:
-            typed = self._determine_type(self.directives)
+        if len(directives) != 0:
+            typed = self._determine_type(directives)
             preprocessed = self._preprocess(typed)
             self._run_validation_passes(preprocessed)
             return dict(directives=preprocessed, content=self._parse(preprocessed))
         logger.warning(f"No DSL Preprocessor directives found in {self.filepath}")
         sys.exit()
 
+    @staticmethod
     def _determine_type(
-        self, raw_directives: Sequence[ts.RawDirective]
+        raw_directives: Sequence[ts.RawDirective],
     ) -> Sequence[ts.ParsedDirective]:
         """Determine the type of each RawDirective and return a Sequence of ParsedDirective objects."""
-        typed = [
-            directive(raw.string, raw.startln, raw.endln)  # type: ignore
-            for raw, directive in product(raw_directives, ts.SUPPORTED_DIRECTIVES)
-            if directive.pattern in raw.string
-        ]
-        self.exception_handler.find_unsupported_directives(raw_directives)
+        typed = []
+        for raw in raw_directives:
+            found = False
+            for directive in ts.SUPPORTED_DIRECTIVES:
+                if directive.pattern in raw.string:
+                    typed.append(directive(raw.string, raw.startln, raw.endln))  # type: ignore
+                    found = True
+                    break
+            if not found:
+                raise UnsupportedDirectiveError(
+                    f"Used unsupported directive(s): {raw.string} on line(s) {raw.startln}."
+                )
         return typed
 
     def _preprocess(

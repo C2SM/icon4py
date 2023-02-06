@@ -27,10 +27,14 @@ from icon4py.liskov.codegen.interface import (
 )
 
 
+def enclose_in_parentheses(string: str) -> str:
+    return f"({string})"
+
+
 def generate_fortran_code(
     parent_node: Type[eve.Node],
     code_generator: Type[TemplatedGenerator],
-    **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
+    **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool],
 ) -> str:
     """
     Generate Fortran code for the given parent node and code generator.
@@ -66,6 +70,7 @@ class Assign(eve.Node):
 
 
 class Field(Assign):
+    dims: Optional[int]
     abs_tol: Optional[str] = None
     rel_tol: Optional[str] = None
     inp: bool
@@ -84,8 +89,14 @@ class ToleranceFields(InputFields):
     ...
 
 
-def get_array_dims(node: Assign, select_all: bool = False):
-    indexes = re.findall("\\(([^)]+)", node.association)
+def get_array_dims(association: str) -> str:
+    """
+    Return the dimensions of an array in a string format.
+
+    Args:
+        association: The string representation of the array.
+    """
+    indexes = re.findall("\\(([^)]+)", association)
     if len(indexes) > 1:
         idx = indexes[-1]
     else:
@@ -93,14 +104,13 @@ def get_array_dims(node: Assign, select_all: bool = False):
 
     dims = list(idx)
 
-    if select_all:
-        dims[-1] = ":"
-    return f"({''.join(list(dims))})"
+    return "".join(list(dims))
 
 
 class EndStencilStatement(eve.Node):
     stencil_data: StartStencilData
     profile: bool
+    noendif: Optional[bool]
 
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -125,7 +135,7 @@ class EndStencilStatementGenerator(TemplatedGenerator):
         {%- if _this_node.profile %}
         call nvtxEndRange()
         {%- endif %}
-        #endif
+        {% if _this_node.noendif %}{% else %}#endif{% endif %}
         call wrap_run_{{ name }}( &
             {{ input_fields }}
             {{ output_fields }}
@@ -150,15 +160,22 @@ class EndStencilStatementGenerator(TemplatedGenerator):
         """
         {%- for field in _this_node.fields %}
             {{ field.variable }}={{ field.association }},&
-            {{ field.variable }}_before={{ field.variable }}_before{{ field.out_index }},&
+            {{ field.variable }}_before={{ field.variable }}_before{{ field.rh_index }},&
         {%- endfor %}
         """
     )
 
     def visit_OutputFields(self, out: OutputFields) -> OutputFields:  # type: ignore
         for f in out.fields:  # type: ignore
-            new_dims = get_array_dims(f)
-            f.out_index = new_dims
+            idx = render_index(f.dims)
+            split_idx = idx.split(",")
+
+            if len(split_idx) >= 3:
+                split_idx[-1] = "1"
+
+            f.rh_index = enclose_in_parentheses(
+                ",".join(split_idx)
+            )  # todo: this may not always be (:,:,1)
         return self.generic_visit(out)
 
     ToleranceFields = as_jinja(
@@ -218,7 +235,8 @@ class DeclareStatementGenerator(TemplatedGenerator):
 
 
 class CopyDeclaration(Declaration):
-    array_index: str
+    lh_index: str
+    rh_index: str
 
 
 class StartStencilStatement(eve.Node):
@@ -228,24 +246,55 @@ class StartStencilStatement(eve.Node):
 
     def __post_init__(self) -> None:  # type: ignore
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
-        out_fields = [
-            Declaration(variable=f.variable, association=f.association)
-            for f in all_fields
-            if f.out
+        self.copy_declarations = [
+            self.make_copy_declaration(f) for f in all_fields if f.out
         ]
-        self.copy_declarations = [self.make_copy_declaration(out) for out in out_fields]
 
     @staticmethod
-    def make_copy_declaration(declr: Declaration) -> CopyDeclaration:
-        copy_field_dims = get_array_dims(declr, select_all=True)
-        offset = len(declr.association) - len(copy_field_dims)
-        new_association = declr.association[:offset]
+    def make_copy_declaration(f: Field) -> CopyDeclaration:
+        if f.dims is None:
+            raise Exception(f"{f.variable} not declared!")
+
+        lh_idx = render_index(f.dims)
+
+        # get length of association index
+        association_dims = get_array_dims(f.association).split(",")
+        n_association_dims = len(association_dims)
+
+        offset = len(",".join(association_dims)) + 2
+        truncated_association = f.association[:-offset]
+
+        if n_association_dims > f.dims:
+            rh_idx = f"{lh_idx},{association_dims[-1]}"
+        else:
+            rh_idx = f"{lh_idx}"
+
+        lh_idx = enclose_in_parentheses(lh_idx)
+        rh_idx = enclose_in_parentheses(rh_idx)
 
         return CopyDeclaration(
-            variable=declr.variable,
-            association=new_association,
-            array_index=copy_field_dims,
+            variable=f.variable,
+            association=truncated_association,
+            lh_index=lh_idx,
+            rh_index=rh_idx,
         )
+
+
+def render_index(n: int) -> str:
+    """
+    Render a string of comma-separated colon characters, used to define the shape of an array in Fortran.
+
+    Args:
+        n (int): The number of colons to include in the returned string.
+
+    Returns:
+        str: A comma-separated string of n colons.
+
+    Example:
+        >>> render_index(3)
+        ':,:,:'
+    """
+    return ",".join([":" for _ in range(n)])
 
 
 class StartStencilStatementGenerator(TemplatedGenerator):
@@ -254,7 +303,7 @@ class StartStencilStatementGenerator(TemplatedGenerator):
         #ifdef __DSL_VERIFY
         !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
-        {{ d.variable }}_before{{ d.array_index }} = {{ d.association }}{{ d.array_index }}
+        {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
         !$ACC END PARALLEL
 
@@ -317,3 +366,11 @@ class EndCreateStatement(eve.Node):
 
 class EndCreateStatementGenerator(TemplatedGenerator):
     EndCreateStatement = as_jinja("!$ACC END DATA")
+
+
+class EndIfStatement(eve.Node):
+    ...
+
+
+class EndIfStatementGenerator(TemplatedGenerator):
+    EndIfStatement = as_jinja("#endif")

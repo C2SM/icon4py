@@ -14,7 +14,7 @@
 import re
 from abc import abstractmethod
 from pathlib import Path
-from typing import Match, Optional, Protocol, Sequence
+from typing import Match, Optional, Protocol
 
 import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.logger import setup_logger
@@ -23,7 +23,6 @@ from icon4py.liskov.parsing.exceptions import (
     RepeatedDirectiveError,
     RequiredDirectivesError,
     UnbalancedStencilDirectiveError,
-    UnsupportedDirectiveError,
 )
 from icon4py.liskov.parsing.utils import (
     print_parsed_directive,
@@ -113,11 +112,11 @@ class DirectiveSemanticsValidator:
     ) -> None:
         """Check that all used directives are unique.
 
-        Note: Allow repeated START STENCIL and END STENCIL directives.
+        Note: Allow repeated START STENCIL, END STENCIL and ENDIF directives.
         """
         repeated = remove_directive_types(
             [d for d in directives if directives.count(d) > 1],
-            [ts.StartStencil, ts.EndStencil],
+            [ts.StartStencil, ts.EndStencil, ts.EndIf],
         )
         if repeated:
             pretty_printed = " ".join([print_parsed_directive(d) for d in repeated])
@@ -167,7 +166,7 @@ class DirectiveSemanticsValidator:
         stencil_directives = [
             d for d in directives if isinstance(d, (ts.StartStencil, ts.EndStencil))
         ]
-        stencil_counts = {}
+        stencil_counts: dict = {}
         for directive in stencil_directives:
             stencil_name = self.extract_arg_from_directive(directive.string, "name")
             stencil_counts[stencil_name] = stencil_counts.get(stencil_name, 0) + (
@@ -188,21 +187,6 @@ VALIDATORS: list = [
     DirectiveSyntaxValidator,
     DirectiveSemanticsValidator,
 ]
-
-
-class ParsingExceptionHandler:
-    @staticmethod
-    def find_unsupported_directives(raw_directives: Sequence[ts.RawDirective]) -> None:
-        """Check for unsupported directives and raises an exception if any are found."""
-        unsupported = [
-            raw
-            for raw in raw_directives
-            if all(d.pattern not in raw.string for d in ts.SUPPORTED_DIRECTIVES)
-        ]
-        if len(u := unsupported) >= 1:
-            raise UnsupportedDirectiveError(
-                f"Used unsupported directive(s): {''.join([d.string for d in u])} on line(s) {','.join([str(d.startln) for d in u])}."
-            )
 
 
 class SyntaxExceptionHandler:

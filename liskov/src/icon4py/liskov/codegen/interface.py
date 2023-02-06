@@ -10,10 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-
+import dataclasses
 from dataclasses import dataclass
-from typing import Optional, Protocol
+from typing import Optional, Protocol, Sequence
+
+
+class UnusedDirective:
+    ...
 
 
 class CodeGenInput(Protocol):
@@ -33,10 +36,11 @@ class BoundsData:
 class FieldAssociationData:
     variable: str
     association: str
-    inp: bool
-    out: bool
-    abs_tol: Optional[str] = None
-    rel_tol: Optional[str] = None
+    dims: Optional[int]
+    abs_tol: Optional[str] = dataclasses.field(kw_only=True, default=None)
+    rel_tol: Optional[str] = dataclasses.field(kw_only=True, default=None)
+    inp: Optional[bool] = dataclasses.field(kw_only=False, default=None)
+    out: Optional[bool] = dataclasses.field(kw_only=False, default=None)
 
 
 @dataclass
@@ -60,6 +64,10 @@ class EndCreateData(ImportsData):
     ...
 
 
+class EndIfData(ImportsData):
+    ...
+
+
 @dataclass
 class StartStencilData:
     name: str
@@ -74,13 +82,15 @@ class EndStencilData:
     name: str
     startln: int
     endln: int
+    noendif: Optional[bool]
 
 
 @dataclass
 class DeserialisedDirectives:
-    StartStencil: list[StartStencilData]
-    EndStencil: list[EndStencilData]
+    StartStencil: Sequence[StartStencilData]
+    EndStencil: Sequence[EndStencilData]
     Declare: DeclareData
     Imports: ImportsData
     StartCreate: StartCreateData
     EndCreate: EndCreateData
+    EndIf: Sequence[EndIfData] | UnusedDirective
