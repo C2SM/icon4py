@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, where
 
 from icon4py.common.dimension import CellDim, KDim, Koff
 
@@ -58,7 +58,7 @@ def _w(
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_52(
+def _mo_solve_nonhydro_stencil_52_relying_on_inlining(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
@@ -76,6 +76,37 @@ def _mo_solve_nonhydro_stencil_52(
     z_c = (0.0 - z_gamma) * z_beta * z_alpha(Koff[1])
     z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
     w_prep = z_w_expl - z_gamma * (z_exner_expl(Koff[-1]) - z_exner_expl)
+    z_q_res, w_res, _ = _w(w, z_q, z_a, z_b, z_c, w_prep)
+    return z_q_res, w_res
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_52(
+    vwind_impl_wgt: Field[[CellDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    ddqz_z_half: Field[[CellDim, KDim], float],
+    z_alpha: Field[[CellDim, KDim], float],
+    z_beta: Field[[CellDim, KDim], float],
+    z_w_expl: Field[[CellDim, KDim], float],
+    z_exner_expl: Field[[CellDim, KDim], float],
+    k_index: Field[[KDim], int],
+    z_q: Field[[CellDim, KDim], float],
+    w: Field[[CellDim, KDim], float],
+    dtime: float,
+    cpd: float,
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    first_level = k_index == 0
+    z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
+    z_a = (
+        (0.0 - z_gamma)
+        * where(first_level, 0.0, z_beta(Koff[-1]))
+        * where(first_level, 0.0, z_alpha(Koff[-1]))
+    )
+    z_c = (0.0 - z_gamma) * z_beta * z_alpha(Koff[1])
+    z_b = 1.0 + z_gamma * z_alpha * (where(first_level, 0.0, z_beta(Koff[-1])) + z_beta)
+    w_prep = z_w_expl - z_gamma * (
+        where(first_level, 0.0, z_exner_expl(Koff[-1])) - z_exner_expl
+    )
     z_q_res, w_res, _ = _w(w, z_q, z_a, z_b, z_c, w_prep)
     return z_q_res, w_res
 
