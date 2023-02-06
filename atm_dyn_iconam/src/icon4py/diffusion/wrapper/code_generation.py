@@ -23,6 +23,7 @@ from icon4py.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
+from icon4py.bindings.utils import write_string
 
 
 class DimensionType(eve.Node):
@@ -46,21 +47,21 @@ class CffiPlugin(eve.Node):
     functions: Sequence[Func]
 
 
-def to_c_type(scalar_type: ScalarKind)->str:
+def to_c_type(scalar_type: ScalarKind) -> str:
     return BUILTIN_TO_CPP_TYPE[scalar_type]
 
 
-def to_f_type(scalar_type: ScalarKind)->str:
+def to_f_type(scalar_type: ScalarKind) -> str:
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
-def as_f90_value(param: FuncParameter)->str:
+
+def as_f90_value(param: FuncParameter) -> str:
     """
     If param is a scalar type (dimension=0) then return the F90 'value' keyword.
 
     Used for F90 generation only.
     """
     return "value, " if len(param.dimensions) == 0 else ""
-
 
 
 def as_field(param: FuncParameter, language: str) -> str:
@@ -121,23 +122,25 @@ class F90InterfaceGenerator(TemplatedGenerator):
     )
 
     def visit_FuncParameter(self, param: FuncParameter, param_names=""):
-        #kw-arg param_names needs to be present because it is present up the tree
-        return self.generic_visit(param,
-                                  value = as_f90_value(param),
-                                  rendered_type=to_f_type(param.d_type),
-                                  dim=as_field(param, "F")
-                                  )
+        # kw-arg param_names needs to be present because it is present up the tree
+        return self.generic_visit(
+            param,
+            value=as_f90_value(param),
+            rendered_type=to_f_type(param.d_type),
+            dim=as_field(param, "F"),
+        )
 
     FuncParameter = as_jinja(
-    """{{rendered_type}}, {{value}} intent(inout):: {{name}}{{dim}}
+        """{{rendered_type}}, {{value}} intent(inout):: {{name}}{{dim}}
     """
     )
 
 
-def generate_c_header(plugin: CffiPlugin)->str:
+def generate_c_header(plugin: CffiPlugin) -> str:
     generated_code = CHeaderGenerator.apply(plugin)
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
-def generate_f90_interface(plugin: CffiPlugin)->str:
+
+def generate_and_write_f90_interface(build_path: str, plugin: CffiPlugin):
     generated_code = F90InterfaceGenerator.apply(plugin)
-    return generated_code
+    write_string(generated_code, build_path, f"{plugin.name}.f90")

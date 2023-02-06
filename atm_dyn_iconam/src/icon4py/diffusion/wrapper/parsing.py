@@ -12,12 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import importlib
-from inspect import signature
+from inspect import signature, unwrap
 
 from functional.type_system.type_specifications import ScalarType
 from functional.type_system.type_translation import from_type_hint
 
-from icon4py.diffusion.wrapper.binding import (
+from icon4py.diffusion.wrapper.cffi_utils import CffiMethod
+from icon4py.diffusion.wrapper.code_generation import (
     CffiPlugin,
     DimensionType,
     Func,
@@ -25,17 +26,18 @@ from icon4py.diffusion.wrapper.binding import (
 )
 
 
-def parse_functions_from_module(module_name: str, func_names: list[str]) -> CffiPlugin:
+def parse_functions_from_module(module_name: str) -> CffiPlugin:
     module = importlib.import_module(module_name)
+    func_names = CffiMethod.get(module_name)
     funcs = [_parse_function(module, fn) for fn in func_names]
-    plugin_name=module_name.split(".")[-1]
+    plugin_name = module_name.split(".")[-1]
     return CffiPlugin(name=plugin_name, functions=funcs)
 
 
 def _parse_function(module, s):
-    func = getattr(module, s)
+    func = unwrap(getattr(module, s))
     params = [
-        _parse_params(signature(func).parameters, p)
+        _parse_params(signature(func, follow_wrapped=False).parameters, p)
         for p in (signature(func).parameters)
     ]
     return Func(name=s, args=params)

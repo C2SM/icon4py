@@ -15,14 +15,15 @@ import string
 import pytest
 from functional.type_system.type_specifications import ScalarKind
 
-from icon4py.diffusion.wrapper.binding import (
+from icon4py.diffusion.wrapper.code_generation import (
     CffiPlugin,
     CHeaderGenerator,
     DimensionType,
     F90InterfaceGenerator,
     Func,
     FuncParameter,
-    as_field, as_f90_value,
+    as_f90_value,
+    as_field,
 )
 
 
@@ -40,10 +41,12 @@ field_1d = FuncParameter(
 simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[])
 
 
-
-@pytest.mark.parametrize(("param", "expected"), ((simple_type, "value, "), (field_2d, ""), (field_1d, "")))
+@pytest.mark.parametrize(
+    ("param", "expected"), ((simple_type, "value, "), (field_2d, ""), (field_1d, ""))
+)
 def test_as_target(param, expected):
     assert expected == as_f90_value(param)
+
 
 @pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "(:,:)")))
 def test_field_extension_2d(lang, expected):
@@ -105,7 +108,7 @@ def compare_ignore_whitespace(s1: str, s2: str):
     return s1.translate(no_whitespace) == s2.translate(no_whitespace)
 
 
-def test_cheader_with_several_functions():
+def test_c_header_with_several_functions():
     functions = [bar, foo]
     plugin = CffiPlugin(name="libtest", functions=functions)
     header = CHeaderGenerator.apply(plugin)
@@ -119,7 +122,7 @@ def test_fortran_interface():
     functions = [foo]
     plugin = CffiPlugin(name="libtest", functions=functions)
     interface = F90InterfaceGenerator.apply(plugin)
-    expteced = """
+    expected = """
     module libtest
     use, intrinsic:: iso_c_binding
     implicit none
@@ -128,10 +131,10 @@ def test_fortran_interface():
     interface
         subroutine foo(one, two) bind(c, name='foo')
         use iso_c_binding
-        integer(c_int), intent(inout):: one
-        real(c_double), intent(inout):: two
+        integer(c_int), value, intent(inout):: one
+        real(c_double), value, intent(inout):: two
         end subroutine foo
     end interface
     end module
     """
-    assert compare_ignore_whitespace(interface, expteced)
+    assert compare_ignore_whitespace(interface, expected)

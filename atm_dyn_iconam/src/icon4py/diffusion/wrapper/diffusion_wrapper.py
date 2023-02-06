@@ -38,10 +38,13 @@ from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.diffusion.wrapper.decorators import cffi_plugin
+from icon4py.diffusion.wrapper.cffi_utils import CffiMethod, with_cffi_gen
+
 
 diffusion: Diffusion(run_program=True)
 
+
+@CffiMethod.register
 def diffusion_init(
     vct_a: Field[[KDim], float],
     nrdmax: float,  # in config
@@ -120,6 +123,8 @@ def diffusion_init(
         interpolation_state=interpolation_state,
     )
 
+
+@CffiMethod.register
 def diffusion_run(
     dtime: float,
     linit: bool,

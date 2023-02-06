@@ -11,13 +11,30 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from icon4py.diffusion.wrapper.cffi_utils import CffiMethod
 from icon4py.diffusion.wrapper.parsing import parse_functions_from_module
 
 
 def test_parse_functions():
     path = "icon4py.diffusion.wrapper.diffusion_wrapper"
-    plugin = parse_functions_from_module(path, ["diffusion_init", "diffusion_run"])
+    plugin = parse_functions_from_module(path)
+
     assert plugin.name == "diffusion_wrapper"
     assert len(plugin.functions) == 2
     assert "diffusion_init" in map(lambda f: f.name, plugin.functions)
     assert "diffusion_run" in map(lambda f: f.name, plugin.functions)
+
+
+@CffiMethod.register
+def do_foo(foo: str):
+    return foo
+
+
+@CffiMethod.register
+def do_bar():
+    return "bar"
+
+
+def test_register_with_cffi():
+    assert "do_foo" in CffiMethod.get(__name__)
+    assert "do_bar" in CffiMethod.get(__name__)
