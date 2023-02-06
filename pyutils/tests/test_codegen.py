@@ -25,7 +25,6 @@ from icon4py.testutils.utils import get_stencil_module_path
 
 LEVELS_PER_THREAD = "1"
 BLOCK_SIZE = "128"
-IS_GLOBAL = "False"
 OUTPATH = "."
 
 
@@ -114,17 +113,13 @@ def check_code_was_generated(stencil_name: str) -> None:
 def test_codegen_atm_dyn_iconam(cli, stencil_module, stencil_name) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
-        result = cli.invoke(
-            main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, IS_GLOBAL, OUTPATH]
-        )
+        result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
         assert result.exit_code == 0
         check_code_was_generated(stencil_name)
 
 
 def test_invalid_module_path(cli) -> None:
     module_path = get_stencil_module_path("some_module", "foo")
-    result = cli.invoke(
-        main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, IS_GLOBAL, OUTPATH]
-    )
+    result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
     assert result.exit_code == 1
     assert isinstance(result.exception, ModuleNotFoundError)

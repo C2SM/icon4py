@@ -36,9 +36,11 @@ class GTHeader:
     def __init__(self, stencil_info: StencilInfo) -> None:
         self.stencil_info = stencil_info
 
-    def __call__(self, outpath: Path) -> None:
+    def __call__(self, outpath: Path, imperative: bool) -> None:
         """Generate C++ code using the GTFN backend and write it to a file."""
-        gtheader = self._generate_cpp_code(self._adapt_domain(self.stencil_info.itir))
+        gtheader = self._generate_cpp_code(
+            self._adapt_domain(self.stencil_info.itir), imperative=imperative
+        )
         write_string(gtheader, outpath, f"{self.stencil_info.itir.id}.hpp")
 
     def _generate_cpp_code(self, fencil: itir.FencilDefinition, **kwargs: Any) -> str:
