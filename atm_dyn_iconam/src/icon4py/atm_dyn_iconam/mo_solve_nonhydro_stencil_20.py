@@ -34,12 +34,19 @@ def _mo_solve_nonhydro_stencil_20(
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
     z_dexner_dz_c_2: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    z_exner_ex_pr_offset_0 = z_exner_ex_pr(E2C[0])(as_offset(Koff, ikidx(E2EC[0])))
-    z_dexner_dz_c_1_oofset_0 = z_dexner_dz_c_1(E2C[0])(as_offset(Koff, ikidx(E2EC[0])))
-    z_dexner_dz_c_2_offset_0 = z_dexner_dz_c_2(E2C[0])(as_offset(Koff, ikidx(E2EC[0])))
-    z_exner_ex_pr_offset_1 = z_exner_ex_pr(E2C[1])(as_offset(Koff, ikidx(E2EC[1])))
-    z_dexner_dz_c_1_oofset_1 = z_dexner_dz_c_1(E2C[1])(as_offset(Koff, ikidx(E2EC[1])))
-    z_dexner_dz_c_2_offset_1 = z_dexner_dz_c_2(E2C[1])(as_offset(Koff, ikidx(E2EC[1])))
+    z_exner_ex_pr_0, z_exner_ex_pr_1 = z_exner_ex_pr(E2C[0]), z_exner_ex_pr(E2C[1])
+    z_dexner_dz_c_1_0, z_dexner_dz_c_1_1 = z_dexner_dz_c_1(E2C[0]), z_dexner_dz_c_1(
+        E2C[1]
+    )
+    z_dexner_dz_c_2_0, z_dexner_dz_c_2_1 = z_dexner_dz_c_2(E2C[0]), z_dexner_dz_c_2(
+        E2C[1]
+    )
+    z_exner_ex_pr_offset_0 = z_exner_ex_pr_0(as_offset(Koff, ikidx(E2EC[0])))
+    z_dexner_dz_c_1_oofset_0 = z_dexner_dz_c_1_0(as_offset(Koff, ikidx(E2EC[0])))
+    z_dexner_dz_c_2_offset_0 = z_dexner_dz_c_2_0(as_offset(Koff, ikidx(E2EC[0])))
+    z_exner_ex_pr_offset_1 = z_exner_ex_pr_1(as_offset(Koff, ikidx(E2EC[1])))
+    z_dexner_dz_c_1_oofset_1 = z_dexner_dz_c_1_1(as_offset(Koff, ikidx(E2EC[1])))
+    z_dexner_dz_c_2_offset_1 = z_dexner_dz_c_2_1(as_offset(Koff, ikidx(E2EC[1])))
     z_gradh_exner = inv_dual_edge_length * (
         -(
             z_exner_ex_pr_offset_0

@@ -35,18 +35,23 @@ def _mo_solve_nonhydro_stencil_21(
     inv_dual_edge_length: Field[[EdgeDim], float],
     grav_o_cpd: float,
 ) -> Field[[EdgeDim, KDim], float]:
+    theta_v_0, theta_v_1 = theta_v(E2C[0]), theta_v(E2C[1])
+    theta_v_ic_0, theta_v_ic_1 = theta_v_ic(E2C[0]), theta_v_ic(E2C[1])
+    inv_ddqz_z_full_0, inv_ddqz_z_full_1 = inv_ddqz_z_full(E2C[0]), inv_ddqz_z_full(
+        E2C[1]
+    )
     z_theta1 = (
-        theta_v(E2C[0])(as_offset(Koff, ikidx(E2EC[0])))
-        + zdiff_gradp(E2EC[0]) * theta_v_ic(E2C[0])(as_offset(Koff, ikidx(E2EC[0])))
-        - theta_v_ic(E2C[0])(as_offset(Koff, ikidx(E2EC[0]) + 1.0))
-        * inv_ddqz_z_full(E2C[0])(as_offset(Koff, ikidx(E2EC[0])))
+        theta_v_0(as_offset(Koff, ikidx(E2EC[0])))
+        + zdiff_gradp(E2EC[0]) * theta_v_ic_0(as_offset(Koff, ikidx(E2EC[0])))
+        - theta_v_ic_0(as_offset(Koff, ikidx(E2EC[0]) + 1.0))
+        * inv_ddqz_z_full_0(as_offset(Koff, ikidx(E2EC[0])))
     )
 
     z_theta2 = (
-        theta_v(E2C[1])(as_offset(Koff, ikidx(E2EC[1])))
-        + zdiff_gradp(E2EC[1]) * theta_v_ic(E2C[1])(as_offset(Koff, ikidx(E2EC[1])))
-        - theta_v_ic(E2C[1])(as_offset(Koff, ikidx(E2EC[1]) + 1.0))
-        * inv_ddqz_z_full(E2C[1])(as_offset(Koff, ikidx(E2EC[1])))
+        theta_v_1(as_offset(Koff, ikidx(E2EC[1])))
+        + zdiff_gradp(E2EC[1]) * theta_v_ic_1(as_offset(Koff, ikidx(E2EC[1])))
+        - theta_v_ic_1(as_offset(Koff, ikidx(E2EC[1]) + 1.0))
+        * inv_ddqz_z_full_1(as_offset(Koff, ikidx(E2EC[1])))
     )
 
     z_hydro_corr = (

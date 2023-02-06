@@ -29,8 +29,9 @@ def _calculate_truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     theta_v: Field[[CellDim, KDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    theta_v_offset = theta_v(C2E2C)(as_offset(Koff, zd_vertidx))
-    theta_v_offset_1 = theta_v(C2E2C)(as_offset(Koff, (zd_vertidx + 1.0)))
+    theta_v_shift = theta_v(C2E2C)
+    theta_v_offset = theta_v_shift(as_offset(Koff, zd_vertidx))
+    theta_v_offset_1 = theta_v_shift(as_offset(Koff, (zd_vertidx + 1.0)))
     expr_1 = vcoef * theta_v_offset + (1.0 - vcoef) * theta_v_offset_1
     sum_1 = neighbor_sum(geofac_n2s_nbh * expr_1, axis=C2E2CDim)
     z_temp_expr = z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_1)
