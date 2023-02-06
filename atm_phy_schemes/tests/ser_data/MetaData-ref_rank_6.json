@@ -1,0 +1,3605 @@
+{
+    "field_map": {
+        "cloud number concentration": {
+            "dims": [16, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "cloud number concentration"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 2
+                }
+            },
+            "type_id": 5
+        },
+        "end_index": {
+            "dims": [13],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 13
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "end_index"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "i_endblk": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "i_endblk"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "i_startblk": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "i_startblk"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "idbg": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "idbg"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "inwp_gscp": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "inwp_gscp"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "ithermo_water": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "ithermo_water"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "ivend": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "ivend"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "ivstart": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "ivstart"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "jg": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "jg"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "kstart": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "kstart"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "kstart_moist": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "kstart_moist"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "l_cv": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "bool"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "l_cv"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 1
+        },
+        "layer thickness": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "layer thickness"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "ldiag_qtend": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "bool"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "ldiag_qtend"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 1
+        },
+        "ldiag_ttend": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "bool"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "ldiag_ttend"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 1
+        },
+        "moist air density": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "moist air density"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "mu_rain": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "mu_rain"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        },
+        "mu_snow": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "mu_snow"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        },
+        "nblks_c": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "nblks_c"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "nlev": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "nlev"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "nproma": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "nproma"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "precipitation rate of graupel": {
+            "dims": [16, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "precipitation rate of graupel"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 2
+                }
+            },
+            "type_id": 5
+        },
+        "precipitation rate of ice": {
+            "dims": [16, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "precipitation rate of ice"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 2
+                }
+            },
+            "type_id": 5
+        },
+        "precipitation rate of rain": {
+            "dims": [16, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "precipitation rate of rain"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 2
+                }
+            },
+            "type_id": 5
+        },
+        "precipitation rate of snow": {
+            "dims": [16, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "precipitation rate of snow"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 2
+                }
+            },
+            "type_id": 5
+        },
+        "pres": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "pres"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "qc0": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "qc0"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        },
+        "qi0": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "qi0"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        },
+        "rain_n0_factor": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "rain_n0_factor"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        },
+        "specific cloud ice content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "specific cloud ice content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "specific cloud water content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "specific cloud water content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "specific graupel content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "specific graupel content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "specific rain content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "specific rain content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "specific snow content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "specific snow content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "specific water vapor content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "specific water vapor content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "start_index": {
+            "dims": [13],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 4
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "int"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 13
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "start_index"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 2
+        },
+        "tcall_gscp_jg": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tcall_gscp_jg"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        },
+        "temperature": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "temperature"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "tendency specific cloud water content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tendency specific cloud water content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "tendency specific ice content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tendency specific ice content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "tendency specific rain content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tendency specific rain content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "tendency specific snow content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tendency specific snow content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "tendency specific water vapor content": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tendency specific water vapor content"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "tendency temperature": {
+            "dims": [16, 90, 201],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 16
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 90
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 201
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tendency temperature"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 3
+                }
+            },
+            "type_id": 5
+        },
+        "tune_icesedi_exp": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tune_icesedi_exp"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        },
+        "tune_v0snow": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tune_v0snow"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        },
+        "tune_zceff_min": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tune_zceff_min"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        },
+        "tune_zvz0i": {
+            "dims": [1],
+            "meta_info": {
+                "__bytesperelement": {
+                    "type_id": 2,
+                    "value": 8
+                },
+                "__elementtype": {
+                    "type_id": 6,
+                    "value": "double"
+                },
+                "__iminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__iplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__isize": {
+                    "type_id": 2,
+                    "value": 1
+                },
+                "__jminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__jsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__kplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__ksize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lminushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lplushalosize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__lsize": {
+                    "type_id": 2,
+                    "value": 0
+                },
+                "__name": {
+                    "type_id": 6,
+                    "value": "tune_zvz0i"
+                },
+                "__rank": {
+                    "type_id": 2,
+                    "value": 1
+                }
+            },
+            "type_id": 5
+        }
+    },
+    "global_meta_info": null,
+    "prefix": "ref_rank_6",
+    "savepoint_vector": {
+        "fields_per_savepoint": [
+            {
+                "pre_cloud_mig_config_list_rank_6": {
+                    "end_index": 0,
+                    "i_endblk": 0,
+                    "i_startblk": 0,
+                    "idbg": 0,
+                    "inwp_gscp": 0,
+                    "ithermo_water": 0,
+                    "ivend": 0,
+                    "ivstart": 0,
+                    "jg": 0,
+                    "kstart": 0,
+                    "kstart_moist": 0,
+                    "l_cv": 0,
+                    "ldiag_qtend": 0,
+                    "ldiag_ttend": 0,
+                    "mu_rain": 0,
+                    "mu_snow": 0,
+                    "nblks_c": 0,
+                    "nlev": 0,
+                    "nproma": 0,
+                    "qc0": 0,
+                    "qi0": 0,
+                    "rain_n0_factor": 0,
+                    "start_index": 0,
+                    "tcall_gscp_jg": 0,
+                    "tune_icesedi_exp": 0,
+                    "tune_v0snow": 0,
+                    "tune_zceff_min": 0,
+                    "tune_zvz0i": 0
+                }
+            },
+            {
+                "pre_graupel-in_rank_6": {
+                    "layer thickness": 0,
+                    "moist air density": 0,
+                    "pres": 0
+                }
+            },
+            {
+                "pre_graupel-inout_rank_6": {
+                    "cloud number concentration": 0,
+                    "precipitation rate of graupel": 0,
+                    "precipitation rate of ice": 0,
+                    "precipitation rate of rain": 0,
+                    "precipitation rate of snow": 0,
+                    "specific cloud ice content": 0,
+                    "specific cloud water content": 0,
+                    "specific graupel content": 0,
+                    "specific rain content": 0,
+                    "specific snow content": 0,
+                    "specific water vapor content": 0,
+                    "temperature": 0
+                }
+            },
+            {
+                "pre_graupel-out_rank_6": {
+                    "tendency specific cloud water content": 0,
+                    "tendency specific ice content": 0,
+                    "tendency specific rain content": 0,
+                    "tendency specific snow content": 0,
+                    "tendency specific water vapor content": 0,
+                    "tendency temperature": 0
+                }
+            },
+            {
+                "post_cloud_mig_config_list_rank_6": {
+                    "end_index": 0,
+                    "i_endblk": 0,
+                    "i_startblk": 0,
+                    "idbg": 0,
+                    "inwp_gscp": 0,
+                    "ithermo_water": 0,
+                    "ivend": 0,
+                    "ivstart": 0,
+                    "jg": 0,
+                    "kstart": 0,
+                    "kstart_moist": 0,
+                    "l_cv": 0,
+                    "ldiag_qtend": 0,
+                    "ldiag_ttend": 0,
+                    "mu_rain": 0,
+                    "mu_snow": 0,
+                    "nblks_c": 0,
+                    "nlev": 0,
+                    "nproma": 0,
+                    "qc0": 0,
+                    "qi0": 0,
+                    "rain_n0_factor": 0,
+                    "start_index": 0,
+                    "tcall_gscp_jg": 0,
+                    "tune_icesedi_exp": 0,
+                    "tune_v0snow": 0,
+                    "tune_zceff_min": 0,
+                    "tune_zvz0i": 0
+                }
+            },
+            {
+                "post_graupel-in_rank_6": {
+                    "layer thickness": 0,
+                    "moist air density": 0,
+                    "pres": 0
+                }
+            },
+            {
+                "post_graupel-inout_rank_6": {
+                    "cloud number concentration": 0,
+                    "precipitation rate of graupel": 0,
+                    "precipitation rate of ice": 0,
+                    "precipitation rate of rain": 0,
+                    "precipitation rate of snow": 0,
+                    "specific cloud ice content": 1,
+                    "specific cloud water content": 0,
+                    "specific graupel content": 0,
+                    "specific rain content": 0,
+                    "specific snow content": 0,
+                    "specific water vapor content": 1,
+                    "temperature": 1
+                }
+            },
+            {
+                "post_graupel-out_rank_6": {
+                    "tendency specific cloud water content": 0,
+                    "tendency specific ice content": 0,
+                    "tendency specific rain content": 0,
+                    "tendency specific snow content": 0,
+                    "tendency specific water vapor content": 0,
+                    "tendency temperature": 0
+                }
+            }
+        ],
+        "savepoints": [
+            {
+                "meta_info": null,
+                "name": "pre_cloud_mig_config_list_rank_6"
+            },
+            {
+                "meta_info": null,
+                "name": "pre_graupel-in_rank_6"
+            },
+            {
+                "meta_info": null,
+                "name": "pre_graupel-inout_rank_6"
+            },
+            {
+                "meta_info": null,
+                "name": "pre_graupel-out_rank_6"
+            },
+            {
+                "meta_info": null,
+                "name": "post_cloud_mig_config_list_rank_6"
+            },
+            {
+                "meta_info": null,
+                "name": "post_graupel-in_rank_6"
+            },
+            {
+                "meta_info": null,
+                "name": "post_graupel-inout_rank_6"
+            },
+            {
+                "meta_info": null,
+                "name": "post_graupel-out_rank_6"
+            }
+        ]
+    },
+    "serialbox_version": 260
+}
