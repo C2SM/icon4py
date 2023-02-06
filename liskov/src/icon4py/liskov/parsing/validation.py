@@ -166,7 +166,7 @@ class DirectiveSemanticsValidator:
         stencil_directives = [
             d for d in directives if isinstance(d, (ts.StartStencil, ts.EndStencil))
         ]
-        stencil_counts = {}
+        stencil_counts: dict = {}
         for directive in stencil_directives:
             stencil_name = self.extract_arg_from_directive(directive.string, "name")
             stencil_counts[stencil_name] = stencil_counts.get(stencil_name, 0) + (

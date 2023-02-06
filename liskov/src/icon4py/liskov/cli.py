@@ -15,12 +15,12 @@ import pathlib
 
 import click
 
-from icon4py.liskov.codegen.generate import IntegrationGenerator
-from icon4py.liskov.codegen.write import IntegrationWriter
 from icon4py.liskov.logger import setup_logger
-from icon4py.liskov.parsing.deserialise import DirectiveDeserialiser
-from icon4py.liskov.parsing.parse import DirectivesParser
-from icon4py.liskov.parsing.scan import DirectivesScanner
+from icon4py.liskov.pipeline import (
+    codegen_pipeline,
+    gt4py_pipeline,
+    parsing_pipeline,
+)
 
 
 logger = setup_logger(__name__)
@@ -48,12 +48,9 @@ def main(filepath: pathlib.Path, profile: bool) -> None:
     Arguments:
         filepath Path to the input file to process.
     """
-    scanner = DirectivesScanner(filepath)
-    parser = DirectivesParser(scanner.directives, filepath)
-    deserialiser = DirectiveDeserialiser(parser.parsed_directives)
-    generator = IntegrationGenerator(deserialiser.directives, profile)
-    writer = IntegrationWriter(generator.generated)
-    writer.write_from(filepath)
+    parsed = parsing_pipeline(filepath)
+    parsed_checked = gt4py_pipeline(parsed)
+    codegen_pipeline(parsed_checked, filepath, profile)
 
 
 if __name__ == "__main__":

@@ -173,7 +173,3 @@ SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     EndCreate,
     EndIf,
 ]
-
-
-class UnusedDirective:
-    pass

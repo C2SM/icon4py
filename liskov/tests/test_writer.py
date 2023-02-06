@@ -25,12 +25,10 @@ def test_write_from():
         with open(filepath, "w") as f:
             f.write("!$DSL\n some code\n another line")
 
-        # create an instance of IntegrationWriter with some generated code
+        # create an instance of IntegrationWriter and write generated code
         generated = [GeneratedCode("generated code", 1, 3)]
-        integration_writer = IntegrationWriter(generated)
-
-        # call the write_from method with the filepath
-        integration_writer.write_from(filepath)
+        integration_writer = IntegrationWriter(filepath)
+        integration_writer(generated)
 
         # check that the generated code was inserted into the file
         with open(filepath.with_suffix(IntegrationWriter.SUFFIX), "r") as f:
