@@ -37,10 +37,10 @@ class FieldAssociationData:
     variable: str
     association: str
     dims: Optional[int]
-    inp: Optional[bool] = dataclasses.field(init=False, default=None)
-    out: Optional[bool] = dataclasses.field(init=False, default=None)
-    abs_tol: Optional[str] = dataclasses.field(init=False, default=None)
-    rel_tol: Optional[str] = dataclasses.field(init=False, default=None)
+    abs_tol: Optional[str] = dataclasses.field(kw_only=True, default=None)
+    rel_tol: Optional[str] = dataclasses.field(kw_only=True, default=None)
+    inp: Optional[bool] = dataclasses.field(kw_only=False, default=None)
+    out: Optional[bool] = dataclasses.field(kw_only=False, default=None)
 
 
 @dataclass
@@ -93,4 +93,4 @@ class DeserialisedDirectives:
     Imports: ImportsData
     StartCreate: StartCreateData
     EndCreate: EndCreateData
-    EndIf: Sequence[EndIfData]
+    EndIf: Sequence[EndIfData] | UnusedDirective

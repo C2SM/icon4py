@@ -47,9 +47,10 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
 ):
     fpath = make_f90_tmpfile(stencil + directive)
     directives = scan_for_directives(fpath)
+    parser = DirectivesParser(fpath)
 
     with pytest.raises(UnbalancedStencilDirectiveError):
-        DirectivesParser(directives, fpath)
+        parser(directives)
 
 
 @mark.parametrize(
@@ -83,12 +84,13 @@ def test_directive_semantics_validation_repeated_directives(
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
+    parser = DirectivesParser(fpath)
 
     with pytest.raises(
         RepeatedDirectiveError,
         match="Found same directive more than once in the following directives:\n",
     ):
-        DirectivesParser(directives, fpath)
+        parser(directives)
 
 
 @mark.parametrize(
@@ -101,7 +103,8 @@ def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, direc
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
-    DirectivesParser(directives, fpath)
+    parser = DirectivesParser(fpath)
+    parser(directives)
 
 
 @mark.parametrize(
@@ -118,9 +121,10 @@ def test_directive_semantics_validation_required_directives(
     new = SINGLE_STENCIL.replace(directive, "")
     fpath = make_f90_tmpfile(content=new)
     directives = scan_for_directives(fpath)
+    parser = DirectivesParser(fpath)
 
     with pytest.raises(
         RequiredDirectivesError,
         match=r"Missing required directive of type (\w.*) in source.",
     ):
-        DirectivesParser(directives, fpath)
+        parser(directives)

@@ -51,7 +51,6 @@ class UpdateFieldsWithGt4PyStencils(Step):
                     )
                 f.out = field_info.out
                 f.inp = field_info.inp
-                # f.type = field_info.field.type # todo: is this needed?
         return self.parsed
 
     def _collect_icon4py_stencil(self, stencil_name: str) -> Program:

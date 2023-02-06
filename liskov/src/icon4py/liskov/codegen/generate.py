@@ -166,7 +166,7 @@ class IntegrationGenerator(Step):
     def _generate_endif(self) -> None:
         """Generate f90 code for endif statements."""
         if self.directives.EndIf != UnusedDirective:
-            for endif in self.directives.EndIf:
+            for endif in self.directives.EndIf:  # type: ignore
                 logger.info("Generating ENDIF statement.")
                 self._generate(
                     EndIfStatement,
