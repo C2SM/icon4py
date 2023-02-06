@@ -125,7 +125,7 @@ def mo_solve_nonhydro_stencil_52(
     dtime: float,
     cpd: float,
 ):
-    _mo_solve_nonhydro_stencil_52(
+    _mo_solve_nonhydro_stencil_52_relying_on_inlining(
         vwind_impl_wgt,
         theta_v_ic,
         ddqz_z_half,
