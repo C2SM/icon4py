@@ -24,7 +24,7 @@ from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _fused_mo_nh_diffusion_stencil_11_12(
+def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],
     thresh_tdiff: float,
@@ -40,12 +40,12 @@ def _fused_mo_nh_diffusion_stencil_11_12(
 
 
 @program
-def fused_mo_nh_diffusion_stencil_11_12(
+def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],
     thresh_tdiff: float,
     kh_smag_e: Field[[EdgeDim, KDim], float],
 ):
-    _fused_mo_nh_diffusion_stencil_11_12(
+    _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
         theta_v, theta_ref_mc, thresh_tdiff, kh_smag_e, out=kh_smag_e
     )
