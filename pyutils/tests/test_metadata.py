@@ -12,11 +12,75 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from functional.common import Field
-from functional.ffront.decorator import field_operator, program
+from gt4py.next.common import Field
+from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.pyutils.metadata import get_field_infos
+from icon4py.pyutils.metadata import get_field_infos, provide_neighbor_table
+
+
+chain_false_skipvalues = [
+    "C2E",
+    "C2V",
+    "E2C",
+    "E2V",
+    "E2C2E",
+    "E2C2EO",
+    "E2C2V",
+    "C2E2C",
+    "C2E2CO",
+    "C2E2C2E",
+    "C2E2C2E2C",
+    "C2E2C2E2CO",
+    "C2E2C2E2C2E",
+]
+
+chain_true_skipvalues = [
+    "V2C",
+    "V2E",
+    "E2C2V2C",
+    "C2V2C",
+    "C2V2CO",
+    "C2V2C2E",
+    "E2V2E",
+    "E2V2EO",
+    "E2V2E2C",
+    "V2E2C",
+    "V2E2C2V",
+    "V2E2C2VO",
+    "V2E2C2V2E",
+    "V2E2C2V2E2C",
+]
+
+
+@pytest.mark.parametrize(
+    "chain",
+    chain_false_skipvalues + chain_true_skipvalues,
+)
+def test_provide_neighbor_table_local(chain):
+    expected = False
+    actual = provide_neighbor_table(chain, is_global=False)
+    assert actual.has_skip_values == expected
+
+
+@pytest.mark.parametrize(
+    "chain",
+    chain_false_skipvalues,
+)
+def test_provide_neighbor_table_global_false_skipvalues(chain):
+    expected = False
+    actual = provide_neighbor_table(chain, is_global=True)
+    assert actual.has_skip_values == expected
+
+
+@pytest.mark.parametrize(
+    "chain",
+    chain_true_skipvalues,
+)
+def test_provide_neighbor_table_global_true_skipvalues(chain):
+    expected = True
+    actual = provide_neighbor_table(chain, is_global=True)
+    assert actual.has_skip_values == expected
 
 
 @field_operator

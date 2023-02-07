@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.common import DimensionKind
-from functional.ffront.fbuiltins import Dimension, FieldOffset
+from gt4py.next.common import DimensionKind
+from gt4py.next.ffront.fbuiltins import Dimension, FieldOffset
 
 
 KDim = Dimension("K", kind=DimensionKind.VERTICAL)

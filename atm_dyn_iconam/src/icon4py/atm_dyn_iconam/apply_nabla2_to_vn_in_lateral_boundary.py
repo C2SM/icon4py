@@ -11,14 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import EdgeDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_06(
+def _apply_nabla2_to_vn_in_lateral_boundary(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     area_edge: Field[[EdgeDim], float],
     vn: Field[[EdgeDim, KDim], float],
@@ -29,10 +29,12 @@ def _mo_nh_diffusion_stencil_06(
 
 
 @program
-def mo_nh_diffusion_stencil_06(
+def apply_nabla2_to_vn_in_lateral_boundary(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     area_edge: Field[[EdgeDim], float],
     vn: Field[[EdgeDim, KDim], float],
     fac_bdydiff_v: float,
 ):
-    _mo_nh_diffusion_stencil_06(z_nabla2_e, area_edge, vn, fac_bdydiff_v, out=vn)
+    _apply_nabla2_to_vn_in_lateral_boundary(
+        z_nabla2_e, area_edge, vn, fac_bdydiff_v, out=vn
+    )

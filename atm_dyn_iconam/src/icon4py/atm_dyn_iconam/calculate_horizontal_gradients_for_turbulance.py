@@ -11,14 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_08(
+def _calculate_horizontal_gradients_for_turbulance(
     w: Field[[CellDim, KDim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
@@ -29,11 +29,13 @@ def _mo_nh_diffusion_stencil_08(
 
 
 @program
-def mo_nh_diffusion_stencil_08(
+def calculate_horizontal_gradients_for_turbulance(
     w: Field[[CellDim, KDim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_08(w, geofac_grg_x, geofac_grg_y, out=(dwdx, dwdy))
+    _calculate_horizontal_gradients_for_turbulance(
+        w, geofac_grg_x, geofac_grg_y, out=(dwdx, dwdy)
+    )

@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field,  where, broadcast, int32, abs
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field,  where, broadcast, int32, abs
 from icon4py.common.dimension import E2EC, ECDim, CellDim, EdgeDim, KDim
 import sys
 sys.setrecursionlimit(5500)

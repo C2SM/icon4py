@@ -13,8 +13,8 @@
 from pathlib import Path
 from typing import Any, Iterable, List
 
-from functional.iterator import ir as itir
-from functional.program_processors.codegens.gtfn.gtfn_backend import generate
+from gt4py.next.iterator import ir as itir
+from gt4py.next.program_processors.codegens.gtfn.gtfn_backend import generate
 
 from icon4py.bindings.utils import write_string
 from icon4py.common.dimension import Koff
@@ -36,10 +36,10 @@ class GTHeader:
     def __init__(self, stencil_info: StencilInfo) -> None:
         self.stencil_info = stencil_info
 
-    def __call__(self, outpath: Path) -> None:
+    def __call__(self, outpath: Path, imperative: bool) -> None:
         """Generate C++ code using the GTFN backend and write it to a file."""
         gtheader = self._generate_cpp_code(
-            self._adapt_domain(self.stencil_info.fvprog.itir)
+            self._adapt_domain(self.stencil_info.fvprog.itir), imperative=imperative
         )
         write_string(gtheader, outpath, f"{self.stencil_info.fvprog.itir.id}.hpp")
 

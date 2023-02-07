@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from functional.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.advection.hor_adv_stencil_01 import hor_adv_stencil_01
 from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim

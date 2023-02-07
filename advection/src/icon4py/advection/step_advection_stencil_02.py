@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.common import Field
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import maximum
+from gt4py.next.common import Field
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import maximum
 
 from icon4py.common.dimension import CellDim, KDim, Koff
 

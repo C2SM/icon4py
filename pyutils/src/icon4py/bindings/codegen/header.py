@@ -14,10 +14,10 @@
 from pathlib import Path
 from typing import Sequence
 
-import eve
-from eve import Node
-from eve.codegen import JinjaTemplate as as_jinja
-from eve.codegen import TemplatedGenerator, format_source
+from gt4py import eve
+from gt4py.eve import Node
+from gt4py.eve.codegen import JinjaTemplate as as_jinja
+from gt4py.eve.codegen import TemplatedGenerator, format_source
 
 from icon4py.bindings.entities import Field
 from icon4py.bindings.utils import write_string

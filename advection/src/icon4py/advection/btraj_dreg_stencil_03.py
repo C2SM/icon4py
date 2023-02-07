@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.fbuiltins import Field, int32, where, broadcast
-from functional.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, int32, where, broadcast
+from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
