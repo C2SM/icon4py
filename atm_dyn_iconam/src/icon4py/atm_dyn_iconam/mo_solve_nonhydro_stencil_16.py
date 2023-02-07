@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, broadcast, where
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, broadcast, where
 
 from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
@@ -31,7 +31,6 @@ def _mo_solve_nonhydro_stencil_16(
     z_rth_pr_1: Field[[CellDim, KDim], float],
     z_rth_pr_2: Field[[CellDim, KDim], float],
 ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
-
     z_rho_e = broadcast(0, (EdgeDim, KDim))
     z_theta_v_e = broadcast(0, (EdgeDim, KDim))
 

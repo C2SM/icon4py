@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from functional.ffront.fbuiltins import int32
-from functional.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.atm_dyn_iconam.mo_advection_traj_btraj_compute_o1_dsl import (
     mo_advection_traj_btraj_compute_o1_dsl,
@@ -40,7 +40,6 @@ def mo_advection_traj_btraj_compute_o1_dsl_numpy(
     dual_normal_cell_2: np.array,
     p_dthalf: float,
 ) -> np.array:
-
     lvn_pos = np.where(p_vn > 0.0, True, False)
     cell_idx = np.expand_dims(cell_idx, axis=-1)
     cell_blk = np.expand_dims(cell_blk, axis=-1)

@@ -13,15 +13,13 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_13 import (
-    mo_nh_diffusion_stencil_13,
-)
+from icon4py.atm_dyn_iconam.calculate_nabla2_for_z import calculate_nabla2_for_z
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field
 
 
-def mo_nh_diffusion_stencil_13_numpy(
+def calculate_nabla2_for_z_numpy(
     e2c: np.array,
     kh_smag_e: np.array,
     inv_dual_edge_length: np.array,
@@ -36,7 +34,7 @@ def mo_nh_diffusion_stencil_13_numpy(
     return z_nabla2_e
 
 
-def test_mo_nh_diffusion_stencil_13():
+def test_calculate_nabla2_for_z():
     mesh = SimpleMesh()
 
     kh_smag_e = random_field(mesh, EdgeDim, KDim)
@@ -44,14 +42,14 @@ def test_mo_nh_diffusion_stencil_13():
     theta_v = random_field(mesh, CellDim, KDim)
     z_nabla2_e = random_field(mesh, EdgeDim, KDim)
 
-    ref = mo_nh_diffusion_stencil_13_numpy(
+    ref = calculate_nabla2_for_z_numpy(
         mesh.e2c,
         np.asarray(kh_smag_e),
         np.asarray(inv_dual_edge_length),
         np.asarray(theta_v),
     )
 
-    mo_nh_diffusion_stencil_13(
+    calculate_nabla2_for_z(
         kh_smag_e,
         inv_dual_edge_length,
         theta_v,

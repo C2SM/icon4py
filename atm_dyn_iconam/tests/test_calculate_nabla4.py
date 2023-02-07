@@ -12,17 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from functional.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_04 import (
-    mo_nh_diffusion_stencil_04,
-)
+from icon4py.atm_dyn_iconam.calculate_nabla4 import calculate_nabla4
 from icon4py.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_04_numpy(
+def calculate_nabla4_numpy(
     e2c2v: np.array,
     u_vert: np.array,
     v_vert: np.array,
@@ -60,7 +58,7 @@ def mo_nh_diffusion_stencil_04_numpy(
     return z_nabla4_e2
 
 
-def test_mo_nh_diffusion_stencil_04():
+def test_calculate_nabla4():
     mesh = SimpleMesh()
 
     u_vert = random_field(mesh, VertexDim, KDim)
@@ -78,7 +76,7 @@ def test_mo_nh_diffusion_stencil_04():
 
     z_nabla4_e2 = zero_field(mesh, EdgeDim, KDim)
 
-    z_nabla4_e2_ref = mo_nh_diffusion_stencil_04_numpy(
+    z_nabla4_e2_ref = calculate_nabla4_numpy(
         mesh.e2c2v,
         np.asarray(u_vert),
         np.asarray(v_vert),
@@ -89,7 +87,7 @@ def test_mo_nh_diffusion_stencil_04():
         np.asarray(inv_primal_edge_length),
     )
 
-    mo_nh_diffusion_stencil_04(
+    calculate_nabla4(
         u_vert,
         v_vert,
         primal_normal_vert_v1_new,
