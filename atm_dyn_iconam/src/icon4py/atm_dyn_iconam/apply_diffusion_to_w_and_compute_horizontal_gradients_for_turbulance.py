@@ -26,7 +26,7 @@ from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _fused_mo_nh_diffusion_stencil_07_08_09_10(
+def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
@@ -81,7 +81,7 @@ def _fused_mo_nh_diffusion_stencil_07_08_09_10(
 
 
 @program
-def fused_mo_nh_diffusion_stencil_07_08_09_10(
+def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
@@ -98,7 +98,7 @@ def fused_mo_nh_diffusion_stencil_07_08_09_10(
     interior_idx: int32,
     halo_idx: int32,
 ):
-    _fused_mo_nh_diffusion_stencil_07_08_09_10(
+    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
         area,
         geofac_n2s,
         geofac_grg_x,
