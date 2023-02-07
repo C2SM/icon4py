@@ -15,32 +15,32 @@ from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import Field
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_z import _calculate_nabla2_for_z
-from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import (
-    _calculate_nabla2_of_theta,
+from icon4py.atm_dyn_iconam.calculate_z_temp import (
+    _calculate_z_temp,
 )
 from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _fused_mo_nh_diffusion_stencil_13_14(
+def _calculate_nabla2_for_theta(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
     theta_v: Field[[CellDim, KDim], float],
     geofac_div: Field[[CEDim], float],
 ) -> Field[[CellDim, KDim], float]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
-    z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
+    z_temp = _calculate_z_temp(z_nabla2_e, geofac_div)
     return z_temp
 
 
 @program
-def fused_mo_nh_diffusion_stencil_13_14(
+def calculate_nabla2_for_theta(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
     theta_v: Field[[CellDim, KDim], float],
     geofac_div: Field[[CEDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ):
-    _fused_mo_nh_diffusion_stencil_13_14(
+    _calculate_nabla2_for_theta(
         kh_smag_e, inv_dual_edge_length, theta_v, geofac_div, out=z_temp
     )
