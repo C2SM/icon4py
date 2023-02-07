@@ -10,15 +10,18 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import os
-from pathlib import Path
+from copy import deepcopy
 
 import pytest
-from functional.ffront.decorator import Program
 
-from icon4py.liskov.parsing.exceptions import UnknownStencilError
+import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.parsing.types import Imports, StartCreate
-from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
+from icon4py.liskov.parsing.utils import (
+    extract_directive,
+    print_parsed_directive,
+    remove_directive_types,
+    string_to_bool,
+)
 
 
 def test_extract_directive():
@@ -32,32 +35,35 @@ def test_extract_directive():
     assert extract_directive(directives, StartCreate) == [directives[1]]
 
 
-def test_stencil_collector():
-    name = "mo_nh_diffusion_stencil_06"
-    collector = StencilCollector(name)
-    assert isinstance(collector.fvprog, Program)
+def test_remove_directive():
+    directives = [
+        Imports("IMPORTS()", 1, 1),
+        StartCreate("START CREATE()", 3, 4),
+    ]
+    new_directives = deepcopy(directives)
+    assert remove_directive_types(new_directives, [Imports]) == [directives[1]]
 
 
-def test_stencil_collector_invalid_module():
-    name = "non_existent_module"
-    collector = StencilCollector(name)
-    with pytest.raises(UnknownStencilError, match=r"Did not find module: (\w*)"):
-        collector.fvprog
+@pytest.mark.parametrize(
+    "string, expected",
+    [
+        ("True", True),
+        ("TRUE", True),
+        ("false", False),
+        ("FALSE", False),
+        ("not a boolean", ValueError("Cannot convert 'not a boolean' to a boolean.")),
+    ],
+)
+def test_string_to_bool(string, expected):
+    if isinstance(expected, bool):
+        assert string_to_bool(string) == expected
+    else:
+        with pytest.raises(ValueError) as exc_info:
+            string_to_bool(string)
+        assert str(exc_info.value) == str(expected)
 
 
-def test_stencil_collector_invalid_member():
-    from icon4py.atm_dyn_iconam import mo_nh_diffusion_stencil_01
-
-    module_path = Path(mo_nh_diffusion_stencil_01.__file__)
-    parents = module_path.parents[0]
-
-    collector = StencilCollector("foo")
-
-    path = os.path.join(parents, "foo.py")
-    with open(path, "w") as f:
-        f.write("")
-
-    with pytest.raises(UnknownStencilError, match=r"Did not find member: (\w*)"):
-        collector.fvprog
-
-    os.remove(path)
+def test_print_parsed_directive():
+    directive = ts.Imports("IMPORTS()", 1, 1)
+    expected_output = "Directive: IMPORTS(), start line: 1, end line: 1\n"
+    assert print_parsed_directive(directive) == expected_output

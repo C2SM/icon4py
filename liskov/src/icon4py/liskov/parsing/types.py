@@ -44,10 +44,10 @@ class CheckForDirectiveClasses(type):
     """
 
     _CLS_REQS = (
-        ("interface", "Data"),
-        ("deserialise", "DataFactory"),
-        ("f90", "Statement"),
-        ("f90", "StatementGenerator"),
+        ("codegen", "interface", "Data"),
+        ("parsing", "deserialise", "DataFactory"),
+        ("codegen", "f90", "Statement"),
+        ("codegen", "f90", "StatementGenerator"),
     )
 
     def __new__(
@@ -57,8 +57,8 @@ class CheckForDirectiveClasses(type):
         namespace: Dict[str, Any],
         **kwargs: Any,
     ) -> T:
-        for module_name, cls_suffix in mcs._CLS_REQS:
-            module = import_module(f"icon4py.liskov.codegen.{module_name}")
+        for subpkg, module_name, cls_suffix in mcs._CLS_REQS:
+            module = import_module(f"icon4py.liskov.{subpkg}.{module_name}")
             expected_cls_name = f"{name}{cls_suffix}"
             if expected_cls_name not in [
                 cls_name for cls_name, _ in getmembers(module, predicate=isclass)
@@ -159,6 +159,10 @@ class EndCreate(WithoutArguments, metaclass=CheckForDirectiveClasses):
     pattern = "END CREATE"
 
 
+class EndIf(WithoutArguments, metaclass=CheckForDirectiveClasses):
+    pattern = "ENDIF"
+
+
 # When adding a new directive this list must be updated.
 SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     StartStencil,
@@ -167,4 +171,5 @@ SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     Declare,
     StartCreate,
     EndCreate,
+    EndIf,
 ]

@@ -79,13 +79,13 @@ def test_parse_single_directive(directive, string, startln, endln, expected_cont
 
 @mark.parametrize(
     "stencil, num_directives, num_content",
-    [(SINGLE_STENCIL, 6, 6), (MULTIPLE_STENCILS, 10, 6)],
+    [(SINGLE_STENCIL, 6, 6), (MULTIPLE_STENCILS, 11, 7)],
 )
 def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
     fpath = make_f90_tmpfile(content=stencil)
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(directives, fpath)
-    parsed = parser.parsed_directives
+    parser = DirectivesParser(fpath)
+    parsed = parser(directives)
 
     directives = parsed["directives"]
     content = parsed["content"]
@@ -100,8 +100,9 @@ def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
 def test_directive_parser_no_directives_found(make_f90_tmpfile):
     fpath = make_f90_tmpfile(content=NO_DIRECTIVES_STENCIL)
     directives = scan_for_directives(fpath)
+    parser = DirectivesParser(fpath)
     with pytest.raises(SystemExit):
-        DirectivesParser(directives, fpath)
+        parser(directives)
 
 
 @mark.parametrize(
@@ -119,9 +120,10 @@ def test_unsupported_directives(
     fpath = make_f90_tmpfile(content=stencil)
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
+    parser = DirectivesParser(fpath)
 
     with pytest.raises(
         UnsupportedDirectiveError,
         match=r"Used unsupported directive\(s\):.",
     ):
-        DirectivesParser(directives, fpath)
+        parser(directives)

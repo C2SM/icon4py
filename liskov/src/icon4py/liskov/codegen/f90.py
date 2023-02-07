@@ -27,14 +27,14 @@ from icon4py.liskov.codegen.interface import (
 )
 
 
-def enclose_in_parentheses(string) -> str:
+def enclose_in_parentheses(string: str) -> str:
     return f"({string})"
 
 
 def generate_fortran_code(
     parent_node: Type[eve.Node],
     code_generator: Type[TemplatedGenerator],
-    **kwargs: CodeGenInput | Sequence[CodeGenInput] | bool,
+    **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool],
 ) -> str:
     """
     Generate Fortran code for the given parent node and code generator.
@@ -89,7 +89,13 @@ class ToleranceFields(InputFields):
     ...
 
 
-def get_array_dims(association: str, select_all: bool = False):
+def get_array_dims(association: str) -> str:
+    """
+    Return the dimensions of an array in a string format.
+
+    Args:
+        association: The string representation of the array.
+    """
     indexes = re.findall("\\(([^)]+)", association)
     if len(indexes) > 1:
         idx = indexes[-1]
@@ -104,6 +110,7 @@ def get_array_dims(association: str, select_all: bool = False):
 class EndStencilStatement(eve.Node):
     stencil_data: StartStencilData
     profile: bool
+    noendif: Optional[bool]
 
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -128,7 +135,7 @@ class EndStencilStatementGenerator(TemplatedGenerator):
         {%- if _this_node.profile %}
         call nvtxEndRange()
         {%- endif %}
-        #endif
+        {% if _this_node.noendif %}{% else %}#endif{% endif %}
         call wrap_run_{{ name }}( &
             {{ input_fields }}
             {{ output_fields }}
@@ -160,14 +167,14 @@ class EndStencilStatementGenerator(TemplatedGenerator):
 
     def visit_OutputFields(self, out: OutputFields) -> OutputFields:  # type: ignore
         for f in out.fields:  # type: ignore
-            base = render_index(f.dims)
-            base = base.split(",")
+            idx = render_index(f.dims)
+            split_idx = idx.split(",")
 
-            if len(base) >= 3:
-                base[-1] = "1"
+            if len(split_idx) >= 3:
+                split_idx[-1] = "1"
 
             f.rh_index = enclose_in_parentheses(
-                ",".join(base)
+                ",".join(split_idx)
             )  # todo: this may not always be (:,:,1)
         return self.generic_visit(out)
 
@@ -273,7 +280,20 @@ class StartStencilStatement(eve.Node):
         )
 
 
-def render_index(n: int):
+def render_index(n: int) -> str:
+    """
+    Render a string of comma-separated colon characters, used to define the shape of an array in Fortran.
+
+    Args:
+        n (int): The number of colons to include in the returned string.
+
+    Returns:
+        str: A comma-separated string of n colons.
+
+    Example:
+        >>> render_index(3)
+        ':,:,:'
+    """
     return ",".join([":" for _ in range(n)])
 
 
@@ -346,3 +366,11 @@ class EndCreateStatement(eve.Node):
 
 class EndCreateStatementGenerator(TemplatedGenerator):
     EndCreateStatement = as_jinja("!$ACC END DATA")
+
+
+class EndIfStatement(eve.Node):
+    ...
+
+
+class EndIfStatementGenerator(TemplatedGenerator):
+    EndIfStatement = as_jinja("#endif")

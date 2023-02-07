@@ -16,13 +16,6 @@ import unittest
 import pytest
 
 import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.codegen.deserialise import (
-    EndCreateDataFactory,
-    EndStencilDataFactory,
-    ImportsDataFactory,
-    StartCreateDataFactory,
-    StartStencilDataFactory,
-)
 from icon4py.liskov.codegen.interface import (
     BoundsData,
     EndCreateData,
@@ -31,8 +24,14 @@ from icon4py.liskov.codegen.interface import (
     ImportsData,
     StartCreateData,
 )
+from icon4py.liskov.parsing.deserialise import (
+    EndCreateDataFactory,
+    EndStencilDataFactory,
+    ImportsDataFactory,
+    StartCreateDataFactory,
+    StartStencilDataFactory,
+)
 from icon4py.liskov.parsing.exceptions import (
-    IncompatibleFieldError,
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
@@ -92,8 +91,8 @@ class TestStartStencilFactory(unittest.TestCase):
     def setUp(self):
         self.factory = StartStencilDataFactory()
         self.mock_fields = [
-            FieldAssociationData("x", "i", 3, True, False),
-            FieldAssociationData("y", "i", 3, True, False),
+            FieldAssociationData("x", "i", 3),
+            FieldAssociationData("y", "i", 3),
         ]
 
     def test_get_bounds(self):
@@ -126,16 +125,15 @@ class TestStartStencilFactory(unittest.TestCase):
             "horizontal_lower": "i_startidx",
             "horizontal_upper": "i_endidx",
         }
+        dimensions = {"z_nabla2_e": 3, "area_edge": 3, "fac_bdydiff_v": 3, "vn": 2}
 
         expected_fields = [
-            FieldAssociationData("z_nabla2_e", "z_nabla2_e(:,:,1)", 3, True, False),
-            FieldAssociationData(
-                "area_edge", "p_patch%edges%area_edge(:,1)", 3, True, False
-            ),
-            FieldAssociationData("fac_bdydiff_v", "fac_bdydiff_v", 3, True, False),
-            FieldAssociationData("vn", "p_nh_prog%vn(:,:,1)", 2, True, True),
+            FieldAssociationData("z_nabla2_e", "z_nabla2_e(:,:,1)", 3),
+            FieldAssociationData("area_edge", "p_patch%edges%area_edge(:,1)", 3),
+            FieldAssociationData("fac_bdydiff_v", "fac_bdydiff_v", 3),
+            FieldAssociationData("vn", "p_nh_prog%vn(:,:,1)", 2),
         ]
-        assert self.factory._make_fields(named_args) == expected_fields
+        assert self.factory._make_fields(named_args, dimensions) == expected_fields
 
     def test_missing_directive_argument_error(self):
         """Test that exception is raised if 'name' argument is not provided."""
@@ -146,20 +144,9 @@ class TestStartStencilFactory(unittest.TestCase):
             "horizontal_lower": "i_startidx",
             "horizontal_upper": "i_endidx",
         }
+        dimensions = {"vn": 2}
         with pytest.raises(MissingDirectiveArgumentError):
-            self.factory._make_fields(named_args)
-
-    def test_incompatible_field_error(self):
-        named_args = {
-            "name": "mo_nh_diffusion_stencil_06",
-            "foo": "p_nh_prog%vn(:,:,1)",
-            "vertical_lower": "1",
-            "vertical_upper": "nlev",
-            "horizontal_lower": "i_startidx",
-            "horizontal_upper": "i_endidx",
-        }
-        with pytest.raises(IncompatibleFieldError):
-            self.factory._make_fields(named_args)
+            self.factory._make_fields(named_args, dimensions)
 
     def test_update_field_tolerances(self):
         """Test that relative and absolute tolerances are set correctly for fields."""
@@ -169,10 +156,8 @@ class TestStartStencilFactory(unittest.TestCase):
             "y_rel_tol": "0.001",
         }
         expected_fields = [
-            FieldAssociationData(
-                "x", "i", True, False, 3, rel_tol="0.01", abs_tol="0.1"
-            ),
-            FieldAssociationData("y", "i", True, False, 3, rel_tol="0.001"),
+            FieldAssociationData("x", "i", 3, rel_tol="0.01", abs_tol="0.1"),
+            FieldAssociationData("y", "i", 3, rel_tol="0.001"),
         ]
         assert (
             self.factory._update_tolerances(named_args, self.mock_fields)
@@ -186,10 +171,8 @@ class TestStartStencilFactory(unittest.TestCase):
             "x_abs_tol": "0.1",
         }
         expected_fields = [
-            FieldAssociationData(
-                "x", "i", True, False, 3, rel_tol="0.01", abs_tol="0.1"
-            ),
-            FieldAssociationData("y", "i", True, False, 3),
+            FieldAssociationData("x", "i", 3, rel_tol="0.01", abs_tol="0.1"),
+            FieldAssociationData("y", "i", 3),
         ]
         assert (
             self.factory._update_tolerances(named_args, self.mock_fields)

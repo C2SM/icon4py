@@ -69,7 +69,8 @@ MULTIPLE_STENCILS = """\
 
     !$DSL START CREATE()
 
-    !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e)
+    !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; z_rho_e=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL         z_theta_v_e=nproma,p_patch%nlev,p_patch%nblks_c; z_nabla2_c=nproma,p_patch%nlev,p_patch%nblks_c)
 
     !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_16; p_vn=p_nh%prog(nnow)%vn(:,:,1); rho_ref_me=p_nh%metrics%rho_ref_me(:,:,1); &
     !$DSL          theta_ref_me=p_nh%metrics%theta_ref_me(:,:,1); p_distv_bary_1=p_distv_bary(:,:,1,1); p_distv_bary_2=p_distv_bary(:,:,1,2); &
@@ -201,7 +202,6 @@ MULTIPLE_STENCILS = """\
     !$ACC END PARALLEL LOOP
     !$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)
 
-
     !$DSL START STENCIL(name=mo_nh_diffusion_stencil_07; &
     !$DSL       w=p_nh_prog%w(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1); &
     !$DSL       z_nabla2_c=z_nabla2_c(:,:,1); z_nabla2_c_abs_tol=1e-21_wp; &
@@ -228,10 +228,10 @@ MULTIPLE_STENCILS = """\
           ENDDO
         ENDDO
         !$ACC END PARALLEL LOOP
-    !$DSL END STENCIL(name=mo_nh_diffusion_stencil_07)
+    !$DSL ENDIF()
+    !$DSL END STENCIL(name=mo_nh_diffusion_stencil_07; noendif=True)
     !$DSL END CREATE()
     """
-
 
 DIRECTIVES_SAMPLE = """\
 !$DSL IMPORTS()

@@ -44,7 +44,7 @@ def cli():
 
 def scan_for_directives(fpath: Path) -> list[ts.RawDirective]:
     collector = DirectivesScanner(fpath)
-    return collector.directives
+    return collector()
 
 
 def insert_new_lines(fname: Path, lines: list[str]) -> None:

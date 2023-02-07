@@ -12,9 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import copy
-from typing import Callable, Protocol
-
-from functional.type_system.type_specifications import FieldType
+from typing import Callable, Optional, Protocol, Type
 
 import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.codegen.interface import (
@@ -23,20 +21,21 @@ from icon4py.liskov.codegen.interface import (
     DeclareData,
     DeserialisedDirectives,
     EndCreateData,
+    EndIfData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
     StartCreateData,
     StartStencilData,
+    UnusedDirective,
 )
+from icon4py.liskov.common import Step
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import (
-    IncompatibleFieldError,
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
-from icon4py.liskov.parsing.utils import StencilCollector, extract_directive
-from icon4py.pyutils.metadata import get_field_infos
+from icon4py.liskov.parsing.utils import extract_directive, string_to_bool
 
 
 logger = setup_logger(__name__)
@@ -65,9 +64,25 @@ class ImportsDataFactory:
         return ImportsData(startln=extracted.startln, endln=extracted.endln)
 
 
+class EndIfDataFactory:
+    def __call__(
+        self, parsed: ts.ParsedDict
+    ) -> Type[UnusedDirective] | list[EndIfData]:
+        extracted = extract_directive(parsed["directives"], ts.EndIf)
+        if len(extracted) < 1:
+            return UnusedDirective
+        else:
+            deserialised = []
+            for directive in extracted:
+                deserialised.append(
+                    EndIfData(startln=directive.startln, endln=directive.endln)
+                )
+            return deserialised
+
+
 class DeclareDataFactory:
     @staticmethod
-    def get_field_dimensions(declarations):
+    def get_field_dimensions(declarations: dict) -> dict[str, int]:
         return {k: len(v.split(",")) for k, v in declarations.items()}
 
     def __call__(self, parsed: ts.ParsedDict) -> DeclareData:
@@ -85,9 +100,13 @@ class EndStencilDataFactory:
         for i, directive in enumerate(extracted):
             named_args = parsed["content"]["EndStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
+            noendif = _extract_boolean_kwarg(named_args, "noendif")
             deserialised.append(
                 EndStencilData(
-                    name=stencil_name, startln=directive.startln, endln=directive.endln
+                    name=stencil_name,
+                    startln=directive.startln,
+                    endln=directive.endln,
+                    noendif=noendif,
                 )
             )
         return deserialised
@@ -102,6 +121,13 @@ def _extract_stencil_name(named_args: dict, directive: ts.ParsedDirective) -> st
             f"Missing argument {e} in {directive.type_name} directive on line {directive.startln}."
         )
     return stencil_name
+
+
+def _extract_boolean_kwarg(args: dict, arg_name: str) -> Optional[bool]:
+    """Extract a boolean kwarg from the parsed dictionary. Kwargs are false by default."""
+    if a := args.get(arg_name):
+        return string_to_bool(a)
+    return False
 
 
 class StartStencilDataFactory:
@@ -160,9 +186,7 @@ class StartStencilDataFactory:
     ) -> list[FieldAssociationData]:
         """Extract all fields from directive arguments and create corresponding field association data."""
         field_args = self._create_field_args(named_args)
-        fields = self._make_icon4py_compatible_fields(
-            field_args, named_args, dimensions
-        )
+        fields = self._make_field_associations(field_args, dimensions)
         return fields
 
     @staticmethod
@@ -188,17 +212,10 @@ class StartStencilDataFactory:
             )
         return field_args
 
-    def _make_icon4py_compatible_fields(
-        self, field_args: dict[str, str], named_args: dict[str, str], dimensions: dict
+    def _make_field_associations(
+        self, field_args: dict[str, str], dimensions: dict
     ) -> list[FieldAssociationData]:
-        """Combine directive field info with field info extracted from the corresponding icon4py stencil.
-
-        Raises:
-            IncompatibleFieldError: If a used field variable name is incompatible with the expected field
-                names defined in the corresponding icon4py stencil.
-        """
-        stencil_collector = StencilCollector(named_args["name"])
-        gt4py_stencil_info = get_field_infos(stencil_collector.fvprog)
+        """Create a list of FieldAssociation objects."""
         fields = []
         for field_name, association in field_args.items():
 
@@ -206,22 +223,10 @@ class StartStencilDataFactory:
             if any([field_name.endswith(tol) for tol in self.TOLERANCE_ARGS]):
                 continue
 
-            try:
-                gt4py_field_info = gt4py_stencil_info[field_name]
-                gt4py_type = gt4py_field_info.field.type
-            except KeyError:
-                raise IncompatibleFieldError(
-                    f"Used field variable name that is incompatible with the expected field names defined in {named_args['name']} in icon4py."
-                )
-
             field_association_data = FieldAssociationData(
                 variable=field_name,
                 association=association,
-                inp=gt4py_field_info.inp,
-                out=gt4py_field_info.out,
-                dims=dimensions.get(field_name)
-                if isinstance(gt4py_type, FieldType)
-                else None,
+                dims=dimensions.get(field_name),
             )
             # todo: improve error handling
             fields.append(field_association_data)
@@ -245,9 +250,7 @@ class StartStencilDataFactory:
         return fields
 
 
-class DirectiveDeserialiser:
-    def __init__(self, parsed: ts.ParsedDict) -> None:
-        self.directives = self.deserialise(parsed)
+class DirectiveDeserialiser(Step):
 
     _FACTORIES: dict[str, Callable] = {
         "StartCreate": StartCreateDataFactory(),
@@ -256,9 +259,10 @@ class DirectiveDeserialiser:
         "Declare": DeclareDataFactory(),
         "StartStencil": StartStencilDataFactory(),
         "EndStencil": EndStencilDataFactory(),
+        "EndIf": EndIfDataFactory(),
     }
 
-    def deserialise(self, directives: ts.ParsedDict) -> DeserialisedDirectives:
+    def __call__(self, directives: ts.ParsedDict) -> DeserialisedDirectives:
         """Deserialise the provided parsed directives to a DeserialisedDirectives object.
 
         Args:
