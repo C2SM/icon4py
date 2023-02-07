@@ -14,7 +14,7 @@
 import subprocess
 from pathlib import Path
 
-from functional.common import Dimension
+from gt4py.next.common import Dimension
 
 from icon4py.pyutils.icochainsize import IcoChainSize
 
