@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulance import (
     _calculate_diagnostics_for_turbulance,

@@ -11,13 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_z import _calculate_nabla2_for_z
-from icon4py.atm_dyn_iconam.calculate_z_temp import (
-    _calculate_z_temp,
-)
+from icon4py.atm_dyn_iconam.calculate_z_temp import _calculate_z_temp
 from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
 

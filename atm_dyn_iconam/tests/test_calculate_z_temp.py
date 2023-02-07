@@ -14,9 +14,7 @@
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.atm_dyn_iconam.calculate_z_temp import (
-    calculate_z_temp,
-)
+from icon4py.atm_dyn_iconam.calculate_z_temp import calculate_z_temp
 from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field

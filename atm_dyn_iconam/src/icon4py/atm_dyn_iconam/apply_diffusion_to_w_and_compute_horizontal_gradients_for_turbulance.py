@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import _apply_nabla2_to_w
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
