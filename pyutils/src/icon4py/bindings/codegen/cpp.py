@@ -140,6 +140,10 @@ class CppDefGenerator(TemplatedGenerator):
         return mesh_info_vtk_;
       }      
 
+      static verify *getVerify() {
+        return verify_;
+      }      
+
       {% for field in _this_node.fields %}
       static int get_{{field.name}}_KSize() {
       return {{field.name}}_kSize_;
@@ -225,7 +229,7 @@ class CppDefGenerator(TemplatedGenerator):
     StencilClassSetupFunc = as_jinja(
         """\
         static void setup(
-        const dawn::GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream, json *jsonRecord, MeshInfoVtk *mesh_info_vtk,
+        const dawn::GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream, json *jsonRecord, MeshInfoVtk *mesh_info_vtk, verify *verify,
         {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -238,6 +242,7 @@ class CppDefGenerator(TemplatedGenerator):
         stream_ = stream;
         jsonRecord_ = jsonRecord;
         mesh_info_vtk_ = mesh_info_vtk;
+        verify_ = verify;
 
         {%- for field in _this_node.out_fields -%}
         {{ field.name }}_{{ suffix }}_ = {{ field.name }}_{{ suffix }};
@@ -258,6 +263,7 @@ class CppDefGenerator(TemplatedGenerator):
         inline static cudaStream_t stream_;
         inline static json* jsonRecord_;
         inline static MeshInfoVtk* mesh_info_vtk_;
+        inline static verify* verify_;
         {%- for field in _this_node.out_fields -%}
         inline static int {{ field.name }}_kSize_;
         {%- endfor %}
@@ -389,6 +395,7 @@ class CppDefGenerator(TemplatedGenerator):
         cudaStream_t stream = dawn_generated::cuda_ico::{{ funcname }}::getStream();
         int kSize = dawn_generated::cuda_ico::{{ funcname }}::getKSize();
         MeshInfoVtk* mesh_info_vtk = dawn_generated::cuda_ico::{{ funcname }}::getMeshInfoVtk();
+        verify* verify = dawn_generated::cuda_ico::{{ funcname }}::getVerify();
         high_resolution_clock::time_point t_start = high_resolution_clock::now();
         struct VerificationMetrics stencilMetrics;
         {{ metrics_serialisation }}
@@ -404,6 +411,10 @@ class CppDefGenerator(TemplatedGenerator):
         {% if field.is_integral() %}
         stencilMetrics = ::dawn::verify_field(
             stream, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
+            \"{{ field.name }}\", iteration);
+        {% elif field.is_bool() %}
+        stencilMetrics = ::dawn::verify_bool_field(
+            stream, verify, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
             \"{{ field.name }}\", iteration);
         {% else %}
         stencilMetrics = ::dawn::verify_field(
@@ -495,7 +506,7 @@ class CppDefGenerator(TemplatedGenerator):
     CppSetupFuncDeclaration = as_jinja(
         """\
         void setup_{{funcname}}(
-        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record, MeshInfoVtk *mesh_info_vtk, 
+        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record, MeshInfoVtk *mesh_info_vtk, verify *verify,
         {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -508,7 +519,7 @@ class CppDefGenerator(TemplatedGenerator):
     SetupFunc = as_jinja(
         """\
         {{ func_declaration }} {
-        dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream, json_record, mesh_info_vtk, 
+        dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream, json_record, mesh_info_vtk, verify,
         {%- for field in _this_node.out_fields -%}
         {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}

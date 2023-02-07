@@ -304,7 +304,14 @@ class F90SetupFun(Node):
     def __post_init__(self) -> None:  # type: ignore
         param_fields = [
             F90Field(name=name)
-            for name in ["mesh", "k_size", "stream", "json_record", "mesh_info_vtk"]
+            for name in [
+                "mesh",
+                "k_size",
+                "stream",
+                "json_record",
+                "mesh_info_vtk",
+                "verify",
+            ]
         ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
         bind_fields = [
             F90TypedField(name="mesh", dtype="type(c_ptr)", dims="value"),
@@ -314,6 +321,7 @@ class F90SetupFun(Node):
             ),
             F90TypedField(name="json_record", dtype="type(c_ptr)", dims="value"),
             F90TypedField(name="mesh_info_vtk", dtype="type(c_ptr)", dims="value"),
+            F90TypedField(name="verify", dtype="type(c_ptr)", dims="value"),
         ] + [
             F90TypedField(
                 name=field.name, dtype="integer(c_int)", dims="value", suffix="kmax"
@@ -466,7 +474,14 @@ class F90WrapSetupFun(Node):
     def __post_init__(self) -> None:  # type: ignore
         param_fields = [
             F90Field(name=name)
-            for name in ["mesh", "k_size", "stream", "json_record", "mesh_info_vtk"]
+            for name in [
+                "mesh",
+                "k_size",
+                "stream",
+                "json_record",
+                "mesh_info_vtk",
+                "verify",
+            ]
         ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
         bind_fields = [
             F90TypedField(name="mesh", dtype="type(c_ptr)", dims="value"),
@@ -476,6 +491,7 @@ class F90WrapSetupFun(Node):
             ),
             F90TypedField(name="json_record", dtype="type(c_ptr)", dims="value"),
             F90TypedField(name="mesh_info_vtk", dtype="type(c_ptr)", dims="value"),
+            F90TypedField(name="verify", dtype="type(c_ptr)", dims="value"),
         ] + [
             F90TypedField(
                 name=field.name,
@@ -500,7 +516,14 @@ class F90WrapSetupFun(Node):
         ]
         setup_params_fields = [
             F90Field(name=name)
-            for name in ["mesh", "k_size", "stream", "json_record", "mesh_info_vtk"]
+            for name in [
+                "mesh",
+                "k_size",
+                "stream",
+                "json_record",
+                "mesh_info_vtk",
+                "verify",
+            ]
         ] + [F90Field(name=field.name, suffix="kvert_max") for field in self.out_fields]
 
         self.params = F90EntityList(

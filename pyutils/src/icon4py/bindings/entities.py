@@ -118,9 +118,11 @@ class Field(Node, FieldEntity):
             ts.ScalarKind.INT,
             ts.ScalarKind.INT32,
             ts.ScalarKind.INT64,
-            ts.ScalarKind.BOOL,
         ]
         return self.field_type in scalar_types
+
+    def is_bool(self) -> bool:
+        return self.field_type == ts.ScalarKind.BOOL
 
     def rank(self) -> int:
         rank = int(self.has_vertical_dimension) + int(self.location is not None)
