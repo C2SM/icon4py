@@ -34,7 +34,7 @@ SINGLE_STENCIL = """\
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; a=nproma,p_patch%nlev,p_patch%nblks_e; &
     !$DSL         b=nproma,p_patch%nlev,p_patch%nblks_e)
 
-    !$DSL START STENCIL(name=mo_nh_diffusion_stencil_06; &
+    !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
     !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
@@ -60,7 +60,7 @@ SINGLE_STENCIL = """\
               ENDDO
             ENDDO
     !$ACC END PARALLEL LOOP
-    !$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)
+    !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)
     !$DSL END CREATE()
     """
 
@@ -184,7 +184,7 @@ MULTIPLE_STENCILS = """\
     !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_16)
 
 
-    !$DSL START STENCIL(name=mo_nh_diffusion_stencil_06; &
+    !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
     !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); vn_abs_tol=1e-21_wp; &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
@@ -200,9 +200,9 @@ MULTIPLE_STENCILS = """\
               ENDDO
             ENDDO
     !$ACC END PARALLEL LOOP
-    !$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)
+    !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)
 
-    !$DSL START STENCIL(name=mo_nh_diffusion_stencil_07; &
+    !$DSL START STENCIL(name=calculate_nabla2_for_w; &
     !$DSL       w=p_nh_prog%w(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1); &
     !$DSL       z_nabla2_c=z_nabla2_c(:,:,1); z_nabla2_c_abs_tol=1e-21_wp; &
     !$DSL       z_nabla2_c_rel_tol=1e-21_wp; &
@@ -229,7 +229,7 @@ MULTIPLE_STENCILS = """\
         ENDDO
         !$ACC END PARALLEL LOOP
     !$DSL ENDIF()
-    !$DSL END STENCIL(name=mo_nh_diffusion_stencil_07; noendif=True)
+    !$DSL END STENCIL(name=calculate_nabla2_for_w; noendif=True)
     !$DSL END CREATE()
     """
 

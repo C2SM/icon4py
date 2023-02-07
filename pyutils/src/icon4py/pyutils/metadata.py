@@ -17,12 +17,12 @@ import types
 from dataclasses import dataclass
 from typing import Any, TypeGuard
 
-import eve
-from functional.common import Dimension, DimensionKind
-from functional.ffront import program_ast as past
-from functional.ffront import type_specifications as ts
-from functional.ffront.decorator import Program, program
-from functional.iterator import ir as itir
+from gt4py import eve
+from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.ffront import program_ast as past
+from gt4py.next.ffront.decorator import FieldOperator, Program, program
+from gt4py.next.iterator import ir as itir
+from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4py.pyutils.exceptions import (
@@ -53,6 +53,8 @@ class DummyConnectivity:
     max_neighbors: int
     has_skip_values: int
     origin_axis: Dimension
+    neighbor_axis: Dimension = Dimension("unused")
+    index_type: type[int] = int
 
     def mapped_index(_, __) -> int:
         raise AssertionError("Unreachable")
@@ -112,56 +114,86 @@ def _get_domain_arg_ids(fvprog: Program) -> list | set[str]:
     return domain_arg_ids
 
 
-class StencilImporter:
-    """Class which imports a fencil from a fencil import path..
+def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
+    """Import a stencil from a given module.
 
-    Args:
-        fencil_import_path: Import path to the fencil member in the following format,
-            icon4py.<package>.<module>:<member_name>, such for example
-            icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_06:mo_nh_diffusion_stencil_06
+    Note:
+        The stencil program and module are assumed to have the same name.
     """
-
-    def __init__(self, fencil_import_path: str) -> None:
-        self.fencil = self._import_definition(fencil_import_path)
-        self.fvprog = self._get_fvprog()
-
-    @staticmethod
-    def _import_definition(
-        fencil_import_path: str,
-    ) -> Program | types.FunctionType:
-        """Import a stencil from a given module.
-
-        Note:
-            The stencil program and module are assumed to have the same name.
-        """
-        module_name, member_name = fencil_import_path.split(":")
-        fencil = getattr(importlib.import_module(module_name), member_name)
-        return fencil
-
-    def _get_fvprog(self) -> Program:
-        match self.fencil:
-            case Program():
-                fvprog = self.fencil
-            case _:
-                fvprog = program(self.fencil)
-
-        if len(fvprog.past_node.body) > 1:
-            raise MultipleFieldOperatorException()
-
-        return fvprog
+    module_name, member_name = name.split(":")
+    fencil = getattr(importlib.import_module(module_name), member_name)
+    return fencil
 
 
-def get_stencil_info(fvprog: Program) -> StencilInfo:
-    """Generate StencilInfo dataclass from a fencil definition."""
-    offsets = _scan_for_offsets(fvprog)
-    offset_provider = {}
-    for offset in offsets:
-        offset_provider[offset] = provide_offset(offset)
-    connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-    return StencilInfo(fvprog, connectivity_chains, offset_provider)
+def get_fvprog(fencil_def: Program | Any) -> Program:
+    match fencil_def:
+        case Program():
+            fvprog = fencil_def
+        case _:
+            fvprog = program(fencil_def)
+
+    if len(fvprog.past_node.body) > 1:
+        raise MultipleFieldOperatorException()
+
+    return fvprog
 
 
-def _scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
+def provide_offset(
+    offset: str, is_global: bool = False
+) -> DummyConnectivity | Dimension:
+    if offset == Koff.value:
+        assert len(Koff.target) == 1
+        assert Koff.source == Koff.target[0]
+        return Koff.source
+    else:
+        return provide_neighbor_table(offset, is_global)
+
+
+def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
+    """Build an offset provider based on connectivity chain string.
+
+    Connectivity strings must contain one of the following connectivity type identifiers:
+    C (cell), E (Edge), V (Vertex) and be separated by a '2' e.g. 'E2V'. If the origin is to
+    be included, the string should terminate with O (uppercase o), e.g. 'C2E2CO`.
+
+    Handling of "new" sparse dimensions
+
+    A new sparse dimension may look like C2CE or V2CVEC. In this case, we need to strip the 2
+    and pass the tokens after to the algorithm below
+    """
+    # note: this seems really brittle. maybe agree on a keyword to indicate new sparse fields?
+    new_sparse_field = any(
+        len(token) > 1 for token in chain.split("2")
+    ) and not chain.endswith("O")
+    if new_sparse_field:
+        chain = chain.split("2")[1]
+    skip_values = False
+    if is_global and "V" in chain:
+        if chain.count("V") > 1 or not chain.endswith("V"):
+            skip_values = True
+    location_chain = []
+    include_center = False
+    for letter in chain:
+        if letter == "C":
+            location_chain.append(CellDim)
+        elif letter == "E":
+            location_chain.append(EdgeDim)
+        elif letter == "V":
+            location_chain.append(VertexDim)
+        elif letter == "O":
+            include_center = True
+        elif letter == "2":
+            pass
+        else:
+            raise InvalidConnectivityException(location_chain)
+    return DummyConnectivity(
+        max_neighbors=IcoChainSize.get(location_chain) + include_center,
+        has_skip_values=skip_values,
+        origin_axis=location_chain[0],
+    )
+
+
+def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     """Scan PAST node for offsets and return a set of all offsets."""
     all_types = (
         fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
@@ -185,51 +217,14 @@ def _scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     return sorted_dims
 
 
-def provide_offset(offset: str) -> DummyConnectivity | Dimension:
-    if offset == Koff.value:
-        assert len(Koff.target) == 1
-        assert Koff.source == Koff.target[0]
-        return Koff.source
-    else:
-        return _provide_neighbor_table(offset)
-
-
-def _provide_neighbor_table(chain: str) -> DummyConnectivity:
-    """Build an offset provider based on connectivity chain string.
-
-    Connectivity strings must contain one of the following connectivity type identifiers:
-    C (cell), E (Edge), V (Vertex) and be separated by a '2' e.g. 'E2V'. If the origin is to
-    be included, the string should terminate with O (uppercase o), e.g. 'C2E2CO`.
-
-    Handling of "new" sparse dimensions
-
-    A new sparse dimension may look like C2CE or V2CVEC. In this case, we need to strip the 2
-    and pass the tokens after to the algorithm below
-    """
-    # note: this seems really brittle. maybe agree on a keyword to indicate new sparse fields?
-    new_sparse_field = any(
-        len(token) > 1 for token in chain.split("2")
-    ) and not chain.endswith("O")
-    if new_sparse_field:
-        chain = chain.split("2")[1]
-
-    location_chain = []
-    include_center = False
-    for letter in chain:
-        if letter == "C":
-            location_chain.append(CellDim)
-        elif letter == "E":
-            location_chain.append(EdgeDim)
-        elif letter == "V":
-            location_chain.append(VertexDim)
-        elif letter == "O":
-            include_center = True
-        elif letter == "2":
-            pass
-        else:
-            raise InvalidConnectivityException(location_chain)
-    return DummyConnectivity(
-        max_neighbors=IcoChainSize.get(location_chain) + include_center,
-        has_skip_values=False,
-        origin_axis=location_chain[0],
-    )
+def get_stencil_info(
+    fencil_def: Program | FieldOperator | types.FunctionType, is_global: bool = False
+) -> StencilInfo:
+    """Generate StencilInfo dataclass from a fencil definition."""
+    fvprog = get_fvprog(fencil_def)
+    offsets = scan_for_offsets(fvprog)
+    offset_provider = {}
+    for offset in offsets:
+        offset_provider[offset] = provide_offset(offset, is_global)
+    connectivity_chains = [offset for offset in offsets if offset != Koff.value]
+    return StencilInfo(fvprog, connectivity_chains, offset_provider)

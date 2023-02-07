@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, maximum, minimum, sqrt
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, maximum, minimum, sqrt
 
 from icon4py.common.dimension import (
     E2C2V,
@@ -25,7 +25,7 @@ from icon4py.common.dimension import (
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_01(
+def _calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[KDim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
@@ -136,7 +136,7 @@ def _mo_nh_diffusion_stencil_01(
 
 
 @program
-def mo_nh_diffusion_stencil_01(
+def calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[KDim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
@@ -158,7 +158,7 @@ def mo_nh_diffusion_stencil_01(
     vertical_start: int,
     vertical_end: int,
 ):
-    _mo_nh_diffusion_stencil_01(
+    _calculate_nabla2_and_smag_coefficients_for_vn(
         diff_multfac_smag,
         tangent_orientation,
         inv_primal_edge_length,

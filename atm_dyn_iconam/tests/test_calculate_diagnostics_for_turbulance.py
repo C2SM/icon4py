@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_03 import (
-    mo_nh_diffusion_stencil_03,
+from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulance import (
+    calculate_diagnostics_for_turbulance,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_03_numpy(
+def calculate_diagnostics_for_turbulance_numpy(
     div: np.array,
     k_hc: np.array,
     wgtfac_c: np.array,
@@ -33,7 +33,7 @@ def mo_nh_diffusion_stencil_03_numpy(
     return div_ic, hdef_ic
 
 
-def test_mo_nh_diffusion_stencil_03():
+def test_calculate_diagnostics_for_turbulance():
     mesh = SimpleMesh()
 
     wgtfac_c = random_field(mesh, CellDim, KDim)
@@ -43,13 +43,13 @@ def test_mo_nh_diffusion_stencil_03():
     div_ic = zero_field(mesh, CellDim, KDim)
     hdef_ic = zero_field(mesh, CellDim, KDim)
 
-    div_ref, kh_c_ref = mo_nh_diffusion_stencil_03_numpy(
+    div_ref, kh_c_ref = calculate_diagnostics_for_turbulance_numpy(
         np.asarray(div),
         np.asarray(kh_c),
         np.asarray(wgtfac_c),
     )
 
-    mo_nh_diffusion_stencil_03(
+    calculate_diagnostics_for_turbulance(
         div,
         kh_c,
         wgtfac_c,

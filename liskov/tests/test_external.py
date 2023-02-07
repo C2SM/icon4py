@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 
 import pytest
-from functional.ffront.decorator import Program
+from gt4py.next.ffront.decorator import Program
 
 from icon4py.liskov.codegen.interface import (
     DeserialisedDirectives,
@@ -30,7 +30,7 @@ from icon4py.liskov.parsing.exceptions import (
 
 
 def test_stencil_collector():
-    name = "mo_nh_diffusion_stencil_06"
+    name = "calculate_nabla4"
     updater = UpdateFieldsWithGt4PyStencils(None)
     assert isinstance(updater._collect_icon4py_stencil(name), Program)
 
@@ -43,9 +43,9 @@ def test_stencil_collector_invalid_module():
 
 
 def test_stencil_collector_invalid_member():
-    from icon4py.atm_dyn_iconam import mo_nh_diffusion_stencil_01
+    from icon4py.atm_dyn_iconam import apply_nabla2_to_w
 
-    module_path = Path(mo_nh_diffusion_stencil_01.__file__)
+    module_path = Path(apply_nabla2_to_w.__file__)
     parents = module_path.parents[0]
 
     updater = UpdateFieldsWithGt4PyStencils(None)
@@ -63,7 +63,7 @@ def test_stencil_collector_invalid_member():
 mock_deserialised_directives = DeserialisedDirectives(
     StartStencil=[
         StartStencilData(
-            name="mo_nh_diffusion_stencil_06",
+            name="apply_nabla2_to_w",
             fields=[
                 FieldAssociationData(
                     variable="incompatible_field_name",

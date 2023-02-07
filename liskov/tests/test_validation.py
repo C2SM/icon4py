@@ -112,7 +112,7 @@ def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, direc
     [
         """!$DSL IMPORTS()""",
         """!$DSL START CREATE()""",
-        """!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)""",
+        """!$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)""",
     ],
 )
 def test_directive_semantics_validation_required_directives(

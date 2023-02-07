@@ -13,15 +13,13 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_07 import (
-    mo_nh_diffusion_stencil_07,
-)
+from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import calculate_nabla2_for_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def mo_nh_diffusion_stencil_07_numpy(
+def calculate_nabla2_for_w_numpy(
     c2e2cO: np.array, w: np.array, geofac_n2s: np.array
 ) -> np.array:
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
@@ -29,17 +27,17 @@ def mo_nh_diffusion_stencil_07_numpy(
     return z_nabla2_c
 
 
-def test_mo_nh_diffusion_stencil_07():
+def test_calculate_nabla2_for_w():
     mesh = SimpleMesh()
 
     w = random_field(mesh, CellDim, KDim)
     geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
     z_nabla2_c = zero_field(mesh, CellDim, KDim)
 
-    ref = mo_nh_diffusion_stencil_07_numpy(
+    ref = calculate_nabla2_for_w_numpy(
         mesh.c2e2cO, np.asarray(w), np.asarray(geofac_n2s)
     )
-    mo_nh_diffusion_stencil_07(
+    calculate_nabla2_for_w(
         w,
         geofac_n2s,
         z_nabla2_c,

@@ -14,7 +14,7 @@
 import importlib
 from inspect import getmembers
 
-from functional.ffront.decorator import Program
+from gt4py.next.ffront.decorator import Program
 from typing_extensions import Any
 
 from icon4py.liskov.codegen.interface import DeserialisedDirectives

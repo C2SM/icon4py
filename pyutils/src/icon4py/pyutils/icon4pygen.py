@@ -19,10 +19,6 @@ import pathlib
 
 import click
 
-from icon4py.bindings.workflow import PyBindGen
-from icon4py.pyutils.backend import GTHeader
-from icon4py.pyutils.metadata import StencilImporter, get_stencil_info
-
 
 class ModuleType(click.ParamType):
     names = [
@@ -49,16 +45,20 @@ class ModuleType(click.ParamType):
 @click.argument("fencil", type=ModuleType())
 @click.argument("block_size", type=int, default=128)
 @click.argument("levels_per_thread", type=int, default=4)
+@click.option("--is_global", is_flag=True, type=bool)
 @click.argument(
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
     default=".",
 )
+@click.option("--imperative", is_flag=True, type=bool)
 def main(
     fencil: str,
     block_size: int,
     levels_per_thread: int,
+    is_global: bool,
     outpath: pathlib.Path,
+    imperative: bool,
 ) -> None:
     """
     Generate Gridtools C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
@@ -73,7 +73,11 @@ def main(
 
         outpath: represents a path to the folder in which to write all generated code.
     """
-    fvprog = StencilImporter(fencil).fvprog
-    stencil_info = get_stencil_info(fvprog)
-    GTHeader(stencil_info)(outpath)
+    from icon4py.bindings.workflow import PyBindGen
+    from icon4py.pyutils.backend import GTHeader
+    from icon4py.pyutils.metadata import get_stencil_info, import_definition
+
+    fencil_def = import_definition(fencil)
+    stencil_info = get_stencil_info(fencil_def, is_global)
+    GTHeader(stencil_info)(outpath, imperative)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)

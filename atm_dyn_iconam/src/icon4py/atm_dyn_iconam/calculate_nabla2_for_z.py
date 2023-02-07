@@ -11,24 +11,32 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, max_over, maximum
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
+from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_12(
+def _calculate_nabla2_for_z(
     kh_smag_e: Field[[EdgeDim, KDim], float],
-    enh_diffu_3d: Field[[CellDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    theta_v: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    kh_smag_e = maximum(kh_smag_e, max_over(enh_diffu_3d(E2C), axis=E2CDim))
-    return kh_smag_e
+    z_nabla2_e = kh_smag_e * inv_dual_edge_length * (theta_v(E2C[1]) - theta_v(E2C[0]))
+    return z_nabla2_e
 
 
 @program
-def mo_nh_diffusion_stencil_12(
+def calculate_nabla2_for_z(
     kh_smag_e: Field[[EdgeDim, KDim], float],
-    enh_diffu_3d: Field[[CellDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    z_nabla2_e: Field[[EdgeDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_12(kh_smag_e, enh_diffu_3d, out=kh_smag_e)
+    _calculate_nabla2_for_z(
+        kh_smag_e,
+        inv_dual_edge_length,
+        theta_v,
+        out=z_nabla2_e,
+    )

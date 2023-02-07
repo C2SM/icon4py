@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import (
     E2C2V,
@@ -25,7 +25,7 @@ from icon4py.common.dimension import (
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_04(
+def _calculate_nabla4(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],
     primal_normal_vert_v1: Field[[ECVDim], float],
@@ -56,7 +56,7 @@ def _mo_nh_diffusion_stencil_04(
 
 
 @program
-def mo_nh_diffusion_stencil_04(
+def calculate_nabla4(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],
     primal_normal_vert_v1: Field[[ECVDim], float],
@@ -66,7 +66,7 @@ def mo_nh_diffusion_stencil_04(
     inv_primal_edge_length: Field[[EdgeDim], float],
     z_nabla4_e2: Field[[EdgeDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_04(
+    _calculate_nabla4(
         u_vert,
         v_vert,
         primal_normal_vert_v1,
