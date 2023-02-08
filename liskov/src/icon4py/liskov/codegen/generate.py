@@ -14,8 +14,8 @@
 from dataclasses import dataclass
 from typing import Optional, Sequence, Type
 
-import eve
-from eve.codegen import TemplatedGenerator
+import gt4py.eve as eve
+from gt4py.eve.codegen import TemplatedGenerator
 from typing_extensions import Any
 
 from icon4py.liskov.codegen.f90 import (

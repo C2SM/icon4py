@@ -15,9 +15,9 @@ import re
 from dataclasses import asdict
 from typing import Optional, Sequence, Type
 
-import eve
-from eve.codegen import JinjaTemplate as as_jinja
-from eve.codegen import TemplatedGenerator
+import gt4py.eve as eve
+from gt4py.eve.codegen import JinjaTemplate as as_jinja
+from gt4py.eve.codegen import TemplatedGenerator
 
 from icon4py.bindings.utils import format_fortran_code
 from icon4py.liskov.codegen.interface import (
