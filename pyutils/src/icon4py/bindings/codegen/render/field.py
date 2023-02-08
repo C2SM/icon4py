@@ -49,6 +49,8 @@ class FieldRenderer:
         if self.entity.rank() == 0:
             raise BindingsRenderingException("can not render sid of a scalar")
 
+        # We want to compute the rank without the sparse dimension, i.e. if a field is horizontal, vertical or both.
+        # This only works since compound fields are not sparse.
         dense_rank = self.entity.rank() - int(self.entity.is_sparse())
         values_str = (
             "1"
