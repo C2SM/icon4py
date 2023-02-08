@@ -129,7 +129,7 @@ class IconGrid:
         self, dim: Dimension, start_marker: int, end_marker: int
     ) -> Tuple[int, int]:
         """
-        Use to specifzy domains of a field for field_operator.
+        Use to specify domains of a field for field_operator.
 
         For a given dimension, returns the start and end index if a
         horizontal region in a field given by the markers.

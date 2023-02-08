@@ -5,3 +5,4 @@
 -e ./pyutils
 -e ./testutils
 -e ./atm_dyn_iconam
+-e ./py2f

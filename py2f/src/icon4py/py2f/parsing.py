@@ -17,13 +17,8 @@ from inspect import signature, unwrap
 from functional.type_system.type_specifications import ScalarType
 from functional.type_system.type_translation import from_type_hint
 
-from icon4py.diffusion.wrapper.cffi_utils import CffiMethod
-from icon4py.diffusion.wrapper.code_generation import (
-    CffiPlugin,
-    DimensionType,
-    Func,
-    FuncParameter,
-)
+from icon4py.py2f.cffi_utils import CffiMethod
+from icon4py.py2f.codegen import CffiPlugin, DimensionType, Func, FuncParameter
 
 
 def parse_functions_from_module(module_name: str) -> CffiPlugin:

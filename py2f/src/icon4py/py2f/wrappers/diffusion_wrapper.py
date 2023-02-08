@@ -12,9 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # flake8: noqa
-import numpy as np
 from functional.common import Field
-from functional.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
     C2E2CDim,
@@ -38,7 +36,7 @@ from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.diffusion.wrapper.cffi_utils import CffiMethod, with_cffi_gen
+from icon4py.py2f.cffi_utils import CffiMethod
 
 
 diffusion: Diffusion(run_program=True)

@@ -15,12 +15,12 @@ import pathlib
 
 import click
 
-from icon4py.diffusion.wrapper.cffi_utils import generate_and_compile_cffi_plugin
-from icon4py.diffusion.wrapper.code_generation import (
+from icon4py.f2py.cffi_utils import generate_and_compile_cffi_plugin
+from icon4py.f2py.codegen import (
     generate_and_write_f90_interface,
     generate_c_header,
 )
-from icon4py.diffusion.wrapper.parsing import parse_functions_from_module
+from icon4py.f2py.parsing import parse_functions_from_module
 
 
 @click.command(
