@@ -106,7 +106,7 @@ def expected_start_create_source():
         !$ACC   out5_before, &
         !$ACC   out6_before &
         !$ACC   ), &
-        !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)"""
+        !$ACC      IF ( i_am_accel_node .AND. dsl_verify)"""
 
 
 @pytest.fixture
@@ -131,7 +131,7 @@ def expected_declare_source():
 def expected_start_stencil_source():
     return """
 #ifdef __DSL_VERIFY
-        !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
         out1_before(:, :) = out1(:, :, 1)
         out2_before(:, :, :) = p_nh%prog(nnew)%out2(:, :, :)
         out3_before(:, :) = p_nh%prog(nnew)%w(:, :, jb)
