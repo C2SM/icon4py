@@ -301,7 +301,7 @@ class StartStencilStatementGenerator(TemplatedGenerator):
     StartStencilStatement = as_jinja(
         """
         #ifdef __DSL_VERIFY
-        !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
@@ -355,7 +355,7 @@ class StartCreateStatementGenerator(TemplatedGenerator):
         !$ACC   {{ name }}_before {%- if not loop.last -%}, & {% else %} & {%- endif -%}
         {%- endfor %}
         !$ACC   ), &
-        !$ACC      IF ( i_am_accel_node .AND. acc_on .AND. dsl_verify)
+        !$ACC      IF ( i_am_accel_node .AND. dsl_verify)
         """
     )
 
