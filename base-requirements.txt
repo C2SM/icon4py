@@ -1,2 +1,2 @@
 # VCS
-gt4py-next @ git+https://github.com/GridTools/gt4py.git@merge-functional
+gt4py @ git+https://github.com/GridTools/gt4py.git@merge-functional
