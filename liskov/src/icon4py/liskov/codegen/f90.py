@@ -346,7 +346,7 @@ class StartCreateStatementGenerator(TemplatedGenerator):
         """
         #ifdef __DSL_VERIFY
         dsl_verify = .TRUE.
-        #elif
+        #else
         dsl_verify = .FALSE.
         #endif
 
