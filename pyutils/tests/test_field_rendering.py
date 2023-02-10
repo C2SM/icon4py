@@ -96,28 +96,3 @@ def test_vertical_sparse_field_sid_rendering():
             field.renderer.render_sid()
             == "gridtools::hymap::keys<unstructured::dim::horizontal,unstructured::dim::vertical>::make_values(1, mesh_.EdgeStride)"
         )
-
-
-# TODO: This unit test should not pass, a `Field[[E2CDim, KDim], float]` should not exist and an error should be thrown in the frontend.
-def test_sparse_field_sid_rendering():
-    @field_operator
-    def reduction(nb_field: Field[[E2CDim, KDim], float]) -> Field[[KDim], float]:
-        return neighbor_sum(nb_field, axis=E2CDim)
-
-    @program
-    def reduction_prog(
-        nb_field: Field[[E2CDim, KDim], float], out: Field[[KDim], float]
-    ):
-        reduction(nb_field, out=out)
-
-    stencil_info = get_stencil_info(reduction_prog)
-    bindgen = PyBindGen(stencil_info, 128, 1)
-
-    assert (
-        bindgen.fields[0].renderer.render_sid()
-        == "gridtools::hymap::keys<unstructured::dim::horizontal,unstructured::dim::vertical>::make_values(1, mesh_.EdgeStride)"
-    )
-    assert (
-        bindgen.fields[1].renderer.render_sid()
-        == "gridtools::hymap::keys<unstructured::dim::vertical>::make_values(1)"
-    )
