@@ -131,6 +131,8 @@ def test_codegen_mo_nh_diffusion_stencil_14(cli) -> None:
     stencil_name = "calculate_nabla2_of_theta"
     module_path = get_stencil_module_path("atm_dyn_iconam", stencil_name)
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, IS_GLOBAL, OUTPATH])
+        result = cli.invoke(
+            main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, IS_GLOBAL, OUTPATH]
+        )
         assert result.exit_code == 0
         check_code_was_generated(stencil_name)

@@ -11,8 +11,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
+import inspect
+from collections import OrderedDict
+from types import MappingProxyType
+from typing import Any
 
 import cffi
+import numpy as np
+from functional.common import Dimension, DimensionKind
+from functional.iterator.embedded import np_as_located_field
+
+from icon4py.common.dimension import KDim, VertexDim
+from icon4py.py2f.typing_utils import parse_annotation
 
 
 FFI_DEF_EXTERN_DECORATOR = "@ffi.def_extern()"
@@ -87,3 +97,77 @@ def generate_and_compile_cffi_plugin(
 
     builder.embedding_init_code(module)
     builder.compile(tmpdir=build_path, target=f"lib{plugin_name}.*", verbose=True)
+
+
+def to_fields(
+    dim_sizes: dict[Dimension, int]
+):  # pass lengths of dimensions to the decorator??
+    ffi = cffi.FFI()
+    dim_sizes = dim_sizes
+
+    def _dim_sizes(dims: list[Dimension]) -> tuple[int, int]:
+        v_size = None
+        h_size = None
+        for d in dims:
+            if d.kind == DimensionKind.VERTICAL:
+                v_size = dim_sizes[d]
+            elif d.kind == DimensionKind.HORIZONTAL:
+                h_size = dim_sizes[d]
+        return h_size, v_size
+
+    def unpack(ptr, size_x, size_y) -> np.ndarray:
+        """
+        unpacks a 2d c/fortran field into a numpy array.
+
+        :param ptr: c_pointer to the field
+        :param size_x: col size (since its called from fortran)
+        :param size_y: row size
+        :return: a numpy array with shape=(size_y, size_x)
+        and dtype = ctype of the pointer
+        """
+        # for now only 2d, invert for row/column precedence...
+        shape = (size_y, size_x)
+        length = np.prod(shape)
+        c_type = ffi.getctype(ffi.typeof(ptr).item)
+        ar = np.frombuffer(
+            ffi.buffer(ptr, length * ffi.sizeof(c_type)),
+            dtype=np.dtype(c_type),
+            count=-1,
+            offset=0,
+        ).reshape(shape)
+        return ar
+
+    def _to_fields_decorator(func):
+        @functools.wraps(func)
+        def wrapper(
+            *args, **kwargs
+        ):  # these are the args of the decorated function ie to_fields(func(*args, **kwargs))
+            signature = inspect.signature(func)
+            print(
+                f"sizes passed to decorator horizontal = {dim_sizes[VertexDim]}, vertical ={dim_sizes[KDim]}"
+            )
+            print(f"signature of func {signature}")
+            parameters: MappingProxyType[str, inspect.Parameter] = signature.parameters
+            print(f"parameters = {parameters}")
+            bind: inspect.BoundArguments = signature.bind(*args, **kwargs)
+
+            arguments: OrderedDict[str, Any] = bind.arguments
+            print(f"arguments = {arguments}")
+            f_args = []
+            for name, argument in arguments.items():
+                # TODO: scalar types, tests, simplify this.
+                print(f"name={name} argument={argument}")
+                annotation = parameters[name].annotation
+                dims, dtype = parse_annotation(annotation)
+                print(
+                    f" type hint of {name} is {annotation}: dims = {dims}, dtype = {dtype}"
+                )
+                (size_h, size_v) = _dim_sizes(dims)
+                ar = unpack(argument, size_h, size_v)
+                field = np_as_located_field(dims)(ar)
+                f_args.append(field)
+            return func(*f_args, **kwargs)
+
+        return wrapper
+
+    return _to_fields_decorator
