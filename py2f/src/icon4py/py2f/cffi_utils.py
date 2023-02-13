@@ -118,16 +118,17 @@ def to_fields(
                 raise UnknownDimensionException(
                     f"size of dimension '{d}' not defined in '{dim_sizes.keys()}'"
                 )
-            if d.kind == DimensionKind.VERTICAL:
+            if d.kind == DimensionKind.VERTICAL or d.kind == DimensionKind.LOCAL:
                 v_size = dim_sizes[d]
             elif d.kind == DimensionKind.HORIZONTAL:
                 h_size = dim_sizes[d]
         return h_size, v_size
 
-    def unpack(ptr, size_h, size_v) -> np.ndarray:
+    def _unpack(ptr, size_h, size_v, dtype) -> np.ndarray:
         """
         Unpack a 2d c/fortran field into a numpy array.
 
+        :param dtype: expected type of the fields
         :param ptr: c_pointer to the field
         :param size_h: length of horizontal dimension
         :param size_v: length of vertical dimension
@@ -150,7 +151,7 @@ def to_fields(
 
     def _to_fields_decorator(func):
         @functools.wraps(func)
-        def wrapper(
+        def _wrapper(
             *args, **kwargs
         ):  # these are the args of the decorated function ie to_fields(func(*args, **kwargs))
             signature = inspect.signature(func)
@@ -158,16 +159,20 @@ def to_fields(
             arguments: OrderedDict[str, Any] = signature.bind(*args, **kwargs).arguments
             f_args = []
             for name, argument in arguments.items():
-                dims, dtype = parse_annotation(parameters[name].annotation)
-                if dims:
-                    (size_h, size_v) = _dim_sizes(dims)
-                    ar = unpack(argument, size_h, size_v)
-                    ar = np_as_located_field(*dims)(ar)
-                else:
-                    ar = argument
+                ar = _transform_arg(argument, name, parameters)
                 f_args.append(ar)
             return func(*f_args, **kwargs)
 
-        return wrapper
+        def _transform_arg(argument, name, parameters):
+            dims, dtype = parse_annotation(parameters[name].annotation)
+            if dims:
+                (size_h, size_v) = _dim_sizes(dims)
+                ar = _unpack(argument, size_h, size_v, dtype)
+                ar = np_as_located_field(*dims)(ar)
+            else:
+                ar = argument
+            return ar
+
+        return _wrapper
 
     return _to_fields_decorator
