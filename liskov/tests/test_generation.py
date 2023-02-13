@@ -66,6 +66,7 @@ def serialised_directives():
         bounds=BoundsData("1", "10", "-1", "-10"),
         startln=1,
         endln=2,
+        acc_present=False,
     )
     end_stencil_data = EndStencilData(
         name="stencil1", startln=3, endln=4, noendif=False, noprofile=False
@@ -74,6 +75,7 @@ def serialised_directives():
         startln=5,
         endln=6,
         declarations=[{"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"}],
+        kind="wp",
     )
     imports_data = ImportsData(startln=7, endln=8)
     start_create_data = StartCreateData(startln=9, endln=10)

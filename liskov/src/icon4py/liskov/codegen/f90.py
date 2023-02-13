@@ -228,7 +228,7 @@ class DeclareStatementGenerator(TemplatedGenerator):
         """
         ! DSL INPUT / OUTPUT FIELDS
         {%- for d in _this_node.declarations %}
-        REAL(wp), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
+        REAL({{ _this_node.declare_data.kind }}), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
         {%- endfor %}
         LOGICAL :: dsl_verify
         """
@@ -250,6 +250,7 @@ class StartStencilStatement(eve.Node):
         self.copy_declarations = [
             self.make_copy_declaration(f) for f in all_fields if f.out
         ]
+        self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
 
     @staticmethod
     def make_copy_declaration(f: Field) -> CopyDeclaration:
@@ -302,7 +303,7 @@ class StartStencilStatementGenerator(TemplatedGenerator):
     StartStencilStatement = as_jinja(
         """
         #ifdef __DSL_VERIFY
-        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
+        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}

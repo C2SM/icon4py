@@ -41,6 +41,8 @@ from icon4py.liskov.parsing.utils import extract_directive, string_to_bool
 
 
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
+DEFAULT_KIND = "wp"
+DEFAULT_ACCPRESENT = "false"
 
 logger = setup_logger(__name__)
 
@@ -132,6 +134,10 @@ class EndProfileDataFactory(OptionalMultiUseDataFactory):
     dtype: Type[CodeGenInput] = EndProfileData
 
 
+def pop_item_from_dict(dictionary, key, default_value):
+    return dictionary.pop(key, default_value)
+
+
 @dataclass
 class DeclareDataFactory(DataFactoryBase):
     directive_cls: ts.ParsedDict = ts.Declare
@@ -143,9 +149,13 @@ class DeclareDataFactory(DataFactoryBase):
 
     def __call__(self, parsed: ts.ParsedDict) -> DeclareData:
         extracted = extract_directive(parsed["directives"], self.directive_cls)[0]
-        declarations = parsed["content"]["Declare"]
+        args = parsed["content"]["Declare"]
+        kind = pop_item_from_dict(args[0], "kind", DEFAULT_KIND)
         return self.dtype(
-            startln=extracted.startln, endln=extracted.endln, declarations=declarations
+            startln=extracted.startln,
+            endln=extracted.endln,
+            declarations=args,
+            kind=kind,
         )
 
 
@@ -216,6 +226,9 @@ class StartStencilDataFactory(DataFactoryBase):
         directives = extract_directive(parsed["directives"], self.directive_cls)
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["StartStencil"][i]
+            acc_present = string_to_bool(
+                pop_item_from_dict(named_args, "accpresent", DEFAULT_ACCPRESENT)
+            )
             stencil_name = _extract_stencil_name(named_args, directive)
             bounds = self._make_bounds(named_args)
             fields = self._make_fields(named_args, field_dimensions)
@@ -228,6 +241,7 @@ class StartStencilDataFactory(DataFactoryBase):
                     bounds=bounds,
                     startln=directive.startln,
                     endln=directive.endln,
+                    acc_present=acc_present,
                 )
             )
         return deserialised

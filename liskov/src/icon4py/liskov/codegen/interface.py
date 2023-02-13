@@ -49,6 +49,7 @@ class DeclareData:
     startln: int
     endln: int
     declarations: list[dict[str, str]]
+    kind: str
 
 
 @dataclass
@@ -89,6 +90,7 @@ class StartStencilData:
     bounds: BoundsData
     startln: int
     endln: int
+    acc_present: Optional[bool]
 
 
 @dataclass
