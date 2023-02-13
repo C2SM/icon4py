@@ -111,6 +111,7 @@ class EndStencilStatement(eve.Node):
     stencil_data: StartStencilData
     profile: bool
     noendif: Optional[bool]
+    noprofile: Optional[bool]
 
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -133,7 +134,7 @@ class EndStencilStatementGenerator(TemplatedGenerator):
     EndStencilStatement = as_jinja(
         """
         {%- if _this_node.profile %}
-        call nvtxEndRange()
+        {% if _this_node.noprofile %}{% else %}call nvtxEndRange(){% endif %}
         {%- endif %}
         {% if _this_node.noendif %}{% else %}#endif{% endif %}
         call wrap_run_{{ name }}( &
@@ -374,3 +375,19 @@ class EndIfStatement(eve.Node):
 
 class EndIfStatementGenerator(TemplatedGenerator):
     EndIfStatement = as_jinja("#endif")
+
+
+class StartProfileStatement(eve.Node):
+    name: str
+
+
+class StartProfileStatementGenerator(TemplatedGenerator):
+    StartProfileStatement = as_jinja('call nvtxStartRange("{{ _this_node.name }}")')
+
+
+class EndProfileStatement(eve.Node):
+    ...
+
+
+class EndProfileStatementGenerator(TemplatedGenerator):
+    EndProfileStatement = as_jinja("call nvtxEndRange()")

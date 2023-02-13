@@ -25,12 +25,16 @@ from icon4py.liskov.codegen.f90 import (
     EndCreateStatementGenerator,
     EndIfStatement,
     EndIfStatementGenerator,
+    EndProfileStatement,
+    EndProfileStatementGenerator,
     EndStencilStatement,
     EndStencilStatementGenerator,
     ImportsStatement,
     ImportsStatementGenerator,
     StartCreateStatement,
     StartCreateStatementGenerator,
+    StartProfileStatement,
+    StartProfileStatementGenerator,
     StartStencilStatement,
     StartStencilStatementGenerator,
     generate_fortran_code,
@@ -73,6 +77,7 @@ class IntegrationGenerator(Step):
         self._generate_declare()
         self._generate_stencil()
         self._generate_endif()
+        self._generate_profile()
         return self.generated
 
     def _generate(
@@ -132,6 +137,7 @@ class IntegrationGenerator(Step):
                 stencil_data=stencil,
                 profile=self.profile,
                 noendif=self.directives.EndStencil[i].noendif,
+                noprofile=self.directives.EndStencil[i].noprofile,
             )
 
     def _generate_imports(self) -> None:
@@ -173,4 +179,27 @@ class IntegrationGenerator(Step):
                     EndIfStatementGenerator,
                     endif.startln,
                     endif.endln,
+                )
+
+    def _generate_profile(self) -> None:
+        """Generate additional nvtx profiling statements."""
+        if self.directives.StartProfile != UnusedDirective:
+            for start in self.directives.StartProfile:  # type: ignore
+                logger.info("Generating nvtx start statement.")
+                self._generate(
+                    StartProfileStatement,
+                    StartProfileStatementGenerator,
+                    start.startln,
+                    start.endln,
+                    name=start.name,
+                )
+
+        if self.directives.EndProfile != UnusedDirective:
+            for end in self.directives.EndProfile:  # type: ignore
+                logger.info("Generating nvtx end statement.")
+                self._generate(
+                    EndProfileStatement,
+                    EndProfileStatementGenerator,
+                    end.startln,
+                    end.endln,
                 )

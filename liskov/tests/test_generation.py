@@ -21,10 +21,12 @@ from icon4py.liskov.codegen.interface import (
     DeserialisedDirectives,
     EndCreateData,
     EndIfData,
+    EndProfileData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
     StartCreateData,
+    StartProfileData,
     StartStencilData,
 )
 
@@ -66,7 +68,7 @@ def serialised_directives():
         endln=2,
     )
     end_stencil_data = EndStencilData(
-        name="stencil1", startln=3, endln=4, noendif=False
+        name="stencil1", startln=3, endln=4, noendif=False, noprofile=False
     )
     declare_data = DeclareData(
         startln=5,
@@ -77,6 +79,8 @@ def serialised_directives():
     start_create_data = StartCreateData(startln=9, endln=10)
     end_create_data = EndCreateData(startln=11, endln=11)
     endif_data = EndIfData(startln=12, endln=12)
+    start_profile_data = StartProfileData(startln=13, endln=13, name="test_stencil")
+    end_profile_data = EndProfileData(startln=14, endln=14)
 
     return DeserialisedDirectives(
         StartStencil=[start_stencil_data],
@@ -86,6 +90,8 @@ def serialised_directives():
         StartCreate=start_create_data,
         EndCreate=end_create_data,
         EndIf=[endif_data],
+        StartProfile=[start_profile_data],
+        EndProfile=[end_profile_data],
     )
 
 
@@ -94,7 +100,7 @@ def expected_start_create_source():
     return """
 #ifdef __DSL_VERIFY
         dsl_verify = .TRUE.
-#elif
+#else
         dsl_verify = .FALSE.
 #endif
 
@@ -176,6 +182,16 @@ def expected_endif_source():
 
 
 @pytest.fixture
+def expected_start_profile_source():
+    return 'call nvtxStartRange("test_stencil")'
+
+
+@pytest.fixture
+def expected_end_profile_source():
+    return "call nvtxEndRange()"
+
+
+@pytest.fixture
 def generator(serialised_directives):
     return IntegrationGenerator(serialised_directives, profile=True)
 
@@ -189,14 +205,18 @@ def test_generate(
     expected_start_stencil_source,
     expected_end_stencil_source,
     expected_endif_source,
+    expected_start_profile_source,
+    expected_end_profile_source,
 ):
     # Check that the generated code snippets are as expected
     generated = generator()
-    assert len(generated) == 7
-    assert generator.generated[0].source == expected_start_create_source
-    assert generator.generated[1].source == expected_end_create_source
-    assert generator.generated[2].source == expected_imports_source
-    assert generator.generated[3].source == expected_declare_source
-    assert generator.generated[4].source == expected_start_stencil_source
-    assert generator.generated[5].source == expected_end_stencil_source
-    assert generator.generated[6].source == expected_endif_source
+    assert len(generated) == 9
+    assert generated[0].source == expected_start_create_source
+    assert generated[1].source == expected_end_create_source
+    assert generated[2].source == expected_imports_source
+    assert generated[3].source == expected_declare_source
+    assert generated[4].source == expected_start_stencil_source
+    assert generated[5].source == expected_end_stencil_source
+    assert generated[6].source == expected_endif_source
+    assert generated[7].source == expected_start_profile_source
+    assert generated[8].source == expected_end_profile_source

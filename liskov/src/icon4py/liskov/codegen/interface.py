@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import dataclasses
 from dataclasses import dataclass
-from typing import Optional, Protocol, Sequence
+from typing import Optional, Protocol, Sequence, runtime_checkable
 
 
 class UnusedDirective:
     ...
 
 
+@runtime_checkable
 class CodeGenInput(Protocol):
     startln: int
     endln: int
@@ -56,15 +57,28 @@ class ImportsData:
     endln: int
 
 
+@dataclass
 class StartCreateData(ImportsData):
     ...
 
 
+@dataclass
 class EndCreateData(ImportsData):
     ...
 
 
+@dataclass
 class EndIfData(ImportsData):
+    ...
+
+
+@dataclass
+class StartProfileData(ImportsData):
+    name: str
+
+
+@dataclass
+class EndProfileData(ImportsData):
     ...
 
 
@@ -83,6 +97,7 @@ class EndStencilData:
     startln: int
     endln: int
     noendif: Optional[bool]
+    noprofile: Optional[bool]
 
 
 @dataclass
@@ -94,3 +109,5 @@ class DeserialisedDirectives:
     StartCreate: StartCreateData
     EndCreate: EndCreateData
     EndIf: Sequence[EndIfData] | UnusedDirective
+    StartProfile: Sequence[StartProfileData] | UnusedDirective
+    EndProfile: Sequence[EndProfileData] | UnusedDirective

@@ -59,8 +59,10 @@ SINGLE_STENCIL = """\
                   p_patch%edges%area_edge(je,jb)*fac_bdydiff_v
               ENDDO
             ENDDO
+    !$DSL START PROFILE(name=apply_nabla2_to_vn_in_lateral_boundary)
     !$ACC END PARALLEL LOOP
-    !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)
+    !$DSL END PROFILE()
+    !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; noprofile=True)
     !$DSL END CREATE()
     """
 
