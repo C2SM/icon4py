@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import copy
 from dataclasses import dataclass
 from typing import Callable, Optional, Protocol, Type
 
@@ -264,20 +263,23 @@ class StartStencilDataFactory(DataFactoryBase):
         Raises:
             MissingDirectiveArgumentError: If a required argument is missing in the named_args.
         """
-        try:
-            field_args = copy.copy(named_args)
-            entries_to_remove = (
-                "name",
-                "horizontal_lower",
-                "horizontal_upper",
-                "vertical_lower",
-                "vertical_upper",
-            )
-            list(map(field_args.pop, entries_to_remove))
-        except Exception as e:
-            raise MissingDirectiveArgumentError(
-                f"Missing argument {e} in a StartStencil directive."
-            )
+        field_args = named_args.copy()
+        required_args = (
+            "name",
+            "horizontal_lower",
+            "horizontal_upper",
+            "vertical_lower",
+            "vertical_upper",
+        )
+
+        for arg in required_args:
+            if arg not in field_args:
+                raise MissingDirectiveArgumentError(
+                    f"Missing required argument '{arg}' in a StartStencil directive."
+                )
+            else:
+                field_args.pop(arg)
+
         return field_args
 
     @staticmethod
