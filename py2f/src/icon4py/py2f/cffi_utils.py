@@ -21,7 +21,6 @@ import numpy as np
 from functional.common import Dimension, DimensionKind
 from functional.iterator.embedded import np_as_located_field
 
-from icon4py.common.dimension import KDim, VertexDim
 from icon4py.py2f.typing_utils import parse_annotation
 
 
@@ -99,6 +98,12 @@ def generate_and_compile_cffi_plugin(
     builder.compile(tmpdir=build_path, target=f"lib{plugin_name}.*", verbose=True)
 
 
+class UnknownDimensionException(Exception):
+    """Raised if a Dimension is unknown to the interface generation."""
+
+    pass
+
+
 def to_fields(
     dim_sizes: dict[Dimension, int]
 ):  # pass lengths of dimensions to the decorator??
@@ -109,28 +114,34 @@ def to_fields(
         v_size = None
         h_size = None
         for d in dims:
+            if d not in dim_sizes.keys():
+                raise UnknownDimensionException(
+                    f"size of dimension '{d}' not defined in '{dim_sizes.keys()}'"
+                )
             if d.kind == DimensionKind.VERTICAL:
                 v_size = dim_sizes[d]
             elif d.kind == DimensionKind.HORIZONTAL:
                 h_size = dim_sizes[d]
         return h_size, v_size
 
-    def unpack(ptr, size_x, size_y) -> np.ndarray:
+    def unpack(ptr, size_h, size_v) -> np.ndarray:
         """
-        unpacks a 2d c/fortran field into a numpy array.
+        Unpack a 2d c/fortran field into a numpy array.
 
         :param ptr: c_pointer to the field
-        :param size_x: col size (since its called from fortran)
-        :param size_y: row size
-        :return: a numpy array with shape=(size_y, size_x)
+        :param size_h: length of horizontal dimension
+        :param size_v: length of vertical dimension
+        :return: a numpy array with shape=(size_h, size_v)
         and dtype = ctype of the pointer
         """
-        # for now only 2d, invert for row/column precedence...
-        shape = (size_y, size_x)
+        shape = (size_h, size_v)
         length = np.prod(shape)
         c_type = ffi.getctype(ffi.typeof(ptr).item)
+        # TODO fix dtype handling use SCALARTYPE?
+        mem_size = ffi.sizeof(c_type)
+        mem_size = np.dtype(c_type).itemsize
         ar = np.frombuffer(
-            ffi.buffer(ptr, length * ffi.sizeof(c_type)),
+            ffi.buffer(ptr, length * mem_size),
             dtype=np.dtype(c_type),
             count=-1,
             offset=0,
@@ -143,29 +154,18 @@ def to_fields(
             *args, **kwargs
         ):  # these are the args of the decorated function ie to_fields(func(*args, **kwargs))
             signature = inspect.signature(func)
-            print(
-                f"sizes passed to decorator horizontal = {dim_sizes[VertexDim]}, vertical ={dim_sizes[KDim]}"
-            )
-            print(f"signature of func {signature}")
             parameters: MappingProxyType[str, inspect.Parameter] = signature.parameters
-            print(f"parameters = {parameters}")
-            bind: inspect.BoundArguments = signature.bind(*args, **kwargs)
-
-            arguments: OrderedDict[str, Any] = bind.arguments
-            print(f"arguments = {arguments}")
+            arguments: OrderedDict[str, Any] = signature.bind(*args, **kwargs).arguments
             f_args = []
             for name, argument in arguments.items():
-                # TODO: scalar types, tests, simplify this.
-                print(f"name={name} argument={argument}")
-                annotation = parameters[name].annotation
-                dims, dtype = parse_annotation(annotation)
-                print(
-                    f" type hint of {name} is {annotation}: dims = {dims}, dtype = {dtype}"
-                )
-                (size_h, size_v) = _dim_sizes(dims)
-                ar = unpack(argument, size_h, size_v)
-                field = np_as_located_field(dims)(ar)
-                f_args.append(field)
+                dims, dtype = parse_annotation(parameters[name].annotation)
+                if dims:
+                    (size_h, size_v) = _dim_sizes(dims)
+                    ar = unpack(argument, size_h, size_v)
+                    ar = np_as_located_field(*dims)(ar)
+                else:
+                    ar = argument
+                f_args.append(ar)
             return func(*f_args, **kwargs)
 
         return wrapper

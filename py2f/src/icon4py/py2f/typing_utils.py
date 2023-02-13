@@ -16,7 +16,7 @@ from functional.type_system.type_specifications import ScalarType
 from functional.type_system.type_translation import from_type_hint
 
 
-def parse_annotation(annotation) -> tuple[ScalarType, list[Dimension]]:
+def parse_annotation(annotation) -> tuple[list[Dimension], ScalarType]:
     type_spec = from_type_hint(annotation)
     if isinstance(type_spec, ScalarType):
         dtype = type_spec.kind
