@@ -50,7 +50,7 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.utils import _scale_k, _set_zero_v_k
+from icon4py.state_utils.utils import _scale_k, _set_zero_v_k
 
 
 @program(backend=gtfn_cpu.run_gtfn)

@@ -18,11 +18,16 @@ from functional.ffront.decorator import field_operator, program
 from functional.ffront.fbuiltins import broadcast, maximum, minimum
 from functional.iterator.embedded import np_as_located_field
 
-from icon4py.common.dimension import KDim, Koff, VertexDim
+from icon4py.common.dimension import CellDim, KDim, Koff, VertexDim
 
 
 # TODO fix duplication: duplicated from test testutils/utils.py
 def zero_field(mesh, *dims: Dimension, dtype=float):
+    shapex = tuple(map(lambda x: mesh.size[x], dims))
+    return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
+
+
+def bool_field(mesh, *dims: Dimension, dtype=bool):
     shapex = tuple(map(lambda x: mesh.size[x], dims))
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
@@ -47,6 +52,16 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
 @program
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
+
+
+@field_operator
+def _set_zero_w_k() -> Field[[CellDim, KDim], float]:
+    return broadcast(0.0, (CellDim, KDim))
+
+
+@program
+def set_zero_w_k(field: Field[[CellDim, KDim], float]):
+    _set_zero_w_k(out=field)
 
 
 @field_operator

@@ -19,6 +19,9 @@ from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
     CellDim,
+    E2C2EDim,
+    E2C2EODim,
+    E2CDim,
     EdgeDim,
     V2EDim,
     VertexDim,
@@ -55,3 +58,7 @@ class InterpolationState:
     ]  # factor for green gauss gradient (nproma,4,nblks_c,2)
     geofac_grg_y: Field[[CellDim, C2E2CODim], float]  # TODO combine to tuple
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
+
+    c_lin_e: Field[[EdgeDim, E2CDim], float]
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float]
+    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float]

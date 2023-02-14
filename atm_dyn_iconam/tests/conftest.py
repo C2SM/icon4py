@@ -30,7 +30,7 @@ from icon4py.common.dimension import (
 )
 from icon4py.diffusion.diffusion import DiffusionConfig
 from icon4py.diffusion.horizontal import HorizontalMeshSize
-from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
+from icon4py.state_utils.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
