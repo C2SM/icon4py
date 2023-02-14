@@ -218,8 +218,7 @@ class DeclareStatement(eve.Node):
     def __post_init__(self) -> None:  # type: ignore
         self.declarations = [
             Declaration(variable=k, association=v)
-            for dic in self.declare_data.declarations
-            for k, v in dic.items()
+            for k, v in self.declare_data.declarations.items()
         ]
 
 
@@ -228,7 +227,7 @@ class DeclareStatementGenerator(TemplatedGenerator):
         """
         ! DSL INPUT / OUTPUT FIELDS
         {%- for d in _this_node.declarations %}
-        REAL({{ _this_node.declare_data.kind }}), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
+        {{ _this_node.declare_data.ident_type }}, DIMENSION({{ d.association }}) :: {{ d.variable }}_before
         {%- endfor %}
         LOGICAL :: dsl_verify
         """

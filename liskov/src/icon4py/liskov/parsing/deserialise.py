@@ -37,11 +37,15 @@ from icon4py.liskov.parsing.exceptions import (
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
-from icon4py.liskov.parsing.utils import extract_directive, string_to_bool
+from icon4py.liskov.parsing.utils import (
+    extract_directive,
+    flatten_list_of_dicts,
+    string_to_bool,
+)
 
 
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
-DEFAULT_KIND = "wp"
+DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
 DEFAULT_ACCPRESENT = "false"
 
 logger = setup_logger(__name__)
@@ -147,16 +151,23 @@ class DeclareDataFactory(DataFactoryBase):
     def get_field_dimensions(declarations: dict) -> dict[str, int]:
         return {k: len(v.split(",")) for k, v in declarations.items()}
 
-    def __call__(self, parsed: ts.ParsedDict) -> DeclareData:
-        extracted = extract_directive(parsed["directives"], self.directive_cls)[0]
-        args = parsed["content"]["Declare"]
-        kind = pop_item_from_dict(args[0], "kind", DEFAULT_KIND)
-        return self.dtype(
-            startln=extracted.startln,
-            endln=extracted.endln,
-            declarations=args,
-            kind=kind,
-        )
+    def __call__(self, parsed: ts.ParsedDict) -> list[DeclareData]:
+        deserialised = []
+        extracted = extract_directive(parsed["directives"], self.directive_cls)
+        for i, directive in enumerate(extracted):
+            named_args = parsed["content"]["Declare"][i]
+            ident_type = pop_item_from_dict(
+                named_args, "type", DEFAULT_DECLARE_IDENT_TYPE
+            )
+            deserialised.append(
+                self.dtype(
+                    startln=directive.startln,
+                    endln=directive.endln,
+                    declarations=named_args,
+                    ident_type=ident_type,
+                )
+            )
+        return deserialised
 
 
 @dataclass
@@ -220,8 +231,11 @@ class StartStencilDataFactory(DataFactoryBase):
             List[StartStencilData]: List of StartStencilData objects created from the parsed directives.
         """
         deserialised = []
-        field_dimensions = DeclareDataFactory.get_field_dimensions(
-            parsed["content"]["Declare"][0]
+        field_dimensions = flatten_list_of_dicts(
+            [
+                DeclareDataFactory.get_field_dimensions(dim)
+                for dim in parsed["content"]["Declare"]
+            ]
         )
         directives = extract_directive(parsed["directives"], self.directive_cls)
         for i, directive in enumerate(directives):

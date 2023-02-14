@@ -103,14 +103,15 @@ class IntegrationGenerator(Step):
 
     def _generate_declare(self) -> None:
         """Generate f90 code for declaration statements."""
-        logger.info("Generating DECLARE statement.")
-        self._generate(
-            DeclareStatement,
-            DeclareStatementGenerator,
-            self.directives.Declare.startln,
-            self.directives.Declare.endln,
-            declare_data=self.directives.Declare,
-        )
+        for i, declare in enumerate(self.directives.Declare):
+            logger.info("Generating DECLARE statement.")
+            self._generate(
+                DeclareStatement,
+                DeclareStatementGenerator,
+                self.directives.Declare[i].startln,
+                self.directives.Declare[i].endln,
+                declare_data=declare,
+            )
 
     def _generate_stencil(self) -> None:
         """Generate f90 integration code surrounding a stencil.

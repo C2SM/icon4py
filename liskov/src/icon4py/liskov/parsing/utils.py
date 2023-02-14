@@ -15,6 +15,17 @@ from typing import Sequence, Type
 import icon4py.liskov.parsing.types as ts
 
 
+def flatten_list_of_dicts(list_of_dicts: list[dict]) -> dict:
+    """Flatten a list of dictionaries into a single dictionary."""
+    if not isinstance(list_of_dicts, list):
+        raise TypeError("Input must be a list")
+    for d in list_of_dicts:
+        if not isinstance(d, dict):
+            raise TypeError("Input list must contain dictionaries only")
+
+    return {k: v for d in list_of_dicts for k, v in d.items()}
+
+
 def string_to_bool(string: str) -> bool:
     """Convert a string representation of a boolean to a bool."""
     if string.lower() == "true":

@@ -48,8 +48,8 @@ class FieldAssociationData:
 class DeclareData:
     startln: int
     endln: int
-    declarations: list[dict[str, str]]
-    kind: str
+    declarations: dict[str, str]
+    ident_type: str
 
 
 @dataclass
@@ -106,7 +106,7 @@ class EndStencilData:
 class DeserialisedDirectives:
     StartStencil: Sequence[StartStencilData]
     EndStencil: Sequence[EndStencilData]
-    Declare: DeclareData
+    Declare: Sequence[DeclareData]
     Imports: ImportsData
     StartCreate: StartCreateData
     EndCreate: EndCreateData

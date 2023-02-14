@@ -32,7 +32,7 @@ SINGLE_STENCIL = """\
     !$DSL START CREATE()
 
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; a=nproma,p_patch%nlev,p_patch%nblks_e; &
-    !$DSL         b=nproma,p_patch%nlev,p_patch%nblks_e; kind=vp)
+    !$DSL         b=nproma,p_patch%nlev,p_patch%nblks_e; type=REAL(vp))
 
     !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &

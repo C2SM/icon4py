@@ -78,13 +78,13 @@ class DirectivesScanner(Step):
                             next_line = self._peek_directive(lines, lnumber)
                             if ts.DIRECTIVE_IDENT not in next_line:
                                 raise DirectiveSyntaxError(
-                                    f"Error in directive on line number: {lnumber}\n Invalid use of & in single line "
+                                    f"Error in directive on line number: {lnumber + 1}\n Invalid use of & in single line "
                                     f"directive. "
                                 )
                             continue
                         case _:
                             raise DirectiveSyntaxError(
-                                f"Error in directive on line number: {lnumber}\n Used invalid end of line character."
+                                f"Error in directive on line number: {lnumber + 1}\n Used invalid end of line character."
                             )
         logger.info(f"Scanning for directives at {self.filepath}")
         return directives

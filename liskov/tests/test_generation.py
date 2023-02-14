@@ -74,8 +74,8 @@ def serialised_directives():
     declare_data = DeclareData(
         startln=5,
         endln=6,
-        declarations=[{"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"}],
-        kind="wp",
+        declarations={"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"},
+        ident_type="REAL(wp)",
     )
     imports_data = ImportsData(startln=7, endln=8)
     start_create_data = StartCreateData(startln=9, endln=10)
@@ -87,7 +87,7 @@ def serialised_directives():
     return DeserialisedDirectives(
         StartStencil=[start_stencil_data],
         EndStencil=[end_stencil_data],
-        Declare=declare_data,
+        Declare=[declare_data],
         Imports=imports_data,
         StartCreate=start_create_data,
         EndCreate=end_create_data,
