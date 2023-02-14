@@ -12,15 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import dataclasses
 from dataclasses import dataclass
-from typing import Optional, Protocol, Sequence, runtime_checkable
+from typing import Optional, Sequence
 
 
 class UnusedDirective:
     ...
 
 
-@runtime_checkable
-class CodeGenInput(Protocol):
+@dataclass
+class CodeGenInput:
     startln: int
     endln: int
 
@@ -45,59 +45,52 @@ class FieldAssociationData:
 
 
 @dataclass
-class DeclareData:
-    startln: int
-    endln: int
+class DeclareData(CodeGenInput):
     declarations: dict[str, str]
     ident_type: str
 
 
 @dataclass
-class ImportsData:
-    startln: int
-    endln: int
-
-
-@dataclass
-class StartCreateData(ImportsData):
+class ImportsData(CodeGenInput):
     ...
 
 
 @dataclass
-class EndCreateData(ImportsData):
+class StartCreateData(CodeGenInput):
     ...
 
 
 @dataclass
-class EndIfData(ImportsData):
+class EndCreateData(CodeGenInput):
     ...
 
 
 @dataclass
-class StartProfileData(ImportsData):
+class EndIfData(CodeGenInput):
+    ...
+
+
+@dataclass
+class StartProfileData(CodeGenInput):
     name: str
 
 
 @dataclass
-class EndProfileData(ImportsData):
+class EndProfileData(CodeGenInput):
     ...
 
 
 @dataclass
-class StartStencilData:
+class StartStencilData(CodeGenInput):
     name: str
     fields: list[FieldAssociationData]
     bounds: BoundsData
-    startln: int
-    endln: int
     acc_present: Optional[bool]
 
 
 @dataclass
-class EndStencilData:
+class EndStencilData(CodeGenInput):
     name: str
-    startln: int
-    endln: int
     noendif: Optional[bool]
     noprofile: Optional[bool]
 

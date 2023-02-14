@@ -86,7 +86,7 @@ class IntegrationGenerator(Step):
         code_generator: Type[TemplatedGenerator],
         startln: int,
         endln: int,
-        **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool],
+        **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool] | Any,
     ) -> None:
         """Add a GeneratedCode object to the `generated` attribute with the given source code and line number information.
 

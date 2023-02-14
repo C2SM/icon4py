@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from typing import Callable, Optional, Protocol, Type
+from typing import Any, Callable, Optional, Protocol, Type
 
 import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.codegen.interface import (
@@ -78,14 +78,14 @@ class DirectiveInputFactory(Protocol):
 
 @dataclass
 class DataFactoryBase:
-    directive_cls: ts.ParsedDirective
+    directive_cls: Type[ts.ParsedDirective]
     dtype: Type[CodeGenInput]
 
 
 @dataclass
 class OptionalMultiUseDataFactory(DataFactoryBase):
     def __call__(
-        self, parsed: ts.ParsedDict, **kwargs
+        self, parsed: ts.ParsedDict, **kwargs: Any
     ) -> Type[UnusedDirective] | list[CodeGenInput]:
         extracted = extract_directive(parsed["directives"], self.directive_cls)
         if len(extracted) < 1:
@@ -110,42 +110,42 @@ class RequiredSingleUseDataFactory(DataFactoryBase):
 
 @dataclass
 class StartCreateDataFactory(RequiredSingleUseDataFactory):
-    directive_cls: ts.ParsedDict = ts.StartCreate
-    dtype: Type[CodeGenInput] = StartCreateData
+    directive_cls: Type[ts.ParsedDirective] = ts.StartCreate
+    dtype: Type[StartCreateData] = StartCreateData
 
 
 @dataclass
 class EndCreateDataFactory(RequiredSingleUseDataFactory):
-    directive_cls: ts.ParsedDict = ts.EndCreate
-    dtype: Type[CodeGenInput] = EndCreateData
+    directive_cls: Type[ts.ParsedDirective] = ts.EndCreate
+    dtype: Type[EndCreateData] = EndCreateData
 
 
 @dataclass
 class ImportsDataFactory(RequiredSingleUseDataFactory):
-    directive_cls: ts.ParsedDict = ts.Imports
-    dtype: Type[CodeGenInput] = ImportsData
+    directive_cls: Type[ts.ParsedDirective] = ts.Imports
+    dtype: Type[ImportsData] = ImportsData
 
 
 @dataclass
 class EndIfDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: ts.ParsedDict = ts.EndIf
-    dtype: Type[CodeGenInput] = EndIfData
+    directive_cls: Type[ts.ParsedDirective] = ts.EndIf
+    dtype: Type[EndIfData] = EndIfData
 
 
 @dataclass
 class EndProfileDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: ts.ParsedDict = ts.EndProfile
-    dtype: Type[CodeGenInput] = EndProfileData
+    directive_cls: Type[ts.ParsedDirective] = ts.EndProfile
+    dtype: Type[EndProfileData] = EndProfileData
 
 
-def pop_item_from_dict(dictionary, key, default_value):
+def pop_item_from_dict(dictionary: dict, key: str, default_value: str) -> str:
     return dictionary.pop(key, default_value)
 
 
 @dataclass
 class DeclareDataFactory(DataFactoryBase):
-    directive_cls: ts.ParsedDict = ts.Declare
-    dtype: Type[CodeGenInput] = DeclareData
+    directive_cls: Type[ts.ParsedDirective] = ts.Declare
+    dtype: Type[DeclareData] = DeclareData
 
     @staticmethod
     def get_field_dimensions(declarations: dict) -> dict[str, int]:
@@ -172,8 +172,8 @@ class DeclareDataFactory(DataFactoryBase):
 
 @dataclass
 class StartProfileDataFactory(DataFactoryBase):
-    directive_cls: ts.ParsedDict = ts.StartProfile
-    dtype: Type[CodeGenInput] = StartProfileData
+    directive_cls: Type[ts.ParsedDirective] = ts.StartProfile
+    dtype: Type[StartProfileData] = StartProfileData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartProfileData]:
         deserialised = []
@@ -193,8 +193,8 @@ class StartProfileDataFactory(DataFactoryBase):
 
 @dataclass
 class EndStencilDataFactory(DataFactoryBase):
-    directive_cls: ts.ParsedDict = ts.EndStencil
-    dtype: Type[CodeGenInput] = EndStencilData
+    directive_cls: Type[ts.ParsedDirective] = ts.EndStencil
+    dtype: Type[EndStencilData] = EndStencilData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[EndStencilData]:
         deserialised = []
@@ -218,8 +218,8 @@ class EndStencilDataFactory(DataFactoryBase):
 
 @dataclass
 class StartStencilDataFactory(DataFactoryBase):
-    directive_cls: ts.ParsedDict = ts.StartStencil
-    dtype: Type[CodeGenInput] = StartStencilData
+    directive_cls: Type[ts.ParsedDirective] = ts.StartStencil
+    dtype: Type[StartStencilData] = StartStencilData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
         """Create and return a list of StartStencilData objects from the parsed directives.
