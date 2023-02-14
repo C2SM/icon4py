@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from gt4py.next.common import Field
 
-from icon4py.common.dimension import C2E2CDim, CellDim, KDim
+from icon4py.common.dimension import C2E2CDim, CellDim, ECDim, EdgeDim, KDim
 
 
 @dataclass
@@ -28,3 +28,12 @@ class MetricState:
     zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int]
     zd_diffcoef: Field[[CellDim, KDim], float]
     zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float]
+
+    coeff_gradekin: Field[[ECDim], float]
+    ddqz_z_full_e: Field[[EdgeDim, KDim], float]
+    wgtfac_e: Field[[EdgeDim, KDim], float]
+    ddxn_z_full: Field[[EdgeDim, KDim], float]
+    ddxt_z_full: Field[[EdgeDim, KDim], float]
+    ddqz_z_half: Field[[CellDim, KDim], float]
+    coeff1_dwdz: Field[[CellDim, KDim], float]
+    coeff2_dwdz: Field[[CellDim, KDim], float]

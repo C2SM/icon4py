@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from gt4py.next.common import Field
 
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 
 @dataclass
@@ -34,3 +34,9 @@ class DiagnosticState:
     dwdy: Field[
         [CellDim, KDim], float
     ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
+
+    vt: Field[[EdgeDim, KDim], float]
+    vn_ie: Field[[EdgeDim, KDim], float]
+    w_concorr_c: Field[[CellDim, KDim], float]
+    ddt_w_adv_pc: Field[[CellDim, KDim], float]
+    ddt_vn_apc_pc: Field[[EdgeDim, KDim], float]

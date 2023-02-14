@@ -67,13 +67,13 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import HorizontalMarkerIndex
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.diffusion.utils import (
+from icon4py.state_utils.diagnostic_state import DiagnosticState
+from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
+from icon4py.state_utils.interpolation_state import InterpolationState
+from icon4py.state_utils.metric_state import MetricState
+from icon4py.state_utils.prognostic_state import PrognosticState
+from icon4py.state_utils.utils import (
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
     scale_k,

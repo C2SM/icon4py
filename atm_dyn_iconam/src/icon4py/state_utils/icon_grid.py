@@ -178,6 +178,18 @@ class IconGrid:
             v2ecv_table, EdgeDim, ECVDim, v2ecv_table.shape[1]
         )
 
+    def get_c2e2cO_connectivity(self):
+        table = self.connectivities["c2e2cO"]
+        return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
+
+    def get_e2c2e_connectivity(self):
+        table = self.connectivities["e2c2e"]
+        return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
+
+    def get_e2c2eO_connectivity(self):
+        table = self.connectivities["e2c2eO"]
+        return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
+
 
 class VerticalModelParams:
     def __init__(self, vct_a: Field[[KDim], float], rayleigh_damping_height: float):
@@ -195,6 +207,9 @@ class VerticalModelParams:
                 np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height)
             )
         )
+        self.nflatlev = (
+            1 if self.config else 0
+        )  # according to mo_init_vgrid.f90 line 329
 
     @property
     def index_of_damping_layer(self):
@@ -205,5 +220,9 @@ class VerticalModelParams:
         return self._vct_a
 
     @property
-    def rayleigh_damping_height(self):
+    def rayleigh_damping_height(self) -> float:
         return self._rayleigh_damping_height
+
+    @property
+    def nflatlev(self) -> float:
+        return self.nflatlev

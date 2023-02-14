@@ -52,7 +52,7 @@ def _mo_velocity_advection_stencil_20(
     ddt_vn_adv: Field[[EdgeDim, KDim], float],
     cfl_w_limit: float,
     scalfac_exdiff: float,
-    d_time: float,
+    dtime: float,
 ) -> Field[[EdgeDim, KDim], float]:
     w_con_e = broadcast(0.0, (EdgeDim, KDim))
     difcoef = broadcast(0.0, (EdgeDim, KDim))
@@ -66,8 +66,8 @@ def _mo_velocity_advection_stencil_20(
         (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
         scalfac_exdiff
         * minimum(
-            0.85 - cfl_w_limit * d_time,
-            abs(w_con_e) * d_time / ddqz_z_full_e - cfl_w_limit * d_time,
+            0.85 - cfl_w_limit * dtime,
+            abs(w_con_e) * dtime / ddqz_z_full_e - cfl_w_limit * dtime,
         ),
         difcoef,
     )
@@ -98,7 +98,7 @@ def mo_velocity_advection_stencil_20(
     ddt_vn_adv: Field[[EdgeDim, KDim], float],
     cfl_w_limit: float,
     scalfac_exdiff: float,
-    d_time: float,
+    dtime: float,
 ):
     _mo_velocity_advection_stencil_20(
         levelmask,
@@ -114,6 +114,6 @@ def mo_velocity_advection_stencil_20(
         ddt_vn_adv,
         cfl_w_limit,
         scalfac_exdiff,
-        d_time,
+        dtime,
         out=ddt_vn_adv[:, :-1],
     )

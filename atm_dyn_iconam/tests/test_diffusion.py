@@ -15,13 +15,13 @@ import numpy as np
 import pytest
 
 from icon4py.common.dimension import ECVDim, KDim, VertexDim
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams, VectorTuple
-from icon4py.diffusion.icon_grid import VerticalModelParams
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.diffusion.utils import (
+from icon4py.state_utils.diagnostic_state import DiagnosticState
+from icon4py.state_utils.icon_grid import VerticalModelParams
+from icon4py.state_utils.interpolation_state import InterpolationState
+from icon4py.state_utils.metric_state import MetricState
+from icon4py.state_utils.prognostic_state import PrognosticState
+from icon4py.state_utils.utils import (
     _en_smag_fac_for_zero_nshift,
     _setup_runtime_diff_multfac_vn,
     _setup_smag_limit,
