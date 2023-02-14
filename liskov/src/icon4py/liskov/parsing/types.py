@@ -11,62 +11,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass, field
-from importlib import import_module
-from inspect import getmembers, isclass
 from typing import (
     Any,
-    Dict,
     Protocol,
     Sequence,
-    Tuple,
     Type,
     TypeAlias,
     TypedDict,
-    TypeVar,
     runtime_checkable,
 )
 
 
 DIRECTIVE_IDENT = "!$DSL"
-
-T = TypeVar("T", bound="CheckForDirectiveClasses")
-
-
-class CheckForDirectiveClasses(type):
-    """Metaclass to be used when defining a new class which implements the ParsedDirective protocol.
-
-    This class checks that the required classes in their respective modules are defined
-    according to their naming conventions. When adding a new directive, first a new subclass
-    which implements the ParsedDirective protocol must be defined. Then a corresponding
-    <directive_name>Data, <directive_name>DataFactory, <directive_name>Statement and
-    <directive_name>StatementGenerator class must be defined in their respective module
-    which can be seen in _CLS_REQS.
-    """
-
-    _CLS_REQS = (
-        ("codegen", "interface", "Data"),
-        ("parsing", "deserialise", "DataFactory"),
-        ("codegen", "f90", "Statement"),
-        ("codegen", "f90", "StatementGenerator"),
-    )
-
-    def __new__(
-        mcs: Type[T],
-        name: str,
-        bases: Tuple[Type, ...],
-        namespace: Dict[str, Any],
-        **kwargs: Any,
-    ) -> T:
-        for subpkg, module_name, cls_suffix in mcs._CLS_REQS:
-            module = import_module(f"icon4py.liskov.{subpkg}.{module_name}")
-            expected_cls_name = f"{name}{cls_suffix}"
-            if expected_cls_name not in [
-                cls_name for cls_name, _ in getmembers(module, predicate=isclass)
-            ]:
-                raise NotImplementedError(
-                    f"Required class of name {expected_cls_name} missing in {module}"
-                )
-        return super().__new__(mcs, name, bases, namespace, **kwargs)
 
 
 @runtime_checkable
@@ -115,8 +71,6 @@ class TypedDirective(RawDirective):
 
 @dataclass(eq=False)
 class WithArguments(TypedDirective):
-    # regex enforces default Fortran variable naming standard and includes arithmetic operators and pointer access
-    # https://gcc.gnu.org/onlinedocs/gfortran/Naming-conventions.html
     regex: str = field(default=r"(.+?)=(.+?)", init=False)
 
     def get_content(self) -> dict[str, str]:
@@ -135,32 +89,40 @@ class WithoutArguments(TypedDirective):
         return {}
 
 
-class StartStencil(WithArguments, metaclass=CheckForDirectiveClasses):
+class StartStencil(WithArguments):
     pattern = "START STENCIL"
 
 
-class EndStencil(WithArguments, metaclass=CheckForDirectiveClasses):
+class EndStencil(WithArguments):
     pattern = "END STENCIL"
 
 
-class Declare(WithArguments, metaclass=CheckForDirectiveClasses):
+class Declare(WithArguments):
     pattern = "DECLARE"
 
 
-class Imports(WithoutArguments, metaclass=CheckForDirectiveClasses):
+class Imports(WithoutArguments):
     pattern = "IMPORTS"
 
 
-class StartCreate(WithoutArguments, metaclass=CheckForDirectiveClasses):
+class StartCreate(WithoutArguments):
     pattern = "START CREATE"
 
 
-class EndCreate(WithoutArguments, metaclass=CheckForDirectiveClasses):
+class EndCreate(WithoutArguments):
     pattern = "END CREATE"
 
 
-class EndIf(WithoutArguments, metaclass=CheckForDirectiveClasses):
+class EndIf(WithoutArguments):
     pattern = "ENDIF"
+
+
+class StartProfile(WithArguments):
+    pattern = "START PROFILE"
+
+
+class EndProfile(WithoutArguments):
+    pattern = "END PROFILE"
 
 
 # When adding a new directive this list must be updated.
@@ -172,4 +134,6 @@ SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     StartCreate,
     EndCreate,
     EndIf,
+    StartProfile,
+    EndProfile,
 ]

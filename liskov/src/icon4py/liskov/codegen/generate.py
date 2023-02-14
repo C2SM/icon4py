@@ -25,12 +25,16 @@ from icon4py.liskov.codegen.f90 import (
     EndCreateStatementGenerator,
     EndIfStatement,
     EndIfStatementGenerator,
+    EndProfileStatement,
+    EndProfileStatementGenerator,
     EndStencilStatement,
     EndStencilStatementGenerator,
     ImportsStatement,
     ImportsStatementGenerator,
     StartCreateStatement,
     StartCreateStatementGenerator,
+    StartProfileStatement,
+    StartProfileStatementGenerator,
     StartStencilStatement,
     StartStencilStatementGenerator,
     generate_fortran_code,
@@ -73,6 +77,7 @@ class IntegrationGenerator(Step):
         self._generate_declare()
         self._generate_stencil()
         self._generate_endif()
+        self._generate_profile()
         return self.generated
 
     def _generate(
@@ -81,7 +86,7 @@ class IntegrationGenerator(Step):
         code_generator: Type[TemplatedGenerator],
         startln: int,
         endln: int,
-        **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool],
+        **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool] | Any,
     ) -> None:
         """Add a GeneratedCode object to the `generated` attribute with the given source code and line number information.
 
@@ -98,14 +103,15 @@ class IntegrationGenerator(Step):
 
     def _generate_declare(self) -> None:
         """Generate f90 code for declaration statements."""
-        logger.info("Generating DECLARE statement.")
-        self._generate(
-            DeclareStatement,
-            DeclareStatementGenerator,
-            self.directives.Declare.startln,
-            self.directives.Declare.endln,
-            declare_data=self.directives.Declare,
-        )
+        for i, declare in enumerate(self.directives.Declare):
+            logger.info("Generating DECLARE statement.")
+            self._generate(
+                DeclareStatement,
+                DeclareStatementGenerator,
+                self.directives.Declare[i].startln,
+                self.directives.Declare[i].endln,
+                declare_data=declare,
+            )
 
     def _generate_stencil(self) -> None:
         """Generate f90 integration code surrounding a stencil.
@@ -132,6 +138,7 @@ class IntegrationGenerator(Step):
                 stencil_data=stencil,
                 profile=self.profile,
                 noendif=self.directives.EndStencil[i].noendif,
+                noprofile=self.directives.EndStencil[i].noprofile,
             )
 
     def _generate_imports(self) -> None:
@@ -173,4 +180,27 @@ class IntegrationGenerator(Step):
                     EndIfStatementGenerator,
                     endif.startln,
                     endif.endln,
+                )
+
+    def _generate_profile(self) -> None:
+        """Generate additional nvtx profiling statements."""
+        if self.directives.StartProfile != UnusedDirective:
+            for start in self.directives.StartProfile:  # type: ignore
+                logger.info("Generating nvtx start statement.")
+                self._generate(
+                    StartProfileStatement,
+                    StartProfileStatementGenerator,
+                    start.startln,
+                    start.endln,
+                    name=start.name,
+                )
+
+        if self.directives.EndProfile != UnusedDirective:
+            for end in self.directives.EndProfile:  # type: ignore
+                logger.info("Generating nvtx end statement.")
+                self._generate(
+                    EndProfileStatement,
+                    EndProfileStatementGenerator,
+                    end.startln,
+                    end.endln,
                 )

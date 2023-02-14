@@ -116,7 +116,7 @@ class DirectiveSemanticsValidator:
         """
         repeated = remove_directive_types(
             [d for d in directives if directives.count(d) > 1],
-            [ts.StartStencil, ts.EndStencil, ts.EndIf],
+            [ts.StartStencil, ts.EndStencil, ts.EndIf, ts.EndProfile, ts.StartProfile],
         )
         if repeated:
             pretty_printed = " ".join([print_parsed_directive(d) for d in repeated])

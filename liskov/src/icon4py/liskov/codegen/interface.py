@@ -12,14 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import dataclasses
 from dataclasses import dataclass
-from typing import Optional, Protocol, Sequence
+from typing import Optional, Sequence
 
 
 class UnusedDirective:
     ...
 
 
-class CodeGenInput(Protocol):
+@dataclass
+class CodeGenInput:
     startln: int
     endln: int
 
@@ -44,53 +45,64 @@ class FieldAssociationData:
 
 
 @dataclass
-class DeclareData:
-    startln: int
-    endln: int
-    declarations: list[dict[str, str]]
+class DeclareData(CodeGenInput):
+    declarations: dict[str, str]
+    ident_type: str
 
 
 @dataclass
-class ImportsData:
-    startln: int
-    endln: int
-
-
-class StartCreateData(ImportsData):
-    ...
-
-
-class EndCreateData(ImportsData):
-    ...
-
-
-class EndIfData(ImportsData):
+class ImportsData(CodeGenInput):
     ...
 
 
 @dataclass
-class StartStencilData:
+class StartCreateData(CodeGenInput):
+    ...
+
+
+@dataclass
+class EndCreateData(CodeGenInput):
+    ...
+
+
+@dataclass
+class EndIfData(CodeGenInput):
+    ...
+
+
+@dataclass
+class StartProfileData(CodeGenInput):
+    name: str
+
+
+@dataclass
+class EndProfileData(CodeGenInput):
+    ...
+
+
+@dataclass
+class StartStencilData(CodeGenInput):
     name: str
     fields: list[FieldAssociationData]
     bounds: BoundsData
-    startln: int
-    endln: int
+    acc_present: Optional[bool]
 
 
 @dataclass
-class EndStencilData:
+class EndStencilData(CodeGenInput):
     name: str
-    startln: int
-    endln: int
     noendif: Optional[bool]
+    noprofile: Optional[bool]
 
 
 @dataclass
 class DeserialisedDirectives:
     StartStencil: Sequence[StartStencilData]
     EndStencil: Sequence[EndStencilData]
-    Declare: DeclareData
+    Declare: Sequence[DeclareData]
     Imports: ImportsData
     StartCreate: StartCreateData
     EndCreate: EndCreateData
     EndIf: Sequence[EndIfData] | UnusedDirective
+    StartProfile: Sequence[StartProfileData] | UnusedDirective
+    EndProfile: Sequence[EndProfileData] | UnusedDirective

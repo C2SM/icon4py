@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import copy
-from typing import Callable, Optional, Protocol, Type
+from dataclasses import dataclass
+from typing import Any, Callable, Optional, Protocol, Type
 
 import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.codegen.interface import (
@@ -22,10 +22,12 @@ from icon4py.liskov.codegen.interface import (
     DeserialisedDirectives,
     EndCreateData,
     EndIfData,
+    EndProfileData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
     StartCreateData,
+    StartProfileData,
     StartStencilData,
     UnusedDirective,
 )
@@ -35,81 +37,18 @@ from icon4py.liskov.parsing.exceptions import (
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
-from icon4py.liskov.parsing.utils import extract_directive, string_to_bool
+from icon4py.liskov.parsing.utils import (
+    extract_directive,
+    flatten_list_of_dicts,
+    string_to_bool,
+)
 
+
+TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
+DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
+DEFAULT_ACCPRESENT = "false"
 
 logger = setup_logger(__name__)
-
-
-class DirectiveInputFactory(Protocol):
-    def __call__(self, parsed: ts.ParsedDict) -> list[CodeGenInput] | CodeGenInput:
-        ...
-
-
-class StartCreateDataFactory:
-    def __call__(self, parsed: ts.ParsedDict) -> StartCreateData:
-        extracted = extract_directive(parsed["directives"], ts.StartCreate)[0]
-        return StartCreateData(startln=extracted.startln, endln=extracted.endln)
-
-
-class EndCreateDataFactory:
-    def __call__(self, parsed: ts.ParsedDict) -> EndCreateData:
-        extracted = extract_directive(parsed["directives"], ts.EndCreate)[0]
-        return EndCreateData(startln=extracted.startln, endln=extracted.endln)
-
-
-class ImportsDataFactory:
-    def __call__(self, parsed: ts.ParsedDict) -> ImportsData:
-        extracted = extract_directive(parsed["directives"], ts.Imports)[0]
-        return ImportsData(startln=extracted.startln, endln=extracted.endln)
-
-
-class EndIfDataFactory:
-    def __call__(
-        self, parsed: ts.ParsedDict
-    ) -> Type[UnusedDirective] | list[EndIfData]:
-        extracted = extract_directive(parsed["directives"], ts.EndIf)
-        if len(extracted) < 1:
-            return UnusedDirective
-        else:
-            deserialised = []
-            for directive in extracted:
-                deserialised.append(
-                    EndIfData(startln=directive.startln, endln=directive.endln)
-                )
-            return deserialised
-
-
-class DeclareDataFactory:
-    @staticmethod
-    def get_field_dimensions(declarations: dict) -> dict[str, int]:
-        return {k: len(v.split(",")) for k, v in declarations.items()}
-
-    def __call__(self, parsed: ts.ParsedDict) -> DeclareData:
-        extracted = extract_directive(parsed["directives"], ts.Declare)[0]
-        declarations = parsed["content"]["Declare"]
-        return DeclareData(
-            startln=extracted.startln, endln=extracted.endln, declarations=declarations
-        )
-
-
-class EndStencilDataFactory:
-    def __call__(self, parsed: ts.ParsedDict) -> list[EndStencilData]:
-        deserialised = []
-        extracted = extract_directive(parsed["directives"], ts.EndStencil)
-        for i, directive in enumerate(extracted):
-            named_args = parsed["content"]["EndStencil"][i]
-            stencil_name = _extract_stencil_name(named_args, directive)
-            noendif = _extract_boolean_kwarg(named_args, "noendif")
-            deserialised.append(
-                EndStencilData(
-                    name=stencil_name,
-                    startln=directive.startln,
-                    endln=directive.endln,
-                    noendif=noendif,
-                )
-            )
-        return deserialised
 
 
 def _extract_stencil_name(named_args: dict, directive: ts.ParsedDirective) -> str:
@@ -130,8 +69,157 @@ def _extract_boolean_kwarg(args: dict, arg_name: str) -> Optional[bool]:
     return False
 
 
-class StartStencilDataFactory:
-    TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
+class DirectiveInputFactory(Protocol):
+    def __call__(
+        self, parsed: ts.ParsedDict
+    ) -> list[CodeGenInput] | CodeGenInput | Type[UnusedDirective]:
+        ...
+
+
+@dataclass
+class DataFactoryBase:
+    directive_cls: Type[ts.ParsedDirective]
+    dtype: Type[CodeGenInput]
+
+
+@dataclass
+class OptionalMultiUseDataFactory(DataFactoryBase):
+    def __call__(
+        self, parsed: ts.ParsedDict, **kwargs: Any
+    ) -> Type[UnusedDirective] | list[CodeGenInput]:
+        extracted = extract_directive(parsed["directives"], self.directive_cls)
+        if len(extracted) < 1:
+            return UnusedDirective
+        else:
+            deserialised = []
+            for directive in extracted:
+                deserialised.append(
+                    self.dtype(
+                        startln=directive.startln, endln=directive.endln, **kwargs
+                    )
+                )
+            return deserialised
+
+
+@dataclass
+class RequiredSingleUseDataFactory(DataFactoryBase):
+    def __call__(self, parsed: ts.ParsedDict) -> CodeGenInput:
+        extracted = extract_directive(parsed["directives"], self.directive_cls)[0]
+        return self.dtype(startln=extracted.startln, endln=extracted.endln)
+
+
+@dataclass
+class StartCreateDataFactory(RequiredSingleUseDataFactory):
+    directive_cls: Type[ts.ParsedDirective] = ts.StartCreate
+    dtype: Type[StartCreateData] = StartCreateData
+
+
+@dataclass
+class EndCreateDataFactory(RequiredSingleUseDataFactory):
+    directive_cls: Type[ts.ParsedDirective] = ts.EndCreate
+    dtype: Type[EndCreateData] = EndCreateData
+
+
+@dataclass
+class ImportsDataFactory(RequiredSingleUseDataFactory):
+    directive_cls: Type[ts.ParsedDirective] = ts.Imports
+    dtype: Type[ImportsData] = ImportsData
+
+
+@dataclass
+class EndIfDataFactory(OptionalMultiUseDataFactory):
+    directive_cls: Type[ts.ParsedDirective] = ts.EndIf
+    dtype: Type[EndIfData] = EndIfData
+
+
+@dataclass
+class EndProfileDataFactory(OptionalMultiUseDataFactory):
+    directive_cls: Type[ts.ParsedDirective] = ts.EndProfile
+    dtype: Type[EndProfileData] = EndProfileData
+
+
+def pop_item_from_dict(dictionary: dict, key: str, default_value: str) -> str:
+    return dictionary.pop(key, default_value)
+
+
+@dataclass
+class DeclareDataFactory(DataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = ts.Declare
+    dtype: Type[DeclareData] = DeclareData
+
+    @staticmethod
+    def get_field_dimensions(declarations: dict) -> dict[str, int]:
+        return {k: len(v.split(",")) for k, v in declarations.items()}
+
+    def __call__(self, parsed: ts.ParsedDict) -> list[DeclareData]:
+        deserialised = []
+        extracted = extract_directive(parsed["directives"], self.directive_cls)
+        for i, directive in enumerate(extracted):
+            named_args = parsed["content"]["Declare"][i]
+            ident_type = pop_item_from_dict(
+                named_args, "type", DEFAULT_DECLARE_IDENT_TYPE
+            )
+            deserialised.append(
+                self.dtype(
+                    startln=directive.startln,
+                    endln=directive.endln,
+                    declarations=named_args,
+                    ident_type=ident_type,
+                )
+            )
+        return deserialised
+
+
+@dataclass
+class StartProfileDataFactory(DataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = ts.StartProfile
+    dtype: Type[StartProfileData] = StartProfileData
+
+    def __call__(self, parsed: ts.ParsedDict) -> list[StartProfileData]:
+        deserialised = []
+        extracted = extract_directive(parsed["directives"], self.directive_cls)
+        for i, directive in enumerate(extracted):
+            named_args = parsed["content"]["StartProfile"][i]
+            stencil_name = _extract_stencil_name(named_args, directive)
+            deserialised.append(
+                self.dtype(
+                    name=stencil_name,
+                    startln=directive.startln,
+                    endln=directive.endln,
+                )
+            )
+        return deserialised
+
+
+@dataclass
+class EndStencilDataFactory(DataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = ts.EndStencil
+    dtype: Type[EndStencilData] = EndStencilData
+
+    def __call__(self, parsed: ts.ParsedDict) -> list[EndStencilData]:
+        deserialised = []
+        extracted = extract_directive(parsed["directives"], self.directive_cls)
+        for i, directive in enumerate(extracted):
+            named_args = parsed["content"]["EndStencil"][i]
+            stencil_name = _extract_stencil_name(named_args, directive)
+            noendif = _extract_boolean_kwarg(named_args, "noendif")
+            noprofile = _extract_boolean_kwarg(named_args, "noprofile")
+            deserialised.append(
+                self.dtype(
+                    name=stencil_name,
+                    startln=directive.startln,
+                    endln=directive.endln,
+                    noendif=noendif,
+                    noprofile=noprofile,
+                )
+            )
+        return deserialised
+
+
+@dataclass
+class StartStencilDataFactory(DataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = ts.StartStencil
+    dtype: Type[StartStencilData] = StartStencilData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
         """Create and return a list of StartStencilData objects from the parsed directives.
@@ -143,24 +231,31 @@ class StartStencilDataFactory:
             List[StartStencilData]: List of StartStencilData objects created from the parsed directives.
         """
         deserialised = []
-        field_dimensions = DeclareDataFactory.get_field_dimensions(
-            parsed["content"]["Declare"][0]
+        field_dimensions = flatten_list_of_dicts(
+            [
+                DeclareDataFactory.get_field_dimensions(dim)
+                for dim in parsed["content"]["Declare"]
+            ]
         )
-        directives = extract_directive(parsed["directives"], ts.StartStencil)
+        directives = extract_directive(parsed["directives"], self.directive_cls)
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["StartStencil"][i]
+            acc_present = string_to_bool(
+                pop_item_from_dict(named_args, "accpresent", DEFAULT_ACCPRESENT)
+            )
             stencil_name = _extract_stencil_name(named_args, directive)
             bounds = self._make_bounds(named_args)
             fields = self._make_fields(named_args, field_dimensions)
             fields_w_tolerance = self._update_tolerances(named_args, fields)
 
             deserialised.append(
-                StartStencilData(
+                self.dtype(
                     name=stencil_name,
                     fields=fields_w_tolerance,
                     bounds=bounds,
                     startln=directive.startln,
                     endln=directive.endln,
+                    acc_present=acc_present,
                 )
             )
         return deserialised
@@ -196,31 +291,35 @@ class StartStencilDataFactory:
         Raises:
             MissingDirectiveArgumentError: If a required argument is missing in the named_args.
         """
-        try:
-            field_args = copy.copy(named_args)
-            entries_to_remove = (
-                "name",
-                "horizontal_lower",
-                "horizontal_upper",
-                "vertical_lower",
-                "vertical_upper",
-            )
-            list(map(field_args.pop, entries_to_remove))
-        except Exception as e:
-            raise MissingDirectiveArgumentError(
-                f"Missing argument {e} in a StartStencil directive."
-            )
+        field_args = named_args.copy()
+        required_args = (
+            "name",
+            "horizontal_lower",
+            "horizontal_upper",
+            "vertical_lower",
+            "vertical_upper",
+        )
+
+        for arg in required_args:
+            if arg not in field_args:
+                raise MissingDirectiveArgumentError(
+                    f"Missing required argument '{arg}' in a StartStencil directive."
+                )
+            else:
+                field_args.pop(arg)
+
         return field_args
 
+    @staticmethod
     def _make_field_associations(
-        self, field_args: dict[str, str], dimensions: dict
+        field_args: dict[str, str], dimensions: dict
     ) -> list[FieldAssociationData]:
         """Create a list of FieldAssociation objects."""
         fields = []
         for field_name, association in field_args.items():
 
             # skipped as handled by _update_field_tolerances
-            if any([field_name.endswith(tol) for tol in self.TOLERANCE_ARGS]):
+            if any([field_name.endswith(tol) for tol in TOLERANCE_ARGS]):
                 continue
 
             field_association_data = FieldAssociationData(
@@ -232,12 +331,13 @@ class StartStencilDataFactory:
             fields.append(field_association_data)
         return fields
 
+    @staticmethod
     def _update_tolerances(
-        self, named_args: dict, fields: list[FieldAssociationData]
+        named_args: dict, fields: list[FieldAssociationData]
     ) -> list[FieldAssociationData]:
         """Set relative and absolute tolerance for a given field if set in the directives."""
         for field_name, association in named_args.items():
-            for tol in self.TOLERANCE_ARGS:
+            for tol in TOLERANCE_ARGS:
 
                 _tol = f"_{tol}"
 
@@ -251,7 +351,6 @@ class StartStencilDataFactory:
 
 
 class DirectiveDeserialiser(Step):
-
     _FACTORIES: dict[str, Callable] = {
         "StartCreate": StartCreateDataFactory(),
         "EndCreate": EndCreateDataFactory(),
@@ -260,6 +359,8 @@ class DirectiveDeserialiser(Step):
         "StartStencil": StartStencilDataFactory(),
         "EndStencil": EndStencilDataFactory(),
         "EndIf": EndIfDataFactory(),
+        "StartProfile": StartProfileDataFactory(),
+        "EndProfile": EndProfileDataFactory(),
     }
 
     def __call__(self, directives: ts.ParsedDict) -> DeserialisedDirectives:
