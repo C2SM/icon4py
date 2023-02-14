@@ -33,7 +33,7 @@ def apply_nabla2_and_nabla4_global_to_vn_numpy(
     diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
     vn = (
         vn
-        + area_edge * kh_smag_e * z_nabla2_e
+        + area_edge * ( kh_smag_e * z_nabla2_e
         - diff_multfac_vn * z_nabla4_e2 * area_edge
     )
     return vn
