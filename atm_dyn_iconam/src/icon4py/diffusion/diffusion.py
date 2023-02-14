@@ -81,7 +81,7 @@ VectorTuple = namedtuple("VectorTuple", "x y")
 
 class DiffusionConfig:
     """
-    Contains necessary parameter to configure a diffusion run.
+    Contains necessafry parameter to configure a diffusion run.
 
     Encapsulates namelist parameters and derived parameters.
     Values should be read from configuration.
@@ -105,10 +105,12 @@ class DiffusionConfig:
         n_substeps: int = 5,
         zdiffu_t: bool = True,
         hdiff_rcf: bool = True,
-        velocity_boundary_diffusion_denom: float = 200.0,
+        velocity_boundary_diffusion_denominator: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
+        type_sher:int = 2,
+        tkeshs = True,
     ):
 
         # parameters from namelist diffusion_nml
@@ -153,6 +155,10 @@ class DiffusionConfig:
         """
         If True, compute 3D Smagorinsky diffusion coefficient.
 
+        Defaults to False.
+        ('True' is not implemented! this option is most likely going to disappear, since there is
+        no experiment in ICON repository that sets it to True??)
+
         Called `lsmag_3d` in in mo_diffusion_nml.f90
         """
 
@@ -163,7 +169,7 @@ class DiffusionConfig:
         Called `itype_vn_diffu` in in mo_diffusion_nml.f90
         """
 
-        self.type_t_diffu = type_t_diffu
+        self.type_t_diffu: int = type_t_diffu
         """
         Options for discretizing the Smagorinsky temperature diffusion.
 
@@ -210,7 +216,7 @@ class DiffusionConfig:
         Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90.
         """
 
-        self.lhdiff_rcf: bool = hdiff_rcf
+        self.hdiff_rcf: bool = hdiff_rcf
         """
         If True, compute horizontal diffusion only at the large time step.
 
@@ -228,7 +234,7 @@ class DiffusionConfig:
         """
 
         self.velocity_boundary_diffusion_denominator: float = (
-            velocity_boundary_diffusion_denom
+            velocity_boundary_diffusion_denominator
         )
         """
         Denominator for velocity boundary diffusion.
@@ -255,6 +261,22 @@ class DiffusionConfig:
         Called `nudge_efold_width` in mo_interpol_nml.f90
         """
 
+        #mo_turbdiff_nml.f90
+        self.type_sher: int = type_sher
+        """
+        Type of shear forcing used in turbulence
+
+        Called 'itype_sher' in mo_turbdiff_nml.f89
+        """
+        self.tkesh: bool = tkeshs
+        """
+        Whether or not to consider separ. horiz. shear production for TKE.
+
+        Default is True.
+
+        Called 'ltkeshs' in mo_turbdiff_nml.f90
+        """
+
         self._validate()
 
     def _validate(self):
@@ -277,6 +299,15 @@ class DiffusionConfig:
             raise NotImplementedError(
                 "zdiffu_t = False is not implemented (leaves out stencil_15)"
             )
+
+        if self.compute_3d_smag_coeff:
+            raise NotImplementedError(
+                "'compute_3d_smag_coeff' (lsmag_3d) is not implemented"
+            )
+
+        if not self.type_sher == 2:
+            raise NotImplementedError(f"type_sher = {self.type_sher} is not supported: "
+                                      f"only supporting type 2")
 
     def substep_as_float(self):
         return float(self.ndyn_substeps)
@@ -316,6 +347,10 @@ class DiffusionParams:
         above sea level with 4 height sections.
 
         It is calculated/used only in the case of diffusion_type 3 or 5
+
+        Returns:
+            smagorinski_factor: tuple containing (hdiff_smag_fac, hdiff_smag_fac2, hdiff_smag_fac3, hdiff_smag_fac4) from mo_diffusion_nml.f90
+            smagorinski_height: tuple containing (hdiff_smag_z, hdiff_smag_z2, hdiff_smag_z3, hdiff_smag_z4) from mo_diffusion_nml.f90
         """
         match config.diffusion_type:
             case 5:
@@ -438,7 +473,7 @@ class Diffusion:
         self.fac_bdydiff_v: float = (
             math.sqrt(config.substep_as_float())
             / config.velocity_boundary_diffusion_denominator
-            if config.lhdiff_rcf
+            if config.hdiff_rcf
             else 1.0 / config.velocity_boundary_diffusion_denominator
         )
 
@@ -568,6 +603,11 @@ class Diffusion:
             HorizontalMarkerIndex.nudging(CellDim),
             HorizontalMarkerIndex.local(CellDim),
         )
+        cell_startindex_nudging_plus1, _ = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.nudging(CellDim) + 1,
+            HorizontalMarkerIndex.local(CellDim),
+        )
 
         (
             cell_startindex_interior,
@@ -688,6 +728,7 @@ class Diffusion:
                 local_horizontal_edge_index=self.horizontal_edge_index,
                 cell_startindex_interior=cell_startindex_interior,
                 cell_startindex_nudging=cell_startindex_nudging,
+                cell_startindex_nudging_plus1 = cell_startindex_nudging_plus1,
                 cell_endindex_local_plus1=cell_endindex_local_plus1,
                 cell_endindex_local=cell_endindex_local,
                 edge_startindex_nudging_plus1=edge_startindex_nudging_plus1,
@@ -950,7 +991,7 @@ class Diffusion:
             interior_idx=cell_start_interior,  # h end index for stencil_09 and stencil_10
             halo_idx=cell_end_local,  # h end index for stencil_09 and stencil_10,
             horizontal_start=cell_start_nudging,  # h start index for stencil_07 and stencil_08
-            horizontal_end=cell_end_local_plus1,  # h end index for stencil_07 and stencil_08
+            horizontal_end=cell_end_local,  # h end index for stencil_07 and stencil_08
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={

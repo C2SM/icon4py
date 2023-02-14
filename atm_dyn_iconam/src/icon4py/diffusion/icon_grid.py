@@ -23,13 +23,17 @@ from icon4py.diffusion.horizontal import HorizontalMeshSize
 
 
 class VerticalMeshConfig:
-    def __init__(self, num_lev: int):
+    def __init__(self, num_lev: int, nshift: int = 0):
         self._num_lev = num_lev
+        self._nshift = nshift
 
     @property
     def num_lev(self) -> int:
         return self._num_lev
 
+    @property
+    def nshift(self) -> int:
+        return self._nshift
 
 class MeshConfig:
     def __init__(
@@ -39,7 +43,6 @@ class MeshConfig:
         limited_area=True,
     ):
         self._vertical = vertical_config
-        self._n_shift_total = 0
         self._limited_area = limited_area
         self._horizontal = horizontal_config
 
@@ -53,7 +56,7 @@ class MeshConfig:
 
     @property
     def n_shift_total(self):
-        return self._n_shift_total
+        return self._vertical.nshift
 
     @property
     def num_vertices(self):
@@ -167,7 +170,7 @@ class IconGrid:
         return self.get_e2v_connectivity()
 
     def get_e2c2v_size(self):
-        self.connectivities["e2v"].shape[1]
+        return self.connectivities["e2v"].shape[1]
 
     def get_v2e_connectivity(self):
         table = self.connectivities["v2e"]

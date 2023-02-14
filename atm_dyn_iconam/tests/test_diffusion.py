@@ -226,7 +226,7 @@ def test_diffusion_init(
 ):
     savepoint = savepoint_init
     config = r04b09_diffusion_config
-    additional_parameters = DiffusionParams(config)
+    diffusion_params = DiffusionParams(config)
     vertical_params = VerticalModelParams(savepoint.vct_a(), damping_height)
 
     meta = savepoint.get_metadata("nlev", "linit", "date")
@@ -253,6 +253,7 @@ def test_diffusion_init(
         zd_intcoef=savepoint.zd_intcoef(),
         zd_vertidx=savepoint.zd_vertidx(),
         zd_diffcoef=savepoint.zd_diffcoef(),
+        zd_indlist=None
     )
 
     diffusion = Diffusion()
@@ -260,13 +261,13 @@ def test_diffusion_init(
         grid=icon_grid,
         vertical_params=vertical_params,
         config=config,
-        params=additional_parameters,
+        params=diffusion_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
     )
 
     assert diffusion.diff_multfac_w == min(
-        1.0 / 48.0, additional_parameters.K4W * config.substep_as_float()
+        1.0 / 48.0, diffusion_params.K4W * config.substep_as_float()
     )
 
     assert np.allclose(0.0, np.asarray(diffusion.v_vert))
@@ -278,23 +279,23 @@ def test_diffusion_init(
     expected_smag_limit = smag_limit_numpy(
         diff_multfac_vn_numpy,
         shape_k,
-        additional_parameters.K4,
+        diffusion_params.K4,
         config.substep_as_float(),
     )
 
     assert (
         diffusion.smag_offset
-        == 0.25 * additional_parameters.K4 * config.substep_as_float()
+        == 0.25 * diffusion_params.K4 * config.substep_as_float()
     )
     assert np.allclose(expected_smag_limit, diffusion.smag_limit)
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(
-        shape_k, additional_parameters.K4, config.substep_as_float()
+        shape_k, diffusion_params.K4, config.substep_as_float()
     )
     assert np.allclose(expected_diff_multfac_vn, diffusion.diff_multfac_vn)
     expected_enh_smag_fac = enhanced_smagorinski_factor_numpy(
-        additional_parameters.smagorinski_factor,
-        additional_parameters.smagorinski_height,
+        diffusion_params.smagorinski_factor,
+        diffusion_params.smagorinski_height,
         savepoint.vct_a(),
     )
     assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))
@@ -377,6 +378,9 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         zd_intcoef=savepoint.zd_intcoef(),
         zd_vertidx=savepoint.zd_vertidx(),
         zd_diffcoef=savepoint.zd_diffcoef(),
+        # TODO fix
+        zd_indlist = None,
+        zd_listdim = 0
     )
     diffusion = Diffusion()
     diffusion.init(
@@ -419,6 +423,9 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         zd_intcoef=savepoint.zd_intcoef(),
         zd_vertidx=savepoint.zd_vertidx(),
         zd_diffcoef=savepoint.zd_diffcoef(),
+        # TODO fix
+        zd_indlist=None,
+        zd_listdim=0
     )
 
     diffusion = Diffusion()
@@ -466,6 +473,9 @@ def test_run_diffusion_single_step(
         zd_intcoef=sp.zd_intcoef(),
         zd_vertidx=sp.zd_vertidx(),
         zd_diffcoef=sp.zd_diffcoef(),
+        # TODO fix
+        zd_indlist=None,
+        zd_listdim=0
     )
 
     diffusion = Diffusion(run_program=True)

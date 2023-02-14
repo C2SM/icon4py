@@ -183,7 +183,7 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
         zdiffu_t=True,
-        velocity_boundary_diffusion_denom=150.0,
+        velocity_boundary_diffusion_denominator=150.0,
         max_nudging_coeff=0.075,
     )
 

@@ -31,8 +31,9 @@ from icon4py.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
 )
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
+from icon4py.diffusion.horizontal import CellParams, EdgeParams, HorizontalMeshSize
+from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams, MeshConfig, \
+    VerticalMeshConfig
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
@@ -44,11 +45,34 @@ diffusion: Diffusion(run_program=True)
 
 @CffiMethod.register
 def diffusion_init(
+    nproma: int,
+    nlev:int,
+    n_shift_total: int,
+    n_dyn_substeps: int,
+    hdiff_order: int,
+    type_vn_diffu:int,
+    type_t_diffu:int,
+    hdiff_smag_fac: float,
+    hdiff_efdt_ratio: float,
+    lhdiff_temp: bool,
+    lhdiff_rcf: bool,
+    lhdiff_w:bool,
+    l_zdiffu_t: bool,
+    denom_diffu_v: float,
+    lsmag_3d: bool,
+    nudge_max_coeff: float,
+    l_limited_area: bool,
+    ltimer: bool,
+    lfeedback: bool,
+    lvert_nest: bool,
+    type_sher: int,
+    ltkeshs: bool,
     vct_a: Field[[KDim], float],
-    nrdmax: float,  # in config
+    nrdmax: float,
     theta_ref_mc: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     mask_hdiff: Field[[CellDim, KDim], int],
+    zd_indlist: Field[[CellDim, C2E2CDim, KDim], int],
     zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int],
     zd_diffcoef: Field[[CellDim, KDim], float],
     zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float],
@@ -80,7 +104,39 @@ def diffusion_init(
     Fortran ICON Diffusion component (aka Diffusion granule)
 
     """
-    grid = IconGrid()  # TODO where to get this from
+    #TODO set up grid from input fields
+    # TODO set up configuration from input fields
+    config: DiffusionConfig = DiffusionConfig(diffusion_type=hdiff_order,
+                                              type_t_diffu=type_t_diffu,
+                                              type_vn_diffu=type_vn_diffu,
+                                              smagorinski_scaling_factor=hdiff_smag_fac,
+                                              hdiff_efdt_ratio=hdiff_efdt_ratio,
+                                              max_nudging_coeff=nudge_max_coeff,
+                                              velocity_boundary_diffusion_denominator=denom_diffu_v,
+                                              hdiff_rcf=lhdiff_rcf,
+                                              hdiff_w = lhdiff_w,
+                                              hdiff_temp = lhdiff_temp,
+                                              zdiffu_t = l_zdiffu_t,
+                                              type_sher=type_sher,
+                                              tkeshs=ltkeshs,
+                                              n_substeps=n_dyn_substeps,
+                                              smag_3d=lsmag_3d,
+
+    )
+    horizontal_size = HorizontalMeshSize(num_cells=nproma,
+                                         num_vertices = nproma,
+                                         num_edges=nproma)
+    vertical_size = VerticalMeshConfig(num_lev=nlev, nshift=n_shift_total)
+    mesh_config = MeshConfig(
+        horizontal_config=horizontal_size,
+        vertical_config=vertical_size,
+        limited_area=l_limited_area
+    )
+
+    grid = IconGrid(config=mesh_config,
+
+    )
+
     edges_params = EdgeParams(
         tangent_orientation=tangent_orientation,
         primal_edge_lengths=primal_edge_lengths,
@@ -94,10 +150,15 @@ def diffusion_init(
     )
     cell_params = CellParams(cell_areas)
     vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=nrdmax)
-    config: DiffusionConfig = DiffusionConfig(grid, vertical_params)
     derived_diffusion_params = DiffusionParams(config)
     metric_state = MetricState(
-        theta_ref_mc, wgtfac_c, mask_hdiff, zd_vertidx, zd_diffcoef, zd_intcoef
+        theta_ref_mc=theta_ref_mc,
+        wgtfac_c=wgtfac_c,
+        mask_hdiff=mask_hdiff,
+        zd_vertidx=zd_vertidx,
+        zd_diffcoef=zd_diffcoef,
+        zd_intcoef=zd_intcoef,
+        zd_indlist = zd_indlist,
     )
     interpolation_state = InterpolationState(
         e_bln_c_s,

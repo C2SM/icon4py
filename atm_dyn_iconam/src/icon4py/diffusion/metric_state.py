@@ -26,5 +26,7 @@ class MetricState:
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     mask_hdiff: Field[[CellDim, KDim], int]
     zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int]
+    zd_indlist: Field[[CellDim, C2E2CDim, KDim], int] | None
     zd_diffcoef: Field[[CellDim, KDim], float]
     zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float]
+    zd_listdim: int
