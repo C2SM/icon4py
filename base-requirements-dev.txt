@@ -1,5 +1,5 @@
 # VCS
--e git+https://github.com/GridTools/gt4py.git@functional#egg=gt4py-next
+-e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
 
 # PyPI
 flake8>=3.8
