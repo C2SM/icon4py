@@ -24,7 +24,7 @@ from icon4py.liskov.parsing.exceptions import (
     IncompatibleFieldError,
     UnknownStencilError,
 )
-from icon4py.pyutils.metadata import get_field_infos
+from icon4py.pyutils.metadata import get_stencil_info
 
 
 logger = setup_logger(__name__)
@@ -41,10 +41,11 @@ class UpdateFieldsWithGt4PyStencils(Step):
 
         for s in self.parsed.StartStencil:
             gt4py_program = self._collect_icon4py_stencil(s.name)
-            gt4py_field_info = get_field_infos(gt4py_program)
+            gt4py_stencil_info = get_stencil_info(gt4py_program)
+            gt4py_fields = gt4py_stencil_info.fields
             for f in s.fields:
                 try:
-                    field_info = gt4py_field_info[f.variable]
+                    field_info = gt4py_fields[f.variable]
                 except KeyError:
                     raise IncompatibleFieldError(
                         f"Used field variable name that is incompatible with the expected field names defined in {s.name} in icon4py."
