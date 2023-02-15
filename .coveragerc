@@ -11,9 +11,17 @@ atm_dyn_iconam_sources =
     atm_dyn_iconam/src/icon4py/atm_dyn_iconam/
     .tox/py*/lib/python3.*/site-packages/icon4py/atm_dyn_iconam/
 
+atm_phy_schemes_sources =
+    atm_phy_schemes/src/icon4py/atm_phy_schemes/
+    .tox/py*/lib/python3.*/site-packages/icon4py/atm_phy_schemes/
+
 common_sources =
     common/src/icon4py/common/
     .tox/py*/lib/python3.*/site-packages/icon4py/common/
+
+shared_sources =
+    shared/src/icon4py/shared/
+    .tox/py*/lib/python3.*/site-packages/icon4py/shared/
 
 pyutils_sources =
     pyutils/src/icon4py/pyutils/
