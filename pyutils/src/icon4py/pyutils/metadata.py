@@ -73,7 +73,7 @@ def _ignore_subscript(node: past.Name | past.Subscript) -> past.Name:
     return node if isinstance(node, past.Name) else node.value
 
 
-def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
+def get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     """Extract and format the in/out fields from a Program."""
     assert is_list_of_names(
         fvprog.past_node.body[0].args
@@ -237,7 +237,7 @@ def get_stencil_info(
         fvprog = get_fvprog(fencil_def)
         offsets = scan_for_offsets(fvprog)
         itir = fvprog.itir
-        fields = _get_field_infos(fvprog)
+        fields = get_field_infos(fvprog)
         column_axis = fvprog._column_axis
 
     offset_provider = {}

@@ -16,7 +16,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.pyutils.metadata import _get_field_infos, provide_neighbor_table
+from icon4py.pyutils.metadata import get_field_infos, provide_neighbor_table
 
 
 chain_false_skipvalues = [
@@ -128,7 +128,7 @@ def with_constant_domain(
 
 @pytest.mark.parametrize("program", [with_domain, without_domain, with_constant_domain])
 def test_get_field_infos_does_not_contain_domain_args(program):
-    field_info = _get_field_infos(program)
+    field_info = get_field_infos(program)
     assert len(field_info) == 3
     assert not field_info["a"].out
     assert field_info["a"].inp
