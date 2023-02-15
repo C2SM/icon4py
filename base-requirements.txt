@@ -1,2 +1,2 @@
 # VCS
-gt4py @ git+https://github.com/havogt/gt4py.git@new_inline_into_scan
+gt4py @ git+https://github.com/GridTools/gt4py.git@main
