@@ -61,7 +61,11 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.diffusion.diagnostic_state import DiagnosticState
-from icon4py.diffusion.horizontal import HorizontalMarkerIndex
+from icon4py.diffusion.horizontal import (
+    CellParams,
+    EdgeParams,
+    HorizontalMarkerIndex,
+)
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
@@ -109,8 +113,8 @@ class DiffusionConfig:
         temperature_boundary_diffusion_denom: float = 135.0,
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
-        type_sher:int = 2,
-        tkeshs = True,
+        type_sher: int = 2,
+        tkeshs:bool=True,
     ):
 
         # parameters from namelist diffusion_nml
@@ -261,7 +265,7 @@ class DiffusionConfig:
         Called `nudge_efold_width` in mo_interpol_nml.f90
         """
 
-        #mo_turbdiff_nml.f90
+        # mo_turbdiff_nml.f90
         self.type_sher: int = type_sher
         """
         Type of shear forcing used in turbulence
@@ -306,8 +310,10 @@ class DiffusionConfig:
             )
 
         if not self.type_sher == 2:
-            raise NotImplementedError(f"type_sher = {self.type_sher} is not supported: "
-                                      f"only supporting type 2")
+            raise NotImplementedError(
+                f"type_sher = {self.type_sher} is not supported: "
+                f"only supporting type 2"
+            )
 
     def substep_as_float(self):
         return float(self.ndyn_substeps)
@@ -369,9 +375,6 @@ class DiffusionParams:
                 smagorinski_height = None
             case _:
                 raise NotImplementedError("Only implemented for diffusion type 4 and 5")
-                smagorinski_factor = None
-                smagorinski_height = None
-                pass
         return smagorinski_factor, smagorinski_height
 
     @staticmethod
@@ -433,6 +436,8 @@ class Diffusion:
         self.grid: Optional[IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
+        self.edge_properties = Optional[EdgeParams] = None
+        self.cell_properties = Optional[CellParams] = None
         self.vertical_params: Optional[VerticalModelParams] = None
         self.interpolation_state = None
         self.metric_state = None
@@ -449,6 +454,8 @@ class Diffusion:
         config: DiffusionConfig,
         params: DiffusionParams,
         vertical_params: VerticalModelParams,
+        edge_properties: EdgeParams,
+        cell_properties: CellParams,
         metric_state: MetricState,
         interpolation_state: InterpolationState,
     ):
@@ -461,6 +468,8 @@ class Diffusion:
         self.params: DiffusionParams = params
         self.grid = grid
         self.vertical_params = vertical_params
+        self.edge_properties = edge_properties
+        self.cell_properties = cell_properties
         self.metric_state: MetricState = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
 
@@ -566,14 +575,6 @@ class Diffusion:
             diagnostic_state,
             prognostic_state,
             dtime,
-            tangent_orientation,
-            inverse_primal_edge_lengths,
-            inverse_dual_edge_length,
-            inverse_vertical_vertex_lengths,
-            primal_normal_vert,
-            dual_normal_vert,
-            edge_areas,
-            cell_areas,
             diff_multfac_vn,
             smag_limit,
             0.0,
@@ -659,14 +660,6 @@ class Diffusion:
                 diagnostic_state=diagnostic_state,
                 prognostic_state=prognostic_state,
                 dtime=dtime,
-                tangent_orientation=tangent_orientation,
-                inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-                inverse_dual_edge_length=inverse_dual_edge_length,
-                inverse_vertex_vertex_lengths=inverse_vertical_vertex_lengths,
-                primal_normal_vert=primal_normal_vert,
-                dual_normal_vert=dual_normal_vert,
-                edge_areas=edge_areas,
-                cell_areas=cell_areas,
                 diff_multfac_vn=self.diff_multfac_vn,
                 smag_limit=self.smag_limit,
                 smag_offset=self.smag_offset,
@@ -728,7 +721,7 @@ class Diffusion:
                 local_horizontal_edge_index=self.horizontal_edge_index,
                 cell_startindex_interior=cell_startindex_interior,
                 cell_startindex_nudging=cell_startindex_nudging,
-                cell_startindex_nudging_plus1 = cell_startindex_nudging_plus1,
+                cell_startindex_nudging_plus1=cell_startindex_nudging_plus1,
                 cell_endindex_local_plus1=cell_endindex_local_plus1,
                 cell_endindex_local=cell_endindex_local,
                 edge_startindex_nudging_plus1=edge_startindex_nudging_plus1,
@@ -739,7 +732,7 @@ class Diffusion:
                 vertex_startindex_lb_plus1=vertex_startindex_lb_plus1,
                 vertex_endindex_local=vertex_endindex_local,
                 vertex_endindex_local_minus1=vertex_endindex_local_minus1,
-                index_of_damping_height=self.config.vertical_params._index_of_damping_height,
+                index_of_damping_height=self.vertical_params.index_of_damping_layer,
                 nlev=self.grid.n_lev(),
                 boundary_diffusion_start_index_edges=self.params.boundary_diffusion_start_index_edges,
                 offset_provider={
@@ -764,18 +757,6 @@ class Diffusion:
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
-        tangent_orientation: Field[[EdgeDim], float],  # from p_patch%edges
-        inverse_primal_edge_lengths: Field[[EdgeDim], float],  # from p_patch%edges
-        inverse_dual_edge_length: Field[[EdgeDim], float],  # from p_patch%edges
-        inverse_vertex_vertex_lengths: Field[[EdgeDim], float],  # from p_patch%edges
-        primal_normal_vert: Tuple[
-            Field[[ECVDim], float], Field[[ECVDim], float]
-        ],  # from p_patch%edges
-        dual_normal_vert: Tuple[
-            Field[[ECVDim], float], Field[[ECVDim], float]
-        ],  # from p_patch%edges
-        edge_areas: Field[[EdgeDim], float],  # from p_patch%edges
-        cell_areas: Field[[CellDim], float],  # from p_atch%cells
         diff_multfac_vn: Field[[KDim], float],
         smag_limit: Field[[KDim], float],
         smag_offset: float,
@@ -787,14 +768,6 @@ class Diffusion:
             diagnostic_state: output argument, data class that contains diagnostic variables
             prognostic_state: output argument, data class that contains prognostic variables
             dtime: the time step,
-            tangent_orientation:
-            inverse_primal_edge_lengths:
-            inverse_dual_edge_length:
-            inverse_vertex_vertex_lengths:
-            primal_normal_vert:
-            dual_normal_vert:
-            edge_areas:
-            cell_areas:
             diff_multfac_vn:
             smag_limit:
             smag_offset:
@@ -882,15 +855,15 @@ class Diffusion:
 
         calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
-            tangent_orientation=tangent_orientation,
-            inv_primal_edge_length=inverse_primal_edge_lengths,
-            inv_vert_vert_length=inverse_vertex_vertex_lengths,
+            tangent_orientation=self.edge_properties.tangent_orientation,
+            inv_primal_edge_length=self.edge_properties.inverse_primal_edge_lengths,
+            inv_vert_vert_length=self.edge_properties.inverse_vertex_vertex_lengths,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
-            primal_normal_vert_x=primal_normal_vert[0],
-            primal_normal_vert_y=primal_normal_vert[1],
-            dual_normal_vert_x=dual_normal_vert[0],
-            dual_normal_vert_y=dual_normal_vert[1],
+            primal_normal_vert_x=self.edge_properties.primal_normal_vert[0],
+            primal_normal_vert_y=self.edge_properties.primal_normal_vert[1],
+            dual_normal_vert_x=self.edge_properties.dual_normal_vert[0],
+            dual_normal_vert_y=self.edge_properties.dual_normal_vert[1],
             vn=prognostic_state.vn,
             smag_limit=smag_limit,
             kh_smag_e=self.kh_smag_e,
@@ -946,12 +919,12 @@ class Diffusion:
         fused_mo_nh_diffusion_stencil_04_05_06(
             self.u_vert,
             self.v_vert,
-            primal_normal_vert[0],
-            primal_normal_vert[1],
+            self.edge_properties.primal_normal_vert[0],
+            self.edge_properties.primal_normal_vert[1],
             self.z_nabla2_e,
-            inverse_vertex_vertex_lengths,
-            inverse_primal_edge_lengths,
-            edge_areas,
+            self.edge_properties.inverse_vertex_vertex_lengths,
+            self.edge_properties.inverse_primal_edge_lengths,
+            self.edge_properties.edge_areas,
             self.kh_smag_e,
             diff_multfac_vn,
             self.interpolation_state.nudgecoeff_e,
@@ -975,7 +948,7 @@ class Diffusion:
         # #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
 
         fused_mo_nh_diffusion_stencil_07_08_09_10(
-            area=cell_areas,
+            area=self.cell_properties.cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
             geofac_grg_y=self.interpolation_state.geofac_grg_y,
@@ -987,7 +960,7 @@ class Diffusion:
             diff_multfac_n2w=self.diff_multfac_n2w,
             vert_idx=self.vertical_index,
             horz_idx=self.horizontal_cell_index,
-            nrdmax=self.config.vertical_params._index_of_damping_height,
+            nrdmax=self.vertical_params.index_of_damping_layer,
             interior_idx=cell_start_interior,  # h end index for stencil_09 and stencil_10
             halo_idx=cell_end_local,  # h end index for stencil_09 and stencil_10,
             horizontal_start=cell_start_nudging,  # h start index for stencil_07 and stencil_08
@@ -1022,7 +995,7 @@ class Diffusion:
         )
         fused_mo_nh_diffusion_stencil_13_14(
             kh_smag_e=self.kh_smag_e,
-            inv_dual_edge_length=inverse_dual_edge_length,
+            inv_dual_edge_length=self.edge_properties.inverse_dual_edge_length,
             theta_v=prognostic_state.theta_v,
             geofac_div=self.interpolation_state.geofac_div,
             z_temp=self.z_temp,
@@ -1057,7 +1030,7 @@ class Diffusion:
 
         update_theta_and_exner(
             z_temp=self.z_temp,
-            area=cell_areas,
+            area=self.cell_properties.cell_areas,
             theta_v=prognostic_state.theta_v,
             exner=prognostic_state.exner_pressure,
             rd_o_cvd=self.rd_o_cvd,

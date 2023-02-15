@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind, Field
@@ -23,9 +23,10 @@ from icon4py.diffusion.horizontal import HorizontalMeshSize
 
 
 class VerticalMeshConfig:
-    def __init__(self, num_lev: int, nshift: int = 0):
+    def __init__(self, num_lev: int, nshift: int = 0, nshift_total=0):
         self._num_lev = num_lev
         self._nshift = nshift
+        self._nshift_total = nshift_total
 
     @property
     def num_lev(self) -> int:
@@ -35,12 +36,17 @@ class VerticalMeshConfig:
     def nshift(self) -> int:
         return self._nshift
 
+    @property
+    def nshift_total(self) -> int:
+        return self._nshift_total
+
+
 class MeshConfig:
     def __init__(
         self,
         horizontal_config: HorizontalMeshSize,
         vertical_config: VerticalMeshConfig,
-        limited_area=True,
+        limited_area: bool =True,
     ):
         self._vertical = vertical_config
         self._limited_area = limited_area
@@ -56,6 +62,10 @@ class MeshConfig:
 
     @property
     def n_shift_total(self):
+        return self._vertical.nshift_total
+
+    @property
+    def n_shift(self):
         return self._vertical.nshift
 
     @property
@@ -81,7 +91,7 @@ def builder(func):
 
 class IconGrid:
     def __init__(self):
-        self.config: MeshConfig = None
+        self.config: Optional[MeshConfig] = None
         self.start_indices = {}
         self.end_indices = {}
         self.connectivities: Dict[str, np.ndarray] = {}

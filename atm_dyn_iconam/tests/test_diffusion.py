@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.common.dimension import ECVDim, KDim, VertexDim
+from icon4py.common.dimension import C2E2CDim, CellDim, ECVDim, KDim, VertexDim
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams, VectorTuple
 from icon4py.diffusion.icon_grid import VerticalModelParams
@@ -253,7 +253,8 @@ def test_diffusion_init(
         zd_intcoef=savepoint.zd_intcoef(),
         zd_vertidx=savepoint.zd_vertidx(),
         zd_diffcoef=savepoint.zd_diffcoef(),
-        zd_indlist=None
+        zd_indlist=zero_field(icon_grid, CellDim, C2E2CDim, KDim, dtype=int),
+        zd_listdim=1,
     )
 
     diffusion = Diffusion()
@@ -284,8 +285,7 @@ def test_diffusion_init(
     )
 
     assert (
-        diffusion.smag_offset
-        == 0.25 * diffusion_params.K4 * config.substep_as_float()
+        diffusion.smag_offset == 0.25 * diffusion_params.K4 * config.substep_as_float()
     )
     assert np.allclose(expected_smag_limit, diffusion.smag_limit)
 
@@ -379,9 +379,10 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         zd_vertidx=savepoint.zd_vertidx(),
         zd_diffcoef=savepoint.zd_diffcoef(),
         # TODO fix
-        zd_indlist = None,
-        zd_listdim = 0
+        zd_indlist=zero_field(icon_grid, CellDim, C2E2CDim, KDim, dtype=int),
+        zd_listdim=1,
     )
+
     diffusion = Diffusion()
     diffusion.init(
         config=config,
@@ -424,8 +425,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         zd_vertidx=savepoint.zd_vertidx(),
         zd_diffcoef=savepoint.zd_diffcoef(),
         # TODO fix
-        zd_indlist=None,
-        zd_listdim=0
+        zd_indlist=zero_field(icon_grid, CellDim, C2E2CDim, KDim, dtype=int),
+        zd_listdim=1,
     )
 
     diffusion = Diffusion()
@@ -474,8 +475,8 @@ def test_run_diffusion_single_step(
         zd_vertidx=sp.zd_vertidx(),
         zd_diffcoef=sp.zd_diffcoef(),
         # TODO fix
-        zd_indlist=None,
-        zd_listdim=0
+        zd_indlist=zero_field(icon_grid, CellDim, C2E2CDim, KDim, dtype=int),
+        zd_listdim=0,
     )
 
     diffusion = Diffusion(run_program=True)
