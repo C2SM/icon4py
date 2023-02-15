@@ -111,6 +111,7 @@ class EndStencilStatement(eve.Node):
     stencil_data: StartStencilData
     profile: bool
     noendif: Optional[bool]
+    noprofile: Optional[bool]
 
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -133,7 +134,7 @@ class EndStencilStatementGenerator(TemplatedGenerator):
     EndStencilStatement = as_jinja(
         """
         {%- if _this_node.profile %}
-        call nvtxEndRange()
+        {% if _this_node.noprofile %}{% else %}call nvtxEndRange(){% endif %}
         {%- endif %}
         {% if _this_node.noendif %}{% else %}#endif{% endif %}
         call wrap_run_{{ name }}( &
@@ -217,8 +218,7 @@ class DeclareStatement(eve.Node):
     def __post_init__(self) -> None:  # type: ignore
         self.declarations = [
             Declaration(variable=k, association=v)
-            for dic in self.declare_data.declarations
-            for k, v in dic.items()
+            for k, v in self.declare_data.declarations.items()
         ]
 
 
@@ -227,7 +227,7 @@ class DeclareStatementGenerator(TemplatedGenerator):
         """
         ! DSL INPUT / OUTPUT FIELDS
         {%- for d in _this_node.declarations %}
-        REAL(wp), DIMENSION({{ d.association }}) :: {{ d.variable }}_before
+        {{ _this_node.declare_data.ident_type }}, DIMENSION({{ d.association }}) :: {{ d.variable }}_before
         {%- endfor %}
         LOGICAL :: dsl_verify
         """
@@ -249,6 +249,7 @@ class StartStencilStatement(eve.Node):
         self.copy_declarations = [
             self.make_copy_declaration(f) for f in all_fields if f.out
         ]
+        self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
 
     @staticmethod
     def make_copy_declaration(f: Field) -> CopyDeclaration:
@@ -301,7 +302,7 @@ class StartStencilStatementGenerator(TemplatedGenerator):
     StartStencilStatement = as_jinja(
         """
         #ifdef __DSL_VERIFY
-        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
+        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
@@ -346,7 +347,7 @@ class StartCreateStatementGenerator(TemplatedGenerator):
         """
         #ifdef __DSL_VERIFY
         dsl_verify = .TRUE.
-        #elif
+        #else
         dsl_verify = .FALSE.
         #endif
 
@@ -374,3 +375,19 @@ class EndIfStatement(eve.Node):
 
 class EndIfStatementGenerator(TemplatedGenerator):
     EndIfStatement = as_jinja("#endif")
+
+
+class StartProfileStatement(eve.Node):
+    name: str
+
+
+class StartProfileStatementGenerator(TemplatedGenerator):
+    StartProfileStatement = as_jinja('call nvtxStartRange("{{ _this_node.name }}")')
+
+
+class EndProfileStatement(eve.Node):
+    ...
+
+
+class EndProfileStatementGenerator(TemplatedGenerator):
+    EndProfileStatement = as_jinja("call nvtxEndRange()")

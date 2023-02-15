@@ -32,13 +32,14 @@ SINGLE_STENCIL = """\
     !$DSL START CREATE()
 
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; a=nproma,p_patch%nlev,p_patch%nblks_e; &
-    !$DSL         b=nproma,p_patch%nlev,p_patch%nblks_e)
+    !$DSL         b=nproma,p_patch%nlev,p_patch%nblks_e; type=REAL(vp))
 
     !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
     !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
     !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
-    !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+    !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx; &
+    !$DSL       accpresent=True)
     !$OMP DO PRIVATE(je,jk,jb,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = i_startblk,i_endblk
 
@@ -59,8 +60,10 @@ SINGLE_STENCIL = """\
                   p_patch%edges%area_edge(je,jb)*fac_bdydiff_v
               ENDDO
             ENDDO
+    !$DSL START PROFILE(name=apply_nabla2_to_vn_in_lateral_boundary)
     !$ACC END PARALLEL LOOP
-    !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)
+    !$DSL END PROFILE()
+    !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; noprofile=True)
     !$DSL END CREATE()
     """
 
