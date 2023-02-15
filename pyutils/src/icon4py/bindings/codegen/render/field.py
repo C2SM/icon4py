@@ -33,12 +33,12 @@ class FieldRenderer:
 
     def render_dim_tags(self) -> str:
         """Render c++ dimension tags."""
-        if self.entity.is_sparse():
-            raise BindingsRenderingException(
-                "can not render dimension tags for sparse field"
-            )
         tags = []
-        if self.entity.is_dense() or self.entity.is_compound():
+        if (
+            self.entity.is_dense()
+            or self.entity.is_sparse()
+            or self.entity.is_compound()
+        ):
             tags.append("unstructured::dim::horizontal")
         if self.entity.has_vertical_dimension:
             tags.append("unstructured::dim::vertical")
@@ -46,18 +46,18 @@ class FieldRenderer:
 
     def render_sid(self) -> str:
         """Render c++ gridtools sid for field."""
-        if self.entity.is_sparse():
-            raise BindingsRenderingException("can not render sid of sparse field")
-
         if self.entity.rank() == 0:
             raise BindingsRenderingException("can not render sid of a scalar")
 
+        # We want to compute the rank without the sparse dimension, i.e. if a field is horizontal, vertical or both.
+        # This only works since compound fields are not sparse.
+        dense_rank = self.entity.rank() - int(self.entity.is_sparse())
         values_str = (
             "1"
-            if self.entity.rank() == 1 or self.entity.is_compound()
+            if dense_rank == 1 or self.entity.is_compound()
             else f"1, mesh_.{self.render_stride_type()}"
         )
-        return f"get_sid({self.entity.name}_, gridtools::hymap::keys<{self.render_dim_tags()}>::make_values({values_str}))"
+        return f"gridtools::hymap::keys<{self.render_dim_tags()}>::make_values({values_str})"
 
     def render_ranked_dim_string(self) -> str:
         """Render f90 ranked dimension string."""
