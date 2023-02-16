@@ -14,8 +14,8 @@
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_16 import (
-    mo_solve_nonhydro_stencil_16,
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
+    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
 from icon4py.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -118,7 +118,7 @@ def sten_16_numpy(
     return z_rho_e, z_theta_v_e
 
 
-def mo_solve_nonhydro_stencil_16_numpy(
+def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
     e2c: np.array,
     p_vn: np.array,
     p_vt: np.array,
@@ -168,7 +168,7 @@ def mo_solve_nonhydro_stencil_16_numpy(
     return z_rho_e, z_theta_v_e
 
 
-def test_mo_solve_nonhydro_stencil_16():
+def test_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1():
     mesh = SimpleMesh()
 
     p_vn = random_field(mesh, EdgeDim, KDim)
@@ -198,7 +198,7 @@ def test_mo_solve_nonhydro_stencil_16():
     z_rho_e = random_field(mesh, EdgeDim, KDim)
     z_theta_v_e = random_field(mesh, EdgeDim, KDim)
 
-    z_rho_e_ref, z_theta_v_e_ref = mo_solve_nonhydro_stencil_16_numpy(
+    z_rho_e_ref, z_theta_v_e_ref = mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
         mesh.e2c,
         np.asarray(p_vn),
         np.asarray(p_vt),
@@ -219,7 +219,7 @@ def test_mo_solve_nonhydro_stencil_16():
         np.asarray(z_rth_pr_2),
     )
 
-    mo_solve_nonhydro_stencil_16(
+    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         p_vn,
         p_vt,
         pos_on_tplane_e_1_new,
