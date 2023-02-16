@@ -198,7 +198,10 @@ def test_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1():
     z_rho_e = random_field(mesh, EdgeDim, KDim)
     z_theta_v_e = random_field(mesh, EdgeDim, KDim)
 
-    z_rho_e_ref, z_theta_v_e_ref = mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
+    (
+        z_rho_e_ref,
+        z_theta_v_e_ref,
+    ) = mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
         mesh.e2c,
         np.asarray(p_vn),
         np.asarray(p_vt),
