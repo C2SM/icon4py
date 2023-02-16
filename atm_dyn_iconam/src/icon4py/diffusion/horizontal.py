@@ -137,7 +137,7 @@ class EdgeParams:
     defined in ICON in mo_model_domain.f90:t_grid_edges%tangent_orientation
     """
 
-    primal_edge_lengths: Field[[EdgeDim], float]
+    #primal_edge_lengths: Field[[EdgeDim], float]
     """
     Length of the triangle edge.
 
@@ -151,7 +151,7 @@ class EdgeParams:
     defined int ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
     """
 
-    dual_edge_lengths: Field[[EdgeDim], float]
+    #dual_edge_lengths: Field[[EdgeDim], float]
     """
     Length of the hexagon/pentagon edge.
 

@@ -436,8 +436,8 @@ class Diffusion:
         self.grid: Optional[IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
-        self.edge_properties = Optional[EdgeParams] = None
-        self.cell_properties = Optional[CellParams] = None
+        self.edge_properties: Optional[EdgeParams] = None
+        self.cell_properties: Optional[CellParams] = None
         self.vertical_params: Optional[VerticalModelParams] = None
         self.interpolation_state = None
         self.metric_state = None

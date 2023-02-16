@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.common import Dimension
-from functional.type_system.type_specifications import ScalarType
-from functional.type_system.type_translation import from_type_hint
+from gt4py.next.common import Dimension
+from gt4py.next.type_system.type_specifications import ScalarType
+from gt4py.next.type_system.type_translation import from_type_hint
 
 
 def parse_annotation(annotation) -> tuple[list[Dimension], ScalarType]:

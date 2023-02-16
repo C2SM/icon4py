@@ -17,6 +17,7 @@ import pytest
 from icon4py.common.dimension import C2E2CDim, CellDim, ECVDim, KDim, VertexDim
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams, VectorTuple
+from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.icon_grid import VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
@@ -229,6 +230,7 @@ def test_diffusion_init(
     diffusion_params = DiffusionParams(config)
     vertical_params = VerticalModelParams(savepoint.vct_a(), damping_height)
 
+
     meta = savepoint.get_metadata("nlev", "linit", "date")
 
     assert meta["nlev"] == 65
@@ -258,9 +260,21 @@ def test_diffusion_init(
     )
 
     diffusion = Diffusion()
+    edge_params = EdgeParams(
+        tangent_orientation=savepoint.tangent_orientation(),
+        edge_areas = savepoint.edge_areas(),
+        inverse_primal_edge_lengths=savepoint.inverse_primal_edge_lengths(),
+        inverse_dual_edge_lengths=savepoint.inv_dual_edge_length(),
+        inverse_vertex_vertex_lengths=savepoint.inv_vert_vert_length(),
+        primal_normal_vert=(savepoint.primal_normal_vert_x(), savepoint.primal_normal_vert_y()),
+        dual_normal_vert=(savepoint.dual_normal_vert_x(), savepoint.dual_normal_vert_y())
+    )
+
     diffusion.init(
         grid=icon_grid,
         vertical_params=vertical_params,
+        edge_properties =edge_params,
+        cell_properties=CellParams(savepoint.cell_areas()),
         config=config,
         params=diffusion_params,
         metric_state=metric_state,
@@ -361,6 +375,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     vct_a = savepoint.vct_a()
 
     grg = savepoint.geofac_grg()
+
     interpolation_state = InterpolationState(
         e_bln_c_s=savepoint.e_bln_c_s(),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
@@ -383,11 +398,23 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         zd_listdim=1,
     )
 
+    edge_params = EdgeParams(
+        tangent_orientation=savepoint.tangent_orientation(),
+        edge_areas=savepoint.edge_areas(),
+        inverse_primal_edge_lengths=savepoint.inverse_primal_edge_lengths(),
+        inverse_dual_edge_lengths=savepoint.inv_dual_edge_length(),
+        inverse_vertex_vertex_lengths=savepoint.inv_vert_vert_length(),
+        primal_normal_vert=(savepoint.primal_normal_vert_x(), savepoint.primal_normal_vert_y()),
+        dual_normal_vert=(savepoint.dual_normal_vert_x(), savepoint.dual_normal_vert_y())
+    )
     diffusion = Diffusion()
+
     diffusion.init(
         config=config,
         grid=icon_grid,
         params=additional_parameters,
+        edge_properties=edge_params,
+        cell_properties=CellParams(savepoint.cell_areas()),
         vertical_params=VerticalModelParams(vct_a, damping_height),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -429,12 +456,23 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         zd_listdim=1,
     )
 
+    edge_params = EdgeParams(
+        tangent_orientation=savepoint.tangent_orientation(),
+        edge_areas=savepoint.edge_areas(),
+        inverse_primal_edge_lengths=savepoint.inverse_primal_edge_lengths(),
+        inverse_dual_edge_lengths=savepoint.inv_dual_edge_length(),
+        inverse_vertex_vertex_lengths=savepoint.inv_vert_vert_length(),
+        primal_normal_vert=(savepoint.primal_normal_vert_x(), savepoint.primal_normal_vert_y()),
+        dual_normal_vert=(savepoint.dual_normal_vert_x(), savepoint.dual_normal_vert_y())
+    )
     diffusion = Diffusion()
     diffusion.init(
         icon_grid,
         config,
         additional_parameters,
         vertical_params,
+        edge_params,
+        CellParams(savepoint.cell_areas()),
         metric_state,
         interpolation_state,
     )
