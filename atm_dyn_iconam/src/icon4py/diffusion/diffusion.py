@@ -15,7 +15,7 @@
 import math
 import sys
 from collections import namedtuple
-from typing import Final, Optional, Tuple
+from typing import Final, Optional
 
 import numpy as np
 from gt4py.next.common import Dimension
@@ -114,7 +114,7 @@ class DiffusionConfig:
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
         type_sher: int = 2,
-        tkeshs:bool=True,
+        tkeshs: bool = True,
     ):
 
         # parameters from namelist diffusion_nml

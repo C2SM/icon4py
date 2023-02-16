@@ -230,7 +230,6 @@ def test_diffusion_init(
     diffusion_params = DiffusionParams(config)
     vertical_params = VerticalModelParams(savepoint.vct_a(), damping_height)
 
-
     meta = savepoint.get_metadata("nlev", "linit", "date")
 
     assert meta["nlev"] == 65
@@ -262,18 +261,24 @@ def test_diffusion_init(
     diffusion = Diffusion()
     edge_params = EdgeParams(
         tangent_orientation=savepoint.tangent_orientation(),
-        edge_areas = savepoint.edge_areas(),
+        edge_areas=savepoint.edge_areas(),
         inverse_primal_edge_lengths=savepoint.inverse_primal_edge_lengths(),
         inverse_dual_edge_lengths=savepoint.inv_dual_edge_length(),
         inverse_vertex_vertex_lengths=savepoint.inv_vert_vert_length(),
-        primal_normal_vert=(savepoint.primal_normal_vert_x(), savepoint.primal_normal_vert_y()),
-        dual_normal_vert=(savepoint.dual_normal_vert_x(), savepoint.dual_normal_vert_y())
+        primal_normal_vert=(
+            savepoint.primal_normal_vert_x(),
+            savepoint.primal_normal_vert_y(),
+        ),
+        dual_normal_vert=(
+            savepoint.dual_normal_vert_x(),
+            savepoint.dual_normal_vert_y(),
+        ),
     )
 
     diffusion.init(
         grid=icon_grid,
         vertical_params=vertical_params,
-        edge_properties =edge_params,
+        edge_properties=edge_params,
         cell_properties=CellParams(savepoint.cell_areas()),
         config=config,
         params=diffusion_params,
@@ -404,8 +409,14 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         inverse_primal_edge_lengths=savepoint.inverse_primal_edge_lengths(),
         inverse_dual_edge_lengths=savepoint.inv_dual_edge_length(),
         inverse_vertex_vertex_lengths=savepoint.inv_vert_vert_length(),
-        primal_normal_vert=(savepoint.primal_normal_vert_x(), savepoint.primal_normal_vert_y()),
-        dual_normal_vert=(savepoint.dual_normal_vert_x(), savepoint.dual_normal_vert_y())
+        primal_normal_vert=(
+            savepoint.primal_normal_vert_x(),
+            savepoint.primal_normal_vert_y(),
+        ),
+        dual_normal_vert=(
+            savepoint.dual_normal_vert_x(),
+            savepoint.dual_normal_vert_y(),
+        ),
     )
     diffusion = Diffusion()
 
@@ -462,8 +473,14 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         inverse_primal_edge_lengths=savepoint.inverse_primal_edge_lengths(),
         inverse_dual_edge_lengths=savepoint.inv_dual_edge_length(),
         inverse_vertex_vertex_lengths=savepoint.inv_vert_vert_length(),
-        primal_normal_vert=(savepoint.primal_normal_vert_x(), savepoint.primal_normal_vert_y()),
-        dual_normal_vert=(savepoint.dual_normal_vert_x(), savepoint.dual_normal_vert_y())
+        primal_normal_vert=(
+            savepoint.primal_normal_vert_x(),
+            savepoint.primal_normal_vert_y(),
+        ),
+        dual_normal_vert=(
+            savepoint.dual_normal_vert_x(),
+            savepoint.dual_normal_vert_y(),
+        ),
     )
     diffusion = Diffusion()
     diffusion.init(

@@ -247,7 +247,9 @@ def diffusion_run(
     w: Field[[CellDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],  # -> unused, part of diagnostic in velocity advection
+    vt: Field[
+        [EdgeDim, KDim], float
+    ],  # -> unused, part of diagnostic in velocity advection
     div_ic: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
     dwdx: Field[[CellDim, KDim], float],

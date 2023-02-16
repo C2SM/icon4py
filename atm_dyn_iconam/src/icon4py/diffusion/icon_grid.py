@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind, Field
@@ -46,7 +46,7 @@ class MeshConfig:
         self,
         horizontal_config: HorizontalMeshSize,
         vertical_config: VerticalMeshConfig,
-        limited_area: bool =True,
+        limited_area: bool = True,
     ):
         self._vertical = vertical_config
         self._limited_area = limited_area
