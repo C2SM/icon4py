@@ -435,7 +435,6 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 
 @pytest.mark.datatest
-@pytest.mark.skip
 def test_run_diffusion_single_step(
     savepoint_init, savepoint_exit, icon_grid, r04b09_diffusion_config, damping_height
 ):

@@ -658,7 +658,7 @@ class Diffusion:
                 tangent_orientation=tangent_orientation,
                 inverse_primal_edge_lengths=inverse_primal_edge_lengths,
                 inverse_dual_edge_lengths=inverse_dual_edge_length,
-                inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+                inverse_vert_vert_lengths=inverse_vertical_vertex_lengths,
                 primal_normal_vert_1=primal_normal_vert[0],
                 primal_normal_vert_2=primal_normal_vert[1],
                 dual_normal_vert_1=dual_normal_vert[0],
@@ -698,7 +698,7 @@ class Diffusion:
                 vertex_startindex_lb_plus1=vertex_startindex_lb_plus1,
                 vertex_endindex_local=vertex_endindex_local,
                 vertex_endindex_local_minus1=vertex_endindex_local_minus1,
-                index_of_damping_height=self.config.vertical_params._index_of_damping_height,
+                index_of_damping_height=self.vertical_params.index_of_damping_layer,
                 nlev=self.grid.n_lev(),
                 boundary_diffusion_start_index_edges=self.params.boundary_diffusion_start_index_edges,
                 offset_provider={

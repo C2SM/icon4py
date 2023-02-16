@@ -183,11 +183,9 @@ class VerticalModelParams:
             vct_a:  field containing the physical heights of the k level
             rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
         """
-        self.rayleigh_damping_height = rayleigh_damping_height
+        self._rayleigh_damping_height = rayleigh_damping_height
         self._vct_a = vct_a
-        self._index_of_damping_height = int32(
-            np.argmax(np.where(np.asarray(self._vct_a) >= self.rayleigh_damping_height))
-        )
+        self._index_of_damping_height = np.argmax(np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height))
 
     @property
     def index_of_damping_layer(self):
@@ -196,3 +194,7 @@ class VerticalModelParams:
     @property
     def physical_heights(self) -> Field[[KDim], float]:
         return self._vct_a
+
+    @property
+    def rayleigh_damping_height(self):
+        return self

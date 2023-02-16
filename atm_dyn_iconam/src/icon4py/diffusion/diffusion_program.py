@@ -14,7 +14,8 @@
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.ffront.fbuiltins import astype
+from gt4py.next.iterator.builtins import int32
 from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
@@ -69,38 +70,38 @@ def diffusion_run(
     metric_zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int],
     metric_zd_diffcoef: Field[[CellDim, KDim], float],
     metric_zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float],
-    interpolation_e_bln_c_s: Field[[CellDim, C2EDim], float],
+    interpolation_e_bln_c_s: Field[[CellDim, C2EDim], float],  #ok = 14
     interpolation_rbf_coeff_1: Field[[VertexDim, V2EDim], float],
     interpolation_rbf_coeff_2: Field[[VertexDim, V2EDim], float],
     interpolation_geofac_div: Field[[CellDim, C2EDim], float],
     interpolation_geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     interpolation_geofac_grg_y: Field[[CellDim, C2E2CODim], float],
-    interpolation_nudgecoeff_e: Field[[EdgeDim], float],
-    interpolation_geofac_n2s: Field[[CellDim, C2E2CODim], float],
+    interpolation_nudgecoeff_e: Field[[EdgeDim], float], # ok = 20
+    interpolation_geofac_n2s: Field[[CellDim, C2E2CODim], float], # ok = 21
     tangent_orientation: Field[[EdgeDim], float],
     inverse_primal_edge_lengths: Field[[EdgeDim], float],
     inverse_dual_edge_lengths: Field[[EdgeDim], float],
-    inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
+    inverse_vert_vert_lengths: Field[[EdgeDim], float],
     primal_normal_vert_1: Field[[ECVDim], float],
     primal_normal_vert_2: Field[[ECVDim], float],
     dual_normal_vert_1: Field[[ECVDim], float],
-    dual_normal_vert_2: Field[[ECVDim], float],
+    dual_normal_vert_2: Field[[ECVDim], float], # ok = 29
     edge_areas: Field[[EdgeDim], float],
     cell_areas: Field[[CellDim], float],
-    diff_multfac_vn: Field[[KDim], float],
+    diff_multfac_vn: Field[[KDim], float], # ok = 32
     dtime: float,
     rd_o_cvd: float,
     local_thresh_tdiff: float,
-    local_smag_limit: Field[[KDim], float],
+    local_smag_limit: Field[[KDim], float], # ok = 36
     local_u_vert: Field[[VertexDim, KDim], float],
     local_v_vert: Field[[VertexDim, KDim], float],
-    local_enh_smag_fac: Field[[KDim], float],
+    local_enh_smag_fac: Field[[KDim], float], # ok = 39
     local_kh_smag_e: Field[[EdgeDim, KDim], float],
     local_kh_smag_ec: Field[[EdgeDim, KDim], float],
     local_z_nabla2_e: Field[[EdgeDim, KDim], float],
     local_z_temp: Field[[CellDim, KDim], float],
     local_diff_multfac_smag: Field[[KDim], float],
-    local_diff_multfac_n2w: Field[[KDim], float],
+    local_diff_multfac_n2w: Field[[KDim], float], #ok = 45
     local_smag_offset: float,
     local_nudgezone_diff: float,
     local_fac_bdydiff_v: float,
@@ -108,21 +109,21 @@ def diffusion_run(
     local_vertical_index: Field[[KDim], int32],
     local_horizontal_cell_index: Field[[CellDim], int32],
     local_horizontal_edge_index: Field[[EdgeDim], int32],
-    cell_startindex_interior: int32,
-    cell_startindex_nudging: int32,
-    cell_endindex_local_plus1: int32,
-    cell_endindex_local: int32,
-    edge_startindex_nudging_plus1: int32,
-    edge_startindex_nudging_minus1: int32,
-    edge_endindex_local: int32,
-    edge_endindex_local_minus2: int32,
-    vertex_startindex_lb_plus3: int32,
-    vertex_startindex_lb_plus1: int32,
-    vertex_endindex_local: int32,
-    vertex_endindex_local_minus1: int32,
-    index_of_damping_height: int32,
+    cell_startindex_interior: int,
+    cell_startindex_nudging: int,
+    cell_endindex_local_plus1: int,
+    cell_endindex_local: int,
+    edge_startindex_nudging_plus1: int,
+    edge_startindex_nudging_minus1: int,
+    edge_endindex_local: int,
+    edge_endindex_local_minus2: int,
+    vertex_startindex_lb_plus3: int,
+    vertex_startindex_lb_plus1: int,
+    vertex_endindex_local: int,
+    vertex_endindex_local_minus1: int,
+    index_of_damping_height: int,
     nlev: int,
-    boundary_diffusion_start_index_edges: int32,
+    boundary_diffusion_start_index_edges: int,
 ):
     _scale_k(local_enh_smag_fac, dtime, out=local_diff_multfac_smag)
 
@@ -149,7 +150,7 @@ def diffusion_run(
         local_diff_multfac_smag,
         tangent_orientation,
         inverse_primal_edge_lengths,
-        inverse_vertical_vertex_lengths,
+        inverse_vert_vert_lengths,
         local_u_vert,
         local_v_vert,
         primal_normal_vert_1,
@@ -207,7 +208,7 @@ def diffusion_run(
         primal_normal_vert_1,
         primal_normal_vert_2,
         local_z_nabla2_e,
-        inverse_vertical_vertex_lengths,
+        inverse_vert_vert_lengths,
         inverse_primal_edge_lengths,
         edge_areas,
         local_kh_smag_e,
@@ -217,7 +218,7 @@ def diffusion_run(
         local_horizontal_edge_index,
         local_nudgezone_diff,
         local_fac_bdydiff_v,
-        edge_startindex_nudging_minus1,
+        astype(edge_startindex_nudging_minus1, int32),
         out=prognostic_vn,
         domain={
             EdgeDim: (edge_startindex_nudging_plus1, edge_endindex_local),
