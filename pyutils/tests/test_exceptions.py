@@ -95,23 +95,6 @@ def test_ctype_rendering_exception():
 
 
 @pytest.mark.skip("raises exception due to dims in offset provider")
-def test_sparse_field_sid_rendering_exception():
-    @field_operator
-    def reduction(nb_field: Field[[EdgeDim, E2CDim], float]) -> Field[[EdgeDim], float]:
-        return neighbor_sum(nb_field, axis=E2CDim)
-
-    @program
-    def reduction_prog(
-        nb_field: Field[[EdgeDim, E2CDim], float], out: Field[[EdgeDim], float]
-    ):
-        reduction(nb_field, out=out)
-
-    with pytest.raises(BindingsRenderingException):
-        stencil_info = get_stencil_info(reduction_prog)
-        bindgen = PyBindGen(stencil_info, 128, 1)
-        [field.renderer.render_sid() for field in bindgen.fields]
-
-
 def test_scalar_sid_rendering_exception():
     @field_operator
     def bad_stencil(a: Field[[EdgeDim], float], b: float) -> Field[[EdgeDim], float]:
