@@ -115,7 +115,7 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps():
 def test_init_enh_smag_fac():
     mesh = SimpleMesh()
     enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0)
+    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
@@ -124,7 +124,7 @@ def test_init_enh_smag_fac():
     _en_smag_fac_for_zero_nshift(
         a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
     )
-    assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac[:-1]))
+    assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac))
 
 
 def diff_multfac_vn_numpy(shape, k4, substeps):
@@ -440,7 +440,7 @@ def test_run_diffusion_single_step(
     savepoint_init, savepoint_exit, icon_grid, r04b09_diffusion_config, damping_height
 ):
     sp = savepoint_init
-    vct_a = sp._vct_a()
+    vct_a = sp.vct_a()
     vertical_params = VerticalModelParams(
         vct_a=vct_a, rayleigh_damping_height=damping_height
     )
@@ -468,7 +468,7 @@ def test_run_diffusion_single_step(
         zd_diffcoef=sp.zd_diffcoef(),
     )
 
-    diffusion = Diffusion(run_program=False)
+    diffusion = Diffusion(run_program=True)
     diffusion.init(
         grid=icon_grid,
         config=r04b09_diffusion_config,

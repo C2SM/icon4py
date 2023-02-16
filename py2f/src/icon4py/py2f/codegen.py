@@ -13,11 +13,10 @@
 
 from typing import Sequence
 
-import eve
-from eve import codegen
-from eve.codegen import JinjaTemplate as as_jinja
-from eve.codegen import TemplatedGenerator
-from functional.type_system.type_specifications import ScalarKind
+from gt4py.eve import Node, codegen
+from gt4py.eve.codegen import JinjaTemplate as as_jinja
+from gt4py.eve.codegen import TemplatedGenerator
+from gt4py.next.type_system.type_specifications import ScalarKind
 
 from icon4py.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
@@ -26,23 +25,23 @@ from icon4py.bindings.codegen.type_conversion import (
 from icon4py.bindings.utils import write_string
 
 
-class DimensionType(eve.Node):
+class DimensionType(Node):
     name: str
     length: int
 
 
-class FuncParameter(eve.Node):
+class FuncParameter(Node):
     name: str
     d_type: ScalarKind
     dimensions: Sequence[DimensionType]
 
 
-class Func(eve.Node):
+class Func(Node):
     name: str
     args: Sequence[FuncParameter]
 
 
-class CffiPlugin(eve.Node):
+class CffiPlugin(Node):
     name: str
     functions: Sequence[Func]
 

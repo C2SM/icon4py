@@ -12,10 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-from functional.common import Field
-from functional.ffront.decorator import program
-from functional.ffront.fbuiltins import int32
-from functional.program_processors.runners import gtfn_cpu
+from gt4py.next.common import Field
+from gt4py.next.ffront.decorator import program
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     _calculate_nabla2_and_smag_coefficients_for_vn,

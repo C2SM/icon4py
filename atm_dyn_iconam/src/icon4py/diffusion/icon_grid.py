@@ -14,9 +14,9 @@
 from typing import Dict, Tuple
 
 import numpy as np
-from functional.common import Dimension, DimensionKind, Field
-from functional.ffront.fbuiltins import int32
-from functional.iterator.embedded import NeighborTableOffsetProvider
+from gt4py.next.common import Dimension, DimensionKind, Field
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.horizontal import HorizontalMeshSize

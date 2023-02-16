@@ -13,9 +13,9 @@
 
 import numpy as np
 import serialbox as ser
-from functional.common import Dimension
-from functional.ffront.fbuiltins import int32
-from functional.iterator.embedded import np_as_located_field
+from gt4py.next.common import Dimension
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
     C2E2CDim,

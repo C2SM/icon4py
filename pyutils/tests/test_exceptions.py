@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Dimension, Field, neighbor_sum
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Dimension, Field
 
 from icon4py.bindings.codegen.render.location import LocationRenderer
 from icon4py.bindings.entities import Offset, chain_from_str
@@ -22,7 +22,7 @@ from icon4py.bindings.exceptions import (
     BindingsTypeConsistencyException,
 )
 from icon4py.bindings.workflow import PyBindGen
-from icon4py.common.dimension import E2CDim, EdgeDim, KDim
+from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.pyutils.metadata import get_stencil_info
 
 
@@ -94,7 +94,6 @@ def test_ctype_rendering_exception():
         [field.renderer.render_ctype("py") for field in bindgen.fields]
 
 
-@pytest.mark.skip("raises exception due to dims in offset provider")
 def test_scalar_sid_rendering_exception():
     @field_operator
     def bad_stencil(a: Field[[EdgeDim], float], b: float) -> Field[[EdgeDim], float]:

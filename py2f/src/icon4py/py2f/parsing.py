@@ -14,8 +14,8 @@
 import importlib
 from inspect import signature, unwrap
 
-from functional.type_system.type_specifications import ScalarType
-from functional.type_system.type_translation import from_type_hint
+from gt4py.next.type_system.type_specifications import ScalarType
+from gt4py.next.type_system.type_translation import from_type_hint
 
 from icon4py.py2f.cffi_utils import CffiMethod
 from icon4py.py2f.codegen import CffiPlugin, DimensionType, Func, FuncParameter

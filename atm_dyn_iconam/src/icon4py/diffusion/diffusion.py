@@ -18,9 +18,9 @@ from collections import namedtuple
 from typing import Final, Optional, Tuple
 
 import numpy as np
-from functional.common import Dimension
-from functional.ffront.fbuiltins import Field, int32
-from functional.iterator.embedded import (
+from gt4py.next.common import Dimension
+from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.iterator.embedded import (
     StridedNeighborOffsetProvider,
     np_as_located_field,
 )

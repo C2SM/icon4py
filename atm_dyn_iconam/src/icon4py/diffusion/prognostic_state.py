@@ -13,7 +13,7 @@
 
 from dataclasses import dataclass
 
-from functional.common import Field
+from gt4py.next.common import Field
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
