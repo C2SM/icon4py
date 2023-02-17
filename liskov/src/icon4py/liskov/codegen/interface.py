@@ -86,6 +86,7 @@ class StartStencilData(CodeGenInput):
     fields: list[FieldAssociationData]
     bounds: BoundsData
     acc_present: Optional[bool]
+    mergecopy: Optional[bool]
 
 
 @dataclass

@@ -67,6 +67,7 @@ def serialised_directives():
         startln=1,
         endln=2,
         acc_present=False,
+        mergecopy=False,
     )
     end_stencil_data = EndStencilData(
         name="stencil1", startln=3, endln=4, noendif=False, noprofile=False

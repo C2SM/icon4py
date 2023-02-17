@@ -255,3 +255,36 @@ DIRECTIVES_SAMPLE = """\
 !$DSL UNKNOWN_DIRECTIVE()
 !$DSL END CREATE()
 """
+
+CONSECUTIVE_STENCIL = """\
+    !$DSL IMPORTS()
+
+    !$DSL START CREATE()
+
+    !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
+
+    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45; z_alpha=z_alpha(:,:); vertical_lower=nlevp1; &
+    !$DSL               vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
+
+    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45_b; z_q=z_q(:,:); vertical_lower=1; vertical_upper=1; &
+    !$DSL               horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
+
+        !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
+        !$ACC LOOP GANG VECTOR
+        DO jc = i_startidx, i_endidx
+          z_alpha(jc,nlevp1) = 0.0_wp
+          !
+          ! Note: z_q is used in the tridiagonal matrix solver for w below.
+          !       z_q(1) is always zero, irrespective of w(1)=0 or w(1)/=0
+          !       z_q(1)=0 is equivalent to cp(slev)=c(slev)/b(slev) in mo_math_utilities:tdma_solver_vec
+          z_q(jc,1) = 0._vp
+        ENDDO
+        !$ACC END PARALLEL
+    !$DSL END PROFILE()
+    !$DSL ENDIF()
+
+    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45; noendif=true; noprofile=true)
+    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45_b; noendif=true; noprofile=true)
+
+    !$DSL END CREATE()
+"""

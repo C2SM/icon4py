@@ -42,6 +42,7 @@ from icon4py.liskov.codegen.f90 import (
 from icon4py.liskov.codegen.interface import (
     CodeGenInput,
     DeserialisedDirectives,
+    StartStencilData,
     UnusedDirective,
 )
 from icon4py.liskov.common import Step
@@ -75,7 +76,8 @@ class IntegrationGenerator(Step):
         self._generate_create()
         self._generate_imports()
         self._generate_declare()
-        self._generate_stencil()
+        self._generate_start_stencil()
+        self._generate_end_stencil()
         self._generate_endif()
         self._generate_profile()
         return self.generated
@@ -113,22 +115,61 @@ class IntegrationGenerator(Step):
                 declare_data=declare,
             )
 
-    def _generate_stencil(self) -> None:
+    def _generate_start_stencil(self) -> None:
+        """Generate f90 integration code surrounding a stencil.
+
+        Args:
+            profile: A boolean indicating whether to include profiling calls in the generated code.
+        """
+        i = 0
+
+        while i < len(self.directives.StartStencil):
+            stencil = self.directives.StartStencil[i]
+            logger.info(f"Generating START statement for {stencil.name}")
+
+            try:
+                next_stencil = self.directives.StartStencil[i + 1]
+            except IndexError:
+                pass
+
+            if stencil.mergecopy and next_stencil.mergecopy:
+                stencil = StartStencilData(
+                    startln=stencil.startln,
+                    endln=next_stencil.endln,
+                    name=stencil.name + "_" + next_stencil.name,
+                    fields=stencil.fields + next_stencil.fields,
+                    bounds=stencil.bounds,
+                    acc_present=stencil.acc_present,
+                    mergecopy=stencil.mergecopy,
+                )
+                i += 2
+
+                self._generate(
+                    StartStencilStatement,
+                    StartStencilStatementGenerator,
+                    stencil.startln,
+                    next_stencil.endln,
+                    stencil_data=stencil,
+                    profile=self.profile,
+                )
+            else:
+                self._generate(
+                    StartStencilStatement,
+                    StartStencilStatementGenerator,
+                    self.directives.StartStencil[i].startln,
+                    self.directives.StartStencil[i].endln,
+                    stencil_data=stencil,
+                    profile=self.profile,
+                )
+                i += 1
+
+    def _generate_end_stencil(self) -> None:
         """Generate f90 integration code surrounding a stencil.
 
         Args:
             profile: A boolean indicating whether to include profiling calls in the generated code.
         """
         for i, stencil in enumerate(self.directives.StartStencil):
-            logger.info(f"Generating START statement for {stencil.name}")
-            self._generate(
-                StartStencilStatement,
-                StartStencilStatementGenerator,
-                self.directives.StartStencil[i].startln,
-                self.directives.StartStencil[i].endln,
-                stencil_data=stencil,
-                profile=self.profile,
-            )
             logger.info(f"Generating END statement for {stencil.name}")
             self._generate(
                 EndStencilStatement,

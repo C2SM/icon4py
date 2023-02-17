@@ -13,6 +13,7 @@
 
 import pytest
 from samples.fortran_samples import (
+    CONSECUTIVE_STENCIL,
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,
@@ -28,14 +29,18 @@ def test_cli_no_directives(make_f90_tmpfile, cli, file):
     assert result.exit_code == 0
 
 
-@pytest.mark.parametrize("file", [SINGLE_STENCIL, MULTIPLE_STENCILS])
+@pytest.mark.parametrize(
+    "file", [SINGLE_STENCIL, CONSECUTIVE_STENCIL, MULTIPLE_STENCILS]
+)
 def test_cli(make_f90_tmpfile, cli, file):
     fpath = str(make_f90_tmpfile(content=file))
     result = cli.invoke(main, [fpath])
     assert result.exit_code == 0
 
 
-@pytest.mark.parametrize("file", [SINGLE_STENCIL, MULTIPLE_STENCILS])
+@pytest.mark.parametrize(
+    "file", [SINGLE_STENCIL, CONSECUTIVE_STENCIL, MULTIPLE_STENCILS]
+)
 def test_cli_profile(make_f90_tmpfile, cli, file):
     fpath = str(make_f90_tmpfile(content=file))
     result = cli.invoke(main, [fpath, "--profile"])

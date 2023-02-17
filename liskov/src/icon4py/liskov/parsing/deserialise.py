@@ -46,7 +46,6 @@ from icon4py.liskov.parsing.utils import (
 
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
-DEFAULT_ACCPRESENT = "false"
 
 logger = setup_logger(__name__)
 
@@ -241,7 +240,10 @@ class StartStencilDataFactory(DataFactoryBase):
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["StartStencil"][i]
             acc_present = string_to_bool(
-                pop_item_from_dict(named_args, "accpresent", DEFAULT_ACCPRESENT)
+                pop_item_from_dict(named_args, "accpresent", "false")
+            )
+            mergecopy = string_to_bool(
+                pop_item_from_dict(named_args, "mergecopy", "false")
             )
             stencil_name = _extract_stencil_name(named_args, directive)
             bounds = self._make_bounds(named_args)
@@ -256,6 +258,7 @@ class StartStencilDataFactory(DataFactoryBase):
                     startln=directive.startln,
                     endln=directive.endln,
                     acc_present=acc_present,
+                    mergecopy=mergecopy,
                 )
             )
         return deserialised
