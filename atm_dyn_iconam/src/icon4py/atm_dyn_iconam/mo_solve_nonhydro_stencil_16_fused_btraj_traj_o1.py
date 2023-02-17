@@ -105,7 +105,7 @@ def _sten_16(
 
 
 @field_operator
-def _mo_solve_nonhydro_btraj_and_stencil_16(
+def _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
     pos_on_tplane_e_1: Field[[ECDim], float],
@@ -154,7 +154,7 @@ def _mo_solve_nonhydro_btraj_and_stencil_16(
 
 
 @program
-def mo_solve_nonhydro_stencil_16(
+def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
     pos_on_tplane_e_1: Field[[ECDim], float],
@@ -175,7 +175,7 @@ def mo_solve_nonhydro_stencil_16(
     z_rho_e: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
 ):
-    _mo_solve_nonhydro_btraj_and_stencil_16(
+    _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         p_vn,
         p_vt,
         pos_on_tplane_e_1,
