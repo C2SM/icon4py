@@ -79,6 +79,7 @@ mock_deserialised_directives = DeserialisedDirectives(
             startln=None,
             endln=None,
             acc_present=False,
+            mergecopy=False,
         )
     ],
     Imports=None,
