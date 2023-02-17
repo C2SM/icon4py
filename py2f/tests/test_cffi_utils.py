@@ -67,7 +67,7 @@ def test_unpack_local_field(field_type):
     assert np.all(res_field == input_field)
 
 
-def test_unknwon_dimension_raises_exception():
+def test_unknown_dimension_raises_exception():
     @to_fields(dim_sizes={})
     def do_nothing(f1: Field[[VertexDim], float]):
         pass

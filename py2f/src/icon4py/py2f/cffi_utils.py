@@ -50,14 +50,6 @@ class CffiMethod:
         return cls._registry[name]
 
 
-def with_cffi_gen(func):
-    @functools.wraps(func)
-    def _cffi_gen(*args, **kwargs):
-        return func(*args, **kwargs)
-
-    return _cffi_gen
-
-
 def generate_and_compile_cffi_plugin(
     plugin_name: str, c_header: str, module_name: str, build_path="."
 ):

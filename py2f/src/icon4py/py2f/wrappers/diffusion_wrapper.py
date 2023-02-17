@@ -48,75 +48,92 @@ from icon4py.diffusion.icon_grid import (
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.py2f.cffi_utils import CffiMethod
+from icon4py.py2f.cffi_utils import CffiMethod, to_fields
 
 
 diffusion: Diffusion(run_program=True)
 
 
+@to_fields(dim_sizes={EdgeDim: 1})
 @CffiMethod.register
 def diffusion_init(
-    # cvd_o_rd, -> const
-    # grav, jg -> unused
+    cvd_o_rd: float,  # unused, calculated internally
+    grav: float,  # unused
+    jg: int,  # unused (no nesting)
     nproma: int,
     nlev: int,
-    # nblks_e, nblks_v, nblks_c -> unused
+    nblks_e: int,  # unused (no blocking)
+    nblks_v: int,  # unused (no blocking)
+    nblks_c: int,  # unused (no blocking)
     n_shift: int,
     n_shift_total: int,
     nrdmax: float,
     n_dyn_substeps: int,
     nudge_max_coeff: float,
     denom_diffu_v: float,
-    # hdiff_smag_z, hdiff_smag_z2, hdiff_smag_z3, hdiff_smag_z4, -> calculated internally
+    hdiff_smag_z: float,  # calculated internally
+    hdiff_smag_z2: float,  # calculated internally
+    hdiff_smag_z3: float,  # calculated internally
+    hdiff_smag_z4: float,  # calculated internally
     hdiff_smag_fac: float,
-    # hdiff_smag_fac2, hdiff_smag_fac3, hdiff_smag_fac4, -> calculated internally
+    hdiff_smag_fac2: float,  # calculated internally
+    hdiff_smag_fac3: float,  # calculated internally
+    hdiff_smag_fac4: float,  # calculated internally
     hdiff_order: int,
     hdiff_efdt_ratio: float,
-    # k4, k4w -> calculated internally
-    # itype_comm -> unused
+    k4: float,
+    k4w: float,  # calculated internally
+    itype_comm: int,  # unused, single node
     itype_sher: int,
     itype_vn_diffu: int,
     itype_t_diffu: int,
-    # p_test_run -> unused, ??
-    # lphys -> ?? see spreadsheet
+    p_test_run: bool,  # unused
+    lphys: bool,  # unused
     lhdiff_rcf: bool,
     lhdiff_w: bool,
     lhdiff_temp: bool,
     l_limited_area: bool,
-    lfeedback: bool,
+    lfeedback: bool,  # unused
     l_zdiffu_t: bool,
     ltkeshs: bool,
     lsmag_3d: bool,
-    # lvert_nest -> unused
-    ltimer: bool,
-    lvert_nest: bool,
-    # ddt_vn_hdf_is_associated, ddt_vn_dyn_is_associated, -> unused, vector machine specific
+    lvert_nest: bool,  # unused
+    ltimer: bool,  # unused
+    ddt_vn_hdf_is_associated: bool,
+    ddt_vn_dyn_is_associated: bool,  # unused,
     vct_a: Field[[KDim], float],
-    # c_lin_e: [[EdgeDim, E2CDim], float], -> unused, needed for velocity advection
+    c_lin_e: Field[[EdgeDim, E2CDim], float],  # unused option
     e_bln_c_s: Field[[CellDim, C2EDim], float],
-    # cells_aw_verts -> unused, ??
+    # cells_aw_verts: Field[[VertexDim, V2C2VDim], float] # unused, dimension unclear 9 cell type
     geofac_div: Field[[CellDim, C2EDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
     nudgecoeff_e: Field[[EdgeDim], float],
-    # enhfac_diffu -> calculated internally, ??
+    enhfac_diffu: Field[[KDim], float],  #  unused, diffusion type 4 only
     zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float],
-    # zd_geofac -> ?? same as geofac_2ns
+    zd_geofac: Field[[CellDim, C2E2CODim], float],  # same as geofac_2ns
     zd_diffcoef: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
-    # wgtfac_e, wgtfacq_e, wgtfacq1_e, -> unused
-    # ddqz_z_full_e -> unused, velocity advection?
+    wgtfac_e: Field[[EdgeDim, KDim], float],  #  unused
+    wgtfacq_e: Field[[EdgeDim, KDim], float],  #  unused
+    wgtfacq1_e: Field[[EdgeDim, KDim], float],  #  unused
+    ddqz_z_full_e: Field[[EdgeDim, KDim], float],  # unused
     theta_ref_mc: Field[[CellDim, KDim], float],
     zd_indlist: Field[[CellDim, C2E2CDim, KDim], int],
-    # zd_blklist -> unused,
+    zd_blklist: Field[[CellDim, C2E2CDim, KDim], int],  # unused,
     zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int],
     zd_listdim: int,
-    # edges_start_block, edges_end_block, -> unused. ??
+    edges_start_block: Field[
+        [KDim], int
+    ],  # unused, !!wrong dimension: probably is number of patches!!
+    edges_end_block: Field[
+        [KDim], int
+    ],  # unused, !!wrong dimension: probably is number of patches!!,
     edges_vertex_idx: Field[[EdgeDim, E2VDim], int],
-    # edges_vertex_blk, -> unused
+    edges_vertex_blk: Field[[EdgeDim, E2VDim], int],  # unused, not blocking
     edges_cell_idx: Field[[EdgeDim, E2CDim], int],
-    # edges_cell_blk, -> unused
+    edges_cell_blk: Field[[EdgeDim, E2CDim], int],  # unused, not blocking
     edges_tangent_orientation: Field[[EdgeDim], float],
     edges_primal_normal_vert_1: Field[[ECVDim], float],
     edges_primal_normal_vert_2: Field[[ECVDim], float],
@@ -126,11 +143,16 @@ def diffusion_init(
     edges_inv_primal_edge_length: Field[[EdgeDim], float],
     edges_inv_dual_edge_length: Field[[EdgeDim], float],
     edges_area_edge: Field[[EdgeDim], float],
-    # cells_start_block, cells_end_block, -> unused
+    cells_start_block: Field[
+        [KDim], int
+    ],  # unused, !!wrong dimension: probably is number of patches!!
+    cells_end_block: Field[
+        [KDim], int
+    ],  # unused, !!wrong dimension: probably is number of patches!!
     cells_neighbor_idx: Field[[CellDim, C2E2CDim], int],
-    # cells_neighbor_blk -> unused
+    cells_neighbor_blk: Field[[CellDim, C2E2CDim], int],  # unused, not blocking,
     cells_edge_idx: Field[[CellDim, C2EDim], int],
-    # cells_edge_blk -> unused
+    cells_edge_blk: Field[[CellDim, C2EDim], int],  # unused, not blocking,
     cells_area: Field[[CellDim], float],
     mask_hdiff: Field[[CellDim, KDim], int],  # dsl specific
     rbf_coeff_1: Field[
@@ -150,8 +172,11 @@ def diffusion_init(
     Fortran ICON Diffusion component (aka Diffusion granule)
 
     """
-    # TODO set up grid from input fields
-    # TODO set up configuration from input fields
+    if diffusion.initialized:
+        raise DuplicateInitializationException(
+            "Diffusion has already been already initialized"
+        )
+
     config: DiffusionConfig = DiffusionConfig(
         diffusion_type=hdiff_order,
         type_t_diffu=itype_t_diffu,
@@ -236,13 +261,12 @@ def diffusion_init(
     )
 
 
+@to_fields(dim_sizes={EdgeDim: 1})
 @CffiMethod.register
 def diffusion_run(
-    jg: int,  # -> unused
+    jg: int,  # -> unused, no nesting
     dtime: float,
     linit: bool,
-    # p_patch -> passed as simple fields
-    # p_int -> passed as simple fields
     vn: Field[[EdgeDim, KDim], float],
     w: Field[[CellDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
@@ -254,7 +278,8 @@ def diffusion_run(
     hdef_ic: Field[[CellDim, KDim], float],
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
-    # ddt_vn_dyn, ddt_vn_hdf -> optional, unused
+    ddt_vn_dyn: Field[[EdgeDim, KDim], float],  # unused -> optional
+    ddt_vn_hdf: Field[[EdgeDim, KDim], float],  # unused -> optional
 ):
     diagnostic_state = DiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
     prognostic_state = PrognosticState(

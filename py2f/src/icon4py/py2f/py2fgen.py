@@ -15,12 +15,12 @@ import pathlib
 
 import click
 
-from icon4py.f2py.cffi_utils import generate_and_compile_cffi_plugin
-from icon4py.f2py.codegen import (
+from icon4py.py2f.cffi_utils import generate_and_compile_cffi_plugin
+from icon4py.py2f.codegen import (
     generate_and_write_f90_interface,
     generate_c_header,
 )
-from icon4py.f2py.parsing import parse_functions_from_module
+from icon4py.py2f.parsing import parse_functions_from_module
 
 
 @click.command(
@@ -38,7 +38,7 @@ def main(module: str, build_path: pathlib.Path) -> None:
 
       Args:
           - module: name of the python module containing the methods to be embedded. Those
-          methods have to be decoratoed with CffiMethod.register
+          methods have to be decorated with CffiMethod.register
 
           - build_path: directory where the generated code and compiled libraries are to be found.
     """
