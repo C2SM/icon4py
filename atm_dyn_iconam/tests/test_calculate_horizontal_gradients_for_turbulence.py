@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulance import (
-    calculate_horizontal_gradients_for_turbulance,
+from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import (
+    calculate_horizontal_gradients_for_turbulence,
 )
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def calculate_horizontal_gradients_for_turbulance_numpy(
+def calculate_horizontal_gradients_for_turbulence_numpy(
     c2e2c0: np.array,
     w: np.array,
     geofac_grg_x: np.array,
@@ -35,7 +35,7 @@ def calculate_horizontal_gradients_for_turbulance_numpy(
     return dwdx, dwdy
 
 
-def test_calculate_horizontal_gradients_for_turbulance():
+def test_calculate_horizontal_gradients_for_turbulence():
     mesh = SimpleMesh()
 
     w = random_field(mesh, CellDim, KDim)
@@ -44,10 +44,10 @@ def test_calculate_horizontal_gradients_for_turbulance():
     dwdx = zero_field(mesh, CellDim, KDim)
     dwdy = zero_field(mesh, CellDim, KDim)
 
-    dwdx_ref, dwdy_ref = calculate_horizontal_gradients_for_turbulance_numpy(
+    dwdx_ref, dwdy_ref = calculate_horizontal_gradients_for_turbulence_numpy(
         mesh.c2e2cO, np.asarray(w), np.asarray(geofac_grg_x), np.asarray(geofac_grg_y)
     )
-    calculate_horizontal_gradients_for_turbulance(
+    calculate_horizontal_gradients_for_turbulence(
         w,
         geofac_grg_x,
         geofac_grg_y,
