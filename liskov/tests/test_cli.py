@@ -14,6 +14,7 @@
 import pytest
 from samples.fortran_samples import (
     CONSECUTIVE_STENCIL,
+    FREE_FORM_STENCIL,
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,
@@ -30,7 +31,7 @@ def test_cli_no_directives(make_f90_tmpfile, cli, file):
 
 
 @pytest.mark.parametrize(
-    "file", [SINGLE_STENCIL, CONSECUTIVE_STENCIL, MULTIPLE_STENCILS]
+    "file", [SINGLE_STENCIL, CONSECUTIVE_STENCIL, FREE_FORM_STENCIL, MULTIPLE_STENCILS]
 )
 def test_cli(make_f90_tmpfile, cli, file):
     fpath = str(make_f90_tmpfile(content=file))
@@ -39,7 +40,7 @@ def test_cli(make_f90_tmpfile, cli, file):
 
 
 @pytest.mark.parametrize(
-    "file", [SINGLE_STENCIL, CONSECUTIVE_STENCIL, MULTIPLE_STENCILS]
+    "file", [SINGLE_STENCIL, CONSECUTIVE_STENCIL, FREE_FORM_STENCIL, MULTIPLE_STENCILS]
 )
 def test_cli_profile(make_f90_tmpfile, cli, file):
     fpath = str(make_f90_tmpfile(content=file))

@@ -31,6 +31,8 @@ from icon4py.liskov.codegen.f90 import (
     EndStencilStatementGenerator,
     ImportsStatement,
     ImportsStatementGenerator,
+    InsertStatement,
+    InsertStatementGenerator,
     StartCreateStatement,
     StartCreateStatementGenerator,
     StartProfileStatement,
@@ -80,6 +82,7 @@ class IntegrationGenerator(Step):
         self._generate_end_stencil()
         self._generate_endif()
         self._generate_profile()
+        self._generate_insert()
         return self.generated
 
     def _generate(
@@ -141,6 +144,7 @@ class IntegrationGenerator(Step):
                     bounds=stencil.bounds,
                     acc_present=stencil.acc_present,
                     mergecopy=stencil.mergecopy,
+                    copies=stencil.copies,
                 )
                 i += 2
 
@@ -244,4 +248,17 @@ class IntegrationGenerator(Step):
                     EndProfileStatementGenerator,
                     end.startln,
                     end.endln,
+                )
+
+    def _generate_insert(self) -> None:
+        """Generate free form statement from insert directive."""
+        if self.directives.Insert != UnusedDirective:
+            for insert in self.directives.Insert:  # type: ignore
+                logger.info("Generating free form statement.")
+                self._generate(
+                    InsertStatement,
+                    InsertStatementGenerator,
+                    insert.startln,
+                    insert.endln,
+                    content=insert.content,
                 )

@@ -26,6 +26,7 @@ from icon4py.liskov.codegen.interface import (
     EndStencilData,
     FieldAssociationData,
     ImportsData,
+    InsertData,
     StartCreateData,
     StartProfileData,
     StartStencilData,
@@ -46,6 +47,7 @@ from icon4py.liskov.parsing.utils import (
 
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
+DEFAULT_DECLARE_SUFFIX = "before"
 
 logger = setup_logger(__name__)
 
@@ -158,12 +160,14 @@ class DeclareDataFactory(DataFactoryBase):
             ident_type = pop_item_from_dict(
                 named_args, "type", DEFAULT_DECLARE_IDENT_TYPE
             )
+            suffix = pop_item_from_dict(named_args, "suffix", DEFAULT_DECLARE_SUFFIX)
             deserialised.append(
                 self.dtype(
                     startln=directive.startln,
                     endln=directive.endln,
                     declarations=named_args,
                     ident_type=ident_type,
+                    suffix=suffix,
                 )
             )
         return deserialised
@@ -245,6 +249,7 @@ class StartStencilDataFactory(DataFactoryBase):
             mergecopy = string_to_bool(
                 pop_item_from_dict(named_args, "mergecopy", "false")
             )
+            copies = string_to_bool(pop_item_from_dict(named_args, "copies", "true"))
             stencil_name = _extract_stencil_name(named_args, directive)
             bounds = self._make_bounds(named_args)
             fields = self._make_fields(named_args, field_dimensions)
@@ -259,6 +264,7 @@ class StartStencilDataFactory(DataFactoryBase):
                     endln=directive.endln,
                     acc_present=acc_present,
                     mergecopy=mergecopy,
+                    copies=copies,
                 )
             )
         return deserialised
@@ -353,6 +359,24 @@ class StartStencilDataFactory(DataFactoryBase):
         return fields
 
 
+@dataclass
+class InsertDataFactory(DataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = ts.Insert
+    dtype: Type[StartStencilData] = InsertData
+
+    def __call__(self, parsed: ts.ParsedDict) -> list[InsertData]:
+        deserialised = []
+        extracted = extract_directive(parsed["directives"], self.directive_cls)
+        for i, directive in enumerate(extracted):
+            content = parsed["content"]["Insert"][i]
+            deserialised.append(
+                self.dtype(
+                    startln=directive.startln, endln=directive.endln, content=content
+                )
+            )
+        return deserialised
+
+
 class DirectiveDeserialiser(Step):
     _FACTORIES: dict[str, Callable] = {
         "StartCreate": StartCreateDataFactory(),
@@ -364,6 +388,7 @@ class DirectiveDeserialiser(Step):
         "EndIf": EndIfDataFactory(),
         "StartProfile": StartProfileDataFactory(),
         "EndProfile": EndProfileDataFactory(),
+        "Insert": InsertDataFactory(),
     }
 
     def __call__(self, directives: ts.ParsedDict) -> DeserialisedDirectives:

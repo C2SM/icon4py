@@ -31,6 +31,8 @@ SINGLE_STENCIL = """\
 
     !$DSL START CREATE()
 
+    !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; suffix=dsl)
+
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; a=nproma,p_patch%nlev,p_patch%nblks_e; &
     !$DSL         b=nproma,p_patch%nlev,p_patch%nblks_e; type=REAL(vp))
 
@@ -285,6 +287,38 @@ CONSECUTIVE_STENCIL = """\
 
     !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45; noendif=true; noprofile=true)
     !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45_b; noendif=true; noprofile=true)
+
+    !$DSL END CREATE()
+"""
+
+
+FREE_FORM_STENCIL = """\
+    !$DSL IMPORTS()
+
+    !$DSL START CREATE()
+
+    !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
+
+    !$DSL INSERT(some custom fields go here)
+
+    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45; z_alpha=z_alpha(:,:); vertical_lower=nlevp1; &
+    !$DSL               vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
+        !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
+        !$ACC LOOP GANG VECTOR
+        DO jc = i_startidx, i_endidx
+          z_alpha(jc,nlevp1) = 0.0_wp
+          !
+          ! Note: z_q is used in the tridiagonal matrix solver for w below.
+          !       z_q(1) is always zero, irrespective of w(1)=0 or w(1)/=0
+          !       z_q(1)=0 is equivalent to cp(slev)=c(slev)/b(slev) in mo_math_utilities:tdma_solver_vec
+          z_q(jc,1) = 0._vp
+        ENDDO
+        !$ACC END PARALLEL
+
+    !$DSL INSERT(some custom code goes here)
+
+    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45)
 
     !$DSL END CREATE()
 """

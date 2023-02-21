@@ -48,6 +48,7 @@ class FieldAssociationData:
 class DeclareData(CodeGenInput):
     declarations: dict[str, str]
     ident_type: str
+    suffix: str
 
 
 @dataclass
@@ -87,6 +88,7 @@ class StartStencilData(CodeGenInput):
     bounds: BoundsData
     acc_present: Optional[bool]
     mergecopy: Optional[bool]
+    copies: Optional[bool]
 
 
 @dataclass
@@ -94,6 +96,11 @@ class EndStencilData(CodeGenInput):
     name: str
     noendif: Optional[bool]
     noprofile: Optional[bool]
+
+
+@dataclass
+class InsertData(CodeGenInput):
+    content: str
 
 
 @dataclass
@@ -107,3 +114,4 @@ class DeserialisedDirectives:
     EndIf: Sequence[EndIfData] | UnusedDirective
     StartProfile: Sequence[StartProfileData] | UnusedDirective
     EndProfile: Sequence[EndProfileData] | UnusedDirective
+    Insert: Sequence[InsertData] | UnusedDirective

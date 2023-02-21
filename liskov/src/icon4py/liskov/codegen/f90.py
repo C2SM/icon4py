@@ -227,9 +227,8 @@ class DeclareStatementGenerator(TemplatedGenerator):
         """
         ! DSL INPUT / OUTPUT FIELDS
         {%- for d in _this_node.declarations %}
-        {{ _this_node.declare_data.ident_type }}, DIMENSION({{ d.association }}) :: {{ d.variable }}_before
+        {{ _this_node.declare_data.ident_type }}, DIMENSION({{ d.association }}) :: {{ d.variable }}_{{ _this_node.declare_data.suffix }}
         {%- endfor %}
-        LOGICAL :: dsl_verify
         """
     )
 
@@ -302,11 +301,13 @@ class StartStencilStatementGenerator(TemplatedGenerator):
     StartStencilStatement = as_jinja(
         """
         #ifdef __DSL_VERIFY
+        {% if _this_node.stencil_data.copies -%}
         !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
         !$ACC END PARALLEL
+        {%- endif -%}
 
         {%- if _this_node.profile %}
         call nvtxStartRange("{{ _this_node.stencil_data.name }}")
@@ -391,3 +392,11 @@ class EndProfileStatement(eve.Node):
 
 class EndProfileStatementGenerator(TemplatedGenerator):
     EndProfileStatement = as_jinja("call nvtxEndRange()")
+
+
+class InsertStatement(eve.Node):
+    content: str
+
+
+class InsertStatementGenerator(TemplatedGenerator):
+    InsertStatement = as_jinja("{{ _this_node.content }}")

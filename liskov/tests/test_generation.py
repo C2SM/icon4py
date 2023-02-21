@@ -25,6 +25,7 @@ from icon4py.liskov.codegen.interface import (
     EndStencilData,
     FieldAssociationData,
     ImportsData,
+    InsertData,
     StartCreateData,
     StartProfileData,
     StartStencilData,
@@ -68,6 +69,7 @@ def serialised_directives():
         endln=2,
         acc_present=False,
         mergecopy=False,
+        copies=True,
     )
     end_stencil_data = EndStencilData(
         name="stencil1", startln=3, endln=4, noendif=False, noprofile=False
@@ -77,6 +79,7 @@ def serialised_directives():
         endln=6,
         declarations={"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"},
         ident_type="REAL(wp)",
+        suffix="before",
     )
     imports_data = ImportsData(startln=7, endln=8)
     start_create_data = StartCreateData(startln=9, endln=10)
@@ -84,6 +87,7 @@ def serialised_directives():
     endif_data = EndIfData(startln=12, endln=12)
     start_profile_data = StartProfileData(startln=13, endln=13, name="test_stencil")
     end_profile_data = EndProfileData(startln=14, endln=14)
+    insert_data = InsertData(startln=15, endln=15, content="print *, 'Hello, World!'")
 
     return DeserialisedDirectives(
         StartStencil=[start_stencil_data],
@@ -95,6 +99,7 @@ def serialised_directives():
         EndIf=[endif_data],
         StartProfile=[start_profile_data],
         EndProfile=[end_profile_data],
+        Insert=[insert_data],
     )
 
 
@@ -132,8 +137,7 @@ def expected_imports_source():
 def expected_declare_source():
     return """
         ! DSL INPUT / OUTPUT FIELDS
-        REAL(wp), DIMENSION((nproma, p_patch%nlev, p_patch%nblks_e)) :: field2_before
-        LOGICAL :: dsl_verify"""
+        REAL(wp), DIMENSION((nproma, p_patch%nlev, p_patch%nblks_e)) :: field2_before"""
 
 
 @pytest.fixture
@@ -195,6 +199,11 @@ def expected_end_profile_source():
 
 
 @pytest.fixture
+def expected_insert_source():
+    return "print *, 'Hello, World!'"
+
+
+@pytest.fixture
 def generator(serialised_directives):
     return IntegrationGenerator(serialised_directives, profile=True)
 
@@ -210,10 +219,11 @@ def test_generate(
     expected_endif_source,
     expected_start_profile_source,
     expected_end_profile_source,
+    expected_insert_source,
 ):
     # Check that the generated code snippets are as expected
     generated = generator()
-    assert len(generated) == 9
+    assert len(generated) == 10
     assert generated[0].source == expected_start_create_source
     assert generated[1].source == expected_end_create_source
     assert generated[2].source == expected_imports_source
@@ -223,3 +233,4 @@ def test_generate(
     assert generated[6].source == expected_endif_source
     assert generated[7].source == expected_start_profile_source
     assert generated[8].source == expected_end_profile_source
+    assert generated[9].source == expected_insert_source

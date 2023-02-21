@@ -89,6 +89,16 @@ class WithoutArguments(TypedDirective):
         return {}
 
 
+@dataclass(eq=False)
+class FreeForm(TypedDirective):
+    # matches any string inside brackets
+    regex: str = field(default=r"(.+?)", init=False)
+
+    def get_content(self) -> dict:
+        args = self.string.replace(f"{self.pattern}", "")
+        return args[1:-1]
+
+
 class StartStencil(WithArguments):
     pattern = "START STENCIL"
 
@@ -125,6 +135,10 @@ class EndProfile(WithoutArguments):
     pattern = "END PROFILE"
 
 
+class Insert(FreeForm):
+    pattern = "INSERT"
+
+
 # When adding a new directive this list must be updated.
 SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     StartStencil,
@@ -136,4 +150,5 @@ SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     EndIf,
     StartProfile,
     EndProfile,
+    Insert,
 ]
