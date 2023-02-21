@@ -290,15 +290,15 @@ class CppDefGenerator(TemplatedGenerator):
       using namespace fn;
       {% for field in _this_node.all_fields -%}
         {% if field.is_sparse() == False and field.rank() > 0 %}
-          auto {{field.name}}_sid = {{ field.renderer.render_sid() }};
+          auto {{field.name}}_sid = get_sid({{field.name}}_, {{ field.renderer.render_sid() }});
         {% endif %}
       {% endfor -%}
       {%- for field in _this_node.sparse_fields -%}
         {%- for i in range(0, field.get_num_neighbors()) -%}
-            double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.renderer.render_stride_type()}}];
+            {{field.renderer.render_ctype('c++')}} *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.renderer.render_stride_type()}}{%- if field.has_vertical_dimension -%}*kSize_{%- endif -%}];
         {% endfor -%}
         {%- for i in range(0, field.get_num_neighbors()) -%}
-            auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, gridtools::hymap::keys<unstructured::dim::horizontal>::make_values(1));
+            auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, {{ field.renderer.render_sid() }});
         {% endfor -%}
         auto {{field.name}}_sid_comp = sid::composite::keys<
         {%- for i in range(0, field.get_num_neighbors()) -%}
