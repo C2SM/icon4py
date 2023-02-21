@@ -75,118 +75,38 @@ MULTIPLE_STENCILS = """\
     !$DSL START CREATE()
 
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; z_rho_e=nproma,p_patch%nlev,p_patch%nblks_c; &
-    !$DSL         z_theta_v_e=nproma,p_patch%nlev,p_patch%nblks_c; z_nabla2_c=nproma,p_patch%nlev,p_patch%nblks_c)
+    !$DSL         z_theta_v_e=nproma,p_patch%nlev,p_patch%nblks_c; z_nabla2_c=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL         z_rth_pr_1=nproma,p_patch%nlev,p_patch%nblks_c; z_rth_pr_2=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL         rho_ic=nproma,p_patch%nlev,p_patch%nblks_c)
 
-    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_16; p_vn=p_nh%prog(nnow)%vn(:,:,1); rho_ref_me=p_nh%metrics%rho_ref_me(:,:,1); &
-    !$DSL          theta_ref_me=p_nh%metrics%theta_ref_me(:,:,1); p_distv_bary_1=p_distv_bary(:,:,1,1); p_distv_bary_2=p_distv_bary(:,:,1,2); &
-    !$DSL          z_grad_rth_1=z_grad_rth(:,:,1,1); z_grad_rth_2=z_grad_rth(:,:,1,2); z_grad_rth_3=z_grad_rth(:,:,1,3); z_grad_rth_4=z_grad_rth(:,:,1,4); &
-    !$DSL          z_rth_pr_1=z_rth_pr(:,:,1,1); z_rth_pr_2=z_rth_pr(:,:,1,2); z_rho_e=z_rho_e(:,:,1); z_theta_v_e=z_theta_v_e(:,:,1); &
-    !$DSL          vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
-    !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on )  DEFAULT(NONE) ASYNC(1)
-    #if defined (__LOOP_EXCHANGE) || defined (__SX__)
-                  ! For cache-based machines, also the back-trajectory computation is inlined to improve efficiency
-                  !$ACC LOOP GANG VECTOR COLLAPSE(2)   &
-                  !$ACC      PRIVATE(lvn_pos,ilc0,ibc0,z_ntdistv_bary_1,z_ntdistv_bary_2,distv_bary_1,distv_bary_2)
-    #ifdef __LOOP_EXCHANGE
-                  DO je = i_startidx, i_endidx
-    !DIR$ IVDEP, PREFERVECTOR
-                    DO jk = 1, nlev
-    #else
-                  DO jk = 1, nlev
-                    DO je = i_startidx, i_endidx
-    #endif
-                      lvn_pos = p_nh%prog(nnow)%vn(je,jk,jb) >= 0._wp
+    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_08; wgtfac_c=p_nh%metrics%wgtfac_c(:,:,1); rho=p_nh%prog(nnow)%rho(:,:,1); rho_ref_mc=p_nh%metrics%rho_ref_mc(:,:,1); &
+    !$DSL               theta_v=p_nh%prog(nnow)%theta_v(:,:,1); theta_ref_mc=p_nh%metrics%theta_ref_mc(:,:,1); rho_ic=p_nh%diag%rho_ic(:,:,1); z_rth_pr_1=z_rth_pr(:,:,1,1); &
+    !$DSL               z_rth_pr_2=z_rth_pr(:,:,1,2); vertical_lower=2; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+              !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
+              !$ACC LOOP GANG VECTOR TILE(32, 4)
+              DO jk = 2, nlev
+    !DIR$ IVDEP
+                DO jc = i_startidx, i_endidx
+                  ! density at interface levels for vertical flux divergence computation
+                  p_nh%diag%rho_ic(jc,jk,jb) = p_nh%metrics%wgtfac_c(jc,jk,jb) *p_nh%prog(nnow)%rho(jc,jk  ,jb) + &
+                                        (1._wp-p_nh%metrics%wgtfac_c(jc,jk,jb))*p_nh%prog(nnow)%rho(jc,jk-1,jb)
 
-                      ! line and block indices of upwind neighbor cell
-                      ilc0 = MERGE(p_patch%edges%cell_idx(je,jb,1),p_patch%edges%cell_idx(je,jb,2),lvn_pos)
-                      ibc0 = MERGE(p_patch%edges%cell_blk(je,jb,1),p_patch%edges%cell_blk(je,jb,2),lvn_pos)
-
-                      ! distances from upwind mass point to the end point of the backward trajectory
-                      ! in edge-normal and tangential directions
-                      z_ntdistv_bary_1 =  - ( p_nh%prog(nnow)%vn(je,jk,jb) * dthalf +    &
-                        MERGE(p_int%pos_on_tplane_e(je,jb,1,1), p_int%pos_on_tplane_e(je,jb,2,1),lvn_pos))
-
-                      z_ntdistv_bary_2 =  - ( p_nh%diag%vt(je,jk,jb) * dthalf +    &
-                        MERGE(p_int%pos_on_tplane_e(je,jb,1,2), p_int%pos_on_tplane_e(je,jb,2,2),lvn_pos))
-
-                      ! rotate distance vectors into local lat-lon coordinates:
-                      !
-                      ! component in longitudinal direction
-                      distv_bary_1 =                                                                     &
-                            z_ntdistv_bary_1*MERGE(p_patch%edges%primal_normal_cell(je,jb,1)%v1,         &
-                                                   p_patch%edges%primal_normal_cell(je,jb,2)%v1,lvn_pos) &
-                          + z_ntdistv_bary_2*MERGE(p_patch%edges%dual_normal_cell(je,jb,1)%v1,           &
-                                                   p_patch%edges%dual_normal_cell(je,jb,2)%v1,lvn_pos)
-
-                      ! component in latitudinal direction
-                      distv_bary_2 =                                                                     &
-                            z_ntdistv_bary_1*MERGE(p_patch%edges%primal_normal_cell(je,jb,1)%v2,         &
-                                                   p_patch%edges%primal_normal_cell(je,jb,2)%v2,lvn_pos) &
-                          + z_ntdistv_bary_2*MERGE(p_patch%edges%dual_normal_cell(je,jb,1)%v2,           &
-                                                   p_patch%edges%dual_normal_cell(je,jb,2)%v2,lvn_pos)
-
-
-                      ! Calculate "edge values" of rho and theta_v
-                      ! Note: z_rth_pr contains the perturbation values of rho and theta_v,
-                      ! and the corresponding gradients are stored in z_grad_rth.
+                  ! perturbation density and virtual potential temperature at main levels for horizontal flux divergence term
+                  ! (needed in the predictor step only)
     #ifdef __SWAPDIM
-                      z_rho_e(je,jk,jb) =                                                     &
-                        REAL(p_nh%metrics%rho_ref_me(je,jk,jb),wp) + z_rth_pr(ilc0,jk,ibc0,1) &
-                        + distv_bary_1 * z_grad_rth(ilc0,jk,ibc0,1) &
-                        + distv_bary_2 * z_grad_rth(ilc0,jk,ibc0,2)
-                      z_theta_v_e(je,jk,jb) =                                                   &
-                        REAL(p_nh%metrics%theta_ref_me(je,jk,jb),wp) + z_rth_pr(ilc0,jk,ibc0,2) &
-                        + distv_bary_1 * z_grad_rth(ilc0,jk,ibc0,3)                             &
-                        + distv_bary_2 * z_grad_rth(ilc0,jk,ibc0,4)
+                  z_rth_pr(jc,jk,jb,1) =  p_nh%prog(nnow)%rho(jc,jk,jb)     - p_nh%metrics%rho_ref_mc(jc,jk,jb)
+                  z_rth_pr(jc,jk,jb,2) =  p_nh%prog(nnow)%theta_v(jc,jk,jb) - p_nh%metrics%theta_ref_mc(jc,jk,jb)
     #else
-                      z_rho_e(je,jk,jb) = REAL(p_nh%metrics%rho_ref_me(je,jk,jb),wp) &
-                        +                      z_rth_pr(1,ilc0,jk,ibc0)              &
-                        + distv_bary_1 * z_grad_rth(1,ilc0,jk,ibc0)                  &
-                        + distv_bary_2 * z_grad_rth(2,ilc0,jk,ibc0)
-
-                      z_theta_v_e(je,jk,jb) = REAL(p_nh%metrics%theta_ref_me(je,jk,jb),wp) &
-                        +                          z_rth_pr(2,ilc0,jk,ibc0)                &
-                        + distv_bary_1 * z_grad_rth(3,ilc0,jk,ibc0)                        &
-                        + distv_bary_2 * z_grad_rth(4,ilc0,jk,ibc0)
+                  z_rth_pr(1,jc,jk,jb) =  p_nh%prog(nnow)%rho(jc,jk,jb)     - p_nh%metrics%rho_ref_mc(jc,jk,jb)
+                  z_rth_pr(2,jc,jk,jb) =  p_nh%prog(nnow)%theta_v(jc,jk,jb) - p_nh%metrics%theta_ref_mc(jc,jk,jb)
     #endif
-                    ENDDO   ! loop over vertical levels
-                  ENDDO ! loop over edges
-    #else
-                  !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(ilc0,ibc0)
-                  DO jk = 1, nlev
-                    DO je = i_startidx, i_endidx
-
-                      ilc0 = p_cell_idx(je,jk,jb)
-                      ibc0 = p_cell_blk(je,jk,jb)
-
-                      ! Calculate "edge values" of rho and theta_v
-                      ! Note: z_rth_pr contains the perturbation values of rho and theta_v,
-                      ! and the corresponding gradients are stored in z_grad_rth.
-    #ifdef __SWAPDIM
-                      z_rho_e(je,jk,jb) =                                                       &
-                        REAL(p_nh%metrics%rho_ref_me(je,jk,jb),wp) + z_rth_pr(ilc0,jk,ibc0,1)   &
-                        + p_distv_bary(je,jk,jb,1) * z_grad_rth(ilc0,jk,ibc0,1)             &
-                        + p_distv_bary(je,jk,jb,2) * z_grad_rth(ilc0,jk,ibc0,2)
-                      z_theta_v_e(je,jk,jb) =                                                   &
-                        REAL(p_nh%metrics%theta_ref_me(je,jk,jb),wp) + z_rth_pr(ilc0,jk,ibc0,2) &
-                        + p_distv_bary(je,jk,jb,1) * z_grad_rth(ilc0,jk,ibc0,3)             &
-                        + p_distv_bary(je,jk,jb,2) * z_grad_rth(ilc0,jk,ibc0,4)
-    #else
-                      z_rho_e(je,jk,jb) = REAL(p_nh%metrics%rho_ref_me(je,jk,jb),wp)     &
-                        +                            z_rth_pr(1,ilc0,jk,ibc0)            &
-                        + p_distv_bary(je,jk,jb,1) * z_grad_rth(1,ilc0,jk,ibc0)      &
-                        + p_distv_bary(je,jk,jb,2) * z_grad_rth(2,ilc0,jk,ibc0)
-                      z_theta_v_e(je,jk,jb) = REAL(p_nh%metrics%theta_ref_me(je,jk,jb),wp) &
-                        +                            z_rth_pr(2,ilc0,jk,ibc0)              &
-                        + p_distv_bary(je,jk,jb,1) * z_grad_rth(3,ilc0,jk,ibc0)        &
-                        + p_distv_bary(je,jk,jb,2) * z_grad_rth(4,ilc0,jk,ibc0)
+    #ifdef _OPENACC
+                ENDDO
+              ENDDO
+              !$ACC END PARALLEL
     #endif
 
-                    ENDDO ! loop over edges
-                  ENDDO   ! loop over vertical levels
-    #endif
-    !$ACC END PARALLEL
-    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_16)
+    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_08)
 
 
     !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
