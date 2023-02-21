@@ -12,10 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Optional
 
-from functional.common import Dimension
-from functional.ffront.fbuiltins import Field
-from functional.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.common import Dimension
+from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
+import icon4py.velocity.velocity_advection_program as velocity_prog
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
     mo_velocity_advection_stencil_01,
 )
@@ -95,7 +96,6 @@ from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState
 from icon4py.state_utils.prognostic_state import PrognosticState
 from icon4py.state_utils.utils import bool_field, set_zero_w_k, zero_field
-import icon4py.velocity.velocity_advection_program as velocity_prog
 from icon4py.velocity.z_fields import ZFields
 
 

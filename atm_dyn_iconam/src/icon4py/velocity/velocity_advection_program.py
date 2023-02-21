@@ -12,9 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-from functional.common import Field
-from functional.ffront.decorator import program
-from functional.program_processors.runners import gtfn_cpu
+from gt4py.next.common import Field
+from gt4py.next.ffront.decorator import program
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
     _mo_velocity_advection_stencil_01,
