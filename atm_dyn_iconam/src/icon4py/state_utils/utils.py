@@ -13,10 +13,10 @@
 from typing import Tuple
 
 import numpy as np
-from functional.common import Dimension, Field
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import broadcast, maximum, minimum
-from functional.iterator.embedded import np_as_located_field
+from gt4py.next.common import Dimension, Field
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
+from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import CellDim, KDim, Koff, VertexDim
 

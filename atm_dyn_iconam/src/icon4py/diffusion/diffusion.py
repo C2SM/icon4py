@@ -18,9 +18,9 @@ from collections import namedtuple
 from typing import Final, Optional, Tuple
 
 import numpy as np
-from functional.common import Dimension
-from functional.ffront.fbuiltins import Field, int32
-from functional.iterator.embedded import (
+from gt4py.next.common import Dimension
+from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.iterator.embedded import (
     StridedNeighborOffsetProvider,
     np_as_located_field,
 )
@@ -357,7 +357,7 @@ class DiffusionParams:
 def mo_nh_diffusion_stencil_15_numpy(
     c2e2c,
     mask_hdiff: Field[[CellDim, KDim], int],
-    zd_vertidx: Field[[C2E2CDim, KDim], int],
+    zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int],
     zd_diffcoef: Field[[CellDim, KDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     vcoef: Field[[C2E2CDim, KDim], float],

@@ -13,16 +13,20 @@
 
 import numpy as np
 import serialbox as ser
-from functional.common import Dimension
-from functional.ffront.fbuiltins import int32
-from functional.iterator.embedded import np_as_located_field
+from gt4py.next.common import Dimension
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
     CellDim,
+    E2C2EDim,
+    E2C2EODim,
     E2C2VDim,
+    E2CDim,
+    ECDim,
     EdgeDim,
     KDim,
     V2EDim,
@@ -30,7 +34,7 @@ from icon4py.common.dimension import (
 )
 
 
-class IconDiffusionSavepoint:
+class IconSavepoint:
     def __init__(self, sp: ser.Savepoint, ser: ser.Serializer):
         self.savepoint = sp
         self.serializer = ser
@@ -41,6 +45,8 @@ class IconDiffusionSavepoint:
     def _get_field(self, name, *dimensions, dtype=float):
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
         print(f"{name} {buffer.shape}")
+        if len(dimensions) < len(buffer.shape):
+            return np_as_located_field(*dimensions)(buffer[0])
         return np_as_located_field(*dimensions)(buffer)
 
     def get_metadata(self, *names):
@@ -48,7 +54,7 @@ class IconDiffusionSavepoint:
         return {n: metadata[n] for n in names if n in metadata}
 
 
-class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
+class IconInitSavepoint(IconSavepoint):
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 
@@ -77,7 +83,7 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
         return self._get_field("cell_areas", CellDim)
 
     def edge_areas(self):
-        return self._get_field("cell_areas", EdgeDim)
+        return self._get_field("edge_areas", EdgeDim)
 
     def inv_dual_edge_length(self):
         return self._get_field("inv_dual_edge_length", EdgeDim)
@@ -144,6 +150,14 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
         # subtract 1 to account for python being 0 based
         return self.serializer.read("c2e2c", self.savepoint) - 1
 
+    def e2c2e(self):
+        # subtract 1 to account for python being 0 based
+        return self.serializer.read("e2c2e", self.savepoint) - 1
+
+    def e2ec(self):
+        # subtract 1 to account for python being 0 based
+        return self.serializer.read("e2ec", self.savepoint) - 1
+
     def e2c(self):
         # subtract 1 to account for python being 0 based
         return self.serializer.read("e2c", self.savepoint) - 1
@@ -171,6 +185,39 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
     def vn(self):
         return self._get_field("vn", EdgeDim, KDim)
 
+    def vn_ie(self):
+        return self._get_field("vn_ie", EdgeDim, KDim)
+
+    def vt(self):
+        return self._get_field("vt", EdgeDim, KDim)
+
+    def w_concorr_c(self):  # TODO: data not serialized
+        return self._get_field("w_concorr_c", CellDim, KDim)
+
+    def ddt_w_adv_pc(self):  # TODO: data not serialized
+        return self._get_field("ddt_w_adv_pc", CellDim, KDim)
+
+    def ddt_vn_apc_pc(self):  # TODO: data not serialized
+        return self._get_field("ddt_vn_apc_pc", EdgeDim, KDim)
+
+    def owner_mask(self):  # TODO: data not serialized
+        return self._get_field("owner_mask", CellDim)
+
+    def f_e(self):  # TODO: data not serialized
+        return self._get_field("f_e", EdgeDim)
+
+    def wgtfacq_e(self):  # TODO: data not serialized
+        return self._get_field("wgtfacq_e", EdgeDim, KDim)
+
+    def z_w_concorr_me(self):
+        return self._get_field("z_w_concorr_me", EdgeDim, KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("z_kin_hor_e", EdgeDim, KDim)
+
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", EdgeDim, KDim)
+
     def theta_v(self):
         return self._get_field("theta_v", CellDim, KDim)
 
@@ -195,6 +242,27 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
+    def ddqz_z_half(self):
+        return self._get_field("ddqz_z_half", CellDim, KDim)
+
+    def ddxt_z_full(self):
+        return self._get_field("ddxt_z_full", EdgeDim, KDim)
+
+    def ddxn_z_full(self):
+        return self._get_field("ddxn_z_full", EdgeDim, KDim)
+
+    def ddqz_z_full_e(self):
+        return self._get_field("ddqz_z_full_e", EdgeDim, KDim)
+
+    def coeff_gradekin(self):
+        return self._get_field("coeff_gradekin", ECDim)
+
+    def coeff2_dwdz(self):
+        return self._get_field("coeff2_dwdz", CellDim, KDim)
+
+    def coeff1_dwdz(self):
+        return self._get_field("coeff1_dwdz", CellDim, KDim)
+
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
 
@@ -215,6 +283,15 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
 
     def nudgecoeff_e(self):
         return self._get_field("nudgecoeff_e", EdgeDim)
+
+    def c_lin_e(self):
+        return self._get_field("c_lin_e", EdgeDim, E2CDim)
+
+    def geofac_grdiv(self):
+        return self._get_field("geofac_grdiv", EdgeDim, E2C2EODim)
+
+    def rbf_vec_coeff_e(self):
+        return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
 
     def zd_vertidx(self):
         return self._get_field("zd_vertidx", CellDim, C2E2CDim, KDim, dtype=int)
@@ -243,6 +320,12 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
     def fac_bdydiff_v(self) -> int:
         return self.serializer.read("fac_bdydiff_v", self.savepoint)[0]
 
+    def cfl_w_limit(self) -> float:
+        return self.serializer.read("cfl_w_limit", self.savepoint)[0]
+
+    def scalfac_exdiff(self) -> float:
+        return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
+
     def smag_offset(self):
         return self.serializer.read("smag_offset", self.savepoint)[0]
 
@@ -253,7 +336,7 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
         return self.serializer.read("diff_multfac_vn", self.savepoint)
 
 
-class IconDiffusionExitSavepoint(IconDiffusionSavepoint):
+class IconExitSavepoint(IconSavepoint):
     def vn(self):
         return self._get_field("x_vn", EdgeDim, KDim)
 
@@ -265,6 +348,27 @@ class IconDiffusionExitSavepoint(IconDiffusionSavepoint):
 
     def exner(self):
         return self._get_field("x_exner", CellDim, KDim)
+
+    def ddt_vn_apc_pc(self):
+        return self._get_field("x_ddt_vn_apc_pc", CellDim, KDim)
+
+    def ddt_w_adv_pc(self):
+        return self._get_field("x_ddt_w_adv_pc", CellDim, KDim)
+
+    def vn_ie(self):
+        return self._get_field("x_vn_ie", CellDim, KDim)
+
+    def vt(self):
+        return self._get_field("x_vt", CellDim, KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("x_z_kin_hor_e", CellDim, KDim)
+
+    def z_vt_ie(self):
+        return self._get_field("x_z_vt_ie", CellDim, KDim)
+
+    def z_w_concorr_me(self):
+        return self._get_field("x_z_w_concorr_me", CellDim, KDim)
 
 
 class IconSerialDataProvider:
@@ -279,7 +383,7 @@ class IconSerialDataProvider:
         if not self.fname:
             print(" WARNING: no filename! closing serializer")
         self.serializer = ser.Serializer(
-            ser.OpenModeKind.Read, self.file_path, self.fname
+            ser.OpenModeKind.Read, str(self.file_path), self.fname
         )
         if do_print:
             self.print_info()
@@ -288,22 +392,43 @@ class IconSerialDataProvider:
         print(f"SAVEPOINTS: {self.serializer.savepoint_list()}")
         print(f"FIELDNAMES: {self.serializer.fieldnames()}")
 
-    def from_savepoint_init(self, linit: bool, date: str) -> IconDiffusionInitSavepoint:
+    def from_savepoint_diffusion_init(
+        self, linit: bool, date: str
+    ) -> IconInitSavepoint:
+        linit = True
         savepoint = (
             self.serializer.savepoint["call-diffusion-init"]
             .linit[linit]
             .date[date]
             .as_savepoint()
         )
-        return IconDiffusionInitSavepoint(savepoint, self.serializer)
+        return IconInitSavepoint(savepoint, self.serializer)
 
-    def from_save_point_exit(
+    def from_savepoint_velocity_init(self, istep: int, date: str) -> IconInitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-velocity-tendencies-init"]
+            .istep[istep]
+            .date[date]
+            .as_savepoint()
+        )
+        return IconInitSavepoint(savepoint, self.serializer)
+
+    def from_save_point_diffusion_exit(
         self, linit: bool, date: str
-    ) -> IconDiffusionExitSavepoint:
+    ) -> IconExitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-diffusion-exit"]
             .linit[linit]
             .date[date]
             .as_savepoint()
         )
-        return IconDiffusionExitSavepoint(savepoint, self.serializer)
+        return IconExitSavepoint(savepoint, self.serializer)
+
+    def from_save_point_velocity_exit(self, istep: int, date: str) -> IconExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-velocity-tendencies-exit"]
+            .istep[istep]
+            .date[date]
+            .as_savepoint()
+        )
+        return IconExitSavepoint(savepoint, self.serializer)

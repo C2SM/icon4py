@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, broadcast
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, broadcast
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -25,7 +25,6 @@ def _mo_solve_nonhydro_stencil_27(
     z_graddiv2_vn: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-
     scal_divdamp = broadcast(scal_divdamp, (EdgeDim, KDim))
     bdy_divdamp = broadcast(bdy_divdamp, (EdgeDim, KDim))
     vn = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn

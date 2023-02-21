@@ -88,7 +88,7 @@ from icon4py.common.dimension import (
     KDim,
     VertexDim,
 )
-from icon4py.state_utils.utils import _set_zero_w_k
+from icon4py.state_utils.utils import set_zero_w_k
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -275,9 +275,9 @@ def velocity_advection_run(
         },
     )
 
-    _set_zero_w_k(out=local_cfl_clipping, offset_provider={})
-    _set_zero_w_k(out=local_pre_levelmask, offset_provider={})
-    _set_zero_w_k(out=local_vcfl, offset_provider={})
+    set_zero_w_k(local_cfl_clipping, offset_provider={})
+    set_zero_w_k(local_pre_levelmask, offset_provider={})
+    set_zero_w_k(local_vcfl, offset_provider={})
 
     _mo_velocity_advection_stencil_14(
         ddqz_z_half,
@@ -306,7 +306,7 @@ def velocity_advection_run(
         w,
         coeff1_dwdz,
         coeff2_dwdz,
-        out=ddt_w_adv[:, 1:],
+        out=ddt_w_adv,
         domain={
             CellDim: (cell_startindex_nudging, cell_endindex_local),
             KDim: (1, nlev),

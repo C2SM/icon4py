@@ -13,7 +13,7 @@
 import string
 
 import pytest
-from functional.type_system.type_specifications import ScalarKind
+from gt4py.next.type_system.type_specifications import ScalarKind
 
 from icon4py.py2f.codegen import (
     CffiPlugin,

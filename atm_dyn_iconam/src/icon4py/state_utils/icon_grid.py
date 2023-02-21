@@ -14,9 +14,9 @@
 from typing import Dict, Tuple
 
 import numpy as np
-from functional.common import Dimension, DimensionKind, Field
-from functional.ffront.fbuiltins import int32
-from functional.iterator.embedded import NeighborTableOffsetProvider
+from gt4py.next.common import Dimension, DimensionKind, Field
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.horizontal import HorizontalMeshSize
@@ -201,9 +201,7 @@ class VerticalModelParams:
         self._index_of_damping_height = int32(
             np.argmax(np.where(np.asarray(self._vct_a) >= self.rayleigh_damping_height))
         )
-        self.nflatlev = (
-            1 if self.config else 0
-        )  # according to mo_init_vgrid.f90 line 329
+        self.nflatlev = 1  # according to mo_init_vgrid.f90 line 329
 
     @property
     def index_of_damping_layer(self):
@@ -214,9 +212,9 @@ class VerticalModelParams:
         return self._vct_a
 
     @property
-    def rayleigh_damping_height(self) -> float:
+    def _rayleigh_damping_height(self) -> float:
         return self.rayleigh_damping_height
 
     @property
-    def nflatlev(self) -> float:
+    def _nflatlev(self) -> float:
         return self.nflatlev

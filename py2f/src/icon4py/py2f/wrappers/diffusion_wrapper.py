@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # flake8: noqa
-from functional.common import Field
+from gt4py.next.common import Field
 
 from icon4py.common.dimension import (
     C2E2CDim,

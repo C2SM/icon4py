@@ -22,8 +22,11 @@ from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
     CellDim,
+    E2C2EDim,
+    E2C2EODim,
     E2CDim,
     E2VDim,
+    ECDim,
     EdgeDim,
     V2EDim,
     VertexDim,
@@ -32,6 +35,7 @@ from icon4py.diffusion.diffusion import DiffusionConfig
 from icon4py.diffusion.horizontal import HorizontalMeshSize
 from icon4py.state_utils.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
+from icon4py.velocity.velocity_advection import VelocityAdvectionConfig
 
 
 data_uri = "https://polybox.ethz.ch/index.php/s/kP0Q2dDU6DytEqI/download"
@@ -92,7 +96,7 @@ def step_date_exit():
 
 
 @pytest.fixture
-def savepoint_init(setup_icon_data, linit, step_date_init):
+def savepoint_diffusion_init(setup_icon_data, linit, step_date_init):
     """
     Load data from ICON savepoint at start of diffusion module.
 
@@ -102,13 +106,27 @@ def savepoint_init(setup_icon_data, linit, step_date_init):
     linit flag can be set by overriding the 'linit' fixture
     """
     sp = IconSerialDataProvider(
-        "icon_diffusion_init", str(extracted_path), True
-    ).from_savepoint_init(linit=linit, date=step_date_init)
+        "icon_diffusion", str(extracted_path), True
+    ).from_savepoint_diffusion_init(linit=linit, date=step_date_init)
     return sp
 
 
 @pytest.fixture
-def savepoint_exit(setup_icon_data, step_date_exit):
+def savepoint_velocity_init(setup_icon_data, linit, step_date_init):
+    """
+    Load data from ICON savepoint at start of velocity_advection module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    sp = IconSerialDataProvider(
+        "icon_diffusion", str(extracted_path), True
+    ).from_savepoint_velocity_init(istep=1, date=step_date_init)
+    return sp
+
+
+@pytest.fixture
+def savepoint_diffusion_exit(setup_icon_data, step_date_exit):
     """
     Load data from ICON savepoint at exist of diffusion module.
 
@@ -116,20 +134,35 @@ def savepoint_exit(setup_icon_data, step_date_exit):
     fixture, passing 'step_data=<iso_string>'
     """
     sp = IconSerialDataProvider(
-        "icon_diffusion_init", extracted_path, True
-    ).from_save_point_exit(linit=False, date=step_date_exit)
+        "icon_diffusion", str(extracted_path), True
+    ).from_save_point_diffusion_exit(linit=False, date=step_date_exit)
     return sp
 
 
 @pytest.fixture
-def icon_grid(savepoint_init):
+def savepoint_velocity_exit(setup_icon_data, step_date_exit):
+    """
+    Load data from ICON savepoint at exist of velocity_advection module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    sp = IconSerialDataProvider(
+        "icon_diffusion", extracted_path, True
+    ).from_save_point_velocity_exit(istep=1, date=step_date_exit)
+    return sp
+
+
+@pytest.fixture
+def icon_grid(savepoint_diffusion_init, savepoint_velocity_init):
     """
     Load the icon grid from an ICON savepoint.
 
     Uses the default save_point from 'savepoint_init' fixture, however these data don't change for
     different time steps.
     """
-    sp = savepoint_init
+    sp = savepoint_diffusion_init
+    sp_v = savepoint_velocity_init
 
     sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
 
@@ -151,6 +184,10 @@ def icon_grid(savepoint_init):
 
     c2e2c = sp.c2e2c()
     c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
+    e2c2e = sp_v.e2c2e()
+    e2c2e0 = np.dstack(
+        (e2c2e, np.repeat([range(e2c2e.shape[0])], e2c2e.shape[1], axis=1).T)
+    )
     grid = (
         IconGrid()
         .with_config(config)
@@ -158,7 +195,15 @@ def icon_grid(savepoint_init):
         .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
         .with_start_end_indices(CellDim, cell_starts, cell_ends)
         .with_connectivities(
-            {C2EDim: sp.c2e(), E2CDim: sp.e2c(), C2E2CDim: c2e2c, C2E2CODim: c2e2c0}
+            {
+                C2EDim: sp.c2e(),
+                E2CDim: sp.e2c(),
+                C2E2CDim: c2e2c,
+                C2E2CODim: c2e2c0,
+                E2C2EDim: e2c2e,
+                E2C2EODim: e2c2e0,
+                ECDim: sp.e2c(),
+            }  # TODO: change ECDim: sp_v.e2ec
         )
         .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e()})
     )
@@ -186,6 +231,17 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coeff=0.075,
     )
+
+
+@pytest.fixture
+def r04b09_velocity_advection_config(setup_icon_data) -> VelocityAdvectionConfig:
+    """
+    Create VelocityAdvectionConfig matching MCH_CH_r04b09_dsl.
+
+    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
+    from the default.
+    """
+    return VelocityAdvectionConfig(lextra_diffu=True)
 
 
 @pytest.fixture

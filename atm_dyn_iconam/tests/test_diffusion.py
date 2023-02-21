@@ -29,7 +29,7 @@ from icon4py.state_utils.utils import (
     set_zero_v_k,
     setup_fields_for_initial_step,
 )
-from icon4py.testutils.serialbox_utils import IconDiffusionInitSavepoint
+from icon4py.testutils.serialbox_utils import IconInitSavepoint
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
@@ -222,9 +222,13 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
 
 @pytest.mark.datatest
 def test_diffusion_init(
-    savepoint_init, icon_grid, r04b09_diffusion_config, step_date_init, damping_height
+    savepoint_diffusion_init,
+    icon_grid,
+    r04b09_diffusion_config,
+    step_date_init,
+    damping_height,
 ):
-    savepoint = savepoint_init
+    savepoint = savepoint_diffusion_init
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
     vertical_params = VerticalModelParams(savepoint.vct_a(), damping_height)
@@ -245,6 +249,9 @@ def test_diffusion_init(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=savepoint.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
     metric_state = MetricState(
         mask_hdiff=savepoint.mask_diff(),
@@ -253,6 +260,15 @@ def test_diffusion_init(
         zd_intcoef=savepoint.zd_intcoef(),
         zd_vertidx=savepoint.zd_vertidx(),
         zd_diffcoef=savepoint.zd_diffcoef(),
+        coeff_gradekin=None,
+        ddqz_z_full_e=None,
+        wgtfac_e=None,
+        wgtfacq_e=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        ddqz_z_half=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
 
     diffusion = Diffusion()
@@ -301,7 +317,7 @@ def test_diffusion_init(
 
 
 def _verify_init_values_against_savepoint(
-    savepoint: IconDiffusionInitSavepoint, diffusion: Diffusion
+    savepoint: IconInitSavepoint, diffusion: Diffusion
 ):
     dtime = savepoint.get_metadata("dtime")["dtime"]
 
@@ -325,9 +341,9 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_init, r04b09_diffusion_config, icon_grid
+    savepoint_diffusion_init, r04b09_diffusion_config, icon_grid
 ):
-    savepoint = savepoint_init
+    savepoint = savepoint_diffusion_init
     config = r04b09_diffusion_config
 
     params = DiffusionParams(config)
@@ -351,12 +367,12 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 
 @pytest.mark.datatest
 def test_verify_diffusion_init_against_first_regular_savepoint(
-    savepoint_init, r04b09_diffusion_config, icon_grid, damping_height
+    savepoint_diffusion_init, r04b09_diffusion_config, icon_grid, damping_height
 ):
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 
-    savepoint = savepoint_init
+    savepoint = savepoint_diffusion_init
     vct_a = savepoint.vct_a()
 
     grg = savepoint.geofac_grg()
@@ -369,6 +385,9 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=savepoint.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
     metric_state = MetricState(
         mask_hdiff=savepoint.mask_diff(),
@@ -377,6 +396,15 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         zd_intcoef=savepoint.zd_intcoef(),
         zd_vertidx=savepoint.zd_vertidx(),
         zd_diffcoef=savepoint.zd_diffcoef(),
+        coeff_gradekin=None,
+        ddqz_z_full_e=None,
+        wgtfac_e=None,
+        wgtfacq_e=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        ddqz_z_half=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
     diffusion = Diffusion()
     diffusion.init(
@@ -394,12 +422,12 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 @pytest.mark.datatest
 @pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
-    r04b09_diffusion_config, icon_grid, savepoint_init, damping_height
+    r04b09_diffusion_config, icon_grid, savepoint_diffusion_init, damping_height
 ):
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 
-    savepoint = savepoint_init
+    savepoint = savepoint_diffusion_init
     vertical_params = VerticalModelParams(savepoint.vct_a(), damping_height)
     grg = savepoint.geofac_grg()
     interpolation_state = InterpolationState(
@@ -411,6 +439,9 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=savepoint.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
     metric_state = MetricState(
         mask_hdiff=savepoint.mask_diff(),
@@ -419,6 +450,15 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         zd_intcoef=savepoint.zd_intcoef(),
         zd_vertidx=savepoint.zd_vertidx(),
         zd_diffcoef=savepoint.zd_diffcoef(),
+        coeff_gradekin=None,
+        ddqz_z_full_e=None,
+        wgtfac_e=None,
+        wgtfacq_e=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        ddqz_z_half=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
 
     diffusion = Diffusion()
@@ -437,9 +477,13 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 @pytest.mark.datatest
 @pytest.mark.skip
 def test_run_diffusion_single_step(
-    savepoint_init, savepoint_exit, icon_grid, r04b09_diffusion_config, damping_height
+    savepoint_diffusion_init,
+    savepoint_diffusion_exit,
+    icon_grid,
+    r04b09_diffusion_config,
+    damping_height,
 ):
-    sp = savepoint_init
+    sp = savepoint_diffusion_init
     vct_a = sp._vct_a()
     vertical_params = VerticalModelParams(
         vct_a=vct_a, rayleigh_damping_height=damping_height
@@ -457,6 +501,9 @@ def test_run_diffusion_single_step(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=sp.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
 
     metric_state = MetricState(
@@ -466,6 +513,15 @@ def test_run_diffusion_single_step(
         zd_intcoef=sp.zd_intcoef(),
         zd_vertidx=sp.zd_vertidx(),
         zd_diffcoef=sp.zd_diffcoef(),
+        coeff_gradekin=None,
+        ddqz_z_full_e=None,
+        wgtfac_e=None,
+        wgtfacq_e=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        ddqz_z_half=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
 
     diffusion = Diffusion(run_program=False)
@@ -479,7 +535,15 @@ def test_run_diffusion_single_step(
     )
 
     diagnostic_state = DiagnosticState(
-        hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
+        hdef_ic=sp.hdef_ic(),
+        div_ic=sp.div_ic(),
+        dwdx=sp.dwdx(),
+        dwdy=sp.dwdy(),
+        vt=None,
+        vn_ie=None,
+        w_concorr_c=None,
+        ddt_w_adv_pc=None,
+        ddt_vn_apc_pc=None,
     )
     prognostic_state = PrognosticState(
         w=sp.w(),
@@ -519,10 +583,10 @@ def test_run_diffusion_single_step(
         cell_areas=cell_areas,
     )
 
-    icon_result_exner = savepoint_exit.exner()
-    icon_result_vn = savepoint_exit.vn()
-    icon_result_w = savepoint_exit.w()
-    icon_result_theta_w = savepoint_exit.theta_v()
+    icon_result_exner = savepoint_diffusion_exit.exner()
+    icon_result_vn = savepoint_diffusion_exit.vn()
+    icon_result_w = savepoint_diffusion_exit.w()
+    icon_result_theta_w = savepoint_diffusion_exit.theta_v()
 
     assert np.allclose(icon_result_w, np.asarray(prognostic_state.w))
     assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.vn))
@@ -539,15 +603,23 @@ def test_run_diffusion_single_step(
 def test_diffusion_five_steps(
     r04b09_diffusion_config,
     icon_grid,
-    savepoint_init,
+    savepoint_diffusion_init,
     savepoint_exit,
     linit=True,
     step_date_exit="2021-06-20T12:01:00.000",
 ):
-    sp = savepoint_init
+    sp = savepoint_diffusion_init
 
     diagnostic_state = DiagnosticState(
-        hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
+        hdef_ic=sp.hdef_ic(),
+        div_ic=sp.div_ic(),
+        dwdx=sp.dwdx(),
+        dwdy=sp.dwdy(),
+        vt=None,
+        vn_ie=None,
+        w_concorr_c=None,
+        ddt_w_adv_pc=None,
+        ddt_vn_apc_pc=None,
     )
     prognostic_state = PrognosticState(
         w=sp.w(),
@@ -566,6 +638,9 @@ def test_diffusion_five_steps(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=sp.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
 
     metric_state = MetricState(
@@ -575,6 +650,15 @@ def test_diffusion_five_steps(
         zd_intcoef=sp.zd_intcoef(),
         zd_vertidx=sp.zd_vertidx(),
         zd_diffcoef=sp.zd_diffcoef(),
+        coeff_gradekin=None,
+        ddqz_z_full_e=None,
+        wgtfac_e=None,
+        wgtfacq_e=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        ddqz_z_half=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
     dtime = sp.get_metadata("dtime").get("dtime")
     orientation = sp.tangent_orientation()

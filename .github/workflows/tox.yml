@@ -18,7 +18,7 @@ jobs:
         steps:
             - uses: actions/checkout@v2
 
-            - name: install boost
+            - name: Install boost
               run: |
                   sudo apt-get update
                   sudo apt-get install libboost-all-dev

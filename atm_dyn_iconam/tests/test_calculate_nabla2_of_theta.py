@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from functional.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import (
     calculate_nabla2_of_theta,

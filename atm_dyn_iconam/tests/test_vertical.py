@@ -34,8 +34,8 @@ def test_nrdmax_calculation(max_h, damping, delta):
 
 
 @pytest.mark.datatest
-def test_nrdmax_calculation_from_icon_input(icon_grid, savepoint_init):
-    sp = savepoint_init
+def test_nrdmax_calculation_from_icon_input(icon_grid, savepoint_diffusion_init):
+    sp = savepoint_diffusion_init
     a = sp.vct_a()
     damping_height = 12500
     vertical_params = VerticalModelParams(

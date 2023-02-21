@@ -15,7 +15,6 @@ from typing import Optional
 from functional.common import Dimension
 from functional.ffront.fbuiltins import Field
 from functional.iterator.embedded import StridedNeighborOffsetProvider
-from z_fields import ZFields
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
     mo_velocity_advection_stencil_01,
@@ -96,7 +95,8 @@ from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState
 from icon4py.state_utils.prognostic_state import PrognosticState
 from icon4py.state_utils.utils import bool_field, set_zero_w_k, zero_field
-from icon4py.velocity.velocity_advection_program import velocity_advection_run
+import icon4py.velocity.velocity_advection_program as velocity_prog
+from icon4py.velocity.z_fields import ZFields
 
 
 class VelocityAdvectionConfig:
@@ -108,16 +108,13 @@ class VelocityAdvection:
     def __init__(self, run_program=True):
 
         self._initialized = False
-
         self._run_program = run_program
-        self.cfl_w_limit: Optional[float] = None
-        self.scalfac_exdiff: Optional[float] = None
-        self.cfl_w_limit: Optional[float] = None
-        self.scalfac_exdiff: Optional[float] = None
-
         self.grid: Optional[IconGrid] = None
         self.interpolation_state = None
         self.metric_state = None
+
+        self.cfl_w_limit: Optional[float] = None
+        self.scalfac_exdiff: Optional[float] = None
 
     def init(
         self,
@@ -235,7 +232,7 @@ class VelocityAdvection:
                 area_edge,
             )
         else:
-            velocity_advection_run(
+            velocity_prog.velocity_advection_run(
                 vn=prognostic_state.vn,
                 rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
                 vt=diagnostic_state.vt,
@@ -289,8 +286,8 @@ class VelocityAdvection:
                 edge_endindex_local=edge_endindex_local,
                 edge_endindex_local_minus2=edge_endindex_local_minus2,
                 edge_endindex_local_minus1=edge_endindex_local_minus1,
-                nflatlev_startindex=VerticalModelParams.nflatlev,
-                nrdmax_startindex=VerticalModelParams.rayleigh_damping_height,
+                nflatlev_startindex=VerticalModelParams._nflatlev,
+                nrdmax_startindex=VerticalModelParams._rayleigh_damping_height,
                 nlev=self.grid.n_lev(),
                 nlevp1=self.grid.n_lev() + 1,
                 offset_provider={
@@ -328,9 +325,9 @@ class VelocityAdvection:
     ):
 
         klevels = self.grid.n_lev()
-        nflatlev = VerticalModelParams.nflatlev
+        nflatlev = VerticalModelParams._nflatlev
         nlevp1 = klevels + 1
-        nrdmax = VerticalModelParams.rayleigh_damping_height
+        nrdmax = VerticalModelParams._rayleigh_damping_height
 
         (edge_start_nudging_plus_one, edge_end_local) = self.grid.get_indices_from_to(
             EdgeDim,
