@@ -92,7 +92,7 @@ class CppHeaderGenerator(TemplatedGenerator):
     CppSetupFuncDeclaration = as_jinja(
         """\
         void setup_{{funcname}}(
-        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record, verify *verify,
+        GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record, verify *verify,
         {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
