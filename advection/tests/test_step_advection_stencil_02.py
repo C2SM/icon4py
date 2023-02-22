@@ -28,8 +28,8 @@ def step_advection_stencil_02_numpy(
 ) -> np.ndarray:
 
     tmp = (
-        np.roll(p_mflx_contra_v, axis=1, shift=-1) * deepatmo_divzl
-        - p_mflx_contra_v * deepatmo_divzu
+        p_mflx_contra_v[:,1:] * deepatmo_divzl
+        - p_mflx_contra_v[:,:-1] * deepatmo_divzu
     )
     return np.maximum(0.1 * rhodz_new, rhodz_new) - pd_time * tmp
 
@@ -37,7 +37,7 @@ def step_advection_stencil_02_numpy(
 def test_step_advection_stencil_02():
     mesh = SimpleMesh()
     rhodz_ast = random_field(mesh, CellDim, KDim)
-    p_mflx_contra = random_field(mesh, CellDim, KDim)
+    p_mflx_contra = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     deepatmo_divzl = random_field(mesh, KDim)
     deepatmo_divzu = random_field(mesh, KDim)
     result = zero_field(mesh, CellDim, KDim)
