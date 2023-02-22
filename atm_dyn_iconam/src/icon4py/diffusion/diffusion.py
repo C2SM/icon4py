@@ -25,7 +25,7 @@ from gt4py.next.iterator.embedded import (
     np_as_located_field,
 )
 
-import icon4py.diffusion.diffusion_program as diff_prog
+#import icon4py.diffusion.diffusion_program as diff_prog
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
@@ -47,6 +47,7 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import mo_nh_diffusion_stencil_15
 from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.constants import CPD, GAS_CONSTANT_DRY_AIR
 from icon4py.common.dimension import (
@@ -58,7 +59,7 @@ from icon4py.common.dimension import (
     EdgeDim,
     KDim,
     V2EDim,
-    VertexDim,
+    VertexDim, E2C2VDim, E2CDim,
 )
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import HorizontalMarkerIndex
@@ -72,7 +73,7 @@ from icon4py.diffusion.utils import (
     scale_k,
     set_zero_v_k,
     setup_fields_for_initial_step,
-    zero_field,
+    zero_field, PatchedStridedNeighborOffsetProvider,
 )
 
 
@@ -131,6 +132,7 @@ class DiffusionConfig:
         self.apply_to_vertical_wind: bool = hdiff_w
         """
         If True, apply diffusion on the vertical wind field
+
 
         Called `lhdiff_w` in in mo_diffusion_nml.f90
         """
@@ -402,11 +404,12 @@ class Diffusion:
         self.interpolation_state = None
         self.metric_state = None
         self.diff_multfac_w: Optional[float] = None
+        self.diff_multfac_n2w: Field[[KDim], float] = None
         self.smag_offset: Optional[float] = None
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
         self.nudgezone_diff: Optional[float] = None
-        self.diff_multfac_n2w: Optional[float] = None
+
 
     def init(
         self,
@@ -490,6 +493,7 @@ class Diffusion:
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
+        # TODO this is KHalfDim
         self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
@@ -575,7 +579,7 @@ class Diffusion:
         ) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.interior(CellDim),
-            HorizontalMarkerIndex.local(CellDim) + 1,
+            HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
         (
@@ -632,91 +636,92 @@ class Diffusion:
                 smag_offset=self.smag_offset,
             )
         else:
-            diff_prog.diffusion_run(
-                diagnostic_hdef_ic=diagnostic_state.hdef_ic,
-                diagnostic_div_ic=diagnostic_state.div_ic,
-                diagnostic_dwdx=diagnostic_state.dwdx,
-                diagnostic_dwdy=diagnostic_state.dwdy,
-                prognostic_w=prognostic_state.w,
-                prognostic_vn=prognostic_state.vn,
-                prognostic_exner_pressure=prognostic_state.exner_pressure,
-                prognostic_theta_v=prognostic_state.theta_v,
-                metric_theta_ref_mc=self.metric_state.theta_ref_mc,
-                metric_wgtfac_c=self.metric_state.wgtfac_c,
-                metric_mask_hdiff=self.metric_state.mask_hdiff,
-                metric_zd_vertidx=self.metric_state.zd_vertidx,
-                metric_zd_diffcoef=self.metric_state.zd_diffcoef,
-                metric_zd_intcoef=self.metric_state.zd_intcoef,
-                interpolation_e_bln_c_s=self.interpolation_state.e_bln_c_s,
-                interpolation_rbf_coeff_1=self.interpolation_state.rbf_coeff_1,
-                interpolation_rbf_coeff_2=self.interpolation_state.rbf_coeff_2,
-                interpolation_geofac_div=self.interpolation_state.geofac_div,
-                interpolation_geofac_grg_x=self.interpolation_state.geofac_grg_x,
-                interpolation_geofac_grg_y=self.interpolation_state.geofac_grg_y,
-                interpolation_nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
-                interpolation_geofac_n2s=self.interpolation_state.geofac_n2s,
-                tangent_orientation=tangent_orientation,
-                inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-                inverse_dual_edge_lengths=inverse_dual_edge_length,
-                inverse_vert_vert_lengths=inverse_vertical_vertex_lengths,
-                primal_normal_vert_1=primal_normal_vert[0],
-                primal_normal_vert_2=primal_normal_vert[1],
-                dual_normal_vert_1=dual_normal_vert[0],
-                dual_normal_vert_2=dual_normal_vert[1],
-                edge_areas=edge_areas,
-                cell_areas=cell_areas,
-                diff_multfac_vn=self.diff_multfac_vn,
-                dtime=dtime,
-                rd_o_cvd=self.rd_o_cvd,
-                local_thresh_tdiff=self.thresh_tdiff,
-                local_smag_limit=self.smag_limit,
-                local_u_vert=self.u_vert,
-                local_v_vert=self.v_vert,
-                local_enh_smag_fac=self.enh_smag_fac,
-                local_kh_smag_e=self.kh_smag_e,
-                local_kh_smag_ec=self.kh_smag_ec,
-                local_z_nabla2_e=self.z_nabla2_e,
-                local_z_temp=self.z_temp,
-                local_diff_multfac_smag=self.diff_multfac_smag,
-                local_diff_multfac_n2w=self.diff_multfac_n2w,
-                local_smag_offset=self.smag_offset,
-                local_nudgezone_diff=self.nudgezone_diff,
-                local_fac_bdydiff_v=self.fac_bdydiff_v,
-                local_diff_multfac_w=self.diff_multfac_w,
-                local_vertical_index=self.vertical_index,
-                local_horizontal_cell_index=self.horizontal_cell_index,
-                local_horizontal_edge_index=self.horizontal_edge_index,
-                cell_startindex_interior=cell_startindex_interior,
-                cell_startindex_nudging=cell_startindex_nudging,
-                cell_endindex_local_plus1=cell_endindex_local_plus1,
-                cell_endindex_local=cell_endindex_local,
-                edge_startindex_nudging_plus1=edge_startindex_nudging_plus1,
-                edge_startindex_nudging_minus1=edge_startindex_nudging_minus1,
-                edge_endindex_local=edge_endindex_local,
-                edge_endindex_local_minus2=edge_endindex_local_minus2,
-                vertex_startindex_lb_plus3=vertex_startindex_lb_plus3,
-                vertex_startindex_lb_plus1=vertex_startindex_lb_plus1,
-                vertex_endindex_local=vertex_endindex_local,
-                vertex_endindex_local_minus1=vertex_endindex_local_minus1,
-                index_of_damping_height=self.vertical_params.index_of_damping_layer,
-                nlev=self.grid.n_lev(),
-                boundary_diffusion_start_index_edges=self.params.boundary_diffusion_start_index_edges,
-                offset_provider={
-                    "V2E": self.grid.get_v2e_connectivity(),
-                    "V2EDim": V2EDim,
-                    "E2C2V": self.grid.get_e2c2v_connectivity(),
-                    "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, 4),
-                    "C2E": self.grid.get_c2e_connectivity(),
-                    "C2EDim": C2EDim,
-                    "E2C": self.grid.get_e2c_connectivity(),
-                    "C2E2C": self.grid.get_c2e2c_connectivity(),
-                    "C2E2CDim": C2E2CDim,
-                    "ECVDim": ECVDim,
-                    "C2E2CODim": C2E2CODim,
-                    "C2E2CO": self.grid.get_c2e2co_connectivity(),
-                    "Koff": KDim,
-                },
-            )
+            print("run program")
+            # diff_prog.diffusion_run(
+            #     diagnostic_hdef_ic=diagnostic_state.hdef_ic,
+            #     diagnostic_div_ic=diagnostic_state.div_ic,
+            #     diagnostic_dwdx=diagnostic_state.dwdx,
+            #     diagnostic_dwdy=diagnostic_state.dwdy,
+            #     prognostic_w=prognostic_state.w,
+            #     prognostic_vn=prognostic_state.vn,
+            #     prognostic_exner_pressure=prognostic_state.exner_pressure,
+            #     prognostic_theta_v=prognostic_state.theta_v,
+            #     metric_theta_ref_mc=self.metric_state.theta_ref_mc,
+            #     metric_wgtfac_c=self.metric_state.wgtfac_c,
+            #     metric_mask_hdiff=self.metric_state.mask_hdiff,
+            #     metric_zd_vertidx=self.metric_state.zd_vertidx,
+            #     metric_zd_diffcoef=self.metric_state.zd_diffcoef,
+            #     metric_zd_intcoef=self.metric_state.zd_intcoef,
+            #     interpolation_e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            #     interpolation_rbf_coeff_1=self.interpolation_state.rbf_coeff_1,
+            #     interpolation_rbf_coeff_2=self.interpolation_state.rbf_coeff_2,
+            #     interpolation_geofac_div=self.interpolation_state.geofac_div,
+            #     interpolation_geofac_grg_x=self.interpolation_state.geofac_grg_x,
+            #     interpolation_geofac_grg_y=self.interpolation_state.geofac_grg_y,
+            #     interpolation_nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+            #     interpolation_geofac_n2s=self.interpolation_state.geofac_n2s,
+            #     tangent_orientation=tangent_orientation,
+            #     inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+            #     inverse_dual_edge_lengths=inverse_dual_edge_length,
+            #     inverse_vert_vert_lengths=inverse_vertical_vertex_lengths,
+            #     primal_normal_vert_1=primal_normal_vert[0],
+            #     primal_normal_vert_2=primal_normal_vert[1],
+            #     dual_normal_vert_1=dual_normal_vert[0],
+            #     dual_normal_vert_2=dual_normal_vert[1],
+            #     edge_areas=edge_areas,
+            #     cell_areas=cell_areas,
+            #     diff_multfac_vn=self.diff_multfac_vn,
+            #     dtime=dtime,
+            #     rd_o_cvd=self.rd_o_cvd,
+            #     local_thresh_tdiff=self.thresh_tdiff,
+            #     local_smag_limit=self.smag_limit,
+            #     local_u_vert=self.u_vert,
+            #     local_v_vert=self.v_vert,
+            #     local_enh_smag_fac=self.enh_smag_fac,
+            #     local_kh_smag_e=self.kh_smag_e,
+            #     local_kh_smag_ec=self.kh_smag_ec,
+            #     local_z_nabla2_e=self.z_nabla2_e,
+            #     local_z_temp=self.z_temp,
+            #     local_diff_multfac_smag=self.diff_multfac_smag,
+            #     local_diff_multfac_n2w=self.diff_multfac_n2w,
+            #     local_smag_offset=self.smag_offset,
+            #     local_nudgezone_diff=self.nudgezone_diff,
+            #     local_fac_bdydiff_v=self.fac_bdydiff_v,
+            #     local_diff_multfac_w=self.diff_multfac_w,
+            #     local_vertical_index=self.vertical_index,
+            #     local_horizontal_cell_index=self.horizontal_cell_index,
+            #     local_horizontal_edge_index=self.horizontal_edge_index,
+            #     cell_startindex_interior=cell_startindex_interior,
+            #     cell_startindex_nudging=cell_startindex_nudging,
+            #     cell_endindex_local_plus1=cell_endindex_local_plus1,
+            #     cell_endindex_local=int32(cell_endindex_local),
+            #     edge_startindex_nudging_plus1=edge_startindex_nudging_plus1,
+            #     edge_startindex_nudging_minus1=int32(edge_startindex_nudging_minus1),
+            #     edge_endindex_local=edge_endindex_local,
+            #     edge_endindex_local_minus2=edge_endindex_local_minus2,
+            #     vertex_startindex_lb_plus3=vertex_startindex_lb_plus3,
+            #     vertex_startindex_lb_plus1=vertex_startindex_lb_plus1,
+            #     vertex_endindex_local=vertex_endindex_local,
+            #     vertex_endindex_local_minus1=vertex_endindex_local_minus1,
+            #     index_of_damping_height=self.vertical_params.index_of_damping_layer,
+            #     nlev=self.grid.n_lev(),
+            #     boundary_diffusion_start_index_edges=self.params.boundary_diffusion_start_index_edges,
+            #     offset_provider={
+            #         "V2E": self.grid.get_v2e_connectivity(),
+            #         "V2EDim": V2EDim,
+            #         "E2C2V": self.grid.get_e2c2v_connectivity(),
+            #         "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, 4),
+            #         "C2E": self.grid.get_c2e_connectivity(),
+            #         "C2EDim": C2EDim,
+            #         "E2C": self.grid.get_e2c_connectivity(),
+            #         "C2E2C": self.grid.get_c2e2c_connectivity(),
+            #         "C2E2CDim": C2E2CDim,
+            #         "ECVDim": ECVDim,
+            #         "C2E2CODim": C2E2CODim,
+            #         "C2E2CO": self.grid.get_c2e2co_connectivity(),
+            #         "Koff": KDim,
+            #     },
+            # )
 
     def _do_diffusion_step(
         self,
@@ -765,7 +770,7 @@ class Diffusion:
         cell_start_nudging_minus1, cell_end_local_plus1 = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.nudging(CellDim) - 1,
-            HorizontalMarkerIndex.local(CellDim) + 1,
+            HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
         cell_start_interior, cell_end_local = self.grid.get_indices_from_to(
@@ -821,7 +826,7 @@ class Diffusion:
         # TODO: is this needed?, if not remove
         set_zero_v_k(self.u_vert, offset_provider={})
         set_zero_v_k(self.v_vert, offset_provider={})
-
+        print("rbf interpolation: start")
         # # 1.  CALL rbf_vec_interpol_vertex
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
@@ -835,37 +840,40 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
         )
-
+        print("rbf interpolation: end")
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
 
-        calculate_nabla2_and_smag_coefficients_for_vn(
-            diff_multfac_smag=self.diff_multfac_smag,
-            tangent_orientation=tangent_orientation,
-            inv_primal_edge_length=inverse_primal_edge_lengths,
-            inv_vert_vert_length=inverse_vertex_vertex_lengths,
-            u_vert=self.u_vert,
-            v_vert=self.v_vert,
-            primal_normal_vert_x=primal_normal_vert[0],
-            primal_normal_vert_y=primal_normal_vert[1],
-            dual_normal_vert_x=dual_normal_vert[0],
-            dual_normal_vert_y=dual_normal_vert[1],
-            vn=prognostic_state.vn,
-            smag_limit=smag_limit,
-            kh_smag_e=self.kh_smag_e,
-            kh_smag_ec=self.kh_smag_ec,
-            z_nabla2_e=self.z_nabla2_e,
-            smag_offset=smag_offset,
-            horizontal_start=self.params.boundary_diffusion_start_index_edges,
-            horizontal_end=edge_end_local_minus2,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "E2C2V": self.grid.get_e2c2v_connectivity(),
-                "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, 4),
-            },
-        )
-
+        print("running calculate_nabla2_and_smag_coefficients_for_vn: start")
+        # calculate_nabla2_and_smag_coefficients_for_vn(
+        #     diff_multfac_smag=self.diff_multfac_smag,
+        #     tangent_orientation=tangent_orientation,
+        #     inv_primal_edge_length=inverse_primal_edge_lengths,
+        #     inv_vert_vert_length=inverse_vertex_vertex_lengths,
+        #     u_vert=self.u_vert,
+        #     v_vert=self.v_vert,
+        #     primal_normal_vert_x=primal_normal_vert[0],
+        #     primal_normal_vert_y=primal_normal_vert[1],
+        #     dual_normal_vert_x=dual_normal_vert[0],
+        #     dual_normal_vert_y=dual_normal_vert[1],
+        #     vn=prognostic_state.vn,
+        #     smag_limit=smag_limit,
+        #     kh_smag_e=self.kh_smag_e,
+        #     kh_smag_ec=self.kh_smag_ec,
+        #     z_nabla2_e=self.z_nabla2_e,
+        #     smag_offset=smag_offset,
+        #     horizontal_start=self.params.boundary_diffusion_start_index_edges,
+        #     horizontal_end=edge_end_local_minus2,
+        #     vertical_start=0,
+        #     vertical_end=klevels,
+        #     offset_provider={
+        #         "E2C2V": self.grid.get_e2c2v_connectivity(),
+        #         "E2C2VDim": E2C2VDim,
+        #         "E2ECV": self.grid.get_e2ecv_connectivity(),
+        #     },
+        # )
+        print("running calculate_nabla2_and_smag_coefficients_for_vn: end")
+        print("running fused stencil fused stencil 02_03: start")
         fused_mo_nh_diffusion_stencil_02_03(
             kh_smag_ec=self.kh_smag_ec,
             vn=prognostic_state.vn,
@@ -879,12 +887,14 @@ class Diffusion:
             horizontal_end=cell_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"C2E": self.grid.get_c2e_connectivity(), "C2EDim": C2EDim},
+            offset_provider={"C2E": self.grid.get_c2e_connectivity(), "C2EDim": C2EDim, "Koff":KDim},
         )
+        print("running fused stencil fused stencil 02_03: end")
         #
         # # 4.  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
         #
         # # 5.  CALL rbf_vec_interpol_vertex_wp
+        print("rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -897,42 +907,46 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
         )
+        print("rbf interpolation: end")
         # # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
         #
         # # 7.  mo_nh_diffusion_stencil_04, mo_nh_diffusion_stencil_05
         # # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
         #
+
+        print("running fused stencil 04_05_06: start")
         fused_mo_nh_diffusion_stencil_04_05_06(
-            self.u_vert,
-            self.v_vert,
-            primal_normal_vert[0],
-            primal_normal_vert[1],
-            self.z_nabla2_e,
-            inverse_vertex_vertex_lengths,
-            inverse_primal_edge_lengths,
-            edge_areas,
-            self.kh_smag_e,
-            diff_multfac_vn,
-            self.interpolation_state.nudgecoeff_e,
-            prognostic_state.vn,
-            self.horizontal_edge_index,
-            self.nudgezone_diff,
-            self.fac_bdydiff_v,
-            edge_start_nudging_minus1,
-            prognostic_state.vn,
+            u_vert =self.u_vert,
+            v_vert=self.v_vert,
+            primal_normal_vert_v1 = primal_normal_vert[0],
+            primal_normal_vert_v2=primal_normal_vert[1],
+            z_nabla2_e=self.z_nabla2_e,
+            inv_vert_vert_length=inverse_vertex_vertex_lengths,
+            inv_primal_edge_length=inverse_primal_edge_lengths,
+            area_edge=edge_areas,
+            kh_smag_e=self.kh_smag_e,
+            diff_multfac_vn=diff_multfac_vn,
+            nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+            vn=prognostic_state.vn,
+            horz_idx=self.horizontal_edge_index,
+            nudgezone_diff=self.nudgezone_diff,
+            fac_bdydiff_v=self.fac_bdydiff_v,
+            start_2nd_nudge_line_idx_e=int32(edge_start_nudging_minus1),
             horizontal_start=edge_start_nudging_plus_one,
             horizontal_end=edge_end_local,
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
                 "E2C2V": self.grid.get_e2c2v_connectivity(),
-                "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, 4),
-                "ECVDim": ECVDim,
+                "E2C2VDim": E2C2VDim,
+                "E2ECV" : self.grid.get_e2ecv_connectivity()
             },
         )
         # # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
         # #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
+        print("running fused stencil 04_05_06: end")
 
+        print("running fused stencil 07_08_09_10: start")
         fused_mo_nh_diffusion_stencil_07_08_09_10(
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
@@ -946,9 +960,9 @@ class Diffusion:
             diff_multfac_n2w=self.diff_multfac_n2w,
             vert_idx=self.vertical_index,
             horz_idx=self.horizontal_cell_index,
-            nrdmax=self.config.vertical_params._index_of_damping_height,
-            interior_idx=cell_start_interior,  # h end index for stencil_09 and stencil_10
-            halo_idx=cell_end_local,  # h end index for stencil_09 and stencil_10,
+            nrdmax=self.vertical_params.index_of_damping_layer,
+            interior_idx=int32(cell_start_interior),  # h end index for stencil_09 and stencil_10
+            halo_idx=int32(cell_end_local),  # h end index for stencil_09 and stencil_10,
             horizontal_start=cell_start_nudging,  # h start index for stencil_07 and stencil_08
             horizontal_end=cell_end_local_plus1,  # h end index for stencil_07 and stencil_08
             vertical_start=0,
@@ -958,12 +972,14 @@ class Diffusion:
                 "C2E2CODim": C2E2CODim,
             },
         )
+        print("running fused stencil 07_08_09_10: start")
         # # 8.  HALO EXCHANGE: CALL sync_patch_array
         # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
         # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
         #
         # # TODO check: kh_smag_e is an out field, should  not be calculated in init?
         #
+        print("running fused stencil 11_12: start")
         fused_mo_nh_diffusion_stencil_11_12(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
@@ -977,8 +993,11 @@ class Diffusion:
                 "E2C": self.grid.get_e2c_connectivity(),
                 "C2E2C": self.grid.get_c2e2c_connectivity(),
                 "C2E2CDim": C2E2CDim,
+                "E2CDim": E2CDim,
             },
         )
+        print("running fused stencil 11_12: end")
+        print("running fused stencil 13_14: start")
         fused_mo_nh_diffusion_stencil_13_14(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=inverse_dual_edge_length,
@@ -992,28 +1011,31 @@ class Diffusion:
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
                 "E2C": self.grid.get_e2c_connectivity(),
+                "E2CDim": E2CDim,
                 "C2EDim": C2EDim,
             },
         )
-
-        mo_nh_diffusion_stencil_15_numpy(
-            mask_hdiff=self.metric_state.mask_hdiff,
-            zd_vertidx=self.metric_state.zd_vertidx,
-            vcoef=self.metric_state.zd_diffcoef,
-            zd_diffcoef=self.metric_state.zd_diffcoef,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            theta_v=prognostic_state.theta_v,
-            z_temp=self.z_temp,
-            domain={
-                CellDim: self.grid.get_indices_from_to(
-                    CellDim,
-                    HorizontalMarkerIndex.nudging(CellDim),
-                    HorizontalMarkerIndex.halo(CellDim),
-                ),
-            },
-            offset_provider={},
+        print("running fused stencil 13_14: end")
+        print("running fused stencil 15: start")
+        mo_nh_diffusion_stencil_15(
+            self.metric_state.mask_hdiff,
+            self.metric_state.zd_vertidx,
+            self.metric_state.zd_diffcoef,
+            self.interpolation_state.geofac_n2s_c,
+            self.interpolation_state.geofac_n2s_nbh,
+            self.metric_state.zd_intcoef,
+            prognostic_state.theta_v,
+            self.z_temp,
+            cell_start_nudging,
+            cell_end_local,
+            0,
+            klevels,
+            offset_provider={"C2E2C": self.grid.get_c2e2c_connectivity(),
+                             "C2E2CDim": C2E2CDim,
+                             "Koff":KDim},
         )
-
+        print("running fused stencil 15: end")
+        print("running fused stencil update_theta_and_exner: start")
         update_theta_and_exner(
             z_temp=self.z_temp,
             area=cell_areas,
@@ -1026,4 +1048,5 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={},
         )
+        print("running fused stencil update_theta_and_exner: end")
         # 10. HALO EXCHANGE sync_patch_array

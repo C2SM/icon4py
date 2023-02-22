@@ -26,7 +26,7 @@ from icon4py.common.dimension import (
     E2VDim,
     EdgeDim,
     V2EDim,
-    VertexDim,
+    VertexDim, E2C2VDim,
 )
 from icon4py.diffusion.diffusion import DiffusionConfig
 from icon4py.diffusion.horizontal import HorizontalMeshSize
@@ -102,7 +102,7 @@ def savepoint_init(setup_icon_data, linit, step_date_init):
     linit flag can be set by overriding the 'linit' fixture
     """
     sp = IconSerialDataProvider(
-        "icon_diffusion_init", str(extracted_path), True
+        "icon_pydycore", str(extracted_path), True
     ).from_savepoint_init(linit=linit, date=step_date_init)
     return sp
 
@@ -116,7 +116,7 @@ def savepoint_exit(setup_icon_data, step_date_exit):
     fixture, passing 'step_data=<iso_string>'
     """
     sp = IconSerialDataProvider(
-        "icon_diffusion_init", str(extracted_path), True
+        "icon_pydycore", str(extracted_path), True
     ).from_save_point_exit(linit=False, date=step_date_exit)
     return sp
 
@@ -151,6 +151,8 @@ def icon_grid(savepoint_init):
 
     c2e2c = sp.c2e2c()
     c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
+
+
     grid = (
         IconGrid()
         .with_config(config)
@@ -160,7 +162,7 @@ def icon_grid(savepoint_init):
         .with_connectivities(
             {C2EDim: sp.c2e(), E2CDim: sp.e2c(), C2E2CDim: c2e2c, C2E2CODim: c2e2c0}
         )
-        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e()})
+        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e(), E2C2VDim: sp.e2c2v()})
     )
     return grid
 

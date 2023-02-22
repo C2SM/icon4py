@@ -12,11 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Tuple
 
+import numpy
 import numpy as np
+from gt4py.next import common
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
-from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum, int32
+from gt4py.next.iterator.embedded import np_as_located_field, IntIndex
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import KDim, Koff, VertexDim
 
@@ -32,7 +35,7 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
     return field * factor
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def scale_k(
     field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]
 ):
@@ -44,7 +47,7 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
 
@@ -80,7 +83,7 @@ def _setup_fields_for_initial_step(
     return diff_multfac_vn, smag_limit
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
@@ -155,7 +158,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
     )
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def init_diffusion_local_fields_for_regular_timestep(
     k4: float,
     dyn_substeps: float,
@@ -193,7 +196,7 @@ def init_diffusion_local_fields_for_regular_timestep(
 
 
 def init_nabla2_factor_in_upper_damping_zone(
-    k_size: int, nrdmax: int, nshift: int, physical_heights: np.ndarray
+    k_size: int, nrdmax: int32, nshift: int, physical_heights: np.ndarray
 ) -> Field[[KDim], float]:
     """
     Calculate diff_multfac_n2w.
@@ -221,3 +224,22 @@ def init_nabla2_factor_in_upper_damping_zone(
         ** 4
     )
     return np_as_located_field(KDim)(buffer)
+
+
+class PatchedStridedNeighborOffsetProvider:
+    def __init__(
+        self,
+        origin_axis: common.Dimension,
+        neighbor_axis: common.Dimension,
+        max_neighbors: int,
+        has_skip_values=True,
+    ) -> None:
+        self.origin_axis = origin_axis
+        self.neighbor_axis = neighbor_axis
+        self.max_neighbors = max_neighbors
+        self.has_skip_values = has_skip_values
+        self.index_type = numpy.dtype("int32")
+
+    def mapped_index(self, primary: IntIndex, neighbor_idx: IntIndex) -> IntIndex:
+        return primary * self.max_neighbors + neighbor_idx
+

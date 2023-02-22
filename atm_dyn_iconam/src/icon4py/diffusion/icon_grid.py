@@ -18,7 +18,8 @@ from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py import common
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim, ECVDim
 from icon4py.diffusion.horizontal import HorizontalMeshSize
 
 
@@ -164,14 +165,23 @@ class IconGrid:
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
 
     def get_e2c2v_connectivity(self):
-        return self.get_e2v_connectivity()
-
-    def get_e2c2v_size(self):
-        self.connectivities["e2v"].shape[1]
+        table = self.connectivities["e2c2v"]
+        return NeighborTableOffsetProvider(table, EdgeDim, VertexDim, table.shape[1])
 
     def get_v2e_connectivity(self):
         table = self.connectivities["v2e"]
         return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
+
+    def get_e2ecv_connectivity(self):
+        old_shape = self.connectivities["e2c2v"].shape
+        v2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return NeighborTableOffsetProvider(v2ecv_table, EdgeDim, ECVDim, v2ecv_table.shape[1])
+
+
+
+
+
+
 
 
 class VerticalModelParams:
@@ -185,7 +195,7 @@ class VerticalModelParams:
         """
         self._rayleigh_damping_height = rayleigh_damping_height
         self._vct_a = vct_a
-        self._index_of_damping_height = np.argmax(np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height))
+        self._index_of_damping_height = int32(np.argmax(np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height)))
 
     @property
     def index_of_damping_layer(self):
@@ -197,4 +207,4 @@ class VerticalModelParams:
 
     @property
     def rayleigh_damping_height(self):
-        return self
+        return self._rayleigh_damping_height

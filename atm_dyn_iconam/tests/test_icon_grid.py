@@ -28,6 +28,15 @@ def test_horizontal_grid_cell_indices(icon_grid):
     )  # halo +1
     assert icon_grid.get_indices_from_to(
         CellDim,
+        HorizontalMarkerIndex.local(CellDim) +1,
+        HorizontalMarkerIndex.local(CellDim) + 1,
+    ) == (
+               20896,
+               20896,
+)  # halo +1
+
+    assert icon_grid.get_indices_from_to(
+        CellDim,
         HorizontalMarkerIndex.local(CellDim),
         HorizontalMarkerIndex.local(CellDim),
     ) == (
@@ -186,6 +195,11 @@ def test_horizontal_edge_indices(icon_grid):
         0,
         428,
     )  # lb +0
+
+@pytest.mark.datatest
+def test_get_e2ecv_connectivity(icon_grid):
+    c = icon_grid.get_e2ecv_connectivity()
+    assert c.mapped_index(0, 0) == 0
 
 
 @pytest.mark.datatest

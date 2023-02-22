@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulance import (
     _calculate_diagnostics_for_turbulance,
@@ -39,7 +40,7 @@ def _fused_mo_nh_diffusion_stencil_02_03(
     return div_ic, hdef_ic
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def fused_mo_nh_diffusion_stencil_02_03(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],

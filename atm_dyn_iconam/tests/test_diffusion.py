@@ -467,7 +467,7 @@ def test_run_diffusion_single_step(
         zd_diffcoef=sp.zd_diffcoef(),
     )
 
-    diffusion = Diffusion(run_program=True)
+    diffusion = Diffusion(run_program=False)
     diffusion.init(
         grid=icon_grid,
         config=r04b09_diffusion_config,

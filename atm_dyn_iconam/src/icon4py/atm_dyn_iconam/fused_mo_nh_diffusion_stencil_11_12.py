@@ -40,7 +40,7 @@ def _fused_mo_nh_diffusion_stencil_11_12(
     return kh_smag_e
 
 
-@program(backend=gtfn_cpu)
+@program(backend=gtfn_cpu.run_gtfn)
 def fused_mo_nh_diffusion_stencil_11_12(
     theta_v: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],

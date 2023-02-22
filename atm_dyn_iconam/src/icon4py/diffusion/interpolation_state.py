@@ -13,7 +13,9 @@
 
 from dataclasses import dataclass
 
+import numpy as np
 from gt4py.next.common import Field
+from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
     C2E2CODim,
@@ -55,3 +57,11 @@ class InterpolationState:
     ]  # factor for green gauss gradient (nproma,4,nblks_c,2)
     geofac_grg_y: Field[[CellDim, C2E2CODim], float]  # TODO combine to tuple
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
+
+    @property
+    def geofac_n2s_c(self)->Field[[CellDim], float]:
+        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:,0])
+
+    @property
+    def geofac_n2s_nbh(self)->Field[[CellDim], float]:
+        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:,1:])

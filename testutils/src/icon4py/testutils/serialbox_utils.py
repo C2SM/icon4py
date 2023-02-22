@@ -77,7 +77,7 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
         return self._get_field("cell_areas", CellDim)
 
     def edge_areas(self):
-        return self._get_field("cell_areas", EdgeDim)
+        return self._get_field("edge_areas", EdgeDim)
 
     def inv_dual_edge_length(self):
         return self._get_field("inv_dual_edge_length", EdgeDim)
@@ -126,6 +126,9 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
         # one off accounts for being exclusive [from:to)
         return self.serializer.read("e_end_index", self.savepoint)
 
+    def print_connectivity_info(name:str, ar:np.ndarray):
+        print(f" connectivity {name} {ar.shape}")
+
     def refin_ctrl(self, dim: Dimension):
         if dim == CellDim:
             return self.serializer.read("c_refin_ctl", self.savepoint)
@@ -137,24 +140,33 @@ class IconDiffusionInitSavepoint(IconDiffusionSavepoint):
             return None
 
     def c2e(self):
-        # subtract 1 to account for python being 0 based
-        return self.serializer.read("c2e", self.savepoint) - 1
+
+        return self._get_connectiviy_array("c2e")
+
+    def _get_connectiviy_array(self, name:str):
+        connectivity = self.serializer.read(name, self.savepoint) - 1
+        print(f" connectivity {name} : {connectivity.shape}")
+        return connectivity
 
     def c2e2c(self):
-        # subtract 1 to account for python being 0 based
-        return self.serializer.read("c2e2c", self.savepoint) - 1
+        return self._get_connectiviy_array("c2e2c")
+
 
     def e2c(self):
-        # subtract 1 to account for python being 0 based
-        return self.serializer.read("e2c", self.savepoint) - 1
+        return self._get_connectiviy_array("e2c")
 
     def e2v(self):
-        # subtract 1 to account for python being 0 based
-        return self.serializer.read("e2v", self.savepoint) - 1
+        # array "e2v" is actually e2c2v
+        v_ = self._get_connectiviy_array("e2v")[:, 0:2]
+        print(f"real e2v {v_.shape}")
+        return v_
+
+    def e2c2v(self):
+        # array "e2v" is actually e2c2v
+        return self._get_connectiviy_array("e2v")
 
     def v2e(self):
-        # subtract 1 to account for python being 0 based
-        return self.serializer.read("v2e", self.savepoint) - 1
+        return self._get_connectiviy_array("v2e")
 
     def hdef_ic(self):
         return self._get_field("hdef_ic", CellDim, KDim)
