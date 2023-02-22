@@ -34,7 +34,7 @@ from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
-data_uri = "https://polybox.ethz.ch/index.php/s/8WPtKzsVUsMawlY/download"
+data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
 data_path = Path(__file__).parent.joinpath("ser_icondata")
 extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
