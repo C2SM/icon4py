@@ -106,7 +106,7 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):
 
     linit flag can be set by overriding the 'linit' fixture
     """
-    return data_provider.from_diffusion_init(linit=linit, date=step_date_init)
+    return data_provider.from_savepoint_diffusion_init(linit=linit, date=step_date_init)
 
 
 @pytest.fixture
@@ -117,7 +117,7 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    sp = data_provider.from_diffusion_exit(linit=False, date=step_date_exit)
+    sp = data_provider.from_savepoint_diffusion_exit(linit=False, date=step_date_exit)
     return sp
 
 
