@@ -219,7 +219,7 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         return self._get_field("nudgecoeff_e", EdgeDim)
 
     def zd_vertidx(self):
-        #TODO fix this
+        # TODO fix this
         return self._get_field("zd_vertidx", CellDim, C2E2CDim, dtype=int)
 
     def rbf_vec_coeff_v1(self):
@@ -295,7 +295,9 @@ class IconSerialDataProvider:
         savepoint = self.serializer.savepoint["icon-grid"].id[1].as_savepoint()
         return IconGridSavePoint(savepoint, self.serializer)
 
-    def from_savepoint_diffusion_init(self, linit: bool, date: str) -> IconDiffusionInitSavepoint:
+    def from_savepoint_diffusion_init(
+        self, linit: bool, date: str
+    ) -> IconDiffusionInitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-diffusion-init"]
             .linit[linit]
@@ -304,7 +306,9 @@ class IconSerialDataProvider:
         )
         return IconDiffusionInitSavepoint(savepoint, self.serializer)
 
-    def from_savepoint_diffusion_exit(self, linit: bool, date: str) -> IconDiffusionExitSavepoint:
+    def from_savepoint_diffusion_exit(
+        self, linit: bool, date: str
+    ) -> IconDiffusionExitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-diffusion-exit"]
             .linit[linit]

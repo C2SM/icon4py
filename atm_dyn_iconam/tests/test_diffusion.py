@@ -356,7 +356,6 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 
 
 @pytest.mark.datatest
-@pytest.mark.skip("check why it is failing after new data serialization")
 def test_verify_diffusion_init_against_first_regular_savepoint(
     diffusion_savepoint_init,
     grid_savepoint,
@@ -403,10 +402,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:20.000"])
-@pytest.mark.skip(
-    "check why it is failing after new data serialization: use 2021-06-20T12:00:50.000  again"
-)
+@pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
     r04b09_diffusion_config,
     grid_savepoint,
