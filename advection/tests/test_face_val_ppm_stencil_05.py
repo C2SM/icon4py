@@ -24,12 +24,15 @@ def face_val_ppm_stencil_05_numpy(
     p_cellhgt_mc_now: np.array,
     z_slope: np.array,
 ):
-    p_cellhgt_mc_now_k_minus_1 = np.roll(p_cellhgt_mc_now, shift=1, axis=1)
-    p_cellhgt_mc_now_k_minus_2 = np.roll(p_cellhgt_mc_now, shift=2, axis=1)
-    p_cellhgt_mc_now_k_plus_1 = np.roll(p_cellhgt_mc_now, shift=-1, axis=1)
+    p_cellhgt_mc_now_k_minus_1 = p_cellhgt_mc_now[:,1:-2]
+    p_cellhgt_mc_now_k_minus_2 = p_cellhgt_mc_now[:,0:-3]
+    p_cellhgt_mc_now_k_plus_1 = p_cellhgt_mc_now[:,3:]
+    p_cellhgt_mc_now = p_cellhgt_mc_now[:,2:-1]
 
-    p_cc_k_minus_1 = np.roll(p_cc, shift=1, axis=1)
-    z_slope_k_minus_1 = np.roll(z_slope, shift=1, axis=1)
+    p_cc_k_minus_1 = p_cc[:,1:-1]
+    p_cc           = p_cc[:,2:]
+    z_slope_k_minus_1 = z_slope[:,1:-1]
+    z_slope = z_slope[:,2:]
 
     zgeo1 = p_cellhgt_mc_now_k_minus_1 / (p_cellhgt_mc_now_k_minus_1 + p_cellhgt_mc_now)
     zgeo2 = 1.0 / (
@@ -62,7 +65,7 @@ def face_val_ppm_stencil_05_numpy(
 def test_face_val_ppm_stencil_05():
     mesh = SimpleMesh()
     p_cc = random_field(mesh, CellDim, KDim)
-    p_cellhgt_mc_now = random_field(mesh, CellDim, KDim)
+    p_cellhgt_mc_now = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     z_slope = random_field(mesh, CellDim, KDim)
     p_face = zero_field(mesh, CellDim, KDim)
 
@@ -80,4 +83,4 @@ def test_face_val_ppm_stencil_05():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:, 1:-1], p_face.__array__()[:, 1:-1])
+    assert np.allclose(ref[:,:], p_face[:, 2:])

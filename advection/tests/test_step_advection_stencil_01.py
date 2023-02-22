@@ -26,9 +26,8 @@ def step_advection_stencil_01_numpy(
     deepatmo_divzu: np.ndarray,
     pd_time: float,
 ) -> np.ndarray:
-    p_mlfx_contra_v1 = np.roll(p_mflx_contra_v, axis=1, shift=-1)
     tmp = pd_time * (
-        p_mlfx_contra_v1 * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
+        p_mflx_contra_v[:,1:] * deepatmo_divzl - p_mflx_contra_v[:,:-1] * deepatmo_divzu
     )
     return rhodz_ast + tmp
 
@@ -36,7 +35,7 @@ def step_advection_stencil_01_numpy(
 def test_step_advection_stencil_01():
     mesh = SimpleMesh()
     rhodz_ast = random_field(mesh, CellDim, KDim)
-    p_mflx_contra = random_field(mesh, CellDim, KDim)
+    p_mflx_contra = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     deepatmo_divzl = random_field(mesh, KDim)
     deepatmo_divzu = random_field(mesh, KDim)
     result = zero_field(mesh, CellDim, KDim)
