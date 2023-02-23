@@ -18,7 +18,7 @@ from icon4py.common.dimension import CellDim, KDim, Koff
 
 
 @field_operator
-def _calculate_diagnostics_for_turbulance(
+def _calculate_diagnostics_for_turbulence(
     div: Field[[CellDim, KDim], float],
     kh_c: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
@@ -29,11 +29,11 @@ def _calculate_diagnostics_for_turbulance(
 
 
 @program
-def calculate_diagnostics_for_turbulance(
+def calculate_diagnostics_for_turbulence(
     div: Field[[CellDim, KDim], float],
     kh_c: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     div_ic: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
 ):
-    _calculate_diagnostics_for_turbulance(div, kh_c, wgtfac_c, out=(div_ic, hdef_ic))
+    _calculate_diagnostics_for_turbulence(div, kh_c, wgtfac_c, out=(div_ic, hdef_ic))
