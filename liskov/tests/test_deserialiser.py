@@ -18,20 +18,31 @@ import pytest
 import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.codegen.interface import (
     BoundsData,
+    DeclareData,
     EndCreateData,
+    EndIfData,
+    EndProfileData,
     EndStencilData,
     FieldAssociationData,
     ImportsData,
+    InsertData,
     StartCreateData,
+    StartProfileData,
 )
 from icon4py.liskov.parsing.deserialise import (
+    DeclareDataFactory,
     EndCreateDataFactory,
+    EndIfDataFactory,
+    EndProfileDataFactory,
     EndStencilDataFactory,
     ImportsDataFactory,
+    InsertDataFactory,
     StartCreateDataFactory,
+    StartProfileDataFactory,
     StartStencilDataFactory,
 )
 from icon4py.liskov.parsing.exceptions import (
+    DirectiveSyntaxError,
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
@@ -40,12 +51,21 @@ from icon4py.liskov.parsing.exceptions import (
 @pytest.mark.parametrize(
     "factory_class, directive_type, startln, endln, string, expected",
     [
-        (StartCreateDataFactory, ts.StartCreate, "start create", 1, 2, StartCreateData),
-        (EndCreateDataFactory, ts.EndCreate, "end create", 3, 4, EndCreateData),
-        (ImportsDataFactory, ts.Imports, "imports", 5, 6, ImportsData),
+        (
+            StartCreateDataFactory,
+            ts.StartCreate,
+            "START CREATE()",
+            1,
+            1,
+            StartCreateData,
+        ),
+        (EndCreateDataFactory, ts.EndCreate, "END CREATE", 2, 2, EndCreateData),
+        (ImportsDataFactory, ts.Imports, "IMPORTS", 3, 3, ImportsData),
+        (EndIfDataFactory, ts.EndIf, "ENDIF", 4, 4, EndIfData),
+        (EndProfileDataFactory, ts.EndProfile, "END PROFILE", 5, 5, EndProfileData),
     ],
 )
-def test_data_factories(
+def test_data_factories_no_args(
     factory_class, directive_type, string, startln, endln, expected
 ):
     parsed = {
@@ -54,37 +74,126 @@ def test_data_factories(
     }
     factory = factory_class()
     result = factory(parsed)
+
+    if type(result) == list:
+        result = result[0]
+
     assert isinstance(result, expected)
     assert result.startln == startln
     assert result.endln == endln
 
 
 @pytest.mark.parametrize(
-    "mock_data",
+    "factory,target,mock_data",
     [
         (
+            EndStencilDataFactory,
+            EndStencilData,
             {
                 "directives": [
                     ts.EndStencil("END STENCIL(name=foo)", 5, 5),
-                    ts.EndStencil("END STENCIL(name=bar)", 20, 20),
+                    ts.EndStencil(
+                        "END STENCIL(name=bar; noendif=true; noprofile=true)", 20, 20
+                    ),
                 ],
-                "content": {"EndStencil": [{"name": "foo"}, {"name": "bar"}]},
-            }
+                "content": {
+                    "EndStencil": [
+                        {"name": "foo"},
+                        {"name": "bar", "noendif": "true", "noprofile": "true"},
+                    ]
+                },
+            },
         ),
         (
+            EndStencilDataFactory,
+            EndStencilData,
             {
-                "directives": [ts.EndStencil("END STENCIL(name=foo)", 5, 5)],
+                "directives": [
+                    ts.EndStencil("END STENCIL(name=foo; noprofile=true)", 5, 5)
+                ],
                 "content": {"EndStencil": [{"name": "foo"}]},
-            }
+            },
+        ),
+        (
+            StartProfileDataFactory,
+            StartProfileData,
+            {
+                "directives": [
+                    ts.StartProfile("START PROFILE(name=foo)", 5, 5),
+                    ts.StartProfile("START PROFILE(name=bar)", 20, 20),
+                ],
+                "content": {"StartProfile": [{"name": "foo"}, {"name": "bar"}]},
+            },
+        ),
+        (
+            StartProfileDataFactory,
+            StartProfileData,
+            {
+                "directives": [ts.StartProfile("START PROFILE(name=foo)", 5, 5)],
+                "content": {"StartProfile": [{"name": "foo"}]},
+            },
+        ),
+        (
+            DeclareDataFactory,
+            DeclareData,
+            {
+                "directives": [
+                    ts.Declare(
+                        "DECLARE(vn=nlev,nblks_c; w=nlevp1,nblks_e; suffix=dsl; type=LOGICAL)",
+                        5,
+                        5,
+                    )
+                ],
+                "content": {
+                    "Declare": [
+                        {
+                            "vn": "nlev,nblks_c",
+                            "w": "nlevp1,nblks_e",
+                            "suffix": "dsl",
+                            "type": "LOGICAL",
+                        }
+                    ]
+                },
+            },
+        ),
+        (
+            InsertDataFactory,
+            InsertData,
+            {
+                "directives": [ts.Insert("INSERT(content=foo)", 5, 5)],
+                "content": {"Insert": ["foo"]},
+            },
         ),
     ],
 )
-def test_end_stencil_data_factory(mock_data):
-    factory = EndStencilDataFactory()
-    result = factory(mock_data)
-    assert all([isinstance(r, EndStencilData) for r in result])
-    for r in result:
-        assert hasattr(r, "name")
+def test_data_factories_with_args(factory, target, mock_data):
+    factory_init = factory()
+    result = factory_init(mock_data)
+    assert all([isinstance(r, target) for r in result])
+
+
+@pytest.mark.parametrize(
+    "factory,target,mock_data",
+    [
+        (
+            EndStencilDataFactory,
+            EndStencilData,
+            {
+                "directives": [
+                    ts.EndStencil("END STENCIL(name=foo)", 5, 5),
+                    ts.EndStencil("END STENCIL(name=bar; noendif=foo)", 20, 20),
+                ],
+                "content": {
+                    "EndStencil": [{"name": "foo"}, {"name": "bar", "noendif": "foo"}]
+                },
+            },
+        ),
+    ],
+)
+def test_data_factories_invalid_args(factory, target, mock_data):
+    factory_init = factory()
+    with pytest.raises(DirectiveSyntaxError):
+        factory_init(mock_data)
 
 
 class TestStartStencilFactory(unittest.TestCase):

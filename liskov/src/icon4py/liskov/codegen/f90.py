@@ -174,9 +174,7 @@ class EndStencilStatementGenerator(TemplatedGenerator):
             if len(split_idx) >= 3:
                 split_idx[-1] = "1"
 
-            f.rh_index = enclose_in_parentheses(
-                ",".join(split_idx)
-            )  # todo: this may not always be (:,:,1)
+            f.rh_index = enclose_in_parentheses(",".join(split_idx))
         return self.generic_visit(out)
 
     ToleranceFields = as_jinja(
