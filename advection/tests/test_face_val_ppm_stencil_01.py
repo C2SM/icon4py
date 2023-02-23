@@ -59,9 +59,6 @@ def test_face_val_ppm_stencil_01():
       vert_idx[i] = i
     elev = vert_idx[-2]
 
-    # print(vert_idx.__array__()) 
-    # print(elev)
-
     z_slope = random_field(mesh, CellDim, KDim)
 
     ref = face_val_ppm_stencil_01_numpy(
@@ -81,5 +78,4 @@ def test_face_val_ppm_stencil_01():
         offset_provider={"Koff": KDim},
     )
 
-    # assert np.allclose(ref[:,1:], z_slope[:,1:-1])
     assert np.allclose(ref[:,:-1], z_slope[:,1:-1])
