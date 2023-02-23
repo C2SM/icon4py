@@ -105,7 +105,7 @@ class IconGrid:
     @builder
     def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
         self.connectivities.update(
-            {d.value.lower(): k for d, k in connectivity.items()}
+            {d.value.lower(): k.astype(int) for d, k in connectivity.items()}
         )
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
@@ -144,7 +144,7 @@ class IconGrid:
         return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
 
     def get_c2e_connectivity(self):
-        table = self.connectivities["c2e"]
+        table = self.connectivities["c2e"].astype(int)
         return NeighborTableOffsetProvider(table, CellDim, EdgeDim, table.shape[1])
 
     def get_e2c_connectivity(self):

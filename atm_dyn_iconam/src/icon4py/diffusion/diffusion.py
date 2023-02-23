@@ -861,33 +861,33 @@ class Diffusion:
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
 
         print("running calculate_nabla2_and_smag_coefficients_for_vn: start")
-        # calculate_nabla2_and_smag_coefficients_for_vn(
-        #     diff_multfac_smag=self.diff_multfac_smag,
-        #     tangent_orientation=tangent_orientation,
-        #     inv_primal_edge_length=inverse_primal_edge_lengths,
-        #     inv_vert_vert_length=inverse_vertex_vertex_lengths,
-        #     u_vert=self.u_vert,
-        #     v_vert=self.v_vert,
-        #     primal_normal_vert_x=primal_normal_vert[0],
-        #     primal_normal_vert_y=primal_normal_vert[1],
-        #     dual_normal_vert_x=dual_normal_vert[0],
-        #     dual_normal_vert_y=dual_normal_vert[1],
-        #     vn=prognostic_state.vn,
-        #     smag_limit=smag_limit,
-        #     kh_smag_e=self.kh_smag_e,
-        #     kh_smag_ec=self.kh_smag_ec,
-        #     z_nabla2_e=self.z_nabla2_e,
-        #     smag_offset=smag_offset,
-        #     horizontal_start=self.params.boundary_diffusion_start_index_edges,
-        #     horizontal_end=edge_end_local_minus2,
-        #     vertical_start=0,
-        #     vertical_end=klevels,
-        #     offset_provider={
-        #         "E2C2V": self.grid.get_e2c2v_connectivity(),
-        #         "E2C2VDim": E2C2VDim,
-        #         "E2ECV": self.grid.get_e2ecv_connectivity(),
-        #     },
-        # )
+        calculate_nabla2_and_smag_coefficients_for_vn(
+            diff_multfac_smag=self.diff_multfac_smag,
+            tangent_orientation=tangent_orientation,
+            inv_primal_edge_length=inverse_primal_edge_lengths,
+            inv_vert_vert_length=inverse_vertex_vertex_lengths,
+            u_vert=self.u_vert,
+            v_vert=self.v_vert,
+            primal_normal_vert_x=primal_normal_vert[0],
+            primal_normal_vert_y=primal_normal_vert[1],
+            dual_normal_vert_x=dual_normal_vert[0],
+            dual_normal_vert_y=dual_normal_vert[1],
+            vn=prognostic_state.vn,
+            smag_limit=smag_limit,
+            kh_smag_e=self.kh_smag_e,
+            kh_smag_ec=self.kh_smag_ec,
+            z_nabla2_e=self.z_nabla2_e,
+            smag_offset=smag_offset,
+            horizontal_start=self.params.boundary_diffusion_start_index_edges,
+            horizontal_end=edge_end_local_minus2,
+            vertical_start=0,
+            vertical_end=klevels,
+            offset_provider={
+                "E2C2V": self.grid.get_e2c2v_connectivity(),
+                "E2ECV": self.grid.get_e2ecv_connectivity(),
+                "E2C2VDim": E2C2VDim,
+            },
+        )
         print("running calculate_nabla2_and_smag_coefficients_for_vn: end")
         print("running fused stencil fused stencil 02_03: start")
         fused_mo_nh_diffusion_stencil_02_03(
