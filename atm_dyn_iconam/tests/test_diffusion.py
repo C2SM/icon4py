@@ -449,6 +449,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 @pytest.mark.skip("fix: try to run with gtfn backend")
 @pytest.mark.datatest
+@pytest.mark.skip
 def test_run_diffusion_single_step(
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
@@ -457,7 +458,8 @@ def test_run_diffusion_single_step(
     r04b09_diffusion_config,
     damping_height,
 ):
-    vct_a = grid_savepoint.vct_a()
+    sp = diffusion_savepoint_init
+    vct_a = sp.vct_a()
     vertical_params = VerticalModelParams(
         vct_a=vct_a, rayleigh_damping_height=damping_height
     )
