@@ -136,7 +136,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     return kh_smag_e, kh_smag_ec, z_nabla2_e
 
 
-
+@program
 def calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[KDim], float],
     tangent_orientation: Field[[EdgeDim], float],
