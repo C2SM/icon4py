@@ -582,56 +582,6 @@ class Diffusion:
 
         runs a diffusion step for the parameter linit=False, within regular time loop.
         """
-        cell_startindex_nudging, cell_endindex_local = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
-
-        (
-            cell_startindex_interior,
-            cell_endindex_local_plus1,
-        ) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.interior(CellDim),
-            HorizontalMarkerIndex.local(CellDim) - 1,
-        )
-
-        (
-            edge_startindex_nudging_plus1,
-            edge_endindex_local,
-        ) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
-        )
-
-        (
-            edge_startindex_nudging_minus1,
-            edge_endindex_local_minus2,
-        ) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) - 1,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
-        )
-
-        (
-            vertex_startindex_lb_plus3,
-            vertex_endindex_local,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
-            HorizontalMarkerIndex.local(VertexDim),
-        )
-
-        (
-            vertex_startindex_lb_plus1,
-            vertex_endindex_local_minus1,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
-            HorizontalMarkerIndex.local(VertexDim) - 1,
-        )
 
         if not self._run_program:
             self._do_diffusion_step(
@@ -652,6 +602,57 @@ class Diffusion:
             )
         else:
             print("run program")
+            # cell_startindex_nudging, cell_endindex_local = self.grid.get_indices_from_to(
+            #     CellDim,
+            #     HorizontalMarkerIndex.nudging(CellDim),
+            #     HorizontalMarkerIndex.local(CellDim),
+            # )
+            #
+            # (
+            #     cell_startindex_interior,
+            #     cell_endindex_local_plus1,
+            # ) = self.grid.get_indices_from_to(
+            #     CellDim,
+            #     HorizontalMarkerIndex.interior(CellDim),
+            #     HorizontalMarkerIndex.local(CellDim) - 1,
+            # )
+            #
+            # (
+            #     edge_startindex_nudging_plus1,
+            #     edge_endindex_local,
+            # ) = self.grid.get_indices_from_to(
+            #     EdgeDim,
+            #     HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            #     HorizontalMarkerIndex.local(EdgeDim),
+            # )
+            #
+            # (
+            #     edge_startindex_nudging_minus1,
+            #     edge_endindex_local_minus2,
+            # ) = self.grid.get_indices_from_to(
+            #     EdgeDim,
+            #     HorizontalMarkerIndex.nudging(EdgeDim) - 1,
+            #     HorizontalMarkerIndex.local(EdgeDim) - 2,
+            # )
+            #
+            # (
+            #     vertex_startindex_lb_plus3,
+            #     vertex_endindex_local,
+            # ) = self.grid.get_indices_from_to(
+            #     VertexDim,
+            #     HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+            #     HorizontalMarkerIndex.local(VertexDim),
+            # )
+            #
+            # (
+            #     vertex_startindex_lb_plus1,
+            #     vertex_endindex_local_minus1,
+            # ) = self.grid.get_indices_from_to(
+            #     VertexDim,
+            #     HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+            #     HorizontalMarkerIndex.local(VertexDim) - 1,
+            # )
+
             # diff_prog.diffusion_run(
             #     diagnostic_hdef_ic=diagnostic_state.hdef_ic,
             #     diagnostic_div_ic=diagnostic_state.div_ic,

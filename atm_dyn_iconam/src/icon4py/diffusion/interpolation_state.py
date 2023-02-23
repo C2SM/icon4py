@@ -18,6 +18,7 @@ from gt4py.next.common import Field
 from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
+    C2E2CDim,
     C2E2CODim,
     C2EDim,
     CellDim,
@@ -55,7 +56,9 @@ class InterpolationState:
     geofac_grg_x: Field[
         [CellDim, C2E2CODim], float
     ]  # factor for green gauss gradient (nproma,4,nblks_c,2)
-    geofac_grg_y: Field[[CellDim, C2E2CODim], float]  # TODO combine to tuple
+    geofac_grg_y: Field[
+        [CellDim, C2E2CODim], float
+    ]  # TODO combine geofac_grg_x and geofac_grg_y to tuple
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
     @property
@@ -64,4 +67,6 @@ class InterpolationState:
 
     @property
     def geofac_n2s_nbh(self) -> Field[[CellDim], float]:
-        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 1:])
+        return np_as_located_field(CellDim, C2E2CDim)(
+            np.asarray(self.geofac_n2s)[:, 1:]
+        )

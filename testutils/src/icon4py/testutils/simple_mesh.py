@@ -426,7 +426,6 @@ class SimpleMesh:
     def get_e2c2v_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.e2c2v, EdgeDim, VertexDim, self.n_e2c2v)
 
-
     def get_e2ecv_offset_provider(self):
         old_shape = self.e2c2v.shape
         v2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)

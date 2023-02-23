@@ -233,6 +233,9 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         # TODO fix this
         return self._get_field("zd_vertidx", CellDim, C2E2CDim, dtype=int)
 
+    def zd_vertoffset(self):
+        return self._get_field("zd_vertoffset", CellDim, C2E2CDim, KDim, dtype=int)
+
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", VertexDim, V2EDim)
 

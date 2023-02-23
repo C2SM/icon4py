@@ -255,7 +255,7 @@ def test_diffusion_init(
         theta_ref_mc=diffusion_savepoint_init.theta_ref_mc(),
         wgtfac_c=diffusion_savepoint_init.wgtfac_c(),
         zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
-        zd_vertidx=diffusion_savepoint_init.zd_vertidx(),
+        zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
         zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
     )
 
@@ -385,7 +385,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         theta_ref_mc=savepoint.theta_ref_mc(),
         wgtfac_c=savepoint.wgtfac_c(),
         zd_intcoef=savepoint.zd_intcoef(),
-        zd_vertidx=savepoint.zd_vertidx(),
+        zd_vertidx=savepoint.zd_vertoffset(),
         zd_diffcoef=savepoint.zd_diffcoef(),
     )
     diffusion = Diffusion()
@@ -430,7 +430,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         theta_ref_mc=diffusion_savepoint_init.theta_ref_mc(),
         wgtfac_c=diffusion_savepoint_init.wgtfac_c(),
         zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
-        zd_vertidx=diffusion_savepoint_init.zd_vertidx(),
+        zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
         zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
     )
 
@@ -447,9 +447,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
-@pytest.mark.skip("fix: try to run with gtfn backend")
+@pytest.mark.skip("fix: diffusion_stencil_15")
 @pytest.mark.datatest
-@pytest.mark.skip
 def test_run_diffusion_single_step(
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
@@ -458,8 +457,7 @@ def test_run_diffusion_single_step(
     r04b09_diffusion_config,
     damping_height,
 ):
-    sp = diffusion_savepoint_init
-    vct_a = sp.vct_a()
+    vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(
         vct_a=vct_a, rayleigh_damping_height=damping_height
     )
@@ -483,7 +481,7 @@ def test_run_diffusion_single_step(
         theta_ref_mc=diffusion_savepoint_init.theta_ref_mc(),
         wgtfac_c=diffusion_savepoint_init.wgtfac_c(),
         zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
-        zd_vertidx=diffusion_savepoint_init.zd_vertidx(),
+        zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
         zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
     )
 
@@ -595,7 +593,7 @@ def test_diffusion_five_steps(
         theta_ref_mc=sp.theta_ref_mc(),
         wgtfac_c=sp.wgtfac_c(),
         zd_intcoef=sp.zd_intcoef(),
-        zd_vertidx=sp.zd_vertidx(),
+        zd_vertidx=sp.zd_vertoffset(),
         zd_diffcoef=sp.zd_diffcoef(),
     )
     dtime = sp.get_metadata("dtime").get("dtime")
