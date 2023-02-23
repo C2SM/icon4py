@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# flake8: noqa
 
 import math
 import sys
@@ -25,7 +26,7 @@ from gt4py.next.iterator.embedded import (
     np_as_located_field,
 )
 
-#import icon4py.diffusion.diffusion_program as diff_prog
+# import icon4py.diffusion.diffusion_program as diff_prog
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
@@ -47,7 +48,9 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import mo_nh_diffusion_stencil_15
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
+    mo_nh_diffusion_stencil_15,
+)
 from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.constants import (
     CPD,
@@ -59,11 +62,13 @@ from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
     CellDim,
+    E2C2VDim,
+    E2CDim,
     ECVDim,
     EdgeDim,
     KDim,
     V2EDim,
-    VertexDim, E2C2VDim, E2CDim,
+    VertexDim,
 )
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import HorizontalMarkerIndex
@@ -72,12 +77,13 @@ from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
 from icon4py.diffusion.utils import (
+    PatchedStridedNeighborOffsetProvider,
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
     scale_k,
     set_zero_v_k,
     setup_fields_for_initial_step,
-    zero_field, PatchedStridedNeighborOffsetProvider,
+    zero_field,
 )
 
 
@@ -417,7 +423,6 @@ class Diffusion:
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
         self.nudgezone_diff: Optional[float] = None
-
 
     def init(
         self,
@@ -897,7 +902,11 @@ class Diffusion:
             horizontal_end=cell_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"C2E": self.grid.get_c2e_connectivity(), "C2EDim": C2EDim, "Koff":KDim},
+            offset_provider={
+                "C2E": self.grid.get_c2e_connectivity(),
+                "C2EDim": C2EDim,
+                "Koff": KDim,
+            },
         )
         print("running fused stencil fused stencil 02_03: end")
         #
@@ -926,9 +935,9 @@ class Diffusion:
 
         print("running fused stencil 04_05_06: start")
         fused_mo_nh_diffusion_stencil_04_05_06(
-            u_vert =self.u_vert,
+            u_vert=self.u_vert,
             v_vert=self.v_vert,
-            primal_normal_vert_v1 = primal_normal_vert[0],
+            primal_normal_vert_v1=primal_normal_vert[0],
             primal_normal_vert_v2=primal_normal_vert[1],
             z_nabla2_e=self.z_nabla2_e,
             inv_vert_vert_length=inverse_vertex_vertex_lengths,
@@ -949,7 +958,7 @@ class Diffusion:
             offset_provider={
                 "E2C2V": self.grid.get_e2c2v_connectivity(),
                 "E2C2VDim": E2C2VDim,
-                "E2ECV" : self.grid.get_e2ecv_connectivity()
+                "E2ECV": self.grid.get_e2ecv_connectivity(),
             },
         )
         # # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
@@ -971,8 +980,12 @@ class Diffusion:
             vert_idx=self.vertical_index,
             horz_idx=self.horizontal_cell_index,
             nrdmax=self.vertical_params.index_of_damping_layer,
-            interior_idx=int32(cell_start_interior),  # h end index for stencil_09 and stencil_10
-            halo_idx=int32(cell_end_local),  # h end index for stencil_09 and stencil_10,
+            interior_idx=int32(
+                cell_start_interior
+            ),  # h end index for stencil_09 and stencil_10
+            halo_idx=int32(
+                cell_end_local
+            ),  # h end index for stencil_09 and stencil_10,
             horizontal_start=cell_start_nudging,  # h start index for stencil_07 and stencil_08
             horizontal_end=cell_end_local_plus1,  # h end index for stencil_07 and stencil_08
             vertical_start=0,
@@ -1040,9 +1053,11 @@ class Diffusion:
             cell_end_local,
             0,
             klevels,
-            offset_provider={"C2E2C": self.grid.get_c2e2c_connectivity(),
-                             "C2E2CDim": C2E2CDim,
-                             "Koff":KDim},
+            offset_provider={
+                "C2E2C": self.grid.get_c2e2c_connectivity(),
+                "C2E2CDim": C2E2CDim,
+                "Koff": KDim,
+            },
         )
         print("running fused stencil 15: end")
         print("running fused stencil update_theta_and_exner: start")

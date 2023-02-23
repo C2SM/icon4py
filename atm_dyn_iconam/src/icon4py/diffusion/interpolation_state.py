@@ -59,9 +59,9 @@ class InterpolationState:
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
     @property
-    def geofac_n2s_c(self)->Field[[CellDim], float]:
-        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:,0])
+    def geofac_n2s_c(self) -> Field[[CellDim], float]:
+        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
 
     @property
-    def geofac_n2s_nbh(self)->Field[[CellDim], float]:
-        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:,1:])
+    def geofac_n2s_nbh(self) -> Field[[CellDim], float]:
+        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 1:])

@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import V2E, EdgeDim, KDim, V2EDim, VertexDim
 
@@ -28,7 +27,8 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
     p_v_out = neighbor_sum(p_e_in(V2E) * ptr_coeff_2, axis=V2EDim)
     return p_u_out, p_v_out
 
-#TODO does not work on gtfn backend, getting "ValueError: buffer has incorrect itemsize: 8; expected 4"
+
+# TODO does not work on gtfn backend, getting "ValueError: buffer has incorrect itemsize: 8; expected 4"
 @program
 def mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: Field[[EdgeDim, KDim], float],

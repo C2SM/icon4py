@@ -126,7 +126,7 @@ class IconGridSavePoint(IconSavepoint):
         # one off accounts for being exclusive [from:to)
         return self.serializer.read("e_end_index", self.savepoint)
 
-    def print_connectivity_info(name:str, ar:np.ndarray):
+    def print_connectivity_info(name: str, ar: np.ndarray):
         print(f" connectivity {name} {ar.shape}")
 
     def refin_ctrl(self, dim: Dimension):
@@ -143,14 +143,13 @@ class IconGridSavePoint(IconSavepoint):
 
         return self._get_connectiviy_array("c2e")
 
-    def _get_connectiviy_array(self, name:str):
+    def _get_connectiviy_array(self, name: str):
         connectivity = self.serializer.read(name, self.savepoint) - 1
         print(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
     def c2e2c(self):
         return self._get_connectiviy_array("c2e2c")
-
 
     def e2c(self):
         return self._get_connectiviy_array("e2c")

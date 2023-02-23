@@ -76,7 +76,7 @@ def _fused_mo_nh_diffusion_stencil_04_05_06(
 
 
 @program(backend=gtfn_cpu.run_gtfn)
-#@program
+# @program
 def fused_mo_nh_diffusion_stencil_04_05_06(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],

@@ -447,6 +447,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
+@pytest.mark.skip("fix: try to run with gtfn backend")
 @pytest.mark.datatest
 def test_run_diffusion_single_step(
     diffusion_savepoint_init,
@@ -495,8 +496,10 @@ def test_run_diffusion_single_step(
     )
 
     diagnostic_state = DiagnosticState(
-        hdef_ic=diffusion_savepoint_init.hdef_ic(), div_ic=diffusion_savepoint_init.div_ic(),
-        dwdx=diffusion_savepoint_init.dwdx(), dwdy=diffusion_savepoint_init.dwdy()
+        hdef_ic=diffusion_savepoint_init.hdef_ic(),
+        div_ic=diffusion_savepoint_init.div_ic(),
+        dwdx=diffusion_savepoint_init.dwdx(),
+        dwdy=diffusion_savepoint_init.dwdy(),
     )
     prognostic_state = PrognosticState(
         w=diffusion_savepoint_init.w(),

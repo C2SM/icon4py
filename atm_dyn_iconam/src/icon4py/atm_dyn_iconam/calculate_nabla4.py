@@ -20,7 +20,7 @@ from icon4py.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
-    VertexDim, E2C2VDim,
+    VertexDim,
 )
 
 

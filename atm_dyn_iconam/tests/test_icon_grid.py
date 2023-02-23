@@ -189,7 +189,6 @@ def test_horizontal_edge_indices(icon_grid):
     )  # lb +0
 
 
-
 @pytest.mark.datatest
 def test_get_e2ecv_connectivity(icon_grid):
     c = icon_grid.get_e2ecv_connectivity()

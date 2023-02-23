@@ -22,11 +22,12 @@ from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
     CellDim,
+    E2C2VDim,
     E2CDim,
     E2VDim,
     EdgeDim,
     V2EDim,
-    VertexDim, E2C2VDim,
+    VertexDim,
 )
 from icon4py.diffusion.diffusion import DiffusionConfig
 from icon4py.diffusion.horizontal import HorizontalMeshSize
