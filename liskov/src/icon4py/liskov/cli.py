@@ -17,9 +17,9 @@ import click
 
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.pipeline import (
-    codegen_pipeline,
-    gt4py_pipeline,
-    parsing_pipeline,
+    load_gt4py_stencils,
+    parse_fortran_file,
+    run_code_generation,
 )
 
 
@@ -48,9 +48,9 @@ def main(filepath: pathlib.Path, profile: bool) -> None:
     Arguments:
         filepath Path to the input file to process.
     """
-    parsed = parsing_pipeline(filepath)
-    parsed_checked = gt4py_pipeline(parsed)
-    codegen_pipeline(parsed_checked, filepath, profile)
+    parsed = parse_fortran_file(filepath)
+    parsed_checked = load_gt4py_stencils(parsed)
+    run_code_generation(parsed_checked, filepath, profile)
 
 
 if __name__ == "__main__":

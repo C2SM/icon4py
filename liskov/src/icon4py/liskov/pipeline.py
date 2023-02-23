@@ -16,14 +16,15 @@ from pathlib import Path
 from icon4py.liskov.codegen.generate import IntegrationGenerator
 from icon4py.liskov.codegen.interface import DeserialisedDirectives
 from icon4py.liskov.codegen.write import IntegrationWriter
-from icon4py.liskov.common import exec_pipeline
+from icon4py.liskov.common import Step, linear_pipeline
 from icon4py.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4py.liskov.parsing.deserialise import DirectiveDeserialiser
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.scan import DirectivesScanner
 
 
-def parsing_pipeline(filepath: Path) -> DeserialisedDirectives:
+@linear_pipeline
+def parse_fortran_file(filepath: Path) -> list[Step]:
     """Execute a pipeline to parse and deserialize directives from a file.
 
         The pipeline consists of three steps: DirectivesScanner, DirectivesParser, and
@@ -38,15 +39,15 @@ def parsing_pipeline(filepath: Path) -> DeserialisedDirectives:
     Returns:
         DeserialisedDirectives: The deserialized directives object.
     """
-    steps = [
+    return [
         DirectivesScanner(filepath),
         DirectivesParser(filepath),
         DirectiveDeserialiser(),
     ]
-    return exec_pipeline(steps)
 
 
-def gt4py_pipeline(parsed: DeserialisedDirectives) -> DeserialisedDirectives:
+@linear_pipeline
+def load_gt4py_stencils(parsed: DeserialisedDirectives) -> list[Step]:
     """Execute a pipeline to update fields of a DeserialisedDirectives object with GT4Py stencils.
 
     Args:
@@ -55,13 +56,13 @@ def gt4py_pipeline(parsed: DeserialisedDirectives) -> DeserialisedDirectives:
     Returns:
         The updated object with fields containing information from GT4Py stencils.
     """
-    steps = [UpdateFieldsWithGt4PyStencils(parsed)]
-    return exec_pipeline(steps)
+    return [UpdateFieldsWithGt4PyStencils(parsed)]
 
 
-def codegen_pipeline(
+@linear_pipeline
+def run_code_generation(
     parsed: DeserialisedDirectives, filepath: Path, profile: bool
-) -> None:
+) -> list[Step]:
     """Execute a pipeline to generate and write code for a set of directives.
 
     The pipeline consists of two steps: IntegrationGenerator and IntegrationWriter. The IntegrationGenerator generates
@@ -73,5 +74,4 @@ def codegen_pipeline(
         filepath: The file path to write the generated code to.
         profile: A flag to indicate if profiling information should be included in the generated code.
     """
-    steps = [IntegrationGenerator(parsed, profile), IntegrationWriter(filepath)]
-    return exec_pipeline(steps)
+    return [IntegrationGenerator(parsed, profile), IntegrationWriter(filepath)]
