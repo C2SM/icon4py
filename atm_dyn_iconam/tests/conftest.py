@@ -34,10 +34,10 @@ from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
-data_uri = "https://polybox.ethz.ch/index.php/s/kP0Q2dDU6DytEqI/download"
+data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
 data_path = Path(__file__).parent.joinpath("ser_icondata")
 extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
-data_file = data_path.joinpath("ser_data_diffusion.tar.gz").name
+data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
 
 
 @pytest.fixture(scope="session")
@@ -59,6 +59,11 @@ def setup_icon_data():
         with tarfile.open(data_file, mode="r:*") as tf:
             tf.extractall(path=data_path)
         Path(data_file).unlink(missing_ok=True)
+
+
+@pytest.fixture
+def data_provider(setup_icon_data) -> IconSerialDataProvider:
+    return IconSerialDataProvider("icon_pydycore", str(extracted_path), True)
 
 
 @pytest.fixture
@@ -92,7 +97,7 @@ def step_date_exit():
 
 
 @pytest.fixture
-def savepoint_init(setup_icon_data, linit, step_date_init):
+def diffusion_savepoint_init(data_provider, linit, step_date_init):
     """
     Load data from ICON savepoint at start of diffusion module.
 
@@ -101,36 +106,30 @@ def savepoint_init(setup_icon_data, linit, step_date_init):
 
     linit flag can be set by overriding the 'linit' fixture
     """
-    sp = IconSerialDataProvider(
-        "icon_pydycore", str(extracted_path), True
-    ).from_savepoint_init(linit=linit, date=step_date_init)
-    return sp
+    return data_provider.from_savepoint_diffusion_init(linit=linit, date=step_date_init)
 
 
 @pytest.fixture
-def savepoint_exit(setup_icon_data, step_date_exit):
+def diffusion_savepoint_exit(data_provider, step_date_exit):
     """
     Load data from ICON savepoint at exist of diffusion module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    sp = IconSerialDataProvider(
-        "icon_pydycore", str(extracted_path), True
-    ).from_save_point_exit(linit=False, date=step_date_exit)
+    sp = data_provider.from_savepoint_diffusion_exit(linit=False, date=step_date_exit)
     return sp
 
 
 @pytest.fixture
-def icon_grid(savepoint_init):
+def icon_grid(data_provider):
     """
     Load the icon grid from an ICON savepoint.
 
     Uses the default save_point from 'savepoint_init' fixture, however these data don't change for
     different time steps.
     """
-    sp = savepoint_init
-
+    sp = data_provider.from_savepoint_grid()
     sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
 
     cell_starts = sp.cells_start_index()
@@ -151,8 +150,6 @@ def icon_grid(savepoint_init):
 
     c2e2c = sp.c2e2c()
     c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
-
-
     grid = (
         IconGrid()
         .with_config(config)
@@ -165,6 +162,11 @@ def icon_grid(savepoint_init):
         .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e(), E2C2VDim: sp.e2c2v()})
     )
     return grid
+
+
+@pytest.fixture
+def grid_savepoint(data_provider):
+    return data_provider.from_savepoint_grid()
 
 
 @pytest.fixture

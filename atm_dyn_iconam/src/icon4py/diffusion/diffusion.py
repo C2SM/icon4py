@@ -49,7 +49,11 @@ from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
 )
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import mo_nh_diffusion_stencil_15
 from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
-from icon4py.common.constants import CPD, GAS_CONSTANT_DRY_AIR
+from icon4py.common.constants import (
+    CPD,
+    DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+    GAS_CONSTANT_DRY_AIR,
+)
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -310,6 +314,10 @@ class DiffusionParams:
             self.smagorinski_factor,
             self.smagorinski_height,
         ) = self.determine_smagorinski_factor(config)
+        # see mo_interpol_nml.f90:
+        self.scaled_nudge_max_coeff = (
+            config.nudge_max_coeff * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+        )
 
     def determine_smagorinski_factor(self, config: DiffusionConfig):
         """Enhanced Smagorinsky diffusion factor.
@@ -435,9 +443,11 @@ class Diffusion:
         self._allocate_local_fields()
 
         self.nudgezone_diff: float = 0.04 / (
-            config.nudge_max_coeff + sys.float_info.epsilon
+            params.scaled_nudge_max_coeff + sys.float_info.epsilon
         )
-        self.bdy_diff: float = 0.015 / (config.nudge_max_coeff + sys.float_info.epsilon)
+        self.bdy_diff: float = 0.015 / (
+            params.scaled_nudge_max_coeff + sys.float_info.epsilon
+        )
         self.fac_bdydiff_v: float = (
             math.sqrt(config.substep_as_float())
             / config.velocity_boundary_diffusion_denominator
