@@ -53,8 +53,32 @@ class IconSavepoint:
         metadata = self.savepoint.metainfo.to_dict()
         return {n: metadata[n] for n in names if n in metadata}
 
+    def _read_int32_shift1(self, name: str):
+        """
+        Read a index field and shift it by -1.
 
-class IconInitSavepoint(IconSavepoint):
+        use for start indeces: the shift accounts for the zero based python
+        values are converted to int32
+        """
+        return (self.serializer.read(name, self.savepoint) - 1).astype(int32)
+
+    def _read_int32(self, name: str):
+        """
+        Read a int field by name.
+
+        use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
+        this accounts for being exclusive python exclusive bounds: [from:to)
+        field values are convert to int32
+        """
+        return self.serializer.read(name, self.savepoint).astype(int32)
+
+    def read_int(self, name: str):
+        buffer = self.serializer.read(name, self.savepoint).astype(int)
+        print(f"{name} {buffer.shape}")
+        return buffer
+
+
+class IconGridSavePoint(IconSavepoint):
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 
@@ -91,32 +115,8 @@ class IconInitSavepoint(IconSavepoint):
     def cells_start_index(self):
         return self._read_int32_shift1("c_start_index")
 
-    def _read_int32_shift1(self, name: str):
-        """
-        Read a index field and shift it by -1.
-
-        use for start indeces: the shift accounts for the zero based python
-        values are converted to int32
-        """
-        return (self.serializer.read(name, self.savepoint) - 1).astype(int32)
-
     def cells_end_index(self):
         return self._read_int32("c_end_index")
-
-    def read_int(self, name: str):
-        buffer = self.serializer.read(name, self.savepoint).astype(int)
-        print(f"{name} {buffer.shape}")
-        return buffer
-
-    def _read_int32(self, name: str):
-        """
-        Read a int field by name.
-
-        use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
-        this accounts for being exclusive python exclusive bounds: [from:to)
-        field values are convert to int32
-        """
-        return self.serializer.read(name, self.savepoint).astype(int32)
 
     def vertex_start_index(self):
         return self._read_int32_shift1("v_start_index")
@@ -170,6 +170,8 @@ class IconInitSavepoint(IconSavepoint):
         # subtract 1 to account for python being 0 based
         return self.serializer.read("v2e", self.savepoint) - 1
 
+
+class IconInitSavepoint(IconSavepoint):
     def hdef_ic(self):
         return self._get_field("hdef_ic", CellDim, KDim)
 
@@ -294,7 +296,8 @@ class IconInitSavepoint(IconSavepoint):
         return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
 
     def zd_vertidx(self):
-        return self._get_field("zd_vertidx", CellDim, C2E2CDim, KDim, dtype=int)
+        # TODO fix this
+        return self._get_field("zd_vertidx", CellDim, C2E2CDim, dtype=int)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", VertexDim, V2EDim)
@@ -392,10 +395,13 @@ class IconSerialDataProvider:
         print(f"SAVEPOINTS: {self.serializer.savepoint_list()}")
         print(f"FIELDNAMES: {self.serializer.fieldnames()}")
 
+    def from_savepoint_grid(self) -> IconGridSavePoint:
+        savepoint = self.serializer.savepoint["icon-grid"].id[1].as_savepoint()
+        return IconGridSavePoint(savepoint, self.serializer)
+
     def from_savepoint_diffusion_init(
         self, linit: bool, date: str
     ) -> IconInitSavepoint:
-        linit = True
         savepoint = (
             self.serializer.savepoint["call-diffusion-init"]
             .linit[linit]

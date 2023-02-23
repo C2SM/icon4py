@@ -115,7 +115,7 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps():
 def test_init_enh_smag_fac():
     mesh = SimpleMesh()
     enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0)
+    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
@@ -124,7 +124,7 @@ def test_init_enh_smag_fac():
     _en_smag_fac_for_zero_nshift(
         a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
     )
-    assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac[:-1]))
+    assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac))
 
 
 def diff_multfac_vn_numpy(shape, k4, substeps):
@@ -222,16 +222,17 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
 
 @pytest.mark.datatest
 def test_diffusion_init(
-    savepoint_diffusion_init,
+    diffusion_savepoint_init,
+    grid_savepoint,
     icon_grid,
     r04b09_diffusion_config,
     step_date_init,
     damping_height,
 ):
-    savepoint = savepoint_diffusion_init
+    savepoint = diffusion_savepoint_init
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
-    vertical_params = VerticalModelParams(savepoint.vct_a(), damping_height)
+    vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
 
     meta = savepoint.get_metadata("nlev", "linit", "date")
 
@@ -311,7 +312,7 @@ def test_diffusion_init(
     expected_enh_smag_fac = enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
-        savepoint.vct_a(),
+        grid_savepoint.vct_a(),
     )
     assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))
 
@@ -334,16 +335,18 @@ def _verify_init_values_against_savepoint(
     assert np.allclose(savepoint.diff_multfac_smag(), diffusion.diff_multfac_smag)
 
     assert np.allclose(savepoint.smag_limit(), diffusion.smag_limit)
-    np.allclose(savepoint.diff_multfac_n2w(), np.asarray(diffusion.diff_multfac_n2w))
+    assert np.allclose(
+        savepoint.diff_multfac_n2w(), np.asarray(diffusion.diff_multfac_n2w)
+    )
     assert np.allclose(savepoint.diff_multfac_vn(), diffusion.diff_multfac_vn)
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, r04b09_diffusion_config, icon_grid
+    diffusion_savepoint_init, r04b09_diffusion_config, icon_grid
 ):
-    savepoint = savepoint_diffusion_init
+    savepoint = diffusion_savepoint_init
     config = r04b09_diffusion_config
 
     params = DiffusionParams(config)
@@ -367,13 +370,17 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 
 @pytest.mark.datatest
 def test_verify_diffusion_init_against_first_regular_savepoint(
-    savepoint_diffusion_init, r04b09_diffusion_config, icon_grid, damping_height
+    diffusion_savepoint_init,
+    grid_savepoint,
+    r04b09_diffusion_config,
+    icon_grid,
+    damping_height,
 ):
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 
-    savepoint = savepoint_diffusion_init
-    vct_a = savepoint.vct_a()
+    savepoint = diffusion_savepoint_init
+    vct_a = grid_savepoint.vct_a()
 
     grg = savepoint.geofac_grg()
     interpolation_state = InterpolationState(
@@ -422,14 +429,18 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 @pytest.mark.datatest
 @pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
-    r04b09_diffusion_config, icon_grid, savepoint_diffusion_init, damping_height
+    r04b09_diffusion_config,
+    grid_savepoint,
+    icon_grid,
+    diffusion_savepoint_init,
+    damping_height,
 ):
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 
-    savepoint = savepoint_diffusion_init
-    vertical_params = VerticalModelParams(savepoint.vct_a(), damping_height)
-    grg = savepoint.geofac_grg()
+    savepoint = diffusion_savepoint_init
+    vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
+    grg = diffusion_savepoint_init.geofac_grg()
     interpolation_state = InterpolationState(
         e_bln_c_s=savepoint.e_bln_c_s(),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
@@ -471,20 +482,20 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         interpolation_state,
     )
 
-    _verify_init_values_against_savepoint(savepoint, diffusion)
+    _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
 @pytest.mark.datatest
 @pytest.mark.skip
 def test_run_diffusion_single_step(
-    savepoint_diffusion_init,
-    savepoint_diffusion_exit,
+    diffusion_savepoint_init,
+    diffusion_savepoint_exit,
     icon_grid,
     r04b09_diffusion_config,
     damping_height,
 ):
-    sp = savepoint_diffusion_init
-    vct_a = sp._vct_a()
+    sp = diffusion_savepoint_init
+    vct_a = sp.vct_a()
     vertical_params = VerticalModelParams(
         vct_a=vct_a, rayleigh_damping_height=damping_height
     )
@@ -524,7 +535,7 @@ def test_run_diffusion_single_step(
         coeff2_dwdz=None,
     )
 
-    diffusion = Diffusion(run_program=False)
+    diffusion = Diffusion(run_program=True)
     diffusion.init(
         grid=icon_grid,
         config=r04b09_diffusion_config,
@@ -583,10 +594,10 @@ def test_run_diffusion_single_step(
         cell_areas=cell_areas,
     )
 
-    icon_result_exner = savepoint_diffusion_exit.exner()
-    icon_result_vn = savepoint_diffusion_exit.vn()
-    icon_result_w = savepoint_diffusion_exit.w()
-    icon_result_theta_w = savepoint_diffusion_exit.theta_v()
+    icon_result_exner = diffusion_savepoint_exit.exner()
+    icon_result_vn = diffusion_savepoint_exit.vn()
+    icon_result_w = diffusion_savepoint_exit.w()
+    icon_result_theta_w = diffusion_savepoint_exit.theta_v()
 
     assert np.allclose(icon_result_w, np.asarray(prognostic_state.w))
     assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.vn))
@@ -603,12 +614,12 @@ def test_run_diffusion_single_step(
 def test_diffusion_five_steps(
     r04b09_diffusion_config,
     icon_grid,
-    savepoint_diffusion_init,
-    savepoint_exit,
+    diffusion_savepoint_init,
+    diffusion_savepoint_exit,
     linit=True,
     step_date_exit="2021-06-20T12:01:00.000",
 ):
-    sp = savepoint_diffusion_init
+    sp = diffusion_savepoint_init
 
     diagnostic_state = DiagnosticState(
         hdef_ic=sp.hdef_ic(),
@@ -719,10 +730,10 @@ def test_diffusion_five_steps(
             cell_areas=cell_areas,
         )
 
-    icon_result_exner = savepoint_exit.exner()
-    icon_result_vn = savepoint_exit.vn()
-    icon_result_w = savepoint_exit.w()
-    icon_result_theta_w = savepoint_exit.theta_v()
+    icon_result_exner = diffusion_savepoint_exit.exner()
+    icon_result_vn = diffusion_savepoint_exit.vn()
+    icon_result_w = diffusion_savepoint_exit.w()
+    icon_result_theta_w = diffusion_savepoint_exit.theta_v()
     assert np.allclose(icon_result_w, np.asarray(prognostic_state.w))
     assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.vn))
     assert np.allclose(

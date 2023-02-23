@@ -25,3 +25,6 @@ GAS_CONSTANT_WATER_VAPOR: Annotated[
 GRAVITATIONAL_ACCELERATION: Annotated[
     float, "av. gravitational acceleration [m/s^2]"
 ] = 9.8066
+DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Annotated[
+    float, "default physics to dynamics time step ratio"
+] = 5.0
