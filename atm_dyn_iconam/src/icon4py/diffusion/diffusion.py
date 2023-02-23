@@ -708,7 +708,7 @@ class Diffusion:
                 vertex_startindex_lb_plus1=vertex_startindex_lb_plus1,
                 vertex_endindex_local=vertex_endindex_local,
                 vertex_endindex_local_minus1=vertex_endindex_local_minus1,
-                index_of_damping_height=self.config.vertical_params._index_of_damping_height,
+                index_of_damping_height=self.vertical_params.index_of_damping_layer,
                 nlev=self.grid.n_lev(),
                 boundary_diffusion_start_index_edges=self.params.boundary_diffusion_start_index_edges,
                 offset_provider={
