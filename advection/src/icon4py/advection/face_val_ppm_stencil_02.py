@@ -63,7 +63,7 @@ def _face_val_ppm_stencil_02(
 
     p_face = where( (vert_idx==slev), _face_val_ppm_stencil_02b(p_cc), p_face_in)
 
-    p_face = where( (vert_idx==elevp1), _face_val_ppm_stencil_02b(p_cc), p_face_in)
+    p_face = where( (vert_idx==elevp1), _face_val_ppm_stencil_02c(p_cc), p_face_in)
 
     return p_face
 
