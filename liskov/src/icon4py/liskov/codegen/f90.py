@@ -318,10 +318,10 @@ class StartStencilStatementGenerator(TemplatedGenerator):
 
 class ImportsStatement(eve.Node):
     stencils: list[StartStencilData]
-    stencil_names: set[str] = eve.datamodels.field(init=False)
+    stencil_names: list[str] = eve.datamodels.field(init=False)
 
     def __post_init__(self) -> None:  # type: ignore
-        self.stencil_names = set([stencil.name for stencil in self.stencils])
+        self.stencil_names = sorted(set([stencil.name for stencil in self.stencils]))
 
 
 class ImportsStatementGenerator(TemplatedGenerator):
@@ -332,16 +332,18 @@ class ImportsStatementGenerator(TemplatedGenerator):
 
 class StartCreateStatement(eve.Node):
     stencils: list[StartStencilData]
-    out_field_names: set[str] = eve.datamodels.field(init=False)
+    out_field_names: list[str] = eve.datamodels.field(init=False)
 
     def __post_init__(self) -> None:  # type: ignore
-        self.out_field_names = set(
-            [
-                field.variable
-                for stencil in self.stencils
-                for field in stencil.fields
-                if field.out
-            ]
+        self.out_field_names = sorted(
+            set(
+                [
+                    field.variable
+                    for stencil in self.stencils
+                    for field in stencil.fields
+                    if field.out
+                ]
+            )
         )
 
 
