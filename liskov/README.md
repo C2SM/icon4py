@@ -18,7 +18,7 @@ To use the `icon_liskov` tool, run the following command:
 icon_liskov <filepath> [--profile]
 ```
 
-Where filepath is the path to the input file to be processed, and the --profile flag (optional) adds nvtx profile statements to the stencils.
+Where filepath is the path to the input file to be processed, and the `--profile` flag (optional) adds nvtx profile statements to the stencils.
 
 ### Preprocessor directives
 
@@ -51,6 +51,8 @@ will generate the following code:
 REAL(wp), DIMENSION((nproma, p_patch%nlev, p_patch%nblks_e)) :: vn_before
 ```
 
+Furthermore, this directive also takes two optional keyword arguments. `type` takes a string which will be used to fill in the type of the declared field, for example `type=LOGICAL`. `suffix` takes a string which will be used as the suffix of the field e.g. `suffix=dsl`, by default the suffix is `before`.
+
 #### `!$DSL START STENCIL()`
 
 This directive denotes the start of a stencil. Required arguments are `name`, `vertical_lower`, `vertical_upper`, `horizontal_lower`, `horizontal_upper`. The value for `name` must correspond to a stencil found in one of the stencil modules inside `icon4py`, and all fields defined in the directive must correspond to the fields defined in the respective icon4py stencil. Optionally, absolute and relative tolerances for the output fields can also be set using the `_tol` or `_abs` suffixes respectively. An example call looks like this:
@@ -62,6 +64,14 @@ This directive denotes the start of a stencil. Required arguments are `name`, `v
 !$DSL       vertical_lower=1; vertical_upper=nlev; &
 !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
 ```
+
+In addition, other optional keyword arguments are the following:
+
+- `accpresent`: Takes a boolean string input, and controls the default data-sharing behavior for variables used in the OpenACC parallel region. Setting the flag to true will cause all variables to be assumed present on the device by default (`DEFAULT(PRESENT)`), and no explicit data-sharing attributes need to be specified. Setting it to false will require explicit data-sharing attributes for every variable used in the parallel region (`DEFAULT(NONE)`). By default it is set to false.<br><br>
+
+- `mergecopy`: Takes a boolean string input. When set to True consecutive before field copy regions of stencils that have the mergecopy flag set to True are combined into a single before field copy region with a new name created by concatenating the names of the merged stencil regions. This is useful when there are consecutive stencils. By default it is set to false.<br><br>
+
+- `copies`: Takes a boolean string input, and controls whether before field copies should be made or not. If set to False only the `#ifdef __DSL_VERIFY` directive is generated. Defaults to true.<br><br>
 
 #### `!$DSL END STENCIL()`
 
@@ -92,3 +102,25 @@ horizontal_lower=i_startidx, &
 horizontal_upper=i_endidx
 )
 ```
+
+Additionally, there are the following keyword arguments:
+
+- `noendif`: Takes a boolean string input and controls whether an `#endif` is generated or not. Defaults to false.<br><br>
+
+- `noprofile`: Takes a boolean string input and controls whether a nvtx end profile directive is generated or not. Defaults to false.<br><br>
+
+#### `!$DSL INSERT()`
+
+This directive allows the user to generate any text that is placed between the parentheses. This is useful for situations where custom code generation is necessary.
+
+#### `!$DSL START PROFILE()`
+
+This directive allows generating an nvtx start profile data statement, and takes the stencil `name` as an argument.
+
+#### `!$DSL END PROFILE()`
+
+This directive allows generating an nvtx end profile statement.
+
+#### `!$DSL ENDIF()`
+
+This directive generates an `#endif` statement.
