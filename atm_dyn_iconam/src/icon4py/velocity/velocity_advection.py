@@ -14,7 +14,6 @@ from typing import Optional
 
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 import icon4py.velocity.velocity_advection_program as velocity_prog
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
@@ -84,6 +83,7 @@ from icon4py.common.dimension import (
     E2C2EDim,
     E2C2EODim,
     E2CDim,
+    E2VDim,
     ECDim,
     EdgeDim,
     KDim,
@@ -112,6 +112,7 @@ class VelocityAdvection:
         self.grid: Optional[IconGrid] = None
         self.interpolation_state = None
         self.metric_state = None
+        self.vertical_params: Optional[VerticalModelParams] = None
 
         self.cfl_w_limit: Optional[float] = None
         self.scalfac_exdiff: Optional[float] = None
@@ -122,12 +123,14 @@ class VelocityAdvection:
         grid: IconGrid,
         metric_state: MetricState,
         interpolation_state: InterpolationState,
+        vertical_params: VerticalModelParams,
         dtime: float,
     ):
 
         self.grid = grid
         self.metric_state: MetricState = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
+        self.vertical_params = vertical_params
 
         self._allocate_local_fields()
 
@@ -179,6 +182,8 @@ class VelocityAdvection:
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
     ):
+        rayleigh_damping_height = 12500  # TODO: insert correct inherited param
+        nflatlev = 1  # TODO: insert correct inherited param
         (
             edge_endindex_nudging_minus1,
             edge_endindex_local_minus2,
@@ -233,63 +238,63 @@ class VelocityAdvection:
             )
         else:
             velocity_prog.velocity_advection_run(
-                vn=prognostic_state.vn,
-                rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
-                vt=diagnostic_state.vt,
-                wgtfac_e=self.metric_state.wgtfac_e,
-                vn_ie=diagnostic_state.vn_ie,
-                z_kin_hor_e=z_fields.z_kin_hor_e,
-                z_vt_ie=z_fields.z_vt_ie,
-                ddxn_z_full=self.metric_state.ddxn_z_full,
-                ddxt_z_full=self.metric_state.ddxt_z_full,
-                z_w_concorr_me=z_fields.z_w_concorr_me,
-                wgtfacq_e=self.metric_state.wgtfacq_e,
-                inv_dual_edge_length=inv_dual_edge_length,
-                w=prognostic_state.w,
-                inv_primal_edge_length=inv_primal_edge_length,
-                tangent_orientation=tangent_orientation,
-                local_z_w_v=self.z_w_v,
-                local_z_v_grad_w=self.z_v_grad_w,
-                e_bln_c_s=self.interpolation_state.e_bln_c_s,
-                local_z_ekinh=self.z_ekinh,
-                local_z_w_concorr_mc=self.z_w_concorr_mc,
-                wgtfac_c=self.metric_state.wgtfac_c,
-                w_concorr_c=diagnostic_state.w_concorr_c,
-                local_z_w_con_c=self.z_w_con_c,
-                ddqz_z_half=self.metric_state.ddqz_z_half,
-                local_cfl_clipping=self.cfl_clipping,
-                local_pre_levelmask=self.pre_levelmask,
-                local_vcfl=self.vcfl,
-                cfl_w_limit=cfl_w_limit,
-                dtime=dtime,
-                local_z_w_con_c_full=self.z_w_con_c_full,
-                coeff1_dwdz=self.metric_state.coeff1_dwdz,
-                coeff2_dwdz=self.metric_state.coeff2_dwdz,
-                ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
-                local_levelmask=self.levelmask,
-                owner_mask=owner_mask,
-                area=cell_areas,
-                geofac_n2s=self.interpolation_state.geofac_n2s,
-                scalfac_exdiff=scalfac_exdiff,
-                coeff_gradekin=self.metric_state.coeff_gradekin,
-                local_zeta=self.zeta,
-                f_e=f_e,
-                c_lin_e=self.interpolation_state.c_lin_e,
-                ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-                ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
-                area_edge=area_edge,
-                geofac_grdiv=self.interpolation_state.geofac_grdiv,
-                cell_startindex_nudging=cell_startindex_nudging,
-                cell_endindex_local_minus1=cell_endindex_local_minus1,
-                cell_endindex_local=cell_endindex_local,
-                edge_startindex_nudging_plus_one=edge_startindex_nudging_plus_one,
-                edge_endindex_local=edge_endindex_local,
-                edge_endindex_local_minus2=edge_endindex_local_minus2,
-                edge_endindex_local_minus1=edge_endindex_local_minus1,
-                nflatlev_startindex=VerticalModelParams._nflatlev,
-                nrdmax_startindex=VerticalModelParams._rayleigh_damping_height,
-                nlev=self.grid.n_lev(),
-                nlevp1=self.grid.n_lev() + 1,
+                prognostic_state.vn,
+                self.interpolation_state.rbf_vec_coeff_e,
+                diagnostic_state.vt,
+                self.metric_state.wgtfac_e,
+                diagnostic_state.vn_ie,
+                z_fields.z_kin_hor_e,
+                z_fields.z_vt_ie,
+                self.metric_state.ddxn_z_full,
+                self.metric_state.ddxt_z_full,
+                z_fields.z_w_concorr_me,
+                self.metric_state.wgtfacq_e,
+                inv_dual_edge_length,
+                prognostic_state.w,
+                inv_primal_edge_length,
+                tangent_orientation,
+                self.z_w_v,
+                self.z_v_grad_w,
+                self.interpolation_state.e_bln_c_s,
+                self.z_ekinh,
+                self.z_w_concorr_mc,
+                self.metric_state.wgtfac_c,
+                diagnostic_state.w_concorr_c,
+                self.z_w_con_c,
+                self.metric_state.ddqz_z_half,
+                self.cfl_clipping,
+                self.pre_levelmask,
+                self.vcfl,
+                cfl_w_limit,
+                dtime,
+                self.z_w_con_c_full,
+                self.metric_state.coeff1_dwdz,
+                self.metric_state.coeff2_dwdz,
+                diagnostic_state.ddt_w_adv_pc,
+                self.levelmask,
+                owner_mask,
+                cell_areas,
+                self.interpolation_state.geofac_n2s,
+                scalfac_exdiff,
+                self.metric_state.coeff_gradekin,
+                self.zeta,
+                f_e,
+                self.interpolation_state.c_lin_e,
+                self.metric_state.ddqz_z_full_e,
+                diagnostic_state.ddt_vn_apc_pc,
+                area_edge,
+                self.interpolation_state.geofac_grdiv,
+                cell_startindex_nudging,
+                cell_endindex_local_minus1,
+                cell_endindex_local,
+                edge_startindex_nudging_plus_one,
+                edge_endindex_local,
+                edge_endindex_local_minus2,
+                edge_endindex_local_minus1,
+                nflatlev,  # to change
+                rayleigh_damping_height,  # to change
+                self.grid.n_lev(),
+                self.grid.n_lev() + 1,
                 offset_provider={
                     "E2C2E": self.grid.get_e2c2e_connectivity(),
                     "E2C2EDim": E2C2EDim,
@@ -297,12 +302,14 @@ class VelocityAdvection:
                     "E2V": self.grid.get_e2v_connectivity(),
                     "C2E": self.grid.get_c2e_connectivity(),
                     "C2EDim": C2EDim,
-                    "C2E2CO": self.grid.get_c2e2cO_connectivity(),
+                    "E2VDim": E2VDim,
+                    "ECDim": ECDim,
+                    "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "C2E2CODim": C2E2CODim,
                     "E2CDim": E2CDim,
-                    "E2C2EO": self.grid.get_e2c2eO_connectivity(),
+                    "E2C2EO": self.grid.get_e2c2eo_connectivity(),
                     "E2C2EODim": E2C2EODim,
-                    "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, 2),
+                    "E2EC": self.grid.get_e2ec_connectivity(),
                     "Koff": KDim,
                 },
             )
@@ -325,9 +332,9 @@ class VelocityAdvection:
     ):
 
         klevels = self.grid.n_lev()
-        nflatlev = VerticalModelParams._nflatlev
+        nflatlev = self.vertical_params._nflatlev
         nlevp1 = klevels + 1
-        nrdmax = VerticalModelParams._rayleigh_damping_height
+        nrdmax = self.vertical_params._rayleigh_damping_height
 
         (edge_start_nudging_plus_one, edge_end_local) = self.grid.get_indices_from_to(
             EdgeDim,
@@ -524,7 +531,7 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=4,
             horizontal_end=cell_end_local_minus1,
-            vertical_start=max(3, nrdmax - 2),
+            vertical_start=max(3, int(nrdmax - 2)),
             vertical_end=klevels - 3,
             offset_provider={},
         )
@@ -603,7 +610,7 @@ class VelocityAdvection:
                 "E2V": self.grid.get_e2v_connectivity(),
                 "E2C": self.grid.get_e2c_connectivity(),
                 "E2CDim": E2CDim,
-                "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, 2),
+                "E2EC": self.grid.get_e2ec_connectivity(),
                 "Koff": KDim,
             },
         )
@@ -625,7 +632,7 @@ class VelocityAdvection:
             d_time=dtime,
             horizontal_start=edge_start_nudging_plus_one,
             horizontal_end=edge_end_local,
-            vertical_start=max(3, nrdmax - 2),
+            vertical_start=max(3, int(nrdmax - 2)),
             vertical_end=klevels - 4,
             offset_provider={
                 "Koff": KDim,

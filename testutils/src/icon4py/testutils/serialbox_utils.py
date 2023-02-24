@@ -103,6 +103,12 @@ class IconGridSavePoint(IconSavepoint):
     def dual_normal_vert_x(self):
         return self._get_field("dual_normal_vert_x", VertexDim, E2C2VDim)
 
+    def owner_mask(self):
+        return self._get_field("owner_mask", CellDim, dtype=bool)
+
+    def f_e(self):
+        return self._get_field("f_e", EdgeDim)
+
     def cell_areas(self):
         return self._get_field("cell_areas", CellDim)
 
@@ -154,10 +160,6 @@ class IconGridSavePoint(IconSavepoint):
         # subtract 1 to account for python being 0 based
         return self.serializer.read("e2c2e", self.savepoint) - 1
 
-    def e2ec(self):
-        # subtract 1 to account for python being 0 based
-        return self.serializer.read("e2ec", self.savepoint) - 1
-
     def e2c(self):
         # subtract 1 to account for python being 0 based
         return self.serializer.read("e2c", self.savepoint) - 1
@@ -193,22 +195,16 @@ class IconInitSavepoint(IconSavepoint):
     def vt(self):
         return self._get_field("vt", EdgeDim, KDim)
 
-    def w_concorr_c(self):  # TODO: data not serialized
+    def w_concorr_c(self):
         return self._get_field("w_concorr_c", CellDim, KDim)
 
-    def ddt_w_adv_pc(self):  # TODO: data not serialized
+    def ddt_w_adv_pc(self):
         return self._get_field("ddt_w_adv_pc", CellDim, KDim)
 
-    def ddt_vn_apc_pc(self):  # TODO: data not serialized
+    def ddt_vn_apc_pc(self):
         return self._get_field("ddt_vn_apc_pc", EdgeDim, KDim)
 
-    def owner_mask(self):  # TODO: data not serialized
-        return self._get_field("owner_mask", CellDim)
-
-    def f_e(self):  # TODO: data not serialized
-        return self._get_field("f_e", EdgeDim)
-
-    def wgtfacq_e(self):  # TODO: data not serialized
+    def wgtfacq_e(self):
         return self._get_field("wgtfacq_e", EdgeDim, KDim)
 
     def z_w_concorr_me(self):
@@ -412,7 +408,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_velocity_init(self, istep: int, date: str) -> IconInitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-velocity-tendencies-init"]
+            self.serializer.savepoint["call-velocity-tendencies"]
             .istep[istep]
             .date[date]
             .as_savepoint()
@@ -432,7 +428,7 @@ class IconSerialDataProvider:
 
     def from_save_point_velocity_exit(self, istep: int, date: str) -> IconExitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-velocity-tendencies-exit"]
+            self.serializer.savepoint["call-velocity-tendencies"]
             .istep[istep]
             .date[date]
             .as_savepoint()

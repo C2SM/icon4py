@@ -18,7 +18,7 @@ from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.common.dimension import CellDim, ECDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.horizontal import HorizontalMeshSize
 
 
@@ -159,6 +159,13 @@ class IconGrid:
         table = self.connectivities["c2e2c"]
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
 
+    def get_e2ec_connectivity(self):
+        old_shape = self.connectivities["e2c"].shape
+        e2ec_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return NeighborTableOffsetProvider(
+            e2ec_table, EdgeDim, ECDim, e2ec_table.shape[1]
+        )
+
     def get_c2e2co_connectivity(self):
         table = self.connectivities["c2e2co"]
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
@@ -167,23 +174,18 @@ class IconGrid:
         return self.get_e2v_connectivity()
 
     def get_e2c2v_size(self):
-        # why not use NeighborTableOffsetProvider for e2c2v?
         self.connectivities["e2v"].shape[1]
 
     def get_v2e_connectivity(self):
         table = self.connectivities["v2e"]
         return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
 
-    def get_c2e2cO_connectivity(self):
-        table = self.connectivities["c2e2cO"]
-        return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
-
     def get_e2c2e_connectivity(self):
         table = self.connectivities["e2c2e"]
         return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
 
-    def get_e2c2eO_connectivity(self):
-        table = self.connectivities["e2c2eO"]
+    def get_e2c2eo_connectivity(self):
+        table = self.connectivities["e2c2eo"]
         return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
 
 

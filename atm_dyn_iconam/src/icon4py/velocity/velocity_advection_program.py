@@ -88,7 +88,7 @@ from icon4py.common.dimension import (
     KDim,
     VertexDim,
 )
-from icon4py.state_utils.utils import set_zero_w_k
+from icon4py.state_utils.utils import _set_zero_w_k
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -275,9 +275,9 @@ def velocity_advection_run(
         },
     )
 
-    set_zero_w_k(local_cfl_clipping, offset_provider={})
-    set_zero_w_k(local_pre_levelmask, offset_provider={})
-    set_zero_w_k(local_vcfl, offset_provider={})
+    _set_zero_w_k(out=local_cfl_clipping)
+    _set_zero_w_k(out=local_pre_levelmask)
+    _set_zero_w_k(out=local_vcfl)
 
     _mo_velocity_advection_stencil_14(
         ddqz_z_half,
@@ -290,7 +290,8 @@ def velocity_advection_run(
         out=(local_cfl_clipping, local_pre_levelmask, local_vcfl, local_z_w_con_c),
         domain={
             CellDim: (4, cell_endindex_local_minus1),
-            KDim: (max(3, nrdmax_startindex - 2), nlev - 3),
+            # KDim: (max(3, nrdmax_startindex - 2), nlev - 3),
+            KDim: (3, nlev - 3),  # TODO: change back to line above
         },
     )
     _mo_velocity_advection_stencil_15(
@@ -322,22 +323,26 @@ def velocity_advection_run(
             KDim: (1, nlev),
         },
     )
-    _mo_velocity_advection_stencil_18(
-        levelmask,
-        local_cfl_clipping,
-        owner_mask,
-        local_z_w_con_c,
-        ddqz_z_half,
-        area,
-        geofac_n2s,
-        w,
-        ddt_w_adv,
-        scalfac_exdiff,
-        cfl_w_limit,
-        dtime,
-        out=ddt_w_adv,
-        domain={},
-    )
+    # _mo_velocity_advection_stencil_18(
+    #     levelmask,
+    #     local_cfl_clipping,
+    #     owner_mask,
+    #     local_z_w_con_c,
+    #     ddqz_z_half,
+    #     area,
+    #     geofac_n2s,
+    #     w,
+    #     ddt_w_adv,
+    #     scalfac_exdiff,
+    #     cfl_w_limit,
+    #     dtime,
+    #     out=ddt_w_adv,
+    #     domain={
+    #         EdgeDim: (cell_startindex_nudging, cell_endindex_local),
+    #         # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
+    #         KDim: (3, nlev - 3),
+    #     },
+    # )
     _mo_velocity_advection_stencil_19(
         z_kin_hor_e,
         coeff_gradekin,
@@ -370,9 +375,10 @@ def velocity_advection_run(
         cfl_w_limit,
         scalfac_exdiff,
         dtime,
-        out=ddt_vn_adv[:, :-1],
+        out=ddt_vn_adv,
         domain={
             EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
-            KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
+            # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
+            KDim: (3, nlev - 4),  # TODO: change back to line above
         },
     )

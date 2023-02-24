@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 
 from icon4py.state_utils.diagnostic_state import DiagnosticState
+from icon4py.state_utils.icon_grid import VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState
 from icon4py.state_utils.prognostic_state import PrognosticState
@@ -71,6 +72,7 @@ def test_velocity_init(
         grid=icon_grid,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        vertical_params=VerticalModelParams,
         dtime=dtime,
     )
 
@@ -134,6 +136,7 @@ def test_verify_velocity_init_against_first_regular_savepoint(
         grid=icon_grid,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        vertical_params=VerticalModelParams,
         dtime=dtime,
     )
 
@@ -187,6 +190,7 @@ def test_verify_velocity_init_against_other_regular_savepoint(
         grid=icon_grid,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        vertical_params=VerticalModelParams,
         dtime=dtime,
     )
 
@@ -199,11 +203,13 @@ def test_velocity_five_steps(
     r04b09_velocity_advection_config,
     icon_grid,
     savepoint_velocity_init,
-    savepoint_diffusion_init,
+    diffusion_savepoint_init,
+    data_provider,
     savepoint_velocity_exit,
     step_date_exit="2021-06-20T12:00:10.000",
 ):
     sp = savepoint_velocity_init
+    sp_d = data_provider.from_savepoint_grid()
     config = r04b09_velocity_advection_config
     dtime = sp.get_metadata("dtime").get("dtime")
     cfl_w_limit = sp.cfl_w_limit()
@@ -221,8 +227,8 @@ def test_velocity_five_steps(
         ddt_vn_apc_pc=sp.ddt_vn_apc_pc(),
     )
     prognostic_state = PrognosticState(
-        w=savepoint_diffusion_init.w(),
-        vn=savepoint_diffusion_init.vn(),
+        w=diffusion_savepoint_init.w(),
+        vn=diffusion_savepoint_init.vn(),
         exner_pressure=None,
         theta_v=None,
     )
@@ -234,11 +240,11 @@ def test_velocity_five_steps(
     )
 
     interpolation_state = InterpolationState(
-        e_bln_c_s=None,
+        e_bln_c_s=diffusion_savepoint_init.e_bln_c_s(),
         rbf_coeff_1=None,
         rbf_coeff_2=None,
         geofac_div=None,
-        geofac_n2s=None,
+        geofac_n2s=diffusion_savepoint_init.geofac_n2s(),
         geofac_grg_x=None,
         geofac_grg_y=None,
         nudgecoeff_e=None,
@@ -250,7 +256,7 @@ def test_velocity_five_steps(
     metric_state = MetricState(
         mask_hdiff=None,
         theta_ref_mc=None,
-        wgtfac_c=None,
+        wgtfac_c=diffusion_savepoint_init.wgtfac_c(),
         zd_intcoef=None,
         zd_vertidx=None,
         zd_diffcoef=None,
@@ -265,11 +271,11 @@ def test_velocity_five_steps(
         coeff2_dwdz=sp.coeff2_dwdz(),
     )
 
-    orientation = savepoint_diffusion_init.tangent_orientation()
-    inverse_primal_edge_lengths = savepoint_diffusion_init.inverse_primal_edge_lengths()
-    inverse_dual_edge_length = savepoint_diffusion_init.inv_dual_edge_length()
-    edge_areas = savepoint_diffusion_init.edge_areas()
-    cell_areas = savepoint_diffusion_init.cell_areas()
+    orientation = sp_d.tangent_orientation()
+    inverse_primal_edge_lengths = sp_d.inverse_primal_edge_lengths()
+    inverse_dual_edge_length = sp_d.inv_dual_edge_length()
+    edge_areas = sp_d.edge_areas()
+    cell_areas = sp_d.cell_areas()
 
     velocity_advection = VelocityAdvection()
     velocity_advection.init(
@@ -277,6 +283,7 @@ def test_velocity_five_steps(
         grid=icon_grid,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        vertical_params=VerticalModelParams,
         dtime=dtime,
     )
 
@@ -292,8 +299,8 @@ def test_velocity_five_steps(
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             cell_areas=cell_areas,
-            owner_mask=sp.owner_mask(),
-            f_e=sp.f_e,
+            owner_mask=sp_d.owner_mask(),
+            f_e=sp_d.f_e(),
             area_edge=edge_areas,
         )
 
