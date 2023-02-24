@@ -23,15 +23,15 @@ logger = setup_logger(__name__)
 
 
 class IntegrationWriter(Step):
-    SUFFIX = ".gen.f90"
-
-    def __init__(self, filepath: Path) -> None:
+    def __init__(self, input_filepath: Path, output_filepath: Path) -> None:
         """Initialize an IntegrationWriter instance with a list of generated code.
 
         Args:
-            filepath: Path to file containing directives.
+            input_filepath: Path to file containing directives.
+            output_filepath: Path to file to write generated code.
         """
-        self.filepath = filepath
+        self.input_filepath = input_filepath
+        self.output_filepath = output_filepath
 
     def __call__(self, generated: List[GeneratedCode]) -> None:
         """Write a file containing generated code, with the DSL directives removed in the same directory as filepath using a new suffix.
@@ -39,22 +39,18 @@ class IntegrationWriter(Step):
         Args:
             generated: A list of GeneratedCode instances representing the generated code that will be written to a file.
         """
-        current_file = self._read_file(self.filepath)
+        current_file = self._read_file()
         with_generated_code = self._insert_generated_code(current_file, generated)
         without_directives = self._remove_directives(with_generated_code)
-        self._write_file(self.filepath, without_directives)
+        self._write_file(without_directives)
 
-    @staticmethod
-    def _read_file(filepath: Path) -> List[str]:
+    def _read_file(self) -> List[str]:
         """Read the lines of a file into a list.
-
-        Args:
-            filepath: Path to the file to be read.
 
         Returns:
             A list of strings representing the lines of the file.
         """
-        with filepath.open("r") as f:
+        with self.input_filepath.open("r") as f:
             lines = f.readlines()
         return lines
 
@@ -93,19 +89,16 @@ class IntegrationWriter(Step):
             cur_line_num += len(to_insert)
         return current_file
 
-    @staticmethod
-    def _write_file(filepath: Path, generated_code: List[str]) -> None:
+    def _write_file(self, generated_code: List[str]) -> None:
         """Write generated code to a file.
 
         Args:
-            filepath: Path to the file where the generated code will be written.
             generated_code: A list of strings representing the generated code to be written to the file.
         """
         code = "".join(generated_code)
-        new_file_path = filepath.with_suffix(IntegrationWriter.SUFFIX)
-        with new_file_path.open("w") as f:
+        with self.output_filepath.open("w") as f:
             f.write(code)
-        logger.info(f"Wrote new file to {new_file_path}")
+        logger.info(f"Wrote new file to {self.output_filepath}")
 
     @staticmethod
     def _remove_directives(current_file: List[str]) -> List[str]:

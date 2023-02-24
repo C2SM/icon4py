@@ -61,7 +61,10 @@ def load_gt4py_stencils(parsed: DeserialisedDirectives) -> list[Step]:
 
 @linear_pipeline
 def run_code_generation(
-    parsed: DeserialisedDirectives, filepath: Path, profile: bool
+    parsed: DeserialisedDirectives,
+    input_filepath: Path,
+    output_filepath: Path,
+    profile: bool,
 ) -> list[Step]:
     """Execute a pipeline to generate and write code for a set of directives.
 
@@ -74,4 +77,7 @@ def run_code_generation(
         filepath: The file path to write the generated code to.
         profile: A flag to indicate if profiling information should be included in the generated code.
     """
-    return [IntegrationGenerator(parsed, profile), IntegrationWriter(filepath)]
+    return [
+        IntegrationGenerator(parsed, profile),
+        IntegrationWriter(input_filepath, output_filepath),
+    ]
