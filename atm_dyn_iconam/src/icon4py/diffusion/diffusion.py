@@ -21,10 +21,7 @@ from typing import Final, Optional, Tuple
 import numpy as np
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
-from gt4py.next.iterator.embedded import (
-    StridedNeighborOffsetProvider,
-    np_as_located_field,
-)
+from gt4py.next.iterator.embedded import np_as_located_field
 
 # import icon4py.diffusion.diffusion_program as diff_prog
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
@@ -77,7 +74,6 @@ from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
 from icon4py.diffusion.utils import (
-    PatchedStridedNeighborOffsetProvider,
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
     scale_k,
@@ -298,9 +294,6 @@ class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
 
     def __init__(self, config: DiffusionConfig):
-        self.boundary_diffusion_start_index_edges = (
-            5  # mo_nh_diffusion.start_bdydiff_e - 1 = 5 -1
-        )
 
         self.K2: Final[float] = (
             1.0 / (config.hdiff_efdt_ratio * 8.0)
@@ -370,6 +363,7 @@ class DiffusionParams:
         return factor, heights
 
 
+# TODO move to TEST: (and reimplement stencil_15 in field view)
 def mo_nh_diffusion_stencil_15_numpy(
     c2e2c,
     mask_hdiff: Field[[CellDim, KDim], int],
@@ -721,7 +715,7 @@ class Diffusion:
             #     vertex_endindex_local_minus1=vertex_endindex_local_minus1,
             #     index_of_damping_height=self.vertical_params.index_of_damping_layer,
             #     nlev=self.grid.n_lev(),
-            #     boundary_diffusion_start_index_edges=self.params.boundary_diffusion_start_index_edges,
+            #     boundary_diffusion_start_index_edges=edge_start_lb_plus4
             #     offset_provider={
             #         "V2E": self.grid.get_v2e_connectivity(),
             #         "V2EDim": V2EDim,
@@ -807,6 +801,12 @@ class Diffusion:
             HorizontalMarkerIndex.local(EdgeDim),
         )
 
+        edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+        )
+
         (
             edge_start_nudging_minus1,
             edge_end_local_minus2,
@@ -878,7 +878,7 @@ class Diffusion:
             kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
             smag_offset=smag_offset,
-            horizontal_start=self.params.boundary_diffusion_start_index_edges,
+            horizontal_start=edge_start_lb_plus4,
             horizontal_end=edge_end_local_minus2,
             vertical_start=0,
             vertical_end=klevels,

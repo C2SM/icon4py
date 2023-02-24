@@ -12,13 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Tuple
 
-import numpy
 import numpy as np
-from gt4py.next import common
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, minimum
-from gt4py.next.iterator.embedded import IntIndex, np_as_located_field
+from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import KDim, Koff, VertexDim
@@ -224,4 +222,3 @@ def init_nabla2_factor_in_upper_damping_zone(
         ** 4
     )
     return np_as_located_field(KDim)(buffer)
-
