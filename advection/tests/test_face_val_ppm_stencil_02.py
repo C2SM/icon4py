@@ -58,9 +58,6 @@ def test_face_val_ppm_stencil_02():
     elev = vert_idx[-3]
     elevp1 = elev + int32(1)
 
-    # print(vert_idx.__array__()) 
-    # print(elev)
-
     ref = face_val_ppm_stencil_02_numpy(
         np.asarray(p_cc),
         np.asarray(p_cellhgt_mc_now),
