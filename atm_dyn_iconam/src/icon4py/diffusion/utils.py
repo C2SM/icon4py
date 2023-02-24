@@ -225,20 +225,3 @@ def init_nabla2_factor_in_upper_damping_zone(
     )
     return np_as_located_field(KDim)(buffer)
 
-
-class PatchedStridedNeighborOffsetProvider:
-    def __init__(
-        self,
-        origin_axis: common.Dimension,
-        neighbor_axis: common.Dimension,
-        max_neighbors: int,
-        has_skip_values=True,
-    ) -> None:
-        self.origin_axis = origin_axis
-        self.neighbor_axis = neighbor_axis
-        self.max_neighbors = max_neighbors
-        self.has_skip_values = has_skip_values
-        self.index_type = numpy.dtype("int32")
-
-    def mapped_index(self, primary: IntIndex, neighbor_idx: IntIndex) -> IntIndex:
-        return primary * self.max_neighbors + neighbor_idx
