@@ -16,8 +16,9 @@ import numpy as np
 from icon4py.advection.face_val_ppm_stencil_02 import face_val_ppm_stencil_02
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import random_field, zero_field, _shape
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator import embedded as it_embedded
 
 
 def face_val_ppm_stencil_02_numpy(
@@ -49,12 +50,9 @@ def test_face_val_ppm_stencil_02():
     p_cellhgt_mc_now = random_field(mesh, CellDim, KDim)
     p_face_in = random_field(mesh, CellDim, KDim)
     p_face = random_field(mesh, CellDim, KDim)
-    vert_idx = zero_field(mesh, KDim, dtype=int32)
 
-    for i in range(len(vert_idx.__array__())):
-      vert_idx[i] = i
+    vert_idx = it_embedded.np_as_located_field(KDim)( np.arange(0, _shape(mesh, KDim)[0], dtype=int32) )
 
-    
     slev = int32(1)
     slevp1 = slev + int32(1)
     elev = vert_idx[-3]
@@ -87,7 +85,4 @@ def test_face_val_ppm_stencil_02():
         offset_provider={"Koff": KDim},
     )
 
-    # assert np.allclose(ref[:,1:], p_face)
-    # assert np.allclose(ref, p_face[:,1:])
-    # assert np.allclose(ref, p_face[:,1:])
-    assert np.allclose(ref, p_face[:,:])
+    assert np.allclose(ref, p_face)

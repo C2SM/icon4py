@@ -16,8 +16,10 @@ import numpy as np
 from icon4py.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import random_field, zero_field, _shape
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator import embedded as it_embedded
+
 
 
 def face_val_ppm_stencil_01_numpy(
@@ -54,8 +56,7 @@ def test_face_val_ppm_stencil_01():
     p_cellhgt_mc_now = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     vert_idx = zero_field(mesh, KDim, dtype=int32, extend={KDim: 1})
 
-    for i in range(len(vert_idx.__array__())):
-      vert_idx[i] = i
+    vert_idx = it_embedded.np_as_located_field(KDim)( np.arange(0, _shape(mesh, KDim, extend={KDim: 1})[0], dtype=int32) )
     elev = vert_idx[-2]
 
     z_slope = random_field(mesh, CellDim, KDim)
