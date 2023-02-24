@@ -15,10 +15,10 @@ The icon4py-liskov package includes the `icon_liskov` CLI tool which takes a for
 To use the `icon_liskov` tool, run the following command:
 
 ```bash
-icon_liskov <filepath> [--profile]
+icon_liskov <input_filepath> <output_filepath> [--profile]
 ```
 
-Where filepath is the path to the input file to be processed, and the `--profile` flag (optional) adds nvtx profile statements to the stencils.
+Where `input_filepath` is the path to the input file to be processed, and `output_filepath` is the path to the output file. The optional `--profile` flag adds nvtx profile statements to the stencils.
 
 ### Preprocessor directives
 
