@@ -25,7 +25,6 @@ def face_val_ppm_stencil_01_numpy(
     p_cellhgt_mc_now: np.array,
     vert_idx: np.array,
     elev: int32,
-    z_slope: np.array,
 ):
 
     # vert_idx = np.broadcast_to(vert_idx, p_cc.shape)
@@ -66,7 +65,6 @@ def test_face_val_ppm_stencil_01():
         np.asarray(p_cellhgt_mc_now),
         np.asarray(vert_idx),
         elev,
-        np.asarray(z_slope),
     )
 
     face_val_ppm_stencil_01(
