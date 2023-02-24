@@ -154,7 +154,7 @@ MULTIPLE_STENCILS = """\
         ENDDO
         !$ACC END PARALLEL LOOP
     !$DSL ENDIF()
-    !$DSL END STENCIL(name=calculate_nabla2_for_w; noendif=True)
+    !$DSL END STENCIL(name=calculate_nabla2_for_w; noendif=true)
     !$DSL END CREATE()
     """
 

@@ -94,7 +94,7 @@ class FreeForm(TypedDirective):
     # matches any string inside brackets
     regex: str = field(default=r"(.+?)", init=False)
 
-    def get_content(self) -> dict:
+    def get_content(self) -> str:
         args = self.string.replace(f"{self.pattern}", "")
         return args[1:-1]
 

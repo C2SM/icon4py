@@ -54,7 +54,7 @@ def test_stencil_collector_invalid_member():
     with open(path, "w") as f:
         f.write("")
 
-    with pytest.raises(UnknownStencilError, match=r"Did not find member: (\w*)"):
+    with pytest.raises(UnknownStencilError, match=r"Did not find module member: (\w*)"):
         updater._collect_icon4py_stencil("foo")
 
     os.remove(path)

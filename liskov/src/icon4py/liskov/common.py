@@ -12,7 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from abc import ABC, abstractmethod
-from typing import Any, Sequence
+from functools import wraps
+from typing import Any, Callable, Sequence
 
 
 class Step(ABC):
@@ -52,7 +53,20 @@ class LinearPipelineComposer:
         return data
 
 
-def exec_pipeline(steps: Sequence[Step]) -> Any:
-    """Assembles a pipeline of steps and executes it."""
-    composer = LinearPipelineComposer(steps)
-    return composer.execute()
+def linear_pipeline(func: Callable) -> Callable:
+    """Apply a linear pipeline to a function using a decorator.
+
+    Args:
+        func: The function to be decorated.
+
+    Returns:
+        The decorated function.
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        steps = func(*args, **kwargs)
+        composer = LinearPipelineComposer(steps)
+        return composer.execute()
+
+    return wrapper

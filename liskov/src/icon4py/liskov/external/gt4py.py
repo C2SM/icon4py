@@ -66,14 +66,16 @@ class UpdateFieldsWithGt4PyStencils(Step):
                 err_counter += 1
 
         if err_counter == len(self._STENCIL_PACKAGES):
-            raise UnknownStencilError(f"Did not find module: {stencil_name}")
+            raise UnknownStencilError(
+                f"Did not find module: {stencil_name} in icon4py."
+            )
 
         module_members = getmembers(module)
         found_stencil = [elt for elt in module_members if elt[0] == stencil_name]
 
         if len(found_stencil) == 0:
             raise UnknownStencilError(
-                f"Did not find member: {stencil_name} in module: {module.__name__}"
+                f"Did not find module member: {stencil_name} in module: {module.__name__} in icon4py."
             )
 
         return found_stencil[0][1]

@@ -35,6 +35,7 @@ from icon4py.liskov.codegen.interface import (
 from icon4py.liskov.common import Step
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import (
+    DirectiveSyntaxError,
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
@@ -63,10 +64,17 @@ def _extract_stencil_name(named_args: dict, directive: ts.ParsedDirective) -> st
     return stencil_name
 
 
-def _extract_boolean_kwarg(args: dict, arg_name: str) -> Optional[bool]:
+def _extract_boolean_kwarg(
+    directive: ts.ParsedDirective, args: dict, arg_name: str
+) -> Optional[bool]:
     """Extract a boolean kwarg from the parsed dictionary. Kwargs are false by default."""
     if a := args.get(arg_name):
-        return string_to_bool(a)
+        try:
+            return string_to_bool(a)
+        except Exception:
+            raise DirectiveSyntaxError(
+                f"Expected boolean string as value to keyword argument {arg_name} on line {directive.startln}. Got {a}"
+            )
     return False
 
 
@@ -205,8 +213,8 @@ class EndStencilDataFactory(DataFactoryBase):
         for i, directive in enumerate(extracted):
             named_args = parsed["content"]["EndStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
-            noendif = _extract_boolean_kwarg(named_args, "noendif")
-            noprofile = _extract_boolean_kwarg(named_args, "noprofile")
+            noendif = _extract_boolean_kwarg(directive, named_args, "noendif")
+            noprofile = _extract_boolean_kwarg(directive, named_args, "noprofile")
             deserialised.append(
                 self.dtype(
                     name=stencil_name,
@@ -336,7 +344,6 @@ class StartStencilDataFactory(DataFactoryBase):
                 association=association,
                 dims=dimensions.get(field_name),
             )
-            # todo: improve error handling
             fields.append(field_association_data)
         return fields
 
@@ -362,7 +369,7 @@ class StartStencilDataFactory(DataFactoryBase):
 @dataclass
 class InsertDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = ts.Insert
-    dtype: Type[StartStencilData] = InsertData
+    dtype: Type[InsertData] = InsertData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[InsertData]:
         deserialised = []
@@ -371,7 +378,7 @@ class InsertDataFactory(DataFactoryBase):
             content = parsed["content"]["Insert"][i]
             deserialised.append(
                 self.dtype(
-                    startln=directive.startln, endln=directive.endln, content=content
+                    startln=directive.startln, endln=directive.endln, content=content  # type: ignore
                 )
             )
         return deserialised

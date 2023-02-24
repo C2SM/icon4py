@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from pathlib import Path
 from typing import List
 
@@ -44,7 +43,6 @@ class IntegrationWriter(Step):
         with_generated_code = self._insert_generated_code(current_file, generated)
         without_directives = self._remove_directives(with_generated_code)
         self._write_file(self.filepath, without_directives)
-        # TODO: return exit status
 
     @staticmethod
     def _read_file(filepath: Path) -> List[str]:
