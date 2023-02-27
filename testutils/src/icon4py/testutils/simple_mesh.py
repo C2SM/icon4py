@@ -27,6 +27,7 @@ from icon4py.common.dimension import (
     E2C2VDim,
     E2CDim,
     E2VDim,
+    ECDim,
     ECVDim,
     EdgeDim,
     KDim,
@@ -392,6 +393,7 @@ class SimpleMesh:
             VertexDim: self.n_vertices,
             V2EDim: self.n_v2e,
             CEDim: self.n_cells * self.n_c2e,
+            ECDim: self.n_edges * self.n_e2c,
             E2C2VDim: self.n_e2c2v,
             ECVDim: self.n_edges * self.n_e2c2v,
         }

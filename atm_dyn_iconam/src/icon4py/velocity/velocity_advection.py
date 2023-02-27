@@ -570,7 +570,6 @@ class VelocityAdvection:
             offset_provider={"C2E": self.grid.get_c2e_connectivity(), "C2EDim": C2EDim},
         )
 
-        # 18 does not have bounds??
         mo_velocity_advection_stencil_18(
             levelmask=self.levelmask,
             cfl_clipping=self.cfl_clipping,
@@ -612,6 +611,7 @@ class VelocityAdvection:
                 "E2CDim": E2CDim,
                 "E2EC": self.grid.get_e2ec_connectivity(),
                 "Koff": KDim,
+                "ECDim": ECDim,
             },
         )
 

@@ -26,7 +26,6 @@ from icon4py.common.dimension import (
     E2C2EODim,
     E2CDim,
     E2VDim,
-    ECDim,
     EdgeDim,
     V2EDim,
     VertexDim,
@@ -114,18 +113,14 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):
 
 
 @pytest.fixture
-def savepoint_velocity_init(setup_icon_data, linit, step_date_init):
+def savepoint_velocity_init(data_provider, linit, step_date_init):
     """
     Load data from ICON savepoint at start of velocity_advection module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    # return data_provider.from_savepoint_velocity_init(istep=1, date=step_date_init)
-    sp = IconSerialDataProvider(
-        "icon_pydycore", str(extracted_path), True
-    ).from_savepoint_velocity_init(istep=1, date=step_date_init)
-    return sp
+    return data_provider.from_savepoint_velocity_init(istep=1, date=step_date_init)
 
 
 @pytest.fixture
@@ -141,19 +136,14 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
 
 
 @pytest.fixture
-def savepoint_velocity_exit(setup_icon_data, step_date_exit):
+def savepoint_velocity_exit(data_provider, step_date_exit):
     """
     Load data from ICON savepoint at exist of velocity_advection module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    # sp = data_provider.from_save_point_velocity_exit(istep=1, date=step_date_exit)
-    # return sp
-    sp = IconSerialDataProvider(
-        "icon_pydycore", extracted_path, True
-    ).from_save_point_velocity_exit(istep=1, date=step_date_exit)
-    return sp
+    return data_provider.from_save_point_velocity_exit(istep=1, date=step_date_exit)
 
 
 @pytest.fixture
@@ -204,7 +194,6 @@ def icon_grid(data_provider):
                 C2E2CODim: c2e2c0,
                 E2C2EDim: e2c2e,
                 E2C2EODim: e2c2e0,
-                ECDim: sp.e2c(),
             }
         )
         .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e()})
