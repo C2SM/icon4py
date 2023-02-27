@@ -1,5 +1,5 @@
 # VCS
--e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
+-e git+https://github.com/havogt/gt4py.git@no_partial_shifts#egg=gt4py
 
 # PyPI
 flake8>=3.8
