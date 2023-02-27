@@ -303,7 +303,6 @@ class VelocityAdvection:
                     "C2E": self.grid.get_c2e_connectivity(),
                     "C2EDim": C2EDim,
                     "E2VDim": E2VDim,
-                    "ECDim": ECDim,
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "C2E2CODim": C2E2CODim,
                     "E2CDim": E2CDim,
@@ -611,7 +610,6 @@ class VelocityAdvection:
                 "E2CDim": E2CDim,
                 "E2EC": self.grid.get_e2ec_connectivity(),
                 "Koff": KDim,
-                "ECDim": ECDim,
             },
         )
 
