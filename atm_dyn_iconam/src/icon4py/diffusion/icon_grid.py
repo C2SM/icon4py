@@ -144,7 +144,7 @@ class IconGrid:
         return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
 
     def get_c2e_connectivity(self):
-        table = self.connectivities["c2e"].astype(int)
+        table = self.connectivities["c2e"]
         return NeighborTableOffsetProvider(table, CellDim, EdgeDim, table.shape[1])
 
     def get_e2c_connectivity(self):

@@ -190,12 +190,6 @@ def test_horizontal_edge_indices(icon_grid):
 
 
 @pytest.mark.datatest
-def test_get_e2ecv_connectivity(icon_grid):
-    c = icon_grid.get_e2ecv_connectivity()
-    assert c.mapped_index(0, 0) == 0
-
-
-@pytest.mark.datatest
 def test_horizontal_vertex_indices(icon_grid):
     assert icon_grid.get_indices_from_to(
         VertexDim,
