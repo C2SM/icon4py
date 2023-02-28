@@ -13,19 +13,19 @@
 
 from dataclasses import dataclass
 
-from icon4py.diffusion.diffusion import Diffusion
-
-@dataclass
-class ModelConfig:
-    n_time_steps: int
-    dtime: float
-@dataclass
-class AtmoNonHydroConfig:
-    n_substeps: int
+from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
+from icon4py.diffusion.icon_grid import read_icon_grid, VerticalModelParams
+from icon4py.diffusion.interpolation_state import InterpolationState
+from icon4py.diffusion.metric_state import MetricState
+from icon4py.icon_configuration import read_config, IconRunConfig
 
 
 class AtmoNonHydro:
-    def __init__(self, config):
+
+    def __init__(self):
+        self.config = None
+
+    def init(self, config):
         self.config = config
 
     def _dynamics_timestep(self):
@@ -35,34 +35,53 @@ class AtmoNonHydro:
         for i in range(self.config.n_substeps):
             self._dynamics_timestep()
 
-
-modelConfig: ModelConfig
-diffusion: Diffusion
-non_hydro: AtmoNonHydro
+diffusion: Diffusion()
+atmo_non_hydro: AtmoNonHydro()
 
 
 def timestep(dtime: float):
-    diffusion.initial_step()
-    non_hydro.do_dynamics_substepping()
+
+    diffusion.initial_step(diagnostic_state, prognostic_state, dtime, tangent_orientation, inverse_primal_edge_lengths, inverse_dual_edge_length, inverse_vert_vert_lengths, primal_normal_vert, dual_normal_vert, edge_areas, cell_areas)
+    atmo_non_hydro.do_dynamics_substepping()
     diffusion.time_step()
 
 
-def timeloop(dtime: float, n_time_steps:int):
+def timeloop(run_config: IconRunConfig):
     """Runs the loop."""
-    for t in range(n_time_steps):
-        timestep(dtime)
+    for t in range(run_config.n_time_steps):
+        timestep(run_config.dtime)
+
+
+def initialize_model():
+    config = read_config()
+    icon_grid = read_icon_grid()
+    diffusion_params = DiffusionParams(config.diffusion_config)
+    vct_a = None
+    vertical_model_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height = 12500)
+    interpolation_state = InterpolationState()
+    metric_state = MetricState()
+
+    diffusion.init(icon_grid, config.diffusion_config, diffusion_params, vertical_model_params, metric_state, interpolation_state)
+    atmo_non_hydro.init(config= config.dycore_config)
+
+    return config
+
+
 
 
 def run():
     """
-    "Runs the driver"
+    "Runs the driver."
+    steps:
     1. initialize model
         a) read config
         b) initialize grid
-    2. run dycore loop
+        c) initialize/configure components ie "granules"
+    2. run time loop loop
         run timeloop
     3. collect output
-
     """
+    config = initialize_model()
+    timeloop(config.run_config)
 
 
