@@ -555,7 +555,7 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     orientation = grid_savepoint.tangent_orientation()
     inverse_primal_edge_lengths = grid_savepoint.inverse_primal_edge_lengths()
-    inverse_vertical_vertex_lengths = grid_savepoint.inv_vert_vert_length()
+    inverse_vert_vert_lengths = grid_savepoint.inv_vert_vert_length()
     inverse_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     primal_normal_vert: VectorTuple = (
         as_1D_sparse_field(grid_savepoint.primal_normal_vert_x(), ECVDim),
@@ -576,7 +576,7 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
         interpolation_state,
         inverse_dual_edge_length,
         inverse_primal_edge_lengths,
-        inverse_vertical_vertex_lengths,
+        inverse_vert_vert_lengths,
         metric_state,
         orientation,
         primal_normal_vert,
@@ -605,7 +605,7 @@ def test_diffusion_five_steps(
         interpolation_state,
         inverse_dual_edge_length,
         inverse_primal_edge_lengths,
-        inverse_vertical_vertex_lengths,
+        inverse_vert_vert_lengths,
         metric_state,
         orientation,
         primal_normal_vert,
@@ -634,7 +634,7 @@ def test_diffusion_five_steps(
         tangent_orientation=orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_length=inverse_dual_edge_length,
-        inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+        inverse_vert_vert_lengths=inverse_vert_vert_lengths,
         primal_normal_vert=primal_normal_vert,
         dual_normal_vert=dual_normal_vert,
         edge_areas=edge_areas,
@@ -648,7 +648,7 @@ def test_diffusion_five_steps(
             tangent_orientation=orientation,
             inverse_primal_edge_lengths=inverse_primal_edge_lengths,
             inverse_dual_edge_length=inverse_dual_edge_length,
-            inverse_vert_vert_lengths=inverse_vertical_vertex_lengths,
+            inverse_vert_vert_lengths=inverse_vert_vert_lengths,
             primal_normal_vert=primal_normal_vert,
             dual_normal_vert=dual_normal_vert,
             edge_areas=edge_areas,
