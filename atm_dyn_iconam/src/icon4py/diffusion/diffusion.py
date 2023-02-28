@@ -538,7 +538,9 @@ class Diffusion:
         setup_fields_for_initial_step(
             self.params.K4,
             self.config.hdiff_efdt_ratio,
-            out=(diff_multfac_vn, smag_limit),
+            diff_multfac_vn,
+            smag_limit,
+            offset_provider={},
         )
         self._do_diffusion_step(
             diagnostic_state,

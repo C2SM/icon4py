@@ -459,33 +459,27 @@ def test_run_diffusion_single_step(
     r04b09_diffusion_config,
     damping_height,
 ):
+    (
+        cell_areas,
+        diagnostic_state,
+        dtime,
+        dual_normal_vert,
+        edge_areas,
+        interpolation_state,
+        inverse_dual_edge_length,
+        inverse_primal_edge_lengths,
+        inverse_vertical_vertex_lengths,
+        metric_state,
+        orientation,
+        primal_normal_vert,
+        prognostic_state,
+    ) = _read_fields(diffusion_savepoint_init, grid_savepoint)
+
     vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(
         vct_a=vct_a, rayleigh_damping_height=damping_height
     )
-
     additional_parameters = DiffusionParams(r04b09_diffusion_config)
-
-    grg = diffusion_savepoint_init.geofac_grg()
-    interpolation_state = InterpolationState(
-        e_bln_c_s=diffusion_savepoint_init.e_bln_c_s(),
-        rbf_coeff_1=diffusion_savepoint_init.rbf_vec_coeff_v1(),
-        rbf_coeff_2=diffusion_savepoint_init.rbf_vec_coeff_v2(),
-        geofac_div=diffusion_savepoint_init.geofac_div(),
-        geofac_n2s=diffusion_savepoint_init.geofac_n2s(),
-        geofac_grg_x=grg[0],
-        geofac_grg_y=grg[1],
-        nudgecoeff_e=diffusion_savepoint_init.nudgecoeff_e(),
-    )
-
-    metric_state = MetricState(
-        mask_hdiff=diffusion_savepoint_init.mask_diff(),
-        theta_ref_mc=diffusion_savepoint_init.theta_ref_mc(),
-        wgtfac_c=diffusion_savepoint_init.wgtfac_c(),
-        zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
-        zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
-        zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
-    )
 
     diffusion = Diffusion(run_program=run_with_program)
     diffusion.init(
@@ -496,37 +490,6 @@ def test_run_diffusion_single_step(
         metric_state=metric_state,
         interpolation_state=interpolation_state,
     )
-
-    diagnostic_state = DiagnosticState(
-        hdef_ic=diffusion_savepoint_init.hdef_ic(),
-        div_ic=diffusion_savepoint_init.div_ic(),
-        dwdx=diffusion_savepoint_init.dwdx(),
-        dwdy=diffusion_savepoint_init.dwdy(),
-    )
-    prognostic_state = PrognosticState(
-        w=diffusion_savepoint_init.w(),
-        vn=diffusion_savepoint_init.vn(),
-        exner_pressure=diffusion_savepoint_init.exner(),
-        theta_v=diffusion_savepoint_init.theta_v(),
-    )
-
-    dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
-    orientation = grid_savepoint.tangent_orientation()
-
-    inverse_primal_edge_lengths = grid_savepoint.inverse_primal_edge_lengths()
-    inverse_vertical_vertex_lengths = grid_savepoint.inv_vert_vert_length()
-    inverse_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    primal_normal_vert: VectorTuple = (
-        as_1D_sparse_field(grid_savepoint.primal_normal_vert_x(), ECVDim),
-        as_1D_sparse_field(grid_savepoint.primal_normal_vert_y(), ECVDim),
-    )
-    dual_normal_vert: VectorTuple = (
-        as_1D_sparse_field(grid_savepoint.dual_normal_vert_x(), ECVDim),
-        as_1D_sparse_field(grid_savepoint.dual_normal_vert_y(), ECVDim),
-    )
-    edge_areas = grid_savepoint.edge_areas()
-    cell_areas = grid_savepoint.cell_areas()
-
     diffusion.time_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
@@ -556,66 +519,101 @@ def test_run_diffusion_single_step(
     )
 
 
-@pytest.mark.skip
+def _read_fields(diffusion_savepoint_init, grid_savepoint):
+
+    grg = diffusion_savepoint_init.geofac_grg()
+    interpolation_state = InterpolationState(
+        e_bln_c_s=diffusion_savepoint_init.e_bln_c_s(),
+        rbf_coeff_1=diffusion_savepoint_init.rbf_vec_coeff_v1(),
+        rbf_coeff_2=diffusion_savepoint_init.rbf_vec_coeff_v2(),
+        geofac_div=diffusion_savepoint_init.geofac_div(),
+        geofac_n2s=diffusion_savepoint_init.geofac_n2s(),
+        geofac_grg_x=grg[0],
+        geofac_grg_y=grg[1],
+        nudgecoeff_e=diffusion_savepoint_init.nudgecoeff_e(),
+    )
+    metric_state = MetricState(
+        mask_hdiff=diffusion_savepoint_init.mask_diff(),
+        theta_ref_mc=diffusion_savepoint_init.theta_ref_mc(),
+        wgtfac_c=diffusion_savepoint_init.wgtfac_c(),
+        zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
+        zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
+        zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
+    )
+    diagnostic_state = DiagnosticState(
+        hdef_ic=diffusion_savepoint_init.hdef_ic(),
+        div_ic=diffusion_savepoint_init.div_ic(),
+        dwdx=diffusion_savepoint_init.dwdx(),
+        dwdy=diffusion_savepoint_init.dwdy(),
+    )
+    prognostic_state = PrognosticState(
+        w=diffusion_savepoint_init.w(),
+        vn=diffusion_savepoint_init.vn(),
+        exner_pressure=diffusion_savepoint_init.exner(),
+        theta_v=diffusion_savepoint_init.theta_v(),
+    )
+    dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
+    orientation = grid_savepoint.tangent_orientation()
+    inverse_primal_edge_lengths = grid_savepoint.inverse_primal_edge_lengths()
+    inverse_vertical_vertex_lengths = grid_savepoint.inv_vert_vert_length()
+    inverse_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    primal_normal_vert: VectorTuple = (
+        as_1D_sparse_field(grid_savepoint.primal_normal_vert_x(), ECVDim),
+        as_1D_sparse_field(grid_savepoint.primal_normal_vert_y(), ECVDim),
+    )
+    dual_normal_vert: VectorTuple = (
+        as_1D_sparse_field(grid_savepoint.dual_normal_vert_x(), ECVDim),
+        as_1D_sparse_field(grid_savepoint.dual_normal_vert_y(), ECVDim),
+    )
+    edge_areas = grid_savepoint.edge_areas()
+    cell_areas = grid_savepoint.cell_areas()
+    return (
+        cell_areas,
+        diagnostic_state,
+        dtime,
+        dual_normal_vert,
+        edge_areas,
+        interpolation_state,
+        inverse_dual_edge_length,
+        inverse_primal_edge_lengths,
+        inverse_vertical_vertex_lengths,
+        metric_state,
+        orientation,
+        primal_normal_vert,
+        prognostic_state,
+    )
+
+
+@pytest.mark.skip("fix: diffusion_stencil_15")
 @pytest.mark.datatest
 def test_diffusion_five_steps(
+    damping_height,
     r04b09_diffusion_config,
     icon_grid,
+    grid_savepoint,
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
     linit=True,
     step_date_exit="2021-06-20T12:01:00.000",
 ):
-    sp = diffusion_savepoint_init
-
-    diagnostic_state = DiagnosticState(
-        hdef_ic=sp.hdef_ic(), div_ic=sp.div_ic(), dwdx=sp.dwdx(), dwdy=sp.dwdy()
-    )
-    prognostic_state = PrognosticState(
-        w=sp.w(),
-        vn=sp.vn(),
-        exner_pressure=sp.exner(),
-        theta_v=sp.theta_v(),
-    )
-    grg = sp.geofac_grg()
-
-    interpolation_state = InterpolationState(
-        e_bln_c_s=sp.e_bln_c_s(),
-        rbf_coeff_1=sp.rbf_vec_coeff_v1(),
-        rbf_coeff_2=sp.rbf_vec_coeff_v2(),
-        geofac_div=sp.geofac_div(),
-        geofac_n2s=sp.geofac_n2s(),
-        geofac_grg_x=grg[0],
-        geofac_grg_y=grg[1],
-        nudgecoeff_e=sp.nudgecoeff_e(),
-    )
-
-    metric_state = MetricState(
-        mask_hdiff=sp.mask_diff(),
-        theta_ref_mc=sp.theta_ref_mc(),
-        wgtfac_c=sp.wgtfac_c(),
-        zd_intcoef=sp.zd_intcoef(),
-        zd_vertidx=sp.zd_vertoffset(),
-        zd_diffcoef=sp.zd_diffcoef(),
-    )
-    dtime = sp.get_metadata("dtime").get("dtime")
-    orientation = sp.tangent_orientation()
-    inverse_primal_edge_lengths = sp.inverse_primal_edge_lengths()
-    inverse_vertical_vertex_lengths = sp.inv_vert_vert_length()
-    inverse_dual_edge_length = sp.inv_dual_edge_length()
-    primal_normal_vert: VectorTuple = (
-        as_1D_sparse_field(sp.primal_normal_vert_x(), ECVDim),
-        as_1D_sparse_field(sp.primal_normal_vert_y(), ECVDim),
-    )
-    dual_normal_vert: VectorTuple = (
-        as_1D_sparse_field(sp.dual_normal_vert_x(), ECVDim),
-        as_1D_sparse_field(sp.dual_normal_vert_y(), ECVDim),
-    )
-    edge_areas = sp.edge_areas()
-    cell_areas = sp.cell_areas()
+    (
+        cell_areas,
+        diagnostic_state,
+        dtime,
+        dual_normal_vert,
+        edge_areas,
+        interpolation_state,
+        inverse_dual_edge_length,
+        inverse_primal_edge_lengths,
+        inverse_vertical_vertex_lengths,
+        metric_state,
+        orientation,
+        primal_normal_vert,
+        prognostic_state,
+    ) = _read_fields(diffusion_savepoint_init, grid_savepoint)
 
     vertical_params = VerticalModelParams(
-        vct_a=(sp._vct_a()), rayleigh_damping_height=12500.0
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
     )
 
     additional_parameters = DiffusionParams(r04b09_diffusion_config)
