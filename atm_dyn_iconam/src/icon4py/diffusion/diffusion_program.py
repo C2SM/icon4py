@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# flake8: noqa
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
@@ -78,7 +79,7 @@ def diffusion_run(
     interpolation_nudgecoeff_e: Field[[EdgeDim], float],
     interpolation_geofac_n2s: Field[[CellDim, C2E2CODim], float],
     interpolation_geofac_n2s_c: Field[[CellDim], float],
-    interpolation_geofac_n2s_nbh:Field[[CellDim, C2E2CDim], float],
+    interpolation_geofac_n2s_nbh: Field[[CellDim, C2E2CDim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inverse_primal_edge_lengths: Field[[EdgeDim], float],
     inverse_dual_edge_lengths: Field[[EdgeDim], float],
@@ -111,7 +112,7 @@ def diffusion_run(
     local_horizontal_cell_index: Field[[CellDim], int32],
     local_horizontal_edge_index: Field[[EdgeDim], int32],
     cell_startindex_interior: int32,
-    cell_halo_idx:int32,
+    cell_halo_idx: int32,
     cell_startindex_nudging: int,
     cell_endindex_local_plus1: int,
     cell_endindex_local: int,
@@ -164,7 +165,7 @@ def diffusion_run(
         local_smag_offset,
         out=(local_kh_smag_e, local_kh_smag_ec, local_z_nabla2_e),
         domain={
-            #TODO wrong start index??
+            # TODO wrong start index??
             EdgeDim: (boundary_diffusion_start_index_edges, edge_endindex_local_minus2),
             KDim: (0, nlev),
         },

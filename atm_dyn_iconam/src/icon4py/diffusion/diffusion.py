@@ -596,7 +596,10 @@ class Diffusion:
             )
         else:
             print("run program")
-            cell_startindex_nudging, cell_endindex_local = self.grid.get_indices_from_to(
+            (
+                cell_startindex_nudging,
+                cell_endindex_local,
+            ) = self.grid.get_indices_from_to(
                 CellDim,
                 HorizontalMarkerIndex.nudging(CellDim),
                 HorizontalMarkerIndex.local(CellDim),
@@ -712,7 +715,7 @@ class Diffusion:
                 cell_startindex_nudging=cell_startindex_nudging,
                 cell_endindex_local_plus1=cell_endindex_local_plus1,
                 cell_endindex_local=cell_endindex_local,
-                cell_halo_idx = int32(cell_endindex_local),
+                cell_halo_idx=int32(cell_endindex_local),
                 edge_startindex_nudging_plus1=edge_startindex_nudging_plus1,
                 edge_startindex_nudging_minus1=int32(edge_startindex_nudging_minus1),
                 edge_endindex_local=edge_endindex_local,
@@ -751,12 +754,8 @@ class Diffusion:
         inverse_primal_edge_lengths: Field[[EdgeDim], float],
         inverse_dual_edge_length: Field[[EdgeDim], float],
         inverse_vertex_vertex_lengths: Field[[EdgeDim], float],
-        primal_normal_vert: Tuple[
-            Field[[ECVDim], float], Field[[ECVDim], float]
-        ],
-        dual_normal_vert: Tuple[
-            Field[[ECVDim], float], Field[[ECVDim], float]
-        ],
+        primal_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
+        dual_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
         edge_areas: Field[[EdgeDim], float],
         cell_areas: Field[[CellDim], float],
         diff_multfac_vn: Field[[KDim], float],
