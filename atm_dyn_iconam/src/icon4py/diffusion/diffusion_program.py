@@ -53,7 +53,7 @@ from icon4py.common.dimension import (
 from icon4py.diffusion.utils import _scale_k, _set_zero_v_k
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn_imperative)
 def diffusion_run(
     diagnostic_hdef_ic: Field[[CellDim, KDim], float],
     diagnostic_div_ic: Field[[CellDim, KDim], float],
@@ -111,9 +111,10 @@ def diffusion_run(
     local_horizontal_cell_index: Field[[CellDim], int32],
     local_horizontal_edge_index: Field[[EdgeDim], int32],
     cell_startindex_interior: int32,
+    cell_halo_idx:int32,
     cell_startindex_nudging: int,
     cell_endindex_local_plus1: int,
-    cell_endindex_local: int32,
+    cell_endindex_local: int,
     edge_startindex_nudging_plus1: int,
     edge_startindex_nudging_minus1: int32,
     edge_endindex_local: int,
@@ -245,7 +246,7 @@ def diffusion_run(
         local_horizontal_cell_index,
         index_of_damping_height,
         cell_startindex_interior,
-        cell_endindex_local,
+        cell_halo_idx,
         out=(
             prognostic_w,
             diagnostic_dwdx,
