@@ -65,18 +65,18 @@ def diffusion_run(
     prognostic_theta_v: Field[[CellDim, KDim], float],
     metric_theta_ref_mc: Field[[CellDim, KDim], float],
     metric_wgtfac_c: Field[[CellDim, KDim], float],
-    metric_mask_hdiff: Field[[CellDim, KDim], int],
+    metric_mask_hdiff: Field[[CellDim, KDim], bool],
     metric_zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int],
     metric_zd_diffcoef: Field[[CellDim, KDim], float],
     metric_zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float],
-    interpolation_e_bln_c_s: Field[[CellDim, C2EDim], float],  # ok = 14
+    interpolation_e_bln_c_s: Field[[CellDim, C2EDim], float],
     interpolation_rbf_coeff_1: Field[[VertexDim, V2EDim], float],
     interpolation_rbf_coeff_2: Field[[VertexDim, V2EDim], float],
     interpolation_geofac_div: Field[[CellDim, C2EDim], float],
     interpolation_geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     interpolation_geofac_grg_y: Field[[CellDim, C2E2CODim], float],
-    interpolation_nudgecoeff_e: Field[[EdgeDim], float],  # ok = 20
-    interpolation_geofac_n2s: Field[[CellDim, C2E2CODim], float],  # ok = 21
+    interpolation_nudgecoeff_e: Field[[EdgeDim], float],
+    interpolation_geofac_n2s: Field[[CellDim, C2E2CODim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inverse_primal_edge_lengths: Field[[EdgeDim], float],
     inverse_dual_edge_lengths: Field[[EdgeDim], float],
@@ -84,23 +84,23 @@ def diffusion_run(
     primal_normal_vert_1: Field[[ECVDim], float],
     primal_normal_vert_2: Field[[ECVDim], float],
     dual_normal_vert_1: Field[[ECVDim], float],
-    dual_normal_vert_2: Field[[ECVDim], float],  # ok = 29
+    dual_normal_vert_2: Field[[ECVDim], float],
     edge_areas: Field[[EdgeDim], float],
     cell_areas: Field[[CellDim], float],
-    diff_multfac_vn: Field[[KDim], float],  # ok = 32
+    diff_multfac_vn: Field[[KDim], float],
     dtime: float,
     rd_o_cvd: float,
     local_thresh_tdiff: float,
-    local_smag_limit: Field[[KDim], float],  # ok = 36
+    local_smag_limit: Field[[KDim], float],
     local_u_vert: Field[[VertexDim, KDim], float],
     local_v_vert: Field[[VertexDim, KDim], float],
-    local_enh_smag_fac: Field[[KDim], float],  # ok = 39
+    local_enh_smag_fac: Field[[KDim], float],
     local_kh_smag_e: Field[[EdgeDim, KDim], float],
     local_kh_smag_ec: Field[[EdgeDim, KDim], float],
     local_z_nabla2_e: Field[[EdgeDim, KDim], float],
     local_z_temp: Field[[CellDim, KDim], float],
     local_diff_multfac_smag: Field[[KDim], float],
-    local_diff_multfac_n2w: Field[[KDim], float],  # ok = 45
+    local_diff_multfac_n2w: Field[[KDim], float],
     local_smag_offset: float,
     local_nudgezone_diff: float,
     local_fac_bdydiff_v: float,

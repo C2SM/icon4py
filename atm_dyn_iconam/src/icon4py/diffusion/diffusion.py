@@ -23,7 +23,7 @@ from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
-# import icon4py.diffusion.diffusion_program as diff_prog
+import icon4py.diffusion.diffusion_program as diff_prog
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
@@ -565,7 +565,7 @@ class Diffusion:
         tangent_orientation: Field[[EdgeDim], float],
         inverse_primal_edge_lengths: Field[[EdgeDim], float],
         inverse_dual_edge_length: Field[[EdgeDim], float],
-        inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
+        inverse_vert_vert_lengths: Field[[EdgeDim], float],
         primal_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
         dual_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
         edge_areas: Field[[EdgeDim], float],
@@ -585,7 +585,7 @@ class Diffusion:
                 tangent_orientation=tangent_orientation,
                 inverse_primal_edge_lengths=inverse_primal_edge_lengths,
                 inverse_dual_edge_length=inverse_dual_edge_length,
-                inverse_vertex_vertex_lengths=inverse_vertical_vertex_lengths,
+                inverse_vertex_vertex_lengths=inverse_vert_vert_lengths,
                 primal_normal_vert=primal_normal_vert,
                 dual_normal_vert=dual_normal_vert,
                 edge_areas=edge_areas,
@@ -596,142 +596,147 @@ class Diffusion:
             )
         else:
             print("run program")
-            # cell_startindex_nudging, cell_endindex_local = self.grid.get_indices_from_to(
-            #     CellDim,
-            #     HorizontalMarkerIndex.nudging(CellDim),
-            #     HorizontalMarkerIndex.local(CellDim),
-            # )
-            #
-            # (
-            #     cell_startindex_interior,
-            #     cell_endindex_local_plus1,
-            # ) = self.grid.get_indices_from_to(
-            #     CellDim,
-            #     HorizontalMarkerIndex.interior(CellDim),
-            #     HorizontalMarkerIndex.local(CellDim) - 1,
-            # )
-            #
-            # (
-            #     edge_startindex_nudging_plus1,
-            #     edge_endindex_local,
-            # ) = self.grid.get_indices_from_to(
-            #     EdgeDim,
-            #     HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            #     HorizontalMarkerIndex.local(EdgeDim),
-            # )
-            #
-            # (
-            #     edge_startindex_nudging_minus1,
-            #     edge_endindex_local_minus2,
-            # ) = self.grid.get_indices_from_to(
-            #     EdgeDim,
-            #     HorizontalMarkerIndex.nudging(EdgeDim) - 1,
-            #     HorizontalMarkerIndex.local(EdgeDim) - 2,
-            # )
-            #
-            # (
-            #     vertex_startindex_lb_plus3,
-            #     vertex_endindex_local,
-            # ) = self.grid.get_indices_from_to(
-            #     VertexDim,
-            #     HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
-            #     HorizontalMarkerIndex.local(VertexDim),
-            # )
-            #
-            # (
-            #     vertex_startindex_lb_plus1,
-            #     vertex_endindex_local_minus1,
-            # ) = self.grid.get_indices_from_to(
-            #     VertexDim,
-            #     HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
-            #     HorizontalMarkerIndex.local(VertexDim) - 1,
-            # )
+            cell_startindex_nudging, cell_endindex_local = self.grid.get_indices_from_to(
+                CellDim,
+                HorizontalMarkerIndex.nudging(CellDim),
+                HorizontalMarkerIndex.local(CellDim),
+            )
 
-            # diff_prog.diffusion_run(
-            #     diagnostic_hdef_ic=diagnostic_state.hdef_ic,
-            #     diagnostic_div_ic=diagnostic_state.div_ic,
-            #     diagnostic_dwdx=diagnostic_state.dwdx,
-            #     diagnostic_dwdy=diagnostic_state.dwdy,
-            #     prognostic_w=prognostic_state.w,
-            #     prognostic_vn=prognostic_state.vn,
-            #     prognostic_exner_pressure=prognostic_state.exner_pressure,
-            #     prognostic_theta_v=prognostic_state.theta_v,
-            #     metric_theta_ref_mc=self.metric_state.theta_ref_mc,
-            #     metric_wgtfac_c=self.metric_state.wgtfac_c,
-            #     metric_mask_hdiff=self.metric_state.mask_hdiff,
-            #     metric_zd_vertidx=self.metric_state.zd_vertidx,
-            #     metric_zd_diffcoef=self.metric_state.zd_diffcoef,
-            #     metric_zd_intcoef=self.metric_state.zd_intcoef,
-            #     interpolation_e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            #     interpolation_rbf_coeff_1=self.interpolation_state.rbf_coeff_1,
-            #     interpolation_rbf_coeff_2=self.interpolation_state.rbf_coeff_2,
-            #     interpolation_geofac_div=self.interpolation_state.geofac_div,
-            #     interpolation_geofac_grg_x=self.interpolation_state.geofac_grg_x,
-            #     interpolation_geofac_grg_y=self.interpolation_state.geofac_grg_y,
-            #     interpolation_nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
-            #     interpolation_geofac_n2s=self.interpolation_state.geofac_n2s,
-            #     tangent_orientation=tangent_orientation,
-            #     inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-            #     inverse_dual_edge_lengths=inverse_dual_edge_length,
-            #     inverse_vert_vert_lengths=inverse_vertical_vertex_lengths,
-            #     primal_normal_vert_1=primal_normal_vert[0],
-            #     primal_normal_vert_2=primal_normal_vert[1],
-            #     dual_normal_vert_1=dual_normal_vert[0],
-            #     dual_normal_vert_2=dual_normal_vert[1],
-            #     edge_areas=edge_areas,
-            #     cell_areas=cell_areas,
-            #     diff_multfac_vn=self.diff_multfac_vn,
-            #     dtime=dtime,
-            #     rd_o_cvd=self.rd_o_cvd,
-            #     local_thresh_tdiff=self.thresh_tdiff,
-            #     local_smag_limit=self.smag_limit,
-            #     local_u_vert=self.u_vert,
-            #     local_v_vert=self.v_vert,
-            #     local_enh_smag_fac=self.enh_smag_fac,
-            #     local_kh_smag_e=self.kh_smag_e,
-            #     local_kh_smag_ec=self.kh_smag_ec,
-            #     local_z_nabla2_e=self.z_nabla2_e,
-            #     local_z_temp=self.z_temp,
-            #     local_diff_multfac_smag=self.diff_multfac_smag,
-            #     local_diff_multfac_n2w=self.diff_multfac_n2w,
-            #     local_smag_offset=self.smag_offset,
-            #     local_nudgezone_diff=self.nudgezone_diff,
-            #     local_fac_bdydiff_v=self.fac_bdydiff_v,
-            #     local_diff_multfac_w=self.diff_multfac_w,
-            #     local_vertical_index=self.vertical_index,
-            #     local_horizontal_cell_index=self.horizontal_cell_index,
-            #     local_horizontal_edge_index=self.horizontal_edge_index,
-            #     cell_startindex_interior=cell_startindex_interior,
-            #     cell_startindex_nudging=cell_startindex_nudging,
-            #     cell_endindex_local_plus1=cell_endindex_local_plus1,
-            #     cell_endindex_local=int32(cell_endindex_local),
-            #     edge_startindex_nudging_plus1=edge_startindex_nudging_plus1,
-            #     edge_startindex_nudging_minus1=int32(edge_startindex_nudging_minus1),
-            #     edge_endindex_local=edge_endindex_local,
-            #     edge_endindex_local_minus2=edge_endindex_local_minus2,
-            #     vertex_startindex_lb_plus3=vertex_startindex_lb_plus3,
-            #     vertex_startindex_lb_plus1=vertex_startindex_lb_plus1,
-            #     vertex_endindex_local=vertex_endindex_local,
-            #     vertex_endindex_local_minus1=vertex_endindex_local_minus1,
-            #     index_of_damping_height=self.vertical_params.index_of_damping_layer,
-            #     nlev=self.grid.n_lev(),
-            #     boundary_diffusion_start_index_edges=edge_start_lb_plus4
-            #     offset_provider={
-            #         "V2E": self.grid.get_v2e_connectivity(),
-            #         "V2EDim": V2EDim,
-            #         "E2C2V": self.grid.get_e2c2v_connectivity(),
-            #         "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, 4),
-            #         "C2E": self.grid.get_c2e_connectivity(),
-            #         "C2EDim": C2EDim,
-            #         "E2C": self.grid.get_e2c_connectivity(),
-            #         "C2E2C": self.grid.get_c2e2c_connectivity(),
-            #         "C2E2CDim": C2E2CDim,
-            #         "ECVDim": ECVDim,
-            #         "C2E2CODim": C2E2CODim,
-            #         "C2E2CO": self.grid.get_c2e2co_connectivity(),
-            #         "Koff": KDim,
-            #     },
-            # )
+            (
+                cell_startindex_interior,
+                cell_endindex_local_plus1,
+            ) = self.grid.get_indices_from_to(
+                CellDim,
+                HorizontalMarkerIndex.interior(CellDim),
+                HorizontalMarkerIndex.local(CellDim) - 1,
+            )
+
+            (
+                edge_startindex_nudging_plus1,
+                edge_endindex_local,
+            ) = self.grid.get_indices_from_to(
+                EdgeDim,
+                HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+                HorizontalMarkerIndex.local(EdgeDim),
+            )
+
+            (
+                edge_startindex_nudging_minus1,
+                edge_endindex_local_minus2,
+            ) = self.grid.get_indices_from_to(
+                EdgeDim,
+                HorizontalMarkerIndex.nudging(EdgeDim) - 1,
+                HorizontalMarkerIndex.local(EdgeDim) - 2,
+            )
+
+            (
+                vertex_startindex_lb_plus3,
+                vertex_endindex_local,
+            ) = self.grid.get_indices_from_to(
+                VertexDim,
+                HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+                HorizontalMarkerIndex.local(VertexDim),
+            )
+
+            (
+                vertex_startindex_lb_plus1,
+                vertex_endindex_local_minus1,
+            ) = self.grid.get_indices_from_to(
+                VertexDim,
+                HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+                HorizontalMarkerIndex.local(VertexDim) - 1,
+            )
+            edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
+                EdgeDim,
+                HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+                HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+            )
+
+            diff_prog.diffusion_run(
+                diagnostic_hdef_ic=diagnostic_state.hdef_ic,
+                diagnostic_div_ic=diagnostic_state.div_ic,
+                diagnostic_dwdx=diagnostic_state.dwdx,
+                diagnostic_dwdy=diagnostic_state.dwdy,
+                prognostic_w=prognostic_state.w,
+                prognostic_vn=prognostic_state.vn,
+                prognostic_exner_pressure=prognostic_state.exner_pressure,
+                prognostic_theta_v=prognostic_state.theta_v,
+                metric_theta_ref_mc=self.metric_state.theta_ref_mc,
+                metric_wgtfac_c=self.metric_state.wgtfac_c,
+                metric_mask_hdiff=self.metric_state.mask_hdiff,
+                metric_zd_vertidx=self.metric_state.zd_vertidx,
+                metric_zd_diffcoef=self.metric_state.zd_diffcoef,
+                metric_zd_intcoef=self.metric_state.zd_intcoef,
+                interpolation_e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                interpolation_rbf_coeff_1=self.interpolation_state.rbf_coeff_1,
+                interpolation_rbf_coeff_2=self.interpolation_state.rbf_coeff_2,
+                interpolation_geofac_div=self.interpolation_state.geofac_div,
+                interpolation_geofac_grg_x=self.interpolation_state.geofac_grg_x,
+                interpolation_geofac_grg_y=self.interpolation_state.geofac_grg_y,
+                interpolation_nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+                interpolation_geofac_n2s=self.interpolation_state.geofac_n2s,
+                tangent_orientation=tangent_orientation,
+                inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+                inverse_dual_edge_lengths=inverse_dual_edge_length,
+                inverse_vert_vert_lengths=inverse_vert_vert_lengths,
+                primal_normal_vert_1=primal_normal_vert[0],
+                primal_normal_vert_2=primal_normal_vert[1],
+                dual_normal_vert_1=dual_normal_vert[0],
+                dual_normal_vert_2=dual_normal_vert[1],
+                edge_areas=edge_areas,
+                cell_areas=cell_areas,
+                diff_multfac_vn=self.diff_multfac_vn,
+                dtime=dtime,
+                rd_o_cvd=self.rd_o_cvd,
+                local_thresh_tdiff=self.thresh_tdiff,
+                local_smag_limit=self.smag_limit,
+                local_u_vert=self.u_vert,
+                local_v_vert=self.v_vert,
+                local_enh_smag_fac=self.enh_smag_fac,
+                local_kh_smag_e=self.kh_smag_e,
+                local_kh_smag_ec=self.kh_smag_ec,
+                local_z_nabla2_e=self.z_nabla2_e,
+                local_z_temp=self.z_temp,
+                local_diff_multfac_smag=self.diff_multfac_smag,
+                local_diff_multfac_n2w=self.diff_multfac_n2w,
+                local_smag_offset=self.smag_offset,
+                local_nudgezone_diff=self.nudgezone_diff,
+                local_fac_bdydiff_v=self.fac_bdydiff_v,
+                local_diff_multfac_w=self.diff_multfac_w,
+                local_vertical_index=self.vertical_index,
+                local_horizontal_cell_index=self.horizontal_cell_index,
+                local_horizontal_edge_index=self.horizontal_edge_index,
+                cell_startindex_interior=cell_startindex_interior,
+                cell_startindex_nudging=cell_startindex_nudging,
+                cell_endindex_local_plus1=cell_endindex_local_plus1,
+                cell_endindex_local=int32(cell_endindex_local),
+                edge_startindex_nudging_plus1=edge_startindex_nudging_plus1,
+                edge_startindex_nudging_minus1=int32(edge_startindex_nudging_minus1),
+                edge_endindex_local=edge_endindex_local,
+                edge_endindex_local_minus2=edge_endindex_local_minus2,
+                vertex_startindex_lb_plus3=vertex_startindex_lb_plus3,
+                vertex_startindex_lb_plus1=vertex_startindex_lb_plus1,
+                vertex_endindex_local=vertex_endindex_local,
+                vertex_endindex_local_minus1=vertex_endindex_local_minus1,
+                index_of_damping_height=self.vertical_params.index_of_damping_layer,
+                nlev=self.grid.n_lev(),
+                boundary_diffusion_start_index_edges=edge_start_lb_plus4,
+                offset_provider={
+                    "V2E": self.grid.get_v2e_connectivity(),
+                    "V2EDim": V2EDim,
+                    "E2C2V": self.grid.get_e2c2v_connectivity(),
+                    "E2ECV": self.grid.get_e2ecv_connectivity(),
+                    "C2E": self.grid.get_c2e_connectivity(),
+                    "C2EDim": C2EDim,
+                    "E2C": self.grid.get_e2c_connectivity(),
+                    "C2E2C": self.grid.get_c2e2c_connectivity(),
+                    "C2E2CDim": C2E2CDim,
+                    "ECVDim": ECVDim,
+                    "C2E2CODim": C2E2CODim,
+                    "C2E2CO": self.grid.get_c2e2co_connectivity(),
+                    "Koff": KDim,
+                },
+            )
 
     def _do_diffusion_step(
         self,
