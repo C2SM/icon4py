@@ -363,37 +363,6 @@ class DiffusionParams:
         return factor, heights
 
 
-# TODO move to TEST: (and reimplement stencil_15 in field view)
-def mo_nh_diffusion_stencil_15_numpy(
-    c2e2c,
-    mask_hdiff: Field[[CellDim, KDim], int],
-    zd_vertidx: Field[[C2E2CDim, KDim], int],
-    zd_diffcoef: Field[[CellDim, KDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
-    vcoef: Field[[C2E2CDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    z_temp: Field[[CellDim, KDim], float],
-):
-    geofac_n2s = np.asarray(geofac_n2s)
-    geofac_n2s_nbh = geofac_n2s[:, 1:]
-    geofac_n2s_c = geofac_n2s[:, 0]
-    mask_hdiff = np.asarray(mask_hdiff)
-    zd_vertidx = np.asarray(zd_vertidx)
-    zd_diffcoef = np.asarray(zd_diffcoef)
-    vcoef = np.asarray(vcoef)
-    second = (1 - vcoef) * theta_v[c2e2c][zd_vertidx + 1]
-
-    z_temp = np.asarray(z_temp)
-    vertidx_ = vcoef * theta_v[c2e2c][zd_vertidx]
-    first = geofac_n2s_nbh * vertidx_
-    summed = np.sum(first + second, axis=0)
-
-    z_temp = np.where(
-        mask_hdiff, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + summed), z_temp
-    )
-    return z_temp
-
-
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
