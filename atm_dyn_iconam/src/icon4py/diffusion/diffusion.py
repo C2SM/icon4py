@@ -64,13 +64,14 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.horizontal import HorizontalMarkerIndex
 from icon4py.state_utils.diagnostic_state import DiagnosticState
+from icon4py.state_utils.horizontal import HorizontalMarkerIndex
 from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState
 from icon4py.state_utils.prognostic_state import PrognosticState
 from icon4py.state_utils.utils import (
+    _allocate,
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
     scale_k,
@@ -482,27 +483,24 @@ class Diffusion:
         return self._initialized
 
     def _allocate_local_fields(self):
-        def _allocate(*dims: Dimension):
-            return zero_field(self.grid, *dims)
-
         def _index_field(dim: Dimension, size=None):
             size = size if size else self.grid.size[dim]
             return np_as_located_field(dim)(np.arange(size, dtype=int32))
 
-        self.diff_multfac_vn = _allocate(KDim)
+        self.diff_multfac_vn = _allocate(KDim, mesh=self.grid)
 
-        self.smag_limit = _allocate(KDim)
-        self.enh_smag_fac = _allocate(KDim)
-        self.u_vert = _allocate(VertexDim, KDim)
-        self.v_vert = _allocate(VertexDim, KDim)
-        self.kh_smag_e = _allocate(EdgeDim, KDim)
-        self.kh_smag_ec = _allocate(EdgeDim, KDim)
-        self.z_nabla2_e = _allocate(EdgeDim, KDim)
-        self.z_temp = _allocate(CellDim, KDim)
-        self.diff_multfac_smag = _allocate(KDim)
+        self.smag_limit = _allocate(KDim, mesh=self.grid)
+        self.enh_smag_fac = _allocate(KDim, mesh=self.grid)
+        self.u_vert = _allocate(VertexDim, KDim, mesh=self.grid)
+        self.v_vert = _allocate(VertexDim, KDim, mesh=self.grid)
+        self.kh_smag_e = _allocate(EdgeDim, KDim, mesh=self.grid)
+        self.kh_smag_ec = _allocate(EdgeDim, KDim, mesh=self.grid)
+        self.z_nabla2_e = _allocate(EdgeDim, KDim, mesh=self.grid)
+        self.z_temp = _allocate(CellDim, KDim, mesh=self.grid)
+        self.diff_multfac_smag = _allocate(KDim, mesh=self.grid)
         self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
-        self.horizontal_cell_index = _index_field(CellDim)
-        self.horizontal_edge_index = _index_field(EdgeDim)
+        self.horizontal_cell_index = _index_field(CellDim, mesh=self.grid)
+        self.horizontal_edge_index = _index_field(EdgeDim, mesh=self.grid)
 
     def initial_step(
         self,

@@ -13,7 +13,7 @@
 import pytest
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.diffusion.horizontal import HorizontalMarkerIndex
+from icon4py.state_utils.horizontal import HorizontalMarkerIndex
 
 
 @pytest.mark.datatest

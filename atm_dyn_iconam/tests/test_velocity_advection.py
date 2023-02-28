@@ -33,7 +33,6 @@ def test_velocity_init(
 ):
     savepoint = savepoint_velocity_init
     config = r04b09_velocity_advection_config
-    dtime = savepoint.get_metadata("dtime")["dtime"]
 
     interpolation_state = InterpolationState(
         e_bln_c_s=None,
@@ -73,7 +72,6 @@ def test_velocity_init(
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         vertical_params=VerticalModelParams,
-        dtime=dtime,
     )
 
     assert np.allclose(0.0, np.asarray(velocity_advection.cfl_clipping))
@@ -82,12 +80,10 @@ def test_velocity_init(
     assert np.allclose(0.0, np.asarray(velocity_advection.vcfl))
 
     if config.lextra_diffu:
-        assert velocity_advection.cfl_w_limit == 0.65 / dtime
-        assert velocity_advection.scalfac_exdiff == 0.05 / (
-            dtime * (0.85 - velocity_advection.cfl_w_limit * dtime)
-        )
+        assert velocity_advection.cfl_w_limit == 0.65
+        assert velocity_advection.scalfac_exdiff == 0.05
     else:
-        assert velocity_advection.cfl_w_limit == 0.85 / dtime
+        assert velocity_advection.cfl_w_limit == 0.85
         assert velocity_advection.scalfac_exdiff == 0.0
 
 
@@ -137,11 +133,12 @@ def test_verify_velocity_init_against_first_regular_savepoint(
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         vertical_params=VerticalModelParams,
-        dtime=dtime,
     )
 
-    assert savepoint.cfl_w_limit() == velocity_advection.cfl_w_limit
-    assert savepoint.scalfac_exdiff() == velocity_advection.scalfac_exdiff
+    assert savepoint.cfl_w_limit() == velocity_advection.cfl_w_limit / dtime
+    assert savepoint.scalfac_exdiff() == velocity_advection.scalfac_exdiff / (
+        dtime * (0.85 - savepoint.cfl_w_limit() * dtime)
+    )
 
 
 @pytest.mark.datatest
@@ -191,11 +188,12 @@ def test_verify_velocity_init_against_other_regular_savepoint(
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         vertical_params=VerticalModelParams,
-        dtime=dtime,
     )
 
-    assert savepoint.cfl_w_limit() == velocity_advection.cfl_w_limit
-    assert savepoint.scalfac_exdiff() == velocity_advection.scalfac_exdiff
+    assert savepoint.cfl_w_limit() == velocity_advection.cfl_w_limit / dtime
+    assert savepoint.scalfac_exdiff() == velocity_advection.scalfac_exdiff / (
+        dtime * (0.85 - savepoint.cfl_w_limit() * dtime)
+    )
 
 
 @pytest.mark.datatest
@@ -284,7 +282,6 @@ def test_velocity_five_steps(
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         vertical_params=VerticalModelParams,
-        dtime=dtime,
     )
 
     for _ in range(4):

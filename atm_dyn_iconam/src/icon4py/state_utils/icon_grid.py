@@ -19,7 +19,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import CellDim, ECDim, EdgeDim, KDim, VertexDim
-from icon4py.diffusion.horizontal import HorizontalMeshSize
+from icon4py.state_utils.horizontal import HorizontalMeshSize
 
 
 class VerticalMeshConfig:
@@ -203,7 +203,7 @@ class VerticalModelParams:
         self._index_of_damping_height = int32(
             np.argmax(np.where(np.asarray(self._vct_a) >= self.rayleigh_damping_height))
         )
-        self.nflatlev = 1  # according to mo_init_vgrid.f90 line 329
+        self._nflatlev = 1  # according to mo_init_vgrid.f90 line 329
 
     @property
     def index_of_damping_layer(self):

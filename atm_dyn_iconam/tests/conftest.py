@@ -31,10 +31,10 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.diffusion.horizontal import HorizontalMeshSize
+from icon4py.state_utils.horizontal import HorizontalMeshSize
 from icon4py.state_utils.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
-from icon4py.velocity.velocity_advection import VelocityAdvectionConfig
+from icon4py.velocity.velocity_advection import NonHydroStaticConfig
 
 
 data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
@@ -230,14 +230,14 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
 
 
 @pytest.fixture
-def r04b09_velocity_advection_config(setup_icon_data) -> VelocityAdvectionConfig:
+def r04b09_velocity_advection_config(setup_icon_data) -> NonHydroStaticConfig:
     """
-    Create VelocityAdvectionConfig matching MCH_CH_r04b09_dsl.
+    Create NonHydroStaticConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    return VelocityAdvectionConfig(lextra_diffu=True)
+    return NonHydroStaticConfig(lextra_diffu=True)
 
 
 @pytest.fixture

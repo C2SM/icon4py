@@ -84,24 +84,26 @@ from icon4py.common.dimension import (
     E2C2EODim,
     E2CDim,
     E2VDim,
-    ECDim,
     EdgeDim,
     KDim,
     VertexDim,
 )
-from icon4py.diffusion.horizontal import HorizontalMarkerIndex
 from icon4py.state_utils.diagnostic_state import DiagnosticState
+from icon4py.state_utils.horizontal import HorizontalMarkerIndex
 from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState
 from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import bool_field, set_zero_w_k, zero_field
+from icon4py.state_utils.utils import _allocate, set_zero_w_k, zero_field
 from icon4py.velocity.z_fields import ZFields
 
 
-class VelocityAdvectionConfig:
+class NonHydroStaticConfig:
     def __init__(self, lextra_diffu: bool = True):
         self.lextra_diffu: bool = lextra_diffu
+
+    def _lextra_diffu(self, lextra_diffu):
+        return lextra_diffu
 
 
 class VelocityAdvection:
@@ -119,12 +121,11 @@ class VelocityAdvection:
 
     def init(
         self,
-        config: VelocityAdvectionConfig,
+        config: NonHydroStaticConfig,
         grid: IconGrid,
         metric_state: MetricState,
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
-        dtime: float,
     ):
 
         self.grid = grid
@@ -135,10 +136,10 @@ class VelocityAdvection:
         self._allocate_local_fields()
 
         if config.lextra_diffu:
-            self.cfl_w_limit = 0.65 / dtime
-            self.scalfac_exdiff = 0.05 / (dtime * (0.85 - self.cfl_w_limit * dtime))
+            self.cfl_w_limit = 0.65
+            self.scalfac_exdiff = 0.05
         else:
-            self.cfl_w_limit = 0.85 / dtime
+            self.cfl_w_limit = 0.85
             self.scalfac_exdiff = 0.0
 
         self._initialized = True
@@ -148,23 +149,17 @@ class VelocityAdvection:
         return self._initialized
 
     def _allocate_local_fields(self):
-        def _allocate(*dims: Dimension):
-            return zero_field(self.grid, *dims)
-
-        def _allocate_bool(*dims: Dimension):
-            return bool_field(self.grid, *dims)
-
-        self.z_w_v = _allocate(VertexDim, KDim)
-        self.z_v_grad_w = _allocate(EdgeDim, KDim)
-        self.z_ekinh = _allocate(CellDim, KDim)
-        self.z_w_concorr_mc = _allocate(CellDim, KDim)
-        self.z_w_con_c = _allocate(CellDim, KDim)
-        self.zeta = _allocate(VertexDim, KDim)
-        self.z_w_con_c_full = _allocate(CellDim, KDim)
-        self.cfl_clipping = _allocate(CellDim, KDim)
-        self.pre_levelmask = _allocate(CellDim, KDim)
-        self.levelmask = _allocate_bool(KDim)
-        self.vcfl = _allocate(CellDim, KDim)
+        self.z_w_v = _allocate(VertexDim, KDim, mesh=self.grid)
+        self.z_v_grad_w = _allocate(EdgeDim, KDim, mesh=self.grid)
+        self.z_ekinh = _allocate(CellDim, KDim, mesh=self.grid)
+        self.z_w_concorr_mc = _allocate(CellDim, KDim, mesh=self.grid)
+        self.z_w_con_c = _allocate(CellDim, KDim, mesh=self.grid)
+        self.zeta = _allocate(VertexDim, KDim, mesh=self.grid)
+        self.z_w_con_c_full = _allocate(CellDim, KDim, mesh=self.grid)
+        self.cfl_clipping = _allocate(CellDim, KDim, mesh=self.grid)
+        self.pre_levelmask = _allocate(CellDim, KDim, mesh=self.grid)
+        self.levelmask = _allocate(KDim, mesh=self.grid, dtype=bool)
+        self.vcfl = _allocate(CellDim, KDim, mesh=self.grid)
 
     def time_step(
         self,
@@ -181,6 +176,7 @@ class VelocityAdvection:
         owner_mask: Field[[CellDim], bool],
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
+        config=NonHydroStaticConfig,
     ):
         rayleigh_damping_height = 12500  # TODO: insert correct inherited param
         nflatlev = 1  # TODO: insert correct inherited param
@@ -219,6 +215,14 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(EdgeDim) + 1,
             None,
         )
+
+        if config._lextra_diffu:
+            self.cfl_w_limit = self.cfl_w_limit / dtime
+            self.scalfac_exdiff = self.scalfac_exdiff / (
+                dtime * (0.85 - self.cfl_w_limit * dtime)
+            )
+        else:
+            self.cfl_w_limit = self.cfl_w_limit / dtime
 
         if not self._run_program:
             self._do_velocity_advection_step(
