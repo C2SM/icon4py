@@ -15,7 +15,10 @@ from dataclasses import dataclass
 
 from icon4py.diffusion.diffusion import Diffusion
 
-
+@dataclass
+class ModelConfig:
+    n_time_steps: int
+    dtime: float
 @dataclass
 class AtmoNonHydroConfig:
     n_substeps: int
@@ -33,6 +36,7 @@ class AtmoNonHydro:
             self._dynamics_timestep()
 
 
+modelConfig: ModelConfig
 diffusion: Diffusion
 non_hydro: AtmoNonHydro
 
@@ -43,5 +47,22 @@ def timestep(dtime: float):
     diffusion.time_step()
 
 
-def timeloop(dtime: float):
-    pass
+def timeloop(dtime: float, n_time_steps:int):
+    """Runs the loop."""
+    for t in range(n_time_steps):
+        timestep(dtime)
+
+
+def run():
+    """
+    "Runs the driver"
+    1. initialize model
+        a) read config
+        b) initialize grid
+    2. run dycore loop
+        run timeloop
+    3. collect output
+
+    """
+
+
