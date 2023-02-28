@@ -26,8 +26,10 @@ from icon4py.common.dimension import (
     EdgeDim,
     KDim,
     V2EDim,
-    VertexDim,
+    VertexDim, E2CDim, E2VDim,
 )
+from icon4py.diffusion.horizontal import HorizontalMeshSize
+from icon4py.diffusion.icon_grid import IconGrid, VerticalMeshConfig, MeshConfig
 
 
 class IconSavepoint:
@@ -166,6 +168,38 @@ class IconGridSavePoint(IconSavepoint):
 
     def v2e(self):
         return self._get_connectiviy_array("v2e")
+
+    def to_icon_grid(self):
+        sp_meta = self.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
+        cell_starts = self.cells_start_index()
+        cell_ends = self.cells_end_index()
+        vertex_starts = self.vertex_start_index()
+        vertex_ends = self.vertex_end_index()
+        edge_starts = self.edge_start_index()
+        edge_ends = self.edge_end_index()
+        config = MeshConfig(
+            HorizontalMeshSize(
+                num_vertices=sp_meta["nproma"],  # or rather "num_vert"
+                num_cells=sp_meta["nproma"],  # or rather "num_cells"
+                num_edges=sp_meta["nproma"],  # or rather "num_edges"
+                ),
+            VerticalMeshConfig(num_lev=sp_meta["nlev"]),
+            )
+        c2e2c = self.c2e2c()
+        c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
+        grid = (
+            IconGrid()
+            .with_config(config)
+            .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
+            .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
+            .with_start_end_indices(CellDim, cell_starts, cell_ends)
+            .with_connectivities(
+                {C2EDim: self.c2e(), E2CDim: self.e2c(), C2E2CDim: c2e2c, C2E2CODim: c2e2c0}
+            )
+            .with_connectivities({E2VDim: self.e2v(), V2EDim: self.v2e(), E2C2VDim: self.e2c2v()})
+        )
+        return grid
+
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):

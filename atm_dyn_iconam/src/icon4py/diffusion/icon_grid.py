@@ -209,5 +209,3 @@ class VerticalModelParams:
         return self._rayleigh_damping_height
 
 
-def read_icon_grid()->IconGrid:
-    return None

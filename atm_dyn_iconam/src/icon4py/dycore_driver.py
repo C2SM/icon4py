@@ -12,13 +12,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.diffusion.icon_grid import read_icon_grid, VerticalModelParams
+from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.icon_configuration import read_config, IconRunConfig
+from icon4py.io_utils import read_icon_grid
 
+data_path = Path(__file__).parent.joinpath("ser_icondata")
+extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 
 class AtmoNonHydro:
 
@@ -52,9 +56,9 @@ def timeloop(run_config: IconRunConfig):
         timestep(run_config.dtime)
 
 
-def initialize_model():
+def initialize_model(gridfile_path:str):
     config = read_config()
-    icon_grid = read_icon_grid()
+    icon_grid = read_icon_grid(gridfile_path)
     diffusion_params = DiffusionParams(config.diffusion_config)
     vct_a = None
     vertical_model_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height = 12500)
@@ -81,7 +85,7 @@ def run():
         run timeloop
     3. collect output
     """
-    config = initialize_model()
+    config = initialize_model(str(extracted_path))
     timeloop(config.run_config)
 
 
