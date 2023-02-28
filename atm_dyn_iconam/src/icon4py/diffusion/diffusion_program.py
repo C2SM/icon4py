@@ -14,7 +14,7 @@
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
-from gt4py.next.iterator.builtins import int32
+from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
@@ -53,7 +53,7 @@ from icon4py.common.dimension import (
 from icon4py.diffusion.utils import _scale_k, _set_zero_v_k
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def diffusion_run(
     diagnostic_hdef_ic: Field[[CellDim, KDim], float],
     diagnostic_div_ic: Field[[CellDim, KDim], float],
@@ -65,7 +65,7 @@ def diffusion_run(
     prognostic_theta_v: Field[[CellDim, KDim], float],
     metric_theta_ref_mc: Field[[CellDim, KDim], float],
     metric_wgtfac_c: Field[[CellDim, KDim], float],
-    metric_mask_hdiff: Field[[CellDim, KDim], bool],
+    metric_mask_hdiff: Field[[CellDim, KDim], int],
     metric_zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int],
     metric_zd_diffcoef: Field[[CellDim, KDim], float],
     metric_zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float],
@@ -77,6 +77,8 @@ def diffusion_run(
     interpolation_geofac_grg_y: Field[[CellDim, C2E2CODim], float],
     interpolation_nudgecoeff_e: Field[[EdgeDim], float],
     interpolation_geofac_n2s: Field[[CellDim, C2E2CODim], float],
+    interpolation_geofac_n2s_c: Field[[CellDim], float],
+    interpolation_geofac_n2s_nbh:Field[[CellDim, C2E2CDim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inverse_primal_edge_lengths: Field[[EdgeDim], float],
     inverse_dual_edge_lengths: Field[[EdgeDim], float],
@@ -161,6 +163,7 @@ def diffusion_run(
         local_smag_offset,
         out=(local_kh_smag_e, local_kh_smag_ec, local_z_nabla2_e),
         domain={
+            #TODO wrong start index??
             EdgeDim: (boundary_diffusion_start_index_edges, edge_endindex_local_minus2),
             KDim: (0, nlev),
         },
@@ -283,7 +286,21 @@ def diffusion_run(
         },
     )
 
-    # MO_NH_DIFFUSION_STENCIL_15: needs index fields!
+    # MO_NH_DIFFUSION_STENCIL_15: as_offset index fields!
+    # _mo_nh_diffusion_stencil_15(
+    #     metric_mask_hdiff,
+    #     metric_zd_vertidx,
+    #     metric_zd_diffcoef,
+    #     interpolation_geofac_n2s_c,
+    #     interpolation_geofac_n2s_nbh,
+    #     metric_zd_intcoef,
+    #     prognostic_theta_v,
+    #     local_z_temp,
+    #     domain = {
+    #     CellDim:(cell_startindex_nudging, cell_endindex_local),
+    #     KDim:  (0,nlev)
+    #     }
+    # )
 
     _update_theta_and_exner(
         local_z_temp,

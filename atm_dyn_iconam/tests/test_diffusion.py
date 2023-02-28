@@ -448,8 +448,9 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 
 @pytest.mark.skip("fix: diffusion_stencil_15")
+@pytest.mark.parametrize("run_with_program", [True, False])
 @pytest.mark.datatest
-def test_run_diffusion_single_step(
+def test_run_diffusion_single_step(run_with_program,
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
     grid_savepoint,
@@ -485,7 +486,7 @@ def test_run_diffusion_single_step(
         zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
     )
 
-    diffusion = Diffusion(run_program=False)
+    diffusion = Diffusion(run_program=run_with_program)
     diffusion.init(
         grid=icon_grid,
         config=r04b09_diffusion_config,

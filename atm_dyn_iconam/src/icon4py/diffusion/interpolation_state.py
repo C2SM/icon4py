@@ -66,7 +66,7 @@ class InterpolationState:
         return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
 
     @property
-    def geofac_n2s_nbh(self) -> Field[[CellDim], float]:
+    def geofac_n2s_nbh(self) -> Field[[CellDim, C2E2CDim], float]:
         return np_as_located_field(CellDim, C2E2CDim)(
             np.asarray(self.geofac_n2s)[:, 1:]
         )

@@ -675,6 +675,8 @@ class Diffusion:
                 interpolation_geofac_grg_y=self.interpolation_state.geofac_grg_y,
                 interpolation_nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
                 interpolation_geofac_n2s=self.interpolation_state.geofac_n2s,
+                interpolation_geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
+                interpolation_geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
                 tangent_orientation=tangent_orientation,
                 inverse_primal_edge_lengths=inverse_primal_edge_lengths,
                 inverse_dual_edge_lengths=inverse_dual_edge_length,
@@ -706,7 +708,7 @@ class Diffusion:
                 local_vertical_index=self.vertical_index,
                 local_horizontal_cell_index=self.horizontal_cell_index,
                 local_horizontal_edge_index=self.horizontal_edge_index,
-                cell_startindex_interior=cell_startindex_interior,
+                cell_startindex_interior=int32(cell_startindex_interior),
                 cell_startindex_nudging=cell_startindex_nudging,
                 cell_endindex_local_plus1=cell_endindex_local_plus1,
                 cell_endindex_local=int32(cell_endindex_local),
@@ -725,13 +727,14 @@ class Diffusion:
                     "V2E": self.grid.get_v2e_connectivity(),
                     "V2EDim": V2EDim,
                     "E2C2V": self.grid.get_e2c2v_connectivity(),
+                    "E2C2VDim": E2C2VDim,
+                    "E2CDim": E2CDim,
                     "E2ECV": self.grid.get_e2ecv_connectivity(),
                     "C2E": self.grid.get_c2e_connectivity(),
                     "C2EDim": C2EDim,
                     "E2C": self.grid.get_e2c_connectivity(),
                     "C2E2C": self.grid.get_c2e2c_connectivity(),
                     "C2E2CDim": C2E2CDim,
-                    "ECVDim": ECVDim,
                     "C2E2CODim": C2E2CODim,
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "Koff": KDim,
@@ -743,18 +746,18 @@ class Diffusion:
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
-        tangent_orientation: Field[[EdgeDim], float],  # from p_patch%edges
-        inverse_primal_edge_lengths: Field[[EdgeDim], float],  # from p_patch%edges
-        inverse_dual_edge_length: Field[[EdgeDim], float],  # from p_patch%edges
-        inverse_vertex_vertex_lengths: Field[[EdgeDim], float],  # from p_patch%edges
+        tangent_orientation: Field[[EdgeDim], float],
+        inverse_primal_edge_lengths: Field[[EdgeDim], float],
+        inverse_dual_edge_length: Field[[EdgeDim], float],
+        inverse_vertex_vertex_lengths: Field[[EdgeDim], float],
         primal_normal_vert: Tuple[
             Field[[ECVDim], float], Field[[ECVDim], float]
-        ],  # from p_patch%edges
+        ],
         dual_normal_vert: Tuple[
             Field[[ECVDim], float], Field[[ECVDim], float]
-        ],  # from p_patch%edges
-        edge_areas: Field[[EdgeDim], float],  # from p_patch%edges
-        cell_areas: Field[[CellDim], float],  # from p_atch%cells
+        ],
+        edge_areas: Field[[EdgeDim], float],
+        cell_areas: Field[[CellDim], float],
         diff_multfac_vn: Field[[KDim], float],
         smag_limit: Field[[KDim], float],
         smag_offset: float,
@@ -1046,25 +1049,25 @@ class Diffusion:
         )
         print("running fused stencil 13_14: end")
         print("running fused stencil 15: start")
-        mo_nh_diffusion_stencil_15(
-            self.metric_state.mask_hdiff,
-            self.metric_state.zd_vertidx,
-            self.metric_state.zd_diffcoef,
-            self.interpolation_state.geofac_n2s_c,
-            self.interpolation_state.geofac_n2s_nbh,
-            self.metric_state.zd_intcoef,
-            prognostic_state.theta_v,
-            self.z_temp,
-            cell_start_nudging,
-            cell_end_local,
-            0,
-            klevels,
-            offset_provider={
-                "C2E2C": self.grid.get_c2e2c_connectivity(),
-                "C2E2CDim": C2E2CDim,
-                "Koff": KDim,
-            },
-        )
+        # mo_nh_diffusion_stencil_15(
+        #     self.metric_state.mask_hdiff,
+        #     self.metric_state.zd_vertidx,
+        #     self.metric_state.zd_diffcoef,
+        #     self.interpolation_state.geofac_n2s_c,
+        #     self.interpolation_state.geofac_n2s_nbh,
+        #     self.metric_state.zd_intcoef,
+        #     prognostic_state.theta_v,
+        #     self.z_temp,
+        #     cell_start_nudging,
+        #     cell_end_local,
+        #     0,
+        #     klevels,
+        #     offset_provider={
+        #         "C2E2C": self.grid.get_c2e2c_connectivity(),
+        #         "C2E2CDim": C2E2CDim,
+        #         "Koff": KDim,
+        #     },
+        # )
         print("running fused stencil 15: end")
         print("running fused stencil update_theta_and_exner: start")
         update_theta_and_exner(
