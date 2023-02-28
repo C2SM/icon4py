@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
 import pytest
 
 from icon4py.liskov.codegen.generate import IntegrationGenerator
@@ -205,7 +204,7 @@ def expected_insert_source():
 
 @pytest.fixture
 def generator(serialised_directives):
-    return IntegrationGenerator(serialised_directives, profile=True)
+    return IntegrationGenerator(serialised_directives, profile=True, metadata_gen=False)
 
 
 def test_generate(

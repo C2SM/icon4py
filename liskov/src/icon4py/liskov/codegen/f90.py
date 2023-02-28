@@ -25,6 +25,7 @@ from icon4py.liskov.codegen.interface import (
     DeclareData,
     StartStencilData,
 )
+from icon4py.liskov.external.metadata import CodeMetadata
 
 
 def enclose_in_parentheses(string: str) -> str:
@@ -105,6 +106,26 @@ def get_array_dims(association: str) -> str:
     dims = list(idx)
 
     return "".join(list(dims))
+
+
+class MetadataStatement(eve.Node):
+    metadata: CodeMetadata
+
+
+class MetadataStatementGenerator(TemplatedGenerator):
+    MetadataStatement = as_jinja(
+        """\
+    !+-+-+-+-+-+-+-+-+-+ +-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+
+    ! GENERATED WITH ICON-LISKOV
+    !+-+-+-+-+-+-+-+-+-+ +-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+
+    ! Generated on {{ _this_node.metadata.generated_on }}
+    ! Input filepath: {{ _this_node.metadata.cli_params['input_filepath'] }}
+    ! Profiling active: {{ _this_node.metadata.cli_params['profile'] }}
+    ! Git version tag: {{ _this_node.metadata.tag }}
+    ! Git commit hash: {{ _this_node.metadata.commit_hash }}
+    !+-+-+-+-+-+-+-+-+-+ +-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+
+    """
+    )
 
 
 class EndStencilStatement(eve.Node):
