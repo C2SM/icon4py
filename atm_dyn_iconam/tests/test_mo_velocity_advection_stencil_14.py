@@ -53,9 +53,10 @@ def test_mo_velocity_advection_stencil_14():
 
     ddqz_z_half = random_field(mesh, CellDim, KDim)
     z_w_con_c = random_field(mesh, CellDim, KDim)
-    cfl_clipping = random_mask(mesh, CellDim, KDim, dtype=float)
-
-    pre_levelmask = zero_field(mesh, CellDim, KDim)  # TODO should be just a K field
+    cfl_clipping = random_mask(mesh, CellDim, KDim, dtype=bool)
+    pre_levelmask = random_mask(
+        mesh, CellDim, KDim, dtype=bool
+    )  # TODO should be just a K field
     vcfl = zero_field(mesh, CellDim, KDim)
     cfl_w_limit = 5.0
     dtime = 9.0

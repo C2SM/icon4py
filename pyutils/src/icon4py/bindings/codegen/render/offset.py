@@ -89,7 +89,7 @@ class GpuTriMeshOffsetRenderer:
         unique_locations = sorted(
             {
                 (
-                    f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<dawn::LocationType>, bool>{{"
+                    f"{self._make_table_var(offset)}Table = mesh->NeighborTables.at(std::tuple<std::vector<LocationType>, bool>{{"
                     f"{{{', '.join(self._make_location_type(offset))}}}, {1 if offset.includes_center else 0}}});"
                 )
                 for offset in self.offsets
@@ -104,6 +104,6 @@ class GpuTriMeshOffsetRenderer:
     @staticmethod
     def _make_location_type(offset: OffsetEntity) -> list[str]:
         return [
-            f"dawn::LocationType::{loc.render_location_type()}"
+            f"LocationType::{loc.render_location_type()}"
             for loc in offset.target[1].chain
         ]
