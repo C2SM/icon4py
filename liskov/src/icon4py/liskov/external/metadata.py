@@ -17,6 +17,11 @@ import subprocess
 import click
 from typing_extensions import Any
 
+from icon4py.liskov.external.exceptions import (
+    MissingClickContextError,
+    MissingGitError,
+)
+
 
 class CodeMetadata:
     """Class that handles retrieval of icon-liskov runtime metadata."""
@@ -30,7 +35,7 @@ class CodeMetadata:
             ctx = click.get_current_context()
             return ctx.params
         except Exception as e:
-            raise Exception(
+            raise MissingClickContextError(
                 f"Cannot fetch click context in this thread as no click command has been executed.\n {e}"
             )
 
@@ -42,7 +47,9 @@ class CodeMetadata:
                 subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
             )
         except Exception as e:
-            raise Exception(f"Git is not available or there is no commit or tag.\n {e}")
+            raise MissingGitError(
+                f"Git is not available or there is no commit or tag.\n {e}"
+            )
 
     @property
     def tag(self) -> str:
@@ -54,4 +61,6 @@ class CodeMetadata:
                 .strip()
             )
         except Exception as e:
-            raise Exception(f"Git is not available or there is no commit or tag.\n {e}")
+            raise MissingGitError(
+                f"Git is not available or there is no commit or tag.\n {e}"
+            )

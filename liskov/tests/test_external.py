@@ -22,11 +22,11 @@ from icon4py.liskov.codegen.interface import (
     FieldAssociationData,
     StartStencilData,
 )
-from icon4py.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
-from icon4py.liskov.parsing.exceptions import (
+from icon4py.liskov.external.exceptions import (
     IncompatibleFieldError,
     UnknownStencilError,
 )
+from icon4py.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 
 
 def test_stencil_collector():

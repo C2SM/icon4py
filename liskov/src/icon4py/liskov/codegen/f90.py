@@ -20,6 +20,7 @@ from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
 from icon4py.bindings.utils import format_fortran_code
+from icon4py.liskov.codegen.exceptions import UndeclaredFieldError
 from icon4py.liskov.codegen.interface import (
     CodeGenInput,
     DeclareData,
@@ -272,7 +273,7 @@ class StartStencilStatement(eve.Node):
     @staticmethod
     def make_copy_declaration(f: Field) -> CopyDeclaration:
         if f.dims is None:
-            raise Exception(f"{f.variable} not declared!")
+            raise UndeclaredFieldError(f"{f.variable} was not declared!")
 
         lh_idx = render_index(f.dims)
 

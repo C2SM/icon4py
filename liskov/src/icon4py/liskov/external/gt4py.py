@@ -19,11 +19,11 @@ from typing_extensions import Any
 
 from icon4py.liskov.codegen.interface import DeserialisedDirectives
 from icon4py.liskov.common import Step
-from icon4py.liskov.logger import setup_logger
-from icon4py.liskov.parsing.exceptions import (
+from icon4py.liskov.external.exceptions import (
     IncompatibleFieldError,
     UnknownStencilError,
 )
+from icon4py.liskov.logger import setup_logger
 from icon4py.pyutils.metadata import get_stencil_info
 
 
