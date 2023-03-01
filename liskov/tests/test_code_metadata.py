@@ -10,14 +10,21 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from datetime import datetime
+from pathlib import Path
 from unittest import mock
 
 import pytest
 
 from icon4py.liskov.external.exceptions import MissingGitError
 from icon4py.liskov.external.metadata import CodeMetadata
+
+
+@pytest.fixture
+def module_parent():
+    import icon4py.liskov.external.metadata as meta
+
+    return Path(meta.__file__).parent
 
 
 def test_generated_on():
@@ -27,20 +34,22 @@ def test_generated_on():
         assert metadata.generated_on == "2023-03-01 12:00:00"
 
 
-def test_tag():
+def test_tag(module_parent):
     with mock.patch("subprocess.check_output", side_effect=[b"v1.0.0"]) as mock_git:
         metadata = CodeMetadata()
         assert metadata.tag == "v1.0.0"
-        mock_git.assert_any_call(["git", "describe", "--tags", "--abbrev=0"])
+        mock_git.assert_called_once_with(
+            ["git", "describe", "--tags", "--abbrev=0"], cwd=module_parent
+        )
 
 
-def test_commit_hash():
+def test_commit_hash(module_parent):
     with mock.patch(
         "subprocess.check_output", side_effect=[b"abcdef123456"]
     ) as mock_git:
         metadata = CodeMetadata()
         assert metadata.commit_hash == "abcdef123456"
-        mock_git.assert_any_call(["git", "rev-parse", "HEAD"])
+        mock_git.assert_any_call(["git", "rev-parse", "HEAD"], cwd=module_parent)
 
 
 def test_no_git():

@@ -10,9 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import datetime
 import subprocess
+from pathlib import Path
 
 import click
 from typing_extensions import Any
@@ -28,6 +28,7 @@ class CodeMetadata:
 
     def __init__(self) -> None:
         self.generated_on = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.parent_dir = Path(__file__).parent
 
     @property
     def cli_params(self) -> dict[str, Any]:
@@ -44,7 +45,11 @@ class CodeMetadata:
         """Get the latest git commit hash."""
         try:
             return (
-                subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+                subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=self.parent_dir
+                )
+                .decode()
+                .strip()
             )
         except Exception as e:
             raise MissingGitError(
@@ -56,7 +61,9 @@ class CodeMetadata:
         """Get the latest git tag."""
         try:
             return (
-                subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"])
+                subprocess.check_output(
+                    ["git", "describe", "--tags", "--abbrev=0"], cwd=self.parent_dir
+                )
                 .decode()
                 .strip()
             )

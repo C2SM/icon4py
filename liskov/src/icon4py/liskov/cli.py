@@ -55,7 +55,7 @@ def main(
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
 
     Usage:
-        icon_liskov <input_filepath> <output_filepath> [--profile]
+        icon_liskov <input_filepath> <output_filepath> [-p] [-m]
 
     Options:
         -p --profile Add nvtx profile statements to stencils.
