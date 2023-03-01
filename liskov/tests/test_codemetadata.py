@@ -16,6 +16,7 @@ from unittest import mock
 
 import pytest
 
+from icon4py.liskov.external.exceptions import MissingGitError
 from icon4py.liskov.external.metadata import CodeMetadata
 
 
@@ -43,9 +44,9 @@ def test_commit_hash():
 
 
 def test_no_git():
-    with mock.patch("subprocess.check_output", side_effect=Exception()):
+    with mock.patch("subprocess.check_output", side_effect=MissingGitError()):
         metadata = CodeMetadata()
-        with pytest.raises(Exception):
+        with pytest.raises(MissingGitError):
             metadata.tag
 
 
