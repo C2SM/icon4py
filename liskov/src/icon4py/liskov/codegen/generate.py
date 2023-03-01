@@ -71,7 +71,7 @@ class IntegrationGenerator(Step):
         self,
         directives: DeserialisedDirectives,
         profile: bool,
-        metadata_gen: bool = True,
+        metadata_gen: bool = False,
     ):
         self.profile = profile
         self.directives = directives
@@ -118,8 +118,8 @@ class IntegrationGenerator(Step):
 
     def _generate_metadata(self) -> None:
         """Generate metadata about the current liskov execution."""
-        logger.info("Generating icon-liskov program metadata.")
         if self.metadata_gen:
+            logger.info("Generating icon-liskov metadata.")
             self._generate(
                 MetadataStatement,
                 MetadataStatementGenerator,

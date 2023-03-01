@@ -65,6 +65,7 @@ def run_code_generation(
     input_filepath: Path,
     output_filepath: Path,
     profile: bool,
+    metadatagen: bool,
 ) -> list[Step]:
     """Execute a pipeline to generate and write code for a set of directives.
 
@@ -77,8 +78,9 @@ def run_code_generation(
         parsed: The deserialized directives object.
         filepath: The file path to write the generated code to.
         profile: A flag to indicate if profiling information should be included in the generated code.
+        metadatagen: A flag to indicate if a metadata header should be included in the generated code.
     """
     return [
-        IntegrationGenerator(parsed, profile),
+        IntegrationGenerator(parsed, profile, metadatagen),
         IntegrationWriter(input_filepath, output_filepath),
     ]

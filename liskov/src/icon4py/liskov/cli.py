@@ -40,8 +40,17 @@ logger = setup_logger(__name__)
 @click.option(
     "--profile", "-p", is_flag=True, help="Add nvtx profile statements to stencils."
 )
+@click.option(
+    "--metadatagen",
+    "-m",
+    is_flag=True,
+    help="Add metadata header with information about program (requires git).",
+)
 def main(
-    input_filepath: pathlib.Path, output_filepath: pathlib.Path, profile: bool
+    input_filepath: pathlib.Path,
+    output_filepath: pathlib.Path,
+    profile: bool,
+    metadatagen: bool,
 ) -> None:
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
 
@@ -50,6 +59,7 @@ def main(
 
     Options:
         -p --profile Add nvtx profile statements to stencils.
+        -m --metadatagen Add metadata header with information about program (requires git).
 
     Arguments:
         input_filepath Path to the input file to process.
@@ -57,7 +67,9 @@ def main(
     """
     parsed = parse_fortran_file(input_filepath)
     parsed_checked = load_gt4py_stencils(parsed)
-    run_code_generation(parsed_checked, input_filepath, output_filepath, profile)
+    run_code_generation(
+        parsed_checked, input_filepath, output_filepath, profile, metadatagen
+    )
 
 
 if __name__ == "__main__":

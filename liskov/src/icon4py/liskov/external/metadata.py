@@ -15,14 +15,17 @@ import datetime
 import subprocess
 
 import click
+from typing_extensions import Any
 
 
 class CodeMetadata:
-    def __init__(self):
+    """Class that handles retrieval of icon-liskov runtime metadata."""
+
+    def __init__(self) -> None:
         self.generated_on = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     @property
-    def cli_params(self):
+    def cli_params(self) -> dict[str, Any]:
         try:
             ctx = click.get_current_context()
             return ctx.params
@@ -32,8 +35,8 @@ class CodeMetadata:
             )
 
     @property
-    def commit_hash(self):
-        """Get the latest commit hash."""
+    def commit_hash(self) -> str:
+        """Get the latest git commit hash."""
         try:
             return (
                 subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
@@ -42,8 +45,8 @@ class CodeMetadata:
             raise Exception(f"Git is not available or there is no commit or tag.\n {e}")
 
     @property
-    def tag(self):
-        """Get the latest tag."""
+    def tag(self) -> str:
+        """Get the latest git tag."""
         try:
             return (
                 subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"])
