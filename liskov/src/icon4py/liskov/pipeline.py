@@ -74,9 +74,9 @@ def run_code_generation(
     specified filepath.
 
     Args:
-        cli_params: Parameters passed to the click cli.
         parsed: The deserialized directives object.
-        filepath: The file path to write the generated code to.
+        input_filepath: The original file containing the DSL preprocessor directives.
+        output_filepath: The file path to write the generated code to.
         profile: A flag to indicate if profiling information should be included in the generated code.
         metadatagen: A flag to indicate if a metadata header should be included in the generated code.
     """

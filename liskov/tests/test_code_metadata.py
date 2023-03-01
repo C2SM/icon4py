@@ -49,7 +49,9 @@ def test_commit_hash(module_parent):
     ) as mock_git:
         metadata = CodeMetadata()
         assert metadata.commit_hash == "abcdef123456"
-        mock_git.assert_any_call(["git", "rev-parse", "HEAD"], cwd=module_parent)
+        mock_git.assert_called_once_with(
+            ["git", "rev-parse", "HEAD"], cwd=module_parent
+        )
 
 
 def test_no_git():
