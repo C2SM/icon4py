@@ -13,25 +13,10 @@
 import tarfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 import wget
 
-from icon4py.common.dimension import (
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    CellDim,
-    E2C2VDim,
-    E2CDim,
-    E2VDim,
-    EdgeDim,
-    V2EDim,
-    VertexDim,
-)
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.diffusion.horizontal import HorizontalMeshSize
-from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
@@ -129,10 +114,7 @@ def icon_grid(grid_savepoint):
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    return grid_savepoint.to_icon_grid()
-
-
-
+    return grid_savepoint.construct_icon_grid()
 
 
 @pytest.fixture

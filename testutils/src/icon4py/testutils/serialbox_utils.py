@@ -23,13 +23,26 @@ from icon4py.common.dimension import (
     C2EDim,
     CellDim,
     E2C2VDim,
+    E2CDim,
+    E2VDim,
+    ECVDim,
     EdgeDim,
     KDim,
     V2EDim,
-    VertexDim, E2CDim, E2VDim,
+    VertexDim,
 )
-from icon4py.diffusion.horizontal import HorizontalMeshSize
-from icon4py.diffusion.icon_grid import IconGrid, VerticalMeshConfig, MeshConfig
+from icon4py.diffusion.diagnostic_state import DiagnosticState
+from icon4py.diffusion.diffusion import VectorTuple
+from icon4py.diffusion.horizontal import (
+    CellParams,
+    EdgeParams,
+    HorizontalMeshSize,
+)
+from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
+from icon4py.diffusion.interpolation_state import InterpolationState
+from icon4py.diffusion.metric_state import MetricState
+from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.testutils.utils import as_1D_sparse_field
 
 
 class IconSavepoint:
@@ -169,8 +182,10 @@ class IconGridSavePoint(IconSavepoint):
     def v2e(self):
         return self._get_connectiviy_array("v2e")
 
-    def to_icon_grid(self):
-        sp_meta = self.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
+    def construct_icon_grid(self):
+        sp_meta = self.get_metadata(
+            "nproma", "nlev", "num_vert", "num_cells", "num_edges"
+        )
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -182,9 +197,9 @@ class IconGridSavePoint(IconSavepoint):
                 num_vertices=sp_meta["nproma"],  # or rather "num_vert"
                 num_cells=sp_meta["nproma"],  # or rather "num_cells"
                 num_edges=sp_meta["nproma"],  # or rather "num_edges"
-                ),
+            ),
             VerticalMeshConfig(num_lev=sp_meta["nlev"]),
-            )
+        )
         c2e2c = self.c2e2c()
         c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
         grid = (
@@ -194,12 +209,42 @@ class IconGridSavePoint(IconSavepoint):
             .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
             .with_start_end_indices(CellDim, cell_starts, cell_ends)
             .with_connectivities(
-                {C2EDim: self.c2e(), E2CDim: self.e2c(), C2E2CDim: c2e2c, C2E2CODim: c2e2c0}
+                {
+                    C2EDim: self.c2e(),
+                    E2CDim: self.e2c(),
+                    C2E2CDim: c2e2c,
+                    C2E2CODim: c2e2c0,
+                }
             )
-            .with_connectivities({E2VDim: self.e2v(), V2EDim: self.v2e(), E2C2VDim: self.e2c2v()})
+            .with_connectivities(
+                {E2VDim: self.e2v(), V2EDim: self.v2e(), E2C2VDim: self.e2c2v()}
+            )
         )
         return grid
 
+    def construct_edge_geometry(self) -> EdgeParams:
+        primal_normal_vert: VectorTuple = (
+            as_1D_sparse_field(self.primal_normal_vert_x(), ECVDim),
+            as_1D_sparse_field(self.primal_normal_vert_y(), ECVDim),
+        )
+        dual_normal_vert: VectorTuple = (
+            as_1D_sparse_field(self.dual_normal_vert_x(), ECVDim),
+            as_1D_sparse_field(self.dual_normal_vert_y(), ECVDim),
+        )
+        return EdgeParams(
+            tangent_orientation=self.tangent_orientation(),
+            inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
+            inverse_dual_edge_lengths=self.inv_dual_edge_length(),
+            inverse_vertex_vertex_lengths=self.inv_vert_vert_length(),
+            primal_normal_vert_x=primal_normal_vert[0],
+            primal_normal_vert_y=primal_normal_vert[1],
+            dual_normal_vert_x=dual_normal_vert[0],
+            dual_normal_vert_y=dual_normal_vert[1],
+            edge_areas=self.edge_areas(),
+        )
+
+    def construct_cell_geometry(self):
+        return CellParams(area=self.cell_areas())
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
@@ -302,6 +347,45 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
     def diff_multfac_vn(self):
         return self.serializer.read("diff_multfac_vn", self.savepoint)
+
+    def construct_interpolation_state(self) -> InterpolationState:
+        grg = self.geofac_grg()
+        return InterpolationState(
+            e_bln_c_s=self.e_bln_c_s(),
+            rbf_coeff_1=self.rbf_vec_coeff_v1(),
+            rbf_coeff_2=self.rbf_vec_coeff_v2(),
+            geofac_div=self.geofac_div(),
+            geofac_n2s=self.geofac_n2s(),
+            geofac_grg_x=grg[0],
+            geofac_grg_y=grg[1],
+            nudgecoeff_e=self.nudgecoeff_e(),
+        )
+
+    def construct_metric_state(self) -> MetricState:
+        return MetricState(
+            mask_hdiff=self.mask_diff(),
+            theta_ref_mc=self.theta_ref_mc(),
+            wgtfac_c=self.wgtfac_c(),
+            zd_intcoef=self.zd_intcoef(),
+            zd_vertidx=self.zd_vertoffset(),
+            zd_diffcoef=self.zd_diffcoef(),
+        )
+
+    def construct_prognostics(self) -> PrognosticState:
+        return PrognosticState(
+            w=self.w(),
+            vn=self.vn(),
+            exner_pressure=self.exner(),
+            theta_v=self.theta_v(),
+        )
+
+    def construct_diagnostics(self) -> DiagnosticState:
+        return DiagnosticState(
+            hdef_ic=self.hdef_ic(),
+            div_ic=self.div_ic(),
+            dwdx=self.dwdx(),
+            dwdy=self.dwdy(),
+        )
 
 
 class IconDiffusionExitSavepoint(IconSavepoint):

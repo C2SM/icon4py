@@ -22,6 +22,7 @@ from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.horizontal import HorizontalMeshSize
 
 
+# TODO keep naming grid vs mesh consistent
 class VerticalMeshConfig:
     def __init__(self, num_lev: int):
         self._num_lev = num_lev
@@ -207,5 +208,3 @@ class VerticalModelParams:
     @property
     def rayleigh_damping_height(self):
         return self._rayleigh_damping_height
-
-

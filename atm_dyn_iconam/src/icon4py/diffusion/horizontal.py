@@ -115,93 +115,121 @@ class HorizontalMeshSize:
     num_cells: int
 
 
-@dataclass(frozen=True)
+# TODO that cannot be a data class
+
+
 class EdgeParams:
-    tangent_orientation: Field[[EdgeDim], float]
-    """
-    Orientation of vector product of the edge and the adjacent cell centers
-         v3
-        /  \
-       /    \
-      /  c1  \
-     /    |   \
-     v1----|--->v2
-     \    |   /
-      \   v  /
-       \ c2 /
-        \  /
-        v4
-    +1 or -1 depending on whether the vector product of
-    (v2-v1) x (c2-c1) points outside (+) or inside (-) the sphere
+    def __init__(
+        self,
+        tangent_orientation=None,
+        primal_edge_lengths=None,
+        inverse_primal_edge_lengths=None,
+        dual_edge_lengths=None,
+        inverse_dual_edge_lengths=None,
+        inverse_vertex_vertex_lengths=None,
+        primal_normal_vert_x=None,
+        primal_normal_vert_y=None,
+        dual_normal_vert_x=None,
+        dual_normal_vert_y=None,
+        edge_areas=None,
+    ):
 
-    defined in ICON in mo_model_domain.f90:t_grid_edges%tangent_orientation
-    """
+        self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
+        """
+        Orientation of vector product of the edge and the adjacent cell centers
+             v3
+            /  \
+           /    \
+          /  c1  \
+         /    |   \
+         v1---|--->v2
+         \    |   /
+          \   v  /
+           \ c2 /
+            \  /
+            v4
+        +1 or -1 depending on whether the vector product of
+        (v2-v1) x (c2-c1) points outside (+) or inside (-) the sphere
 
-    primal_edge_lengths: Field[[EdgeDim], float]
-    """
-    Length of the triangle edge.
+        defined in ICON in mo_model_domain.f90:t_grid_edges%tangent_orientation
+        """
 
-    defined int ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
-    """
+        self.primal_edge_lengths: Field[[EdgeDim], float] = primal_edge_lengths
+        """
+        Length of the triangle edge.
 
-    inverse_primal_edge_lengths: Field[[EdgeDim], float]
-    """
-    Inverse of the triangle edge length: 1.0/primal_edge_length.
+        defined int ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
+        """
 
-    defined int ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
-    """
+        self.inverse_primal_edge_lengths: Field[
+            [EdgeDim], float
+        ] = inverse_primal_edge_lengths
+        """
+        Inverse of the triangle edge length: 1.0/primal_edge_length.
 
-    dual_edge_lengths: Field[[EdgeDim], float]
-    """
-    Length of the hexagon/pentagon edge.
+        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
+        """
 
-    defined int ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
-    """
+        self.dual_edge_lengths: Field[[EdgeDim], float] = dual_edge_lengths
+        """
+        Length of the hexagon/pentagon edge.
 
-    inverse_dual_edge_lengths: Field[[EdgeDim], float]
-    """
-    Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
+        defined int ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
+        """
 
-    defined int ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
-    """
+        self.inverse_dual_edge_lengths: Field[
+            [EdgeDim], float
+        ] = inverse_dual_edge_lengths
+        """
+        Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
 
-    inverse_vertex_vertex_lengths: Field[[EdgeDim], float]
-    """
-    Inverse distance between outer vertices of adjacent cells.
+        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
+        """
 
-    v1--------
-    |       /|
-    |      / |
-    |    e   |
-    |  /     |
-    |/       |
-    --------v2
+        self.inverse_vertex_vertex_lengths: Field[
+            [EdgeDim], float
+        ] = inverse_vertex_vertex_lengths
+        """
+        Inverse distance between outer vertices of adjacent cells.
 
-    inverse_vertex_vertex_length(e) = 1.0/|v2-v1|
+        v1--------
+        |       /|
+        |      / |
+        |    e   |
+        |  /     |
+        |/       |
+        --------v2
 
-    defined int ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
-    """
+        inverse_vertex_vertex_length(e) = 1.0/|v2-v1|
 
-    primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]]
-    """
-    Normal of the triangle edge, projected onto the location of the vertices
+        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
+        """
 
-    defined int ICON in mo_model_domain.f90:t_grid_edges%primal_normal_vert
-    """
+        self.primal_normal_vert: tuple[
+            Field[[ECVDim], float], Field[[ECVDim], float]
+        ] = (primal_normal_vert_x, primal_normal_vert_y)
+        """
+        Normal of the triangle edge, projected onto the location of the vertices
 
-    dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]]
-    """
-    Tangent to the triangle edge, projected onto the location of vertices.
+        defined int ICON in mo_model_domain.f90:t_grid_edges%primal_normal_vert
+        """
 
-     defined int ICON in mo_model_domain.f90:t_grid_edges%dual_normal_vert
-    """
+        self.dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
+            dual_normal_vert_x,
+            dual_normal_vert_y,
+        )
+        """
+        Tangent to the triangle edge, projected onto the location of vertices.
 
-    edge_areas: Field[[EdgeDim], float]
-    """
-    Area of the quadrilateral (two triangles) adjacent to the edge.
+         defined int ICON in mo_model_domain.f90:t_grid_edges%dual_normal_vert
+        """
 
-    defined int ICON in mo_model_domain.f90:t_grid_edges%area_edge
-    """
+        self.edge_areas: Field[[EdgeDim], float] = edge_areas
+        """
+        Area of the quadrilateral (two triangles) adjacent to the edge.
+
+        defined int ICON in mo_model_domain.f90:t_grid_edges%area_edge
+        """
 
 
 @dataclass(frozen=True)
