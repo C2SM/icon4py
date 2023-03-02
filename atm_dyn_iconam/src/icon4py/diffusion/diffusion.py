@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# flake8: noqa
 
 import math
 import sys
@@ -20,10 +21,7 @@ from typing import Final, Optional, Tuple
 import numpy as np
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
-from gt4py.next.iterator.embedded import (
-    StridedNeighborOffsetProvider,
-    np_as_located_field,
-)
+from gt4py.next.iterator.embedded import np_as_located_field
 
 import icon4py.diffusion.diffusion_program as diff_prog
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
@@ -47,6 +45,9 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
+    mo_nh_diffusion_stencil_15,
+)
 from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.constants import (
     CPD,
@@ -58,6 +59,8 @@ from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
     CellDim,
+    E2C2VDim,
+    E2CDim,
     ECVDim,
     EdgeDim,
     KDim,
@@ -290,9 +293,6 @@ class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
 
     def __init__(self, config: DiffusionConfig):
-        self.boundary_diffusion_start_index_edges = (
-            5  # mo_nh_diffusion.start_bdydiff_e - 1 = 5 -1
-        )
 
         self.K2: Final[float] = (
             1.0 / (config.hdiff_efdt_ratio * 8.0)
@@ -362,36 +362,6 @@ class DiffusionParams:
         return factor, heights
 
 
-def mo_nh_diffusion_stencil_15_numpy(
-    c2e2c,
-    mask_hdiff: Field[[CellDim, KDim], int],
-    zd_vertidx: Field[[C2E2CDim, KDim], int],
-    zd_diffcoef: Field[[CellDim, KDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
-    vcoef: Field[[C2E2CDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    z_temp: Field[[CellDim, KDim], float],
-):
-    geofac_n2s = np.asarray(geofac_n2s)
-    geofac_n2s_nbh = geofac_n2s[:, 1:]
-    geofac_n2s_c = geofac_n2s[:, 0]
-    mask_hdiff = np.asarray(mask_hdiff)
-    zd_vertidx = np.asarray(zd_vertidx)
-    zd_diffcoef = np.asarray(zd_diffcoef)
-    vcoef = np.asarray(vcoef)
-    second = (1 - vcoef) * theta_v[c2e2c][zd_vertidx + 1]
-
-    z_temp = np.asarray(z_temp)
-    vertidx_ = vcoef * theta_v[c2e2c][zd_vertidx]
-    first = geofac_n2s_nbh * vertidx_
-    summed = np.sum(first + second, axis=0)
-
-    z_temp = np.where(
-        mask_hdiff, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + summed), z_temp
-    )
-    return z_temp
-
-
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
@@ -410,11 +380,11 @@ class Diffusion:
         self.interpolation_state = None
         self.metric_state = None
         self.diff_multfac_w: Optional[float] = None
+        self.diff_multfac_n2w: Field[[KDim], float] = None
         self.smag_offset: Optional[float] = None
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
         self.nudgezone_diff: Optional[float] = None
-        self.diff_multfac_n2w: Optional[float] = None
 
     def init(
         self,
@@ -500,6 +470,7 @@ class Diffusion:
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
+        # TODO this is KHalfDim
         self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
@@ -512,7 +483,7 @@ class Diffusion:
         tangent_orientation: Field[[EdgeDim], float],
         inverse_primal_edge_lengths: Field[[EdgeDim], float],
         inverse_dual_edge_length: Field[[EdgeDim], float],
-        inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
+        inverse_vert_vert_lengths: Field[[EdgeDim], float],
         primal_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
         dual_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
         edge_areas: Field[[EdgeDim], float],
@@ -535,7 +506,9 @@ class Diffusion:
         setup_fields_for_initial_step(
             self.params.K4,
             self.config.hdiff_efdt_ratio,
-            out=(diff_multfac_vn, smag_limit),
+            diff_multfac_vn,
+            smag_limit,
+            offset_provider={},
         )
         self._do_diffusion_step(
             diagnostic_state,
@@ -544,7 +517,7 @@ class Diffusion:
             tangent_orientation,
             inverse_primal_edge_lengths,
             inverse_dual_edge_length,
-            inverse_vertical_vertex_lengths,
+            inverse_vert_vert_lengths,
             primal_normal_vert,
             dual_normal_vert,
             edge_areas,
@@ -562,7 +535,7 @@ class Diffusion:
         tangent_orientation: Field[[EdgeDim], float],
         inverse_primal_edge_lengths: Field[[EdgeDim], float],
         inverse_dual_edge_length: Field[[EdgeDim], float],
-        inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
+        inverse_vert_vert_lengths: Field[[EdgeDim], float],
         primal_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
         dual_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
         edge_areas: Field[[EdgeDim], float],
@@ -573,56 +546,6 @@ class Diffusion:
 
         runs a diffusion step for the parameter linit=False, within regular time loop.
         """
-        cell_startindex_nudging, cell_endindex_local = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
-
-        (
-            cell_startindex_interior,
-            cell_endindex_local_plus1,
-        ) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.interior(CellDim),
-            HorizontalMarkerIndex.local(CellDim) + 1,
-        )
-
-        (
-            edge_startindex_nudging_plus1,
-            edge_endindex_local,
-        ) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
-        )
-
-        (
-            edge_startindex_nudging_minus1,
-            edge_endindex_local_minus2,
-        ) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) - 1,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
-        )
-
-        (
-            vertex_startindex_lb_plus3,
-            vertex_endindex_local,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
-            HorizontalMarkerIndex.local(VertexDim),
-        )
-
-        (
-            vertex_startindex_lb_plus1,
-            vertex_endindex_local_minus1,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
-            HorizontalMarkerIndex.local(VertexDim) - 1,
-        )
 
         if not self._run_program:
             self._do_diffusion_step(
@@ -632,7 +555,7 @@ class Diffusion:
                 tangent_orientation=tangent_orientation,
                 inverse_primal_edge_lengths=inverse_primal_edge_lengths,
                 inverse_dual_edge_length=inverse_dual_edge_length,
-                inverse_vertex_vertex_lengths=inverse_vertical_vertex_lengths,
+                inverse_vertex_vertex_lengths=inverse_vert_vert_lengths,
                 primal_normal_vert=primal_normal_vert,
                 dual_normal_vert=dual_normal_vert,
                 edge_areas=edge_areas,
@@ -642,6 +565,66 @@ class Diffusion:
                 smag_offset=self.smag_offset,
             )
         else:
+            print("run program")
+            (
+                cell_startindex_nudging,
+                cell_endindex_local,
+            ) = self.grid.get_indices_from_to(
+                CellDim,
+                HorizontalMarkerIndex.nudging(CellDim),
+                HorizontalMarkerIndex.local(CellDim),
+            )
+
+            (
+                cell_startindex_interior,
+                cell_endindex_local_plus1,
+            ) = self.grid.get_indices_from_to(
+                CellDim,
+                HorizontalMarkerIndex.interior(CellDim),
+                HorizontalMarkerIndex.local(CellDim) - 1,
+            )
+
+            (
+                edge_startindex_nudging_plus1,
+                edge_endindex_local,
+            ) = self.grid.get_indices_from_to(
+                EdgeDim,
+                HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+                HorizontalMarkerIndex.local(EdgeDim),
+            )
+
+            (
+                edge_startindex_nudging_minus1,
+                edge_endindex_local_minus2,
+            ) = self.grid.get_indices_from_to(
+                EdgeDim,
+                HorizontalMarkerIndex.nudging(EdgeDim) - 1,
+                HorizontalMarkerIndex.local(EdgeDim) - 2,
+            )
+
+            (
+                vertex_startindex_lb_plus3,
+                vertex_endindex_local,
+            ) = self.grid.get_indices_from_to(
+                VertexDim,
+                HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+                HorizontalMarkerIndex.local(VertexDim),
+            )
+
+            (
+                vertex_startindex_lb_plus1,
+                vertex_endindex_local_minus1,
+            ) = self.grid.get_indices_from_to(
+                VertexDim,
+                HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+                HorizontalMarkerIndex.local(VertexDim) - 1,
+            )
+            edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
+                EdgeDim,
+                HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+                HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+            )
+
             diff_prog.diffusion_run(
                 diagnostic_hdef_ic=diagnostic_state.hdef_ic,
                 diagnostic_div_ic=diagnostic_state.div_ic,
@@ -665,10 +648,12 @@ class Diffusion:
                 interpolation_geofac_grg_y=self.interpolation_state.geofac_grg_y,
                 interpolation_nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
                 interpolation_geofac_n2s=self.interpolation_state.geofac_n2s,
+                interpolation_geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
+                interpolation_geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
                 tangent_orientation=tangent_orientation,
                 inverse_primal_edge_lengths=inverse_primal_edge_lengths,
                 inverse_dual_edge_lengths=inverse_dual_edge_length,
-                inverse_vertical_vertex_lengths=inverse_vertical_vertex_lengths,
+                inverse_vert_vert_lengths=inverse_vert_vert_lengths,
                 primal_normal_vert_1=primal_normal_vert[0],
                 primal_normal_vert_2=primal_normal_vert[1],
                 dual_normal_vert_1=dual_normal_vert[0],
@@ -696,12 +681,13 @@ class Diffusion:
                 local_vertical_index=self.vertical_index,
                 local_horizontal_cell_index=self.horizontal_cell_index,
                 local_horizontal_edge_index=self.horizontal_edge_index,
-                cell_startindex_interior=cell_startindex_interior,
+                cell_startindex_interior=int32(cell_startindex_interior),
                 cell_startindex_nudging=cell_startindex_nudging,
                 cell_endindex_local_plus1=cell_endindex_local_plus1,
                 cell_endindex_local=cell_endindex_local,
+                cell_halo_idx=int32(cell_endindex_local),
                 edge_startindex_nudging_plus1=edge_startindex_nudging_plus1,
-                edge_startindex_nudging_minus1=edge_startindex_nudging_minus1,
+                edge_startindex_nudging_minus1=int32(edge_startindex_nudging_minus1),
                 edge_endindex_local=edge_endindex_local,
                 edge_endindex_local_minus2=edge_endindex_local_minus2,
                 vertex_startindex_lb_plus3=vertex_startindex_lb_plus3,
@@ -710,18 +696,19 @@ class Diffusion:
                 vertex_endindex_local_minus1=vertex_endindex_local_minus1,
                 index_of_damping_height=self.vertical_params.index_of_damping_layer,
                 nlev=self.grid.n_lev(),
-                boundary_diffusion_start_index_edges=self.params.boundary_diffusion_start_index_edges,
+                boundary_diffusion_start_index_edges=edge_start_lb_plus4,
                 offset_provider={
                     "V2E": self.grid.get_v2e_connectivity(),
                     "V2EDim": V2EDim,
                     "E2C2V": self.grid.get_e2c2v_connectivity(),
-                    "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, 4),
+                    "E2C2VDim": E2C2VDim,
+                    "E2CDim": E2CDim,
+                    "E2ECV": self.grid.get_e2ecv_connectivity(),
                     "C2E": self.grid.get_c2e_connectivity(),
                     "C2EDim": C2EDim,
                     "E2C": self.grid.get_e2c_connectivity(),
                     "C2E2C": self.grid.get_c2e2c_connectivity(),
                     "C2E2CDim": C2E2CDim,
-                    "ECVDim": ECVDim,
                     "C2E2CODim": C2E2CODim,
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "Koff": KDim,
@@ -733,18 +720,14 @@ class Diffusion:
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
-        tangent_orientation: Field[[EdgeDim], float],  # from p_patch%edges
-        inverse_primal_edge_lengths: Field[[EdgeDim], float],  # from p_patch%edges
-        inverse_dual_edge_length: Field[[EdgeDim], float],  # from p_patch%edges
-        inverse_vertex_vertex_lengths: Field[[EdgeDim], float],  # from p_patch%edges
-        primal_normal_vert: Tuple[
-            Field[[ECVDim], float], Field[[ECVDim], float]
-        ],  # from p_patch%edges
-        dual_normal_vert: Tuple[
-            Field[[ECVDim], float], Field[[ECVDim], float]
-        ],  # from p_patch%edges
-        edge_areas: Field[[EdgeDim], float],  # from p_patch%edges
-        cell_areas: Field[[CellDim], float],  # from p_atch%cells
+        tangent_orientation: Field[[EdgeDim], float],
+        inverse_primal_edge_lengths: Field[[EdgeDim], float],
+        inverse_dual_edge_length: Field[[EdgeDim], float],
+        inverse_vertex_vertex_lengths: Field[[EdgeDim], float],
+        primal_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
+        dual_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
+        edge_areas: Field[[EdgeDim], float],
+        cell_areas: Field[[CellDim], float],
         diff_multfac_vn: Field[[KDim], float],
         smag_limit: Field[[KDim], float],
         smag_offset: float,
@@ -775,7 +758,7 @@ class Diffusion:
         cell_start_nudging_minus1, cell_end_local_plus1 = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.nudging(CellDim) - 1,
-            HorizontalMarkerIndex.local(CellDim) + 1,
+            HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
         cell_start_interior, cell_end_local = self.grid.get_indices_from_to(
@@ -794,6 +777,12 @@ class Diffusion:
             EdgeDim,
             HorizontalMarkerIndex.nudging(EdgeDim) + 1,
             HorizontalMarkerIndex.local(EdgeDim),
+        )
+
+        edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
         )
 
         (
@@ -831,7 +820,7 @@ class Diffusion:
         # TODO: is this needed?, if not remove
         set_zero_v_k(self.u_vert, offset_provider={})
         set_zero_v_k(self.v_vert, offset_provider={})
-
+        print("rbf interpolation: start")
         # # 1.  CALL rbf_vec_interpol_vertex
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
@@ -845,10 +834,11 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
         )
-
+        print("rbf interpolation: end")
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
 
+        print("running calculate_nabla2_and_smag_coefficients_for_vn: start")
         calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
             tangent_orientation=tangent_orientation,
@@ -866,16 +856,18 @@ class Diffusion:
             kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
             smag_offset=smag_offset,
-            horizontal_start=self.params.boundary_diffusion_start_index_edges,
+            horizontal_start=edge_start_lb_plus4,
             horizontal_end=edge_end_local_minus2,
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
                 "E2C2V": self.grid.get_e2c2v_connectivity(),
-                "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, 4),
+                "E2ECV": self.grid.get_e2ecv_connectivity(),
+                "E2C2VDim": E2C2VDim,
             },
         )
-
+        print("running calculate_nabla2_and_smag_coefficients_for_vn: end")
+        print("running fused stencil fused stencil 02_03: start")
         fused_mo_nh_diffusion_stencil_02_03(
             kh_smag_ec=self.kh_smag_ec,
             vn=prognostic_state.vn,
@@ -889,12 +881,18 @@ class Diffusion:
             horizontal_end=cell_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"C2E": self.grid.get_c2e_connectivity(), "C2EDim": C2EDim},
+            offset_provider={
+                "C2E": self.grid.get_c2e_connectivity(),
+                "C2EDim": C2EDim,
+                "Koff": KDim,
+            },
         )
+        print("running fused stencil fused stencil 02_03: end")
         #
         # # 4.  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
         #
         # # 5.  CALL rbf_vec_interpol_vertex_wp
+        print("rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -907,42 +905,46 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
         )
+        print("rbf interpolation: end")
         # # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
         #
         # # 7.  mo_nh_diffusion_stencil_04, mo_nh_diffusion_stencil_05
         # # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
         #
+
+        print("running fused stencil 04_05_06: start")
         fused_mo_nh_diffusion_stencil_04_05_06(
-            self.u_vert,
-            self.v_vert,
-            primal_normal_vert[0],
-            primal_normal_vert[1],
-            self.z_nabla2_e,
-            inverse_vertex_vertex_lengths,
-            inverse_primal_edge_lengths,
-            edge_areas,
-            self.kh_smag_e,
-            diff_multfac_vn,
-            self.interpolation_state.nudgecoeff_e,
-            prognostic_state.vn,
-            self.horizontal_edge_index,
-            self.nudgezone_diff,
-            self.fac_bdydiff_v,
-            edge_start_nudging_minus1,
-            prognostic_state.vn,
+            u_vert=self.u_vert,
+            v_vert=self.v_vert,
+            primal_normal_vert_v1=primal_normal_vert[0],
+            primal_normal_vert_v2=primal_normal_vert[1],
+            z_nabla2_e=self.z_nabla2_e,
+            inv_vert_vert_length=inverse_vertex_vertex_lengths,
+            inv_primal_edge_length=inverse_primal_edge_lengths,
+            area_edge=edge_areas,
+            kh_smag_e=self.kh_smag_e,
+            diff_multfac_vn=diff_multfac_vn,
+            nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+            vn=prognostic_state.vn,
+            horz_idx=self.horizontal_edge_index,
+            nudgezone_diff=self.nudgezone_diff,
+            fac_bdydiff_v=self.fac_bdydiff_v,
+            start_2nd_nudge_line_idx_e=int32(edge_start_nudging_minus1),
             horizontal_start=edge_start_nudging_plus_one,
             horizontal_end=edge_end_local,
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
                 "E2C2V": self.grid.get_e2c2v_connectivity(),
-                "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, 4),
-                "ECVDim": ECVDim,
+                "E2C2VDim": E2C2VDim,
+                "E2ECV": self.grid.get_e2ecv_connectivity(),
             },
         )
         # # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
         # #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
+        print("running fused stencil 04_05_06: end")
 
+        print("running fused stencil 07_08_09_10: start")
         fused_mo_nh_diffusion_stencil_07_08_09_10(
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
@@ -956,9 +958,13 @@ class Diffusion:
             diff_multfac_n2w=self.diff_multfac_n2w,
             vert_idx=self.vertical_index,
             horz_idx=self.horizontal_cell_index,
-            nrdmax=self.config.vertical_params._index_of_damping_height,
-            interior_idx=cell_start_interior,  # h end index for stencil_09 and stencil_10
-            halo_idx=cell_end_local,  # h end index for stencil_09 and stencil_10,
+            nrdmax=self.vertical_params.index_of_damping_layer,
+            interior_idx=int32(
+                cell_start_interior
+            ),  # h end index for stencil_09 and stencil_10
+            halo_idx=int32(
+                cell_end_local
+            ),  # h end index for stencil_09 and stencil_10,
             horizontal_start=cell_start_nudging,  # h start index for stencil_07 and stencil_08
             horizontal_end=cell_end_local_plus1,  # h end index for stencil_07 and stencil_08
             vertical_start=0,
@@ -968,12 +974,14 @@ class Diffusion:
                 "C2E2CODim": C2E2CODim,
             },
         )
+        print("running fused stencil 07_08_09_10: start")
         # # 8.  HALO EXCHANGE: CALL sync_patch_array
         # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
         # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
         #
         # # TODO check: kh_smag_e is an out field, should  not be calculated in init?
         #
+        print("running fused stencil 11_12: start")
         fused_mo_nh_diffusion_stencil_11_12(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
@@ -987,8 +995,11 @@ class Diffusion:
                 "E2C": self.grid.get_e2c_connectivity(),
                 "C2E2C": self.grid.get_c2e2c_connectivity(),
                 "C2E2CDim": C2E2CDim,
+                "E2CDim": E2CDim,
             },
         )
+        print("running fused stencil 11_12: end")
+        print("running fused stencil 13_14: start")
         fused_mo_nh_diffusion_stencil_13_14(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=inverse_dual_edge_length,
@@ -1002,28 +1013,33 @@ class Diffusion:
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
                 "E2C": self.grid.get_e2c_connectivity(),
+                "E2CDim": E2CDim,
                 "C2EDim": C2EDim,
             },
         )
-
-        mo_nh_diffusion_stencil_15_numpy(
-            mask_hdiff=self.metric_state.mask_hdiff,
-            zd_vertidx=self.metric_state.zd_vertidx,
-            vcoef=self.metric_state.zd_diffcoef,
-            zd_diffcoef=self.metric_state.zd_diffcoef,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            theta_v=prognostic_state.theta_v,
-            z_temp=self.z_temp,
-            domain={
-                CellDim: self.grid.get_indices_from_to(
-                    CellDim,
-                    HorizontalMarkerIndex.nudging(CellDim),
-                    HorizontalMarkerIndex.halo(CellDim),
-                ),
-            },
-            offset_provider={},
-        )
-
+        print("running fused stencil 13_14: end")
+        print("running fused stencil 15: start")
+        # mo_nh_diffusion_stencil_15(
+        #     self.metric_state.mask_hdiff,
+        #     self.metric_state.zd_vertidx,
+        #     self.metric_state.zd_diffcoef,
+        #     self.interpolation_state.geofac_n2s_c,
+        #     self.interpolation_state.geofac_n2s_nbh,
+        #     self.metric_state.zd_intcoef,
+        #     prognostic_state.theta_v,
+        #     self.z_temp,
+        #     cell_start_nudging,
+        #     cell_end_local,
+        #     0,
+        #     klevels,
+        #     offset_provider={
+        #         "C2E2C": self.grid.get_c2e2c_connectivity(),
+        #         "C2E2CDim": C2E2CDim,
+        #         "Koff": KDim,
+        #     },
+        # )
+        print("running fused stencil 15: end")
+        print("running fused stencil update_theta_and_exner: start")
         update_theta_and_exner(
             z_temp=self.z_temp,
             area=cell_areas,
@@ -1036,4 +1052,5 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={},
         )
+        print("running fused stencil update_theta_and_exner: end")
         # 10. HALO EXCHANGE sync_patch_array

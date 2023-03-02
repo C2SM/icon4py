@@ -22,6 +22,7 @@ from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
     CellDim,
+    E2C2VDim,
     E2CDim,
     E2VDim,
     EdgeDim,
@@ -159,7 +160,7 @@ def icon_grid(data_provider):
         .with_connectivities(
             {C2EDim: sp.c2e(), E2CDim: sp.e2c(), C2E2CDim: c2e2c, C2E2CODim: c2e2c0}
         )
-        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e()})
+        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e(), E2C2VDim: sp.e2c2v()})
     )
     return grid
 

@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# flake8: noqa
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
@@ -77,10 +78,12 @@ def diffusion_run(
     interpolation_geofac_grg_y: Field[[CellDim, C2E2CODim], float],
     interpolation_nudgecoeff_e: Field[[EdgeDim], float],
     interpolation_geofac_n2s: Field[[CellDim, C2E2CODim], float],
+    interpolation_geofac_n2s_c: Field[[CellDim], float],
+    interpolation_geofac_n2s_nbh: Field[[CellDim, C2E2CDim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inverse_primal_edge_lengths: Field[[EdgeDim], float],
     inverse_dual_edge_lengths: Field[[EdgeDim], float],
-    inverse_vertical_vertex_lengths: Field[[EdgeDim], float],
+    inverse_vert_vert_lengths: Field[[EdgeDim], float],
     primal_normal_vert_1: Field[[ECVDim], float],
     primal_normal_vert_2: Field[[ECVDim], float],
     dual_normal_vert_1: Field[[ECVDim], float],
@@ -109,20 +112,21 @@ def diffusion_run(
     local_horizontal_cell_index: Field[[CellDim], int32],
     local_horizontal_edge_index: Field[[EdgeDim], int32],
     cell_startindex_interior: int32,
-    cell_startindex_nudging: int32,
-    cell_endindex_local_plus1: int32,
-    cell_endindex_local: int32,
-    edge_startindex_nudging_plus1: int32,
+    cell_halo_idx: int32,
+    cell_startindex_nudging: int,
+    cell_endindex_local_plus1: int,
+    cell_endindex_local: int,
+    edge_startindex_nudging_plus1: int,
     edge_startindex_nudging_minus1: int32,
-    edge_endindex_local: int32,
-    edge_endindex_local_minus2: int32,
-    vertex_startindex_lb_plus3: int32,
-    vertex_startindex_lb_plus1: int32,
-    vertex_endindex_local: int32,
-    vertex_endindex_local_minus1: int32,
+    edge_endindex_local: int,
+    edge_endindex_local_minus2: int,
+    vertex_startindex_lb_plus3: int,
+    vertex_startindex_lb_plus1: int,
+    vertex_endindex_local: int,
+    vertex_endindex_local_minus1: int,
     index_of_damping_height: int32,
     nlev: int,
-    boundary_diffusion_start_index_edges: int32,
+    boundary_diffusion_start_index_edges: int,
 ):
     _scale_k(local_enh_smag_fac, dtime, out=local_diff_multfac_smag)
 
@@ -149,7 +153,7 @@ def diffusion_run(
         local_diff_multfac_smag,
         tangent_orientation,
         inverse_primal_edge_lengths,
-        inverse_vertical_vertex_lengths,
+        inverse_vert_vert_lengths,
         local_u_vert,
         local_v_vert,
         primal_normal_vert_1,
@@ -161,6 +165,7 @@ def diffusion_run(
         local_smag_offset,
         out=(local_kh_smag_e, local_kh_smag_ec, local_z_nabla2_e),
         domain={
+            # TODO wrong start index??
             EdgeDim: (boundary_diffusion_start_index_edges, edge_endindex_local_minus2),
             KDim: (0, nlev),
         },
@@ -207,7 +212,7 @@ def diffusion_run(
         primal_normal_vert_1,
         primal_normal_vert_2,
         local_z_nabla2_e,
-        inverse_vertical_vertex_lengths,
+        inverse_vert_vert_lengths,
         inverse_primal_edge_lengths,
         edge_areas,
         local_kh_smag_e,
@@ -242,7 +247,7 @@ def diffusion_run(
         local_horizontal_cell_index,
         index_of_damping_height,
         cell_startindex_interior,
-        cell_endindex_local,
+        cell_halo_idx,
         out=(
             prognostic_w,
             diagnostic_dwdx,
@@ -283,7 +288,21 @@ def diffusion_run(
         },
     )
 
-    # MO_NH_DIFFUSION_STENCIL_15: needs index fields!
+    # MO_NH_DIFFUSION_STENCIL_15: as_offset index fields!
+    # _mo_nh_diffusion_stencil_15(
+    #     metric_mask_hdiff,
+    #     metric_zd_vertidx,
+    #     metric_zd_diffcoef,
+    #     interpolation_geofac_n2s_c,
+    #     interpolation_geofac_n2s_nbh,
+    #     metric_zd_intcoef,
+    #     prognostic_theta_v,
+    #     local_z_temp,
+    #     domain = {
+    #     CellDim:(cell_startindex_nudging, cell_endindex_local),
+    #     KDim:  (0,nlev)
+    #     }
+    # )
 
     _update_theta_and_exner(
         local_z_temp,
