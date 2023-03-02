@@ -15,6 +15,7 @@ flake8-mutable>=1.2.0
 flake8-rst-docstrings>=0.0.14
 isort~=5.10
 mypy>=0.942
+typing-extensions>=4.5
 pre-commit~=2.15
 pytest>=6.1
 pytest-cache>=1.0
