@@ -24,7 +24,7 @@ from icon4py.liskov.parsing.scan import DirectivesScanner
 
 
 @linear_pipeline
-def parse_fortran_file(filepath: Path) -> list[Step]:
+def parse_fortran_file(filepath: Path, outpath: Path) -> list[Step]:
     """Execute a pipeline to parse and deserialize directives from a file.
 
         The pipeline consists of three steps: DirectivesScanner, DirectivesParser, and
@@ -40,7 +40,7 @@ def parse_fortran_file(filepath: Path) -> list[Step]:
         DeserialisedDirectives: The deserialized directives object.
     """
     return [
-        DirectivesScanner(filepath),
+        DirectivesScanner(filepath, outpath),
         DirectivesParser(filepath),
         DirectiveDeserialiser(),
     ]

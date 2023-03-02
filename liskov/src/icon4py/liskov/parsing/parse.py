@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import collections
+import shutil
 import sys
 from pathlib import Path
 from typing import Sequence
@@ -28,7 +29,7 @@ logger = setup_logger(__name__)
 
 
 class DirectivesParser(Step):
-    def __init__(self, filepath: Path) -> None:
+    def __init__(self, filepath: Path, outpath: Path) -> None:
         """Initialize a DirectivesParser instance.
 
         This class parses a Sequence of RawDirective objects and returns a dictionary of parsed directives and their associated content.
@@ -38,6 +39,7 @@ class DirectivesParser(Step):
             filepath: Path to file being parsed.
         """
         self.filepath = filepath
+        self.outpath = outpath
 
     def __call__(self, directives: list[ts.RawDirective]) -> ts.ParsedDict:
         """Parse the directives and return a dictionary of parsed directives and their associated content.
@@ -51,7 +53,10 @@ class DirectivesParser(Step):
             preprocessed = self._preprocess(typed)
             self._run_validation_passes(preprocessed)
             return dict(directives=preprocessed, content=self._parse(preprocessed))
-        logger.warning(f"No DSL Preprocessor directives found in {self.filepath}")
+        logger.warning(
+            f"No DSL Preprocessor directives found in {self.filepath}, copying to {self.outpath}"
+        )
+        shutil.copyfile(self.filepath, self.outpath)
         sys.exit()
 
     @staticmethod

@@ -65,7 +65,7 @@ def main(
         input_filepath Path to the input file to process.
         output_filepath Path to the output file to generate.
     """
-    parsed = parse_fortran_file(input_filepath)
+    parsed = parse_fortran_file(input_filepath, output_filepath)
     parsed_checked = load_gt4py_stencils(parsed)
     run_code_generation(
         parsed_checked, input_filepath, output_filepath, profile, metadatagen
