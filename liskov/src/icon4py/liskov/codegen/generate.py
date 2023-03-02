@@ -251,26 +251,27 @@ class IntegrationGenerator(Step):
 
     def _generate_profile(self) -> None:
         """Generate additional nvtx profiling statements."""
-        if self.directives.StartProfile != UnusedDirective:
-            for start in self.directives.StartProfile:  # type: ignore
-                logger.info("Generating nvtx start statement.")
-                self._generate(
-                    StartProfileStatement,
-                    StartProfileStatementGenerator,
-                    start.startln,
-                    start.endln,
-                    name=start.name,
-                )
+        if self.profile:
+            if self.directives.StartProfile != UnusedDirective:
+                for start in self.directives.StartProfile:  # type: ignore
+                    logger.info("Generating nvtx start statement.")
+                    self._generate(
+                        StartProfileStatement,
+                        StartProfileStatementGenerator,
+                        start.startln,
+                        start.endln,
+                        name=start.name,
+                    )
 
-        if self.directives.EndProfile != UnusedDirective:
-            for end in self.directives.EndProfile:  # type: ignore
-                logger.info("Generating nvtx end statement.")
-                self._generate(
-                    EndProfileStatement,
-                    EndProfileStatementGenerator,
-                    end.startln,
-                    end.endln,
-                )
+            if self.directives.EndProfile != UnusedDirective:
+                for end in self.directives.EndProfile:  # type: ignore
+                    logger.info("Generating nvtx end statement.")
+                    self._generate(
+                        EndProfileStatement,
+                        EndProfileStatementGenerator,
+                        end.startln,
+                        end.endln,
+                    )
 
     def _generate_insert(self) -> None:
         """Generate free form statement from insert directive."""
