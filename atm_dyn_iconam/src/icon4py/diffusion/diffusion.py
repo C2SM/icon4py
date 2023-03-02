@@ -139,7 +139,6 @@ class DiffusionConfig:
         """
         If True, apply diffusion on the vertical wind field
 
-
         Called `lhdiff_w` in in mo_diffusion_nml.f90
         """
 

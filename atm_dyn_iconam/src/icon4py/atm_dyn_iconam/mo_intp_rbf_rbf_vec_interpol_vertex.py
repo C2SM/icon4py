@@ -28,6 +28,7 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
     p_v_out = neighbor_sum(p_e_in(V2E) * ptr_coeff_2, axis=V2EDim)
     return p_u_out, p_v_out
 
+
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: Field[[EdgeDim, KDim], float],
