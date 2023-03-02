@@ -15,6 +15,9 @@ from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.testutils import serialbox_utils
 
 
+SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
+
+
 def read_icon_grid(path=".", ser_type="sb") -> IconGrid:
     """
     Return IconGrid parsed from a given input type.
@@ -35,17 +38,29 @@ def read_icon_grid(path=".", ser_type="sb") -> IconGrid:
         raise NotImplementedError
 
 
+def read_initial_state(gridfile_path):
+    data_provider = serialbox_utils.IconSerialDataProvider(
+        "icon_pydycore", gridfile_path, False
+    )
+    initial_save_point = data_provider.from_savepoint_diffusion_init(
+        linit=True, date=SIMULATION_START_DATE
+    )
+    prognostic_state = initial_save_point.construct_prognostics()
+    diagnostic_state = initial_save_point.construct_diagnostics()
+    return data_provider, diagnostic_state, prognostic_state
+
+
 def read_geometry_fields(path=".", ser_type="sb"):
     if ser_type == "sb":
         sp = serialbox_utils.IconSerialDataProvider(
             "icon_pydycore", path, False
         ).from_savepoint_grid()
-        edge_geometry = sp.construct_cell_geometry()
+        edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
             vct_a=sp.vct_a(), rayleigh_damping_height=12500
         )
-        return (edge_geometry, cell_geometry, vertical_geometry)
+        return edge_geometry, cell_geometry, vertical_geometry
     else:
         raise NotImplementedError
 
@@ -54,9 +69,9 @@ def read_static_fields(path=".", ser_type="sb"):
     if ser_type == "sb":
         sp = serialbox_utils.IconSerialDataProvider(
             "icon_pydycore", path, False
-        ).from_savepoint_diffusion_init()
+        ).from_savepoint_diffusion_init(linit=True, date=SIMULATION_START_DATE)
         metric_state = sp.construct_metric_state()
         interpolation_state = sp.construct_interpolation_state()
-        return (metric_state, interpolation_state)
+        return metric_state, interpolation_state
     else:
         raise NotImplementedError

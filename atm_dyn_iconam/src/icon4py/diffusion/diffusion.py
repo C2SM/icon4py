@@ -566,7 +566,7 @@ class Diffusion:
                 smag_offset=self.smag_offset,
             )
         else:
-            print("run program")
+
             (
                 cell_startindex_nudging,
                 cell_endindex_local,
@@ -625,7 +625,7 @@ class Diffusion:
                 HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
                 HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
             )
-
+            print("diffusion program: start")
             diff_prog.diffusion_run(
                 diagnostic_hdef_ic=diagnostic_state.hdef_ic,
                 diagnostic_div_ic=diagnostic_state.div_ic,
@@ -715,6 +715,7 @@ class Diffusion:
                     "Koff": KDim,
                 },
             )
+        print("diffusion program: end")
 
     def _do_diffusion_step(
         self,
