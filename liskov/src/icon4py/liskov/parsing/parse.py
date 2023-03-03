@@ -29,17 +29,18 @@ logger = setup_logger(__name__)
 
 
 class DirectivesParser(Step):
-    def __init__(self, filepath: Path, outpath: Path) -> None:
+    def __init__(self, input_filepath: Path, output_filepath: Path) -> None:
         """Initialize a DirectivesParser instance.
 
         This class parses a Sequence of RawDirective objects and returns a dictionary of parsed directives and their associated content.
 
         Args:
             directives: Sequence of RawDirective objects to parse.
-            filepath: Path to file being parsed.
+            input_filepath Path to the input file to process.
+            output_filepath Path to the output file to generate.
         """
-        self.filepath = filepath
-        self.outpath = outpath
+        self.input_filepath = input_filepath
+        self.output_filepath = output_filepath
 
     def __call__(self, directives: list[ts.RawDirective]) -> ts.ParsedDict:
         """Parse the directives and return a dictionary of parsed directives and their associated content.
@@ -47,16 +48,16 @@ class DirectivesParser(Step):
         Returns:
             ParsedType: Dictionary of parsed directives and their associated content.
         """
-        logger.info(f"Parsing DSL Preprocessor directives at {self.filepath}")
+        logger.info(f"Parsing DSL Preprocessor directives at {self.input_filepath}")
         if len(directives) != 0:
             typed = self._determine_type(directives)
             preprocessed = self._preprocess(typed)
             self._run_validation_passes(preprocessed)
             return dict(directives=preprocessed, content=self._parse(preprocessed))
         logger.warning(
-            f"No DSL Preprocessor directives found in {self.filepath}, copying to {self.outpath}"
+            f"No DSL Preprocessor directives found in {self.input_filepath}, copying to {self.output_filepath}"
         )
-        shutil.copyfile(self.filepath, self.outpath)
+        shutil.copyfile(self.input_filepath, self.output_filepath)
         sys.exit()
 
     @staticmethod
@@ -92,7 +93,7 @@ class DirectivesParser(Step):
     ) -> None:
         """Run validation passes on the directives."""
         for validator in VALIDATORS:
-            validator(self.filepath).validate(preprocessed)
+            validator(self.input_filepath).validate(preprocessed)
 
     @staticmethod
     def _clean_string(string: str) -> str:

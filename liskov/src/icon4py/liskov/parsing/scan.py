@@ -30,7 +30,7 @@ class Scanned:
 
 
 class DirectivesScanner(Step):
-    def __init__(self, filepath: Path) -> None:
+    def __init__(self, input_filepath: Path) -> None:
         r"""Class for scanning a file for ICON-Liskov DSL directives.
 
         A directive must start with !$DSL <DIRECTIVE_NAME>( with the
@@ -47,9 +47,9 @@ class DirectivesScanner(Step):
             !$DSL               b=test)
 
         Args:
-            filepath: Path to file to scan for directives.
+            input_filepath: Path to file to scan for directives.
         """
-        self.filepath = filepath
+        self.input_filepath = input_filepath
 
     def __call__(self, data: Any = None) -> list[ts.RawDirective]:
         """Scan filepath for directives and return them along with their line numbers.
@@ -58,7 +58,7 @@ class DirectivesScanner(Step):
             A list of RawDirective objects containing the scanned directives and their line numbers.
         """
         directives = []
-        with self.filepath.open() as f:
+        with self.input_filepath.open() as f:
 
             scanned_directives = []
             lines = f.readlines()
@@ -86,7 +86,7 @@ class DirectivesScanner(Step):
                             raise DirectiveSyntaxError(
                                 f"Error in directive on line number: {lnumber + 1}\n Used invalid end of line character."
                             )
-        logger.info(f"Scanning for directives at {self.filepath}")
+        logger.info(f"Scanning for directives at {self.input_filepath}")
         return directives
 
     @staticmethod

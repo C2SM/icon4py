@@ -47,7 +47,7 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
 ):
     fpath = make_f90_tmpfile(stencil + directive)
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, fpath)
 
     with pytest.raises(UnbalancedStencilDirectiveError):
         parser(directives)
@@ -84,7 +84,7 @@ def test_directive_semantics_validation_repeated_directives(
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, fpath)
 
     with pytest.raises(
         RepeatedDirectiveError,
@@ -103,7 +103,7 @@ def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, direc
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, fpath)
     parser(directives)
 
 
@@ -121,7 +121,7 @@ def test_directive_semantics_validation_required_directives(
     new = SINGLE_STENCIL.replace(directive, "")
     fpath = make_f90_tmpfile(content=new)
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, fpath)
 
     with pytest.raises(
         RequiredDirectivesError,
