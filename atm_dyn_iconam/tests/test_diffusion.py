@@ -249,6 +249,9 @@ def test_diffusion_init(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=diffusion_savepoint_init.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
     metric_state = MetricState(
         mask_hdiff=diffusion_savepoint_init.mask_diff(),
@@ -257,6 +260,14 @@ def test_diffusion_init(
         zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
         zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
         zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
+        coeff_gradekin=None,
+        wgtfac_e=None,
+        ddqz_z_full_e=None,
+        ddqz_z_half=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
 
     diffusion = Diffusion()
@@ -379,6 +390,9 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=savepoint.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
     metric_state = MetricState(
         mask_hdiff=savepoint.mask_diff(),
@@ -387,6 +401,14 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         zd_intcoef=savepoint.zd_intcoef(),
         zd_vertidx=savepoint.zd_vertoffset(),
         zd_diffcoef=savepoint.zd_diffcoef(),
+        coeff_gradekin=None,
+        wgtfac_e=None,
+        ddqz_z_full_e=None,
+        ddqz_z_half=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
     diffusion = Diffusion()
     diffusion.init(
@@ -424,6 +446,9 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=diffusion_savepoint_init.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
     metric_state = MetricState(
         mask_hdiff=diffusion_savepoint_init.mask_diff(),
@@ -432,6 +457,14 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
         zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
         zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
+        coeff_gradekin=None,
+        wgtfac_e=None,
+        ddqz_z_full_e=None,
+        ddqz_z_half=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
 
     diffusion = Diffusion()
@@ -531,6 +564,9 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=diffusion_savepoint_init.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
     metric_state = MetricState(
         mask_hdiff=diffusion_savepoint_init.mask_diff(),
@@ -539,12 +575,25 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
         zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
         zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
         zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
+        coeff_gradekin=None,
+        wgtfac_e=None,
+        ddqz_z_full_e=None,
+        ddqz_z_half=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
     diagnostic_state = DiagnosticState(
         hdef_ic=diffusion_savepoint_init.hdef_ic(),
         div_ic=diffusion_savepoint_init.div_ic(),
         dwdx=diffusion_savepoint_init.dwdx(),
         dwdy=diffusion_savepoint_init.dwdy(),
+        vt=None,
+        vn_ie=None,
+        w_concorr_c=None,
+        ddt_w_adv_pc=None,
+        ddt_vn_apc_pc=None,
     )
     prognostic_state = PrognosticState(
         w=diffusion_savepoint_init.w(),
