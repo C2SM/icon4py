@@ -19,7 +19,6 @@ import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
-from icon4py.bindings.utils import format_fortran_code
 from icon4py.liskov.codegen.exceptions import UndeclaredFieldError
 from icon4py.liskov.codegen.interface import (
     CodeGenInput,
@@ -55,8 +54,8 @@ def generate_fortran_code(
     """
     parent = parent_node(**kwargs)
     source = code_generator.apply(parent)
-    formatted_source = format_fortran_code(source)
-    return formatted_source
+    # formatted_source = format_fortran_code(source) # todo: temporarily disabled
+    return source
 
 
 class BoundsFields(eve.Node):
