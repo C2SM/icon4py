@@ -18,7 +18,14 @@ from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
-from icon4py.common.dimension import CellDim, ECDim, EdgeDim, KDim, VertexDim
+from icon4py.common.dimension import (
+    CellDim,
+    ECDim,
+    ECVDim,
+    EdgeDim,
+    KDim,
+    VertexDim,
+)
 from icon4py.state_utils.horizontal import HorizontalMeshSize
 
 
@@ -105,7 +112,7 @@ class IconGrid:
     @builder
     def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
         self.connectivities.update(
-            {d.value.lower(): k for d, k in connectivity.items()}
+            {d.value.lower(): k.astype(int) for d, k in connectivity.items()}
         )
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
@@ -171,14 +178,19 @@ class IconGrid:
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
 
     def get_e2c2v_connectivity(self):
-        return self.get_e2v_connectivity()
-
-    def get_e2c2v_size(self):
-        self.connectivities["e2v"].shape[1]
+        table = self.connectivities["e2c2v"]
+        return NeighborTableOffsetProvider(table, EdgeDim, VertexDim, table.shape[1])
 
     def get_v2e_connectivity(self):
         table = self.connectivities["v2e"]
         return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
+
+    def get_e2ecv_connectivity(self):
+        old_shape = self.connectivities["e2c2v"].shape
+        v2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return NeighborTableOffsetProvider(
+            v2ecv_table, EdgeDim, ECVDim, v2ecv_table.shape[1]
+        )
 
     def get_e2c2e_connectivity(self):
         table = self.connectivities["e2c2e"]
@@ -198,10 +210,12 @@ class VerticalModelParams:
             vct_a:  field containing the physical heights of the k level
             rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
         """
-        self.rayleigh_damping_height = rayleigh_damping_height
+        self._rayleigh_damping_height = rayleigh_damping_height
         self._vct_a = vct_a
         self._index_of_damping_height = int32(
-            np.argmax(np.where(np.asarray(self._vct_a) >= self.rayleigh_damping_height))
+            np.argmax(
+                np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height)
+            )
         )
         self._nflatlev = 1  # according to mo_init_vgrid.f90 line 329
 
@@ -214,9 +228,9 @@ class VerticalModelParams:
         return self._vct_a
 
     @property
-    def _rayleigh_damping_height(self) -> float:
-        return self.rayleigh_damping_height
+    def rayleigh_damping_height(self):
+        return self._rayleigh_damping_height
 
     @property
-    def _nflatlev(self) -> float:
-        return self.nflatlev
+    def nflatlev(self) -> float:
+        return self._nflatlev

@@ -6,3 +6,4 @@
 ./testutils
 ./atm_dyn_iconam
 ./py2f
+./liskov

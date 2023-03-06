@@ -1,5 +1,4 @@
 # VCS
-#-e git+https://github.com/tehrengruber/gt4py.git@2a9dcb0367a1ec1ef6d78951358d700424867b07#egg=gt4py-functional
 -e git+https://github.com/tehrengruber/gt4py.git@reduce_foast_lowering_complexity#egg=gt4py
 git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
 
@@ -15,6 +14,7 @@ flake8-mutable>=1.2.0
 flake8-rst-docstrings>=0.0.14
 isort~=5.10
 mypy>=0.942
+typing-extensions>=4.5
 pre-commit~=2.15
 pytest>=6.1
 pytest-cache>=1.0

@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Optional
 
-from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field
 
 import icon4py.velocity.velocity_advection_program as velocity_prog
@@ -94,7 +93,7 @@ from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState
 from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import _allocate, set_zero_w_k, zero_field
+from icon4py.state_utils.utils import _allocate, set_zero_w_k
 from icon4py.velocity.z_fields import ZFields
 
 

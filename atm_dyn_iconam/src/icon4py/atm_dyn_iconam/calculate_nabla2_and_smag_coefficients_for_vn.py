@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, maximum, minimum, sqrt
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import (
     E2C2V,
@@ -135,7 +136,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     return kh_smag_e, kh_smag_ec, z_nabla2_e
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[KDim], float],
     tangent_orientation: Field[[EdgeDim], float],

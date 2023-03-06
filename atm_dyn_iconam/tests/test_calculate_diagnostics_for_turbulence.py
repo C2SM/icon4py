@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulance import (
-    calculate_diagnostics_for_turbulance,
+from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
+    calculate_diagnostics_for_turbulence,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import random_field, zero_field
 
 
-def calculate_diagnostics_for_turbulance_numpy(
+def calculate_diagnostics_for_turbulence_numpy(
     div: np.array,
     k_hc: np.array,
     wgtfac_c: np.array,
@@ -33,7 +33,7 @@ def calculate_diagnostics_for_turbulance_numpy(
     return div_ic, hdef_ic
 
 
-def test_calculate_diagnostics_for_turbulance():
+def test_calculate_diagnostics_for_turbulence():
     mesh = SimpleMesh()
 
     wgtfac_c = random_field(mesh, CellDim, KDim)
@@ -43,13 +43,13 @@ def test_calculate_diagnostics_for_turbulance():
     div_ic = zero_field(mesh, CellDim, KDim)
     hdef_ic = zero_field(mesh, CellDim, KDim)
 
-    div_ref, kh_c_ref = calculate_diagnostics_for_turbulance_numpy(
+    div_ref, kh_c_ref = calculate_diagnostics_for_turbulence_numpy(
         np.asarray(div),
         np.asarray(kh_c),
         np.asarray(wgtfac_c),
     )
 
-    calculate_diagnostics_for_turbulance(
+    calculate_diagnostics_for_turbulence(
         div,
         kh_c,
         wgtfac_c,

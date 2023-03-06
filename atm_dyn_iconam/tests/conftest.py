@@ -24,6 +24,7 @@ from icon4py.common.dimension import (
     CellDim,
     E2C2EDim,
     E2C2EODim,
+    E2C2VDim,
     E2CDim,
     E2VDim,
     EdgeDim,
@@ -155,7 +156,6 @@ def icon_grid(data_provider):
     different time steps.
     """
     sp = data_provider.from_savepoint_grid()
-
     sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
 
     cell_starts = sp.cells_start_index()
@@ -196,7 +196,7 @@ def icon_grid(data_provider):
                 E2C2EODim: e2c2e0,
             }
         )
-        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e()})
+        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e(), E2C2VDim: sp.e2c2v()})
     )
     return grid
 
