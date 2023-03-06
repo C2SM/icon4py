@@ -155,8 +155,8 @@ class VelocityAdvection:
         self.z_w_con_c = _allocate(CellDim, KDim, mesh=self.grid)
         self.zeta = _allocate(VertexDim, KDim, mesh=self.grid)
         self.z_w_con_c_full = _allocate(CellDim, KDim, mesh=self.grid)
-        self.cfl_clipping = _allocate(CellDim, KDim, mesh=self.grid)
-        self.pre_levelmask = _allocate(CellDim, KDim, mesh=self.grid)
+        self.cfl_clipping = _allocate(CellDim, KDim, mesh=self.grid, dtype=bool)
+        self.pre_levelmask = _allocate(CellDim, KDim, mesh=self.grid, dtype=bool)
         self.levelmask = _allocate(KDim, mesh=self.grid, dtype=bool)
         self.vcfl = _allocate(CellDim, KDim, mesh=self.grid)
 
