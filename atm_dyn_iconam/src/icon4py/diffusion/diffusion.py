@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import logging
 # flake8: noqa
 
 import math
@@ -138,7 +138,6 @@ class DiffusionConfig:
         self.apply_to_vertical_wind: bool = hdiff_w
         """
         If True, apply diffusion on the vertical wind field
-
 
         Called `lhdiff_w` in in mo_diffusion_nml.f90
         """
@@ -386,6 +385,7 @@ class Diffusion:
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
         self.nudgezone_diff: Optional[float] = None
+        self.log = logging.getLogger(__name__)
 
     def init(
         self,
@@ -566,7 +566,7 @@ class Diffusion:
                 smag_offset=self.smag_offset,
             )
         else:
-
+            self.log.info("running diffusion_program")
             (
                 cell_startindex_nudging,
                 cell_endindex_local,
@@ -625,7 +625,7 @@ class Diffusion:
                 HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
                 HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
             )
-            print("diffusion program: start")
+            self.log.info("diffusion program: start")
             diff_prog.diffusion_run(
                 diagnostic_hdef_ic=diagnostic_state.hdef_ic,
                 diagnostic_div_ic=diagnostic_state.div_ic,
@@ -715,7 +715,7 @@ class Diffusion:
                     "Koff": KDim,
                 },
             )
-        print("diffusion program: end")
+        self.log.info("diffusion program: end")
 
     def _do_diffusion_step(
         self,
@@ -822,7 +822,7 @@ class Diffusion:
         # TODO: is this needed?, if not remove
         set_zero_v_k(self.u_vert, offset_provider={})
         set_zero_v_k(self.v_vert, offset_provider={})
-        print("rbf interpolation: start")
+        self.log.info("rbf interpolation: start")
         # # 1.  CALL rbf_vec_interpol_vertex
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
@@ -836,11 +836,11 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
         )
-        print("rbf interpolation: end")
+        self.log.info("rbf interpolation: end")
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
 
-        print("running calculate_nabla2_and_smag_coefficients_for_vn: start")
+        self.log.info("running calculate_nabla2_and_smag_coefficients_for_vn: start")
         calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
             tangent_orientation=tangent_orientation,
@@ -868,8 +868,8 @@ class Diffusion:
                 "E2C2VDim": E2C2VDim,
             },
         )
-        print("running calculate_nabla2_and_smag_coefficients_for_vn: end")
-        print("running fused stencil fused stencil 02_03: start")
+        self.log.info("running calculate_nabla2_and_smag_coefficients_for_vn: end")
+        self.log.info("running fused stencil fused stencil 02_03: start")
         fused_mo_nh_diffusion_stencil_02_03(
             kh_smag_ec=self.kh_smag_ec,
             vn=prognostic_state.vn,
@@ -889,12 +889,12 @@ class Diffusion:
                 "Koff": KDim,
             },
         )
-        print("running fused stencil fused stencil 02_03: end")
+        self.log.info("running fused stencil fused stencil 02_03: end")
         #
         # # 4.  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
         #
         # # 5.  CALL rbf_vec_interpol_vertex_wp
-        print("rbf interpolation: start")
+        self.log.info("rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -907,14 +907,14 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
         )
-        print("rbf interpolation: end")
+        self.log.info("rbf interpolation: end")
         # # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
         #
         # # 7.  mo_nh_diffusion_stencil_04, mo_nh_diffusion_stencil_05
         # # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
         #
 
-        print("running fused stencil 04_05_06: start")
+        self.log.info("running fused stencil 04_05_06: start")
         fused_mo_nh_diffusion_stencil_04_05_06(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
@@ -944,9 +944,9 @@ class Diffusion:
         )
         # # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
         # #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
-        print("running fused stencil 04_05_06: end")
+        self.log.info("running fused stencil 04_05_06: end")
 
-        print("running fused stencil 07_08_09_10: start")
+        self.log.info("running fused stencil 07_08_09_10: start")
         fused_mo_nh_diffusion_stencil_07_08_09_10(
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
@@ -976,14 +976,14 @@ class Diffusion:
                 "C2E2CODim": C2E2CODim,
             },
         )
-        print("running fused stencil 07_08_09_10: start")
+        self.log.info("running fused stencil 07_08_09_10: start")
         # # 8.  HALO EXCHANGE: CALL sync_patch_array
         # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
         # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
         #
         # # TODO check: kh_smag_e is an out field, should  not be calculated in init?
         #
-        print("running fused stencil 11_12: start")
+        self.log.info("running fused stencil 11_12: start")
         fused_mo_nh_diffusion_stencil_11_12(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
@@ -1000,8 +1000,8 @@ class Diffusion:
                 "E2CDim": E2CDim,
             },
         )
-        print("running fused stencil 11_12: end")
-        print("running fused stencil 13_14: start")
+        self.log.info("running fused stencil 11_12: end")
+        self.log.info("running fused stencil 13_14: start")
         fused_mo_nh_diffusion_stencil_13_14(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=inverse_dual_edge_length,
@@ -1019,8 +1019,8 @@ class Diffusion:
                 "C2EDim": C2EDim,
             },
         )
-        print("running fused stencil 13_14: end")
-        print("running fused stencil 15: start")
+        self.log.info("running fused stencil 13_14: end")
+        self.log.info("running fused stencil 15: start")
         # mo_nh_diffusion_stencil_15(
         #     self.metric_state.mask_hdiff,
         #     self.metric_state.zd_vertidx,
@@ -1040,8 +1040,8 @@ class Diffusion:
         #         "Koff": KDim,
         #     },
         # )
-        print("running fused stencil 15: end")
-        print("running fused stencil update_theta_and_exner: start")
+        self.log.info("running fused stencil 15: end")
+        self.log.info("running fused stencil update_theta_and_exner: start")
         update_theta_and_exner(
             z_temp=self.z_temp,
             area=cell_areas,
@@ -1054,5 +1054,5 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={},
         )
-        print("running fused stencil update_theta_and_exner: end")
+        self.log.info("running fused stencil update_theta_and_exner: end")
         # 10. HALO EXCHANGE sync_patch_array

@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import logging
 
 import numpy as np
 import serialbox as ser
@@ -49,13 +50,14 @@ class IconSavepoint:
     def __init__(self, sp: ser.Savepoint, ser: ser.Serializer):
         self.savepoint = sp
         self.serializer = ser
+        self.log = logging.getLogger((__name__))
 
-    def print_meta_info(self):
-        print(self.savepoint.metainfo)
+    def log_meta_info(self):
+        self.log.info(self.savepoint.metainfo)
 
     def _get_field(self, name, *dimensions, dtype=float):
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
-        print(f"{name} {buffer.shape}")
+        self.log.debug(f"{name} {buffer.shape}")
         return np_as_located_field(*dimensions)(buffer)
 
     def get_metadata(self, *names):
@@ -83,7 +85,7 @@ class IconSavepoint:
 
     def read_int(self, name: str):
         buffer = self.serializer.read(name, self.savepoint).astype(int)
-        print(f"{name} {buffer.shape}")
+        self.log.debug(f"{name} {buffer.shape}")
         return buffer
 
 
@@ -141,8 +143,8 @@ class IconGridSavePoint(IconSavepoint):
         # one off accounts for being exclusive [from:to)
         return self.serializer.read("e_end_index", self.savepoint)
 
-    def print_connectivity_info(name: str, ar: np.ndarray):
-        print(f" connectivity {name} {ar.shape}")
+    def print_connectivity_info(self, name: str, ar: np.ndarray):
+        self.log.debug(f" connectivity {name} {ar.shape}")
 
     def refin_ctrl(self, dim: Dimension):
         if dim == CellDim:
@@ -160,7 +162,7 @@ class IconGridSavePoint(IconSavepoint):
 
     def _get_connectiviy_array(self, name: str):
         connectivity = self.serializer.read(name, self.savepoint) - 1
-        print(f" connectivity {name} : {connectivity.shape}")
+        self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
     def c2e2c(self):
@@ -172,7 +174,7 @@ class IconGridSavePoint(IconSavepoint):
     def e2v(self):
         # array "e2v" is actually e2c2v
         v_ = self._get_connectiviy_array("e2v")[:, 0:2]
-        print(f"real e2v {v_.shape}")
+        self.log.debug(f"real e2v {v_.shape}")
         return v_
 
     def e2c2v(self):
@@ -408,11 +410,13 @@ class IconSerialDataProvider:
         self.serializer: ser.Serializer = None
         self.file_path: str = path
         self.fname = f"{fname_prefix}_rank{str(self.rank)}"
+        self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
+
 
     def _init_serializer(self, do_print: bool):
         if not self.fname:
-            print(" WARNING: no filename! closing serializer")
+            self.log.warning(" WARNING: no filename! closing serializer")
         self.serializer = ser.Serializer(
             ser.OpenModeKind.Read, self.file_path, self.fname
         )
@@ -420,8 +424,8 @@ class IconSerialDataProvider:
             self.print_info()
 
     def print_info(self):
-        print(f"SAVEPOINTS: {self.serializer.savepoint_list()}")
-        print(f"FIELDNAMES: {self.serializer.fieldnames()}")
+        self.log.info(f"SAVEPOINTS: {self.serializer.savepoint_list()}")
+        self.log.info(f"FIELDNAMES: {self.serializer.fieldnames()}")
 
     def from_savepoint_grid(self) -> IconGridSavePoint:
         savepoint = self.serializer.savepoint["icon-grid"].id[1].as_savepoint()

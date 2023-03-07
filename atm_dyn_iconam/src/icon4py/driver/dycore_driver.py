@@ -194,7 +194,7 @@ class Timeloop:
             self.cells.area,
         )
         for t in range(self.config.n_time_steps):
-            self.log.info(f"start timestep nr = {t}")
+            self.log.info(f"run timestep : {t}")
             self._timestep(diagnostic_state, prognostic_state)
 
 
