@@ -10,8 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
 from gt4py.next.program_processors.runners import gtfn_cpu
@@ -290,7 +288,7 @@ def velocity_advection_run(
         out=(local_cfl_clipping, local_pre_levelmask, local_vcfl, local_z_w_con_c),
         domain={
             CellDim: (4, cell_endindex_local_minus1),
-            # KDim: (max(3, nrdmax_startindex - 2), nlev - 3),
+            # KDim: (maximum(3, nrdmax_startindex - 2), nlev - 3),
             KDim: (3, nlev - 3),  # TODO: change back to line above
         },
     )
@@ -378,7 +376,7 @@ def velocity_advection_run(
         out=ddt_vn_adv,
         domain={
             EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
-            # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
+            # KDim: (maximum(3, nrdmax_startindex - 2), nlev - 4),
             KDim: (3, nlev - 4),  # TODO: change back to line above
         },
     )

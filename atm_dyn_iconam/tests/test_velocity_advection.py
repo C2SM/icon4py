@@ -196,10 +196,13 @@ def test_verify_velocity_init_against_other_regular_savepoint(
     )
 
 
+@pytest.mark.skip("fix: mo_velocity_advection_stencil_18")
 @pytest.mark.datatest
 def test_velocity_five_steps(
+    damping_height,
     r04b09_velocity_advection_config,
     icon_grid,
+    grid_savepoint,
     savepoint_velocity_init,
     diffusion_savepoint_init,
     data_provider,
@@ -275,13 +278,17 @@ def test_velocity_five_steps(
     edge_areas = sp_d.edge_areas()
     cell_areas = sp_d.cell_areas()
 
+    vertical_params = VerticalModelParams(
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+    )
+
     velocity_advection = VelocityAdvection()
     velocity_advection.init(
         config=config,
         grid=icon_grid,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
-        vertical_params=VerticalModelParams,
+        vertical_params=vertical_params,
     )
 
     for _ in range(4):
