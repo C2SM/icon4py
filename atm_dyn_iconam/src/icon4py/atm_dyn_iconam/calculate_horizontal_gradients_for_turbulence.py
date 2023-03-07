@@ -18,7 +18,7 @@ from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _calculate_horizontal_gradients_for_turbulance(
+def _calculate_horizontal_gradients_for_turbulence(
     w: Field[[CellDim, KDim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
@@ -29,13 +29,13 @@ def _calculate_horizontal_gradients_for_turbulance(
 
 
 @program
-def calculate_horizontal_gradients_for_turbulance(
+def calculate_horizontal_gradients_for_turbulence(
     w: Field[[CellDim, KDim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
 ):
-    _calculate_horizontal_gradients_for_turbulance(
+    _calculate_horizontal_gradients_for_turbulence(
         w, geofac_grg_x, geofac_grg_y, out=(dwdx, dwdy)
     )
