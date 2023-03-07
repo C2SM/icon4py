@@ -39,8 +39,10 @@ class IconConfig:
 
 # TODO move to io_utils?
 def read_config(experiment: Optional[str], n_time_steps: int) -> IconConfig:
-    def _default_run_config(n_time_steps):
-        return IconRunConfig(n_time_steps=n_time_steps)
+    def _default_run_config(n_steps: int):
+        if n_steps > 5:
+            raise NotImplementedError("only five dummy timesteps available")
+        return IconRunConfig(n_time_steps=n_steps)
 
     def mch_ch_r04b09_diffusion_config():
         return DiffusionConfig(
@@ -60,13 +62,13 @@ def read_config(experiment: Optional[str], n_time_steps: int) -> IconConfig:
     def _default_diffusion_config():
         return DiffusionConfig()
 
-    def _default_config(n_time_steps):
-        run_config = _default_run_config(n_time_steps)
+    def _default_config(n_steps):
+        run_config = _default_run_config(n_steps)
         return run_config, _default_diffusion_config(), AtmoNonHydroConfig()
 
-    def _mch_ch_r04b09_config(n_time_steps):
+    def _mch_ch_r04b09_config(n_steps):
         return (
-            IconRunConfig(n_time_steps=n_time_steps, dtime=10.0),
+            IconRunConfig(n_time_steps=n_steps, dtime=10.0),
             mch_ch_r04b09_diffusion_config(),
             AtmoNonHydroConfig(),
         )

@@ -20,9 +20,10 @@ from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.prognostic_state import PrognosticState
 from icon4py.diffusion.utils import copy_diagnostic_and_prognostics
-from icon4py.icon_configuration import IconRunConfig, read_config
-from icon4py.io_utils import (
+from icon4py.driver.icon_configuration import IconRunConfig, read_config
+from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,
+    configure_logging,
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
@@ -83,6 +84,21 @@ class DummyAtmoNonHydro:
 
 
 def initialize(n_time_steps, file_path: str = "."):
+    """
+    Inititalize the driver run.
+
+    "reads" in
+        - configuration
+
+        - grid information
+
+        - (serialized) input fields, initial
+
+     Returns:
+         tl: configured timeloop,
+         prognostic_state: initial state fro prognostic and diagnostic variables
+         diagnostic_state:
+    """
     config = read_config("mch_ch_r04b09", n_time_steps=n_time_steps)
     icon_grid = read_icon_grid(file_path)
 
@@ -161,7 +177,7 @@ class Timeloop:
         prognostic_state: PrognosticState,
     ):
         self.log.info(
-            "starting time loop for dtime={dtime} n_timesteps={self.config.n_time_steps}"
+            f"starting time loop for dtime={self.config.dtime} n_timesteps={self.config.n_time_steps}"
         )
 
         self.diffusion.initial_step(
@@ -177,16 +193,24 @@ class Timeloop:
             self.edges.edge_areas,
             self.cells.area,
         )
-        for _ in range(self.config.n_time_steps):
+        for t in range(self.config.n_time_steps):
+            self.log.info(f"start timestep nr = {t}")
             self._timestep(diagnostic_state, prognostic_state)
 
 
 @click.command()
 @click.argument("input_path")
+@click.option("--run_path", default="", help="folder for output")
 @click.option("--n_steps", default=5, help="number of time steps to run")
-def run(input_path, n_steps):
+def run(
+    input_path,
+    run_path,
+    n_steps,
+):
     """
     Run the driver.
+
+    usage: python driver/dycore_driver.py ../../tests/ser_icondata/mch_ch_r04b09_dsl/ser_data
 
     steps:
     1. initialize model:
@@ -202,14 +226,14 @@ def run(input_path, n_steps):
     2. run time loop
     3. collect output (not implemented)
     """
-    logging.basicConfig(
-        level=logging.INFO, format="%(asctime) - %(name) - %(level) :---- %(message)"
-    )
-    log = logging.getLogger(__name__)
+    # TODO error handling, timing
+
+    configure_logging(run_path)
+    log = logging.getLogger(__file__)
     log.info("Starting ICON dycore run")
     log.info(f"input args: input_path={input_path}, n_time_steps={n_steps}")
     timeloop, diagnostic_state, prognostic_state = initialize(n_steps, input_path)
-    log.info("dycore configured")
+    log.info("dycore configuring: DONE")
 
     timeloop(diagnostic_state, prognostic_state)
     log.info("ICON dycore:  DONE")
