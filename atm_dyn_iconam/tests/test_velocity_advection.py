@@ -93,7 +93,7 @@ def test_verify_velocity_init_against_first_regular_savepoint(
 ):
     config = r04b09_velocity_advection_config
     savepoint = savepoint_velocity_init
-    dtime = savepoint.get_metadata("dtime")["dtime"]
+    dtime = savepoint.get_metadata("dtime").get("dtime")
 
     interpolation_state = InterpolationState(
         e_bln_c_s=None,
@@ -142,13 +142,12 @@ def test_verify_velocity_init_against_first_regular_savepoint(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:10.000"])
 def test_verify_velocity_init_against_other_regular_savepoint(
     r04b09_velocity_advection_config, icon_grid, savepoint_velocity_init, damping_height
 ):
     config = r04b09_velocity_advection_config
     savepoint = savepoint_velocity_init
-    dtime = savepoint.get_metadata("dtime")["dtime"]
+    dtime = savepoint.get_metadata("dtime").get("dtime")
 
     interpolation_state = InterpolationState(
         e_bln_c_s=None,
@@ -206,11 +205,12 @@ def test_velocity_five_steps(
     diffusion_savepoint_init,
     data_provider,
     savepoint_velocity_exit,
-    step_date_exit="2021-06-20T12:00:10.000",
 ):
     sp = savepoint_velocity_init
     sp_d = data_provider.from_savepoint_grid()
     config = r04b09_velocity_advection_config
+    istep = sp.get_metadata("istep").get("istep")
+    vn_only = sp.get_metadata("vn_only").get("vn_only")
     dtime = sp.get_metadata("dtime").get("dtime")
     cfl_w_limit = sp.cfl_w_limit()
     scalfac_exdiff = sp.scalfac_exdiff()
@@ -292,6 +292,8 @@ def test_velocity_five_steps(
 
     for _ in range(4):
         velocity_advection.time_step(
+            istep=istep,
+            vn_only=vn_only,
             diagnostic_state=diagnostic_state,
             prognostic_state=prognostic_state,
             z_fields=z_fields,

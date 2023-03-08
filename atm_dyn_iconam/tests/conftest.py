@@ -114,14 +114,16 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, linit, step_date_init):
+def savepoint_velocity_init(data_provider, linit, step_date_init, istep, vn_only):
     """
     Load data from ICON savepoint at start of velocity_advection module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    return data_provider.from_savepoint_velocity_init(istep=1, date=step_date_init)
+    return data_provider.from_savepoint_velocity_init(
+        istep=istep, vn_only=vn_only, date=step_date_init
+    )
 
 
 @pytest.fixture
@@ -137,14 +139,16 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit):
+def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only):
     """
     Load data from ICON savepoint at exist of velocity_advection module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    return data_provider.from_save_point_velocity_exit(istep=1, date=step_date_exit)
+    return data_provider.from_savepoint_velocity_exit(
+        istep=istep, vn_only=vn_only, date=step_date_exit
+    )
 
 
 @pytest.fixture
@@ -156,7 +160,9 @@ def icon_grid(data_provider):
     different time steps.
     """
     sp = data_provider.from_savepoint_grid()
-    sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
+    sp_meta = sp.get_metadata(
+        "nproma", "nlev", "num_vert", "num_cells", "num_edges", "lvert_nest"
+    )
 
     cell_starts = sp.cells_start_index()
     cell_ends = sp.cells_end_index()
@@ -172,6 +178,7 @@ def icon_grid(data_provider):
             num_edges=sp_meta["nproma"],  # or rather "num_edges"
         ),
         VerticalMeshConfig(num_lev=sp_meta["nlev"]),
+        lvert_nest=sp_meta["lvert_nest"],
     )
 
     c2e2c = sp.c2e2c()
@@ -243,3 +250,13 @@ def r04b09_velocity_advection_config(setup_icon_data) -> NonHydroStaticConfig:
 @pytest.fixture
 def damping_height():
     return 12500
+
+
+@pytest.fixture
+def istep():
+    return 1
+
+
+@pytest.fixture
+def vn_only():
+    return False

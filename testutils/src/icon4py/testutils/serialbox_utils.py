@@ -420,10 +420,13 @@ class IconSerialDataProvider:
         )
         return IconInitSavepoint(savepoint, self.serializer)
 
-    def from_savepoint_velocity_init(self, istep: int, date: str) -> IconInitSavepoint:
+    def from_savepoint_velocity_init(
+        self, istep: int, vn_only: bool, date: str
+    ) -> IconInitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-velocity-tendencies"]
             .istep[istep]
+            .vn_only[vn_only]
             .date[date]
             .as_savepoint()
         )
@@ -440,10 +443,13 @@ class IconSerialDataProvider:
         )
         return IconExitSavepoint(savepoint, self.serializer)
 
-    def from_save_point_velocity_exit(self, istep: int, date: str) -> IconExitSavepoint:
+    def from_savepoint_velocity_exit(
+        self, istep: int, vn_only: bool, date: str
+    ) -> IconExitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-velocity-tendencies"]
             .istep[istep]
+            .vn_only[vn_only]
             .date[date]
             .as_savepoint()
         )
