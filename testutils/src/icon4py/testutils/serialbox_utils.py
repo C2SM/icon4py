@@ -413,7 +413,6 @@ class IconSerialDataProvider:
         self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
 
-
     def _init_serializer(self, do_print: bool):
         if not self.fname:
             self.log.warning(" WARNING: no filename! closing serializer")

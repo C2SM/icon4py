@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+from datetime import datetime
 from pathlib import Path
 
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
@@ -80,11 +81,14 @@ def read_static_fields(path=".", ser_type="sb"):
         raise NotImplementedError
 
 
-def configure_logging(run_path):
+def configure_logging(run_path: str, start_time):
     run_dir = (
         Path(run_path).absolute() if run_path else Path(__file__).absolute().parent
     )
-    logfile = run_dir.joinpath("dummy_driver.log")
+    run_dir.mkdir(exist_ok=True)
+    logfile = run_dir.joinpath(
+        f"dummy_dycore_driver_{datetime.isoformat(start_time)}.log"
+    )
     logfile.touch(exist_ok=True)
     logging.basicConfig(
         level=logging.DEBUG,
@@ -97,4 +101,5 @@ def configure_logging(run_path):
         "%(asctime)s %(filename)-20s : %(funcName)-20s:  %(levelname)-8s %(message)s"
     )
     console_handler.setFormatter(formatter)
+    console_handler.setLevel(logging.INFO)
     logging.getLogger("").addHandler(console_handler)

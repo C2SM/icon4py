@@ -12,8 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
 from datetime import datetime, timedelta
+from typing import Callable
 
 import click
+import pytz
+from devtools import Timer
 
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
@@ -83,56 +86,11 @@ class DummyAtmoNonHydro:
         )
 
 
-def initialize(n_time_steps, file_path: str = "."):
-    """
-    Inititalize the driver run.
-
-    "reads" in
-        - configuration
-
-        - grid information
-
-        - (serialized) input fields, initial
-
-     Returns:
-         tl: configured timeloop,
-         prognostic_state: initial state fro prognostic and diagnostic variables
-         diagnostic_state:
-    """
-    config = read_config("mch_ch_r04b09", n_time_steps=n_time_steps)
-    icon_grid = read_icon_grid(file_path)
-
-    (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(file_path)
-
-    (metric_state, interpolation_state) = read_static_fields(file_path)
-
-    diffusion_params = DiffusionParams(config.diffusion_config)
-    diffusion = Diffusion()
-    diffusion.init(
-        icon_grid,
-        config.diffusion_config,
-        diffusion_params,
-        vertical_geometry,
-        metric_state,
-        interpolation_state,
-    )
-
-    data_provider, diagnostic_state, prognostic_state = read_initial_state(file_path)
-
-    atmo_non_hydro = DummyAtmoNonHydro(data_provider)
-    atmo_non_hydro.init(config=config.dycore_config)
-
-    tl = Timeloop(
-        config=config.run_config,
-        diffusion=diffusion,
-        atmo_non_hydro=atmo_non_hydro,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
-    )
-    return tl, diagnostic_state, prognostic_state
-
-
 class Timeloop:
+    @classmethod
+    def name(cls):
+        return cls.__name__
+
     def __init__(
         self,
         config: IconRunConfig,
@@ -147,6 +105,9 @@ class Timeloop:
         self.edges = edge_geometry
         self.cells = cell_geometry
         self.log = logging.getLogger(__name__)
+
+    def _full_name(self, func: Callable):
+        return ":".join((self.__class__.__name__, func.__name__))
 
     def _timestep(
         self,
@@ -179,7 +140,7 @@ class Timeloop:
         self.log.info(
             f"starting time loop for dtime={self.config.dtime} n_timesteps={self.config.n_time_steps}"
         )
-
+        self.log.info("running initial step to diffuse fields before timeloop starts")
         self.diffusion.initial_step(
             diagnostic_state,
             prognostic_state,
@@ -193,9 +154,69 @@ class Timeloop:
             self.edges.edge_areas,
             self.cells.area,
         )
+        self.log.info(
+            f"starting real time loop for dtime={self.config.dtime} n_timesteps={self.config.n_time_steps}"
+        )
+        timer = Timer(self._full_name(self._timestep))
         for t in range(self.config.n_time_steps):
             self.log.info(f"run timestep : {t}")
+            timer.start()
             self._timestep(diagnostic_state, prognostic_state)
+            timer.capture()
+        timer.summary(True)
+
+
+def initialize(n_time_steps, file_path: str = "."):
+    """
+    Inititalize the driver run.
+
+    "reads" in
+        - configuration
+
+        - grid information
+
+        - (serialized) input fields, initial
+
+     Returns:
+         tl: configured timeloop,
+         prognostic_state: initial state fro prognostic and diagnostic variables
+         diagnostic_state:
+    """
+    log = logging.getLogger(__name__)
+    experiment_name = "mch_ch_r04b09_dsl"
+    log.info(f"reading configuration: experiment {experiment_name}")
+    config = read_config(experiment_name, n_time_steps=n_time_steps)
+    log.info("initializing the grid")
+    icon_grid = read_icon_grid(file_path)
+    log.info("reading input fields")
+    (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(file_path)
+    (metric_state, interpolation_state) = read_static_fields(file_path)
+
+    log.info("initializing dycore")
+    diffusion_params = DiffusionParams(config.diffusion_config)
+    diffusion = Diffusion(run_program=False)
+    diffusion.init(
+        icon_grid,
+        config.diffusion_config,
+        diffusion_params,
+        vertical_geometry,
+        metric_state,
+        interpolation_state,
+    )
+
+    data_provider, diagnostic_state, prognostic_state = read_initial_state(file_path)
+
+    atmo_non_hydro = DummyAtmoNonHydro(data_provider)
+    atmo_non_hydro.init(config=config.dycore_config)
+
+    tl = Timeloop(
+        config=config.run_config,
+        diffusion=diffusion,
+        atmo_non_hydro=atmo_non_hydro,
+        edge_geometry=edge_geometry,
+        cell_geometry=cell_geometry,
+    )
+    return tl, diagnostic_state, prognostic_state
 
 
 @click.command()
@@ -226,17 +247,18 @@ def run(
     2. run time loop
     3. collect output (not implemented)
     """
-    # TODO error handling, timing
-
-    configure_logging(run_path)
+    start_time = datetime.now().astimezone(pytz.UTC)
+    configure_logging(run_path, start_time)
     log = logging.getLogger(__file__)
-    log.info("Starting ICON dycore run")
+    log.info(f"Starting ICON dycore run: {datetime.isoformat(start_time)}")
     log.info(f"input args: input_path={input_path}, n_time_steps={n_steps}")
     timeloop, diagnostic_state, prognostic_state = initialize(n_steps, input_path)
     log.info("dycore configuring: DONE")
+    log.info("timeloop: START")
 
     timeloop(diagnostic_state, prognostic_state)
-    log.info("ICON dycore:  DONE")
+
+    log.info("timeloop:  DONE")
 
 
 if __name__ == "__main__":
