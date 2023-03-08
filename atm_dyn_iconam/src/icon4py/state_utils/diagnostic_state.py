@@ -10,12 +10,17 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from dataclasses import dataclass
 
+import numpy as np
 from gt4py.next.common import Field
+from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, KHalfDim
+
+
+def ntnd():
+    return 1
 
 
 @dataclass
@@ -43,4 +48,10 @@ class DiagnosticState:
         [CellDim, KHalfDim], float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s]
     ddt_w_adv_pc: Field[[CellDim, KDim], float]
-    ddt_vn_apc_pc: Field[[EdgeDim, KDim], float]
+    ddt_vn_apc_pc_before: Field[[EdgeDim, KDim], float]
+
+    @property
+    def ddt_vn_apc_pc(self) -> Field[[EdgeDim, KDim], float]:
+        return np_as_located_field(EdgeDim, KDim)(
+            np.asarray(self.ddt_vn_apc_pc_before)[:, ntnd() :]
+        )

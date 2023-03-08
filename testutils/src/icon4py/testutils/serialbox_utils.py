@@ -212,7 +212,7 @@ class IconInitSavepoint(IconSavepoint):
     def ddt_w_adv_pc(self):
         return self._get_field("ddt_w_adv_pc", CellDim, KDim)
 
-    def ddt_vn_apc_pc(self):
+    def ddt_vn_apc_pc_before(self):
         return self._get_field("ddt_vn_apc_pc", EdgeDim, KDim)
 
     def wgtfacq_e(self):

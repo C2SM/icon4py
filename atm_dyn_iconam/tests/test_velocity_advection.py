@@ -224,7 +224,7 @@ def test_velocity_five_steps(
         vn_ie=sp.vn_ie(),
         w_concorr_c=sp.w_concorr_c(),
         ddt_w_adv_pc=sp.ddt_w_adv_pc(),
-        ddt_vn_apc_pc=sp.ddt_vn_apc_pc(),
+        ddt_vn_apc_pc_before=sp.ddt_vn_apc_pc_before(),
     )
     prognostic_state = PrognosticState(
         w=diffusion_savepoint_init.w(),
