@@ -65,9 +65,10 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_16 import (
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
-    _mo_velocity_advection_stencil_18,
-)
+
+# from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
+#     _mo_velocity_advection_stencil_18,
+# )
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_19 import (
     _mo_velocity_advection_stencil_19,
 )
@@ -321,26 +322,26 @@ def velocity_advection_run(
             KDim: (1, nlev),
         },
     )
-    _mo_velocity_advection_stencil_18(
-        levelmask,
-        local_cfl_clipping,
-        owner_mask,
-        local_z_w_con_c,
-        ddqz_z_half,
-        area,
-        geofac_n2s,
-        w,
-        ddt_w_adv,
-        scalfac_exdiff,
-        cfl_w_limit,
-        dtime,
-        out=ddt_w_adv,
-        domain={
-            EdgeDim: (cell_startindex_nudging, cell_endindex_local),
-            # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
-            KDim: (3, nlev - 3),
-        },
-    )
+    # _mo_velocity_advection_stencil_18(
+    #     levelmask,
+    #     local_cfl_clipping,
+    #     owner_mask,
+    #     local_z_w_con_c,
+    #     ddqz_z_half,
+    #     area,
+    #     geofac_n2s,
+    #     w,
+    #     ddt_w_adv,
+    #     scalfac_exdiff,
+    #     cfl_w_limit,
+    #     dtime,
+    #     out=ddt_w_adv,
+    #     domain={
+    #         EdgeDim: (cell_startindex_nudging, cell_endindex_local),
+    #         # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
+    #         KDim: (3, nlev - 3),
+    #     },
+    # )
     _mo_velocity_advection_stencil_19(
         z_kin_hor_e,
         coeff_gradekin,

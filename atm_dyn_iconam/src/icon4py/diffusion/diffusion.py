@@ -498,8 +498,8 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = zero_field(self.grid, KDim)
-        smag_limit = zero_field(self.grid, KDim)
+        diff_multfac_vn = _allocate(KDim, mesh=self.grid)
+        smag_limit = _allocate(KDim, mesh=self.grid)
 
         setup_fields_for_initial_step(
             self.params.K4,
@@ -635,7 +635,7 @@ class Diffusion:
                 metric_theta_ref_mc=self.metric_state.theta_ref_mc,
                 metric_wgtfac_c=self.metric_state.wgtfac_c,
                 metric_mask_hdiff=self.metric_state.mask_hdiff,
-                metric_zd_vertidx=self.metric_state.zd_vertidx,
+                metric_zd_vertidx=self.metric_state.zd_vertoffset,
                 metric_zd_diffcoef=self.metric_state.zd_diffcoef,
                 metric_zd_intcoef=self.metric_state.zd_intcoef,
                 interpolation_e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -707,7 +707,7 @@ class Diffusion:
                     "E2C": self.grid.get_e2c_connectivity(),
                     "C2E2C": self.grid.get_c2e2c_connectivity(),
                     "C2E2CDim": C2E2CDim,
-                    "ECVDim": ECVDim,
+                    # "ECVDim": ECVDim,
                     "C2E2CODim": C2E2CODim,
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "Koff": KDim,

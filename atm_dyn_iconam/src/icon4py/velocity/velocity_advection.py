@@ -66,9 +66,10 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_16 import (
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_17 import (
     mo_velocity_advection_stencil_17,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
-    mo_velocity_advection_stencil_18,
-)
+
+# from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
+#     mo_velocity_advection_stencil_18,
+# )
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_19 import (
     mo_velocity_advection_stencil_19,
 )
@@ -306,8 +307,8 @@ class VelocityAdvection:
                     "C2E": self.grid.get_c2e_connectivity(),
                     "C2EDim": C2EDim,
                     "E2VDim": E2VDim,
-                    "C2E2CO": self.grid.get_c2e2co_connectivity(),
-                    "C2E2CODim": C2E2CODim,
+                    # "C2E2CO": self.grid.get_c2e2co_connectivity(),
+                    # "C2E2CODim": C2E2CODim,
                     "E2CDim": E2CDim,
                     "E2C2EO": self.grid.get_e2c2eo_connectivity(),
                     "E2C2EODim": E2C2EODim,
@@ -572,24 +573,24 @@ class VelocityAdvection:
             offset_provider={"C2E": self.grid.get_c2e_connectivity(), "C2EDim": C2EDim},
         )
 
-        mo_velocity_advection_stencil_18(
-            levelmask=self.levelmask,
-            cfl_clipping=self.cfl_clipping,
-            owner_mask=owner_mask,
-            z_w_con_c=self.z_w_con_c,
-            ddqz_z_half=self.metric_state.ddqz_z_half,
-            area=cell_areas,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            w=prognostic_state.w,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
-            scalfac_exdiff=scalfac_exdiff,
-            cfl_w_limit=cfl_w_limit,
-            dtime=dtime,
-            offset_provider={
-                "C2E2CO": self.grid.get_c2e2co_connectivity(),
-                "C2E2CODim": C2E2CODim,
-            },
-        )
+        # mo_velocity_advection_stencil_18(
+        #     levelmask=self.levelmask,
+        #     cfl_clipping=self.cfl_clipping,
+        #     owner_mask=owner_mask,
+        #     z_w_con_c=self.z_w_con_c,
+        #     ddqz_z_half=self.metric_state.ddqz_z_half,
+        #     area=cell_areas,
+        #     geofac_n2s=self.interpolation_state.geofac_n2s,
+        #     w=prognostic_state.w,
+        #     ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
+        #     scalfac_exdiff=scalfac_exdiff,
+        #     cfl_w_limit=cfl_w_limit,
+        #     dtime=dtime,
+        #     offset_provider={
+        #         "C2E2CO": self.grid.get_c2e2co_connectivity(),
+        #         "C2E2CODim": C2E2CODim,
+        #     },
+        # )
 
         mo_velocity_advection_stencil_19(
             z_kin_hor_e=z_fields.z_kin_hor_e,

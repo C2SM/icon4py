@@ -429,7 +429,7 @@ class IconSerialDataProvider:
         )
         return IconInitSavepoint(savepoint, self.serializer)
 
-    def from_save_point_diffusion_exit(
+    def from_savepoint_diffusion_exit(
         self, linit: bool, date: str
     ) -> IconExitSavepoint:
         savepoint = (

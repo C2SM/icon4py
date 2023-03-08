@@ -485,10 +485,10 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
-@pytest.mark.skip("fix: diffusion_stencil_15")
+# @pytest.mark.skip("fix: diffusion_stencil_15")
 @pytest.mark.parametrize("run_with_program", [True, False])
 @pytest.mark.datatest
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_run_diffusion_single_step(
     run_with_program,
     diffusion_savepoint_init,
@@ -604,6 +604,9 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=diffusion_savepoint_init.nudgecoeff_e(),
+        c_lin_e=None,
+        geofac_grdiv=None,
+        rbf_vec_coeff_e=None,
     )
     metric_state = MetricState(
         mask_hdiff=diffusion_savepoint_init.mask_diff(),
@@ -612,12 +615,26 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
         zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
         zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
         zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
+        coeff_gradekin=None,
+        ddqz_z_full_e=None,
+        wgtfac_e=None,
+        wgtfacq_e=None,
+        ddxn_z_full=None,
+        ddxt_z_full=None,
+        ddqz_z_half=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
     )
     diagnostic_state = DiagnosticState(
         hdef_ic=diffusion_savepoint_init.hdef_ic(),
         div_ic=diffusion_savepoint_init.div_ic(),
         dwdx=diffusion_savepoint_init.dwdx(),
         dwdy=diffusion_savepoint_init.dwdy(),
+        vt=None,
+        vn_ie=None,
+        w_concorr_c=None,
+        ddt_w_adv_pc=None,
+        ddt_vn_apc_pc=None,
     )
     prognostic_state = PrognosticState(
         w=diffusion_savepoint_init.w(),
@@ -657,7 +674,7 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
     )
 
 
-@pytest.mark.skip("fix: diffusion_stencil_15")
+# @pytest.mark.skip("fix: diffusion_stencil_15")
 @pytest.mark.datatest
 def test_diffusion_five_steps(
     damping_height,

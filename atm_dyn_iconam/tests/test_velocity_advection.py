@@ -196,7 +196,6 @@ def test_verify_velocity_init_against_other_regular_savepoint(
     )
 
 
-@pytest.mark.skip("fix: mo_velocity_advection_stencil_18")
 @pytest.mark.datatest
 def test_velocity_five_steps(
     damping_height,
