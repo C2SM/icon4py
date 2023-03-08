@@ -707,7 +707,7 @@ class Diffusion:
                     "E2C": self.grid.get_e2c_connectivity(),
                     "C2E2C": self.grid.get_c2e2c_connectivity(),
                     "C2E2CDim": C2E2CDim,
-                    # "ECVDim": ECVDim,
+                    "ECVDim": ECVDim,
                     "C2E2CODim": C2E2CODim,
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "Koff": KDim,

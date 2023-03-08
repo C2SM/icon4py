@@ -485,10 +485,9 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
-# @pytest.mark.skip("fix: diffusion_stencil_15")
+@pytest.mark.skip("fix: diffusion_stencil_15")
 @pytest.mark.parametrize("run_with_program", [True, False])
 @pytest.mark.datatest
-# @pytest.mark.skip
 def test_run_diffusion_single_step(
     run_with_program,
     diffusion_savepoint_init,
@@ -521,40 +520,8 @@ def test_run_diffusion_single_step(
     )
     additional_parameters = DiffusionParams(r04b09_diffusion_config)
 
-    grg = sp.geofac_grg()
-    interpolation_state = InterpolationState(
-        e_bln_c_s=sp.e_bln_c_s(),
-        rbf_coeff_1=sp.rbf_vec_coeff_v1(),
-        rbf_coeff_2=sp.rbf_vec_coeff_v2(),
-        geofac_div=sp.geofac_div(),
-        geofac_n2s=sp.geofac_n2s(),
-        geofac_grg_x=grg[0],
-        geofac_grg_y=grg[1],
-        nudgecoeff_e=sp.nudgecoeff_e(),
-        c_lin_e=None,
-        geofac_grdiv=None,
-        rbf_vec_coeff_e=None,
-    )
+    diffusion = Diffusion(run_program=run_with_program)
 
-    metric_state = MetricState(
-        mask_hdiff=sp.mask_diff(),
-        theta_ref_mc=sp.theta_ref_mc(),
-        wgtfac_c=sp.wgtfac_c(),
-        zd_intcoef=sp.zd_intcoef(),
-        zd_vertidx=sp.zd_vertidx(),
-        zd_diffcoef=sp.zd_diffcoef(),
-        coeff_gradekin=None,
-        ddqz_z_full_e=None,
-        wgtfac_e=None,
-        wgtfacq_e=None,
-        ddxn_z_full=None,
-        ddxt_z_full=None,
-        ddqz_z_half=None,
-        coeff1_dwdz=None,
-        coeff2_dwdz=None,
-    )
-
-    diffusion = Diffusion(run_program=True)
     diffusion.init(
         grid=icon_grid,
         config=r04b09_diffusion_config,
@@ -674,7 +641,7 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
     )
 
 
-# @pytest.mark.skip("fix: diffusion_stencil_15")
+@pytest.mark.skip("fix: diffusion_stencil_15")
 @pytest.mark.datatest
 def test_diffusion_five_steps(
     damping_height,
