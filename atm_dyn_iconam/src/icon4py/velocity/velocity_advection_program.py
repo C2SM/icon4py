@@ -176,11 +176,9 @@ def predictor_tendencies(
     wgtfac_e: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
     ddxn_z_full: Field[[EdgeDim, KDim], float],
     ddxt_z_full: Field[[EdgeDim, KDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfacq_e: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
     local_z_w_concorr_mc: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
@@ -199,6 +197,7 @@ def predictor_tendencies(
             KDim: (0, nlev),
         },
     )
+
     _mo_velocity_advection_stencil_02(
         wgtfac_e,
         vn,
@@ -231,6 +230,7 @@ def predictor_tendencies(
             KDim: (nflatlev_startindex, nlev),
         },
     )
+
     _mo_velocity_advection_stencil_10(
         local_z_w_concorr_mc,
         wgtfac_c,
@@ -243,14 +243,86 @@ def predictor_tendencies(
 
 
 @program(backend=gtfn_cpu.run_gtfn)
-def advector_tendencies(
+def advector_tendencies_extra_diffu(
     vn: Field[[EdgeDim, KDim], float],
+    w: Field[[CellDim, KDim], float],
+    inv_primal_edge_length: Field[[EdgeDim], float],
+    tangent_orientation: Field[[EdgeDim], float],
+    local_z_w_con_c: Field[[CellDim, KDim], float],
+    ddqz_z_half: Field[[CellDim, KDim], float],
+    area: Field[[CellDim], float],
+    geofac_n2s: Field[[CellDim, C2E2CODim], float],
+    local_cfl_clipping: Field[[CellDim, KDim], bool],
+    owner_mask: Field[[CellDim], bool],
+    cfl_w_limit: float,
+    dtime: float,
+    z_w_con_c_full: Field[[CellDim, KDim], float],
+    ddt_w_adv: Field[[CellDim, KDim], float],
+    levelmask: Field[[KDim], bool],
+    scalfac_exdiff: float,
+    zeta: Field[[VertexDim, KDim], float],
+    c_lin_e: Field[[EdgeDim, E2CDim], float],
+    ddqz_z_full_e: Field[[EdgeDim, KDim], float],
+    ddt_vn_adv: Field[[EdgeDim, KDim], float],
+    area_edge: Field[[EdgeDim], float],
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
+    cell_startindex_nudging: int,
+    cell_endindex_local: int,
+    edge_startindex_nudging_plus_one: int,
+    edge_endindex_local: int,
+    nlev: int,
+):
+    _mo_velocity_advection_stencil_18(
+        levelmask,
+        local_cfl_clipping,
+        owner_mask,
+        local_z_w_con_c,
+        ddqz_z_half,
+        area,
+        geofac_n2s,
+        w,
+        ddt_w_adv,
+        scalfac_exdiff,
+        cfl_w_limit,
+        dtime,
+        out=ddt_w_adv,
+        domain={
+            EdgeDim: (cell_startindex_nudging, cell_endindex_local),
+            # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
+            KDim: (3, nlev - 3),
+        },
+    )
+
+    _mo_velocity_advection_stencil_20(
+        levelmask,
+        c_lin_e,
+        z_w_con_c_full,
+        ddqz_z_full_e,
+        area_edge,
+        tangent_orientation,
+        inv_primal_edge_length,
+        zeta,
+        geofac_grdiv,
+        vn,
+        ddt_vn_adv,
+        cfl_w_limit,
+        scalfac_exdiff,
+        dtime,
+        out=ddt_vn_adv,
+        domain={
+            EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
+            # KDim: (maximum(3, nrdmax_startindex - 2), nlev - 4),
+            KDim: (3, nlev - 4),  # TODO: change back to line above
+        },
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def advector_tendencies(
     vt: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     w: Field[[CellDim, KDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    tangent_orientation: Field[[EdgeDim], float],
     local_z_v_grad_w: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
     local_z_ekinh: Field[[CellDim, KDim], float],
@@ -266,25 +338,17 @@ def advector_tendencies(
     coeff1_dwdz: Field[[CellDim, KDim], float],
     coeff2_dwdz: Field[[CellDim, KDim], float],
     ddt_w_adv: Field[[CellDim, KDim], float],
-    levelmask: Field[[KDim], bool],
-    scalfac_exdiff: float,
     coeff_gradekin: Field[[ECDim], float],
     zeta: Field[[VertexDim, KDim], float],
     f_e: Field[[EdgeDim], float],
     c_lin_e: Field[[EdgeDim, E2CDim], float],
     ddqz_z_full_e: Field[[EdgeDim, KDim], float],
     ddt_vn_adv: Field[[EdgeDim, KDim], float],
-    area_edge: Field[[EdgeDim], float],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    owner_mask: Field[[CellDim], bool],
-    area: Field[[CellDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
     cell_startindex_nudging: int,
     cell_endindex_local_minus1: int,
     cell_endindex_local: int,
     edge_startindex_nudging_plus_one: int,
     edge_endindex_local: int,
-    edge_endindex_local_minus1: int,
     nflatlev_startindex: int,
     nlev: int,
     nlevp1: int,
@@ -352,6 +416,7 @@ def advector_tendencies(
             KDim: (0, nlev),
         },
     )
+
     _mo_velocity_advection_stencil_16(
         local_z_w_con_c,
         w,
@@ -363,6 +428,7 @@ def advector_tendencies(
             KDim: (1, nlev),
         },
     )
+
     _mo_velocity_advection_stencil_17(
         e_bln_c_s,
         local_z_v_grad_w,
@@ -371,27 +437,6 @@ def advector_tendencies(
         domain={
             CellDim: (cell_startindex_nudging, cell_endindex_local),
             KDim: (1, nlev),
-        },
-    )
-
-    _mo_velocity_advection_stencil_18(
-        levelmask,
-        local_cfl_clipping,
-        owner_mask,
-        local_z_w_con_c,
-        ddqz_z_half,
-        area,
-        geofac_n2s,
-        w,
-        ddt_w_adv,
-        scalfac_exdiff,
-        cfl_w_limit,
-        dtime,
-        out=ddt_w_adv,
-        domain={
-            EdgeDim: (cell_startindex_nudging, cell_endindex_local),
-            # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
-            KDim: (3, nlev - 3),
         },
     )
 
@@ -410,28 +455,5 @@ def advector_tendencies(
         domain={
             EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
             KDim: (0, nlev),
-        },
-    )
-
-    _mo_velocity_advection_stencil_20(
-        levelmask,
-        c_lin_e,
-        z_w_con_c_full,
-        ddqz_z_full_e,
-        area_edge,
-        tangent_orientation,
-        inv_primal_edge_length,
-        zeta,
-        geofac_grdiv,
-        vn,
-        ddt_vn_adv,
-        cfl_w_limit,
-        scalfac_exdiff,
-        dtime,
-        out=ddt_vn_adv,
-        domain={
-            EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
-            # KDim: (maximum(3, nrdmax_startindex - 2), nlev - 4),
-            KDim: (3, nlev - 4),  # TODO: change back to line above
         },
     )
