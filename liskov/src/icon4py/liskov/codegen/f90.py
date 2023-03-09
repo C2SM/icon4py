@@ -370,18 +370,12 @@ class StartCreateStatement(eve.Node):
 class StartCreateStatementGenerator(TemplatedGenerator):
     StartCreateStatement = as_jinja(
         """
-        #ifdef __DSL_VERIFY
-        dsl_verify = .TRUE.
-        #else
-        dsl_verify = .FALSE.
-        #endif
-
         !$ACC DATA CREATE( &
         {%- for name in out_field_names %}
         !$ACC   {{ name }}_before {%- if not loop.last -%}, & {% else %} & {%- endif -%}
         {%- endfor %}
         !$ACC   ), &
-        !$ACC      IF ( i_am_accel_node .AND. dsl_verify)
+        !$ACC      IF ( i_am_accel_node )
         """
     )
 
