@@ -86,6 +86,11 @@ def test_velocity_init(
         assert velocity_advection.cfl_w_limit == 0.85
         assert velocity_advection.scalfac_exdiff == 0.0
 
+    if icon_grid.lvert_nest and icon_grid.n_shift() > 0:
+        assert velocity_advection.l_vert_nested == True
+    else:
+        assert velocity_advection.l_vert_nested == False
+
 
 @pytest.mark.datatest
 def test_verify_velocity_init_against_first_regular_savepoint(
@@ -302,6 +307,7 @@ def test_velocity_five_steps(
             dtime=dtime,
             tangent_orientation=orientation,
             cfl_w_limit=cfl_w_limit,
+            l_vert_nested=velocity_advection.l_vert_nested,
             scalfac_exdiff=scalfac_exdiff,
             cell_areas=cell_areas,
             owner_mask=sp_d.owner_mask(),

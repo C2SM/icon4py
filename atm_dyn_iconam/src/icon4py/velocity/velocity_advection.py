@@ -56,6 +56,7 @@ class VelocityAdvection:
 
         self.cfl_w_limit: Optional[float] = None
         self.scalfac_exdiff: Optional[float] = None
+        self.l_vert_nested: Optional[bool] = None
 
     def init(
         self,
@@ -79,6 +80,11 @@ class VelocityAdvection:
         else:
             self.cfl_w_limit = 0.85
             self.scalfac_exdiff = 0.0
+
+        if self.grid.lvert_nest and self.grid.n_shift() > 0:
+            self.l_vert_nested = True
+        else:
+            self.l_vert_nested = False
 
         self._initialized = True
 
@@ -112,6 +118,7 @@ class VelocityAdvection:
         tangent_orientation: Field[[EdgeDim], float],
         cfl_w_limit: float,
         scalfac_exdiff: float,
+        l_vert_nested: bool,
         cell_areas: Field[[CellDim], float],
         owner_mask: Field[[CellDim], bool],
         f_e: Field[[EdgeDim], float],
@@ -200,7 +207,7 @@ class VelocityAdvection:
                 },
             )
 
-            if not self.grid.lvert_nest:
+            if not l_vert_nested:
                 velocity_prog.predictor_tendencies_lvert_nest(
                     prognostic_state.vn,
                     diagnostic_state.vt,

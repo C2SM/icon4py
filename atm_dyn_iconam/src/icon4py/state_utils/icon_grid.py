@@ -129,6 +129,9 @@ class IconGrid:
     def lvert_nest(self):
         return self.config.bool_lvert_nest
 
+    def n_shift(self):
+        return self.config.n_shift_total if self.config else 0
+
     def n_lev(self):
         return self.config.num_k_levels if self.config else 0
 
