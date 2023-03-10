@@ -84,8 +84,8 @@ def test_hflx_diffusion_mo_stencil_03():
     mesh = SimpleMesh()
     z_tracer_max = random_field(mesh, CellDim, KDim)
     z_tracer_min = random_field(mesh, CellDim, KDim)
-    z_max = zero_field(mesh, CellDim, KDim)
-    z_min = zero_field(mesh, CellDim, KDim)
+    # z_max = zero_field(mesh, CellDim, KDim)
+    # z_min = zero_field(mesh, CellDim, KDim)
     beta_fct = 0.4
     r_beta_fct = 0.6
     z_mflx_anti_in = random_field(mesh, CellDim, KDim)
@@ -112,8 +112,8 @@ def test_hflx_diffusion_mo_stencil_03():
         z_tracer_min,
         beta_fct,
         r_beta_fct,
-        z_max,
-        z_min,
+        # z_max,
+        # z_min,
         z_mflx_anti_in,
         z_mflx_anti_out,
         z_tracer_new_low,
