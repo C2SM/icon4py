@@ -228,6 +228,7 @@ class IntegrationGenerator(Step):
             self.directives.StartCreate.startln,
             self.directives.StartCreate.endln,
             stencils=self.directives.StartStencil,
+            extra_fields=self.directives.StartCreate.extra_fields,
         )
 
         self._generate(

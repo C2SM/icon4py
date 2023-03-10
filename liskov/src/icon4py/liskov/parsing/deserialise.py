@@ -49,6 +49,7 @@ from icon4py.liskov.parsing.utils import (
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
 DEFAULT_DECLARE_SUFFIX = "before"
+DEFAULT_DATA_CREATE_EXTRA_FIELDS = None
 
 logger = setup_logger(__name__)
 
@@ -76,6 +77,12 @@ def _extract_boolean_kwarg(
                 f"Expected boolean string as value to keyword argument {arg_name} on line {directive.startln}. Got {a}"
             )
     return False
+
+
+def pop_item_from_dict(
+    dictionary: dict, key: str, default_value: Optional[str]
+) -> Optional[str]:
+    return dictionary.pop(key, default_value)
 
 
 class DirectiveInputFactory(Protocol):
@@ -118,12 +125,6 @@ class RequiredSingleUseDataFactory(DataFactoryBase):
 
 
 @dataclass
-class StartCreateDataFactory(RequiredSingleUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = ts.StartCreate
-    dtype: Type[StartCreateData] = StartCreateData
-
-
-@dataclass
 class EndCreateDataFactory(RequiredSingleUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = ts.EndCreate
     dtype: Type[EndCreateData] = EndCreateData
@@ -147,8 +148,30 @@ class EndProfileDataFactory(OptionalMultiUseDataFactory):
     dtype: Type[EndProfileData] = EndProfileData
 
 
-def pop_item_from_dict(dictionary: dict, key: str, default_value: str) -> str:
-    return dictionary.pop(key, default_value)
+@dataclass
+class StartCreateDataFactory(DataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = ts.StartCreate
+    dtype: Type[StartCreateData] = StartCreateData
+
+    def __call__(self, parsed: ts.ParsedDict) -> StartCreateData:
+        directive = extract_directive(parsed["directives"], self.directive_cls)[0]
+
+        named_args = parsed["content"]["StartCreate"][0]
+        extra_fields = pop_item_from_dict(
+            named_args, "extra_fields", DEFAULT_DATA_CREATE_EXTRA_FIELDS
+        )
+
+        match extra_fields:
+            case None:
+                pass
+            case "none":
+                extra_fields = None
+            case _:
+                extra_fields = extra_fields.split(",")
+
+        return self.dtype(
+            startln=directive.startln, endln=directive.endln, extra_fields=extra_fields
+        )
 
 
 @dataclass

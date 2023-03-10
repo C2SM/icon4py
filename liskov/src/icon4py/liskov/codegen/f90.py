@@ -352,6 +352,7 @@ class ImportsStatementGenerator(TemplatedGenerator):
 
 class StartCreateStatement(eve.Node):
     stencils: list[StartStencilData]
+    extra_fields: Optional[list[str]]
     out_field_names: list[str] = eve.datamodels.field(init=False)
 
     def __post_init__(self) -> None:  # type: ignore
@@ -371,6 +372,11 @@ class StartCreateStatementGenerator(TemplatedGenerator):
     StartCreateStatement = as_jinja(
         """
         !$ACC DATA CREATE( &
+        {%- if _this_node.extra_fields -%}
+        {%- for name in extra_fields %}
+        !$ACC   {{ name }} {%- if not loop.last -%}, & {% else %}, & {%- endif -%}
+        {%- endfor %}
+        {%- endif -%}
         {%- for name in out_field_names %}
         !$ACC   {{ name }}_before {%- if not loop.last -%}, & {% else %} & {%- endif -%}
         {%- endfor %}
