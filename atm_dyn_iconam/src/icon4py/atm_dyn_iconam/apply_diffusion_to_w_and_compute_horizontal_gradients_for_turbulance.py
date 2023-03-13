@@ -18,8 +18,8 @@ from icon4py.atm_dyn_iconam.apply_nabla2_to_w import _apply_nabla2_to_w
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
     _apply_nabla2_to_w_in_upper_damping_layer,
 )
-from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulance import (
-    _calculate_horizontal_gradients_for_turbulance,
+from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import (
+    _calculate_horizontal_gradients_for_turbulence,
 )
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import _calculate_nabla2_for_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
@@ -52,7 +52,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
 
     dwdx, dwdy = where(
         vert_idx > int32(0),
-        _calculate_horizontal_gradients_for_turbulance(
+        _calculate_horizontal_gradients_for_turbulence(
             w_old, geofac_grg_x, geofac_grg_y
         ),
         (dwdx, dwdy),
