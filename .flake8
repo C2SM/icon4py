@@ -3,25 +3,31 @@
 max-line-length = 100
 max-complexity = 15
 doctests = true
-ignore =
-    B008    # Do not perform function calls in argument defaults
-    D1      # Public code object needs docstring
-    DAR     # Disable dargling errors by default
-    E203    # Whitespace before ':' (black formatter breaks this sometimes)
-    E501    # Line too long (using Bugbear's B950 warning)
-    W503    # Line break occurred before a binary operator
+extend-ignore =
+    # Do not perform function calls in argument defaults
+    B008,
+    # Public code object needs docstring
+    D1,
+    # Disable dargling errors by default
+    DAR,
+    # Whitespace before ':' (black formatter breaks this sometimes)
+    E203,
+    # Line too long (using Bugbear's B950 warning)
+    E501,
+    # Line break occurred before a binary operator
+    W503
 
 exclude =
-    .eggs
-    .gt_cache
-    .ipynb_checkpoints
-    .tox
-    _local_
-    build
-    dist
-    docs
-    _external_src
-    tests/_disabled
+    .eggs,
+    .gt_cache,
+    .ipynb_checkpoints,
+    .tox,
+    _local_,
+    build,
+    dist,
+    docs,
+    _external_src,
+    tests/_disabled,
     setup.py
 
 rst-roles =
