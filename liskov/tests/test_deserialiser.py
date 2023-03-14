@@ -186,7 +186,7 @@ def test_data_factories_with_args(factory, target, mock_data):
         (
             {
                 "directives": [ts.StartCreate("START CREATE(extra_fields=none)", 5, 5)],
-                "content": {"StartCreate": [{"extra_fields": None}]},
+                "content": {"StartCreate": [{"extra_fields": "none"}]},
             },
             0,
         ),
@@ -195,7 +195,7 @@ def test_data_factories_with_args(factory, target, mock_data):
 def test_start_create_factory(mock_data, num_fields):
     factory = StartCreateDataFactory()
 
-    if mock_data["content"]["StartCreate"][0]["extra_fields"] is None:
+    if mock_data["content"]["StartCreate"][0]["extra_fields"] == "none":
         result = factory(mock_data)
         assert result.extra_fields is None
     else:

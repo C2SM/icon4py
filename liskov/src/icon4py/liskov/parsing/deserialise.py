@@ -49,7 +49,7 @@ from icon4py.liskov.parsing.utils import (
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
 DEFAULT_DECLARE_SUFFIX = "before"
-DEFAULT_DATA_CREATE_EXTRA_FIELDS = None
+DEFAULT_DATA_CREATE_EXTRA_FIELDS = "none"
 
 logger = setup_logger(__name__)
 
@@ -79,9 +79,7 @@ def _extract_boolean_kwarg(
     return False
 
 
-def pop_item_from_dict(
-    dictionary: dict, key: str, default_value: Optional[str]
-) -> Optional[str]:
+def pop_item_from_dict(dictionary: dict, key: str, default_value: str) -> str:
     return dictionary.pop(key, default_value)
 
 
@@ -157,17 +155,16 @@ class StartCreateDataFactory(DataFactoryBase):
         directive = extract_directive(parsed["directives"], self.directive_cls)[0]
 
         named_args = parsed["content"]["StartCreate"][0]
-        extra_fields = pop_item_from_dict(
+
+        extra_field_args = pop_item_from_dict(
             named_args, "extra_fields", DEFAULT_DATA_CREATE_EXTRA_FIELDS
         )
 
-        match extra_fields:
-            case None:
-                pass
+        match extra_field_args:
             case "none":
                 extra_fields = None
             case _:
-                extra_fields = extra_fields.split(",")
+                extra_fields = extra_field_args.split(",")
 
         return self.dtype(
             startln=directive.startln, endln=directive.endln, extra_fields=extra_fields
