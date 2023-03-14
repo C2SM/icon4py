@@ -51,14 +51,6 @@ from icon4py.liskov.parsing.exceptions import (
 @pytest.mark.parametrize(
     "factory_class, directive_type, startln, endln, string, expected",
     [
-        (
-            StartCreateDataFactory,
-            ts.StartCreate,
-            "START CREATE()",
-            1,
-            1,
-            StartCreateData,
-        ),
         (EndCreateDataFactory, ts.EndCreate, "END CREATE", 2, 2, EndCreateData),
         (ImportsDataFactory, ts.Imports, "IMPORTS", 3, 3, ImportsData),
         (EndIfDataFactory, ts.EndIf, "ENDIF", 4, 4, EndIfData),
@@ -170,6 +162,46 @@ def test_data_factories_with_args(factory, target, mock_data):
     factory_init = factory()
     result = factory_init(mock_data)
     assert all([isinstance(r, target) for r in result])
+
+
+@pytest.mark.parametrize(
+    "mock_data, num_fields",
+    [
+        (
+            {
+                "directives": [ts.StartCreate("START CREATE(extra_fields=foo)", 5, 5)],
+                "content": {"StartCreate": [{"extra_fields": "foo"}]},
+            },
+            1,
+        ),
+        (
+            {
+                "directives": [
+                    ts.StartCreate("START CREATE(extra_fields=foo,xyz)", 5, 5)
+                ],
+                "content": {"StartCreate": [{"extra_fields": "foo,xyz"}]},
+            },
+            2,
+        ),
+        (
+            {
+                "directives": [ts.StartCreate("START CREATE(extra_fields=none)", 5, 5)],
+                "content": {"StartCreate": [{"extra_fields": None}]},
+            },
+            0,
+        ),
+    ],
+)
+def test_start_create_factory(mock_data, num_fields):
+    factory = StartCreateDataFactory()
+
+    if mock_data["content"]["StartCreate"][0]["extra_fields"] is None:
+        result = factory(mock_data)
+        assert result.extra_fields is None
+    else:
+        result = factory(mock_data)
+        assert isinstance(result, StartCreateData)
+        assert len(result.extra_fields) == num_fields
 
 
 @pytest.mark.parametrize(

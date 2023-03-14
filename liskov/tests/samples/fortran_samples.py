@@ -29,7 +29,7 @@ NO_DIRECTIVES_STENCIL = """\
 SINGLE_STENCIL = """\
     !$DSL IMPORTS()
 
-    !$DSL START CREATE()
+    !$DSL START CREATE(extra_fields=none)
 
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; suffix=dsl)
 
@@ -72,7 +72,7 @@ SINGLE_STENCIL = """\
 MULTIPLE_STENCILS = """\
     !$DSL IMPORTS()
 
-    !$DSL START CREATE()
+    !$DSL START CREATE(extra_fields=none)
 
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; z_rho_e=nproma,p_patch%nlev,p_patch%nblks_c; &
     !$DSL         z_theta_v_e=nproma,p_patch%nlev,p_patch%nblks_c; z_nabla2_c=nproma,p_patch%nlev,p_patch%nblks_c; &
@@ -161,7 +161,7 @@ MULTIPLE_STENCILS = """\
 DIRECTIVES_SAMPLE = """\
 !$DSL IMPORTS()
 
-!$DSL START CREATE()
+!$DSL START CREATE(extra_fields=none)
 
 !$DSL DECLARE(vn=p_patch%vn; vn2=p_patch%vn2)
 
@@ -181,7 +181,7 @@ DIRECTIVES_SAMPLE = """\
 CONSECUTIVE_STENCIL = """\
     !$DSL IMPORTS()
 
-    !$DSL START CREATE()
+    !$DSL START CREATE(extra_fields=none)
 
     !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
 
@@ -215,7 +215,7 @@ CONSECUTIVE_STENCIL = """\
 FREE_FORM_STENCIL = """\
     !$DSL IMPORTS()
 
-    !$DSL START CREATE()
+    !$DSL START CREATE(extra_fields=none)
 
     !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
 

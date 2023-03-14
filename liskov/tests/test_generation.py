@@ -81,7 +81,9 @@ def serialised_directives():
         suffix="before",
     )
     imports_data = ImportsData(startln=7, endln=8)
-    start_create_data = StartCreateData(startln=9, endln=10)
+    start_create_data = StartCreateData(
+        extra_fields=["foo", "bar"], startln=9, endln=10
+    )
     end_create_data = EndCreateData(startln=11, endln=11)
     endif_data = EndIfData(startln=12, endln=12)
     start_profile_data = StartProfileData(startln=13, endln=13, name="test_stencil")
@@ -105,21 +107,17 @@ def serialised_directives():
 @pytest.fixture
 def expected_start_create_source():
     return """
-#ifdef __DSL_VERIFY
-        dsl_verify = .TRUE.
-#else
-        dsl_verify = .FALSE.
-#endif
-
-        !$ACC DATA CREATE( &
-        !$ACC   out1_before, &
-        !$ACC   out2_before, &
-        !$ACC   out3_before, &
-        !$ACC   out4_before, &
-        !$ACC   out5_before, &
-        !$ACC   out6_before &
-        !$ACC   ), &
-        !$ACC      IF ( i_am_accel_node .AND. dsl_verify)"""
+!$ACC DATA CREATE( &
+!$ACC   foo, &
+!$ACC   bar, &
+!$ACC   out1_before, &
+!$ACC   out2_before, &
+!$ACC   out3_before, &
+!$ACC   out4_before, &
+!$ACC   out5_before, &
+!$ACC   out6_before &
+!$ACC   ), &
+!$ACC      IF ( i_am_accel_node )"""
 
 
 @pytest.fixture

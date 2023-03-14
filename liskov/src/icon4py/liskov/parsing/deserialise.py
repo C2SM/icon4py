@@ -357,7 +357,6 @@ class StartStencilDataFactory(DataFactoryBase):
         """Create a list of FieldAssociation objects."""
         fields = []
         for field_name, association in field_args.items():
-
             # skipped as handled by _update_field_tolerances
             if any([field_name.endswith(tol) for tol in TOLERANCE_ARGS]):
                 continue
@@ -377,7 +376,6 @@ class StartStencilDataFactory(DataFactoryBase):
         """Set relative and absolute tolerance for a given field if set in the directives."""
         for field_name, association in named_args.items():
             for tol in TOLERANCE_ARGS:
-
                 _tol = f"_{tol}"
 
                 if field_name.endswith(_tol):

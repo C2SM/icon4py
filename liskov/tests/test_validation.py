@@ -75,7 +75,7 @@ def test_directive_syntax_validator(directive):
     "directive",
     [
         "!$DSL IMPORTS()",
-        "!$DSL START CREATE()",
+        "!$DSL START CREATE(extra_fields=none)",
     ],
 )
 def test_directive_semantics_validation_repeated_directives(
@@ -113,7 +113,7 @@ def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, direc
     "directive",
     [
         """!$DSL IMPORTS()""",
-        """!$DSL START CREATE()""",
+        """!$DSL START CREATE(extra_fields=none)""",
         """!$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; noprofile=True)""",
     ],
 )

@@ -58,7 +58,6 @@ class UpdateFieldsWithGt4PyStencils(Step):
         """Collect and return the ICON4PY stencil program with the given name."""
         err_counter = 0
         for pkg in self._STENCIL_PACKAGES:
-
             try:
                 module_name = f"icon4py.{pkg}.{stencil_name}"
                 module = importlib.import_module(module_name)

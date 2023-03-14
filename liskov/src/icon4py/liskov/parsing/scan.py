@@ -59,11 +59,9 @@ class DirectivesScanner(Step):
         """
         directives = []
         with self.input_filepath.open() as f:
-
             scanned_directives = []
             lines = f.readlines()
             for lnumber, string in enumerate(lines):
-
                 if ts.DIRECTIVE_IDENT in string:
                     stripped = string.strip()
                     eol = stripped[-1]

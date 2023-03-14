@@ -44,11 +44,11 @@ def test_parse_no_input():
             defaultdict(list, {"Imports": [{}]}),
         ),
         (
-            ts.StartCreate("START CREATE()", 2, 2),
+            ts.StartCreate("START CREATE(extra_fields=foo)", 2, 2),
             "START CREATE()",
             2,
             2,
-            defaultdict(list, {"StartCreate": [{}]}),
+            defaultdict(list, {"StartCreate": [{"extra_fields": "foo"}]}),
         ),
         (
             ts.StartStencil(
