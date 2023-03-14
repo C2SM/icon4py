@@ -43,22 +43,16 @@ class MeshConfig:
         self,
         horizontal_config: HorizontalMeshSize,
         vertical_config: VerticalMeshConfig,
-        lvert_nest: bool,
         limited_area=True,
     ):
         self._vertical = vertical_config
         self._n_shift_total = 0
         self._limited_area = limited_area
-        self._lvert_nest = lvert_nest
         self._horizontal = horizontal_config
 
     @property
     def limited_area(self):
         return self._limited_area
-
-    @property
-    def bool_lvert_nest(self):
-        return self._lvert_nest
 
     @property
     def num_k_levels(self):
@@ -125,9 +119,6 @@ class IconGrid:
     def limited_area(self):
         # TODO defined in mo_grid_nml.f90
         return self.config.limited_area
-
-    def lvert_nest(self):
-        return self.config.bool_lvert_nest
 
     def n_shift(self):
         return self.config.n_shift_total if self.config else 0

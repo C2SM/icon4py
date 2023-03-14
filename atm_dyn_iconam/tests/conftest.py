@@ -35,7 +35,6 @@ from icon4py.diffusion.diffusion import DiffusionConfig
 from icon4py.state_utils.horizontal import HorizontalMeshSize
 from icon4py.state_utils.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
-from icon4py.velocity.velocity_advection import NonHydroStaticConfig
 
 
 data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
@@ -114,7 +113,7 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, linit, step_date_init, istep, vn_only):
+def savepoint_velocity_init(data_provider, step_date_init, istep, vn_only, jstep):
     """
     Load data from ICON savepoint at start of velocity_advection module.
 
@@ -122,7 +121,7 @@ def savepoint_velocity_init(data_provider, linit, step_date_init, istep, vn_only
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.from_savepoint_velocity_init(
-        istep=istep, vn_only=vn_only, date=step_date_init
+        istep=istep, vn_only=vn_only, date=step_date_init, jstep=jstep
     )
 
 
@@ -139,7 +138,7 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only):
+def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only, jstep):
     """
     Load data from ICON savepoint at exist of velocity_advection module.
 
@@ -147,7 +146,7 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only):
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.from_savepoint_velocity_exit(
-        istep=istep, vn_only=vn_only, date=step_date_exit
+        istep=istep, vn_only=vn_only, date=step_date_exit, jstep=jstep
     )
 
 
@@ -160,9 +159,7 @@ def icon_grid(data_provider):
     different time steps.
     """
     sp = data_provider.from_savepoint_grid()
-    sp_meta = sp.get_metadata(
-        "nproma", "nlev", "num_vert", "num_cells", "num_edges", "lvert_nest"
-    )
+    sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
 
     cell_starts = sp.cells_start_index()
     cell_ends = sp.cells_end_index()
@@ -178,7 +175,6 @@ def icon_grid(data_provider):
             num_edges=sp_meta["nproma"],  # or rather "num_edges"
         ),
         VerticalMeshConfig(num_lev=sp_meta["nlev"]),
-        lvert_nest=sp_meta["lvert_nest"],
     )
 
     c2e2c = sp.c2e2c()
@@ -237,17 +233,6 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
 
 
 @pytest.fixture
-def r04b09_velocity_advection_config(setup_icon_data) -> NonHydroStaticConfig:
-    """
-    Create NonHydroStaticConfig matching MCH_CH_r04b09_dsl.
-
-    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
-    from the default.
-    """
-    return NonHydroStaticConfig(lextra_diffu=True)
-
-
-@pytest.fixture
 def damping_height():
     return 12500
 
@@ -255,6 +240,16 @@ def damping_height():
 @pytest.fixture
 def istep():
     return 1
+
+
+@pytest.fixture
+def jstep():
+    return 0
+
+
+@pytest.fixture
+def ntnd(savepoint_velocity_init):
+    return savepoint_velocity_init.get_metadata("ntnd").get("ntnd")
 
 
 @pytest.fixture

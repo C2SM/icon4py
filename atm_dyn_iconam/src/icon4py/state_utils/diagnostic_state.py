@@ -19,10 +19,6 @@ from gt4py.next.iterator.embedded import np_as_located_field
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, KHalfDim
 
 
-def ntnd():
-    return 1
-
-
 @dataclass
 class DiagnosticState:
     # fields for 3D elements in turbdiff
@@ -47,11 +43,18 @@ class DiagnosticState:
     w_concorr_c: Field[
         [CellDim, KHalfDim], float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s]
-    ddt_w_adv_pc: Field[[CellDim, KDim], float]
+    ddt_w_adv_pc_before: Field[[CellDim, KDim], float]
     ddt_vn_apc_pc_before: Field[[EdgeDim, KDim], float]
+    ntnd: float
+
+    @property
+    def ddt_w_adv_pc(self) -> Field[[CellDim, KDim], float]:
+        return np_as_located_field(CellDim, KDim)(
+            np.asarray(self.ddt_w_adv_pc_before)[:, self.ntnd :]
+        )
 
     @property
     def ddt_vn_apc_pc(self) -> Field[[EdgeDim, KDim], float]:
         return np_as_located_field(EdgeDim, KDim)(
-            np.asarray(self.ddt_vn_apc_pc_before)[:, ntnd() :]
+            np.asarray(self.ddt_vn_apc_pc_before)[:, self.ntnd :]
         )

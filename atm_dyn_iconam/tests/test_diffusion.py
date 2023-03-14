@@ -29,7 +29,7 @@ from icon4py.state_utils.utils import (
     set_zero_v_k,
     setup_fields_for_initial_step,
 )
-from icon4py.testutils.serialbox_utils import IconInitSavepoint
+from icon4py.testutils.serialbox_utils import IconDiffusionInitSavepoint
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
@@ -318,7 +318,7 @@ def test_diffusion_init(
 
 
 def _verify_init_values_against_savepoint(
-    savepoint: IconInitSavepoint, diffusion: Diffusion
+    savepoint: IconDiffusionInitSavepoint, diffusion: Diffusion
 ):
     dtime = savepoint.get_metadata("dtime")["dtime"]
 
@@ -513,7 +513,6 @@ def test_run_diffusion_single_step(
         prognostic_state,
     ) = _read_fields(diffusion_savepoint_init, grid_savepoint)
 
-    sp = diffusion_savepoint_init
     vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(
         vct_a=vct_a, rayleigh_damping_height=damping_height
@@ -602,6 +601,7 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
         w_concorr_c=None,
         ddt_w_adv_pc=None,
         ddt_vn_apc_pc=None,
+        ntnd=None,
     )
     prognostic_state = PrognosticState(
         w=diffusion_savepoint_init.w(),

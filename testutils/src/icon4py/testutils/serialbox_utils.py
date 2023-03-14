@@ -29,6 +29,7 @@ from icon4py.common.dimension import (
     ECDim,
     EdgeDim,
     KDim,
+    KHalfDim,
     V2EDim,
     VertexDim,
 )
@@ -153,38 +154,106 @@ class IconGridSavePoint(IconSavepoint):
 
     def c2e(self):
 
-        return self._get_connectiviy_array("c2e")
+        return self._get_connectivity_array("c2e")
 
-    def _get_connectiviy_array(self, name: str):
+    def _get_connectivity_array(self, name: str):
         connectivity = self.serializer.read(name, self.savepoint) - 1
         print(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
     def c2e2c(self):
-        return self._get_connectiviy_array("c2e2c")
+        return self._get_connectivity_array("c2e2c")
 
     def e2c2e(self):
         # subtract 1 to account for python being 0 based
         return self.serializer.read("e2c2e", self.savepoint) - 1
 
     def e2c(self):
-        return self._get_connectiviy_array("e2c")
+        return self._get_connectivity_array("e2c")
 
     def e2v(self):
         # array "e2v" is actually e2c2v
-        v_ = self._get_connectiviy_array("e2v")[:, 0:2]
+        v_ = self._get_connectivity_array("e2v")[:, 0:2]
         print(f"real e2v {v_.shape}")
         return v_
 
     def e2c2v(self):
         # array "e2v" is actually e2c2v
-        return self._get_connectiviy_array("e2v")
+        return self._get_connectivity_array("e2v")
 
     def v2e(self):
-        return self._get_connectiviy_array("v2e")
+        return self._get_connectivity_array("v2e")
 
 
-class IconInitSavepoint(IconSavepoint):
+class IconVelocityInitSavepoint(IconSavepoint):
+    def c_lin_e(self):
+        return self._get_field("c_lin_e", EdgeDim, E2CDim)
+
+    def cfl_w_limit(self) -> float:
+        return self.serializer.read("cfl_w_limit", self.savepoint)[0]
+
+    def coeff2_dwdz(self):
+        return self._get_field("coeff2_dwdz", CellDim, KDim)
+
+    def coeff1_dwdz(self):
+        return self._get_field("coeff1_dwdz", CellDim, KDim)
+
+    def ddqz_z_full_e(self):
+        return self._get_field("ddqz_z_full_e", EdgeDim, KDim)
+
+    def coeff_gradekin(self):
+        return self._get_field("coeff_gradekin", ECDim)
+
+    def ddqz_z_half(self):
+        return self._get_field("ddqz_z_half", CellDim, KDim)
+
+    def ddt_w_adv_pc_before(self):
+        return self._get_field("ddt_w_adv_pc", CellDim, KDim)
+
+    def ddt_vn_apc_pc_before(self):
+        return self._get_field("ddt_vn_apc_pc", EdgeDim, KDim)
+
+    def ddxt_z_full(self):
+        return self._get_field("ddxt_z_full", EdgeDim, KDim)
+
+    def ddxn_z_full(self):
+        return self._get_field("ddxn_z_full", EdgeDim, KDim)
+
+    def geofac_grdiv(self):
+        return self._get_field("geofac_grdiv", EdgeDim, E2C2EODim)
+
+    def rbf_vec_coeff_e(self):
+        return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
+
+    def scalfac_exdiff(self) -> float:
+        return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
+
+    def vn_ie(self):
+        return self._get_field("vn_ie", EdgeDim, KDim)
+
+    def vt(self):
+        return self._get_field("vt", EdgeDim, KDim)
+
+    def w_concorr_c(self):
+        return self._get_field("w_concorr_c", CellDim, KDim)
+
+    def wgtfac_e(self):
+        return self._get_field("wgtfac_e", EdgeDim, KDim)
+
+    def wgtfacq_e(self):
+        return self._get_field("wgtfacq_e", EdgeDim, KDim)
+
+    def z_w_concorr_me(self):
+        return self._get_field("z_w_concorr_me", EdgeDim, KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("z_kin_hor_e", EdgeDim, KDim)
+
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", EdgeDim, KDim)
+
+
+class IconDiffusionInitSavepoint(IconSavepoint):
     def hdef_ic(self):
         return self._get_field("hdef_ic", CellDim, KDim)
 
@@ -199,33 +268,6 @@ class IconInitSavepoint(IconSavepoint):
 
     def vn(self):
         return self._get_field("vn", EdgeDim, KDim)
-
-    def vn_ie(self):
-        return self._get_field("vn_ie", EdgeDim, KDim)
-
-    def vt(self):
-        return self._get_field("vt", EdgeDim, KDim)
-
-    def w_concorr_c(self):
-        return self._get_field("w_concorr_c", CellDim, KDim)
-
-    def ddt_w_adv_pc(self):
-        return self._get_field("ddt_w_adv_pc", CellDim, KDim)
-
-    def ddt_vn_apc_pc_before(self):
-        return self._get_field("ddt_vn_apc_pc", EdgeDim, KDim)
-
-    def wgtfacq_e(self):
-        return self._get_field("wgtfacq_e", EdgeDim, KDim)
-
-    def z_w_concorr_me(self):
-        return self._get_field("z_w_concorr_me", EdgeDim, KDim)
-
-    def z_kin_hor_e(self):
-        return self._get_field("z_kin_hor_e", EdgeDim, KDim)
-
-    def z_vt_ie(self):
-        return self._get_field("z_vt_ie", EdgeDim, KDim)
 
     def theta_v(self):
         return self._get_field("theta_v", CellDim, KDim)
@@ -242,35 +284,11 @@ class IconInitSavepoint(IconSavepoint):
     def wgtfac_c(self):
         return self._get_field("wgtfac_c", CellDim, KDim)
 
-    def wgtfac_e(self):
-        return self._get_field("wgtfac_e", EdgeDim, KDim)
-
     def mask_diff(self):
         return self._get_field("mask_hdiff", CellDim, KDim, dtype=int)
 
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)
-
-    def ddqz_z_half(self):
-        return self._get_field("ddqz_z_half", CellDim, KDim)
-
-    def ddxt_z_full(self):
-        return self._get_field("ddxt_z_full", EdgeDim, KDim)
-
-    def ddxn_z_full(self):
-        return self._get_field("ddxn_z_full", EdgeDim, KDim)
-
-    def ddqz_z_full_e(self):
-        return self._get_field("ddqz_z_full_e", EdgeDim, KDim)
-
-    def coeff_gradekin(self):
-        return self._get_field("coeff_gradekin", ECDim)
-
-    def coeff2_dwdz(self):
-        return self._get_field("coeff2_dwdz", CellDim, KDim)
-
-    def coeff1_dwdz(self):
-        return self._get_field("coeff1_dwdz", CellDim, KDim)
 
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
@@ -292,15 +310,6 @@ class IconInitSavepoint(IconSavepoint):
 
     def nudgecoeff_e(self):
         return self._get_field("nudgecoeff_e", EdgeDim)
-
-    def c_lin_e(self):
-        return self._get_field("c_lin_e", EdgeDim, E2CDim)
-
-    def geofac_grdiv(self):
-        return self._get_field("geofac_grdiv", EdgeDim, E2C2EODim)
-
-    def rbf_vec_coeff_e(self):
-        return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
 
     def zd_vertidx(self):
         # TODO fix this
@@ -333,12 +342,6 @@ class IconInitSavepoint(IconSavepoint):
     def fac_bdydiff_v(self) -> int:
         return self.serializer.read("fac_bdydiff_v", self.savepoint)[0]
 
-    def cfl_w_limit(self) -> float:
-        return self.serializer.read("cfl_w_limit", self.savepoint)[0]
-
-    def scalfac_exdiff(self) -> float:
-        return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
-
     def smag_offset(self):
         return self.serializer.read("smag_offset", self.savepoint)[0]
 
@@ -363,25 +366,25 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_exner", CellDim, KDim)
 
     def ddt_vn_apc_pc(self):
-        return self._get_field("x_ddt_vn_apc_pc", CellDim, KDim)
+        return self._get_field("x_ddt_vn_apc_pc", EdgeDim, KDim)
 
     def ddt_w_adv_pc(self):
         return self._get_field("x_ddt_w_adv_pc", CellDim, KDim)
 
     def vn_ie(self):
-        return self._get_field("x_vn_ie", CellDim, KDim)
+        return self._get_field("x_vn_ie", EdgeDim, KHalfDim)
 
     def vt(self):
-        return self._get_field("x_vt", CellDim, KDim)
+        return self._get_field("x_vt", EdgeDim, KDim)
 
     def z_kin_hor_e(self):
-        return self._get_field("x_z_kin_hor_e", CellDim, KDim)
+        return self._get_field("x_z_kin_hor_e", EdgeDim, KDim)
 
     def z_vt_ie(self):
-        return self._get_field("x_z_vt_ie", CellDim, KDim)
+        return self._get_field("x_z_vt_ie", EdgeDim, KDim)
 
     def z_w_concorr_me(self):
-        return self._get_field("x_z_w_concorr_me", CellDim, KDim)
+        return self._get_field("x_z_w_concorr_me", EdgeDim, KDim)
 
 
 class IconSerialDataProvider:
@@ -411,26 +414,27 @@ class IconSerialDataProvider:
 
     def from_savepoint_diffusion_init(
         self, linit: bool, date: str
-    ) -> IconInitSavepoint:
+    ) -> IconDiffusionInitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-diffusion-init"]
             .linit[linit]
             .date[date]
             .as_savepoint()
         )
-        return IconInitSavepoint(savepoint, self.serializer)
+        return IconDiffusionInitSavepoint(savepoint, self.serializer)
 
     def from_savepoint_velocity_init(
-        self, istep: int, vn_only: bool, date: str
-    ) -> IconInitSavepoint:
+        self, istep: int, vn_only: bool, date: str, jstep: int
+    ) -> IconVelocityInitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-velocity-tendencies"]
             .istep[istep]
             .vn_only[vn_only]
             .date[date]
+            .jstep[jstep]
             .as_savepoint()
         )
-        return IconInitSavepoint(savepoint, self.serializer)
+        return IconVelocityInitSavepoint(savepoint, self.serializer)
 
     def from_savepoint_diffusion_exit(
         self, linit: bool, date: str
@@ -444,13 +448,14 @@ class IconSerialDataProvider:
         return IconExitSavepoint(savepoint, self.serializer)
 
     def from_savepoint_velocity_exit(
-        self, istep: int, vn_only: bool, date: str
+        self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconExitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-velocity-tendencies"]
             .istep[istep]
             .vn_only[vn_only]
             .date[date]
+            .jstep[jstep]
             .as_savepoint()
         )
         return IconExitSavepoint(savepoint, self.serializer)
