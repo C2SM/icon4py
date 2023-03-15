@@ -94,7 +94,7 @@ class VelocityAdvection:
         z_fields: ZFields,
         dtime: float,
     ):
-        nflatlev = self.vertical_params._rayleigh_damping_height
+        nflatlev = self.vertical_params.nflatlev
         (
             edge_endindex_nudging_minus1,
             edge_endindex_local_minus2,
@@ -104,22 +104,10 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(EdgeDim) - 2,
         )
 
-        cell_startindex_nudging, _ = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            None,
-        )
-
         cell_endindex_local, cell_endindex_local_minus1 = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.local(CellDim),
             HorizontalMarkerIndex.local(CellDim) - 1,
-        )
-
-        edge_startindex_nudging_plus_one, _ = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.local(EdgeDim) + 1,
-            None,
         )
 
         self.cfl_w_limit = self.cfl_w_limit / dtime
@@ -158,7 +146,7 @@ class VelocityAdvection:
             self.grid.n_lev(),
             offset_provider={
                 "E2C2E": self.grid.get_e2c2e_connectivity(),
-                "E2C2EDim": E2C2EDim,  #
+                "E2C2EDim": E2C2EDim,
                 "C2E": self.grid.get_c2e_connectivity(),
                 "C2EDim": C2EDim,
                 "Koff": KDim,
@@ -182,12 +170,15 @@ class VelocityAdvection:
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
     ):
-        nflatlev = self.vertical_params._rayleigh_damping_height
+        nflatlev = self.vertical_params.nflatlev
 
-        cell_startindex_nudging, _ = self.grid.get_indices_from_to(
+        (
+            cell_startindex_nudging_minus1,
+            cell_startindex_nudging,
+        ) = self.grid.get_indices_from_to(
             CellDim,
+            HorizontalMarkerIndex.nudging(CellDim) - 1,
             HorizontalMarkerIndex.nudging(CellDim),
-            None,
         )
 
         cell_endindex_local, cell_endindex_local_minus1 = self.grid.get_indices_from_to(
@@ -205,10 +196,13 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(EdgeDim),
         )
 
-        edge_startindex_nudging_plus_one, _ = self.grid.get_indices_from_to(
+        (
+            edge_startindex_nudging_plus_one,
+            edge_startindex_nudging_plus_two,
+        ) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.local(EdgeDim) + 1,
-            None,
+            HorizontalMarkerIndex.local(EdgeDim) + 2,
         )
 
         self.cfl_w_limit = self.cfl_w_limit / dtime
@@ -276,22 +270,20 @@ class VelocityAdvection:
             },
         )
 
-        if not vn_only:
-            velocity_prog.advector_tendencies_vn_only(
-                diagnostic_state.vn_ie,
-                inv_dual_edge_length,
-                prognostic_state.w,
-                z_fields.z_vt_ie,
-                inv_primal_edge_length,
-                tangent_orientation,
-                self.z_w_v,
-                self.z_v_grad_w,
-                edge_endindex_local_minus1,
-                self.grid.n_lev(),
-                offset_provider={
-                    "E2C": self.grid.get_e2c_connectivity(),
-                    "E2V": self.grid.get_e2v_connectivity(),
-                    "E2VDim": E2VDim,
-                    "E2CDim": E2CDim,
-                },
-            )
+        # if not vn_only:
+        #     velocity_prog.advector_tendencies_vn_only(
+        #         diagnostic_state.vn_ie,
+        #         inv_dual_edge_length,
+        #         prognostic_state.w,
+        #         z_fields.z_vt_ie,
+        #         inv_primal_edge_length,
+        #         tangent_orientation,
+        #         self.z_w_v,
+        #         self.z_v_grad_w,
+        #         edge_endindex_local_minus1,
+        #         self.grid.n_lev(),
+        #         offset_provider={
+        #             "E2C": self.grid.get_e2c_connectivity(),
+        #             "E2V": self.grid.get_e2v_connectivity(),
+        #         },
+        #     )

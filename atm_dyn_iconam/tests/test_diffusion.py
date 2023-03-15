@@ -599,8 +599,8 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
         vt=None,
         vn_ie=None,
         w_concorr_c=None,
-        ddt_w_adv_pc=None,
-        ddt_vn_apc_pc=None,
+        ddt_w_adv_pc_before=None,
+        ddt_vn_apc_pc_before=None,
         ntnd=None,
     )
     prognostic_state = PrognosticState(

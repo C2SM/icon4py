@@ -41,7 +41,7 @@ def _mo_velocity_advection_stencil_19(
     z_w_con_c_full: Field[[CellDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
     ddqz_z_full_e: Field[[EdgeDim, KDim], float],
-):
+) -> Field[[EdgeDim, KDim], float]:
     ddt_vn_adv = -(
         (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1])) * z_kin_hor_e
         + (

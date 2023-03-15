@@ -180,9 +180,7 @@ def icon_grid(data_provider):
     c2e2c = sp.c2e2c()
     c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
     e2c2e = sp.e2c2e()
-    e2c2e0 = np.dstack(
-        (e2c2e, np.repeat([range(e2c2e.shape[0])], e2c2e.shape[1], axis=1).T)
-    )
+    e2c2e0 = np.column_stack((e2c2e, (np.asarray(range(e2c2e.shape[0])))))
     grid = (
         IconGrid()
         .with_config(config)

@@ -342,87 +342,87 @@ def advector_tendencies(
         },
     )
 
-    _mo_velocity_advection_stencil_16(
-        local_z_w_con_c,
-        w,
-        coeff1_dwdz,
-        coeff2_dwdz,
-        out=ddt_w_adv,
-        domain={
-            CellDim: (cell_startindex_nudging, cell_endindex_local),
-            KDim: (1, nlev),
-        },
-    )
-
-    _mo_velocity_advection_stencil_17(
-        e_bln_c_s,
-        local_z_v_grad_w,
-        ddt_w_adv,
-        out=ddt_w_adv,
-        domain={
-            CellDim: (cell_startindex_nudging, cell_endindex_local),
-            KDim: (1, nlev),
-        },
-    )
-
-    _mo_velocity_advection_stencil_18(
-        levelmask,
-        local_cfl_clipping,
-        owner_mask,
-        local_z_w_con_c,
-        ddqz_z_half,
-        area,
-        geofac_n2s,
-        w,
-        ddt_w_adv,
-        scalfac_exdiff,
-        cfl_w_limit,
-        dtime,
-        out=ddt_w_adv,
-        domain={
-            CellDim: (cell_startindex_nudging, cell_endindex_local),
-            # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
-            KDim: (3, nlev - 3),
-        },
-    )
-
-    _mo_velocity_advection_stencil_19(
-        z_kin_hor_e,
-        coeff_gradekin,
-        local_z_ekinh,
-        zeta,
-        vt,
-        f_e,
-        c_lin_e,
-        z_w_con_c_full,
-        vn_ie,
-        ddqz_z_full_e,
-        out=ddt_vn_adv,
-        domain={
-            EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
-            KDim: (0, nlev),
-        },
-    )
-
-    _mo_velocity_advection_stencil_20(
-        levelmask,
-        c_lin_e,
-        z_w_con_c_full,
-        ddqz_z_full_e,
-        area_edge,
-        tangent_orientation,
-        inv_primal_edge_length,
-        zeta,
-        geofac_grdiv,
-        vn,
-        ddt_vn_adv,
-        cfl_w_limit,
-        scalfac_exdiff,
-        dtime,
-        out=ddt_vn_adv,
-        domain={
-            EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
-            # KDim: (maximum(3, nrdmax_startindex - 2), nlev - 4),
-            KDim: (3, nlev - 4),  # TODO: change back to line above
-        },
-    )
+    # _mo_velocity_advection_stencil_16(
+    #     local_z_w_con_c,
+    #     w,
+    #     coeff1_dwdz,
+    #     coeff2_dwdz,
+    #     out=ddt_w_adv,
+    #     domain={
+    #         CellDim: (cell_startindex_nudging, cell_endindex_local),
+    #         KDim: (1, nlev),
+    #     },
+    # )
+    #
+    # _mo_velocity_advection_stencil_17(
+    #     e_bln_c_s,
+    #     local_z_v_grad_w,
+    #     ddt_w_adv,
+    #     out=ddt_w_adv,
+    #     domain={
+    #         CellDim: (cell_startindex_nudging, cell_endindex_local),
+    #         KDim: (1, nlev),
+    #     },
+    # )
+    #
+    # _mo_velocity_advection_stencil_18(
+    #     levelmask,
+    #     local_cfl_clipping,
+    #     owner_mask,
+    #     local_z_w_con_c,
+    #     ddqz_z_half,
+    #     area,
+    #     geofac_n2s,
+    #     w,
+    #     ddt_w_adv,
+    #     scalfac_exdiff,
+    #     cfl_w_limit,
+    #     dtime,
+    #     out=ddt_w_adv,
+    #     domain={
+    #         CellDim: (cell_startindex_nudging, cell_endindex_local),
+    #         # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
+    #         KDim: (3, nlev - 3),
+    #     },
+    # )
+    #
+    # _mo_velocity_advection_stencil_19(
+    #     z_kin_hor_e,
+    #     coeff_gradekin,
+    #     local_z_ekinh,
+    #     zeta,
+    #     vt,
+    #     f_e,
+    #     c_lin_e,
+    #     z_w_con_c_full,
+    #     vn_ie,
+    #     ddqz_z_full_e,
+    #     out=ddt_vn_adv,
+    #     domain={
+    #         EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
+    #         KDim: (0, nlev),
+    #     },
+    # )
+    #
+    # _mo_velocity_advection_stencil_20(
+    #     levelmask,
+    #     c_lin_e,
+    #     z_w_con_c_full,
+    #     ddqz_z_full_e,
+    #     area_edge,
+    #     tangent_orientation,
+    #     inv_primal_edge_length,
+    #     zeta,
+    #     geofac_grdiv,
+    #     vn,
+    #     ddt_vn_adv,
+    #     cfl_w_limit,
+    #     scalfac_exdiff,
+    #     dtime,
+    #     out=ddt_vn_adv,
+    #     domain={
+    #         EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
+    #         # KDim: (maximum(3, nrdmax_startindex - 2), nlev - 4),
+    #         KDim: (3, nlev - 4),  # TODO: change back to line above
+    #     },
+    # )

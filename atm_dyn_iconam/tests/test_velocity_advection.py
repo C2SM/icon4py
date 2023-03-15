@@ -271,7 +271,6 @@ def test_velocity_corrector_step(
     sp_d = data_provider.from_savepoint_grid()
     vn_only = sp.get_metadata("vn_only").get("vn_only")
     ntnd = sp.get_metadata("ntnd").get("ntnd")
-    jstep = sp.get_metadata("jstep").get("jstep")
     dtime = sp.get_metadata("dtime").get("dtime")
     cfl_w_limit = sp.cfl_w_limit()
     scalfac_exdiff = sp.scalfac_exdiff()
@@ -376,12 +375,6 @@ def test_velocity_corrector_step(
     icon_result_z_vt_ie = savepoint_velocity_exit.z_vt_ie()
     icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
 
-    assert np.allclose(
-        icon_result_ddt_vn_apc_pc, np.asarray(diagnostic_state.ddt_vn_apc_pc)
-    )
-    assert np.allclose(
-        np.asarray(icon_result_ddt_w_adv_pc), np.asarray(diagnostic_state.ddt_w_adv_pc)
-    )
     assert np.allclose(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
     )

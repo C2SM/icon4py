@@ -153,7 +153,6 @@ class IconGridSavePoint(IconSavepoint):
             return None
 
     def c2e(self):
-
         return self._get_connectivity_array("c2e")
 
     def _get_connectivity_array(self, name: str):
@@ -165,8 +164,7 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_connectivity_array("c2e2c")
 
     def e2c2e(self):
-        # subtract 1 to account for python being 0 based
-        return self.serializer.read("e2c2e", self.savepoint) - 1
+        return self._get_connectivity_array("e2c2e")[:, 0, :]
 
     def e2c(self):
         return self._get_connectivity_array("e2c")
@@ -223,7 +221,11 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self._get_field("geofac_grdiv", EdgeDim, E2C2EODim)
 
     def rbf_vec_coeff_e(self):
-        return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
+        buffer = np.squeeze(
+            self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
+        ).transpose()
+        return np_as_located_field(EdgeDim, E2C2EDim)(buffer)
+        # return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
 
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
