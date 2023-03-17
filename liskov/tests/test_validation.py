@@ -46,8 +46,9 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
     make_f90_tmpfile, stencil, directive
 ):
     fpath = make_f90_tmpfile(stencil + directive)
+    opath = fpath.with_suffix(".gen")
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, opath)
 
     with pytest.raises(UnbalancedStencilDirectiveError):
         parser(directives)
@@ -82,9 +83,10 @@ def test_directive_semantics_validation_repeated_directives(
     make_f90_tmpfile, directive
 ):
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
+    opath = fpath.with_suffix(".gen")
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, opath)
 
     with pytest.raises(
         RepeatedDirectiveError,
@@ -101,9 +103,10 @@ def test_directive_semantics_validation_repeated_directives(
 )
 def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, directive):
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
+    opath = fpath.with_suffix(".gen")
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, opath)
     parser(directives)
 
 
@@ -120,8 +123,9 @@ def test_directive_semantics_validation_required_directives(
 ):
     new = SINGLE_STENCIL.replace(directive, "")
     fpath = make_f90_tmpfile(content=new)
+    opath = fpath.with_suffix(".gen")
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, opath)
 
     with pytest.raises(
         RequiredDirectivesError,
