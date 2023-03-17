@@ -46,8 +46,9 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
     make_f90_tmpfile, stencil, directive
 ):
     fpath = make_f90_tmpfile(stencil + directive)
+    opath = fpath.with_suffix(".gen")
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath, fpath)
+    parser = DirectivesParser(fpath, opath)
 
     with pytest.raises(UnbalancedStencilDirectiveError):
         parser(directives)

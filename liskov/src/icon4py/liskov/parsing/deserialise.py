@@ -49,7 +49,6 @@ from icon4py.liskov.parsing.utils import (
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
 DEFAULT_DECLARE_SUFFIX = "before"
-DEFAULT_DATA_CREATE_EXTRA_FIELDS = None
 
 logger = setup_logger(__name__)
 
