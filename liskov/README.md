@@ -30,7 +30,7 @@ This directive generates the necessary `USE` statements to import the Fortran to
 
 #### `!$DSL START CREATE()`
 
-This directive generates an OpenACC `DATA CREATE` statement for all output fields used in each DSL (icon4py) stencil. The directive takes a required keyword argument to specify extra fields to include in the `DATA CREATE` statement. To not load any additional fields other than the output fields used in the stencil calls use `extra_fields=none`. Otherwise a comma-separated list of strings can be used such as `extra_fields=foo,bar`.
+This directive generates an OpenACC `DATA CREATE` statement for all output fields used in each DSL (icon4py) stencil. The directive also takes an **optional** keyword argument to specify extra fields to include in the `DATA CREATE` statement called `extra_fields`. Here you can specify a comma-separated list of strings which should be added to the `DATA CREATE` statement as follows `extra_fields=foo,bar`.
 
 #### `!$DSL END CREATE()`
 

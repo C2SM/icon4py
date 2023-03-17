@@ -50,7 +50,7 @@ def special_char():
             DIRECTIVES_SAMPLE,
             [
                 RawDirective("!$DSL IMPORTS()\n", 0, 0),
-                RawDirective("!$DSL START CREATE(extra_fields=none)\n", 2, 2),
+                RawDirective("!$DSL START CREATE()\n", 2, 2),
                 RawDirective("!$DSL DECLARE(vn=p_patch%vn; vn2=p_patch%vn2)\n", 4, 4),
                 RawDirective(
                     "!$DSL START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%vn; &\n!$DSL       a=a; b=c)\n",

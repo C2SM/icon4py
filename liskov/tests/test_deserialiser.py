@@ -165,14 +165,14 @@ def test_data_factories_with_args(factory, target, mock_data):
 
 
 @pytest.mark.parametrize(
-    "mock_data, num_fields",
+    "mock_data, extra_fields",
     [
         (
             {
                 "directives": [ts.StartCreate("START CREATE(extra_fields=foo)", 5, 5)],
                 "content": {"StartCreate": [{"extra_fields": "foo"}]},
             },
-            1,
+            ["foo"],
         ),
         (
             {
@@ -181,27 +181,22 @@ def test_data_factories_with_args(factory, target, mock_data):
                 ],
                 "content": {"StartCreate": [{"extra_fields": "foo,xyz"}]},
             },
-            2,
+            ["foo", "xyz"],
         ),
         (
             {
-                "directives": [ts.StartCreate("START CREATE(extra_fields=none)", 5, 5)],
-                "content": {"StartCreate": [{"extra_fields": "none"}]},
+                "directives": [ts.StartCreate("START CREATE()", 5, 5)],
+                "content": {"StartCreate": [None]},
             },
-            0,
+            None,
         ),
     ],
 )
-def test_start_create_factory(mock_data, num_fields):
+def test_start_create_factory(mock_data, extra_fields):
     factory = StartCreateDataFactory()
-
-    if mock_data["content"]["StartCreate"][0]["extra_fields"] == "none":
-        result = factory(mock_data)
-        assert result.extra_fields is None
-    else:
-        result = factory(mock_data)
-        assert isinstance(result, StartCreateData)
-        assert len(result.extra_fields) == num_fields
+    result = factory(mock_data)
+    assert isinstance(result, StartCreateData)
+    assert result.extra_fields == extra_fields
 
 
 @pytest.mark.parametrize(

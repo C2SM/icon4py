@@ -71,7 +71,7 @@ class IntegrationGenerator(Step):
         self,
         directives: DeserialisedDirectives,
         profile: bool,
-        metadata_gen: bool = False,
+        metadata_gen: bool,
     ):
         self.profile = profile
         self.directives = directives
@@ -123,8 +123,8 @@ class IntegrationGenerator(Step):
             self._generate(
                 MetadataStatement,
                 MetadataStatementGenerator,
-                0,
-                0,
+                startln=0,
+                endln=0,
                 metadata=CodeMetadata(),
             )
 

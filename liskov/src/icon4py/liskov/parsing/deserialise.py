@@ -49,7 +49,7 @@ from icon4py.liskov.parsing.utils import (
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
 DEFAULT_DECLARE_SUFFIX = "before"
-DEFAULT_DATA_CREATE_EXTRA_FIELDS = "none"
+DEFAULT_DATA_CREATE_EXTRA_FIELDS = None
 
 logger = setup_logger(__name__)
 
@@ -156,15 +156,9 @@ class StartCreateDataFactory(DataFactoryBase):
 
         named_args = parsed["content"]["StartCreate"][0]
 
-        extra_field_args = pop_item_from_dict(
-            named_args, "extra_fields", DEFAULT_DATA_CREATE_EXTRA_FIELDS
-        )
-
-        match extra_field_args:
-            case "none":
-                extra_fields = None
-            case _:
-                extra_fields = extra_field_args.split(",")
+        extra_fields = None
+        if named_args:
+            extra_fields = named_args["extra_fields"].split(",")
 
         return self.dtype(
             startln=directive.startln, endln=directive.endln, extra_fields=extra_fields
