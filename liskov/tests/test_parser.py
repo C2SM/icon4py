@@ -44,11 +44,11 @@ def test_parse_no_input():
             defaultdict(list, {"Imports": [{}]}),
         ),
         (
-            ts.StartCreate("START CREATE()", 2, 2),
+            ts.StartCreate("START CREATE(extra_fields=foo)", 2, 2),
             "START CREATE()",
             2,
             2,
-            defaultdict(list, {"StartCreate": [{}]}),
+            defaultdict(list, {"StartCreate": [{"extra_fields": "foo"}]}),
         ),
         (
             ts.StartStencil(
@@ -83,8 +83,9 @@ def test_parse_single_directive(directive, string, startln, endln, expected_cont
 )
 def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
     fpath = make_f90_tmpfile(content=stencil)
+    opath = fpath.with_suffix(".gen")
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, opath)
     parsed = parser(directives)
 
     directives = parsed["directives"]
@@ -99,8 +100,9 @@ def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
 
 def test_directive_parser_no_directives_found(make_f90_tmpfile):
     fpath = make_f90_tmpfile(content=NO_DIRECTIVES_STENCIL)
+    opath = fpath.with_suffix(".gen")
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, opath)
     with pytest.raises(SystemExit):
         parser(directives)
 
@@ -118,9 +120,10 @@ def test_unsupported_directives(
     directive,
 ):
     fpath = make_f90_tmpfile(content=stencil)
+    opath = fpath.with_suffix(".gen")
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
-    parser = DirectivesParser(fpath)
+    parser = DirectivesParser(fpath, opath)
 
     with pytest.raises(
         UnsupportedDirectiveError,

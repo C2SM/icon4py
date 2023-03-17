@@ -78,6 +78,10 @@ def _extract_boolean_kwarg(
     return False
 
 
+def pop_item_from_dict(dictionary: dict, key: str, default_value: str) -> str:
+    return dictionary.pop(key, default_value)
+
+
 class DirectiveInputFactory(Protocol):
     def __call__(
         self, parsed: ts.ParsedDict
@@ -118,12 +122,6 @@ class RequiredSingleUseDataFactory(DataFactoryBase):
 
 
 @dataclass
-class StartCreateDataFactory(RequiredSingleUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = ts.StartCreate
-    dtype: Type[StartCreateData] = StartCreateData
-
-
-@dataclass
 class EndCreateDataFactory(RequiredSingleUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = ts.EndCreate
     dtype: Type[EndCreateData] = EndCreateData
@@ -147,8 +145,23 @@ class EndProfileDataFactory(OptionalMultiUseDataFactory):
     dtype: Type[EndProfileData] = EndProfileData
 
 
-def pop_item_from_dict(dictionary: dict, key: str, default_value: str) -> str:
-    return dictionary.pop(key, default_value)
+@dataclass
+class StartCreateDataFactory(DataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = ts.StartCreate
+    dtype: Type[StartCreateData] = StartCreateData
+
+    def __call__(self, parsed: ts.ParsedDict) -> StartCreateData:
+        directive = extract_directive(parsed["directives"], self.directive_cls)[0]
+
+        named_args = parsed["content"]["StartCreate"][0]
+
+        extra_fields = None
+        if named_args:
+            extra_fields = named_args["extra_fields"].split(",")
+
+        return self.dtype(
+            startln=directive.startln, endln=directive.endln, extra_fields=extra_fields
+        )
 
 
 @dataclass
@@ -334,7 +347,6 @@ class StartStencilDataFactory(DataFactoryBase):
         """Create a list of FieldAssociation objects."""
         fields = []
         for field_name, association in field_args.items():
-
             # skipped as handled by _update_field_tolerances
             if any([field_name.endswith(tol) for tol in TOLERANCE_ARGS]):
                 continue
@@ -354,7 +366,6 @@ class StartStencilDataFactory(DataFactoryBase):
         """Set relative and absolute tolerance for a given field if set in the directives."""
         for field_name, association in named_args.items():
             for tol in TOLERANCE_ARGS:
-
                 _tol = f"_{tol}"
 
                 if field_name.endswith(_tol):
