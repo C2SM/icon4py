@@ -12,29 +12,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-class UnsupportedDirectiveError(Exception):
-    pass
-
-
-class DirectiveSyntaxError(Exception):
-    pass
-
-
-class RepeatedDirectiveError(Exception):
-    pass
-
-
-class RequiredDirectivesError(Exception):
-    pass
-
-
-class UnbalancedStencilDirectiveError(Exception):
-    pass
-
-
-class MissingBoundsError(Exception):
-    pass
-
-
-class MissingDirectiveArgumentError(Exception):
+class UndeclaredFieldError(Exception):
     pass
