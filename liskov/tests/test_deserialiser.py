@@ -16,7 +16,7 @@ import unittest
 import pytest
 
 import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.codegen.interface import (
+from icon4py.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     EndCreateData,

@@ -13,16 +13,14 @@
 
 import re
 from dataclasses import asdict
-from typing import Optional, Sequence, Type
+from typing import Optional
 
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
-from icon4py.bindings.utils import format_fortran_code
-from icon4py.liskov.codegen.exceptions import UndeclaredFieldError
-from icon4py.liskov.codegen.interface import (
-    CodeGenInput,
+from icon4py.liskov.codegen.integration.exceptions import UndeclaredFieldError
+from icon4py.liskov.codegen.integration.interface import (
     DeclareData,
     StartStencilData,
 )
@@ -31,32 +29,6 @@ from icon4py.liskov.external.metadata import CodeMetadata
 
 def enclose_in_parentheses(string: str) -> str:
     return f"({string})"
-
-
-def generate_fortran_code(
-    parent_node: Type[eve.Node],
-    code_generator: Type[TemplatedGenerator],
-    **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool],
-) -> str:
-    """
-    Generate Fortran code for the given parent node and code generator.
-
-    Args:
-        parent_node: A subclass of eve.Node that represents the parent node.
-        code_generator: A subclass of TemplatedGenerator that will be used
-            to generate the code.
-        **kwargs: Arguments to be passed to the parent node constructor.
-            This can be a single CodeGenInput value, a sequence of CodeGenInput
-            values, or a boolean value, which is required by some parent nodes which
-            require a profile argument.
-
-    Returns:
-        A string containing the formatted Fortran code.
-    """
-    parent = parent_node(**kwargs)
-    source = code_generator.apply(parent)
-    formatted_source = format_fortran_code(source)
-    return formatted_source
 
 
 class BoundsFields(eve.Node):

@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 from gt4py.next.ffront.decorator import Program
 
-from icon4py.liskov.codegen.interface import (
+from icon4py.liskov.codegen.integration.interface import (
     DeserialisedDirectives,
     FieldAssociationData,
     StartStencilData,

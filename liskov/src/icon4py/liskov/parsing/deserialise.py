@@ -15,9 +15,8 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional, Protocol, Type
 
 import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.codegen.interface import (
+from icon4py.liskov.codegen.integration.interface import (
     BoundsData,
-    CodeGenInput,
     DeclareData,
     DeserialisedDirectives,
     EndCreateData,
@@ -32,6 +31,7 @@ from icon4py.liskov.codegen.interface import (
     StartStencilData,
     UnusedDirective,
 )
+from icon4py.liskov.codegen.types import CodeGenInput
 from icon4py.liskov.common import Step
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import (

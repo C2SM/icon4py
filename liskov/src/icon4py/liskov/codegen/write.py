@@ -13,7 +13,7 @@
 from pathlib import Path
 from typing import List
 
-from icon4py.liskov.codegen.generate import GeneratedCode
+from icon4py.liskov.codegen.types import GeneratedCode
 from icon4py.liskov.common import Step
 from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.types import DIRECTIVE_IDENT
@@ -22,7 +22,7 @@ from icon4py.liskov.parsing.types import DIRECTIVE_IDENT
 logger = setup_logger(__name__)
 
 
-class IntegrationWriter(Step):
+class CodegenWriter(Step):
     def __init__(self, input_filepath: Path, output_filepath: Path) -> None:
         """Initialize an IntegrationWriter instance with a list of generated code.
 

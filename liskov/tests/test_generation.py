@@ -13,8 +13,8 @@
 
 import pytest
 
-from icon4py.liskov.codegen.generate import IntegrationGenerator
-from icon4py.liskov.codegen.interface import (
+from icon4py.liskov.codegen.integration.generate import IntegrationGenerator
+from icon4py.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     DeserialisedDirectives,

@@ -13,9 +13,9 @@
 
 from pathlib import Path
 
-from icon4py.liskov.codegen.generate import IntegrationGenerator
-from icon4py.liskov.codegen.interface import DeserialisedDirectives
-from icon4py.liskov.codegen.write import IntegrationWriter
+from icon4py.liskov.codegen.integration.generate import IntegrationGenerator
+from icon4py.liskov.codegen.integration.interface import DeserialisedDirectives
+from icon4py.liskov.codegen.write import CodegenWriter
 from icon4py.liskov.common import Step, linear_pipeline
 from icon4py.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4py.liskov.parsing.deserialise import DirectiveDeserialiser
@@ -83,5 +83,5 @@ def run_code_generation(
     """
     return [
         IntegrationGenerator(parsed, profile, metadatagen),
-        IntegrationWriter(input_filepath, output_filepath),
+        CodegenWriter(input_filepath, output_filepath),
     ]

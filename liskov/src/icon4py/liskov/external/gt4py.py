@@ -17,7 +17,7 @@ from inspect import getmembers
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Any
 
-from icon4py.liskov.codegen.interface import DeserialisedDirectives
+from icon4py.liskov.codegen.integration.interface import DeserialisedDirectives
 from icon4py.liskov.common import Step
 from icon4py.liskov.external.exceptions import (
     IncompatibleFieldError,

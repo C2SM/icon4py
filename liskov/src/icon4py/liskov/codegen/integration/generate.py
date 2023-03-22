@@ -11,14 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
-from typing import Optional, Sequence, Type
-
-import gt4py.eve as eve
-from gt4py.eve.codegen import TemplatedGenerator
 from typing_extensions import Any
 
-from icon4py.liskov.codegen.f90 import (
+from icon4py.liskov.codegen.common import CodeGenerator
+from icon4py.liskov.codegen.integration.interface import (
+    DeserialisedDirectives,
+    StartStencilData,
+    UnusedDirective,
+)
+from icon4py.liskov.codegen.integration.template import (
     DeclareStatement,
     DeclareStatementGenerator,
     EndCreateStatement,
@@ -41,15 +42,8 @@ from icon4py.liskov.codegen.f90 import (
     StartProfileStatementGenerator,
     StartStencilStatement,
     StartStencilStatementGenerator,
-    generate_fortran_code,
 )
-from icon4py.liskov.codegen.interface import (
-    CodeGenInput,
-    DeserialisedDirectives,
-    StartStencilData,
-    UnusedDirective,
-)
-from icon4py.liskov.common import Step
+from icon4py.liskov.codegen.types import GeneratedCode
 from icon4py.liskov.external.metadata import CodeMetadata
 from icon4py.liskov.logger import setup_logger
 
@@ -57,25 +51,16 @@ from icon4py.liskov.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-@dataclass
-class GeneratedCode:
-    """A class for storing generated f90 code and its line number information."""
-
-    source: str
-    startln: int
-    endln: int
-
-
-class IntegrationGenerator(Step):
+class IntegrationGenerator(CodeGenerator):
     def __init__(
         self,
         directives: DeserialisedDirectives,
         profile: bool,
         metadata_gen: bool,
     ):
+        super().__init__()
         self.profile = profile
         self.directives = directives
-        self.generated: list[GeneratedCode] = []
         self.metadata_gen = metadata_gen
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:
@@ -94,27 +79,6 @@ class IntegrationGenerator(Step):
         self._generate_profile()
         self._generate_insert()
         return self.generated
-
-    def _generate(
-        self,
-        parent_node: Type[eve.Node],
-        code_generator: Type[TemplatedGenerator],
-        startln: int,
-        endln: int,
-        **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool] | Any,
-    ) -> None:
-        """Add a GeneratedCode object to the `generated` attribute with the given source code and line number information.
-
-        Args:
-            parent_node: The parent node of the code to be generated.
-            code_generator: The code generator to use for generating the code.
-            startln: The start line number of the generated code.
-            endln: The end line number of the generated code.
-            **kwargs: Additional keyword arguments to be passed to the code generator.
-        """
-        source = generate_fortran_code(parent_node, code_generator, **kwargs)
-        code = GeneratedCode(source=source, startln=startln, endln=endln)
-        self.generated.append(code)
 
     def _generate_metadata(self) -> None:
         """Generate metadata about the current liskov execution."""
