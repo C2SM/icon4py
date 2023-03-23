@@ -40,7 +40,7 @@ class ModuleType(click.ParamType):
 
 
 @click.command(
-    "icon4pygen",
+    "pyutils",
 )
 @click.argument("fencil", type=ModuleType())
 @click.argument("block_size", type=int, default=128)

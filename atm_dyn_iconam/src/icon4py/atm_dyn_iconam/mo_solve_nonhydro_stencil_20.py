@@ -177,7 +177,7 @@ _metadata = {
         out=True,
     ),
 }
-# patch the fendef with metainfo for icon4pygen
+# patch the fendef with metainfo for pyutils
 mo_solve_nonhydro_stencil_20.__dict__["offsets"] = [
     Koff.value,
     E2C.value,

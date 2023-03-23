@@ -189,7 +189,7 @@ _metadata = {
     ),
 }
 
-# patch the fendef with metainfo for icon4pygen
+# patch the fendef with metainfo for pyutils
 mo_nh_diffusion_stencil_15.__dict__["offsets"] = [
     Koff.value,
     C2E2C.value,
