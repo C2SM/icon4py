@@ -30,7 +30,7 @@ def v_limit_prbl_sm_stencil_01_numpy(
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face[:,:-1] + p_face[:,1:]))
 
     q_face_up, q_face_low = np.where(
-        abs(z_delta) < -1 * z_a6i,
+        np.abs(z_delta) < -1 * z_a6i,
         np.where(
             (p_cc < np.minimum(p_face[:,:-1], p_face[:,1:])),
             (p_cc, p_cc),
