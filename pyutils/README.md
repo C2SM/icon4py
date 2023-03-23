@@ -20,7 +20,7 @@ Check `README.md` file in the root of the repository.
 In order to turn on autocomplete in your shell for `icon4pygen` you need to execute the following in your shell:
 
 ```bash
-eval "$(_ICON4PYGEN_COMPLETE=bash_source pyutils)"
+eval "$(_ICON4PYGEN_COMPLETE=bash_source icon4pygen)"
 ```
 
 To permanently enable autocomplete on your system add the above statement to your `~/.bashrc` file.
