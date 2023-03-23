@@ -32,6 +32,7 @@ from icon4py.diffusion.utils import (
 from icon4py.testutils.serialbox_utils import IconDiffusionInitSavepoint
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
+from icon4py.testutils.fixtures import setup_icon_data, data_provider, grid_savepoint
 
 
 def test_scale_k():

@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 from icon4py.diffusion.icon_grid import VerticalModelParams
+from icon4py.testutils.fixtures import setup_icon_data, data_provider, grid_savepoint
 
 
 @pytest.mark.parametrize(

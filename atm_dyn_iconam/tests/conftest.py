@@ -10,12 +10,10 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import tarfile
-from pathlib import Path
+
 
 import numpy as np
 import pytest
-import wget
 
 from icon4py.common.dimension import (
     C2E2CDim,
@@ -32,39 +30,6 @@ from icon4py.common.dimension import (
 from icon4py.diffusion.diffusion import DiffusionConfig
 from icon4py.diffusion.horizontal import HorizontalMeshSize
 from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
-
-
-data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
-data_path = Path(__file__).parent.joinpath("ser_icondata")
-extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
-data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
-
-
-@pytest.fixture(scope="session")
-def setup_icon_data():
-    """
-    Get the binary ICON data from a remote server.
-
-    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
-    """
-    data_path.mkdir(parents=True, exist_ok=True)
-    if not any(data_path.iterdir()):
-        print(
-            f"directory {data_path} is empty: downloading data from {data_uri} and extracting"
-        )
-        wget.download(data_uri, out=data_file)
-        # extract downloaded file
-        if not tarfile.is_tarfile(data_file):
-            raise NotImplementedError(f"{data_file} needs to be a valid tar file")
-        with tarfile.open(data_file, mode="r:*") as tf:
-            tf.extractall(path=data_path)
-        Path(data_file).unlink(missing_ok=True)
-
-
-@pytest.fixture
-def data_provider(setup_icon_data) -> IconSerialDataProvider:
-    return IconSerialDataProvider("icon_pydycore", str(extracted_path), True)
 
 
 @pytest.fixture
@@ -163,11 +128,6 @@ def icon_grid(data_provider):
         .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e(), E2C2VDim: sp.e2c2v()})
     )
     return grid
-
-
-@pytest.fixture
-def grid_savepoint(data_provider):
-    return data_provider.from_savepoint_grid()
 
 
 @pytest.fixture
