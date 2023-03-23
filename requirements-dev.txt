@@ -6,3 +6,4 @@
 -e ./testutils
 -e ./atm_dyn_iconam
 -e ./advection
+-e ./liskov

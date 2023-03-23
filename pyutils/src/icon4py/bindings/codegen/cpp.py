@@ -52,19 +52,16 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         #include <gridtools/fn/backend/gpu.hpp>
 
-        #include "driver-includes/cuda_utils.hpp"
-        #include "driver-includes/cuda_verify.hpp"
-        #include "driver-includes/defs.hpp"
-        #include "driver-includes/to_json.hpp"
-        #include "driver-includes/to_vtk.h"
-        #include "driver-includes/unstructured_domain.hpp"
-        #include "driver-includes/unstructured_interface.hpp"
-        #include "driver-includes/verification_metrics.hpp"
+        #include "cuda_utils.hpp"
+        #include "cuda_verify.hpp"
+        #include "to_json.hpp"
+        #include "to_vtk.h"
+        #include "unstructured_interface.hpp"
+        #include "verification_metrics.hpp"
         #include \"{{ funcname }}.hpp\"
         #include <gridtools/common/array.hpp>
         #include <gridtools/stencil/global_parameter.hpp>
         #define GRIDTOOLS_DAWN_NO_INCLUDE
-        #include "driver-includes/math.hpp"
         #include <chrono>
         #define BLOCK_SIZE {{ block_size }}
         #define LEVELS_PER_THREAD {{ levels_per_thread }}
@@ -79,7 +76,6 @@ class CppDefGenerator(TemplatedGenerator):
         using fn_backend_t =
             gridtools::fn::backend::gpu<block_sizes_t<BLOCK_SIZE, LEVELS_PER_THREAD>>;
         } // namespace
-        using namespace gridtools::dawn;
         """
     )
 
@@ -140,6 +136,14 @@ class CppDefGenerator(TemplatedGenerator):
         return jsonRecord_;
       }
 
+      static MeshInfoVtk *getMeshInfoVtk() {
+        return mesh_info_vtk_;
+      }
+
+      static verify *getVerify() {
+        return verify_;
+      }
+
       {% for field in _this_node.fields %}
       static int get_{{field.name}}_KSize() {
       return {{field.name}}_kSize_;
@@ -166,8 +170,7 @@ class CppDefGenerator(TemplatedGenerator):
     )
 
     StencilClass = as_jinja(
-        """\
-        namespace dawn_generated {
+        """
         namespace cuda_ico {
 
         class {{ funcname }} {
@@ -181,7 +184,6 @@ class CppDefGenerator(TemplatedGenerator):
         {{ copy_pointers }}
         };
         } // namespace cuda_ico
-        } // namespace dawn_generated
         """
     )
 
@@ -204,7 +206,7 @@ class CppDefGenerator(TemplatedGenerator):
 
             GpuTriMesh() {}
 
-            GpuTriMesh(const dawn::GlobalGpuTriMesh *mesh) {
+            GpuTriMesh(const GlobalGpuTriMesh *mesh) {
               Nproma = mesh->Nproma;
               NumVertices = mesh->NumVertices;
               NumCells = mesh->NumCells;
@@ -225,7 +227,7 @@ class CppDefGenerator(TemplatedGenerator):
     StencilClassSetupFunc = as_jinja(
         """\
         static void setup(
-        const dawn::GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream, json *jsonRecord,
+        const GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream, json *jsonRecord, MeshInfoVtk *mesh_info_vtk, verify *verify,
         {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -237,6 +239,9 @@ class CppDefGenerator(TemplatedGenerator):
         is_setup_ = true;
         stream_ = stream;
         jsonRecord_ = jsonRecord;
+        mesh_info_vtk_ = mesh_info_vtk;
+        verify_ = verify;
+
         {%- for field in _this_node.out_fields -%}
         {{ field.name }}_{{ suffix }}_ = {{ field.name }}_{{ suffix }};
         {%- endfor -%}
@@ -255,6 +260,8 @@ class CppDefGenerator(TemplatedGenerator):
         inline static bool is_setup_;
         inline static cudaStream_t stream_;
         inline static json* jsonRecord_;
+        inline static MeshInfoVtk* mesh_info_vtk_;
+        inline static verify* verify_;
         {%- for field in _this_node.out_fields -%}
         inline static int {{ field.name }}_kSize_;
         {%- endfor %}
@@ -281,15 +288,15 @@ class CppDefGenerator(TemplatedGenerator):
       using namespace fn;
       {% for field in _this_node.all_fields -%}
         {% if field.is_sparse() == False and field.rank() > 0 %}
-          auto {{field.name}}_sid = {{ field.renderer.render_sid() }};
+          auto {{field.name}}_sid = get_sid({{field.name}}_, {{ field.renderer.render_sid() }});
         {% endif %}
       {% endfor -%}
       {%- for field in _this_node.sparse_fields -%}
         {%- for i in range(0, field.get_num_neighbors()) -%}
-            double *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.renderer.render_stride_type()}}];
+            {{field.renderer.render_ctype('c++')}} *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.renderer.render_stride_type()}}{%- if field.has_vertical_dimension -%}*kSize_{%- endif -%}];
         {% endfor -%}
         {%- for i in range(0, field.get_num_neighbors()) -%}
-            auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, gridtools::hymap::keys<unstructured::dim::horizontal>::make_values(1));
+            auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, {{ field.renderer.render_sid() }});
         {% endfor -%}
         auto {{field.name}}_sid_comp = sid::composite::keys<
         {%- for i in range(0, field.get_num_neighbors()) -%}
@@ -344,7 +351,7 @@ class CppDefGenerator(TemplatedGenerator):
     RunFunc = as_jinja(
         """\
         {{run_func_declaration }} {
-        dawn_generated::cuda_ico::{{ funcname }} s;
+        cuda_ico::{{ funcname }} s;
         s.copy_pointers({{ params }});
         s.run(verticalStart, verticalEnd, horizontalStart, horizontalEnd);
         return;
@@ -370,7 +377,7 @@ class CppDefGenerator(TemplatedGenerator):
         const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
         const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
         {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
+        {%- for field in _this_node.tol_fields -%}
         const double {{ field.name }}_rel_tol,
         const double {{ field.name }}_abs_tol,
         {%- endfor -%}
@@ -382,9 +389,11 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         {{ verify_func_declaration }} {
         using namespace std::chrono;
-        const auto &mesh = dawn_generated::cuda_ico::{{ funcname }}::getMesh();
-        cudaStream_t stream = dawn_generated::cuda_ico::{{ funcname }}::getStream();
-        int kSize = dawn_generated::cuda_ico::{{ funcname }}::getKSize();
+        const auto &mesh = cuda_ico::{{ funcname }}::getMesh();
+        cudaStream_t stream = cuda_ico::{{ funcname }}::getStream();
+        int kSize = cuda_ico::{{ funcname }}::getKSize();
+        MeshInfoVtk* mesh_info_vtk = cuda_ico::{{ funcname }}::getMeshInfoVtk();
+        verify* verify = cuda_ico::{{ funcname }}::getVerify();
         high_resolution_clock::time_point t_start = high_resolution_clock::now();
         struct VerificationMetrics stencilMetrics;
         {{ metrics_serialisation }}
@@ -395,23 +404,33 @@ class CppDefGenerator(TemplatedGenerator):
     MetricsSerialisation = as_jinja(
         """\
         {%- for field in _this_node.out_fields %}
-        int {{ field.name }}_kSize = dawn_generated::cuda_ico::{{ funcname }}::
+        int {{ field.name }}_kSize = cuda_ico::{{ funcname }}::
         get_{{ field.name }}_KSize();
-        stencilMetrics = ::dawn::verify_field(
+        {% if field.is_integral() %}
+        stencilMetrics = ::verify_field(
+            stream, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
+            \"{{ field.name }}\", iteration);
+        {% elif field.is_bool() %}
+        stencilMetrics = ::verify_bool_field(
+            stream, verify, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
+            \"{{ field.name }}\", iteration);
+        {% else %}
+        stencilMetrics = ::verify_field(
             stream, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
             \"{{ field.name }}\", {{ field.name }}_rel_tol, {{ field.name }}_abs_tol, iteration);
+        {% endif %}
         #ifdef __SERIALIZE_METRICS
         MetricsSerialiser serialiser_{{ field.name }}(
-            dawn_generated::cuda_ico::{{ funcname }}::getJsonRecord(), stencilMetrics,
+            cuda_ico::{{ funcname }}::getJsonRecord(), stencilMetrics,
             \"{{ funcname }}\", \"{{ field.name }}\");
         serialiser_{{ field.name }}.writeJson(iteration);
         #endif
         if (!stencilMetrics.isValid) {
         #ifdef __SERIALIZE_ON_ERROR
-        {{ field.renderer.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
+        {{ field.renderer.render_serialise_func() }}(mesh_info_vtk, 0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
                               (mesh.{{ field.renderer.render_stride_type() }}), {{ field.name }},
                               \"{{ funcname }}\", \"{{ field.name }}\", iteration);
-        {{ field.renderer.render_serialise_func() }}(0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
+        {{ field.renderer.render_serialise_func() }}(mesh_info_vtk, 0, (mesh.Num{{ field.location.render_location_type() }} - 1), {{ field.name }}_kSize,
                               (mesh.{{ field.renderer.render_stride_type() }}), {{ field.name }}_dsl,
                               \"{{ funcname }}\", \"{{ field.name }}_dsl\",
                               iteration);
@@ -455,7 +474,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{ field.name }}_{{ suffix }},
         {{ field.name }},
         {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
+        {%- for field in _this_node.tol_fields -%}
         {{ field.name }}_rel_tol,
         {{ field.name }}_abs_tol,
         {%- endfor -%}
@@ -485,7 +504,7 @@ class CppDefGenerator(TemplatedGenerator):
     CppSetupFuncDeclaration = as_jinja(
         """\
         void setup_{{funcname}}(
-        dawn::GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record,
+        GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record, MeshInfoVtk *mesh_info_vtk, verify *verify,
         {%- for field in _this_node.out_fields -%}
         const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -498,7 +517,7 @@ class CppDefGenerator(TemplatedGenerator):
     SetupFunc = as_jinja(
         """\
         {{ func_declaration }} {
-        dawn_generated::cuda_ico::{{ funcname }}::setup(mesh, k_size, stream, json_record,
+        cuda_ico::{{ funcname }}::setup(mesh, k_size, stream, json_record, mesh_info_vtk, verify,
         {%- for field in _this_node.out_fields -%}
         {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
@@ -513,7 +532,7 @@ class CppDefGenerator(TemplatedGenerator):
     FreeFunc = as_jinja(
         """\
         void free_{{funcname}}() {
-            dawn_generated::cuda_ico::{{ funcname }}::free();
+            cuda_ico::{{ funcname }}::free();
         }
         """
     )
@@ -635,6 +654,7 @@ class CppDefTemplate(Node):
 
     def _get_field_data(self) -> tuple:
         output_fields = [field for field in self.fields if field.intent.out]
+        tolerance_fields = [field for field in output_fields if not field.is_integral()]
         # since we can vertical fields as dense fields for the purpose of this function, lets include them here
         dense_fields = [
             field
@@ -658,6 +678,7 @@ class CppDefTemplate(Node):
             sparse=sparse_fields,
             compound=compound_fields,
             all_fields=all_fields,
+            tolerance=tolerance_fields,
         )
         return fields, offsets
 
@@ -696,7 +717,10 @@ class CppDefTemplate(Node):
                 fields=self.fields, out_fields=fields["output"]
             ),
             setup_func=StencilClassSetupFunc(
-                funcname=self.stencil_name, out_fields=fields["output"], suffix="kSize"
+                funcname=self.stencil_name,
+                out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
+                suffix="kSize",
             ),
         )
 
@@ -711,7 +735,10 @@ class CppDefTemplate(Node):
         self.verify_func = VerifyFunc(
             funcname=self.stencil_name,
             verify_func_declaration=CppVerifyFuncDeclaration(
-                funcname=self.stencil_name, out_fields=fields["output"], suffix="dsl"
+                funcname=self.stencil_name,
+                out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
+                suffix="dsl",
             ),
             metrics_serialisation=MetricsSerialisation(
                 funcname=self.stencil_name, out_fields=fields["output"]
@@ -724,19 +751,27 @@ class CppDefTemplate(Node):
                 funcname=self.stencil_name,
                 fields=self.fields,
                 out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
                 suffix="before",
             ),
             run_func_call=RunFuncCall(funcname=self.stencil_name, fields=self.fields),
             verify_func_call=VerifyFuncCall(
-                funcname=self.stencil_name, out_fields=fields["output"], suffix="before"
+                funcname=self.stencil_name,
+                out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
+                suffix="before",
             ),
         )
 
         self.setup_func = SetupFunc(
             funcname=self.stencil_name,
             out_fields=fields["output"],
+            tol_fields=fields["tolerance"],
             func_declaration=CppSetupFuncDeclaration(
-                funcname=self.stencil_name, out_fields=fields["output"], suffix="k_size"
+                funcname=self.stencil_name,
+                out_fields=fields["output"],
+                tol_fields=fields["tolerance"],
+                suffix="k_size",
             ),
             suffix="k_size",
         )
