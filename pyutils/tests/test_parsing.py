@@ -20,8 +20,12 @@ from icon4py.serialisation.parse import GranuleParser
 # todo: test for correct parsing
 def test_granule_parsing():
     root_dir = Path(__file__).parent
-    path = Path(f"{root_dir}/samples/granule_example.f90")
-    parser = GranuleParser(path)
+    granule = Path(f"{root_dir}/samples/granule_example.f90")
+    dependencies = [
+        Path(f"{root_dir}/samples/derived_types_example.f90"),
+        Path(f"{root_dir}/samples/granule_example.f90"),
+    ]
+    parser = GranuleParser(granule, dependencies)
     parsed = parser.parse()
     assert parsed == SerialisationInterface
 

@@ -10,14 +10,18 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
+from typing import Optional
 
 from numpy.f2py.crackfortran import crackfortran
 
 from icon4py.serialisation.interface import SerialisationInterface
+
+
+def crack(path: Path):
+    return crackfortran(path)[0]
 
 
 class SubroutineType(Enum):
@@ -26,23 +30,56 @@ class SubroutineType(Enum):
 
 
 class GranuleParser:
-    def __init__(self, path: Path):
-        self.path = path
-        self.cracked = crackfortran(self.path)[0]
+    def __init__(self, granule: Path, dependencies: Optional[list[Path]] = None):
+        self.granule = granule
+        self.dependencies = dependencies
 
     def parse(self) -> SerialisationInterface:
-        subroutines = self._extract_subroutines()
+        parsed = crack(self.granule)
+
+        subroutines = self._extract_subroutines(parsed)
+
         variables = {
             name: self._extract_intent_vars(routine)
             for name, routine in subroutines.items()
         }
+
         intrinsic_type_vars = self._remove_derived_type_vars(variables)  # noqa
 
-        # todo: handle derived type vars
+        derived_type_vars = self._parse_derived_types(variables)  # noqa
+
+        # todo: create new intrinsic type vars based on derived_type_vars
         # todo: find post declarations line number (required for input field serialisation codegen)
         # todo: find pre end subroutine line number (required for output field serialisation codegen)
+
         # todo: construct SerialisationInterface (object to pass to code generator)
         return SerialisationInterface  # temporary
+
+    def _parse_derived_types(self, variables: dict):
+        # find derived types in variables
+        derived_type_map = {name: {} for name in variables}
+        for subroutine in variables:
+            for intent in variables[subroutine]:
+                derived_type_map[subroutine][intent] = {}
+                for var_name, var_dict in variables[subroutine][intent].items():
+                    if var_dict["typespec"] == "type":
+                        derived_type_map[subroutine][intent][var_name] = var_dict
+
+        # find derived types in dependencies
+        for dep in self.dependencies:
+            parsed = crack(dep)
+            for block in parsed["body"]:
+                if block["block"] == "type":
+                    # check if there are matches with derived variable types
+                    dependency_type_name = block["name"]
+                    for subroutine in derived_type_map:
+                        for intent in derived_type_map[subroutine]:
+                            for k, v in derived_type_map[subroutine][intent].items():
+                                if dependency_type_name == v["typename"]:
+                                    derived_type_map[subroutine][intent][k][
+                                        "typedef"
+                                    ] = block["vars"]
+        return derived_type_map
 
     @staticmethod
     def _remove_derived_type_vars(routine_vars: dict):
@@ -56,9 +93,10 @@ class GranuleParser:
                 }
         return copy
 
-    def _extract_subroutines(self):
+    @staticmethod
+    def _extract_subroutines(parsed: dict):
         subroutines = {}
-        for elt in self.cracked["body"]:
+        for elt in parsed["body"]:
             name = elt["name"]
             if SubroutineType.RUN.value in name:
                 subroutines[name] = elt
@@ -85,8 +123,4 @@ class GranuleParser:
 
     # todo
     def _find_end_of_subroutine(self) -> int:
-        pass
-
-    # todo
-    def _handle_derived_types(self):
         pass
