@@ -397,7 +397,6 @@ MODULE mo_nh_diffusion_new
     diff_inst(jg)%hdiff_efdt_ratio = hdiff_efdt_ratio
 
     !$ACC ENTER DATA COPYIN(diff_inst(jg))
-
   END SUBROUTINE diffusion_init
 
   !>

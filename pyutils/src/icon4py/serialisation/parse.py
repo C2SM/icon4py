@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import re
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
@@ -17,10 +18,8 @@ from typing import Optional
 
 from numpy.f2py.crackfortran import crackfortran
 
-from icon4py.serialisation.interface import SerialisationInterface
 
-
-def crack(path: Path):
+def crack(path: Path) -> dict:
     return crackfortran(path)[0]
 
 
@@ -30,72 +29,50 @@ class SubroutineType(Enum):
 
 
 class GranuleParser:
-    def __init__(self, granule: Path, dependencies: Optional[list[Path]] = None):
+    """Parses a Fortran source file and extracts information about its subroutines and variables.
+
+    Attributes:
+        granule (Path): A path to the Fortran source file to be parsed.
+        dependencies (Optional[list[Path]]): A list of paths to any additional Fortran source files that the input file depends on.
+
+    Methods:
+        parse(): Parses the input file and returns a dictionary with information about its subroutines and variables.
+
+    Example usage:
+        parser = GranuleParser(Path("my_file.f90"), dependencies=[Path("common.f90"), Path("constants.f90")])
+        parsed_types = parser.parse()
+    """
+
+    def __init__(
+        self, granule: Path, dependencies: Optional[list[Path]] = None
+    ) -> None:
         self.granule = granule
         self.dependencies = dependencies
 
-    def parse(self) -> SerialisationInterface:
+    def parse(self) -> dict:
+
         parsed = crack(self.granule)
 
         subroutines = self._extract_subroutines(parsed)
 
-        variables = {
+        variables_grouped_by_intent = {
             name: self._extract_intent_vars(routine)
             for name, routine in subroutines.items()
         }
 
-        intrinsic_type_vars = self._remove_derived_type_vars(variables)  # noqa
+        intrinsic_type_vars, derived_type_vars = self._parse_types(
+            variables_grouped_by_intent
+        )
 
-        derived_type_vars = self._parse_derived_types(variables)  # noqa
+        combined_type_vars = self._combine_types(derived_type_vars, intrinsic_type_vars)
 
-        # todo: create new intrinsic type vars based on derived_type_vars
-        # todo: find post declarations line number (required for input field serialisation codegen)
-        # todo: find pre end subroutine line number (required for output field serialisation codegen)
+        vars_with_lines = self._update_with_codegen_lines(combined_type_vars)
 
-        # todo: construct SerialisationInterface (object to pass to code generator)
-        return SerialisationInterface  # temporary
-
-    def _parse_derived_types(self, variables: dict):
-        # find derived types in variables
-        derived_type_map = {name: {} for name in variables}
-        for subroutine in variables:
-            for intent in variables[subroutine]:
-                derived_type_map[subroutine][intent] = {}
-                for var_name, var_dict in variables[subroutine][intent].items():
-                    if var_dict["typespec"] == "type":
-                        derived_type_map[subroutine][intent][var_name] = var_dict
-
-        # find derived types in dependencies
-        for dep in self.dependencies:
-            parsed = crack(dep)
-            for block in parsed["body"]:
-                if block["block"] == "type":
-                    # check if there are matches with derived variable types
-                    dependency_type_name = block["name"]
-                    for subroutine in derived_type_map:
-                        for intent in derived_type_map[subroutine]:
-                            for k, v in derived_type_map[subroutine][intent].items():
-                                if dependency_type_name == v["typename"]:
-                                    derived_type_map[subroutine][intent][k][
-                                        "typedef"
-                                    ] = block["vars"]
-        return derived_type_map
+        return vars_with_lines
 
     @staticmethod
-    def _remove_derived_type_vars(routine_vars: dict):
-        copy = deepcopy(routine_vars)
-        for subroutine in copy:
-            for intent in copy[subroutine]:
-                copy[subroutine][intent] = {
-                    var_name: var_dict
-                    for var_name, var_dict in copy[subroutine][intent].items()
-                    if var_dict["typespec"] != "type"
-                }
-        return copy
-
-    @staticmethod
-    def _extract_subroutines(parsed: dict):
-        subroutines = {}
+    def _extract_subroutines(parsed: dict) -> dict:
+        subroutines: dict = {}
         for elt in parsed["body"]:
             name = elt["name"]
             if SubroutineType.RUN.value in name:
@@ -105,9 +82,9 @@ class GranuleParser:
         return subroutines
 
     @staticmethod
-    def _extract_intent_vars(subroutine: dict):
+    def _extract_intent_vars(subroutine: dict) -> dict:
         intents = ["in", "inout", "out"]
-        result = {}
+        result: dict = {}
         for var in subroutine["vars"]:
             var_intent = subroutine["vars"][var]["intent"]
             common_intents = list(set(intents).intersection(var_intent))
@@ -117,10 +94,130 @@ class GranuleParser:
                 result[intent][var] = subroutine["vars"][var]
         return result
 
-    # todo
-    def _find_post_variable_declaration(self) -> int:
-        pass
+    def _parse_types(self, parsed: dict) -> tuple[dict, dict]:
+        intrinsic_types: dict = {}
+        derived_types: dict = {}
 
-    # todo
-    def _find_end_of_subroutine(self) -> int:
-        pass
+        for subroutine, subroutine_vars in parsed.items():
+            intrinsic_types[subroutine] = {}
+            derived_types[subroutine] = {}
+
+            for intent, intent_vars in subroutine_vars.items():
+                intrinsic_vars = {}
+                derived_vars = {}
+
+                for var_name, var_dict in intent_vars.items():
+                    if var_dict["typespec"] != "type":
+                        intrinsic_vars[var_name] = var_dict
+                    else:
+                        derived_vars[var_name] = var_dict
+
+                intrinsic_types[subroutine][intent] = intrinsic_vars
+                derived_types[subroutine][intent] = derived_vars
+
+        return intrinsic_types, self._parse_derived_types(derived_types)
+
+    def _parse_derived_types(self, derived_types: dict) -> dict:
+        # Create a dictionary that maps the typename to the typedef for each derived type
+        derived_type_defs = {}
+        for dep in self.dependencies:
+            parsed = crack(dep)
+            for block in parsed["body"]:
+                if block["block"] == "type":
+                    derived_type_defs[block["name"]] = block["vars"]
+
+        # Iterate over the derived types and add the typedef for each derived type
+        for _, subroutine_vars in derived_types.items():
+            for _, intent_vars in subroutine_vars.items():
+                for _, var in intent_vars.items():
+                    if var["typespec"] == "type":
+                        typename = var["typename"]
+                        if typename in derived_type_defs:
+                            var["typedef"] = derived_type_defs[typename]
+
+        return self._decompose_derived_types(derived_types)
+
+    @staticmethod
+    def _decompose_derived_types(derived_types: dict) -> dict:
+        decomposed_vars: dict = {}
+        for subroutine, subroutine_vars in derived_types.items():
+            decomposed_vars[subroutine] = {}
+            for intent, intent_vars in subroutine_vars.items():
+                decomposed_vars[subroutine][intent] = {}
+                for var_name, var_dict in intent_vars.items():
+                    if "typedef" in var_dict:
+                        typedef = var_dict["typedef"]
+                        del var_dict["typedef"]
+                        for subtype_name, subtype_spec in typedef.items():
+                            new_type_name = f"{var_name}_{subtype_name}"
+                            new_var_dict = var_dict.copy()
+                            new_var_dict.update(subtype_spec)
+                            decomposed_vars[subroutine][intent][
+                                new_type_name
+                            ] = new_var_dict
+                    else:
+                        decomposed_vars[subroutine][intent][var_name] = var_dict
+
+        return decomposed_vars
+
+    @staticmethod
+    def _combine_types(derived_type_vars: dict, intrinsic_type_vars: dict) -> dict:
+        combined = deepcopy(intrinsic_type_vars)
+        for subroutine_name in combined:
+            for intent in combined[subroutine_name]:
+                new_vars = derived_type_vars[subroutine_name][intent]
+                combined[subroutine_name][intent].update(new_vars)
+        return combined
+
+    def _update_with_codegen_lines(self, parsed_types: dict) -> dict:
+        with_lines = deepcopy(parsed_types)
+        for subroutine in with_lines:
+            end_subroutine_line_number, last_intent_line_number = self.get_line_numbers(
+                subroutine
+            )
+            for intent in with_lines[subroutine]:
+                intent_codegen_ln = []
+                if intent == "in":
+                    intent_codegen_ln.append(last_intent_line_number)
+                elif intent == "inout":
+                    intent_codegen_ln.append(last_intent_line_number)
+                    intent_codegen_ln.append(end_subroutine_line_number)
+                elif intent == "out":
+                    intent_codegen_ln.append(end_subroutine_line_number)
+                else:
+                    raise ValueError(f"Unrecognized intent: {intent}")
+                with_lines[subroutine][intent]["codegen_ln"] = intent_codegen_ln
+        return with_lines
+
+    def get_line_numbers(self, subroutine_name: str) -> tuple[int, int]:
+        with open(self.granule, "r") as f:
+            code = f.read()
+
+        # Find the line number where the subroutine is defined
+        start_subroutine_pattern = r"SUBROUTINE\s+" + subroutine_name + r"\s*\("
+        end_subroutine_pattern = r"END\s+SUBROUTINE\s+" + subroutine_name + r"\s*"
+        start_match = re.search(start_subroutine_pattern, code)
+        end_match = re.search(end_subroutine_pattern, code)
+        if start_match is None or end_match is None:
+            return None
+        start_subroutine_line_number = code[: start_match.start()].count("\n") + 1
+        end_subroutine_line_number = code[: end_match.start()].count("\n") + 1
+
+        # Find the last intent statement line number in the subroutine
+        intent_pattern = r"\bINTENT\b"
+        intent_pattern_lines = [
+            i
+            for i, line in enumerate(
+                code.splitlines()[
+                    start_subroutine_line_number:end_subroutine_line_number
+                ]
+            )
+            if re.search(intent_pattern, line)
+        ]
+        if not intent_pattern_lines:
+            raise Exception(f"No INTENT declarations found in {self.granule}")
+        last_intent_line_number = (
+            intent_pattern_lines[-1] + start_subroutine_line_number + 1
+        )
+
+        return end_subroutine_line_number, last_intent_line_number

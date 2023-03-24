@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing_extensions import Any
+from typing import Any
 
 from icon4py.liskov.codegen.common import CodeGenerator
 from icon4py.liskov.codegen.integration.interface import (
