@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-import pathlib
+from pathlib import Path
 from uuid import uuid4
 
 import numpy as np
@@ -20,16 +20,38 @@ import pytest
 from netCDF4 import Dataset
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.grid.icon_grid import GridFile, GridFileName, GridManager
+from icon4py.grid.icon_grid import (
+    GridFile,
+    GridFileName,
+    GridManager,
+    GridTransformation,
+    ToGt4PyTransformation,
+)
+from icon4py.testutils.data_handling import download_and_extract
 from icon4py.testutils.simple_mesh import SimpleMesh
 
 
 SIMPLE_MESH_NC = "./simple_mesh_grid.nc"
 
+grid_uri = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
+grids_path = Path(__file__).parent.joinpath("grids")
+r04b09_dsl_grid_path = grids_path.joinpath("mch_ch_r04b09_dsl")
+data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1.tar.gz").name
+
+
+@pytest.fixture(scope="session")
+def get_grid_files():
+    """
+    Get the grid files used for testing.
+
+    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
+    """
+    download_and_extract(grid_uri, r04b09_dsl_grid_path, data_file)
+
 
 @pytest.fixture
 def simple_mesh_path():
-    return pathlib.Path(SIMPLE_MESH_NC).absolute()
+    return Path(SIMPLE_MESH_NC).absolute()
 
 
 @pytest.fixture(scope="session")
@@ -42,14 +64,19 @@ def simple_mesh_data():
     dataset.createDimension(GridFile.Dimension.CELL_NAME, size=mesh.n_cells)
     dataset.createDimension(GridFile.Dimension.E2V_SIZE, size=mesh.n_e2v)
     dataset.createDimension(GridFile.Dimension.DIAMOND_EDGE_SIZE, size=mesh.n_e2c2e)
-    dataset.createDimension(GridFile.Dimension.C2E_SIZE, size=mesh.n_c2e)
+    dataset.createDimension(
+        GridFile.Dimension.NEIGHBORING_EDGES_TO_CELL_SIZE, size=mesh.n_c2e
+    )
     dataset.createDimension(GridFile.Dimension.V2E_SIZE, size=mesh.n_v2c)
 
     add_to_dataset(
         dataset,
         mesh.c2e,
         GridFile.Offsets.C2E,
-        (GridFile.Dimension.C2E_SIZE, GridFile.Dimension.CELL_NAME),
+        (
+            GridFile.Dimension.NEIGHBORING_EDGES_TO_CELL_SIZE,
+            GridFile.Dimension.CELL_NAME,
+        ),
     )
     # add_to_dataset(data, mesh.c2v, GridFile.Offsets.C2V, (GridFile.Dimension.C2E_SIZE, GridFile.Dimension.CELL_NAME))
     add_to_dataset(
@@ -76,7 +103,10 @@ def simple_mesh_data():
         dataset,
         np.zeros((mesh.n_cells, 3), dtype=np.int32),
         GridFile.Offsets.C2V,
-        (GridFile.Dimension.C2E_SIZE, GridFile.Dimension.CELL_NAME),
+        (
+            GridFile.Dimension.NEIGHBORING_EDGES_TO_CELL_SIZE,
+            GridFile.Dimension.CELL_NAME,
+        ),
     )
     add_to_dataset(
         dataset,
@@ -95,7 +125,10 @@ def simple_mesh_data():
         dataset,
         mesh.c2e2c,
         GridFile.Offsets.C2E2C,
-        (GridFile.Dimension.C2E_SIZE, GridFile.Dimension.CELL_NAME),
+        (
+            GridFile.Dimension.NEIGHBORING_EDGES_TO_CELL_SIZE,
+            GridFile.Dimension.CELL_NAME,
+        ),
     )
     dataset.close()
 
@@ -107,7 +140,7 @@ def add_to_dataset(
     dims: tuple[GridFileName, GridFileName],
 ):
     var = dataset.createVariable(var_name, np.int32, dims)
-    var[:] = np.transpose(data)[:] + 1
+    var[:] = np.transpose(data)[:]
 
 
 def test_gridparser_dimension(simple_mesh_data):
@@ -132,36 +165,62 @@ def test_grid_parser_index_fields(simple_mesh_data, caplog):
     assert np.allclose(grid_parser.int_field(GridFile.Offsets.V2C), mesh.v2c)
 
 
-@pytest.mark.skip("TODO: how are -1 values handled?")
+@pytest.mark.skip("TODO: handling of boundary values")
 @pytest.mark.datatest
-def test_gridmanager_read_gridfile(caplog, grid_savepoint):
+def test_gridmanager_eval_v2e(caplog, grid_savepoint, get_grid_files):
     caplog.set_level(logging.DEBUG)
-    fname = "/home/magdalena/data/exclaim/grids/mch_ch_r04b09_dsl/grid.nc"
-    gm = GridManager(fname)
+    fname = r04b09_dsl_grid_path.joinpath("grid.nc")
+    gm, num_cells, num_edges, num_vertex = _init_grid_manager(fname)
+    assert np.allclose(
+        gm.get_v2e_connectivity().table, grid_savepoint.v2e()[0:num_vertex, :]
+    )
+
+
+@pytest.mark.skip("TODO: v2c not serialized??")
+@pytest.mark.datatest
+def test_gridmanager_eval_v2c(caplog, grid_savepoint, get_grid_files):
+    caplog.set_level(logging.DEBUG)
+    fname = r04b09_dsl_grid_path.joinpath("grid.nc")
+    gm, num_cells, num_edges, num_vertex = _init_grid_manager(fname)
+    assert np.allclose(
+        gm.get_v2c_connectivity().table, grid_savepoint.v2c()[0:num_vertex, :]
+    )
+
+
+@pytest.mark.datatest
+def test_gridmanager_eval_e2c(caplog, grid_savepoint, get_grid_files):
+    caplog.set_level(logging.DEBUG)
+    fname = r04b09_dsl_grid_path.joinpath("grid.nc")
+    gm, num_cells, num_edges, num_vertex = _init_grid_manager(fname)
+
+    assert np.allclose(
+        gm.get_e2c_connectivity().table, grid_savepoint.e2c()[0:num_edges, :]
+    )
+
+
+@pytest.mark.datatest
+def test_gridmanager_eval_c2e(caplog, grid_savepoint, get_grid_files):
+    caplog.set_level(logging.DEBUG)
+    fname = r04b09_dsl_grid_path.joinpath("grid.nc")
+    gm, num_cells, num_edges, num_vertex = _init_grid_manager(fname)
+    assert np.allclose(
+        gm.get_c2e_connectivity().table, grid_savepoint.c2e()[0:num_cells, :]
+    )
+
+
+def _init_grid_manager(fname):
+    gm = GridManager(ToGt4PyTransformation(), fname)
     gm.init()
     num_vertex = gm.get_size(VertexDim)
     num_edges = gm.get_size(EdgeDim)
     num_cells = gm.get_size(CellDim)
-    assert np.allclose(
-        gm.get_v2e_connectivity().table, grid_savepoint.v2e()[0:num_vertex, :]
-    )
-    assert np.allclose(
-        gm.get_v2c_connectivity().table, grid_savepoint.v2c()[0:num_vertex, :]
-    )
-    assert np.allclose(
-        gm.get_e2c_connectivity().table, grid_savepoint.e2c()[0:num_edges, :]
-    )
-    assert np.allclose(
-        gm.get_c2e_connectivity().table, grid_savepoint.c2e()[0:num_cells, :]
-    )
-    assert np.allclose(
-        gm.get_e2v_connectivity().table, grid_savepoint.v2e()[0:num_vertex, :]
-    )
+    return gm, num_cells, num_edges, num_vertex
 
 
 @pytest.mark.parametrize("dim, size", [(CellDim, 18), (EdgeDim, 27), (VertexDim, 9)])
-def test_grid_manager_getsize(simple_mesh_data, simple_mesh_path, dim, size):
-    gm = GridManager(simple_mesh_path)
+def test_grid_manager_getsize(simple_mesh_data, simple_mesh_path, dim, size, caplog):
+    caplog.set_level(logging.DEBUG)
+    gm = GridManager(GridTransformation(), simple_mesh_path)
     gm.init()
     assert size == gm.get_size(dim)
 
@@ -169,7 +228,17 @@ def test_grid_manager_getsize(simple_mesh_data, simple_mesh_path, dim, size):
 def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(SystemExit) as error:
-        gm = GridManager(fname)
+        gm = GridManager(GridTransformation(), fname)
         gm.init()
         assert error.type == SystemExit
         assert error.value == 1
+
+
+@pytest.mark.parametrize("size", [100, 1500, 20000])
+def test_gt4py_transform_offset_by_1_where_valid(size):
+    trafo = ToGt4PyTransformation()
+    input_field = np.random.randint(-1, size, (size,))
+    offset = trafo.get_offset_for_field(input_field)
+    expected = np.where(input_field >= 0, -1, 0)
+    print(expected)
+    assert np.allclose(expected, offset)

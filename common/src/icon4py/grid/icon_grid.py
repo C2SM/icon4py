@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
+from abc import ABC
 from typing import Optional
 from uuid import UUID
 
@@ -40,6 +41,12 @@ class GridFileName(StrEnum):
 
 
 class GridFile:
+    """
+    Represents and ICON netcdf grid file.
+    """
+
+    INVALID_INDEX = -1
+
     class Property(GridFileName):
         GRID_ID = "uuidOfHGrid"
         PARENT_GRID_ID = "uuidOfParHGrid"
@@ -60,7 +67,7 @@ class GridFile:
         CELL_NAME = "cell"
         V2E_SIZE = "ne"  # 6
         DIAMOND_EDGE_SIZE = "no"  # 4
-        C2E_SIZE = "nv"  # 3
+        NEIGHBORING_EDGES_TO_CELL_SIZE = "nv"  # 3
         E2V_SIZE = "nc"  # 2
 
     def __init__(self, dataset: Dataset):
@@ -70,12 +77,10 @@ class GridFile:
     def dimension(self, name: GridFileName) -> int:
         return self._dataset.dimensions[name].size
 
-    def int_field(
-        self, name: GridFileName, offset_value=-1, transpose=True
-    ) -> np.ndarray:
+    def int_field(self, name: GridFileName, transpose=True) -> np.ndarray:
         nc_variable = self._dataset.variables[name]
         self._log.debug(f"{name}: {nc_variable}")
-        data = nc_variable[:] + offset_value
+        data = nc_variable[:]
 
         data = np.array(data, dtype=np.int32)
         return np.transpose(data) if transpose else data
@@ -85,9 +90,26 @@ class IconGridError(RuntimeError):
     pass
 
 
+class GridTransformation(ABC):
+    def get_offset_for_field(self, array: np.ndarray):
+        return np.zeros(array.shape)
+
+
+class ToGt4PyTransformation(GridTransformation):
+    def get_offset_for_field(self, array: np.ndarray):
+        """
+        Calculate the index offset needed for usage with python.
+
+        Fortran indices are 1-based, hence the offset is -1 for 0-based ness of python except for
+        INVALID values which are marked with -1 in the grid file and are kept such.
+        """
+        return np.where(array < 0, 0, -1)
+
+
 class GridManager:
-    def __init__(self, grid_file: str):
+    def __init__(self, transformation: GridTransformation, grid_file: str):
         self._log = logging.getLogger(__name__)
+        self._transformation = transformation
         self._grid: Optional[IconGrid] = None
         self._file_names = grid_file
 
@@ -95,13 +117,14 @@ class GridManager:
         _, grid = self._read_from_gridfile(self._file_names)
         self._grid = grid
 
-    def _read_from_gridfile(self, fname: str):
+    def _read_from_gridfile(self, fname: str) -> tuple[UUID, IconGrid]:
         try:
             dataset = Dataset(fname, "r", format="NETCDF4")
+
             self._log.debug(dataset)
             grid_id = UUID(dataset.getncattr(GridFile.Property.GRID_ID))
-            return grid_id, self.__class__.from_grid_dataset(dataset)
-        except:
+            return grid_id, self.from_grid_dataset(dataset)
+        except FileNotFoundError:
             self._log.error(f"gridfile {fname} not found, aborting")
             exit(1)
 
@@ -143,8 +166,12 @@ class GridManager:
             self._log.warning(f"cannot determine size of unknown dimension {dim}")
             raise IconGridError(f"Unknown dimension {dim}")
 
-    @staticmethod
-    def from_grid_dataset(dataset: Dataset) -> IconGrid:
+    def _get_index_field(self, reader, name: GridFileName):
+        field = reader.int_field(name)
+        field = field + self._transformation.get_offset_for_field(field)
+        return field
+
+    def from_grid_dataset(self, dataset: Dataset) -> IconGrid:
         reader = GridFile(dataset)
         num_cells = reader.dimension(GridFile.Dimension.CELL_NAME)
         num_edges = reader.dimension(GridFile.Dimension.EDGE_NAME)
@@ -152,15 +179,16 @@ class GridManager:
         grid_size = HorizontalMeshSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
+        c2e = self._get_index_field(reader, GridFile.Offsets.C2E)
+        c2v = self._get_index_field(reader, GridFile.Offsets.C2V)
 
-        c2e = reader.int_field(GridFile.Offsets.C2E)
-        c2v = reader.int_field(GridFile.Offsets.C2V)
-        e2c = reader.int_field(GridFile.Offsets.E2C)
-        e2v = reader.int_field(GridFile.Offsets.E2V)
-        v2c = reader.int_field(GridFile.Offsets.V2C)
-        v2e = reader.int_field(GridFile.Offsets.V2E)
-        v2e2v = reader.int_field(GridFile.Offsets.V2E2V)
-        c2e2c = reader.int_field(GridFile.Offsets.C2E2C)
+        e2c = self._get_index_field(reader, GridFile.Offsets.E2C)
+
+        e2v = self._get_index_field(reader, GridFile.Offsets.E2V)
+        v2c = self._get_index_field(reader, GridFile.Offsets.V2C)
+        v2e = self._get_index_field(reader, GridFile.Offsets.V2E)
+        v2e2v = self._get_index_field(reader, GridFile.Offsets.V2E2V)
+        c2e2c = self._get_index_field(reader, GridFile.Offsets.C2E2C)
         config = MeshConfig(
             horizontal_config=grid_size, vertical_config=VerticalMeshConfig(0)
         )

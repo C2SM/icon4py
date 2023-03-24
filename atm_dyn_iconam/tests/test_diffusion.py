@@ -29,10 +29,14 @@ from icon4py.diffusion.utils import (
     set_zero_v_k,
     setup_fields_for_initial_step,
 )
+from icon4py.testutils.fixtures import (  # noqa F401
+    data_provider,
+    grid_savepoint,
+    setup_icon_data,
+)
 from icon4py.testutils.serialbox_utils import IconDiffusionInitSavepoint
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
-from icon4py.testutils.fixtures import setup_icon_data, data_provider, grid_savepoint
 
 
 def test_scale_k():
@@ -224,7 +228,7 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
 @pytest.mark.datatest
 def test_diffusion_init(
     diffusion_savepoint_init,
-    grid_savepoint,
+    grid_savepoint,  # noqa: F811
     icon_grid,
     r04b09_diffusion_config,
     step_date_init,
@@ -359,7 +363,7 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 @pytest.mark.datatest
 def test_verify_diffusion_init_against_first_regular_savepoint(
     diffusion_savepoint_init,
-    grid_savepoint,
+    grid_savepoint,  # noqa: F811
     r04b09_diffusion_config,
     icon_grid,
     damping_height,
@@ -406,7 +410,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 @pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
     r04b09_diffusion_config,
-    grid_savepoint,
+    grid_savepoint,  # noqa: F811
     icon_grid,
     diffusion_savepoint_init,
     damping_height,
@@ -455,7 +459,7 @@ def test_run_diffusion_single_step(
     run_with_program,
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
-    grid_savepoint,
+    grid_savepoint,  # noqa: F811
     icon_grid,
     r04b09_diffusion_config,
     damping_height,
@@ -520,7 +524,7 @@ def test_run_diffusion_single_step(
     )
 
 
-def _read_fields(diffusion_savepoint_init, grid_savepoint):
+def _read_fields(diffusion_savepoint_init, grid_savepoint):  # noqa: F811
 
     grg = diffusion_savepoint_init.geofac_grg()
     interpolation_state = InterpolationState(
@@ -591,7 +595,7 @@ def test_diffusion_five_steps(
     damping_height,
     r04b09_diffusion_config,
     icon_grid,
-    grid_savepoint,
+    grid_savepoint,  # noqa: F811
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
     linit=True,

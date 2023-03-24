@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-from icon4py.testutils.fixtures import (
+from icon4py.testutils.fixtures import (  # noqa F401
     data_provider,
     grid_savepoint,
     setup_icon_data,

@@ -11,12 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import tarfile
 from pathlib import Path
 
 import pytest
-import wget
 
+from icon4py.testutils.data_handling import download_and_extract
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
@@ -33,18 +32,7 @@ def setup_icon_data():
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
-    data_path.mkdir(parents=True, exist_ok=True)
-    if not any(data_path.iterdir()):
-        print(
-            f"directory {data_path} is empty: downloading data from {data_uri} and extracting"
-        )
-        wget.download(data_uri, out=data_file)
-        # extract downloaded file
-        if not tarfile.is_tarfile(data_file):
-            raise NotImplementedError(f"{data_file} needs to be a valid tar file")
-        with tarfile.open(data_file, mode="r:*") as tf:
-            tf.extractall(path=data_path)
-        Path(data_file).unlink(missing_ok=True)
+    download_and_extract(data_uri, data_path, data_file)
 
 
 @pytest.fixture

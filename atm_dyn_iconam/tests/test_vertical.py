@@ -17,7 +17,11 @@ import numpy as np
 import pytest
 
 from icon4py.diffusion.icon_grid import VerticalModelParams
-from icon4py.testutils.fixtures import setup_icon_data, data_provider, grid_savepoint
+from icon4py.testutils.fixtures import (  # noqa F401
+    data_provider,
+    grid_savepoint,
+    setup_icon_data,
+)
 
 
 @pytest.mark.parametrize(
@@ -35,7 +39,7 @@ def test_nrdmax_calculation(max_h, damping, delta):
 
 
 @pytest.mark.datatest
-def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint):
+def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint):  # noqa: F811
     a = grid_savepoint.vct_a()
     damping_height = 12500
     vertical_params = VerticalModelParams(
