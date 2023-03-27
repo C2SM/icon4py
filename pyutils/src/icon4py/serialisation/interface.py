@@ -30,8 +30,8 @@ class InitData(CodeGenInput):
 
 @dataclass
 class FieldSerializationData(CodeGenInput):
-    name: str
-    dimension: Optional[str]
+    variable: str
+    association: str
 
 
 @dataclass

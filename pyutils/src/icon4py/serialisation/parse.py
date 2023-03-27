@@ -12,11 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import re
 from copy import deepcopy
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Optional
 
 from numpy.f2py.crackfortran import crackfortran
+
+from icon4py.serialisation.exceptions import MissingDerivedTypeError, ParsingError
 
 
 def crack(path: Path) -> dict:
@@ -26,6 +29,12 @@ def crack(path: Path) -> dict:
 class SubroutineType(Enum):
     RUN = "_run"
     INIT = "_init"
+
+
+@dataclass
+class CodegenContext:
+    last_intent_ln: int
+    end_subroutine_ln: int
 
 
 class GranuleParser:
@@ -70,8 +79,7 @@ class GranuleParser:
 
         return vars_with_lines
 
-    @staticmethod
-    def _extract_subroutines(parsed: dict) -> dict:
+    def _extract_subroutines(self, parsed: dict) -> dict:
         subroutines: dict = {}
         for elt in parsed["body"]:
             name = elt["name"]
@@ -79,6 +87,12 @@ class GranuleParser:
                 subroutines[name] = elt
             elif SubroutineType.INIT.value in name:
                 subroutines[name] = elt
+
+        if len(subroutines) != 2:
+            raise ParsingError(
+                f"Did not find _init and _run subroutines in {self.granule}"
+            )
+
         return subroutines
 
     @staticmethod
@@ -134,6 +148,10 @@ class GranuleParser:
                         typename = var["typename"]
                         if typename in derived_type_defs:
                             var["typedef"] = derived_type_defs[typename]
+                        else:
+                            raise MissingDerivedTypeError(
+                                f"Could not find type definition for TYPE: {typename} in dependency files: {self.dependencies}"
+                            )
 
         return self._decompose_derived_types(derived_types)
 
@@ -172,24 +190,22 @@ class GranuleParser:
     def _update_with_codegen_lines(self, parsed_types: dict) -> dict:
         with_lines = deepcopy(parsed_types)
         for subroutine in with_lines:
-            end_subroutine_line_number, last_intent_line_number = self.get_line_numbers(
-                subroutine
-            )
+            ctx = self.get_line_numbers(subroutine)
             for intent in with_lines[subroutine]:
-                intent_codegen_ln = []
+                lns = []
                 if intent == "in":
-                    intent_codegen_ln.append(last_intent_line_number)
+                    lns.append(ctx.last_intent_ln)
                 elif intent == "inout":
-                    intent_codegen_ln.append(last_intent_line_number)
-                    intent_codegen_ln.append(end_subroutine_line_number)
+                    lns.append(ctx.last_intent_ln)
+                    lns.append(ctx.end_subroutine_ln)
                 elif intent == "out":
-                    intent_codegen_ln.append(end_subroutine_line_number)
+                    lns.append(ctx.end_subroutine_ln)
                 else:
                     raise ValueError(f"Unrecognized intent: {intent}")
-                with_lines[subroutine][intent]["codegen_ln"] = intent_codegen_ln
+                with_lines[subroutine][intent]["codegen_lines"] = lns
         return with_lines
 
-    def get_line_numbers(self, subroutine_name: str) -> tuple[int, int]:
+    def get_line_numbers(self, subroutine_name: str) -> CodegenContext:
         with open(self.granule, "r") as f:
             code = f.read()
 
@@ -200,24 +216,20 @@ class GranuleParser:
         end_match = re.search(end_subroutine_pattern, code)
         if start_match is None or end_match is None:
             return None
-        start_subroutine_line_number = code[: start_match.start()].count("\n") + 1
-        end_subroutine_line_number = code[: end_match.start()].count("\n") + 1
+        start_subroutine_ln = code[: start_match.start()].count("\n") + 1
+        end_subroutine_ln = code[: end_match.start()].count("\n") + 1
 
         # Find the last intent statement line number in the subroutine
         intent_pattern = r"\bINTENT\b"
         intent_pattern_lines = [
             i
             for i, line in enumerate(
-                code.splitlines()[
-                    start_subroutine_line_number:end_subroutine_line_number
-                ]
+                code.splitlines()[start_subroutine_ln:end_subroutine_ln]
             )
             if re.search(intent_pattern, line)
         ]
         if not intent_pattern_lines:
-            raise Exception(f"No INTENT declarations found in {self.granule}")
-        last_intent_line_number = (
-            intent_pattern_lines[-1] + start_subroutine_line_number + 1
-        )
+            raise ParsingError(f"No INTENT declarations found in {self.granule}")
+        last_intent_ln = intent_pattern_lines[-1] + start_subroutine_ln + 1
 
-        return end_subroutine_line_number, last_intent_line_number
+        return CodegenContext(last_intent_ln, end_subroutine_ln)
