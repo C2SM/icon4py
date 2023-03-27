@@ -58,7 +58,7 @@ class ImportsData(CodeGenInput):
 
 @dataclass
 class StartCreateData(CodeGenInput):
-    ...
+    extra_fields: Optional[list[str]]
 
 
 @dataclass

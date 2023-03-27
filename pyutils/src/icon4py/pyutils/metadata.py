@@ -212,6 +212,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
         fvprog.itir.pre_walk_values()
         .if_isinstance(itir.OffsetLiteral)
         .getattr("value")
+        .if_isinstance(str)
         .to_list()
     )
     all_dim_labels = [dim.value for dim in all_dims if dim.kind == DimensionKind.LOCAL]

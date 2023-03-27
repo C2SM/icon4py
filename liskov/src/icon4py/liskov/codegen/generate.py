@@ -33,6 +33,8 @@ from icon4py.liskov.codegen.f90 import (
     ImportsStatementGenerator,
     InsertStatement,
     InsertStatementGenerator,
+    MetadataStatement,
+    MetadataStatementGenerator,
     StartCreateStatement,
     StartCreateStatementGenerator,
     StartProfileStatement,
@@ -48,6 +50,7 @@ from icon4py.liskov.codegen.interface import (
     UnusedDirective,
 )
 from icon4py.liskov.common import Step
+from icon4py.liskov.external.metadata import CodeMetadata
 from icon4py.liskov.logger import setup_logger
 
 
@@ -64,10 +67,16 @@ class GeneratedCode:
 
 
 class IntegrationGenerator(Step):
-    def __init__(self, directives: DeserialisedDirectives, profile: bool):
+    def __init__(
+        self,
+        directives: DeserialisedDirectives,
+        profile: bool,
+        metadata_gen: bool,
+    ):
         self.profile = profile
         self.directives = directives
         self.generated: list[GeneratedCode] = []
+        self.metadata_gen = metadata_gen
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:
         """Generate all f90 code for integration.
@@ -75,6 +84,7 @@ class IntegrationGenerator(Step):
         Args:
             profile: A boolean indicating whether to include profiling calls in the generated code.
         """
+        self._generate_metadata()
         self._generate_create()
         self._generate_imports()
         self._generate_declare()
@@ -105,6 +115,18 @@ class IntegrationGenerator(Step):
         source = generate_fortran_code(parent_node, code_generator, **kwargs)
         code = GeneratedCode(source=source, startln=startln, endln=endln)
         self.generated.append(code)
+
+    def _generate_metadata(self) -> None:
+        """Generate metadata about the current liskov execution."""
+        if self.metadata_gen:
+            logger.info("Generating icon-liskov metadata.")
+            self._generate(
+                MetadataStatement,
+                MetadataStatementGenerator,
+                startln=0,
+                endln=0,
+                metadata=CodeMetadata(),
+            )
 
     def _generate_declare(self) -> None:
         """Generate f90 code for declaration statements."""
@@ -206,6 +228,7 @@ class IntegrationGenerator(Step):
             self.directives.StartCreate.startln,
             self.directives.StartCreate.endln,
             stencils=self.directives.StartStencil,
+            extra_fields=self.directives.StartCreate.extra_fields,
         )
 
         self._generate(
@@ -229,26 +252,27 @@ class IntegrationGenerator(Step):
 
     def _generate_profile(self) -> None:
         """Generate additional nvtx profiling statements."""
-        if self.directives.StartProfile != UnusedDirective:
-            for start in self.directives.StartProfile:  # type: ignore
-                logger.info("Generating nvtx start statement.")
-                self._generate(
-                    StartProfileStatement,
-                    StartProfileStatementGenerator,
-                    start.startln,
-                    start.endln,
-                    name=start.name,
-                )
+        if self.profile:
+            if self.directives.StartProfile != UnusedDirective:
+                for start in self.directives.StartProfile:  # type: ignore
+                    logger.info("Generating nvtx start statement.")
+                    self._generate(
+                        StartProfileStatement,
+                        StartProfileStatementGenerator,
+                        start.startln,
+                        start.endln,
+                        name=start.name,
+                    )
 
-        if self.directives.EndProfile != UnusedDirective:
-            for end in self.directives.EndProfile:  # type: ignore
-                logger.info("Generating nvtx end statement.")
-                self._generate(
-                    EndProfileStatement,
-                    EndProfileStatementGenerator,
-                    end.startln,
-                    end.endln,
-                )
+            if self.directives.EndProfile != UnusedDirective:
+                for end in self.directives.EndProfile:  # type: ignore
+                    logger.info("Generating nvtx end statement.")
+                    self._generate(
+                        EndProfileStatement,
+                        EndProfileStatementGenerator,
+                        end.startln,
+                        end.endln,
+                    )
 
     def _generate_insert(self) -> None:
         """Generate free form statement from insert directive."""
