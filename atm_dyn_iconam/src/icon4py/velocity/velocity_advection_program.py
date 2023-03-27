@@ -94,7 +94,7 @@ def predictor_tendencies_vn_only(
     vt: Field[[EdgeDim, KDim], float],
     wgtfac_e: Field[[EdgeDim, KDim], float],
     z_vt_ie: Field[[EdgeDim, KDim], float],
-    edge_endindex_local_minus2: int,
+    edge_startindex_local_minus2: int,
     nlev: int,
 ):
     _mo_velocity_advection_stencil_03(
@@ -102,7 +102,7 @@ def predictor_tendencies_vn_only(
         vt,
         out=z_vt_ie,
         domain={
-            EdgeDim: (5, edge_endindex_local_minus2),
+            EdgeDim: (5, edge_startindex_local_minus2),
             KDim: (1, nlev),
         },
     )
@@ -118,7 +118,7 @@ def advector_tendencies_vn_only(
     tangent_orientation: Field[[EdgeDim], float],
     local_z_w_v: Field[[VertexDim, KDim], float],
     local_z_v_grad_w: Field[[EdgeDim, KDim], float],
-    edge_endindex_local_minus1: int,
+    edge_startindex_local_minus1: int,
     nlev: int,
 ):
     _mo_velocity_advection_stencil_07(
@@ -131,7 +131,7 @@ def advector_tendencies_vn_only(
         local_z_w_v,
         out=local_z_v_grad_w,
         domain={
-            EdgeDim: (5, edge_endindex_local_minus1),
+            EdgeDim: (5, edge_startindex_local_minus1),
             KDim: (0, nlev),
         },
     )
@@ -154,8 +154,8 @@ def predictor_tendencies(
     wgtfac_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
     wgtfacq_e: Field[[EdgeDim, KDim], float],
-    cell_endindex_local_minus1: int,
-    edge_endindex_local_minus2: int,
+    cell_startindex_local_minus1: int,
+    edge_startindex_local_minus2: int,
     nflatlev_startindex: int,
     nlev: int,
 ):
@@ -164,7 +164,7 @@ def predictor_tendencies(
         rbf_vec_coeff_e,
         out=vt,
         domain={
-            EdgeDim: (5, edge_endindex_local_minus2),
+            EdgeDim: (5, edge_startindex_local_minus2),
             KDim: (0, nlev),
         },
     )
@@ -175,7 +175,7 @@ def predictor_tendencies(
         vt,
         out=(vn_ie, z_kin_hor_e),
         domain={
-            EdgeDim: (5, edge_endindex_local_minus2),
+            EdgeDim: (5, edge_startindex_local_minus2),
             KDim: (1, nlev),
         },
     )
@@ -187,7 +187,7 @@ def predictor_tendencies(
         vt,
         out=z_w_concorr_me,
         domain={
-            EdgeDim: (5, edge_endindex_local_minus2),
+            EdgeDim: (5, edge_startindex_local_minus2),
             KDim: (nflatlev_startindex, nlev),
         },
     )
@@ -197,7 +197,7 @@ def predictor_tendencies(
         vt,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
-            EdgeDim: (5, edge_endindex_local_minus2),
+            EdgeDim: (5, edge_startindex_local_minus2),
             KDim: (0, 0),
         },
     )
@@ -206,7 +206,7 @@ def predictor_tendencies(
         vn,
         out=vn_ie,
         domain={
-            EdgeDim: (5, edge_endindex_local_minus2),
+            EdgeDim: (5, edge_startindex_local_minus2),
             KDim: (nlev, nlev),
         },
     )
@@ -216,7 +216,7 @@ def predictor_tendencies(
         e_bln_c_s,
         out=local_z_w_concorr_mc,
         domain={
-            CellDim: (4, cell_endindex_local_minus1),
+            CellDim: (4, cell_startindex_local_minus1),
             KDim: (nflatlev_startindex, nlev),
         },
     )
@@ -226,7 +226,7 @@ def predictor_tendencies(
         wgtfac_c,
         out=w_concorr_c,
         domain={
-            CellDim: (4, cell_endindex_local_minus1),
+            CellDim: (4, cell_startindex_local_minus1),
             KDim: (nflatlev_startindex + 1, nlev),
         },
     )
@@ -269,8 +269,8 @@ def advector_tendencies(
     scalfac_exdiff: float,
     area_edge: Field[[EdgeDim], float],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    cell_startindex_nudging: int,
-    cell_endindex_local_minus1: int,
+    cell_endindex_nudging: int,
+    cell_startindex_local_minus1: int,
     cell_endindex_local: int,
     edge_startindex_nudging_plus_one: int,
     edge_endindex_local: int,
@@ -284,7 +284,7 @@ def advector_tendencies(
         e_bln_c_s,
         out=local_z_ekinh,
         domain={
-            CellDim: (4, cell_endindex_local_minus1),
+            CellDim: (4, cell_startindex_local_minus1),
             KDim: (0, nlev),
         },
     )
@@ -293,14 +293,14 @@ def advector_tendencies(
         w,
         out=local_z_w_con_c,
         domain={
-            CellDim: (4, cell_endindex_local_minus1),
+            CellDim: (4, cell_startindex_local_minus1),
             KDim: (0, nlev),
         },
     )
     _mo_velocity_advection_stencil_12(
         out=local_z_w_con_c,
         domain={
-            CellDim: (4, cell_endindex_local_minus1),
+            CellDim: (4, cell_startindex_local_minus1),
             KDim: (nlevp1, nlevp1),
         },
     )
@@ -309,7 +309,7 @@ def advector_tendencies(
         w_concorr_c,
         out=local_z_w_con_c,
         domain={
-            CellDim: (4, cell_endindex_local_minus1),
+            CellDim: (4, cell_startindex_local_minus1),
             KDim: (nflatlev_startindex + 1, nlev),
         },
     )
@@ -328,101 +328,101 @@ def advector_tendencies(
         dtime,
         out=(local_cfl_clipping, local_pre_levelmask, local_vcfl, local_z_w_con_c),
         domain={
-            CellDim: (4, cell_endindex_local_minus1),
+            CellDim: (4, cell_startindex_local_minus1),
             # KDim: (maximum(3, nrdmax_startindex - 2), nlev - 3),
-            KDim: (3, nlev - 3),  # TODO: change back to line above
+            KDim: (3, nlev - 3),  # TODO: @nfarabullini change back to line above
         },
     )
     _mo_velocity_advection_stencil_15(
         local_z_w_con_c,
         out=z_w_con_c_full,
         domain={
-            CellDim: (4, cell_endindex_local_minus1),
+            CellDim: (4, cell_startindex_local_minus1),
             KDim: (0, nlev),
         },
     )
 
-    # _mo_velocity_advection_stencil_16(
-    #     local_z_w_con_c,
-    #     w,
-    #     coeff1_dwdz,
-    #     coeff2_dwdz,
-    #     out=ddt_w_adv,
-    #     domain={
-    #         CellDim: (cell_startindex_nudging, cell_endindex_local),
-    #         KDim: (1, nlev),
-    #     },
-    # )
-    #
-    # _mo_velocity_advection_stencil_17(
-    #     e_bln_c_s,
-    #     local_z_v_grad_w,
-    #     ddt_w_adv,
-    #     out=ddt_w_adv,
-    #     domain={
-    #         CellDim: (cell_startindex_nudging, cell_endindex_local),
-    #         KDim: (1, nlev),
-    #     },
-    # )
-    #
-    # _mo_velocity_advection_stencil_18(
-    #     levelmask,
-    #     local_cfl_clipping,
-    #     owner_mask,
-    #     local_z_w_con_c,
-    #     ddqz_z_half,
-    #     area,
-    #     geofac_n2s,
-    #     w,
-    #     ddt_w_adv,
-    #     scalfac_exdiff,
-    #     cfl_w_limit,
-    #     dtime,
-    #     out=ddt_w_adv,
-    #     domain={
-    #         CellDim: (cell_startindex_nudging, cell_endindex_local),
-    #         # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
-    #         KDim: (3, nlev - 3),
-    #     },
-    # )
-    #
-    # _mo_velocity_advection_stencil_19(
-    #     z_kin_hor_e,
-    #     coeff_gradekin,
-    #     local_z_ekinh,
-    #     zeta,
-    #     vt,
-    #     f_e,
-    #     c_lin_e,
-    #     z_w_con_c_full,
-    #     vn_ie,
-    #     ddqz_z_full_e,
-    #     out=ddt_vn_adv,
-    #     domain={
-    #         EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
-    #         KDim: (0, nlev),
-    #     },
-    # )
-    #
-    # _mo_velocity_advection_stencil_20(
-    #     levelmask,
-    #     c_lin_e,
-    #     z_w_con_c_full,
-    #     ddqz_z_full_e,
-    #     area_edge,
-    #     tangent_orientation,
-    #     inv_primal_edge_length,
-    #     zeta,
-    #     geofac_grdiv,
-    #     vn,
-    #     ddt_vn_adv,
-    #     cfl_w_limit,
-    #     scalfac_exdiff,
-    #     dtime,
-    #     out=ddt_vn_adv,
-    #     domain={
-    #         EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
-    #         # KDim: (maximum(3, nrdmax_startindex - 2), nlev - 4),
-    #         KDim: (3, nlev - 4),  # TODO: change back to line above
-    #     },
-    # )
+    _mo_velocity_advection_stencil_16(
+        local_z_w_con_c,
+        w,
+        coeff1_dwdz,
+        coeff2_dwdz,
+        out=ddt_w_adv,
+        domain={
+            CellDim: (cell_endindex_nudging, cell_endindex_local),
+            KDim: (1, nlev),
+        },
+    )
+
+    _mo_velocity_advection_stencil_17(
+        e_bln_c_s,
+        local_z_v_grad_w,
+        ddt_w_adv,
+        out=ddt_w_adv,
+        domain={
+            CellDim: (cell_endindex_nudging, cell_endindex_local),
+            KDim: (1, nlev),
+        },
+    )
+
+    _mo_velocity_advection_stencil_18(
+        levelmask,
+        local_cfl_clipping,
+        owner_mask,
+        local_z_w_con_c,
+        ddqz_z_half,
+        area,
+        geofac_n2s,
+        w,
+        ddt_w_adv,
+        scalfac_exdiff,
+        cfl_w_limit,
+        dtime,
+        out=ddt_w_adv,
+        domain={
+            CellDim: (cell_endindex_nudging, cell_endindex_local),
+            # KDim: (max(3, nrdmax_startindex - 2), nlev - 4),
+            KDim: (3, nlev - 4),  # TODO: @nfarabullini change back to line above
+        },
+    )
+
+    _mo_velocity_advection_stencil_19(
+        z_kin_hor_e,
+        coeff_gradekin,
+        local_z_ekinh,
+        zeta,
+        vt,
+        f_e,
+        c_lin_e,
+        z_w_con_c_full,
+        vn_ie,
+        ddqz_z_full_e,
+        out=ddt_vn_adv,
+        domain={
+            EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
+            KDim: (0, nlev),
+        },
+    )
+
+    _mo_velocity_advection_stencil_20(
+        levelmask,
+        c_lin_e,
+        z_w_con_c_full,
+        ddqz_z_full_e,
+        area_edge,
+        tangent_orientation,
+        inv_primal_edge_length,
+        zeta,
+        geofac_grdiv,
+        vn,
+        ddt_vn_adv,
+        cfl_w_limit,
+        scalfac_exdiff,
+        dtime,
+        out=ddt_vn_adv,
+        domain={
+            EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_local),
+            # KDim: (maximum(3, nrdmax_startindex - 2), nlev - 4),
+            KDim: (3, nlev - 4),  # TODO: @nfarabullini change back to line above
+        },
+    )

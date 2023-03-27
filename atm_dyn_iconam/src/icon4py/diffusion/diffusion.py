@@ -45,9 +45,10 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
-    mo_nh_diffusion_stencil_15,
-)
+
+# from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
+#     mo_nh_diffusion_stencil_15,
+# )
 from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.constants import (
     CPD,

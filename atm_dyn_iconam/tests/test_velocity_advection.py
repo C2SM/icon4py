@@ -149,7 +149,6 @@ def test_velocity_predictor_step(
     sp = savepoint_velocity_init
     dtime = sp.get_metadata("dtime").get("dtime")
     vn_only = sp.get_metadata("vn_only").get("vn_only")
-    jstep = sp.get_metadata("jstep").get("jstep")
     ntnd = sp.get_metadata("ntnd").get("ntnd")
 
     diagnostic_state = DiagnosticState(
