@@ -27,11 +27,11 @@ from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
-from icon4py.pyutils.exceptions import (
+from icon4py.icon4pygen.exceptions import (
     InvalidConnectivityException,
     MultipleFieldOperatorException,
 )
-from icon4py.pyutils.icochainsize import IcoChainSize
+from icon4py.icon4pygen.icochainsize import IcoChainSize
 
 
 @dataclass(frozen=True)

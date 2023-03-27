@@ -24,7 +24,7 @@ from gt4py.next.iterator.runtime import closure, fendef, fundef
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim, Koff
-from icon4py.pyutils.metadata import FieldInfo
+from icon4py.icon4pygen.metadata import FieldInfo
 
 
 @fundef
