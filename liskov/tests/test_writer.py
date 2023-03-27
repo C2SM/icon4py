@@ -28,7 +28,7 @@ def test_write_from():
             f.write("!$DSL\n some code\n another line")
 
         # create an instance of IntegrationWriter and write generated code
-        generated = [GeneratedCode("generated code", 1, 3)]
+        generated = [GeneratedCode(1, 3, "generated code")]
         integration_writer = CodegenWriter(input_filepath, output_filepath)
         integration_writer(generated)
 
@@ -55,8 +55,8 @@ def test_remove_directives():
 def test_insert_generated_code():
     current_file = ["some code", "another line"]
     generated = [
-        GeneratedCode("generated code2", 5, 6),
-        GeneratedCode("generated code1", 1, 3),
+        GeneratedCode(5, 6, "generated code2"),
+        GeneratedCode(1, 3, "generated code1"),
     ]
     expected_output = [
         "some code",

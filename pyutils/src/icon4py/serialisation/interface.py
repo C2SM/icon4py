@@ -14,15 +14,34 @@
 from dataclasses import dataclass
 from typing import Optional
 
-
-@dataclass
-class CodeGenInput:
-    startln: int
-    endln: Optional[int]
+from icon4py.liskov.codegen.types import CodeGenInput
 
 
 @dataclass
-class GeneratedCode(CodeGenInput):
-    """A class for storing generated f90 code and its line number information."""
+class Metadata(CodeGenInput):
+    key: str
+    value: str
 
-    source: str
+
+@dataclass
+class InitData(CodeGenInput):
+    directory_path: str
+
+
+@dataclass
+class FieldSerializationData(CodeGenInput):
+    variable: str
+    association: str
+
+
+@dataclass
+class SavepointData(CodeGenInput):
+    name: str
+    fields: list[FieldSerializationData]
+    metadata: Optional[list[Metadata]]
+
+
+@dataclass
+class SerialisationInterface:
+    init: InitData
+    savepoint: list[SavepointData]
