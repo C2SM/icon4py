@@ -184,7 +184,7 @@ class IconGridSavePoint(IconSavepoint):
     def v2e(self):
         return self._get_connectiviy_array("v2e")
 
-    def construct_icon_grid(self):
+    def construct_icon_grid(self) -> IconGrid:
         sp_meta = self.get_metadata(
             "nproma", "nlev", "num_vert", "num_cells", "num_edges"
         )
@@ -245,7 +245,7 @@ class IconGridSavePoint(IconSavepoint):
             edge_areas=self.edge_areas(),
         )
 
-    def construct_cell_geometry(self):
+    def construct_cell_geometry(self) -> CellParams:
         return CellParams(area=self.cell_areas())
 
 

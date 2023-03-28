@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Callable
 
 import click
@@ -166,7 +167,7 @@ class Timeloop:
         timer.summary(True)
 
 
-def initialize(n_time_steps, file_path: str = "."):
+def initialize(n_time_steps, file_path: Path):
     """
     Inititalize the driver run.
 
@@ -252,7 +253,7 @@ def run(
     log = logging.getLogger(__file__)
     log.info(f"Starting ICON dycore run: {datetime.isoformat(start_time)}")
     log.info(f"input args: input_path={input_path}, n_time_steps={n_steps}")
-    timeloop, diagnostic_state, prognostic_state = initialize(n_steps, input_path)
+    timeloop, diagnostic_state, prognostic_state = initialize(n_steps, Path(input_path))
     log.info("dycore configuring: DONE")
     log.info("timeloop: START")
 

@@ -12,8 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 
+from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.testutils import serialbox_utils
 
@@ -22,7 +24,12 @@ SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
 
 
-def read_icon_grid(path=".", ser_type="sb") -> IconGrid:
+class SerializationType(str, Enum):
+    SB = "serialbox"
+    NC = "netcdf"
+
+
+def read_icon_grid(path: Path, ser_type=SerializationType.SB) -> IconGrid:
     """
     Return IconGrid parsed from a given input type.
 
@@ -32,19 +39,21 @@ def read_icon_grid(path=".", ser_type="sb") -> IconGrid:
         path: str - path where to find the input data
         ser_type: str - type of input data. Currently only 'sb (serialbox)' is supported. It reads from ppser serialized test data
     """
-    if ser_type == "sb":
+    if ser_type == SerializationType.SB:
         return (
-            serialbox_utils.IconSerialDataProvider("icon_pydycore", path, False)
+            serialbox_utils.IconSerialDataProvider(
+                "icon_pydycore", str(path.absolute()), False
+            )
             .from_savepoint_grid()
             .construct_icon_grid()
         )
     else:
-        raise NotImplementedError
+        raise NotImplementedError("Only ser_type='sb' is implemented so far.")
 
 
-def read_initial_state(gridfile_path):
+def read_initial_state(gridfile_path: Path):
     data_provider = serialbox_utils.IconSerialDataProvider(
-        "icon_pydycore", gridfile_path, False
+        "icon_pydycore", str(gridfile_path), False
     )
     initial_save_point = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
@@ -54,10 +63,12 @@ def read_initial_state(gridfile_path):
     return data_provider, diagnostic_state, prognostic_state
 
 
-def read_geometry_fields(path=".", ser_type="sb"):
-    if ser_type == "sb":
+def read_geometry_fields(
+    path: Path, ser_type=SerializationType.SB
+) -> tuple[EdgeParams, CellParams, VerticalModelParams]:
+    if ser_type == SerializationType.SB:
         sp = serialbox_utils.IconSerialDataProvider(
-            "icon_pydycore", path, False
+            "icon_pydycore", str(path.absolute()), False
         ).from_savepoint_grid()
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
@@ -66,19 +77,19 @@ def read_geometry_fields(path=".", ser_type="sb"):
         )
         return edge_geometry, cell_geometry, vertical_geometry
     else:
-        raise NotImplementedError
+        raise NotImplementedError("Only ser_type='sb' is implemented so far.")
 
 
-def read_static_fields(path=".", ser_type="sb"):
-    if ser_type == "sb":
+def read_static_fields(path: Path, ser_type=SerializationType.SB):
+    if ser_type == SerializationType.SB:
         sp = serialbox_utils.IconSerialDataProvider(
-            "icon_pydycore", path, False
+            "icon_pydycore", str(path.absolute()), False
         ).from_savepoint_diffusion_init(linit=True, date=SIMULATION_START_DATE)
         metric_state = sp.construct_metric_state()
         interpolation_state = sp.construct_interpolation_state()
         return metric_state, interpolation_state
     else:
-        raise NotImplementedError
+        raise NotImplementedError("Only ser_type='sb' is implemented so far.")
 
 
 def configure_logging(run_path: str, start_time):
