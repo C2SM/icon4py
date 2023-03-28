@@ -10,42 +10,88 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import pytest
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
-from icon4py.f2ser.interface import SerialisationInterface
+from icon4py.f2ser.interface import (
+    FieldSerialisationData,
+    SavepointData,
+    SerialisationInterface,
+)
+from icon4py.f2ser.parse import GranuleParser
 
 
-mock_granule = {
-    "diffusion_init": {
-        "in": {
-            "jg": {"typespec": "integer", "attrspec": [], "intent": ["in"]},
-            "vt": {
-                "typespec": "real",
-                "kindselector": {"kind": "vp"},
-                "attrspec": [],
-                "intent": ["in"],
-                "dimension": [":", ":", ":"],
+@pytest.fixture
+def mock_parsed_granule():
+    return {
+        "diffusion_init": {
+            "in": {
+                "jg": {"typespec": "integer", "attrspec": [], "intent": ["in"]},
+                "vt": {
+                    "typespec": "real",
+                    "kindselector": {"kind": "vp"},
+                    "attrspec": [],
+                    "intent": ["in"],
+                    "dimension": [":", ":", ":"],
+                },
+                "codegen_lines": [432],
+            }
+        },
+        "diffusion_run": {
+            "out": {
+                "vert_idx": {
+                    "typespec": "logical",
+                    "kindselector": {"kind": "vp"},
+                    "attrspec": [],
+                    "intent": ["in"],
+                    "dimension": [":", ":", ":"],
+                },
+                "codegen_lines": [800],
             },
-            "codegen_lines": [432],
-        }
-    },
-    "diffusion_run": {
-        "out": {
-            "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
-            "vert_idx": {
-                "typespec": "logical",
-                "kindselector": {"kind": "vp"},
-                "attrspec": [],
-                "intent": ["in"],
-                "dimension": [":", ":", ":"],
+            "in": {
+                "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
+                "vert_idx": {
+                    "typespec": "logical",
+                    "kindselector": {"kind": "vp"},
+                    "attrspec": [],
+                    "intent": ["in"],
+                    "dimension": [":", ":", ":"],
+                },
+                "codegen_lines": [600, 800],
             },
-            "codegen_lines": [800],
-        }
-    },
-}
+            "inout": {
+                "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
+                "vert_idx": {
+                    "typespec": "logical",
+                    "kindselector": {"kind": "vp"},
+                    "attrspec": [],
+                    "intent": ["in"],
+                    "dimension": [":", ":", ":"],
+                },
+                "codegen_lines": [600, 800],
+            },
+        },
+    }
 
 
-def test_deserialiser():
-    deserialiser = ParsedGranuleDeserialiser(mock_granule)
+def test_deserialiser_mock(mock_parsed_granule):
+    deserialiser = ParsedGranuleDeserialiser(mock_parsed_granule)
     interface = deserialiser.deserialise()
     assert isinstance(interface, SerialisationInterface)
+    assert len(interface.savepoint) == 6
+    assert all([isinstance(s, SavepointData) for s in interface.savepoint])
+    assert all(
+        [
+            isinstance(f, FieldSerialisationData)
+            for s in interface.savepoint
+            for f in s.fields
+        ]
+    )
+
+
+def test_deserialiser_diffusion_granule(diffusion_granule, diffusion_granule_deps):
+    parser = GranuleParser(diffusion_granule, diffusion_granule_deps)
+    parsed = parser.parse()
+    deserialiser = ParsedGranuleDeserialiser(parsed)
+    interface = deserialiser.deserialise()
+    assert len(interface.savepoint) == 5

@@ -29,6 +29,9 @@ class FieldSerialisationData:
     association: str
 
 
+# todo: decomposed fields require extra information so that we can generate corresponding field copies as well.
+
+
 @dataclass
 class InitData(CodeGenInput):
     directory_path: str
