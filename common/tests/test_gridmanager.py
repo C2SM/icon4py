@@ -165,6 +165,14 @@ def test_grid_parser_index_fields(simple_mesh_data, caplog):
     assert np.allclose(grid_parser.int_field(GridFile.Offsets.V2C), mesh.v2c)
 
 
+
+
+#e2c2v - diamond: serial, simple
+
+#c2v: grid, ???
+#v2e2v: grid,???
+
+# v2e: serial, simple, grid
 @pytest.mark.skip("TODO: handling of boundary values")
 @pytest.mark.datatest
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, get_grid_files):
@@ -175,8 +183,15 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, get_grid_files):
         gm.get_v2e_connectivity().table, grid_savepoint.v2e()[0:num_vertex, :]
     )
 
+#v2c: serial, simple, grid
+#@pytest.mark.skip("TODO: handling of boundary values")
 
-@pytest.mark.skip("TODO: v2c not serialized??")
+#mo_model_domimp_patches.f90 lines 2183ff
+# ! Checks for the pentagon case and moves dummy cells to end.
+#  ! The dummy entry is either set to 0 or duplicated from the last one
+#  SUBROUTINE move_dummies_to_end(array, array_size, max_connectivity, duplicate)
+
+
 @pytest.mark.datatest
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, get_grid_files):
     caplog.set_level(logging.DEBUG)
@@ -186,7 +201,18 @@ def test_gridmanager_eval_v2c(caplog, grid_savepoint, get_grid_files):
         gm.get_v2c_connectivity().table, grid_savepoint.v2c()[0:num_vertex, :]
     )
 
+#e2v: serial, simple, grid
+@pytest.mark.datatest
+def test_gridmanager_eval_e2v(caplog, grid_savepoint, get_grid_files):
+    caplog.set_level(logging.DEBUG)
+    fname = r04b09_dsl_grid_path.joinpath("grid.nc")
+    gm, num_cells, num_edges, num_vertex = _init_grid_manager(fname)
+    assert np.allclose(
+        gm.get_e2v_connectivity().table, grid_savepoint.e2v()[0:num_edges, :]
+    )
 
+
+# e2c :serial, simple, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, get_grid_files):
     caplog.set_level(logging.DEBUG)
@@ -198,6 +224,7 @@ def test_gridmanager_eval_e2c(caplog, grid_savepoint, get_grid_files):
     )
 
 
+#c2e: serial, simple, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_c2e(caplog, grid_savepoint, get_grid_files):
     caplog.set_level(logging.DEBUG)
@@ -206,6 +233,28 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, get_grid_files):
     assert np.allclose(
         gm.get_c2e_connectivity().table, grid_savepoint.c2e()[0:num_cells, :]
     )
+
+# e2c2e (e2c2eo) - diamond: serial, simple
+# @pytest.mark.datatest
+# def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, get_grid_files):
+#     caplog.set_level(logging.DEBUG)
+#     fname = r04b09_dsl_grid_path.joinpath("grid.nc")
+#     gm, num_cells, num_edges, num_vertex = _init_grid_manager(fname)
+#     assert np.allclose(
+#         gm.get_e2c2e_connectivity().table, grid_savepoint.e2c2e()[0:num_cells, :]
+#     )
+
+#c2e2c: serial, simple, grid
+@pytest.mark.datatest
+def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, get_grid_files):
+    caplog.set_level(logging.DEBUG)
+    fname = r04b09_dsl_grid_path.joinpath("grid.nc")
+    gm, num_cells, num_edges, num_vertex = _init_grid_manager(fname)
+    assert np.allclose(
+        gm.get_c2e2c_connectivity().table, grid_savepoint.c2e2c()[0:num_cells, :]
+    )
+
+
 
 
 def _init_grid_manager(fname):
@@ -240,5 +289,4 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
     input_field = np.random.randint(-1, size, (size,))
     offset = trafo.get_offset_for_field(input_field)
     expected = np.where(input_field >= 0, -1, 0)
-    print(expected)
     assert np.allclose(expected, offset)

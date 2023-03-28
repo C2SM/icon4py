@@ -141,7 +141,7 @@ class GridManager:
         return self._grid.get_c2e2c_connectivity()
 
     def get_v2c_connectivity(self):
-        return self._grid.get_v2e_connectivity()
+        return self._grid.get_v2c_connectivity()
 
     def get_c2e2co_connectivity(self):
         return self._grid.get_c2e2co_connectivity()
@@ -207,3 +207,6 @@ class GridManager:
             )
         )
         return icon_grid
+
+    def get_e2c2e_connectivity(self):
+        pass

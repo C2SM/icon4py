@@ -167,6 +167,9 @@ class IconGridSavePoint(IconSavepoint):
     def v2e(self):
         return self._get_connectiviy_array("v2e")
 
+    def v2c(self):
+        return self._get_connectiviy_array("v2c")
+
 
 class IconDiffusionInitSavepoint(IconSavepoint):
     def hdef_ic(self):
