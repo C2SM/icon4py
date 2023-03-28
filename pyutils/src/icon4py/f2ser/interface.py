@@ -18,9 +18,15 @@ from icon4py.liskov.codegen.types import CodeGenInput
 
 
 @dataclass
-class Metadata(CodeGenInput):
+class Metadata:
     key: str
     value: str
+
+
+@dataclass
+class FieldSerialisationData:
+    variable: str
+    association: str
 
 
 @dataclass
@@ -29,15 +35,9 @@ class InitData(CodeGenInput):
 
 
 @dataclass
-class FieldSerializationData(CodeGenInput):
-    variable: str
-    association: str
-
-
-@dataclass
 class SavepointData(CodeGenInput):
     name: str
-    fields: list[FieldSerializationData]
+    fields: list[FieldSerialisationData]
     metadata: Optional[list[Metadata]]
 
 

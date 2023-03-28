@@ -11,4 +11,4 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# todo: add serialisation code generation
+# todo: add f2ser code generation

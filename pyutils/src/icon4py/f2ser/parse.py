@@ -19,7 +19,11 @@ from typing import Optional
 
 from numpy.f2py.crackfortran import crackfortran
 
-from icon4py.serialisation.exceptions import MissingDerivedTypeError, ParsingError
+from icon4py.f2ser.exceptions import MissingDerivedTypeError, ParsingError
+
+
+CodeGenLines = list[int]
+ParsedGranule = dict[str, dict[str, dict[str, any] | CodeGenLines]]
 
 
 def crack(path: Path) -> dict:
@@ -58,7 +62,7 @@ class GranuleParser:
         self.granule = granule
         self.dependencies = dependencies
 
-    def parse(self) -> dict:
+    def parse(self) -> ParsedGranule:
 
         parsed = crack(self.granule)
 
@@ -192,7 +196,7 @@ class GranuleParser:
         for subroutine in with_lines:
             ctx = self.get_line_numbers(subroutine)
             for intent in with_lines[subroutine]:
-                lns = []
+                lns: CodeGenLines = []
                 if intent == "in":
                     lns.append(ctx.last_intent_ln)
                 elif intent == "inout":

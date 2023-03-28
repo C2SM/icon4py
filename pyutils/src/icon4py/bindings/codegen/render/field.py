@@ -68,7 +68,7 @@ class FieldRenderer:
         )
 
     def render_serialise_func(self) -> str:
-        """Render c++ serialisation function."""
+        """Render c++ f2ser function."""
         _serializers = {
             "E": "serialize_dense_edges",
             "C": "serialize_dense_cells",

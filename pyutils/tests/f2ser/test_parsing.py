@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from icon4py.serialisation.exceptions import MissingDerivedTypeError, ParsingError
-from icon4py.serialisation.parse import GranuleParser
+from icon4py.f2ser.exceptions import MissingDerivedTypeError, ParsingError
+from icon4py.f2ser.parse import GranuleParser
 
 
 def root_dir():
