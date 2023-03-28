@@ -115,9 +115,9 @@ class HorizontalMeshSize:
     num_cells: int
 
 
-# TODO that cannot be a data class
-
-
+# TODO [@Magdalena] allow initialization with only partial values
+#  (becomes tedious for testing otherwise): hence this should
+#  that should not be a data class
 class EdgeParams:
     def __init__(
         self,

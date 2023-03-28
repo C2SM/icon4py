@@ -22,7 +22,7 @@ from gt4py.next.program_processors.runners import gtfn_cpu
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
 
-# TODO fix duplication: duplicated from test testutils/utils.py
+# TODO [@Magdalena] fix duplication: duplicated from test testutils/utils.py
 def zero_field(mesh, *dims: Dimension, dtype=float):
     shapex = tuple(map(lambda x: mesh.size[x], dims))
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
