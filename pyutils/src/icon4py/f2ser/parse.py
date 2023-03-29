@@ -63,7 +63,6 @@ class GranuleParser:
         self.dependencies = dependencies
 
     def parse(self) -> ParsedGranule:
-
         parsed = crack(self.granule)
 
         subroutines = self._extract_subroutines(parsed)

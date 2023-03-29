@@ -92,6 +92,6 @@ def test_deserialiser_mock(mock_parsed_granule):
 def test_deserialiser_diffusion_granule(diffusion_granule, diffusion_granule_deps):
     parser = GranuleParser(diffusion_granule, diffusion_granule_deps)
     parsed = parser.parse()
-    deserialiser = ParsedGranuleDeserialiser(parsed)
+    deserialiser = ParsedGranuleDeserialiser(parsed, directory=".")
     interface = deserialiser.deserialise()
     assert len(interface.savepoint) == 5

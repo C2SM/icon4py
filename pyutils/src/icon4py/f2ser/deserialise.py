@@ -13,6 +13,7 @@
 
 from icon4py.f2ser.interface import (
     FieldSerialisationData,
+    InitData,
     SavepointData,
     SerialisationInterface,
 )
@@ -20,9 +21,11 @@ from icon4py.f2ser.parse import ParsedGranule
 
 
 class ParsedGranuleDeserialiser:
-    def __init__(self, parsed: ParsedGranule):
+    _data = {"savepoint": [], "init": ...}
+
+    def __init__(self, parsed: ParsedGranule, directory: str):
         self.parsed = parsed
-        self.savepoints: list[SavepointData] = []
+        self.directory = directory
 
     def deserialise(self) -> SerialisationInterface:
         """
@@ -31,11 +34,11 @@ class ParsedGranuleDeserialiser:
         Returns:
             A `SerialisationInterface` object representing the deserialised data.
         """
-        self._create_savepoints()
-        init_data = self._get_init_data()
-        return SerialisationInterface(init=init_data, savepoint=self.savepoints)
+        self._make_savepoints()
+        self._make_init_data()
+        return SerialisationInterface(**self._data)
 
-    def _create_savepoints(self) -> None:
+    def _make_savepoints(self) -> None:
         """Create savepoints for each subroutine and intent in the parsed granule."""
         for subroutine_name, intent_dict in self.parsed.items():
             for intent, var_dict in intent_dict.items():
@@ -63,11 +66,10 @@ class ParsedGranuleDeserialiser:
             fields.append(field)
 
         for ln in var_dict["codegen_lines"]:
-            self.savepoints.append(
+            self._data["savepoint"].append(
                 SavepointData(
                     name=savepoint_name,
                     startln=ln,
-                    endln=ln,
                     fields=fields,
                     metadata=metadata,
                 )
@@ -86,7 +88,7 @@ class ParsedGranuleDeserialiser:
             str: A string representing the association of the variable with its dimensions, formatted as
                 "var_name(dim1,dim2,...)" if the variable has dimensions, or simply "var_name" otherwise.
         """
-        # todo: handle other dimension cases e.g. (min_rl:)
+        # todo: handle other dimension cases e.g. verts_end_index(min_rlvert:)
         dimension = var_data.get("dimension", None)
 
         if dimension is not None:
@@ -96,7 +98,11 @@ class ParsedGranuleDeserialiser:
             association = var_name
         return association
 
-    @staticmethod
-    def _get_init_data() -> None:
-        # todo: implement the logic for getting init data
-        return None
+    def _make_init_data(self) -> None:
+        lns = []
+        for _, intent_dict in self.parsed.items():
+            for intent, var_dict in intent_dict.items():
+                if intent == "in":
+                    lns += var_dict["codegen_lines"]
+        startln = min(lns)
+        self._data["init"] = InitData(startln=startln, directory=self.directory)
