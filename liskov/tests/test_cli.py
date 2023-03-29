@@ -12,15 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from samples.fortran_samples import (
+
+from icon4py.liskov.cli import main
+from icon4py.testutils.liskov_fortran_samples import (
     CONSECUTIVE_STENCIL,
     FREE_FORM_STENCIL,
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,
 )
-
-from icon4py.liskov.cli import main
 
 
 @pytest.fixture

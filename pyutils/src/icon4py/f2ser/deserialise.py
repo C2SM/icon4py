@@ -21,11 +21,10 @@ from icon4py.f2ser.parse import ParsedGranule
 
 
 class ParsedGranuleDeserialiser:
-    _data = {"savepoint": [], "init": ...}
-
     def __init__(self, parsed: ParsedGranule, directory: str):
         self.parsed = parsed
         self.directory = directory
+        self._data = {"savepoint": [], "init": ...}
 
     def deserialise(self) -> SerialisationInterface:
         """

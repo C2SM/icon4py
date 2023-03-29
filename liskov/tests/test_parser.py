@@ -15,17 +15,20 @@
 from collections import defaultdict
 
 import pytest
-from conftest import insert_new_lines, scan_for_directives
 from pytest import mark
-from samples.fortran_samples import (
-    MULTIPLE_STENCILS,
-    NO_DIRECTIVES_STENCIL,
-    SINGLE_STENCIL,
-)
 
 import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4py.liskov.parsing.parse import DirectivesParser
+from icon4py.testutils.liskov_fortran_samples import (
+    MULTIPLE_STENCILS,
+    NO_DIRECTIVES_STENCIL,
+    SINGLE_STENCIL,
+)
+from icon4py.testutils.liskov_test_utils import (
+    insert_new_lines,
+    scan_for_directives,
+)
 
 
 def test_parse_no_input():

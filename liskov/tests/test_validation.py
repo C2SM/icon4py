@@ -12,9 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from conftest import insert_new_lines, scan_for_directives
 from pytest import mark
-from samples.fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
 
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
@@ -30,6 +28,14 @@ from icon4py.liskov.parsing.types import (
     StartStencil,
 )
 from icon4py.liskov.parsing.validation import DirectiveSyntaxValidator
+from icon4py.testutils.liskov_fortran_samples import (
+    MULTIPLE_STENCILS,
+    SINGLE_STENCIL,
+)
+from icon4py.testutils.liskov_test_utils import (
+    insert_new_lines,
+    scan_for_directives,
+)
 
 
 @mark.parametrize(

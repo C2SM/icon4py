@@ -75,7 +75,7 @@ def mock_parsed_granule():
 
 
 def test_deserialiser_mock(mock_parsed_granule):
-    deserialiser = ParsedGranuleDeserialiser(mock_parsed_granule)
+    deserialiser = ParsedGranuleDeserialiser(mock_parsed_granule, directory=".")
     interface = deserialiser.deserialise()
     assert isinstance(interface, SerialisationInterface)
     assert len(interface.savepoint) == 6
