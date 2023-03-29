@@ -5,5 +5,6 @@
 ./pyutils
 ./testutils
 ./atm_dyn_iconam
+./advection
 ./py2f
 ./liskov
