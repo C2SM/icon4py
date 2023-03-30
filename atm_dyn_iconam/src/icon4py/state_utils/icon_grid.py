@@ -188,6 +188,10 @@ class IconGrid:
         table = self.connectivities["v2e"]
         return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
 
+    def get_v2c_connectivity(self):
+        table = self.connectivities["v2c"]
+        return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
+
     def get_e2ecv_connectivity(self):
         old_shape = self.connectivities["e2c2v"].shape
         v2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)

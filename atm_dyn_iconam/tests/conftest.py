@@ -28,6 +28,7 @@ from icon4py.common.dimension import (
     E2CDim,
     E2VDim,
     EdgeDim,
+    V2CDim,
     V2EDim,
     VertexDim,
 )
@@ -191,6 +192,7 @@ def icon_grid(data_provider):
             {
                 C2EDim: sp.c2e(),
                 E2CDim: sp.e2c(),
+                V2CDim: sp.v2c(),
                 C2E2CDim: c2e2c,
                 C2E2CODim: c2e2c0,
                 E2C2EDim: e2c2e,

@@ -253,6 +253,8 @@ def test_diffusion_init(
         c_lin_e=None,
         geofac_grdiv=None,
         rbf_vec_coeff_e=None,
+        c_intp=None,
+        geofac_rot=None,
     )
     metric_state = MetricState(
         mask_hdiff=savepoint.mask_diff(),
@@ -395,6 +397,8 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         c_lin_e=None,
         geofac_grdiv=None,
         rbf_vec_coeff_e=None,
+        c_intp=None,
+        geofac_rot=None,
     )
     metric_state = MetricState(
         mask_hdiff=savepoint.mask_diff(),
@@ -453,6 +457,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         c_lin_e=None,
         geofac_grdiv=None,
         rbf_vec_coeff_e=None,
+        c_intp=None,
+        geofac_rot=None,
     )
     metric_state = MetricState(
         mask_hdiff=savepoint.mask_diff(),
@@ -573,6 +579,8 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
         c_lin_e=None,
         geofac_grdiv=None,
         rbf_vec_coeff_e=None,
+        c_intp=None,
+        geofac_rot=None,
     )
     metric_state = MetricState(
         mask_hdiff=diffusion_savepoint_init.mask_diff(),

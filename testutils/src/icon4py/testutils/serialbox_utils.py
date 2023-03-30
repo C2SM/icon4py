@@ -30,6 +30,7 @@ from icon4py.common.dimension import (
     EdgeDim,
     KDim,
     KHalfDim,
+    V2CDim,
     V2EDim,
     VertexDim,
 )
@@ -164,7 +165,7 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_connectivity_array("c2e2c")
 
     def e2c2e(self):
-        return self._get_connectivity_array("e2c2e")[:, 0, :]
+        return self._get_connectivity_array("e2c2e")
 
     def e2c(self):
         return self._get_connectivity_array("e2c")
@@ -181,6 +182,9 @@ class IconGridSavePoint(IconSavepoint):
 
     def v2e(self):
         return self._get_connectivity_array("v2e")
+
+    def v2c(self):
+        return self._get_connectivity_array("v2c")
 
 
 class IconVelocityInitSavepoint(IconSavepoint):
@@ -225,7 +229,15 @@ class IconVelocityInitSavepoint(IconSavepoint):
             self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
         ).transpose()
         return np_as_located_field(EdgeDim, E2C2EDim)(buffer)
-        # return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
+
+    def c_intp(self):
+        return self._get_field("c_intp", VertexDim, V2CDim)
+
+    def vn(self):
+        return self._get_field("vn", EdgeDim, KDim)
+
+    def geofac_rot(self):
+        return self._get_field("geofac_rot", VertexDim, V2EDim)
 
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
@@ -236,6 +248,9 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def vt(self):
         return self._get_field("vt", EdgeDim, KDim)
 
+    def e_bln_c_s(self):
+        return self._get_field("e_bln_c_s", CellDim, C2EDim)
+
     def w_concorr_c(self):
         return self._get_field("w_concorr_c", CellDim, KDim)
 
@@ -245,14 +260,23 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def wgtfacq_e(self):
         return self._get_field("wgtfacq_e", EdgeDim, KDim)
 
+    def geofac_n2s(self):
+        return self._get_field("geofac_n2s", CellDim, C2E2CODim)
+
     def z_w_concorr_me(self):
         return self._get_field("z_w_concorr_me", EdgeDim, KDim)
+
+    def wgtfac_c(self):
+        return self._get_field("wgtfac_c", CellDim, KDim)
 
     def z_kin_hor_e(self):
         return self._get_field("z_kin_hor_e", EdgeDim, KDim)
 
     def z_vt_ie(self):
         return self._get_field("z_vt_ie", EdgeDim, KDim)
+
+    def w(self):
+        return self._get_field("w", CellDim, KDim)
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):

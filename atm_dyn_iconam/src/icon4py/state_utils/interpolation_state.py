@@ -26,6 +26,7 @@ from icon4py.common.dimension import (
     E2C2EODim,
     E2CDim,
     EdgeDim,
+    V2CDim,
     V2EDim,
     VertexDim,
 )
@@ -67,6 +68,8 @@ class InterpolationState:
     c_lin_e: Field[[EdgeDim, E2CDim], float]
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float]
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float]
+    c_intp: Field[[VertexDim, V2CDim], float]
+    geofac_rot: Field[[VertexDim, V2EDim], float]
 
     @property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:

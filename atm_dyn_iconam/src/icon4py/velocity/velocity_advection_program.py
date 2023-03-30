@@ -14,6 +14,12 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
 from gt4py.next.program_processors.runners import gtfn_cpu
 
+from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+)
+from icon4py.atm_dyn_iconam.mo_math_divrot_rot_vertex_ri_dsl import (
+    _mo_math_divrot_rot_vertex_ri_dsl,
+)
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
     _mo_velocity_advection_stencil_01,
 )
@@ -84,9 +90,76 @@ from icon4py.common.dimension import (
     ECDim,
     EdgeDim,
     KDim,
+    V2CDim,
+    V2EDim,
     VertexDim,
 )
 from icon4py.state_utils.utils import _set_bool_c_k, _set_zero_c_k
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_vn_only(
+    p_cell_in: Field[[CellDim, KDim], float],
+    c_intp: Field[[VertexDim, V2CDim], float],
+    p_vert_out: Field[[VertexDim, KDim], float],
+    vert_startindex_local_minus1: int,
+    nlev: int,
+):
+    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+        p_cell_in,
+        c_intp,
+        out=p_vert_out,
+        domain={VertexDim: (2, vert_startindex_local_minus1), KDim: (1, nlev)},
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_math_divrot_rot_vertex_ri_dsl(
+    vec_e: Field[[EdgeDim, KDim], float],
+    geofac_rot: Field[[VertexDim, V2EDim], float],
+    rot_vec: Field[[VertexDim, KDim], float],
+    vert_startindex_local_minus1: int,
+    nlev: int,
+):
+    _mo_math_divrot_rot_vertex_ri_dsl(
+        vec_e,
+        geofac_rot,
+        out=rot_vec,
+        domain={VertexDim: (2, vert_startindex_local_minus1), KDim: (1, nlev)},
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def predictor_tendencies_1_2(
+    vn: Field[[EdgeDim, KDim], float],
+    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
+    vt: Field[[EdgeDim, KDim], float],
+    wgtfac_e: Field[[EdgeDim, KDim], float],
+    vn_ie: Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], float],
+    edge_startindex_local_minus2: int,
+    nlev: int,
+):
+    _mo_velocity_advection_stencil_01(
+        vn,
+        rbf_vec_coeff_e,
+        out=vt,
+        domain={
+            EdgeDim: (5, edge_startindex_local_minus2),
+            KDim: (0, nlev),
+        },
+    )
+
+    _mo_velocity_advection_stencil_02(
+        wgtfac_e,
+        vn,
+        vt,
+        out=(vn_ie, z_kin_hor_e),
+        domain={
+            EdgeDim: (5, edge_startindex_local_minus2),
+            KDim: (1, nlev),
+        },
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -104,6 +177,87 @@ def predictor_tendencies_vn_only(
         domain={
             EdgeDim: (5, edge_startindex_local_minus2),
             KDim: (1, nlev),
+        },
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def predictor_tendencies_4_5_6(
+    vn: Field[[EdgeDim, KDim], float],
+    vt: Field[[EdgeDim, KDim], float],
+    vn_ie: Field[[EdgeDim, KDim], float],
+    z_vt_ie: Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], float],
+    ddxn_z_full: Field[[EdgeDim, KDim], float],
+    ddxt_z_full: Field[[EdgeDim, KDim], float],
+    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    wgtfacq_e: Field[[EdgeDim, KDim], float],
+    edge_startindex_local_minus2: int,
+    nflatlev_startindex: int,
+    nlev: int,
+):
+
+    _mo_velocity_advection_stencil_04(
+        vn,
+        ddxn_z_full,
+        ddxt_z_full,
+        vt,
+        out=z_w_concorr_me,
+        domain={
+            EdgeDim: (5, edge_startindex_local_minus2),
+            KDim: (nflatlev_startindex, nlev),
+        },
+    )
+
+    _mo_velocity_advection_stencil_05(
+        vn,
+        vt,
+        out=(vn_ie, z_vt_ie, z_kin_hor_e),
+        domain={
+            EdgeDim: (5, edge_startindex_local_minus2),
+            KDim: (0, 0),
+        },
+    )
+
+    _mo_velocity_advection_stencil_06(
+        wgtfacq_e,
+        vn,
+        out=vn_ie,
+        domain={
+            EdgeDim: (5, edge_startindex_local_minus2),
+            KDim: (nlev, nlev),
+        },
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def predictor_tendencies_9_10(
+    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    local_z_w_concorr_mc: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
+    w_concorr_c: Field[[CellDim, KDim], float],
+    cell_startindex_local_minus1: int,
+    nflatlev_startindex: int,
+    nlev: int,
+):
+    _mo_velocity_advection_stencil_09(
+        z_w_concorr_me,
+        e_bln_c_s,
+        out=local_z_w_concorr_mc,
+        domain={
+            CellDim: (4, cell_startindex_local_minus1),
+            KDim: (nflatlev_startindex, nlev),
+        },
+    )
+
+    _mo_velocity_advection_stencil_10(
+        local_z_w_concorr_mc,
+        wgtfac_c,
+        out=w_concorr_c,
+        domain={
+            CellDim: (4, cell_startindex_local_minus1),
+            KDim: (nflatlev_startindex + 1, nlev),
         },
     )
 
@@ -138,102 +292,27 @@ def advector_tendencies_vn_only(
 
 
 @program(backend=gtfn_cpu.run_gtfn)
-def predictor_tendencies(
-    vn: Field[[EdgeDim, KDim], float],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    wgtfac_e: Field[[EdgeDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
+def advector_tendencies_8(
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    ddxn_z_full: Field[[EdgeDim, KDim], float],
-    ddxt_z_full: Field[[EdgeDim, KDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
-    local_z_w_concorr_mc: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    wgtfacq_e: Field[[EdgeDim, KDim], float],
+    local_z_ekinh: Field[[CellDim, KDim], float],
     cell_startindex_local_minus1: int,
-    edge_startindex_local_minus2: int,
-    nflatlev_startindex: int,
     nlev: int,
 ):
-    _mo_velocity_advection_stencil_01(
-        vn,
-        rbf_vec_coeff_e,
-        out=vt,
-        domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
-            KDim: (0, nlev),
-        },
-    )
 
-    _mo_velocity_advection_stencil_02(
-        wgtfac_e,
-        vn,
-        vt,
-        out=(vn_ie, z_kin_hor_e),
-        domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
-            KDim: (1, nlev),
-        },
-    )
-
-    _mo_velocity_advection_stencil_04(
-        vn,
-        ddxn_z_full,
-        ddxt_z_full,
-        vt,
-        out=z_w_concorr_me,
-        domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
-            KDim: (nflatlev_startindex, nlev),
-        },
-    )
-
-    _mo_velocity_advection_stencil_05(
-        vn,
-        vt,
-        out=(vn_ie, z_vt_ie, z_kin_hor_e),
-        domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
-            KDim: (0, 0),
-        },
-    )
-    _mo_velocity_advection_stencil_06(
-        wgtfacq_e,
-        vn,
-        out=vn_ie,
-        domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
-            KDim: (nlev, nlev),
-        },
-    )
-
-    _mo_velocity_advection_stencil_09(
-        z_w_concorr_me,
+    _mo_velocity_advection_stencil_08(
+        z_kin_hor_e,
         e_bln_c_s,
-        out=local_z_w_concorr_mc,
+        out=local_z_ekinh,
         domain={
             CellDim: (4, cell_startindex_local_minus1),
-            KDim: (nflatlev_startindex, nlev),
-        },
-    )
-
-    _mo_velocity_advection_stencil_10(
-        local_z_w_concorr_mc,
-        wgtfac_c,
-        out=w_concorr_c,
-        domain={
-            CellDim: (4, cell_startindex_local_minus1),
-            KDim: (nflatlev_startindex + 1, nlev),
+            KDim: (0, nlev),
         },
     )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
-def advector_tendencies(
+def advector_tendencies_11_to_20(
     vt: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
@@ -278,16 +357,6 @@ def advector_tendencies(
     nlev: int,
     nlevp1: int,
 ):
-
-    _mo_velocity_advection_stencil_08(
-        z_kin_hor_e,
-        e_bln_c_s,
-        out=local_z_ekinh,
-        domain={
-            CellDim: (4, cell_startindex_local_minus1),
-            KDim: (0, nlev),
-        },
-    )
 
     _mo_velocity_advection_stencil_11(
         w,
