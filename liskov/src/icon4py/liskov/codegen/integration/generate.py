@@ -88,7 +88,6 @@ class IntegrationGenerator(CodeGenerator):
                 MetadataStatement,
                 MetadataStatementGenerator,
                 startln=0,
-                endln=0,
                 metadata=CodeMetadata(),
             )
 
@@ -100,7 +99,6 @@ class IntegrationGenerator(CodeGenerator):
                 DeclareStatement,
                 DeclareStatementGenerator,
                 self.directives.Declare[i].startln,
-                self.directives.Declare[i].endln,
                 declare_data=declare,
             )
 
@@ -124,7 +122,6 @@ class IntegrationGenerator(CodeGenerator):
             if stencil.mergecopy and next_stencil.mergecopy:
                 stencil = StartStencilData(
                     startln=stencil.startln,
-                    endln=next_stencil.endln,
                     name=stencil.name + "_" + next_stencil.name,
                     fields=stencil.fields + next_stencil.fields,
                     bounds=stencil.bounds,
@@ -138,7 +135,6 @@ class IntegrationGenerator(CodeGenerator):
                     StartStencilStatement,
                     StartStencilStatementGenerator,
                     stencil.startln,
-                    next_stencil.endln,
                     stencil_data=stencil,
                     profile=self.profile,
                 )
@@ -147,7 +143,6 @@ class IntegrationGenerator(CodeGenerator):
                     StartStencilStatement,
                     StartStencilStatementGenerator,
                     self.directives.StartStencil[i].startln,
-                    self.directives.StartStencil[i].endln,
                     stencil_data=stencil,
                     profile=self.profile,
                 )
@@ -165,7 +160,6 @@ class IntegrationGenerator(CodeGenerator):
                 EndStencilStatement,
                 EndStencilStatementGenerator,
                 self.directives.EndStencil[i].startln,
-                self.directives.EndStencil[i].endln,
                 stencil_data=stencil,
                 profile=self.profile,
                 noendif=self.directives.EndStencil[i].noendif,
@@ -179,7 +173,6 @@ class IntegrationGenerator(CodeGenerator):
             ImportsStatement,
             ImportsStatementGenerator,
             self.directives.Imports.startln,
-            self.directives.Imports.endln,
             stencils=self.directives.StartStencil,
         )
 
@@ -190,7 +183,6 @@ class IntegrationGenerator(CodeGenerator):
             StartCreateStatement,
             StartCreateStatementGenerator,
             self.directives.StartCreate.startln,
-            self.directives.StartCreate.endln,
             stencils=self.directives.StartStencil,
             extra_fields=self.directives.StartCreate.extra_fields,
         )
@@ -199,7 +191,6 @@ class IntegrationGenerator(CodeGenerator):
             EndCreateStatement,
             EndCreateStatementGenerator,
             self.directives.EndCreate.startln,
-            self.directives.EndCreate.endln,
         )
 
     def _generate_endif(self) -> None:
@@ -207,12 +198,7 @@ class IntegrationGenerator(CodeGenerator):
         if self.directives.EndIf != UnusedDirective:
             for endif in self.directives.EndIf:  # type: ignore
                 logger.info("Generating ENDIF statement.")
-                self._generate(
-                    EndIfStatement,
-                    EndIfStatementGenerator,
-                    endif.startln,
-                    endif.endln,
-                )
+                self._generate(EndIfStatement, EndIfStatementGenerator, endif.startln)
 
     def _generate_profile(self) -> None:
         """Generate additional nvtx profiling statements."""
@@ -224,7 +210,6 @@ class IntegrationGenerator(CodeGenerator):
                         StartProfileStatement,
                         StartProfileStatementGenerator,
                         start.startln,
-                        start.endln,
                         name=start.name,
                     )
 
@@ -232,10 +217,7 @@ class IntegrationGenerator(CodeGenerator):
                 for end in self.directives.EndProfile:  # type: ignore
                     logger.info("Generating nvtx end statement.")
                     self._generate(
-                        EndProfileStatement,
-                        EndProfileStatementGenerator,
-                        end.startln,
-                        end.endln,
+                        EndProfileStatement, EndProfileStatementGenerator, end.startln
                     )
 
     def _generate_insert(self) -> None:
@@ -247,6 +229,5 @@ class IntegrationGenerator(CodeGenerator):
                     InsertStatement,
                     InsertStatementGenerator,
                     insert.startln,
-                    insert.endln,
                     content=insert.content,
                 )

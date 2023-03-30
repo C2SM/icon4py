@@ -77,7 +77,6 @@ mock_deserialised_directives = DeserialisedDirectives(
             ],
             bounds=None,
             startln=None,
-            endln=None,
             acc_present=False,
             mergecopy=False,
             copies=True,

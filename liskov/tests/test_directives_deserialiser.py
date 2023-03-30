@@ -49,7 +49,7 @@ from icon4py.liskov.parsing.exceptions import (
 
 
 @pytest.mark.parametrize(
-    "factory_class, directive_type, startln, endln, string, expected",
+    "factory_class, directive_type, string, startln, endln, expected",
     [
         (EndCreateDataFactory, ts.EndCreate, "END CREATE", 2, 2, EndCreateData),
         (ImportsDataFactory, ts.Imports, "IMPORTS", 3, 3, ImportsData),
@@ -72,7 +72,6 @@ def test_data_factories_no_args(
 
     assert isinstance(result, expected)
     assert result.startln == startln
-    assert result.endln == endln
 
 
 @pytest.mark.parametrize(

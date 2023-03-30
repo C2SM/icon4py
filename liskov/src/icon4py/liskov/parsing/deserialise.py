@@ -106,11 +106,7 @@ class OptionalMultiUseDataFactory(DataFactoryBase):
         else:
             deserialised = []
             for directive in extracted:
-                deserialised.append(
-                    self.dtype(
-                        startln=directive.startln, endln=directive.endln, **kwargs
-                    )
-                )
+                deserialised.append(self.dtype(startln=directive.startln, **kwargs))
             return deserialised
 
 
@@ -118,7 +114,7 @@ class OptionalMultiUseDataFactory(DataFactoryBase):
 class RequiredSingleUseDataFactory(DataFactoryBase):
     def __call__(self, parsed: ts.ParsedDict) -> CodeGenInput:
         extracted = extract_directive(parsed["directives"], self.directive_cls)[0]
-        return self.dtype(startln=extracted.startln, endln=extracted.endln)
+        return self.dtype(startln=extracted.startln)
 
 
 @dataclass
@@ -159,9 +155,7 @@ class StartCreateDataFactory(DataFactoryBase):
         if named_args:
             extra_fields = named_args["extra_fields"].split(",")
 
-        return self.dtype(
-            startln=directive.startln, endln=directive.endln, extra_fields=extra_fields
-        )
+        return self.dtype(startln=directive.startln, extra_fields=extra_fields)
 
 
 @dataclass
@@ -185,7 +179,6 @@ class DeclareDataFactory(DataFactoryBase):
             deserialised.append(
                 self.dtype(
                     startln=directive.startln,
-                    endln=directive.endln,
                     declarations=named_args,
                     ident_type=ident_type,
                     suffix=suffix,
@@ -206,11 +199,7 @@ class StartProfileDataFactory(DataFactoryBase):
             named_args = parsed["content"]["StartProfile"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
             deserialised.append(
-                self.dtype(
-                    name=stencil_name,
-                    startln=directive.startln,
-                    endln=directive.endln,
-                )
+                self.dtype(name=stencil_name, startln=directive.startln)
             )
         return deserialised
 
@@ -232,7 +221,6 @@ class EndStencilDataFactory(DataFactoryBase):
                 self.dtype(
                     name=stencil_name,
                     startln=directive.startln,
-                    endln=directive.endln,
                     noendif=noendif,
                     noprofile=noprofile,
                 )
@@ -282,7 +270,6 @@ class StartStencilDataFactory(DataFactoryBase):
                     fields=fields_w_tolerance,
                     bounds=bounds,
                     startln=directive.startln,
-                    endln=directive.endln,
                     acc_present=acc_present,
                     mergecopy=mergecopy,
                     copies=copies,
@@ -388,9 +375,7 @@ class InsertDataFactory(DataFactoryBase):
         for i, directive in enumerate(extracted):
             content = parsed["content"]["Insert"][i]
             deserialised.append(
-                self.dtype(
-                    startln=directive.startln, endln=directive.endln, content=content  # type: ignore
-                )
+                self.dtype(startln=directive.startln, content=content)  # type: ignore
             )
         return deserialised
 

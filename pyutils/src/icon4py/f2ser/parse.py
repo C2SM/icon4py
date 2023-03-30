@@ -19,7 +19,11 @@ from typing import Optional
 
 from numpy.f2py.crackfortran import crackfortran
 
-from icon4py.serialisation.exceptions import MissingDerivedTypeError, ParsingError
+from icon4py.f2ser.exceptions import MissingDerivedTypeError, ParsingError
+
+
+CodeGenLines = list[int]
+ParsedGranule = dict[str, dict[str, dict[str, any] | CodeGenLines]]
 
 
 def crack(path: Path) -> dict:
@@ -58,8 +62,7 @@ class GranuleParser:
         self.granule = granule
         self.dependencies = dependencies
 
-    def parse(self) -> dict:
-
+    def parse(self) -> ParsedGranule:
         parsed = crack(self.granule)
 
         subroutines = self._extract_subroutines(parsed)
@@ -192,17 +195,15 @@ class GranuleParser:
         for subroutine in with_lines:
             ctx = self.get_line_numbers(subroutine)
             for intent in with_lines[subroutine]:
-                lns = []
                 if intent == "in":
-                    lns.append(ctx.last_intent_ln)
+                    ln = ctx.last_intent_ln
                 elif intent == "inout":
-                    lns.append(ctx.last_intent_ln)
-                    lns.append(ctx.end_subroutine_ln)
+                    continue
                 elif intent == "out":
-                    lns.append(ctx.end_subroutine_ln)
+                    ln = ctx.end_subroutine_ln
                 else:
                     raise ValueError(f"Unrecognized intent: {intent}")
-                with_lines[subroutine][intent]["codegen_lines"] = lns
+                with_lines[subroutine][intent]["codegen_line"] = ln
         return with_lines
 
     def get_line_numbers(self, subroutine_name: str) -> CodegenContext:

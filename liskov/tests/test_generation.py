@@ -65,30 +65,26 @@ def serialised_directives():
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
         startln=1,
-        endln=2,
         acc_present=False,
         mergecopy=False,
         copies=True,
     )
     end_stencil_data = EndStencilData(
-        name="stencil1", startln=3, endln=4, noendif=False, noprofile=False
+        name="stencil1", startln=3, noendif=False, noprofile=False
     )
     declare_data = DeclareData(
         startln=5,
-        endln=6,
         declarations={"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"},
         ident_type="REAL(wp)",
         suffix="before",
     )
-    imports_data = ImportsData(startln=7, endln=8)
-    start_create_data = StartCreateData(
-        extra_fields=["foo", "bar"], startln=9, endln=10
-    )
-    end_create_data = EndCreateData(startln=11, endln=11)
-    endif_data = EndIfData(startln=12, endln=12)
-    start_profile_data = StartProfileData(startln=13, endln=13, name="test_stencil")
-    end_profile_data = EndProfileData(startln=14, endln=14)
-    insert_data = InsertData(startln=15, endln=15, content="print *, 'Hello, World!'")
+    imports_data = ImportsData(startln=7)
+    start_create_data = StartCreateData(extra_fields=["foo", "bar"], startln=9)
+    end_create_data = EndCreateData(startln=11)
+    endif_data = EndIfData(startln=12)
+    start_profile_data = StartProfileData(startln=13, name="test_stencil")
+    end_profile_data = EndProfileData(startln=14)
+    insert_data = InsertData(startln=15, content="print *, 'Hello, World!'")
 
     return DeserialisedDirectives(
         StartStencil=[start_stencil_data],

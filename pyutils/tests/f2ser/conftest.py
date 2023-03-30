@@ -11,4 +11,23 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# todo: add f2ser code generation
+from pathlib import Path
+
+import pytest
+
+import icon4py.testutils as testutils
+
+
+@pytest.fixture
+def samples_path():
+    return Path(testutils.__file__).parent / "fortran"
+
+
+@pytest.fixture
+def diffusion_granule(samples_path):
+    return samples_path / "diffusion_granule.f90"
+
+
+@pytest.fixture
+def diffusion_granule_deps(samples_path):
+    return [samples_path / "derived_types_example.f90"]

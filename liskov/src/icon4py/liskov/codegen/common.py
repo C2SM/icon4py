@@ -61,7 +61,6 @@ class CodeGenerator(Step):
         parent_node: Type[eve.Node],
         code_generator: Type[TemplatedGenerator],
         startln: int,
-        endln: int,
         **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool] | Any,
     ) -> None:
         """Add a GeneratedCode object to the `generated` attribute with the given source code and line number information.
@@ -70,9 +69,8 @@ class CodeGenerator(Step):
             parent_node: The parent node of the code to be generated.
             code_generator: The code generator to use for generating the code.
             startln: The start line number of the generated code.
-            endln: The end line number of the generated code.
             **kwargs: Additional keyword arguments to be passed to the code generator.
         """
         source = self._generate_fortran_code(parent_node, code_generator, **kwargs)
-        code = GeneratedCode(source=source, startln=startln, endln=endln)
+        code = GeneratedCode(startln=startln, source=source)
         self.generated.append(code)

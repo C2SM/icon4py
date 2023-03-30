@@ -12,13 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
 class CodeGenInput:
     startln: int
-    endln: Optional[int]
 
 
 @dataclass

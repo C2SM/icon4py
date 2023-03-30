@@ -17,19 +17,22 @@ from typing import Optional
 from icon4py.liskov.codegen.types import CodeGenInput
 
 
+# todo: decomposed fields require extra information so that we can generate corresponding field copies
+
+
 @dataclass
-class Metadata(CodeGenInput):
+class InitData(CodeGenInput):
+    directory: str
+
+
+@dataclass
+class Metadata:
     key: str
     value: str
 
 
 @dataclass
-class InitData(CodeGenInput):
-    directory_path: str
-
-
-@dataclass
-class FieldSerializationData(CodeGenInput):
+class FieldSerialisationData:
     variable: str
     association: str
 
@@ -37,7 +40,7 @@ class FieldSerializationData(CodeGenInput):
 @dataclass
 class SavepointData(CodeGenInput):
     name: str
-    fields: list[FieldSerializationData]
+    fields: list[FieldSerialisationData]
     metadata: Optional[list[Metadata]]
 
 
