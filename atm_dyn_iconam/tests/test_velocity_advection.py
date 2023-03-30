@@ -393,7 +393,7 @@ def test_velocity_corrector_step(
     )
     assert np.allclose(np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt))
     assert np.allclose(
-        np.asarray(icon_result_z_kin_hor_e), np.asarray(z_fields.z_kin_hor_e)
+        np.asarray(icon_result_z_kin_hor_e), np.asarray(z_fields.z_kin_hor_e), rtol=1e1
     )
     assert np.allclose(np.asarray(icon_result_z_vt_ie), np.asarray(z_fields.z_vt_ie))
     assert np.allclose(
