@@ -16,10 +16,10 @@ from typing import Any, Iterable, List
 from gt4py.next.iterator import ir as itir
 from gt4py.next.program_processors.codegens.gtfn.gtfn_backend import generate
 
-from icon4py.bindings.utils import write_string
 from icon4py.common.dimension import Koff
-from icon4py.pyutils.exceptions import MultipleFieldOperatorException
-from icon4py.pyutils.metadata import StencilInfo
+from icon4py.icon4pygen.bindings.utils import write_string
+from icon4py.icon4pygen.exceptions import MultipleFieldOperatorException
+from icon4py.icon4pygen.metadata import StencilInfo
 
 
 H_START = "horizontal_start"

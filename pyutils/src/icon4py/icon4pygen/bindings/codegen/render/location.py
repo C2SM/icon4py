@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.bindings.exceptions import BindingsRenderingException
+from icon4py.icon4pygen.bindings.exceptions import BindingsRenderingException
 
 
 class LocationRenderer:
