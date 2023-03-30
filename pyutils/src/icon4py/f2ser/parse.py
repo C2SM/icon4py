@@ -195,17 +195,15 @@ class GranuleParser:
         for subroutine in with_lines:
             ctx = self.get_line_numbers(subroutine)
             for intent in with_lines[subroutine]:
-                lns: CodeGenLines = []
                 if intent == "in":
-                    lns.append(ctx.last_intent_ln)
+                    ln = ctx.last_intent_ln
                 elif intent == "inout":
-                    lns.append(ctx.last_intent_ln)
-                    lns.append(ctx.end_subroutine_ln)
+                    continue
                 elif intent == "out":
-                    lns.append(ctx.end_subroutine_ln)
+                    ln = ctx.end_subroutine_ln
                 else:
                     raise ValueError(f"Unrecognized intent: {intent}")
-                with_lines[subroutine][intent]["codegen_lines"] = lns
+                with_lines[subroutine][intent]["codegen_line"] = ln
         return with_lines
 
     def get_line_numbers(self, subroutine_name: str) -> CodegenContext:

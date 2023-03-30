@@ -24,7 +24,7 @@ class ParsedGranuleDeserialiser:
     def __init__(self, parsed: ParsedGranule, directory: str):
         self.parsed = parsed
         self.directory = directory
-        self._data = {"savepoint": [], "init": ...}
+        self.data = {"savepoint": [], "init": ...}
 
     def deserialise(self) -> SerialisationInterface:
         """
@@ -33,9 +33,10 @@ class ParsedGranuleDeserialiser:
         Returns:
             A `SerialisationInterface` object representing the deserialised data.
         """
+        self._merge_out_inout_fields()
         self._make_savepoints()
         self._make_init_data()
-        return SerialisationInterface(**self._data)
+        return SerialisationInterface(**self.data)
 
     def _make_savepoints(self) -> None:
         """Create savepoints for each subroutine and intent in the parsed granule."""
@@ -64,15 +65,14 @@ class ParsedGranuleDeserialiser:
             field = FieldSerialisationData(variable=var_name, association=association)
             fields.append(field)
 
-        for ln in var_dict["codegen_lines"]:
-            self._data["savepoint"].append(
-                SavepointData(
-                    name=savepoint_name,
-                    startln=ln,
-                    fields=fields,
-                    metadata=metadata,
-                )
+        self.data["savepoint"].append(
+            SavepointData(
+                name=savepoint_name,
+                startln=var_dict["codegen_line"],
+                fields=fields,
+                metadata=metadata,
             )
+        )
 
     @staticmethod
     def _get_variable_association(var_data: dict, var_name: str) -> str:
@@ -102,6 +102,13 @@ class ParsedGranuleDeserialiser:
         for _, intent_dict in self.parsed.items():
             for intent, var_dict in intent_dict.items():
                 if intent == "in":
-                    lns += var_dict["codegen_lines"]
+                    lns.append(var_dict["codegen_line"])
         startln = min(lns)
-        self._data["init"] = InitData(startln=startln, directory=self.directory)
+        self.data["init"] = InitData(startln=startln, directory=self.directory)
+
+    def _merge_out_inout_fields(self):
+        for _, intent_dict in self.parsed.items():
+            if "inout" in intent_dict:
+                intent_dict["in"].update(intent_dict["inout"])
+                intent_dict["out"].update(intent_dict["inout"])
+                del intent_dict["inout"]

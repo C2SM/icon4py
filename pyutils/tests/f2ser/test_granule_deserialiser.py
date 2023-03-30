@@ -34,7 +34,7 @@ def mock_parsed_granule():
                     "intent": ["in"],
                     "dimension": [":", ":", ":"],
                 },
-                "codegen_lines": [432],
+                "codegen_line": 432,
             }
         },
         "diffusion_run": {
@@ -46,7 +46,7 @@ def mock_parsed_granule():
                     "intent": ["in"],
                     "dimension": [":", ":", ":"],
                 },
-                "codegen_lines": [800],
+                "codegen_line": 800,
             },
             "in": {
                 "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
@@ -57,7 +57,7 @@ def mock_parsed_granule():
                     "intent": ["in"],
                     "dimension": [":", ":", ":"],
                 },
-                "codegen_lines": [600, 800],
+                "codegen_line": 600,
             },
             "inout": {
                 "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
@@ -68,7 +68,6 @@ def mock_parsed_granule():
                     "intent": ["in"],
                     "dimension": [":", ":", ":"],
                 },
-                "codegen_lines": [600, 800],
             },
         },
     }
@@ -78,7 +77,7 @@ def test_deserialiser_mock(mock_parsed_granule):
     deserialiser = ParsedGranuleDeserialiser(mock_parsed_granule, directory=".")
     interface = deserialiser.deserialise()
     assert isinstance(interface, SerialisationInterface)
-    assert len(interface.savepoint) == 6
+    assert len(interface.savepoint) == 3
     assert all([isinstance(s, SavepointData) for s in interface.savepoint])
     assert all(
         [
@@ -94,4 +93,4 @@ def test_deserialiser_diffusion_granule(diffusion_granule, diffusion_granule_dep
     parsed = parser.parse()
     deserialiser = ParsedGranuleDeserialiser(parsed, directory=".")
     interface = deserialiser.deserialise()
-    assert len(interface.savepoint) == 5
+    assert len(interface.savepoint) == 3
