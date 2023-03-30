@@ -126,7 +126,7 @@ repos:
           - id: mypy
             name: mypy static type checker
             entry: |
-                mypy --install-types --non-interactive -p icon4py.common -p icon4py.pyutils -p icon4py.testutils
+                mypy --install-types --non-interactive -p icon4py.common -p icon4py.icon4pygen -p icon4py.testutils
             language: system
             types_or: [python, pyi]
             always_run: true

@@ -13,8 +13,8 @@
 import pytest
 from gt4py.next.iterator import ir as itir
 
-from icon4py.pyutils import backend
-from icon4py.pyutils.backend import GTHeader
+from icon4py.icon4pygen import backend
+from icon4py.icon4pygen.backend import GTHeader
 
 
 @pytest.mark.parametrize(

@@ -17,11 +17,17 @@ from gt4py.eve import Node
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.type_system import type_specifications as ts
 
-from icon4py.bindings.codegen.render.field import FieldRenderer
-from icon4py.bindings.codegen.render.offset import OffsetRenderer
-from icon4py.bindings.codegen.types import FieldEntity, FieldIntent, OffsetEntity
-from icon4py.bindings.exceptions import BindingsTypeConsistencyException
-from icon4py.bindings.locations import (
+from icon4py.icon4pygen.bindings.codegen.render.field import FieldRenderer
+from icon4py.icon4pygen.bindings.codegen.render.offset import OffsetRenderer
+from icon4py.icon4pygen.bindings.codegen.types import (
+    FieldEntity,
+    FieldIntent,
+    OffsetEntity,
+)
+from icon4py.icon4pygen.bindings.exceptions import (
+    BindingsTypeConsistencyException,
+)
+from icon4py.icon4pygen.bindings.locations import (
     BASIC_LOCATIONS,
     BasicLocation,
     Cell,
@@ -30,8 +36,8 @@ from icon4py.bindings.locations import (
     Edge,
     Vertex,
 )
-from icon4py.bindings.utils import calc_num_neighbors
-from icon4py.pyutils.metadata import FieldInfo
+from icon4py.icon4pygen.bindings.utils import calc_num_neighbors
+from icon4py.icon4pygen.metadata import FieldInfo
 
 
 def chain_from_str(chain: list[str] | str) -> list[BasicLocation]:
