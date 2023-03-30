@@ -205,7 +205,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            velocity_prog.predictor_tendencies_vn_only(
+            velocity_prog.predictor_tendencies_3(
                 diagnostic_state.vt,
                 self.metric_state.wgtfac_e,
                 z_fields.z_vt_ie,
@@ -234,7 +234,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            velocity_prog.advector_tendencies_vn_only(
+            velocity_prog.advector_tendencies_7(
                 diagnostic_state.vn_ie,
                 inv_dual_edge_length,
                 prognostic_state.w,
@@ -431,7 +431,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            velocity_prog.advector_tendencies_vn_only(
+            velocity_prog.advector_tendencies_7(
                 diagnostic_state.vn_ie,
                 inv_dual_edge_length,
                 prognostic_state.w,

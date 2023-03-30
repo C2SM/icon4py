@@ -163,7 +163,7 @@ def predictor_tendencies_1_2(
 
 
 @program(backend=gtfn_cpu.run_gtfn)
-def predictor_tendencies_vn_only(
+def predictor_tendencies_3(
     vt: Field[[EdgeDim, KDim], float],
     wgtfac_e: Field[[EdgeDim, KDim], float],
     z_vt_ie: Field[[EdgeDim, KDim], float],
@@ -263,7 +263,7 @@ def predictor_tendencies_9_10(
 
 
 @program(backend=gtfn_cpu.run_gtfn)
-def advector_tendencies_vn_only(
+def advector_tendencies_7(
     vn_ie: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
     w: Field[[CellDim, KDim], float],

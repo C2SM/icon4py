@@ -50,13 +50,11 @@ class DiagnosticState:
     @property
     def ddt_w_adv_pc(self) -> LocatedFieldImpl:
         return np_as_located_field(CellDim, KDim)(
-            # np.asarray(self.ddt_w_adv_pc_before)[:, self.ntnd:]
             np.asarray(self.ddt_w_adv_pc_before)[self.ntnd :]
         )
 
     @property
     def ddt_vn_apc_pc(self) -> LocatedFieldImpl:
         return np_as_located_field(EdgeDim, KDim)(
-            # np.asarray(self.ddt_vn_apc_pc_before)[:, self.ntnd:]
             np.asarray(self.ddt_vn_apc_pc_before)[self.ntnd :]
         )
