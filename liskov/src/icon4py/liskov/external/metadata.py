@@ -13,9 +13,9 @@
 import datetime
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import click
-from typing_extensions import Any
 
 from icon4py.liskov.external.exceptions import (
     MissingClickContextError,
