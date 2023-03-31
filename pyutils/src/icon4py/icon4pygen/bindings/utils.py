@@ -40,7 +40,7 @@ def calc_num_neighbors(dim_list: list[Dimension], includes_center: bool) -> int:
 def format_fortran_code(source: str) -> str:
     """Format fortran code using fprettify."""
     bin_path = Path(PYTHON_PATH).parent
-    if "spack" not in bin_path:
+    if "spack" not in str(bin_path):
         fprettify_path = bin_path / "fprettify"
     else:
         fprettify_path = "fprettify"
