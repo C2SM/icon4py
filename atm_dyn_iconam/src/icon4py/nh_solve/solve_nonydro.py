@@ -199,12 +199,12 @@ class SolveNonhydro:
         z_fields: ZFields,
         dtime: float,
     ):
-        if LAM:
+        if l_limited_area:
             set_zero_c_k(self.z_rth_pr_1, offset_provider={})
             set_zero_c_k(self.z_rth_pr_2, offset_provider={})
             #_mo_solve_nonhydro_stencil_01()
 
-        nhsolve_prog.nhsolve_predictor_tendencies_2_3(
+        nhsolve_prog.predictor_stencils_2_3(
             exner_exfac,
             exner,
             exner_ref_mc,
@@ -221,20 +221,7 @@ class SolveNonhydro:
         #_mo_solve_nonhydro_stencil_03()
 
         if (igradp_method <= 3):
-            nhsolve_prog.nhsolve_predictor_tendencies_4_5_6(
-                self.metric_state.wgtfacq_c,
-                z_exner_ex_pr,
-                z_exner_ic,
-                self.metric_state.wgtfac_e,
-                inv_ddqz_z_full,
-                z_dexner_dz_c_1,
-                edge_startindex_local - 2,
-                self.vertical_params.nflatlev,
-                self.grid.n_lev(),
-                offset_provider={
-                    "Koff": KDim,
-                },
-            )
+            nhsolve_prog.predictor_stencils_4_5_6()
             #_mo_solve_nonhydro_stencil_04()
             #_mo_solve_nonhydro_stencil_05()
             #_mo_solve_nonhydro_stencil_06()
@@ -242,10 +229,7 @@ class SolveNonhydro:
             if (nflatlev == 1):
                 print("Not implemented")
 
-        nhsolve_prog.nhsolve_predictor_tendencies_4_5_6(
-            prognostic_state.rho,
-
-        )
+        nhsolve_prog.predictor_stencils_7_8_9()
         #_mo_solve_nonhydro_stencil_07()
         #_mo_solve_nonhydro_stencil_08()
         #_mo_solve_nonhydro_stencil_09()
@@ -253,7 +237,7 @@ class SolveNonhydro:
         if (l_open_ubc and not l_vert_nested):
             print("Not implemented")
 
-        nhsolve_prog.nhsolve_predictor_tendencies_11_lower_upper(
+        nhsolve_prog.predictor_stencils_11_lower_upper(
         )
         #_mo_solve_nonhydro_stencil_11_lower()
         #_mo_solve_nonhydro_stencil_11_upper()
@@ -307,17 +291,17 @@ class SolveNonhydro:
         )
 
         if (l_limited_area):
-            _mo_solve_nonhydro_stencil_15()
+            mo_solve_nonhydro_stencil_15()
 
         if (iadv_rhotheta == 2):
         else:
             mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1()
 
-        _mo_solve_nonhydro_stencil_18()
+        mo_solve_nonhydro_stencil_18()
 
-        if (igradp_method <= 3):
-            _mo_solve_nonhydro_stencil_19()
-            _mo_solve_nonhydro_stencil_20()
+        if (igradp_method <= 3): #stencil_20 is tricky, there's no regular field operator
+            mo_solve_nonhydro_stencil_19()
+            mo_solve_nonhydro_stencil_20()
         else if (igradp == 4 or igradp_method == 5):
 
         if (igradp_method == 3):
@@ -325,35 +309,37 @@ class SolveNonhydro:
         else if (igradp_method == 5):
 
         if (igradp_method == 3 or igradp_method == 5):
-            _mo_solve_nonhydro_stencil_22()
+            mo_solve_nonhydro_stencil_22()
 
-        _mo_solve_nonhydro_stencil_24()
+        mo_solve_nonhydro_stencil_24()
 
         if (is_iau_active):
-            _mo_solve_nonhydro_stencil_28()
+            mo_solve_nonhydro_stencil_28()
 
         if (l_limited_area):
-            _mo_solve_nonhydro_stencil_29()
+            mo_solve_nonhydro_stencil_29()
 
         ##### COMMUNICATION PHASE
 
-        _mo_solve_nonhydro_stencil_30()
+        mo_solve_nonhydro_stencil_30()
 
         #####  Not sure about  _mo_solve_nonhydro_stencil_31()
 
         if (idiv_method == 1):
-            _mo_solve_nonhydro_stencil_32()
+            mo_solve_nonhydro_stencil_32()
 
-        _mo_solve_nonhydro_stencil_35()
-
-        _mo_solve_nonhydro_stencil_36()
+        nhsolve_prog.predictor_stencils_35_36()
+        #_mo_solve_nonhydro_stencil_35()
+        #_mo_solve_nonhydro_stencil_36()
 
         if (not l_vert_nested):
-            _mo_solve_nonhydro_stencil_37()
-            _mo_solve_nonhydro_stencil_38()
+            nhsolve_prog.predictor_stencils_37_38()
+            #_mo_solve_nonhydro_stencil_37()
+            #_mo_solve_nonhydro_stencil_38()
 
-        _mo_solve_nonhydro_stencil_39()
-        _mo_solve_nonhydro_stencil_40()
+        nhsolve_prog.predictor_stencils_39_40()
+        #_mo_solve_nonhydro_stencil_39()
+        #_mo_solve_nonhydro_stencil_40()
 
         if (idiv_method == 2):
             if (l_limited_area):
@@ -365,9 +351,9 @@ class SolveNonhydro:
             div_avg()
 
         if (idiv_method == 1):
-            _mo_solve_nonhydro_stencil_41()
+            mo_solve_nonhydro_stencil_41()
 
-        nhsolve_prog.nhsolve_predictor_tendencies_43_44_45_45b
+        nhsolve_prog.stencils_43_44_45_45b()
         #_mo_solve_nonhydro_stencil_43()
         #_mo_solve_nonhydro_stencil_44()
         #_mo_solve_nonhydro_stencil_45()
@@ -376,15 +362,15 @@ class SolveNonhydro:
         if (not l_open_ubc and not l_vert_nested):
             _mo_solve_nonhydro_stencil_46()
 
-        nhsolve_prog.nhsolve_predictor_tendencies_47_48_49()
+        nhsolve_prog.stencils_47_48_49()
         #_mo_solve_nonhydro_stencil_47()
         #_mo_solve_nonhydro_stencil_48()
         #_mo_solve_nonhydro_stencil_49()
 
         if (is_iau_active):
-            _mo_solve_nonhydro_stencil_50()
+            mo_solve_nonhydro_stencil_50()
 
-        nhsolve_prog.nhsolve_predictor_tendencies_52_53()
+        nhsolve_prog.stencils_52_53()
         #_mo_solve_nonhydro_stencil_52()
         #_mo_solve_nonhydro_stencil_53()
 
@@ -392,23 +378,23 @@ class SolveNonhydro:
             ## ACC w_1 -> p_nh%w
             _mo_solve_nonhydro_stencil_54()
 
-        _mo_solve_nonhydro_stencil_55()
+        mo_solve_nonhydro_stencil_55()
 
         if (lhdiff_rcf and divdamp_type >= 3):
-            _mo_solve_nonhydro_stencil_56_63()
+            mo_solve_nonhydro_stencil_56_63()
 
         if (idyn_timestep == 1):
-            nhsolve_prog.nhsolve_predictor_tendencies_59_60()
+            nhsolve_prog.predictor_stencils_59_60()
             #_mo_solve_nonhydro_stencil_59()
             #_mo_solve_nonhydro_stencil_60()
 
         if (l_limited_area):  # for MPI-parallelized case
-            nhsolve_prog.nhsolve_predictor_tendencies_61_62()
+            nhsolve_prog.predictor_stencils_61_62()
             #_mo_solve_nonhydro_stencil_61()
             #_mo_solve_nonhydro_stencil_62()
 
         if (lhdiff_rcf and divdamp_type >= 3):
-            _mo_solve_nonhydro_stencil_56_63()
+            mo_solve_nonhydro_stencil_56_63()
 
     ##### COMMUNICATION PHASE
 
@@ -430,44 +416,45 @@ class SolveNonhydro:
         area_edge: Field[[EdgeDim], float],
     ):
 
-        _mo_solve_nonhydro_stencil_10()
+        mo_solve_nonhydro_stencil_10()
 
         if (l_open_ubc and not l_vert_nested):
 
-        _mo_solve_nonhydro_stencil_17()
+        mo_solve_nonhydro_stencil_17()
 
         if (itime_scheme >= 4):
-            _mo_solve_nonhydro_stencil_23()
+            mo_solve_nonhydro_stencil_23()
 
         if (lhdiff_rcf and (divdamp_order == 4.OR.divdamp_order == 24)):
-            _mo_solve_nonhydro_stencil_25()
+            mo_solve_nonhydro_stencil_25()
 
         if (lhdiff_rcf):
             if (divdamp_order == 2 or (divdamp_order == 24 and scal_divdamp_o2 > 1e-6)):
-                _mo_solve_nonhydro_stencil_26()
+                mo_solve_nonhydro_stencil_26()
             if (divdamp_order == 4 or (divdamp_order == 24 and ivdamp_fac_o2 <= 4 * divdamp_fac)):
                 if (l_limited_area):
-                    _mo_solve_nonhydro_stencil_27()
+                    mo_solve_nonhydro_stencil_27()
                 else:
-                    _mo_solve_nonhydro_4th_order_divdamp()
+                    mo_solve_nonhydro_4th_order_divdamp()
 
         if (is_iau_active):
-            _mo_solve_nonhydro_stencil_28()
+            mo_solve_nonhydro_stencil_28()
 
         ##### COMMUNICATION PHASE
 
         if (idiv_method == 1):
-            _mo_solve_nonhydro_stencil_32()
+            mo_solve_nonhydro_stencil_32()
 
             if (lpred_adv):
                 if (lclean_mflx):
-                    _mo_solve_nonhydro_stencil_33()
-                _mo_solve_nonhydro_stencil_34()
+                    mo_solve_nonhydro_stencil_33()
+                mo_solve_nonhydro_stencil_34()
 
         if (itime_scheme >= 5):
-            _mo_solve_nonhydro_stencil_35()
-            _mo_solve_nonhydro_stencil_39()
-            _mo_solve_nonhydro_stencil_40()
+            nhsolve_prog.corrector_stencils_35_39_40()
+            #_mo_solve_nonhydro_stencil_35()
+            #_mo_solve_nonhydro_stencil_39()
+            #_mo_solve_nonhydro_stencil_40()
 
         if (idiv_method == 2):
             if (l_limited_area):
@@ -479,47 +466,49 @@ class SolveNonhydro:
             div_avg()
 
         if (idiv_method == 1):
-            _mo_solve_nonhydro_stencil_41()
+            mo_solve_nonhydro_stencil_41()
 
         if (itime_scheme >= 4):
-            _mo_solve_nonhydro_stencil_42()
+            mo_solve_nonhydro_stencil_42()
         else:
-            _mo_solve_nonhydro_stencil_43()
+            mo_solve_nonhydro_stencil_43()
 
-        _mo_solve_nonhydro_stencil_44()
+        mo_solve_nonhydro_stencil_44()
 
-        _mo_solve_nonhydro_stencil_45()
-        _mo_solve_nonhydro_stencil_45_b()
+        mo_solve_nonhydro_stencil_45()
+        mo_solve_nonhydro_stencil_45_b()
 
         if (not l_open_ubc and not l_vert_nested):
-            _mo_solve_nonhydro_stencil_46()
+            mo_solve_nonhydro_stencil_46()
 
-        _mo_solve_nonhydro_stencil_47()
-        _mo_solve_nonhydro_stencil_48()
-        _mo_solve_nonhydro_stencil_49()
+        nhsolve_prog.stencils_47_48_49()
+        #_mo_solve_nonhydro_stencil_47()
+        #_mo_solve_nonhydro_stencil_48()
+        #_mo_solve_nonhydro_stencil_49()
 
         if (is_iau_active):
-            _mo_solve_nonhydro_stencil_50()
+            mo_solve_nonhydro_stencil_50()
 
-        _mo_solve_nonhydro_stencil_52()
-        _mo_solve_nonhydro_stencil_53()
+        nhsolve_prog.stencils_52_53()
+        #_mo_solve_nonhydro_stencil_52()
+        #_mo_solve_nonhydro_stencil_53()
 
         if (rayleigh_type == RAYLEIGH_KLEMP):
             ## ACC w_1 -> p_nh%w
-            _mo_solve_nonhydro_stencil_54()
+            mo_solve_nonhydro_stencil_54()
 
-        _mo_solve_nonhydro_stencil_55()
-
-        if (lpred_adv):
-            if (lclean_mflx):
-                _mo_solve_nonhydro_stencil_57()
-
-        _mo_solve_nonhydro_stencil_58()
+        mo_solve_nonhydro_stencil_55()
 
         if (lpred_adv):
             if (lclean_mflx):
-                _mo_solve_nonhydro_stencil_64()
-            _mo_solve_nonhydro_stencil_65()
+                mo_solve_nonhydro_stencil_57()
+
+        mo_solve_nonhydro_stencil_58()
+
+        if (lpred_adv):
+            if (lclean_mflx):
+                mo_solve_nonhydro_stencil_64()
+            mo_solve_nonhydro_stencil_65()
 
         ##### COMMUNICATION PHASE
 
