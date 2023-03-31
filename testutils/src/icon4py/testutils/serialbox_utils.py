@@ -153,13 +153,13 @@ class IconGridSavePoint(IconSavepoint):
         else:
             return None
 
-    def c2e(self):
-        return self._get_connectivity_array("c2e")
-
     def _get_connectivity_array(self, name: str):
         connectivity = self.serializer.read(name, self.savepoint) - 1
         print(f" connectivity {name} : {connectivity.shape}")
         return connectivity
+
+    def c2e(self):
+        return self._get_connectivity_array("c2e")
 
     def c2e2c(self):
         return self._get_connectivity_array("c2e2c")

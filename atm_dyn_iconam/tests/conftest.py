@@ -197,9 +197,11 @@ def icon_grid(data_provider):
                 C2E2CODim: c2e2c0,
                 E2C2EDim: e2c2e,
                 E2C2EODim: e2c2e0,
+                E2VDim: sp.e2v(),
+                V2EDim: sp.v2e(),
+                E2C2VDim: sp.e2c2v(),
             }
         )
-        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e(), E2C2VDim: sp.e2c2v()})
     )
     return grid
 
