@@ -24,7 +24,7 @@ class ParsedGranuleDeserialiser:
     def __init__(self, parsed: ParsedGranule, directory: str):
         self.parsed = parsed
         self.directory = directory
-        self.data = {"savepoint": [], "init": ...}
+        self.data = {"Savepoint": [], "Init": ...}
 
     def deserialise(self) -> SerialisationInterface:
         """
@@ -65,7 +65,7 @@ class ParsedGranuleDeserialiser:
             field = FieldSerialisationData(variable=var_name, association=association)
             fields.append(field)
 
-        self.data["savepoint"].append(
+        self.data["Savepoint"].append(
             SavepointData(
                 name=savepoint_name,
                 startln=var_dict["codegen_line"],
@@ -104,7 +104,7 @@ class ParsedGranuleDeserialiser:
                 if intent == "in":
                     lns.append(var_dict["codegen_line"])
         startln = min(lns)
-        self.data["init"] = InitData(startln=startln, directory=self.directory)
+        self.data["Init"] = InitData(startln=startln, directory=self.directory)
 
     def _merge_out_inout_fields(self):
         for _, intent_dict in self.parsed.items():
