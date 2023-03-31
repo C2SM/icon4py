@@ -38,7 +38,12 @@ def calc_num_neighbors(dim_list: list[Dimension], includes_center: bool) -> int:
 
 
 def format_fortran_code(source: str) -> str:
-    """Format fortran code using fprettify."""
+    """Format fortran code using fprettify.
+
+    The path to fprettify needs to be set explicitly for the
+    non-Spack build process as Liskov does not activate a virtual environment.
+    However, the PYTHON_PATH does not contain fprettify in a Spack build, hence the need for a special condition
+    """
     bin_path = Path(PYTHON_PATH).parent
     if "spack" not in str(bin_path):
         fprettify_path = bin_path / "fprettify"
