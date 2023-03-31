@@ -15,7 +15,6 @@ from gt4py.eve import SourceLocation
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.iterator.builtins import (
     deref,
-    list_get,
     named_range,
     power,
     shift,
@@ -30,14 +29,14 @@ from icon4py.pyutils.metadata import FieldInfo
 
 @fundef
 def step(i, theta_v, ikoffset, zdiff_gradp, theta_v_ic, inv_ddqz_z_full):
-    d_ikoffset = list_get(i, deref(ikoffset))
+    d_ikoffset = deref(shift(i)(ikoffset))
 
     d_theta_v = deref(shift(Koff, d_ikoffset, E2C, i)(theta_v))
     s_theta_v_ic = shift(Koff, d_ikoffset, E2C, i)(theta_v_ic)
     d_theta_v_ic = deref(s_theta_v_ic)
     d_theta_v_ic_p1 = deref(shift(Koff, 1)(s_theta_v_ic))
     d_inv_ddqz_z_full = deref(shift(Koff, d_ikoffset, E2C, i)(inv_ddqz_z_full))
-    d_zdiff_gradp = list_get(i, deref(zdiff_gradp))
+    d_zdiff_gradp = deref(shift(i)(zdiff_gradp))
 
     return (
         d_theta_v + d_zdiff_gradp * (d_theta_v_ic - d_theta_v_ic_p1) * d_inv_ddqz_z_full
