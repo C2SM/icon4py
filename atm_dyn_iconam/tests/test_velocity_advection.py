@@ -251,15 +251,28 @@ def test_velocity_predictor_step(
         area_edge=edge_areas,
     )
 
-    # icon_result_ddt_vn_apc_pc = np.asarray(savepoint_velocity_exit.ddt_vn_apc_pc())[ntnd:, :]
-    # icon_result_ddt_w_adv_pc = np.asarray(savepoint_velocity_exit.ddt_w_adv_pc())[ntnd:, :]
+    icon_result_ddt_vn_apc_pc = np.asarray(savepoint_velocity_exit.ddt_vn_apc_pc())[
+        ntnd:, :
+    ]
+    icon_result_ddt_w_adv_pc = np.asarray(savepoint_velocity_exit.ddt_w_adv_pc())[
+        ntnd:, :
+    ]
+    icon_result_vn_ie = savepoint_velocity_exit.vn_ie()
     icon_result_vt = savepoint_velocity_exit.vt()
     icon_result_z_kin_hor_e = savepoint_velocity_exit.z_kin_hor_e()
     icon_result_z_vt_ie = savepoint_velocity_exit.z_vt_ie()
     icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
 
-    # assert np.allclose(np.asarray(icon_result_ddt_vn_apc_pc), np.asarray(diagnostic_state.ddt_vn_apc_pc))
-    # assert np.allclose(np.asarray(icon_result_ddt_w_adv_pc), np.asarray(diagnostic_state.ddt_w_adv_pc))
+    assert np.allclose(
+        np.asarray(icon_result_ddt_vn_apc_pc),
+        np.asarray(diagnostic_state.ddt_vn_apc_pc),
+    )
+    assert np.allclose(
+        np.asarray(icon_result_ddt_w_adv_pc), np.asarray(diagnostic_state.ddt_w_adv_pc)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
+    )
     assert np.allclose(np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt))
     assert np.allclose(
         np.asarray(icon_result_z_kin_hor_e), np.asarray(z_fields.z_kin_hor_e)
@@ -272,7 +285,7 @@ def test_velocity_predictor_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep, jstep", [(2, 0)])
-def test_velocity_corrector_step(
+def test_velocity_advector_step(
     damping_height,
     icon_grid,
     grid_savepoint,
@@ -365,7 +378,7 @@ def test_velocity_corrector_step(
         vertical_params=vertical_params,
     )
 
-    velocity_advection.run_corrector_step(
+    velocity_advection.run_advector_step(
         vn_only=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
@@ -382,16 +395,25 @@ def test_velocity_corrector_step(
         area_edge=edge_areas,
     )
 
-    # icon_result_ddt_vn_apc_pc = np.asarray(savepoint_velocity_exit.ddt_vn_apc_pc())[ntnd:, :]
-    # icon_result_ddt_w_adv_pc = np.asarray(savepoint_velocity_exit.ddt_w_adv_pc())[ntnd:, :]
+    icon_result_ddt_vn_apc_pc = np.asarray(savepoint_velocity_exit.ddt_vn_apc_pc())[
+        ntnd:, :
+    ]
+    icon_result_ddt_w_adv_pc = np.asarray(savepoint_velocity_exit.ddt_w_adv_pc())[
+        ntnd:, :
+    ]
     icon_result_vn_ie = savepoint_velocity_exit.vn_ie()
     icon_result_vt = savepoint_velocity_exit.vt()
     icon_result_z_kin_hor_e = savepoint_velocity_exit.z_kin_hor_e()
     icon_result_z_vt_ie = savepoint_velocity_exit.z_vt_ie()
     icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
 
-    # assert np.allclose(np.asarray(icon_result_ddt_vn_apc_pc), np.asarray(diagnostic_state.ddt_vn_apc_pc))
-    # assert np.allclose(np.asarray(icon_result_ddt_w_adv_pc), np.asarray(diagnostic_state.ddt_w_adv_pc))
+    assert np.allclose(
+        np.asarray(icon_result_ddt_vn_apc_pc),
+        np.asarray(diagnostic_state.ddt_vn_apc_pc),
+    )
+    assert np.allclose(
+        np.asarray(icon_result_ddt_w_adv_pc), np.asarray(diagnostic_state.ddt_w_adv_pc)
+    )
     assert np.allclose(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
     )
