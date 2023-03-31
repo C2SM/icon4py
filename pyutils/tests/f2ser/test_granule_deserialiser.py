@@ -13,12 +13,12 @@
 import pytest
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
-from icon4py.f2ser.interface import (
+from icon4py.f2ser.parse import GranuleParser
+from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     SavepointData,
     SerialisationInterface,
 )
-from icon4py.f2ser.parse import GranuleParser
 
 
 @pytest.fixture

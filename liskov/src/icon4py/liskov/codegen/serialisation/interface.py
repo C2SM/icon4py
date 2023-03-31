@@ -11,4 +11,40 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# todo: add f2ser nodes
+from dataclasses import dataclass
+from typing import Optional
+
+from icon4py.liskov.codegen.types import CodeGenInput
+
+
+# todo: decomposed fields require extra information so that we can generate corresponding field copies
+
+
+@dataclass
+class InitData(CodeGenInput):
+    directory: str
+
+
+@dataclass
+class Metadata:
+    key: str
+    value: str
+
+
+@dataclass
+class FieldSerialisationData:
+    variable: str
+    association: str
+
+
+@dataclass
+class SavepointData(CodeGenInput):
+    name: str
+    fields: list[FieldSerialisationData]
+    metadata: Optional[list[Metadata]]
+
+
+@dataclass
+class SerialisationInterface:
+    Init: InitData
+    Savepoint: list[SavepointData]

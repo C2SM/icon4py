@@ -11,13 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.f2ser.interface import (
+from icon4py.f2ser.parse import ParsedGranule
+from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     InitData,
     SavepointData,
     SerialisationInterface,
 )
-from icon4py.f2ser.parse import ParsedGranule
 
 
 class ParsedGranuleDeserialiser:
