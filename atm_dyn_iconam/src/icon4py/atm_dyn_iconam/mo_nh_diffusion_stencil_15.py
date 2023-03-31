@@ -1,5 +1,3 @@
-# TODO: This license is not consistent with license used in the project.
-#       Delete the inconsistent license and above line and rerun pre-commit to insert a good license.
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
@@ -18,7 +16,6 @@ from gt4py.next.ffront import program_ast as past
 from gt4py.next.iterator.builtins import (
     deref,
     if_,
-    list_get,
     named_range,
     shift,
     unstructured_domain,
@@ -32,9 +29,9 @@ from icon4py.pyutils.metadata import FieldInfo
 
 @fundef
 def step(i, geofac_n2s_nbh, vcoef, theta_v, zd_vertoffset):
-    d_vcoef = list_get(i, deref(vcoef))
-    s_theta_v = shift(C2E2C, i, Koff, list_get(i, deref(zd_vertoffset)))(theta_v)
-    return list_get(i, deref(geofac_n2s_nbh)) * (
+    d_vcoef = deref(shift(i)(vcoef))
+    s_theta_v = shift(C2E2C, i, Koff, deref(shift(i)(zd_vertoffset)))(theta_v)
+    return deref(shift(i)(geofac_n2s_nbh)) * (
         d_vcoef * deref(s_theta_v) + (1.0 - d_vcoef) * deref(shift(Koff, 1)(s_theta_v))
     )
 
