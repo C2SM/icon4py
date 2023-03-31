@@ -15,18 +15,28 @@ import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
+from icon4py.liskov.codegen.serialisation.interface import SavepointData
+
 
 class InitStatement(eve.Node):
-    InitStatement = as_jinja("todo")
+    directory: str
 
 
 class InitStatementGenerator(TemplatedGenerator):
-    InitStatementGenerator = as_jinja("todo")
+    InitStatement = as_jinja("!$ser init directory={{directory}}")
 
 
 class SavepointStatement(eve.Node):
-    SavepointStatement = as_jinja("todo")
+    savepoint: SavepointData
 
 
 class SavepointStatementGenerator(TemplatedGenerator):
-    SavepointStatementGenerator = as_jinja("todo")
+    SavepointStatement = as_jinja(
+        """
+        !$ser savepoint {{ _this_node.savepoint.name }} {% if _this_node.savepoint.metadata %} {%- for m in _this_node.savepoint.metadata -%} {{ m.key }}={{ m.value }} {%- endfor -%} {% endif %}
+
+        {% for f in _this_node.savepoint.fields %}
+        !$ser data {{ f.variable }}={{ f.association }}
+        {% endfor %}
+        """
+    )

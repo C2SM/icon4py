@@ -43,8 +43,8 @@ class SerialisationGenerator(CodeGenerator):
         self._generate(
             InitStatement,
             InitStatementGenerator,
-            self.ser_iface.init.startln,
-            init=self.ser_iface.Init,
+            self.ser_iface.Init.startln,
+            directory=self.ser_iface.Init.directory,
         )
 
     def _generate_savepoints(self) -> None:
