@@ -36,15 +36,6 @@ from icon4py.state_utils.prognostic_state import PrognosticState
 from icon4py.state_utils.utils import _allocate
 from icon4py.velocity.z_fields import ZFields
 
-from icon4py.state_utils.diagnostic_state import DiagnosticState
-from icon4py.state_utils.icon_grid import VerticalModelParams
-from icon4py.state_utils.interpolation_state import InterpolationState
-from icon4py.state_utils.metric_state import MetricState
-from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.velocity.velocity_advection import VelocityAdvection
-from icon4py.velocity.z_fields import ZFields
-
-
 
 class NonHydrostaticConfig:
     """
@@ -79,10 +70,21 @@ class NonHydrostaticConfig:
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
-        if self.diffusion_type != 5:
+
+        if self.l_open_ubc:
             raise NotImplementedError(
-                "Only diffusion type 5 = `Smagorinsky diffusion with fourth-order background "
-                "diffusion` is implemented"
+                "Open upper boundary conditions not supported"
+                "(to allow vertical motions related to diabatic heating to extend beyond the model top)"
+            )
+
+        if self.lvert_nest or self.l_vert_nested:
+            raise NotImplementedError(
+                "Vertical nesting support not implemented"
+            )
+
+        if self.igradp_method == 4 or self.igradp_method == 5:
+            raise NotImplementedError(
+                "igradp_method 4 and 5 not implemented"
             )
 
         if self.diffusion_type < 0:
@@ -171,25 +173,18 @@ class SolveNonhydro:
         runs a diffusion step for the parameter linit=False, within regular time loop.
         """
 
-        if not self._run_program:
-            self._do_nonhydrosolve_step(
-                diagnostic_state=diagnostic_state,
-                prognostic_state=prognostic_state,
-                dtime=dtime,
-                tangent_orientation=tangent_orientation,
-                inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-                inverse_dual_edge_length=inverse_dual_edge_length,
-                inverse_vertex_vertex_lengths=inverse_vert_vert_lengths,
-                primal_normal_vert=primal_normal_vert,
-                dual_normal_vert=dual_normal_vert,
-                edge_areas=edge_areas,
-                cell_areas=cell_areas,
-                diff_multfac_vn=self.diff_multfac_vn,
-                smag_limit=self.smag_limit,
-                smag_offset=self.smag_offset,
-            )
-        else:
-            print("Not implemented")
+        #velocity_advection is referenced inside
+
+        self.run_predictor_step()
+
+        self.run_corrector_step()
+
+        if l_limited_area or jg > 1:
+            _mo_solve_nonhydro_stencil_66()
+            _mo_solve_nonhydro_stencil_67()
+
+        mo_solve_nonhydro_stencil_68()
+
 
     def run_predictor_step(
         self,
@@ -199,6 +194,14 @@ class SolveNonhydro:
         z_fields: ZFields,
         dtime: float,
     ):
+        if itime_scheme >=6 or l_init or l_recompute:
+            if itime_scheme<6 and not l_init:
+                lvn_only=true
+            else:
+                lvn_only=false
+            velocity_advection.run_predictor_step()
+        nvar = nnow
+
         if l_limited_area:
             set_zero_c_k(self.z_rth_pr_1, offset_provider={})
             set_zero_c_k(self.z_rth_pr_2, offset_provider={})
@@ -220,29 +223,34 @@ class SolveNonhydro:
         #_mo_solve_nonhydro_stencil_02()
         #_mo_solve_nonhydro_stencil_03()
 
-        if (igradp_method <= 3):
+        if igradp_method <= 3:
             nhsolve_prog.predictor_stencils_4_5_6()
             #_mo_solve_nonhydro_stencil_04()
             #_mo_solve_nonhydro_stencil_05()
             #_mo_solve_nonhydro_stencil_06()
 
-            if (nflatlev == 1):
-                print("Not implemented")
+            if nflatlev == 1:
+                raise NotImplementedError(
+                    "nflatlev=1 not implemented"
+                )
 
         nhsolve_prog.predictor_stencils_7_8_9()
         #_mo_solve_nonhydro_stencil_07()
         #_mo_solve_nonhydro_stencil_08()
         #_mo_solve_nonhydro_stencil_09()
 
-        if (l_open_ubc and not l_vert_nested):
-            print("Not implemented")
+        if l_open_ubc and not l_vert_nested:
+            raise NotImplementedError(
+                "Nesting support not implemented. "
+                "l_open_ubc not implemented"
+            )
 
         nhsolve_prog.predictor_stencils_11_lower_upper(
         )
         #_mo_solve_nonhydro_stencil_11_lower()
         #_mo_solve_nonhydro_stencil_11_upper()
 
-        if (igradp_method <= 3):
+        if igradp_method <= 3:
             mo_solve_nonhydro_stencil_12(
                 z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc,
@@ -262,61 +270,77 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if (iadv_rhotheta == 1):
+        if iadv_rhotheta == 1:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl()
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl()
-        elif (iadv_rhotheta == 2):
-            mo_math_gradients_grad_green_gauss_cell_dsl()
-        elif (iadv_rhotheta == 3):
-            upwind_hflux_miura3
+        elif iadv_rhotheta == 2:
+            mo_math_gradients_grad_green_gauss_cell_dsl(
+                p_grad_1_u,
+                p_grad_1_v,
+                p_grad_2_u,
+                p_grad_2_v,
+                p_ccpr1,
+                p_ccpr2,
+                geofac_grg_x,
+                geofac_grg_y,
+                offset_provider={
+                    "C2E2CO": mesh.get_c2e2cO_offset_provider(),
+                    "C2E2CODim": C2E2CODim,
+                },
+            )
+        elif iadv_rhotheta == 3:
+            #First call: compute backward trajectory with wind at time level nnow
+            lcompute=true
+            lcleanup=false
+            upwind_hflux_miura3()
+            # Second call: compute only reconstructed value for flux divergence
+            lcompute = false
+            lcleanup = true
+            upwind_hflux_miura3()
 
-        if (iadv_rhotheta <= 2):
-            if (idiv_method == 1):
-
+        # Please see test.f90 for this section. Above call to 'wrap_run_mo_solve_nonhydro_stencil_14'
+        if iadv_rhotheta <= 2:
+            if idiv_method == 1:
+                pass
             else:
+                pass
+        mo_solve_nonhydro_stencil_14()
 
-        mo_math_gradients_grad_green_gauss_cell_dsl(
-            p_grad_1_u,
-            p_grad_1_v,
-            p_grad_2_u,
-            p_grad_2_v,
-            p_ccpr1,
-            p_ccpr2,
-            geofac_grg_x,
-            geofac_grg_y,
-            offset_provider={
-                "C2E2CO": mesh.get_c2e2cO_offset_provider(),
-                "C2E2CODim": C2E2CODim,
-            },
-        )
-
-        if (l_limited_area):
+        if jg > 1 or l_limited_area:
             mo_solve_nonhydro_stencil_15()
 
-        if (iadv_rhotheta == 2):
+        if iadv_rhotheta == 2:
+            #Operations from upwind_hflux_miura are inlined in order to process both fields in one step
+            pass
         else:
             mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1()
 
         mo_solve_nonhydro_stencil_18()
 
-        if (igradp_method <= 3): #stencil_20 is tricky, there's no regular field operator
+        if igradp_method <= 3: #stencil_20 is tricky, there's no regular field operator
             mo_solve_nonhydro_stencil_19()
             mo_solve_nonhydro_stencil_20()
-        else if (igradp == 4 or igradp_method == 5):
+        elif igradp_method == 4 or igradp_method == 5:
+            raise NotImplementedError(
+                "igradp_method 4 and 5 not implemented"
+            )
 
-        if (igradp_method == 3):
-            _mo_solve_nonhydro_stencil_21()
-        else if (igradp_method == 5):
+        if igradp_method == 3:
+            mo_solve_nonhydro_stencil_21()
+        elif igradp_method == 5:
+            raise NotImplementedError(
+                "igradp_method 4 and 5 not implemented"
+            )
 
-        if (igradp_method == 3 or igradp_method == 5):
+        if igradp_method == 3 or igradp_method == 5:
             mo_solve_nonhydro_stencil_22()
 
         mo_solve_nonhydro_stencil_24()
 
-        if (is_iau_active):
+        if is_iau_active:
             mo_solve_nonhydro_stencil_28()
 
-        if (l_limited_area):
+        if l_limited_area:
             mo_solve_nonhydro_stencil_29()
 
         ##### COMMUNICATION PHASE
@@ -325,14 +349,14 @@ class SolveNonhydro:
 
         #####  Not sure about  _mo_solve_nonhydro_stencil_31()
 
-        if (idiv_method == 1):
+        if idiv_method == 1:
             mo_solve_nonhydro_stencil_32()
 
         nhsolve_prog.predictor_stencils_35_36()
         #_mo_solve_nonhydro_stencil_35()
         #_mo_solve_nonhydro_stencil_36()
 
-        if (not l_vert_nested):
+        if not l_vert_nested:
             nhsolve_prog.predictor_stencils_37_38()
             #_mo_solve_nonhydro_stencil_37()
             #_mo_solve_nonhydro_stencil_38()
@@ -341,16 +365,16 @@ class SolveNonhydro:
         #_mo_solve_nonhydro_stencil_39()
         #_mo_solve_nonhydro_stencil_40()
 
-        if (idiv_method == 2):
-            if (l_limited_area):
+        if idiv_method == 2:
+            if l_limited_area:
                 init_zero_contiguous_dp()
 
             ##stencil not translated
 
-        if (idiv_method == 2):
+        if idiv_method == 2:
             div_avg()
 
-        if (idiv_method == 1):
+        if idiv_method == 1:
             mo_solve_nonhydro_stencil_41()
 
         nhsolve_prog.stencils_43_44_45_45b()
@@ -359,7 +383,7 @@ class SolveNonhydro:
         #_mo_solve_nonhydro_stencil_45()
         #_mo_solve_nonhydro_stencil_45_b()
 
-        if (not l_open_ubc and not l_vert_nested):
+        if not (l_open_ubc and l_vert_nested):
             _mo_solve_nonhydro_stencil_46()
 
         nhsolve_prog.stencils_47_48_49()
@@ -374,101 +398,99 @@ class SolveNonhydro:
         #_mo_solve_nonhydro_stencil_52()
         #_mo_solve_nonhydro_stencil_53()
 
-        if (rayleigh_type == RAYLEIGH_KLEMP):
+        if rayleigh_type == RAYLEIGH_KLEMP:
             ## ACC w_1 -> p_nh%w
             _mo_solve_nonhydro_stencil_54()
 
         mo_solve_nonhydro_stencil_55()
 
-        if (lhdiff_rcf and divdamp_type >= 3):
+        if lhdiff_rcf and divdamp_type >= 3:
             mo_solve_nonhydro_stencil_56_63()
 
-        if (idyn_timestep == 1):
+        if idyn_timestep == 1:
             nhsolve_prog.predictor_stencils_59_60()
             #_mo_solve_nonhydro_stencil_59()
             #_mo_solve_nonhydro_stencil_60()
 
-        if (l_limited_area):  # for MPI-parallelized case
+        if l_limited_area:  # for MPI-parallelized case
             nhsolve_prog.predictor_stencils_61_62()
             #_mo_solve_nonhydro_stencil_61()
             #_mo_solve_nonhydro_stencil_62()
 
-        if (lhdiff_rcf and divdamp_type >= 3):
+        if lhdiff_rcf and divdamp_type >= 3:
             mo_solve_nonhydro_stencil_56_63()
 
-    ##### COMMUNICATION PHASE
+        ##### COMMUNICATION PHASE
+
+
 
     def run_corrector_step(
         self,
         vn_only: bool,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
-        z_fields: ZFields,
-        inv_dual_edge_length: Field[[EdgeDim], float],
-        inv_primal_edge_length: Field[[EdgeDim], float],
-        dtime: float,
-        tangent_orientation: Field[[EdgeDim], float],
-        cfl_w_limit: float,
-        scalfac_exdiff: float,
-        cell_areas: Field[[CellDim], float],
-        owner_mask: Field[[CellDim], bool],
-        f_e: Field[[EdgeDim], float],
-        area_edge: Field[[EdgeDim], float],
     ):
+
+        lvn_only = false
+        velocity_advection.run_corrector_step()
+        nvar=nnew
 
         mo_solve_nonhydro_stencil_10()
 
-        if (l_open_ubc and not l_vert_nested):
+        if l_open_ubc and not l_vert_nested:
+            raise NotImplementedError(
+                "l_open_ubc not implemented"
+            )
 
         mo_solve_nonhydro_stencil_17()
 
-        if (itime_scheme >= 4):
+        if itime_scheme >= 4:
             mo_solve_nonhydro_stencil_23()
 
-        if (lhdiff_rcf and (divdamp_order == 4.OR.divdamp_order == 24)):
+        if lhdiff_rcf and (divdamp_order == 4 or divdamp_order == 24):
             mo_solve_nonhydro_stencil_25()
 
-        if (lhdiff_rcf):
-            if (divdamp_order == 2 or (divdamp_order == 24 and scal_divdamp_o2 > 1e-6)):
+        if lhdiff_rcf:
+            if divdamp_order == 2 or (divdamp_order == 24 and scal_divdamp_o2 > 1e-6):
                 mo_solve_nonhydro_stencil_26()
-            if (divdamp_order == 4 or (divdamp_order == 24 and ivdamp_fac_o2 <= 4 * divdamp_fac)):
-                if (l_limited_area):
+            if divdamp_order == 4 or (divdamp_order == 24 and ivdamp_fac_o2 <= 4 * divdamp_fac):
+                if l_limited_area:
                     mo_solve_nonhydro_stencil_27()
                 else:
                     mo_solve_nonhydro_4th_order_divdamp()
 
-        if (is_iau_active):
+        if is_iau_active:
             mo_solve_nonhydro_stencil_28()
 
         ##### COMMUNICATION PHASE
 
-        if (idiv_method == 1):
+        if idiv_method == 1:
             mo_solve_nonhydro_stencil_32()
 
-            if (lpred_adv):
-                if (lclean_mflx):
+            if lpred_adv:
+                if lclean_mflx:
                     mo_solve_nonhydro_stencil_33()
                 mo_solve_nonhydro_stencil_34()
 
-        if (itime_scheme >= 5):
+        if itime_scheme >= 5:
             nhsolve_prog.corrector_stencils_35_39_40()
             #_mo_solve_nonhydro_stencil_35()
             #_mo_solve_nonhydro_stencil_39()
             #_mo_solve_nonhydro_stencil_40()
 
-        if (idiv_method == 2):
-            if (l_limited_area):
+        if idiv_method == 2:
+            if l_limited_area:
                 init_zero_contiguous_dp()
 
             ##stencil not translated
 
-        if (idiv_method == 2):
+        if idiv_method == 2:
             div_avg()
 
-        if (idiv_method == 1):
+        if idiv_method == 1:
             mo_solve_nonhydro_stencil_41()
 
-        if (itime_scheme >= 4):
+        if itime_scheme >= 4:
             mo_solve_nonhydro_stencil_42()
         else:
             mo_solve_nonhydro_stencil_43()
@@ -478,7 +500,7 @@ class SolveNonhydro:
         mo_solve_nonhydro_stencil_45()
         mo_solve_nonhydro_stencil_45_b()
 
-        if (not l_open_ubc and not l_vert_nested):
+        if not l_open_ubc and not l_vert_nested:
             mo_solve_nonhydro_stencil_46()
 
         nhsolve_prog.stencils_47_48_49()
@@ -486,127 +508,29 @@ class SolveNonhydro:
         #_mo_solve_nonhydro_stencil_48()
         #_mo_solve_nonhydro_stencil_49()
 
-        if (is_iau_active):
+        if is_iau_active:
             mo_solve_nonhydro_stencil_50()
 
         nhsolve_prog.stencils_52_53()
         #_mo_solve_nonhydro_stencil_52()
         #_mo_solve_nonhydro_stencil_53()
 
-        if (rayleigh_type == RAYLEIGH_KLEMP):
+        if rayleigh_type == RAYLEIGH_KLEMP:
             ## ACC w_1 -> p_nh%w
             mo_solve_nonhydro_stencil_54()
 
         mo_solve_nonhydro_stencil_55()
 
-        if (lpred_adv):
-            if (lclean_mflx):
+        if lpred_adv:
+            if lclean_mflx:
                 mo_solve_nonhydro_stencil_57()
 
         mo_solve_nonhydro_stencil_58()
 
-        if (lpred_adv):
-            if (lclean_mflx):
+        if lpred_adv:
+            if lclean_mflx:
                 mo_solve_nonhydro_stencil_64()
             mo_solve_nonhydro_stencil_65()
 
         ##### COMMUNICATION PHASE
-
-    def _do_nonhydrosolve_step(
-        self,
-        diagnostic_state: DiagnosticState,
-        prognostic_state: PrognosticState,
-        dtime: float,
-        tangent_orientation: Field[[EdgeDim], float],
-        inverse_primal_edge_lengths: Field[[EdgeDim], float],
-        inverse_dual_edge_length: Field[[EdgeDim], float],
-        inverse_vertex_vertex_lengths: Field[[EdgeDim], float],
-        primal_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        dual_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        edge_areas: Field[[EdgeDim], float],
-        cell_areas: Field[[CellDim], float],
-        diff_multfac_vn: Field[[KDim], float],
-        smag_limit: Field[[KDim], float],
-        smag_offset: float,
-    ):
-        """
-        Run a diffusion step.
-
-        Args:
-            diagnostic_state: output argument, data class that contains diagnostic variables
-            prognostic_state: output argument, data class that contains prognostic variables
-            dtime: the time step,
-            tangent_orientation:
-            inverse_primal_edge_lengths:
-            inverse_dual_edge_length:
-            inverse_vertex_vertex_lengths:
-            primal_normal_vert:
-            dual_normal_vert:
-            edge_areas:
-            cell_areas:
-            diff_multfac_vn:
-            smag_limit:
-            smag_offset:
-
-        """
-        klevels = self.grid.n_lev()
-        k_start_end_minus2 = klevels - 2
-
-        cell_start_nudging_minus1, cell_end_local_plus1 = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim) - 1,
-            HorizontalMarkerIndex.local(CellDim) - 1,
-        )
-
-        cell_start_interior, cell_end_local = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.interior(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
-
-        cell_start_nudging, _ = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
-
-        edge_start_nudging_plus_one, edge_end_local = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
-        )
-
-        edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-        )
-
-        (
-            edge_start_nudging_minus1,
-            edge_end_local_minus2,
-        ) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) - 1,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
-        )
-
-        (
-            vertex_start_local_boundary_plus3,
-            vertex_end_local,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
-            HorizontalMarkerIndex.local(VertexDim),
-        )
-        (
-            vertex_start_local_boundary_plus1,
-            vertex_end_local_minus1,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
-            HorizontalMarkerIndex.local(VertexDim) - 1,
-        )
-
-
 
