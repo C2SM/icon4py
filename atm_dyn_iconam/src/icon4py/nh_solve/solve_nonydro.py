@@ -180,8 +180,9 @@ class SolveNonhydro:
         self.run_corrector_step()
 
         if l_limited_area or jg > 1:
-            _mo_solve_nonhydro_stencil_66()
-            _mo_solve_nonhydro_stencil_67()
+            nhsolve_prog.stencils_66_67()
+            #_mo_solve_nonhydro_stencil_66()
+            #_mo_solve_nonhydro_stencil_67()
 
         mo_solve_nonhydro_stencil_68()
 

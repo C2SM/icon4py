@@ -400,3 +400,20 @@ def predictor_stencils_61_62(
         out=(rho_new, exner_new, w_new),
     )
     _mo_solve_nonhydro_stencil_62(w_now, grf_tend_w, dtime, out=w_new)
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def stencils_66_67(
+bdy_halo_c: Field[[CellDim], bool],
+    rho: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], float],
+    rd_o_cvd: float,
+    rd_o_p0ref: float,
+):
+    _mo_solve_nonhydro_stencil_66(
+        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner)
+    )
+    _mo_solve_nonhydro_stencil_67(
+        rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner)
+    )
