@@ -235,4 +235,8 @@ class GranuleParser:
             raise ParsingError(f"No INTENT declarations found in {self.granule}")
         last_intent_ln = intent_pattern_lines[-1] + start_subroutine_ln + 1
 
-        return CodegenContext(last_intent_ln, end_subroutine_ln)
+        pre_end_subroutine_ln = (
+            end_subroutine_ln - 1
+        )  # we want to generate the code before the end of the subroutine
+
+        return CodegenContext(last_intent_ln, pre_end_subroutine_ln)

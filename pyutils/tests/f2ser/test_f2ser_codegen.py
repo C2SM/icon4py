@@ -22,5 +22,5 @@ def test_deserialiser_diffusion_codegen(diffusion_granule, diffusion_granule_dep
     deserialiser = ParsedGranuleDeserialiser(parsed, directory=".")
     interface = deserialiser.deserialise()
     generator = SerialisationGenerator(interface)
-    generator()
-    assert len(generator.generated) == 4
+    generated = generator()
+    assert len(generated) == 4
