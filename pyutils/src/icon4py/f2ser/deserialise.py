@@ -42,14 +42,11 @@ class ParsedGranuleDeserialiser:
         """Create savepoints for each subroutine and intent in the parsed granule."""
         for subroutine_name, intent_dict in self.parsed.items():
             for intent, var_dict in intent_dict.items():
-                savepoint_name = self._create_savepoint_name(subroutine_name, intent)
-                self._create_savepoint(savepoint_name, var_dict)
+                self._create_savepoint(subroutine_name, intent, var_dict)
 
-    @staticmethod
-    def _create_savepoint_name(subroutine_name: str, intent: str) -> str:
-        return f"{subroutine_name}_{intent}"
-
-    def _create_savepoint(self, savepoint_name: str, var_dict: dict) -> None:
+    def _create_savepoint(
+        self, subroutine_name: str, intent: str, var_dict: dict
+    ) -> None:
         """Create a savepoint for the given variables.
 
         Args:
@@ -61,13 +58,28 @@ class ParsedGranuleDeserialiser:
         field_vals = {k: v for k, v in var_dict.items() if isinstance(v, dict)}
 
         for var_name, var_data in field_vals.items():
-            association = self._get_variable_association(var_data, var_name)
-            field = FieldSerialisationData(variable=var_name, association=association)
-            fields.append(field)
+            association = self._create_association(var_data, var_name)
+            if var_data.get("decomposed"):
+                fields.append(
+                    FieldSerialisationData(
+                        variable=var_name,
+                        association=association,
+                        decomposed=var_data["decomposed"],
+                        dimension=var_data["dimension"],
+                        typespec=var_data["typespec"],
+                        typename=var_data["typename"],
+                        ptr_var=var_data["ptr_var"],
+                    )
+                )
+            else:
+                fields.append(
+                    FieldSerialisationData(variable=var_name, association=association)
+                )
 
         self.data["Savepoint"].append(
             SavepointData(
-                name=savepoint_name,
+                subroutine=subroutine_name,
+                intent=intent,
                 startln=var_dict["codegen_line"],
                 fields=fields,
                 metadata=metadata,
@@ -75,27 +87,20 @@ class ParsedGranuleDeserialiser:
         )
 
     @staticmethod
-    def _get_variable_association(var_data: dict, var_name: str) -> str:
-        """
-        Generate a string representing the association of a variable with its dimensions.
+    def get_slice_expression(var_name, dimension):
+        idx = dimension.split()[-1].lstrip("-+")
+        return f"{var_name}({idx}:)"
 
-        Parameters:
-            var_data (dict): A dictionary containing information about the variable, including its dimensions.
-            var_name (str): The name of the variable.
-
-        Returns:
-            str: A string representing the association of the variable with its dimensions, formatted as
-                "var_name(dim1,dim2,...)" if the variable has dimensions, or simply "var_name" otherwise.
-        """
-        # todo: handle other dimension cases e.g. verts_end_index(min_rlvert:)
+    def _create_association(self, var_data, var_name):
         dimension = var_data.get("dimension", None)
-
         if dimension is not None:
-            dim_string = ",".join(dimension)
-            association = f"{var_name}({dim_string})"
+            if ":" not in dimension:
+                return self.get_slice_expression(var_name, dimension[0])
+            else:
+                dim_string = ",".join(dimension)
+                return f"{var_name}({dim_string})"
         else:
-            association = var_name
-        return association
+            return var_name
 
     def _make_init_data(self) -> None:
         lns = []

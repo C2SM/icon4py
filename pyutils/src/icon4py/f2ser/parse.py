@@ -151,6 +151,7 @@ class GranuleParser:
                         typename = var["typename"]
                         if typename in derived_type_defs:
                             var["typedef"] = derived_type_defs[typename]
+                            var["decomposed"] = True
                         else:
                             raise MissingDerivedTypeError(
                                 f"Could not find type definition for TYPE: {typename} in dependency files: {self.dependencies}"
@@ -176,6 +177,7 @@ class GranuleParser:
                             decomposed_vars[subroutine][intent][
                                 new_type_name
                             ] = new_var_dict
+                            new_var_dict["ptr_var"] = subtype_name
                     else:
                         decomposed_vars[subroutine][intent][var_name] = var_dict
 

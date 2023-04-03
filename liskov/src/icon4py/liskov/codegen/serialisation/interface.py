@@ -35,11 +35,17 @@ class Metadata:
 class FieldSerialisationData:
     variable: str
     association: str
+    decomposed: bool = False
+    dimension: Optional[list[str]] = None
+    typespec: Optional[str] = None
+    typename: Optional[str] = None
+    ptr_var: Optional[str] = None
 
 
 @dataclass
 class SavepointData(CodeGenInput):
-    name: str
+    subroutine: str
+    intent: str
     fields: list[FieldSerialisationData]
     metadata: Optional[list[Metadata]]
 
