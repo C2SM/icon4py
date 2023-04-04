@@ -63,32 +63,31 @@ class GranuleParser:
         self.dependencies = dependencies
 
     def parse(self) -> ParsedGranule:
-        parsed = crack(self.granule)
-
-        subroutines = self._extract_subroutines(parsed)
-
+        """Parse the granule and return the parsed data."""
+        subroutines = self._extract_subroutines(crack(self.granule))
         variables_grouped_by_intent = {
             name: self._extract_intent_vars(routine)
             for name, routine in subroutines.items()
         }
-
         intrinsic_type_vars, derived_type_vars = self._parse_types(
             variables_grouped_by_intent
         )
-
         combined_type_vars = self._combine_types(derived_type_vars, intrinsic_type_vars)
+        return self._update_with_codegen_lines(combined_type_vars)
 
-        vars_with_lines = self._update_with_codegen_lines(combined_type_vars)
+    def _extract_subroutines(self, parsed: dict[str, any]) -> dict[str, any]:
+        """Extract the _init and _run subroutines from the parsed granule.
 
-        return vars_with_lines
+        Args:
+            parsed: A dictionary representing the parsed granule.
 
-    def _extract_subroutines(self, parsed: dict) -> dict:
-        subroutines: dict = {}
+        Returns:
+            A dictionary containing the extracted _init and _run subroutines.
+        """
+        subroutines = {}
         for elt in parsed["body"]:
             name = elt["name"]
-            if SubroutineType.RUN.value in name:
-                subroutines[name] = elt
-            elif SubroutineType.INIT.value in name:
+            if SubroutineType.RUN.value in name or SubroutineType.INIT.value in name:
                 subroutines[name] = elt
 
         if len(subroutines) != 2:
@@ -100,6 +99,14 @@ class GranuleParser:
 
     @staticmethod
     def _extract_intent_vars(subroutine: dict) -> dict:
+        """Extract variables grouped by their intent.
+
+        Args:
+            subroutine (dict): A dictionary representing the subroutine.
+
+        Returns:
+            A dictionary representing variables grouped by their intent.
+        """
         intents = ["in", "inout", "out"]
         result: dict = {}
         for var in subroutine["vars"]:
@@ -112,6 +119,14 @@ class GranuleParser:
         return result
 
     def _parse_types(self, parsed: dict) -> tuple[dict, dict]:
+        """Parse the intrinsic and derived type variables of each subroutine and intent from a parsed granule dictionary.
+
+        Args:
+            parsed (dict): A dictionary containing the parsed information of a granule.
+
+        Returns:
+            tuple[dict, dict]: A tuple containing two dictionaries. The first one maps each subroutine and intent to a dictionary of intrinsic type variables. The second one maps each subroutine and intent to a dictionary of derived type variables.
+        """
         intrinsic_types: dict = {}
         derived_types: dict = {}
 
@@ -135,7 +150,17 @@ class GranuleParser:
         return intrinsic_types, self._parse_derived_types(derived_types)
 
     def _parse_derived_types(self, derived_types: dict) -> dict:
-        # Create a dictionary that maps the typename to the typedef for each derived type
+        """Parse the derived types defined in the input dictionary by adding their type definitions.
+
+        Args:
+            derived_types (dict): A dictionary containing the derived types.
+
+        Returns:
+            dict: A dictionary containing the parsed derived types with their type definitions.
+
+        Raises:
+            MissingDerivedTypeError: If the type definition for a derived type could not be found in any of the dependency files.
+        """
         derived_type_defs = {}
         for dep in self.dependencies:
             parsed = crack(dep)
@@ -143,7 +168,6 @@ class GranuleParser:
                 if block["block"] == "type":
                     derived_type_defs[block["name"]] = block["vars"]
 
-        # Iterate over the derived types and add the typedef for each derived type
         for _, subroutine_vars in derived_types.items():
             for _, intent_vars in subroutine_vars.items():
                 for _, var in intent_vars.items():
@@ -161,6 +185,14 @@ class GranuleParser:
 
     @staticmethod
     def _decompose_derived_types(derived_types: dict) -> dict:
+        """Decompose derived types into individual subtypes.
+
+        Args:
+            derived_types (dict): A dictionary containing the derived types to be decomposed.
+
+        Returns:
+            dict: A dictionary containing the decomposed derived types, with each subtype represented by a separate entry.
+        """
         decomposed_vars: dict = {}
         for subroutine, subroutine_vars in derived_types.items():
             decomposed_vars[subroutine] = {}
@@ -185,6 +217,15 @@ class GranuleParser:
 
     @staticmethod
     def _combine_types(derived_type_vars: dict, intrinsic_type_vars: dict) -> dict:
+        """Combine intrinsic and derived type variables and returns a dictionary with the combined result.
+
+        Args:
+            derived_type_vars (dict): A dictionary with derived type variables.
+            intrinsic_type_vars (dict): A dictionary with intrinsic type variables.
+
+        Returns:
+            dict: A dictionary with the combined intrinsic and derived type variables.
+        """
         combined = deepcopy(intrinsic_type_vars)
         for subroutine_name in combined:
             for intent in combined[subroutine_name]:
@@ -193,6 +234,14 @@ class GranuleParser:
         return combined
 
     def _update_with_codegen_lines(self, parsed_types: dict) -> dict:
+        """Update the parsed_types dictionary with the line numbers for codegen.
+
+        Args:
+            parsed_types (dict): A dictionary containing the parsed intrinsic and derived types.
+
+        Returns:
+            dict: A dictionary containing the parsed intrinsic and derived types with line numbers for codegen.
+        """
         with_lines = deepcopy(parsed_types)
         for subroutine in with_lines:
             ctx = self.get_line_numbers(subroutine)
@@ -209,6 +258,14 @@ class GranuleParser:
         return with_lines
 
     def get_line_numbers(self, subroutine_name: str) -> CodegenContext:
+        """Return CodegenContext object containing line numbers of the last intent statement and the code before the end of the given subroutine.
+
+        Args:
+            subroutine_name (str): Name of the subroutine to look for in the code.
+
+        Returns:
+            CodegenContext: Object containing the line number of the last intent statement and the line number of the last line of the code before the end of the given subroutine.
+        """
         with open(self.granule, "r") as f:
             code = f.read()
 
