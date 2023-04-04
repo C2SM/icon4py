@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Optional
 
 import numpy as np
 import serialbox as ser
@@ -129,7 +130,7 @@ class IconGridSavePoint(IconSavepoint):
     def print_connectivity_info(name: str, ar: np.ndarray):
         print(f" connectivity {name} {ar.shape}")
 
-    def refin_ctrl(self, dim: Dimension):
+    def refin_ctrl(self, dim: Dimension)-> Optional[np.ndarray]:
         if dim == CellDim:
             return self.serializer.read("c_refin_ctl", self.savepoint)
         elif dim == EdgeDim:
@@ -139,36 +140,45 @@ class IconGridSavePoint(IconSavepoint):
         else:
             return None
 
+    def num(self, dim:Dimension)->Optional[int]:
+        if dim == CellDim:
+            return self.serializer.read("num_cells", self.savepoint)[0]
+        elif dim == EdgeDim:
+            return self.serializer.read("num_edges", self.savepoint)[0]
+        elif dim == VertexDim:
+            return self.serializer.read("num_vert", self.savepoint)[0]
+        else:
+            return None
+
     def c2e(self):
+        return self._get_connectivity_array("c2e")
 
-        return self._get_connectiviy_array("c2e")
-
-    def _get_connectiviy_array(self, name: str):
+    def _get_connectivity_array(self, name: str):
         connectivity = self.serializer.read(name, self.savepoint) - 1
         print(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
     def c2e2c(self):
-        return self._get_connectiviy_array("c2e2c")
+        return self._get_connectivity_array("c2e2c")
 
     def e2c(self):
-        return self._get_connectiviy_array("e2c")
+        return self._get_connectivity_array("e2c")
 
     def e2v(self):
         # array "e2v" is actually e2c2v
-        v_ = self._get_connectiviy_array("e2v")[:, 0:2]
+        v_ = self._get_connectivity_array("e2v")[:, 0:2]
         print(f"real e2v {v_.shape}")
         return v_
 
     def e2c2v(self):
         # array "e2v" is actually e2c2v
-        return self._get_connectiviy_array("e2v")
+        return self._get_connectivity_array("e2v")
 
     def v2e(self):
-        return self._get_connectiviy_array("v2e")
+        return self._get_connectivity_array("v2e")
 
     def v2c(self):
-        return self._get_connectiviy_array("v2c")
+        return self._get_connectivity_array("v2c")
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
