@@ -11,24 +11,23 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.f2ser.interface import (
+from icon4py.f2ser.parse import ParsedGranule
+from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     InitData,
     SavepointData,
     SerialisationInterface,
 )
-from icon4py.f2ser.parse import ParsedGranule
 
 
 class ParsedGranuleDeserialiser:
     def __init__(self, parsed: ParsedGranule, directory: str):
         self.parsed = parsed
         self.directory = directory
-        self.data = {"savepoint": [], "init": ...}
+        self.data = {"Savepoint": [], "Init": ...}
 
     def deserialise(self) -> SerialisationInterface:
-        """
-        Deserialises the parsed granule and returns a serialisation interface.
+        """Deserialise the parsed granule and returns a serialisation interface.
 
         Returns:
             A `SerialisationInterface` object representing the deserialised data.
@@ -39,74 +38,108 @@ class ParsedGranuleDeserialiser:
         return SerialisationInterface(**self.data)
 
     def _make_savepoints(self) -> None:
-        """Create savepoints for each subroutine and intent in the parsed granule."""
+        """Create savepoints for each subroutine and intent in the parsed granule.
+
+        Returns:
+            None.
+        """
         for subroutine_name, intent_dict in self.parsed.items():
             for intent, var_dict in intent_dict.items():
-                savepoint_name = self._create_savepoint_name(subroutine_name, intent)
-                self._create_savepoint(savepoint_name, var_dict)
+                self._create_savepoint(subroutine_name, intent, var_dict)
 
-    @staticmethod
-    def _create_savepoint_name(subroutine_name: str, intent: str) -> str:
-        return f"{subroutine_name}_{intent}"
-
-    def _create_savepoint(self, savepoint_name: str, var_dict: dict) -> None:
+    def _create_savepoint(
+        self, subroutine_name: str, intent: str, var_dict: dict
+    ) -> None:
         """Create a savepoint for the given variables.
 
         Args:
-            savepoint_name: The name of the savepoint.
+            subroutine_name: The name of the subroutine.
+            intent: The intent of the fields to be serialised.
             var_dict: A dictionary representing the variables to be saved.
+
+        Returns:
+            None.
         """
-        fields = []
-        metadata = None  # todo: decide how to handle metadata
         field_vals = {k: v for k, v in var_dict.items() if isinstance(v, dict)}
+        fields = [
+            FieldSerialisationData(
+                variable=var_name,
+                association=self._create_association(var_data, var_name),
+                decomposed=var_data["decomposed"]
+                if var_data.get("decomposed")
+                else False,
+                dimension=var_data.get("dimension"),
+                typespec=var_data.get("typespec"),
+                typename=var_data.get("typename"),
+                ptr_var=var_data.get("ptr_var"),
+            )
+            for var_name, var_data in field_vals.items()
+        ]
 
-        for var_name, var_data in field_vals.items():
-            association = self._get_variable_association(var_data, var_name)
-            field = FieldSerialisationData(variable=var_name, association=association)
-            fields.append(field)
-
-        self.data["savepoint"].append(
+        self.data["Savepoint"].append(
             SavepointData(
-                name=savepoint_name,
+                subroutine=subroutine_name,
+                intent=intent,
                 startln=var_dict["codegen_line"],
                 fields=fields,
-                metadata=metadata,
+                metadata=None,  # todo: decide how to handle metadata
             )
         )
 
     @staticmethod
-    def _get_variable_association(var_data: dict, var_name: str) -> str:
-        """
-        Generate a string representing the association of a variable with its dimensions.
+    def get_slice_expression(var_name: str, dimension: str) -> str:
+        """Return a string representing a slice expression for a given variable name and dimension.
 
-        Parameters:
-            var_data (dict): A dictionary containing information about the variable, including its dimensions.
+        Args:
+            var_name (str): The name of the variable.
+            dimension (str): The dimension of the variable.
+
+        Returns:
+            str: A string representing a slice expression.
+        """
+        idx = dimension.split()[-1].lstrip("-+")
+        return f"{var_name}({idx}:)"
+
+    def _create_association(self, var_data: dict, var_name: str) -> str:
+        """Create an association between a variable and its data.
+
+        Args:
+            var_data (dict): A dictionary containing information about the variable.
             var_name (str): The name of the variable.
 
         Returns:
-            str: A string representing the association of the variable with its dimensions, formatted as
-                "var_name(dim1,dim2,...)" if the variable has dimensions, or simply "var_name" otherwise.
+            str: A string representing the association between the variable and its data.
         """
-        # todo: handle other dimension cases e.g. verts_end_index(min_rlvert:)
-        dimension = var_data.get("dimension", None)
-
+        dimension = var_data.get("dimension")
         if dimension is not None:
-            dim_string = ",".join(dimension)
-            association = f"{var_name}({dim_string})"
-        else:
-            association = var_name
-        return association
+            return (
+                self.get_slice_expression(var_name, dimension[0])
+                if ":" not in dimension
+                else f"{var_name}({','.join(dimension)})"
+            )
+        return var_name
 
     def _make_init_data(self) -> None:
-        lns = []
-        for _, intent_dict in self.parsed.items():
-            for intent, var_dict in intent_dict.items():
-                if intent == "in":
-                    lns.append(var_dict["codegen_line"])
-        startln = min(lns)
-        self.data["init"] = InitData(startln=startln, directory=self.directory)
+        """Create an `InitData` object and sets it to the `Init` key in the `data` dictionary.
+
+        Returns:
+            None.
+        """
+        in_lines = [
+            var_dict["codegen_line"]
+            for intent_dict in self.parsed.values()
+            for intent, var_dict in intent_dict.items()
+            if intent == "in"
+        ]
+        startln = min(in_lines, default=0)
+        self.data["Init"] = InitData(startln=startln, directory=self.directory)
 
     def _merge_out_inout_fields(self):
+        """Merge the `inout` fields into the `in` and `out` fields in the `parsed` dictionary.
+
+        Returns:
+            None.
+        """
         for _, intent_dict in self.parsed.items():
             if "inout" in intent_dict:
                 intent_dict["in"].update(intent_dict["inout"])

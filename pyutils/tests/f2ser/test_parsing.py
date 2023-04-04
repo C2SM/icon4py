@@ -34,7 +34,7 @@ def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
     assert len(parsed["diffusion_run"]["inout"]) == 7
 
     assert len(parsed["diffusion_run"]["out"]) == 5
-    assert parsed["diffusion_run"]["out"]["codegen_line"] == 1970
+    assert parsed["diffusion_run"]["out"]["codegen_line"] == 1969
 
     assert isinstance(parsed, dict)
 

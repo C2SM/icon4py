@@ -11,4 +11,43 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# todo: add f2ser nodes
+from dataclasses import dataclass
+from typing import Optional
+
+from icon4py.liskov.codegen.types import CodeGenInput
+
+
+@dataclass
+class InitData(CodeGenInput):
+    directory: str
+
+
+@dataclass
+class Metadata:
+    key: str
+    value: str
+
+
+@dataclass
+class FieldSerialisationData:
+    variable: str
+    association: str
+    decomposed: bool = False
+    dimension: Optional[list[str]] = None
+    typespec: Optional[str] = None
+    typename: Optional[str] = None
+    ptr_var: Optional[str] = None
+
+
+@dataclass
+class SavepointData(CodeGenInput):
+    subroutine: str
+    intent: str
+    fields: list[FieldSerialisationData]
+    metadata: Optional[list[Metadata]]
+
+
+@dataclass
+class SerialisationInterface:
+    Init: InitData
+    Savepoint: list[SavepointData]

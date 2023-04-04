@@ -13,12 +13,12 @@
 import pytest
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
-from icon4py.f2ser.interface import (
+from icon4py.f2ser.parse import GranuleParser
+from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     SavepointData,
     SerialisationInterface,
 )
-from icon4py.f2ser.parse import GranuleParser
 
 
 @pytest.fixture
@@ -77,12 +77,12 @@ def test_deserialiser_mock(mock_parsed_granule):
     deserialiser = ParsedGranuleDeserialiser(mock_parsed_granule, directory=".")
     interface = deserialiser.deserialise()
     assert isinstance(interface, SerialisationInterface)
-    assert len(interface.savepoint) == 3
-    assert all([isinstance(s, SavepointData) for s in interface.savepoint])
+    assert len(interface.Savepoint) == 3
+    assert all([isinstance(s, SavepointData) for s in interface.Savepoint])
     assert all(
         [
             isinstance(f, FieldSerialisationData)
-            for s in interface.savepoint
+            for s in interface.Savepoint
             for f in s.fields
         ]
     )
@@ -93,4 +93,4 @@ def test_deserialiser_diffusion_granule(diffusion_granule, diffusion_granule_dep
     parsed = parser.parse()
     deserialiser = ParsedGranuleDeserialiser(parsed, directory=".")
     interface = deserialiser.deserialise()
-    assert len(interface.savepoint) == 3
+    assert len(interface.Savepoint) == 3
