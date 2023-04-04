@@ -172,6 +172,18 @@ def test_gridparser_dimension(simple_mesh_data):
     assert grid_parser.dimension(GridFile.Dimension.VERTEX_NAME) == mesh.n_vertices
     assert grid_parser.dimension(GridFile.Dimension.EDGE_NAME) == mesh.n_edges
 
+def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint):
+    fname = r04b09_dsl_grid_path.joinpath("grid.nc")
+    data = Dataset(fname, "r")
+    grid_file = GridFile(data)
+
+    assert grid_file.dimension(GridFile.Dimension.CELL_NAME) == grid_savepoint.num(CellDim)
+    assert grid_file.dimension(GridFile.Dimension.EDGE_NAME) == grid_savepoint.num(EdgeDim)
+    # TODO: @magdalena fix in serialized data. it returns the num_cells
+    assert grid_file.dimension(GridFile.Dimension.VERTEX_NAME) == grid_savepoint.num(VertexDim)
+
+
+
 
 def test_grid_parser_index_fields(simple_mesh_data, caplog):
     caplog.set_level(logging.DEBUG)
