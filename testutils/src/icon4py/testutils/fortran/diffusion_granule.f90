@@ -36,10 +36,11 @@ MODULE mo_nh_diffusion_new
   USE mo_kind_base,                 ONLY: wp, vp
 #endif
   USE mo_math_types,           ONLY: t_tangent_vectors   ! to maintain compatibility w/ p_patch
-
+#if 0
+  USE mo_math_types_base,           ONLY: t_tangent_vectors
+#endif
   USE mo_model_domain_advanced,     ONLY: t_patch ! until GridManager available
   USE mo_model_domain,              ONLY: p_patch
-
   USE mo_intp_rbf_math,             ONLY: rbf_vec_interpol_vertex, rbf_vec_interpol_cell
   USE mo_interpolation_scalar_math, ONLY: cells2verts_scalar
   USE mo_interpolation_vector_math, ONLY: edges2cells_vector
@@ -397,6 +398,7 @@ MODULE mo_nh_diffusion_new
     diff_inst(jg)%hdiff_efdt_ratio = hdiff_efdt_ratio
 
     !$ACC ENTER DATA COPYIN(diff_inst(jg))
+
   END SUBROUTINE diffusion_init
 
   !>
@@ -408,7 +410,6 @@ MODULE mo_nh_diffusion_new
   !! Initial release by Guenther Zaengl, DWD (2010-10-13), based on an earlier
   !! version initially developed by Almut Gassmann, MPI-M
   !!
-
   SUBROUTINE  diffusion_run(jg, dtime, linit,                              &
                             vn, w, theta_v, exner,                         & ! p_nh_prog
                             vt, theta_v_ic, div_ic, hdef_ic, dwdx, dwdy,   & ! p_nh_diag
@@ -417,7 +418,6 @@ MODULE mo_nh_diffusion_new
     INTEGER,  INTENT(IN)     :: jg                ! patch ID
     REAL(wp), INTENT(IN)     :: dtime             !< time step
     LOGICAL,  INTENT(IN)     :: linit             !< initial call or runtime call
-
     REAL(wp), INTENT(INOUT)  :: vn(:,:,:)         ! orthogonal normal wind (nproma,nlev,nblks_e) [m/s]
     REAL(wp), INTENT(INOUT)  :: w(:,:,:)          ! orthogonal vertical wind (nproma,nlevp1,nblks_c) [m/s]
     REAL(wp), INTENT(INOUT)  :: theta_v(:,:,:)    ! virtual potential temperature (nproma,nlev,nblks_c) [K]
@@ -670,7 +670,6 @@ MODULE mo_nh_diffusion_new
       ENDIF
 
       !  RBF reconstruction of velocity at vertices
-
       CALL rbf_vec_interpol_vertex( vn, p_patch_diff(jg), &
                                     diff_inst(jg)%rbf_vec_idx_v, diff_inst(jg)%rbf_vec_blk_v, &
                                     diff_inst(jg)%rbf_vec_coeff_v, u_vert, v_vert,            &
@@ -796,7 +795,6 @@ MODULE mo_nh_diffusion_new
       ENDIF
 
       !  RBF reconstruction of velocity at vertices
-
       CALL rbf_vec_interpol_vertex( vn, p_patch_diff(jg),                                              &
                                     diff_inst(jg)%rbf_vec_idx_v, diff_inst(jg)%rbf_vec_blk_v, &
                                     diff_inst(jg)%rbf_vec_coeff_v, u_vert, v_vert,            &
@@ -987,7 +985,6 @@ MODULE mo_nh_diffusion_new
     ELSE IF ((diffu_type == 3 .OR. diffu_type == 5) .AND. diff_inst(jg)%discr_vn >= 2) THEN
 
        !  RBF reconstruction of velocity at vertices and cells
-
       CALL rbf_vec_interpol_vertex( vn, p_patch_diff(jg), &
                                     diff_inst(jg)%rbf_vec_idx_v, diff_inst(jg)%rbf_vec_blk_v, &
                                     diff_inst(jg)%rbf_vec_coeff_v, u_vert, v_vert,            &
@@ -1595,7 +1592,6 @@ MODULE mo_nh_diffusion_new
 
       i_startblk = p_patch_diff(jg)%cells%start_block(rl_start)
       i_endblk   = p_patch_diff(jg)%cells%end_block(rl_end)
-
 
 !$OMP DO PRIVATE(jk,jc,jb,i_startidx,i_endidx), ICON_OMP_RUNTIME_SCHEDULE
       DO jb = i_startblk,i_endblk
