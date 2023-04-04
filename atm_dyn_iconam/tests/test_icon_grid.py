@@ -54,13 +54,13 @@ def test_horizontal_grid_cell_indices(icon_grid):
     )  # lb+1
     assert icon_grid.get_indices_from_to(
         CellDim,
-        HorizontalMarkerIndex.local_boundary(CellDim) + 1,
-        HorizontalMarkerIndex.local_boundary(CellDim) + 1,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
     ) == (850, 1688)
     assert icon_grid.get_indices_from_to(
         CellDim,
-        HorizontalMarkerIndex.local_boundary(CellDim) + 2,
-        HorizontalMarkerIndex.local_boundary(CellDim) + 2,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
     ) == (
         1688,
         2511,
@@ -126,64 +126,64 @@ def test_horizontal_edge_indices(icon_grid):
     )  # nudging
     assert icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 7,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 7,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 7,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 7,
     ) == (
         4184,
         4989,
     )  # lb +7
     assert icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 6,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 6,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
     ) == (
         3777,
         4184,
     )  # lb +6
     assert icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 5,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 5,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5,
     ) == (
         2954,
         3777,
     )  # lb +5
     assert icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
     ) == (
         2538,
         2954,
     )  # lb +4
     assert icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 3,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 3,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3,
     ) == (
         1700,
         2538,
     )  # lb +3
     assert icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 2,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 2,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
     ) == (
         1278,
         1700,
     )  # lb +2
     assert icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 1,
-        HorizontalMarkerIndex.local_boundary(EdgeDim) + 1,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
     ) == (
         428,
         1278,
     )  # lb +1
     assert icon_grid.get_indices_from_to(
         EdgeDim,
-        HorizontalMarkerIndex.local_boundary(EdgeDim),
-        HorizontalMarkerIndex.local_boundary(EdgeDim),
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim),
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim),
     ) == (
         0,
         428,
@@ -210,28 +210,28 @@ def test_horizontal_vertex_indices(icon_grid):
 
     assert icon_grid.get_indices_from_to(
         VertexDim,
-        HorizontalMarkerIndex.local_boundary(VertexDim),
-        HorizontalMarkerIndex.local_boundary(VertexDim),
+        HorizontalMarkerIndex.lateral_boundary(VertexDim),
+        HorizontalMarkerIndex.lateral_boundary(VertexDim),
     ) == (0, 428)
     assert icon_grid.get_indices_from_to(
         VertexDim,
-        HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
-        HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
     ) == (428, 850)
     assert icon_grid.get_indices_from_to(
         VertexDim,
-        HorizontalMarkerIndex.local_boundary(VertexDim) + 2,
-        HorizontalMarkerIndex.local_boundary(VertexDim) + 2,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 2,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 2,
     ) == (850, 1266)
     assert icon_grid.get_indices_from_to(
         VertexDim,
-        HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
-        HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
     ) == (1266, 1673)
     assert icon_grid.get_indices_from_to(
         VertexDim,
-        HorizontalMarkerIndex.local_boundary(VertexDim) + 4,
-        HorizontalMarkerIndex.local_boundary(VertexDim) + 4,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 4,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 4,
     ) == (1673, 2071)
 
     assert icon_grid.get_indices_from_to(
@@ -239,3 +239,9 @@ def test_horizontal_vertex_indices(icon_grid):
         HorizontalMarkerIndex.interior(VertexDim),
         HorizontalMarkerIndex.interior(VertexDim),
     ) == (2071, 10663)
+
+    assert icon_grid.get_indices_from_to(
+        VertexDim,
+        HorizontalMarkerIndex.nudging(VertexDim),
+        HorizontalMarkerIndex.nudging(VertexDim),
+    ) == (10663, 10663)
