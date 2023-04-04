@@ -17,9 +17,6 @@ from typing import Optional
 from icon4py.liskov.codegen.types import CodeGenInput
 
 
-# todo: decomposed fields require extra information so that we can generate corresponding field copies
-
-
 @dataclass
 class InitData(CodeGenInput):
     directory: str
