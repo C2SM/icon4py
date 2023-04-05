@@ -19,7 +19,8 @@ from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.pipeline import (
     load_gt4py_stencils,
     parse_fortran_file,
-    run_code_generation,
+    run_integration_code_generation,
+    run_serialisation_code_generation,
 )
 
 
@@ -41,6 +42,9 @@ logger = setup_logger(__name__)
     "--profile", "-p", is_flag=True, help="Add nvtx profile statements to stencils."
 )
 @click.option(
+    "--serialise", "-s", is_flag=True, help="Generate pp_ser serialisation statements."
+)
+@click.option(
     "--metadatagen",
     "-m",
     is_flag=True,
@@ -51,6 +55,7 @@ def main(
     output_filepath: pathlib.Path,
     profile: bool,
     metadatagen: bool,
+    serialise: str,
 ) -> None:
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
 
@@ -60,16 +65,24 @@ def main(
     Options:
         -p --profile Add nvtx profile statements to stencils.
         -m --metadatagen Add metadata header with information about program (requires git).
+        -s --serialise Generates pp_ser serialisation statements for all fields in each stencil.
 
     Arguments:
         input_filepath Path to the input file to process.
         output_filepath Path to the output file to generate.
     """
-    parsed = parse_fortran_file(input_filepath, output_filepath)
-    parsed_checked = load_gt4py_stencils(parsed)
-    run_code_generation(
-        parsed_checked, input_filepath, output_filepath, profile, metadatagen
-    )
+    if serialise:
+        ser_iface = parse_fortran_file(input_filepath, output_filepath, "serialisation")
+        run_serialisation_code_generation(
+            ser_iface, input_filepath, output_filepath, profile, metadatagen
+        )
+
+    else:
+        parsed = parse_fortran_file(input_filepath, output_filepath, "integration")
+        parsed_checked = load_gt4py_stencils(parsed)
+        run_integration_code_generation(
+            parsed_checked, input_filepath, output_filepath, profile, metadatagen
+        )
 
 
 if __name__ == "__main__":
