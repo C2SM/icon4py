@@ -10,3 +10,51 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+import pathlib
+
+import click
+
+from icon4py.f2ser.logger import setup_logger
+from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
+from icon4py.f2ser.parse import GranuleParser
+
+logger = setup_logger(__name__)
+
+@click.command("icon_f2ser")
+@click.argument(
+    "granule_path",
+    type=click.Path(
+        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
+    ),
+)
+@click.argument('dependencies', multiple=True, help='List of dependency file paths.')
+@click.argument(
+    "output_filepath",
+    type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
+)
+def main(
+    granule_path: pathlib.Path,
+    dependencies: Optional[list[pathlib.Path]] = None,
+    output_filepath: pathlib.Path,
+) -> None:
+    """Command line interface for interacting with the ICON-f2ser serialization Preprocessor.
+
+    Usage:
+        icon_f2ser <granule_path> <dependencies> <output_filepath>
+
+    Options:
+
+    Arguments:
+        granule_path (Path): A path to the Fortran source file to be parsed.
+        dependencies (Optional[list[Path]]): A list of paths to any additional Fortran source files that the input file depends on.
+        output_filepath (Path): A path to the output Fortran source file to be generated.
+    """
+
+    parser = GranuleParser(granule_path, dependencies)
+    parsed = parser.parse()
+    deserialiser = ParsedGranuleDeserialiser(parsed, directory=".")
+    interface = deserialiser.deserialise()
+
+if __name__ == "__main__":
+    main()
