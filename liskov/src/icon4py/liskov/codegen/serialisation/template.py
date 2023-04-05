@@ -25,7 +25,7 @@ class InitStatement(eve.Node):
 
 
 class InitStatementGenerator(TemplatedGenerator):
-    InitStatement = as_jinja("!$ser init directory={{directory}}")
+    InitStatement = as_jinja('!$ser init directory="{{directory}}"')
 
 
 class Field(eve.Node):
@@ -83,8 +83,10 @@ class SavepointStatementGenerator(TemplatedGenerator):
     DecomposedFields = as_jinja(
         """
     {% for f in _this_node.fields %}
-    !$ser verbatim {{ f.typespec }}, automatic :: {{ f.variable }}_{{ f.ptr_var}}({{ f.alloc_dims }})
-    !$ser data {{ f.variable }}={{ f.association }}
+    !$ser verbatim {{ f.typespec }}, dimension({{ ",".join(f.dimension) }}), allocatable :: {{ f.variable }}_{{ f.ptr_var}}
+    !$ser verbatim allocate({{ f.variable }}_{{ f.ptr_var}}({{ f.alloc_dims }}))
+    !$ser data {{ f.variable }}_{{ f.ptr_var}}={{ f.association }}
+    !$ser verbatim deallocate({{ f.variable }}_{{ f.ptr_var}})
     {% endfor %}
     """
     )
