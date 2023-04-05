@@ -53,3 +53,5 @@ class MetricState:
     d2dexdz2_fac2_mc: Field[[CellDim, KDim], float]
     vwind_impl_wgt: Field[[CellDim, KDim], float]
     bdy_halo_c: Field[[CellDim], bool]
+    ipeidx_dsl: Field[[EdgeDim, KDim], bool]
+    pg_exdist: Field[[EdgeDim, KDim], float]
