@@ -46,6 +46,13 @@ class DiagnosticState:
     ddt_w_adv_pc_before: Field[[CellDim, KDim], float]
     ddt_vn_apc_pc_before: Field[[EdgeDim, KDim], float]
     ntnd: float
+    theta_v_ic: Field[[CellDim, KDim], float]
+    exner_pr: Field[[CellDim, KDim], float]
+    rho_ic: Field[[CellDim, KDim], float]
+    ddt_exner_phy: Field[[CellDim, KDim], float]
+    grf_tend_rho: Field[[CellDim, KDim], float]
+    grf_tend_thv: Field[[CellDim, KDim], float]
+    grf_tend_w: Field[[CellDim, KDim], float]
 
     @property
     def ddt_w_adv_pc(self) -> LocatedFieldImpl:

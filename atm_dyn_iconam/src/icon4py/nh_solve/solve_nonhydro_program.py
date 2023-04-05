@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
+from gt4py.next.ffront.fbuiltins import maximum
 from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_01 import (
@@ -19,7 +20,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_01 import (
 )
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_02 import (
-    mo_solve_nonhydro_stencil_02,
+    mo_solve_nonhydro_stencil_02, _mo_solve_nonhydro_stencil_02,
 )
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_03 import (
@@ -35,7 +36,14 @@ from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_d
 from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_04 import _mo_solve_nonhydro_stencil_04
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_05 import _mo_solve_nonhydro_stencil_05
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_06 import _mo_solve_nonhydro_stencil_06
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_07 import _mo_solve_nonhydro_stencil_07
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_08 import _mo_solve_nonhydro_stencil_08
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_09 import _mo_solve_nonhydro_stencil_09
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_11_lower import _mo_solve_nonhydro_stencil_11_lower
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_11_upper import _mo_solve_nonhydro_stencil_11_upper
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
@@ -45,6 +53,28 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 imp
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_19 import _mo_solve_nonhydro_stencil_19
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_35 import _mo_solve_nonhydro_stencil_35
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_36 import _mo_solve_nonhydro_stencil_36
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_37 import _mo_solve_nonhydro_stencil_37
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_38 import _mo_solve_nonhydro_stencil_38
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_39 import _mo_solve_nonhydro_stencil_39
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_40 import _mo_solve_nonhydro_stencil_40
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_43 import _mo_solve_nonhydro_stencil_43
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_44 import _mo_solve_nonhydro_stencil_44
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_45 import _mo_solve_nonhydro_stencil_45
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_45_b import _mo_solve_nonhydro_stencil_45_b
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_47 import _mo_solve_nonhydro_stencil_47
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_48 import _mo_solve_nonhydro_stencil_48
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_49 import _mo_solve_nonhydro_stencil_49
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_52 import _mo_solve_nonhydro_stencil_52
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_53 import _mo_solve_nonhydro_stencil_53_scan
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_59 import _mo_solve_nonhydro_stencil_59
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_60 import _mo_solve_nonhydro_stencil_60
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_61 import _mo_solve_nonhydro_stencil_61
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_62 import _mo_solve_nonhydro_stencil_62
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_66 import _mo_solve_nonhydro_stencil_66
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_67 import _mo_solve_nonhydro_stencil_67
 
 from icon4py.common.dimension import (
     C2E2CODim,
@@ -58,7 +88,7 @@ from icon4py.common.dimension import (
     KDim,
     VertexDim,
 )
-from icon4py.state_utils.utils import _set_bool_c_k, _set_zero_c_k
+from icon4py.state_utils.utils import _set_zero_c_k
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -68,11 +98,15 @@ def predictor_stencils_2_3(
     exner_ref_mc: Field[[CellDim, KDim], float],
     exner_pr: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
+    cell_startindex_local: int,
+    nlev: int
 ):
     _mo_solve_nonhydro_stencil_02(
-        exner_exfac, exner, exner_ref_mc, exner_pr, out=(z_exner_ex_pr, exner_pr)
+        exner_exfac, exner, exner_ref_mc, exner_pr, out=(z_exner_ex_pr, exner_pr),
+        domain={CellDim: (1, cell_startindex_local),
+                KDim: (1, nlev)}
     )
-    _set_zero_c_k(self.z_exner_ex_pr, offset_provider={})
+    _set_zero_c_k(z_exner_ex_pr, domain={CellDim: (1, cell_startindex_local), KDim: (1, nlev)})
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -83,12 +117,19 @@ def predictor_stencils_4_5_6(
     wgtfac_c: Field[[CellDim, KDim], float],
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
+    cell_startindex_local: int,
+    nflatlev_startindex: int,
+    nlev: int,
+    nlevp1: int
 ):
-    _mo_solve_nonhydro_stencil_04(wgtfacq_c, z_exner_ex_pr, out=z_exner_ic)
+    _mo_solve_nonhydro_stencil_04(wgtfacq_c, z_exner_ex_pr, out=z_exner_ic,
+                                  domain={CellDim: (3, cell_startindex_local), KDim: (nlevp1, nlevp1)})
 
-    _mo_solve_nonhydro_stencil_05(wgtfac_c, z_exner_ex_pr, out=z_exner_ic)
+    _mo_solve_nonhydro_stencil_05(wgtfac_c, z_exner_ex_pr, out=z_exner_ic,
+                                  domain={CellDim: (3, cell_startindex_local), KDim: (maximum(2, nflatlev_startindex), nlev)})
 
-    _mo_solve_nonhydro_stencil_06(z_exner_ic, inv_ddqz_z_full, out=z_dexner_dz_c_1)
+    _mo_solve_nonhydro_stencil_06(z_exner_ic, inv_ddqz_z_full, out=z_dexner_dz_c_1,
+                                  domain={CellDim: (3, cell_startindex_local), KDim: (maximum(2, nflatlev_startindex), nlev)})
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -97,6 +138,7 @@ def predictor_stencils_7_8_9(
     rho_ref_mc: Field[[CellDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
     z_rth_pr_1: Field[[CellDim, KDim], float],
     z_rth_pr_2: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
@@ -107,9 +149,12 @@ def predictor_stencils_7_8_9(
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    cell_startindex_local: int,
+    nlev: int
 ):
     _mo_solve_nonhydro_stencil_07(
-        rho, rho_ref_mc, theta_v, theta_ref_mc, out=(z_rth_pr_1, z_rth_pr_2)
+        rho, rho_ref_mc, theta_v, theta_ref_mc, out=(z_rth_pr_1, z_rth_pr_2),
+        domain={CellDim: (3, cell_startindex_local), KDim: (1, 1)}
     )
     _mo_solve_nonhydro_stencil_08(
         wgtfac_c,
@@ -118,6 +163,7 @@ def predictor_stencils_7_8_9(
         theta_v,
         theta_ref_mc,
         out=(rho_ic, z_rth_pr_1, z_rth_pr_2),
+        domain={CellDim: (3, cell_startindex_local), KDim: (2, nlev)}
     )
     _mo_solve_nonhydro_stencil_09(
         wgtfac_c,
@@ -128,6 +174,7 @@ def predictor_stencils_7_8_9(
         d_exner_dz_ref_ic,
         ddqz_z_half,
         out=(z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
+        domain={CellDim: (3, cell_startindex_local), KDim: (2, nlev)}
     )
 
 
@@ -138,9 +185,12 @@ def predictor_stencils_11_lower_upper(
     theta_ref_ic: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
+    cell_startindex_local: int,
+    nlevp1: int
 ):
     _mo_solve_nonhydro_stencil_11_lower(
         out=z_theta_v_pr_ic,
+        domain={CellDim: (3, cell_startindex_local), KDim: (1, 1)}
     )
     _mo_solve_nonhydro_stencil_11_upper(
         wgtfacq_c,
@@ -148,6 +198,7 @@ def predictor_stencils_11_lower_upper(
         theta_ref_ic,
         z_theta_v_pr_ic,
         out=(z_theta_v_pr_ic, theta_v_ic),
+        domain={CellDim: (3, cell_startindex_local), KDim: (nlevp1, nlevp1)}
     )
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -166,7 +217,9 @@ def nhsolve_predictor_tendencies_19_20(
         c_lin_e,
         z_dexner_dz_c_1,
         out=z_gradh_exner,
+        domain={}
     )
+# TODO: @nfarabullini: what's up with stencil_20?
 
 @program(backend=gtfn_cpu.run_gtfn)
 def predictor_stencils_35_36(
@@ -338,7 +391,9 @@ def stencils_52_53(
     w: Field[[CellDim, KDim], float],
     dtime: float,
     cpd: float,
-
+    cell_startindex_nudging: int,
+    cell_startindex_local: int,
+    nlev: int
 ):
     _mo_solve_nonhydro_stencil_52(
         vwind_impl_wgt,
@@ -353,8 +408,10 @@ def stencils_52_53(
         dtime,
         cpd,
         out=(z_q[:, 1:], w[:, 1:]),
+        domain={CellDim: (cell_startindex_nudging + 1, cell_startindex_local), KDim: (2, nlev)}
     )
-    _mo_solve_nonhydro_stencil_53_scan(z_q, w, out=w[:, 1:])
+    _mo_solve_nonhydro_stencil_53_scan(z_q, w, out=w[:, 1:],
+                                       domain={CellDim: (cell_startindex_nudging + 1, cell_startindex_local), KDim: (2, nlev)})
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -404,16 +461,21 @@ def predictor_stencils_61_62(
 
 @program(backend=gtfn_cpu.run_gtfn)
 def stencils_66_67(
-bdy_halo_c: Field[[CellDim], bool],
+    bdy_halo_c: Field[[CellDim], bool],
     rho: Field[[CellDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
     rd_o_p0ref: float,
+    cell_endindex_nudging: int,
+    cell_startindex_local: int,
+    nlev: int
 ):
     _mo_solve_nonhydro_stencil_66(
-        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner)
+        bdy_halo_c, rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner),
+        domain={CellDim: (cell_startindex_local - 1, cell_startindex_local), KDim: (1, nlev)}
     )
     _mo_solve_nonhydro_stencil_67(
-        rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner)
+        rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner),
+        domain={CellDim: (1, cell_endindex_nudging), KDim: (1, nlev)}
     )

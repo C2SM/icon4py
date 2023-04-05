@@ -38,3 +38,18 @@ class MetricState:
     ddqz_z_half: Field[[CellDim, KDim], float]
     coeff1_dwdz: Field[[CellDim, KDim], float]
     coeff2_dwdz: Field[[CellDim, KDim], float]
+
+    exner_exfac: Field[[CellDim, KDim], float]
+    exner_ref_mc: Field[[CellDim, KDim], float]
+    wgtfacq_c: Field[[CellDim, KDim], float]
+    inv_ddqz_z_full: Field[[CellDim, KDim], float]
+    rho_ref_mc: Field[[CellDim, KDim], float]
+    theta_ref_mc: Field[[CellDim, KDim], float]
+    vwind_expl_wgt: Field[[CellDim, KDim], float]
+    d_exner_dz_ref_ic: Field[[CellDim, KDim], float]
+    ddqz_z_half: Field[[CellDim, KDim], float] # half KDim ?
+    theta_ref_ic: Field[[CellDim, KDim], float]
+    d2dexdz2_fac1_mc: Field[[CellDim, KDim], float]
+    d2dexdz2_fac2_mc: Field[[CellDim, KDim], float]
+    vwind_impl_wgt: Field[[CellDim, KDim], float]
+    bdy_halo_c: Field[[CellDim], bool]

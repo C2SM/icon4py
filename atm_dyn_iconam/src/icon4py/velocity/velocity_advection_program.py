@@ -145,7 +145,7 @@ def predictor_tendencies_1_2(
         rbf_vec_coeff_e,
         out=vt,
         domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
+            EdgeDim: (4, edge_startindex_local_minus2),
             KDim: (0, nlev),
         },
     )
@@ -156,8 +156,8 @@ def predictor_tendencies_1_2(
         vt,
         out=(vn_ie, z_kin_hor_e),
         domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
-            KDim: (1, nlev),
+            EdgeDim: (4, edge_startindex_local_minus2),
+            KDim: (0, nlev),
         },
     )
 
@@ -175,8 +175,8 @@ def predictor_tendencies_3(
         vt,
         out=z_vt_ie,
         domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
-            KDim: (1, nlev),
+            EdgeDim: (4, edge_startindex_local_minus2),
+            KDim: (0, nlev),
         },
     )
 
@@ -204,7 +204,7 @@ def predictor_tendencies_4_5_6(
         vt,
         out=z_w_concorr_me,
         domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
+            EdgeDim: (4, edge_startindex_local_minus2),
             KDim: (nflatlev_startindex, nlev),
         },
     )
@@ -214,7 +214,7 @@ def predictor_tendencies_4_5_6(
         vt,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
+            EdgeDim: (4, edge_startindex_local_minus2),
             KDim: (0, 0),
         },
     )
@@ -224,7 +224,7 @@ def predictor_tendencies_4_5_6(
         vn,
         out=vn_ie,
         domain={
-            EdgeDim: (5, edge_startindex_local_minus2),
+            EdgeDim: (4, edge_startindex_local_minus2),
             KDim: (nlev, nlev),
         },
     )
@@ -247,7 +247,7 @@ def predictor_tendencies_9_10(
         out=local_z_w_concorr_mc,
         domain={
             CellDim: (4, cell_startindex_local_minus1),
-            KDim: (nflatlev_startindex, nlev),
+            KDim: (nflatlev_startindex, nlev)
         },
     )
 
@@ -285,7 +285,7 @@ def advector_tendencies_7(
         local_z_w_v,
         out=local_z_v_grad_w,
         domain={
-            EdgeDim: (5, edge_startindex_local_minus1),
+            EdgeDim: (6, edge_startindex_local_minus1),
             KDim: (0, nlev),
         },
     )
@@ -305,7 +305,7 @@ def advector_tendencies_8(
         e_bln_c_s,
         out=local_z_ekinh,
         domain={
-            CellDim: (4, cell_startindex_local_minus1),
+            CellDim: (3, cell_startindex_local_minus1),
             KDim: (0, nlev),
         },
     )

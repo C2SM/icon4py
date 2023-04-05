@@ -20,7 +20,7 @@ from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState
 from icon4py.state_utils.prognostic_state import PrognosticState
 from icon4py.velocity.velocity_advection import VelocityAdvection
-from icon4py.velocity.z_fields import ZFields
+from icon4py.state_utils.z_fields import ZFields
 
 
 @pytest.mark.datatest
