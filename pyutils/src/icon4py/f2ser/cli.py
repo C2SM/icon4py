@@ -23,11 +23,12 @@ logger = setup_logger(__name__)
 
 @click.command("icon_f2ser")
 @click.argument(
-    "input_filepath",
+    "granule_path",
     type=click.Path(
         exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
     ),
 )
+@click.argument('dependencies', multiple=True, help='List of dependency file paths.')
 @click.argument(
     "output_filepath",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
@@ -54,7 +55,6 @@ def main(
     parsed = parser.parse()
     deserialiser = ParsedGranuleDeserialiser(parsed, directory=".")
     interface = deserialiser.deserialise()
-    run_code_generation(interface, output_filepath)
 
 if __name__ == "__main__":
     main()
