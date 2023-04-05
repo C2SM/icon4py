@@ -247,7 +247,7 @@ def predictor_tendencies_9_10(
         out=local_z_w_concorr_mc,
         domain={
             CellDim: (4, cell_startindex_local_minus1),
-            KDim: (nflatlev_startindex, nlev)
+            KDim: (nflatlev_startindex, nlev),
         },
     )
 

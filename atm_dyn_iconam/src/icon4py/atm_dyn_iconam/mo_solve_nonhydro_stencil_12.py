@@ -44,5 +44,5 @@ def mo_solve_nonhydro_stencil_12(
         d2dexdz2_fac1_mc,
         d2dexdz2_fac2_mc,
         z_rth_pr_2,
-        out=z_dexner_dz_c_2
+        out=z_dexner_dz_c_2,
     )

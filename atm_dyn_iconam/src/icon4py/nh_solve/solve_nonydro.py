@@ -12,19 +12,24 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.fbuiltins import Field
-
-import icon4py.nh_solve.solve_nonhydro_program as nhsolve_prog
 from gt4py.next.iterator.type_inference import Tuple
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_12 import mo_solve_nonhydro_stencil_12
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_13 import mo_solve_nonhydro_stencil_13
+
 import icon4py.common.constants as constants
+import icon4py.nh_solve.solve_nonhydro_program as nhsolve_prog
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_12 import (
+    mo_solve_nonhydro_stencil_12,
+)
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_13 import (
+    mo_solve_nonhydro_stencil_13,
+)
 from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
     CellDim,
+    E2CDim,
+    ECVDim,
     EdgeDim,
     KDim,
-    ECVDim, E2CDim,
 )
 from icon4py.state_utils.diagnostic_state import DiagnosticState
 from icon4py.state_utils.horizontal import HorizontalMarkerIndex
@@ -32,9 +37,9 @@ from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState
 from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import set_zero_c_k, _allocate
-from icon4py.velocity import velocity_advection
+from icon4py.state_utils.utils import _allocate, set_zero_c_k
 from icon4py.state_utils.z_fields import ZFields
+from icon4py.velocity import velocity_advection
 
 
 class NonHydrostaticConfig:
@@ -121,7 +126,7 @@ class NonHydrostaticParams:
 
 
 class SolveNonhydro:
-    def __init__(self, run_program=True):
+    #def __init__(self, run_program=True):
 
 
     def init(
@@ -513,6 +518,9 @@ class SolveNonhydro:
             vn_nnew,
             dtime,
             constants.CPD,
+            edge_startindex_nudging + 1,
+            edge_endindex_local,
+            self.grid.n_lev(),
             offset_provider={})
 
         if config.is_iau_active:
@@ -540,6 +548,8 @@ class SolveNonhydro:
                 self.z_theta_v_e,
                 diagnostic_state.mass_fl_e,
                 self.z_theta_v_fl_e,
+                edge_endindex_local - 2,
+                self.grid.n_lev(),
                 offset_provider={}
             )
 
@@ -552,6 +562,9 @@ class SolveNonhydro:
                                               diagnostic_state.vn_ie,
                                               z_fields.z_vt_ie,
                                               z_fields.z_kin_hor_e,
+                                              edge_endindex_local - 2,
+                                              self.vertical_params.nflatlev,
+                                              self.grid.n_lev(),
                                               offset_provider={})
         #_mo_solve_nonhydro_stencil_35()
         #_mo_solve_nonhydro_stencil_36()
@@ -563,6 +576,8 @@ class SolveNonhydro:
                                                   z_fields.z_vt_ie,
                                                   z_fields.z_kin_hor_e,
                                                   self.metric_state.wgtfacq_e,
+                                                  edge_endindex_local - 2,
+                                                  self.grid.n_lev() + 1,
                                                   offset_provider={"Koff": KDim})
             #_mo_solve_nonhydro_stencil_37()
             #_mo_solve_nonhydro_stencil_38()
