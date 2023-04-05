@@ -656,3 +656,146 @@ def stencils_66_67(
         rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner),
         domain={CellDim: (1, cell_endindex_nudging), KDim: (1, nlev)}
     )
+
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_10(
+    w: Field[[CellDim, KDim], float],
+    w_concorr_c: Field[[CellDim, KDim], float],
+    ddqz_z_half: Field[[CellDim, KDim], float],
+    rho_now: Field[[CellDim, KDim], float],
+    rho_var: Field[[CellDim, KDim], float],
+    theta_now: Field[[CellDim, KDim], float],
+    theta_var: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
+    theta_ref_mc: Field[[CellDim, KDim], float],
+    vwind_expl_wgt: Field[[CellDim], float],
+    exner_pr: Field[[CellDim, KDim], float],
+    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    dtime: float,
+    wgt_nnow_rth: float,
+    wgt_nnew_rth: float,
+    cell_startindex_local: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_stencil_10(
+        w,
+        w_concorr_c,
+        ddqz_z_half,
+        rho_now,
+        rho_var,
+        theta_now,
+        theta_var,
+        wgtfac_c,
+        theta_ref_mc,
+        vwind_expl_wgt,
+        exner_pr,
+        d_exner_dz_ref_ic,
+        dtime,
+        wgt_nnow_rth,
+        wgt_nnew_rth,
+        out=(rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
+        domain={CellDim: (2, cell_startindex_local), KDim: (1, nlev - 1)},
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_17(
+    hmask_dd3d: Field[[EdgeDim], float],
+    scalfac_dd3d: Field[[KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    z_dwdz_dd: Field[[CellDim, KDim], float],
+    z_graddiv_vn: Field[[EdgeDim, KDim], float],
+    edge_endindex_local: int,
+    kstart_dd3d: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_stencil_17(
+        hmask_dd3d,
+        scalfac_dd3d,
+        inv_dual_edge_length,
+        z_dwdz_dd,
+        z_graddiv_vn,
+        out=z_graddiv_vn,
+        domain={CellDim: (6, edge_endindex_local - 2), KDim: (kstart_dd3d, nlev - 1)},
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_23(
+    vn_nnow: Field[[EdgeDim, KDim], float],
+    ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float],
+    ddt_vn_adv_ntl2: Field[[EdgeDim, KDim], float],
+    ddt_vn_phy: Field[[EdgeDim, KDim], float],
+    z_theta_v_e: Field[[EdgeDim, KDim], float],
+    z_gradh_exner: Field[[EdgeDim, KDim], float],
+    vn_nnew: Field[[EdgeDim, KDim], float],
+    dtime: float,
+    wgt_nnow_vel: float,
+    wgt_nnew_vel: float,
+    cpd: float,
+    edge_startindex_nudging: int,
+    edge_endindex_local: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_stencil_23(
+        vn_nnow,
+        ddt_vn_adv_ntl1,
+        ddt_vn_adv_ntl2,
+        ddt_vn_phy,
+        z_theta_v_e,
+        z_gradh_exner,
+        dtime,
+        wgt_nnow_vel,
+        wgt_nnew_vel,
+        cpd,
+        out=vn_nnew,
+        domain={
+            CellDim: (edge_startindex_nudging + 1, edge_endindex_local),
+            KDim: (0, nlev),
+        },
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_25(
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
+    z_graddiv_vn: Field[[EdgeDim, KDim], float],
+    z_graddiv2_vn: Field[[EdgeDim, KDim], float],
+    edge_startindex_nudging: int,
+    edge_endindex_local: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_stencil_25(
+        geofac_grdiv,
+        z_graddiv_vn,
+        out=z_graddiv2_vn,
+        domain={
+            CellDim: (edge_startindex_nudging + 1, edge_endindex_local),
+            KDim: (0, nlev),
+        },
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_26(
+    z_graddiv_vn: Field[[EdgeDim, KDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    scal_divdamp_o2: float,
+):
+    _mo_solve_nonhydro_stencil_26(
+        z_graddiv_vn,
+        vn,
+        scal_divdamp_o2,
+        out=vn,
+        domain={
+            CellDim: (edge_startindex_nudging + 1, edge_endindex_local),
+            KDim: (0, nlev),
+        },
+    )
+

@@ -744,24 +744,92 @@ class SolveNonhydro:
         velocity_advection.run_corrector_step()
         nvar=nnew
 
-        mo_solve_nonhydro_stencil_10()
+        mo_solve_nonhydro_stencil_10(prognostic_state.w,
+                                     diagnostic_state.w_concorr_c,
+                                     self.metric_state.ddqz_z_half,
+                                     prognostic_state_now.rho,
+                                     prognostic_state_var.rho,
+                                     prognostic_state_now.theta_v,
+                                     prognostic_state_var.theta_v,
+                                     self.metric_state.wgtfac_c,
+                                     self.metric_state.theta_ref_mc,
+                                     self.metric_state.vwind_expl_wgt,
+                                     diagnostic_state.exner_pr,
+                                     self.metric_state.d_exner_dz_ref_ic,
+                                     diagnostic_state.rho_ic,
+                                     self.z_theta_v_pr_ic,
+                                     diagnostic_state.theta_v_ic,
+                                     self.z_th_ddz_exner_c,
+                                     dtime,
+                                     wgt_nnow_rth,
+                                     wgt_nnew_rth,
+                                     cell_startindex_local - 1,
+                                     self.grid.n_lev(),
+                                     offset_provider={"Koff": KDim}
+                                     )
 
         if config.l_open_ubc and not l_vert_nested:
             raise NotImplementedError(
                 "l_open_ubc not implemented"
             )
 
-        mo_solve_nonhydro_stencil_17()
+        mo_solve_nonhydro_stencil_17(
+            self.metric_state.hmask_dd3d,
+            self.metric_state.scalfac_dd3d,
+            inv_dual_edge_length,
+            z_dwdz_dd,
+            z_graddiv_vn,
+            edge_endindex_local,
+            kstart_dd3d,
+            self.grid.n_lev(),
+            offset_provider={
+                "E2C": self.grid.get_e2c_offset_provider(),
+            }
+        )
 
         if config.itime_scheme >= 4:
-            mo_solve_nonhydro_stencil_23()
+            mo_solve_nonhydro_stencil_23(
+                prognostic_state_now.vn,
+                diagnostic_state.ddt_vn_adv_ntl1,
+                diagnostic_state.ddt_vn_adv_ntl2,
+                diagnostic_state.ddt_vn_phy,
+                self.z_theta_v_e,
+                self.z_gradh_exner,
+                prognostic_state_new.vn,
+                dtime,
+                wgt_nnow_vel,
+                wgt_nnew_vel,
+                cpd,
+                edge_startindex_nudging,
+                edge_endindex_local,
+                self.grid.n_lev(),
+                offset_provider={}
+            )
 
         if lhdiff_rcf and (config.divdamp_order == 4 or config.divdamp_order == 24):
-            mo_solve_nonhydro_stencil_25()
+            mo_solve_nonhydro_stencil_25(
+                self.interpolation_state.geofac_grdiv,
+                z_graddiv_vn,
+                z_graddiv2_vn,
+                edge_startindex_nudging,
+                edge_endindex_local,
+                self.grid.n_lev(),
+                offset_provider={
+                    "E2C2EO": self.grid.get_e2c2eO_offset_provider(),
+                    "E2C2EODim": E2C2EODim,
+                }
+            )
 
         if lhdiff_rcf:
             if config.divdamp_order == 2 or (config.divdamp_order == 24 and scal_divdamp_o2 > 1e-6):
-                mo_solve_nonhydro_stencil_26()
+                mo_solve_nonhydro_stencil_26(z_graddiv_vn,
+                                             prognostic_state_new.vn,
+                                             scal_divdamp_o2,
+                                             edge_startindex_nudging,
+                                             edge_endindex_local,
+                                             self.grid.n_lev(),
+                                             offset_provider={}
+                                             )
             if config.divdamp_order == 4 or (config.divdamp_order == 24 and ivdamp_fac_o2 <= 4 * divdamp_fac):
                 if self.icon_grid.limited_area():
                     mo_solve_nonhydro_stencil_27()
