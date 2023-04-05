@@ -55,6 +55,10 @@ class DiagnosticState:
     grf_tend_w: Field[[CellDim, KDim], float]
     mass_fl_e: Field[[EdgeDim, KDim], float]
 
+    ddt_vn_phy: Field[[EdgeDim, KDim], float]
+    ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float]
+    ddt_vn_adv_ntl2: Field[[EdgeDim, KDim], float]
+
     @property
     def ddt_w_adv_pc(self) -> LocatedFieldImpl:
         return np_as_located_field(CellDim, KDim)(

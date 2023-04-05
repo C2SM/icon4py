@@ -45,7 +45,7 @@ class MetricState:
     inv_ddqz_z_full: Field[[CellDim, KDim], float]
     rho_ref_mc: Field[[CellDim, KDim], float]
     theta_ref_mc: Field[[CellDim, KDim], float]
-    vwind_expl_wgt: Field[[CellDim, KDim], float]
+    vwind_expl_wgt: Field[[CellDim], float]
     d_exner_dz_ref_ic: Field[[CellDim, KDim], float]
     ddqz_z_half: Field[[CellDim, KDim], float]  # half KDim ?
     theta_ref_ic: Field[[CellDim, KDim], float]
@@ -55,3 +55,6 @@ class MetricState:
     bdy_halo_c: Field[[CellDim], bool]
     ipeidx_dsl: Field[[EdgeDim, KDim], bool]
     pg_exdist: Field[[EdgeDim, KDim], float]
+
+    hmask_dd3d: Field[[EdgeDim], float]
+    scalfac_dd3d: Field[[KDim], float]
