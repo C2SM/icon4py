@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_20 import (
     mo_solve_nonhydro_stencil_20,
 )
-from icon4py.common.dimension import CellDim, E2CDim, EdgeDim, KDim
+from icon4py.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.testutils.utils import flatten_first_two_dims, random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_20_numpy(
@@ -71,6 +72,7 @@ def test_mo_solve_nonhydro_stencil_20():
     z_exner_ex_pr = random_field(mesh, CellDim, KDim)
     zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
     ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int)
+
     rng = np.random.default_rng()
     for k in range(mesh.k_level):
         # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
@@ -79,6 +81,9 @@ def test_mo_solve_nonhydro_stencil_20():
             high=mesh.k_level - k - 1,
             size=(ikoffset.shape[0], ikoffset.shape[1]),
         )
+
+    zdiff_gradp_new = flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp)
+    ikoffset_new = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
 
     z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim)
     z_dexner_dz_c_2 = random_field(mesh, CellDim, KDim)
@@ -103,8 +108,8 @@ def test_mo_solve_nonhydro_stencil_20():
     mo_solve_nonhydro_stencil_20(
         inv_dual_edge_length,
         z_exner_ex_pr,
-        zdiff_gradp,
-        ikoffset,
+        zdiff_gradp_new,
+        ikoffset_new,
         z_dexner_dz_c_1,
         z_dexner_dz_c_2,
         z_gradh_exner,
@@ -114,8 +119,11 @@ def test_mo_solve_nonhydro_stencil_20():
         kend,
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
+            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
             "Koff": KDim,
         },
     )
 
+    print(np.asarray(z_gradh_exner))
+    print(z_gradh_exner_ref)
     assert np.allclose(z_gradh_exner, z_gradh_exner_ref)
