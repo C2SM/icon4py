@@ -62,7 +62,9 @@ class NonHydrostaticConfig:
         rayleigh_type: int = 2,
         divdamp_order: int = 24,
         idiv_method: int = 4, # TODO: @nfarabullini check if this param is ok here, in FORTRAN is imported from somewhere else
-        is_iau_active: bool = False
+        is_iau_active: bool = False,
+        iau_wgt_dyn: float = 0.0,
+        divdamp_type: int = 3
     ):
 
         # parameters from namelist diffusion_nml
@@ -75,6 +77,8 @@ class NonHydrostaticConfig:
         self.ndyn_substeps_var = ndyn_substeps_var
         self.idiv_method: int = idiv_method
         self.is_iau_active: bool = is_iau_active
+        self.iau_wgt_dyn: float = iau_wgt_dyn
+        self.divdamp_type: int = divdamp_type
         self.rayleigh_type: int = rayleigh_type
         self.divdamp_order: int = divdamp_order
 
@@ -540,7 +544,7 @@ class SolveNonhydro:
             offset_provider={})
 
         if config.is_iau_active:
-            nhsolve_prog.mo_solve_nonhydro_stencil_28(vn_incr, prognostic_state[nnew].vn, iau_wgt_dyn, offset_provider={})
+            nhsolve_prog.mo_solve_nonhydro_stencil_28(vn_incr, prognostic_state[nnew].vn, config.iau_wgt_dyn, offset_provider={})
 
         if self.icon_grid.limited_area():
             nhsolve_prog.mo_solve_nonhydro_stencil_29(
@@ -708,7 +712,7 @@ class SolveNonhydro:
                 self.z_exner_expl,
                 rho_incr,
                 exner_incr,
-                iau_wgt_dyn,
+                config.iau_wgt_dyn,
                 cell_startindex_nudging + 1,
                 cell_endindex_local,
                 self.grid.n_lev(),
@@ -739,7 +743,7 @@ class SolveNonhydro:
             ## ACC w_1 -> p_nh%w
             nhsolve_prog.mo_solve_nonhydro_stencil_54(
                 z_raylfac,
-                w_1,
+                prognostic_state[nnew].w_1,
                 prognostic_state[nnew].w,
                 offset_provider={}
             )
@@ -768,7 +772,7 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim}
         )
 
-        if lhdiff_rcf and divdamp_type >= 3:
+        if lhdiff_rcf and config.divdamp_type >= 3:
             nhsolve_prog.mo_solve_nonhydro_stencil_56_63(
                 self.metric_state.inv_ddqz_z_full,
                 prognostic_state[nnew].w,
@@ -810,7 +814,7 @@ class SolveNonhydro:
             #_mo_solve_nonhydro_stencil_61()
             #_mo_solve_nonhydro_stencil_62()
 
-        if lhdiff_rcf and divdamp_type >= 3:
+        if lhdiff_rcf and config.divdamp_type >= 3:
             nhsolve_prog.mo_solve_nonhydro_stencil_56_63(
                 self.metric_state.inv_ddqz_z_full,
                 prognostic_state[nnew].w,
