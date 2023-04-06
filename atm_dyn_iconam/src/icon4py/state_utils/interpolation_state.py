@@ -28,7 +28,7 @@ from icon4py.common.dimension import (
     EdgeDim,
     V2CDim,
     V2EDim,
-    VertexDim,
+    VertexDim, ECDim,
 )
 
 
@@ -70,6 +70,7 @@ class InterpolationState:
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float]
     c_intp: Field[[VertexDim, V2CDim], float]
     geofac_rot: Field[[VertexDim, V2EDim], float]
+    pos_on_tplane_e: Field[[ECDim], float]
 
     @property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
@@ -79,4 +80,16 @@ class InterpolationState:
     def geofac_n2s_nbh(self) -> Field[[CellDim, C2E2CDim], float]:
         return np_as_located_field(CellDim, C2E2CDim)(
             np.asarray(self.geofac_n2s)[:, 1:]
+        )
+
+    @property
+    def pos_on_tplane_e_1(self) -> Field[[ECDim], float]:
+        return np_as_located_field(ECDim)(
+            np.asarray(self.pos_on_tplane_e)[0]
+        )
+
+    @property
+    def pos_on_tplane_e_2(self) -> Field[[ECDim], float]:
+        return np_as_located_field(ECDim)(
+            np.asarray(self.pos_on_tplane_e)[1]
         )

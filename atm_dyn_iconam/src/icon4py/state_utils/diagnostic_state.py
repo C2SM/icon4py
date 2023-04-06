@@ -54,6 +54,8 @@ class DiagnosticState:
     grf_tend_thv: Field[[CellDim, KDim], float]
     grf_tend_w: Field[[CellDim, KDim], float]
     mass_fl_e: Field[[EdgeDim, KDim], float]
+    ddt_vn_phy: Field[[EdgeDim, KDim], float]
+    grf_tend_vn: Field[[EdgeDim, KDim], float]
 
     ddt_vn_phy: Field[[EdgeDim, KDim], float]
     ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float]

@@ -34,3 +34,4 @@ RD: Annotated[float, "[J/K/kg] gas constant"] = 287.04
 CVD: Annotated[float, "[J/K/kg] specific heat at constant volume"] = CPD - RD
 RAYLEIGH_KLEMP: Annotated[int, "Klemp (2008) type Rayleigh damping"] = 2
 P0REF: Annotated[float, "[Pa]  reference pressure for Exner function"] = 100000.0
+CVD_O_RD = CVD/RD

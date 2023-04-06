@@ -12,7 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
+import numpy as np
 
+from functional.iterator.embedded import np_as_located_field
 from gt4py.next.common import Field
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
@@ -34,3 +36,7 @@ class PrognosticState:
 
     rho: Field[[CellDim, KDim], float]
     exner: Field[[CellDim, KDim], float]
+
+    @property
+    def w_1(self) -> Field[[CellDim, KDim], float]:
+        return np_as_located_field(CellDim, KDim)(np.asarray(self.w)[:, 0])
