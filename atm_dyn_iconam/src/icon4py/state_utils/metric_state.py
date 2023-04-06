@@ -55,3 +55,6 @@ class MetricState:
     bdy_halo_c: Field[[CellDim], bool]
     ipeidx_dsl: Field[[EdgeDim, KDim], bool]
     pg_exdist: Field[[EdgeDim, KDim], float]
+    rayleigh_w: Field[[KDim], float]
+    rho_ref_me: Field[[EdgeDim, KDim], float]
+    theta_ref_me: Field[[EdgeDim, KDim], float]
