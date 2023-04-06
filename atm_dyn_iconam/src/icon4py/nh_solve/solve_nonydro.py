@@ -64,7 +64,8 @@ class NonHydrostaticConfig:
         idiv_method: int = 4, # TODO: @nfarabullini check if this param is ok here, in FORTRAN is imported from somewhere else
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
-        divdamp_type: int = 3
+        divdamp_type: int = 3,
+        lhdiff_rcf: bool = True
     ):
 
         # parameters from namelist diffusion_nml
@@ -79,6 +80,7 @@ class NonHydrostaticConfig:
         self.is_iau_active: bool = is_iau_active
         self.iau_wgt_dyn: float = iau_wgt_dyn
         self.divdamp_type: int = divdamp_type
+        self.lhdiff_rcf: bool = lhdiff_rcf
         self.rayleigh_type: int = rayleigh_type
         self.divdamp_order: int = divdamp_order
 
@@ -772,7 +774,7 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim}
         )
 
-        if lhdiff_rcf and config.divdamp_type >= 3:
+        if config.lhdiff_rcf and config.divdamp_type >= 3:
             nhsolve_prog.mo_solve_nonhydro_stencil_56_63(
                 self.metric_state.inv_ddqz_z_full,
                 prognostic_state[nnew].w,
@@ -814,7 +816,7 @@ class SolveNonhydro:
             #_mo_solve_nonhydro_stencil_61()
             #_mo_solve_nonhydro_stencil_62()
 
-        if lhdiff_rcf and config.divdamp_type >= 3:
+        if config.lhdiff_rcf and config.divdamp_type >= 3:
             nhsolve_prog.mo_solve_nonhydro_stencil_56_63(
                 self.metric_state.inv_ddqz_z_full,
                 prognostic_state[nnew].w,
