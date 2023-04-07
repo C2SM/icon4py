@@ -661,10 +661,30 @@ def corrector_stencils_35_39_40(
     wgtfac_c: Field[[CellDim, KDim], float],
     wgtfacq_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
+    edge_endindex_local_minus2: int,
+    cell_endindex_local_minus1: int,
+    nflatlev_startindex_plus1: int,
+    nlev: int,
+    nlevp1: int,
+    nflatlev_startindex: int
 ):
-    _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt, out=z_w_concorr_me)
-    _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c, out=w_concorr_c)
-    _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c, out=w_concorr_c)
+    _mo_solve_nonhydro_stencil_35(
+        vn,
+        ddxn_z_full,
+        ddxt_z_full,
+        vt,
+        out=z_w_concorr_me,
+        domain={
+            EdgeDim: (4, edge_endindex_local_minus2),
+            KDim: (nflatlev_startindex, nlev),
+        },
+    )
+    _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c,
+                                  out=w_concorr_c, domain={CellDim: (2, cell_endindex_local_minus1),
+                                                           KDim: (nflatlev_startindex_plus1, nlev)})
+    _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c,
+                                  out=w_concorr_c,
+                                  domain={CellDim: (2, cell_endindex_local_minus1), KDim: (nlevp1, nlevp1)})
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -685,6 +705,74 @@ def mo_solve_nonhydro_stencil_41(
         out=(z_flxdiv_mass, z_flxdiv_theta),
         domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)},
     )
+
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def stencils_42_44_45_45b(
+    z_w_expl: Field[[CellDim, KDim], float],
+    w_nnow: Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    z_contr_w_fl_l: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
+    w_concorr_c: Field[[CellDim, KDim], float],
+    vwind_expl_wgt: Field[[CellDim], float],
+    z_beta: Field[[CellDim, KDim], float],
+    exner_nnow: Field[[CellDim, KDim], float],
+    rho_nnow: Field[[CellDim, KDim], float],
+    theta_v_nnow: Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: Field[[CellDim, KDim], float],
+    z_alpha: Field[[CellDim, KDim], float],
+    vwind_impl_wgt: Field[[CellDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    z_q: Field[[CellDim, KDim], float],
+    rd: float,
+    cvd: float,
+    dtime: float,
+    cpd: float,
+    wgt_nnow_vel: float,
+    wgt_nnew_vel: float,
+    cell_startindex_nudging_plus1: int,
+    cell_endindex_local: int,
+    nlev: int,
+    nlevp1: int,
+):
+    _mo_solve_nonhydro_stencil_42(
+        w_nnow,
+        ddt_w_adv_ntl1,
+        ddt_w_adv_ntl2,
+        z_th_ddz_exner_c,
+        rho_ic,
+        w_concorr_c,
+        vwind_expl_wgt,
+        dtime,
+        wgt_nnow_vel,
+        wgt_nnew_vel,
+        cpd,
+        out=(z_w_expl, z_contr_w_fl_l),
+        domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (1, nlev)}
+    )
+
+    _mo_solve_nonhydro_stencil_44(
+        exner_nnow,
+        rho_nnow,
+        theta_v_nnow,
+        inv_ddqz_z_full,
+        vwind_impl_wgt,
+        theta_v_ic,
+        rho_ic,
+        dtime,
+        rd,
+        cvd,
+        out=(z_beta, z_alpha),
+        domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)}
+    )
+    _mo_solve_nonhydro_stencil_45(out=z_alpha, domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+                                                       KDim: (nlevp1, nlevp1)})
+    _mo_solve_nonhydro_stencil_45_b(out=z_q, domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+                                                     KDim: (0, 0)})
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -1146,6 +1234,9 @@ def mo_solve_nonhydro_stencil_26(
     z_graddiv_vn: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
     scal_divdamp_o2: float,
+    edge_startindex_nudging: int,
+    edge_endindex_local: int,
+    nlev: int,
 ):
     _mo_solve_nonhydro_stencil_26(
         z_graddiv_vn,
@@ -1158,3 +1249,134 @@ def mo_solve_nonhydro_stencil_26(
         },
     )
 
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_27(
+    scal_divdamp: Field[[KDim], float],
+    bdy_divdamp: Field[[KDim], float],
+    nudgecoeff_e: Field[[EdgeDim], float],
+    z_graddiv2_vn: Field[[EdgeDim, KDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    edge_startindex_nudging: int,
+    edge_endindex_local: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_stencil_27(
+        scal_divdamp, bdy_divdamp, nudgecoeff_e, z_graddiv2_vn, vn, out=vn,
+        domain={
+            CellDim: (edge_startindex_nudging + 1, edge_endindex_local),
+            KDim: (0, nlev),
+        },
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_4th_order_divdamp(
+    scal_divdamp: Field[[KDim], float],
+    z_graddiv2_vn: Field[[EdgeDim, KDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    edge_startindex_nudging: int,
+    edge_endindex_local: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_4th_order_divdamp(scal_divdamp, z_graddiv2_vn, vn, out=vn,
+                                         domain={
+                                             CellDim: (edge_startindex_nudging + 1, edge_endindex_local),
+                                             KDim: (0, nlev),
+                                         },
+                                         )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_33(
+    vn_traj: Field[[EdgeDim, KDim], float],
+    mass_flx_me: Field[[EdgeDim, KDim], float],
+    edge_endindex_local: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_stencil_33(out=(vn_traj, mass_flx_me),
+                                  domain={EdgeDim: (0, edge_endindex_local), KDim: (0, nlev)},)
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_34(
+    z_vn_avg: Field[[EdgeDim, KDim], float],
+    mass_fl_e: Field[[EdgeDim, KDim], float],
+    vn_traj: Field[[EdgeDim, KDim], float],
+    mass_flx_me: Field[[EdgeDim, KDim], float],
+    r_nsubsteps: float,
+    edge_endindex_local_minus2: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_stencil_34(
+        z_vn_avg,
+        mass_fl_e,
+        vn_traj,
+        mass_flx_me,
+        r_nsubsteps,
+        out=(vn_traj, mass_flx_me),
+        domain={EdgeDim: (4, edge_endindex_local_minus2), KDim: (0, nlev)},
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_46(
+    w_nnew: Field[[CellDim, KDim], float],
+    z_contr_w_fl_l: Field[[CellDim, KDim], float],
+    cell_startindex_nudging_plus1: int,
+    cell_endindex_local: int,
+):
+    _mo_solve_nonhydro_stencil_46(out=(w_nnew, z_contr_w_fl_l),
+                                  domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0,0)})
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_58(
+    z_contr_w_fl_l: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
+    vwind_impl_wgt: Field[[CellDim], float],
+    w: Field[[CellDim, KDim], float],
+    mass_flx_ic: Field[[CellDim, KDim], float],
+    r_nsubsteps: float,
+    cell_startindex_nudging_plus1: int,
+    cell_endindex_local: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_stencil_58(
+        z_contr_w_fl_l,
+        rho_ic,
+        vwind_impl_wgt,
+        w,
+        mass_flx_ic,
+        r_nsubsteps,
+        out=mass_flx_ic,
+        domain={EdgeDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)},
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_65(
+    rho_ic: Field[[CellDim, KDim], float],
+    vwind_expl_wgt: Field[[CellDim], float],
+    vwind_impl_wgt: Field[[CellDim], float],
+    w_now: Field[[CellDim, KDim], float],
+    w_new: Field[[CellDim, KDim], float],
+    w_concorr_c: Field[[CellDim, KDim], float],
+    mass_flx_ic: Field[[CellDim, KDim], float],
+    r_nsubsteps: float,
+    cell_startindex_nudging_plus1: int,
+    cell_endindex_local: int,
+    nlev: int,
+):
+    _mo_solve_nonhydro_stencil_65(
+        rho_ic,
+        vwind_expl_wgt,
+        vwind_impl_wgt,
+        w_now,
+        w_new,
+        w_concorr_c,
+        mass_flx_ic,
+        r_nsubsteps,
+        out=mass_flx_ic,
+        domain={EdgeDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)},
+    )
