@@ -25,10 +25,11 @@ from icon4py.common.dimension import (
     E2C2EDim,
     E2C2EODim,
     E2CDim,
+    ECDim,
     EdgeDim,
     V2CDim,
     V2EDim,
-    VertexDim, ECDim,
+    VertexDim,
 )
 
 
@@ -84,12 +85,8 @@ class InterpolationState:
 
     @property
     def pos_on_tplane_e_1(self) -> Field[[ECDim], float]:
-        return np_as_located_field(ECDim)(
-            np.asarray(self.pos_on_tplane_e)[0]
-        )
+        return np_as_located_field(ECDim)(np.asarray(self.pos_on_tplane_e)[0])
 
     @property
     def pos_on_tplane_e_2(self) -> Field[[ECDim], float]:
-        return np_as_located_field(ECDim)(
-            np.asarray(self.pos_on_tplane_e)[1]
-        )
+        return np_as_located_field(ECDim)(np.asarray(self.pos_on_tplane_e)[1])

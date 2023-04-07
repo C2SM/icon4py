@@ -71,7 +71,8 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_15 import (
     _mo_solve_nonhydro_stencil_15,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
-    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1, _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
+    _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
+    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_18 import (
     _mo_solve_nonhydro_stencil_18,
@@ -127,7 +128,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_45 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_45_b import (
     _mo_solve_nonhydro_stencil_45_b,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_46 import _mo_solve_nonhydro_stencil_46
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_46 import (
+    _mo_solve_nonhydro_stencil_46,
+)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_47 import (
     _mo_solve_nonhydro_stencil_47,
 )
@@ -137,15 +140,21 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_48 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_49 import (
     _mo_solve_nonhydro_stencil_49,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_50 import _mo_solve_nonhydro_stencil_50
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_50 import (
+    _mo_solve_nonhydro_stencil_50,
+)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_52 import (
     _mo_solve_nonhydro_stencil_52,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_53 import (
     _mo_solve_nonhydro_stencil_53_scan,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_54 import _mo_solve_nonhydro_stencil_54
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_55 import _mo_solve_nonhydro_stencil_55
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_54 import (
+    _mo_solve_nonhydro_stencil_54,
+)
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_55 import (
+    _mo_solve_nonhydro_stencil_55,
+)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_56_63 import (
     _mo_solve_nonhydro_stencil_56_63,
 )
@@ -391,6 +400,7 @@ def mo_solve_nonhydro_stencil_15(
         domain={EdgeDim: (0, edge_endindex_local_minus1), KDim: (0, nlev)},
     )
 
+
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     p_vn: Field[[EdgeDim, KDim], float],
@@ -432,7 +442,7 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         z_rth_pr_1,
         z_rth_pr_2,
         out=(z_rho_e, z_theta_v_e),
-        domain={}
+        domain={},
     )
 
 
@@ -642,12 +652,25 @@ def predictor_stencils_39_40(
     cell_endindex_local_minus1: int,
     nflatlev_startindex_plus1: int,
     nlev: int,
-    nlevp1: int
+    nlevp1: int,
 ):
-    _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c,
-                                  out=w_concorr_c, domain={CellDim: (2, cell_endindex_local_minus1), KDim: (nflatlev_startindex_plus1, nlev)})
-    _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c,
-                                  out=w_concorr_c, domain={CellDim: (2, cell_endindex_local_minus1), KDim: (nlevp1, nlevp1)})
+    _mo_solve_nonhydro_stencil_39(
+        e_bln_c_s,
+        z_w_concorr_me,
+        wgtfac_c,
+        out=w_concorr_c,
+        domain={
+            CellDim: (2, cell_endindex_local_minus1),
+            KDim: (nflatlev_startindex_plus1, nlev),
+        },
+    )
+    _mo_solve_nonhydro_stencil_40(
+        e_bln_c_s,
+        z_w_concorr_me,
+        wgtfacq_c,
+        out=w_concorr_c,
+        domain={CellDim: (2, cell_endindex_local_minus1), KDim: (nlevp1, nlevp1)},
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -666,7 +689,7 @@ def corrector_stencils_35_39_40(
     nflatlev_startindex_plus1: int,
     nlev: int,
     nlevp1: int,
-    nflatlev_startindex: int
+    nflatlev_startindex: int,
 ):
     _mo_solve_nonhydro_stencil_35(
         vn,
@@ -679,12 +702,23 @@ def corrector_stencils_35_39_40(
             KDim: (nflatlev_startindex, nlev),
         },
     )
-    _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c,
-                                  out=w_concorr_c, domain={CellDim: (2, cell_endindex_local_minus1),
-                                                           KDim: (nflatlev_startindex_plus1, nlev)})
-    _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c,
-                                  out=w_concorr_c,
-                                  domain={CellDim: (2, cell_endindex_local_minus1), KDim: (nlevp1, nlevp1)})
+    _mo_solve_nonhydro_stencil_39(
+        e_bln_c_s,
+        z_w_concorr_me,
+        wgtfac_c,
+        out=w_concorr_c,
+        domain={
+            CellDim: (2, cell_endindex_local_minus1),
+            KDim: (nflatlev_startindex_plus1, nlev),
+        },
+    )
+    _mo_solve_nonhydro_stencil_40(
+        e_bln_c_s,
+        z_w_concorr_me,
+        wgtfacq_c,
+        out=w_concorr_c,
+        domain={CellDim: (2, cell_endindex_local_minus1), KDim: (nlevp1, nlevp1)},
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -696,16 +730,18 @@ def mo_solve_nonhydro_stencil_41(
     z_flxdiv_theta: Field[[CellDim, KDim], float],
     cell_startindex_nudging_plus1: int,
     cell_endindex_local: int,
-    nlev: int
+    nlev: int,
 ):
     _mo_solve_nonhydro_stencil_41(
         geofac_div,
         mass_fl_e,
         z_theta_v_fl_e,
         out=(z_flxdiv_mass, z_flxdiv_theta),
-        domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)},
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, nlev),
+        },
     )
-
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -752,7 +788,10 @@ def stencils_42_44_45_45b(
         wgt_nnew_vel,
         cpd,
         out=(z_w_expl, z_contr_w_fl_l),
-        domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (1, nlev)}
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (1, nlev),
+        },
     )
 
     _mo_solve_nonhydro_stencil_44(
@@ -767,12 +806,25 @@ def stencils_42_44_45_45b(
         rd,
         cvd,
         out=(z_beta, z_alpha),
-        domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)}
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, nlev),
+        },
     )
-    _mo_solve_nonhydro_stencil_45(out=z_alpha, domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
-                                                       KDim: (nlevp1, nlevp1)})
-    _mo_solve_nonhydro_stencil_45_b(out=z_q, domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
-                                                     KDim: (0, 0)})
+    _mo_solve_nonhydro_stencil_45(
+        out=z_alpha,
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (nlevp1, nlevp1),
+        },
+    )
+    _mo_solve_nonhydro_stencil_45_b(
+        out=z_q,
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, 0),
+        },
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -801,7 +853,7 @@ def stencils_43_44_45_45b(
     cell_startindex_nudging_plus1: int,
     cell_endindex_local: int,
     nlev: int,
-    nlevp1: int
+    nlevp1: int,
 ):
     _mo_solve_nonhydro_stencil_43(
         w_nnow,
@@ -813,7 +865,10 @@ def stencils_43_44_45_45b(
         dtime,
         cpd,
         out=(z_w_expl, z_contr_w_fl_l),
-        domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (1, nlev)}
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (1, nlev),
+        },
     )
     _mo_solve_nonhydro_stencil_44(
         exner_nnow,
@@ -827,10 +882,26 @@ def stencils_43_44_45_45b(
         rd,
         cvd,
         out=(z_beta, z_alpha),
-        domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)}
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, nlev),
+        },
     )
-    _mo_solve_nonhydro_stencil_45(out=z_alpha, domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (nlevp1, nlevp1)})
-    _mo_solve_nonhydro_stencil_45_b(out=z_q, domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, 0)})
+    _mo_solve_nonhydro_stencil_45(
+        out=z_alpha,
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (nlevp1, nlevp1),
+        },
+    )
+    _mo_solve_nonhydro_stencil_45_b(
+        out=z_q,
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, 0),
+        },
+    )
+
 
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_46(
@@ -839,7 +910,14 @@ def mo_solve_nonhydro_stencil_46(
     cell_startindex_nudging_plus1: int,
     cell_endindex_local: int,
 ):
-    _mo_solve_nonhydro_stencil_46(out=(w_nnew, z_contr_w_fl_l), domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0,0)})
+    _mo_solve_nonhydro_stencil_46(
+        out=(w_nnew, z_contr_w_fl_l),
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, 0),
+        },
+    )
+
 
 @program(backend=gtfn_cpu.run_gtfn)
 def stencils_47_48_49(
@@ -886,6 +964,7 @@ def stencils_47_48_49(
         out=(z_rho_expl, z_exner_expl),
     )
 
+
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_50(
     z_rho_expl: Field[[CellDim, KDim], float],
@@ -895,7 +974,7 @@ def mo_solve_nonhydro_stencil_50(
     iau_wgt_dyn: float,
     cell_startindex_nudging_plus1: int,
     cell_endindex_local: int,
-    nlev:int
+    nlev: int,
 ):
     _mo_solve_nonhydro_stencil_50(
         z_rho_expl,
@@ -904,8 +983,12 @@ def mo_solve_nonhydro_stencil_50(
         exner_incr,
         iau_wgt_dyn,
         out=(z_rho_expl, z_exner_expl),
-        domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)}
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, nlev),
+        },
     )
+
 
 @program(backend=gtfn_cpu.run_gtfn)
 def stencils_52_53(
@@ -952,16 +1035,26 @@ def stencils_52_53(
         },
     )
 
+
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_54(
     z_raylfac: Field[[KDim], float],
     w_1: Field[[CellDim], float],
     w: Field[[CellDim, KDim], float],
     cell_startindex_nudging_plus1,
-    cell_endindex_local
+    cell_endindex_local,
 ):
-    _mo_solve_nonhydro_stencil_54(z_raylfac, w_1, w, out=w,
-                                  domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: ()})
+    _mo_solve_nonhydro_stencil_54(
+        z_raylfac,
+        w_1,
+        w,
+        out=w,
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (),
+        },
+    )
+
 
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_55(
@@ -984,7 +1077,7 @@ def mo_solve_nonhydro_stencil_55(
     cvd_o_rd: float,
     cell_startindex_nudging_plus1: int,
     cell_endindex_local: int,
-    nlev: int
+    nlev: int,
 ):
     _mo_solve_nonhydro_stencil_55(
         z_rho_expl,
@@ -1002,7 +1095,10 @@ def mo_solve_nonhydro_stencil_55(
         dtime,
         cvd_o_rd,
         out=(rho_new, exner_new, theta_v_new),
-        domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)}
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, nlev),
+        },
     )
 
 
@@ -1041,7 +1137,7 @@ def predictor_stencils_61_62(
     dtime: float,
     cell_endindex_nudging: int,
     nlev: int,
-    nlevp1: int
+    nlevp1: int,
 ):
     _mo_solve_nonhydro_stencil_61(
         rho_now,
@@ -1052,9 +1148,15 @@ def predictor_stencils_61_62(
         grf_tend_w,
         dtime,
         out=(rho_new, exner_new, w_new),
-        domain={CellDim: (0, cell_endindex_nudging), KDim: (0, nlev)}
+        domain={CellDim: (0, cell_endindex_nudging), KDim: (0, nlev)},
     )
-    _mo_solve_nonhydro_stencil_62(w_now, grf_tend_w, dtime, out=w_new, domain={CellDim: (0, cell_endindex_nudging), KDim: (nlevp1, nlevp1)})
+    _mo_solve_nonhydro_stencil_62(
+        w_now,
+        grf_tend_w,
+        dtime,
+        out=w_new,
+        domain={CellDim: (0, cell_endindex_nudging), KDim: (nlevp1, nlevp1)},
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -1103,7 +1205,6 @@ def stencils_66_67(
         out=(theta_v, exner),
         domain={CellDim: (1, cell_endindex_nudging), KDim: (1, nlev)},
     )
-
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -1262,7 +1363,12 @@ def mo_solve_nonhydro_stencil_27(
     nlev: int,
 ):
     _mo_solve_nonhydro_stencil_27(
-        scal_divdamp, bdy_divdamp, nudgecoeff_e, z_graddiv2_vn, vn, out=vn,
+        scal_divdamp,
+        bdy_divdamp,
+        nudgecoeff_e,
+        z_graddiv2_vn,
+        vn,
+        out=vn,
         domain={
             CellDim: (edge_startindex_nudging + 1, edge_endindex_local),
             KDim: (0, nlev),
@@ -1279,12 +1385,16 @@ def mo_solve_nonhydro_4th_order_divdamp(
     edge_endindex_local: int,
     nlev: int,
 ):
-    _mo_solve_nonhydro_4th_order_divdamp(scal_divdamp, z_graddiv2_vn, vn, out=vn,
-                                         domain={
-                                             CellDim: (edge_startindex_nudging + 1, edge_endindex_local),
-                                             KDim: (0, nlev),
-                                         },
-                                         )
+    _mo_solve_nonhydro_4th_order_divdamp(
+        scal_divdamp,
+        z_graddiv2_vn,
+        vn,
+        out=vn,
+        domain={
+            CellDim: (edge_startindex_nudging + 1, edge_endindex_local),
+            KDim: (0, nlev),
+        },
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -1294,8 +1404,10 @@ def mo_solve_nonhydro_stencil_33(
     edge_endindex_local: int,
     nlev: int,
 ):
-    _mo_solve_nonhydro_stencil_33(out=(vn_traj, mass_flx_me),
-                                  domain={EdgeDim: (0, edge_endindex_local), KDim: (0, nlev)},)
+    _mo_solve_nonhydro_stencil_33(
+        out=(vn_traj, mass_flx_me),
+        domain={EdgeDim: (0, edge_endindex_local), KDim: (0, nlev)},
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -1326,8 +1438,13 @@ def mo_solve_nonhydro_stencil_46(
     cell_startindex_nudging_plus1: int,
     cell_endindex_local: int,
 ):
-    _mo_solve_nonhydro_stencil_46(out=(w_nnew, z_contr_w_fl_l),
-                                  domain={CellDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0,0)})
+    _mo_solve_nonhydro_stencil_46(
+        out=(w_nnew, z_contr_w_fl_l),
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, 0),
+        },
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -1350,7 +1467,10 @@ def mo_solve_nonhydro_stencil_58(
         mass_flx_ic,
         r_nsubsteps,
         out=mass_flx_ic,
-        domain={EdgeDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)},
+        domain={
+            EdgeDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, nlev),
+        },
     )
 
 
@@ -1378,5 +1498,8 @@ def mo_solve_nonhydro_stencil_65(
         mass_flx_ic,
         r_nsubsteps,
         out=mass_flx_ic,
-        domain={EdgeDim: (cell_startindex_nudging_plus1, cell_endindex_local), KDim: (0, nlev)},
+        domain={
+            EdgeDim: (cell_startindex_nudging_plus1, cell_endindex_local),
+            KDim: (0, nlev),
+        },
     )

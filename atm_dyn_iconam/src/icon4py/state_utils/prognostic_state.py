@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-import numpy as np
 
+import numpy as np
 from functional.iterator.embedded import np_as_located_field
 from gt4py.next.common import Field
 

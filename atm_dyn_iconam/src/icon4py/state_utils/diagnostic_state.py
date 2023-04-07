@@ -61,16 +61,10 @@ class DiagnosticState:
     ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float]
     ddt_vn_adv_ntl2: Field[[EdgeDim, KDim], float]
 
-    #Analysis increments
-    rho_incr: Field[
-        [EdgeDim, KDim], float
-    ]  # moist density increment [kg/m^3]
-    vn_incr: Field[
-        [EdgeDim, KDim], float
-    ]  # normal velocity increment [m/s]
-    exner_incr: Field[
-        [EdgeDim, KDim], float
-    ]  # exner increment [- ]
+    # Analysis increments
+    rho_incr: Field[[EdgeDim, KDim], float]  # moist density increment [kg/m^3]
+    vn_incr: Field[[EdgeDim, KDim], float]  # normal velocity increment [m/s]
+    exner_incr: Field[[EdgeDim, KDim], float]  # exner increment [- ]
 
     @property
     def ddt_w_adv_pc(self) -> LocatedFieldImpl:
