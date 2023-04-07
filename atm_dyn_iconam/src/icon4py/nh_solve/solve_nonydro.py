@@ -16,12 +16,6 @@ from gt4py.next.iterator.type_inference import Tuple
 
 import icon4py.common.constants as constants
 import icon4py.nh_solve.solve_nonhydro_program as nhsolve_prog
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_12 import (
-    mo_solve_nonhydro_stencil_12,
-)
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_13 import (
-    mo_solve_nonhydro_stencil_13,
-)
 from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
@@ -99,19 +93,6 @@ class NonHydrostaticConfig:
 
         if self.igradp_method == 4 or self.igradp_method == 5:
             raise NotImplementedError("igradp_method 4 and 5 not implemented")
-
-        if self.diffusion_type < 0:
-            self.apply_to_temperature = False
-            self.apply_to_horizontal_wind = False
-            self.apply_to_vertical_wind = False
-        else:
-            self.apply_to_temperature = True
-            self.apply_to_horizontal_wind = True
-
-        if not self.apply_zdiffusion_t:
-            raise NotImplementedError(
-                "zdiffu_t = False is not implemented (leaves out stencil_15)"
-            )
 
 
 class NonHydrostaticParams:
@@ -246,21 +227,34 @@ class SolveNonhydro:
 
         if self.icon_grid.limited_area() or jg > 1:
             nhsolve_prog.stencils_66_67(
-                self.metric_state.bdy_halo_c,
-                prognostic_state.rho,
-                prognostic_state.theta_v,
-                prognostic_state.exner,
+                self.metric_state.bdy_halo_c,  # TODO: @abishekg7 check if this should be mask_prog_halo_c_dsl_low_refin
+                prognostic_state[nnew].rho,
+                prognostic_state[nnew].theta_v,
+                prognostic_state[nnew].exner,
                 self.rd_o_cvd,
                 self.rd_o_p0ref,
                 cell_endindex_nudging,
-                cell_startindex_local,
+                cell_startindex_local - 1,
                 self.grid.n_lev(),
                 offset_provider={},
             )
             # _mo_solve_nonhydro_stencil_66()
             # _mo_solve_nonhydro_stencil_67()
 
-        mo_solve_nonhydro_stencil_68()
+        mo_solve_nonhydro_stencil_68(
+            self.metric_state.mask_prog_halo_c,
+            prognostic_state[nnow].rho,
+            prognostic_state[nnow].theta_v,
+            prognostic_state[nnew].exner,
+            prognostic_state[nnow].exner,
+            prognostic_state[nnew].rho,
+            prognostic_state[nnew].theta_v,
+            constants.CVD_O_RD,
+            cell_startindex_local - 1,
+            min_rlcell,  # TODO: @abishekg7: what does this translate to
+            self.grid.n_lev(),
+            offset_provider={},
+        )
 
     def run_predictor_step(
         self,
@@ -304,7 +298,7 @@ class SolveNonhydro:
             cell_endindex_local,
         ) = self.init_dimensions_boundaries()
 
-        if self.icon_grid.limited_area():
+        if self.icon_grid.limited_area():  # TODO: @abishekg7 set domain extents
             set_zero_c_k(self.z_rth_pr_1, offset_provider={})
             set_zero_c_k(self.z_rth_pr_2, offset_provider={})
             # _mo_solve_nonhydro_stencil_01()
@@ -318,7 +312,7 @@ class SolveNonhydro:
             edge_startindex_local - 2,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
-            cell_endindex_local - 1,
+            cell_endindex_local - 1,  # TODO: @abishekg7
             self.grid.n_lev(),
             offset_provider={},
         )
@@ -555,15 +549,20 @@ class SolveNonhydro:
                 diagnostic_state.vn_incr,
                 prognostic_state[nnew].vn,
                 config.iau_wgt_dyn,
+                edge_startindex_nudging + 1,
+                edge_endindex_local,
+                self.grid.n_lev(),
                 offset_provider={},
             )
 
-        if self.icon_grid.limited_area():
+        if self.icon_grid.limited_area() or jg > 1:
             nhsolve_prog.mo_solve_nonhydro_stencil_29(
                 diagnostic_state.grf_tend_vn,
                 prognostic_state[nnow].vn,
                 prognostic_state[nnew].vn,
                 dtime,
+                edge_endindex_nudging,
+                self.grid.n_lev(),
                 offset_provider={},
             )
 
@@ -752,7 +751,7 @@ class SolveNonhydro:
             prognostic_state[nnew].w,
             dtime,
             constants.CPD,
-            cell_startindex_nudging,
+            cell_startindex_nudging + 1,
             cell_endindex_local,
             self.grid.n_lev(),
             offset_provider={"Koff": KDim},
@@ -801,6 +800,10 @@ class SolveNonhydro:
                 prognostic_state[nnew].w,
                 diagnostic_state.w_concorr_c,
                 self.z_dwdz_dd,
+                cell_startindex_nudging + 1,
+                cell_endindex_local,
+                kstart_dd3d,  # TODO: @abishekg7
+                self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
 
@@ -812,6 +815,10 @@ class SolveNonhydro:
                 diagnostic_state.ddt_exner_phy,
                 config.ndyn_substeps_var,
                 dtime,
+                cell_startindex_nudging + 1,
+                cell_endindex_local,
+                kstart_moist,  # TODO: @abishekg7
+                self.grid.n_lev(),
                 offset_provider={},
             )
             # _mo_solve_nonhydro_stencil_59()
@@ -843,6 +850,10 @@ class SolveNonhydro:
                 prognostic_state[nnew].w,
                 diagnostic_state.w_concorr_c,
                 self.z_dwdz_dd,
+                cell_startindex_nudging + 1,
+                cell_endindex_local,
+                kstart_dd3d,  # TODO: @abishekg7
+                self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
 
@@ -862,7 +873,7 @@ class SolveNonhydro:
         velocity_advection.run_corrector_step()
         nvar = nnew
 
-        mo_solve_nonhydro_stencil_10(
+        nhsolve_prog.mo_solve_nonhydro_stencil_10(
             prognostic_state.w,
             diagnostic_state.w_concorr_c,
             self.metric_state.ddqz_z_half,
@@ -882,7 +893,7 @@ class SolveNonhydro:
             dtime,
             wgt_nnow_rth,
             wgt_nnew_rth,
-            cell_startindex_local - 1,
+            cell_endindex_local,
             self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
@@ -890,14 +901,14 @@ class SolveNonhydro:
         if config.l_open_ubc and not l_vert_nested:
             raise NotImplementedError("l_open_ubc not implemented")
 
-        mo_solve_nonhydro_stencil_17(
+        nhsolve_prog.mo_solve_nonhydro_stencil_17(
             self.metric_state.hmask_dd3d,
             self.metric_state.scalfac_dd3d,
             inv_dual_edge_length,
             z_dwdz_dd,
             z_graddiv_vn,
-            edge_endindex_local,
-            kstart_dd3d,
+            edge_endindex_local - 2,
+            kstart_dd3d,  # TODO: @abishekg7 resolve
             self.grid.n_lev(),
             offset_provider={
                 "E2C": self.grid.get_e2c_offset_provider(),
@@ -905,7 +916,7 @@ class SolveNonhydro:
         )
 
         if config.itime_scheme >= 4:
-            mo_solve_nonhydro_stencil_23(
+            nhsolve_prog.mo_solve_nonhydro_stencil_23(
                 prognostic_state_now.vn,
                 diagnostic_state.ddt_vn_adv_ntl1,
                 diagnostic_state.ddt_vn_adv_ntl2,
@@ -917,18 +928,18 @@ class SolveNonhydro:
                 wgt_nnow_vel,
                 wgt_nnew_vel,
                 cpd,
-                edge_startindex_nudging,
+                edge_startindex_nudging + 1,
                 edge_endindex_local,
                 self.grid.n_lev(),
                 offset_provider={},
             )
 
         if lhdiff_rcf and (config.divdamp_order == 4 or config.divdamp_order == 24):
-            mo_solve_nonhydro_stencil_25(
+            nhsolve_prog.mo_solve_nonhydro_stencil_25(
                 self.interpolation_state.geofac_grdiv,
                 z_graddiv_vn,
                 z_graddiv2_vn,
-                edge_startindex_nudging,
+                edge_startindex_nudging + 1,
                 edge_endindex_local,
                 self.grid.n_lev(),
                 offset_provider={
@@ -941,11 +952,11 @@ class SolveNonhydro:
             if config.divdamp_order == 2 or (
                 config.divdamp_order == 24 and scal_divdamp_o2 > 1e-6
             ):
-                mo_solve_nonhydro_stencil_26(
+                nhsolve_prog.mo_solve_nonhydro_stencil_26(
                     z_graddiv_vn,
                     prognostic_state_new.vn,
                     scal_divdamp_o2,
-                    edge_startindex_nudging,
+                    edge_startindex_nudging + 1,
                     edge_endindex_local,
                     self.grid.n_lev(),
                     offset_provider={},
@@ -954,34 +965,34 @@ class SolveNonhydro:
                 config.divdamp_order == 24 and ivdamp_fac_o2 <= 4 * divdamp_fac
             ):
                 if self.icon_grid.limited_area():
-                    mo_solve_nonhydro_stencil_27(
+                    nhsolve_prog.mo_solve_nonhydro_stencil_27(
                         scal_divdamp,
                         bdy_divdamp,
                         self.interpolation_state.nudgecoeff_e,
                         z_graddiv2_vn,
                         prognostic_state_new.vn,
-                        edge_startindex_nudging,
+                        edge_startindex_nudging + 1,
                         edge_endindex_local,
                         self.grid.n_lev(),
                         offset_provider={},
                     )
                 else:
-                    mo_solve_nonhydro_4th_order_divdamp(
+                    nhsolve_prog.mo_solve_nonhydro_4th_order_divdamp(
                         scal_divdamp,
                         z_graddiv2_vn,
                         prognostic_state_new.vn,
-                        edge_startindex_nudging,
+                        edge_startindex_nudging + 1,
                         edge_endindex_local,
                         self.grid.n_lev(),
                         offset_provider={},
                     )
 
         if config.is_iau_active:
-            mo_solve_nonhydro_stencil_28(
+            nhsolve_prog.mo_solve_nonhydro_stencil_28(
                 diagnostic_state.vn_incr,
                 prognostic_state_new.vn,
                 iau_wgt_dyn,
-                edge_startindex_nudging,
+                edge_startindex_nudging + 1,
                 edge_endindex_local,
                 self.grid.n_lev(),
                 offset_provider={},
@@ -1005,14 +1016,14 @@ class SolveNonhydro:
             # TODO: @abishekg7 resolve prep_adv
             if lpred_adv:  # Preparations for tracer advection
                 if lclean_mflx:
-                    mo_solve_nonhydro_stencil_33(
+                    nhsolve_prog.mo_solve_nonhydro_stencil_33(
                         prep_adv.vn_traj,
                         prep_adv.mass_flx_me,
                         edge_endindex_local,
                         self.grid.n_lev(),
                         offset_provider={},
                     )
-                mo_solve_nonhydro_stencil_34(
+                nhsolve_prog.mo_solve_nonhydro_stencil_34(
                     z_vn_avg,
                     diagnostic_state.mass_fl_e,
                     prep_adv.vn_traj,
@@ -1075,6 +1086,7 @@ class SolveNonhydro:
                 },
             )
 
+        # TODO: @abishekg7 45_b is just a zero stencil
         if config.itime_scheme >= 4:
             nhsolve_prog.stencils_42_44_45_45b(
                 self.z_w_expl,
@@ -1143,7 +1155,7 @@ class SolveNonhydro:
         # mo_solve_nonhydro_stencil_45_b()
 
         if not config.l_open_ubc and not l_vert_nested:
-            mo_solve_nonhydro_stencil_46(
+            nhsolve_prog.mo_solve_nonhydro_stencil_46(
                 prognostic_state[nnew].w,
                 self.z_contr_w_fl_l,
                 cell_startindex_nudging + 1,
@@ -1166,7 +1178,7 @@ class SolveNonhydro:
             diagnostic_state.theta_v_ic,
             diagnostic_state.ddt_exner_phy,
             dtime,
-            offset_provider={},
+            offset_provider={"Koff": KDim},
         )
         # _mo_solve_nonhydro_stencil_47()
         # _mo_solve_nonhydro_stencil_48()
@@ -1246,7 +1258,7 @@ class SolveNonhydro:
                 set_zero_c_k(self.mass_flx_ic, offset_provider={})
                 # mo_solve_nonhydro_stencil_57()
 
-        mo_solve_nonhydro_stencil_58(
+        nhsolve_prog.mo_solve_nonhydro_stencil_58(
             self.z_contr_w_fl_l,
             diagnostic_state.rho_ic,
             self.metric_state.vwind_impl_wgt,
@@ -1256,6 +1268,7 @@ class SolveNonhydro:
             cell_startindex_nudging + 1,
             cell_endindex_local,
             self.grid.n_lev(),
+            offset_provider={},
         )
 
         if lpred_adv:
@@ -1264,7 +1277,7 @@ class SolveNonhydro:
                 set_zero_c_k(self.mass_flx_ic, offset_provider={})
                 # mo_solve_nonhydro_stencil_64()
 
-            mo_solve_nonhydro_stencil_65(
+            nhsolve_prog.mo_solve_nonhydro_stencil_65(
                 diagnostic_state.rho_ic,
                 self.metric_state.vwind_expl_wgt,
                 self.metric_state.vwind_impl_wgt,
@@ -1276,6 +1289,7 @@ class SolveNonhydro:
                 cell_startindex_nudging + 1,
                 cell_endindex_local,
                 self.grid.n_lev(),
+                offset_provider={},
             )
 
         ##### COMMUNICATION PHASE
