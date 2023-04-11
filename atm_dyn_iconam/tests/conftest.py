@@ -28,8 +28,9 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.diffusion.horizontal import HorizontalMeshSize
-from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
+from icon4py.grid.horizontal import HorizontalGridSize
+from icon4py.grid.icon_grid import GridConfig, IconGrid
+from icon4py.grid.vertical import VerticalGridConfig
 
 
 @pytest.fixture
@@ -105,13 +106,13 @@ def icon_grid(data_provider):
     edge_starts = sp.edge_start_index()
     edge_ends = sp.edge_end_index()
 
-    config = MeshConfig(
-        HorizontalMeshSize(
+    config = GridConfig(
+        HorizontalGridSize(
             num_vertices=sp_meta["nproma"],  # or rather "num_vert"
             num_cells=sp_meta["nproma"],  # or rather "num_cells"
             num_edges=sp_meta["nproma"],  # or rather "num_edges"
         ),
-        VerticalMeshConfig(num_lev=sp_meta["nlev"]),
+        VerticalGridConfig(num_lev=sp_meta["nlev"]),
     )
 
     c2e2c = sp.c2e2c()

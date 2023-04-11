@@ -11,11 +11,27 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from icon4py.common.dimension import CellDim
+from icon4py.grid.horizontal import Nudging, nudging
 
-from icon4py.testutils.fixtures import (  # noqa F401
-    data_provider,
-    get_grid_files,
-    grid_savepoint,
-    r04b09_dsl_gridfile,
-    setup_icon_data,
-)
+
+def test_nudging_class_for_cells():
+    nudging = Nudging(CellDim)
+    nudging_plus_one = Nudging(CellDim) + 1
+    assert nudging() == 13
+    assert nudging_plus_one == 14
+
+
+def test_nudging_for_cells():
+    nudge = nudging(CellDim)
+    nudge_p1 = nudging(CellDim, 1)
+    assert nudge == 13
+    assert nudge_p1 == 14
+
+
+def get_start_index(i):
+    pass
+
+
+def test_start_index():
+    get_start_index(nudging(CellDim, 1))

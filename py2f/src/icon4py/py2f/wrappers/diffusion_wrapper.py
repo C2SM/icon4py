@@ -31,11 +31,11 @@ from icon4py.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
 )
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.icon_grid import IconGrid, VerticalModelParams
 from icon4py.py2f.cffi_utils import CffiMethod
 
 

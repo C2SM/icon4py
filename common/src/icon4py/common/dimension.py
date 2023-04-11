@@ -11,14 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import DimensionKind
+from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import Dimension, FieldOffset
 
 
 KDim = Dimension("K", kind=DimensionKind.VERTICAL)
 KHalfDim = Dimension("KHalf", kind=DimensionKind.VERTICAL)
 EdgeDim = Dimension("Edge")
-CellDim = Dimension("Cell")
+CellDim: Dimension = Dimension("Cell")
 VertexDim = Dimension("Vertex")
 CEDim = Dimension("CE")
 ECDim = Dimension("EC")

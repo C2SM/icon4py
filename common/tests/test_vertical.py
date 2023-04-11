@@ -16,7 +16,7 @@ import math
 import numpy as np
 import pytest
 
-from icon4py.diffusion.icon_grid import VerticalModelParams
+from icon4py.grid.vertical import VerticalGridConfig, VerticalModelParams
 from icon4py.testutils.fixtures import (  # noqa F401
     data_provider,
     grid_savepoint,
@@ -31,7 +31,11 @@ from icon4py.testutils.fixtures import (  # noqa F401
 def test_nrdmax_calculation(max_h, damping, delta):
     vct_a = np.arange(0, max_h, delta)
     vct_a = vct_a[::-1]
-    vertical_params = VerticalModelParams(rayleigh_damping_height=damping, vct_a=vct_a)
+    vertical_params = VerticalModelParams(
+        config=VerticalGridConfig(num_lev=10),
+        rayleigh_damping_height=damping,
+        vct_a=vct_a,
+    )
     assert (
         vertical_params.index_of_damping_layer
         == vct_a.shape[0] - math.ceil(damping / delta) - 1
@@ -43,7 +47,7 @@ def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint):  # noqa:
     a = grid_savepoint.vct_a()
     damping_height = 12500
     vertical_params = VerticalModelParams(
-        rayleigh_damping_height=damping_height, vct_a=a
+        VerticalGridConfig(num_lev=10), rayleigh_damping_height=damping_height, vct_a=a
     )
     assert 9 == vertical_params.index_of_damping_layer
     a_array = np.asarray(a)

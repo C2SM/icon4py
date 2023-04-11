@@ -45,9 +45,6 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
-    mo_nh_diffusion_stencil_15,
-)
 from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.constants import (
     CPD,
@@ -68,8 +65,6 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.diffusion.diagnostic_state import DiagnosticState
-from icon4py.diffusion.horizontal import HorizontalMarkerIndex
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
@@ -81,6 +76,9 @@ from icon4py.diffusion.utils import (
     setup_fields_for_initial_step,
     zero_field,
 )
+from icon4py.grid.horizontal import HorizontalMarkerIndex
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalGridConfig, VerticalModelParams
 
 
 VectorTuple = namedtuple("VectorTuple", "x y")

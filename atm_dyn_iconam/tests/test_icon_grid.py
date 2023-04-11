@@ -13,7 +13,7 @@
 import pytest
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.diffusion.horizontal import HorizontalMarkerIndex
+from icon4py.grid.horizontal import HorizontalMarkerIndex
 from icon4py.testutils.fixtures import data_provider, setup_icon_data  # noqa
 
 

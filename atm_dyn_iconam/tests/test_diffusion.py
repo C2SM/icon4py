@@ -17,7 +17,6 @@ import pytest
 from icon4py.common.dimension import ECVDim, KDim, VertexDim
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams, VectorTuple
-from icon4py.diffusion.icon_grid import VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
@@ -29,9 +28,13 @@ from icon4py.diffusion.utils import (
     set_zero_v_k,
     setup_fields_for_initial_step,
 )
+from icon4py.grid.grid_manager import GridManager, ToGt4PyTransformation
+from icon4py.grid.vertical import VerticalGridConfig, VerticalModelParams
 from icon4py.testutils.fixtures import (  # noqa F401
     data_provider,
+    get_grid_files,
     grid_savepoint,
+    r04b09_dsl_gridfile,
     setup_icon_data,
 )
 from icon4py.testutils.serialbox_utils import IconDiffusionInitSavepoint
@@ -225,16 +228,25 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
+def init_grid_manager(fname, config):
+    gm = GridManager(ToGt4PyTransformation(), fname, config)
+    gm.init()
+    return gm
+
+
 @pytest.mark.datatest
 def test_diffusion_init(
     diffusion_savepoint_init,
     grid_savepoint,  # noqa: F811
-    icon_grid,
+    r04b09_dsl_gridfile,  # noqa: F811
     r04b09_diffusion_config,
     step_date_init,
     damping_height,
 ):
     config = r04b09_diffusion_config
+    grid_config = VerticalGridConfig(grid_savepoint.num(KDim))
+    gm = init_grid_manager(r04b09_dsl_gridfile, grid_config)
+    icon_grid = gm.get_grid()
     additional_parameters = DiffusionParams(config)
     vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
 

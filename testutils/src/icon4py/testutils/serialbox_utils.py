@@ -130,7 +130,7 @@ class IconGridSavePoint(IconSavepoint):
     def print_connectivity_info(name: str, ar: np.ndarray):
         print(f" connectivity {name} {ar.shape}")
 
-    def refin_ctrl(self, dim: Dimension)-> Optional[np.ndarray]:
+    def refin_ctrl(self, dim: Dimension) -> Optional[np.ndarray]:
         if dim == CellDim:
             return self.serializer.read("c_refin_ctl", self.savepoint)
         elif dim == EdgeDim:
@@ -140,13 +140,15 @@ class IconGridSavePoint(IconSavepoint):
         else:
             return None
 
-    def num(self, dim:Dimension)->Optional[int]:
+    def num(self, dim: Dimension) -> Optional[int]:
         if dim == CellDim:
             return self.serializer.read("num_cells", self.savepoint)[0]
         elif dim == EdgeDim:
             return self.serializer.read("num_edges", self.savepoint)[0]
         elif dim == VertexDim:
             return self.serializer.read("num_vert", self.savepoint)[0]
+        elif dim == KDim:
+            return self.serializer.read("nlev", self.savepoint)[0]
         else:
             return None
 

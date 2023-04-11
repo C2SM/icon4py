@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from abc import ABC
 from dataclasses import dataclass
 from typing import Final
 
@@ -19,7 +20,29 @@ from icon4py.common import dimension
 from icon4py.common.dimension import CellDim, ECVDim, EdgeDim
 
 
+# W605
+
+
 class HorizontalMarkerIndex:
+    """
+    Handles constants indexing into the start_index and end_index fields.
+
+     ICON uses a double indexing scheme for field indices marking the start and end of special
+     grid zone: The constants defined here (from mo_impl_constants.f90 and mo_impl_constants_grf.f90)
+     are the indices that are used to index into the start_idx and end_idx arrays
+     provided by the grid file where for each dimension the start index of the horizontal
+     "zones" are defined:
+     f.ex. an inlined access of the field F: Field[[CellDim], double] at the starting point of the lateral boundary zone would be
+
+     F[start_idx_c[_LATERAL_BOUNDARY_CELLS]
+
+
+     ICON uses a custom index range from [ICON_INDEX_OFFSET... ] such that the index 0 marks the
+     internal entities for _all_ dimensions (Cell, Edge, Vertex) that is why we define these
+     additional INDEX_OFFSETs here in order to swap back to a 0 base python array.
+
+    """
+
     NUM_GHOST_ROWS: Final[int] = 2
     # values from mo_impl_constants.f90
     _ICON_INDEX_OFFSET_CELLS: Final[int] = 8
@@ -59,7 +82,8 @@ class HorizontalMarkerIndex:
 
     @classmethod
     def lateral_boundary(cls, dim: Dimension) -> int:
-        match (dim):
+        """TODO @magdalena"""
+        match dim:
             case (dimension.CellDim):
                 return cls._LATERAL_BOUNDARY_CELLS
             case (dimension.EdgeDim):
@@ -108,8 +132,38 @@ class HorizontalMarkerIndex:
                 return cls._END_VERTICES
 
 
+class IconHorizontalDomainZone(ABC):
+    def __init__(self, dim: Dimension):
+        self._marker = HorizontalMarkerIndex.nudging(dim)
+
+    def __call__(self, *args, **kwargs):
+        return self._marker
+
+    def __add__(self, other: int):
+        return self._marker + other
+
+
+class Nudging(IconHorizontalDomainZone):
+    def __init__(self, dim: Dimension):
+        super().__init__(dim)
+
+
+class LateralBoundary(IconHorizontalDomainZone):
+    def __init__(self, dim: Dimension):
+        super().__init__(dim)
+
+
+class Interior(IconHorizontalDomainZone):
+    def __init__(self, dim: Dimension):
+        super().__init__(dim)
+
+
+def nudging(dim: CellDim, offset=0):
+    return HorizontalMarkerIndex.nudging(dim) + offset
+
+
 @dataclass(frozen=True)
-class HorizontalMeshSize:
+class HorizontalGridSize:
     num_vertices: int
     num_edges: int
     num_cells: int
