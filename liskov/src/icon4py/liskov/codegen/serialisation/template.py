@@ -22,10 +22,13 @@ from icon4py.liskov.codegen.serialisation.interface import SavepointData
 
 class InitStatement(eve.Node):
     directory: str
+    prefix: str
 
 
 class InitStatementGenerator(TemplatedGenerator):
-    InitStatement = as_jinja('!$ser init directory="{{directory}}"')
+    InitStatement = as_jinja(
+        '!$ser init directory="{{directory}}" prefix="{{ prefix }}"'
+    )
 
 
 class Field(eve.Node):

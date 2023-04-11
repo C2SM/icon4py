@@ -40,19 +40,31 @@ from icon4py.liskov.codegen.write import CodegenWriter
     "output_filepath",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
+@click.option(
+    "--directory", type=str, help="Directory to serialise variables to.", default="."
+)
+@click.option(
+    "--prefix", type=str, help="Prefix to use for serialised files.", default="f2ser"
+)
 def main(
     granule_path: pathlib.Path,
     dependencies: Optional[list[pathlib.Path]],
     output_filepath: pathlib.Path,
+    directory: str,
+    prefix: str,
 ) -> None:
     """Command line interface for interacting with the ICON-f2ser serialization Preprocessor.
 
     Arguments:
         granule_path (Path): A path to the Fortran source file to be parsed.
         output_filepath (Path): A path to the output Fortran source file to be generated.
+        directory (str): The directory to serialise the variables to.
+        prefix (str): The prefix to use for each serialised variable.
     """
     parsed = GranuleParser(granule_path, dependencies).parse()
-    interface = ParsedGranuleDeserialiser(parsed, directory=".").deserialise()
+    interface = ParsedGranuleDeserialiser(
+        parsed, directory=directory, prefix=prefix
+    ).deserialise()
     generator = SerialisationGenerator(interface)
     generated = generator()
     writer = CodegenWriter(granule_path, output_filepath)

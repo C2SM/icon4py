@@ -25,7 +25,7 @@ def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
 
     assert list(parsed["diffusion_init"]) == ["in"]
     assert len(parsed["diffusion_init"]["in"]) == 107
-    assert parsed["diffusion_init"]["in"]["codegen_line"] == 279
+    assert parsed["diffusion_init"]["in"]["codegen_line"] == 280
 
     assert list(parsed["diffusion_run"]) == ["in", "inout", "out"]
     assert len(parsed["diffusion_run"]["in"]) == 5
@@ -34,7 +34,7 @@ def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
     assert len(parsed["diffusion_run"]["inout"]) == 7
 
     assert len(parsed["diffusion_run"]["out"]) == 5
-    assert parsed["diffusion_run"]["out"]["codegen_line"] == 1969
+    assert parsed["diffusion_run"]["out"]["codegen_line"] == 1965
 
     assert isinstance(parsed, dict)
 

@@ -21,9 +21,10 @@ from icon4py.liskov.codegen.serialisation.interface import (
 
 
 class ParsedGranuleDeserialiser:
-    def __init__(self, parsed: ParsedGranule, directory: str):
+    def __init__(self, parsed: ParsedGranule, directory: str, prefix: str):
         self.parsed = parsed
         self.directory = directory
+        self.prefix = prefix
         self.data = {"Savepoint": [], "Init": ...}
 
     def deserialise(self) -> SerialisationInterface:
@@ -132,7 +133,9 @@ class ParsedGranuleDeserialiser:
             if intent == "in"
         ]
         startln = min(in_lines, default=0)
-        self.data["Init"] = InitData(startln=startln, directory=self.directory)
+        self.data["Init"] = InitData(
+            startln=startln, directory=self.directory, prefix=self.prefix
+        )
 
     def _merge_out_inout_fields(self):
         """Merge the `inout` fields into the `in` and `out` fields in the `parsed` dictionary.

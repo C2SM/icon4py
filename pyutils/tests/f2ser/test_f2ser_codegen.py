@@ -19,7 +19,7 @@ from icon4py.liskov.codegen.serialisation.generate import SerialisationGenerator
 def test_deserialiser_diffusion_codegen(diffusion_granule, diffusion_granule_deps):
     parser = GranuleParser(diffusion_granule, diffusion_granule_deps)
     parsed = parser.parse()
-    deserialiser = ParsedGranuleDeserialiser(parsed, directory=".")
+    deserialiser = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")
     interface = deserialiser.deserialise()
     generator = SerialisationGenerator(interface)
     generated = generator()
