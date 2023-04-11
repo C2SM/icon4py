@@ -118,7 +118,6 @@ class SolveNonhydro:
         metric_state: MetricState,
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
-        icon_grid: IconGrid,
     ):
         """
         Initialize NonHydrostatic granule with configuration.
@@ -131,7 +130,6 @@ class SolveNonhydro:
         self.vertical_params = vertical_params
         self.metric_state: MetricState = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
-        self.icon_grid: IconGrid = icon_grid
 
         self._allocate_local_fields()
         self._initialized = True
@@ -221,6 +219,13 @@ class SolveNonhydro:
         ) = self.init_dimensions_boundaries()
         # velocity_advection is referenced inside
 
+        if self.itime_scheme >= 4:
+            self.ntl1 = nnow
+            self.ntl2 = nnew
+        else:
+            self.ntl1 = 1
+            self.ntl2 = 1
+
         self.run_predictor_step()
 
         self.run_corrector_step()
@@ -273,7 +278,7 @@ class SolveNonhydro:
         l_recompute: bool,
         l_init: bool,
         nnow: int,
-        nnew,
+        nnew: int,
     ):
         if config.itime_scheme >= 6 or l_init or l_recompute:
             if config.itime_scheme < 6 and not l_init:
@@ -389,6 +394,9 @@ class SolveNonhydro:
                 self.metric_state.d2dexdz2_fac2_mc,
                 self.z_rth_pr_2,
                 self.z_dexner_dz_c_2,
+                cell_endindex_local,
+                self.grid.nflat_gradp(),
+                self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
 
@@ -418,6 +426,8 @@ class SolveNonhydro:
                 p_ccpr2,
                 geofac_grg_x,
                 geofac_grg_y,
+                cell_endindex_local,
+                self.grid.n_lev(),
                 offset_provider={
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "C2E2CODim": C2E2CODim,
@@ -479,6 +489,8 @@ class SolveNonhydro:
                 self.z_grad_rth_4,
                 self.z_rth_pr_1,
                 self.z_rth_pr_2,
+                edge_endindex_local - 1,
+                self.grid.n_lev(),
                 offset_provider={
                     "E2C": self.grid.get_e2c_connectivity(),
                     "E2CDim": E2CDim,
@@ -505,6 +517,10 @@ class SolveNonhydro:
                 self.interpolation_state.c_lin_e,
                 self.z_dexner_dz_c_1,
                 self.z_gradh_exner,
+                edge_startindex_nudging + 1,
+                edge_endindex_local,
+                self.vertical_params.nflatlev,
+                self.grid.nflat_gradp(),
                 offset_provider={},
             )
             # mo_solve_nonhydro_stencil_19()
@@ -568,7 +584,7 @@ class SolveNonhydro:
 
         ##### COMMUNICATION PHASE
 
-        mo_solve_nonhydro_stencil_30()
+        nhsolve_prog.mo_solve_nonhydro_stencil_30()
 
         #####  Not sure about  _mo_solve_nonhydro_stencil_31()
 

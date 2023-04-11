@@ -19,6 +19,7 @@ from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_d
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
+    _mo_math_gradients_grad_green_gauss_cell_dsl,
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_4th_order_divdamp import (
@@ -91,6 +92,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_28 import (
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_29 import (
     _mo_solve_nonhydro_stencil_29,
+)
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_30 import (
+    _mo_solve_nonhydro_stencil_30,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_32 import (
     _mo_solve_nonhydro_stencil_32,
@@ -189,6 +193,29 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.state_utils.utils import _set_zero_c_k
+
+
+@program
+def mo_math_gradients_grad_green_gauss_cell_dsl(
+    p_grad_1_u: Field[[CellDim, KDim], float],
+    p_grad_1_v: Field[[CellDim, KDim], float],
+    p_grad_2_u: Field[[CellDim, KDim], float],
+    p_grad_2_v: Field[[CellDim, KDim], float],
+    p_ccpr1: Field[[CellDim, KDim], float],
+    p_ccpr2: Field[[CellDim, KDim], float],
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
+    cell_endindex_local: int,
+    nlev: int,
+):
+    _mo_math_gradients_grad_green_gauss_cell_dsl(
+        p_ccpr1,
+        p_ccpr2,
+        geofac_grg_x,
+        geofac_grg_y,
+        out=(p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v),
+        domain={CellDim: (1, cell_endindex_local), KDim: (0, nlev)},
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)
@@ -335,6 +362,9 @@ def mo_solve_nonhydro_stencil_12(
     d2dexdz2_fac2_mc: Field[[CellDim, KDim], float],
     z_rth_pr_2: Field[[CellDim, KDim], float],
     z_dexner_dz_c_2: Field[[CellDim, KDim], float],
+    cell_endindex_local: int,
+    nflat_gradp: int,
+    nlev: int,
 ):
     _mo_solve_nonhydro_stencil_12(
         z_theta_v_pr_ic,
@@ -342,7 +372,7 @@ def mo_solve_nonhydro_stencil_12(
         d2dexdz2_fac2_mc,
         z_rth_pr_2,
         out=z_dexner_dz_c_2,
-        domain={},
+        domain={CellDim: (2, cell_endindex_local), KDim: (nflat_gradp, nlev)},
     )
 
 
@@ -422,6 +452,8 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     z_rth_pr_2: Field[[CellDim, KDim], float],
     z_rho_e: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
+    edge_endindex_local_minus1: int,
+    nlev: int,
 ):
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         p_vn,
@@ -442,7 +474,7 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         z_rth_pr_1,
         z_rth_pr_2,
         out=(z_rho_e, z_theta_v_e),
-        domain={},
+        domain={EdgeDim: (6, edge_endindex_local_minus1), KDim: (0, nlev)},
     )
 
 
@@ -474,6 +506,10 @@ def nhsolve_predictor_tendencies_19_20(
     c_lin_e: Field[[EdgeDim, E2CDim], float],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
+    edge_startindex_nudging_plus1: int,
+    edge_endindex_local: int,
+    nflatlev: int,
+    nflat_gradp: int,
 ):
     _mo_solve_nonhydro_stencil_19(
         inv_dual_edge_length,
@@ -482,7 +518,10 @@ def nhsolve_predictor_tendencies_19_20(
         c_lin_e,
         z_dexner_dz_c_1,
         out=z_gradh_exner,
-        domain={},
+        domain={
+            EdgeDim: (edge_startindex_nudging_plus1, edge_endindex_local),
+            KDim: (nflatlev, nflat_gradp),
+        },
     )
 
 
@@ -569,6 +608,8 @@ def mo_solve_nonhydro_stencil_29(
     vn_now: Field[[EdgeDim, KDim], float],
     vn_new: Field[[EdgeDim, KDim], float],
     dtime: float,
+    edge_endindex_nudging: int,
+    nlev: int,
 ):
     _mo_solve_nonhydro_stencil_29(
         grf_tend_vn,
@@ -579,6 +620,21 @@ def mo_solve_nonhydro_stencil_29(
             EdgeDim: (0, edge_endindex_nudging),
             KDim: (0, nlev),
         },
+    )
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_30(
+    e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
+    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
+    z_vn_avg: Field[[EdgeDim, KDim], float],
+    z_graddiv_vn: Field[[EdgeDim, KDim], float],
+    vt: Field[[EdgeDim, KDim], float],
+):
+    _mo_solve_nonhydro_stencil_30(
+        e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e, out=(z_vn_avg, z_graddiv_vn, vt)
     )
 
 
