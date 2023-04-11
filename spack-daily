@@ -1,0 +1,34 @@
+pipeline {
+    agent none
+    stages {
+        stage('Tests') {
+            matrix {
+                agent { label "${NODENAME}" }
+                axes {
+                    axis {
+                        name 'NODENAME'
+                        values 'daint', 'balfrin'
+                    }
+                }
+                post {
+                    always {
+                        echo 'Cleaning up workspace'
+                        deleteDir()
+                    }
+                }
+                    stage('Install and Test') {
+                        steps {
+                            sh """
+                            git clone git@github.com:C2SM/spack-c2sm.git
+                            cd spack-c2sm
+                            . setup-env.sh
+                            spack install --test=root py-gt4py@main%gcc ^py-gt4py@main%gcc
+                            """
+                        }
+                    }
+                    }
+                }
+            }
+        }
+    }
+}
