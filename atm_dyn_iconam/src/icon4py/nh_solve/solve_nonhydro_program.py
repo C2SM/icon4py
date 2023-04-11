@@ -190,6 +190,19 @@ from icon4py.common.dimension import (
 )
 from icon4py.state_utils.utils import _set_zero_c_k
 
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_solve_nonhydro_stencil_01(
+    z_rth_pr_1: Field[[CellDim, KDim], float],
+    z_rth_pr_2: Field[[CellDim, KDim], float],
+    cell_endindex_local: int,
+    nlev: int,
+):
+    _set_zero_c_k(
+        z_rth_pr_1, domain={CellDim: (0, cell_endindex_local), KDim: (0, nlev)}
+    )
+    _set_zero_c_k(
+        z_rth_pr_2, domain={CellDim: (0, cell_endindex_local), KDim: (0, nlev)}
+    )
 
 @program(backend=gtfn_cpu.run_gtfn)
 def predictor_stencils_2_3(
@@ -227,6 +240,7 @@ def predictor_stencils_4_5_6(
     nlev: int,
     nlevp1: int,
 ):
+    # Perturbation Exner pressure on bottom half level
     _mo_solve_nonhydro_stencil_04(
         wgtfacq_c,
         z_exner_ex_pr,
@@ -234,6 +248,8 @@ def predictor_stencils_4_5_6(
         domain={CellDim: (2, cell_endindex_local), KDim: (nlevp1, nlevp1)},
     )
 
+    # WS: moved full z_exner_ic calculation here to avoid OpenACC dependency on jk+1 below
+    # possibly GZ will want to consider the cache ramifications of this change for CPU
     _mo_solve_nonhydro_stencil_05(
         wgtfac_c,
         z_exner_ex_pr,
@@ -244,6 +260,7 @@ def predictor_stencils_4_5_6(
         },
     )
 
+    # First vertical derivative of perturbation Exner pressure
     _mo_solve_nonhydro_stencil_06(
         z_exner_ic,
         inv_ddqz_z_full,

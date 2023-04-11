@@ -100,11 +100,22 @@ class NonHydrostaticParams:
 
     def __init__(self, config: NonHydrostaticConfig):
 
-        self.K2: float = (
-            1.0 / (config.hdiff_efdt_ratio * 8.0)
-            if config.hdiff_efdt_ratio > 0.0
-            else 0.0
+        # start level for 3D divergence damping terms
+        self.kstart_dd3d: int = (
+           #TODO: @abishekg7 See mo_vertical_grid.f90
         )
+        # start level for moist physics processes (specified by htop_moist_proc)
+        self.kstart_moist: int # see mo_nonhydrostatic_config.f90
+
+        self.alin = (config.divdamp_fac2 - config.divdamp_fac) / (config.divdamp_z2 - config.divdamp_z)
+
+        self.df32 = config.divdamp_fac3 - config.divdamp_fac2
+        self.dz32 = config.divdamp_z3 - config.divdamp_z2
+        self.df42 = config.divdamp_fac4 - config.divdamp_fac2
+        self.dz42 = config.divdamp_z4 - config.divdamp_z2
+
+        self.bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
+        self.aqdr = df32 / dz32 - bqdr * dz32
 
 
 class SolveNonhydro:
@@ -123,7 +134,7 @@ class SolveNonhydro:
         """
         Initialize NonHydrostatic granule with configuration.
 
-        calculates all local fields that are used in diffusion within the time loop
+        calculates all local fields that are used in nh_solve within the time loop
         """
         self.config: NonHydrostaticConfig = config
         self.params: NonHydrostaticParams = params
@@ -221,6 +232,29 @@ class SolveNonhydro:
         ) = self.init_dimensions_boundaries()
         # velocity_advection is referenced inside
 
+        # Inverse value of ndyn_substeps for tracer advection precomputations
+        r_nsubsteps = 1.0/config.ndyn_substeps_var
+
+        #  Precompute Rayleigh damping factor
+        z_raylfac = 1.0 / (
+            1.0 + dtime * self.metric_state.rayleigh_w
+        )  # TODO: @nfarabullini make this a program
+
+        # Coefficient for reduced fourth-order divergence damping along nest boundaries
+        bdy_divdamp = 0.75/(nudge_max_coeff + dbl_eps)*abs(scal_divdamp)
+
+        # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
+        # delta_x**2 is approximated by the mean cell area
+        scal_divdamp_o2 = divdamp_fac_o2 * p_patch%geometry_info%mean_cell_area
+
+        #  Set time levels of ddt_adv fields for call to velocity_tendencies
+        if itime_scheme >= 4: # Velocity advection averaging nnow and nnew tendencies
+           ntl1 = nnow
+           ntl2 = nnew
+        else:                 # Velocity advection is taken at nnew only
+           ntl1 = 1
+           ntl2 = 1
+
         self.run_predictor_step()
 
         self.run_corrector_step()
@@ -277,14 +311,12 @@ class SolveNonhydro:
     ):
         if config.itime_scheme >= 6 or l_init or l_recompute:
             if config.itime_scheme < 6 and not l_init:
-                lvn_only = True
+                lvn_only = True  # Recompute only vn tendency
             else:
                 lvn_only = False
             velocity_advection.run_predictor_step()
         nvar = nnow
-        z_raylfac = 1.0 / (
-            1.0 + dtime * self.metric_state.rayleigh_w
-        )  # TODO: @nfarabullini make this a program
+
         p_dthalf = 0.5 * dtime
 
         (
@@ -298,9 +330,15 @@ class SolveNonhydro:
             cell_endindex_local,
         ) = self.init_dimensions_boundaries()
 
-        if self.icon_grid.limited_area():  # TODO: @abishekg7 set domain extents
-            set_zero_c_k(self.z_rth_pr_1, offset_provider={})
-            set_zero_c_k(self.z_rth_pr_2, offset_provider={})
+        # initialize nest boundary points of z_rth_pr with zero
+        if jg > 1 or self.icon_grid.limited_area():
+            nhsolve_prog.mo_solve_nonhydro_stencil_01(
+                self.z_rth_pr_1,
+                self.z_rth_pr_2,
+                cell_endindex_local, # TODO: @abishekg7 wrong, change to min_rlcell
+                self.grid.n_lev(),
+                offset_provider={}
+            )
             # _mo_solve_nonhydro_stencil_01()
 
         nhsolve_prog.predictor_stencils_2_3(
@@ -338,6 +376,7 @@ class SolveNonhydro:
             # _mo_solve_nonhydro_stencil_06()
 
             if self.vertical_params.nflatlev == 1:
+                # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
         nhsolve_prog.predictor_stencils_7_8_9(
@@ -369,6 +408,7 @@ class SolveNonhydro:
                 "Nesting support not implemented. " "l_open_ubc not implemented"
             )
 
+        # Perturbation theta at top and surface levels
         nhsolve_prog.predictor_stencils_11_lower_upper(
             self.metric_state.wgtfacq_c,
             self.z_rth_pr,
@@ -383,6 +423,7 @@ class SolveNonhydro:
         # _mo_solve_nonhydro_stencil_11_upper()
 
         if config.igradp_method <= 3:
+            # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
             nhsolve_prog.mo_solve_nonhydro_stencil_12(
                 self.z_theta_v_pr_ic,
                 self.metric_state.d2dexdz2_fac1_mc,
@@ -392,6 +433,8 @@ class SolveNonhydro:
                 offset_provider={"Koff": KDim},
             )
 
+        # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
+        # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
         nhsolve_prog.mo_solve_nonhydro_stencil_13(
             prognostic_state[nnow].rho,
             self.metric_state.rho_ref_mc,
@@ -405,10 +448,12 @@ class SolveNonhydro:
             offset_provider={},
         )
 
+        # Compute rho and theta at edges for horizontal flux divergence term
         if self.iadv_rhotheta == 1:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl()
             # mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl()
         elif self.iadv_rhotheta == 2:
+            # Compute Green-Gauss gradients for rho and theta
             mo_math_gradients_grad_green_gauss_cell_dsl(
                 p_grad_1_u,
                 p_grad_1_v,
@@ -433,7 +478,7 @@ class SolveNonhydro:
             lcleanup = True
             # upwind_hflux_miura3()
 
-        # Please see test.f90 for this section. Above call to 'wrap_run_mo_solve_nonhydro_stencil_14'
+        # TODO: @abishekg7 Please see test.f90 for this section. Above call to 'wrap_run_mo_solve_nonhydro_stencil_14'
         if self.iadv_rhotheta <= 2:
             if config.idiv_method == 1:
                 pass
@@ -447,7 +492,7 @@ class SolveNonhydro:
             self.grid.n_lev(),
             offset_provider={},
         )
-
+        # initialize also nest boundary points with zero
         if jg > 1 or self.icon_grid.limited_area():
             nhsolve_prog.mo_solve_nonhydro_stencil_15(
                 self.z_rho_e,
@@ -461,6 +506,9 @@ class SolveNonhydro:
             # Operations from upwind_hflux_miura are inlined in order to process both fields in one step
             pass
         else:
+            # Compute upwind-biased values for rho and theta starting from centered differences
+            # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
+            # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
             nhsolve_prog.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
                 prognostic_state[nnow].vn,
                 diagnostic_state.vt,
@@ -485,6 +533,7 @@ class SolveNonhydro:
                 },
             )
 
+        # Remaining computations at edge points
         nhsolve_prog.mo_solve_nonhydro_stencil_18(
             inv_dual_edge_length,
             self.z_exner_ex_pr,
@@ -498,6 +547,8 @@ class SolveNonhydro:
         if (
             config.igradp_method <= 3
         ):  # stencil_20 is tricky, there's no regular field operator
+            # horizontal gradient of Exner pressure, including metric correction
+            # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
             nhsolve_prog.nhsolve_predictor_tendencies_19_20(
                 inv_dual_edge_length,
                 self.z_exner_ex_pr,
@@ -510,8 +561,10 @@ class SolveNonhydro:
             # mo_solve_nonhydro_stencil_19()
             # mo_solve_nonhydro_stencil_20()
         elif config.igradp_method == 4 or config.igradp_method == 5:
+            # horizontal gradient of Exner pressure, cubic/quadratic interpolation
             raise NotImplementedError("igradp_method 4 and 5 not implemented")
 
+        # compute hydrostatically approximated correction term that replaces downward extrapolation
         if config.igradp_method == 3:
             mo_solve_nonhydro_stencil_21()
         elif config.igradp_method == 5:
@@ -794,6 +847,7 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim},
         )
 
+        # compute dw/dz for divergence damping term
         if config.lhdiff_rcf and config.divdamp_type >= 3:
             nhsolve_prog.mo_solve_nonhydro_stencil_56_63(
                 self.metric_state.inv_ddqz_z_full,
@@ -802,7 +856,7 @@ class SolveNonhydro:
                 self.z_dwdz_dd,
                 cell_startindex_nudging + 1,
                 cell_endindex_local,
-                kstart_dd3d,  # TODO: @abishekg7
+                config.kstart_dd3d,  # TODO: @abishekg7
                 self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
@@ -817,7 +871,7 @@ class SolveNonhydro:
                 dtime,
                 cell_startindex_nudging + 1,
                 cell_endindex_local,
-                kstart_moist,  # TODO: @abishekg7
+                config.kstart_moist,  # TODO: @abishekg7
                 self.grid.n_lev(),
                 offset_provider={},
             )
@@ -852,7 +906,7 @@ class SolveNonhydro:
                 self.z_dwdz_dd,
                 cell_startindex_nudging + 1,
                 cell_endindex_local,
-                kstart_dd3d,  # TODO: @abishekg7
+                config.kstart_dd3d,  # TODO: @abishekg7
                 self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
@@ -908,7 +962,7 @@ class SolveNonhydro:
             z_dwdz_dd,
             z_graddiv_vn,
             edge_endindex_local - 2,
-            kstart_dd3d,  # TODO: @abishekg7 resolve
+            config.kstart_dd3d,  # TODO: @abishekg7 resolve
             self.grid.n_lev(),
             offset_provider={
                 "E2C": self.grid.get_e2c_offset_provider(),
