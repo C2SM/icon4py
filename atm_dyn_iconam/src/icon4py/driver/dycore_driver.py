@@ -221,9 +221,9 @@ def initialize(n_time_steps, file_path: Path):
 
 
 @click.command()
-@click.argument("input_path")
+@click.argument("input_path", help="folder for input data")
 @click.option("--run_path", default="", help="folder for output")
-@click.option("--n_steps", default=5, help="number of time steps to run")
+@click.option("--n_steps", default=5, help="number of time steps to run, max 5 is supported")
 def run(
     input_path,
     run_path,
@@ -237,7 +237,7 @@ def run(
     steps:
     1. initialize model:
 
-        a) read config
+        a) load config
 
         b) initialize grid
 
@@ -246,7 +246,7 @@ def run(
         d) setup the time loop
 
     2. run time loop
-    3. collect output (not implemented)
+
     """
     start_time = datetime.now().astimezone(pytz.UTC)
     configure_logging(run_path, start_time)
