@@ -16,14 +16,16 @@ pipeline {
                         deleteDir()
                     }
                 }
-                stage('Install and Test') {
-                    steps {
-                        sh """
-                        git clone -b icon4py_working git@github.com:C2SM/spack-c2sm.git
-                        cd spack-c2sm
-                        . setup-env.sh
-                        spack install -v --test=root py-gt4py@main%gcc ^py-gt4py@main%gcc
-                        """
+                stages {
+                    stage('Install and Test') {
+                        steps {
+                            sh """
+                            git clone -b icon4py_working git@github.com:C2SM/spack-c2sm.git
+                            cd spack-c2sm
+                            . setup-env.sh
+                            spack install -v --test=root py-gt4py@main%gcc ^py-gt4py@main%gcc
+                            """
+                        }
                     }
                 }
             }
