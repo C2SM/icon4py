@@ -15,11 +15,14 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
+from icon4py.diffusion.prognostic_state import PrognosticState
 from icon4py.testutils import serialbox_utils
+from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
@@ -53,7 +56,20 @@ def read_icon_grid(path: Path, ser_type=SerializationType.SB) -> IconGrid:
         raise NotImplementedError("Only ser_type='sb' is implemented so far.")
 
 
-def read_initial_state(gridfile_path: Path):
+def read_initial_state(
+    gridfile_path: Path,
+) -> tuple[IconSerialDataProvider, DiagnosticState, PrognosticState]:
+    """
+    Read prognostic and diagnostic state from serialized data.
+
+    Args:
+        gridfile_path: path the the serialized input data
+
+    Returns: a tuple containing the data_provider, the initial diagnostic and prognostic state.
+    The data_provider is returned such that further timesteps of diagnostics and prognostics can be
+    read from within the dummy timeloop
+
+    """
     data_provider = serialbox_utils.IconSerialDataProvider(
         "icon_pydycore", str(gridfile_path), False
     )
@@ -68,6 +84,16 @@ def read_initial_state(gridfile_path: Path):
 def read_geometry_fields(
     path: Path, ser_type=SerializationType.SB
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams]:
+    """
+    Read fields containing grid properties.
+
+    Args:
+        path: path to the serialized input data
+        ser_type: (optional) defualt so SB=serialbox, type of input data to be read
+
+    Returns: a tuple containing fields describing edges, cells, vertical properties of the model
+        the data is originally obtained from the grid file (horizontal fields) or some special input files.
+    """
     if ser_type == SerializationType.SB:
         sp = serialbox_utils.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False
@@ -85,6 +111,17 @@ def read_geometry_fields(
 def read_static_fields(
     path: Path, ser_type=SerializationType.SB
 ) -> tuple[MetricState, InterpolationState]:
+    """
+    Read fields for metric and interpolation state.
+
+     Args:
+        path: path to the serialized input data
+        ser_type: (optional) defualt so SB=serialbox, type of input data to be read
+
+    Returns: a tuple containing the metric_state and interpolation state,
+    the fields are precalculated in the icon setup.
+
+    """
     if ser_type == SerializationType.SB:
         sp = serialbox_utils.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False
@@ -97,6 +134,16 @@ def read_static_fields(
 
 
 def configure_logging(run_path: str, start_time):
+    """
+    Configure logging.
+
+    Log output is sent to console and to a file.
+
+    Args:
+        run_path: path to the output folder where the logfile should be stored
+        start_time: start time of the model run
+
+    """
     run_dir = (
         Path(run_path).absolute() if run_path else Path(__file__).absolute().parent
     )
