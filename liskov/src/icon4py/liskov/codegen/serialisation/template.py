@@ -49,10 +49,17 @@ class DecomposedFields(StandardFields):
     ...
 
 
+class DecomposedFieldDeclarations(DecomposedFields):
+    ...
+
+
 class SavepointStatement(eve.Node):
     savepoint: SavepointData
     standard_fields: StandardFields = eve.datamodels.field(init=False)
     decomposed_fields: DecomposedFields = eve.datamodels.field(init=False)
+    decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(
+        init=False
+    )
 
     def __post_init__(self):
         self.standard_fields = StandardFields(
@@ -63,15 +70,21 @@ class SavepointStatement(eve.Node):
         self.decomposed_fields = DecomposedFields(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if f.decomposed]
         )
+        self.decomposed_field_declarations = DecomposedFieldDeclarations(
+            fields=[Field(**asdict(f)) for f in self.savepoint.fields if f.decomposed]
+        )
 
 
 class SavepointStatementGenerator(TemplatedGenerator):
     SavepointStatement = as_jinja(
         """
+        {{ decomposed_field_declarations }}
+
         !$ser savepoint {{ _this_node.savepoint.subroutine }}_{{ _this_node.savepoint.intent }} {% if _this_node.savepoint.metadata %} {%- for m in _this_node.savepoint.metadata -%} {{ m.key }}={{ m.value }} {%- endfor -%} {% endif %}
 
-        {{ standard_fields }}
         {{ decomposed_fields }}
+
+        {{ standard_fields }}
         """
     )
 
@@ -83,10 +96,17 @@ class SavepointStatementGenerator(TemplatedGenerator):
     """
     )
 
+    DecomposedFieldDeclarations = as_jinja(
+        """
+        {% for f in _this_node.fields %}
+        !$ser verbatim {{ f.typespec }}, dimension({{ ",".join(f.dimension) }}), allocatable :: {{ f.variable }}_{{ f.ptr_var}}
+        {% endfor %}
+        """
+    )
+
     DecomposedFields = as_jinja(
         """
     {% for f in _this_node.fields %}
-    !$ser verbatim {{ f.typespec }}, dimension({{ ",".join(f.dimension) }}), allocatable :: {{ f.variable }}_{{ f.ptr_var}}
     !$ser verbatim allocate({{ f.variable }}_{{ f.ptr_var}}({{ f.alloc_dims }}))
     !$ser data {{ f.variable }}_{{ f.ptr_var}}={{ f.association }}
     !$ser verbatim deallocate({{ f.variable }}_{{ f.ptr_var}})
