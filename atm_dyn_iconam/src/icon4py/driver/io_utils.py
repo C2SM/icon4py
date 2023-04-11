@@ -82,7 +82,9 @@ def read_geometry_fields(
         raise NotImplementedError("Only ser_type='sb' is implemented so far.")
 
 
-def read_static_fields(path: Path, ser_type=SerializationType.SB)-> tuple[MetricState, InterpolationState]:
+def read_static_fields(
+    path: Path, ser_type=SerializationType.SB
+) -> tuple[MetricState, InterpolationState]:
     if ser_type == SerializationType.SB:
         sp = serialbox_utils.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False

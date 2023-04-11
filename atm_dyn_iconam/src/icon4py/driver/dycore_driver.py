@@ -223,7 +223,9 @@ def initialize(n_time_steps, file_path: Path):
 @click.command()
 @click.argument("input_path")
 @click.option("--run_path", default="", help="folder for output")
-@click.option("--n_steps", default=5, help="number of time steps to run, max 5 is supported")
+@click.option(
+    "--n_steps", default=5, help="number of time steps to run, max 5 is supported"
+)
 def run(
     input_path,
     run_path,

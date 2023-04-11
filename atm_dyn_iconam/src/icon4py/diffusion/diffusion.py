@@ -94,8 +94,8 @@ class DiffusionConfig:
     Encapsulates namelist parameters and derived parameters.
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
-    TODO: [ml] to be read from config
-    TODO: [ml] handle dependencies on other namelists (see below...)
+    TODO: @magdalena to be read from config
+    TODO: @magdalena handle dependencies on other namelists (see below...)
     """
 
     def __init__(
@@ -472,7 +472,7 @@ class Diffusion:
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
-        # TODO this is KHalfDim
+        # TODO @magdalena this is KHalfDim
         self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
@@ -814,13 +814,13 @@ class Diffusion:
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
-        # Oa TODO: logging
-        # 0b TODO: call timer start
+        # Oa logging
+        # 0b call timer start
         #
         # 0c. dtime dependent stuff: enh_smag_factor,
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
-        # TODO: is this needed?, if not remove
+        # TODO: @magdalena is this needed?, if not remove
         set_zero_v_k(self.u_vert, offset_provider={})
         set_zero_v_k(self.v_vert, offset_provider={})
         self.log.debug("rbf interpolation: start")
@@ -982,7 +982,7 @@ class Diffusion:
         # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
         # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
         #
-        # # TODO check: kh_smag_e is an out field, should  not be calculated in init?
+        # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
         #
         self.log.debug("running fused stencil 11_12: start")
         fused_mo_nh_diffusion_stencil_11_12(

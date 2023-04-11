@@ -243,7 +243,7 @@ def init_nabla2_factor_in_upper_damping_zone(
     Calculate diff_multfac_n2w.
 
     numpy version, since gt4py does not allow non-constant indexing into fields
-    TODO: [ml] fix this once IndexedFields are implemented
+    TODO: @magdalena fix this once IndexedFields are implemented
 
     Args
         k_size: number of vertical levels

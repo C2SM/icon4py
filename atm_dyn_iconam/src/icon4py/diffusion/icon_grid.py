@@ -111,7 +111,7 @@ class IconGrid:
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     def limited_area(self):
-        # TODO defined in mo_grid_nml.f90
+        # defined in mo_grid_nml.f90
         return self.config.limited_area
 
     def n_lev(self):

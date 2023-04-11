@@ -35,7 +35,6 @@ class IconConfig:
     dycore_config: AtmoNonHydroConfig
 
 
-
 # TODO @magdalena move to io_utils?
 def read_config(experiment: Optional[str], n_time_steps: int) -> IconConfig:
     def _default_run_config(n_steps: int):
