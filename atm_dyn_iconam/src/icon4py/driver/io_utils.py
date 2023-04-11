@@ -17,6 +17,8 @@ from pathlib import Path
 
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
+from icon4py.diffusion.interpolation_state import InterpolationState
+from icon4py.diffusion.metric_state import MetricState
 from icon4py.testutils import serialbox_utils
 
 
@@ -55,11 +57,11 @@ def read_initial_state(gridfile_path: Path):
     data_provider = serialbox_utils.IconSerialDataProvider(
         "icon_pydycore", str(gridfile_path), False
     )
-    initial_save_point = data_provider.from_savepoint_diffusion_init(
+    init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
     )
-    prognostic_state = initial_save_point.construct_prognostics()
-    diagnostic_state = initial_save_point.construct_diagnostics()
+    prognostic_state = init_savepoint.construct_prognostics()
+    diagnostic_state = init_savepoint.construct_diagnostics()
     return data_provider, diagnostic_state, prognostic_state
 
 
@@ -80,7 +82,7 @@ def read_geometry_fields(
         raise NotImplementedError("Only ser_type='sb' is implemented so far.")
 
 
-def read_static_fields(path: Path, ser_type=SerializationType.SB):
+def read_static_fields(path: Path, ser_type=SerializationType.SB)-> tuple[MetricState, InterpolationState]:
     if ser_type == SerializationType.SB:
         sp = serialbox_utils.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False

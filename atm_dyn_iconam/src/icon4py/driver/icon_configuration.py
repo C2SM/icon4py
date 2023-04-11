@@ -19,7 +19,7 @@ from icon4py.diffusion.diffusion import DiffusionConfig
 
 @dataclass
 class IconRunConfig:
-    n_time_steps: int
+    n_time_steps: int = 5
     dtime: float = 600.0
 
 

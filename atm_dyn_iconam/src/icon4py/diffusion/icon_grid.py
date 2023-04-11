@@ -22,7 +22,7 @@ from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.horizontal import HorizontalMeshSize
 
 
-# TODO keep naming grid vs mesh consistent
+# TODO @magdalena keep naming grid vs mesh consistent
 class VerticalMeshConfig:
     def __init__(self, num_lev: int):
         self._num_lev = num_lev
