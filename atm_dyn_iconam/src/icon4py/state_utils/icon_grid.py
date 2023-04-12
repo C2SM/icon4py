@@ -140,6 +140,9 @@ class IconGrid:
     def num_edges(self):
         return self.config.num_edges
 
+    def lvert_nest(self):
+        return True if self.config else False
+
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
     ) -> Tuple[int, int]:
