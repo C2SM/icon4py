@@ -1005,10 +1005,10 @@ class SolveNonhydro:
             prognostic_state.w,
             diagnostic_state.w_concorr_c,
             self.metric_state.ddqz_z_half,
-            prognostic_state_now.rho,
-            prognostic_state_var.rho,
-            prognostic_state_now.theta_v,
-            prognostic_state_var.theta_v,
+            prognostic_state[nnow].rho,
+            prognostic_state[nvar].rho,
+            prognostic_state[nnow].theta_v,
+            prognostic_state[nvar].theta_v,
             self.metric_state.wgtfac_c,
             self.metric_state.theta_ref_mc,
             self.metric_state.vwind_expl_wgt,
@@ -1045,13 +1045,13 @@ class SolveNonhydro:
 
         if config.itime_scheme >= 4:
             nhsolve_prog.mo_solve_nonhydro_stencil_23(
-                prognostic_state_now.vn,
+                prognostic_state[nnow].vn,
                 diagnostic_state.ddt_vn_adv_ntl1,
                 diagnostic_state.ddt_vn_adv_ntl2,
                 diagnostic_state.ddt_vn_phy,
                 self.z_theta_v_e,
                 self.z_gradh_exner,
-                prognostic_state_new.vn,
+                prognostic_state[nnew].vn,
                 dtime,
                 wgt_nnow_vel,
                 wgt_nnew_vel,
@@ -1082,7 +1082,7 @@ class SolveNonhydro:
             ):
                 nhsolve_prog.mo_solve_nonhydro_stencil_26(
                     z_graddiv_vn,
-                    prognostic_state_new.vn,
+                    prognostic_state[nnew].vn,
                     scal_divdamp_o2,
                     edge_startindex_nudging + 1,
                     edge_endindex_local,
@@ -1098,7 +1098,7 @@ class SolveNonhydro:
                         bdy_divdamp,
                         self.interpolation_state.nudgecoeff_e,
                         z_graddiv2_vn,
-                        prognostic_state_new.vn,
+                        prognostic_state[nnew].vn,
                         edge_startindex_nudging + 1,
                         edge_endindex_interior,
                         self.grid.n_lev(),
@@ -1108,7 +1108,7 @@ class SolveNonhydro:
                     nhsolve_prog.mo_solve_nonhydro_4th_order_divdamp(
                         scal_divdamp,
                         z_graddiv2_vn,
-                        prognostic_state_new.vn,
+                        prognostic_state[nnew].vn,
                         edge_startindex_nudging + 1,
                         edge_endindex_interior,
                         self.grid.n_lev(),
@@ -1118,7 +1118,7 @@ class SolveNonhydro:
         if config.is_iau_active:
             nhsolve_prog.mo_solve_nonhydro_stencil_28(
                 diagnostic_state.vn_incr,
-                prognostic_state_new.vn,
+                prognostic_state[nnew].vn,
                 iau_wgt_dyn,
                 edge_startindex_nudging + 1,
                 edge_endindex_interior,
