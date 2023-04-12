@@ -13,8 +13,8 @@
 
 import pytest
 
-from icon4py.pyutils.exceptions import InvalidConnectivityException
-from icon4py.pyutils.metadata import provide_offset
+from icon4py.icon4pygen.exceptions import InvalidConnectivityException
+from icon4py.icon4pygen.metadata import provide_offset
 
 
 @pytest.mark.parametrize(
