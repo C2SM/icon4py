@@ -10,12 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import Fields
 from gt4py.next.iterator.type_inference import Tuple
 
 import icon4py.common.constants as constants
 import icon4py.nh_solve.solve_nonhydro_program as nhsolve_prog
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_21 import mo_solve_nonhydro_stencil_21
 from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
@@ -61,7 +62,8 @@ class NonHydrostaticConfig:
         iau_wgt_dyn: float = 0.0,
         divdamp_type: int = 3,
         lhdiff_rcf: bool = True,
-        l_vert_nested: bool = False
+        l_vert_nested: bool = False,
+        l_open_ubc: bool = True,
     ):
 
         # parameters from namelist diffusion_nml
@@ -69,7 +71,7 @@ class NonHydrostaticConfig:
         self.iadv_rhotheta: int = iadv_rhotheta
 
         self._validate()
-        self.l_open_ubc: bool
+        self.l_open_ubc: bool = l_open_ubc
         self.igradp_method: int = igradp_method
         self.ndyn_substeps_var = ndyn_substeps_var
         self.idiv_method: int = idiv_method
@@ -148,6 +150,7 @@ class SolveNonhydro:
         self._initialized = True
         self.rd_o_cvd = constants.RD / constants.CPD
         self.rd_o_p0ref = constants.RD / constants.P0REF
+        self.grav_o_cpd = constants.GRAVITATIONAL_ACCELERATION / constants.CPD
 
         if self.grid.lvert_nest():
             self.l_vert_nested = True
@@ -205,6 +208,7 @@ class SolveNonhydro:
         self.z_theta_v_v = _allocate(VertexDim, KDim, mesh=self.grid)
         self.p_grad = _allocate(CellDim, KDim, mesh=self.grid)
         self.p_ccpr = _allocate(CellDim, KDim, mesh=self.grid)
+        self.ikoffset = _allocate(EdgeDim, E2CDim, KDim, mesh=self.grid)
     # def initial_step(self):
 
     def time_step(
@@ -270,7 +274,7 @@ class SolveNonhydro:
 
         self.run_corrector_step()
 
-        if self.grid.limited_area() or jg > 1:
+        if self.grid.limited_area():
             nhsolve_prog.stencils_66_67(
                 self.metric_state.bdy_halo_c,  # TODO: @abishekg7 check if this should be mask_prog_halo_c_dsl_low_refin
                 prognostic_state[nnew].rho,
@@ -314,6 +318,14 @@ class SolveNonhydro:
         dual_normal_cell_1: Field[[ECDim], float],
         primal_normal_cell_2: Field[[ECDim], float],
         dual_normal_cell_2: Field[[ECDim], float],
+        inv_primal_edge_length: Field[[EdgeDim], float],
+        tangent_orientation: Field[[EdgeDim], float],
+        cfl_w_limit: float,
+        scalfac_exdiff: float,
+        cell_areas: Field[[CellDim], float],
+        owner_mask: Field[[CellDim], bool],
+        f_e: Field[[EdgeDim], float],
+        area_edge: Field[[EdgeDim], float],
         dtime: float,
         idyn_timestep: float,
         l_recompute: bool,
@@ -326,7 +338,22 @@ class SolveNonhydro:
                 lvn_only = True  # Recompute only vn tendency
             else:
                 lvn_only = False
-            velocity_advection.run_predictor_step()
+            velocity_advection.VelocityAdvection.run_predictor_step(
+                lvn_only,
+                DiagnosticState,
+                PrognosticState,
+                ZFields,
+                inv_dual_edge_length,
+                inv_primal_edge_length,
+                dtime,
+                tangent_orientation,
+                cfl_w_limit,
+                scalfac_exdiff,
+                cell_areas,
+                owner_mask,
+                f_e,
+                area_edge
+            )
         nvar = nnow
 
         p_dthalf = 0.5 * dtime
@@ -348,7 +375,7 @@ class SolveNonhydro:
 
 
         # initialize nest boundary points of z_rth_pr with zero
-        if jg > 1 or self.icon_grid.limited_area():
+        if self.grid.limited_area():
             nhsolve_prog.mo_solve_nonhydro_stencil_01(
                 self.z_rth_pr_1,
                 self.z_rth_pr_2,
@@ -466,7 +493,7 @@ class SolveNonhydro:
         )
 
         # Compute rho and theta at edges for horizontal flux divergence term
-        if self.iadv_rhotheta == 1:
+        if config.iadv_rhotheta == 1:
             nhsolve_prog.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 prognostic_state[nnow].rho,
                 self.interpolation_state.c_intp,
@@ -486,7 +513,7 @@ class SolveNonhydro:
                 }
             )
             # mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl()
-        elif self.iadv_rhotheta == 2:
+        elif config.iadv_rhotheta == 2:
             # Compute Green-Gauss gradients for rho and theta
             nhsolve_prog.mo_math_gradients_grad_green_gauss_cell_dsl(
                 self.p_grad[:,1],
@@ -504,7 +531,7 @@ class SolveNonhydro:
                     "C2E2CODim": C2E2CODim,
                 }
             )
-        elif self.iadv_rhotheta == 3:
+        elif config.iadv_rhotheta == 3:
             # First call: compute backward trajectory with wind at time level nnow
             lcompute = True
             lcleanup = False
@@ -515,7 +542,7 @@ class SolveNonhydro:
             # upwind_hflux_miura3()
 
         # TODO: @abishekg7 Please see test.f90 for this section. Above call to 'wrap_run_mo_solve_nonhydro_stencil_14'
-        if self.iadv_rhotheta <= 2:
+        if config.iadv_rhotheta <= 2:
             if config.idiv_method == 1:
                 pass
             else:
@@ -529,7 +556,7 @@ class SolveNonhydro:
             offset_provider={}
         )
         # initialize also nest boundary points with zero
-        if jg > 1 or self.grid.limited_area():
+        if self.grid.limited_area():
             nhsolve_prog.mo_solve_nonhydro_stencil_15(
                 self.z_rho_e,
                 self.z_theta_v_e,
@@ -538,7 +565,7 @@ class SolveNonhydro:
                 offset_provider={}
             )
 
-        if self.iadv_rhotheta == 2:
+        if config.iadv_rhotheta == 2:
             # Operations from upwind_hflux_miura are inlined in order to process both fields in one step
             pass
         else:
@@ -608,7 +635,25 @@ class SolveNonhydro:
 
         # compute hydrostatically approximated correction term that replaces downward extrapolation
         if config.igradp_method == 3:
-            mo_solve_nonhydro_stencil_21()
+            mo_solve_nonhydro_stencil_21(
+                prognostic_state[nnow].theta_v,
+                self.ikoffset,
+                self.metric_state.zdiff_gradp,
+                diagnostic_state.theta_v_ic,
+                self.metric_state.inv_ddqz_z_full,
+                inv_dual_edge_length,
+                self.grav_o_cpd,
+                self.z_hydro_corr,
+                edge_startindex_nudging + 1,
+                edge_endindex_interior,
+                self.grid.n_lev(),
+                self.grid.n_lev(),
+                offset_provider={
+                    "E2C": self.grid.get_e2c_connectivity(),
+                    "E2CDim": E2CDim,
+                    "Koff": KDim
+                }
+            )
         elif config.igradp_method == 5:
             raise NotImplementedError("igradp_method 4 and 5 not implemented")
 
@@ -650,7 +695,7 @@ class SolveNonhydro:
                 offset_provider={}
             )
 
-        if self.grid.limited_area() or jg > 1:
+        if self.grid.limited_area():
             nhsolve_prog.mo_solve_nonhydro_stencil_29(
                 diagnostic_state.grf_tend_vn,
                 prognostic_state[nnow].vn,
@@ -675,10 +720,10 @@ class SolveNonhydro:
             edge_endindex_interior - 2,
             self.grid.n_lev(),
             offset_provider={
-                    "E2C2EO": self.grid.get_e2c2eo_connectivity(),
-                    "E2C2EODim": E2C2EODim,
-                    "E2C2E": self.grid.get_e2c2e_connectivity(),
-                    "E2C2EDim": E2C2EDim
+                "E2C2EO": self.grid.get_e2c2eo_connectivity(),
+                "E2C2EODim": E2C2EODim,
+                "E2C2E": self.grid.get_e2c2e_connectivity(),
+                "E2C2EDim": E2C2EDim
             }
 
         )
@@ -751,13 +796,15 @@ class SolveNonhydro:
         # _mo_solve_nonhydro_stencil_40()
 
         if config.idiv_method == 2:
-            if self.grid.limited_area():
-                init_zero_contiguous_dp()
+            pass
+            # if self.grid.limited_area():
+            #     init_zero_contiguous_dp()
 
             ##stencil not translated
 
         if config.idiv_method == 2:
-            div_avg()
+            pass
+            #div_avg()
 
         if config.idiv_method == 1:
             nhsolve_prog.mo_solve_nonhydro_stencil_41(
