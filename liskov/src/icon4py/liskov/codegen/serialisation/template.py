@@ -17,18 +17,7 @@ import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
-from icon4py.liskov.codegen.serialisation.interface import SavepointData
-
-
-class InitStatement(eve.Node):
-    directory: str
-    prefix: str
-
-
-class InitStatementGenerator(TemplatedGenerator):
-    InitStatement = as_jinja(
-        '!$ser init directory="{{directory}}" prefix="{{ prefix }}"'
-    )
+from icon4py.liskov.codegen.serialisation.interface import InitData, SavepointData
 
 
 class Field(eve.Node):
@@ -55,6 +44,7 @@ class DecomposedFieldDeclarations(DecomposedFields):
 
 class SavepointStatement(eve.Node):
     savepoint: SavepointData
+    init: Optional[InitData] = eve.datamodels.field(default=None)
     standard_fields: StandardFields = eve.datamodels.field(init=False)
     decomposed_fields: DecomposedFields = eve.datamodels.field(init=False)
     decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(
@@ -79,6 +69,10 @@ class SavepointStatementGenerator(TemplatedGenerator):
     SavepointStatement = as_jinja(
         """
         {{ decomposed_field_declarations }}
+
+        {% if _this_node.init %}
+        !$ser init directory="{{_this_node.init.directory}}" prefix="{{ _this_node.init.prefix }}"
+        {% endif %}
 
         !$ser savepoint {{ _this_node.savepoint.subroutine }}_{{ _this_node.savepoint.intent }} {% if _this_node.savepoint.metadata %} {%- for m in _this_node.savepoint.metadata -%} {{ m.key }}={{ m.value }} {%- endfor -%} {% endif %}
 
