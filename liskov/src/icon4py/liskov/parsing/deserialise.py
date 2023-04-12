@@ -253,7 +253,7 @@ class StartStencilDataFactory(DataFactoryBase):
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["StartStencil"][i]
             acc_present = string_to_bool(
-                pop_item_from_dict(named_args, "accpresent", "false")
+                pop_item_from_dict(named_args, "accpresent", "true")
             )
             mergecopy = string_to_bool(
                 pop_item_from_dict(named_args, "mergecopy", "false")

@@ -17,7 +17,7 @@ from typing import Any, Optional, Sequence, Type
 import gt4py.eve as eve
 from gt4py.eve.codegen import TemplatedGenerator
 
-from icon4py.bindings.utils import format_fortran_code
+from icon4py.icon4pygen.bindings.utils import format_fortran_code
 from icon4py.liskov.codegen.types import CodeGenInput, GeneratedCode
 from icon4py.liskov.common import Step
 
