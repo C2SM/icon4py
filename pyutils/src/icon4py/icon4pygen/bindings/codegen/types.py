@@ -17,7 +17,7 @@ from typing import Union
 
 from gt4py.next.type_system import type_specifications as ts
 
-from icon4py.bindings.locations import (
+from icon4py.icon4pygen.bindings.locations import (
     BasicLocation,
     ChainedLocation,
     CompoundLocation,

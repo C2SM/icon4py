@@ -13,12 +13,12 @@
 
 from dataclasses import dataclass
 
-from icon4py.bindings.codegen.type_conversion import (
+from icon4py.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4py.bindings.codegen.types import FieldEntity
-from icon4py.bindings.exceptions import BindingsRenderingException
+from icon4py.icon4pygen.bindings.codegen.types import FieldEntity
+from icon4py.icon4pygen.bindings.exceptions import BindingsRenderingException
 
 
 @dataclass(frozen=True)
