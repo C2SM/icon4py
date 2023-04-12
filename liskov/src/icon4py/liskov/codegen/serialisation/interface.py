@@ -20,6 +20,7 @@ from icon4py.liskov.codegen.types import CodeGenInput
 @dataclass
 class InitData(CodeGenInput):
     directory: str
+    prefix: str
 
 
 @dataclass

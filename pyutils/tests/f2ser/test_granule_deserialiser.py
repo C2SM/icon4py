@@ -13,7 +13,7 @@
 import pytest
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
-from icon4py.f2ser.parse import GranuleParser
+from icon4py.f2ser.parse import CodegenContext, GranuleParser
 from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     SavepointData,
@@ -34,7 +34,7 @@ def mock_parsed_granule():
                     "intent": ["in"],
                     "dimension": [":", ":", ":"],
                 },
-                "codegen_line": 432,
+                "codegen_ctx": CodegenContext(432, 450, 600),
             }
         },
         "diffusion_run": {
@@ -46,7 +46,7 @@ def mock_parsed_granule():
                     "intent": ["in"],
                     "dimension": [":", ":", ":"],
                 },
-                "codegen_line": 800,
+                "codegen_ctx": CodegenContext(800, 850, 1000),
             },
             "in": {
                 "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
@@ -57,7 +57,7 @@ def mock_parsed_granule():
                     "intent": ["in"],
                     "dimension": [":", ":", ":"],
                 },
-                "codegen_line": 600,
+                "codegen_ctx": CodegenContext(600, 690, 750),
             },
             "inout": {
                 "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
@@ -74,7 +74,9 @@ def mock_parsed_granule():
 
 
 def test_deserialiser_mock(mock_parsed_granule):
-    deserialiser = ParsedGranuleDeserialiser(mock_parsed_granule, directory=".")
+    deserialiser = ParsedGranuleDeserialiser(
+        mock_parsed_granule, directory=".", prefix="f2ser"
+    )
     interface = deserialiser.deserialise()
     assert isinstance(interface, SerialisationInterface)
     assert len(interface.Savepoint) == 3
@@ -91,6 +93,6 @@ def test_deserialiser_mock(mock_parsed_granule):
 def test_deserialiser_diffusion_granule(diffusion_granule, diffusion_granule_deps):
     parser = GranuleParser(diffusion_granule, diffusion_granule_deps)
     parsed = parser.parse()
-    deserialiser = ParsedGranuleDeserialiser(parsed, directory=".")
+    deserialiser = ParsedGranuleDeserialiser(parsed, directory=".", prefix="f2ser")
     interface = deserialiser.deserialise()
     assert len(interface.Savepoint) == 3
