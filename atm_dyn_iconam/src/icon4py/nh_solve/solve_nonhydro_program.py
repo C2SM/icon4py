@@ -16,7 +16,7 @@ from gt4py.next.ffront.fbuiltins import maximum
 from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl, _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
@@ -191,7 +191,7 @@ from icon4py.common.dimension import (
     ECDim,
     EdgeDim,
     KDim,
-    VertexDim,
+    VertexDim, V2CDim,
 )
 from icon4py.state_utils.utils import _set_zero_c_k
 
@@ -209,7 +209,7 @@ def mo_solve_nonhydro_stencil_01(
         z_rth_pr_2, domain={CellDim: (0, cell_endindex_local), KDim: (0, nlev)}
     )
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_math_gradients_grad_green_gauss_cell_dsl(
     p_grad_1_u: Field[[CellDim, KDim], float],
     p_grad_1_v: Field[[CellDim, KDim], float],
@@ -418,6 +418,15 @@ def mo_solve_nonhydro_stencil_13(
         },
     )
 
+@program(backend=gtfn_cpu.run_gtfn)
+def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+    p_cell_in: Field[[CellDim, KDim], float],
+    c_intp: Field[[VertexDim, V2CDim], float],
+    p_vert_out: Field[[VertexDim, KDim], float],
+):
+    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+        p_cell_in, c_intp, out=p_vert_out
+    )
 
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_14(

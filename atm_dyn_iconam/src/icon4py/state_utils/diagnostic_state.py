@@ -58,8 +58,9 @@ class DiagnosticState:
     grf_tend_vn: Field[[EdgeDim, KDim], float]
 
     ddt_vn_phy: Field[[EdgeDim, KDim], float]
-    ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float]
-    ddt_vn_adv_ntl2: Field[[EdgeDim, KDim], float]
+    ddt_vn_adv: Field[[EdgeDim, KDim], float]
+    ntl1: float
+    ntl2: float
 
     # Analysis increments
     rho_incr: Field[[EdgeDim, KDim], float]  # moist density increment [kg/m^3]
@@ -77,3 +78,11 @@ class DiagnosticState:
         return np_as_located_field(EdgeDim, KDim)(
             np.asarray(self.ddt_vn_apc_pc_before)[self.ntnd :]
         )
+
+    @property
+    def ddt_vn_adv_ntl1(self) -> Field[[EdgeDim, KDim], float]:
+        return np_as_located_field(EdgeDim, KDim)(np.asarray(self.ddt_vn_adv)[:, self.ntl1])
+
+    @property
+    def ddt_vn_adv_ntl2(self) -> Field[[EdgeDim, KDim], float]:
+        return np_as_located_field(EdgeDim, KDim)(np.asarray(self.ddt_vn_adv)[:, self.ntl2])
