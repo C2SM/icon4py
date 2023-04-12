@@ -14,7 +14,7 @@
 import pytest
 
 from icon4py.f2ser.exceptions import MissingDerivedTypeError, ParsingError
-from icon4py.f2ser.parse import GranuleParser
+from icon4py.f2ser.parse import CodegenContext, GranuleParser
 
 
 def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
@@ -25,16 +25,22 @@ def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
 
     assert list(parsed["diffusion_init"]) == ["in"]
     assert len(parsed["diffusion_init"]["in"]) == 107
-    assert parsed["diffusion_init"]["in"]["codegen_line"] == 280
+    assert parsed["diffusion_init"]["in"]["codegen_ctx"] == CodegenContext(
+        first_declaration_ln=190, last_declaration_ln=280, end_subroutine_ln=401
+    )
 
     assert list(parsed["diffusion_run"]) == ["in", "inout", "out"]
     assert len(parsed["diffusion_run"]["in"]) == 5
-    assert parsed["diffusion_run"]["in"]["codegen_line"] == 492
+    assert parsed["diffusion_run"]["in"]["codegen_ctx"] == CodegenContext(
+        first_declaration_ln=417, last_declaration_ln=492, end_subroutine_ln=1965
+    )
 
-    assert len(parsed["diffusion_run"]["inout"]) == 7
+    assert len(parsed["diffusion_run"]["inout"]) == 8
 
     assert len(parsed["diffusion_run"]["out"]) == 5
-    assert parsed["diffusion_run"]["out"]["codegen_line"] == 1965
+    assert parsed["diffusion_run"]["out"]["codegen_ctx"] == CodegenContext(
+        first_declaration_ln=417, last_declaration_ln=492, end_subroutine_ln=1965
+    )
 
     assert isinstance(parsed, dict)
 

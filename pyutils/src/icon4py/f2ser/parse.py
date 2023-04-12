@@ -22,10 +22,6 @@ from numpy.f2py.crackfortran import crackfortran
 from icon4py.f2ser.exceptions import MissingDerivedTypeError, ParsingError
 
 
-CodeGenLines = list[int]
-ParsedGranule = dict[str, dict[str, dict[str, any] | CodeGenLines]]
-
-
 def crack(path: Path) -> dict:
     return crackfortran(path)[0]
 
@@ -37,8 +33,12 @@ class SubroutineType(Enum):
 
 @dataclass
 class CodegenContext:
+    first_declaration_ln: int
     last_declaration_ln: int
     end_subroutine_ln: int
+
+
+ParsedGranule = dict[str, dict[str, dict[str, any] | CodegenContext]]
 
 
 class GranuleParser:
@@ -244,17 +244,10 @@ class GranuleParser:
         """
         with_lines = deepcopy(parsed_types)
         for subroutine in with_lines:
-            ctx = self.get_line_numbers(subroutine)
             for intent in with_lines[subroutine]:
-                if intent == "in":
-                    ln = ctx.last_declaration_ln
-                elif intent == "inout":
-                    continue
-                elif intent == "out":
-                    ln = ctx.end_subroutine_ln
-                else:
-                    raise ValueError(f"Unrecognized intent: {intent}")
-                with_lines[subroutine][intent]["codegen_line"] = ln
+                with_lines[subroutine][intent]["codegen_ctx"] = self.get_line_numbers(
+                    subroutine
+                )
         return with_lines
 
     def get_line_numbers(self, subroutine_name: str) -> CodegenContext:
@@ -291,9 +284,12 @@ class GranuleParser:
         if not declaration_pattern_lines:
             raise ParsingError(f"No declarations found in {self.granule}")
         last_declaration_ln = declaration_pattern_lines[-1] + start_subroutine_ln + 1
+        first_declaration_ln = declaration_pattern_lines[0] + start_subroutine_ln
 
         pre_end_subroutine_ln = (
             end_subroutine_ln - 1
         )  # we want to generate the code before the end of the subroutine
 
-        return CodegenContext(last_declaration_ln, pre_end_subroutine_ln)
+        return CodegenContext(
+            first_declaration_ln, last_declaration_ln, pre_end_subroutine_ln
+        )
