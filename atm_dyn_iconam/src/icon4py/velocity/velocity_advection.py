@@ -109,14 +109,14 @@ class VelocityAdvection:
         (
             edge_startindex_nudging,
             edge_endindex_nudging,
-            edge_startindex_local,
-            edge_endindex_local,
+            edge_startindex_interior,
+            edge_endindex_interior,
             cell_startindex_nudging,
             cell_endindex_nudging,
-            cell_startindex_local,
-            cell_endindex_local,
-            vert_startindex_local,
-            vert_endindex_local,
+            cell_startindex_interior,
+            cell_endindex_interior,
+            vert_startindex_interior,
+            vert_endindex_interior,
         ) = self.init_dimensions_boundaries()
 
         self.cfl_w_limit = self.cfl_w_limit / dtime
@@ -129,7 +129,7 @@ class VelocityAdvection:
                 prognostic_state.w,
                 self.interpolation_state.c_intp,
                 self.z_w_v,
-                vert_startindex_local - 1,
+                vert_startindex_interior - 1,
                 self.grid.n_lev(),
                 offset_provider={
                     "V2C": self.grid.get_v2c_connectivity(),
@@ -141,7 +141,7 @@ class VelocityAdvection:
             prognostic_state.vn,
             self.interpolation_state.geofac_rot,
             self.zeta,
-            vert_startindex_local - 1,
+            vert_startindex_interior - 1,
             self.grid.n_lev(),
             offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
         )
@@ -153,7 +153,7 @@ class VelocityAdvection:
             self.metric_state.wgtfac_e,
             diagnostic_state.vn_ie,
             z_fields.z_kin_hor_e,
-            edge_startindex_local - 2,
+            edge_startindex_interior - 2,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
             offset_provider={
@@ -168,7 +168,7 @@ class VelocityAdvection:
                 diagnostic_state.vt,
                 self.metric_state.wgtfac_e,
                 z_fields.z_vt_ie,
-                edge_startindex_local - 2,
+                edge_startindex_interior - 2,
                 self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
@@ -182,7 +182,7 @@ class VelocityAdvection:
             self.metric_state.ddxt_z_full,
             z_fields.z_w_concorr_me,
             self.metric_state.wgtfacq_e,
-            edge_startindex_local - 2,
+            edge_startindex_interior - 2,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
             offset_provider={
@@ -193,7 +193,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            velocity_prog.advector_tendencies_7(
+            velocity_prog.corrector_tendencies_7(
                 diagnostic_state.vn_ie,
                 inv_dual_edge_length,
                 prognostic_state.w,
@@ -202,7 +202,7 @@ class VelocityAdvection:
                 tangent_orientation,
                 self.z_w_v,
                 self.z_v_grad_w,
-                edge_startindex_local - 1,
+                edge_startindex_interior - 1,
                 self.grid.n_lev(),
                 offset_provider={
                     "E2C": self.grid.get_e2c_connectivity(),
@@ -210,11 +210,11 @@ class VelocityAdvection:
                 },
             )
 
-        velocity_prog.advector_tendencies_8(
+        velocity_prog.corrector_tendencies_8(
             z_fields.z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
             self.z_ekinh,
-            cell_startindex_local - 1,
+            cell_startindex_interior - 1,
             self.grid.n_lev(),
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
@@ -228,7 +228,7 @@ class VelocityAdvection:
             self.z_w_concorr_mc,
             self.metric_state.wgtfac_c,
             diagnostic_state.w_concorr_c,
-            cell_startindex_local - 1,
+            cell_startindex_interior - 1,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
             offset_provider={
@@ -238,7 +238,7 @@ class VelocityAdvection:
             },
         )
 
-        velocity_prog.advector_tendencies_11_to_20(
+        velocity_prog.corrector_tendencies_11_to_20(
             diagnostic_state.vt,
             diagnostic_state.vn_ie,
             z_fields.z_kin_hor_e,
@@ -275,10 +275,10 @@ class VelocityAdvection:
             area_edge,
             self.interpolation_state.geofac_grdiv,
             cell_endindex_nudging,
-            cell_startindex_local - 1,
-            cell_endindex_local,
+            cell_startindex_interior - 1,
+            cell_endindex_interior,
             edge_startindex_nudging + 1,
-            edge_endindex_local,
+            edge_endindex_interior,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
             self.grid.n_lev() + 1,
@@ -298,7 +298,7 @@ class VelocityAdvection:
             },
         )
 
-    def run_advector_step(
+    def run_corrector_step(
         self,
         vn_only: bool,
         diagnostic_state: DiagnosticState,
@@ -319,14 +319,14 @@ class VelocityAdvection:
         (
             edge_startindex_nudging,
             edge_endindex_nudging,
-            edge_startindex_local,
-            edge_endindex_local,
+            edge_startindex_interior,
+            edge_endindex_interior,
             cell_startindex_nudging,
             cell_endindex_nudging,
-            cell_startindex_local,
-            cell_endindex_local,
-            vert_startindex_local,
-            vert_endindex_local,
+            cell_startindex_interior,
+            cell_endindex_interior,
+            vert_startindex_interior,
+            vert_endindex_interior,
         ) = self.init_dimensions_boundaries()
 
         self.cfl_w_limit = self.cfl_w_limit / dtime
@@ -339,7 +339,7 @@ class VelocityAdvection:
                 prognostic_state.w,
                 self.interpolation_state.c_intp,
                 self.z_w_v,
-                vert_startindex_local - 1,
+                vert_startindex_interior - 1,
                 self.grid.n_lev(),
                 offset_provider={
                     "V2C": self.grid.get_v2c_connectivity(),
@@ -351,13 +351,13 @@ class VelocityAdvection:
             prognostic_state.vn,
             self.interpolation_state.geofac_rot,
             self.zeta,
-            vert_startindex_local - 1,
+            vert_startindex_interior - 1,
             self.grid.n_lev(),
             offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
         )
 
         if not vn_only:
-            velocity_prog.advector_tendencies_7(
+            velocity_prog.corrector_tendencies_7(
                 diagnostic_state.vn_ie,
                 inv_dual_edge_length,
                 prognostic_state.w,
@@ -366,7 +366,7 @@ class VelocityAdvection:
                 tangent_orientation,
                 self.z_w_v,
                 self.z_v_grad_w,
-                edge_startindex_local - 1,
+                edge_startindex_interior - 1,
                 self.grid.n_lev(),
                 offset_provider={
                     "E2C": self.grid.get_e2c_connectivity(),
@@ -374,11 +374,11 @@ class VelocityAdvection:
                 },
             )
 
-        velocity_prog.advector_tendencies_8(
+        velocity_prog.corrector_tendencies_8(
             z_fields.z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
             self.z_ekinh,
-            cell_startindex_local - 1,
+            cell_startindex_interior - 1,
             self.grid.n_lev(),
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
@@ -386,7 +386,7 @@ class VelocityAdvection:
             },
         )
 
-        velocity_prog.advector_tendencies_11_to_20(
+        velocity_prog.corrector_tendencies_11_to_20(
             diagnostic_state.vt,
             diagnostic_state.vn_ie,
             z_fields.z_kin_hor_e,
@@ -423,10 +423,10 @@ class VelocityAdvection:
             area_edge,
             self.interpolation_state.geofac_grdiv,
             cell_endindex_nudging,
-            cell_startindex_local - 1,
-            cell_endindex_local,
+            cell_startindex_interior - 1,
+            cell_endindex_interior,
             edge_startindex_nudging + 1,
-            edge_endindex_local,
+            edge_endindex_interior,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
             self.grid.n_lev() + 1,
@@ -456,10 +456,10 @@ class VelocityAdvection:
             HorizontalMarkerIndex.nudging(EdgeDim),
         )
 
-        (edge_startindex_local, edge_endindex_local,) = self.grid.get_indices_from_to(
+        (edge_startindex_interior, edge_endindex_interior,) = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.local(EdgeDim),
-            HorizontalMarkerIndex.local(EdgeDim),
+            HorizontalMarkerIndex.interior(EdgeDim),
+            HorizontalMarkerIndex.interior(EdgeDim),
         )
 
         (
@@ -471,26 +471,26 @@ class VelocityAdvection:
             HorizontalMarkerIndex.nudging(CellDim),
         )
 
-        (cell_startindex_local, cell_endindex_local,) = self.grid.get_indices_from_to(
+        (cell_startindex_interior, cell_endindex_interior,) = self.grid.get_indices_from_to(
             CellDim,
-            HorizontalMarkerIndex.local(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
+            HorizontalMarkerIndex.interior(CellDim),
+            HorizontalMarkerIndex.interior(CellDim),
         )
 
-        (vert_startindex_local, vert_endindex_local,) = self.grid.get_indices_from_to(
+        (vert_startindex_interior, vert_endindex_interior,) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.local(VertexDim),
-            HorizontalMarkerIndex.local(VertexDim),
+            HorizontalMarkerIndex.interior(VertexDim),
+            HorizontalMarkerIndex.interior(VertexDim),
         )
         return (
             edge_startindex_nudging,
             edge_endindex_nudging,
-            edge_startindex_local,
-            edge_endindex_local,
+            edge_startindex_interior,
+            edge_endindex_interior,
             cell_startindex_nudging,
             cell_endindex_nudging,
-            cell_startindex_local,
-            cell_endindex_local,
-            vert_startindex_local,
-            vert_endindex_local,
+            cell_startindex_interior,
+            cell_endindex_interior,
+            vert_startindex_interior,
+            vert_endindex_interior,
         )

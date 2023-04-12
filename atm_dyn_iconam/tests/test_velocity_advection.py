@@ -278,7 +278,7 @@ def test_velocity_predictor_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep, jstep", [(2, 0)])
-def test_velocity_advector_step(
+def test_velocity_corrector_step(
     damping_height,
     icon_grid,
     grid_savepoint,
@@ -371,7 +371,7 @@ def test_velocity_advector_step(
         vertical_params=vertical_params,
     )
 
-    velocity_advection.run_advector_step(
+    velocity_advection.run_corrector_step(
         vn_only=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
