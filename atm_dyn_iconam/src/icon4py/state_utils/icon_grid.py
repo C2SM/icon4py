@@ -126,6 +126,11 @@ class IconGrid:
     def n_lev(self):
         return self.config.num_k_levels if self.config else 0
 
+    def nflat_gradp(self):
+        return (
+            self.config.num_k_levels if self.config else 0
+        )  # according to line 1168 in mo_vertical_grid.f90
+
     def num_cells(self):
         return self.config.num_cells if self.config else 0
 

@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Fields
 from gt4py.next.iterator.type_inference import Tuple
 
 import icon4py.common.constants as constants
@@ -129,7 +129,6 @@ class SolveNonhydro:
         metric_state: MetricState,
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
-        icon_grid: IconGrid,
     ):
         """
         Initialize NonHydrostatic granule with configuration.
@@ -142,7 +141,6 @@ class SolveNonhydro:
         self.vertical_params = vertical_params
         self.metric_state: MetricState = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
-        self.icon_grid: IconGrid = icon_grid
 
         self._allocate_local_fields()
         self._initialized = True
@@ -223,10 +221,14 @@ class SolveNonhydro:
         (
             edge_startindex_nudging,
             edge_endindex_nudging,
+            edge_startindex_interior,
+            edge_endindex_interior,
             edge_startindex_local,
             edge_endindex_local,
             cell_startindex_nudging,
             cell_endindex_nudging,
+            cell_startindex_interior,
+            cell_endindex_interior,
             cell_startindex_local,
             cell_endindex_local,
         ) = self.init_dimensions_boundaries()
@@ -248,12 +250,12 @@ class SolveNonhydro:
         scal_divdamp_o2 = divdamp_fac_o2 * p_patch%geometry_info%mean_cell_area
 
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
-        if itime_scheme >= 4: # Velocity advection averaging nnow and nnew tendencies
-           ntl1 = nnow
-           ntl2 = nnew
-        else:                 # Velocity advection is taken at nnew only
-           ntl1 = 1
-           ntl2 = 1
+        if self.itime_scheme >= 4:
+            self.ntl1 = nnow
+            self.ntl2 = nnew
+        else:
+            self.ntl1 = 1
+            self.ntl2 = 1
 
         self.run_predictor_step()
 
@@ -267,8 +269,9 @@ class SolveNonhydro:
                 prognostic_state[nnew].exner,
                 self.rd_o_cvd,
                 self.rd_o_p0ref,
+                cell_startindex_interior - 1,
+                cell_endindex_local,
                 cell_endindex_nudging,
-                cell_startindex_local - 1,
                 self.grid.n_lev(),
                 offset_provider={},
             )
@@ -284,8 +287,8 @@ class SolveNonhydro:
             prognostic_state[nnew].rho,
             prognostic_state[nnew].theta_v,
             constants.CVD_O_RD,
-            cell_startindex_local - 1,
-            min_rlcell,  # TODO: @abishekg7: what does this translate to
+            cell_startindex_interior - 1,
+            cell_endindex_local,
             self.grid.n_lev(),
             offset_provider={},
         )
@@ -307,7 +310,7 @@ class SolveNonhydro:
         l_recompute: bool,
         l_init: bool,
         nnow: int,
-        nnew,
+        nnew: int,
     ):
         if config.itime_scheme >= 6 or l_init or l_recompute:
             if config.itime_scheme < 6 and not l_init:
@@ -322,10 +325,14 @@ class SolveNonhydro:
         (
             edge_startindex_nudging,
             edge_endindex_nudging,
+            edge_startindex_interior,
+            edge_endindex_interior,
             edge_startindex_local,
             edge_endindex_local,
             cell_startindex_nudging,
             cell_endindex_nudging,
+            cell_startindex_interior,
+            cell_endindex_interior,
             cell_startindex_local,
             cell_endindex_local,
         ) = self.init_dimensions_boundaries()
@@ -335,7 +342,7 @@ class SolveNonhydro:
             nhsolve_prog.mo_solve_nonhydro_stencil_01(
                 self.z_rth_pr_1,
                 self.z_rth_pr_2,
-                cell_endindex_local, # TODO: @abishekg7 wrong, change to min_rlcell
+                cell_endindex_local,
                 self.grid.n_lev(),
                 offset_provider={}
             )
@@ -347,10 +354,7 @@ class SolveNonhydro:
             self.metric_state.exner_ref_mc,
             diagnostic_state.exner_pr,
             self.z_exner_ex_pr,
-            edge_startindex_local - 2,
-            self.vertical_params.nflatlev,
-            self.grid.n_lev(),
-            cell_endindex_local - 1,  # TODO: @abishekg7
+            cell_endindex_interior - 1,
             self.grid.n_lev(),
             offset_provider={},
         )
@@ -365,7 +369,7 @@ class SolveNonhydro:
                 self.metric_state.wgtfac_c,
                 self.metric_state.inv_ddqz_z_full,
                 self.z_dexner_dz_c_1,
-                cell_endindex_local - 1,
+                cell_endindex_interior - 1,
                 self.vertical_params.nflatlev,
                 self.grid.n_lev(),
                 self.grid.n_lev() + 1,
@@ -395,7 +399,7 @@ class SolveNonhydro:
             self.z_theta_v_pr_ic,
             diagnostic_state.theta_v_ic,
             self.z_th_ddz_exner_c,
-            cell_endindex_local - 1,
+            cell_endindex_interior - 1,
             self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
@@ -415,7 +419,7 @@ class SolveNonhydro:
             self.metric_state.theta_ref_ic,
             self.z_theta_v_pr_ic,
             diagnostic_state.theta_v_ic,
-            cell_endindex_local - 1,
+            cell_endindex_interior - 1,
             self.grid.n_lev() + 1,
             offset_provider={"Koff": KDim},
         )
@@ -430,6 +434,9 @@ class SolveNonhydro:
                 self.metric_state.d2dexdz2_fac2_mc,
                 self.z_rth_pr_2,
                 self.z_dexner_dz_c_2,
+                cell_endindex_interior - 1,
+                self.grid.nflat_gradp(),
+                self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
 
@@ -442,8 +449,8 @@ class SolveNonhydro:
             self.metric_state.theta_ref_mc,
             self.z_rth_pr_1,
             self.z_rth_pr_2,
-            cell_startindex_local - 2,
-            cell_endindex_local - 2,
+            cell_startindex_interior - 2,
+            cell_endindex_interior - 2,
             self.grid.n_lev(),
             offset_provider={},
         )
@@ -463,6 +470,8 @@ class SolveNonhydro:
                 p_ccpr2,
                 geofac_grg_x,
                 geofac_grg_y,
+                cell_endindex_local,
+                self.grid.n_lev(),
                 offset_provider={
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "C2E2CODim": C2E2CODim,
@@ -487,8 +496,8 @@ class SolveNonhydro:
         nhsolve_prog.mo_solve_nonhydro_stencil_14(
             self.z_rho_e,
             self.z_theta_v_e,
-            edge_startindex_local - 2,
-            edge_endindex_local - 3,
+            edge_startindex_interior - 2,
+            edge_endindex_interior - 3, #TODO: @abishekg7 conditional on idiv_method
             self.grid.n_lev(),
             offset_provider={},
         )
@@ -497,7 +506,7 @@ class SolveNonhydro:
             nhsolve_prog.mo_solve_nonhydro_stencil_15(
                 self.z_rho_e,
                 self.z_theta_v_e,
-                edge_endindex_local - 1,
+                edge_endindex_interior - 1,
                 self.grid.n_lev(),
                 offset_provider={},
             )
@@ -527,6 +536,8 @@ class SolveNonhydro:
                 self.z_grad_rth_4,
                 self.z_rth_pr_1,
                 self.z_rth_pr_2,
+                edge_endindex_interior - 1,
+                self.grid.n_lev(),
                 offset_provider={
                     "E2C": self.grid.get_e2c_connectivity(),
                     "E2CDim": E2CDim,
@@ -539,7 +550,7 @@ class SolveNonhydro:
             self.z_exner_ex_pr,
             self.z_gradh_exner,
             edge_startindex_nudging + 1,
-            edge_endindex_local,
+            edge_endindex_interior,
             self.vertical_params.nflatlev - 1,
             offset_provider={"E2C": self.grid.get_e2c_connectivity(), "E2CDim": E2CDim},
         )
@@ -556,6 +567,10 @@ class SolveNonhydro:
                 self.interpolation_state.c_lin_e,
                 self.z_dexner_dz_c_1,
                 self.z_gradh_exner,
+                edge_startindex_nudging + 1,
+                edge_endindex_interior,
+                self.vertical_params.nflatlev,
+                self.grid.nflat_gradp(),
                 offset_provider={},
             )
             # mo_solve_nonhydro_stencil_19()
@@ -592,7 +607,7 @@ class SolveNonhydro:
             dtime,
             constants.CPD,
             edge_startindex_nudging + 1,
-            edge_endindex_local,
+            edge_endindex_interior,
             self.grid.n_lev(),
             offset_provider={},
         )
@@ -621,7 +636,11 @@ class SolveNonhydro:
 
         ##### COMMUNICATION PHASE
 
-        mo_solve_nonhydro_stencil_30()
+        # TODO: @abishekg7 fill this up
+        nhsolve_prog.mo_solve_nonhydro_stencil_30(
+            edge_endindex_interior - 2,
+            self.grid.n_lev(),
+        )
 
         #####  Not sure about  _mo_solve_nonhydro_stencil_31()
 
@@ -633,7 +652,7 @@ class SolveNonhydro:
                 self.z_theta_v_e,
                 diagnostic_state.mass_fl_e,
                 self.z_theta_v_fl_e,
-                edge_endindex_local - 2,
+                edge_endindex_interior - 2,
                 self.grid.n_lev(),
                 offset_provider={},
             )
@@ -648,7 +667,7 @@ class SolveNonhydro:
             diagnostic_state.vn_ie,
             z_fields.z_vt_ie,
             z_fields.z_kin_hor_e,
-            edge_endindex_local - 2,
+            edge_endindex_interior - 2,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
             offset_provider={},
@@ -870,7 +889,7 @@ class SolveNonhydro:
                 config.ndyn_substeps_var,
                 dtime,
                 cell_startindex_nudging + 1,
-                cell_endindex_local,
+                cell_endindex_interior,
                 config.kstart_moist,  # TODO: @abishekg7
                 self.grid.n_lev(),
                 offset_provider={},
@@ -904,8 +923,7 @@ class SolveNonhydro:
                 prognostic_state[nnew].w,
                 diagnostic_state.w_concorr_c,
                 self.z_dwdz_dd,
-                cell_startindex_nudging + 1,
-                cell_endindex_local,
+                cell_endindex_nudging, #TODO: @abishekg7 double check domains
                 config.kstart_dd3d,  # TODO: @abishekg7
                 self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
@@ -922,6 +940,21 @@ class SolveNonhydro:
         lclean_mflx,
         nnew,
     ):
+
+        (
+            edge_startindex_nudging,
+            edge_endindex_nudging,
+            edge_startindex_interior,
+            edge_endindex_interior,
+            edge_startindex_local,
+            edge_endindex_local,
+            cell_startindex_nudging,
+            cell_endindex_nudging,
+            cell_startindex_interior,
+            cell_endindex_interior,
+            cell_startindex_local,
+            cell_endindex_local,
+        ) = self.init_dimensions_boundaries()
 
         lvn_only = False
         velocity_advection.run_corrector_step()
@@ -947,7 +980,7 @@ class SolveNonhydro:
             dtime,
             wgt_nnow_rth,
             wgt_nnew_rth,
-            cell_endindex_local,
+            cell_endindex_interior,
             self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
@@ -961,7 +994,7 @@ class SolveNonhydro:
             inv_dual_edge_length,
             z_dwdz_dd,
             z_graddiv_vn,
-            edge_endindex_local - 2,
+            edge_endindex_interior - 2,
             config.kstart_dd3d,  # TODO: @abishekg7 resolve
             self.grid.n_lev(),
             offset_provider={
@@ -983,7 +1016,7 @@ class SolveNonhydro:
                 wgt_nnew_vel,
                 cpd,
                 edge_startindex_nudging + 1,
-                edge_endindex_local,
+                edge_endindex_interior,
                 self.grid.n_lev(),
                 offset_provider={},
             )
@@ -994,7 +1027,7 @@ class SolveNonhydro:
                 z_graddiv_vn,
                 z_graddiv2_vn,
                 edge_startindex_nudging + 1,
-                edge_endindex_local,
+                edge_endindex_interior,
                 self.grid.n_lev(),
                 offset_provider={
                     "E2C2EO": self.grid.get_e2c2eO_offset_provider(),
@@ -1026,7 +1059,7 @@ class SolveNonhydro:
                         z_graddiv2_vn,
                         prognostic_state_new.vn,
                         edge_startindex_nudging + 1,
-                        edge_endindex_local,
+                        edge_endindex_interior,
                         self.grid.n_lev(),
                         offset_provider={},
                     )
@@ -1036,7 +1069,7 @@ class SolveNonhydro:
                         z_graddiv2_vn,
                         prognostic_state_new.vn,
                         edge_startindex_nudging + 1,
-                        edge_endindex_local,
+                        edge_endindex_interior,
                         self.grid.n_lev(),
                         offset_provider={},
                     )
@@ -1047,7 +1080,7 @@ class SolveNonhydro:
                 prognostic_state_new.vn,
                 iau_wgt_dyn,
                 edge_startindex_nudging + 1,
-                edge_endindex_local,
+                edge_endindex_interior,
                 self.grid.n_lev(),
                 offset_provider={},
             )
@@ -1083,13 +1116,13 @@ class SolveNonhydro:
                     prep_adv.vn_traj,
                     prep_adv.mass_flx_me,
                     r_nsubsteps,
-                    edge_endindex_local - 2,
+                    edge_endindex_interior - 2,
                     self.grid.n_lev(),
                     offset_provider={},
                 )
 
         if config.itime_scheme >= 5:
-            nhsolve_prog.corrector_stencils_35_39_40(
+            nhsolve_prog.corrector_stencils_35_39_40( #TODO: @abishekg7 bounds are complicated
                 prognostic_state[nnew].vn,
                 self.metric_state.ddxn_z_full,
                 self.metric_state.ddxt_z_full,
@@ -1132,7 +1165,7 @@ class SolveNonhydro:
                 self.z_flxdiv_mass,
                 self.z_flxdiv_theta,
                 cell_startindex_nudging + 1,
-                cell_endindex_local,
+                cell_endindex_interior,
                 self.grid.n_lev(),
                 offset_provider={
                     "C2E": self.grid.get_c2e_connectivity(),
@@ -1168,7 +1201,7 @@ class SolveNonhydro:
                 wgt_nnow_vel,
                 wgt_nnew_vel,
                 cell_startindex_nudging + 1,
-                cell_endindex_local,
+                cell_endindex_interior,
                 self.grid.n_lev(),
                 self.grid.n_lev() + 1,
                 offset_provider={},
@@ -1197,7 +1230,7 @@ class SolveNonhydro:
                 dtime,
                 constants.CPD,
                 cell_startindex_nudging + 1,
-                cell_endindex_local,
+                cell_endindex_interior,
                 self.grid.n_lev(),
                 self.grid.n_lev() + 1,
                 offset_provider={},
@@ -1213,7 +1246,7 @@ class SolveNonhydro:
                 prognostic_state[nnew].w,
                 self.z_contr_w_fl_l,
                 cell_startindex_nudging + 1,
-                cell_endindex_local,
+                cell_endindex_interior,
                 offset_provider={},
             )
 
@@ -1232,6 +1265,10 @@ class SolveNonhydro:
             diagnostic_state.theta_v_ic,
             diagnostic_state.ddt_exner_phy,
             dtime,
+            cell_startindex_nudging + 1,
+            cell_endindex_interior,
+            self.grid.n_lev(),
+            self.grid.n_lev() + 1,
             offset_provider={"Koff": KDim},
         )
         # _mo_solve_nonhydro_stencil_47()
@@ -1246,7 +1283,7 @@ class SolveNonhydro:
                 diagnostic_state.exner_incr,
                 config.iau_wgt_dyn,
                 cell_startindex_nudging + 1,
-                cell_endindex_local,
+                cell_endindex_interior,
                 self.grid.n_lev(),
                 offset_provider={},
             )
@@ -1264,7 +1301,7 @@ class SolveNonhydro:
             dtime,
             constants.CPD,
             cell_startindex_nudging,
-            cell_endindex_local,
+            cell_endindex_interior,
             self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
@@ -1278,7 +1315,7 @@ class SolveNonhydro:
                 prognostic_state[nnew].w_1,
                 prognostic_state[nnew].w,
                 cell_startindex_nudging + 1,
-                cell_endindex_local,
+                cell_endindex_interior,
                 offset_provider={},
             )
 
@@ -1301,7 +1338,7 @@ class SolveNonhydro:
             dtime,
             constants.CVD_O_RD,
             cell_startindex_nudging + 1,
-            cell_endindex_local,
+            cell_endindex_interior,
             self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
@@ -1309,7 +1346,11 @@ class SolveNonhydro:
         if lpred_adv:
             if lclean_mflx:
                 # TODO: @abishekg7 domains for this
-                set_zero_c_k(self.mass_flx_ic, offset_provider={})
+                set_zero_c_k(self.mass_flx_ic,
+                             cell_startindex_nudging + 1,
+                             cell_endindex_interior,
+                             self.grid.n_lev(),
+                             offset_provider={})
                 # mo_solve_nonhydro_stencil_57()
 
         nhsolve_prog.mo_solve_nonhydro_stencil_58(
@@ -1320,7 +1361,7 @@ class SolveNonhydro:
             mass_flx_ic,
             r_nsubsteps,
             cell_startindex_nudging + 1,
-            cell_endindex_local,
+            cell_endindex_interior,
             self.grid.n_lev(),
             offset_provider={},
         )
@@ -1328,7 +1369,10 @@ class SolveNonhydro:
         if lpred_adv:
             if lclean_mflx:
                 # TODO: @abishekg7 domains for this
-                set_zero_c_k(self.mass_flx_ic, offset_provider={})
+                set_zero_c_k(self.mass_flx_ic,
+                             cell_endindex_nudging,
+                             self.grid.n_lev()+1,
+                             offset_provider={})
                 # mo_solve_nonhydro_stencil_64()
 
             nhsolve_prog.mo_solve_nonhydro_stencil_65(
@@ -1340,13 +1384,14 @@ class SolveNonhydro:
                 diagnostic_state.w_concorr_c,
                 self.mass_flx_ic,
                 r_nsubsteps,
-                cell_startindex_nudging + 1,
-                cell_endindex_local,
+                cell_endindex_nudging,
                 self.grid.n_lev(),
                 offset_provider={},
             )
 
         ##### COMMUNICATION PHASE
+
+
 
     def init_dimensions_boundaries(self):
         (
@@ -1356,6 +1401,12 @@ class SolveNonhydro:
             EdgeDim,
             HorizontalMarkerIndex.nudging(EdgeDim),
             HorizontalMarkerIndex.nudging(EdgeDim),
+        )
+
+        (edge_startindex_interior, edge_endindex_interior,) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.interior(EdgeDim),
+            HorizontalMarkerIndex.interior(EdgeDim),
         )
 
         (edge_startindex_local, edge_endindex_local,) = self.grid.get_indices_from_to(
@@ -1373,6 +1424,12 @@ class SolveNonhydro:
             HorizontalMarkerIndex.nudging(CellDim),
         )
 
+        (cell_startindex_interior, cell_endindex_interior,) = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.interior(CellDim),
+            HorizontalMarkerIndex.interior(CellDim),
+        )
+
         (cell_startindex_local, cell_endindex_local,) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.local(CellDim),
@@ -1382,10 +1439,14 @@ class SolveNonhydro:
         return (
             edge_startindex_nudging,
             edge_endindex_nudging,
+            edge_startindex_interior,
+            edge_endindex_interior,
             edge_startindex_local,
             edge_endindex_local,
             cell_startindex_nudging,
             cell_endindex_nudging,
+            cell_startindex_interior,
+            cell_endindex_interior,
             cell_startindex_local,
             cell_endindex_local,
         )
