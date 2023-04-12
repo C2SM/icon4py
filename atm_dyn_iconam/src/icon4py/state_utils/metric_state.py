@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from gt4py.next.common import Field
 
-from icon4py.common.dimension import C2E2CDim, CellDim, ECDim, EdgeDim, KDim
+from icon4py.common.dimension import C2E2CDim, CellDim, ECDim, EdgeDim, KDim, E2CDim
 
 
 @dataclass
@@ -59,6 +59,7 @@ class MetricState:
     rayleigh_w: Field[[KDim], float]
     rho_ref_me: Field[[EdgeDim, KDim], float]
     theta_ref_me: Field[[EdgeDim, KDim], float]
+    zdiff_gradp: Field[[EdgeDim, E2CDim, KDim], float]
 
     # Finally, a mask field that excludes boundary halo points
     mask_prog_halo_c: Field[[CellDim, KDim], bool]
