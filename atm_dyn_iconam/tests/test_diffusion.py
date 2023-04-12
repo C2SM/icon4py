@@ -228,7 +228,8 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
-def init_grid_manager(fname, config):
+def init_grid_manager(fname, nlev):
+    config = VerticalGridConfig(nlev)
     gm = GridManager(ToGt4PyTransformation(), fname, config)
     gm.init()
     return gm
@@ -244,8 +245,8 @@ def test_diffusion_init(
     damping_height,
 ):
     config = r04b09_diffusion_config
-    grid_config = VerticalGridConfig(grid_savepoint.num(KDim))
-    gm = init_grid_manager(r04b09_dsl_gridfile, grid_config)
+
+    gm = init_grid_manager(r04b09_dsl_gridfile, grid_savepoint.num(KDim))
     icon_grid = gm.get_grid()
     additional_parameters = DiffusionParams(config)
     vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
@@ -348,10 +349,12 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    diffusion_savepoint_init, r04b09_diffusion_config, icon_grid
+    diffusion_savepoint_init, r04b09_diffusion_config, r04b09_dsl_gridfile, grid_savepoint
 ):
     savepoint = diffusion_savepoint_init
     config = r04b09_diffusion_config
+
+    icon_grid = init_grid_manager(r04b09_dsl_gridfile, grid_savepoint.num(KDim)).get_grid()
 
     params = DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()
@@ -377,7 +380,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     diffusion_savepoint_init,
     grid_savepoint,  # noqa: F811
     r04b09_diffusion_config,
-    icon_grid,
+    r04b09_dsl_gridfile,
     damping_height,
 ):
     config = r04b09_diffusion_config
@@ -405,6 +408,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         zd_vertidx=savepoint.zd_vertoffset(),
         zd_diffcoef=savepoint.zd_diffcoef(),
     )
+    icon_grid = init_grid_manager(r04b09_dsl_gridfile, grid_savepoint.num(KDim)).get_grid()
     diffusion = Diffusion()
     diffusion.init(
         config=config,
@@ -423,7 +427,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 def test_verify_diffusion_init_against_other_regular_savepoint(
     r04b09_diffusion_config,
     grid_savepoint,  # noqa: F811
-    icon_grid,
+    r04b09_dsl_gridfile,
     diffusion_savepoint_init,
     damping_height,
 ):
@@ -431,6 +435,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     additional_parameters = DiffusionParams(config)
 
     vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
+    icon_grid = init_grid_manager(r04b09_dsl_gridfile, grid_savepoint.num(KDim)).get_grid()
     grg = diffusion_savepoint_init.geofac_grg()
     interpolation_state = InterpolationState(
         e_bln_c_s=diffusion_savepoint_init.e_bln_c_s(),
@@ -464,7 +469,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
-@pytest.mark.skip("fix: diffusion_stencil_15")
+#@pytest.mark.skip("fix: diffusion_stencil_15")
 @pytest.mark.parametrize("run_with_program", [True, False])
 @pytest.mark.datatest
 def test_run_diffusion_single_step(
@@ -472,7 +477,7 @@ def test_run_diffusion_single_step(
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
     grid_savepoint,  # noqa: F811
-    icon_grid,
+    r04b09_dsl_gridfile,
     r04b09_diffusion_config,
     damping_height,
 ):
@@ -497,7 +502,7 @@ def test_run_diffusion_single_step(
         vct_a=vct_a, rayleigh_damping_height=damping_height
     )
     additional_parameters = DiffusionParams(r04b09_diffusion_config)
-
+    icon_grid = init_grid_manager(r04b09_dsl_gridfile, grid_savepoint.num(KDim)).get_grid()
     diffusion = Diffusion(run_program=run_with_program)
     diffusion.init(
         grid=icon_grid,
