@@ -16,7 +16,8 @@ from gt4py.next.ffront.fbuiltins import maximum
 from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl, _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
@@ -53,7 +54,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_08 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_09 import (
     _mo_solve_nonhydro_stencil_09,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_10 import _mo_solve_nonhydro_stencil_10
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_10 import (
+    _mo_solve_nonhydro_stencil_10,
+)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_11_lower import (
     _mo_solve_nonhydro_stencil_11_lower,
 )
@@ -191,9 +194,11 @@ from icon4py.common.dimension import (
     ECDim,
     EdgeDim,
     KDim,
-    VertexDim, V2CDim,
+    V2CDim,
+    VertexDim,
 )
 from icon4py.state_utils.utils import _set_zero_c_k
+
 
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_01(
@@ -208,6 +213,7 @@ def mo_solve_nonhydro_stencil_01(
     _set_zero_c_k(
         z_rth_pr_2, domain={CellDim: (0, cell_endindex_local), KDim: (0, nlev)}
     )
+
 
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_math_gradients_grad_green_gauss_cell_dsl(
@@ -251,7 +257,8 @@ def predictor_stencils_2_3(
         domain={CellDim: (2, cell_endindex_interior_minus1), KDim: (0, nlev)},
     )
     _set_zero_c_k(
-        z_exner_ex_pr, domain={CellDim: (2, cell_endindex_interior_minus1), KDim: (0, nlev)}
+        z_exner_ex_pr,
+        domain={CellDim: (2, cell_endindex_interior_minus1), KDim: (0, nlev)},
     )
 
 
@@ -361,7 +368,8 @@ def predictor_stencils_11_lower_upper(
     nlevp1: int,
 ):
     _mo_solve_nonhydro_stencil_11_lower(
-        out=z_theta_v_pr_ic, domain={CellDim: (2, cell_endindex_interior_minus1), KDim: (0, 0)}
+        out=z_theta_v_pr_ic,
+        domain={CellDim: (2, cell_endindex_interior_minus1), KDim: (0, 0)},
     )
     _mo_solve_nonhydro_stencil_11_upper(
         wgtfacq_c,
@@ -418,15 +426,22 @@ def mo_solve_nonhydro_stencil_13(
         },
     )
 
+
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     p_cell_in: Field[[CellDim, KDim], float],
     c_intp: Field[[VertexDim, V2CDim], float],
     p_vert_out: Field[[VertexDim, KDim], float],
+    vertex_endindex_interior_minus1: int,
+    nlev: int,
 ):
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-        p_cell_in, c_intp, out=p_vert_out
+        p_cell_in,
+        c_intp,
+        out=p_vert_out,
+        domain={VertexDim: (1, vertex_endindex_interior_minus1), KDim: (0, nlev)},
     )
+
 
 @program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_14(
@@ -663,8 +678,12 @@ def mo_solve_nonhydro_stencil_30(
     nlev: int,
 ):
     _mo_solve_nonhydro_stencil_30(
-        e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e, out=(z_vn_avg, z_graddiv_vn, vt),
-        domain = {EdgeDim: (4, edge_endindex_interior_minus2), KDim: (0, nlev)},
+        e_flx_avg,
+        vn,
+        geofac_grdiv,
+        rbf_vec_coeff_e,
+        out=(z_vn_avg, z_graddiv_vn, vt),
+        domain={EdgeDim: (4, edge_endindex_interior_minus2), KDim: (0, nlev)},
     )
 
 
@@ -1047,10 +1066,14 @@ def stencils_47_48_49(
     nlev: int,
     nlevp1: int,
 ):
-    _mo_solve_nonhydro_stencil_47(w_concorr_c, out=(w_nnew, z_contr_w_fl_l),  domain={
+    _mo_solve_nonhydro_stencil_47(
+        w_concorr_c,
+        out=(w_nnew, z_contr_w_fl_l),
+        domain={
             CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
             KDim: (nlevp1, nlevp1),
-        },)
+        },
+    )
     _mo_solve_nonhydro_stencil_48(
         rho_nnow,
         inv_ddqz_z_full,

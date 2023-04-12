@@ -456,7 +456,10 @@ class VelocityAdvection:
             HorizontalMarkerIndex.nudging(EdgeDim),
         )
 
-        (edge_startindex_interior, edge_endindex_interior,) = self.grid.get_indices_from_to(
+        (
+            edge_startindex_interior,
+            edge_endindex_interior,
+        ) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.interior(EdgeDim),
             HorizontalMarkerIndex.interior(EdgeDim),
@@ -471,13 +474,19 @@ class VelocityAdvection:
             HorizontalMarkerIndex.nudging(CellDim),
         )
 
-        (cell_startindex_interior, cell_endindex_interior,) = self.grid.get_indices_from_to(
+        (
+            cell_startindex_interior,
+            cell_endindex_interior,
+        ) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.interior(CellDim),
             HorizontalMarkerIndex.interior(CellDim),
         )
 
-        (vert_startindex_interior, vert_endindex_interior,) = self.grid.get_indices_from_to(
+        (
+            vert_startindex_interior,
+            vert_endindex_interior,
+        ) = self.grid.get_indices_from_to(
             VertexDim,
             HorizontalMarkerIndex.interior(VertexDim),
             HorizontalMarkerIndex.interior(VertexDim),

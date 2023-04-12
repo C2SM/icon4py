@@ -81,8 +81,12 @@ class DiagnosticState:
 
     @property
     def ddt_vn_adv_ntl1(self) -> Field[[EdgeDim, KDim], float]:
-        return np_as_located_field(EdgeDim, KDim)(np.asarray(self.ddt_vn_adv)[:, self.ntl1])
+        return np_as_located_field(EdgeDim, KDim)(
+            np.asarray(self.ddt_vn_adv)[:, self.ntl1]
+        )
 
     @property
     def ddt_vn_adv_ntl2(self) -> Field[[EdgeDim, KDim], float]:
-        return np_as_located_field(EdgeDim, KDim)(np.asarray(self.ddt_vn_adv)[:, self.ntl2])
+        return np_as_located_field(EdgeDim, KDim)(
+            np.asarray(self.ddt_vn_adv)[:, self.ntl2]
+        )
