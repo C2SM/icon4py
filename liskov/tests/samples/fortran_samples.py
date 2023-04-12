@@ -48,9 +48,9 @@ SINGLE_STENCIL = """\
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, start_bdydiff_e, grf_bdywidth_e)
 
-    !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+    !$ACC KERNELS IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
     vn_before(:,:,:) = p_nh_prog%vn(:,:,:)
-    !$ACC END PARALLEL
+    !$ACC END KERNELS
 
     !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
             DO jk = 1, nlev

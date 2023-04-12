@@ -322,11 +322,11 @@ class StartStencilStatementGenerator(TemplatedGenerator):
         """
         #ifdef __DSL_VERIFY
         {% if _this_node.stencil_data.copies -%}
-        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
+        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
-        !$ACC END PARALLEL
+        !$ACC END KERNELS
         {%- endif -%}
 
         {%- if _this_node.profile %}

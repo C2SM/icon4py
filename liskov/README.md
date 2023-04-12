@@ -81,9 +81,9 @@ Together, the `START STENCIL` and `END STENCIL` directives result in the followi
 
 ```fortran
 #ifdef __DSL_VERIFY
-!$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+!$ACC KERNELS IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
 vn_before(:, :, :) = vn(:, :, :)
-!$ACC END PARALLEL
+!$ACC END KERNELS
 ```
 
 ```fortran

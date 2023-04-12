@@ -141,14 +141,14 @@ def expected_declare_source():
 def expected_start_stencil_source():
     return """
 #ifdef __DSL_VERIFY
-        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
+        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
         out1_before(:, :) = out1(:, :, 1)
         out2_before(:, :, :) = p_nh%prog(nnew)%out2(:, :, :)
         out3_before(:, :) = p_nh%prog(nnew)%w(:, :, jb)
         out4_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, 2)
         out5_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
         out6_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
-        !$ACC END PARALLEL
+        !$ACC END KERNELS
         call nvtxStartRange("stencil1")"""
 
 
