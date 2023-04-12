@@ -12,14 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pathlib
+from typing import Optional
 
 import click
 
-from icon4py.f2ser.logger import setup_logger
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4py.f2ser.parse import GranuleParser
+from icon4py.liskov.codegen.serialisation.generate import SerialisationGenerator
+from icon4py.liskov.codegen.write import CodegenWriter
 
-logger = setup_logger(__name__)
 
 @click.command("icon_f2ser")
 @click.argument(
@@ -28,33 +29,47 @@ logger = setup_logger(__name__)
         exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
     ),
 )
-@click.argument('dependencies', multiple=True, help='List of dependency file paths.')
+@click.option(
+    "--dependencies",
+    "-d",
+    multiple=True,
+    type=click.Path(exists=True),
+    help="Optional list of dependency paths.",
+)
 @click.argument(
     "output_filepath",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
+@click.option(
+    "--directory", type=str, help="Directory to serialise variables to.", default="."
+)
+@click.option(
+    "--prefix", type=str, help="Prefix to use for serialised files.", default="f2ser"
+)
 def main(
     granule_path: pathlib.Path,
-    dependencies: Optional[list[pathlib.Path]] = None,
+    dependencies: Optional[list[pathlib.Path]],
     output_filepath: pathlib.Path,
+    directory: str,
+    prefix: str,
 ) -> None:
     """Command line interface for interacting with the ICON-f2ser serialization Preprocessor.
 
-    Usage:
-        icon_f2ser <granule_path> <dependencies> <output_filepath>
-
-    Options:
-
     Arguments:
         granule_path (Path): A path to the Fortran source file to be parsed.
-        dependencies (Optional[list[Path]]): A list of paths to any additional Fortran source files that the input file depends on.
         output_filepath (Path): A path to the output Fortran source file to be generated.
+        directory (str): The directory to serialise the variables to.
+        prefix (str): The prefix to use for each serialised variable.
     """
+    parsed = GranuleParser(granule_path, dependencies).parse()
+    interface = ParsedGranuleDeserialiser(
+        parsed, directory=directory, prefix=prefix
+    ).deserialise()
+    generator = SerialisationGenerator(interface)
+    generated = generator()
+    writer = CodegenWriter(granule_path, output_filepath)
+    writer(generated)
 
-    parser = GranuleParser(granule_path, dependencies)
-    parsed = parser.parse()
-    deserialiser = ParsedGranuleDeserialiser(parsed, directory=".")
-    interface = deserialiser.deserialise()
 
 if __name__ == "__main__":
     main()

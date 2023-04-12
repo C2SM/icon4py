@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.f2ser.parse import ParsedGranule
+from icon4py.f2ser.parse import CodegenContext, ParsedGranule
 from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     InitData,
@@ -21,9 +21,10 @@ from icon4py.liskov.codegen.serialisation.interface import (
 
 
 class ParsedGranuleDeserialiser:
-    def __init__(self, parsed: ParsedGranule, directory: str):
+    def __init__(self, parsed: ParsedGranule, directory: str, prefix: str):
         self.parsed = parsed
         self.directory = directory
+        self.prefix = prefix
         self.data = {"Savepoint": [], "Init": ...}
 
     def deserialise(self) -> SerialisationInterface:
@@ -80,7 +81,7 @@ class ParsedGranuleDeserialiser:
             SavepointData(
                 subroutine=subroutine_name,
                 intent=intent,
-                startln=var_dict["codegen_line"],
+                startln=self._get_codegen_line(var_dict["codegen_ctx"], intent),
                 fields=fields,
                 metadata=None,  # todo: decide how to handle metadata
             )
@@ -125,14 +126,18 @@ class ParsedGranuleDeserialiser:
         Returns:
             None.
         """
-        in_lines = [
-            var_dict["codegen_line"]
+        first_intent_in_subroutine = [
+            var_dict
             for intent_dict in self.parsed.values()
             for intent, var_dict in intent_dict.items()
             if intent == "in"
-        ]
-        startln = min(in_lines, default=0)
-        self.data["Init"] = InitData(startln=startln, directory=self.directory)
+        ][0]
+        startln = self._get_codegen_line(
+            first_intent_in_subroutine["codegen_ctx"], "init"
+        )
+        self.data["Init"] = InitData(
+            startln=startln, directory=self.directory, prefix=self.prefix
+        )
 
     def _merge_out_inout_fields(self):
         """Merge the `inout` fields into the `in` and `out` fields in the `parsed` dictionary.
@@ -145,3 +150,14 @@ class ParsedGranuleDeserialiser:
                 intent_dict["in"].update(intent_dict["inout"])
                 intent_dict["out"].update(intent_dict["inout"])
                 del intent_dict["inout"]
+
+    @staticmethod
+    def _get_codegen_line(ctx: CodegenContext, intent: str):
+        if intent == "in":
+            return ctx.last_declaration_ln
+        elif intent == "out":
+            return ctx.end_subroutine_ln
+        elif intent == "init":
+            return ctx.first_declaration_ln
+        else:
+            raise ValueError(f"Unrecognized intent: {intent}")

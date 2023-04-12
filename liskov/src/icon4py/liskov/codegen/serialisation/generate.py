@@ -15,8 +15,6 @@ from typing import Any
 from icon4py.liskov.codegen.common import CodeGenerator
 from icon4py.liskov.codegen.serialisation.interface import SerialisationInterface
 from icon4py.liskov.codegen.serialisation.template import (
-    InitStatement,
-    InitStatementGenerator,
     SavepointStatement,
     SavepointStatementGenerator,
 )
@@ -31,28 +29,29 @@ class SerialisationGenerator(CodeGenerator):
     def __init__(self, ser_iface: SerialisationInterface):
         super().__init__()
         self.ser_iface = ser_iface
+        self.ser_init_complete = False
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:
         """Generate all f90 code for integration."""
-        self._generate_init()
         self._generate_savepoints()
         return self.generated
-
-    def _generate_init(self) -> None:
-        logger.info("Generating pp_ser initialisation statement.")
-        self._generate(
-            InitStatement,
-            InitStatementGenerator,
-            self.ser_iface.Init.startln,
-            directory=self.ser_iface.Init.directory,
-        )
 
     def _generate_savepoints(self) -> None:
         for i, savepoint in enumerate(self.ser_iface.Savepoint):
             logger.info("Generating pp_ser savepoint statement.")
-            self._generate(
-                SavepointStatement,
-                SavepointStatementGenerator,
-                self.ser_iface.Savepoint[i].startln,
-                savepoint=savepoint,
-            )
+            if self.ser_init_complete:
+                self._generate(
+                    SavepointStatement,
+                    SavepointStatementGenerator,
+                    self.ser_iface.Savepoint[i].startln,
+                    savepoint=savepoint,
+                )
+            else:
+                self._generate(
+                    SavepointStatement,
+                    SavepointStatementGenerator,
+                    self.ser_iface.Savepoint[i].startln,
+                    savepoint=savepoint,
+                    init=self.ser_iface.Init,
+                )
+                self.ser_init_complete = True
