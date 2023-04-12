@@ -17,33 +17,6 @@ from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum, abs,
 from icon4py.common.dimension import C2CE, C2E, CEDim, E2C, CellDim, EdgeDim, KDim, Koff
 
 
-@field_operator
-def _face_val_ppm_stencil_02a(
-    p_cc: Field[[CellDim, KDim], float],
-    p_cellhgt_mc_now: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-
-    p_face = p_cc*(1. - (p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))) + (p_cellhgt_mc_now/(p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)) * ((p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))* p_cc + p_cc(Koff[-1]))
-
-    return p_face
-
-
-@field_operator
-def _face_val_ppm_stencil_02b(
-    p_cc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-
-    p_face = p_cc
-    return p_face
-
-@field_operator
-def _face_val_ppm_stencil_02c(
-    p_cc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-
-    p_face = p_cc(Koff[-1])
-    return p_face
-
 
 @field_operator
 def _face_val_ppm_stencil_02(
@@ -58,12 +31,11 @@ def _face_val_ppm_stencil_02(
 ) -> Field[[CellDim, KDim], float]:
 
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
+    p_cc_km1 =  p_cc(Koff[-1])
 
-    p_face = where( (vert_idx==slevp1) | (vert_idx==elev), _face_val_ppm_stencil_02a(p_cc, p_cellhgt_mc_now), p_face_in)
+    p_face = where( (vert_idx==elev), p_cc_km1, p_face_in)
 
-    p_face = where( (vert_idx==slev), _face_val_ppm_stencil_02b(p_cc), p_face)
-
-    p_face = where( (vert_idx==elevp1), _face_val_ppm_stencil_02c(p_cc), p_face)
+    p_face = where( (vert_idx==elevp1), p_cc_km1, p_face)
 
     return p_face
 
