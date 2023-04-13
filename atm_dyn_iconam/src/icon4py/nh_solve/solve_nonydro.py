@@ -71,6 +71,7 @@ class NonHydrostaticConfig:
         l_vert_nested: bool = False,
         l_open_ubc: bool = True,
         veladv_offctr: float = 2.0,
+        divdamp_fac_o2: float = 2.0
     ):
 
         # parameters from namelist diffusion_nml
@@ -90,6 +91,7 @@ class NonHydrostaticConfig:
         self.divdamp_order: int = divdamp_order
         self.l_vert_nested: bool = l_vert_nested
         self.veladv_offctr: float = veladv_offctr
+        self.divdamp_fac_o2: float = divdamp_fac_o2
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
@@ -215,16 +217,28 @@ class SolveNonhydro:
     def time_step(
         self,
         diagnostic_state: DiagnosticState,
-        prognostic_state: PrognosticState,
-        dtime: float,
+        prognostic_state: list[PrognosticState],
+        config: NonHydrostaticConfig,
+        z_fields: ZFields,
+        inv_dual_edge_length: Field[[EdgeDim], float],
+        primal_normal_cell_1: Field[[ECDim], float],
+        dual_normal_cell_1: Field[[ECDim], float],
+        primal_normal_cell_2: Field[[ECDim], float],
+        dual_normal_cell_2: Field[[ECDim], float],
+        inv_primal_edge_length: Field[[EdgeDim], float],
         tangent_orientation: Field[[EdgeDim], float],
-        inverse_primal_edge_lengths: Field[[EdgeDim], float],
-        inverse_dual_edge_length: Field[[EdgeDim], float],
-        inverse_vert_vert_lengths: Field[[EdgeDim], float],
-        primal_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        dual_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        edge_areas: Field[[EdgeDim], float],
+        cfl_w_limit: float,
+        scalfac_exdiff: float,
         cell_areas: Field[[CellDim], float],
+        owner_mask: Field[[CellDim], bool],
+        f_e: Field[[EdgeDim], float],
+        area_edge: Field[[EdgeDim], float],
+        dtime: float,
+        idyn_timestep: float,
+        l_recompute: bool,
+        l_init: bool,
+        nnow: int,
+        nnew: int
     ):
         """
         Do one diffusion step within regular time loop.
@@ -263,7 +277,7 @@ class SolveNonhydro:
 
         # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
         # delta_x**2 is approximated by the mean cell area
-        scal_divdamp_o2 = divdamp_fac_o2 * p_patch % geometry_info % mean_cell_area
+        scal_divdamp_o2 = config.divdamp_fac_o2 * p_patch % geometry_info % mean_cell_area
 
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
         if self.itime_scheme >= 4:
@@ -276,7 +290,30 @@ class SolveNonhydro:
         self.wgt_nnow_vel = 0.5 - self.veladv_offctr
         self.wgt_nnew_vel = 0.5 + self.veladv_offctr
 
-        self.run_predictor_step()
+        self.run_predictor_step(
+            diagnostic_state,
+            prognostic_state,
+            config,
+            z_fields,
+            inv_dual_edge_length,
+            primal_normal_cell_1,
+            dual_normal_cell_1,
+            primal_normal_cell_2,
+            dual_normal_cell_2,
+            inv_primal_edge_length,
+            tangent_orientation,
+            cfl_w_limit,
+            scalfac_exdiff,
+            cell_areas,
+            owner_mask,
+            f_e,
+            area_edge,
+            dtime,
+            idyn_timestep,
+            l_recompute,
+            l_init,
+            nnow,
+            nnew)
 
         self.run_corrector_step()
 
@@ -336,7 +373,7 @@ class SolveNonhydro:
         l_recompute: bool,
         l_init: bool,
         nnow: int,
-        nnew: int,
+        nnew: int
     ):
         if config.itime_scheme >= 6 or l_init or l_recompute:
             if config.itime_scheme < 6 and not l_init:
@@ -359,7 +396,6 @@ class SolveNonhydro:
                 f_e,
                 area_edge,
             )
-        nvar = nnow
 
         p_dthalf = 0.5 * dtime
 
@@ -1035,15 +1071,23 @@ class SolveNonhydro:
     def run_corrector_step(
         self,
         vn_only: bool,
-        inv_dual_edge_length: Field[[EdgeDim], float],
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
         config: NonHydrostaticConfig,
         z_fields: ZFields,
+        inv_dual_edge_length: Field[[EdgeDim], float],
+        inv_primal_edge_length: Field[[EdgeDim], float],
+        tangent_orientation: Field[[EdgeDim], float],
         prep_adv: PrepAdvection,
-        nnew,
-        nnow,
         dtime: float,
+        nnew: int,
+        nnow: int,
+        cfl_w_limit: float,
+        scalfac_exdiff: float,
+        cell_areas: Field[[CellDim], float],
+        owner_mask: Field[[CellDim], bool],
+        f_e: Field[[EdgeDim], float],
+        area_edge: Field[[EdgeDim], float],
         lprep_adv: bool,
         lclean_mflx: bool,
     ):
@@ -1066,7 +1110,22 @@ class SolveNonhydro:
         ) = self.init_dimensions_boundaries()
 
         lvn_only = False
-        velocity_advection.run_corrector_step()
+        velocity_advection.VelocityAdvection.run_corrector_step(
+            lvn_only,
+            diagnostic_state,
+            prognostic_state,
+            z_fields,
+            inv_dual_edge_length,
+            inv_primal_edge_length,
+            dtime,
+            tangent_orientation,
+            cfl_w_limit,
+            scalfac_exdiff,
+            cell_areas,
+            owner_mask,
+            f_e,
+            area_edge
+        )
         nvar = nnew
 
         nhsolve_prog.mo_solve_nonhydro_stencil_10(
@@ -1130,7 +1189,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if lhdiff_rcf and (config.divdamp_order == 4 or config.divdamp_order == 24):
+        if config.lhdiff_rcf and (config.divdamp_order == 4 or config.divdamp_order == 24):
             nhsolve_prog.mo_solve_nonhydro_stencil_25(
                 self.interpolation_state.geofac_grdiv,
                 self.z_graddiv_vn,
@@ -1144,7 +1203,7 @@ class SolveNonhydro:
                 },
             )
 
-        if lhdiff_rcf:
+        if config.lhdiff_rcf:
             if config.divdamp_order == 2 or (
                 config.divdamp_order == 24 and scal_divdamp_o2 > 1e-6
             ):
@@ -1158,7 +1217,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             if config.divdamp_order == 4 or (
-                config.divdamp_order == 24 and ivdamp_fac_o2 <= 4 * divdamp_fac
+                config.divdamp_order == 24 and config.divdamp_fac_o2 <= 4 * divdamp_fac
             ):
                 if self.grid.limited_area():
                     nhsolve_prog.mo_solve_nonhydro_stencil_27(
