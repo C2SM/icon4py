@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field
-from gt4py.next.iterator.type_inference import Tuple
 
 import icon4py.common.constants as constants
 import icon4py.nh_solve.solve_nonhydro_program as nhsolve_prog
@@ -1070,7 +1069,6 @@ class SolveNonhydro:
 
     def run_corrector_step(
         self,
-        vn_only: bool,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
         config: NonHydrostaticConfig,
@@ -1205,7 +1203,7 @@ class SolveNonhydro:
 
         if config.lhdiff_rcf:
             if config.divdamp_order == 2 or (
-                config.divdamp_order == 24 and scal_divdamp_o2 > 1e-6
+                config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6
             ):
                 nhsolve_prog.mo_solve_nonhydro_stencil_26(
                     self.z_graddiv_vn,
@@ -1279,7 +1277,7 @@ class SolveNonhydro:
                         offset_provider={},
                     )
                 nhsolve_prog.mo_solve_nonhydro_stencil_34(
-                    z_vn_avg,
+                    self.z_vn_avg,
                     diagnostic_state.mass_fl_e,
                     prep_adv.vn_traj,
                     prep_adv.mass_flx_me,
