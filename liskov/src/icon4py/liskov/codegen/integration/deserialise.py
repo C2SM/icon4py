@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Protocol, Type
+from typing import Any, Optional, Protocol, Type
 
 import icon4py.liskov.parsing.types as ts
 from icon4py.common.logger import setup_logger
@@ -32,7 +32,8 @@ from icon4py.liskov.codegen.integration.interface import (
     StartStencilData,
     UnusedDirective,
 )
-from icon4py.liskov.codegen.types import CodeGenInput
+from icon4py.liskov.codegen.shared.deserialiser import Deserialiser
+from icon4py.liskov.codegen.shared.types import CodeGenInput
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     MissingBoundsError,
@@ -43,7 +44,6 @@ from icon4py.liskov.parsing.utils import (
     flatten_list_of_dicts,
     string_to_bool,
 )
-from icon4py.liskov.pipeline.definition import Step
 
 
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
@@ -380,8 +380,8 @@ class InsertDataFactory(DataFactoryBase):
         return deserialised
 
 
-class IntegrationCodeDeserialiser(Step):
-    _FACTORIES: dict[str, Callable] = {
+class IntegrationCodeDeserialiser(Deserialiser):
+    _FACTORIES = {
         "StartCreate": StartCreateDataFactory(),
         "EndCreate": EndCreateDataFactory(),
         "Imports": ImportsDataFactory(),
@@ -393,27 +393,4 @@ class IntegrationCodeDeserialiser(Step):
         "EndProfile": EndProfileDataFactory(),
         "Insert": InsertDataFactory(),
     }
-
-    def __call__(self, directives: ts.ParsedDict) -> IntegrationCodeInterface:
-        """Deserialise the provided parsed directives to an IntegrationCodeInterface object.
-
-        Args:
-            directives: The parsed directives to deserialise.
-
-        Returns:
-            A IntegrationCodeInterface object containing the deserialised directives.
-
-        Note:
-            The method uses the `_FACTORIES` class attribute to create the appropriate
-            factory object for each directive type, and uses these objects to deserialise
-            the parsed directives. The IntegrationCodeInterface class is a dataclass
-            containing the deserialised versions of the different directives.
-        """
-        logger.info("Deserialising directives ...")
-        deserialised = dict()
-
-        for key, func in self._FACTORIES.items():
-            ser = func(directives)
-            deserialised[key] = ser
-
-        return IntegrationCodeInterface(**deserialised)
+    _INTERFACE_TYPE = IntegrationCodeInterface

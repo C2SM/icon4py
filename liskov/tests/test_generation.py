@@ -13,7 +13,7 @@
 
 import pytest
 
-from icon4py.liskov.codegen.integration.generate import IntegrationGenerator
+from icon4py.liskov.codegen.integration.generate import IntegrationCodeGenerator
 from icon4py.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
@@ -198,7 +198,9 @@ def expected_insert_source():
 
 @pytest.fixture
 def generator(serialised_directives):
-    return IntegrationGenerator(serialised_directives, profile=True, metadatagen=False)
+    return IntegrationCodeGenerator(
+        serialised_directives, profile=True, metadatagen=False
+    )
 
 
 def test_generate(

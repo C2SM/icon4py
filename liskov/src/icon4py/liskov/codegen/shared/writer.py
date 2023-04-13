@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import List
 
 from icon4py.common.logger import setup_logger
-from icon4py.liskov.codegen.types import GeneratedCode
+from icon4py.liskov.codegen.shared.types import GeneratedCode
 from icon4py.liskov.parsing.types import DIRECTIVE_IDENT
 from icon4py.liskov.pipeline.definition import Step
 

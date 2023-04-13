@@ -14,7 +14,6 @@
 from typing import Any
 
 from icon4py.common.logger import setup_logger
-from icon4py.liskov.codegen.generator import CodeGenerator
 from icon4py.liskov.codegen.integration.interface import (
     IntegrationCodeInterface,
     StartStencilData,
@@ -44,14 +43,15 @@ from icon4py.liskov.codegen.integration.template import (
     StartStencilStatement,
     StartStencilStatementGenerator,
 )
-from icon4py.liskov.codegen.types import GeneratedCode
+from icon4py.liskov.codegen.shared.generator import CodeGenerator
+from icon4py.liskov.codegen.shared.types import GeneratedCode
 from icon4py.liskov.external.metadata import CodeMetadata
 
 
 logger = setup_logger(__name__)
 
 
-class IntegrationGenerator(CodeGenerator):
+class IntegrationCodeGenerator(CodeGenerator):
     def __init__(
         self,
         interface: IntegrationCodeInterface,

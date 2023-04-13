@@ -11,27 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.common.logger import setup_logger
-from icon4py.liskov.codegen.serialisation.interface import (
-    SerialisationCodeInterface,
-)
-from icon4py.liskov.codegen.shared.deserialiser import Deserialiser
+from dataclasses import dataclass
 
 
-logger = setup_logger(__name__)
+@dataclass
+class CodeGenInput:
+    startln: int
 
 
-class InitDataFactory:
-    pass
-
-
-class SavepointDataFactory:
-    pass
-
-
-class SerialisationCodeDeserialiser(Deserialiser):
-    _FACTORIES = {
-        "Init": InitDataFactory(),
-        "Savepoint": SavepointDataFactory(),
-    }
-    _INTERFACE_TYPE = SerialisationCodeInterface
+@dataclass
+class GeneratedCode(CodeGenInput):
+    source: str

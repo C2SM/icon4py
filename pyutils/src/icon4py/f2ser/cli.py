@@ -18,7 +18,9 @@ import click
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4py.f2ser.parse import GranuleParser
-from icon4py.liskov.codegen.serialisation.generate import SerialisationGenerator
+from icon4py.liskov.codegen.serialisation.generate import (
+    SerialisationCodeGenerator,
+)
 from icon4py.liskov.codegen.writer import CodegenWriter
 
 
@@ -65,7 +67,7 @@ def main(
     interface = ParsedGranuleDeserialiser(
         parsed, directory=directory, prefix=prefix
     ).deserialise()
-    generator = SerialisationGenerator(interface)
+    generator = SerialisationCodeGenerator(interface)
     generated = generator()
     writer = CodegenWriter(granule_path, output_filepath)
     writer(generated)

@@ -14,7 +14,7 @@ import dataclasses
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from icon4py.liskov.codegen.types import CodeGenInput
+from icon4py.liskov.codegen.shared.types import CodeGenInput
 
 
 class UnusedDirective:

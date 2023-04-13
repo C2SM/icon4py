@@ -15,13 +15,15 @@ from pathlib import Path
 from icon4py.liskov.codegen.integration.deserialise import (
     IntegrationCodeDeserialiser,
 )
-from icon4py.liskov.codegen.integration.generate import IntegrationGenerator
+from icon4py.liskov.codegen.integration.generate import IntegrationCodeGenerator
 from icon4py.liskov.codegen.integration.interface import IntegrationCodeInterface
 from icon4py.liskov.codegen.serialisation.deserialise import (
     SerialisationCodeDeserialiser,
 )
-from icon4py.liskov.codegen.serialisation.generate import SerialisationGenerator
-from icon4py.liskov.codegen.writer import CodegenWriter
+from icon4py.liskov.codegen.serialisation.generate import (
+    SerialisationCodeGenerator,
+)
+from icon4py.liskov.codegen.shared.writer import CodegenWriter
 from icon4py.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.scan import DirectivesScanner
@@ -34,8 +36,8 @@ DESERIALISERS = {
 }
 
 CODEGENS = {
-    "integration": IntegrationGenerator,
-    "serialisation": SerialisationGenerator,
+    "integration": IntegrationCodeGenerator,
+    "serialisation": SerialisationCodeGenerator,
 }
 
 
