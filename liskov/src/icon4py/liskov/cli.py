@@ -15,8 +15,8 @@ import pathlib
 
 import click
 
-from icon4py.liskov.logger import setup_logger
-from icon4py.liskov.pipeline import (
+from icon4py.common.logger import setup_logger
+from icon4py.liskov.pipeline.collection import (
     load_gt4py_stencils,
     parse_fortran_file,
     run_integration_code_generation,

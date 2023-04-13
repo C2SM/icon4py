@@ -10,27 +10,30 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from pathlib import Path
 
+from icon4py.liskov.codegen.integration.deserialise import (
+    IntegrationCodeDeserialiser,
+)
 from icon4py.liskov.codegen.integration.generate import IntegrationGenerator
-from icon4py.liskov.codegen.integration.interface import DeserialisedDirectives
+from icon4py.liskov.codegen.integration.interface import IntegrationCodeInterface
 from icon4py.liskov.codegen.serialisation.deserialise import (
-    SerialisationDeserialiser,
+    SerialisationCodeDeserialiser,
 )
 from icon4py.liskov.codegen.serialisation.generate import SerialisationGenerator
-from icon4py.liskov.codegen.serialisation.interface import SerialisationInterface
-from icon4py.liskov.codegen.write import CodegenWriter
-from icon4py.liskov.common import Step, linear_pipeline
+from icon4py.liskov.codegen.serialisation.interface import (
+    SerialisationCodeInterface,
+)
+from icon4py.liskov.codegen.writer import CodegenWriter
 from icon4py.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
-from icon4py.liskov.parsing.deserialise import DirectiveDeserialiser
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.scan import DirectivesScanner
+from icon4py.liskov.pipeline.definition import Step, linear_pipeline
 
 
 SERIALISERS = {
-    "integration": DirectiveDeserialiser,
-    "serialisation": SerialisationDeserialiser,
+    "integration": IntegrationCodeDeserialiser,
+    "serialisation": SerialisationCodeDeserialiser,
 }
 
 
@@ -52,7 +55,7 @@ def parse_fortran_file(
         deserialiser_type: What deserialiser to use.
 
     Returns:
-        DeserialisedDirectives: The deserialized directives object.
+        IntegrationCodeInterface: The deserialized directives object.
     """
     deserialiser = SERIALISERS[deserialiser_type]
 
@@ -64,7 +67,7 @@ def parse_fortran_file(
 
 
 @linear_pipeline
-def load_gt4py_stencils(parsed: DeserialisedDirectives) -> list[Step]:
+def load_gt4py_stencils(parsed: IntegrationCodeInterface) -> list[Step]:
     """Execute a pipeline to update fields of a DeserialisedDirectives object with GT4Py stencils.
 
     Args:
@@ -78,7 +81,7 @@ def load_gt4py_stencils(parsed: DeserialisedDirectives) -> list[Step]:
 
 @linear_pipeline
 def run_integration_code_generation(
-    parsed: DeserialisedDirectives,
+    parsed: IntegrationCodeInterface,
     input_filepath: Path,
     output_filepath: Path,
     profile: bool,
@@ -105,7 +108,7 @@ def run_integration_code_generation(
 
 @linear_pipeline
 def run_serialisation_code_generation(
-    ser_iface: SerialisationInterface,
+    ser_iface: SerialisationCodeInterface,
     input_filepath: Path,
     output_filepath: Path,
 ) -> list[Step]:

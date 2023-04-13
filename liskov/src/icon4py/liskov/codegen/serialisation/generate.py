@@ -12,21 +12,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Any
 
-from icon4py.liskov.codegen.common import CodeGenerator
-from icon4py.liskov.codegen.serialisation.interface import SerialisationInterface
+from icon4py.common.logger import setup_logger
+from icon4py.liskov.codegen.generator import CodeGenerator
+from icon4py.liskov.codegen.serialisation.interface import (
+    SerialisationCodeInterface,
+)
 from icon4py.liskov.codegen.serialisation.template import (
     SavepointStatement,
     SavepointStatementGenerator,
 )
 from icon4py.liskov.codegen.types import GeneratedCode
-from icon4py.liskov.logger import setup_logger
 
 
 logger = setup_logger(__name__)
 
 
 class SerialisationGenerator(CodeGenerator):
-    def __init__(self, ser_iface: SerialisationInterface):
+    def __init__(self, ser_iface: SerialisationCodeInterface):
         super().__init__()
         self.ser_iface = ser_iface
         self.ser_init_complete = False

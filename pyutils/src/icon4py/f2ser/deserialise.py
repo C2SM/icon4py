@@ -16,7 +16,7 @@ from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     InitData,
     SavepointData,
-    SerialisationInterface,
+    SerialisationCodeInterface,
 )
 
 
@@ -27,7 +27,7 @@ class ParsedGranuleDeserialiser:
         self.prefix = prefix
         self.data = {"Savepoint": [], "Init": ...}
 
-    def deserialise(self) -> SerialisationInterface:
+    def deserialise(self) -> SerialisationCodeInterface:
         """Deserialise the parsed granule and returns a serialisation interface.
 
         Returns:
@@ -36,7 +36,7 @@ class ParsedGranuleDeserialiser:
         self._merge_out_inout_fields()
         self._make_savepoints()
         self._make_init_data()
-        return SerialisationInterface(**self.data)
+        return SerialisationCodeInterface(**self.data)
 
     def _make_savepoints(self) -> None:
         """Create savepoints for each subroutine and intent in the parsed granule.

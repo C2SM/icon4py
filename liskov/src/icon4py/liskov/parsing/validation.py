@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Match, Optional, Protocol
 
 import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.logger import setup_logger
+from icon4py.common.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     RepeatedDirectiveError,

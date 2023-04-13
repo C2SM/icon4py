@@ -100,7 +100,7 @@ class InsertData(CodeGenInput):
 
 
 @dataclass
-class DeserialisedDirectives:
+class IntegrationCodeInterface:
     StartStencil: Sequence[StartStencilData]
     EndStencil: Sequence[EndStencilData]
     Declare: Sequence[DeclareData]

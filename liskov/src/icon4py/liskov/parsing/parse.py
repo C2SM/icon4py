@@ -17,10 +17,10 @@ from pathlib import Path
 from typing import Sequence
 
 import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.common import Step
-from icon4py.liskov.logger import setup_logger
+from icon4py.common.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4py.liskov.parsing.validation import VALIDATORS
+from icon4py.liskov.pipeline.definition import Step
 
 
 REPLACE_CHARS = [ts.DIRECTIVE_IDENT, "&", "\n"]

@@ -13,9 +13,10 @@
 
 from typing import Any
 
-from icon4py.liskov.codegen.common import CodeGenerator
+from icon4py.common.logger import setup_logger
+from icon4py.liskov.codegen.generator import CodeGenerator
 from icon4py.liskov.codegen.integration.interface import (
-    DeserialisedDirectives,
+    IntegrationCodeInterface,
     StartStencilData,
     UnusedDirective,
 )
@@ -45,7 +46,6 @@ from icon4py.liskov.codegen.integration.template import (
 )
 from icon4py.liskov.codegen.types import GeneratedCode
 from icon4py.liskov.external.metadata import CodeMetadata
-from icon4py.liskov.logger import setup_logger
 
 
 logger = setup_logger(__name__)
@@ -54,7 +54,7 @@ logger = setup_logger(__name__)
 class IntegrationGenerator(CodeGenerator):
     def __init__(
         self,
-        directives: DeserialisedDirectives,
+        directives: IntegrationCodeInterface,
         profile: bool,
         metadata_gen: bool,
     ):

@@ -16,6 +16,18 @@ import unittest
 import pytest
 
 import icon4py.liskov.parsing.types as ts
+from icon4py.liskov.codegen.integration.deserialise import (
+    DeclareDataFactory,
+    EndCreateDataFactory,
+    EndIfDataFactory,
+    EndProfileDataFactory,
+    EndStencilDataFactory,
+    ImportsDataFactory,
+    InsertDataFactory,
+    StartCreateDataFactory,
+    StartProfileDataFactory,
+    StartStencilDataFactory,
+)
 from icon4py.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
@@ -28,18 +40,6 @@ from icon4py.liskov.codegen.integration.interface import (
     InsertData,
     StartCreateData,
     StartProfileData,
-)
-from icon4py.liskov.parsing.deserialise import (
-    DeclareDataFactory,
-    EndCreateDataFactory,
-    EndIfDataFactory,
-    EndProfileDataFactory,
-    EndStencilDataFactory,
-    ImportsDataFactory,
-    InsertDataFactory,
-    StartCreateDataFactory,
-    StartProfileDataFactory,
-    StartStencilDataFactory,
 )
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,

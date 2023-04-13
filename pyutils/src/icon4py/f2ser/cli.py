@@ -19,7 +19,7 @@ import click
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4py.f2ser.parse import GranuleParser
 from icon4py.liskov.codegen.serialisation.generate import SerialisationGenerator
-from icon4py.liskov.codegen.write import CodegenWriter
+from icon4py.liskov.codegen.writer import CodegenWriter
 
 
 @click.command("icon_f2ser")

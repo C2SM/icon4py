@@ -14,9 +14,11 @@
 from typing import Callable
 
 import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.codegen.serialisation.interface import SerialisationInterface
-from icon4py.liskov.common import Step
-from icon4py.liskov.logger import setup_logger
+from icon4py.common.logger import setup_logger
+from icon4py.liskov.codegen.serialisation.interface import (
+    SerialisationCodeInterface,
+)
+from icon4py.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)
@@ -30,13 +32,13 @@ class SavepointDataFactory:
     pass
 
 
-class SerialisationDeserialiser(Step):
+class SerialisationCodeDeserialiser(Step):
     _FACTORIES: dict[str, Callable] = {
         "Init": InitDataFactory(),
         "Savepoint": SavepointDataFactory(),
     }
 
-    def __call__(self, directives: ts.ParsedDict) -> SerialisationInterface:
+    def __call__(self, directives: ts.ParsedDict) -> SerialisationCodeInterface:
         logger.info("Deserialising directives into SerialisationInterface ...")
         deserialised = dict()
 
@@ -44,4 +46,4 @@ class SerialisationDeserialiser(Step):
             ser = func(directives)
             deserialised[key] = ser
 
-        return SerialisationInterface(**deserialised)
+        return SerialisationCodeInterface(**deserialised)

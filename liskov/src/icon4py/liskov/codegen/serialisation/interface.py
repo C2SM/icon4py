@@ -49,6 +49,6 @@ class SavepointData(CodeGenInput):
 
 
 @dataclass
-class SerialisationInterface:
+class SerialisationCodeInterface:
     Init: InitData
     Savepoint: list[SavepointData]
