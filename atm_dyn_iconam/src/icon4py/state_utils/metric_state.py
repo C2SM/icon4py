@@ -45,6 +45,9 @@ class MetricState:
     coeff1_dwdz: Field[[CellDim, KDim], float]
     coeff2_dwdz: Field[[CellDim, KDim], float]
 
+
+@dataclass
+class MetricStateNonHydro:
     exner_exfac: Field[[CellDim, KDim], float]
     exner_ref_mc: Field[[CellDim, KDim], float]
     wgtfacq_c: Field[[CellDim, KDim], float]
