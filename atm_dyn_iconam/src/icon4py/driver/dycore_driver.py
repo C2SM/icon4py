@@ -36,6 +36,9 @@ from icon4py.driver.io_utils import (
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
+log = logging.getLogger(__name__)
+
+
 class DummyAtmoNonHydro:
     def __init__(self, data_provider: IconSerialDataProvider):
         self.config = None
@@ -105,7 +108,6 @@ class Timeloop:
         self.atmo_non_hydro = atmo_non_hydro
         self.edges = edge_geometry
         self.cells = cell_geometry
-        self.log = logging.getLogger(__name__)
 
     def _full_name(self, func: Callable):
         return ":".join((self.__class__.__name__, func.__name__))
@@ -138,10 +140,10 @@ class Timeloop:
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
     ):
-        self.log.info(
+        log.info(
             f"starting time loop for dtime={self.config.dtime} n_timesteps={self.config.n_time_steps}"
         )
-        self.log.info("running initial step to diffuse fields before timeloop starts")
+        log.info("running initial step to diffuse fields before timeloop starts")
         self.diffusion.initial_step(
             diagnostic_state,
             prognostic_state,
@@ -155,12 +157,12 @@ class Timeloop:
             self.edges.edge_areas,
             self.cells.area,
         )
-        self.log.info(
+        log.info(
             f"starting real time loop for dtime={self.config.dtime} n_timesteps={self.config.n_time_steps}"
         )
         timer = Timer(self._full_name(self._timestep))
         for t in range(self.config.n_time_steps):
-            self.log.info(f"run timestep : {t}")
+            log.info(f"run timestep : {t}")
             timer.start()
             self._timestep(diagnostic_state, prognostic_state)
             timer.capture()
@@ -183,7 +185,6 @@ def initialize(n_time_steps, file_path: Path):
          prognostic_state: initial state fro prognostic and diagnostic variables
          diagnostic_state:
     """
-    log = logging.getLogger(__name__)
     experiment_name = "mch_ch_r04b09_dsl"
     log.info(f"reading configuration: experiment {experiment_name}")
     config = read_config(experiment_name, n_time_steps=n_time_steps)
@@ -252,7 +253,6 @@ def run(
     """
     start_time = datetime.now().astimezone(pytz.UTC)
     configure_logging(run_path, start_time)
-    log = logging.getLogger(__file__)
     log.info(f"Starting ICON dycore run: {datetime.isoformat(start_time)}")
     log.info(f"input args: input_path={input_path}, n_time_steps={n_steps}")
     timeloop, diagnostic_state, prognostic_state = initialize(n_steps, Path(input_path))
