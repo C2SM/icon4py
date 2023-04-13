@@ -28,6 +28,7 @@ from icon4py.grid.grid_manager import (
     ToGt4PyTransformation,
 )
 from icon4py.grid.horizontal import HorizontalMarkerIndex
+from icon4py.grid.vertical import VerticalGridConfig
 from icon4py.testutils.simple_mesh import SimpleMesh
 
 
@@ -35,7 +36,7 @@ SIMPLE_MESH_NC = "./simple_mesh_grid.nc"
 
 
 @pytest.fixture
-def simple_mesh_path():
+def simple_mesh_path(simple_mesh_data):
     return Path(SIMPLE_MESH_NC).absolute()
 
 
@@ -45,6 +46,7 @@ def simple_mesh_data():
     dataset = Dataset(SIMPLE_MESH_NC, "w", format="NETCDF4")
     dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
     dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=mesh.n_vertices)
+
     dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=mesh.n_edges)
     dataset.createDimension(GridFile.DimensionName.CELL_NAME, size=mesh.n_cells)
     dataset.createDimension(
@@ -63,6 +65,7 @@ def simple_mesh_data():
         GridFile.GridRefinementName.CONTROL_EDGES,
         (GridFile.DimensionName.EDGE_NAME,),
     )
+
     _add_to_dataset(
         dataset,
         np.zeros(mesh.n_cells),
@@ -92,7 +95,7 @@ def simple_mesh_data():
             GridFile.DimensionName.CELL_NAME,
         ),
     )
-    # add_to_dataset(data, mesh.c2v, GridFile.Offsets.C2V, (GridFile.Dimension.C2E_SIZE, GridFile.Dimension.CELL_NAME))
+
     _add_to_dataset(
         dataset,
         mesh.e2c,
@@ -121,10 +124,10 @@ def simple_mesh_data():
             GridFile.DimensionName.VERTEX_NAME,
         ),
     )
-    # TODO @magdalena: there is no v2c in the simple mesh
+
     _add_to_dataset(
         dataset,
-        np.zeros((mesh.n_cells, 3), dtype=np.int32),
+        mesh.c2v,
         GridFile.OffsetName.C2V,
         (
             GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
@@ -206,6 +209,8 @@ def _add_to_dataset(
     var[:] = np.transpose(data)[:]
 
 
+
+
 def test_gridparser_dimension(simple_mesh_data):
 
     data = Dataset(SIMPLE_MESH_NC, "r")
@@ -245,8 +250,6 @@ def test_grid_parser_index_fields(simple_mesh_data, caplog):
 
 
 # TODO @magdalena add test cases for
-# e2c2v - diamond: serial, simple
-# c2v: grid, ???
 # v2e2v: grid,???
 
 # v2e: serial, simple, grid
@@ -263,6 +266,7 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert has_invalid_index(gm.get_v2e_connectivity().table)
     reset_invalid_index(seralized_v2e)
     assert np.allclose(gm.get_v2e_connectivity().table, seralized_v2e)
+
 
 
 # v2c: serial, simple, grid
@@ -323,8 +327,11 @@ def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert np.allclose(gm.get_e2v_connectivity().table, serialized_e2v)
 
 
+
 def has_invalid_index(ar: np.ndarray):
     return np.any(np.where(ar == GridFile.INVALID_INDEX))
+
+
 
 
 # e2c :serial, simple, grid
@@ -358,7 +365,7 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert np.allclose(gm.get_c2e_connectivity().table, serialized_c2e)
 
 
-# e2c2e (e2c2eo) - diamond: serial, simple_mesh
+# e2c2e (e2c2eo) - diamond: serial, simple_mesh, grid file????
 @pytest.mark.skip("does this array exist in grid file?")
 @pytest.mark.datatest
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
@@ -368,6 +375,8 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert has_invalid_index(serialized_e2c2e)
     assert has_invalid_index(gm.get_e2c2e_connectivity().table)
     assert np.allclose(gm.get_e2c2e_connectivity().table, serialized_e2c2e)
+
+
 
 
 # c2e2c: serial, simple_mesh, grid
@@ -380,9 +389,25 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
         gm.get_c2e2c_connectivity().table, grid_savepoint.c2e2c()[0:num_cells, :]
     )
 
-
+def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
+    caplog.set_level(logging.DEBUG)
+    gm = init_grid_manager(r04b09_dsl_gridfile)
+    num_edges = gm.get_size(EdgeDim)
+    c2v = gm.get_c2v_connectivity().table
+    assert np.allclose(
+        gm.get_e2c2v_connectivity().table, grid_savepoint.e2c2v()[0:num_edges, :]
+    )
+@pytest.mark.skip("add to savepoint")
+def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
+    caplog.set_level(logging.DEBUG)
+    gm = init_grid_manager(r04b09_dsl_gridfile)
+    num_cells = gm.get_size(CellDim)
+    c2v = gm.get_c2v_connectivity().table
+    assert np.allclose(
+        c2v, grid_savepoint.c2v()[0:num_cells, :]
+    )
 def init_grid_manager(fname):
-    gm = GridManager(ToGt4PyTransformation(), fname)
+    gm = GridManager(ToGt4PyTransformation(), fname, VerticalGridConfig(65))
     gm.init()
     return gm
 
@@ -393,6 +418,12 @@ def test_grid_manager_getsize(simple_mesh_data, simple_mesh_path, dim, size, cap
     gm = GridManager(IndexTransformation(), simple_mesh_path)
     gm.init()
     assert size == gm.get_size(dim)
+
+def test_grid_manager_diamond_offset(simple_mesh_path):
+    mesh = SimpleMesh()
+    gm = GridManager(IndexTransformation(), simple_mesh_path, VerticalGridConfig(num_lev=mesh.k_level))
+    gm.init()
+    assert np.allclose(np.sort(gm.get_e2c2v_connectivity().table, 1), np.sort(mesh.diamond_arr, 1))
 
 
 def test_gridmanager_given_file_not_found_then_abort():

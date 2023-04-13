@@ -116,23 +116,23 @@ class IconGrid:
     def num_edges(self):
         return self.config.num_edges
 
-    def get_indices_from_to(
-        self, dim: Dimension, start_marker: int, end_marker: int
-    ) -> Tuple[int, int]:
+    def get_start_index(self, dim:Dimension, marker: int):
         """
-        Use to specify domains of a field for field_operator.
+            Use to specify lower end of domains of a field for field_operators.
 
-        For a given dimension, returns the start and end index if a
-        horizontal region in a field given by the markers.
-
-        field operators will then run from start of the region given by the
-        start_marker to the end of the region given by the end_marker
+            For a given dimension, returns the start index of the
+            horizontal region in a field given by the marker.
         """
-        if dim.kind != DimensionKind.HORIZONTAL:
-            raise ValueError(
-                "only defined for {} dimension kind ", DimensionKind.HORIZONTAL
-            )
-        return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
+        return self.start_indices[dim][marker]
+
+    def get_end_index(self, dim: Dimension, marker:int):
+        """
+               Use to specify upper end of domains of a field for field_operators.
+
+               For a given dimension, returns the end index of the
+               horizontal region in a field given by the marker.
+           """
+        return self.end_indices[dim][marker]
 
     def get_c2e_connectivity(self):
         table = self.connectivities["c2e"]
@@ -164,7 +164,11 @@ class IconGrid:
 
     def get_v2c_connectivity(self):
         table = self.connectivities["v2c"]
-        return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
+        return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
+
+    def get_c2v_connectivity(self):
+        table = self.connectivities["c2v"]
+        return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
 
     def get_e2ecv_connectivity(self):
         old_shape = self.connectivities["e2c2v"].shape

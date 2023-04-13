@@ -142,13 +142,13 @@ class IconGridSavePoint(IconSavepoint):
 
     def num(self, dim: Dimension) -> Optional[int]:
         if dim == CellDim:
-            return self.serializer.read("num_cells", self.savepoint)[0]
+            return int(self.serializer.read("num_cells", self.savepoint)[0])
         elif dim == EdgeDim:
-            return self.serializer.read("num_edges", self.savepoint)[0]
+            return int(self.serializer.read("num_edges", self.savepoint)[0])
         elif dim == VertexDim:
-            return self.serializer.read("num_vert", self.savepoint)[0]
+            return int(self.serializer.read("num_vert", self.savepoint)[0])
         elif dim == KDim:
-            return self.serializer.read("nlev", self.savepoint)[0]
+            return int(self.serializer.read("nlev", self.savepoint)[0])
         else:
             return None
 
@@ -173,7 +173,7 @@ class IconGridSavePoint(IconSavepoint):
         return v_
 
     def e2c2v(self):
-        # array "e2v" is actually e2c2v
+        # array "e2v" is actually e2c2v, that is hexagon or pentagon
         return self._get_connectivity_array("e2v")
 
     def v2e(self):

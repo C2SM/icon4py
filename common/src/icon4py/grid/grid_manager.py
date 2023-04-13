@@ -31,7 +31,7 @@ from icon4py.common.dimension import (
     EdgeDim,
     V2CDim,
     V2EDim,
-    VertexDim,
+    VertexDim, C2E2CODim, E2C2VDim,
 )
 from icon4py.grid.horizontal import HorizontalGridSize
 from icon4py.grid.icon_grid import GridConfig, IconGrid
@@ -66,8 +66,8 @@ class GridFile:
 
     class OffsetName(GridFileName):
         # e2c2e/e2c2eO: diamond edges (including origin) -> calculate?
-        # e2c2v: diamond vertices
-        #
+        # e2c2v: diamond vertices: constructed from e2c and c2v
+
         C2E2C = "neighbor_cell_index"  # dims(nv=3, cell)
         V2E2V = "vertices_of_vertex"  # dims(ne=6, vertex) not in simple mesh, = v2c2v vertices in hexa/pentagon
         V2E = "edges_of_vertex"  # dims(ne=6, vertex)
@@ -110,13 +110,13 @@ class GridFile:
     def dimension(self, name: GridFileName) -> int:
         return self._dataset.dimensions[name].size
 
-    def int_field(self, name: GridFileName, transpose=True) -> np.ndarray:
+    def int_field(self, name: GridFileName, transpose=True, dtype=np.int32) -> np.ndarray:
         try:
             nc_variable = self._dataset.variables[name]
 
             self._log.debug(f"reading {name}: {nc_variable}")
             data = nc_variable[:]
-            data = np.array(data, dtype=np.int32)
+            data = np.array(data, dtype=dtype)
             return np.transpose(data) if transpose else data
         except KeyError:
             msg = f"{name} does not exist in dataset"
@@ -129,8 +129,8 @@ class IconGridError(RuntimeError):
 
 
 class IndexTransformation(ABC):
-    def get_offset_for_index_field(self, array: np.ndarray):
-        return np.zeros(array.shape)
+    def get_offset_for_index_field(self, array: np.ndarray,):
+        return np.zeros(array.shape, dtype=np.int32)
 
 
 class ToGt4PyTransformation(IndexTransformation):
@@ -173,6 +173,7 @@ class GridManager:
             exit(1)
 
     def _read_grid_refinement_information(self, dataset):
+        _CHILD_DOM = 0
         reader = GridFile(dataset)
 
         grf_vertices = reader.dimension(GridFile.DimensionName.VERTEX_GRF)
@@ -185,31 +186,31 @@ class GridManager:
         end_indices = {}
         start_indices[CellDim] = self._get_index_field(
             reader, GridFile.GridRefinementName.START_INDEX_CELLS, transpose=False
-        )
+        )[_CHILD_DOM]
         end_indices[CellDim] = self._get_index_field(
             reader,
             GridFile.GridRefinementName.END_INDEX_CELLS,
             transpose=False,
-            apply_offset=False,
-        )
+            apply_offset=False, dtype=np.int64
+        )[_CHILD_DOM]
         start_indices[EdgeDim] = self._get_index_field(
-            reader, GridFile.GridRefinementName.START_INDEX_EDGES, transpose=False
-        )
+            reader, GridFile.GridRefinementName.START_INDEX_EDGES, transpose=False, dtype=np.int64
+        )[_CHILD_DOM]
         end_indices[EdgeDim] = self._get_index_field(
             reader,
             GridFile.GridRefinementName.END_INDEX_EDGES,
             transpose=False,
-            apply_offset=False,
-        )
+            apply_offset=False, dtype=np.int64
+        )[_CHILD_DOM]
         start_indices[VertexDim] = self._get_index_field(
-            reader, GridFile.GridRefinementName.START_INDEX_VERTICES, transpose=False
-        )
+            reader, GridFile.GridRefinementName.START_INDEX_VERTICES, transpose=False, dtype=np.int64
+        )[_CHILD_DOM]
         end_indices[VertexDim] = self._get_index_field(
             reader,
             GridFile.GridRefinementName.END_INDEX_VERTICES,
             transpose=False,
-            apply_offset=False,
-        )
+            apply_offset=False, dtype=np.int64
+        )[_CHILD_DOM]
 
         return start_indices, end_indices
 
@@ -225,13 +226,12 @@ class GridManager:
         return self._grid
 
     def _get_index(self, dim: Dimension, start_marker: int, index_dict):
-        _CHILD_DOM = 0
         if dim.kind != DimensionKind.HORIZONTAL:
             msg = f"getting start index in horizontal domain with non - horizontal dimension {dim}"
             self._log.warning(msg)
             raise IconGridError(msg)
         try:
-            return index_dict[dim][_CHILD_DOM][start_marker]
+            return index_dict[dim][start_marker]
         except KeyError as error:
             msg = f"start, end indices for dimension {dim} not present"
             self._log.error(msg)
@@ -255,6 +255,9 @@ class GridManager:
 
     def get_v2c_connectivity(self):
         return self._grid.get_v2c_connectivity()
+
+    def get_c2v_connectivity(self):
+        return self._grid.get_c2v_connectivity()
 
     def get_c2e2co_connectivity(self):
         return self._grid.get_c2e2co_connectivity()
@@ -283,9 +286,9 @@ class GridManager:
             raise IconGridError(f"Unknown dimension {dim}")
 
     def _get_index_field(
-        self, reader, field: GridFileName, transpose=True, apply_offset=True
+        self, reader, field: GridFileName, transpose=True, apply_offset=True, dtype=np.int32
     ):
-        field = reader.int_field(field, transpose=transpose)
+        field = reader.int_field(field, transpose=transpose, dtype=dtype)
         if apply_offset:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
@@ -300,15 +303,19 @@ class GridManager:
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
         c2e = self._get_index_field(reader, GridFile.OffsetName.C2E)
-        c2v = self._get_index_field(reader, GridFile.OffsetName.C2V)
+
 
         e2c = self._get_index_field(reader, GridFile.OffsetName.E2C)
-
+        c2v = self._get_index_field(reader, GridFile.OffsetName.C2V)
         e2v = self._get_index_field(reader, GridFile.OffsetName.E2V)
+
+        e2c2v = self.construct_diamond_array(c2v, e2c)
+
         v2c = self._get_index_field(reader, GridFile.OffsetName.V2C)
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
         v2e2v = self._get_index_field(reader, GridFile.OffsetName.V2E2V)
         c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C)
+        c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
         start_indices, end_indices = self._read_grid_refinement_information(dataset)
 
         config = GridConfig(
@@ -325,8 +332,10 @@ class GridManager:
                     E2VDim: e2v,
                     V2EDim: v2e,
                     V2CDim: v2c,
-                    C2E2CDim: c2e2c,
                     C2VDim: c2v,
+                    C2E2CDim: c2e2c,
+                    C2E2CODim: c2e2c0,
+                    E2C2VDim: e2c2v,
                 }
             )
             .with_start_end_indices(
@@ -341,3 +350,14 @@ class GridManager:
         )
 
         return icon_grid
+
+    def construct_diamond_array(self, c2v:np.ndarray, e2c:np.ndarray):
+        dummy_c2v = np.append(c2v, GridFile.INVALID_INDEX * np.ones((1, c2v.shape[1]), dtype=np.int32), axis=0)
+        expanded = dummy_c2v[e2c[:, :], :]
+        sh = expanded.shape
+        flattened = expanded.reshape(sh[0], sh[1] * sh[2])
+        return np.apply_along_axis(np.unique, 1, flattened)
+
+    def get_c2v_connectivity(self):
+        return self._grid.get_c2v_connectivity()
+
