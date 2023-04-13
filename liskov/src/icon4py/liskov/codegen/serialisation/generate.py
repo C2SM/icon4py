@@ -28,9 +28,9 @@ logger = setup_logger(__name__)
 
 
 class SerialisationGenerator(CodeGenerator):
-    def __init__(self, ser_iface: SerialisationCodeInterface):
+    def __init__(self, interface: SerialisationCodeInterface):
         super().__init__()
-        self.ser_iface = ser_iface
+        self.ser_iface = interface
         self.ser_init_complete = False
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:

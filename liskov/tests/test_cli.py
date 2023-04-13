@@ -31,7 +31,7 @@ def outfile(tmp_path):
 @pytest.mark.parametrize("file", [NO_DIRECTIVES_STENCIL])
 def test_cli_no_directives(make_f90_tmpfile, cli, file, outfile):
     fpath = str(make_f90_tmpfile(content=file))
-    result = cli.invoke(main, [fpath, outfile])
+    result = cli.invoke(main, [fpath, outfile, "integration"])
     assert result.exit_code == 0
 
 
@@ -51,7 +51,7 @@ def test_cli_no_directives(make_f90_tmpfile, cli, file, outfile):
 )
 def test_cli(make_f90_tmpfile, cli, file, outfile, profile):
     fpath = str(make_f90_tmpfile(content=file))
-    args = [fpath, outfile]
+    args = [fpath, outfile, "integration"]
     if profile:
         args.append("--profile")
     result = cli.invoke(main, args)

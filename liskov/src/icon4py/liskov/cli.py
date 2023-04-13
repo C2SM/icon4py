@@ -19,8 +19,7 @@ from icon4py.common.logger import setup_logger
 from icon4py.liskov.pipeline.collection import (
     load_gt4py_stencils,
     parse_fortran_file,
-    run_integration_code_generation,
-    run_serialisation_code_generation,
+    run_code_generation,
 )
 
 
@@ -29,20 +28,24 @@ logger = setup_logger(__name__)
 
 @click.command("icon_liskov")
 @click.argument(
-    "input_filepath",
+    "input_path",
     type=click.Path(
         exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
     ),
 )
 @click.argument(
-    "output_filepath",
+    "output_path",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
-@click.option(
-    "--profile", "-p", is_flag=True, help="Add nvtx profile statements to stencils."
+@click.argument(
+    "mode",
+    type=str,
 )
 @click.option(
-    "--serialise", "-s", is_flag=True, help="Generate pp_ser serialisation statements."
+    "--profile",
+    "-p",
+    is_flag=True,
+    help="Add nvtx profile statements to integration code.",
 )
 @click.option(
     "--metadatagen",
@@ -51,38 +54,51 @@ logger = setup_logger(__name__)
     help="Add metadata header with information about program (requires git).",
 )
 def main(
-    input_filepath: pathlib.Path,
-    output_filepath: pathlib.Path,
+    input_path: pathlib.Path,
+    output_path: pathlib.Path,
+    mode: str,
     profile: bool,
     metadatagen: bool,
-    serialise: str,
 ) -> None:
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
 
     Usage:
-        icon_liskov <input_filepath> <output_filepath> [-p] [-m]
+        icon_liskov <input> <output> <mode> [-p] [-m]
 
     Options:
         -p --profile Add nvtx profile statements to stencils.
         -m --metadatagen Add metadata header with information about program (requires git).
-        -s --serialise Generates pp_ser serialisation statements for all fields in each stencil.
 
     Arguments:
-        input_filepath Path to the input file to process.
-        output_filepath Path to the output file to generate.
+        input_path: Path to the input file to process.
+        output_path: Path to the output file to generate.
+        mode: Code generation mode to use. Available options are serialisation or integration.
     """
-    if serialise:
-        ser_iface = parse_fortran_file(input_filepath, output_filepath, "serialisation")
-        run_serialisation_code_generation(
-            ser_iface, input_filepath, output_filepath, profile, metadatagen
+    if mode not in ["serialisation", "integration"]:
+        raise ValueError("Invalid mode: must be 'serialisation' or 'integration'")
+
+    def run_serialisation():
+        iface = parse_fortran_file(input_path, output_path, mode)
+        run_code_generation(input_path, output_path, mode, iface)
+
+    def run_integration():
+        iface = parse_fortran_file(input_path, output_path, mode)
+        iface_gt4py = load_gt4py_stencils(iface)
+        run_code_generation(
+            input_path,
+            output_path,
+            mode,
+            iface_gt4py,
+            profile=profile,
+            metadatagen=metadatagen,
         )
 
-    else:
-        parsed = parse_fortran_file(input_filepath, output_filepath, "integration")
-        parsed_checked = load_gt4py_stencils(parsed)
-        run_integration_code_generation(
-            parsed_checked, input_filepath, output_filepath, profile, metadatagen
-        )
+    mode_dispatcher = {
+        "serialisation": run_serialisation,
+        "integration": run_integration,
+    }
+
+    mode_dispatcher[mode]()
 
 
 if __name__ == "__main__":

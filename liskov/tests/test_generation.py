@@ -198,7 +198,7 @@ def expected_insert_source():
 
 @pytest.fixture
 def generator(serialised_directives):
-    return IntegrationGenerator(serialised_directives, profile=True, metadata_gen=False)
+    return IntegrationGenerator(serialised_directives, profile=True, metadatagen=False)
 
 
 def test_generate(

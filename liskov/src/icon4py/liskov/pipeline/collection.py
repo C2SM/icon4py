@@ -21,9 +21,6 @@ from icon4py.liskov.codegen.serialisation.deserialise import (
     SerialisationCodeDeserialiser,
 )
 from icon4py.liskov.codegen.serialisation.generate import SerialisationGenerator
-from icon4py.liskov.codegen.serialisation.interface import (
-    SerialisationCodeInterface,
-)
 from icon4py.liskov.codegen.writer import CodegenWriter
 from icon4py.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4py.liskov.parsing.parse import DirectivesParser
@@ -31,9 +28,14 @@ from icon4py.liskov.parsing.scan import DirectivesScanner
 from icon4py.liskov.pipeline.definition import Step, linear_pipeline
 
 
-SERIALISERS = {
+DESERIALISERS = {
     "integration": IntegrationCodeDeserialiser,
     "serialisation": SerialisationCodeDeserialiser,
+}
+
+CODEGENS = {
+    "integration": IntegrationGenerator,
+    "serialisation": SerialisationGenerator,
 }
 
 
@@ -57,7 +59,7 @@ def parse_fortran_file(
     Returns:
         IntegrationCodeInterface: The deserialized directives object.
     """
-    deserialiser = SERIALISERS[deserialiser_type]
+    deserialiser = DESERIALISERS[deserialiser_type]
 
     return [
         DirectivesScanner(input_filepath),
@@ -80,46 +82,23 @@ def load_gt4py_stencils(parsed: IntegrationCodeInterface) -> list[Step]:
 
 
 @linear_pipeline
-def run_integration_code_generation(
-    parsed: IntegrationCodeInterface,
+def run_code_generation(
     input_filepath: Path,
     output_filepath: Path,
-    profile: bool,
-    metadatagen: bool,
-) -> list[Step]:
-    """Execute a pipeline to generate and write code for a set of directives.
-
-    The pipeline consists of two steps: IntegrationGenerator and IntegrationWriter. The IntegrationGenerator generates
-    code based on the parsed directives and profile flag. The IntegrationWriter writes the generated code to the
-    specified filepath.
-
-    Args:
-        parsed: The deserialized directives object.
-        input_filepath: The original file containing the DSL preprocessor directives.
-        output_filepath: The file path to write the generated code to.
-        profile: A flag to indicate if profiling information should be included in the generated code.
-        metadatagen: A flag to indicate if a metadata header should be included in the generated code.
-    """
-    return [
-        IntegrationGenerator(parsed, profile, metadatagen),
-        CodegenWriter(input_filepath, output_filepath),
-    ]
-
-
-@linear_pipeline
-def run_serialisation_code_generation(
-    ser_iface: SerialisationCodeInterface,
-    input_filepath: Path,
-    output_filepath: Path,
+    codegen_type: str,
+    *args,
+    **kwargs,
 ) -> list[Step]:
     """Execute a pipeline to generate and write serialisation statements.
 
     Args:
-        ser_iface: The serialisation interface.
         input_filepath: The original file containing the DSL preprocessor directives.
         output_filepath: The file path to write the generated code to.
+        codegen_type: Which type of code generator to use.
     """
+    code_generator = CODEGENS[codegen_type]
+
     return [
-        SerialisationGenerator(ser_iface),
+        code_generator(*args, **kwargs),
         CodegenWriter(input_filepath, output_filepath),
     ]
