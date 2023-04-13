@@ -46,6 +46,22 @@ class DiagnosticState:
     ddt_w_adv_pc_before: Field[[CellDim, KDim], float]
     ddt_vn_apc_pc_before: Field[[EdgeDim, KDim], float]
     ntnd: float
+
+    @property
+    def ddt_w_adv_pc(self) -> LocatedFieldImpl:
+        return np_as_located_field(CellDim, KDim)(
+            np.asarray(self.ddt_w_adv_pc_before)[self.ntnd :]
+        )
+
+    @property
+    def ddt_vn_apc_pc(self) -> LocatedFieldImpl:
+        return np_as_located_field(EdgeDim, KDim)(
+            np.asarray(self.ddt_vn_apc_pc_before)[self.ntnd :]
+        )
+
+
+@dataclass
+class DiagnosticStateNonHydro:
     theta_v_ic: Field[[CellDim, KDim], float]
     exner_pr: Field[[CellDim, KDim], float]
     rho_ic: Field[[CellDim, KDim], float]
@@ -66,18 +82,6 @@ class DiagnosticState:
     rho_incr: Field[[EdgeDim, KDim], float]  # moist density increment [kg/m^3]
     vn_incr: Field[[EdgeDim, KDim], float]  # normal velocity increment [m/s]
     exner_incr: Field[[EdgeDim, KDim], float]  # exner increment [- ]
-
-    @property
-    def ddt_w_adv_pc(self) -> LocatedFieldImpl:
-        return np_as_located_field(CellDim, KDim)(
-            np.asarray(self.ddt_w_adv_pc_before)[self.ntnd :]
-        )
-
-    @property
-    def ddt_vn_apc_pc(self) -> LocatedFieldImpl:
-        return np_as_located_field(EdgeDim, KDim)(
-            np.asarray(self.ddt_vn_apc_pc_before)[self.ntnd :]
-        )
 
     @property
     def ddt_vn_adv_ntl1(self) -> Field[[EdgeDim, KDim], float]:

@@ -616,6 +616,8 @@ def _read_fields(diffusion_savepoint_init, grid_savepoint):
         vn=diffusion_savepoint_init.vn(),
         exner_pressure=diffusion_savepoint_init.exner(),
         theta_v=diffusion_savepoint_init.theta_v(),
+        rho=None,
+        exner=None,
     )
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     orientation = grid_savepoint.tangent_orientation()

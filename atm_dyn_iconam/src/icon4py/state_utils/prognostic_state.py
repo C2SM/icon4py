@@ -14,9 +14,10 @@
 from dataclasses import dataclass
 
 import numpy as np
-from functional.iterator.embedded import np_as_located_field
+
 from gt4py.next.common import Field
 
+from gt4py.next.iterator.embedded import np_as_located_field
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 

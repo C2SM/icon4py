@@ -170,10 +170,7 @@ def test_velocity_predictor_step(
         ntnd=ntnd,
     )
     prognostic_state = PrognosticState(
-        w=sp.w(),
-        vn=sp.vn(),
-        exner_pressure=None,
-        theta_v=None,
+        w=sp.w(), vn=sp.vn(), exner_pressure=None, theta_v=None, rho=None, exner=None
     )
 
     z_fields = ZFields(
@@ -299,18 +296,15 @@ def test_velocity_corrector_step(
         div_ic=None,
         dwdx=None,
         dwdy=None,
-        vt=sp.vt(),
-        vn_ie=sp.vn_ie(),
-        w_concorr_c=sp.w_concorr_c(),
+        vt=sp.vt(),  # yes
+        vn_ie=sp.vn_ie(),  # yes
+        w_concorr_c=sp.w_concorr_c(),  # yes
         ddt_w_adv_pc_before=sp.ddt_w_adv_pc_before(),
-        ddt_vn_apc_pc_before=sp.ddt_vn_apc_pc_before(),
+        ddt_vn_apc_pc_before=sp.ddt_vn_apc_pc_before(),  # yes
         ntnd=ntnd,
     )
     prognostic_state = PrognosticState(
-        w=sp.w(),
-        vn=sp.vn(),
-        exner_pressure=None,
-        theta_v=None,
+        w=sp.w(), vn=sp.vn(), exner_pressure=None, theta_v=None, rho=None, exner=None
     )
 
     z_fields = ZFields(
