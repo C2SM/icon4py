@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -28,10 +29,23 @@ def _mo_solve_nonhydro_4th_order_divdamp(
     return vn
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_4th_order_divdamp(
     scal_divdamp: Field[[KDim], float],
     z_graddiv2_vn: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
-    _mo_solve_nonhydro_4th_order_divdamp(scal_divdamp, z_graddiv2_vn, vn, out=vn)
+    _mo_solve_nonhydro_4th_order_divdamp(
+        scal_divdamp,
+        z_graddiv2_vn,
+        vn,
+        out=vn,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

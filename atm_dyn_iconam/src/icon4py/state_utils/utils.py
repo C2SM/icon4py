@@ -50,8 +50,20 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
 
 
 @program(backend=gtfn_cpu.run_gtfn)
-def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
-    _set_zero_v_k(out=field)
+def set_zero_v_k(
+    field: Field[[VertexDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
+):
+    _set_zero_v_k(
+        out=field,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
 
 
 @field_operator
@@ -60,8 +72,20 @@ def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
 
 
 @program
-def set_zero_c_k(field: Field[[CellDim, KDim], float]):
-    _set_zero_c_k(out=field)
+def set_zero_c_k(
+    field: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
+):
+    _set_zero_c_k(
+        out=field,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
 
 
 @field_operator

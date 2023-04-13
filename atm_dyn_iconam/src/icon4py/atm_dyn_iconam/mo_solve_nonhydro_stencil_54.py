@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -28,10 +29,23 @@ def _mo_solve_nonhydro_stencil_54(
     return w
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_54(
     z_raylfac: Field[[KDim], float],
     w_1: Field[[CellDim], float],
     w: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
-    _mo_solve_nonhydro_stencil_54(z_raylfac, w_1, w, out=w)
+    _mo_solve_nonhydro_stencil_54(
+        z_raylfac,
+        w_1,
+        w,
+        out=w,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

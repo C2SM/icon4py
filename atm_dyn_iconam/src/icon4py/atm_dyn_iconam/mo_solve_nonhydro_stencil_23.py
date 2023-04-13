@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -39,7 +40,7 @@ def _mo_solve_nonhydro_stencil_23(
     return vn_nnew
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_23(
     vn_nnow: Field[[EdgeDim, KDim], float],
     ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float],
@@ -52,6 +53,10 @@ def mo_solve_nonhydro_stencil_23(
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
     cpd: float,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _mo_solve_nonhydro_stencil_23(
         vn_nnow,
@@ -65,4 +70,8 @@ def mo_solve_nonhydro_stencil_23(
         wgt_nnew_vel,
         cpd,
         out=vn_nnew,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

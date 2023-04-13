@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 
@@ -28,14 +29,25 @@ def _mo_solve_nonhydro_stencil_41(
     return z_flxdiv_mass, z_flxdiv_theta
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_solve_nonhydro_stencil_41(
     geofac_div: Field[[CellDim, C2EDim], float],
     mass_fl_e: Field[[EdgeDim, KDim], float],
     z_theta_v_fl_e: Field[[EdgeDim, KDim], float],
     z_flxdiv_mass: Field[[CellDim, KDim], float],
     z_flxdiv_theta: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _mo_solve_nonhydro_stencil_41(
-        geofac_div, mass_fl_e, z_theta_v_fl_e, out=(z_flxdiv_mass, z_flxdiv_theta)
+        geofac_div,
+        mass_fl_e,
+        z_theta_v_fl_e,
+        out=(z_flxdiv_mass, z_flxdiv_theta),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
