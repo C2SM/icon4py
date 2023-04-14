@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
 from typing import Any, Optional, Protocol, Type
 
 import icon4py.liskov.parsing.types as ts
@@ -89,13 +88,11 @@ class DirectiveInputFactory(Protocol):
         ...
 
 
-@dataclass
 class DataFactoryBase:
     directive_cls: Type[ts.ParsedDirective]
     dtype: Type[CodeGenInput]
 
 
-@dataclass
 class OptionalMultiUseDataFactory(DataFactoryBase):
     def __call__(
         self, parsed: ts.ParsedDict, **kwargs: Any
@@ -110,38 +107,32 @@ class OptionalMultiUseDataFactory(DataFactoryBase):
             return deserialised
 
 
-@dataclass
 class RequiredSingleUseDataFactory(DataFactoryBase):
     def __call__(self, parsed: ts.ParsedDict) -> CodeGenInput:
         extracted = extract_directive(parsed["directives"], self.directive_cls)[0]
         return self.dtype(startln=extracted.startln)
 
 
-@dataclass
 class EndCreateDataFactory(RequiredSingleUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = ts.EndCreate
     dtype: Type[EndCreateData] = EndCreateData
 
 
-@dataclass
 class ImportsDataFactory(RequiredSingleUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = ts.Imports
     dtype: Type[ImportsData] = ImportsData
 
 
-@dataclass
 class EndIfDataFactory(OptionalMultiUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = ts.EndIf
     dtype: Type[EndIfData] = EndIfData
 
 
-@dataclass
 class EndProfileDataFactory(OptionalMultiUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = ts.EndProfile
     dtype: Type[EndProfileData] = EndProfileData
 
 
-@dataclass
 class StartCreateDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = ts.StartCreate
     dtype: Type[StartCreateData] = StartCreateData
@@ -158,7 +149,6 @@ class StartCreateDataFactory(DataFactoryBase):
         return self.dtype(startln=directive.startln, extra_fields=extra_fields)
 
 
-@dataclass
 class DeclareDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = ts.Declare
     dtype: Type[DeclareData] = DeclareData
@@ -187,7 +177,6 @@ class DeclareDataFactory(DataFactoryBase):
         return deserialised
 
 
-@dataclass
 class StartProfileDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = ts.StartProfile
     dtype: Type[StartProfileData] = StartProfileData
@@ -204,7 +193,6 @@ class StartProfileDataFactory(DataFactoryBase):
         return deserialised
 
 
-@dataclass
 class EndStencilDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = ts.EndStencil
     dtype: Type[EndStencilData] = EndStencilData
@@ -228,7 +216,6 @@ class EndStencilDataFactory(DataFactoryBase):
         return deserialised
 
 
-@dataclass
 class StartStencilDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = ts.StartStencil
     dtype: Type[StartStencilData] = StartStencilData
@@ -364,7 +351,6 @@ class StartStencilDataFactory(DataFactoryBase):
         return fields
 
 
-@dataclass
 class InsertDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = ts.Insert
     dtype: Type[InsertData] = InsertData

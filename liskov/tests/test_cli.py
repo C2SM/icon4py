@@ -51,8 +51,11 @@ def test_cli_no_directives(make_f90_tmpfile, cli, file, outfile):
 )
 def test_cli(make_f90_tmpfile, cli, file, outfile, profile):
     fpath = str(make_f90_tmpfile(content=file))
-    args = [fpath, outfile, "integration"]
+    args = [fpath, outfile, "serialisation"]
     if profile:
         args.append("--profile")
     result = cli.invoke(main, args)
     assert result.exit_code == 0
+
+
+# todo: add tests for different modes

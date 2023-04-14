@@ -45,8 +45,8 @@ class Deserialiser(Step):
         logger.info("Deserialising directives ...")
         deserialised = dict()
 
-        for key, func in self._FACTORIES.items():
-            ser = func(directives)
-            deserialised[key] = ser
+        for key, factory in self._FACTORIES.items():
+            obj = factory(directives)
+            deserialised[key] = obj
 
         return self._INTERFACE_TYPE(**deserialised)
