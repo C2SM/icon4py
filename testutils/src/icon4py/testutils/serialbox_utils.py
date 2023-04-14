@@ -187,6 +187,140 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_connectivity_array("v2c")
 
 
+class IconNonHydroInitSavepoint(IconSavepoint):
+    def exner_exfac(self):
+        return self._get_field("exner_exfac", CellDim, KDim)
+
+    def exner_ref_mc(self):
+        return self._get_field("exner_ref_mc", CellDim, KDim)
+
+    def wgtfacq_c(self):
+        return self._get_field("wgtfacq_c", CellDim, KDim)
+
+    def inv_ddqz_z_full(self):
+        return self._get_field("inv_ddqz_z_full", CellDim, KDim)
+
+    def rho_ref_mc(self):
+        return self._get_field("rho_ref_mc", CellDim, KDim)
+
+    def theta_ref_mc(self):
+        return self._get_field("theta_ref_mc", CellDim, KDim)
+
+    def vwind_expl_wgt(self):
+        return self._get_field("vwind_expl_wgt", CellDim)
+
+    def d_exner_dz_ref_ic(self):
+        return self._get_field("d_exner_dz_ref_ic", CellDim, KDim)
+
+    def ddqz_z_half(self):
+        return self._get_field("ddqz_z_half", CellDim, KDim)  # half KDim ?
+
+    def theta_ref_ic(self):
+        return self._get_field("theta_ref_ic", CellDim, KDim)
+
+    def d2dexdz2_fac1_mc(self):
+        return self._get_field("d2dexdz2_fac1_mc", CellDim, KDim)
+
+    def d2dexdz2_fac2_mc(self):
+        return self._get_field("d2dexdz2_fac2_mc", CellDim, KDim)
+
+    def vwind_impl_wgt(self):
+        return self._get_field("vwind_impl_wgt", CellDim, KDim)
+
+    def bdy_halo_c(self):
+        return self._get_field("bdy_halo_c", CellDim)
+
+    def ipeidx_dsl(self):
+        return self._get_field("ipeidx_dsl", EdgeDim, KDim)
+
+    def pg_exdist(self):
+        return self._get_field("pg_exdist", EdgeDim, KDim)
+
+    def hmask_dd3d(self):
+        return self._get_field("hmask_dd3d", EdgeDim)
+
+    def scalfac_dd3d(self):
+        return self._get_field("scalfac_dd3d", KDim)
+
+    def rayleigh_w(self):
+        return self._get_field("rayleigh_w", KDim)
+
+    def rho_ref_me(self):
+        return self._get_field("rho_ref_me", EdgeDim, KDim)
+
+    def theta_ref_me(self):
+        return self._get_field("theta_ref_me", EdgeDim, KDim)
+
+    def zdiff_gradp(self):
+        return self._get_field("zdiff_gradp", EdgeDim, E2CDim, KDim)
+
+    def mask_prog_halo_c(self):
+        return self._get_field("mask_prog_halo_c", CellDim, KDim)
+
+    def mask_hdiff(self):
+        return self._get_field("mask_hdiff", CellDim, KDim)
+
+    def pos_on_tplane_e(self):
+        return self._get_field("pos_on_tplane_e", ECDim)
+
+    def e_flx_avg(self):
+        return self._get_field("e_flx_avg", EdgeDim, E2C2EODim)
+
+    def rho(self):
+        return self._get_field("rho", CellDim, KDim)
+
+    def exner(self):
+        return self._get_field("exner", CellDim, KDim)
+
+    def theta_v_ic(self):
+        return self._get_field("theta_v_ic", CellDim, KDim)
+
+    def exner_pr(self):
+        return self._get_field("exner_pr", CellDim, KDim)
+
+    def rho_ic(self):
+        return self._get_field("rho_ic", CellDim, KDim)
+
+    def ddt_exner_phy(self):
+        return self._get_field("ddt_exner_phy", CellDim, KDim)
+
+    def grf_tend_rho(self):
+        return self._get_field("grf_tend_rho", CellDim, KDim)
+
+    def grf_tend_thv(self):
+        return self._get_field("grf_tend_thv", CellDim, KDim)
+
+    def grf_tend_w(self):
+        return self._get_field("grf_tend_w", CellDim, KDim)
+
+    def mass_fl_e(self):
+        return self._get_field("mass_fl_e", EdgeDim, KDim)
+
+    def ddt_vn_phy(self):
+        return self._get_field("ddt_vn_phy", EdgeDim, KDim)
+
+    def grf_tend_vn(self):
+        return self._get_field("grf_tend_vn", EdgeDim, KDim)
+
+    def ddt_vn_adv(self):
+        return self._get_field("ddt_vn_adv", EdgeDim, KDim)
+
+    def rho_incr(self):
+        return self._get_field("rho_incr", EdgeDim, KDim)
+
+    def vn_incr(self):
+        return self._get_field("vn_incr", EdgeDim, KDim)
+
+    def exner_incr(self):
+        return self._get_field("exner_incr", EdgeDim, KDim)
+
+    def vn_traj(self):
+        return self._get_field("vn_traj", EdgeDim, KDim)
+
+    def mass_flx_me(self):
+        return self._get_field("mass_flx_me", EdgeDim, KDim)
+
+
 class IconVelocityInitSavepoint(IconSavepoint):
     def c_lin_e(self):
         return self._get_field("c_lin_e", EdgeDim, E2CDim)
@@ -462,6 +596,21 @@ class IconSerialDataProvider:
         )
         return IconVelocityInitSavepoint(savepoint, self.serializer)
 
+    def from_savepoint_nonhydro_init(
+        self, istep: int, vn_only: bool, date: str, jstep: int
+    ) -> IconNonHydroInitSavepoint:
+        savepoint = (
+            self.serializer.savepoint[
+                "call-solve_nohydro"
+            ]  # TODO: @nfarabullini change string once new dataset is ready
+            .istep[istep]
+            .vn_only[vn_only]
+            .date[date]
+            .jstep[jstep]
+            .as_savepoint()
+        )
+        return IconNonHydroInitSavepoint(savepoint, self.serializer)
+
     def from_savepoint_diffusion_exit(
         self, linit: bool, date: str
     ) -> IconExitSavepoint:
@@ -478,6 +627,21 @@ class IconSerialDataProvider:
     ) -> IconExitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-velocity-tendencies"]
+            .istep[istep]
+            .vn_only[vn_only]
+            .date[date]
+            .jstep[jstep]
+            .as_savepoint()
+        )
+        return IconExitSavepoint(savepoint, self.serializer)
+
+    def from_savepoint_nonhydro_exit(
+        self, istep: int, vn_only: bool, date: str, jstep: int
+    ) -> IconExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint[
+                "call-solve_nohydro"
+            ]  # TODO: @nfarabullini change string once new dataset is ready
             .istep[istep]
             .vn_only[vn_only]
             .date[date]

@@ -1712,7 +1712,6 @@ class SolveNonhydro:
                 )
                 # mo_solve_nonhydro_stencil_64()
 
-
             mo_solve_nonhydro_stencil_65(
                 diagnostic_state_nonhydro.rho_ic,
                 self.metric_state_nonhydro.vwind_expl_wgt,
