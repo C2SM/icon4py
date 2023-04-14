@@ -73,7 +73,6 @@ class DiagnosticStateNonHydro:
     ddt_vn_phy: Field[[EdgeDim, KDim], float]
     grf_tend_vn: Field[[EdgeDim, KDim], float]
 
-    ddt_vn_phy: Field[[EdgeDim, KDim], float]
     ddt_vn_adv: Field[[EdgeDim, KDim], float]
     ntl1: float
     ntl2: float

@@ -126,6 +126,18 @@ def savepoint_velocity_init(data_provider, step_date_init, istep, vn_only, jstep
     )
 
 
+def savepoint_nonhydro_init(data_provider, step_date_exit, istep, vn_only, jstep):
+    """
+    Load data from ICON savepoint at exist of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_nonhydro_init(
+        istep=istep, vn_only=vn_only, date=step_date_exit, jstep=jstep
+    )
+
+
 @pytest.fixture
 def diffusion_savepoint_exit(data_provider, step_date_exit):
     """
@@ -141,12 +153,24 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
 @pytest.fixture
 def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only, jstep):
     """
-    Load data from ICON savepoint at exist of velocity_advection module.
+    Load data from ICON savepoint at exist of solve_nonhydro module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.from_savepoint_velocity_exit(
+        istep=istep, vn_only=vn_only, date=step_date_exit, jstep=jstep
+    )
+
+
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep, vn_only, jstep):
+    """
+    Load data from ICON savepoint at exist of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_nonhydro_exit(
         istep=istep, vn_only=vn_only, date=step_date_exit, jstep=jstep
     )
 

@@ -69,10 +69,10 @@ class InterpolationState:
     c_lin_e: Field[[EdgeDim, E2CDim], float]
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float]
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float]
-    e_flx_avg: Field[[EdgeDim, E2C2EODim], float]
     c_intp: Field[[VertexDim, V2CDim], float]
     geofac_rot: Field[[VertexDim, V2EDim], float]
     pos_on_tplane_e: Field[[ECDim], float]
+    e_flx_avg: Field[[EdgeDim, E2C2EODim], float]
 
     @property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:

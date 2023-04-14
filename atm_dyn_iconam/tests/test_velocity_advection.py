@@ -46,6 +46,8 @@ def test_velocity_init(
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
         c_intp=savepoint.c_intp(),
         geofac_rot=savepoint.geofac_rot(),
+        pos_on_tplane_e=None,
+        e_flx_avg=None,
     )
     metric_state = MetricState(
         mask_hdiff=None,
@@ -103,6 +105,8 @@ def test_verify_velocity_init_against_regular_savepoint(
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
         c_intp=savepoint.c_intp(),
         geofac_rot=savepoint.geofac_rot(),
+        pos_on_tplane_e=None,
+        e_flx_avg=None,
     )
     metric_state = MetricState(
         mask_hdiff=None,
@@ -193,6 +197,8 @@ def test_velocity_predictor_step(
         rbf_vec_coeff_e=sp.rbf_vec_coeff_e(),
         c_intp=sp.c_intp(),
         geofac_rot=sp.geofac_rot(),
+        pos_on_tplane_e=None,
+        e_flx_avg=None,
     )
 
     metric_state = MetricState(
@@ -296,11 +302,11 @@ def test_velocity_corrector_step(
         div_ic=None,
         dwdx=None,
         dwdy=None,
-        vt=sp.vt(),  # yes
-        vn_ie=sp.vn_ie(),  # yes
-        w_concorr_c=sp.w_concorr_c(),  # yes
+        vt=sp.vt(),
+        vn_ie=sp.vn_ie(),
+        w_concorr_c=sp.w_concorr_c(),
         ddt_w_adv_pc_before=sp.ddt_w_adv_pc_before(),
-        ddt_vn_apc_pc_before=sp.ddt_vn_apc_pc_before(),  # yes
+        ddt_vn_apc_pc_before=sp.ddt_vn_apc_pc_before(),
         ntnd=ntnd,
     )
     prognostic_state = PrognosticState(
@@ -327,6 +333,8 @@ def test_velocity_corrector_step(
         rbf_vec_coeff_e=sp.rbf_vec_coeff_e(),
         c_intp=sp.c_intp(),
         geofac_rot=sp.geofac_rot(),
+        pos_on_tplane_e=None,
+        e_flx_avg=None,
     )
 
     metric_state = MetricState(
