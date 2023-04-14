@@ -42,6 +42,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_11_lower import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_11_upper import (
     _mo_solve_nonhydro_stencil_11_upper,
 )
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_19 import _mo_solve_nonhydro_stencil_19
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_35 import (
     _mo_solve_nonhydro_stencil_35,
 )
@@ -266,6 +267,33 @@ def predictor_stencils_11_lower_upper(
         domain={CellDim: (2, cell_endindex_interior_minus1), KDim: (nlevp1, nlevp1)},
     )
 
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def nhsolve_predictor_tendencies_19_20(
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    z_exner_ex_pr: Field[[CellDim, KDim], float],
+    ddxn_z_full: Field[[EdgeDim, KDim], float],
+    c_lin_e: Field[[EdgeDim, E2CDim], float],
+    z_dexner_dz_c_1: Field[[CellDim, KDim], float],
+    z_gradh_exner: Field[[EdgeDim, KDim], float],
+    edge_startindex_nudging_plus1: int,
+    edge_endindex_interior: int,
+    nflatlev: int,
+    nflat_gradp: int,
+):
+    _mo_solve_nonhydro_stencil_19(
+        inv_dual_edge_length,
+        z_exner_ex_pr,
+        ddxn_z_full,
+        c_lin_e,
+        z_dexner_dz_c_1,
+        out=z_gradh_exner,
+        domain={
+            EdgeDim: (edge_startindex_nudging_plus1, edge_endindex_interior),
+            KDim: (nflatlev, nflat_gradp),
+        },
+    )
 
 # TODO: @nfarabullini: what's up with stencil_20?
 
