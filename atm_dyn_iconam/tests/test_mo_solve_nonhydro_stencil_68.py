@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_68 import (
-    mo_solve_nonhydro_stencil_68,
+    _mo_solve_nonhydro_stencil_68,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -67,7 +67,7 @@ def test_mo_solve_nonhydro_stencil_68():
         np.asarray(theta_v_new),
         np.asarray(cvd_o_rd),
     )
-    mo_solve_nonhydro_stencil_68(
+    _mo_solve_nonhydro_stencil_68(
         mask_prog_halo_c,
         rho_now,
         theta_v_now,
@@ -76,6 +76,7 @@ def test_mo_solve_nonhydro_stencil_68():
         rho_new,
         theta_v_new,
         cvd_o_rd,
+        out=theta_v_new,
         offset_provider={},
     )
     assert np.allclose(theta_v_new, ref)

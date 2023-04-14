@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_14 import (
-    mo_solve_nonhydro_stencil_14,
+    _mo_solve_nonhydro_stencil_14,
 )
 from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -38,9 +38,10 @@ def test_mo_solve_nonhydro_stencil_14_z_theta_v_e():
     ref = mo_solve_nonhydro_stencil_14_numpy(
         np.asarray(z_rho_e), np.asarray(z_theta_v_e)
     )
-    mo_solve_nonhydro_stencil_14(
+    _mo_solve_nonhydro_stencil_14(
         z_rho_e,
         z_theta_v_e,
+        out=(z_rho_e, z_theta_v_e),
         offset_provider={},
     )
     assert np.allclose(z_theta_v_e, ref)

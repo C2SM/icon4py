@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
@@ -36,7 +37,7 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl(
     return p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_math_gradients_grad_green_gauss_cell_dsl(
     p_grad_1_u: Field[[CellDim, KDim], float],
     p_grad_1_v: Field[[CellDim, KDim], float],

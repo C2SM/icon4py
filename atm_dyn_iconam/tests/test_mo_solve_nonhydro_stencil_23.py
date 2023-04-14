@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_23 import (
-    mo_solve_nonhydro_stencil_23,
+    _mo_solve_nonhydro_stencil_23,
 )
 from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -69,7 +69,7 @@ def test_mo_solve_nonhydro_stencil_23():
         wgt_nnew_vel,
         cpd,
     )
-    mo_solve_nonhydro_stencil_23(
+    _mo_solve_nonhydro_stencil_23(
         vn_nnow,
         ddt_vn_adv_ntl1,
         ddt_vn_adv_ntl2,
@@ -81,6 +81,7 @@ def test_mo_solve_nonhydro_stencil_23():
         wgt_nnow_vel,
         wgt_nnew_vel,
         cpd,
+        out=vn_nnew,
         offset_provider={},
     )
     assert np.allclose(vn_nnew, ref)

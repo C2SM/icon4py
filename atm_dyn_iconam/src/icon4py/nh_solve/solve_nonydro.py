@@ -14,6 +14,12 @@ from gt4py.next.common import Field
 
 import icon4py.common.constants as constants
 import icon4py.nh_solve.solve_nonhydro_program as nhsolve_prog
+from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+)
+from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
+    mo_math_gradients_grad_green_gauss_cell_dsl,
+)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
@@ -638,25 +644,31 @@ class SolveNonhydro:
 
         # Compute rho and theta at edges for horizontal flux divergence term
         if config.iadv_rhotheta == 1:
-            # TODO: @abishekg7 this calls a function, which calls the stencil
-            nhsolve_prog.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 prognostic_state[nnow].rho,
                 self.interpolation_state.c_intp,
                 self.z_rho_v,
                 vertex_endindex_interior - 1,
                 self.grid.n_lev(),
+                horizontal_start=1,
+                horizontal_end=vertex_endindex_interior - 1,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),  # UBOUND(p_cell_in,2)
                 offset_provider={
                     "V2C": self.grid.get_v2c_connectivity(),
                     "V2CDim": V2CDim,
                 },
             )
-            # TODO: @abishekg7 this calls a function, which calls the stencil
-            nhsolve_prog.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 prognostic_state[nnow].theta_v,
                 self.interpolation_state.c_intp,
                 self.z_theta_v_v,
                 vertex_endindex_interior - 1,
                 self.grid.n_lev(),
+                horizontal_start=1,
+                horizontal_end=vertex_endindex_interior - 1,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),  # UBOUND(p_cell_in,2)
                 offset_provider={
                     "V2C": self.grid.get_v2c_connectivity(),
                     "V2CDim": V2CDim,
@@ -665,8 +677,7 @@ class SolveNonhydro:
             # mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl()
         elif config.iadv_rhotheta == 2:
             # Compute Green-Gauss gradients for rho and theta
-            # TODO: @abishekg7 this calls a function, which calls the stencil
-            nhsolve_prog.mo_math_gradients_grad_green_gauss_cell_dsl(
+            mo_math_gradients_grad_green_gauss_cell_dsl(
                 self.p_grad[:, 1],
                 self.p_grad[:, 2],
                 self.p_grad[:, 3],
@@ -677,6 +688,10 @@ class SolveNonhydro:
                 self.interpolation_state.geofac_grg_y,
                 cell_endindex_local,
                 self.grid.n_lev(),
+                horizontal_start=2,
+                horizontal_end=cell_endindex_interior - 1,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),  # UBOUND(p_ccpr,2)
                 offset_provider={
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "C2E2CODim": C2E2CODim,
@@ -747,10 +762,8 @@ class SolveNonhydro:
                 self.z_grad_rth_4,
                 self.z_rth_pr_1,
                 self.z_rth_pr_2,
-                horizontal_start=6,
-                horizontal_end=edge_endindex_interior - 1,
-                vertical_start=0,
-                vertical_end=self.grid.n_lev(),
+                edge_endindex_interior - 1,
+                self.grid.n_lev(),
                 offset_provider={
                     "E2C": self.grid.get_e2c_connectivity(),
                     "E2CDim": E2CDim,

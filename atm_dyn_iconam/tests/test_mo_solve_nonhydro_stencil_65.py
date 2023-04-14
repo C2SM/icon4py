@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_65 import (
-    mo_solve_nonhydro_stencil_65,
+    _mo_solve_nonhydro_stencil_65,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -64,7 +64,7 @@ def test_mo_solve_nonhydro_stencil_65():
         r_nsubsteps,
     )
 
-    mo_solve_nonhydro_stencil_65(
+    _mo_solve_nonhydro_stencil_65(
         rho_ic,
         vwind_expl_wgt,
         vwind_impl_wgt,
@@ -73,6 +73,7 @@ def test_mo_solve_nonhydro_stencil_65():
         w_concorr_c,
         mass_flx_ic,
         r_nsubsteps,
+        out=mass_flx_ic,
         offset_provider={},
     )
     assert np.allclose(mass_flx_ic, ref)

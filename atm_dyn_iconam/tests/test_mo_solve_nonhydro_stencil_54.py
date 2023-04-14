@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_54 import (
-    mo_solve_nonhydro_stencil_54,
+    _mo_solve_nonhydro_stencil_54,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -40,10 +40,11 @@ def test_mo_solve_nonhydro_stencil_54():
     ref = mo_solve_nonhydro_stencil_54_numpy(
         np.asarray(z_raylfac), np.asarray(w_1), np.asarray(w)
     )
-    mo_solve_nonhydro_stencil_54(
+    _mo_solve_nonhydro_stencil_54(
         z_raylfac,
         w_1,
         w,
+        out=w,
         offset_provider={},
     )
     assert np.allclose(w, ref)

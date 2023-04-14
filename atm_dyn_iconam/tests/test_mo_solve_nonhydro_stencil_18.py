@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_18 import (
-    mo_solve_nonhydro_stencil_18,
+    _mo_solve_nonhydro_stencil_18,
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -48,10 +48,11 @@ def test_mo_solve_nonhydro_stencil_18():
         np.asarray(z_exner_ex_pr),
     )
 
-    mo_solve_nonhydro_stencil_18(
+    _mo_solve_nonhydro_stencil_18(
         inv_dual_edge_length,
         z_exner_ex_pr,
         z_gradh_exner,
+        out=z_gradh_exner,
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
         },

@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_4th_order_divdamp import (
-    mo_solve_nonhydro_4th_order_divdamp,
+    _mo_solve_nonhydro_4th_order_divdamp,
 )
 from icon4py.common.dimension import EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -43,10 +43,11 @@ def test_mo_solve_nonhydro_4th_order_divdamp():
         np.asarray(z_graddiv2_vn),
         np.asarray(vn),
     )
-    mo_solve_nonhydro_4th_order_divdamp(
+    _mo_solve_nonhydro_4th_order_divdamp(
         scal_divdamp,
         z_graddiv2_vn,
         vn,
+        out=vn,
         offset_provider={},
     )
     assert np.allclose(vn, ref)

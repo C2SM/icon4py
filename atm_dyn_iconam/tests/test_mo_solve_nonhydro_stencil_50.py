@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_50 import (
-    mo_solve_nonhydro_stencil_50,
+    _mo_solve_nonhydro_stencil_50,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -50,12 +50,13 @@ def test_mo_solve_nonhydro_stencil_50():
         iau_wgt_dyn,
     )
 
-    mo_solve_nonhydro_stencil_50(
+    _mo_solve_nonhydro_stencil_50(
         z_rho_expl,
         z_exner_expl,
         rho_incr,
         exner_incr,
         iau_wgt_dyn,
+        out=(z_rho_expl, z_exner_expl),
         offset_provider={},
     )
 

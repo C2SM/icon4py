@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
-    mo_math_gradients_grad_green_gauss_cell_dsl,
+    _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -65,7 +65,7 @@ def test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy():
         np.asarray(geofac_grg_y),
     )
 
-    mo_math_gradients_grad_green_gauss_cell_dsl(
+    _mo_math_gradients_grad_green_gauss_cell_dsl(
         p_grad_1_u,
         p_grad_1_v,
         p_grad_2_u,
@@ -74,6 +74,7 @@ def test_mo_math_gradients_grad_green_gauss_cell_dsl_numpy():
         p_ccpr2,
         geofac_grg_x,
         geofac_grg_y,
+        out=(p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v),
         offset_provider={
             "C2E2CO": mesh.get_c2e2cO_offset_provider(),
             "C2E2CODim": C2E2CODim,

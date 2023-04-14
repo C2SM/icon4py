@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_55 import (
-    mo_solve_nonhydro_stencil_55,
+    _mo_solve_nonhydro_stencil_55,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -97,7 +97,7 @@ def test_mo_solve_nonhydro_stencil_55():
         cvd_o_rd,
     )
 
-    mo_solve_nonhydro_stencil_55(
+    _mo_solve_nonhydro_stencil_55(
         z_rho_expl,
         vwind_impl_wgt,
         inv_ddqz_z_full,
@@ -115,6 +115,7 @@ def test_mo_solve_nonhydro_stencil_55():
         theta_v_new,
         dtime,
         cvd_o_rd,
+        out=(rho_new, exner_new, theta_v_new),
         offset_provider={"Koff": KDim},
     )
 

@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_25 import (
-    mo_solve_nonhydro_stencil_25,
+    _mo_solve_nonhydro_stencil_25,
 )
 from icon4py.common.dimension import E2C2EODim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -39,10 +39,11 @@ def test_mo_solve_nonhydro_stencil_25():
     ref = mo_solve_nonhydro_stencil_25_numpy(
         mesh.e2c2eO, np.asarray(geofac_grdiv), np.asarray(z_graddiv_vn)
     )
-    mo_solve_nonhydro_stencil_25(
+    _mo_solve_nonhydro_stencil_25(
         geofac_grdiv,
         z_graddiv_vn,
         z_graddiv2_vn,
+        out=z_graddiv2_vn,
         offset_provider={
             "E2C2EO": mesh.get_e2c2eO_offset_provider(),
             "E2C2EODim": E2C2EODim,

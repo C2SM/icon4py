@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_10 import (
-    mo_solve_nonhydro_stencil_10,
+    _mo_solve_nonhydro_stencil_10,
 )
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -123,7 +123,7 @@ def test_mo_solve_nonhydro_stencil_10():
         wgt_nnew_rth,
     )
 
-    mo_solve_nonhydro_stencil_10(
+    _mo_solve_nonhydro_stencil_10(
         w,
         w_concorr_c,
         ddqz_z_half,
@@ -143,6 +143,7 @@ def test_mo_solve_nonhydro_stencil_10():
         dtime,
         wgt_nnow_rth,
         wgt_nnew_rth,
+        out=(rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
         offset_provider={"Koff": KDim},
     )
 

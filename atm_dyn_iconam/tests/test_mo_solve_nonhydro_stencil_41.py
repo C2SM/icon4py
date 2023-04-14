@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_41 import (
-    mo_solve_nonhydro_stencil_41,
+    _mo_solve_nonhydro_stencil_41,
 )
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -45,12 +45,13 @@ def test_mo_solve_nonhydro_stencil_41_z_flxdiv_theta():
         np.asarray(mass_fl_e),
         np.asarray(z_theta_v_fl_e),
     )
-    mo_solve_nonhydro_stencil_41(
+    _mo_solve_nonhydro_stencil_41(
         geofac_div,
         mass_fl_e,
         z_theta_v_fl_e,
         z_flxdiv_mass,
         z_flxdiv_theta,
+        out=(z_flxdiv_mass, z_flxdiv_theta),
         offset_provider={"C2E": mesh.get_c2e_offset_provider(), "C2EDim": C2EDim},
     )
 
