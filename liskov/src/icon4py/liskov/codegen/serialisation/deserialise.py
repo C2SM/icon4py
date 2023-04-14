@@ -14,6 +14,7 @@
 import icon4py.liskov.parsing.types as ts
 from icon4py.common.logger import setup_logger
 from icon4py.liskov.codegen.integration.deserialise import (
+    TOLERANCE_ARGS,
     _extract_stencil_name,
     pop_item_from_dict,
 )
@@ -61,6 +62,12 @@ class SavepointDataFactory:
                 "name",
             ]
             [pop_item_from_dict(named_args, k, None) for k in to_remove]
+
+            for tol in TOLERANCE_ARGS:
+                for k in named_args.copy().keys():
+                    if k.endswith(tol):
+                        pop_item_from_dict(named_args, k, None)
+
             fields = [
                 FieldSerialisationData(
                     variable=variable,
