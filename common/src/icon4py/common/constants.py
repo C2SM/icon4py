@@ -13,25 +13,32 @@
 
 from typing import Annotated
 
+# Physical constants
 
-GAS_CONSTANT_DRY_AIR: Annotated[
+RD: Annotated[
     float,
     "gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90), https://glossary.ametsoc.org/wiki/Gas_constant",
 ] = 287.04
 CPD: Annotated[float, "specific heat at constant pressure [J/K/kg]"] = 1004.64
-GAS_CONSTANT_WATER_VAPOR: Annotated[
+CVD: Annotated[float, "[J/K/kg] specific heat at constant volume"] = CPD - RD
+CVD_O_RD = CVD / RD
+
+RV: Annotated[
     float, "gas constant for water vapor [J/K/kg], rv in Icon"
 ] = 461.51
-GRAVITATIONAL_ACCELERATION: Annotated[
+GRAV: Annotated[
     float, "av. gravitational acceleration [m/s^2]"
 ] = 9.8066
+
+P0REF: Annotated[float, "[Pa]  reference pressure for Exner function"] = 100000.0
+
+
+# Implementation constants
+
 DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Annotated[
     float, "default physics to dynamics time step ratio"
 ] = 5.0
 
-# nonhydro constants
-RD: Annotated[float, "[J/K/kg] gas constant"] = 287.04
-CVD: Annotated[float, "[J/K/kg] specific heat at constant volume"] = CPD - RD
 RAYLEIGH_KLEMP: Annotated[int, "Klemp (2008) type Rayleigh damping"] = 2
-P0REF: Annotated[float, "[Pa]  reference pressure for Exner function"] = 100000.0
-CVD_O_RD = CVD / RD
+
+

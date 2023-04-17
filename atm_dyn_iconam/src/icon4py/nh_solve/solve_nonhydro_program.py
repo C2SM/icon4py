@@ -127,7 +127,35 @@ from icon4py.common.dimension import (
     V2CDim,
     VertexDim,
 )
-from icon4py.state_utils.utils import _set_zero_c_k
+from icon4py.state_utils.utils import _set_zero_c_k, _set_zero_e_k
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def init_test_fields(
+    z_rho_e: Field[[EdgeDim, KDim], float],
+    z_theta_v_e: Field[[EdgeDim, KDim], float],
+    z_dwdz_dd: Field[[CellDim, KDim], float],
+    z_graddiv_vn: Field[[EdgeDim, KDim], float],
+    edge_endindex_local: int,
+    cell_endindex_local: int,
+    nlev: int,
+):
+    _set_zero_e_k(
+        z_rho_e,
+        domain={EdgeDim: (0, edge_endindex_local), KDim: (0, nlev)},
+    )
+    _set_zero_e_k(
+        z_theta_v_e,
+        domain={EdgeDim: (0, edge_endindex_local), KDim: (0, nlev)},
+    )
+    _set_zero_e_k(
+        z_graddiv_vn,
+        domain={EdgeDim: (0, edge_endindex_local), KDim: (0, nlev)},
+    )
+    _set_zero_c_k(
+        z_dwdz_dd,
+        domain={CellDim: (0, cell_endindex_local), KDim: (0, nlev)},
+    )
 
 
 @program(backend=gtfn_cpu.run_gtfn)

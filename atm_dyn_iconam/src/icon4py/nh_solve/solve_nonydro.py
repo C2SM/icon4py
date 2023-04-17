@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Final
+
 from gt4py.next.common import Field
 
 import icon4py.common.constants as constants
@@ -165,6 +167,7 @@ class NonHydrostaticConfig:
         lhdiff_rcf: bool = True,
         l_vert_nested: bool = False,
         l_open_ubc: bool = True,
+        rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 2.0,
         divdamp_fac_o2: float = 2.0,
     ):
@@ -185,6 +188,7 @@ class NonHydrostaticConfig:
         self.rayleigh_type: int = rayleigh_type
         self.divdamp_order: int = divdamp_order
         self.l_vert_nested: bool = l_vert_nested
+        self.rhotheta_offctr: float = rhotheta_offctr
         self.veladv_offctr: float = veladv_offctr
         self.divdamp_fac_o2: float = divdamp_fac_o2
 
@@ -209,6 +213,11 @@ class NonHydrostaticParams:
 
     def __init__(self, config: NonHydrostaticConfig):
 
+
+        self.rd_o_cvd: Final[float] = constants.RD / constants.CPD
+        self.rd_o_p0ref: Final[float] = constants.RD / constants.P0REF
+        self.grav_o_cpd: Final[float] = constants.GRAV / constants.CPD
+
         # start level for 3D divergence damping terms
         self.kstart_dd3d: int = (
             # TODO: @abishekg7 See mo_vertical_grid.f90
@@ -225,8 +234,9 @@ class NonHydrostaticParams:
         self.df42 = config.divdamp_fac4 - config.divdamp_fac2
         self.dz42 = config.divdamp_z4 - config.divdamp_z2
 
-        self.bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
-        self.aqdr = df32 / dz32 - bqdr * dz32
+        self.bqdr = (self.df42 * self.dz32 - self.df32 * self.dz42) / (self.dz32 * self.dz42 * (self.dz42 - self.dz32))
+        self.aqdr = self.df32 / self.dz32 - self.bqdr * self.dz32
+
 
 
 class SolveNonhydro:
@@ -257,12 +267,17 @@ class SolveNonhydro:
 
         self._allocate_local_fields()
         self._initialized = True
-        self.rd_o_cvd = constants.RD / constants.CPD
-        self.rd_o_p0ref = constants.RD / constants.P0REF
-        self.grav_o_cpd = constants.GRAVITATIONAL_ACCELERATION / constants.CPD
+
 
         if self.grid.lvert_nest():
             self.l_vert_nested = True
+
+        self.enh_divdamp_fac = _en_smag_fac_for_zero_nshift(
+        a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
+        )
+
+        # TODO: @abishekg7 geometry_info
+        self.scal_divdamp = - self.enh_divdamp_fac* p_patch % geometry_info % mean_cell_area ** 2
 
     @property
     def initialized(self):
@@ -371,13 +386,27 @@ class SolveNonhydro:
         )  # TODO: @nfarabullini make this a program
 
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
-        bdy_divdamp = 0.75 / (nudge_max_coeff + dbl_eps) * abs(scal_divdamp)
+        bdy_divdamp = 0.75 / (nudge_max_coeff + dbl_eps) * abs(self.scal_divdamp)
 
         # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         scal_divdamp_o2 = (
             config.divdamp_fac_o2 * p_patch % geometry_info % mean_cell_area
         )
+
+        if(self.p_test_run):
+            nhsolve_prog.init_test_fields(
+                self.z_rho_e,
+                self.z_theta_v_e,
+                self.z_dwdz_dd,
+                self.z_graddiv_vn,
+                edge_endindex_local,
+                cell_endindex_local,
+                self.grid.n_lev(),
+                offset_provider={},
+            )
+
+
 
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
         if self.itime_scheme >= 4:
@@ -387,8 +416,11 @@ class SolveNonhydro:
             self.ntl1 = 1
             self.ntl2 = 1
 
-        self.wgt_nnow_vel = 0.5 - self.veladv_offctr
-        self.wgt_nnew_vel = 0.5 + self.veladv_offctr
+        self.wgt_nnow_vel = 0.5 - config.veladv_offctr #TODO: add to config
+        self.wgt_nnew_vel = 0.5 + config.veladv_offctr
+
+        self.wgt_nnew_rth = 0.5 + config.rhotheta_offctr #TODO: add to config
+        self.wgt_nnow_rth = 1.0 - self.wgt_nnew_rth
 
         self.run_predictor_step(
             diagnostic_state,
@@ -1817,3 +1849,4 @@ class SolveNonhydro:
             vertex_startindex_interior,
             vertex_endindex_interior,
         )
+

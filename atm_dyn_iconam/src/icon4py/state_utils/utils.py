@@ -19,7 +19,7 @@ from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, minimum
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners import gtfn_cpu
 
-from icon4py.common.dimension import CellDim, KDim, Koff, VertexDim
+from icon4py.common.dimension import CellDim, KDim, Koff, VertexDim, EdgeDim
 
 
 # TODO fix duplication: duplicated from test testutils/utils.py
@@ -60,7 +60,30 @@ def set_zero_v_k(
     _set_zero_v_k(
         out=field,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
+            VertexDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+
+@field_operator
+def _set_zero_e_k() -> Field[[EdgeDim, KDim], float]:
+    return broadcast(0.0, (EdgeDim, KDim))
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def set_zero_e_k(
+    field: Field[[EdgeDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
+):
+    _set_zero_e_k(
+        out=field,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )

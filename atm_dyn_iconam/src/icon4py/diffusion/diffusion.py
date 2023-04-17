@@ -52,7 +52,7 @@ from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.constants import (
     CPD,
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
-    GAS_CONSTANT_DRY_AIR,
+    RD,
 )
 from icon4py.common.dimension import (
     C2E2CDim,
@@ -369,7 +369,7 @@ class Diffusion:
     def __init__(self, run_program=True):
 
         self._initialized = False
-        self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
+        self.rd_o_cvd: float = RD / (CPD - RD)
         self.thresh_tdiff: float = (
             -5.0
         )  # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
