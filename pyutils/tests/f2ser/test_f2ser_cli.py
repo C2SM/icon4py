@@ -15,7 +15,7 @@ import pytest
 from click.testing import CliRunner
 
 from icon4py.f2ser.cli import main
-
+from icon4py.f2ser.exceptions import MissingDerivedTypeError
 
 @pytest.fixture
 def outfile(tmp_path):
@@ -39,3 +39,9 @@ def test_cli_no_deps(no_deps_source_file, outfile, cli):
     args = [inp, outfile]
     result = cli.invoke(main, args)
     assert result.exit_code == 0
+
+def test_cli_missing_deps(diffusion_granule, outfile, cli):
+    inp = str(diffusion_granule)
+    args = [inp, outfile]
+    result = cli.invoke(main, args)
+    assert result.exception == MissingDerivedTypeError
