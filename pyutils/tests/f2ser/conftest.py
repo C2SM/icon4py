@@ -31,3 +31,7 @@ def diffusion_granule(samples_path):
 @pytest.fixture
 def diffusion_granule_deps(samples_path):
     return [samples_path / "derived_types_example.f90"]
+
+@pytest.fixture
+def no_deps_source_file(samples_path):
+    return samples_path / "no_deps_subroutine_example.f90"
