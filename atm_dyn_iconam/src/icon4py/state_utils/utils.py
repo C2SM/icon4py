@@ -19,7 +19,7 @@ from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, minimum
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners import gtfn_cpu
 
-from icon4py.common.dimension import CellDim, KDim, Koff, VertexDim, EdgeDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
 
 # TODO fix duplication: duplicated from test testutils/utils.py
@@ -64,7 +64,6 @@ def set_zero_v_k(
             KDim: (vertical_start, vertical_end),
         },
     )
-
 
 
 @field_operator

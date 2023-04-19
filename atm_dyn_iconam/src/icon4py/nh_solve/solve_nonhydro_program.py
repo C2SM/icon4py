@@ -66,6 +66,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_39 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_40 import (
     _mo_solve_nonhydro_stencil_40,
 )
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_42 import (
+    _mo_solve_nonhydro_stencil_42,
+)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_43 import (
     _mo_solve_nonhydro_stencil_43,
 )
@@ -114,19 +117,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_66 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_67 import (
     _mo_solve_nonhydro_stencil_67,
 )
-from icon4py.common.dimension import (
-    C2E2CODim,
-    C2EDim,
-    CellDim,
-    E2C2EDim,
-    E2C2EODim,
-    E2CDim,
-    ECDim,
-    EdgeDim,
-    KDim,
-    V2CDim,
-    VertexDim,
-)
+from icon4py.common.dimension import C2EDim, CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.state_utils.utils import _set_zero_c_k, _set_zero_e_k
 
 

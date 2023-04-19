@@ -30,19 +30,29 @@ from icon4py.state_utils.z_fields import ZFields
 def test_nonhydro_params():
     nonhydro_params = NonHydrostaticParams(config)
 
-    assert nonhydro_params.df32 == pytest.approx(nonhydro_params.divdamp_fac3 - nonhydro_params.divdamp_fac2, abs=1e-12)
-    assert nonhydro_params.dz32 == pytest.approxnonhydro_params.divdamp_z3 - nonhydro_params.divdamp_z2, abs=1e-12)
-    assert nonhydro_params.df42 == pytest.approxnonhydro_params.divdamp_fac4 - nonhydro_params.divdamp_fac2, abs=1e-12)
-    assert nonhydro_params.dz42 == pytest.approxnonhydro_params.divdamp_z4 - nonhydro_params.divdamp_z2, abs=1e-12)
+    assert nonhydro_params.df32 == pytest.approx(
+        nonhydro_params.divdamp_fac3 - nonhydro_params.divdamp_fac2, abs=1e-12
+    )
+    assert nonhydro_params.dz32 == pytest.approx(
+        nonhydro_params.divdamp_z3 - nonhydro_params.divdamp_z2, abs=1e-12
+    )
+    assert nonhydro_params.df42 == pytest.approx(
+        nonhydro_params.divdamp_fac4 - nonhydro_params.divdamp_fac2, abs=1e-12
+    )
+    assert nonhydro_params.dz42 == pytest.approx(
+        nonhydro_params.divdamp_z4 - nonhydro_params.divdamp_z2, abs=1e-12
+    )
 
-    assert nonhydro_params.bqdr == pytest.approx(df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32)), abs=1e-12)
-    assert nonhydro_params.aqdr == pytest.approxdf32 / dz32 - bqdr * dz32, abs=1e-12)
+    assert nonhydro_params.bqdr == pytest.approx(
+        (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32)), abs=1e-12
+    )
+    assert nonhydro_params.aqdr == pytest.approx(df32 / dz32 - bqdr * dz32, abs=1e-12)
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep, step_date_init, step_date_exit",
-    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")]
+    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_nonhydro_predictor_step(
     icon_grid,
@@ -56,7 +66,6 @@ def test_nonhydro_predictor_step(
     cfl_w_limit = sp.cfl_w_limit()
     scalfac_exdiff = sp.scalfac_exdiff()
 
-
     diagnostic_state = DiagnosticState(
         hdef_ic=None,
         div_ic=None,
@@ -67,7 +76,7 @@ def test_nonhydro_predictor_step(
         w_concorr_c=sp.w_concorr_c(),
         ddt_w_adv_pc_before=None,
         ddt_vn_apc_pc_before=sp.ddt_vn_adv_pc_before(),
-        ntnd=None
+        ntnd=None,
     )
 
     diagnostic_state_nonhydro = DiagnosticStateNonHydro(
@@ -86,7 +95,7 @@ def test_nonhydro_predictor_step(
         ntl2=ntl2,
         rho_incr=sp.rho_incr(),
         vn_incr=sp.vn_incr(),
-        exner_incr=sp.exner_incr()
+        exner_incr=sp.exner_incr(),
     )
     prognostic_state = PrognosticState(
         w=sp.w(),
@@ -94,7 +103,7 @@ def test_nonhydro_predictor_step(
         exner_pressure=None,
         theta_v=sp.theta_v(),
         rho=sp.rho(),
-        exner=sp.exner()
+        exner=sp.exner(),
     )
 
     interpolation_state = InterpolationState(
@@ -112,7 +121,7 @@ def test_nonhydro_predictor_step(
         c_intp=savepoint.c_intp(),
         geofac_rot=None,
         pos_on_tplane_e=savepoint.pos_on_tplane_e(),
-        e_flx_avg=savepoint.e_flx_avg()
+        e_flx_avg=savepoint.e_flx_avg(),
     )
 
     metric_state = MetricState(
@@ -157,7 +166,7 @@ def test_nonhydro_predictor_step(
         theta_ref_me=savepoint.theta_ref_me,
         zdiff_gradp=savepoint.zdiff_gradp,
         mask_prog_halo_c=savepoint.mask_prog_halo_c,
-        mask_hdiff=savepoint.mask_hdiff
+        mask_hdiff=savepoint.mask_hdiff,
     )
 
     z_fields = ZFields(
@@ -174,7 +183,7 @@ def test_nonhydro_predictor_step(
         metric_state=metric_state,
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
-        vertical_params = vertical_params
+        vertical_params=vertical_params,
     )
 
     orientation = sp_d.tangent_orientation()
@@ -207,13 +216,14 @@ def test_nonhydro_predictor_step(
         l_recompute=l_recompute,
         l_init=l_init,
         nnow=nnow,
-        nnew=nnew
+        nnew=nnew,
     )
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep, step_date_init, step_date_exit",
-    [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")]
+    [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_nonhydro_corrector_step(
     icon_grid,
@@ -227,10 +237,7 @@ def test_nonhydro_corrector_step(
     cfl_w_limit = sp.cfl_w_limit()
     scalfac_exdiff = sp.scalfac_exdiff()
 
-    prep_adv=PrepAdvection(
-        vn_traj=sp.vn_traj(),
-        mass_flx_me=sp.mass_flx_me()
-    )
+    prep_adv = PrepAdvection(vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me())
 
     diagnostic_state = DiagnosticState(
         hdef_ic=None,
@@ -242,7 +249,7 @@ def test_nonhydro_corrector_step(
         w_concorr_c=sp.w_concorr_c(),
         ddt_w_adv_pc_before=None,
         ddt_vn_apc_pc_before=sp.ddt_vn_adv_pc_before(),
-        ntnd=None
+        ntnd=None,
     )
     diagnostic_state_nonhydro = DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
@@ -260,7 +267,7 @@ def test_nonhydro_corrector_step(
         ntl2=ntl2,
         rho_incr=sp.rho_incr(),
         vn_incr=sp.vn_incr(),
-        exner_incr=sp.exner_incr()
+        exner_incr=sp.exner_incr(),
     )
     prognostic_state = PrognosticState(
         w=sp.w(),
@@ -268,7 +275,7 @@ def test_nonhydro_corrector_step(
         exner_pressure=None,
         theta_v=sp.theta_v(),
         rho=sp.rho(),
-        exner=sp.exner()
+        exner=sp.exner(),
     )
 
     interpolation_state = InterpolationState(
@@ -286,7 +293,7 @@ def test_nonhydro_corrector_step(
         c_intp=savepoint.c_intp(),
         geofac_rot=None,
         pos_on_tplane_e=savepoint.pos_on_tplane_e(),
-        e_flx_avg=savepoint.e_flx_avg()
+        e_flx_avg=savepoint.e_flx_avg(),
     )
 
     metric_state = MetricState(
@@ -331,7 +338,7 @@ def test_nonhydro_corrector_step(
         theta_ref_me=savepoint.theta_ref_me,
         zdiff_gradp=savepoint.zdiff_gradp,
         mask_prog_halo_c=savepoint.mask_prog_halo_c,
-        mask_hdiff=savepoint.mask_hdiff
+        mask_hdiff=savepoint.mask_hdiff,
     )
 
     z_fields = ZFields(
@@ -348,7 +355,7 @@ def test_nonhydro_corrector_step(
         metric_state=metric_state,
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
-        vertical_params=vertical_params
+        vertical_params=vertical_params,
     )
 
     orientation = sp_d.tangent_orientation()
@@ -377,6 +384,5 @@ def test_nonhydro_corrector_step(
         f_e=sp_d.f_e(),
         area_edge=edge_areas,
         lprep_adv=lprep_adv,
-        lclean_mflx=lprep_adv
+        lclean_mflx=lprep_adv,
     )
-
