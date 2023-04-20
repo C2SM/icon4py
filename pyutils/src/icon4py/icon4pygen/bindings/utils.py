@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 from gt4py.next.common import Dimension
