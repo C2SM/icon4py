@@ -47,7 +47,7 @@ def format_fortran_code(source: str) -> str:
     Variable SPACK_ROOT is always set in a spack build, used to assume that fprettify
     is in PATH
     """
-    if "SPACK_ROOT" in os.environ:
+    if os.getenv("SPACK_ROOT") is not None:
         fprettify_path = "fprettify"
     else:
         bin_path = Path(PYTHON_PATH).parent
