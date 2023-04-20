@@ -13,6 +13,7 @@
 
 import subprocess
 import sys
+import os
 from pathlib import Path
 
 from gt4py.next.common import Dimension
@@ -42,13 +43,15 @@ def format_fortran_code(source: str) -> str:
 
     The path to fprettify needs to be set explicitly for the
     non-Spack build process as Liskov does not activate a virtual environment.
-    However, the PYTHON_PATH does not contain fprettify in a Spack build, hence the need for a special condition
+
+    Variable SPACK_ROOT is always set in a spack build, used to assume that fprettify
+    is in PATH
     """
-    bin_path = Path(PYTHON_PATH).parent
-    if "spack" not in str(bin_path):
-        fprettify_path = bin_path / "fprettify"
-    else:
+    if "SPACK_ROOT" in os.environ:
         fprettify_path = "fprettify"
+    else:
+        bin_path = Path(PYTHON_PATH).parent
+        fprettify_path = bin_path / "fprettify"
     args = [str(fprettify_path)]
     p1 = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()
