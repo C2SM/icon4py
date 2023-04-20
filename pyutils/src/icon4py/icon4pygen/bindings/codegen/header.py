@@ -42,7 +42,11 @@ run_verify_func_declaration = as_jinja(
     {%- for field in _this_node.out_fields -%}
     {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
     {%- endfor -%}
+    {%- if _this_node.tol_fields -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
+    {%- else -%}
+    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd
+    {%- endif -%}
     {%- for field in _this_node.tol_fields -%}
     const double {{ field.name }}_rel_tol,
     const double {{ field.name }}_abs_tol
