@@ -45,3 +45,10 @@ def test_cli_missing_deps(diffusion_granule, outfile, cli):
     args = [inp, outfile]
     result = cli.invoke(main, args)
     assert result.exception == MissingDerivedTypeError
+
+def test_cli_missing_source(not_existing_diffusion_granule, outfile, cli):
+    inp = str(not_existing_diffusion_granule)
+    args = [inp, outfile]
+    result = cli.invoke(main, args)
+    error_search = result.stdout.find("Invalid value for \'GRANULE_PATH\'")
+    assert error_search != -1
