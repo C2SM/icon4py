@@ -52,7 +52,7 @@ def _mo_solve_nonhydro_stencil_20(
 
     #z_gradh_exner = z_exner_ex_pr_0(E2C[0])
 
-    return z_gradh_exner
+    return inv_dual_edge_length * (z_exner_ex_pr_1(E2C[1]) - z_exner_ex_pr_0(E2C[0]))
 
 
 @program
