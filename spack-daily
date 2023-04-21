@@ -22,7 +22,8 @@ pipeline {
                             sh """
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b archspec https://github.com/C2SM/spack-c2sm.git
                             . ./spack-c2sm/setup-env.sh
-                            spack dev-build --test=root py-icon4py@main%gcc ^py-gt4py@main%gcc
+                            spack env activate spack/dev-env
+                            spack install -v --test=root
                             """
                         }
                     }
