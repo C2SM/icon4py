@@ -20,10 +20,9 @@ pipeline {
                     stage('Install and Test') {
                         steps {
                             sh """
-                            git clone --depth 1 --recurse-submodules --shallow-submodules -b main https://github.com/C2SM/spack-c2sm.git
+                            git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/C2SM/spack-c2sm.git
                             . ./spack-c2sm/setup-env.sh
-                            spack env activate spack/dev-env
-                            spack install -v --test=root
+                            spack install -v --test=root py-icon4py@main%gcc ^py-gt4py@main%gcc
                             """
                         }
                     }
