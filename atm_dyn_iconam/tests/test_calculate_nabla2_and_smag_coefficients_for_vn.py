@@ -213,6 +213,6 @@ def test_calculate_nabla2_and_smag_coefficients_for_vn():
             "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, mesh.n_e2c2v),
         },
     )
-    assert not np.allclose(kh_smag_e_ref, kh_smag_e)
+    assert np.allclose(kh_smag_e_ref, kh_smag_e)
     assert np.allclose(kh_smag_ec_ref, kh_smag_ec)
     assert np.allclose(z_nabla2_e_ref, z_nabla2_e)
