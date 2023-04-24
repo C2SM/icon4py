@@ -37,9 +37,11 @@ logger = setup_logger(__name__)
     "output_path",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
-@click.argument(
-    "mode",
+@click.option(
+    "--ppser",
+    is_flag=True,
     type=str,
+    help="Generate ppser serialization statements instead of integration code.",
 )
 @click.option(
     "--profile",
@@ -56,7 +58,7 @@ logger = setup_logger(__name__)
 def main(
     input_path: pathlib.Path,
     output_path: pathlib.Path,
-    mode: str,
+    ppser: bool,
     profile: bool,
     metadatagen: bool,
 ) -> None:
@@ -68,14 +70,13 @@ def main(
     Options:
         -p --profile Add nvtx profile statements to stencils.
         -m --metadatagen Add metadata header with information about program (requires git).
+        --ppser Generate ppser serialization statements instead of integration code.
 
     Arguments:
         input_path: Path to the input file to process.
         output_path: Path to the output file to generate.
-        mode: Code generation mode to use. Available options are serialisation or integration.
     """
-    if mode not in ["serialisation", "integration"]:
-        raise ValueError("Invalid mode: must be 'serialisation' or 'integration'")
+    mode = "serialisation" if ppser else "integration"
 
     def run_serialisation():
         iface = parse_fortran_file(input_path, output_path, mode)
