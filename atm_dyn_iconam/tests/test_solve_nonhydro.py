@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import numpy as np
 import pytest
 
 from icon4py.nh_solve.solve_nonydro import NonHydrostaticParams, SolveNonhydro
@@ -386,3 +385,157 @@ def test_nonhydro_corrector_step(
         lprep_adv=lprep_adv,
         lclean_mflx=lprep_adv,
     )
+
+
+@pytest.mark.datatest
+def test_run_solve_nonhydro_single_step():
+    prep_adv = PrepAdvection(vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me())
+    diagnostic_state = DiagnosticState(
+        hdef_ic=None,
+        div_ic=None,
+        dwdx=None,
+        dwdy=None,
+        vt=sp.vt(),
+        vn_ie=sp.vn_ie(),
+        w_concorr_c=sp.w_concorr_c(),
+        ddt_w_adv_pc_before=None,
+        ddt_vn_apc_pc_before=sp.ddt_vn_adv_pc_before(),
+        ntnd=None,
+    )
+    diagnostic_state_nonhydro = DiagnosticStateNonHydro(
+        theta_v_ic=sp.theta_v_ic(),
+        exner_pr=sp.exner_pr(),
+        rho_ic=sp.rho_ic(),
+        ddt_exner_phy=sp.ddt_exner_phy(),
+        grf_tend_rho=sp.grf_tend_rho(),
+        grf_tend_thv=sp.grf_tend_thv(),
+        grf_tend_w=sp.grf_tend_w(),
+        mass_fl_e=sp.mass_fl_e(),
+        ddt_vn_phy=sp.ddt_vn_phy(),
+        grf_tend_vn=sp.grf_tend_vn(),
+        ddt_vn_adv=sp.ddt_vn_adv(),
+        ntl1=ntl1,
+        ntl2=ntl2,
+        rho_incr=sp.rho_incr(),
+        vn_incr=sp.vn_incr(),
+        exner_incr=sp.exner_incr(),
+    )
+    prognostic_state = PrognosticState(
+        w=sp.w(),
+        vn=None,
+        exner_pressure=None,
+        theta_v=sp.theta_v(),
+        rho=sp.rho(),
+        exner=sp.exner(),
+    )
+
+    interpolation_state = InterpolationState(
+        e_bln_c_s=savepoint.e_bln_c_s(),
+        rbf_coeff_1=None,
+        rbf_coeff_2=None,
+        geofac_div=savepoint.geofac_div(),
+        geofac_n2s=None,
+        geofac_grg_x=savepoint.geofac_grg_x(),
+        geofac_grg_y=savepoint.geofac_grg_y(),
+        nudgecoeff_e=savepoint.nudgecoeff_e(),
+        c_lin_e=savepoint.c_lin_e(),
+        geofac_grdiv=savepoint.geofac_grdiv(),
+        rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
+        c_intp=savepoint.c_intp(),
+        geofac_rot=None,
+        pos_on_tplane_e=savepoint.pos_on_tplane_e(),
+        e_flx_avg=savepoint.e_flx_avg(),
+    )
+
+    metric_state = MetricState(
+        mask_hdiff=None,
+        theta_ref_mc=None,
+        wgtfac_c=None,
+        zd_intcoef=None,
+        zd_vertidx=None,
+        zd_diffcoef=None,
+        coeff_gradekin=None,
+        ddqz_z_full_e=None,
+        wgtfac_e=None,
+        wgtfacq_e=None,
+        ddxn_z_full=None,
+        ddxt_z_full=sp.ddxt_z_full(),
+        ddqz_z_half=None,
+        coeff1_dwdz=None,
+        coeff2_dwdz=None,
+    )
+
+    metric_state_nonhydro = MetricStateNonHydro(
+        exner_exfac=savepoint.exner_exfac,
+        exner_ref_mc=savepoint.exner_ref_mc,
+        wgtfacq_c=savepoint.wgtfacq_c,
+        inv_ddqz_z_full=savepoint.inv_ddqz_z_full,
+        rho_ref_mc=savepoint.rho_ref_mc,
+        theta_ref_mc=savepoint.theta_ref_mc,
+        vwind_expl_wgt=savepoint.vwind_expl_wgt,
+        d_exner_dz_ref_ic=savepoint.d_exner_dz_ref_ic,
+        ddqz_z_half=savepoint.ddqz_z_half,
+        theta_ref_ic=savepoint.theta_ref_ic,
+        d2dexdz2_fac1_mc=savepoint.d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc=savepoint.d2dexdz2_fac2_mc,
+        vwind_impl_wgt=savepoint.vwind_impl_wgt,
+        bdy_halo_c=savepoint.bdy_halo_c,
+        ipeidx_dsl=savepoint.ipeidx_dsl,
+        pg_exdist=savepoint.pg_exdist,
+        hmask_dd3d=savepoint.hmask_dd3d,
+        scalfac_dd3d=savepoint.scalfac_dd3d,
+        rayleigh_w=savepoint.rayleigh_w,
+        rho_ref_me=savepoint.rho_ref_me,
+        theta_ref_me=savepoint.theta_ref_me,
+        zdiff_gradp=savepoint.zdiff_gradp,
+        mask_prog_halo_c=savepoint.mask_prog_halo_c,
+        mask_hdiff=savepoint.mask_hdiff,
+    )
+
+    z_fields = ZFields(
+        z_w_concorr_me=sp.z_w_concorr_me(),
+        z_kin_hor_e=sp.z_kin_hor_e(),
+        z_vt_ie=sp.z_vt_ie(),
+    )
+    vertical_params = VerticalModelParams()
+
+    solve_nonhydro = SolveNonhydro()
+    solve_nonhydro.init(
+        grid=icon_grid,
+        config=config,
+        params=nonhydro_params,
+        metric_state=metric_state,
+        metric_state_nonhydro=metric_state_nonhydro,
+        interpolation_state=interpolation_state,
+        vertical_params=vertical_params,
+    )
+    for _ in range(4):
+        solve_nonhydro.time_step(
+            diagnostic_state=diagnostic_state,
+            diagnostic_state_nonhydro=diagnostic_state_nonhydro,
+            prognostic_state=prognostic_state,
+            prep_adv=prep_adv,
+            config=config,
+            z_fields=z_fields,
+            inv_dual_edge_length=inverse_dual_edge_length,
+            primal_normal_cell_1=primal_normal_cell_1,
+            dual_normal_cell_1=dual_normal_cell_1,
+            primal_normal_cell_2=primal_normal_cell_2,
+            dual_normal_cell_2=dual_normal_cell_2,
+            inv_primal_edge_length=inverse_primal_edge_lengths,
+            tangent_orientation=orientation,
+            cfl_w_limit=cfl_w_limit,
+            scalfac_exdiff=scalfac_exdiff,
+            cell_areas=cell_areas,
+            owner_mask=sp_d.owner_mask(),
+            f_e=sp_d.f_e(),
+            area_edge=edge_areas,
+            dtime=dtime,
+            idyn_timestep=idyn_timestep,
+            l_recompute=l_recompute,
+            l_init=l_init,
+            nnew=nnew,
+            nnow=nnow,
+            lprep_adv=lprep_adv,
+            lclean_mflx=lprep_adv,
+        )

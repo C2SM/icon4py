@@ -28,8 +28,17 @@ def zero_field(*dims: Dimension, mesh, dtype=float):
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
 
+def indices_field(*dims: Dimension, mesh, dtype=int):
+    shapex = tuple(map(lambda x: mesh.size[x], dims))
+    return np_as_located_field(*dims)(np.arange(shapex, dtype=dtype))
+
+
 def _allocate(*dims: Dimension, mesh, dtype=float):
     return zero_field(*dims, mesh=mesh, dtype=dtype)
+
+
+def _allocate_indices(*dims: Dimension, mesh, dtype=int):
+    return indices_field(*dims, mesh=mesh, dtype=dtype)
 
 
 @field_operator

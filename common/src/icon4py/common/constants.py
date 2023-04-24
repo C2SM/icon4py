@@ -37,3 +37,6 @@ DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Annotated[
 ] = 5.0
 
 RAYLEIGH_KLEMP: Annotated[int, "Klemp (2008) type Rayleigh damping"] = 2
+
+# Math constants
+dbl_eps = 0.01  # EPSILON(1._wp)

@@ -79,6 +79,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_29 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_30 import (
     mo_solve_nonhydro_stencil_30,
 )
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_31 import (
+    mo_solve_nonhydro_stencil_31,
+)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_32 import (
     mo_solve_nonhydro_stencil_32,
 )
@@ -87,6 +90,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_33 import (
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_34 import (
     mo_solve_nonhydro_stencil_34,
+)
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_35 import (
+    mo_solve_nonhydro_stencil_35,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
@@ -102,6 +108,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_54 import (
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_55 import (
     mo_solve_nonhydro_stencil_55,
+)
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_56_63 import (
+    mo_solve_nonhydro_stencil_56_63,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_58 import (
     mo_solve_nonhydro_stencil_58,
@@ -135,7 +144,7 @@ from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
 from icon4py.state_utils.prep_adv_state import PrepAdvection
 from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import _allocate, set_zero_c_k
+from icon4py.state_utils.utils import _allocate, _allocate_indices, set_zero_c_k
 from icon4py.state_utils.z_fields import ZFields
 from icon4py.velocity import velocity_advection
 
@@ -168,7 +177,9 @@ class NonHydrostaticConfig:
         l_open_ubc: bool = True,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 2.0,
+        divdamp_fac: float = 1.0,
         divdamp_fac_o2: float = 2.0,
+        max_nudging_coeff: float = 0.02,
     ):
 
         # parameters from namelist diffusion_nml
@@ -189,7 +200,9 @@ class NonHydrostaticConfig:
         self.l_vert_nested: bool = l_vert_nested
         self.rhotheta_offctr: float = rhotheta_offctr
         self.veladv_offctr: float = veladv_offctr
+        self.divdamp_fac: float = divdamp_fac
         self.divdamp_fac_o2: float = divdamp_fac_o2
+        self.nudge_max_coeff: float = max_nudging_coeff
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
@@ -275,7 +288,9 @@ class SolveNonhydro:
 
         # TODO: @abishekg7 geometry_info
         self.scal_divdamp = (
-            -self.enh_divdamp_fac * p_patch % geometry_info % mean_cell_area**2
+            -self.enh_divdamp_fac
+            * self.grid.num_cells()
+            ** 2  # TODO: @nfarabullini: check that this is ok for p_patch % geometry_info % mean_cell_area
         )
 
     @property
@@ -322,8 +337,10 @@ class SolveNonhydro:
         self.ikoffset = _allocate(EdgeDim, E2CDim, KDim, mesh=self.grid)
         self.z_graddiv2_vn = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.mass_flx_ic = _allocate(CellDim, KDim, mesh=self.grid)
+        self.k_field = _allocate_indices(KDim, mesh=self.grid)
+        self.cell_field = _allocate_indices(CellDim, mesh=self.grid)
 
-    # def initial_step(self):
+    # def initial_step(self): # TODO: @nfarabullini ask Magda if we need this
 
     def time_step(
         self,
@@ -332,6 +349,7 @@ class SolveNonhydro:
         prognostic_state: list[PrognosticState],
         prep_adv: PrepAdvection,
         config: NonHydrostaticConfig,
+        params: NonHydrostaticParams,
         z_fields: ZFields,
         inv_dual_edge_length: Field[[EdgeDim], float],
         primal_normal_cell_1: Field[[ECDim], float],
@@ -357,6 +375,7 @@ class SolveNonhydro:
     ):
         """
         Do one diffusion step within regular time loop.
+
         runs a diffusion step for the parameter linit=False, within regular time loop.
         """
 
@@ -384,15 +403,18 @@ class SolveNonhydro:
         #  Precompute Rayleigh damping factor
         z_raylfac = 1.0 / (
             1.0 + dtime * self.metric_state.rayleigh_w
-        )  # TODO: @nfarabullini make this a program
+        )  # TODO: @nfarabullini make this a program, check whether that all vars are fixed (then they can be moved to init)
 
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
-        bdy_divdamp = 0.75 / (nudge_max_coeff + dbl_eps) * abs(self.scal_divdamp)
+        bdy_divdamp = (
+            0.75 / (config.nudge_max_coeff + constants.dbl_eps) * abs(self.scal_divdamp)
+        )
 
         # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
         # delta_x**2 is approximated by the mean cell area
         scal_divdamp_o2 = (
-            config.divdamp_fac_o2 * p_patch % geometry_info % mean_cell_area
+            config.divdamp_fac_o2
+            * self.grid.num_cells()  # TODO: @nfarabullini: check that this is ok for p_patch % geometry_info % mean_cell_area
         )
 
         if self.p_test_run:
@@ -408,17 +430,17 @@ class SolveNonhydro:
             )
 
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
-        if self.itime_scheme >= 4:
+        if config.itime_scheme >= 4:
             self.ntl1 = nnow
             self.ntl2 = nnew
         else:
             self.ntl1 = 1
             self.ntl2 = 1
 
-        self.wgt_nnow_vel = 0.5 - config.veladv_offctr  # TODO: add to config
+        self.wgt_nnow_vel = 0.5 - config.veladv_offctr
         self.wgt_nnew_vel = 0.5 + config.veladv_offctr
 
-        self.wgt_nnew_rth = 0.5 + config.rhotheta_offctr  # TODO: add to config
+        self.wgt_nnew_rth = 0.5 + config.rhotheta_offctr
         self.wgt_nnow_rth = 1.0 - self.wgt_nnew_rth
 
         self.run_predictor_step(
@@ -426,6 +448,7 @@ class SolveNonhydro:
             diagnostic_state_nonhydro,
             prognostic_state,
             config,
+            params,
             z_fields,
             inv_dual_edge_length,
             primal_normal_cell_1,
@@ -453,6 +476,7 @@ class SolveNonhydro:
             diagnostic_state_nonhydro,
             prognostic_state,
             config,
+            params,
             z_fields,
             inv_dual_edge_length,
             inv_primal_edge_length,
@@ -469,6 +493,8 @@ class SolveNonhydro:
             area_edge,
             lprep_adv,
             lclean_mflx,
+            scal_divdamp_o2,
+            bdy_divdamp,
         )
 
         if self.grid.limited_area():
@@ -477,8 +503,9 @@ class SolveNonhydro:
                 prognostic_state[nnew].rho,
                 prognostic_state[nnew].theta_v,
                 prognostic_state[nnew].exner,
-                self.rd_o_cvd,
-                self.rd_o_p0ref,
+                self.cell_field,
+                params.rd_o_cvd,
+                params.rd_o_p0ref,
                 cell_startindex_interior - 1,
                 cell_endindex_local,
                 cell_endindex_nudging,
@@ -508,6 +535,7 @@ class SolveNonhydro:
         diagnostic_state_nonhydro: DiagnosticStateNonHydro,
         prognostic_state: list[PrognosticState],
         config: NonHydrostaticConfig,
+        params: NonHydrostaticParams,
         z_fields: ZFields,
         inv_dual_edge_length: Field[[EdgeDim], float],
         primal_normal_cell_1: Field[[ECDim], float],
@@ -601,6 +629,7 @@ class SolveNonhydro:
                 self.metric_state.wgtfac_c,
                 self.metric_state_nonhydro.inv_ddqz_z_full,
                 self.z_dexner_dz_c_1,
+                self.k_field,
                 cell_endindex_interior - 1,
                 self.vertical_params.nflatlev,
                 self.grid.n_lev(),
@@ -628,6 +657,7 @@ class SolveNonhydro:
             self.z_theta_v_pr_ic,
             diagnostic_state_nonhydro.theta_v_ic,
             self.z_th_ddz_exner_c,
+            self.k_field,
             cell_endindex_interior - 1,
             self.grid.n_lev(),
             offset_provider={"Koff": KDim},
@@ -645,6 +675,7 @@ class SolveNonhydro:
             self.metric_state_nonhydro.theta_ref_ic,
             self.z_theta_v_pr_ic,
             diagnostic_state_nonhydro.theta_v_ic,
+            self.k_field,
             cell_endindex_interior - 1,
             self.grid.n_lev() + 1,
             offset_provider={"Koff": KDim},
@@ -852,7 +883,7 @@ class SolveNonhydro:
                 diagnostic_state_nonhydro.theta_v_ic,
                 self.metric_state_nonhydro.inv_ddqz_z_full,
                 inv_dual_edge_length,
-                self.grav_o_cpd,
+                params.grav_o_cpd,
                 self.z_hydro_corr,
                 horizontal_start=edge_startindex_nudging + 1,
                 horizontal_end=edge_endindex_interior,
@@ -943,8 +974,6 @@ class SolveNonhydro:
             },
         )
 
-        #####  Not sure about  _mo_solve_nonhydro_stencil_31()
-
         if config.idiv_method == 1:
             mo_solve_nonhydro_stencil_32(
                 self.z_rho_e,
@@ -970,6 +999,7 @@ class SolveNonhydro:
             diagnostic_state.vn_ie,
             z_fields.z_vt_ie,
             z_fields.z_kin_hor_e,
+            self.k_field,
             edge_endindex_interior - 2,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
@@ -984,17 +1014,19 @@ class SolveNonhydro:
                 z_fields.z_vt_ie,
                 z_fields.z_kin_hor_e,
                 self.metric_state.wgtfacq_e,
+                self.k_field,
                 edge_endindex_local - 2,
                 self.grid.n_lev() + 1,
                 offset_provider={"Koff": KDim},
             )
 
-        nhsolve_prog.predictor_stencils_39_40(
+        nhsolve_prog.stencils_39_40(
             self.interpolation_state.e_bln_c_s,
             z_fields.z_w_concorr_me,
             self.metric_state.wgtfac_c,
             self.metric_state_nonhydro.wgtfacq_c,
             diagnostic_state.w_concorr_c,
+            self.k_field,
             cell_endindex_local - 1,
             self.vertical_params.nflatlev + 1,
             self.grid.n_lev(),
@@ -1051,6 +1083,7 @@ class SolveNonhydro:
             self.metric_state_nonhydro.vwind_impl_wgt,
             diagnostic_state_nonhydro.theta_v_ic,
             self.z_q,
+            self.k_field,
             constants.RD,
             constants.CVD,
             dtime,
@@ -1089,6 +1122,7 @@ class SolveNonhydro:
             self.z_flxdiv_theta,
             diagnostic_state_nonhydro.theta_v_ic,
             diagnostic_state_nonhydro.ddt_exner_phy,
+            self.k_field,
             dtime,
             cell_startindex_nudging + 1,
             cell_endindex_interior,
@@ -1169,15 +1203,15 @@ class SolveNonhydro:
 
         # compute dw/dz for divergence damping term
         if config.lhdiff_rcf and config.divdamp_type >= 3:
-            nhsolve_prog.mo_solve_nonhydro_stencil_56_63(
+            mo_solve_nonhydro_stencil_56_63(
                 self.metric_state_nonhydro.inv_ddqz_z_full,
                 prognostic_state[nnew].w,
                 diagnostic_state.w_concorr_c,
                 self.z_dwdz_dd,
-                cell_startindex_nudging + 1,
-                cell_endindex_local,
-                config.kstart_dd3d,  # TODO: @abishekg7
-                self.grid.n_lev(),
+                horizontal_start=cell_startindex_nudging + 1,
+                horizontal_end=cell_endindex_nudging,
+                vertical_start=params.kstart_dd3d,
+                vertical_end=self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
 
@@ -1191,7 +1225,7 @@ class SolveNonhydro:
                 dtime,
                 cell_startindex_nudging + 1,
                 cell_endindex_interior,
-                config.kstart_moist,  # TODO: @abishekg7
+                params.kstart_moist,  # TODO: @abishekg7
                 self.grid.n_lev(),
                 offset_provider={},
             )
@@ -1221,7 +1255,7 @@ class SolveNonhydro:
                 diagnostic_state.w_concorr_c,
                 self.z_dwdz_dd,
                 cell_endindex_nudging,  # TODO: @abishekg7 double check domains
-                config.kstart_dd3d,  # TODO: @abishekg7
+                params.kstart_dd3d,  # TODO: @abishekg7
                 self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
@@ -1234,6 +1268,7 @@ class SolveNonhydro:
         diagnostic_state_nonhydro: DiagnosticStateNonHydro,
         prognostic_state: list[PrognosticState],
         config: NonHydrostaticConfig,
+        params: NonHydrostaticParams,
         z_fields: ZFields,
         inv_dual_edge_length: Field[[EdgeDim], float],
         inv_primal_edge_length: Field[[EdgeDim], float],
@@ -1250,6 +1285,8 @@ class SolveNonhydro:
         area_edge: Field[[EdgeDim], float],
         lprep_adv: bool,
         lclean_mflx: bool,
+        scal_divdamp_o2: float,
+        bdy_divdamp: float,
     ):
 
         (
@@ -1289,7 +1326,7 @@ class SolveNonhydro:
         nvar = nnew
 
         mo_solve_nonhydro_stencil_10(
-            prognostic_state.w,
+            prognostic_state[nnew].w,
             diagnostic_state.w_concorr_c,
             self.metric_state.ddqz_z_half,
             prognostic_state[nnow].rho,
@@ -1306,8 +1343,8 @@ class SolveNonhydro:
             diagnostic_state_nonhydro.theta_v_ic,
             self.z_th_ddz_exner_c,
             dtime,
-            wgt_nnow_rth,
-            wgt_nnew_rth,
+            self.wgt_nnow_rth,
+            self.wgt_nnew_rth,
             horizontal_start=2,
             horizontal_end=cell_endindex_interior,
             vertical_start=1,
@@ -1326,7 +1363,7 @@ class SolveNonhydro:
             self.z_graddiv_vn,
             horizontal_start=6,
             horizontal_end=edge_endindex_interior - 2,
-            vertical_start=config.kstart_dd3d,  # TODO: @abishekg7 resolve
+            vertical_start=params.kstart_dd3d,  # TODO: @abishekg7 resolve
             vertical_end=self.grid.n_lev(),
             offset_provider={
                 "E2C": self.grid.get_e2c_connectivity(),
@@ -1385,11 +1422,12 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             if config.divdamp_order == 4 or (
-                config.divdamp_order == 24 and config.divdamp_fac_o2 <= 4 * divdamp_fac
+                config.divdamp_order == 24
+                and config.divdamp_fac_o2 <= 4 * config.divdamp_fac
             ):
                 if self.grid.limited_area():
                     mo_solve_nonhydro_stencil_27(
-                        scal_divdamp,
+                        self.scal_divdamp,
                         bdy_divdamp,
                         self.interpolation_state.nudgecoeff_e,
                         self.z_graddiv2_vn,
@@ -1402,7 +1440,7 @@ class SolveNonhydro:
                     )
                 else:
                     mo_solve_nonhydro_4th_order_divdamp(
-                        scal_divdamp,
+                        self.scal_divdamp,
                         self.z_graddiv2_vn,
                         prognostic_state[nnew].vn,
                         edge_startindex_nudging + 1,
@@ -1426,6 +1464,20 @@ class SolveNonhydro:
                 vertical_end=self.grid.n_lev(),
                 offset_provider={},
             )
+
+        mo_solve_nonhydro_stencil_31(
+            self.interpolation_state.e_flx_avg,
+            prognostic_state[nnew].vn,
+            self.z_vn_avg,
+            horizontal_start=4,
+            horizontal_end=edge_endindex_interior - 2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={
+                "E2C2EO": self.grid.get_e2c2eo_connectivity(),
+                "E2C2EODim": E2C2EODim,
+            },
+        )
 
         ##### COMMUNICATION PHASE
 
@@ -1470,6 +1522,37 @@ class SolveNonhydro:
                 )
 
         if config.itime_scheme >= 5:
+            mo_solve_nonhydro_stencil_35(
+                prognostic_state[nnew].vn,
+                self.metric_state.ddxn_z_full,
+                self.metric_state.ddxt_z_full,
+                diagnostic_state.vt,
+                z_fields.z_w_concorr_me,
+                horizontal_start=4,
+                horizontal_end=edge_endindex_local - 2,
+                vertical_start=self.vertical_params.nflatlev,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={},
+            )
+
+            nhsolve_prog.stencils_39_40(
+                self.interpolation_state.e_bln_c_s,
+                z_fields.z_w_concorr_me,
+                self.metric_state.wgtfac_c,
+                self.metric_state_nonhydro.wgtfacq_c,
+                diagnostic_state.w_concorr_c,
+                self.k_field,
+                cell_endindex_local - 1,
+                self.vertical_params.nflatlev + 1,
+                self.grid.n_lev(),
+                self.grid.n_lev() + 1,
+                offset_provider={
+                    "C2E": self.grid.get_c2e_connectivity(),
+                    "C2EDim": C2EDim,
+                    "Koff": KDim,
+                },
+            )
+
             nhsolve_prog.corrector_stencils_35_39_40(  # TODO: @abishekg7 bounds are complicated
                 prognostic_state[nnew].vn,
                 self.metric_state.ddxn_z_full,
@@ -1540,6 +1623,7 @@ class SolveNonhydro:
                 self.metric_state_nonhydro.vwind_impl_wgt,
                 diagnostic_state_nonhydro.theta_v_ic,
                 self.z_q,
+                self.k_field,
                 constants.RD,
                 constants.CVD,
                 dtime,
@@ -1571,6 +1655,7 @@ class SolveNonhydro:
                 self.metric_state_nonhydro.vwind_impl_wgt,
                 diagnostic_state_nonhydro.theta_v_ic,
                 self.z_q,
+                self.k_field,
                 constants.RD,
                 constants.CVD,
                 dtime,
@@ -1607,6 +1692,7 @@ class SolveNonhydro:
             self.z_flxdiv_theta,
             diagnostic_state_nonhydro.theta_v_ic,
             diagnostic_state_nonhydro.ddt_exner_phy,
+            self.k_field,
             dtime,
             cell_startindex_nudging + 1,
             cell_endindex_interior,
