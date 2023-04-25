@@ -14,13 +14,13 @@
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.atm_dyn_iconam.calculate_z_temp import calculate_z_temp
+from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import calculate_nabla2_of_theta
 from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
 
-def calculate_z_temp_numpy(
+def calculate_nabla2_of_theta_numpy(
     c2e: np.array, z_nabla2_e: np.array, geofac_div: np.array
 ) -> np.array:
     geofac_div = np.expand_dims(geofac_div, axis=-1)
@@ -28,7 +28,7 @@ def calculate_z_temp_numpy(
     return z_temp
 
 
-def test_calculate_z_temp():
+def test_calculate_nabla2_of_theta():
     mesh = SimpleMesh()
 
     z_nabla2_e = random_field(mesh, EdgeDim, KDim)
@@ -37,10 +37,10 @@ def test_calculate_z_temp():
 
     out = zero_field(mesh, CellDim, KDim)
 
-    ref = calculate_z_temp_numpy(
+    ref = calculate_nabla2_of_theta_numpy(
         mesh.c2e, np.asarray(z_nabla2_e), np.asarray(geofac_div)
     )
-    calculate_z_temp(
+    calculate_nabla2_of_theta(
         z_nabla2_e,
         geofac_div_new,
         out,

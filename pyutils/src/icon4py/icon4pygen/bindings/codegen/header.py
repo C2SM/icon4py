@@ -19,8 +19,8 @@ from gt4py.eve import Node
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator, format_source
 
-from icon4py.bindings.entities import Field
-from icon4py.bindings.utils import write_string
+from icon4py.icon4pygen.bindings.entities import Field
+from icon4py.icon4pygen.bindings.utils import write_string
 
 
 run_func_declaration = as_jinja(
@@ -42,7 +42,11 @@ run_verify_func_declaration = as_jinja(
     {%- for field in _this_node.out_fields -%}
     {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
     {%- endfor -%}
+    {%- if _this_node.tol_fields -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
+    {%- else -%}
+    const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd
+    {%- endif -%}
     {%- for field in _this_node.tol_fields -%}
     const double {{ field.name }}_rel_tol,
     const double {{ field.name }}_abs_tol

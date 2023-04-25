@@ -26,7 +26,7 @@ from icon4py.common.dimension import (
 
 
 @field_operator
-def _calculate_z_temp(
+def _calculate_nabla2_of_theta(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     geofac_div: Field[[CEDim], float],
 ) -> Field[[CellDim, KDim], float]:
@@ -35,9 +35,9 @@ def _calculate_z_temp(
 
 
 @program
-def calculate_z_temp(
+def calculate_nabla2_of_theta(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     geofac_div: Field[[CEDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ):
-    _calculate_z_temp(z_nabla2_e, geofac_div, out=z_temp)
+    _calculate_nabla2_of_theta(z_nabla2_e, geofac_div, out=z_temp)
