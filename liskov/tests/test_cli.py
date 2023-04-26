@@ -56,3 +56,6 @@ def test_cli(make_f90_tmpfile, cli, file, outfile, options):
     args = [fpath, outfile, *options, "-m"]
     result = cli.invoke(main, args)
     assert result.exit_code == 0
+
+
+# todo: add test for wrong arguments

@@ -85,7 +85,15 @@ class SavepointStatementGenerator(TemplatedGenerator):
     StandardFields = as_jinja(
         """
     {% for f in _this_node.fields %}
+    {% if f.dimension %}
+    IF (SIZE({{ f.variable }}) > 0) THEN
     !$ser data {{ f.variable }}={{ f.association }}
+    ELSE
+    PRINT *, 'Warning: Array {{ f.variable }} has size 0. Not serializing array.'
+    ENDIF
+    {% else %}
+    !$ser data {{ f.variable }}={{ f.association }}
+    {% endif %}
     {% endfor %}
     """
     )
