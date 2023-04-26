@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Final
+from typing import Final, Optional
 
 from gt4py.next.common import Field
 
@@ -144,8 +144,14 @@ from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
 from icon4py.state_utils.prep_adv_state import PrepAdvection
 from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import _allocate, _allocate_indices, set_zero_c_k, zero_field, \
-    _en_smag_fac_for_zero_nshift
+from icon4py.state_utils.utils import (
+    _allocate,
+    _allocate_indices,
+    _en_smag_fac_for_zero_nshift,
+    compute_z_raylfac,
+    set_zero_c_k,
+    zero_field,
+)
 from icon4py.state_utils.z_fields import ZFields
 from icon4py.velocity import velocity_advection
 
@@ -250,14 +256,24 @@ class NonHydrostaticParams:
         )
         self.aqdr = self.df32 / self.dz32 - self.bqdr * self.dz32
 
-        self.fac = (0.67, 0.5, 1.3, 0.8)
-        self.z = (0.1, 0.2, 0.3, 0.4)
-        self.enh_smag_fac = zero_field(KDim, mesh=self.grid)
-        self.a_vec = _allocate()
-
 
 class SolveNonhydro:
     # def __init__(self, run_program=True):
+
+    def __init__(self):
+        self._initialized = False
+        self.grid: Optional[IconGrid] = None
+        self.interpolation_state = None
+        self.metric_state = None
+        self.vertical_params: Optional[VerticalModelParams] = None
+
+        self.config: Optional[NonHydrostaticConfig] = None
+        self.params: Optional[NonHydrostaticParams] = None
+        self.metric_state_nonhydro = None
+
+        self.l_vert_nested = None
+        self.enh_divdamp_fac = None
+        self.scal_divdamp = None
 
     def init(
         self,
@@ -268,6 +284,10 @@ class SolveNonhydro:
         metric_state_nonhydro: MetricStateNonHydro,
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
+        a_vec: Field[[KDim], float],
+        enh_smag_fac: Field[[KDim], float],
+        fac: tuple,
+        z: tuple,
     ):
         """
         Initialize NonHydrostatic granule with configuration.
@@ -289,7 +309,7 @@ class SolveNonhydro:
             self.l_vert_nested = True
 
         self.enh_divdamp_fac = _en_smag_fac_for_zero_nshift(
-            params.a_vec, *params.fac, *params.z, out=params.enh_smag_fac, offset_provider={"Koff": KDim}
+            a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
         )
 
         # TODO: @abishekg7 geometry_info
@@ -377,11 +397,6 @@ class SolveNonhydro:
         lprep_adv: bool,
         lclean_mflx: bool,
     ):
-        """
-        Do one diffusion step within regular time loop.
-
-        runs a diffusion step for the parameter linit=False, within regular time loop.
-        """
 
         (
             edge_startindex_nudging,
@@ -403,11 +418,6 @@ class SolveNonhydro:
 
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / config.ndyn_substeps_var
-
-        #  Precompute Rayleigh damping factor
-        z_raylfac = 1.0 / (
-            1.0 + dtime * self.metric_state.rayleigh_w
-        )  # TODO: @nfarabullini make this a program, check whether that all vars are fixed (then they can be moved to init)
 
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
         bdy_divdamp = (
@@ -602,6 +612,9 @@ class SolveNonhydro:
             vertex_startindex_interior,
             vertex_endindex_interior,
         ) = self.init_dimensions_boundaries()
+
+        #  Precompute Rayleigh damping factor
+        z_raylfac = compute_z_raylfac(self.metric_state_nonhydro.rayleigh_w, dtime)
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area():
@@ -1292,7 +1305,7 @@ class SolveNonhydro:
         lclean_mflx: bool,
         scal_divdamp_o2: float,
         bdy_divdamp: float,
-        r_nsubsteps: int,
+        r_nsubsteps: float,
     ):
 
         (
@@ -1331,6 +1344,9 @@ class SolveNonhydro:
         )
         nvar = nnew
 
+        #  Precompute Rayleigh damping factor
+        z_raylfac = compute_z_raylfac(self.metric_state_nonhydro.rayleigh_w, dtime)
+
         mo_solve_nonhydro_stencil_10(
             prognostic_state[nnew].w,
             diagnostic_state.w_concorr_c,
@@ -1365,7 +1381,7 @@ class SolveNonhydro:
             self.metric_state_nonhydro.hmask_dd3d,
             self.metric_state_nonhydro.scalfac_dd3d,
             inv_dual_edge_length,
-            z_dwdz_dd,
+            self.z_dwdz_dd,
             self.z_graddiv_vn,
             horizontal_start=6,
             horizontal_end=edge_endindex_interior - 2,

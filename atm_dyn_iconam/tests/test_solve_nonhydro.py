@@ -65,6 +65,11 @@ def test_nonhydro_predictor_step(
     cfl_w_limit = sp.cfl_w_limit()
     scalfac_exdiff = sp.scalfac_exdiff()
 
+    enh_smag_fac = zero_field(mesh, KDim)
+    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    fac = (0.67, 0.5, 1.3, 0.8)
+    z = (0.1, 0.2, 0.3, 0.4)
+
     diagnostic_state = DiagnosticState(
         hdef_ic=None,
         div_ic=None,
@@ -183,6 +188,10 @@ def test_nonhydro_predictor_step(
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        a_vec=a_vec,
+        enh_smag_fac=enh_smag_fac,
+        fac=fac,
+        z=z,
     )
 
     orientation = sp_d.tangent_orientation()
@@ -236,6 +245,11 @@ def test_nonhydro_corrector_step(
     cfl_w_limit = sp.cfl_w_limit()
     scalfac_exdiff = sp.scalfac_exdiff()
 
+    enh_smag_fac = zero_field(mesh, KDim)
+    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    fac = (0.67, 0.5, 1.3, 0.8)
+    z = (0.1, 0.2, 0.3, 0.4)
+
     prep_adv = PrepAdvection(vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me())
 
     diagnostic_state = DiagnosticState(
@@ -355,6 +369,10 @@ def test_nonhydro_corrector_step(
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        a_vec=a_vec,
+        enh_smag_fac=enh_smag_fac,
+        fac=fac,
+        z=z,
     )
 
     orientation = sp_d.tangent_orientation()
@@ -390,6 +408,12 @@ def test_nonhydro_corrector_step(
 
 @pytest.mark.datatest
 def test_run_solve_nonhydro_single_step():
+
+    enh_smag_fac = zero_field(mesh, KDim)
+    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    fac = (0.67, 0.5, 1.3, 0.8)
+    z = (0.1, 0.2, 0.3, 0.4)
+
     prep_adv = PrepAdvection(vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me())
     diagnostic_state = DiagnosticState(
         hdef_ic=None,
@@ -509,6 +533,10 @@ def test_run_solve_nonhydro_single_step():
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        a_vec=a_vec,
+        enh_smag_fac=enh_smag_fac,
+        fac=fac,
+        z=z,
     )
     for _ in range(4):
         solve_nonhydro.time_step(

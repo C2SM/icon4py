@@ -267,6 +267,13 @@ def init_diffusion_local_fields_for_regular_timestep(
     )
 
 
+@field_operator
+def compute_z_raylfac(
+    rayleigh_w: Field[[KDim], float], dtime: float
+) -> Field[[KDim], float]:
+    return 1.0 / (1.0 + dtime * rayleigh_w)
+
+
 def init_nabla2_factor_in_upper_damping_zone(
     k_size: int, nrdmax: int32, nshift: int, physical_heights: np.ndarray
 ) -> Field[[KDim], float]:
