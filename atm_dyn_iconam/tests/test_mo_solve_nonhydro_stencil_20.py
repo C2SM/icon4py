@@ -51,19 +51,18 @@ def mo_solve_nonhydro_stencil_20_numpy(
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
     z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, e2c, ikoffset)
-    #z_dexner_dz_c_1_at_kidx = _apply_index_field(
-    #    full_shape, z_dexner_dz_c_1, e2c, ikoffset
-    #)
-    #z_dexner_dz_c_2_at_kidx = _apply_index_field(
-    #    full_shape, z_dexner_dz_c_2, e2c, ikoffset
-    #)
+    z_dexner_dz_c_1_at_kidx = _apply_index_field(
+        full_shape, z_dexner_dz_c_1, e2c, ikoffset
+    )
+    z_dexner_dz_c_2_at_kidx = _apply_index_field(
+        full_shape, z_dexner_dz_c_2, e2c, ikoffset
+    )
 
     def at_neighbor(i):
-        return z_exner_ex_pr_at_kidx[:, i, :]
-        #return z_exner_ex_pr_at_kidx[:, i, :] + zdiff_gradp[:, i, :] * (
-        #    z_dexner_dz_c_1_at_kidx[:, i, :]
-        #    + zdiff_gradp[:, i, :] * z_dexner_dz_c_2_at_kidx[:, i, :]
-        #)
+        return z_exner_ex_pr_at_kidx[:, i, :] + zdiff_gradp[:, i, :] * (
+            z_dexner_dz_c_1_at_kidx[:, i, :]
+            + zdiff_gradp[:, i, :] * z_dexner_dz_c_2_at_kidx[:, i, :]
+        )
 
     sum_expr = at_neighbor(1) - at_neighbor(0)
 

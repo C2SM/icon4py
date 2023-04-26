@@ -13,12 +13,16 @@
 
 import numpy as np
 
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
     mo_nh_diffusion_stencil_15,
 )
-from icon4py.common.dimension import C2E2CDim, CellDim, KDim
+from icon4py.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, random_mask, zero_field
+from icon4py.testutils.utils import flatten_first_two_dims, random_field, random_mask, zero_field
+
+from gt4py.next.iterator import embedded as it_embedded
 
 
 def mo_nh_diffusion_stencil_15_numpy(
@@ -82,6 +86,10 @@ def test_mo_nh_diffusion_stencil_15():
     theta_v = random_field(mesh, CellDim, KDim)
     z_temp = random_field(mesh, CellDim, KDim)
 
+    vcoef_new = flatten_first_two_dims(CECDim, KDim, field=vcoef)
+    zd_vertoffset_new = flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset)
+    geofac_n2s_nbh_new = flatten_first_two_dims(CECDim, field=geofac_n2s_nbh)
+
     ref = mo_nh_diffusion_stencil_15_numpy(
         mesh.c2e2c,
         np.asarray(mask),
@@ -101,11 +109,11 @@ def test_mo_nh_diffusion_stencil_15():
 
     mo_nh_diffusion_stencil_15(
         mask,
-        zd_vertoffset,
+        zd_vertoffset_new,
         zd_diffcoef,
         geofac_n2s_c,
-        geofac_n2s_nbh,
-        vcoef,
+        geofac_n2s_nbh_new,
+        vcoef_new,
         theta_v,
         z_temp,
         hstart,
@@ -114,6 +122,7 @@ def test_mo_nh_diffusion_stencil_15():
         kend,
         offset_provider={
             "C2E2C": mesh.get_c2e2c_offset_provider(),
+            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, mesh.n_c2e2c),
             "Koff": KDim,
         },
     )

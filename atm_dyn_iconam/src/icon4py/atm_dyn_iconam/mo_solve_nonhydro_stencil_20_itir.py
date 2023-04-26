@@ -42,7 +42,9 @@ def step(
     d_z_dexner_dz_c_2 = deref(shift(Koff, d_ikoffset, E2C, i)(z_dexner_dz_c_2))
     d_zdiff_gradp = list_get(i, deref(zdiff_gradp))
 
-    return d_z_exner_exp_pr
+    return d_z_exner_exp_pr + d_zdiff_gradp * (
+        d_z_dexner_dz_c_1 + d_zdiff_gradp * d_z_dexner_dz_c_2
+    )
 
 
 @fundef
