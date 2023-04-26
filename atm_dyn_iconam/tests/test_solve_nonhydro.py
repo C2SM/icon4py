@@ -384,6 +384,7 @@ def test_nonhydro_corrector_step(
         area_edge=edge_areas,
         lprep_adv=lprep_adv,
         lclean_mflx=lprep_adv,
+        r_nsubsteps=r_nsubsteps,
     )
 
 
@@ -538,4 +539,5 @@ def test_run_solve_nonhydro_single_step():
             nnow=nnow,
             lprep_adv=lprep_adv,
             lclean_mflx=lprep_adv,
+            r_nsubsteps=r_nsubsteps,
         )

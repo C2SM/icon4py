@@ -144,7 +144,8 @@ from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
 from icon4py.state_utils.prep_adv_state import PrepAdvection
 from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import _allocate, _allocate_indices, set_zero_c_k
+from icon4py.state_utils.utils import _allocate, _allocate_indices, set_zero_c_k, zero_field, \
+    _en_smag_fac_for_zero_nshift
 from icon4py.state_utils.z_fields import ZFields
 from icon4py.velocity import velocity_advection
 
@@ -249,6 +250,11 @@ class NonHydrostaticParams:
         )
         self.aqdr = self.df32 / self.dz32 - self.bqdr * self.dz32
 
+        self.fac = (0.67, 0.5, 1.3, 0.8)
+        self.z = (0.1, 0.2, 0.3, 0.4)
+        self.enh_smag_fac = zero_field(KDim, mesh=self.grid)
+        self.a_vec = _allocate()
+
 
 class SolveNonhydro:
     # def __init__(self, run_program=True):
@@ -283,7 +289,7 @@ class SolveNonhydro:
             self.l_vert_nested = True
 
         self.enh_divdamp_fac = _en_smag_fac_for_zero_nshift(
-            a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
+            params.a_vec, *params.fac, *params.z, out=params.enh_smag_fac, offset_provider={"Koff": KDim}
         )
 
         # TODO: @abishekg7 geometry_info
@@ -339,8 +345,6 @@ class SolveNonhydro:
         self.mass_flx_ic = _allocate(CellDim, KDim, mesh=self.grid)
         self.k_field = _allocate_indices(KDim, mesh=self.grid)
         self.cell_field = _allocate_indices(CellDim, mesh=self.grid)
-
-    # def initial_step(self): # TODO: @nfarabullini ask Magda if we need this
 
     def time_step(
         self,
@@ -495,6 +499,7 @@ class SolveNonhydro:
             lclean_mflx,
             scal_divdamp_o2,
             bdy_divdamp,
+            r_nsubsteps,
         )
 
         if self.grid.limited_area():
@@ -564,9 +569,9 @@ class SolveNonhydro:
                 lvn_only = False
             velocity_advection.VelocityAdvection.run_predictor_step(
                 lvn_only,
-                DiagnosticState,
-                PrognosticState,
-                ZFields,
+                diagnostic_state,
+                prognostic_state[nnow],
+                z_fields,
                 inv_dual_edge_length,
                 inv_primal_edge_length,
                 dtime,
@@ -1287,6 +1292,7 @@ class SolveNonhydro:
         lclean_mflx: bool,
         scal_divdamp_o2: float,
         bdy_divdamp: float,
+        r_nsubsteps: int,
     ):
 
         (
@@ -1310,7 +1316,7 @@ class SolveNonhydro:
         velocity_advection.VelocityAdvection.run_corrector_step(
             lvn_only,
             diagnostic_state,
-            prognostic_state,
+            prognostic_state[nnew],
             z_fields,
             inv_dual_edge_length,
             inv_primal_edge_length,

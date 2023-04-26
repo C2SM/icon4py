@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import V2E, EdgeDim, KDim, V2EDim, VertexDim
 
@@ -26,7 +27,7 @@ def _mo_math_divrot_rot_vertex_ri_dsl(
     return rot_vec
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_math_divrot_rot_vertex_ri_dsl(
     vec_e: Field[[EdgeDim, KDim], float],
     geofac_rot: Field[[VertexDim, V2EDim], float],

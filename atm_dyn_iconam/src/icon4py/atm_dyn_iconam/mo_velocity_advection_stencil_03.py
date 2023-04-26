@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import EdgeDim, KDim, Koff
 
@@ -27,7 +28,7 @@ def _mo_velocity_advection_stencil_03(
     return z_vt_ie
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_velocity_advection_stencil_03(
     wgtfac_e: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],

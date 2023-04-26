@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, abs, minimum, neighbor_sum, where
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
@@ -52,7 +53,7 @@ def _mo_velocity_advection_stencil_18(
     return ddt_w_adv
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_velocity_advection_stencil_18(
     levelmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
