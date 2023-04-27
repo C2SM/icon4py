@@ -21,6 +21,7 @@ from icon4py.liskov.codegen.integration.deserialise import (
 from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     InitData,
+    Metadata,
     SavepointData,
     SerialisationCodeInterface,
 )
@@ -47,6 +48,7 @@ class SavepointDataFactory:
 
         # todo: remove rel and abs tol values
         # todo: handle merge copies
+        # todo: allow insertion of additional metadata?
 
         for i, (start, end) in enumerate(zip(start_stencil, end_stencil)):
             named_args = parsed["content"]["StartStencil"][i]
@@ -80,13 +82,24 @@ class SavepointDataFactory:
                 )
                 for variable, association in named_args.items()
             ]
+
+            # todo: make this into a function
+            timestep_variables = dict(jstep="jstep_ptr", nstep="nstep_ptr")
+
+            if "mo_velocity_advection" in stencil_name:
+                timestep_variables["istep"] = "istep"
+
+            timestep_metadata = [
+                Metadata(key=k, value=v) for k, v in timestep_variables.items()
+            ]
+
             deserialised.append(
                 SavepointData(
                     subroutine=f"{stencil_name}",
                     intent="start",
                     startln=start.startln,
                     fields=fields,
-                    metadata=None,
+                    metadata=timestep_metadata,
                 )
             )
 
@@ -96,7 +109,7 @@ class SavepointDataFactory:
                     intent="end",
                     startln=end.startln,
                     fields=fields,
-                    metadata=None,
+                    metadata=timestep_metadata,
                 )
             )
         return deserialised
