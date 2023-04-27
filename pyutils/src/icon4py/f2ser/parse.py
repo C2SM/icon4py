@@ -162,11 +162,12 @@ class GranuleParser:
             MissingDerivedTypeError: If the type definition for a derived type could not be found in any of the dependency files.
         """
         derived_type_defs = {}
-        for dep in self.dependencies:
-            parsed = crack(dep)
-            for block in parsed["body"]:
-                if block["block"] == "type":
-                    derived_type_defs[block["name"]] = block["vars"]
+        if self.dependencies:
+            for dep in self.dependencies:
+                parsed = crack(dep)
+                for block in parsed["body"]:
+                    if block["block"] == "type":
+                        derived_type_defs[block["name"]] = block["vars"]
 
         for _, subroutine_vars in derived_types.items():
             for _, intent_vars in subroutine_vars.items():
