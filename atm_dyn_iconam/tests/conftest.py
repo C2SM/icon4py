@@ -13,25 +13,10 @@
 import tarfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 import wget
 
-from icon4py.common.dimension import (
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    CellDim,
-    E2C2VDim,
-    E2CDim,
-    E2VDim,
-    EdgeDim,
-    V2EDim,
-    VertexDim,
-)
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.diffusion.horizontal import HorizontalMeshSize
-from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
@@ -123,46 +108,13 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
 
 
 @pytest.fixture
-def icon_grid(data_provider):
+def icon_grid(grid_savepoint):
     """
     Load the icon grid from an ICON savepoint.
 
-    Uses the default save_point from 'savepoint_init' fixture, however these data don't change for
-    different time steps.
+    Uses the special grid_savepoint that contains data from p_patch
     """
-    sp = data_provider.from_savepoint_grid()
-    sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
-
-    cell_starts = sp.cells_start_index()
-    cell_ends = sp.cells_end_index()
-    vertex_starts = sp.vertex_start_index()
-    vertex_ends = sp.vertex_end_index()
-    edge_starts = sp.edge_start_index()
-    edge_ends = sp.edge_end_index()
-
-    config = MeshConfig(
-        HorizontalMeshSize(
-            num_vertices=sp_meta["nproma"],  # or rather "num_vert"
-            num_cells=sp_meta["nproma"],  # or rather "num_cells"
-            num_edges=sp_meta["nproma"],  # or rather "num_edges"
-        ),
-        VerticalMeshConfig(num_lev=sp_meta["nlev"]),
-    )
-
-    c2e2c = sp.c2e2c()
-    c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
-    grid = (
-        IconGrid()
-        .with_config(config)
-        .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
-        .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
-        .with_start_end_indices(CellDim, cell_starts, cell_ends)
-        .with_connectivities(
-            {C2EDim: sp.c2e(), E2CDim: sp.e2c(), C2E2CDim: c2e2c, C2E2CODim: c2e2c0}
-        )
-        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e(), E2C2VDim: sp.e2c2v()})
-    )
-    return grid
+    return grid_savepoint.construct_icon_grid()
 
 
 @pytest.fixture

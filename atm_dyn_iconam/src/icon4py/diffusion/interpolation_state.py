@@ -33,7 +33,7 @@ class InterpolationState:
     """
     represents the ICON interpolation state.
 
-    TODO [ml]: keep? does this state make sense at all?
+    TODO [magdalena]: keep? does this state make sense at all?
     """
 
     e_bln_c_s: Field[
@@ -56,9 +56,7 @@ class InterpolationState:
     geofac_grg_x: Field[
         [CellDim, C2E2CODim], float
     ]  # factor for green gauss gradient (nproma,4,nblks_c,2)
-    geofac_grg_y: Field[
-        [CellDim, C2E2CODim], float
-    ]  # TODO combine geofac_grg_x and geofac_grg_y to tuple
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float]
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
     @property

@@ -22,6 +22,7 @@ from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.horizontal import HorizontalMeshSize
 
 
+# TODO @magdalena keep naming grid vs mesh consistent
 class VerticalMeshConfig:
     def __init__(self, num_lev: int):
         self._num_lev = num_lev
@@ -110,7 +111,7 @@ class IconGrid:
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     def limited_area(self):
-        # TODO defined in mo_grid_nml.f90
+        # defined in mo_grid_nml.f90
         return self.config.limited_area
 
     def n_lev(self):

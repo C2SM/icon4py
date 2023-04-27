@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import logging
 
 import numpy as np
 import serialbox as ser
@@ -23,24 +24,40 @@ from icon4py.common.dimension import (
     C2EDim,
     CellDim,
     E2C2VDim,
+    E2CDim,
+    E2VDim,
+    ECVDim,
     EdgeDim,
     KDim,
     V2EDim,
     VertexDim,
 )
+from icon4py.diffusion.diagnostic_state import DiagnosticState
+from icon4py.diffusion.diffusion import VectorTuple
+from icon4py.diffusion.horizontal import (
+    CellParams,
+    EdgeParams,
+    HorizontalMeshSize,
+)
+from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
+from icon4py.diffusion.interpolation_state import InterpolationState
+from icon4py.diffusion.metric_state import MetricState
+from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.testutils.utils import as_1D_sparse_field
 
 
 class IconSavepoint:
     def __init__(self, sp: ser.Savepoint, ser: ser.Serializer):
         self.savepoint = sp
         self.serializer = ser
+        self.log = logging.getLogger((__name__))
 
-    def print_meta_info(self):
-        print(self.savepoint.metainfo)
+    def log_meta_info(self):
+        self.log.info(self.savepoint.metainfo)
 
     def _get_field(self, name, *dimensions, dtype=float):
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
-        print(f"{name} {buffer.shape}")
+        self.log.debug(f"{name} {buffer.shape}")
         return np_as_located_field(*dimensions)(buffer)
 
     def get_metadata(self, *names):
@@ -68,7 +85,7 @@ class IconSavepoint:
 
     def read_int(self, name: str):
         buffer = self.serializer.read(name, self.savepoint).astype(int)
-        print(f"{name} {buffer.shape}")
+        self.log.debug(f"{name} {buffer.shape}")
         return buffer
 
 
@@ -126,8 +143,8 @@ class IconGridSavePoint(IconSavepoint):
         # one off accounts for being exclusive [from:to)
         return self.serializer.read("e_end_index", self.savepoint)
 
-    def print_connectivity_info(name: str, ar: np.ndarray):
-        print(f" connectivity {name} {ar.shape}")
+    def print_connectivity_info(self, name: str, ar: np.ndarray):
+        self.log.debug(f" connectivity {name} {ar.shape}")
 
     def refin_ctrl(self, dim: Dimension):
         if dim == CellDim:
@@ -145,7 +162,7 @@ class IconGridSavePoint(IconSavepoint):
 
     def _get_connectiviy_array(self, name: str):
         connectivity = self.serializer.read(name, self.savepoint) - 1
-        print(f" connectivity {name} : {connectivity.shape}")
+        self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
     def c2e2c(self):
@@ -157,7 +174,7 @@ class IconGridSavePoint(IconSavepoint):
     def e2v(self):
         # array "e2v" is actually e2c2v
         v_ = self._get_connectiviy_array("e2v")[:, 0:2]
-        print(f"real e2v {v_.shape}")
+        self.log.debug(f"real e2v {v_.shape}")
         return v_
 
     def e2c2v(self):
@@ -166,6 +183,70 @@ class IconGridSavePoint(IconSavepoint):
 
     def v2e(self):
         return self._get_connectiviy_array("v2e")
+
+    def construct_icon_grid(self) -> IconGrid:
+        sp_meta = self.get_metadata(
+            "nproma", "nlev", "num_vert", "num_cells", "num_edges"
+        )
+        cell_starts = self.cells_start_index()
+        cell_ends = self.cells_end_index()
+        vertex_starts = self.vertex_start_index()
+        vertex_ends = self.vertex_end_index()
+        edge_starts = self.edge_start_index()
+        edge_ends = self.edge_end_index()
+        config = MeshConfig(
+            HorizontalMeshSize(
+                num_vertices=sp_meta["nproma"],  # or rather "num_vert"
+                num_cells=sp_meta["nproma"],  # or rather "num_cells"
+                num_edges=sp_meta["nproma"],  # or rather "num_edges"
+            ),
+            VerticalMeshConfig(num_lev=sp_meta["nlev"]),
+        )
+        c2e2c = self.c2e2c()
+        c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
+        grid = (
+            IconGrid()
+            .with_config(config)
+            .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
+            .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
+            .with_start_end_indices(CellDim, cell_starts, cell_ends)
+            .with_connectivities(
+                {
+                    C2EDim: self.c2e(),
+                    E2CDim: self.e2c(),
+                    C2E2CDim: c2e2c,
+                    C2E2CODim: c2e2c0,
+                }
+            )
+            .with_connectivities(
+                {E2VDim: self.e2v(), V2EDim: self.v2e(), E2C2VDim: self.e2c2v()}
+            )
+        )
+        return grid
+
+    def construct_edge_geometry(self) -> EdgeParams:
+        primal_normal_vert: VectorTuple = (
+            as_1D_sparse_field(self.primal_normal_vert_x(), ECVDim),
+            as_1D_sparse_field(self.primal_normal_vert_y(), ECVDim),
+        )
+        dual_normal_vert: VectorTuple = (
+            as_1D_sparse_field(self.dual_normal_vert_x(), ECVDim),
+            as_1D_sparse_field(self.dual_normal_vert_y(), ECVDim),
+        )
+        return EdgeParams(
+            tangent_orientation=self.tangent_orientation(),
+            inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
+            inverse_dual_edge_lengths=self.inv_dual_edge_length(),
+            inverse_vertex_vertex_lengths=self.inv_vert_vert_length(),
+            primal_normal_vert_x=primal_normal_vert[0],
+            primal_normal_vert_y=primal_normal_vert[1],
+            dual_normal_vert_x=dual_normal_vert[0],
+            dual_normal_vert_y=dual_normal_vert[1],
+            edge_areas=self.edge_areas(),
+        )
+
+    def construct_cell_geometry(self) -> CellParams:
+        return CellParams(area=self.cell_areas())
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
@@ -269,6 +350,45 @@ class IconDiffusionInitSavepoint(IconSavepoint):
     def diff_multfac_vn(self):
         return self.serializer.read("diff_multfac_vn", self.savepoint)
 
+    def construct_interpolation_state(self) -> InterpolationState:
+        grg = self.geofac_grg()
+        return InterpolationState(
+            e_bln_c_s=self.e_bln_c_s(),
+            rbf_coeff_1=self.rbf_vec_coeff_v1(),
+            rbf_coeff_2=self.rbf_vec_coeff_v2(),
+            geofac_div=self.geofac_div(),
+            geofac_n2s=self.geofac_n2s(),
+            geofac_grg_x=grg[0],
+            geofac_grg_y=grg[1],
+            nudgecoeff_e=self.nudgecoeff_e(),
+        )
+
+    def construct_metric_state(self) -> MetricState:
+        return MetricState(
+            mask_hdiff=self.mask_diff(),
+            theta_ref_mc=self.theta_ref_mc(),
+            wgtfac_c=self.wgtfac_c(),
+            zd_intcoef=self.zd_intcoef(),
+            zd_vertidx=self.zd_vertoffset(),
+            zd_diffcoef=self.zd_diffcoef(),
+        )
+
+    def construct_prognostics(self) -> PrognosticState:
+        return PrognosticState(
+            w=self.w(),
+            vn=self.vn(),
+            exner_pressure=self.exner(),
+            theta_v=self.theta_v(),
+        )
+
+    def construct_diagnostics(self) -> DiagnosticState:
+        return DiagnosticState(
+            hdef_ic=self.hdef_ic(),
+            div_ic=self.div_ic(),
+            dwdx=self.dwdx(),
+            dwdy=self.dwdy(),
+        )
+
 
 class IconDiffusionExitSavepoint(IconSavepoint):
     def vn(self):
@@ -290,11 +410,12 @@ class IconSerialDataProvider:
         self.serializer: ser.Serializer = None
         self.file_path: str = path
         self.fname = f"{fname_prefix}_rank{str(self.rank)}"
+        self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
 
     def _init_serializer(self, do_print: bool):
         if not self.fname:
-            print(" WARNING: no filename! closing serializer")
+            self.log.warning(" WARNING: no filename! closing serializer")
         self.serializer = ser.Serializer(
             ser.OpenModeKind.Read, self.file_path, self.fname
         )
@@ -302,8 +423,8 @@ class IconSerialDataProvider:
             self.print_info()
 
     def print_info(self):
-        print(f"SAVEPOINTS: {self.serializer.savepoint_list()}")
-        print(f"FIELDNAMES: {self.serializer.fieldnames()}")
+        self.log.info(f"SAVEPOINTS: {self.serializer.savepoint_list()}")
+        self.log.info(f"FIELDNAMES: {self.serializer.fieldnames()}")
 
     def from_savepoint_grid(self) -> IconGridSavePoint:
         savepoint = self.serializer.savepoint["icon-grid"].id[1].as_savepoint()
