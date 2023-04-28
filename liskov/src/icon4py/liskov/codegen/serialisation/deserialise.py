@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import icon4py.liskov.parsing.parse
 import icon4py.liskov.parsing.types as ts
 from icon4py.common.logger import setup_logger
 from icon4py.liskov.codegen.integration.deserialise import (
@@ -41,8 +41,12 @@ class InitDataFactory:
 
 class SavepointDataFactory:
     def __call__(self, parsed: ts.ParsedDict) -> list[SavepointData]:
-        start_stencil = extract_directive(parsed["directives"], ts.StartStencil)
-        end_stencil = extract_directive(parsed["directives"], ts.EndStencil)
+        start_stencil = extract_directive(
+            parsed["directives"], icon4py.liskov.parsing.parse.StartStencil
+        )
+        end_stencil = extract_directive(
+            parsed["directives"], icon4py.liskov.parsing.parse.EndStencil
+        )
 
         deserialised = []
 
