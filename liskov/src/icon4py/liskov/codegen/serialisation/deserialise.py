@@ -88,10 +88,25 @@ class SavepointDataFactory:
             ]
 
             # todo: make this into a function
-            timestep_variables = dict(jstep="jstep_ptr", nstep="nstep_ptr")
+            timestep_variables = {}
 
             if "mo_velocity_advection" in stencil_name:
+                timestep_variables["jstep"] = "jstep_ptr"
+                timestep_variables["nstep"] = "nstep_ptr"
                 timestep_variables["istep"] = "istep"
+
+            diffusion_stencil_names = [
+                "apply",
+                "calculate",
+                "enhance",
+                "update",
+                "temporary",
+                "diffusion",
+            ]
+
+            if any([name in stencil_name for name in diffusion_stencil_names]):
+                timestep_variables["jstep"] = "jstep_ptr"
+                timestep_variables["diffctr"] = "diffctr"
 
             timestep_metadata = [
                 Metadata(key=k, value=v) for k, v in timestep_variables.items()
