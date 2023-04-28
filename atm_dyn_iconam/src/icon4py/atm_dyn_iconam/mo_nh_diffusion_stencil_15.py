@@ -28,7 +28,6 @@ from icon4py.common.dimension import C2E2C, C2E2CDim, CellDim, KDim, Koff
 from icon4py.icon4pygen.metadata import FieldInfo
 
 
-@fundef
 def step(i, geofac_n2s_nbh, vcoef, theta_v, zd_vertoffset):
     d_vcoef = list_get(i, deref(vcoef))
     s_theta_v = shift(C2E2C, i, Koff, list_get(i, deref(zd_vertoffset)))(theta_v)
