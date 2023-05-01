@@ -13,7 +13,6 @@
 
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from gt4py.next.iterator.embedded import constant_field
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_21 import (
     mo_solve_nonhydro_stencil_21,

@@ -87,51 +87,23 @@ def as_1D_sparse_field(
     field: it_embedded.MutableLocatedField, dim: gt_common.Dimension
 ) -> it_embedded.MutableLocatedField:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    #print("OldArray")
-    #print(np.asarray(field))
     old_shape = np.asarray(field).shape
-    #print(old_shape)
     assert len(old_shape) == 2
     new_shape = (old_shape[0] * old_shape[1],)
-    #print("NEWArray")
-    #print(np.asarray(field).reshape(new_shape))
-    #print(new_shape)
     return it_embedded.np_as_located_field(dim)(np.asarray(field).reshape(new_shape))
 
 def flatten_first_two_dims(
     *dims: gt_common.Dimension, field: it_embedded.MutableLocatedField
 ) -> it_embedded.MutableLocatedField:
-    """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
+    """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
     old_shape = np.asarray(field).shape
-    #print("Old Shape")
-    #print(old_shape)
     assert len(old_shape) >= 2
     flattened_size = old_shape[0] * old_shape[1]
-    #print("Flattened Size")
-    #print(flattened_size)
     flattened_shape = (flattened_size, )
-    #print("Flattened Shape")
-    #print(flattened_shape)
     residual_shape = old_shape[2:]
-    #print("Residual Shape")
-    #print(residual_shape)
     new_shape = flattened_shape + residual_shape
-    #print("New Shape")
-    #print(new_shape)
-
-    #print("Field")
-    #print(field)
-    array = np.asarray(field)
-    #print("ARRAY")
-    #print(array)
-    #print(array.shape)
     newarray = np.asarray(field).reshape(new_shape)
-    #print("NEWARRAY")
-    #print(newarray)
-    #print(newarray.shape)
-    #print(dims)
     return it_embedded.np_as_located_field(*dims)(newarray)
-
 
 def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
     return f"icon4py.{stencil_module}.{stencil_name}:{stencil_name}"

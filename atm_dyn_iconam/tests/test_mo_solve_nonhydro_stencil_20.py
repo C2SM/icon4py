@@ -23,7 +23,6 @@ from icon4py.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import flatten_first_two_dims, random_field, zero_field
 
-
 def mo_solve_nonhydro_stencil_20_numpy(
     e2c: np.array,
     inv_dual_edge_length: np.array,

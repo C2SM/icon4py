@@ -14,6 +14,7 @@
 import numpy as np
 
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
     mo_nh_diffusion_stencil_15,
@@ -21,9 +22,6 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
 from icon4py.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
 from icon4py.testutils.utils import flatten_first_two_dims, random_field, random_mask, zero_field
-
-from gt4py.next.iterator import embedded as it_embedded
-
 
 def mo_nh_diffusion_stencil_15_numpy(
     c2e2c: np.array,
@@ -69,7 +67,7 @@ def test_mo_nh_diffusion_stencil_15():
 
     mask = random_mask(mesh, CellDim, KDim)
 
-    zd_vertoffset = zero_field(mesh, CellDim, C2E2CDim, KDim, dtype=int)
+    zd_vertoffset = zero_field(mesh, CellDim, C2E2CDim, KDim, dtype=int32)
     rng = np.random.default_rng()
     for k in range(mesh.k_level):
         # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
