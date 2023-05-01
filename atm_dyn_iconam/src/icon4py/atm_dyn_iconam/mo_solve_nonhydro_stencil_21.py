@@ -12,10 +12,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum, int32
 from gt4py.next.ffront.experimental import as_offset
+from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
-from icon4py.common.dimension import E2C, CellDim, E2EC, ECDim, EdgeDim, KDim, Koff
+from icon4py.common.dimension import (
+    E2C,
+    E2EC,
+    CellDim,
+    ECDim,
+    EdgeDim,
+    KDim,
+    Koff,
+)
+
 
 @field_operator
 def _mo_solve_nonhydro_stencil_21(
@@ -40,10 +49,20 @@ def _mo_solve_nonhydro_stencil_21(
     inv_ddqz_z_full_0 = inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[0])))
     inv_ddqz_z_full_1 = inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[1])))
 
-    z_theta_0 = theta_v_0(E2C[0]) + zdiff_gradp(E2EC[0]) * (theta_v_ic_0(E2C[0]) - theta_v_ic_p1_0(E2C[0])) * inv_ddqz_z_full_0(E2C[0])
-    z_theta_1 = theta_v_1(E2C[1]) + zdiff_gradp(E2EC[1]) * (theta_v_ic_1(E2C[1]) - theta_v_ic_p1_1(E2C[1])) * inv_ddqz_z_full_1(E2C[1])
+    z_theta_0 = theta_v_0(E2C[0]) + zdiff_gradp(E2EC[0]) * (
+        theta_v_ic_0(E2C[0]) - theta_v_ic_p1_0(E2C[0])
+    ) * inv_ddqz_z_full_0(E2C[0])
+    z_theta_1 = theta_v_1(E2C[1]) + zdiff_gradp(E2EC[1]) * (
+        theta_v_ic_1(E2C[1]) - theta_v_ic_p1_1(E2C[1])
+    ) * inv_ddqz_z_full_1(E2C[1])
 
-    z_hydro_corr = grav_o_cpd * inv_dual_edge_length * (z_theta_1 - z_theta_0) * float(4.0) / (z_theta_0 + z_theta_1)**2
+    z_hydro_corr = (
+        grav_o_cpd
+        * inv_dual_edge_length
+        * (z_theta_1 - z_theta_0)
+        * float(4.0)
+        / (z_theta_0 + z_theta_1) ** 2
+    )
 
     return z_hydro_corr
 

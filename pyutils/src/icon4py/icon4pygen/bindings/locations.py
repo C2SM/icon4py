@@ -69,6 +69,7 @@ class CompoundLocation:
         map_to_dim = {Cell: CellDim, Edge: EdgeDim, Vertex: VertexDim}
         return [map_to_dim[c.__class__] for c in self.compound]
 
+
 def is_valid(nbh_list: list[BasicLocation]) -> bool:
     for i in range(0, len(nbh_list) - 1):  # This doesn't look very pythonic
         if isinstance(type(nbh_list[i]), type(nbh_list[i + 1])):

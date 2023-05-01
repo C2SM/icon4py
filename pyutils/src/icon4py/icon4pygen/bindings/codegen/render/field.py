@@ -50,7 +50,9 @@ class FieldRenderer:
             raise BindingsRenderingException("can not render sid of a scalar")
 
         # We want to compute the rank without the sparse dimension, i.e. if a field is horizontal, vertical or both.
-        dense_rank = self.entity.rank() - int(self.entity.is_sparse() or self.entity.is_compound())
+        dense_rank = self.entity.rank() - int(
+            self.entity.is_sparse() or self.entity.is_compound()
+        )
         if dense_rank == 1:
             values_str = "1"
         elif self.entity.is_compound():
@@ -91,9 +93,7 @@ class FieldRenderer:
         elif self.entity.is_sparse() or self.entity.is_compound():
             return _strides[str(self.entity.location[0])]  # type: ignore
         else:
-            raise BindingsRenderingException(
-                "stride type called on scalar"
-            )
+            raise BindingsRenderingException("stride type called on scalar")
 
     def render_ctype(self, binding_type: str) -> str:
         """Render C datatype for a corresponding binding type."""
