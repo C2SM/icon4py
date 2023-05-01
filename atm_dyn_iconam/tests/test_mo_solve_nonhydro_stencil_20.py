@@ -18,10 +18,6 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_20 import (
     mo_solve_nonhydro_stencil_20,
 )
 
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_20_itir import (
-    mo_solve_nonhydro_stencil_20_itir,
-)
-
 from gt4py.next.ffront.fbuiltins import int32
 from icon4py.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
@@ -93,9 +89,7 @@ def test_mo_solve_nonhydro_stencil_20():
 
     z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim)
     z_dexner_dz_c_2 = random_field(mesh, CellDim, KDim)
-
     z_gradh_exner = zero_field(mesh, EdgeDim, KDim)
-    z_gradh_exner_itir = zero_field(mesh, EdgeDim, KDim)
 
     z_gradh_exner_ref = mo_solve_nonhydro_stencil_20_numpy(
         mesh.e2c,
@@ -111,24 +105,6 @@ def test_mo_solve_nonhydro_stencil_20():
     hend = mesh.n_edges
     kstart = 0
     kend = mesh.k_level
-
-    mo_solve_nonhydro_stencil_20_itir(
-        inv_dual_edge_length,
-        z_exner_ex_pr,
-        zdiff_gradp,
-        ikoffset,
-        z_dexner_dz_c_1,
-        z_dexner_dz_c_2,
-        z_gradh_exner_itir,
-        hstart,
-        hend,
-        kstart,
-        kend,
-        offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
-            "Koff": KDim,
-        },
-    )
 
     mo_solve_nonhydro_stencil_20(
         inv_dual_edge_length,
@@ -149,9 +125,4 @@ def test_mo_solve_nonhydro_stencil_20():
         },
     )
 
-    #print(z_gradh_exner_ref)
-    #print(z_gradh_exner_itir )
-    #print(np.asarray(z_gradh_exner))
-
-    assert np.allclose(z_gradh_exner_itir, z_gradh_exner_ref)
     assert np.allclose(z_gradh_exner, z_gradh_exner_ref)
