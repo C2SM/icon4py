@@ -59,6 +59,15 @@ class CompoundLocation:
                 f"chain {compound} contains two of the same elements in succession"
             )
 
+    def __iter__(self) -> Iterator[BasicLocation]:
+        return iter(self.compound)
+
+    def __getitem__(self, item: int) -> BasicLocation:
+        return self.compound[item]
+
+    def to_dim_list(self) -> list[Dimension]:
+        map_to_dim = {Cell: CellDim, Edge: EdgeDim, Vertex: VertexDim}
+        return [map_to_dim[c.__class__] for c in self.compound]
 
 def is_valid(nbh_list: list[BasicLocation]) -> bool:
     for i in range(0, len(nbh_list) - 1):  # This doesn't look very pythonic

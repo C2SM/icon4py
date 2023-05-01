@@ -12,14 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, where
+from gt4py.next.ffront.fbuiltins import Field, where, int32
 from gt4py.next.ffront.experimental import as_offset
 from icon4py.common.dimension import C2E2C, CellDim, CECDim, C2CEC, KDim, Koff
 
 @field_operator
 def _mo_nh_diffusion_stencil_15(
     mask: Field[[CellDim, KDim], bool],
-    zd_vertoffset: Field[[CECDim, KDim], int],
+    zd_vertoffset: Field[[CECDim, KDim], int32],
     zd_diffcoef: Field[[CellDim, KDim], float],
     geofac_n2s_c: Field[[CellDim], float],
     geofac_n2s_nbh: Field[[CECDim], float],
@@ -32,9 +32,9 @@ def _mo_nh_diffusion_stencil_15(
     theta_v_1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1])))
     theta_v_2 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2])))
 
-    theta_v_0_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0]) + 1))
-    theta_v_1_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1]) + 1))
-    theta_v_2_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2]) + 1))
+    theta_v_0_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0]) + int32(1)))
+    theta_v_1_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1]) + int32(1)))
+    theta_v_2_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2]) + int32(1)))
 
     sum = geofac_n2s_nbh(C2CEC[0]) * (vcoef(C2CEC[0]) * theta_v_0(C2E2C[0]) + (1.0 - vcoef(C2CEC[0])) * theta_v_0_m1(C2E2C[0])) \
         + geofac_n2s_nbh(C2CEC[1]) * (vcoef(C2CEC[1]) * theta_v_1(C2E2C[1]) + (1.0 - vcoef(C2CEC[1])) * theta_v_1_m1(C2E2C[1])) \
@@ -47,7 +47,7 @@ def _mo_nh_diffusion_stencil_15(
 @program
 def mo_nh_diffusion_stencil_15(
     mask: Field[[CellDim, KDim], bool],
-    zd_vertoffset: Field[[CECDim, KDim], int],
+    zd_vertoffset: Field[[CECDim, KDim], int32],
     zd_diffcoef: Field[[CellDim, KDim], float],
     geofac_n2s_c: Field[[CellDim], float],
     geofac_n2s_nbh: Field[[CECDim], float],

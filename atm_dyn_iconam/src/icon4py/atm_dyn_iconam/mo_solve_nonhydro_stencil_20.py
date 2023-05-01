@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, neighbor_sum, int32
 from gt4py.next.ffront.experimental import as_offset
 
 from icon4py.common.dimension import E2C, CellDim, E2EC, ECDim, EdgeDim, KDim, Koff
@@ -22,7 +22,7 @@ def _mo_solve_nonhydro_stencil_20(
     inv_dual_edge_length: Field[[EdgeDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
     zdiff_gradp: Field[[ECDim, KDim], float],
-    ikoffset: Field[[ECDim, KDim], int],
+    ikoffset: Field[[ECDim, KDim], int32],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
     z_dexner_dz_c_2: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
@@ -56,7 +56,7 @@ def mo_solve_nonhydro_stencil_20(
     inv_dual_edge_length: Field[[EdgeDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
     zdiff_gradp: Field[[ECDim, KDim], float],
-    ikoffset: Field[[ECDim, KDim], int],
+    ikoffset: Field[[ECDim, KDim], int32],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
     z_dexner_dz_c_2: Field[[CellDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
