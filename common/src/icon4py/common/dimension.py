@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import DimensionKind
 from gt4py.next.ffront.fbuiltins import Dimension, FieldOffset
 
 

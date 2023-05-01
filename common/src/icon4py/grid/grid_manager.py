@@ -23,15 +23,17 @@ from netCDF4 import Dataset
 
 from icon4py.common.dimension import (
     C2E2CDim,
+    C2E2CODim,
     C2EDim,
     C2VDim,
     CellDim,
+    E2C2VDim,
     E2CDim,
     E2VDim,
     EdgeDim,
     V2CDim,
     V2EDim,
-    VertexDim, C2E2CODim, E2C2VDim,
+    VertexDim,
 )
 from icon4py.grid.horizontal import HorizontalGridSize
 from icon4py.grid.icon_grid import GridConfig, IconGrid
@@ -110,7 +112,9 @@ class GridFile:
     def dimension(self, name: GridFileName) -> int:
         return self._dataset.dimensions[name].size
 
-    def int_field(self, name: GridFileName, transpose=True, dtype=np.int32) -> np.ndarray:
+    def int_field(
+        self, name: GridFileName, transpose=True, dtype=np.int32
+    ) -> np.ndarray:
         try:
             nc_variable = self._dataset.variables[name]
 
@@ -129,7 +133,10 @@ class IconGridError(RuntimeError):
 
 
 class IndexTransformation(ABC):
-    def get_offset_for_index_field(self, array: np.ndarray,):
+    def get_offset_for_index_field(
+        self,
+        array: np.ndarray,
+    ):
         return np.zeros(array.shape, dtype=np.int32)
 
 
@@ -191,25 +198,34 @@ class GridManager:
             reader,
             GridFile.GridRefinementName.END_INDEX_CELLS,
             transpose=False,
-            apply_offset=False, dtype=np.int64
+            apply_offset=False,
+            dtype=np.int64,
         )[_CHILD_DOM]
         start_indices[EdgeDim] = self._get_index_field(
-            reader, GridFile.GridRefinementName.START_INDEX_EDGES, transpose=False, dtype=np.int64
+            reader,
+            GridFile.GridRefinementName.START_INDEX_EDGES,
+            transpose=False,
+            dtype=np.int64,
         )[_CHILD_DOM]
         end_indices[EdgeDim] = self._get_index_field(
             reader,
             GridFile.GridRefinementName.END_INDEX_EDGES,
             transpose=False,
-            apply_offset=False, dtype=np.int64
+            apply_offset=False,
+            dtype=np.int64,
         )[_CHILD_DOM]
         start_indices[VertexDim] = self._get_index_field(
-            reader, GridFile.GridRefinementName.START_INDEX_VERTICES, transpose=False, dtype=np.int64
+            reader,
+            GridFile.GridRefinementName.START_INDEX_VERTICES,
+            transpose=False,
+            dtype=np.int64,
         )[_CHILD_DOM]
         end_indices[VertexDim] = self._get_index_field(
             reader,
             GridFile.GridRefinementName.END_INDEX_VERTICES,
             transpose=False,
-            apply_offset=False, dtype=np.int64
+            apply_offset=False,
+            dtype=np.int64,
         )[_CHILD_DOM]
 
         return start_indices, end_indices
@@ -232,7 +248,7 @@ class GridManager:
             raise IconGridError(msg)
         try:
             return index_dict[dim][start_marker]
-        except KeyError as error:
+        except KeyError:
             msg = f"start, end indices for dimension {dim} not present"
             self._log.error(msg)
             raise IconGridError(msg)
@@ -286,7 +302,12 @@ class GridManager:
             raise IconGridError(f"Unknown dimension {dim}")
 
     def _get_index_field(
-        self, reader, field: GridFileName, transpose=True, apply_offset=True, dtype=np.int32
+        self,
+        reader,
+        field: GridFileName,
+        transpose=True,
+        apply_offset=True,
+        dtype=np.int32,
     ):
         field = reader.int_field(field, transpose=transpose, dtype=dtype)
         if apply_offset:
@@ -303,7 +324,6 @@ class GridManager:
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
         c2e = self._get_index_field(reader, GridFile.OffsetName.C2E)
-
 
         e2c = self._get_index_field(reader, GridFile.OffsetName.E2C)
         c2v = self._get_index_field(reader, GridFile.OffsetName.C2V)
@@ -351,8 +371,12 @@ class GridManager:
 
         return icon_grid
 
-    def construct_diamond_array(self, c2v:np.ndarray, e2c:np.ndarray):
-        dummy_c2v = np.append(c2v, GridFile.INVALID_INDEX * np.ones((1, c2v.shape[1]), dtype=np.int32), axis=0)
+    def construct_diamond_array(self, c2v: np.ndarray, e2c: np.ndarray):
+        dummy_c2v = np.append(
+            c2v,
+            GridFile.INVALID_INDEX * np.ones((1, c2v.shape[1]), dtype=np.int32),
+            axis=0,
+        )
         expanded = dummy_c2v[e2c[:, :], :]
         sh = expanded.shape
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
@@ -360,4 +384,3 @@ class GridManager:
 
     def get_c2v_connectivity(self):
         return self._grid.get_c2v_connectivity()
-

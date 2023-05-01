@@ -58,13 +58,28 @@ from icon4py.common.dimension import (
 
 @dataclass
 class SimpleMeshData:
-    c2v_table = np.asarray([[0,1,4], [1,2,5], [2,0,3],
-                 [0,3,4], [1,4,5], [2,5,3],
-                 [3,4,7], [4,5,8], [5,3,6],
-                 [3,6,7], [4,7,8], [5,8,6],
-                 [6,7,1], [7,8,2], [8,6,0],
-                 [6,0,1],[7,1,2], [8,2,0]
-                 ])
+    c2v_table = np.asarray(
+        [
+            [0, 1, 4],
+            [1, 2, 5],
+            [2, 0, 3],
+            [0, 3, 4],
+            [1, 4, 5],
+            [2, 5, 3],
+            [3, 4, 7],
+            [4, 5, 8],
+            [5, 3, 6],
+            [3, 6, 7],
+            [4, 7, 8],
+            [5, 8, 6],
+            [6, 7, 1],
+            [7, 8, 2],
+            [8, 6, 0],
+            [6, 0, 1],
+            [7, 1, 2],
+            [8, 2, 0],
+        ]
+    )
 
     e2c2v_table = np.asarray(
         [
@@ -406,8 +421,9 @@ class SimpleMesh:
             ECVDim: self.n_edges * self.n_e2c2v,
         }
 
-    def get_c2v_offset_provider(self)-> NeighborTableOffsetProvider:
+    def get_c2v_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.c2v, VertexDim, CellDim, self.n_c2v)
+
     def get_c2e_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.c2e, CellDim, EdgeDim, self.n_c2e)
 

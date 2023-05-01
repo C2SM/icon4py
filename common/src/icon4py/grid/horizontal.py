@@ -82,7 +82,7 @@ class HorizontalMarkerIndex:
 
     @classmethod
     def lateral_boundary(cls, dim: Dimension) -> int:
-        """TODO @magdalena"""
+        """Return the ICON constants for lateral boundary markers."""
         match dim:
             case (dimension.CellDim):
                 return cls._LATERAL_BOUNDARY_CELLS

@@ -10,10 +10,10 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Dict, Tuple
+from typing import Dict
 
 import numpy as np
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import Dimension
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
@@ -116,22 +116,22 @@ class IconGrid:
     def num_edges(self):
         return self.config.num_edges
 
-    def get_start_index(self, dim:Dimension, marker: int):
+    def get_start_index(self, dim: Dimension, marker: int):
         """
-            Use to specify lower end of domains of a field for field_operators.
+        Use to specify lower end of domains of a field for field_operators.
 
-            For a given dimension, returns the start index of the
-            horizontal region in a field given by the marker.
+        For a given dimension, returns the start index of the
+        horizontal region in a field given by the marker.
         """
         return self.start_indices[dim][marker]
 
-    def get_end_index(self, dim: Dimension, marker:int):
+    def get_end_index(self, dim: Dimension, marker: int):
         """
-               Use to specify upper end of domains of a field for field_operators.
+        Use to specify upper end of domains of a field for field_operators.
 
-               For a given dimension, returns the end index of the
-               horizontal region in a field given by the marker.
-           """
+        For a given dimension, returns the end index of the
+        horizontal region in a field given by the marker.
+        """
         return self.end_indices[dim][marker]
 
     def get_c2e_connectivity(self):
