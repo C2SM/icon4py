@@ -62,7 +62,7 @@ class GranuleParser:
         self.granule = granule
         self.dependencies = dependencies
 
-    def parse(self) -> ParsedGranule:
+    def __call__(self) -> ParsedGranule:
         """Parse the granule and return the parsed data."""
         subroutines = self._extract_subroutines(crack(self.granule))
         variables_grouped_by_intent = {
