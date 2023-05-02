@@ -19,6 +19,20 @@ from icon4py.common.dimension import C2CEC, C2E2C, CECDim, CellDim, KDim, Koff
 
 
 @field_operator
+def step(
+    zd_vertoffset: Field[[CECDim, KDim], int32],
+    geofac_n2s_nbh: Field[[CECDim], float],
+    vcoef: Field[[CECDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    i: int,
+) -> Field[[CellDim, KDim], float]:
+
+    theta_v_deref = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[i])))
+    theta_v_deref_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[i]) + int32(1)))
+
+    return geofac_n2s_nbh(C2CEC[i]) *(vcoef(C2CEC[i]) * theta_v_deref(C2E2C[i]) + (1.0 - vcoef(C2CEC[i])) * theta_v_deref_m1(C2E2C[i]))
+
+@field_operator
 def _mo_nh_diffusion_stencil_15(
     mask: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
@@ -30,31 +44,7 @@ def _mo_nh_diffusion_stencil_15(
     z_temp: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
 
-    theta_v_0 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0])))
-    theta_v_1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1])))
-    theta_v_2 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2])))
-
-    theta_v_0_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0]) + int32(1)))
-    theta_v_1_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1]) + int32(1)))
-    theta_v_2_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2]) + int32(1)))
-
-    sum = (
-        geofac_n2s_nbh(C2CEC[0])
-        * (
-            vcoef(C2CEC[0]) * theta_v_0(C2E2C[0])
-            + (1.0 - vcoef(C2CEC[0])) * theta_v_0_m1(C2E2C[0])
-        )
-        + geofac_n2s_nbh(C2CEC[1])
-        * (
-            vcoef(C2CEC[1]) * theta_v_1(C2E2C[1])
-            + (1.0 - vcoef(C2CEC[1])) * theta_v_1_m1(C2E2C[1])
-        )
-        + geofac_n2s_nbh(C2CEC[2])
-        * (
-            vcoef(C2CEC[2]) * theta_v_2(C2E2C[2])
-            + (1.0 - vcoef(C2CEC[2])) * theta_v_2_m1(C2E2C[2])
-        )
-    )
+    sum = step(zd_vertoffset, geofac_n2s_nbh, vcoef, theta_v, 0) + step(zd_vertoffset, geofac_n2s_nbh, vcoef, theta_v, 1) + step(zd_vertoffset, geofac_n2s_nbh, vcoef, theta_v, 2)
 
     z_temp = where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum), z_temp)
 
