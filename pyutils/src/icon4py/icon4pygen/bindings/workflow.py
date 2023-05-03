@@ -13,12 +13,12 @@
 
 from pathlib import Path
 
-from icon4py.bindings.codegen.cpp import generate_cpp_definition
-from icon4py.bindings.codegen.f90 import generate_f90_file
-from icon4py.bindings.codegen.header import generate_cpp_header
-from icon4py.bindings.entities import Field, Offset
-from icon4py.bindings.utils import check_dir_exists
-from icon4py.pyutils.metadata import StencilInfo
+from icon4py.icon4pygen.bindings.codegen.cpp import generate_cpp_definition
+from icon4py.icon4pygen.bindings.codegen.f90 import generate_f90_file
+from icon4py.icon4pygen.bindings.codegen.header import generate_cpp_header
+from icon4py.icon4pygen.bindings.entities import Field, Offset
+from icon4py.icon4pygen.bindings.utils import check_dir_exists
+from icon4py.icon4pygen.metadata import StencilInfo
 
 
 class PyBindGen:

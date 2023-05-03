@@ -73,9 +73,9 @@ def main(
 
         outpath: represents a path to the folder in which to write all generated code.
     """
-    from icon4py.bindings.workflow import PyBindGen
-    from icon4py.pyutils.backend import GTHeader
-    from icon4py.pyutils.metadata import get_stencil_info, import_definition
+    from icon4py.icon4pygen.backend import GTHeader
+    from icon4py.icon4pygen.bindings.workflow import PyBindGen
+    from icon4py.icon4pygen.metadata import get_stencil_info, import_definition
 
     fencil_def = import_definition(fencil)
     stencil_info = get_stencil_info(fencil_def, is_global)

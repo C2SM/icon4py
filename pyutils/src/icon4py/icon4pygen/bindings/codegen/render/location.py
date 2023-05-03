@@ -11,30 +11,17 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
-class UnsupportedDirectiveError(Exception):
-    pass
+from icon4py.icon4pygen.bindings.exceptions import BindingsRenderingException
 
 
-class DirectiveSyntaxError(Exception):
-    pass
+class LocationRenderer:
 
+    type_dispatcher = {"Cell": "Cells", "Edge": "Edges", "Vertex": "Vertices"}
 
-class RepeatedDirectiveError(Exception):
-    pass
-
-
-class RequiredDirectivesError(Exception):
-    pass
-
-
-class UnbalancedStencilDirectiveError(Exception):
-    pass
-
-
-class MissingBoundsError(Exception):
-    pass
-
-
-class MissingDirectiveArgumentError(Exception):
-    pass
+    @classmethod
+    def location_type(cls, cls_name: str) -> str:
+        if cls_name not in cls.type_dispatcher.keys():
+            raise BindingsRenderingException(
+                f"cls name {cls_name} needs to be either 'Cell', 'Edge' or 'Vertex'"
+            )
+        return cls.type_dispatcher[cls_name]
