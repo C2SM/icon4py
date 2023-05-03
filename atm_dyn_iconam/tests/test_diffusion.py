@@ -447,7 +447,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 
 @pytest.mark.skip("fix: diffusion_stencil_15")
-@pytest.mark.parametrize("run_with_program", [True])
+@pytest.mark.parametrize("run_with_program", [True, False])
 @pytest.mark.datatest
 def test_run_diffusion_single_step(
     run_with_program,
