@@ -11,12 +11,17 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 from gt4py.next.common import Dimension
 
-from icon4py.pyutils.icochainsize import IcoChainSize
+from icon4py.icon4pygen.icochainsize import IcoChainSize
+
+
+PYTHON_PATH = sys.executable
 
 
 def check_dir_exists(dirpath: Path) -> None:
@@ -34,6 +39,19 @@ def calc_num_neighbors(dim_list: list[Dimension], includes_center: bool) -> int:
 
 
 def format_fortran_code(source: str) -> str:
-    args = ["fprettify"]
+    """Format fortran code using fprettify.
+
+    The path to fprettify needs to be set explicitly for the
+    non-Spack build process as Liskov does not activate a virtual environment.
+
+    Variable SPACK_ROOT is always set in a spack build, used to assume that fprettify
+    is in PATH
+    """
+    if os.getenv("SPACK_ROOT") is not None:
+        fprettify_path = "fprettify"
+    else:
+        bin_path = Path(PYTHON_PATH).parent
+        fprettify_path = bin_path / "fprettify"
+    args = [str(fprettify_path)]
     p1 = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()
