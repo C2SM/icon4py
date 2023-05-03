@@ -700,17 +700,11 @@ class Diffusion:
                 boundary_diffusion_start_index_edges=edge_start_lb_plus4,
                 offset_provider={
                     "V2E": self.grid.get_v2e_connectivity(),
-                    "V2EDim": V2EDim,
                     "E2C2V": self.grid.get_e2c2v_connectivity(),
-                    "E2C2VDim": E2C2VDim,
-                    "E2CDim": E2CDim,
                     "E2ECV": self.grid.get_e2ecv_connectivity(),
                     "C2E": self.grid.get_c2e_connectivity(),
-                    "C2EDim": C2EDim,
                     "E2C": self.grid.get_e2c_connectivity(),
                     "C2E2C": self.grid.get_c2e2c_connectivity(),
-                    "C2E2CDim": C2E2CDim,
-                    "C2E2CODim": C2E2CODim,
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "Koff": KDim,
                 },
@@ -833,7 +827,7 @@ class Diffusion:
             horizontal_end=vertex_end_local_minus1,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
+            offset_provider={"V2E": self.grid.get_v2e_connectivity()},
         )
         log.debug("rbf interpolation: end")
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult
@@ -864,7 +858,6 @@ class Diffusion:
             offset_provider={
                 "E2C2V": self.grid.get_e2c2v_connectivity(),
                 "E2ECV": self.grid.get_e2ecv_connectivity(),
-                "E2C2VDim": E2C2VDim,
             },
         )
         log.debug("running calculate_nabla2_and_smag_coefficients_for_vn: end")
@@ -884,7 +877,6 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
-                "C2EDim": C2EDim,
                 "Koff": KDim,
             },
         )
@@ -904,7 +896,7 @@ class Diffusion:
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"V2E": self.grid.get_v2e_connectivity(), "V2EDim": V2EDim},
+            offset_provider={"V2E": self.grid.get_v2e_connectivity()},
         )
         log.debug("rbf interpolation: end")
         # # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
@@ -937,7 +929,6 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={
                 "E2C2V": self.grid.get_e2c2v_connectivity(),
-                "E2C2VDim": E2C2VDim,
                 "E2ECV": self.grid.get_e2ecv_connectivity(),
             },
         )
@@ -972,7 +963,6 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={
                 "C2E2CO": self.grid.get_c2e2co_connectivity(),
-                "C2E2CODim": C2E2CODim,
             },
         )
         log.debug("running fused stencil 07_08_09_10: start")
@@ -995,8 +985,6 @@ class Diffusion:
             offset_provider={
                 "E2C": self.grid.get_e2c_connectivity(),
                 "C2E2C": self.grid.get_c2e2c_connectivity(),
-                "C2E2CDim": C2E2CDim,
-                "E2CDim": E2CDim,
             },
         )
         log.debug("running fused stencil 11_12: end")
@@ -1014,8 +1002,6 @@ class Diffusion:
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
                 "E2C": self.grid.get_e2c_connectivity(),
-                "E2CDim": E2CDim,
-                "C2EDim": C2EDim,
             },
         )
         log.debug("running fused stencil 13_14: end")
@@ -1035,7 +1021,6 @@ class Diffusion:
         #     klevels,
         #     offset_provider={
         #         "C2E2C": self.grid.get_c2e2c_connectivity(),
-        #         "C2E2CDim": C2E2CDim,
         #         "Koff": KDim,
         #     },
         # )
