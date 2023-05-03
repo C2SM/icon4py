@@ -48,12 +48,9 @@ class GranuleParser:
         granule (Path): A path to the Fortran source file to be parsed.
         dependencies (Optional[list[Path]]): A list of paths to any additional Fortran source files that the input file depends on.
 
-    Methods:
-        parse(): Parses the input file and returns a dictionary with information about its subroutines and variables.
-
     Example usage:
         parser = GranuleParser(Path("my_file.f90"), dependencies=[Path("common.f90"), Path("constants.f90")])
-        parsed_types = parser.parse()
+        parsed_types = parser()
     """
 
     def __init__(
