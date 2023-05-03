@@ -116,6 +116,10 @@ class SavepointDataFactory:
                 timestep_variables["jstep"] = "jstep_ptr"
                 timestep_variables["mo_math_divrot_ctr"] = "mo_math_divrot_ctr"
 
+            if "grad_green_gauss" in stencil_name:
+                timestep_variables["jstep"] = "jstep_ptr"
+                timestep_variables["grad_green_gauss_ctr"] = "grad_green_gauss_ctr"
+
             timestep_metadata = [
                 Metadata(key=k, value=v) for k, v in timestep_variables.items()
             ]
