@@ -120,6 +120,12 @@ class SavepointDataFactory:
                 timestep_variables["jstep"] = "jstep_ptr"
                 timestep_variables["grad_green_gauss_ctr"] = "grad_green_gauss_ctr"
 
+            if "mo_icon_interpolation_scalar" in stencil_name:
+                timestep_variables["jstep"] = "jstep_ptr"
+                timestep_variables[
+                    "mo_icon_interpolation_ctr"
+                ] = "mo_icon_interpolation_ctr"
+
             timestep_metadata = [
                 Metadata(key=k, value=v) for k, v in timestep_variables.items()
             ]
