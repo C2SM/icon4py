@@ -65,7 +65,6 @@ def mo_solve_nonhydro_stencil_20_numpy(
     return z_gradh_exner
 
 
-@pytest.mark.skip("new lowering: dims in offset provider")
 def test_mo_solve_nonhydro_stencil_20():
     mesh = SimpleMesh()
 
