@@ -33,3 +33,33 @@ def test_cli(diffusion_granule, diffusion_granule_deps, outfile, cli):
     args = [inp, outfile, "-d", ",".join(deps)]
     result = cli.invoke(main, args)
     assert result.exit_code == 0
+
+def test_cli_no_deps(no_deps_source_file, outfile, cli):
+    inp = str(no_deps_source_file)
+    args = [inp, outfile]
+    result = cli.invoke(main, args)
+    assert result.exit_code == 0
+
+def test_cli_wrong_deps(diffusion_granule, wrong_diffusion_granule_deps, outfile, cli):
+    inp = str(diffusion_granule)
+    deps = [str(p) for p in wrong_diffusion_granule_deps]
+    args = [inp, outfile, "-d", ",".join(deps)]
+    result = cli.invoke(main, args)
+    assert result.exit_code == 0
+
+def test_cli_missing_deps(diffusion_granule, outfile, cli):
+    inp = str(diffusion_granule)
+    args = [inp, outfile]
+    result = cli.invoke(main, args)
+    assert result.exception == MissingDerivedTypeError
+
+def test_cli_wrong_source(not_existing_diffusion_granule, outfile, cli):
+    inp = str(not_existing_diffusion_granule)
+    args = [inp, outfile]
+#    with pytest.raises(Exception) as excinfo:
+#        cli.invoke(main, args)
+#    assert "Invalid value for \'GRANULE_PATH\'" in str(excinfo.value)
+    result = cli.invoke(main, args)
+    assert isinstance(result.exception, SystemExit)
+#    error_search = result.stdout.find("Invalid value for \'GRANULE_PATH\'")
+#    assert error_search != -1
