@@ -112,6 +112,10 @@ class SavepointDataFactory:
                 timestep_variables["jstep"] = "jstep_ptr"
                 timestep_variables["mo_intp_rbf_ctr"] = "mo_intp_rbf_ctr"
 
+            if "mo_math_divrot" in stencil_name:
+                timestep_variables["jstep"] = "jstep_ptr"
+                timestep_variables["mo_math_divrot_ctr"] = "mo_math_divrot_ctr"
+
             timestep_metadata = [
                 Metadata(key=k, value=v) for k, v in timestep_variables.items()
             ]
