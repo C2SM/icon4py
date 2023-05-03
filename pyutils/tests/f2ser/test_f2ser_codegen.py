@@ -12,6 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
+import difflib
+from pathlib import Path
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4py.f2ser.parse import GranuleParser
@@ -40,12 +42,24 @@ def expected_no_deps_serialization_directives():
                       source='\n!$ser savepoint no_deps_run_out\n\n!$ser data c=c\n\n!$ser data b=b')]
     return serialization_directives
 
-def test_deserialiser_no_deps_codegen(no_deps_source_file, diffusion_granule_deps,
-                                      expected_no_deps_serialization_directives):
+def test_deserialiser_directives_no_deps_codegen(no_deps_source_file, expected_no_deps_serialization_directives):
     parser = GranuleParser(no_deps_source_file)
     parsed = parser.parse()
     deserialiser = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")
     interface = deserialiser.deserialise()
     generator = SerialisationGenerator(interface)
     generated = generator()
-    assert(generated == expected_no_deps_serialization_directives())
+    assert(generated == expected_no_deps_serialization_directives)
+
+def test_deserialiser_directives_diffusion_codegen(diffusion_granule, diffusion_granule_deps,
+                                                   expected_diffusion_serialization_directives):
+    parser = GranuleParser(diffusion_granule, diffusion_granule_deps)
+    parsed = parser.parse()
+    deserialiser = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")
+    interface = deserialiser.deserialise()
+    generator = SerialisationGenerator(interface)
+    generated = generator()
+    reference_str = Path(expected_diffusion_serialization_directives).read_text()
+    generated_str = ', '.join([str(elem) for elem in generated])
+    generated_str = "[" + generated_str + "]\n"
+    assert(generated_str == reference_str)
