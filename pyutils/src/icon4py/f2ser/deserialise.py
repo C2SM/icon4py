@@ -27,7 +27,7 @@ class ParsedGranuleDeserialiser:
         self.prefix = prefix
         self.data = {"Savepoint": [], "Init": ...}
 
-    def deserialise(self) -> SerialisationInterface:
+    def __call__(self) -> SerialisationInterface:
         """Deserialise the parsed granule and returns a serialisation interface.
 
         Returns:
@@ -83,7 +83,7 @@ class ParsedGranuleDeserialiser:
                 intent=intent,
                 startln=self._get_codegen_line(var_dict["codegen_ctx"], intent),
                 fields=fields,
-                metadata=None,  # todo: decide how to handle metadata
+                metadata=None,
             )
         )
 
