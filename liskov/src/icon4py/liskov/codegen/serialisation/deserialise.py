@@ -126,6 +126,10 @@ class SavepointDataFactory:
                     "mo_icon_interpolation_ctr"
                 ] = "mo_icon_interpolation_ctr"
 
+            if "mo_advection_traj" in stencil_name:
+                timestep_variables["jstep"] = "jstep_ptr"
+                timestep_variables["mo_advection_traj_ctr"] = "mo_advection_traj_ctr"
+
             timestep_metadata = [
                 Metadata(key=k, value=v) for k, v in timestep_variables.items()
             ]
