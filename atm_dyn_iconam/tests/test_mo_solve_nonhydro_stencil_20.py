@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_20 import (
     mo_solve_nonhydro_stencil_20,

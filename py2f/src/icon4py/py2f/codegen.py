@@ -18,11 +18,11 @@ from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 from gt4py.next.type_system.type_specifications import ScalarKind
 
-from icon4py.bindings.codegen.type_conversion import (
+from icon4py.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4py.bindings.utils import write_string
+from icon4py.icon4pygen.bindings.utils import write_string
 
 
 class DimensionType(Node):
