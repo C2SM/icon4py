@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-import difflib
+from pathlib import Path
 from pathlib import Path
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
