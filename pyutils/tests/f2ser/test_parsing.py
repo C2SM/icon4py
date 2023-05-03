@@ -19,7 +19,7 @@ from icon4py.f2ser.parse import CodegenContext, GranuleParser
 
 def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
     parser = GranuleParser(diffusion_granule, diffusion_granule_deps)
-    parsed = parser.parse()
+    parsed = parser()
 
     assert list(parsed) == ["diffusion_init", "diffusion_run"]
 
@@ -51,10 +51,10 @@ def test_granule_parsing_missing_derived_typedef(diffusion_granule, samples_path
     with pytest.raises(
         MissingDerivedTypeError, match="Could not find type definition for TYPE"
     ):
-        parser.parse()
+        parser()
 
 
 def test_granule_parsing_no_intent(samples_path):
     parser = GranuleParser(samples_path / "subroutine_example.f90", [])
     with pytest.raises(ParsingError):
-        parser.parse()
+        parser()
