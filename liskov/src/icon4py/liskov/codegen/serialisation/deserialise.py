@@ -130,6 +130,12 @@ class SavepointDataFactory:
                 timestep_variables["jstep"] = "jstep_ptr"
                 timestep_variables["mo_advection_traj_ctr"] = "mo_advection_traj_ctr"
 
+            if "mo_solve_nonhydro" in stencil_name:
+                timestep_variables["jstep"] = "jstep_ptr"
+                timestep_variables["nstep"] = "nstep_ptr"
+                timestep_variables["mo_solve_nonhydro_ctr"] = "mo_solve_nonhydro_ctr"
+                timestep_variables["istep"] = "istep"
+
             timestep_metadata = [
                 Metadata(key=k, value=v) for k, v in timestep_variables.items()
             ]
