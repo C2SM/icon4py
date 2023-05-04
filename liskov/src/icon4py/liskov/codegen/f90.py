@@ -385,14 +385,10 @@ class StartCreateStatementGenerator(TemplatedGenerator):
         !$ACC DATA CREATE( &
         {%- if _this_node.extra_fields -%}
         {%- for name in extra_fields %}
-        !$ACC   {{ name }} {%- if not loop.last -%}, & {% else %}, & {%- endif -%}
+        !$ACC   {{ name }} {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
         {%- endfor %}
-        {%- endif -%}
-        {%- for name in out_field_names %}
-        !$ACC   {{ name }}_before {%- if not loop.last -%}, & {% else %} & {%- endif -%}
-        {%- endfor %}
-        !$ACC   ), &
-        !$ACC      IF ( i_am_accel_node )
+        {%- endif %}
+        !$ACC   IF ( i_am_accel_node )
         """
     )
 
