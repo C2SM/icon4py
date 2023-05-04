@@ -164,6 +164,10 @@ class EndStencilStatementGenerator(TemplatedGenerator):
             {{ output_fields }}
             {{ tolerance_fields }}
             {{ bounds_fields }}
+
+        #ifdef __DSL_VERIFY
+        !$ACC END DATA
+        #endif
         """
     )
 
@@ -321,6 +325,13 @@ class StartStencilStatementGenerator(TemplatedGenerator):
     StartStencilStatement = as_jinja(
         """
         #ifdef __DSL_VERIFY
+
+        !$ACC DATA CREATE( &
+        {%- for d in _this_node.copy_declarations %}
+        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
+        {%- endfor %}
+        !$ACC      IF ( i_am_accel_node )
+
         {% if _this_node.stencil_data.copies -%}
         !$ACC KERNELS IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
