@@ -117,6 +117,8 @@ class DirectiveSemanticsValidator:
         repeated = remove_directive_types(
             [d for d in directives if directives.count(d) > 1],
             [
+                ts.StartCreate,
+                ts.EndCreate,
                 ts.StartStencil,
                 ts.EndStencil,
                 ts.EndIf,
@@ -138,8 +140,6 @@ class DirectiveSemanticsValidator:
         expected = [
             ts.Declare,
             ts.Imports,
-            ts.StartCreate,
-            ts.EndCreate,
             ts.StartStencil,
             ts.EndStencil,
         ]
