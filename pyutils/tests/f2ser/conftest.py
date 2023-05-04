@@ -22,12 +22,22 @@ import icon4py.testutils as testutils
 def samples_path():
     return Path(testutils.__file__).parent / "fortran"
 
-
 @pytest.fixture
 def diffusion_granule(samples_path):
     return samples_path / "diffusion_granule.f90"
 
-
 @pytest.fixture
 def diffusion_granule_deps(samples_path):
     return [samples_path / "derived_types_example.f90"]
+
+@pytest.fixture
+def wrong_diffusion_granule_deps(samples_path):
+    return [samples_path / "wrong_derived_types_example.f90"]
+
+@pytest.fixture
+def no_deps_source_file(samples_path):
+    return samples_path / "no_deps_subroutine_example.f90"
+
+@pytest.fixture
+def expected_diffusion_serialization_directives(samples_path):
+    return samples_path / "expected_diffusion_serialization_directives.f90.f2ser"
