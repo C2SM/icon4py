@@ -128,7 +128,7 @@ class Imports(WithoutArguments):
     pattern = "IMPORTS"
 
 
-class StartCreate(WithOptionalArguments):
+class StartCreate(WithArguments):
     pattern = "START CREATE"
 
 
