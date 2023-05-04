@@ -15,6 +15,7 @@ import pytest
 from click.testing import CliRunner
 
 from icon4py.f2ser.cli import main
+from icon4py.f2ser.exceptions import MissingDerivedTypeError
 
 
 @pytest.fixture
@@ -34,32 +35,32 @@ def test_cli(diffusion_granule, diffusion_granule_deps, outfile, cli):
     result = cli.invoke(main, args)
     assert result.exit_code == 0
 
+
 def test_cli_no_deps(no_deps_source_file, outfile, cli):
     inp = str(no_deps_source_file)
     args = [inp, outfile]
     result = cli.invoke(main, args)
     assert result.exit_code == 0
 
-def test_cli_wrong_deps(diffusion_granule, wrong_diffusion_granule_deps, outfile, cli):
+
+def test_cli_wrong_deps(diffusion_granule, samples_path, outfile, cli):
     inp = str(diffusion_granule)
-    deps = [str(p) for p in wrong_diffusion_granule_deps]
-    args = [inp, outfile, "-d", ",".join(deps)]
+    deps = [str(samples_path / "wrong_derived_types_example.f90")]
+    args = [inp, outfile, "-d", *deps]
     result = cli.invoke(main, args)
     assert result.exit_code == 0
+
 
 def test_cli_missing_deps(diffusion_granule, outfile, cli):
     inp = str(diffusion_granule)
     args = [inp, outfile]
     result = cli.invoke(main, args)
-    assert result.exception == MissingDerivedTypeError
+    assert isinstance(result.exception, MissingDerivedTypeError)
 
-def test_cli_wrong_source(not_existing_diffusion_granule, outfile, cli):
-    inp = str(not_existing_diffusion_granule)
+
+def test_cli_wrong_source(outfile, cli):
+    inp = str("foo.90")
     args = [inp, outfile]
-#    with pytest.raises(Exception) as excinfo:
-#        cli.invoke(main, args)
-#    assert "Invalid value for \'GRANULE_PATH\'" in str(excinfo.value)
     result = cli.invoke(main, args)
+    assert "Invalid value for 'GRANULE_PATH'" in result.output
     assert isinstance(result.exception, SystemExit)
-#    error_search = result.stdout.find("Invalid value for \'GRANULE_PATH\'")
-#    assert error_search != -1
