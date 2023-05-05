@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from abc import ABCMeta, abstractmethod
 from typing import Iterator
 
 from gt4py.next.ffront.fbuiltins import Dimension
@@ -45,31 +46,6 @@ class Vertex(BasicLocation):
 BASIC_LOCATIONS = {location.__name__: location for location in [Cell, Edge, Vertex]}
 
 
-class CompoundLocation:
-    compound: list[BasicLocation]
-
-    def __str__(self) -> str:
-        return "".join([str(loc) for loc in self.compound])
-
-    def __init__(self, compound: list[BasicLocation]) -> None:
-        if is_valid(compound):
-            self.compound = compound
-        else:
-            raise Exception(
-                f"chain {compound} contains two of the same elements in succession"
-            )
-
-    def __iter__(self) -> Iterator[BasicLocation]:
-        return iter(self.compound)
-
-    def __getitem__(self, item: int) -> BasicLocation:
-        return self.compound[item]
-
-    def to_dim_list(self) -> list[Dimension]:
-        map_to_dim = {Cell: CellDim, Edge: EdgeDim, Vertex: VertexDim}
-        return [map_to_dim[c.__class__] for c in self.compound]
-
-
 def is_valid(nbh_list: list[BasicLocation]) -> bool:
     for i in range(0, len(nbh_list) - 1):  # This doesn't look very pythonic
         if isinstance(type(nbh_list[i]), type(nbh_list[i + 1])):
@@ -77,12 +53,12 @@ def is_valid(nbh_list: list[BasicLocation]) -> bool:
     return True
 
 
-class ChainedLocation:
+class MultiLocation(metaclass=ABCMeta):
     chain: list[BasicLocation]
 
+    @abstractmethod
     def __str__(self) -> str:
-        return "2".join([str(loc) for loc in self.chain])
-
+        ...
     def __init__(self, chain: list[BasicLocation]) -> None:
         if is_valid(chain):
             self.chain = chain
@@ -100,3 +76,14 @@ class ChainedLocation:
     def to_dim_list(self) -> list[Dimension]:
         map_to_dim = {Cell: CellDim, Edge: EdgeDim, Vertex: VertexDim}
         return [map_to_dim[c.__class__] for c in self.chain]
+
+class CompoundLocation(MultiLocation):
+
+    def __str__(self) -> str:
+        return "".join([str(loc) for loc in self.chain])
+
+
+class ChainedLocation(MultiLocation):
+
+    def __str__(self) -> str:
+        return "2".join([str(loc) for loc in self.chain])
