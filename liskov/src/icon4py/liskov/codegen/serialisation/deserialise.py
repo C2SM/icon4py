@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import uuid
+
 import icon4py.liskov.parsing.parse
 import icon4py.liskov.parsing.types as ts
 from icon4py.common.logger import setup_logger
@@ -62,11 +64,16 @@ class SavepointDataFactory:
             parsed["directives"], icon4py.liskov.parsing.parse.EndStencil
         )
 
+        repeated = self._find_repeated_stencils(parsed["content"])
+
         deserialised = []
 
         for i, (start, end) in enumerate(zip(start_stencil, end_stencil)):
             named_args = parsed["content"]["StartStencil"][i]
             stencil_name = _extract_stencil_name(named_args, start)
+
+            if stencil_name in repeated:
+                stencil_name = f"{stencil_name}_{str(uuid.uuid4())}"
 
             field_names = self._remove_unnecessary_keys(named_args)
 
@@ -165,6 +172,19 @@ class SavepointDataFactory:
             timestep_variables["mo_solve_nonhydro_ctr"] = "mo_solve_nonhydro_ctr"
 
         return timestep_variables
+
+    def _find_repeated_stencils(self, content):
+        stencil_names = {}
+        repeated_names = []
+        for stencil in content["StartStencil"]:
+            name = stencil["name"]
+            if name in stencil_names:
+                if stencil_names[name] not in repeated_names:
+                    repeated_names.append(stencil_names[name])
+                repeated_names.append(name)
+            else:
+                stencil_names[name] = name
+        return set(repeated_names)
 
 
 class SerialisationCodeDeserialiser(Deserialiser):

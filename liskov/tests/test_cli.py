@@ -19,6 +19,7 @@ from icon4py.testutils.liskov_fortran_samples import (
     FREE_FORM_STENCIL,
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
+    REPEATED_STENCILS,
     SINGLE_STENCIL,
 )
 
@@ -49,6 +50,8 @@ def outfile(tmp_path):
         (FREE_FORM_STENCIL, ["--profile"]),
         (MULTIPLE_STENCILS, ["--ppser", "--profile"]),
         (MULTIPLE_STENCILS, ["--profile"]),
+        (REPEATED_STENCILS, ["--ppser", "--profile"]),
+        (REPEATED_STENCILS, ["--profile"]),
     ],
 )
 def test_cli(make_f90_tmpfile, cli, file, outfile, options):
