@@ -51,7 +51,7 @@ def parse_fortran_file(
         DirectiveDeserialiser. The DirectivesScanner scans the file for directives,
         the DirectivesParser parses the directives into a dictionary, and the
         DirectiveDeserialiser deserializes the dictionary into a
-        DeserialisedDirectives object.
+        its corresponding Interface object.
 
     Args:
         input_filepath: Path to the input file to process.
@@ -59,7 +59,7 @@ def parse_fortran_file(
         deserialiser_type: What deserialiser to use.
 
     Returns:
-        IntegrationCodeInterface: The deserialized directives object.
+        IntegrationCodeInterface | SerialisationCodeInterface: The interface object.
     """
     deserialiser = DESERIALISERS[deserialiser_type]
 
@@ -72,10 +72,10 @@ def parse_fortran_file(
 
 @linear_pipeline
 def load_gt4py_stencils(parsed: IntegrationCodeInterface) -> list[Step]:
-    """Execute a pipeline to update fields of a DeserialisedDirectives object with GT4Py stencils.
+    """Execute a pipeline to update fields of a IntegrationCodeInterface object with GT4Py stencils.
 
     Args:
-        parsed: The input DeserialisedDirectives object.
+        parsed: The input IntegrationCodeInterface object.
 
     Returns:
         The updated object with fields containing information from GT4Py stencils.
@@ -91,12 +91,15 @@ def run_code_generation(
     *args,
     **kwargs,
 ) -> list[Step]:
-    """Execute a pipeline to generate and write serialisation statements.
+    """Execute a pipeline to generate and write code.
 
     Args:
         input_filepath: The original file containing the DSL preprocessor directives.
         output_filepath: The file path to write the generated code to.
         codegen_type: Which type of code generator to use.
+
+    Note:
+        Additional positional and keyword arguments are passed to the code generator.
     """
     code_generator = CODEGENS[codegen_type]
 

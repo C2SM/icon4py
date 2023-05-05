@@ -24,7 +24,7 @@ logger = setup_logger(__name__)
 
 class CodegenWriter(Step):
     def __init__(self, input_filepath: Path, output_filepath: Path) -> None:
-        """Initialize an IntegrationWriter instance with a list of generated code.
+        """Initialize an CodegenWriter instance.
 
         Args:
             input_filepath: Path to file containing directives.
@@ -34,10 +34,12 @@ class CodegenWriter(Step):
         self.output_filepath = output_filepath
 
     def __call__(self, generated: List[GeneratedCode]) -> None:
-        """Write a file containing generated code, with the DSL directives removed in the same directory as filepath using a new suffix.
+        """Write a new file containing the generated code.
+
+            Any !$DSL directives are removed from the file.
 
         Args:
-            generated: A list of GeneratedCode instances representing the generated code that will be written to a file.
+            generated: A list of GeneratedCode instances representing the generated code that will be written to the file.
         """
         current_file = self._read_file()
         with_generated_code = self._insert_generated_code(current_file, generated)
@@ -45,7 +47,7 @@ class CodegenWriter(Step):
         self._write_file(without_directives)
 
     def _read_file(self) -> List[str]:
-        """Read the lines of a file into a list.
+        """Read the lines of the input file into a list.
 
         Returns:
             A list of strings representing the lines of the file.

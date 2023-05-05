@@ -78,11 +78,11 @@ def main(
     """
     mode = "serialisation" if ppser else "integration"
 
-    def run_serialisation():
+    def run_serialisation() -> None:
         iface = parse_fortran_file(input_path, output_path, mode)
         run_code_generation(input_path, output_path, mode, iface)
 
-    def run_integration():
+    def run_integration() -> None:
         iface = parse_fortran_file(input_path, output_path, mode)
         iface_gt4py = load_gt4py_stencils(iface)
         run_code_generation(
