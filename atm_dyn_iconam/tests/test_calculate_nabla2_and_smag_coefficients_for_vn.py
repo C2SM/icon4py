@@ -210,7 +210,6 @@ def test_calculate_nabla2_and_smag_coefficients_for_vn():
         offset_provider={
             "E2C2V": mesh.get_e2c2v_offset_provider(),
             "E2ECV": mesh.get_e2ecv_offset_provider(),
-            "E2C2VDim": E2C2VDim,
         },
     )
     assert np.allclose(kh_smag_e_ref, kh_smag_e)

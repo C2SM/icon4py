@@ -52,7 +52,7 @@ def test_mo_intp_rbf_rbf_vec_interpol_vertex():
         mesh.n_vertices,
         0,
         mesh.k_level,
-        offset_provider={"V2E": mesh.get_v2e_offset_provider(), "V2EDim": V2EDim},
+        offset_provider={"V2E": mesh.get_v2e_offset_provider()},
     )
     p_u_out_ref, p_v_out_ref = mo_intp_rbf_rbf_vec_interpol_vertex_numpy(
         mesh.v2e, np.asarray(p_e_in), np.asarray(ptr_coeff_1), np.asarray(ptr_coeff_2)
