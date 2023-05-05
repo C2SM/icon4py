@@ -77,7 +77,7 @@ def test_deserialiser_mock(mock_parsed_granule):
     deserialiser = ParsedGranuleDeserialiser(
         mock_parsed_granule, directory=".", prefix="f2ser"
     )
-    interface = deserialiser.deserialise()
+    interface = deserialiser()
     assert isinstance(interface, SerialisationCodeInterface)
     assert len(interface.Savepoint) == 3
     assert all([isinstance(s, SavepointData) for s in interface.Savepoint])
@@ -92,7 +92,7 @@ def test_deserialiser_mock(mock_parsed_granule):
 
 def test_deserialiser_diffusion_granule(diffusion_granule, diffusion_granule_deps):
     parser = GranuleParser(diffusion_granule, diffusion_granule_deps)
-    parsed = parser.parse()
+    parsed = parser()
     deserialiser = ParsedGranuleDeserialiser(parsed, directory=".", prefix="f2ser")
-    interface = deserialiser.deserialise()
+    interface = deserialiser()
     assert len(interface.Savepoint) == 3

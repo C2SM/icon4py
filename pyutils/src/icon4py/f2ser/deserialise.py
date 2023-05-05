@@ -27,7 +27,7 @@ class ParsedGranuleDeserialiser:
         self.prefix = prefix
         self.data = {"Savepoint": [], "Init": ...}
 
-    def deserialise(self) -> SerialisationCodeInterface:
+    def __call__(self) -> SerialisationCodeInterface:
         """Deserialise the parsed granule and returns a serialisation interface.
 
         Returns:

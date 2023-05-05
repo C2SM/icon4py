@@ -63,14 +63,10 @@ def main(
         directory (str): The directory to serialise the variables to.
         prefix (str): The prefix to use for each serialised variable.
     """
-    parsed = GranuleParser(granule_path, dependencies).parse()
-    interface = ParsedGranuleDeserialiser(
-        parsed, directory=directory, prefix=prefix
-    ).deserialise()
-    generator = SerialisationCodeGenerator(interface)
-    generated = generator()
-    writer = CodegenWriter(granule_path, output_filepath)
-    writer(generated)
+    parsed = GranuleParser(granule_path, dependencies)()
+    interface = ParsedGranuleDeserialiser(parsed, directory=directory, prefix=prefix)()
+    generated = SerialisationCodeGenerator(interface)()
+    CodegenWriter(granule_path, output_filepath)(generated)
 
 
 if __name__ == "__main__":
