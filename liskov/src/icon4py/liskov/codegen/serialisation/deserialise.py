@@ -130,9 +130,7 @@ class SavepointDataFactory:
     @staticmethod
     def _get_timestep_variables(stencil_name: str) -> dict:
         """Get the corresponding timestep metadata variables for the stencil."""
-        timestep_variables = {
-            "jstep": "jstep_ptr"
-        }  # jstep is always included as it is the main timestep counter
+        timestep_variables = {}
 
         diffusion_stencil_names = [
             "apply",
@@ -143,31 +141,37 @@ class SavepointDataFactory:
             "diffusion",
         ]
         if any(name in stencil_name for name in diffusion_stencil_names):
+            timestep_variables["jstep"] = "jstep"
             timestep_variables["diffctr"] = "diffctr"
 
         if "mo_velocity_advection" in stencil_name:
+            timestep_variables["jstep"] = "jstep"
             timestep_variables["nstep"] = "nstep_ptr"
             timestep_variables["istep"] = "istep"
 
         if "mo_intp_rbf" in stencil_name:
+            timestep_variables["jstep"] = "jstep"
             timestep_variables["mo_intp_rbf_ctr"] = "mo_intp_rbf_ctr"
 
         if "mo_math_divrot" in stencil_name:
+            timestep_variables["jstep"] = "jstep"
             timestep_variables["mo_math_divrot_ctr"] = "mo_math_divrot_ctr"
 
         if "grad_green_gauss" in stencil_name:
+            timestep_variables["jstep"] = "jstep"
             timestep_variables["grad_green_gauss_ctr"] = "grad_green_gauss_ctr"
 
         if "mo_icon_interpolation_scalar" in stencil_name:
+            timestep_variables["jstep"] = "jstep"
             timestep_variables[
                 "mo_icon_interpolation_ctr"
             ] = "mo_icon_interpolation_ctr"
 
         if "mo_advection_traj" in stencil_name:
+            timestep_variables["jstep"] = "jstep"
             timestep_variables["mo_advection_traj_ctr"] = "mo_advection_traj_ctr"
 
         if "mo_solve_nonhydro" in stencil_name:
-            timestep_variables["nstep"] = "nstep_ptr"
             timestep_variables["istep"] = "istep"
             timestep_variables["mo_solve_nonhydro_ctr"] = "mo_solve_nonhydro_ctr"
 
