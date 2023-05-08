@@ -38,7 +38,7 @@ def _mo_nh_diffusion_stencil_15(
     theta_v_1_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1]) + int32(1)))
     theta_v_2_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2]) + int32(1)))
 
-    sum = (
+    neighbor_sum = (
         geofac_n2s_nbh(C2CEC[0])
         * (
             vcoef(C2CEC[0]) * theta_v_0(C2E2C[0])
@@ -56,7 +56,7 @@ def _mo_nh_diffusion_stencil_15(
         )
     )
 
-    z_temp = where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum), z_temp)
+    z_temp = where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + neighbor_sum), z_temp)
 
     return z_temp
 

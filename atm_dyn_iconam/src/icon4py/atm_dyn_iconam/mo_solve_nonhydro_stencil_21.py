@@ -13,7 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
-from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.common.dimension import (
     E2C,
