@@ -59,6 +59,7 @@ class MultiLocation(metaclass=ABCMeta):
     @abstractmethod
     def __str__(self) -> str:
         ...
+
     def __init__(self, chain: list[BasicLocation]) -> None:
         if is_valid(chain):
             self.chain = chain
@@ -77,13 +78,12 @@ class MultiLocation(metaclass=ABCMeta):
         map_to_dim = {Cell: CellDim, Edge: EdgeDim, Vertex: VertexDim}
         return [map_to_dim[c.__class__] for c in self.chain]
 
-class CompoundLocation(MultiLocation):
 
+class CompoundLocation(MultiLocation):
     def __str__(self) -> str:
         return "".join([str(loc) for loc in self.chain])
 
 
 class ChainedLocation(MultiLocation):
-
     def __str__(self) -> str:
         return "2".join([str(loc) for loc in self.chain])
