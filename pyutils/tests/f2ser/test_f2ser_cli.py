@@ -15,6 +15,7 @@ import pytest
 from click.testing import CliRunner
 
 from icon4py.f2ser.cli import main
+from icon4py.f2ser.exceptions import MissingDerivedTypeError
 
 
 @pytest.fixture
@@ -33,3 +34,26 @@ def test_cli(diffusion_granule, diffusion_granule_deps, outfile, cli):
     args = [inp, outfile, "-d", ",".join(deps)]
     result = cli.invoke(main, args)
     assert result.exit_code == 0
+
+
+def test_cli_no_deps(no_deps_source_file, outfile, cli):
+    inp = str(no_deps_source_file)
+    args = [inp, outfile]
+    result = cli.invoke(main, args)
+    assert result.exit_code == 0
+
+
+def test_cli_missing_deps(diffusion_granule, outfile, cli):
+    inp = str(diffusion_granule)
+    args = [inp, outfile]
+    result = cli.invoke(main, args)
+    assert isinstance(result.exception, MissingDerivedTypeError)
+
+
+def test_cli_missing_source(not_existing_diffusion_granule, outfile, cli):
+    inp = str(not_existing_diffusion_granule)
+    args = [inp, outfile]
+    result = cli.invoke(main, args)
+    error_search = result.stdout.find("Invalid value for 'GRANULE_PATH'")
+    assert error_search != -1
+    assert isinstance(result.exception, SystemExit)
