@@ -43,6 +43,15 @@ def test_cli_no_deps(no_deps_source_file, outfile, cli):
     assert result.exit_code == 0
 
 
+def test_cli_wrong_deps(diffusion_granule, samples_path, outfile, cli):
+    inp = str(diffusion_granule)
+    deps = [str(samples_path / "wrong_derived_types_example.f90")]
+    args = [inp, outfile, "-d", *deps]
+    result = cli.invoke(main, args)
+    assert result.exit_code == 2
+    assert "Invalid value for '--dependencies' / '-d'" in result.output
+
+
 def test_cli_missing_deps(diffusion_granule, outfile, cli):
     inp = str(diffusion_granule)
     args = [inp, outfile]
@@ -50,10 +59,16 @@ def test_cli_missing_deps(diffusion_granule, outfile, cli):
     assert isinstance(result.exception, MissingDerivedTypeError)
 
 
+def test_cli_wrong_source(outfile, cli):
+    inp = str("foo.90")
+    args = [inp, outfile]
+    result = cli.invoke(main, args)
+    assert "Invalid value for 'GRANULE_PATH'" in result.output
+
+
 def test_cli_missing_source(not_existing_diffusion_granule, outfile, cli):
     inp = str(not_existing_diffusion_granule)
     args = [inp, outfile]
     result = cli.invoke(main, args)
-    error_search = result.stdout.find("Invalid value for 'GRANULE_PATH'")
-    assert error_search != -1
     assert isinstance(result.exception, SystemExit)
+    assert "Invalid value for 'GRANULE_PATH'" in result.output
