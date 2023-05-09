@@ -15,7 +15,19 @@ import unittest
 
 import pytest
 
-import icon4py.liskov.parsing.types as ts
+import icon4py.liskov.parsing.parse
+from icon4py.liskov.codegen.integration.deserialise import (
+    DeclareDataFactory,
+    EndCreateDataFactory,
+    EndIfDataFactory,
+    EndProfileDataFactory,
+    EndStencilDataFactory,
+    ImportsDataFactory,
+    InsertDataFactory,
+    StartCreateDataFactory,
+    StartProfileDataFactory,
+    StartStencilDataFactory,
+)
 from icon4py.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
@@ -29,18 +41,6 @@ from icon4py.liskov.codegen.integration.interface import (
     StartCreateData,
     StartProfileData,
 )
-from icon4py.liskov.parsing.deserialise import (
-    DeclareDataFactory,
-    EndCreateDataFactory,
-    EndIfDataFactory,
-    EndProfileDataFactory,
-    EndStencilDataFactory,
-    ImportsDataFactory,
-    InsertDataFactory,
-    StartCreateDataFactory,
-    StartProfileDataFactory,
-    StartStencilDataFactory,
-)
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     MissingBoundsError,
@@ -51,10 +51,38 @@ from icon4py.liskov.parsing.exceptions import (
 @pytest.mark.parametrize(
     "factory_class, directive_type, string, startln, endln, expected",
     [
-        (EndCreateDataFactory, ts.EndCreate, "END CREATE", 2, 2, EndCreateData),
-        (ImportsDataFactory, ts.Imports, "IMPORTS", 3, 3, ImportsData),
-        (EndIfDataFactory, ts.EndIf, "ENDIF", 4, 4, EndIfData),
-        (EndProfileDataFactory, ts.EndProfile, "END PROFILE", 5, 5, EndProfileData),
+        (
+            EndCreateDataFactory,
+            icon4py.liskov.parsing.parse.EndCreate,
+            "END CREATE",
+            2,
+            2,
+            EndCreateData,
+        ),
+        (
+            ImportsDataFactory,
+            icon4py.liskov.parsing.parse.Imports,
+            "IMPORTS",
+            3,
+            3,
+            ImportsData,
+        ),
+        (
+            EndIfDataFactory,
+            icon4py.liskov.parsing.parse.EndIf,
+            "ENDIF",
+            4,
+            4,
+            EndIfData,
+        ),
+        (
+            EndProfileDataFactory,
+            icon4py.liskov.parsing.parse.EndProfile,
+            "END PROFILE",
+            5,
+            5,
+            EndProfileData,
+        ),
     ],
 )
 def test_data_factories_no_args(
@@ -82,8 +110,10 @@ def test_data_factories_no_args(
             EndStencilData,
             {
                 "directives": [
-                    ts.EndStencil("END STENCIL(name=foo)", 5, 5),
-                    ts.EndStencil(
+                    icon4py.liskov.parsing.parse.EndStencil(
+                        "END STENCIL(name=foo)", 5, 5
+                    ),
+                    icon4py.liskov.parsing.parse.EndStencil(
                         "END STENCIL(name=bar; noendif=true; noprofile=true)", 20, 20
                     ),
                 ],
@@ -100,7 +130,9 @@ def test_data_factories_no_args(
             EndStencilData,
             {
                 "directives": [
-                    ts.EndStencil("END STENCIL(name=foo; noprofile=true)", 5, 5)
+                    icon4py.liskov.parsing.parse.EndStencil(
+                        "END STENCIL(name=foo; noprofile=true)", 5, 5
+                    )
                 ],
                 "content": {"EndStencil": [{"name": "foo"}]},
             },
@@ -110,8 +142,12 @@ def test_data_factories_no_args(
             StartProfileData,
             {
                 "directives": [
-                    ts.StartProfile("START PROFILE(name=foo)", 5, 5),
-                    ts.StartProfile("START PROFILE(name=bar)", 20, 20),
+                    icon4py.liskov.parsing.parse.StartProfile(
+                        "START PROFILE(name=foo)", 5, 5
+                    ),
+                    icon4py.liskov.parsing.parse.StartProfile(
+                        "START PROFILE(name=bar)", 20, 20
+                    ),
                 ],
                 "content": {"StartProfile": [{"name": "foo"}, {"name": "bar"}]},
             },
@@ -120,7 +156,11 @@ def test_data_factories_no_args(
             StartProfileDataFactory,
             StartProfileData,
             {
-                "directives": [ts.StartProfile("START PROFILE(name=foo)", 5, 5)],
+                "directives": [
+                    icon4py.liskov.parsing.parse.StartProfile(
+                        "START PROFILE(name=foo)", 5, 5
+                    )
+                ],
                 "content": {"StartProfile": [{"name": "foo"}]},
             },
         ),
@@ -129,7 +169,7 @@ def test_data_factories_no_args(
             DeclareData,
             {
                 "directives": [
-                    ts.Declare(
+                    icon4py.liskov.parsing.parse.Declare(
                         "DECLARE(vn=nlev,nblks_c; w=nlevp1,nblks_e; suffix=dsl; type=LOGICAL)",
                         5,
                         5,
@@ -151,7 +191,9 @@ def test_data_factories_no_args(
             InsertDataFactory,
             InsertData,
             {
-                "directives": [ts.Insert("INSERT(content=foo)", 5, 5)],
+                "directives": [
+                    icon4py.liskov.parsing.parse.Insert("INSERT(content=foo)", 5, 5)
+                ],
                 "content": {"Insert": ["foo"]},
             },
         ),
@@ -168,7 +210,11 @@ def test_data_factories_with_args(factory, target, mock_data):
     [
         (
             {
-                "directives": [ts.StartCreate("START CREATE(extra_fields=foo)", 5, 5)],
+                "directives": [
+                    icon4py.liskov.parsing.parse.StartCreate(
+                        "START CREATE(extra_fields=foo)", 5, 5
+                    )
+                ],
                 "content": {"StartCreate": [{"extra_fields": "foo"}]},
             },
             ["foo"],
@@ -176,7 +222,9 @@ def test_data_factories_with_args(factory, target, mock_data):
         (
             {
                 "directives": [
-                    ts.StartCreate("START CREATE(extra_fields=foo,xyz)", 5, 5)
+                    icon4py.liskov.parsing.parse.StartCreate(
+                        "START CREATE(extra_fields=foo,xyz)", 5, 5
+                    )
                 ],
                 "content": {"StartCreate": [{"extra_fields": "foo,xyz"}]},
             },
@@ -184,7 +232,9 @@ def test_data_factories_with_args(factory, target, mock_data):
         ),
         (
             {
-                "directives": [ts.StartCreate("START CREATE()", 5, 5)],
+                "directives": [
+                    icon4py.liskov.parsing.parse.StartCreate("START CREATE()", 5, 5)
+                ],
                 "content": {"StartCreate": [None]},
             },
             None,
@@ -206,8 +256,12 @@ def test_start_create_factory(mock_data, extra_fields):
             EndStencilData,
             {
                 "directives": [
-                    ts.EndStencil("END STENCIL(name=foo)", 5, 5),
-                    ts.EndStencil("END STENCIL(name=bar; noendif=foo)", 20, 20),
+                    icon4py.liskov.parsing.parse.EndStencil(
+                        "END STENCIL(name=foo)", 5, 5
+                    ),
+                    icon4py.liskov.parsing.parse.EndStencil(
+                        "END STENCIL(name=bar; noendif=foo)", 20, 20
+                    ),
                 ],
                 "content": {
                     "EndStencil": [{"name": "foo"}, {"name": "bar", "noendif": "foo"}]

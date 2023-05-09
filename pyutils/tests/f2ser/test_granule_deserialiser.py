@@ -17,7 +17,7 @@ from icon4py.f2ser.parse import CodegenContext, GranuleParser
 from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     SavepointData,
-    SerialisationInterface,
+    SerialisationCodeInterface,
 )
 
 
@@ -78,7 +78,7 @@ def test_deserialiser_mock(mock_parsed_granule):
         mock_parsed_granule, directory=".", prefix="f2ser"
     )
     interface = deserialiser()
-    assert isinstance(interface, SerialisationInterface)
+    assert isinstance(interface, SerialisationCodeInterface)
     assert len(interface.Savepoint) == 3
     assert all([isinstance(s, SavepointData) for s in interface.Savepoint])
     assert all(

@@ -33,11 +33,11 @@ SINGLE_STENCIL = """\
 
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; suffix=dsl)
 
-    !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; a=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL DECLARE(vn= nproma,p_patch%nlev,p_patch%nblks_e; a=nproma,p_patch%nlev,p_patch%nblks_e; &
     !$DSL         b=nproma,p_patch%nlev,p_patch%nblks_e; type=REAL(vp))
 
     !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
-    !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
+    !$DSL       z_nabla2_e=z_nabla2_e(:, :, 1); area_edge=p_patch%edges%area_edge(:,1); &
     !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
     !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx; &
@@ -242,3 +242,78 @@ FREE_FORM_STENCIL = """\
 
     !$DSL END CREATE()
 """
+
+
+REPEATED_STENCILS = """\
+    !$DSL IMPORTS()
+
+    !$DSL START CREATE()
+
+    !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; suffix=dsl)
+
+    !$DSL DECLARE(vn= nproma,p_patch%nlev,p_patch%nblks_e; a=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL         b=nproma,p_patch%nlev,p_patch%nblks_e; type=REAL(vp))
+
+    !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
+    !$DSL       z_nabla2_e=z_nabla2_e(:, :, 1); area_edge=p_patch%edges%area_edge(:,1); &
+    !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); &
+    !$DSL       vertical_lower=1; vertical_upper=nlev; &
+    !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx; &
+    !$DSL       accpresent=True)
+    !$OMP DO PRIVATE(je,jk,jb,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
+      DO jb = i_startblk,i_endblk
+
+        CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
+                           i_startidx, i_endidx, start_bdydiff_e, grf_bdywidth_e)
+
+    !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+    vn_before(:,:,:) = p_nh_prog%vn(:,:,:)
+    !$ACC END PARALLEL
+
+    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
+            DO jk = 1, nlev
+    !DIR$ IVDEP
+              DO je = i_startidx, i_endidx
+                p_nh_prog%vn(je,jk,jb) =   &
+                  p_nh_prog%vn(je,jk,jb) + &
+                  z_nabla2_e(je,jk,jb) * &
+                  p_patch%edges%area_edge(je,jb)*fac_bdydiff_v
+              ENDDO
+            ENDDO
+    !$DSL START PROFILE(name=apply_nabla2_to_vn_in_lateral_boundary)
+    !$ACC END PARALLEL LOOP
+    !$DSL END PROFILE()
+    !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; noprofile=True)
+
+    !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
+    !$DSL       z_nabla2_e=z_nabla2_e(:, :, 1); area_edge=p_patch%edges%area_edge(:,1); &
+    !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); &
+    !$DSL       vertical_lower=1; vertical_upper=nlev; &
+    !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx; &
+    !$DSL       accpresent=True)
+    !$OMP DO PRIVATE(je,jk,jb,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
+      DO jb = i_startblk,i_endblk
+
+        CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
+                           i_startidx, i_endidx, start_bdydiff_e, grf_bdywidth_e)
+
+    !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+    vn_before(:,:,:) = p_nh_prog%vn(:,:,:)
+    !$ACC END PARALLEL
+
+    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
+            DO jk = 1, nlev
+    !DIR$ IVDEP
+              DO je = i_startidx, i_endidx
+                p_nh_prog%vn(je,jk,jb) =   &
+                  p_nh_prog%vn(je,jk,jb) + &
+                  z_nabla2_e(je,jk,jb) * &
+                  p_patch%edges%area_edge(je,jb)*fac_bdydiff_v
+              ENDDO
+            ENDDO
+    !$DSL START PROFILE(name=apply_nabla2_to_vn_in_lateral_boundary)
+    !$ACC END PARALLEL LOOP
+    !$DSL END PROFILE()
+    !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; noprofile=True)
+    !$DSL END CREATE()
+    """

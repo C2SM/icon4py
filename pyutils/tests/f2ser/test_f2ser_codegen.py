@@ -13,7 +13,9 @@
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4py.f2ser.parse import GranuleParser
-from icon4py.liskov.codegen.serialisation.generate import SerialisationGenerator
+from icon4py.liskov.codegen.serialisation.generate import (
+    SerialisationCodeGenerator,
+)
 
 
 def test_deserialiser_diffusion_codegen(diffusion_granule, diffusion_granule_deps):
@@ -21,6 +23,6 @@ def test_deserialiser_diffusion_codegen(diffusion_granule, diffusion_granule_dep
     parsed = parser()
     deserialiser = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")
     interface = deserialiser()
-    generator = SerialisationGenerator(interface)
+    generator = SerialisationCodeGenerator(interface)
     generated = generator()
     assert len(generated) == 3

@@ -10,17 +10,3 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-from dataclasses import dataclass
-
-
-@dataclass
-class CodeGenInput:
-    startln: int
-
-
-@dataclass
-class GeneratedCode(CodeGenInput):
-    """A class for storing generated f90 code and its line number information."""
-
-    source: str

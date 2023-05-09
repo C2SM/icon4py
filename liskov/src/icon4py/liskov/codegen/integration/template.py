@@ -92,7 +92,7 @@ class MetadataStatementGenerator(TemplatedGenerator):
     ! GENERATED WITH ICON-LISKOV
     !+-+-+-+-+-+-+-+-+-+ +-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+
     ! Generated on: {{ _this_node.metadata.generated_on }}
-    ! Input filepath: {{ _this_node.metadata.cli_params['input_filepath'] }}
+    ! Input filepath: {{ _this_node.metadata.cli_params['input_path'] }}
     ! Profiling active: {{ _this_node.metadata.cli_params['profile'] }}
     ! Git version tag: {{ _this_node.metadata.tag }}
     ! Git commit hash: {{ _this_node.metadata.commit_hash }}

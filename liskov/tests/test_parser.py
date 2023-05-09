@@ -17,6 +17,7 @@ from collections import defaultdict
 import pytest
 from pytest import mark
 
+import icon4py.liskov.parsing.parse
 import icon4py.liskov.parsing.types as ts
 from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4py.liskov.parsing.parse import DirectivesParser
@@ -40,21 +41,23 @@ def test_parse_no_input():
     "directive, string, startln, endln, expected_content",
     [
         (
-            ts.Imports("IMPORTS()", 1, 1),
+            icon4py.liskov.parsing.parse.Imports("IMPORTS()", 1, 1),
             "IMPORTS()",
             1,
             1,
             defaultdict(list, {"Imports": [{}]}),
         ),
         (
-            ts.StartCreate("START CREATE(extra_fields=foo)", 2, 2),
+            icon4py.liskov.parsing.parse.StartCreate(
+                "START CREATE(extra_fields=foo)", 2, 2
+            ),
             "START CREATE()",
             2,
             2,
             defaultdict(list, {"StartCreate": [{"extra_fields": "foo"}]}),
         ),
         (
-            ts.StartStencil(
+            icon4py.liskov.parsing.parse.StartStencil(
                 "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)", 3, 4
             ),
             "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)",

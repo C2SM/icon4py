@@ -14,8 +14,8 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from icon4py.liskov.codegen.types import GeneratedCode
-from icon4py.liskov.codegen.write import DIRECTIVE_IDENT, CodegenWriter
+from icon4py.liskov.codegen.shared.types import GeneratedCode
+from icon4py.liskov.codegen.shared.writer import DIRECTIVE_IDENT, CodegenWriter
 
 
 def test_write_from():
