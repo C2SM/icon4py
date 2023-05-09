@@ -15,14 +15,16 @@ import pytest
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4py.f2ser.parse import GranuleParser
-from icon4py.liskov.codegen.serialisation.generate import SerialisationGenerator
-from icon4py.liskov.codegen.types import GeneratedCode
+from icon4py.liskov.codegen.serialisation.generate import (
+    SerialisationCodeGenerator,
+)
+from icon4py.liskov.codegen.shared.types import GeneratedCode
 
 
 def test_deserialiser_diffusion_codegen(diffusion_granule, diffusion_granule_deps):
     parsed = GranuleParser(diffusion_granule, diffusion_granule_deps)()
     interface = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")()
-    generated = SerialisationGenerator(interface)()
+    generated = SerialisationCodeGenerator(interface)()
     assert len(generated) == 3
 
 
@@ -31,19 +33,57 @@ def expected_no_deps_serialization_directives():
     serialization_directives = [
         GeneratedCode(
             startln=12,
-            source='\n!$ser init directory="." prefix="test"\n\n!$ser savepoint no_deps_init_in\n\n!$ser data a=a\n\n!$ser data b=b',
+            source="\n"
+            '    !$ser init directory="." prefix="test"\n'
+            "\n"
+            "    !$ser savepoint no_deps_init_in\n"
+            "\n"
+            "    PRINT *, 'Serializing a=a'\n"
+            "\n"
+            "    !$ser data a=a\n"
+            "\n"
+            "    PRINT *, 'Serializing b=b'\n"
+            "\n"
+            "    !$ser data b=b",
         ),
         GeneratedCode(
             startln=14,
-            source="\n!$ser savepoint no_deps_init_out\n\n!$ser data c=c\n\n!$ser data b=b",
+            source="\n"
+            "    !$ser savepoint no_deps_init_out\n"
+            "\n"
+            "    PRINT *, 'Serializing c=c'\n"
+            "\n"
+            "    !$ser data c=c\n"
+            "\n"
+            "    PRINT *, 'Serializing b=b'\n"
+            "\n"
+            "    !$ser data b=b",
         ),
         GeneratedCode(
             startln=20,
-            source="\n!$ser savepoint no_deps_run_in\n\n!$ser data a=a\n\n!$ser data b=b",
+            source="\n"
+            "    !$ser savepoint no_deps_run_in\n"
+            "\n"
+            "    PRINT *, 'Serializing a=a'\n"
+            "\n"
+            "    !$ser data a=a\n"
+            "\n"
+            "    PRINT *, 'Serializing b=b'\n"
+            "\n"
+            "    !$ser data b=b",
         ),
         GeneratedCode(
             startln=22,
-            source="\n!$ser savepoint no_deps_run_out\n\n!$ser data c=c\n\n!$ser data b=b",
+            source="\n"
+            "    !$ser savepoint no_deps_run_out\n"
+            "\n"
+            "    PRINT *, 'Serializing c=c'\n"
+            "\n"
+            "    !$ser data c=c\n"
+            "\n"
+            "    PRINT *, 'Serializing b=b'\n"
+            "\n"
+            "    !$ser data b=b",
         ),
     ]
     return serialization_directives
@@ -54,7 +94,7 @@ def test_deserialiser_directives_no_deps_codegen(
 ):
     parsed = GranuleParser(no_deps_source_file)()
     interface = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")()
-    generated = SerialisationGenerator(interface)()
+    generated = SerialisationCodeGenerator(interface)()
     assert generated == expected_no_deps_serialization_directives
 
 
@@ -63,7 +103,7 @@ def test_deserialiser_directives_diffusion_codegen(
 ):
     parsed = GranuleParser(diffusion_granule, diffusion_granule_deps)()
     interface = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")()
-    generated = SerialisationGenerator(interface)()
+    generated = SerialisationCodeGenerator(interface)()
     reference_savepoint = (
         samples_path / "expected_diffusion_granule_savepoint.f90"
     ).read_text()
