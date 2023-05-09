@@ -74,7 +74,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
         !$ser init directory="{{_this_node.init.directory}}" prefix="{{ _this_node.init.prefix }}"
         {% endif %}
 
-        !$ser savepoint {{ _this_node.savepoint.subroutine }}_{{ _this_node.savepoint.intent }} {% if _this_node.savepoint.metadata %} {%- for m in _this_node.savepoint.metadata -%} {{ m.key }}={{ m.value }} {%- endfor -%} {% endif %}
+        !$ser savepoint {{ _this_node.savepoint.subroutine }}_{{ _this_node.savepoint.intent }} {% if _this_node.savepoint.metadata %} {%- for m in _this_node.savepoint.metadata -%} {{ m.key }}={{ m.value }} {% endfor -%} {% endif %}
 
         {{ decomposed_fields }}
 
@@ -85,6 +85,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
     StandardFields = as_jinja(
         """
     {% for f in _this_node.fields %}
+    PRINT *, 'Serializing {{ f.variable }}={{ f.association }}'
     {% if f.dimension %}
     IF (SIZE({{ f.variable }}) > 0) THEN
     !$ser data {{ f.variable }}={{ f.association }}
@@ -125,6 +126,6 @@ class SavepointStatementGenerator(TemplatedGenerator):
 
         for f in node.fields:
             f.variable = f.variable.replace(f"_{f.ptr_var}", "")
-            f.alloc_dims = ", ".join(generate_size_strings(f.dimension, f.variable))
+            f.alloc_dims = ",".join(generate_size_strings(f.dimension, f.variable))
 
         return self.generic_visit(node)

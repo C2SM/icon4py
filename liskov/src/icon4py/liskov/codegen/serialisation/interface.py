@@ -14,7 +14,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from icon4py.liskov.codegen.types import CodeGenInput
+from icon4py.liskov.codegen.shared.types import CodeGenInput
 
 
 @dataclass
@@ -42,13 +42,13 @@ class FieldSerialisationData:
 
 @dataclass
 class SavepointData(CodeGenInput):
-    subroutine: str
+    subroutine: str  # todo: change to name
     intent: str
     fields: list[FieldSerialisationData]
     metadata: Optional[list[Metadata]]
 
 
 @dataclass
-class SerialisationInterface:
+class SerialisationCodeInterface:
     Init: InitData
     Savepoint: list[SavepointData]

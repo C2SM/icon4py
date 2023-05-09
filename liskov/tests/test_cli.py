@@ -19,6 +19,7 @@ from icon4py.testutils.liskov_fortran_samples import (
     FREE_FORM_STENCIL,
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
+    REPEATED_STENCILS,
     SINGLE_STENCIL,
 )
 
@@ -28,31 +29,36 @@ def outfile(tmp_path):
     return str(tmp_path / "gen.f90")
 
 
-@pytest.mark.parametrize("file", [NO_DIRECTIVES_STENCIL])
-def test_cli_no_directives(make_f90_tmpfile, cli, file, outfile):
-    fpath = str(make_f90_tmpfile(content=file))
-    result = cli.invoke(main, [fpath, outfile])
-    assert result.exit_code == 0
-
-
 @pytest.mark.parametrize(
-    "file, profile",
+    "file, options",
     [
-        (NO_DIRECTIVES_STENCIL, False),
-        (SINGLE_STENCIL, False),
-        (CONSECUTIVE_STENCIL, False),
-        (FREE_FORM_STENCIL, False),
-        (MULTIPLE_STENCILS, False),
-        (SINGLE_STENCIL, True),
-        (CONSECUTIVE_STENCIL, True),
-        (FREE_FORM_STENCIL, True),
-        (MULTIPLE_STENCILS, True),
+        (NO_DIRECTIVES_STENCIL, ["--ppser"]),
+        (NO_DIRECTIVES_STENCIL, []),
+        (SINGLE_STENCIL, ["--ppser"]),
+        (SINGLE_STENCIL, []),
+        (CONSECUTIVE_STENCIL, ["--ppser"]),
+        (CONSECUTIVE_STENCIL, []),
+        (FREE_FORM_STENCIL, ["--ppser"]),
+        (FREE_FORM_STENCIL, []),
+        (MULTIPLE_STENCILS, ["--ppser"]),
+        (MULTIPLE_STENCILS, []),
+        (SINGLE_STENCIL, ["--ppser"]),
+        (SINGLE_STENCIL, ["--profile"]),
+        (CONSECUTIVE_STENCIL, ["--ppser", "--profile"]),
+        (CONSECUTIVE_STENCIL, ["--profile"]),
+        (FREE_FORM_STENCIL, ["--ppser", "--profile"]),
+        (FREE_FORM_STENCIL, ["--profile"]),
+        (MULTIPLE_STENCILS, ["--ppser", "--profile"]),
+        (MULTIPLE_STENCILS, ["--profile"]),
+        (REPEATED_STENCILS, ["--ppser", "--profile"]),
+        (REPEATED_STENCILS, ["--profile"]),
     ],
 )
-def test_cli(make_f90_tmpfile, cli, file, outfile, profile):
+def test_cli(make_f90_tmpfile, cli, file, outfile, options):
     fpath = str(make_f90_tmpfile(content=file))
-    args = [fpath, outfile]
-    if profile:
-        args.append("--profile")
+    args = [fpath, outfile, *options, "-m"]
     result = cli.invoke(main, args)
     assert result.exit_code == 0
+
+
+# todo: add test for wrong arguments

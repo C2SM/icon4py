@@ -18,8 +18,8 @@ import pytest
 from gt4py.next.ffront.decorator import Program
 
 from icon4py.liskov.codegen.integration.interface import (
-    DeserialisedDirectives,
     FieldAssociationData,
+    IntegrationCodeInterface,
     StartStencilData,
 )
 from icon4py.liskov.external.exceptions import (
@@ -60,7 +60,7 @@ def test_stencil_collector_invalid_member():
     os.remove(path)
 
 
-mock_deserialised_directives = DeserialisedDirectives(
+mock_deserialised_directives = IntegrationCodeInterface(
     StartStencil=[
         StartStencilData(
             name="apply_nabla2_to_w",

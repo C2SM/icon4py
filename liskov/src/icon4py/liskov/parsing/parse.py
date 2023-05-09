@@ -13,14 +13,16 @@
 import collections
 import shutil
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Sequence
+from typing import Optional, Sequence, Type
 
 import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.common import Step
-from icon4py.liskov.logger import setup_logger
+from icon4py.common.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
+from icon4py.liskov.parsing.types import ParsedDirective, RawDirective
 from icon4py.liskov.parsing.validation import VALIDATORS
+from icon4py.liskov.pipeline.definition import Step
 
 
 REPLACE_CHARS = [ts.DIRECTIVE_IDENT, "&", "\n"]
@@ -68,7 +70,7 @@ class DirectivesParser(Step):
         typed = []
         for raw in raw_directives:
             found = False
-            for directive in ts.SUPPORTED_DIRECTIVES:
+            for directive in SUPPORTED_DIRECTIVES:
                 if directive.pattern in raw.string:
                     typed.append(directive(raw.string, raw.startln, raw.endln))  # type: ignore
                     found = True
@@ -108,3 +110,128 @@ class DirectivesParser(Step):
             content = d.get_content()
             parsed_content[d.type_name].append(content)
         return parsed_content
+
+
+class TypedDirective(RawDirective):
+    pattern: str
+
+    @property
+    def type_name(self) -> str:
+        return self.__class__.__name__
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TypedDirective):
+            raise NotImplementedError
+        return self.string == other.string
+
+
+@dataclass(eq=False)
+class WithArguments(TypedDirective):
+    regex: str = field(default=r"(.+?)=(.+?)", init=False)
+
+    def get_content(self) -> dict[str, str]:
+        args = self.string.replace(f"{self.pattern}", "")
+        delimited = args[1:-1].split(";")
+        content = {
+            strip_whitespace(a.split("=")[0].strip()): strip_whitespace(a.split("=")[1])
+            for a in delimited
+        }
+        return content
+
+
+@dataclass(eq=False)
+class WithOptionalArguments(TypedDirective):
+    regex: str = field(default=r"(?:.+?=.+?|)", init=False)
+
+    def get_content(self) -> Optional[dict[str, str]]:
+        args = self.string.replace(f"{self.pattern}", "")[1:-1]
+        if len(args) > 0:
+            content = dict([args.split("=")])
+            return content
+        return None
+
+
+@dataclass(eq=False)
+class WithoutArguments(TypedDirective):
+    # matches an empty string at the beginning of a line
+    regex: str = field(default=r"^(?![\s\S])", init=False)
+
+    def get_content(self) -> dict:
+        return {}
+
+
+@dataclass(eq=False)
+class FreeForm(TypedDirective):
+    # matches any string inside brackets
+    regex: str = field(default=r"(.+?)", init=False)
+
+    def get_content(self) -> str:
+        args = self.string.replace(f"{self.pattern}", "")
+        return args[1:-1]
+
+
+def strip_whitespace(string: str) -> str:
+    """
+    Remove all whitespace characters from the given string.
+
+    Args:
+        string: The string to remove whitespace from.
+
+    Returns:
+        The input string with all whitespace removed.
+    """
+    return "".join(string.split())
+
+
+class StartStencil(WithArguments):
+    pattern = "START STENCIL"
+
+
+class EndStencil(WithArguments):
+    pattern = "END STENCIL"
+
+
+class Declare(WithArguments):
+    pattern = "DECLARE"
+
+
+class Imports(WithoutArguments):
+    pattern = "IMPORTS"
+
+
+class StartCreate(WithOptionalArguments):
+    pattern = "START CREATE"
+
+
+class EndCreate(WithoutArguments):
+    pattern = "END CREATE"
+
+
+class EndIf(WithoutArguments):
+    pattern = "ENDIF"
+
+
+class StartProfile(WithArguments):
+    pattern = "START PROFILE"
+
+
+class EndProfile(WithoutArguments):
+    pattern = "END PROFILE"
+
+
+class Insert(FreeForm):
+    pattern = "INSERT"
+
+
+SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
+    StartStencil,
+    EndStencil,
+    Imports,
+    Declare,
+    StartCreate,
+    EndCreate,
+    EndIf,
+    StartProfile,
+    EndProfile,
+    Insert,
+]

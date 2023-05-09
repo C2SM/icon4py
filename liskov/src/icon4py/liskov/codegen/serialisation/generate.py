@@ -12,24 +12,25 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Any
 
-from icon4py.liskov.codegen.common import CodeGenerator
-from icon4py.liskov.codegen.serialisation.interface import SerialisationInterface
+from icon4py.common.logger import setup_logger
+from icon4py.liskov.codegen.serialisation.interface import (
+    SerialisationCodeInterface,
+)
 from icon4py.liskov.codegen.serialisation.template import (
     SavepointStatement,
     SavepointStatementGenerator,
 )
-from icon4py.liskov.codegen.types import GeneratedCode
-from icon4py.liskov.logger import setup_logger
+from icon4py.liskov.codegen.shared.generator import CodeGenerator
+from icon4py.liskov.codegen.shared.types import GeneratedCode
 
 
 logger = setup_logger(__name__)
 
 
-class SerialisationGenerator(CodeGenerator):
-    def __init__(self, ser_iface: SerialisationInterface):
+class SerialisationCodeGenerator(CodeGenerator):
+    def __init__(self, interface: SerialisationCodeInterface):
         super().__init__()
-        self.ser_iface = ser_iface
-        self.ser_init_complete = False
+        self.interface = interface
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:
         """Generate all f90 code for integration."""
@@ -37,21 +38,22 @@ class SerialisationGenerator(CodeGenerator):
         return self.generated
 
     def _generate_savepoints(self) -> None:
-        for i, savepoint in enumerate(self.ser_iface.Savepoint):
+        init_complete = False
+        for i, savepoint in enumerate(self.interface.Savepoint):
             logger.info("Generating pp_ser savepoint statement.")
-            if self.ser_init_complete:
+            if init_complete:
                 self._generate(
                     SavepointStatement,
                     SavepointStatementGenerator,
-                    self.ser_iface.Savepoint[i].startln,
+                    self.interface.Savepoint[i].startln,
                     savepoint=savepoint,
                 )
             else:
                 self._generate(
                     SavepointStatement,
                     SavepointStatementGenerator,
-                    self.ser_iface.Savepoint[i].startln,
+                    self.interface.Savepoint[i].startln,
                     savepoint=savepoint,
-                    init=self.ser_iface.Init,
+                    init=self.interface.Init,
                 )
-                self.ser_init_complete = True
+                init_complete = True
