@@ -109,8 +109,8 @@ class DeserialisedDirectives:
     EndStencil: Sequence[EndStencilData]
     Declare: Sequence[DeclareData]
     Imports: ImportsData
-    StartCreate: StartCreateData
-    EndCreate: EndCreateData
+    StartCreate: Sequence[StartCreateData] | UnusedDirective
+    EndCreate: Sequence[EndCreateData] | UnusedDirective
     EndIf: Sequence[EndIfData] | UnusedDirective
     StartProfile: Sequence[StartProfileData] | UnusedDirective
     EndProfile: Sequence[EndProfileData] | UnusedDirective

@@ -122,7 +122,7 @@ class RequiredSingleUseDataFactory(DataFactoryBase):
 
 
 @dataclass
-class EndCreateDataFactory(RequiredSingleUseDataFactory):
+class EndCreateDataFactory(OptionalMultiUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = ts.EndCreate
     dtype: Type[EndCreateData] = EndCreateData
 
@@ -150,18 +150,27 @@ class StartCreateDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = ts.StartCreate
     dtype: Type[StartCreateData] = StartCreateData
 
-    def __call__(self, parsed: ts.ParsedDict) -> StartCreateData:
-        directive = extract_directive(parsed["directives"], self.directive_cls)[0]
+    def __call__(self, parsed: ts.ParsedDict) -> list[StartCreateData]:
 
-        named_args = parsed["content"]["StartCreate"][0]
+        deserialised = []
+        extracted = extract_directive(parsed["directives"], self.directive_cls)
 
-        extra_fields = None
-        if named_args:
-            extra_fields = named_args["extra_fields"].split(",")
+        if len(extracted) < 1:
+            return UnusedDirective
 
-        return self.dtype(
-            startln=directive.startln, endln=directive.endln, extra_fields=extra_fields
-        )
+        for i, directive in enumerate(extracted):
+
+            named_args = parsed["content"]["StartCreate"][i]
+
+            extra_fields = None
+            if named_args:
+                extra_fields = named_args["extra_fields"].split(",")
+
+            deserialised.append(
+                self.dtype( startln=directive.startln, endln=directive.endln, extra_fields=extra_fields )
+            )
+
+        return deserialised
 
 
 @dataclass

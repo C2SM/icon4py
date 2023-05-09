@@ -362,22 +362,7 @@ class ImportsStatementGenerator(TemplatedGenerator):
 
 
 class StartCreateStatement(eve.Node):
-    stencils: list[StartStencilData]
     extra_fields: Optional[list[str]]
-    out_field_names: list[str] = eve.datamodels.field(init=False)
-
-    def __post_init__(self) -> None:  # type: ignore
-        self.out_field_names = sorted(
-            set(
-                [
-                    field.variable
-                    for stencil in self.stencils
-                    for field in stencil.fields
-                    if field.out
-                ]
-            )
-        )
-
 
 class StartCreateStatementGenerator(TemplatedGenerator):
     StartCreateStatement = as_jinja(

@@ -220,22 +220,22 @@ class IntegrationGenerator(Step):
 
     def _generate_create(self) -> None:
         """Generate f90 code for OpenACC DATA CREATE statements."""
-        logger.info("Generating DATA CREATE statement.")
-        self._generate(
-            StartCreateStatement,
-            StartCreateStatementGenerator,
-            self.directives.StartCreate.startln,
-            self.directives.StartCreate.endln,
-            stencils=self.directives.StartStencil,
-            extra_fields=self.directives.StartCreate.extra_fields,
-        )
+        if self.directives.StartCreate != UnusedDirective:
+          logger.info("Generating DATA CREATE statement.")
+          self._generate(
+              StartCreateStatement,
+              StartCreateStatementGenerator,
+              self.directives.StartCreate.startln,
+              self.directives.StartCreate.endln,
+              extra_fields=self.directives.StartCreate.extra_fields,
+          )
 
-        self._generate(
-            EndCreateStatement,
-            EndCreateStatementGenerator,
-            self.directives.EndCreate.startln,
-            self.directives.EndCreate.endln,
-        )
+          self._generate(
+              EndCreateStatement,
+              EndCreateStatementGenerator,
+              self.directives.EndCreate.startln,
+              self.directives.EndCreate.endln,
+          )
 
     def _generate_endif(self) -> None:
         """Generate f90 code for endif statements."""
