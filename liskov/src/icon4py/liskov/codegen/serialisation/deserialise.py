@@ -102,9 +102,9 @@ class SavepointDataFactory:
         copy = named_args.copy()
         [pop_item_from_dict(copy, k, None) for k in KEYS_TO_REMOVE]
         for tol in TOLERANCE_ARGS:
-            for k in named_args.copy().keys():
+            for k in copy.copy().keys():
                 if k.endswith(tol):
-                    pop_item_from_dict(named_args, k, None)
+                    pop_item_from_dict(copy, k, None)
         return copy
 
     @staticmethod
