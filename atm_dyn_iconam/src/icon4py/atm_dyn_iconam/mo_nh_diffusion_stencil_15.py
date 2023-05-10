@@ -57,7 +57,9 @@ def _mo_nh_diffusion_stencil_15(
     )
 
     z_temp = where(
-        mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over_neighbors), z_temp
+        mask,
+        z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over_neighbors),
+        z_temp,
     )
 
     return z_temp
