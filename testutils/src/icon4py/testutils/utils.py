@@ -101,8 +101,7 @@ def flatten_first_two_dims(
     assert len(old_shape) >= 2
     flattened_size = old_shape[0] * old_shape[1]
     flattened_shape = (flattened_size,)
-    residual_shape = old_shape[2:]
-    new_shape = flattened_shape + residual_shape
+    new_shape = flattened_shape + old_shape[2:]
     newarray = np.asarray(field).reshape(new_shape)
     return it_embedded.np_as_located_field(*dims)(newarray)
 
