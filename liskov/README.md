@@ -15,10 +15,10 @@ The icon4py-liskov package includes the `icon_liskov` CLI tool which takes a for
 To use the `icon_liskov` tool, run the following command:
 
 ```bash
-icon_liskov <input_filepath> <output_filepath> [--profile] [--metadatagen]
+icon_liskov <input_filepath> <output_filepath> [--profile] [--metadatagen] [--ppser]
 ```
 
-Where `input_filepath` is the path to the input file to be processed, and `output_filepath` is the path to the output file. The optional `--profile` flag adds nvtx profile statements to the stencils.
+Where `input_filepath` is the path to the input file to be processed, and `output_filepath` is the path to the output file. The optional `--profile` flag adds nvtx profile statements to the stencils. The `--metadatagen` flag generates a metadata header at the top of the file which includes information on icon_liskov such as the git tag and commit hash. The `--ppser` flag activates serialisation mode and will trigger the generation of `ppser` serialisation statements serialising all variables at the start and end of each stencil directive. The data will be saved at the default folder location of the currently run experiment and will have a prefix of `liskov-serialisation`.
 
 ### Preprocessor directives
 
