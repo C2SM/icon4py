@@ -1,54 +1,62 @@
 
-    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_primal_normal_vert_v1
+    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_primal_normal_vert_v1(:,:,:)
 
-    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_primal_normal_vert_v2
+    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_primal_normal_vert_v2(:,:,:)
 
-    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_dual_normal_vert_v1
+    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_dual_normal_vert_v1(:,:,:)
 
-    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_dual_normal_vert_v2
+    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_dual_normal_vert_v2(:,:,:)
 
-    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_primal_normal_cell_v1
+    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_primal_normal_cell_v1(:,:,:)
 
-    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_primal_normal_cell_v2
+    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_primal_normal_cell_v2(:,:,:)
 
-    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_dual_normal_cell_v1
+    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_dual_normal_cell_v1(:,:,:)
 
-    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_dual_normal_cell_v2
+    !$ser verbatim real, dimension(:,:,:), allocatable :: edges_dual_normal_cell_v2(:,:,:)
 
     !$ser init directory="." prefix="test"
 
     !$ser savepoint diffusion_init_in
 
     !$ser verbatim allocate(edges_primal_normal_vert_v1(size(edges_primal_normal_vert, 1),size(edges_primal_normal_vert, 2),size(edges_primal_normal_vert, 3)))
-    !$ser data edges_primal_normal_vert_v1=edges_primal_normal_vert_v1(:,:,:)
+    !$ser verbatim edges_primal_normal_vert_v1 = edges_primal_normal_vert%v1
+    !$ser data edges_primal_normal_vert_v1=edges_primal_normal_vert_v1
     !$ser verbatim deallocate(edges_primal_normal_vert_v1)
 
     !$ser verbatim allocate(edges_primal_normal_vert_v2(size(edges_primal_normal_vert, 1),size(edges_primal_normal_vert, 2),size(edges_primal_normal_vert, 3)))
-    !$ser data edges_primal_normal_vert_v2=edges_primal_normal_vert_v2(:,:,:)
+    !$ser verbatim edges_primal_normal_vert_v2 = edges_primal_normal_vert%v2
+    !$ser data edges_primal_normal_vert_v2=edges_primal_normal_vert_v2
     !$ser verbatim deallocate(edges_primal_normal_vert_v2)
 
     !$ser verbatim allocate(edges_dual_normal_vert_v1(size(edges_dual_normal_vert, 1),size(edges_dual_normal_vert, 2),size(edges_dual_normal_vert, 3)))
-    !$ser data edges_dual_normal_vert_v1=edges_dual_normal_vert_v1(:,:,:)
+    !$ser verbatim edges_dual_normal_vert_v1 = edges_dual_normal_vert%v1
+    !$ser data edges_dual_normal_vert_v1=edges_dual_normal_vert_v1
     !$ser verbatim deallocate(edges_dual_normal_vert_v1)
 
     !$ser verbatim allocate(edges_dual_normal_vert_v2(size(edges_dual_normal_vert, 1),size(edges_dual_normal_vert, 2),size(edges_dual_normal_vert, 3)))
-    !$ser data edges_dual_normal_vert_v2=edges_dual_normal_vert_v2(:,:,:)
+    !$ser verbatim edges_dual_normal_vert_v2 = edges_dual_normal_vert%v2
+    !$ser data edges_dual_normal_vert_v2=edges_dual_normal_vert_v2
     !$ser verbatim deallocate(edges_dual_normal_vert_v2)
 
     !$ser verbatim allocate(edges_primal_normal_cell_v1(size(edges_primal_normal_cell, 1),size(edges_primal_normal_cell, 2),size(edges_primal_normal_cell, 3)))
-    !$ser data edges_primal_normal_cell_v1=edges_primal_normal_cell_v1(:,:,:)
+    !$ser verbatim edges_primal_normal_cell_v1 = edges_primal_normal_cell%v1
+    !$ser data edges_primal_normal_cell_v1=edges_primal_normal_cell_v1
     !$ser verbatim deallocate(edges_primal_normal_cell_v1)
 
     !$ser verbatim allocate(edges_primal_normal_cell_v2(size(edges_primal_normal_cell, 1),size(edges_primal_normal_cell, 2),size(edges_primal_normal_cell, 3)))
-    !$ser data edges_primal_normal_cell_v2=edges_primal_normal_cell_v2(:,:,:)
+    !$ser verbatim edges_primal_normal_cell_v2 = edges_primal_normal_cell%v2
+    !$ser data edges_primal_normal_cell_v2=edges_primal_normal_cell_v2
     !$ser verbatim deallocate(edges_primal_normal_cell_v2)
 
     !$ser verbatim allocate(edges_dual_normal_cell_v1(size(edges_dual_normal_cell, 1),size(edges_dual_normal_cell, 2),size(edges_dual_normal_cell, 3)))
-    !$ser data edges_dual_normal_cell_v1=edges_dual_normal_cell_v1(:,:,:)
+    !$ser verbatim edges_dual_normal_cell_v1 = edges_dual_normal_cell%v1
+    !$ser data edges_dual_normal_cell_v1=edges_dual_normal_cell_v1
     !$ser verbatim deallocate(edges_dual_normal_cell_v1)
 
     !$ser verbatim allocate(edges_dual_normal_cell_v2(size(edges_dual_normal_cell, 1),size(edges_dual_normal_cell, 2),size(edges_dual_normal_cell, 3)))
-    !$ser data edges_dual_normal_cell_v2=edges_dual_normal_cell_v2(:,:,:)
+    !$ser verbatim edges_dual_normal_cell_v2 = edges_dual_normal_cell%v2
+    !$ser data edges_dual_normal_cell_v2=edges_dual_normal_cell_v2
     !$ser verbatim deallocate(edges_dual_normal_cell_v2)
 
     PRINT *, 'Serializing cvd_o_rd=cvd_o_rd'

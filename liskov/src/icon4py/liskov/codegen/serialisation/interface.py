@@ -34,6 +34,7 @@ class FieldSerialisationData:
     variable: str
     association: str
     decomposed: bool = False
+    device: Optional[str] = "cpu"
     dimension: Optional[list[str]] = None
     typespec: Optional[str] = None
     typename: Optional[str] = None

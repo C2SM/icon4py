@@ -28,6 +28,7 @@ class Field(eve.Node):
     typespec: Optional[str]
     typename: Optional[str]
     ptr_var: Optional[str]
+    device: str
 
 
 class StandardFields(eve.Node):
@@ -88,12 +89,12 @@ class SavepointStatementGenerator(TemplatedGenerator):
     PRINT *, 'Serializing {{ f.variable }}={{ f.association }}'
     {% if f.dimension %}
     IF (SIZE({{ f.variable }}) > 0) THEN
-    !$ser data {{ f.variable }}={{ f.association }}
+    !$ser {% if f.device == 'gpu' %}accdata {% else %}data {% endif %}{{ f.variable }}={{ f.association }}
     ELSE
     PRINT *, 'Warning: Array {{ f.variable }} has size 0. Not serializing array.'
     ENDIF
     {% else %}
-    !$ser data {{ f.variable }}={{ f.association }}
+    !$ser {% if f.device == 'gpu' %}accdata {% else %}data {% endif %}{{ f.variable }}={{ f.association }}
     {% endif %}
     {% endfor %}
     """
@@ -102,7 +103,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
     DecomposedFieldDeclarations = as_jinja(
         """
         {% for f in _this_node.fields %}
-        !$ser verbatim {{ f.typespec }}, dimension({{ ",".join(f.dimension) }}), allocatable :: {{ f.variable }}_{{ f.ptr_var}}
+        !$ser verbatim {{ f.typespec }}, dimension({{ ",".join(f.dimension) }}), allocatable :: {{ f.variable }}_{{ f.ptr_var}}({{ ",".join(f.dimension) }})
         {% endfor %}
         """
     )
@@ -111,7 +112,8 @@ class SavepointStatementGenerator(TemplatedGenerator):
         """
     {% for f in _this_node.fields %}
     !$ser verbatim allocate({{ f.variable }}_{{ f.ptr_var}}({{ f.alloc_dims }}))
-    !$ser data {{ f.variable }}_{{ f.ptr_var}}={{ f.association }}
+    !$ser verbatim {{ f.variable }}_{{ f.ptr_var}} = {{ f.variable }}%{{ f.ptr_var}}
+    !$ser {% if f.device == 'gpu' %}accdata {% else %}data {% endif %}{{ f.variable }}_{{ f.ptr_var}}={{ f.variable }}_{{ f.ptr_var}}
     !$ser verbatim deallocate({{ f.variable }}_{{ f.ptr_var}})
     {% endfor %}
     """

@@ -17,6 +17,7 @@ import icon4py.liskov.parsing.types as ts
 from icon4py.common.logger import setup_logger
 from icon4py.liskov.codegen.integration.deserialise import (
     TOLERANCE_ARGS,
+    DeclareDataFactory,
     _extract_stencil_name,
     pop_item_from_dict,
 )
@@ -63,6 +64,7 @@ class SavepointDataFactory:
         end_stencil = extract_directive(
             parsed["directives"], icon4py.liskov.parsing.parse.EndStencil
         )
+        gpu_fields = self.get_gpu_fields(parsed)
 
         repeated = self._find_repeated_stencils(parsed["content"])
 
@@ -82,7 +84,7 @@ class SavepointDataFactory:
                 for k, v in self._get_timestep_variables(stencil_name).items()
             ]
 
-            fields = self._make_fields(field_names)
+            fields = self._make_fields(field_names, gpu_fields)
 
             for intent, ln in [("start", start.startln), ("end", end.startln)]:
                 savepoint = SavepointData(
@@ -96,6 +98,15 @@ class SavepointDataFactory:
 
         return deserialised
 
+    def get_gpu_fields(self, parsed: ts.ParsedDict) -> set[str]:
+        """Get declared fields which will be loaded on GPU and thus need to be serialised using accdata."""
+        declare = DeclareDataFactory()(parsed)
+        fields = []
+        for d in declare:
+            for f in d.declarations:
+                fields.append(f)
+        return set(fields)
+
     @staticmethod
     def _remove_unnecessary_keys(named_args: dict) -> dict:
         """Remove unnecessary keys from named_args, and only return field names."""
@@ -108,7 +119,7 @@ class SavepointDataFactory:
         return copy
 
     @staticmethod
-    def _make_fields(named_args: dict) -> list[FieldSerialisationData]:
+    def _make_fields(named_args: dict, gpu_fields: set) -> list[FieldSerialisationData]:
         """Create a list of FieldSerialisationData objects based on named arguments."""
         fields = [
             FieldSerialisationData(
@@ -121,6 +132,7 @@ class SavepointDataFactory:
                 typespec=None,
                 typename=None,
                 ptr_var=None,
+                device="gpu" if variable in gpu_fields else "cpu",
             )
             for variable, association in named_args.items()
             if variable not in SKIP_VARS
