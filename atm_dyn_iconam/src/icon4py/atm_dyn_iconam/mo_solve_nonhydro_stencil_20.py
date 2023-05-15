@@ -11,175 +11,78 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.eve import SourceLocation
-from gt4py.next.ffront import program_ast as past
-from gt4py.next.iterator.builtins import (
-    deref,
-    named_range,
-    shift,
-    unstructured_domain,
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.experimental import as_offset
+from gt4py.next.ffront.fbuiltins import Field, int32
+
+from icon4py.common.dimension import (
+    E2C,
+    E2EC,
+    CellDim,
+    ECDim,
+    EdgeDim,
+    KDim,
+    Koff,
 )
-from gt4py.next.iterator.runtime import closure, fendef, fundef
-from gt4py.next.type_system import type_specifications as ts
-
-from icon4py.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim, Koff
-from icon4py.pyutils.metadata import FieldInfo
 
 
-@fundef
-def step(
-    i,
-    z_exner_ex_pr,
-    zdiff_gradp,
-    ikoffset,
-    z_dexner_dz_c_1,
-    z_dexner_dz_c_2,
-):
-    d_ikoffset = deref(shift(i)(ikoffset))
-    d_z_exner_exp_pr = deref(shift(Koff, d_ikoffset, E2C, i)(z_exner_ex_pr))
-    d_z_dexner_dz_c_1 = deref(shift(Koff, d_ikoffset, E2C, i)(z_dexner_dz_c_1))
-    d_z_dexner_dz_c_2 = deref(shift(Koff, d_ikoffset, E2C, i)(z_dexner_dz_c_2))
-    d_zdiff_gradp = deref(shift(i)(zdiff_gradp))
-
-    return d_z_exner_exp_pr + d_zdiff_gradp * (
-        d_z_dexner_dz_c_1 + d_zdiff_gradp * d_z_dexner_dz_c_2
-    )
-
-
-@fundef
+@field_operator
 def _mo_solve_nonhydro_stencil_20(
-    inv_dual_edge_length,
-    z_exner_ex_pr,
-    zdiff_gradp,
-    ikoffset,
-    z_dexner_dz_c_1,
-    z_dexner_dz_c_2,
-):
-    return deref(inv_dual_edge_length) * (
-        step(1, z_exner_ex_pr, zdiff_gradp, ikoffset, z_dexner_dz_c_1, z_dexner_dz_c_2)
-        - step(
-            0, z_exner_ex_pr, zdiff_gradp, ikoffset, z_dexner_dz_c_1, z_dexner_dz_c_2
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    z_exner_ex_pr: Field[[CellDim, KDim], float],
+    zdiff_gradp: Field[[ECDim, KDim], float],
+    ikoffset: Field[[ECDim, KDim], int32],
+    z_dexner_dz_c_1: Field[[CellDim, KDim], float],
+    z_dexner_dz_c_2: Field[[CellDim, KDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+
+    z_exner_ex_pr_0 = z_exner_ex_pr(as_offset(Koff, ikoffset(E2EC[0])))
+    z_exner_ex_pr_1 = z_exner_ex_pr(as_offset(Koff, ikoffset(E2EC[1])))
+
+    z_dexner_dz_c1_0 = z_dexner_dz_c_1(as_offset(Koff, ikoffset(E2EC[0])))
+    z_dexner_dz_c1_1 = z_dexner_dz_c_1(as_offset(Koff, ikoffset(E2EC[1])))
+
+    z_dexner_dz_c2_0 = z_dexner_dz_c_2(as_offset(Koff, ikoffset(E2EC[0])))
+    z_dexner_dz_c2_1 = z_dexner_dz_c_2(as_offset(Koff, ikoffset(E2EC[1])))
+
+    z_gradh_exner = inv_dual_edge_length * (
+        (
+            z_exner_ex_pr_1(E2C[1])
+            + zdiff_gradp(E2EC[1])
+            * (
+                z_dexner_dz_c1_1(E2C[1])
+                + zdiff_gradp(E2EC[1]) * z_dexner_dz_c2_1(E2C[1])
+            )
+        )
+        - (
+            z_exner_ex_pr_0(E2C[0])
+            + zdiff_gradp(E2EC[0])
+            * (
+                z_dexner_dz_c1_0(E2C[0])
+                + zdiff_gradp(E2EC[0]) * z_dexner_dz_c2_0(E2C[0])
+            )
         )
     )
 
+    return z_gradh_exner
 
-@fendef
+
+@program
 def mo_solve_nonhydro_stencil_20(
-    inv_dual_edge_length,
-    z_exner_ex_pr,
-    zdiff_gradp,
-    ikoffset,
-    z_dexner_dz_c_1,
-    z_dexner_dz_c_2,
-    z_gradh_exner,
-    horizontal_start,
-    horizontal_end,
-    vertical_start,
-    vertical_end,
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    z_exner_ex_pr: Field[[CellDim, KDim], float],
+    zdiff_gradp: Field[[ECDim, KDim], float],
+    ikoffset: Field[[ECDim, KDim], int32],
+    z_dexner_dz_c_1: Field[[CellDim, KDim], float],
+    z_dexner_dz_c_2: Field[[CellDim, KDim], float],
+    z_gradh_exner: Field[[EdgeDim, KDim], float],
 ):
-    closure(
-        unstructured_domain(
-            named_range(EdgeDim, horizontal_start, horizontal_end),
-            named_range(KDim, vertical_start, vertical_end),
-        ),
-        _mo_solve_nonhydro_stencil_20,
-        z_gradh_exner,
-        [
-            inv_dual_edge_length,
-            z_exner_ex_pr,
-            zdiff_gradp,
-            ikoffset,
-            z_dexner_dz_c_1,
-            z_dexner_dz_c_2,
-        ],
+    _mo_solve_nonhydro_stencil_20(
+        inv_dual_edge_length,
+        z_exner_ex_pr,
+        zdiff_gradp,
+        ikoffset,
+        z_dexner_dz_c_1,
+        z_dexner_dz_c_2,
+        out=z_gradh_exner,
     )
-
-
-_dummy_loc = SourceLocation(1, 1, "")
-_metadata = {
-    "inv_dual_edge_length": FieldInfo(
-        field=past.FieldSymbol(
-            id="inv_dual_edge_length",
-            type=ts.FieldType(
-                dims=[EdgeDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
-            ),
-            location=_dummy_loc,
-        ),
-        inp=True,
-        out=False,
-    ),
-    "z_exner_ex_pr": FieldInfo(
-        field=past.FieldSymbol(
-            id="z_exner_ex_pr",
-            type=ts.FieldType(
-                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
-            ),
-            location=_dummy_loc,
-        ),
-        inp=True,
-        out=False,
-    ),
-    "zdiff_gradp": FieldInfo(
-        field=past.FieldSymbol(
-            id="zdiff_gradp",
-            type=ts.FieldType(
-                dims=[EdgeDim, E2CDim, KDim],
-                dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64),
-            ),
-            location=_dummy_loc,
-        ),
-        inp=True,
-        out=False,
-    ),
-    "ikoffset": FieldInfo(
-        field=past.FieldSymbol(
-            id="ikoffset",
-            type=ts.FieldType(
-                dims=[EdgeDim, E2CDim, KDim],
-                dtype=ts.ScalarType(kind=ts.ScalarKind.INT32),
-            ),
-            location=_dummy_loc,
-        ),
-        inp=True,
-        out=False,
-    ),
-    "z_dexner_dz_c_1": FieldInfo(
-        field=past.FieldSymbol(
-            id="z_dexner_dz_c_1",
-            type=ts.FieldType(
-                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
-            ),
-            location=_dummy_loc,
-        ),
-        inp=True,
-        out=False,
-    ),
-    "z_dexner_dz_c_2": FieldInfo(
-        field=past.FieldSymbol(
-            id="z_dexner_dz_c_2",
-            type=ts.FieldType(
-                dims=[CellDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
-            ),
-            location=_dummy_loc,
-        ),
-        inp=True,
-        out=False,
-    ),
-    "z_gradh_exner": FieldInfo(
-        field=past.FieldSymbol(
-            id="z_gradh_exner",
-            type=ts.FieldType(
-                dims=[EdgeDim, KDim], dtype=ts.ScalarType(kind=ts.ScalarKind.FLOAT64)
-            ),
-            location=_dummy_loc,
-        ),
-        inp=False,
-        out=True,
-    ),
-}
-# patch the fendef with metainfo for icon4pygen
-mo_solve_nonhydro_stencil_20.__dict__["offsets"] = [
-    Koff.value,
-    E2C.value,
-]  # could be done with a pass...
-mo_solve_nonhydro_stencil_20.__dict__["metadata"] = _metadata

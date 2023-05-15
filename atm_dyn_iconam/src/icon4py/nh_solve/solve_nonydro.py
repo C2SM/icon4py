@@ -140,7 +140,7 @@ from icon4py.state_utils.utils import (
     _allocate_indices,
     _calculate_bdy_divdamp,
     _en_smag_fac_for_zero_nshift,
-    _field_sum,
+    #_field_sum,
     compute_z_raylfac,
     scal_divdamp_calcs,
     set_zero_c_k,
@@ -336,7 +336,7 @@ class SolveNonhydro:
 
         # TODO: @nfarabullini: global reductions not possible in gt4py
         cell_areas_sum = 0.0
-        _field_sum(cell_areas, out=cell_areas_sum, offset_provider={})
+        #_field_sum(cell_areas, out=cell_areas_sum, offset_provider={})
 
         scal_divdamp_calcs(
             enh_smag_fac,
@@ -460,7 +460,7 @@ class SolveNonhydro:
         # delta_x**2 is approximated by the mean cell area
         # TODO: @nfarabullini: global reductions not possible in gt4py
         cell_areas_sum = 0.0
-        _field_sum(cell_areas, out=cell_areas_sum, offset_provider={})
+        #_field_sum(cell_areas, out=cell_areas_sum, offset_provider={})
         scal_divdamp_o2 = config.divdamp_fac_o2 * (
             cell_areas_sum / float(self.grid.num_cells())
         )  # TODO: check that this is ok for p_patch % geometry_info % mean_cell_area

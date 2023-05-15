@@ -1,0 +1,33 @@
+pipeline {
+    agent none
+    stages {
+        stage('Tests') {
+            matrix {
+                agent { label "${NODENAME}" }
+                axes {
+                    axis {
+                        name 'NODENAME'
+                        values 'daint', 'balfrin'
+                    }
+                }
+                post {
+                    always {
+                        echo 'Cleaning up workspace'
+                        deleteDir()
+                    }
+                }
+                stages {
+                    stage('Install and Test') {
+                        steps {
+                            sh """
+                            git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/C2SM/spack-c2sm.git
+                            . ./spack-c2sm/setup-env.sh
+                            spack install -v --test=root py-icon4py@main%gcc ^py-gt4py@main%gcc
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

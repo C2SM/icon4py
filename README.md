@@ -70,7 +70,7 @@ source .venv/bin/activate
 pip install --upgrade wheel
 
 # Install a specific ICON4Py subpackage and its dependencies
-cd _SUBPACKAGE_  # where _SUBPACKAGE_ in atm_dyn_iconam | common | pyutils | testutils | ...
+cd _SUBPACKAGE_  # where _SUBPACKAGE_ in atm_dyn_iconam | common | icon4pygen | testutils | ...
 pip install -r requirements-dev.txt
 ```
 

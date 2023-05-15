@@ -13,10 +13,11 @@
 
 import importlib
 from inspect import getmembers
+from typing import Any
 
 from gt4py.next.ffront.decorator import Program
-from typing_extensions import Any
 
+from icon4py.icon4pygen.metadata import get_stencil_info
 from icon4py.liskov.codegen.interface import DeserialisedDirectives
 from icon4py.liskov.common import Step
 from icon4py.liskov.external.exceptions import (
@@ -24,7 +25,6 @@ from icon4py.liskov.external.exceptions import (
     UnknownStencilError,
 )
 from icon4py.liskov.logger import setup_logger
-from icon4py.pyutils.metadata import get_stencil_info
 
 
 logger = setup_logger(__name__)

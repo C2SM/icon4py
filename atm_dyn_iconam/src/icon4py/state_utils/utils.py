@@ -21,6 +21,7 @@ from gt4py.next.ffront.fbuiltins import (
     maximum,
     minimum,
     neighbor_sum,
+    abs
 )
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners import gtfn_cpu
@@ -180,9 +181,9 @@ def _calculate_bdy_divdamp(
     return 0.75 / (nudge_max_coeff + dbl_eps) * abs(scal_divdamp)
 
 
-@field_operator
-def _field_sum(field: Field[[CellDim], float]) -> float:
-    return neighbor_sum(field, axis=CellDim)
+# @field_operator
+# def _field_sum(field: Field[[CellDim], float]) -> float:
+#     return neighbor_sum(field, axis=CellDim)
 
 
 @field_operator

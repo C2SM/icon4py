@@ -15,15 +15,15 @@ import pytest
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Dimension, Field
 
-from icon4py.bindings.codegen.render.location import LocationRenderer
-from icon4py.bindings.entities import Offset, chain_from_str
-from icon4py.bindings.exceptions import (
+from icon4py.common.dimension import EdgeDim, KDim
+from icon4py.icon4pygen.bindings.codegen.render.location import LocationRenderer
+from icon4py.icon4pygen.bindings.entities import Offset, chain_from_str
+from icon4py.icon4pygen.bindings.exceptions import (
     BindingsRenderingException,
     BindingsTypeConsistencyException,
 )
-from icon4py.bindings.workflow import PyBindGen
-from icon4py.common.dimension import EdgeDim, KDim
-from icon4py.pyutils.metadata import get_stencil_info
+from icon4py.icon4pygen.bindings.workflow import PyBindGen
+from icon4py.icon4pygen.metadata import get_stencil_info
 
 
 def test_invalid_offset():
