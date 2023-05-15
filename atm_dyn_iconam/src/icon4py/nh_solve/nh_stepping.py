@@ -36,7 +36,7 @@ class NonhydroStepping:
     def _perform_nh_timeloop(self):
 
     def _integrate_nh(self, num_steps):
-        if jg > 1:
+        if jg > 1: # TODO: does thi shave to be 1 in Python as well or just 0?
             raise NotImplementedError("jg can only be 1")
         #     jgp = p_patch(jg).parent_id
         if n_dom_start == 0:
