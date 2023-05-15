@@ -237,6 +237,7 @@ class EndStencilDataFactory(DataFactoryBase):
             stencil_name = _extract_stencil_name(named_args, directive)
             noendif = _extract_boolean_kwarg(directive, named_args, "noendif")
             noprofile = _extract_boolean_kwarg(directive, named_args, "noprofile")
+            noaccenddata = _extract_boolean_kwarg(directive, named_args, "noaccenddata")
             deserialised.append(
                 self.dtype(
                     name=stencil_name,
@@ -244,6 +245,7 @@ class EndStencilDataFactory(DataFactoryBase):
                     endln=directive.endln,
                     noendif=noendif,
                     noprofile=noprofile,
+                    noaccenddata=noaccenddata,
                 )
             )
         return deserialised

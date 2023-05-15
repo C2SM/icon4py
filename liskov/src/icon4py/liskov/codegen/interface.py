@@ -96,6 +96,7 @@ class EndStencilData(CodeGenInput):
     name: str
     noendif: Optional[bool]
     noprofile: Optional[bool]
+    noaccenddata: Optional[bool]
 
 
 @dataclass

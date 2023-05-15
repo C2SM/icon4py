@@ -205,6 +205,7 @@ class IntegrationGenerator(Step):
                 profile=self.profile,
                 noendif=self.directives.EndStencil[i].noendif,
                 noprofile=self.directives.EndStencil[i].noprofile,
+                noaccenddata=self.directives.EndStencil[i].noaccenddata
             )
 
     def _generate_imports(self) -> None:

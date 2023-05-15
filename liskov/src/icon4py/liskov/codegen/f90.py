@@ -134,6 +134,7 @@ class EndStencilStatement(eve.Node):
     profile: bool
     noendif: Optional[bool]
     noprofile: Optional[bool]
+    noaccenddata: Optional[bool]
 
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -165,9 +166,11 @@ class EndStencilStatementGenerator(TemplatedGenerator):
             {{ tolerance_fields }}
             {{ bounds_fields }}
 
+        {%- if not _this_node.noaccenddata %}
         #ifdef __DSL_VERIFY
         !$ACC END DATA
         #endif
+        {%- endif %}
         """
     )
 
