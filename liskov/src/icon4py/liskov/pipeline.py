@@ -24,7 +24,7 @@ from icon4py.liskov.parsing.scan import DirectivesScanner
 
 
 @linear_pipeline
-def parse_fortran_file(filepath: Path) -> list[Step]:
+def parse_fortran_file(input_filepath: Path, output_filepath: Path) -> list[Step]:
     """Execute a pipeline to parse and deserialize directives from a file.
 
         The pipeline consists of three steps: DirectivesScanner, DirectivesParser, and
@@ -34,14 +34,15 @@ def parse_fortran_file(filepath: Path) -> list[Step]:
         DeserialisedDirectives object.
 
     Args:
-        filepath (Path): The file path of the directives file.
+        input_filepath: Path to the input file to process.
+        output_filepath: Path to the output file to generate.
 
     Returns:
         DeserialisedDirectives: The deserialized directives object.
     """
     return [
-        DirectivesScanner(filepath),
-        DirectivesParser(filepath),
+        DirectivesScanner(input_filepath),
+        DirectivesParser(input_filepath, output_filepath),
         DirectiveDeserialiser(),
     ]
 
@@ -65,6 +66,7 @@ def run_code_generation(
     input_filepath: Path,
     output_filepath: Path,
     profile: bool,
+    metadatagen: bool,
 ) -> list[Step]:
     """Execute a pipeline to generate and write code for a set of directives.
 
@@ -74,10 +76,12 @@ def run_code_generation(
 
     Args:
         parsed: The deserialized directives object.
-        filepath: The file path to write the generated code to.
+        input_filepath: The original file containing the DSL preprocessor directives.
+        output_filepath: The file path to write the generated code to.
         profile: A flag to indicate if profiling information should be included in the generated code.
+        metadatagen: A flag to indicate if a metadata header should be included in the generated code.
     """
     return [
-        IntegrationGenerator(parsed, profile),
+        IntegrationGenerator(parsed, profile, metadatagen),
         IntegrationWriter(input_filepath, output_filepath),
     ]

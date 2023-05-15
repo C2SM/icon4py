@@ -8,14 +8,14 @@ To install the icon4py-liskov package, follow the instructions in the `README.md
 
 ## Description
 
-The icon4py-liskov package includes the `icon_liskov` CLI tool which takes a fortran file as input and processes it with the ICON-Liskov DSL Preprocessor. This preprocessor adds the necessary `USE` statements and generates OpenACC `DATA CREATE` statements and declares DSL input/output fields based on directives in the input file. The preprocessor also processes stencils defined in the input file using the `START STENCIL` and `END STENCIL` directives, inserting the necessary code to run the stencils and adding nvtx profile statements if specified with the `--profile` flag.
+The icon4py-liskov package includes the `icon_liskov` CLI tool which takes a fortran file as input and processes it with the ICON-Liskov DSL Preprocessor. This preprocessor adds the necessary `USE` statements and generates OpenACC `DATA CREATE` statements and declares DSL input/output fields based on directives in the input file. The preprocessor also processes stencils defined in the input file using the `START STENCIL` and `END STENCIL` directives, inserting the necessary code to run the stencils and adding nvtx profile statements if specified with the `--profile` or `-p` flag. Additionally, specifying the `--metadatagen` or `-m` flag will result in the generation of runtime metadata at the top of the generated file. Note that this requires `git` to be available in the shell from which `icon_liskov` is executed.
 
 ### Usage
 
 To use the `icon_liskov` tool, run the following command:
 
 ```bash
-icon_liskov <input_filepath> <output_filepath> [--profile]
+icon_liskov <input_filepath> <output_filepath> [--profile] [--metadatagen]
 ```
 
 Where `input_filepath` is the path to the input file to be processed, and `output_filepath` is the path to the output file. The optional `--profile` flag adds nvtx profile statements to the stencils.
@@ -30,7 +30,7 @@ This directive generates the necessary `USE` statements to import the Fortran to
 
 #### `!$DSL START CREATE()`
 
-This directive generates an OpenACC `DATA CREATE` statement for all output fields used in each DSL (icon4py) stencil.
+This directive generates an OpenACC `DATA CREATE` statement for all output fields used in each DSL (icon4py) stencil. The directive also takes an **optional** keyword argument to specify extra fields to include in the `DATA CREATE` statement called `extra_fields`. Here you can specify a comma-separated list of strings which should be added to the `DATA CREATE` statement as follows `extra_fields=foo,bar`.
 
 #### `!$DSL END CREATE()`
 

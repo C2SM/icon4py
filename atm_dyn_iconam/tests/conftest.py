@@ -10,10 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import tarfile
+from pathlib import Path
 
-
-import numpy as np
 import pytest
+import wget
 
 from icon4py.common.dimension import (
     C2E2CDim,
@@ -31,6 +32,39 @@ from icon4py.diffusion.diffusion import DiffusionConfig
 from icon4py.grid.horizontal import HorizontalGridSize
 from icon4py.grid.icon_grid import GridConfig, IconGrid
 from icon4py.grid.vertical import VerticalGridConfig
+from icon4py.testutils.serialbox_utils import IconSerialDataProvider
+
+
+data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
+data_path = Path(__file__).parent.joinpath("ser_icondata")
+extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
+data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
+
+
+@pytest.fixture(scope="session")
+def setup_icon_data():
+    """
+    Get the binary ICON data from a remote server.
+
+    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
+    """
+    data_path.mkdir(parents=True, exist_ok=True)
+    if not any(data_path.iterdir()):
+        print(
+            f"directory {data_path} is empty: downloading data from {data_uri} and extracting"
+        )
+        wget.download(data_uri, out=data_file)
+        # extract downloaded file
+        if not tarfile.is_tarfile(data_file):
+            raise NotImplementedError(f"{data_file} needs to be a valid tar file")
+        with tarfile.open(data_file, mode="r:*") as tf:
+            tf.extractall(path=data_path)
+        Path(data_file).unlink(missing_ok=True)
+
+
+@pytest.fixture
+def data_provider(setup_icon_data) -> IconSerialDataProvider:
+    return IconSerialDataProvider("icon_pydycore", str(extracted_path), True)
 
 
 @pytest.fixture
@@ -89,46 +123,18 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
 
 
 @pytest.fixture
-def icon_grid(data_provider):
+def icon_grid(grid_savepoint):
     """
     Load the icon grid from an ICON savepoint.
 
-    Uses the default save_point from 'savepoint_init' fixture, however these data don't change for
-    different time steps.
+    Uses the special grid_savepoint that contains data from p_patch
     """
-    sp = data_provider.from_savepoint_grid()
-    sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
+    return grid_savepoint.construct_icon_grid()
 
-    cell_starts = sp.cells_start_index()
-    cell_ends = sp.cells_end_index()
-    vertex_starts = sp.vertex_start_index()
-    vertex_ends = sp.vertex_end_index()
-    edge_starts = sp.edge_start_index()
-    edge_ends = sp.edge_end_index()
 
-    config = GridConfig(
-        HorizontalGridSize(
-            num_vertices=sp_meta["nproma"],  # or rather "num_vert"
-            num_cells=sp_meta["nproma"],  # or rather "num_cells"
-            num_edges=sp_meta["nproma"],  # or rather "num_edges"
-        ),
-        VerticalGridConfig(num_lev=sp_meta["nlev"]),
-    )
-
-    c2e2c = sp.c2e2c()
-    c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
-    grid = (
-        IconGrid()
-        .with_config(config)
-        .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
-        .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
-        .with_start_end_indices(CellDim, cell_starts, cell_ends)
-        .with_connectivities(
-            {C2EDim: sp.c2e(), E2CDim: sp.e2c(), C2E2CDim: c2e2c, C2E2CODim: c2e2c0}
-        )
-        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e(), E2C2VDim: sp.e2c2v()})
-    )
-    return grid
+@pytest.fixture
+def grid_savepoint(data_provider):
+    return data_provider.from_savepoint_grid()
 
 
 @pytest.fixture

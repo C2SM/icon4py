@@ -101,7 +101,7 @@ class IconGrid:
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     def limited_area(self):
-        # TODO defined in mo_grid_nml.f90
+        # defined in mo_grid_nml.f90
         return self.config.limited_area
 
     def n_lev(self):
@@ -116,7 +116,7 @@ class IconGrid:
     def num_edges(self):
         return self.config.num_edges
 
-    def get_start_index(self, dim: Dimension, marker: int)->int:
+    def get_start_index(self, dim: Dimension, marker: int) -> int:
         """
         Use to specify lower end of domains of a field for field_operators.
 
@@ -125,7 +125,7 @@ class IconGrid:
         """
         return self.start_indices[dim][marker]
 
-    def get_end_index(self, dim: Dimension, marker: int)->int:
+    def get_end_index(self, dim: Dimension, marker: int) -> int:
         """
         Use to specify upper end of domains of a field for field_operators.
 

@@ -13,6 +13,7 @@
 from dataclasses import dataclass, field
 from typing import (
     Any,
+    Optional,
     Protocol,
     Sequence,
     Type,
@@ -81,6 +82,18 @@ class WithArguments(TypedDirective):
 
 
 @dataclass(eq=False)
+class WithOptionalArguments(TypedDirective):
+    regex: str = field(default=r"(?:.+?=.+?|)", init=False)
+
+    def get_content(self) -> Optional[dict[str, str]]:
+        args = self.string.replace(f"{self.pattern}", "")[1:-1]
+        if len(args) > 0:
+            content = dict([args.split("=")])
+            return content
+        return None
+
+
+@dataclass(eq=False)
 class WithoutArguments(TypedDirective):
     # matches an empty string at the beginning of a line
     regex: str = field(default=r"^(?![\s\S])", init=False)
@@ -115,7 +128,7 @@ class Imports(WithoutArguments):
     pattern = "IMPORTS"
 
 
-class StartCreate(WithoutArguments):
+class StartCreate(WithOptionalArguments):
     pattern = "START CREATE"
 
 

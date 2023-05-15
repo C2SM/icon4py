@@ -19,12 +19,14 @@ import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
-from icon4py.bindings.utils import format_fortran_code
+from icon4py.icon4pygen.bindings.utils import format_fortran_code
+from icon4py.liskov.codegen.exceptions import UndeclaredFieldError
 from icon4py.liskov.codegen.interface import (
     CodeGenInput,
     DeclareData,
     StartStencilData,
 )
+from icon4py.liskov.external.metadata import CodeMetadata
 
 
 def enclose_in_parentheses(string: str) -> str:
@@ -105,6 +107,26 @@ def get_array_dims(association: str) -> str:
     dims = list(idx)
 
     return "".join(list(dims))
+
+
+class MetadataStatement(eve.Node):
+    metadata: CodeMetadata
+
+
+class MetadataStatementGenerator(TemplatedGenerator):
+    MetadataStatement = as_jinja(
+        """\
+    !+-+-+-+-+-+-+-+-+-+ +-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+
+    ! GENERATED WITH ICON-LISKOV
+    !+-+-+-+-+-+-+-+-+-+ +-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+
+    ! Generated on: {{ _this_node.metadata.generated_on }}
+    ! Input filepath: {{ _this_node.metadata.cli_params['input_filepath'] }}
+    ! Profiling active: {{ _this_node.metadata.cli_params['profile'] }}
+    ! Git version tag: {{ _this_node.metadata.tag }}
+    ! Git commit hash: {{ _this_node.metadata.commit_hash }}
+    !+-+-+-+-+-+-+-+-+-+ +-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+
+    """
+    )
 
 
 class EndStencilStatement(eve.Node):
@@ -251,7 +273,7 @@ class StartStencilStatement(eve.Node):
     @staticmethod
     def make_copy_declaration(f: Field) -> CopyDeclaration:
         if f.dims is None:
-            raise Exception(f"{f.variable} not declared!")
+            raise UndeclaredFieldError(f"{f.variable} was not declared!")
 
         lh_idx = render_index(f.dims)
 
@@ -330,6 +352,7 @@ class ImportsStatementGenerator(TemplatedGenerator):
 
 class StartCreateStatement(eve.Node):
     stencils: list[StartStencilData]
+    extra_fields: Optional[list[str]]
     out_field_names: list[str] = eve.datamodels.field(init=False)
 
     def __post_init__(self) -> None:  # type: ignore
@@ -348,18 +371,17 @@ class StartCreateStatement(eve.Node):
 class StartCreateStatementGenerator(TemplatedGenerator):
     StartCreateStatement = as_jinja(
         """
-        #ifdef __DSL_VERIFY
-        dsl_verify = .TRUE.
-        #else
-        dsl_verify = .FALSE.
-        #endif
-
         !$ACC DATA CREATE( &
+        {%- if _this_node.extra_fields -%}
+        {%- for name in extra_fields %}
+        !$ACC   {{ name }} {%- if not loop.last -%}, & {% else %}, & {%- endif -%}
+        {%- endfor %}
+        {%- endif -%}
         {%- for name in out_field_names %}
         !$ACC   {{ name }}_before {%- if not loop.last -%}, & {% else %} & {%- endif -%}
         {%- endfor %}
         !$ACC   ), &
-        !$ACC      IF ( i_am_accel_node .AND. dsl_verify)
+        !$ACC      IF ( i_am_accel_node )
         """
     )
 

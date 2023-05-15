@@ -478,9 +478,9 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
+@pytest.mark.skip("fix: diffusion_stencil_15")
 @pytest.mark.parametrize("run_with_program", [True, False])
 @pytest.mark.datatest
-@pytest.mark.xfail()
 def test_run_diffusion_single_step(
     run_with_program,
     diffusion_savepoint_init,
@@ -491,18 +491,12 @@ def test_run_diffusion_single_step(
     damping_height,
 ):
     (
-        cell_areas,
-        diagnostic_state,
         dtime,
-        dual_normal_vert,
-        edge_areas,
+        cell_geometry,
+        edge_geometry,
+        diagnostic_state,
         interpolation_state,
-        inverse_dual_edge_length,
-        inverse_primal_edge_lengths,
-        inverse_vertical_vertex_lengths,
         metric_state,
-        orientation,
-        primal_normal_vert,
         prognostic_state,
     ) = _read_fields(diffusion_savepoint_init, grid_savepoint)
 
@@ -527,14 +521,14 @@ def test_run_diffusion_single_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
-        tangent_orientation=orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_length=inverse_dual_edge_length,
-        inverse_vert_vert_lengths=inverse_vertical_vertex_lengths,
-        primal_normal_vert=primal_normal_vert,
-        dual_normal_vert=dual_normal_vert,
-        edge_areas=edge_areas,
-        cell_areas=cell_areas,
+        tangent_orientation=edge_geometry.tangent_orientation,
+        inverse_primal_edge_lengths=edge_geometry.inverse_primal_edge_lengths,
+        inverse_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+        inverse_vert_vert_lengths=edge_geometry.inverse_vertex_vertex_lengths,
+        primal_normal_vert=edge_geometry.primal_normal_vert,
+        dual_normal_vert=edge_geometry.dual_normal_vert,
+        edge_areas=edge_geometry.edge_areas,
+        cell_areas=cell_geometry.area,
     )
 
     icon_result_exner = diffusion_savepoint_exit.exner()
@@ -552,69 +546,29 @@ def test_run_diffusion_single_step(
     )
 
 
-def _read_fields(diffusion_savepoint_init, grid_savepoint):  # noqa: F811
-
-    grg = diffusion_savepoint_init.geofac_grg()
-    interpolation_state = InterpolationState(
-        e_bln_c_s=diffusion_savepoint_init.e_bln_c_s(),
-        rbf_coeff_1=diffusion_savepoint_init.rbf_vec_coeff_v1(),
-        rbf_coeff_2=diffusion_savepoint_init.rbf_vec_coeff_v2(),
-        geofac_div=diffusion_savepoint_init.geofac_div(),
-        geofac_n2s=diffusion_savepoint_init.geofac_n2s(),
-        geofac_grg_x=grg[0],
-        geofac_grg_y=grg[1],
-        nudgecoeff_e=diffusion_savepoint_init.nudgecoeff_e(),
-    )
-    metric_state = MetricState(
-        mask_hdiff=diffusion_savepoint_init.mask_diff(),
-        theta_ref_mc=diffusion_savepoint_init.theta_ref_mc(),
-        wgtfac_c=diffusion_savepoint_init.wgtfac_c(),
-        zd_intcoef=diffusion_savepoint_init.zd_intcoef(),
-        zd_vertidx=diffusion_savepoint_init.zd_vertoffset(),
-        zd_diffcoef=diffusion_savepoint_init.zd_diffcoef(),
-    )
-    diagnostic_state = DiagnosticState(
-        hdef_ic=diffusion_savepoint_init.hdef_ic(),
-        div_ic=diffusion_savepoint_init.div_ic(),
-        dwdx=diffusion_savepoint_init.dwdx(),
-        dwdy=diffusion_savepoint_init.dwdy(),
-    )
-    prognostic_state = PrognosticState(
-        w=diffusion_savepoint_init.w(),
-        vn=diffusion_savepoint_init.vn(),
-        exner_pressure=diffusion_savepoint_init.exner(),
-        theta_v=diffusion_savepoint_init.theta_v(),
-    )
+def _read_fields(diffusion_savepoint_init, grid_savepoint):
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
-    orientation = grid_savepoint.tangent_orientation()
-    inverse_primal_edge_lengths = grid_savepoint.inverse_primal_edge_lengths()
-    inverse_vert_vert_lengths = grid_savepoint.inv_vert_vert_length()
-    inverse_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    primal_normal_vert: VectorTuple = (
-        as_1D_sparse_field(grid_savepoint.primal_normal_vert_x(), ECVDim),
-        as_1D_sparse_field(grid_savepoint.primal_normal_vert_y(), ECVDim),
-    )
-    dual_normal_vert: VectorTuple = (
-        as_1D_sparse_field(grid_savepoint.dual_normal_vert_x(), ECVDim),
-        as_1D_sparse_field(grid_savepoint.dual_normal_vert_y(), ECVDim),
-    )
-    edge_areas = grid_savepoint.edge_areas()
-    cell_areas = grid_savepoint.cell_areas()
+    edge_geometry, cell_geometry = _read_geometry_fields(grid_savepoint)
+
+    interpolation_state = diffusion_savepoint_init.construct_interpolation_state()
+    metric_state = diffusion_savepoint_init.construct_metric_state()
+    diagnostic_state = diffusion_savepoint_init.construct_diagnostics()
+    prognostic_state = diffusion_savepoint_init.construct_prognostics()
     return (
-        cell_areas,
-        diagnostic_state,
         dtime,
-        dual_normal_vert,
-        edge_areas,
+        cell_geometry,
+        edge_geometry,
+        diagnostic_state,
         interpolation_state,
-        inverse_dual_edge_length,
-        inverse_primal_edge_lengths,
-        inverse_vert_vert_lengths,
         metric_state,
-        orientation,
-        primal_normal_vert,
         prognostic_state,
     )
+
+
+def _read_geometry_fields(grid_savepoint):
+    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
+    return edge_geometry, cell_geometry
 
 
 @pytest.mark.skip("fix: diffusion_stencil_15")
@@ -630,18 +584,12 @@ def test_diffusion_five_steps(
     step_date_exit="2021-06-20T12:01:00.000",
 ):
     (
-        cell_areas,
-        diagnostic_state,
         dtime,
-        dual_normal_vert,
-        edge_areas,
+        cell_geometry,
+        edge_geometry,
+        diagnostic_state,
         interpolation_state,
-        inverse_dual_edge_length,
-        inverse_primal_edge_lengths,
-        inverse_vert_vert_lengths,
         metric_state,
-        orientation,
-        primal_normal_vert,
         prognostic_state,
     ) = _read_fields(diffusion_savepoint_init, grid_savepoint)
 
@@ -664,28 +612,28 @@ def test_diffusion_five_steps(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
-        tangent_orientation=orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_length=inverse_dual_edge_length,
-        inverse_vert_vert_lengths=inverse_vert_vert_lengths,
-        primal_normal_vert=primal_normal_vert,
-        dual_normal_vert=dual_normal_vert,
-        edge_areas=edge_areas,
-        cell_areas=cell_areas,
+        tangent_orientation=edge_geometry.tangent_orientation,
+        inverse_primal_edge_lengths=edge_geometry.inverse_primal_edge_lengths,
+        inverse_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+        inverse_vert_vert_lengths=edge_geometry.inverse_vertex_vertex_lengths,
+        primal_normal_vert=edge_geometry.primal_normal_vert,
+        dual_normal_vert=edge_geometry.dual_normal_vert,
+        edge_areas=edge_geometry.edge_areas,
+        cell_areas=cell_geometry.area,
     )
     for _ in range(4):
         diffusion.time_step(
             diagnostic_state=diagnostic_state,
             prognostic_state=prognostic_state,
             dtime=dtime,
-            tangent_orientation=orientation,
-            inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-            inverse_dual_edge_length=inverse_dual_edge_length,
-            inverse_vert_vert_lengths=inverse_vert_vert_lengths,
-            primal_normal_vert=primal_normal_vert,
-            dual_normal_vert=dual_normal_vert,
-            edge_areas=edge_areas,
-            cell_areas=cell_areas,
+            tangent_orientation=edge_geometry.tangent_orientation,
+            inverse_primal_edge_lengths=edge_geometry.inverse_primal_edge_lengths,
+            inverse_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+            inverse_vert_vert_lengths=edge_geometry.inverse_vertex_vertex_lengths,
+            primal_normal_vert=edge_geometry.primal_normal_vert,
+            dual_normal_vert=edge_geometry.dual_normal_vert,
+            edge_areas=edge_geometry.edge_areas,
+            cell_areas=cell_geometry.area,
         )
 
     icon_result_exner = diffusion_savepoint_exit.exner()

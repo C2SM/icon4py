@@ -19,7 +19,7 @@ import pytest
 from click.testing import CliRunner
 
 import icon4py.atm_dyn_iconam
-from icon4py.pyutils.icon4pygen import main
+from icon4py.icon4pygen.cli import main
 from icon4py.testutils.utils import get_stencil_module_path
 
 

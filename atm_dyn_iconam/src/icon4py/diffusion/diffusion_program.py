@@ -130,7 +130,7 @@ def diffusion_run(
 ):
     _scale_k(local_enh_smag_fac, dtime, out=local_diff_multfac_smag)
 
-    # TODO: is this needed?, if not remove
+    # TODO: @magdalena is this needed?, if not remove
     _set_zero_v_k(out=local_u_vert)
     _set_zero_v_k(out=local_v_vert)
 
@@ -165,7 +165,7 @@ def diffusion_run(
         local_smag_offset,
         out=(local_kh_smag_e, local_kh_smag_ec, local_z_nabla2_e),
         domain={
-            # TODO wrong start index??
+            # TODO @magdalena wrong start index??
             EdgeDim: (boundary_diffusion_start_index_edges, edge_endindex_local_minus2),
             KDim: (0, nlev),
         },
@@ -262,7 +262,7 @@ def diffusion_run(
     # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
     # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
     #
-    # # TODO check: kh_smag_e is an out field, should  not be calculated in init?
+    # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
     #
 
     _fused_mo_nh_diffusion_stencil_11_12(

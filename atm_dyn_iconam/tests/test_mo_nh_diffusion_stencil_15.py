@@ -61,7 +61,6 @@ def mo_nh_diffusion_stencil_15_numpy(
     )
 
 
-@pytest.mark.skip("new lowering: dims in offset provider")
 def test_mo_nh_diffusion_stencil_15():
     mesh = SimpleMesh()
 

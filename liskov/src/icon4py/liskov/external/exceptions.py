@@ -12,29 +12,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-class UnsupportedDirectiveError(Exception):
+class MissingClickContextError(Exception):
     pass
 
 
-class DirectiveSyntaxError(Exception):
+class MissingGitError(Exception):
     pass
 
 
-class RepeatedDirectiveError(Exception):
+class UnknownStencilError(Exception):
     pass
 
 
-class RequiredDirectivesError(Exception):
-    pass
-
-
-class UnbalancedStencilDirectiveError(Exception):
-    pass
-
-
-class MissingBoundsError(Exception):
-    pass
-
-
-class MissingDirectiveArgumentError(Exception):
+class IncompatibleFieldError(Exception):
     pass
