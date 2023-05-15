@@ -15,7 +15,13 @@ from typing import Tuple
 import numpy as np
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, minimum
+from gt4py.next.ffront.fbuiltins import (
+    broadcast,
+    int32,
+    maximum,
+    minimum,
+    neighbor_sum,
+)
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners import gtfn_cpu
 
@@ -28,9 +34,9 @@ def zero_field(*dims: Dimension, mesh, dtype=float):
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
 
-def indices_field(*dims: Dimension, mesh, dtype=int):
-    shapex = tuple(map(lambda x: mesh.size[x], dims))
-    return np_as_located_field(*dims)(np.arange(shapex, dtype=dtype))
+def indices_field(dim: Dimension, mesh, dtype=int):
+    shapex = mesh.size[dim]
+    return np_as_located_field(dim)(np.arange(shapex, dtype=dtype))
 
 
 def _allocate(*dims: Dimension, mesh, dtype=float):
@@ -165,6 +171,18 @@ def setup_fields_for_initial_step(
     _setup_fields_for_initial_step(
         k4, hdiff_efdt_ratio, out=(diff_multfac_vn, smag_limit)
     )
+
+
+@field_operator
+def _calculate_bdy_divdamp(
+    scal_divdamp: Field[[KDim], float], nudge_max_coeff: float, dbl_eps: float
+) -> Field[[KDim], float]:
+    return 0.75 / (nudge_max_coeff + dbl_eps) * abs(scal_divdamp)
+
+
+@field_operator
+def _field_sum(field: Field[[CellDim], float]) -> float:
+    return neighbor_sum(field, axis=CellDim)
 
 
 @field_operator
@@ -303,3 +321,10 @@ def init_nabla2_factor_in_upper_damping_zone(
         ** 4
     )
     return np_as_located_field(KDim)(buffer)
+
+
+@field_operator
+def scal_divdamp_calcs(
+    enh_divdamp_fac: Field[[KDim], float], mean_cell_area: float
+) -> Field[[KDim], float]:
+    return -enh_divdamp_fac * mean_cell_area**2

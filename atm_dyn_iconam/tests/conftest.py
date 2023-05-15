@@ -101,6 +101,16 @@ def step_date_exit():
 
 
 @pytest.fixture
+def metric_savepoint(data_provider):
+    return data_provider.from_savepoint_metric_state()
+
+
+@pytest.fixture
+def interpolation_savepoint(data_provider):
+    return data_provider.from_savepoint_interpolation_state()
+
+
+@pytest.fixture
 def diffusion_savepoint_init(data_provider, linit, step_date_init):
     """
     Load data from ICON savepoint at start of diffusion module.
@@ -126,7 +136,8 @@ def savepoint_velocity_init(data_provider, step_date_init, istep, vn_only, jstep
     )
 
 
-def savepoint_nonhydro_init(data_provider, step_date_exit, istep, vn_only, jstep):
+@pytest.fixture
+def savepoint_nonhydro_init(data_provider, step_date_init, istep, vn_only, jstep):
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
@@ -134,7 +145,7 @@ def savepoint_nonhydro_init(data_provider, step_date_exit, istep, vn_only, jstep
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.from_savepoint_nonhydro_init(
-        istep=istep, vn_only=vn_only, date=step_date_exit, jstep=jstep
+        istep=istep, date=step_date_init, jstep=jstep
     )
 
 

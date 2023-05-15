@@ -37,12 +37,6 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_12 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_13 import (
     mo_solve_nonhydro_stencil_13,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_14 import (
-    mo_solve_nonhydro_stencil_14,
-)
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_15 import (
-    mo_solve_nonhydro_stencil_15,
-)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_17 import (
     mo_solve_nonhydro_stencil_17,
 )
@@ -90,9 +84,6 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_33 import (
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_34 import (
     mo_solve_nonhydro_stencil_34,
-)
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_35 import (
-    mo_solve_nonhydro_stencil_35,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
@@ -147,10 +138,13 @@ from icon4py.state_utils.prognostic_state import PrognosticState
 from icon4py.state_utils.utils import (
     _allocate,
     _allocate_indices,
+    _calculate_bdy_divdamp,
     _en_smag_fac_for_zero_nshift,
+    _field_sum,
     compute_z_raylfac,
+    scal_divdamp_calcs,
     set_zero_c_k,
-    zero_field,
+    set_zero_e_k,
 )
 from icon4py.state_utils.z_fields import ZFields
 from icon4py.velocity import velocity_advection
@@ -163,37 +157,41 @@ class NonHydrostaticConfig:
     Encapsulates namelist parameters and derived parameters.
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
-    TODO: @abishekg7 to be read from config
-    TODO: @abishekg7 handle dependencies on other namelists (see below...)
     """
 
     def __init__(
         self,
-        itime_scheme: int = 5,
-        iadv_rhotheta: int = 5,
-        igradp_method: int = 5,
-        ndyn_substeps_var: float = 3.0,
+        itime_scheme: int = 4,
+        iadv_rhotheta: int = 2,
+        igradp_method: int = 3,
+        ndyn_substeps_var: float = 5.0,
         rayleigh_type: int = 2,
         divdamp_order: int = 24,
-        idiv_method: int = 4,  # from mo_dynamics_config in FORTRAN
+        idiv_method: int = 1,
         is_iau_active: bool = False,
-        iau_wgt_dyn: float = 0.0,
+        iau_wgt_dyn: float = 1.0,
         divdamp_type: int = 3,
         lhdiff_rcf: bool = True,
         l_vert_nested: bool = False,
-        l_open_ubc: bool = True,
+        l_open_ubc: bool = False,
         rhotheta_offctr: float = -0.1,
-        veladv_offctr: float = 2.0,
-        divdamp_fac: float = 1.0,
+        veladv_offctr: float = 0.25,
+        divdamp_fac: float = 0.0025,
         divdamp_fac_o2: float = 2.0,
-        max_nudging_coeff: float = 0.02,
+        max_nudging_coeff: float = 0.075,
+        divdamp_fac2: float = 0.004,
+        divdamp_fac3: float = 0.004,
+        divdamp_fac4: float = 0.004,
+        divdamp_z: float = 32500,
+        divdamp_z2: float = 40000,
+        divdamp_z3: float = 60000,
+        divdamp_z4: float = 80000,
     ):
 
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
         self.iadv_rhotheta: int = iadv_rhotheta
 
-        self._validate()
         self.l_open_ubc: bool = l_open_ubc
         self.igradp_method: int = igradp_method
         self.ndyn_substeps_var = ndyn_substeps_var
@@ -211,6 +209,16 @@ class NonHydrostaticConfig:
         self.divdamp_fac_o2: float = divdamp_fac_o2
         self.nudge_max_coeff: float = max_nudging_coeff
 
+        self.divdamp_fac2: float = divdamp_fac2
+        self.divdamp_fac3: float = divdamp_fac3
+        self.divdamp_fac4: float = divdamp_fac4
+        self.divdamp_z: float = divdamp_z
+        self.divdamp_z2: float = divdamp_z2
+        self.divdamp_z3: float = divdamp_z3
+        self.divdamp_z4: float = divdamp_z4
+
+        self._validate()
+
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
         if self.l_open_ubc:
@@ -219,11 +227,23 @@ class NonHydrostaticConfig:
                 "(to allow vertical motions related to diabatic heating to extend beyond the model top)"
             )
 
-        if self.lvert_nest or self.l_vert_nested:
+        if self.l_vert_nested:
             raise NotImplementedError("Vertical nesting support not implemented")
 
-        if self.igradp_method == 4 or self.igradp_method == 5:
-            raise NotImplementedError("igradp_method 4 and 5 not implemented")
+        if self.igradp_method != 3:
+            raise NotImplementedError("igradp_method can only be 3")
+
+        if self.itime_scheme != 4:
+            raise NotImplementedError("itime_scheme can only be 4")
+
+        if self.idiv_method != 1:
+            raise NotImplementedError("idiv_method can only be 1")
+
+        if self.divdamp_order != 24:
+            raise NotImplementedError("divdamp_order can only be 24")
+
+        if self.divdamp_type == 32:
+            raise NotImplementedError("divdamp_type with value 32 not yet implemented")
 
 
 class NonHydrostaticParams:
@@ -236,11 +256,12 @@ class NonHydrostaticParams:
         self.grav_o_cpd: Final[float] = constants.GRAV / constants.CPD
 
         # start level for 3D divergence damping terms
-        self.kstart_dd3d: int = (
-            # TODO: @abishekg7 See mo_vertical_grid.f90
-        )
+        self.kstart_dd3d: int = 1
+
         # start level for moist physics processes (specified by htop_moist_proc)
-        self.kstart_moist: int  # see mo_nonhydrostatic_config.f90
+        self.kstart_moist: int = 1
+        if self.kstart_moist != 1:
+            raise NotImplementedError("kstart_moist can only be 1")
 
         self.alin = (config.divdamp_fac2 - config.divdamp_fac) / (
             config.divdamp_z2 - config.divdamp_z
@@ -258,8 +279,6 @@ class NonHydrostaticParams:
 
 
 class SolveNonhydro:
-    # def __init__(self, run_program=True):
-
     def __init__(self):
         self._initialized = False
         self.grid: Optional[IconGrid] = None
@@ -274,6 +293,7 @@ class SolveNonhydro:
         self.l_vert_nested = None
         self.enh_divdamp_fac = None
         self.scal_divdamp = None
+        self.p_test_run = None
 
     def init(
         self,
@@ -308,16 +328,24 @@ class SolveNonhydro:
         if self.grid.lvert_nest():
             self.l_vert_nested = True
 
-        self.enh_divdamp_fac = _en_smag_fac_for_zero_nshift(
+        out = enh_smag_fac
+        _en_smag_fac_for_zero_nshift(
             a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
         )
+        self.enh_divdamp_fac = enh_smag_fac
 
-        # TODO: @abishekg7 geometry_info
-        self.scal_divdamp = (
-            -self.enh_divdamp_fac
-            * self.grid.num_cells()
-            ** 2  # TODO: @nfarabullini: check that this is ok for p_patch % geometry_info % mean_cell_area
+        # TODO: @nfarabullini: global reductions not possible in gt4py
+        cell_areas_sum = 0.0
+        _field_sum(cell_areas, out=cell_areas_sum, offset_provider={})
+
+        scal_divdamp_calcs(
+            enh_smag_fac,
+            cell_areas_sum / float(self.grid.num_cells()),
+            out=out,
+            offset_provider={},
         )
+        self.scal_divdamp = out
+        self.p_test_run = True
 
     @property
     def initialized(self):
@@ -394,7 +422,6 @@ class SolveNonhydro:
         l_init: bool,
         nnow: int,
         nnew: int,
-        lprep_adv: bool,
         lclean_mflx: bool,
     ):
 
@@ -420,16 +447,23 @@ class SolveNonhydro:
         r_nsubsteps = 1.0 / config.ndyn_substeps_var
 
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
-        bdy_divdamp = (
-            0.75 / (config.nudge_max_coeff + constants.dbl_eps) * abs(self.scal_divdamp)
+        bdy_divdamp = self.scal_divdamp
+        _calculate_bdy_divdamp(
+            self.scal_divdamp,
+            config.nudge_max_coeff,
+            constants.dbl_eps,
+            out=bdy_divdamp,
+            offset_provider={},
         )
 
         # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
         # delta_x**2 is approximated by the mean cell area
-        scal_divdamp_o2 = (
-            config.divdamp_fac_o2
-            * self.grid.num_cells()  # TODO: @nfarabullini: check that this is ok for p_patch % geometry_info % mean_cell_area
-        )
+        # TODO: @nfarabullini: global reductions not possible in gt4py
+        cell_areas_sum = 0.0
+        _field_sum(cell_areas, out=cell_areas_sum, offset_provider={})
+        scal_divdamp_o2 = config.divdamp_fac_o2 * (
+            cell_areas_sum / float(self.grid.num_cells())
+        )  # TODO: check that this is ok for p_patch % geometry_info % mean_cell_area
 
         if self.p_test_run:
             nhsolve_prog.init_test_fields(
@@ -444,7 +478,7 @@ class SolveNonhydro:
             )
 
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
-        if config.itime_scheme >= 4:
+        if config.itime_scheme == 4:
             self.ntl1 = nnow
             self.ntl2 = nnew
         else:
@@ -505,7 +539,6 @@ class SolveNonhydro:
             owner_mask,
             f_e,
             area_edge,
-            lprep_adv,
             lclean_mflx,
             scal_divdamp_o2,
             bdy_divdamp,
@@ -514,7 +547,7 @@ class SolveNonhydro:
 
         if self.grid.limited_area():
             nhsolve_prog.stencils_66_67(
-                self.metric_state_nonhydro.bdy_halo_c,  # TODO: @abishekg7 check if this should be mask_prog_halo_c_dsl_low_refin
+                self.metric_state_nonhydro.bdy_halo_c,
                 prognostic_state[nnew].rho,
                 prognostic_state[nnew].theta_v,
                 prognostic_state[nnew].exner,
@@ -572,8 +605,8 @@ class SolveNonhydro:
         nnow: int,
         nnew: int,
     ):
-        if config.itime_scheme >= 6 or l_init or l_recompute:
-            if config.itime_scheme < 6 and not l_init:
+        if l_init or l_recompute:
+            if config.itime_scheme == 4 and not l_init:
                 lvn_only = True  # Recompute only vn tendency
             else:
                 lvn_only = False
@@ -639,7 +672,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if config.igradp_method <= 3:
+        if config.igradp_method == 3:
             nhsolve_prog.predictor_stencils_4_5_6(
                 self.metric_state_nonhydro.wgtfacq_c,
                 self.z_exner_ex_pr,
@@ -681,11 +714,6 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim},
         )
 
-        if config.l_open_ubc and not self.l_vert_nested:
-            raise NotImplementedError(
-                "Nesting support not implemented. " "l_open_ubc not implemented"
-            )
-
         # Perturbation theta at top and surface levels
         nhsolve_prog.predictor_stencils_11_lower_upper(
             self.metric_state_nonhydro.wgtfacq_c,
@@ -699,7 +727,7 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim},
         )
 
-        if config.igradp_method <= 3:
+        if config.igradp_method == 3:
             # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
             mo_solve_nonhydro_stencil_12(
                 self.z_theta_v_pr_ic,
@@ -784,78 +812,78 @@ class SolveNonhydro:
                     "C2E2CODim": C2E2CODim,
                 },
             )
-        elif config.iadv_rhotheta == 3:
-            # First call: compute backward trajectory with wind at time level nnow
-            lcompute = True
-            lcleanup = False
-            # upwind_hflux_miura3()
-            # Second call: compute only reconstructed value for flux divergence
-            lcompute = False
-            lcleanup = True
-            # upwind_hflux_miura3()
 
-        # TODO: @abishekg7 Please see test.f90 for this section. Above call to 'wrap_run_mo_solve_nonhydro_stencil_14'
         if config.iadv_rhotheta <= 2:
+            temp_horizontal_end = edge_endindex_interior - 3
             if config.idiv_method == 1:
-                pass
-            else:
-                pass
-        # TODO: @abishekg7 this is just zero stencils two fields
-        mo_solve_nonhydro_stencil_14(
-            self.z_rho_e,
-            self.z_theta_v_e,
-            horizontal_start=edge_startindex_interior - 2,
-            horizontal_end=edge_endindex_interior
-            - 2,  # TODO: @abishekg7 conditional on idiv_method
-            vertical_start=0,
-            vertical_end=self.grid.n_lev(),
-            offset_provider={},
-        )
-        # initialize also nest boundary points with zero
-        # TODO: @abishekg7 this is just zero stencils two fields
-        if self.grid.limited_area():
-            mo_solve_nonhydro_stencil_15(
-                self.z_rho_e,
-                self.z_theta_v_e,
-                horizontal_start=0,
-                horizontal_end=edge_endindex_interior - 1,
+                temp_horizontal_end = edge_endindex_interior - 2
+
+            set_zero_e_k(
+                field=self.z_rho_e,
+                horizontal_start=edge_startindex_interior - 2,
+                horizontal_end=temp_horizontal_end,
                 vertical_start=0,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={},
             )
 
-        if config.iadv_rhotheta == 2:
-            # Operations from upwind_hflux_miura are inlined in order to process both fields in one step
-            pass
-        else:
-            # Compute upwind-biased values for rho and theta starting from centered differences
-            # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
-            # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
-            nhsolve_prog.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
-                prognostic_state[nnow].vn,
-                diagnostic_state.vt,
-                self.interpolation_state.pos_on_tplane_e_1,
-                self.interpolation_state.pos_on_tplane_e_2,
-                primal_normal_cell_1,
-                dual_normal_cell_1,
-                primal_normal_cell_2,
-                dual_normal_cell_2,
-                p_dthalf,
-                self.metric_state_nonhydro.rho_ref_me,
-                self.metric_state_nonhydro.theta_ref_me,
-                self.z_grad_rth_1,
-                self.z_grad_rth_2,
-                self.z_grad_rth_3,
-                self.z_grad_rth_4,
-                self.z_rth_pr_1,
-                self.z_rth_pr_2,
-                edge_endindex_interior - 1,
-                self.grid.n_lev(),
-                offset_provider={
-                    "E2C": self.grid.get_e2c_connectivity(),
-                    "E2CDim": E2CDim,
-                },
+            set_zero_e_k(
+                field=self.z_theta_v_e,
+                horizontal_start=edge_startindex_interior - 2,
+                horizontal_end=temp_horizontal_end,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={},
             )
+            # initialize also nest boundary points with zero
+            if self.grid.limited_area():
+                set_zero_e_k(
+                    field=self.z_rho_e,
+                    horizontal_start=0,
+                    horizontal_end=edge_endindex_interior - 1,
+                    vertical_start=0,
+                    vertical_end=self.grid.n_lev(),
+                    offset_provider={},
+                )
+
+                set_zero_e_k(
+                    field=self.z_theta_v_e,
+                    horizontal_start=0,
+                    horizontal_end=edge_endindex_interior - 1,
+                    vertical_start=0,
+                    vertical_end=self.grid.n_lev(),
+                    offset_provider={},
+                )
+
+            if config.iadv_rhotheta == 2:
+                # Compute upwind-biased values for rho and theta starting from centered differences
+                # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
+                # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
+                nhsolve_prog.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
+                    prognostic_state[nnow].vn,
+                    diagnostic_state.vt,
+                    self.interpolation_state.pos_on_tplane_e_1,
+                    self.interpolation_state.pos_on_tplane_e_2,
+                    primal_normal_cell_1,
+                    dual_normal_cell_1,
+                    primal_normal_cell_2,
+                    dual_normal_cell_2,
+                    p_dthalf,
+                    self.metric_state_nonhydro.rho_ref_me,
+                    self.metric_state_nonhydro.theta_ref_me,
+                    self.z_grad_rth_1,
+                    self.z_grad_rth_2,
+                    self.z_grad_rth_3,
+                    self.z_grad_rth_4,
+                    self.z_rth_pr_1,
+                    self.z_rth_pr_2,
+                    edge_endindex_interior - 1,
+                    self.grid.n_lev(),
+                    offset_provider={
+                        "E2C": self.grid.get_e2c_connectivity(),
+                        "E2CDim": E2CDim,
+                    },
+                )
 
         # Remaining computations at edge points
         mo_solve_nonhydro_stencil_18(
@@ -870,7 +898,7 @@ class SolveNonhydro:
         )
 
         if (
-            config.igradp_method <= 3
+            config.igradp_method == 3
         ):  # stencil_20 is tricky, there's no regular field operator
             # horizontal gradient of Exner pressure, including metric correction
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
@@ -887,10 +915,6 @@ class SolveNonhydro:
                 self.grid.nflat_gradp(),
                 offset_provider={},
             )
-
-        elif config.igradp_method == 4 or config.igradp_method == 5:
-            # horizontal gradient of Exner pressure, cubic/quadratic interpolation
-            raise NotImplementedError("igradp_method 4 and 5 not implemented")
 
         # compute hydrostatically approximated correction term that replaces downward extrapolation
         if config.igradp_method == 3:
@@ -913,10 +937,8 @@ class SolveNonhydro:
                     "Koff": KDim,
                 },
             )
-        elif config.igradp_method == 5:
-            raise NotImplementedError("igradp_method 4 and 5 not implemented")
 
-        if config.igradp_method == 3 or config.igradp_method == 5:
+        if config.igradp_method == 3:
             mo_solve_nonhydro_stencil_22(
                 self.metric_state_nonhydro.ipeidx_dsl,
                 self.metric_state_nonhydro.pg_exdist,
@@ -931,7 +953,7 @@ class SolveNonhydro:
 
         mo_solve_nonhydro_stencil_24(
             prognostic_state[nnow].vn,
-            diagnostic_state_nonhydro.ddt_vn_adv_ntl1,  # TODO: @nfarabullini: is the self.ntl1 correct or this one?
+            diagnostic_state_nonhydro.ddt_vn_adv_ntl1,
             diagnostic_state_nonhydro.ddt_vn_phy,
             self.z_theta_v_e,
             self.z_gradh_exner,
@@ -1055,15 +1077,6 @@ class SolveNonhydro:
                 "Koff": KDim,
             },
         )
-
-        if config.idiv_method == 2:
-            pass
-            # if self.grid.limited_area():
-            #     init_zero_contiguous_dp()
-
-        if config.idiv_method == 2:
-            pass
-            # div_avg()
 
         if config.idiv_method == 1:
             mo_solve_nonhydro_stencil_41(
@@ -1243,13 +1256,13 @@ class SolveNonhydro:
                 dtime,
                 cell_startindex_nudging + 1,
                 cell_endindex_interior,
-                params.kstart_moist,  # TODO: @abishekg7
+                params.kstart_moist,
                 self.grid.n_lev(),
                 offset_provider={},
             )
 
         if self.grid.limited_area():  # for MPI-parallelized case
-            nhsolve_prog.predictor_stencils_61_62(
+            nhsolve_prog.stencils_61_62(
                 prognostic_state[nnow].rho,
                 diagnostic_state_nonhydro.grf_tend_rho,
                 prognostic_state[nnow].theta_v,
@@ -1259,6 +1272,7 @@ class SolveNonhydro:
                 prognostic_state[nnew].rho,
                 prognostic_state[nnew].exner,
                 prognostic_state[nnew].w,
+                self.k_field,
                 dtime,
                 cell_endindex_nudging,
                 self.grid.n_lev(),
@@ -1267,14 +1281,15 @@ class SolveNonhydro:
             )
 
         if config.lhdiff_rcf and config.divdamp_type >= 3:
-            nhsolve_prog.mo_solve_nonhydro_stencil_56_63(
+            mo_solve_nonhydro_stencil_56_63(
                 self.metric_state_nonhydro.inv_ddqz_z_full,
                 prognostic_state[nnew].w,
                 diagnostic_state.w_concorr_c,
                 self.z_dwdz_dd,
-                cell_endindex_nudging,  # TODO: @abishekg7 double check domains
-                params.kstart_dd3d,  # TODO: @abishekg7
-                self.grid.n_lev(),
+                horizontal_start=cell_startindex_nudging + 1,
+                horizontal_end=cell_endindex_nudging,
+                vertical_start=params.kstart_dd3d,
+                vertical_end=self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
 
@@ -1301,11 +1316,11 @@ class SolveNonhydro:
         owner_mask: Field[[CellDim], bool],
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
-        lprep_adv: bool,
         lclean_mflx: bool,
         scal_divdamp_o2: float,
-        bdy_divdamp: float,
+        bdy_divdamp: Field[[KDim], float],
         r_nsubsteps: float,
+        lprep_adv: bool,
     ):
 
         (
@@ -1385,14 +1400,14 @@ class SolveNonhydro:
             self.z_graddiv_vn,
             horizontal_start=6,
             horizontal_end=edge_endindex_interior - 2,
-            vertical_start=params.kstart_dd3d,  # TODO: @abishekg7 resolve
+            vertical_start=params.kstart_dd3d,
             vertical_end=self.grid.n_lev(),
             offset_provider={
                 "E2C": self.grid.get_e2c_connectivity(),
             },
         )
 
-        if config.itime_scheme >= 4:
+        if config.itime_scheme == 4:
             mo_solve_nonhydro_stencil_23(
                 prognostic_state[nnow].vn,
                 diagnostic_state_nonhydro.ddt_vn_adv_ntl1,
@@ -1412,9 +1427,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if config.lhdiff_rcf and (
-            config.divdamp_order == 4 or config.divdamp_order == 24
-        ):
+        if config.lhdiff_rcf and config.divdamp_order == 24:
             mo_solve_nonhydro_stencil_25(
                 self.interpolation_state.geofac_grdiv,
                 self.z_graddiv_vn,
@@ -1430,9 +1443,7 @@ class SolveNonhydro:
             )
 
         if config.lhdiff_rcf:
-            if config.divdamp_order == 2 or (
-                config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6
-            ):
+            if config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
                 mo_solve_nonhydro_stencil_26(
                     self.z_graddiv_vn,
                     prognostic_state[nnew].vn,
@@ -1443,7 +1454,7 @@ class SolveNonhydro:
                     vertical_end=self.grid.n_lev(),
                     offset_provider={},
                 )
-            if config.divdamp_order == 4 or (
+            if (
                 config.divdamp_order == 24
                 and config.divdamp_fac_o2 <= 4 * config.divdamp_fac
             ):
@@ -1518,7 +1529,6 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            # TODO: @abishekg7 resolve prep_adv
             if lprep_adv:  # Preparations for tracer advection
                 if lclean_mflx:
                     mo_solve_nonhydro_stencil_33(
@@ -1543,70 +1553,6 @@ class SolveNonhydro:
                     offset_provider={},
                 )
 
-        if config.itime_scheme >= 5:
-            mo_solve_nonhydro_stencil_35(
-                prognostic_state[nnew].vn,
-                self.metric_state.ddxn_z_full,
-                self.metric_state.ddxt_z_full,
-                diagnostic_state.vt,
-                z_fields.z_w_concorr_me,
-                horizontal_start=4,
-                horizontal_end=edge_endindex_local - 2,
-                vertical_start=self.vertical_params.nflatlev,
-                vertical_end=self.grid.n_lev(),
-                offset_provider={},
-            )
-
-            nhsolve_prog.stencils_39_40(
-                self.interpolation_state.e_bln_c_s,
-                z_fields.z_w_concorr_me,
-                self.metric_state.wgtfac_c,
-                self.metric_state_nonhydro.wgtfacq_c,
-                diagnostic_state.w_concorr_c,
-                self.k_field,
-                cell_endindex_local - 1,
-                self.vertical_params.nflatlev + 1,
-                self.grid.n_lev(),
-                self.grid.n_lev() + 1,
-                offset_provider={
-                    "C2E": self.grid.get_c2e_connectivity(),
-                    "C2EDim": C2EDim,
-                    "Koff": KDim,
-                },
-            )
-
-            nhsolve_prog.corrector_stencils_35_39_40(  # TODO: @abishekg7 bounds are complicated
-                prognostic_state[nnew].vn,
-                self.metric_state.ddxn_z_full,
-                self.metric_state.ddxt_z_full,
-                diagnostic_state.vt,
-                z_fields.z_w_concorr_me,
-                self.interpolation_state.e_bln_c_s,
-                self.metric_state.wgtfac_c,
-                self.metric_state_nonhydro.wgtfacq_c,
-                diagnostic_state.w_concorr_c,
-                edge_endindex_local - 2,
-                cell_endindex_local - 1,
-                self.vertical_params.nflatlev + 1,
-                self.grid.n_lev(),
-                self.grid.n_lev() + 1,
-                self.vertical_params.nflatlev,
-                offset_provider={
-                    "C2E": self.grid.get_c2e_connectivity(),
-                    "C2EDim": C2EDim,
-                    "Koff": KDim,
-                },
-            )
-
-        if config.idiv_method == 2:
-            pass
-            # if self.grid.limited_area():
-            #     init_zero_contiguous_dp()
-
-        if config.idiv_method == 2:
-            pass
-            # div_avg()
-
         if config.idiv_method == 1:
             mo_solve_nonhydro_stencil_41(
                 self.interpolation_state.geofac_div,
@@ -1624,8 +1570,7 @@ class SolveNonhydro:
                 },
             )
 
-        # TODO: @abishekg7 45_b is just a zero stencil
-        if config.itime_scheme >= 4:
+        if config.itime_scheme == 4:
             nhsolve_prog.stencils_42_44_45_45b(
                 self.z_w_expl,
                 prognostic_state[nnow].w,
@@ -1797,7 +1742,6 @@ class SolveNonhydro:
 
         if lprep_adv:
             if lclean_mflx:
-                # TODO: @abishekg7 domains for this
                 set_zero_c_k(
                     field=self.mass_flx_ic,
                     horizontal_start=cell_startindex_nudging + 1,
@@ -1838,7 +1782,7 @@ class SolveNonhydro:
                 self.metric_state_nonhydro.vwind_impl_wgt,
                 prognostic_state[nnow].w,
                 prognostic_state[nnew].w,
-                diagnostic_state_nonhydro.w_concorr_c,
+                diagnostic_state.w_concorr_c,
                 self.mass_flx_ic,
                 r_nsubsteps,
                 horizontal_start=0,

@@ -48,17 +48,11 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_13 import (
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_14 import (
     _mo_velocity_advection_stencil_14,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_15 import (
-    _mo_velocity_advection_stencil_15,
-)
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_16 import (
     _mo_velocity_advection_stencil_16,
 )
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
-)
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
-    _mo_velocity_advection_stencil_18,
 )
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_19 import (
     _mo_velocity_advection_stencil_19,
@@ -67,7 +61,6 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_20 import (
     _mo_velocity_advection_stencil_20,
 )
 from icon4py.common.dimension import (
-    C2E2CODim,
     C2EDim,
     CellDim,
     E2C2EDim,
@@ -131,7 +124,7 @@ def _fused_stencils_4_5_6(
 ]:
 
     z_w_concorr_me = where(
-        k_field >= nflatlev_startindex & k_field < nlev,
+        (k_field >= nflatlev_startindex) & (k_field < nlev),
         _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
@@ -195,13 +188,13 @@ def _fused_stencils_9_10(
     nlev: int,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     local_z_w_concorr_mc = where(
-        k_field >= nflatlev_startindex & k_field < nlev,
+        (k_field >= nflatlev_startindex) & (k_field < nlev),
         _mo_velocity_advection_stencil_09(z_w_concorr_me, e_bln_c_s),
         local_z_w_concorr_mc,
     )
 
     w_concorr_c = where(
-        k_field >= nflatlev_startindex + 1 & k_field < nlev,
+        (k_field >= nflatlev_startindex + 1) & (k_field < nlev),
         _mo_velocity_advection_stencil_10(local_z_w_concorr_mc, wgtfac_c),
         w_concorr_c,
     )
@@ -241,7 +234,7 @@ def _fused_stencils_11_to_14(
     w_concorr_c: Field[[CellDim, KDim], float],
     local_z_w_con_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], float],
+    k_field: Field[[KDim], int],
     cfl_w_limit: float,
     dtime: float,
     nrdmax_startindex: int,
@@ -250,7 +243,7 @@ def _fused_stencils_11_to_14(
     nlevp1: int,
 ):
     local_z_w_con_c = where(
-        k_field >= 0 & k_field < nlev,
+        (k_field >= 0) & (k_field < nlev),
         _mo_velocity_advection_stencil_11(w),
         local_z_w_con_c,
     )
@@ -260,7 +253,7 @@ def _fused_stencils_11_to_14(
     )
 
     local_z_w_con_c = where(
-        k_field >= (nflatlev_startindex + 1) & k_field < nlev,
+        (k_field >= (nflatlev_startindex + 1)) & (k_field < nlev),
         _mo_velocity_advection_stencil_13(local_z_w_con_c, w_concorr_c),
         local_z_w_con_c,
     )
@@ -271,7 +264,7 @@ def _fused_stencils_11_to_14(
 
     k_lower = maximum(3, nrdmax_startindex - 2)
     (local_cfl_clipping, local_pre_levelmask, local_vcfl, local_z_w_con_c) = where(
-        k_field >= k_lower & k_field < (nlev - 3),
+        (k_field >= k_lower) & (k_field < (nlev - 3)),
         _mo_velocity_advection_stencil_14(
             ddqz_z_half,
             local_z_w_con_c,
@@ -296,7 +289,7 @@ def fused_stencils_11_to_14(
     local_cfl_clipping: Field[[CellDim, KDim], bool],
     local_pre_levelmask: Field[[CellDim, KDim], bool],
     local_vcfl: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], float],
+    k_field: Field[[KDim], int],
     cfl_w_limit: float,
     dtime: float,
     nrdmax_startindex: int,
@@ -391,7 +384,7 @@ def _fused_stencils_19_to_20(
 ) -> Field[[EdgeDim, KDim], float]:
 
     ddt_vn_adv = where(
-        k_field >= 0 & k_field < nlev,
+        (k_field >= 0) & (k_field < nlev),
         _mo_velocity_advection_stencil_19(
             z_kin_hor_e,
             coeff_gradekin,
@@ -408,7 +401,7 @@ def _fused_stencils_19_to_20(
     )
     k_lower = maximum(3, nrdmax_startindex - 2)
     ddt_vn_adv = where(
-        k_field >= k_lower & k_field < (nlev - 4),
+        (k_field >= k_lower) & (k_field < (nlev - 4)),
         _mo_velocity_advection_stencil_20(
             levelmask,
             c_lin_e,
@@ -483,6 +476,7 @@ def fused_stencils_19_to_20(
         geofac_grdiv,
         nrdmax_startindex,
         nlev,
+        out=ddt_vn_adv,
         domain={
             EdgeDim: (edge_startindex_nudging_plus_one, edge_endindex_interior),
         },
