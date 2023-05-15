@@ -16,7 +16,7 @@ from unittest import mock
 
 import pytest
 
-from icon4py.liskov.external.exceptions import MissingGitError
+from icon4py.liskov import __version__
 from icon4py.liskov.external.metadata import CodeMetadata
 
 
@@ -34,31 +34,9 @@ def test_generated_on():
         assert metadata.generated_on == "2023-03-01 12:00:00"
 
 
-def test_tag(module_parent):
-    with mock.patch("subprocess.check_output", side_effect=[b"v1.0.0"]) as mock_git:
-        metadata = CodeMetadata()
-        assert metadata.tag == "v1.0.0"
-        mock_git.assert_called_once_with(
-            ["git", "describe", "--tags", "--abbrev=0"], cwd=module_parent
-        )
-
-
-def test_commit_hash(module_parent):
-    with mock.patch(
-        "subprocess.check_output", side_effect=[b"abcdef123456"]
-    ) as mock_git:
-        metadata = CodeMetadata()
-        assert metadata.commit_hash == "abcdef123456"
-        mock_git.assert_called_once_with(
-            ["git", "rev-parse", "HEAD"], cwd=module_parent
-        )
-
-
-def test_no_git():
-    with mock.patch("subprocess.check_output", side_effect=MissingGitError()):
-        metadata = CodeMetadata()
-        with pytest.raises(MissingGitError):
-            metadata.tag
+def test_version(module_parent):
+    metadata = CodeMetadata()
+    assert metadata.version == __version__
 
 
 def test_click_context():
