@@ -36,14 +36,15 @@ class NonhydroStepping:
     def _perform_nh_timeloop(self):
 
     def _integrate_nh(self, num_steps):
-        # if jg > 1:
+        if jg > 1:
+            raise NotImplementedError("jg can only be 1")
         #     jgp = p_patch(jg).parent_id
         if n_dom_start == 0:
             jgp = 0
         else:
             jgp = 1
 
-        if jg == 1 and l_limited_area and linit_dyn(jg):
+        if l_limited_area and linit_dyn(jg):
             n_save = nsav2(jg)
             n_now = nnow(jg)
 
@@ -118,7 +119,7 @@ class NonhydroStepping:
                 if iforcing == iaes:
                     interface_iconam_aes()
 
-                    jn = 1
+                    jn = 0
                     # for jn in range(p_patch(jg).n_childdom):
                     jgc = p_patch(jg).child_id(jn)
 
@@ -138,7 +139,9 @@ class NonhydroStepping:
 
                     if lcall_rrg and atm_phy_nwp_config(jgc).latm_above_top
                         copy_rrg_ubc()
+
                 # messy and testing interface stuff
+
             if l_limited_area and not l_global_nudging:
                 tsrat = float(ndyn_substeps, wp)
 
@@ -148,23 +151,17 @@ class NonhydroStepping:
                 if num_prefetch_proc >= 1:
                     latbc.update_intp_wgt(datetime_local(jg).ptr)
 
-                    if jg == 1:
-                        limarea_nudging_latbdy()
+                    limarea_nudging_latbdy()
 
                     if nudging_config(jg).ltype(indg_type.ubn):
-                        if jg == 1:
-                            ptr_latbc_data_atm_old = latbc.latbc_data(latbc.prev_latbc_tlev()).atm
-                            ptr_latbc_data_atm_new = latbc.latbc_data(latbc.new_latbc_tlev).atm
-                        else:
-                            ptr_latbc_data_atm_old = latbc.latbc_data(latbc.prev_latbc_tlev()).atm_child(jg)
-                            ptr_latbc_data_atm_new = latbc.latbc_data(latbc.new_latbc_tlev).atm_child(jg)
+                        ptr_latbc_data_atm_old = latbc.latbc_data(latbc.prev_latbc_tlev()).atm
+                        ptr_latbc_data_atm_new = latbc.latbc_data(latbc.new_latbc_tlev).atm
 
                     limarea_nudging_upbdy()
                 else:
-                    if jg == 1:
-                        limarea_nudging_latbdy()
+                    limarea_nudging_latbdy()
 
-            elif l_global_nudging and jg==1:
+            elif l_global_nudging:
                 nudging_interface()
 
             # if p_patch(jg).n_childdom > 0:
@@ -211,7 +208,7 @@ class NonhydroStepping:
             #             if proc_split: pop_glob_comm()
 
                 # feedback loop, do we need this???
-            if jg == 1 and is_avgFG_time(datetime_local(jg).ptr):
+            if is_avgFG_time(datetime_local(jg).ptr):
                 average_first_guess()
 
             if test_mode <= 0:
