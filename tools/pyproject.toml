@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=58.0.4", "wheel>=0.37.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "icon4pytools"
+version = "0.1.0"
+dependencies = ["icon4py-diffusion", "icon4py-dycore", "icon4py-common", "tabulate>=0.8.9", "fprettify>=0.3.7"]
+
+[metadata]
+description = "Tools for icon4py"
+author = "Your Name"
+author_email = "your.email@example.com"
+license = "MIT"
+
+[options.extras_require]
+dev = [] # Add any development dependencies here (e.g. for testing)
+
+[options.entry_points]
+# If your package includes any command-line scripts, you can define them here
+
+# todo: requires icon4py.atmosphere
