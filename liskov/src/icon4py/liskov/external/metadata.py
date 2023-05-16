@@ -15,7 +15,7 @@ from typing import Any
 
 import click
 
-from icon4py.liskov import __version__
+import icon4py.liskov
 from icon4py.liskov.external.exceptions import MissingClickContextError
 
 
@@ -39,4 +39,4 @@ class CodeMetadata:
     @property
     def version(self) -> str:
         """Get the current version."""
-        return __version__
+        return icon4py.liskov.__version__

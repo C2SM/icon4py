@@ -16,7 +16,7 @@ from unittest import mock
 
 import pytest
 
-from icon4py.liskov import __version__
+import icon4py.liskov
 from icon4py.liskov.external.metadata import CodeMetadata
 
 
@@ -36,7 +36,7 @@ def test_generated_on():
 
 def test_version(module_parent):
     metadata = CodeMetadata()
-    assert metadata.version == __version__
+    assert metadata.version == icon4py.liskov.__version__
 
 
 def test_click_context():
