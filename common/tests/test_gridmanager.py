@@ -337,13 +337,13 @@ def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     gm = init_grid_manager(r04b09_dsl_gridfile)
     num_edges = gm.get_size(EdgeDim)
-    serialized_c2e = grid_savepoint.e2c()[0:num_edges, :]
+    serialized_e2c = grid_savepoint.e2c()[0:num_edges, :]
     # there are edges at the boundary that have only one
     # neighboring cell, there are "missing values" in the grid file
     # and here they do not get substituted in the ICON preprocessing
-    assert has_invalid_index(serialized_c2e)
+    assert has_invalid_index(serialized_e2c)
     assert has_invalid_index(gm.get_e2c_connectivity().table)
-    assert np.allclose(gm.get_e2c_connectivity().table, serialized_c2e)
+    assert np.allclose(gm.get_e2c_connectivity().table, serialized_e2c)
 
 
 # c2e: serial, simple, grid
@@ -390,7 +390,6 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     gm = init_grid_manager(r04b09_dsl_gridfile)
     num_edges = gm.get_size(EdgeDim)
-    # TODO: for boundary edges there are only 2 valid vertices in the serialized data, not 3 three
     # the "far" (adjacent to edge normal ) is not there. why?
     # despite that ordering is different
     assert np.allclose(
