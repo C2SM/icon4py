@@ -71,7 +71,7 @@ def serialised_directives():
         copies=True,
     )
     end_stencil_data = EndStencilData(
-        name="stencil1", startln=3, endln=4, noendif=False, noprofile=False
+        name="stencil1", startln=3, endln=4, noendif=False, noprofile=False, noaccenddata=False
     )
     declare_data = DeclareData(
         startln=5,
@@ -95,8 +95,8 @@ def serialised_directives():
         EndStencil=[end_stencil_data],
         Declare=[declare_data],
         Imports=imports_data,
-        StartCreate=start_create_data,
-        EndCreate=end_create_data,
+        StartCreate=[start_create_data],
+        EndCreate=[end_create_data],
         EndIf=[endif_data],
         StartProfile=[start_profile_data],
         EndProfile=[end_profile_data],
@@ -109,15 +109,8 @@ def expected_start_create_source():
     return """
 !$ACC DATA CREATE( &
 !$ACC   foo, &
-!$ACC   bar, &
-!$ACC   out1_before, &
-!$ACC   out2_before, &
-!$ACC   out3_before, &
-!$ACC   out4_before, &
-!$ACC   out5_before, &
-!$ACC   out6_before &
-!$ACC   ), &
-!$ACC      IF ( i_am_accel_node )"""
+!$ACC   bar ) &
+!$ACC   IF ( i_am_accel_node )"""
 
 
 @pytest.fixture
