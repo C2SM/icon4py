@@ -23,7 +23,7 @@ from icon4py.liskov.codegen.shared.types import GeneratedCode
 
 def test_deserialiser_diffusion_codegen(diffusion_granule, diffusion_granule_deps):
     parsed = GranuleParser(diffusion_granule, diffusion_granule_deps)()
-    interface = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")()
+    interface = ParsedGranuleDeserialiser(parsed)()
     generated = SerialisationCodeGenerator(interface)()
     assert len(generated) == 3
 
@@ -34,7 +34,7 @@ def expected_no_deps_serialization_directives():
         GeneratedCode(
             startln=12,
             source="\n"
-            '    !$ser init directory="." prefix="test"\n'
+            '    !$ser init directory="." prefix="f2ser"\n'
             "\n"
             "    !$ser savepoint no_deps_init_in\n"
             "\n"
@@ -93,7 +93,7 @@ def test_deserialiser_directives_no_deps_codegen(
     no_deps_source_file, expected_no_deps_serialization_directives
 ):
     parsed = GranuleParser(no_deps_source_file)()
-    interface = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")()
+    interface = ParsedGranuleDeserialiser(parsed)()
     generated = SerialisationCodeGenerator(interface)()
     assert generated == expected_no_deps_serialization_directives
 
@@ -102,7 +102,7 @@ def test_deserialiser_directives_diffusion_codegen(
     diffusion_granule, diffusion_granule_deps, samples_path
 ):
     parsed = GranuleParser(diffusion_granule, diffusion_granule_deps)()
-    interface = ParsedGranuleDeserialiser(parsed, directory=".", prefix="test")()
+    interface = ParsedGranuleDeserialiser(parsed)()
     generated = SerialisationCodeGenerator(interface)()
     reference_savepoint = (
         samples_path / "expected_diffusion_granule_savepoint.f90"

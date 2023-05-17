@@ -43,7 +43,10 @@ CODEGENS = {
 
 @linear_pipeline
 def parse_fortran_file(
-    input_filepath: Path, output_filepath: Path, deserialiser_type: str
+    input_filepath: Path,
+    output_filepath: Path,
+    deserialiser_type: str,
+    **kwargs,
 ) -> list[Step]:
     """Execute a pipeline to parse and deserialize directives from a file.
 
@@ -66,7 +69,7 @@ def parse_fortran_file(
     return [
         DirectivesScanner(input_filepath),
         DirectivesParser(input_filepath, output_filepath),
-        deserialiser(),
+        deserialiser(**kwargs),
     ]
 
 

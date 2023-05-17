@@ -28,10 +28,13 @@ def cli():
     return CliRunner()
 
 
-def test_cli(diffusion_granule, diffusion_granule_deps, outfile, cli):
+@pytest.mark.parametrize("multinode", [False, True])
+def test_cli(diffusion_granule, diffusion_granule_deps, outfile, cli, multinode):
     inp = str(diffusion_granule)
     deps = [str(p) for p in diffusion_granule_deps]
     args = [inp, outfile, "-d", ",".join(deps)]
+    if multinode:
+        args.append("--multinode")
     result = cli.invoke(main, args)
     assert result.exit_code == 0
 

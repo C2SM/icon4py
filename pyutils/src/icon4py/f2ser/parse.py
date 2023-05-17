@@ -38,7 +38,13 @@ class CodegenContext:
     end_subroutine_ln: int
 
 
-ParsedGranule = dict[str, dict[str, dict[str, any] | CodegenContext]]
+ParsedSubroutines = dict[str, dict[str, dict[str, any] | CodegenContext]]
+
+
+@dataclass
+class ParsedGranule:
+    subroutines: ParsedSubroutines
+    last_import_ln: int
 
 
 class GranuleParser:
@@ -56,12 +62,17 @@ class GranuleParser:
     def __init__(
         self, granule: Path, dependencies: Optional[list[Path]] = None
     ) -> None:
-        self.granule = granule
+        self.granule_path = granule
         self.dependencies = dependencies
 
     def __call__(self) -> ParsedGranule:
         """Parse the granule and return the parsed data."""
-        subroutines = self._extract_subroutines(crack(self.granule))
+        subroutines = self.parse_subroutines()
+        last_import_ln = self.find_last_fortran_use_statement()
+        return ParsedGranule(subroutines=subroutines, last_import_ln=last_import_ln)
+
+    def parse_subroutines(self):
+        subroutines = self._extract_subroutines(crack(self.granule_path))
         variables_grouped_by_intent = {
             name: self._extract_intent_vars(routine)
             for name, routine in subroutines.items()
@@ -70,7 +81,8 @@ class GranuleParser:
             variables_grouped_by_intent
         )
         combined_type_vars = self._combine_types(derived_type_vars, intrinsic_type_vars)
-        return self._update_with_codegen_lines(combined_type_vars)
+        with_lines = self._update_with_codegen_lines(combined_type_vars)
+        return with_lines
 
     def _extract_subroutines(self, parsed: dict[str, any]) -> dict[str, any]:
         """Extract the _init and _run subroutines from the parsed granule.
@@ -89,7 +101,7 @@ class GranuleParser:
 
         if len(subroutines) != 2:
             raise ParsingError(
-                f"Did not find _init and _run subroutines in {self.granule}"
+                f"Did not find _init and _run subroutines in {self.granule_path}"
             )
 
         return subroutines
@@ -243,12 +255,31 @@ class GranuleParser:
         with_lines = deepcopy(parsed_types)
         for subroutine in with_lines:
             for intent in with_lines[subroutine]:
-                with_lines[subroutine][intent]["codegen_ctx"] = self.get_line_numbers(
-                    subroutine
-                )
+                with_lines[subroutine][intent][
+                    "codegen_ctx"
+                ] = self.get_subroutine_lines(subroutine)
         return with_lines
 
-    def get_line_numbers(self, subroutine_name: str) -> CodegenContext:
+    def find_last_fortran_use_statement(self):
+        with open(self.granule_path) as f:
+            file_contents = f.readlines()
+
+        # Reverse the order of the lines so we can search from the end
+        file_contents.reverse()
+
+        # Look for the last USE statement
+        use_ln = None
+        for i, line in enumerate(file_contents):
+            if line.strip().lower().startswith("use"):
+                use_ln = len(file_contents) - i
+                if i > 0 and file_contents[i - 1].strip().lower() == "#endif":
+                    # If the USE statement is preceded by an #endif statement, return the line number after the #endif statement
+                    return use_ln + 1
+                else:
+                    return use_ln
+        return None
+
+    def get_subroutine_lines(self, subroutine_name: str) -> CodegenContext:
         """Return CodegenContext object containing line numbers of the last declaration statement and the code before the end of the given subroutine.
 
         Args:
@@ -257,7 +288,7 @@ class GranuleParser:
         Returns:
             CodegenContext: Object containing the line number of the last declaration statement and the line number of the last line of the code before the end of the given subroutine.
         """
-        with open(self.granule, "r") as f:
+        with open(self.granule_path) as f:
             code = f.read()
 
         # Find the line number where the subroutine is defined
@@ -280,7 +311,7 @@ class GranuleParser:
             if re.search(declaration_pattern, line)
         ]
         if not declaration_pattern_lines:
-            raise ParsingError(f"No declarations found in {self.granule}")
+            raise ParsingError(f"No declarations found in {self.granule_path}")
         last_declaration_ln = declaration_pattern_lines[-1] + start_subroutine_ln + 1
         first_declaration_ln = declaration_pattern_lines[0] + start_subroutine_ln
 

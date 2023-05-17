@@ -49,7 +49,12 @@ class SavepointData(CodeGenInput):
     metadata: Optional[list[Metadata]]
 
 
+class ImportData(CodeGenInput):
+    ...
+
+
 @dataclass
 class SerialisationCodeInterface:
+    Import: ImportData
     Init: InitData
     Savepoint: list[SavepointData]

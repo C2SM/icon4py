@@ -13,7 +13,7 @@
 import pytest
 
 from icon4py.f2ser.deserialise import ParsedGranuleDeserialiser
-from icon4py.f2ser.parse import CodegenContext, GranuleParser
+from icon4py.f2ser.parse import CodegenContext, GranuleParser, ParsedGranule
 from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     SavepointData,
@@ -23,60 +23,61 @@ from icon4py.liskov.codegen.serialisation.interface import (
 
 @pytest.fixture
 def mock_parsed_granule():
-    return {
-        "diffusion_init": {
-            "in": {
-                "jg": {"typespec": "integer", "attrspec": [], "intent": ["in"]},
-                "vt": {
-                    "typespec": "real",
-                    "kindselector": {"kind": "vp"},
-                    "attrspec": [],
-                    "intent": ["in"],
-                    "dimension": [":", ":", ":"],
+    return ParsedGranule(
+        subroutines={
+            "diffusion_init": {
+                "in": {
+                    "jg": {"typespec": "integer", "attrspec": [], "intent": ["in"]},
+                    "vt": {
+                        "typespec": "real",
+                        "kindselector": {"kind": "vp"},
+                        "attrspec": [],
+                        "intent": ["in"],
+                        "dimension": [":", ":", ":"],
+                    },
+                    "codegen_ctx": CodegenContext(432, 450, 600),
+                }
+            },
+            "diffusion_run": {
+                "out": {
+                    "vert_idx": {
+                        "typespec": "logical",
+                        "kindselector": {"kind": "vp"},
+                        "attrspec": [],
+                        "intent": ["in"],
+                        "dimension": [":", ":", ":"],
+                    },
+                    "codegen_ctx": CodegenContext(800, 850, 1000),
                 },
-                "codegen_ctx": CodegenContext(432, 450, 600),
-            }
+                "in": {
+                    "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
+                    "vert_idx": {
+                        "typespec": "logical",
+                        "kindselector": {"kind": "vp"},
+                        "attrspec": [],
+                        "intent": ["in"],
+                        "dimension": [":", ":", ":"],
+                    },
+                    "codegen_ctx": CodegenContext(600, 690, 750),
+                },
+                "inout": {
+                    "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
+                    "vert_idx": {
+                        "typespec": "logical",
+                        "kindselector": {"kind": "vp"},
+                        "attrspec": [],
+                        "intent": ["in"],
+                        "dimension": [":", ":", ":"],
+                    },
+                },
+            },
         },
-        "diffusion_run": {
-            "out": {
-                "vert_idx": {
-                    "typespec": "logical",
-                    "kindselector": {"kind": "vp"},
-                    "attrspec": [],
-                    "intent": ["in"],
-                    "dimension": [":", ":", ":"],
-                },
-                "codegen_ctx": CodegenContext(800, 850, 1000),
-            },
-            "in": {
-                "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
-                "vert_idx": {
-                    "typespec": "logical",
-                    "kindselector": {"kind": "vp"},
-                    "attrspec": [],
-                    "intent": ["in"],
-                    "dimension": [":", ":", ":"],
-                },
-                "codegen_ctx": CodegenContext(600, 690, 750),
-            },
-            "inout": {
-                "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
-                "vert_idx": {
-                    "typespec": "logical",
-                    "kindselector": {"kind": "vp"},
-                    "attrspec": [],
-                    "intent": ["in"],
-                    "dimension": [":", ":", ":"],
-                },
-            },
-        },
-    }
+        last_import_ln=59,
+    )
 
 
 def test_deserialiser_mock(mock_parsed_granule):
-    deserialiser = ParsedGranuleDeserialiser(
-        mock_parsed_granule, directory=".", prefix="f2ser"
-    )
+    deserialiser = ParsedGranuleDeserialiser(mock_parsed_granule)
     interface = deserialiser()
     assert isinstance(interface, SerialisationCodeInterface)
     assert len(interface.Savepoint) == 3
@@ -93,6 +94,6 @@ def test_deserialiser_mock(mock_parsed_granule):
 def test_deserialiser_diffusion_granule(diffusion_granule, diffusion_granule_deps):
     parser = GranuleParser(diffusion_granule, diffusion_granule_deps)
     parsed = parser()
-    deserialiser = ParsedGranuleDeserialiser(parsed, directory=".", prefix="f2ser")
+    deserialiser = ParsedGranuleDeserialiser(parsed)
     interface = deserialiser()
     assert len(interface.Savepoint) == 3

@@ -15,7 +15,7 @@
 
     !$ser verbatim real, dimension(:,:,:), allocatable :: edges_dual_normal_cell_v2(:,:,:)
 
-    !$ser init directory="." prefix="test"
+    !$ser init directory="." prefix="f2ser"
 
     !$ser savepoint diffusion_init_in
 
