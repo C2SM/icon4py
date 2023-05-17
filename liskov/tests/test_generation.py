@@ -36,6 +36,7 @@ from icon4py.liskov.codegen.serialisation.generate import (
 )
 from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
+    ImportData,
     InitData,
     Metadata,
     SavepointData,
@@ -242,11 +243,11 @@ def test_integration_code_generation(
     assert generated[9].source == expected_insert_source
 
 
-# TODO: fix tests to adapt to new custom output fields
 @pytest.fixture
 def serialisation_code_interface():
     interface = {
-        "Init": InitData(startln=0, directory=".", prefix="liskov-serialisation"),
+        "Import": ImportData(startln=0),
+        "Init": InitData(startln=1, directory=".", prefix="liskov-serialisation"),
         "Savepoint": [
             SavepointData(
                 startln=9,
@@ -306,8 +307,9 @@ def serialisation_code_interface():
 @pytest.fixture
 def expected_savepoints():
     return [
+        "  USE mo_mpi, ONLY: get_my_mpi_work_id",
         """
-    !$ser init directory="." prefix="liskov-serialisation"
+    !$ser init directory="." prefix="liskov-serialisation" mpi_rank=get_my_mpi_work_id()
 
     !$ser savepoint apply_nabla2_to_vn_in_lateral_boundary_start jstep=jstep_ptr diffctr=diffctr
 
@@ -327,10 +329,19 @@ def expected_savepoints():
     ]
 
 
+@pytest.mark.parametrize("multinode", [False, True])
 def test_serialisation_code_generation(
-    serialisation_code_interface, expected_savepoints
+    serialisation_code_interface, expected_savepoints, multinode
 ):
-    generated = SerialisationCodeGenerator(serialisation_code_interface)()
-    assert len(generated) == 2
-    assert generated[0].source == expected_savepoints[0]
-    assert generated[1].source == expected_savepoints[1]
+    generated = SerialisationCodeGenerator(
+        serialisation_code_interface, multinode=multinode
+    )()
+
+    if multinode:
+        assert len(generated) == 3
+        assert generated[0].source == expected_savepoints[0]
+        assert generated[1].source == expected_savepoints[1]
+        assert generated[2].source == expected_savepoints[2]
+    else:
+        assert len(generated) == 2
+        assert generated[1].source == expected_savepoints[2]

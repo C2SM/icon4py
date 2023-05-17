@@ -30,9 +30,10 @@ logger = setup_logger(__name__)
 
 
 class SerialisationCodeGenerator(CodeGenerator):
-    def __init__(self, interface: SerialisationCodeInterface):
+    def __init__(self, interface: SerialisationCodeInterface, multinode: bool = False):
         super().__init__()
         self.interface = interface
+        self.multinode = multinode
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:
         """Generate all f90 code for integration."""
@@ -41,7 +42,7 @@ class SerialisationCodeGenerator(CodeGenerator):
         return self.generated
 
     def _generate_import(self) -> None:
-        if self.interface.Init.multinode:
+        if self.multinode:
             self._generate(
                 ImportStatement,
                 ImportStatementGenerator,
@@ -58,6 +59,7 @@ class SerialisationCodeGenerator(CodeGenerator):
                     SavepointStatementGenerator,
                     self.interface.Savepoint[i].startln,
                     savepoint=savepoint,
+                    multinode=self.multinode,
                 )
             else:
                 self._generate(
@@ -66,5 +68,6 @@ class SerialisationCodeGenerator(CodeGenerator):
                     self.interface.Savepoint[i].startln,
                     savepoint=savepoint,
                     init=self.interface.Init,
+                    multinode=self.multinode,
                 )
                 init_complete = True

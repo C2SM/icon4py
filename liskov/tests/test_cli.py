@@ -52,6 +52,7 @@ def outfile(tmp_path):
         (MULTIPLE_STENCILS, ["--profile"]),
         (REPEATED_STENCILS, ["--ppser", "--profile"]),
         (REPEATED_STENCILS, ["--profile"]),
+        (MULTIPLE_STENCILS, ["--ppser", "--multinode"]),
     ],
 )
 def test_cli(make_f90_tmpfile, cli, file, outfile, options):

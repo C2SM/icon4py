@@ -21,7 +21,6 @@ from icon4py.liskov.codegen.shared.types import CodeGenInput
 class InitData(CodeGenInput):
     directory: str
     prefix: str
-    multinode: bool
 
 
 @dataclass

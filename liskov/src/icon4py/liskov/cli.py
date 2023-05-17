@@ -55,12 +55,20 @@ logger = setup_logger(__name__)
     is_flag=True,
     help="Add metadata header with information about program (requires git).",
 )
+@click.option(
+    "--multinode",
+    is_flag=True,
+    type=bool,
+    help="Specify whether it is a multinode run.",
+    default=False,
+)
 def main(
     input_path: pathlib.Path,
     output_path: pathlib.Path,
     ppser: bool,
     profile: bool,
     metadatagen: bool,
+    multinode: bool,
 ) -> None:
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
 
@@ -71,6 +79,7 @@ def main(
         -p --profile Add nvtx profile statements to stencils.
         -m --metadatagen Add metadata header with information about program (requires git).
         --ppser Generate ppser serialization statements instead of integration code.
+        --multinode: Considers this a multinode run.
 
     Arguments:
         input_path: Path to the input file to process.
@@ -80,7 +89,7 @@ def main(
 
     def run_serialisation() -> None:
         iface = parse_fortran_file(input_path, output_path, mode)
-        run_code_generation(input_path, output_path, mode, iface)
+        run_code_generation(input_path, output_path, mode, iface, multinode=multinode)
 
     def run_integration() -> None:
         iface = parse_fortran_file(input_path, output_path, mode)

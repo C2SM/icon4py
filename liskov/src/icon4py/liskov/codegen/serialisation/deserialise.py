@@ -23,6 +23,7 @@ from icon4py.liskov.codegen.integration.deserialise import (
 )
 from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
+    ImportData,
     InitData,
     Metadata,
     SavepointData,
@@ -56,6 +57,8 @@ class InitDataFactory:
 
 
 class SavepointDataFactory:
+    dtype = SavepointData
+
     def __call__(self, parsed: ts.ParsedDict) -> list[SavepointData]:
         """Create a list of Start and End Savepoints for each Start and End Stencil directive."""
         start_stencil = extract_directive(
@@ -87,7 +90,7 @@ class SavepointDataFactory:
             fields = self._make_fields(field_names, gpu_fields)
 
             for intent, ln in [("start", start.startln), ("end", end.startln)]:
-                savepoint = SavepointData(
+                savepoint = self.dtype(
                     subroutine=f"{stencil_name}",
                     intent=intent,
                     startln=ln,
@@ -203,9 +206,20 @@ class SavepointDataFactory:
         return set(repeated_names)
 
 
+class ImportDataFactory:
+    dtype = ImportData
+
+    def __call__(self, parsed: ts.ParsedDict) -> ImportData:
+        imports = extract_directive(
+            parsed["directives"], icon4py.liskov.parsing.parse.Imports
+        )[0]
+        return self.dtype(startln=imports.startln)
+
+
 class SerialisationCodeDeserialiser(Deserialiser):
     _FACTORIES = {
         "Init": InitDataFactory(),
         "Savepoint": SavepointDataFactory(),
+        "Import": ImportDataFactory(),
     }
     _INTERFACE_TYPE = SerialisationCodeInterface

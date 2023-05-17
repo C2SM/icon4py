@@ -46,6 +46,7 @@ class DecomposedFieldDeclarations(DecomposedFields):
 class SavepointStatement(eve.Node):
     savepoint: SavepointData
     init: Optional[InitData] = eve.datamodels.field(default=None)
+    multinode: bool
     standard_fields: StandardFields = eve.datamodels.field(init=False)
     decomposed_fields: DecomposedFields = eve.datamodels.field(init=False)
     decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(
@@ -72,7 +73,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
         {{ decomposed_field_declarations }}
 
         {% if _this_node.init %}
-        !$ser init directory="{{_this_node.init.directory}}" prefix="{{ _this_node.init.prefix }}" {% if _this_node.init.multinode %}mpi_rank=get_my_mpi_work_id(){% endif %}
+        !$ser init directory="{{_this_node.init.directory}}" prefix="{{ _this_node.init.prefix }}" {% if _this_node.multinode %}mpi_rank=get_my_mpi_work_id(){% endif %}
         {% endif %}
 
         !$ser savepoint {{ _this_node.savepoint.subroutine }}_{{ _this_node.savepoint.intent }} {% if _this_node.savepoint.metadata %} {%- for m in _this_node.savepoint.metadata -%} {{ m.key }}={{ m.value }} {% endfor -%} {% endif %}

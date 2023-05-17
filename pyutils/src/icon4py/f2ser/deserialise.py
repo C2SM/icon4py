@@ -27,12 +27,10 @@ class ParsedGranuleDeserialiser:
         parsed: ParsedGranule,
         directory: str = ".",
         prefix: str = "f2ser",
-        multinode: bool = False,
     ):
         self.parsed = parsed
         self.directory = directory
         self.prefix = prefix
-        self.multinode = multinode
         self.data = {"Savepoint": [], "Init": ..., "Import": ...}
 
     def __call__(self) -> SerialisationCodeInterface:
@@ -148,7 +146,6 @@ class ParsedGranuleDeserialiser:
             startln=startln,
             directory=self.directory,
             prefix=self.prefix,
-            multinode=self.multinode,
         )
 
     def _merge_out_inout_fields(self):
@@ -175,5 +172,4 @@ class ParsedGranuleDeserialiser:
             raise ValueError(f"Unrecognized intent: {intent}")
 
     def _make_imports(self):
-        if self.multinode:
-            self.data["Import"] = ImportData(startln=self.parsed.last_import_ln)
+        self.data["Import"] = ImportData(startln=self.parsed.last_import_ln)

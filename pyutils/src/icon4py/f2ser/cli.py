@@ -73,10 +73,8 @@ def main(
         multinode (bool): Specify whether this is a multinode run.
     """
     parsed = GranuleParser(granule_path, dependencies)()
-    interface = ParsedGranuleDeserialiser(
-        parsed, directory=directory, prefix=prefix, multinode=multinode
-    )()
-    generated = SerialisationCodeGenerator(interface)()
+    interface = ParsedGranuleDeserialiser(parsed, directory=directory, prefix=prefix)()
+    generated = SerialisationCodeGenerator(interface, multinode=multinode)()
     CodegenWriter(granule_path, output_filepath)(generated)
 
 
