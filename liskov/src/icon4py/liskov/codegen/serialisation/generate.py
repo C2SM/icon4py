@@ -17,6 +17,8 @@ from icon4py.liskov.codegen.serialisation.interface import (
     SerialisationCodeInterface,
 )
 from icon4py.liskov.codegen.serialisation.template import (
+    ImportStatement,
+    ImportStatementGenerator,
     SavepointStatement,
     SavepointStatementGenerator,
 )
@@ -34,8 +36,17 @@ class SerialisationCodeGenerator(CodeGenerator):
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:
         """Generate all f90 code for integration."""
+        self._generate_import()
         self._generate_savepoints()
         return self.generated
+
+    def _generate_import(self) -> None:
+        if self.interface.Init.multinode:
+            self._generate(
+                ImportStatement,
+                ImportStatementGenerator,
+                self.interface.Import.startln,
+            )
 
     def _generate_savepoints(self) -> None:
         init_complete = False

@@ -19,30 +19,33 @@ from icon4py.f2ser.parse import CodegenContext, GranuleParser
 
 def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
     parser = GranuleParser(diffusion_granule, diffusion_granule_deps)
-    parsed = parser()
+    parsed_granule = parser()
 
-    assert list(parsed) == ["diffusion_init", "diffusion_run"]
+    subroutines = parsed_granule.subroutines
 
-    assert list(parsed["diffusion_init"]) == ["in"]
-    assert len(parsed["diffusion_init"]["in"]) == 107
-    assert parsed["diffusion_init"]["in"]["codegen_ctx"] == CodegenContext(
+    assert list(subroutines) == ["diffusion_init", "diffusion_run"]
+
+    assert list(subroutines["diffusion_init"]) == ["in"]
+    assert len(subroutines["diffusion_init"]["in"]) == 107
+    assert subroutines["diffusion_init"]["in"]["codegen_ctx"] == CodegenContext(
         first_declaration_ln=190, last_declaration_ln=280, end_subroutine_ln=401
     )
 
-    assert list(parsed["diffusion_run"]) == ["in", "inout", "out"]
-    assert len(parsed["diffusion_run"]["in"]) == 5
-    assert parsed["diffusion_run"]["in"]["codegen_ctx"] == CodegenContext(
+    assert list(subroutines["diffusion_run"]) == ["in", "inout", "out"]
+    assert len(subroutines["diffusion_run"]["in"]) == 5
+    assert subroutines["diffusion_run"]["in"]["codegen_ctx"] == CodegenContext(
         first_declaration_ln=417, last_declaration_ln=492, end_subroutine_ln=1965
     )
 
-    assert len(parsed["diffusion_run"]["inout"]) == 8
+    assert len(subroutines["diffusion_run"]["inout"]) == 8
 
-    assert len(parsed["diffusion_run"]["out"]) == 5
-    assert parsed["diffusion_run"]["out"]["codegen_ctx"] == CodegenContext(
+    assert len(subroutines["diffusion_run"]["out"]) == 5
+    assert subroutines["diffusion_run"]["out"]["codegen_ctx"] == CodegenContext(
         first_declaration_ln=417, last_declaration_ln=492, end_subroutine_ln=1965
     )
 
-    assert isinstance(parsed, dict)
+    assert isinstance(subroutines, dict)
+    assert parsed_granule.last_import_ln == 60
 
 
 def test_granule_parsing_missing_derived_typedef(diffusion_granule, samples_path):

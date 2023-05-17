@@ -72,7 +72,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
         {{ decomposed_field_declarations }}
 
         {% if _this_node.init %}
-        !$ser init directory="{{_this_node.init.directory}}" prefix="{{ _this_node.init.prefix }}"
+        !$ser init directory="{{_this_node.init.directory}}" prefix="{{ _this_node.init.prefix }}" {% if _this_node.init.multinode %}mpi_rank=get_my_mpi_work_id(){% endif %}
         {% endif %}
 
         !$ser savepoint {{ _this_node.savepoint.subroutine }}_{{ _this_node.savepoint.intent }} {% if _this_node.savepoint.metadata %} {%- for m in _this_node.savepoint.metadata -%} {{ m.key }}={{ m.value }} {% endfor -%} {% endif %}
@@ -131,3 +131,11 @@ class SavepointStatementGenerator(TemplatedGenerator):
             f.alloc_dims = ",".join(generate_size_strings(f.dimension, f.variable))
 
         return self.generic_visit(node)
+
+
+class ImportStatement(eve.Node):
+    ...
+
+
+class ImportStatementGenerator(TemplatedGenerator):
+    ImportStatement = as_jinja("  USE mo_mpi, ONLY: get_my_mpi_work_id")

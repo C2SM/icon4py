@@ -48,12 +48,20 @@ from icon4py.liskov.codegen.shared.writer import CodegenWriter
 @click.option(
     "--prefix", type=str, help="Prefix to use for serialised files.", default="f2ser"
 )
+@click.option(
+    "--multinode",
+    is_flag=True,
+    type=bool,
+    help="Specify whether it is a multinode run.",
+    default=False,
+)
 def main(
     granule_path: pathlib.Path,
     dependencies: Optional[list[pathlib.Path]],
     output_filepath: pathlib.Path,
     directory: str,
     prefix: str,
+    multinode: bool,
 ) -> None:
     """Command line interface for interacting with the ICON-f2ser serialization Preprocessor.
 
@@ -62,9 +70,12 @@ def main(
         output_filepath (Path): A path to the output Fortran source file to be generated.
         directory (str): The directory to serialise the variables to.
         prefix (str): The prefix to use for each serialised variable.
+        multinode (bool): Specify whether this is a multinode run.
     """
     parsed = GranuleParser(granule_path, dependencies)()
-    interface = ParsedGranuleDeserialiser(parsed, directory=directory, prefix=prefix)()
+    interface = ParsedGranuleDeserialiser(
+        parsed, directory=directory, prefix=prefix, multinode=multinode
+    )()
     generated = SerialisationCodeGenerator(interface)()
     CodegenWriter(granule_path, output_filepath)(generated)
 

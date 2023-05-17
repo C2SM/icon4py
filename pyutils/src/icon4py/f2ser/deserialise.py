@@ -14,6 +14,7 @@
 from icon4py.f2ser.parse import CodegenContext, ParsedGranule
 from icon4py.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
+    ImportData,
     InitData,
     SavepointData,
     SerialisationCodeInterface,
@@ -21,11 +22,18 @@ from icon4py.liskov.codegen.serialisation.interface import (
 
 
 class ParsedGranuleDeserialiser:
-    def __init__(self, parsed: ParsedGranule, directory: str, prefix: str):
+    def __init__(
+        self,
+        parsed: ParsedGranule,
+        directory: str = ".",
+        prefix: str = "f2ser",
+        multinode: bool = False,
+    ):
         self.parsed = parsed
         self.directory = directory
         self.prefix = prefix
-        self.data = {"Savepoint": [], "Init": ...}
+        self.multinode = multinode
+        self.data = {"Savepoint": [], "Init": ..., "Import": ...}
 
     def __call__(self) -> SerialisationCodeInterface:
         """Deserialise the parsed granule and returns a serialisation interface.
@@ -36,6 +44,7 @@ class ParsedGranuleDeserialiser:
         self._merge_out_inout_fields()
         self._make_savepoints()
         self._make_init_data()
+        self._make_imports()
         return SerialisationCodeInterface(**self.data)
 
     def _make_savepoints(self) -> None:
@@ -44,7 +53,7 @@ class ParsedGranuleDeserialiser:
         Returns:
             None.
         """
-        for subroutine_name, intent_dict in self.parsed.items():
+        for subroutine_name, intent_dict in self.parsed.subroutines.items():
             for intent, var_dict in intent_dict.items():
                 self._create_savepoint(subroutine_name, intent, var_dict)
 
@@ -128,7 +137,7 @@ class ParsedGranuleDeserialiser:
         """
         first_intent_in_subroutine = [
             var_dict
-            for intent_dict in self.parsed.values()
+            for intent_dict in self.parsed.subroutines.values()
             for intent, var_dict in intent_dict.items()
             if intent == "in"
         ][0]
@@ -136,7 +145,10 @@ class ParsedGranuleDeserialiser:
             first_intent_in_subroutine["codegen_ctx"], "init"
         )
         self.data["Init"] = InitData(
-            startln=startln, directory=self.directory, prefix=self.prefix
+            startln=startln,
+            directory=self.directory,
+            prefix=self.prefix,
+            multinode=self.multinode,
         )
 
     def _merge_out_inout_fields(self):
@@ -145,7 +157,7 @@ class ParsedGranuleDeserialiser:
         Returns:
             None.
         """
-        for _, intent_dict in self.parsed.items():
+        for _, intent_dict in self.parsed.subroutines.items():
             if "inout" in intent_dict:
                 intent_dict["in"].update(intent_dict["inout"])
                 intent_dict["out"].update(intent_dict["inout"])
@@ -161,3 +173,7 @@ class ParsedGranuleDeserialiser:
             return ctx.first_declaration_ln
         else:
             raise ValueError(f"Unrecognized intent: {intent}")
+
+    def _make_imports(self):
+        if self.multinode:
+            self.data["Import"] = ImportData(startln=self.parsed.last_import_ln)

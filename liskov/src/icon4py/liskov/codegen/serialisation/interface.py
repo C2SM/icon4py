@@ -21,6 +21,7 @@ from icon4py.liskov.codegen.shared.types import CodeGenInput
 class InitData(CodeGenInput):
     directory: str
     prefix: str
+    multinode: bool
 
 
 @dataclass
@@ -49,7 +50,12 @@ class SavepointData(CodeGenInput):
     metadata: Optional[list[Metadata]]
 
 
+class ImportData(CodeGenInput):
+    ...
+
+
 @dataclass
 class SerialisationCodeInterface:
+    Import: ImportData
     Init: InitData
     Savepoint: list[SavepointData]
