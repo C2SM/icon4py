@@ -2,7 +2,8 @@
 
 # Concretized dependencies in local repo
 ./common
-./pyutils
 ./testutils
 ./atm_dyn_iconam
-./liskov
+
+# icon4pytools
+ ./tools

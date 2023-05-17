@@ -5,18 +5,40 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "icon4pytools"
 version = "0.1.0"
-dependencies = ["icon4py-diffusion", "icon4py-dycore", "icon4py-common", "tabulate>=0.8.9", "fprettify>=0.3.7"]
-
-[metadata]
 description = "Tools for icon4py"
-author = "Your Name"
-author_email = "your.email@example.com"
-license = "MIT"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {email = "gridtools@cscs.ch"},
+    {name = "ETH Zurich"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: POSIX",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics"
+]
+dependencies = [
+    "icon4py_atm_dyn_iconam",
+    "icon4py_testutils",
+    "gt4py",
+    "icon4py_common",
+    "tabulate>=0.8.9",
+    "fprettify>=0.3.7"
+]
 
-[options.extras_require]
-dev = [] # Add any development dependencies here (e.g. for testing)
+[project.urls]
+repository = "https://github.com/C2SM/icon4py"
 
-[options.entry_points]
-# If your package includes any command-line scripts, you can define them here
-
-# todo: requires icon4py.atmosphere
+[project.scripts]
+icon_liskov = "icon4pytools.liskov.cli:main"
+icon4pygen = "icon4pytools.icon4pygen.cli:main"
