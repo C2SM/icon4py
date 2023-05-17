@@ -167,9 +167,7 @@ class EndStencilStatementGenerator(TemplatedGenerator):
             {{ bounds_fields }}
 
         {%- if not _this_node.noaccenddata %}
-        #ifdef __DSL_VERIFY
         !$ACC END DATA
-        #endif
         {%- endif %}
         """
     )
@@ -327,7 +325,6 @@ def render_index(n: int) -> str:
 class StartStencilStatementGenerator(TemplatedGenerator):
     StartStencilStatement = as_jinja(
         """
-        #ifdef __DSL_VERIFY
 
         !$ACC DATA CREATE( &
         {%- for d in _this_node.copy_declarations %}
@@ -335,6 +332,7 @@ class StartStencilStatementGenerator(TemplatedGenerator):
         {%- endfor %}
         !$ACC      IF ( i_am_accel_node )
 
+        #ifdef __DSL_VERIFY
         {% if _this_node.stencil_data.copies -%}
         !$ACC KERNELS IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
