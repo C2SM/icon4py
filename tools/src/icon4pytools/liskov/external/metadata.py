@@ -11,23 +11,19 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import datetime
-import subprocess
-from pathlib import Path
 from typing import Any
 
 import click
-from icon4pytools.liskov.external.exceptions import (
-    MissingClickContextError,
-    MissingGitError,
-)
+import icon4pytools
+from icon4pytools.liskov.external.exceptions import MissingClickContextError
 
 
 class CodeMetadata:
     """Class that handles retrieval of icon-liskov runtime metadata."""
 
-    def __init__(self) -> None:
-        self.generated_on = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.parent_dir = Path(__file__).parent
+    @property
+    def generated_on(self) -> str:
+        return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     @property
     def cli_params(self) -> dict[str, Any]:
@@ -40,33 +36,6 @@ class CodeMetadata:
             )
 
     @property
-    def commit_hash(self) -> str:
-        """Get the latest git commit hash."""
-        try:
-            return (
-                subprocess.check_output(
-                    ["git", "rev-parse", "HEAD"], cwd=self.parent_dir
-                )
-                .decode()
-                .strip()
-            )
-        except Exception as e:
-            raise MissingGitError(
-                f"Git is not available or there is no commit or tag.\n {e}"
-            )
-
-    @property
-    def tag(self) -> str:
-        """Get the latest git tag."""
-        try:
-            return (
-                subprocess.check_output(
-                    ["git", "describe", "--tags", "--abbrev=0"], cwd=self.parent_dir
-                )
-                .decode()
-                .strip()
-            )
-        except Exception as e:
-            raise MissingGitError(
-                f"Git is not available or there is no commit or tag.\n {e}"
-            )
+    def version(self) -> str:
+        """Get the current version."""
+        return icon4pytools.__version__
