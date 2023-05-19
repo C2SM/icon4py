@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from utils.helpers import random_field, zero_field
-from utils.simple_mesh import SimpleMesh
+from simple_mesh import SimpleMesh
+from utils import random_field, zero_field
 
 from icon4py.atm_dyn_iconam.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,

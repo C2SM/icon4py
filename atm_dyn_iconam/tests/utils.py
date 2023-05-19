@@ -17,8 +17,7 @@ import numpy as np
 import numpy.typing as npt
 from gt4py.next import common as gt_common
 from gt4py.next.iterator import embedded as it_embedded
-
-from . import simple_mesh
+from simple_mesh import SimpleMesh
 
 
 def _shape(
@@ -35,7 +34,7 @@ def _shape(
 
 
 def random_mask(
-    mesh: simple_mesh.SimpleMesh,
+    mesh: SimpleMesh,
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
@@ -65,7 +64,7 @@ def random_field(
 
 
 def zero_field(
-    mesh: simple_mesh.SimpleMesh,
+    mesh: SimpleMesh,
     *dims: gt_common.Dimension,
     dtype=float,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
@@ -76,7 +75,7 @@ def zero_field(
 
 
 def constant_field(
-    mesh: simple_mesh.SimpleMesh, value: float, *dims: gt_common.Dimension, dtype=float
+    mesh: SimpleMesh, value: float, *dims: gt_common.Dimension, dtype=float
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
         value * np.ones(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)

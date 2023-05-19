@@ -14,13 +14,8 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from utils.helpers import (
-    flatten_first_two_dims,
-    random_field,
-    random_mask,
-    zero_field,
-)
-from utils.simple_mesh import SimpleMesh
+from simple_mesh import SimpleMesh
+from utils import flatten_first_two_dims, random_field, random_mask, zero_field
 
 from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
     mo_nh_diffusion_stencil_15,
