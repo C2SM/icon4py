@@ -10,3 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+
+def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
+    return f"icon4py.{stencil_module}.{stencil_name}:{stencil_name}"

@@ -2,7 +2,6 @@
 
 # Concretized dependencies in local repo
 -e ./common
--e ./testutils
 -e ./atm_dyn_iconam
 
 # icon4pytools

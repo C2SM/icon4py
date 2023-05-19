@@ -12,13 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from utils.helpers import random_field, zero_field
+from utils.simple_mesh import SimpleMesh
 
 from icon4py.atm_dyn_iconam.temporary_fields_for_turbulence_diagnostics import (
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
 
 
 def mo_nh_diffusion_stencil_02_numpy(

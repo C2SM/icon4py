@@ -19,11 +19,7 @@ from icon4pytools.liskov.parsing.exceptions import DirectiveSyntaxError
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
 from icon4pytools.liskov.parsing.types import RawDirective
 from pytest import mark
-
-from icon4py.testutils.liskov.fortran_samples import (
-    DIRECTIVES_SAMPLE,
-    NO_DIRECTIVES_STENCIL,
-)
+from utils.fortran_samples import DIRECTIVES_SAMPLE, NO_DIRECTIVES_STENCIL
 
 
 ALLOWED_EOL_CHARS = [")", "&"]

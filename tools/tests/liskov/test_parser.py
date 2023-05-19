@@ -20,8 +20,7 @@ from conftest import insert_new_lines, scan_for_directives
 from icon4pytools.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4pytools.liskov.parsing.parse import DirectivesParser
 from pytest import mark
-
-from icon4py.testutils.liskov.fortran_samples import (
+from utils.fortran_samples import (
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,

@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=58.0.4", "wheel>=0.37.0"]
+requires = ["setuptools>=60.6.0", "wheel>=0.40.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "icon4pytools"
 version = "0.0.3"
-description = "Tools for icon4py"
+description = "Tools and utilities for integrating icon4py code into the ICON model."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
@@ -29,8 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "icon4py_atm_dyn_iconam",
-    "icon4py_testutils",
-    "gt4py",
+    "gt4py>=1.0.1",
     "icon4py_common",
     "tabulate>=0.8.9",
     "fprettify>=0.3.7"

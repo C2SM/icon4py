@@ -35,9 +35,6 @@ repos:
           - id: destroyed-symlinks
           # - id: fix-encoding-pragma
           #   args: [--remove]
-          - id: name-tests-test
-            args: [--pytest-test-first]
-            exclude: ^liskov/tests/samples
 
     - repo: https://gitlab.com/bmares/check-json5
       rev: v1.0.0
@@ -126,7 +123,7 @@ repos:
           - id: mypy
             name: mypy static type checker
             entry: |
-                mypy --install-types --non-interactive -p icon4py.common -p icon4py.testutils
+                mypy --install-types --non-interactive -p icon4py.common
             language: system
             types_or: [python, pyi]
             always_run: true

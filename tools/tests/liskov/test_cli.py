@@ -13,8 +13,7 @@
 
 import pytest
 from icon4pytools.liskov.cli import main
-
-from icon4py.testutils.liskov.fortran_samples import (
+from utils.fortran_samples import (
     CONSECUTIVE_STENCIL,
     FREE_FORM_STENCIL,
     MULTIPLE_STENCILS,

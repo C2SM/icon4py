@@ -12,13 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from utils.helpers import random_field
+from utils.simple_mesh import SimpleMesh
 
 from icon4py.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
 
 
 def enhance_diffusion_coefficient_for_grid_point_cold_pools_numpy(

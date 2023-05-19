@@ -28,11 +28,7 @@ from icon4pytools.liskov.parsing.types import (
 )
 from icon4pytools.liskov.parsing.validation import DirectiveSyntaxValidator
 from pytest import mark
-
-from icon4py.testutils.liskov.fortran_samples import (
-    MULTIPLE_STENCILS,
-    SINGLE_STENCIL,
-)
+from utils.fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
 
 
 @mark.parametrize(

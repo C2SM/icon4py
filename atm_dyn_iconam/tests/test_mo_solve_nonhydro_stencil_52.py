@@ -13,13 +13,13 @@
 
 import numpy as np
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
+from utils.helpers import random_field
+from utils.simple_mesh import SimpleMesh
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_52 import (
     mo_solve_nonhydro_stencil_52,
 )
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
 
 
 def mo_solve_nonhydro_stencil_52_numpy(

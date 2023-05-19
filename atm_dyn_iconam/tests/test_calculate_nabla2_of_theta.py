@@ -13,13 +13,13 @@
 
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+from utils.helpers import as_1D_sparse_field, random_field, zero_field
+from utils.simple_mesh import SimpleMesh
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import (
     calculate_nabla2_of_theta,
 )
 from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
 
 
 def calculate_nabla2_of_theta_numpy(
