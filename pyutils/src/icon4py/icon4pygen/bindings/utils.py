@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -40,15 +41,14 @@ def calc_num_neighbors(dim_list: list[Dimension], includes_center: bool) -> int:
 def format_fortran_code(source: str) -> str:
     """Format fortran code using fprettify.
 
-    The path to fprettify needs to be set explicitly for the
-    non-Spack build process as Liskov does not activate a virtual environment.
-    However, the PYTHON_PATH does not contain fprettify in a Spack build, hence the need for a special condition
+    Try to find fprettify in PATH -> found by which
+    otherwise look in PYTHONPATH
     """
-    bin_path = Path(PYTHON_PATH).parent
-    if "spack" not in str(bin_path):
+    fprettify_path = shutil.which("fprettify")
+
+    if fprettify_path is None:
+        bin_path = Path(PYTHON_PATH).parent
         fprettify_path = bin_path / "fprettify"
-    else:
-        fprettify_path = "fprettify"
     args = [str(fprettify_path)]
     p1 = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()
