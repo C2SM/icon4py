@@ -13,7 +13,7 @@ Generates from GT4Py Field View programs
 
 ## Installation instructions
 
-Check `README.md` file in the root of the repository.
+Part of the `icon4pytools` package, check `README.md` file in the root of the repository for installation instructions.
 
 ## Autocomplete
 

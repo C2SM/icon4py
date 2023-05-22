@@ -4,7 +4,7 @@ A preprocessor that facilitates integration of gt4py code into the ICON model.
 
 ## Installation
 
-To install the icon4py-liskov package, follow the instructions in the `README.md` file located in the root of the repository.
+Part of the `icon4pytools` package, check `README.md` file in the root of the repository for installation instructions.
 
 ## Description
 
