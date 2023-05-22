@@ -23,7 +23,7 @@ from icon4py.liskov.codegen.serialisation.deserialise import (
 from icon4py.liskov.codegen.serialisation.generate import (
     SerialisationCodeGenerator,
 )
-from icon4py.liskov.codegen.shared.writer import CodegenWriter
+from icon4py.liskov.codegen.shared.write import CodegenWriter
 from icon4py.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4py.liskov.parsing.parse import DirectivesParser
 from icon4py.liskov.parsing.scan import DirectivesScanner

@@ -21,7 +21,7 @@ from icon4py.f2ser.parse import GranuleParser
 from icon4py.liskov.codegen.serialisation.generate import (
     SerialisationCodeGenerator,
 )
-from icon4py.liskov.codegen.shared.writer import CodegenWriter
+from icon4py.liskov.codegen.shared.write import CodegenWriter
 
 
 @click.command("icon_f2ser")
