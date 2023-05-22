@@ -22,7 +22,7 @@ from icon4py.liskov.codegen.serialisation.template import (
     SavepointStatement,
     SavepointStatementGenerator,
 )
-from icon4py.liskov.codegen.shared.generator import CodeGenerator
+from icon4py.liskov.codegen.shared.generate import CodeGenerator
 from icon4py.liskov.codegen.shared.types import GeneratedCode
 
 

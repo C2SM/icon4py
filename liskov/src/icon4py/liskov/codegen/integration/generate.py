@@ -43,7 +43,7 @@ from icon4py.liskov.codegen.integration.template import (
     StartStencilStatement,
     StartStencilStatementGenerator,
 )
-from icon4py.liskov.codegen.shared.generator import CodeGenerator
+from icon4py.liskov.codegen.shared.generate import CodeGenerator
 from icon4py.liskov.codegen.shared.types import GeneratedCode
 from icon4py.liskov.external.metadata import CodeMetadata
 

@@ -29,7 +29,7 @@ from icon4py.liskov.codegen.serialisation.interface import (
     SavepointData,
     SerialisationCodeInterface,
 )
-from icon4py.liskov.codegen.shared.deserialiser import Deserialiser
+from icon4py.liskov.codegen.shared.deserialise import Deserialiser
 from icon4py.liskov.parsing.utils import extract_directive
 
 

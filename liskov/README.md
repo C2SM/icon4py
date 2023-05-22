@@ -18,7 +18,15 @@ To use the `icon_liskov` tool, run the following command:
 icon_liskov <input_filepath> <output_filepath> [--profile] [--metadatagen] [--ppser]
 ```
 
-Where `input_filepath` is the path to the input file to be processed, and `output_filepath` is the path to the output file. The optional `--profile` flag adds nvtx profile statements to the stencils. The `--metadatagen` flag generates a metadata header at the top of the file which includes information on icon_liskov such as the git tag and commit hash. The `--ppser` flag activates serialisation mode and will trigger the generation of `ppser` serialisation statements serialising all variables at the start and end of each stencil directive. The data will be saved at the default folder location of the currently run experiment and will have a prefix of `liskov-serialisation`.
+The following are descriptions of the arguments and options:
+
+- input_filepath: path to the input file to be processed.
+- output_filepath: path to the output file.
+- profile flag: adds nvtx profile statements to the stencils (optional).
+- metadatagen flag: generates a metadata header at the top of the file which includes information on icon_liskov such as the version used.
+- ppser flag: activates serialisation mode and will trigger the generation of ppser serialisation statements serialising all variables at the start and end of each stencil directive.
+
+**Note**: By default the data will be saved at the default folder location of the currently run experiment and will have a prefix of `liskov-serialisation`.
 
 ### Preprocessor directives
 

@@ -90,7 +90,7 @@ class ParsedGranuleDeserialiser:
                 intent=intent,
                 startln=self._get_codegen_line(var_dict["codegen_ctx"], intent),
                 fields=fields,
-                metadata=None,  # todo: currently not using metadata
+                metadata=None,
             )
         )
 

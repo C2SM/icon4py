@@ -32,7 +32,7 @@ from icon4py.liskov.codegen.integration.interface import (
     StartStencilData,
     UnusedDirective,
 )
-from icon4py.liskov.codegen.shared.deserialiser import Deserialiser
+from icon4py.liskov.codegen.shared.deserialise import Deserialiser
 from icon4py.liskov.codegen.shared.types import CodeGenInput
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
