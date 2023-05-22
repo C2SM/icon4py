@@ -53,7 +53,7 @@ logger = setup_logger(__name__)
     "--metadatagen",
     "-m",
     is_flag=True,
-    help="Add metadata header with information about program (requires git).",
+    help="Add metadata header with information about program.",
 )
 @click.option(
     "--multinode",
@@ -72,18 +72,9 @@ def main(
 ) -> None:
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
 
-    Usage:
-        icon_liskov <input> <output> <mode> [-p] [-m]
-
-    Options:
-        -p --profile Add nvtx profile statements to stencils.
-        -m --metadatagen Add metadata header with information about program (requires git).
-        --ppser Generate ppser serialization statements instead of integration code.
-        --multinode: Considers this a multinode run.
-
     Arguments:
-        input_path: Path to the input file to process.
-        output_path: Path to the output file to generate.
+        INPUT_PATH: Path to input file containing Liskov directives.
+        OUTPUT_PATH: Path to new file to be generated.
     """
     mode = "serialisation" if ppser else "integration"
 
