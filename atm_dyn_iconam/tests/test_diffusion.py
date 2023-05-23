@@ -483,7 +483,7 @@ def test_run_diffusion_single_step(
         metric_state=metric_state,
         interpolation_state=interpolation_state,
     )
-    diffusion.time_step(
+    diffusion.run(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
@@ -574,7 +574,7 @@ def test_diffusion_five_steps(
         metric_state=metric_state,
         interpolation_state=interpolation_state,
     )
-    diffusion.initial_step(
+    diffusion.initial_run(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
@@ -588,7 +588,7 @@ def test_diffusion_five_steps(
         cell_areas=cell_geometry.area,
     )
     for _ in range(4):
-        diffusion.time_step(
+        diffusion.run(
             diagnostic_state=diagnostic_state,
             prognostic_state=prognostic_state,
             dtime=dtime,

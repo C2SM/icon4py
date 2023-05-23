@@ -121,7 +121,7 @@ class Timeloop:
         self.atmo_non_hydro.do_dynamics_substepping(
             self.config.dtime, diagnostic_state, prognostic_state
         )
-        self.diffusion.time_step(
+        self.diffusion.run(
             diagnostic_state,
             prognostic_state,
             self.config.dtime,
@@ -144,7 +144,7 @@ class Timeloop:
             f"starting time loop for dtime={self.config.dtime} n_timesteps={self.config.n_time_steps}"
         )
         log.info("running initial step to diffuse fields before timeloop starts")
-        self.diffusion.initial_step(
+        self.diffusion.initial_run(
             diagnostic_state,
             prognostic_state,
             self.config.dtime,
