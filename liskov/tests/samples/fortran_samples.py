@@ -29,8 +29,6 @@ NO_DIRECTIVES_STENCIL = """\
 SINGLE_STENCIL = """\
     !$DSL IMPORTS()
 
-    !$DSL START CREATE()
-
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; suffix=dsl)
 
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; a=nproma,p_patch%nlev,p_patch%nblks_e; &
@@ -66,13 +64,10 @@ SINGLE_STENCIL = """\
     !$ACC END PARALLEL LOOP
     !$DSL END PROFILE()
     !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; noprofile=True)
-    !$DSL END CREATE()
     """
 
 MULTIPLE_STENCILS = """\
     !$DSL IMPORTS()
-
-    !$DSL START CREATE()
 
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; z_rho_e=nproma,p_patch%nlev,p_patch%nblks_c; &
     !$DSL         z_theta_v_e=nproma,p_patch%nlev,p_patch%nblks_c; z_nabla2_c=nproma,p_patch%nlev,p_patch%nblks_c; &
@@ -155,7 +150,6 @@ MULTIPLE_STENCILS = """\
         !$ACC END PARALLEL LOOP
     !$DSL ENDIF()
     !$DSL END STENCIL(name=calculate_nabla2_for_w; noendif=true)
-    !$DSL END CREATE()
     """
 
 DIRECTIVES_SAMPLE = """\
