@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from simple_mesh import SimpleMesh
-from utils import random_field, zero_field
 
 from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.common.dimension import CellDim, KDim, V2CDim, VertexDim
+
+from .simple_mesh import SimpleMesh
+from .utils import random_field, zero_field
 
 
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(

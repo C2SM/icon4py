@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from simple_mesh import SimpleMesh
-from utils import random_field
 
 from icon4py.atm_dyn_iconam.apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary,
 )
 from icon4py.common.dimension import EdgeDim, KDim
+
+from .simple_mesh import SimpleMesh
+from .utils import random_field
 
 
 def apply_nabla2_to_vn_in_lateral_boundary_numpy(

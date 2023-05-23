@@ -17,7 +17,8 @@ import numpy as np
 import numpy.typing as npt
 from gt4py.next import common as gt_common
 from gt4py.next.iterator import embedded as it_embedded
-from simple_mesh import SimpleMesh
+
+from .simple_mesh import SimpleMesh
 
 
 def _shape(

@@ -14,13 +14,14 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from simple_mesh import SimpleMesh
-from utils import flatten_first_two_dims, random_field, zero_field
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_20 import (
     mo_solve_nonhydro_stencil_20,
 )
 from icon4py.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+
+from .simple_mesh import SimpleMesh
+from .utils import flatten_first_two_dims, random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_20_numpy(

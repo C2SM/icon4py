@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from simple_mesh import SimpleMesh
-from utils import random_field, random_mask
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
     mo_velocity_advection_stencil_18,
 )
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
+
+from .simple_mesh import SimpleMesh
+from .utils import random_field, random_mask
 
 
 def mo_velocity_advection_stencil_18_numpy(

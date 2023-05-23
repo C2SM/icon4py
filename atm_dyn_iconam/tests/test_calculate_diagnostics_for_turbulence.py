@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from simple_mesh import SimpleMesh
-from utils import random_field, zero_field
 
 from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
     calculate_diagnostics_for_turbulence,
 )
 from icon4py.common.dimension import CellDim, KDim
+
+from .simple_mesh import SimpleMesh
+from .utils import random_field, zero_field
 
 
 def calculate_diagnostics_for_turbulence_numpy(

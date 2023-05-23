@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from simple_mesh import SimpleMesh
-from utils import random_field
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_12 import (
     mo_velocity_advection_stencil_12,
 )
 from icon4py.common.dimension import CellDim, KDim
+
+from .simple_mesh import SimpleMesh
+from .utils import random_field
 
 
 def mo_velocity_advection_stencil_12_numpy(z_w_con_c: np.array) -> np.array:

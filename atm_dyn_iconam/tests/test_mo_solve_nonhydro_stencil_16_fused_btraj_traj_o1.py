@@ -13,13 +13,14 @@
 
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from simple_mesh import SimpleMesh
-from utils import as_1D_sparse_field, random_field
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
 from icon4py.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+
+from .simple_mesh import SimpleMesh
+from .utils import as_1D_sparse_field, random_field
 
 
 def compute_btraj_numpy(

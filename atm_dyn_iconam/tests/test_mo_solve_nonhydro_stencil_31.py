@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from simple_mesh import SimpleMesh
-from utils import random_field, zero_field
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_31 import (
     mo_solve_nonhydro_stencil_31,
 )
 from icon4py.common.dimension import E2C2EODim, EdgeDim, KDim
+
+from .simple_mesh import SimpleMesh
+from .utils import random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_31_numpy(

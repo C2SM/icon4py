@@ -12,11 +12,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from simple_mesh import SimpleMesh
-from utils import random_field, zero_field
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import calculate_nabla2_for_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
+
+from .simple_mesh import SimpleMesh
+from .utils import random_field, zero_field
 
 
 def calculate_nabla2_for_w_numpy(

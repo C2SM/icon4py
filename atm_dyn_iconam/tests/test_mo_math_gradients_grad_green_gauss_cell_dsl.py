@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from simple_mesh import SimpleMesh
-from utils import random_field, zero_field
 
 from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
+
+from .simple_mesh import SimpleMesh
+from .utils import random_field, zero_field
 
 
 def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(

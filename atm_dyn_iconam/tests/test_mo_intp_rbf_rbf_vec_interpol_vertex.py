@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from simple_mesh import SimpleMesh
-from utils import random_field, zero_field
 
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
+
+from .simple_mesh import SimpleMesh
+from .utils import random_field, zero_field
 
 
 def mo_intp_rbf_rbf_vec_interpol_vertex_numpy(
