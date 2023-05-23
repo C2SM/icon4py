@@ -175,8 +175,6 @@ DIRECTIVES_SAMPLE = """\
 CONSECUTIVE_STENCIL = """\
     !$DSL IMPORTS()
 
-    !$DSL START CREATE()
-
     !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
 
     !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45; z_alpha=z_alpha(:,:); vertical_lower=nlevp1; &
@@ -202,14 +200,11 @@ CONSECUTIVE_STENCIL = """\
     !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45; noendif=true; noprofile=true)
     !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45_b; noendif=true; noprofile=true)
 
-    !$DSL END CREATE()
 """
 
 
 FREE_FORM_STENCIL = """\
     !$DSL IMPORTS()
-
-    !$DSL START CREATE()
 
     !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
 
@@ -234,5 +229,4 @@ FREE_FORM_STENCIL = """\
 
     !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45)
 
-    !$DSL END CREATE()
 """
