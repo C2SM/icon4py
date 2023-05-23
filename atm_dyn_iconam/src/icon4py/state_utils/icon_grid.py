@@ -15,7 +15,7 @@ from typing import Dict, Tuple
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind, Field
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.ffront.fbuiltins import int64
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import (
@@ -227,12 +227,12 @@ class VerticalModelParams:
         """
         self._rayleigh_damping_height = rayleigh_damping_height
         self._vct_a = vct_a
-        self._index_of_damping_height = int32(
+        self._index_of_damping_height = int64(
             np.argmax(
                 np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height)
             )
         )
-        self._nflatlev = 1  # according to mo_init_vgrid.f90 line 329
+        self._nflatlev = 10  # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
 
     @property
     def index_of_damping_layer(self):

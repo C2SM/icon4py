@@ -58,12 +58,9 @@ class InterpolationState:
     geofac_n2s: Field[
         [CellDim, C2E2CODim], float
     ]  # factor for nabla2-scalar (nproma,cell_type+1,nblks_c)
-    geofac_grg_x: Field[
-        [CellDim, C2E2CODim], float
+    geofac_grg: tuple[
+        Field[[CellDim, C2E2CODim], float], Field[[CellDim, C2E2CODim], float]
     ]  # factor for green gauss gradient (nproma,4,nblks_c,2)
-    geofac_grg_y: Field[
-        [CellDim, C2E2CODim], float
-    ]  # TODO combine geofac_grg_x and geofac_grg_y to tuple
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
     c_lin_e: Field[[EdgeDim, E2CDim], float]
@@ -86,8 +83,12 @@ class InterpolationState:
 
     @property
     def pos_on_tplane_e_1(self) -> Field[[ECDim], float]:
-        return np_as_located_field(ECDim)(np.asarray(self.pos_on_tplane_e)[0])
+        return np_as_located_field(ECDim)(
+            np.asarray(self.pos_on_tplane_e)
+        )  # TODO: @nfarabullini: check that this should not be self.pos_on_tplane_e[0]
 
     @property
     def pos_on_tplane_e_2(self) -> Field[[ECDim], float]:
-        return np_as_located_field(ECDim)(np.asarray(self.pos_on_tplane_e)[1])
+        return np_as_located_field(ECDim)(
+            np.asarray(self.pos_on_tplane_e)
+        )  # TODO: @nfarabullini: check that this should not be self.pos_on_tplane_e[1]

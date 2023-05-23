@@ -27,6 +27,7 @@ from icon4py.common.dimension import (
 
 @dataclass
 class MetricState:
+    mask_hdiff: Field[[CellDim, KDim], bool]
     theta_ref_mc: Field[[CellDim, KDim], float]
     wgtfac_c: Field[
         [CellDim, KDim], float
@@ -60,7 +61,7 @@ class MetricStateNonHydro:
     theta_ref_ic: Field[[CellDim, KDim], float]
     d2dexdz2_fac1_mc: Field[[CellDim, KDim], float]
     d2dexdz2_fac2_mc: Field[[CellDim, KDim], float]
-    vwind_impl_wgt: Field[[CellDim, KDim], float]
+    vwind_impl_wgt: Field[[CellDim], float]
     bdy_halo_c: Field[[CellDim], bool]
     ipeidx_dsl: Field[[EdgeDim, KDim], bool]
     pg_exdist: Field[[EdgeDim, KDim], float]
@@ -73,4 +74,3 @@ class MetricStateNonHydro:
 
     # Finally, a mask field that excludes boundary halo points
     mask_prog_halo_c: Field[[CellDim, KDim], bool]
-    mask_hdiff: Field[[CellDim, KDim], bool]

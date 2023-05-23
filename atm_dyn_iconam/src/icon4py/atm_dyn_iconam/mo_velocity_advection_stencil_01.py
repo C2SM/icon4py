@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import E2C2E, E2C2EDim, EdgeDim, KDim
 
@@ -26,10 +27,22 @@ def _mo_velocity_advection_stencil_01(
     return vt
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_velocity_advection_stencil_01(
     vn: Field[[EdgeDim, KDim], float],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
     vt: Field[[EdgeDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
-    _mo_velocity_advection_stencil_01(vn, rbf_vec_coeff_e, out=vt)
+    _mo_velocity_advection_stencil_01(
+        vn,
+        rbf_vec_coeff_e,
+        out=vt,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

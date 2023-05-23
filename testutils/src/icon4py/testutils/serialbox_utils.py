@@ -105,17 +105,17 @@ class IconGridSavePoint(IconSavepoint):
     def dual_normal_vert_x(self):
         return self._get_field("dual_normal_vert_x", VertexDim, E2C2VDim)
 
-    def primal_normal_cell_1(self):
-        return self._get_field("primal_normal_cell_1", ECDim)
+    def primal_normal_cell_x(self):
+        return self._get_field("primal_normal_cell_x", ECDim)
 
-    def dual_normal_cell_1(self):
-        return self._get_field("dual_normal_cell_1", EdgeDim, E2CDim)
+    def dual_normal_cell_x(self):
+        return self._get_field("dual_normal_cell_x", ECDim)
 
-    def primal_normal_cell_2(self):
-        return self._get_field("primal_normal_cell_2", EdgeDim, E2CDim)
+    def primal_normal_cell_y(self):
+        return self._get_field("primal_normal_cell_y", ECDim)
 
-    def dual_normal_cell_2(self):
-        return self._get_field("dual_normal_cell_2", EdgeDim, E2CDim)
+    def dual_normal_cell_y(self):
+        return self._get_field("dual_normal_cell_y", ECDim)
 
     def owner_mask(self):
         return self._get_field("owner_mask", CellDim, dtype=bool)
@@ -237,7 +237,7 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("d2dexdz2_fac2_mc", CellDim, KDim)
 
     def vwind_impl_wgt(self):
-        return self._get_field("vwind_impl_wgt", CellDim, KDim)
+        return self._get_field("vwind_impl_wgt", CellDim)
 
     def bdy_halo_c(self):
         return self._get_field("bdy_halo_c", CellDim)
@@ -314,8 +314,8 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def grf_tend_vn(self):
         return self._get_field("grf_tend_vn", EdgeDim, KDim)
 
-    def ddt_vn_adv(self):
-        return self._get_field("ddt_vn_adv", EdgeDim, KDim)
+    # def ddt_vn_adv(self):
+    #     return self._get_field("ddt_vn_adv", EdgeDim, KDim)
 
     def rho_incr(self):
         return self._get_field("rho_incr", EdgeDim, KDim)
@@ -444,18 +444,11 @@ class InterpolationStateSavepoint(IconSavepoint):
     def geofac_grdiv(self):
         return self._get_field("geofac_grdiv", EdgeDim, E2C2EODim)
 
-    def geofac_grg_x(self):
-        return self._get_field("geofac_grg", CellDim, C2E2CODim)[
-            0
-        ]  # TODO @nfarabullini: check that this is correct
-
-    def geofac_grg_y(self):
-        return self._get_field("geofac_grg", CellDim, C2E2CODim)[
-            1
-        ]  # TODO @nfarabullini: check that this is correct
+    def geofac_grg(self):
+        return self._get_field("geofac_grg", CellDim, C2E2CODim)
 
     def geofac_n2s(self):
-        return self._get_field("geofac_n2s", CellDim)
+        return self._get_field("geofac_n2s", CellDim, C2E2CODim)
 
     def geofac_rot(self):
         return self._get_field("geofac_rot", VertexDim, V2EDim)
@@ -595,16 +588,14 @@ class MetricStateSavepoint(IconSavepoint):
         )  # TODO @nfarabullini: check dimensions here
 
     def zd_vertidx(self):
-        return self._get_field("zd_vertidx", CellDim, C2E2CDim, KDim)
+        return self._get_field("zd_vertidx", CellDim, KDim)
 
     def zd_vertoffset(self):
-        return self._get_field(
-            "zd_vertoffset", CellDim, KDim
-        )  # TODO @nfarabullini: check dimensions here
+        return self._get_field("zd_vertoffset", CellDim, KDim)
 
     def zdiff_gradp_dsl(self):
         return self._get_field(
-            "zdiff_gradp_dsl", CellDim, KDim
+            "zdiff_gradp_dsl", ECDim, KDim
         )  # TODO @nfarabullini: check dimensions here
 
 
@@ -744,6 +735,39 @@ class IconExitSavepoint(IconSavepoint):
     def z_w_concorr_me(self):
         return self._get_field("x_z_w_concorr_me", EdgeDim, KDim)
 
+    def exner_new(self):
+        return self._get_field("x_exner_new", EdgeDim, KDim)
+
+    def mass_fl_e(self):
+        return self._get_field("x_mass_fl_e", EdgeDim, KDim)
+
+    def prep_adv_mass_flx_me(self):
+        return self._get_field("x_prep_adv_mass_flx_me", EdgeDim, KDim)
+
+    def prep_adv_vn_traj(self):
+        return self._get_field("x_prep_adv_vn_traj", EdgeDim, KDim)
+
+    def rho_ic(self):
+        return self._get_field("x_rho_ic", EdgeDim, KDim)
+
+    def theta_v_ic(self):
+        return self._get_field("x_theta_v_ic", EdgeDim, KDim)
+
+    def theta_v_new(self):
+        return self._get_field("x_theta_v_new", EdgeDim, KDim)
+
+    def vn_ie(self):
+        return self._get_field("x_vn_ie", EdgeDim, KDim)
+
+    def vn_new(self):
+        return self._get_field("x_vn_new", EdgeDim, KDim)
+
+    def w_concorr_c(self):
+        return self._get_field("x_w_concorr_c", EdgeDim, KDim)
+
+    def w_new(self):
+        return self._get_field("x_w_new", EdgeDim, KDim)
+
 
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False):
@@ -806,7 +830,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, jstep: int
     ) -> IconNonHydroInitSavepoint:
         savepoint = (
-            self.serializer.savepoint["solve_nonhydro_init"]
+            self.serializer.savepoint["solve_nonhydro"]
             .istep[istep]
             .date[date]
             .jstep[jstep]
@@ -839,14 +863,11 @@ class IconSerialDataProvider:
         return IconExitSavepoint(savepoint, self.serializer)
 
     def from_savepoint_nonhydro_exit(
-        self, istep: int, vn_only: bool, date: str, jstep: int
+        self, istep: int, date: str, jstep: int
     ) -> IconExitSavepoint:
         savepoint = (
-            self.serializer.savepoint[
-                "solve_nonhydro_init"
-            ]  # TODO: @nfarabullini change string once new dataset is ready
+            self.serializer.savepoint["solve_nonhydro"]
             .istep[istep]
-            .vn_only[vn_only]
             .date[date]
             .jstep[jstep]
             .as_savepoint()

@@ -32,5 +32,17 @@ def mo_velocity_advection_stencil_08(
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
     z_ekinh: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
-    _mo_velocity_advection_stencil_08(z_kin_hor_e, e_bln_c_s, out=z_ekinh)
+    _mo_velocity_advection_stencil_08(
+        z_kin_hor_e,
+        e_bln_c_s,
+        out=z_ekinh,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

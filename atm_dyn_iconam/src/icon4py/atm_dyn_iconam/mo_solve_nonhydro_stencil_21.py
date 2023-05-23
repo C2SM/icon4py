@@ -77,6 +77,10 @@ def mo_solve_nonhydro_stencil_21(
     inv_dual_edge_length: Field[[EdgeDim], float],
     grav_o_cpd: float,
     z_hydro_corr: Field[[EdgeDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _mo_solve_nonhydro_stencil_21(
         theta_v,
@@ -87,4 +91,8 @@ def mo_solve_nonhydro_stencil_21(
         inv_dual_edge_length,
         grav_o_cpd,
         out=z_hydro_corr,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

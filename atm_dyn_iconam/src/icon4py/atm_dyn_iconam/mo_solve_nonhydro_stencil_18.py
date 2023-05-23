@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 from gt4py.next.program_processors.runners import gtfn_cpu
@@ -29,7 +29,7 @@ def _mo_solve_nonhydro_stencil_18(
     return z_gradh_exner
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program(backend=gtfn_cpu.run_gtfn, grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_18(
     inv_dual_edge_length: Field[[EdgeDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
@@ -44,7 +44,7 @@ def mo_solve_nonhydro_stencil_18(
         z_exner_ex_pr,
         out=z_gradh_exner,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
+            EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )

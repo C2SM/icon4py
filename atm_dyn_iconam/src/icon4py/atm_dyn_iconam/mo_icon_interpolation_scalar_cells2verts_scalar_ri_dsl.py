@@ -42,7 +42,7 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
         c_intp,
         out=p_vert_out,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
+            VertexDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )

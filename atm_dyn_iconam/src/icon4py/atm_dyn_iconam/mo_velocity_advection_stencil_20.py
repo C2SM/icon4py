@@ -10,8 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
     Field,
@@ -21,6 +19,7 @@ from gt4py.next.ffront.fbuiltins import (
     neighbor_sum,
     where,
 )
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import (
     E2C,
@@ -83,7 +82,7 @@ def _mo_velocity_advection_stencil_20(
     return ddt_vn_adv
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def mo_velocity_advection_stencil_20(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], float],
@@ -99,6 +98,10 @@ def mo_velocity_advection_stencil_20(
     cfl_w_limit: float,
     scalfac_exdiff: float,
     dtime: float,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _mo_velocity_advection_stencil_20(
         levelmask,
@@ -115,5 +118,9 @@ def mo_velocity_advection_stencil_20(
         cfl_w_limit,
         scalfac_exdiff,
         dtime,
-        out=ddt_vn_adv[:, :-1],
+        out=ddt_vn_adv,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

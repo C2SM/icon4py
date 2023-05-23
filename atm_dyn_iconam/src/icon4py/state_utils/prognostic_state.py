@@ -38,5 +38,5 @@ class PrognosticState:
     exner: Field[[CellDim, KDim], float]
 
     @property
-    def w_1(self) -> Field[[CellDim, KDim], float]:
-        return np_as_located_field(CellDim, KDim)(np.asarray(self.w)[:, 0])
+    def w_1(self) -> Field[[CellDim], float]:
+        return np_as_located_field(CellDim)(np.asarray(self.w)[0])

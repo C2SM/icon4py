@@ -41,11 +41,23 @@ class DiagnosticState:
         [EdgeDim, KHalfDim], float
     ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s]
     w_concorr_c: Field[
-        [CellDim, KHalfDim], float
-    ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s]
+        [CellDim, KDim], float
+    ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     ddt_w_adv_pc_before: Field[[CellDim, KDim], float]
     ddt_vn_apc_pc_before: Field[[EdgeDim, KDim], float]
     ntnd: float
+
+    @property
+    def ddt_w_adv_pc(self) -> LocatedFieldImpl:
+        return np_as_located_field(CellDim, KDim)(
+            np.asarray(self.ddt_w_adv_pc_before)[self.ntnd :]
+        )
+
+    @property
+    def ddt_vn_apc_pc(self) -> LocatedFieldImpl:
+        return np_as_located_field(EdgeDim, KDim)(
+            np.asarray(self.ddt_vn_apc_pc_before)[self.ntnd :]
+        )
 
 
 @dataclass
@@ -62,6 +74,7 @@ class DiagnosticStateNonHydro:
     grf_tend_vn: Field[[EdgeDim, KDim], float]
 
     ddt_vn_adv: Field[[EdgeDim, KDim], float]
+    ddt_w_adv: Field[[CellDim, KDim], float]
     ntl1: float
     ntl2: float
 
@@ -71,25 +84,13 @@ class DiagnosticStateNonHydro:
     exner_incr: Field[[EdgeDim, KDim], float]  # exner increment [- ]
 
     @property
-    def ddt_vn_adv_ntl1(self) -> Field[[EdgeDim, KDim], float]:
-        return np_as_located_field(EdgeDim, KDim)(
-            np.asarray(self.ddt_vn_adv)[:, self.ntl1]
-        )
+    def ddt_vn_adv_ntl(
+        self,
+    ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
+        return (self.ddt_vn_adv, self.ddt_vn_adv)
 
     @property
-    def ddt_vn_adv_ntl2(self) -> Field[[EdgeDim, KDim], float]:
-        return np_as_located_field(EdgeDim, KDim)(
-            np.asarray(self.ddt_vn_adv)[:, self.ntl2]
-        )
-
-    @property
-    def ddt_w_adv_pc(self) -> LocatedFieldImpl:
-        return np_as_located_field(CellDim, KDim)(
-            np.asarray(self.ddt_w_adv_pc_before)[self.ntnd :]
-        )
-
-    @property
-    def ddt_vn_apc_pc(self) -> LocatedFieldImpl:
-        return np_as_located_field(EdgeDim, KDim)(
-            np.asarray(self.ddt_vn_apc_pc_before)[self.ntnd :]
-        )
+    def ddt_w_adv_ntl(
+        self,
+    ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+        return (self.ddt_w_adv, self.ddt_w_adv)

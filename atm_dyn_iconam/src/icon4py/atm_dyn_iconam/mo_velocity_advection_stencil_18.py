@@ -67,6 +67,10 @@ def mo_velocity_advection_stencil_18(
     scalfac_exdiff: float,
     cfl_w_limit: float,
     dtime: float,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _mo_velocity_advection_stencil_18(
         levelmask,
@@ -82,4 +86,8 @@ def mo_velocity_advection_stencil_18(
         cfl_w_limit,
         dtime,
         out=ddt_w_adv,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

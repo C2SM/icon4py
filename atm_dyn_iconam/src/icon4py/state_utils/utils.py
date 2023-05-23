@@ -15,14 +15,7 @@ from typing import Tuple
 import numpy as np
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import (
-    broadcast,
-    int32,
-    maximum,
-    minimum,
-    neighbor_sum,
-    abs
-)
+from gt4py.next.ffront.fbuiltins import abs, broadcast, int32, maximum, minimum
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners import gtfn_cpu
 
@@ -109,7 +102,7 @@ def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
     return broadcast(0.0, (CellDim, KDim))
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn)
 def set_zero_c_k(
     field: Field[[CellDim, KDim], float],
     horizontal_start: int,
@@ -179,11 +172,6 @@ def _calculate_bdy_divdamp(
     scal_divdamp: Field[[KDim], float], nudge_max_coeff: float, dbl_eps: float
 ) -> Field[[KDim], float]:
     return 0.75 / (nudge_max_coeff + dbl_eps) * abs(scal_divdamp)
-
-
-# @field_operator
-# def _field_sum(field: Field[[CellDim], float]) -> float:
-#     return neighbor_sum(field, axis=CellDim)
 
 
 @field_operator
@@ -287,10 +275,17 @@ def init_diffusion_local_fields_for_regular_timestep(
 
 
 @field_operator
-def compute_z_raylfac(
+def _compute_z_raylfac(
     rayleigh_w: Field[[KDim], float], dtime: float
 ) -> Field[[KDim], float]:
     return 1.0 / (1.0 + dtime * rayleigh_w)
+
+
+@program(backend=gtfn_cpu.run_gtfn)
+def compute_z_raylfac(
+    rayleigh_w: Field[[KDim], float], dtime: float, z_raylfac: Field[[KDim], float]
+):
+    _compute_z_raylfac(rayleigh_w, dtime, out=z_raylfac)
 
 
 def init_nabla2_factor_in_upper_damping_zone(

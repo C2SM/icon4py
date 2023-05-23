@@ -19,7 +19,6 @@ from icon4py.state_utils.icon_grid import VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState
 from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.z_fields import ZFields
 from icon4py.velocity.velocity_advection import VelocityAdvection
 
 
@@ -177,12 +176,6 @@ def test_velocity_predictor_step(
         w=sp.w(), vn=sp.vn(), exner_pressure=None, theta_v=None, rho=None, exner=None
     )
 
-    z_fields = ZFields(
-        z_w_concorr_me=sp.z_w_concorr_me(),
-        z_kin_hor_e=sp.z_kin_hor_e(),
-        z_vt_ie=sp.z_vt_ie(),
-    )
-
     interpolation_state = InterpolationState(
         e_bln_c_s=sp.e_bln_c_s(),
         rbf_coeff_1=None,
@@ -241,7 +234,9 @@ def test_velocity_predictor_step(
         vn_only=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        z_fields=z_fields,
+        z_w_concorr_me=sp.z_w_concorr_me,
+        z_kin_hor_e=sp.z_kin_hor_e,
+        z_vt_ie=sp.z_vt_ie,
         inv_dual_edge_length=inverse_dual_edge_length,
         inv_primal_edge_length=inverse_primal_edge_lengths,
         dtime=dtime,
@@ -288,6 +283,8 @@ def test_velocity_corrector_step(
     savepoint_velocity_init,
     data_provider,
     savepoint_velocity_exit,
+    interpolation_savepoint,
+    metric_savepoint,
 ):
     sp = savepoint_velocity_init
     sp_d = data_provider.from_savepoint_grid()
@@ -296,6 +293,8 @@ def test_velocity_corrector_step(
     dtime = sp.get_metadata("dtime").get("dtime")
     cfl_w_limit = sp.cfl_w_limit()
     scalfac_exdiff = sp.scalfac_exdiff()
+    sp_int = interpolation_savepoint
+    sp_met = metric_savepoint
 
     diagnostic_state = DiagnosticState(
         hdef_ic=None,
@@ -313,26 +312,20 @@ def test_velocity_corrector_step(
         w=sp.w(), vn=sp.vn(), exner_pressure=None, theta_v=None, rho=None, exner=None
     )
 
-    z_fields = ZFields(
-        z_w_concorr_me=sp.z_w_concorr_me(),
-        z_kin_hor_e=sp.z_kin_hor_e(),
-        z_vt_ie=sp.z_vt_ie(),
-    )
-
     interpolation_state = InterpolationState(
-        e_bln_c_s=sp.e_bln_c_s(),
+        e_bln_c_s=sp_int.e_bln_c_s(),
         rbf_coeff_1=None,
         rbf_coeff_2=None,
         geofac_div=None,
-        geofac_n2s=sp.geofac_n2s(),
+        geofac_n2s=sp_int.geofac_n2s(),
         geofac_grg_x=None,
         geofac_grg_y=None,
         nudgecoeff_e=None,
-        c_lin_e=sp.c_lin_e(),
-        geofac_grdiv=sp.geofac_grdiv(),
-        rbf_vec_coeff_e=sp.rbf_vec_coeff_e(),
-        c_intp=sp.c_intp(),
-        geofac_rot=sp.geofac_rot(),
+        c_lin_e=sp_int.c_lin_e(),
+        geofac_grdiv=sp_int.geofac_grdiv(),
+        rbf_vec_coeff_e=sp_int.rbf_vec_coeff_e(),
+        c_intp=sp_int.c_intp(),
+        geofac_rot=sp_int.geofac_rot(),
         pos_on_tplane_e=None,
         e_flx_avg=None,
     )
@@ -340,19 +333,19 @@ def test_velocity_corrector_step(
     metric_state = MetricState(
         mask_hdiff=None,
         theta_ref_mc=None,
-        wgtfac_c=sp.wgtfac_c(),
+        wgtfac_c=sp_met.wgtfac_c(),
         zd_intcoef=None,
         zd_vertidx=None,
         zd_diffcoef=None,
-        coeff_gradekin=sp.coeff_gradekin(),
-        ddqz_z_full_e=sp.ddqz_z_full_e(),
-        wgtfac_e=sp.wgtfac_e(),
-        wgtfacq_e=sp.wgtfacq_e(),
-        ddxn_z_full=sp.ddxn_z_full(),
-        ddxt_z_full=sp.ddxt_z_full(),
-        ddqz_z_half=sp.ddqz_z_half(),
-        coeff1_dwdz=sp.coeff1_dwdz(),
-        coeff2_dwdz=sp.coeff2_dwdz(),
+        coeff_gradekin=sp_met.coeff_gradekin(),
+        ddqz_z_full_e=sp_met.ddqz_z_full_e(),
+        wgtfac_e=sp_met.wgtfac_e(),
+        wgtfacq_e=sp_met.wgtfacq_e(),
+        ddxn_z_full=sp_met.ddxn_z_full(),
+        ddxt_z_full=sp_met.ddxt_z_full(),
+        ddqz_z_half=sp_met.ddqz_z_half(),
+        coeff1_dwdz=sp_met.coeff1_dwdz(),
+        coeff2_dwdz=sp_met.coeff2_dwdz(),
     )
 
     orientation = sp_d.tangent_orientation()
@@ -374,20 +367,21 @@ def test_velocity_corrector_step(
     )
 
     velocity_advection.run_corrector_step(
-        vn_only=vn_only,
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        z_fields=z_fields,
-        inv_dual_edge_length=inverse_dual_edge_length,
-        inv_primal_edge_length=inverse_primal_edge_lengths,
-        dtime=dtime,
-        tangent_orientation=orientation,
-        cfl_w_limit=cfl_w_limit,
-        scalfac_exdiff=scalfac_exdiff,
-        cell_areas=cell_areas,
-        owner_mask=sp_d.owner_mask(),
-        f_e=sp_d.f_e(),
-        area_edge=edge_areas,
+        vn_only,
+        diagnostic_state,
+        prognostic_state,
+        sp.z_kin_hor_e(),
+        sp.z_vt_ie(),
+        inverse_dual_edge_length,
+        inverse_primal_edge_lengths,
+        dtime,
+        orientation,
+        cfl_w_limit,
+        scalfac_exdiff,
+        cell_areas,
+        sp_d.owner_mask(),
+        sp_d.f_e(),
+        edge_areas,
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc()

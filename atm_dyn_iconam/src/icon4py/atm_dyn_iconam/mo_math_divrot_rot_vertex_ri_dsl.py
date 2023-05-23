@@ -32,5 +32,17 @@ def mo_math_divrot_rot_vertex_ri_dsl(
     vec_e: Field[[EdgeDim, KDim], float],
     geofac_rot: Field[[VertexDim, V2EDim], float],
     rot_vec: Field[[VertexDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
-    _mo_math_divrot_rot_vertex_ri_dsl(vec_e, geofac_rot, out=rot_vec)
+    _mo_math_divrot_rot_vertex_ri_dsl(
+        vec_e,
+        geofac_rot,
+        out=rot_vec,
+        domain={
+            VertexDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
