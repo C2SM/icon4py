@@ -1,4 +1,4 @@
-# Icon4pyTools
+# ICON4PyTools
 
 ## Description
 
@@ -9,8 +9,13 @@ Tools and utilities for integrating icon4py code into the ICON model.
 `icon4pytools` can be installed on its own in a virtual environment using `pip` from the `requirements-dev.txt` or `requirements.txt` file. For example:
 
 ```bash
+# create a virtual environment
 python3 -m venv .venv
+
+# activate the virtual environment
 source .venv/bin/activate
+
+# install all dependencies
 pip install -r requirements-dev.txt
 ```
 
@@ -18,7 +23,7 @@ pip install -r requirements-dev.txt
 
 A variety of command-line tools are available in the shell after installation of `icon4pytools`.
 
-### icon4pygen
+### `icon4pygen`
 
 A bindings generator that generates C++ and Fortran bindings from Gt4Py programs. This tools generates the following code:
 
@@ -59,7 +64,7 @@ eval "$(_ICON4PYGEN_COMPLETE=bash_source icon4pygen)"
 
 To permanently enable autocomplete on your system add the above statement to your `~/.bashrc` file.
 
-## icon_liskov
+## `icon_liskov`
 
 A preprocessor that facilitates integration of gt4py code into the ICON model. `icon_liskov` is a CLI tool which takes a fortran file as input and processes it with the ICON-Liskov DSL Preprocessor. This preprocessor adds the necessary `USE` statements and generates OpenACC `DATA CREATE` statements and declares DSL input/output fields based on directives in the input file. The preprocessor also processes stencils defined in the input file using the `START STENCIL` and `END STENCIL` directives, inserting the necessary code to run the stencils and adding nvtx profile statements if specified with the `--profile` or `-p` flag. Additionally, specifying the `--metadatagen` or `-m` flag will result in the generation of runtime metadata at the top of the generated file.
 
