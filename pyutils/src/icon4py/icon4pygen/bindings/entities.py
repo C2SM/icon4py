@@ -139,9 +139,9 @@ class Field(Node, FieldEntity):
         return rank
 
     def get_num_neighbors(self) -> int:
-        if not self.is_sparse():
+        if not (self.is_sparse() or self.is_compound()):
             raise BindingsTypeConsistencyException(
-                "num nbh only defined for sparse fields"
+                "num nbh only defined for sparse or compound fields"
             )
         return calc_num_neighbors(self.location.to_dim_list(), self.includes_center)  # type: ignore
 
