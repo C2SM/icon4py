@@ -12,8 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from conftest import insert_new_lines, scan_for_directives
-from fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
 from icon4pytools.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     RepeatedDirectiveError,
@@ -29,6 +27,9 @@ from icon4pytools.liskov.parsing.types import (
 )
 from icon4pytools.liskov.parsing.validation import DirectiveSyntaxValidator
 from pytest import mark
+
+from .conftest import insert_new_lines, scan_for_directives
+from .fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
 
 
 @mark.parametrize(
