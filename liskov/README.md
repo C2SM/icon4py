@@ -30,7 +30,7 @@ This directive generates the necessary `USE` statements to import the Fortran to
 
 #### `!$DSL START CREATE()`
 
-This directive generates an OpenACC `DATA CREATE` statement. The directive takes an **optional** keyword argument to specify extra fields to include in the `DATA CREATE` statement called `extra_fields`. Here you can specify a comma-separated list of strings which should be added to the `DATA CREATE` statement as follows `extra_fields=foo,bar`.
+This directive generates an OpenACC `DATA CREATE` statement. The directive requires an **optional** keyword argument to specify extra fields to include in the `DATA CREATE` statement called `extra_fields`. Here you can specify a comma-separated list of strings which should be added to the `DATA CREATE` statement as follows `extra_fields=foo,bar`.
 
 #### `!$DSL END CREATE()`
 
