@@ -133,6 +133,15 @@ def expected_declare_source():
 @pytest.fixture
 def expected_start_stencil_source():
     return """
+        !$ACC DATA CREATE( &
+        !$ACC   out1_before, &
+        !$ACC   out2_before, &
+        !$ACC   out3_before, &
+        !$ACC   out4_before, &
+        !$ACC   out5_before, &
+        !$ACC   out6_before ) &
+        !$ACC      IF ( i_am_accel_node )
+
 #ifdef __DSL_VERIFY
         !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
         out1_before(:, :) = out1(:, :, 1)
@@ -170,7 +179,9 @@ def expected_end_stencil_source():
            vertical_lower=-1, &
            vertical_upper=-10, &
            horizontal_lower=1, &
-           horizontal_upper=10)"""
+           horizontal_upper=10)
+
+        !$ACC END DATA"""
 
 
 @pytest.fixture
