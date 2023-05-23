@@ -53,7 +53,7 @@ The `--src _external_src` option tells `pip` to use a specific folder as base pa
 
 ### Installation of specific subpackages
 
-In case you only want to install a specific subpackage, use the actual subpackage `requirements.txt` or `requirements-dev.txt` files or in case of there being a `pyproject.toml` file use the `toml` file directly.
+In case you only want to install a specific subpackage, use the actual subpackage `requirements.txt` or `requirements-dev.txt` files.
 
 For example:
 

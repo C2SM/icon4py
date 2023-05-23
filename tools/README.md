@@ -1,24 +1,87 @@
-# icon4py-liskov
-
-A preprocessor that facilitates integration of gt4py code into the ICON model.
-
-## Installation
-
-Part of the `icon4pytools` package, check `README.md` file in the root of the repository for installation instructions.
+# Icon4pyTools
 
 ## Description
 
-The icon4py-liskov package includes the `icon_liskov` CLI tool which takes a fortran file as input and processes it with the ICON-Liskov DSL Preprocessor. This preprocessor adds the necessary `USE` statements and generates OpenACC `DATA CREATE` statements and declares DSL input/output fields based on directives in the input file. The preprocessor also processes stencils defined in the input file using the `START STENCIL` and `END STENCIL` directives, inserting the necessary code to run the stencils and adding nvtx profile statements if specified with the `--profile` or `-p` flag. Additionally, specifying the `--metadatagen` or `-m` flag will result in the generation of runtime metadata at the top of the generated file. Note that this requires `git` to be available in the shell from which `icon_liskov` is executed.
+Tools and utilities for integrating icon4py code into the ICON model.
+
+## Installation instructions
+
+`icon4pytools` can be installed on its own in a virtual environment using `pip` from the `requirements-dev.txt` or `requirements.txt` file. For example:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+```
+
+## Command-line tools
+
+A variety of command-line tools are available in the shell after installation of `icon4pytools`.
+
+### icon4pygen
+
+A bindings generator that generates C++ and Fortran bindings from Gt4Py programs. This tools generates the following code:
+
+- GridTools C++ `gridtools::fn` header file (`.hpp`).
+- A Fortran interface file containing all wrapper functions which can be called from within ICON (`.f90`).
+- A corresponding C (`.cpp, .h`) interface which in turn calls the Gridtools C++ code, as well as the C++ verification utils.
+
+#### Usage
+
+```
+Usage: icon4pygen [OPTIONS] FENCIL [BLOCK_SIZE] [LEVELS_PER_THREAD] [OUTPATH]
+
+  Generate Gridtools C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
+
+  Arguments:
+    FENCIL: may be specified as <module>:<member>, where <module>
+            is the dotted name of the containing module and <member> is the name of the fencil.
+
+    BLOCK_SIZE: refers to the number of threads per block to use in a cuda kernel.
+
+    LEVELS_PER_THREAD: how many k-levels to process per thread.
+
+    OUTPATH: represents a path to the folder in which to write all generated code.
+
+Options:
+  --is_global   Whether this is a global run.
+  --imperative  Whether to use the imperative code generation backend.
+  --help        Show this message and exit.
+```
+
+#### Autocomplete
+
+In order to turn on autocomplete for the available fencils in your shell for `icon4pygen` you need to execute the following in your shell:
+
+```bash
+eval "$(_ICON4PYGEN_COMPLETE=bash_source icon4pygen)"
+```
+
+To permanently enable autocomplete on your system add the above statement to your `~/.bashrc` file.
+
+## icon_liskov
+
+A preprocessor that facilitates integration of gt4py code into the ICON model. `icon_liskov` is a CLI tool which takes a fortran file as input and processes it with the ICON-Liskov DSL Preprocessor. This preprocessor adds the necessary `USE` statements and generates OpenACC `DATA CREATE` statements and declares DSL input/output fields based on directives in the input file. The preprocessor also processes stencils defined in the input file using the `START STENCIL` and `END STENCIL` directives, inserting the necessary code to run the stencils and adding nvtx profile statements if specified with the `--profile` or `-p` flag. Additionally, specifying the `--metadatagen` or `-m` flag will result in the generation of runtime metadata at the top of the generated file.
 
 ### Usage
 
 To use the `icon_liskov` tool, run the following command:
 
-```bash
-icon_liskov <input_filepath> <output_filepath> [--profile] [--metadatagen]
 ```
+Usage: icon_liskov [OPTIONS] INPUT_FILEPATH OUTPUT_FILEPATH
 
-Where `input_filepath` is the path to the input file to be processed, and `output_filepath` is the path to the output file. The optional `--profile` flag adds nvtx profile statements to the stencils.
+  Command line interface for interacting with the ICON-Liskov DSL
+  Preprocessor.
+
+  Arguments:
+    INPUT_PATH: Path to input file containing Liskov directives.
+    OUTPUT_PATH: Path to new file to be generated.
+
+Options:
+  -p, --profile      Add nvtx profile statements to stencils.
+  -m, --metadatagen  Add metadata header with information about program.
+  --help             Show this message and exit.
+```
 
 ### Preprocessor directives
 

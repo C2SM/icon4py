@@ -5,4 +5,4 @@
 ./atm_dyn_iconam
 
 # icon4pytools
- ./tools
+./tools

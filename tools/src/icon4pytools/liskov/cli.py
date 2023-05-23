@@ -53,16 +53,9 @@ def main(
 ) -> None:
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
 
-    Usage:
-        icon_liskov <input_filepath> <output_filepath> [-p] [-m]
-
-    Options:
-        -p --profile Add nvtx profile statements to stencils.
-        -m --metadatagen Add metadata header with information about program (requires git).
-
     Arguments:
-        input_filepath Path to the input file to process.
-        output_filepath Path to the output file to generate.
+        INPUT_PATH: Path to input file containing Liskov directives.
+        OUTPUT_PATH: Path to new file to be generated.
     """
     parsed = parse_fortran_file(input_filepath, output_filepath)
     parsed_checked = load_gt4py_stencils(parsed)

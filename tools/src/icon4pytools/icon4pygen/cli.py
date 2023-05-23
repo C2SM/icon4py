@@ -45,13 +45,20 @@ class ModuleType(click.ParamType):
 @click.argument("fencil", type=ModuleType())
 @click.argument("block_size", type=int, default=128)
 @click.argument("levels_per_thread", type=int, default=4)
-@click.option("--is_global", is_flag=True, type=bool)
+@click.option(
+    "--is_global", is_flag=True, type=bool, help="Whether this is a global run."
+)
 @click.argument(
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
     default=".",
 )
-@click.option("--imperative", is_flag=True, type=bool)
+@click.option(
+    "--imperative",
+    is_flag=True,
+    type=bool,
+    help="Whether to use the imperative code generation backend.",
+)
 def main(
     fencil: str,
     block_size: int,
@@ -63,15 +70,11 @@ def main(
     """
     Generate Gridtools C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
 
-    Args:
-        fencil: may be specified as <module>:<member>, where <module> is the dotted name of the containing module
-            and <member> is the name of the fencil.
-
-        block_size: refers to the number of threads per block to use in a cuda kernel.
-
-        levels_per_thread: how many k-levels to process per thread.
-
-        outpath: represents a path to the folder in which to write all generated code.
+    Arguments:
+        FENCIL: may be specified as <module>:<member>, where <module> is the dotted name of the containing module and <member> is the name of the fencil.
+        BLOCK_SIZE: refers to the number of threads per block to use in a cuda kernel.
+        LEVELS_PER_THREAD: how many k-levels to process per thread.
+        OUTPATH: represents a path to the folder in which to write all generated code.
     """
     from icon4pytools.icon4pygen.backend import GTHeader
     from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
