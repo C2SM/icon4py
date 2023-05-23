@@ -79,7 +79,7 @@ def test_parse_single_directive(directive, string, startln, endln, expected_cont
 
 @mark.parametrize(
     "stencil, num_directives, num_content",
-    [(SINGLE_STENCIL, 9, 8), (MULTIPLE_STENCILS, 11, 7)],
+    [(SINGLE_STENCIL, 7, 6), (MULTIPLE_STENCILS, 9, 5)],
 )
 def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
     fpath = make_f90_tmpfile(content=stencil)
