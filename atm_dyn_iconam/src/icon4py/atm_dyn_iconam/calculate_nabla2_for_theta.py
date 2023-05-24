@@ -15,7 +15,9 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_z import _calculate_nabla2_for_z
-from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import _calculate_nabla2_of_theta
+from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import (
+    _calculate_nabla2_of_theta,
+)
 from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
 
