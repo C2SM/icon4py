@@ -107,7 +107,6 @@ def _setup_runtime_diff_multfac_vn(
     return broadcast(minimum(con, dyn), (KDim,))
 
 
-# @field_operator(backend=run_gtfn)
 @field_operator
 def _setup_initial_diff_multfac_vn(
     k4: float, hdiff_efdt_ratio: float

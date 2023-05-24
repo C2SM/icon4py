@@ -18,9 +18,9 @@ from gt4py.next.common import Field
 from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
-    C2E2CDim,
     C2E2CODim,
     C2EDim,
+    CECDim,
     CellDim,
     EdgeDim,
     V2EDim,
@@ -64,7 +64,9 @@ class InterpolationState:
         return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
 
     @property
-    def geofac_n2s_nbh(self) -> Field[[CellDim, C2E2CDim], float]:
-        return np_as_located_field(CellDim, C2E2CDim)(
-            np.asarray(self.geofac_n2s)[:, 1:]
+    def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
+        np_array = np.asarray(self.geofac_n2s)[:, 1:]
+        old_shape = np_array.shape
+        return np_as_located_field(CECDim)(
+            np_array.reshape(old_shape[0] * old_shape[1])
         )

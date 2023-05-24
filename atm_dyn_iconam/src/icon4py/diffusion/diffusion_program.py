@@ -39,11 +39,15 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     _mo_intp_rbf_rbf_vec_interpol_vertex,
 )
+from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
+    _mo_nh_diffusion_stencil_15,
+)
 from icon4py.atm_dyn_iconam.update_theta_and_exner import _update_theta_and_exner
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    CECDim,
     CellDim,
     ECVDim,
     EdgeDim,
@@ -66,10 +70,10 @@ def diffusion_run(
     prognostic_theta_v: Field[[CellDim, KDim], float],
     metric_theta_ref_mc: Field[[CellDim, KDim], float],
     metric_wgtfac_c: Field[[CellDim, KDim], float],
-    metric_mask_hdiff: Field[[CellDim, KDim], int],
-    metric_zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int],
+    metric_mask_hdiff: Field[[CellDim, KDim], bool],
+    metric_zd_vertidx: Field[[CECDim, KDim], int32],
     metric_zd_diffcoef: Field[[CellDim, KDim], float],
-    metric_zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float],
+    metric_zd_intcoef: Field[[CECDim, KDim], float],
     interpolation_e_bln_c_s: Field[[CellDim, C2EDim], float],
     interpolation_rbf_coeff_1: Field[[VertexDim, V2EDim], float],
     interpolation_rbf_coeff_2: Field[[VertexDim, V2EDim], float],
@@ -79,7 +83,7 @@ def diffusion_run(
     interpolation_nudgecoeff_e: Field[[EdgeDim], float],
     interpolation_geofac_n2s: Field[[CellDim, C2E2CODim], float],
     interpolation_geofac_n2s_c: Field[[CellDim], float],
-    interpolation_geofac_n2s_nbh: Field[[CellDim, C2E2CDim], float],
+    interpolation_geofac_n2s_nbh: Field[[CECDim], float],
     tangent_orientation: Field[[EdgeDim], float],
     inverse_primal_edge_lengths: Field[[EdgeDim], float],
     inverse_dual_edge_lengths: Field[[EdgeDim], float],
@@ -289,20 +293,21 @@ def diffusion_run(
     )
 
     # MO_NH_DIFFUSION_STENCIL_15: as_offset index fields!
-    # _mo_nh_diffusion_stencil_15(
-    #     metric_mask_hdiff,
-    #     metric_zd_vertidx,
-    #     metric_zd_diffcoef,
-    #     interpolation_geofac_n2s_c,
-    #     interpolation_geofac_n2s_nbh,
-    #     metric_zd_intcoef,
-    #     prognostic_theta_v,
-    #     local_z_temp,
-    #     domain = {
-    #     CellDim:(cell_startindex_nudging, cell_endindex_local),
-    #     KDim:  (0,nlev)
-    #     }
-    # )
+    _mo_nh_diffusion_stencil_15(
+        metric_mask_hdiff,
+        metric_zd_vertidx,
+        metric_zd_diffcoef,
+        interpolation_geofac_n2s_c,
+        interpolation_geofac_n2s_nbh,
+        metric_zd_intcoef,
+        prognostic_theta_v,
+        local_z_temp,
+        domain={
+            CellDim: (cell_startindex_nudging, cell_endindex_local),
+            KDim: (0, nlev),
+        },
+        out=local_z_temp,
+    )
 
     _update_theta_and_exner(
         local_z_temp,

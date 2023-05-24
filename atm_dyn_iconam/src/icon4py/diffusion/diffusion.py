@@ -528,7 +528,7 @@ class Diffusion:
             0.0,
         )
 
-    def time_step(
+    def run(
         self,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
@@ -637,10 +637,10 @@ class Diffusion:
                 prognostic_theta_v=prognostic_state.theta_v,
                 metric_theta_ref_mc=self.metric_state.theta_ref_mc,
                 metric_wgtfac_c=self.metric_state.wgtfac_c,
-                metric_mask_hdiff=self.metric_state.mask_hdiff,
-                metric_zd_vertidx=self.metric_state.zd_vertidx,
-                metric_zd_diffcoef=self.metric_state.zd_diffcoef,
-                metric_zd_intcoef=self.metric_state.zd_intcoef,
+                metric_mask_hdiff=self.metric_state.mask_hdiff,  #
+                metric_zd_vertidx=self.metric_state.zd_vertidx,  #
+                metric_zd_diffcoef=self.metric_state.zd_diffcoef,  #
+                metric_zd_intcoef=self.metric_state.zd_intcoef,  #
                 interpolation_e_bln_c_s=self.interpolation_state.e_bln_c_s,
                 interpolation_rbf_coeff_1=self.interpolation_state.rbf_coeff_1,
                 interpolation_rbf_coeff_2=self.interpolation_state.rbf_coeff_2,
@@ -650,7 +650,7 @@ class Diffusion:
                 interpolation_nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
                 interpolation_geofac_n2s=self.interpolation_state.geofac_n2s,
                 interpolation_geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
-                interpolation_geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
+                interpolation_geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,  #
                 tangent_orientation=tangent_orientation,
                 inverse_primal_edge_lengths=inverse_primal_edge_lengths,
                 inverse_dual_edge_lengths=inverse_dual_edge_length,
@@ -705,6 +705,7 @@ class Diffusion:
                     "C2E": self.grid.get_c2e_connectivity(),
                     "E2C": self.grid.get_e2c_connectivity(),
                     "C2E2C": self.grid.get_c2e2c_connectivity(),
+                    "C2CEC": self.grid.get_c2cec_connectivity(),
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                     "Koff": KDim,
                 },
@@ -1006,24 +1007,26 @@ class Diffusion:
         )
         log.debug("running fused stencil 13_14: end")
         log.debug("running fused stencil 15: start")
-        # mo_nh_diffusion_stencil_15(
-        #     self.metric_state.mask_hdiff,
-        #     self.metric_state.zd_vertidx,
-        #     self.metric_state.zd_diffcoef,
-        #     self.interpolation_state.geofac_n2s_c,
-        #     self.interpolation_state.geofac_n2s_nbh,
-        #     self.metric_state.zd_intcoef,
-        #     prognostic_state.theta_v,
-        #     self.z_temp,
-        #     cell_start_nudging,
-        #     cell_end_local,
-        #     0,
-        #     klevels,
-        #     offset_provider={
-        #         "C2E2C": self.grid.get_c2e2c_connectivity(),
-        #         "Koff": KDim,
-        #     },
-        # )
+        mo_nh_diffusion_stencil_15(
+            mask=self.metric_state.mask_hdiff,
+            zd_vertoffset=self.metric_state.zd_vertidx,
+            zd_diffcoef=self.metric_state.zd_diffcoef,
+            geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
+            geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
+            vcoef=self.metric_state.zd_intcoef,
+            theta_v=prognostic_state.theta_v,
+            z_temp=self.z_temp,
+            horizontal_start=cell_start_nudging,
+            horizontal_end=cell_end_local,
+            vertical_start=0,
+            vertical_end=klevels,
+            offset_provider={
+                "C2CEC": self.grid.get_c2cec_connectivity(),
+                "C2E2C": self.grid.get_c2e2c_connectivity(),
+                "Koff": KDim,
+            },
+        )
+
         log.debug("running fused stencil 15: end")
         log.debug("running fused stencil update_theta_and_exner: start")
         update_theta_and_exner(
