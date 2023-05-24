@@ -109,7 +109,6 @@ def check_code_was_generated(stencil_name: str) -> None:
     check_cpp_codegen(f"{stencil_name}.cpp")
 
 
-@pytest.mark.skip("raises exception due to dims in offset provider")
 @pytest.mark.parametrize(("stencil_module", "stencil_name"), atm_dyn_iconam_fencils())
 def test_codegen_atm_dyn_iconam(cli, stencil_module, stencil_name) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
