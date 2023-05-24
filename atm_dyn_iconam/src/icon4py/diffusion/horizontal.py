@@ -58,7 +58,7 @@ class HorizontalMarkerIndex:
     _END_VERTICES: Final[int] = 0
 
     @classmethod
-    def local_boundary(cls, dim: Dimension) -> int:
+    def lateral_boundary(cls, dim: Dimension) -> int:
         match (dim):
             case (dimension.CellDim):
                 return cls._LOCAL_BOUNDARY_CELLS
