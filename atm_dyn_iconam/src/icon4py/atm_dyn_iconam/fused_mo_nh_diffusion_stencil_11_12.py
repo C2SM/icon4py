@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     _enhance_diffusion_coefficient_for_grid_point_cold_pools,
@@ -40,7 +39,7 @@ def _fused_mo_nh_diffusion_stencil_11_12(
     return kh_smag_e
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def fused_mo_nh_diffusion_stencil_11_12(
     theta_v: Field[[CellDim, KDim], float],
     theta_ref_mc: Field[[CellDim, KDim], float],
