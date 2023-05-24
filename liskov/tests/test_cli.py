@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import itertools
+
 import pytest
 
 from icon4py.liskov.cli import main
@@ -29,34 +31,39 @@ def outfile(tmp_path):
     return str(tmp_path / "gen.f90")
 
 
+test_cases = []
+
+files = [
+    ("NO_DIRECTIVES", NO_DIRECTIVES_STENCIL),
+    ("SINGLE", SINGLE_STENCIL),
+    ("CONSECUTIVE", CONSECUTIVE_STENCIL),
+    ("FREE_FORM", FREE_FORM_STENCIL),
+    ("MULTIPLE", MULTIPLE_STENCILS),
+    ("REPEATED", REPEATED_STENCILS),
+]
+
+flags = {"serialise": ["--multinode"], "integrate": ["-p", "-m"]}
+
+for file_name, file_content in files:
+    for cmd in flags.keys():
+        flag_combinations = []
+        for r in range(1, len(flags[cmd]) + 1):
+            flag_combinations.extend(itertools.combinations(flags[cmd], r))
+        for flags_selected in flag_combinations:
+            args = (file_name, file_content, cmd, list(flags_selected))
+            test_cases.append(args)
+
+
 @pytest.mark.parametrize(
-    "file, options",
-    [
-        (NO_DIRECTIVES_STENCIL, ["--ppser"]),
-        (NO_DIRECTIVES_STENCIL, []),
-        (SINGLE_STENCIL, ["--ppser"]),
-        (SINGLE_STENCIL, []),
-        (CONSECUTIVE_STENCIL, ["--ppser"]),
-        (CONSECUTIVE_STENCIL, []),
-        (FREE_FORM_STENCIL, ["--ppser"]),
-        (FREE_FORM_STENCIL, []),
-        (MULTIPLE_STENCILS, ["--ppser"]),
-        (MULTIPLE_STENCILS, []),
-        (SINGLE_STENCIL, ["--ppser"]),
-        (SINGLE_STENCIL, ["--profile"]),
-        (CONSECUTIVE_STENCIL, ["--ppser", "--profile"]),
-        (CONSECUTIVE_STENCIL, ["--profile"]),
-        (FREE_FORM_STENCIL, ["--ppser", "--profile"]),
-        (FREE_FORM_STENCIL, ["--profile"]),
-        (MULTIPLE_STENCILS, ["--ppser", "--profile"]),
-        (MULTIPLE_STENCILS, ["--profile"]),
-        (REPEATED_STENCILS, ["--ppser", "--profile"]),
-        (REPEATED_STENCILS, ["--profile"]),
-        (MULTIPLE_STENCILS, ["--ppser", "--multinode"]),
+    "file_name, file_content, cmd, cmd_flags",
+    test_cases,
+    ids=[
+        "file={}, command={}, flags={}".format(file_name, cmd, ",".join(cmd_flags))
+        for file_name, file_content, cmd, cmd_flags in test_cases
     ],
 )
-def test_cli(make_f90_tmpfile, cli, file, outfile, options):
-    fpath = str(make_f90_tmpfile(content=file))
-    args = [fpath, outfile, *options]
+def test_cli(make_f90_tmpfile, cli, outfile, file_name, file_content, cmd, cmd_flags):
+    fpath = str(make_f90_tmpfile(content=file_content))
+    args = [fpath, outfile, cmd, *cmd_flags]
     result = cli.invoke(main, args)
     assert result.exit_code == 0

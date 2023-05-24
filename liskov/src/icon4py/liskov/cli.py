@@ -26,7 +26,8 @@ from icon4py.liskov.pipeline.collection import (
 logger = setup_logger(__name__)
 
 
-@click.command("icon_liskov")
+@click.group(invoke_without_command=True)
+@click.pass_context
 @click.argument(
     "input_path",
     type=click.Path(
@@ -37,12 +38,24 @@ logger = setup_logger(__name__)
     "output_path",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
-@click.option(
-    "--ppser",
-    is_flag=True,
-    type=str,
-    help="Generate ppser serialization statements instead of integration code.",
-)
+def main(ctx, input_path, output_path):
+    """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
+
+    Arguments:
+        INPUT_PATH: Path to input file containing Liskov directives.
+        OUTPUT_PATH: Path to new file to be generated.
+    """
+    if ctx.invoked_subcommand is None:
+        click.echo(
+            "Need to choose one of the following commands:\nintegrate\nserialise"
+        )
+    else:
+        ctx.ensure_object(dict)
+        ctx.obj["INPUT"] = input_path
+        ctx.obj["OUTPUT"] = output_path
+
+
+@main.command()
 @click.option(
     "--profile",
     "-p",
@@ -55,51 +68,39 @@ logger = setup_logger(__name__)
     is_flag=True,
     help="Add metadata header with information about program.",
 )
+@click.pass_context
+def integrate(ctx, profile, metadatagen):
+    mode = "integration"
+    inp = ctx.obj["INPUT"]
+    out = ctx.obj["OUTPUT"]
+
+    iface = parse_fortran_file(inp, out, mode)
+    iface_gt4py = load_gt4py_stencils(iface)
+    run_code_generation(
+        inp,
+        out,
+        mode,
+        iface_gt4py,
+        profile=profile,
+        metadatagen=metadatagen,
+    )
+
+
+@main.command()
 @click.option(
     "--multinode",
     is_flag=True,
     type=bool,
-    help="Specify whether it is a multinode run.",
+    help="Specify whether it is a multinode run. Will generate mpi rank information.",
     default=False,
 )
-def main(
-    input_path: pathlib.Path,
-    output_path: pathlib.Path,
-    ppser: bool,
-    profile: bool,
-    metadatagen: bool,
-    multinode: bool,
-) -> None:
-    """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
-
-    Arguments:
-        INPUT_PATH: Path to input file containing Liskov directives.
-        OUTPUT_PATH: Path to new file to be generated.
-    """
-    mode = "serialisation" if ppser else "integration"
-
-    def run_serialisation() -> None:
-        iface = parse_fortran_file(input_path, output_path, mode)
-        run_code_generation(input_path, output_path, mode, iface, multinode=multinode)
-
-    def run_integration() -> None:
-        iface = parse_fortran_file(input_path, output_path, mode)
-        iface_gt4py = load_gt4py_stencils(iface)
-        run_code_generation(
-            input_path,
-            output_path,
-            mode,
-            iface_gt4py,
-            profile=profile,
-            metadatagen=metadatagen,
-        )
-
-    mode_dispatcher = {
-        "serialisation": run_serialisation,
-        "integration": run_integration,
-    }
-
-    mode_dispatcher[mode]()
+@click.pass_context
+def serialise(ctx, multinode):
+    mode = "serialisation"
+    inp = ctx.obj["INPUT"]
+    out = ctx.obj["OUTPUT"]
+    iface = parse_fortran_file(inp, out, mode)
+    run_code_generation(inp, out, mode, iface, multinode=multinode)
 
 
 if __name__ == "__main__":
