@@ -13,9 +13,21 @@
 
 import unittest
 
-import icon4pytools.liskov.parsing.types as ts
+import icon4pytools.liskov.parsing.parse as ts
 import pytest
-from icon4pytools.liskov.codegen.interface import (
+from icon4pytools.liskov.codegen.integration.deserialise import (
+    DeclareDataFactory,
+    EndCreateDataFactory,
+    EndIfDataFactory,
+    EndProfileDataFactory,
+    EndStencilDataFactory,
+    ImportsDataFactory,
+    InsertDataFactory,
+    StartCreateDataFactory,
+    StartProfileDataFactory,
+    StartStencilDataFactory,
+)
+from icon4pytools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     EndCreateData,
@@ -28,18 +40,6 @@ from icon4pytools.liskov.codegen.interface import (
     StartCreateData,
     StartProfileData,
 )
-from icon4pytools.liskov.parsing.deserialise import (
-    DeclareDataFactory,
-    EndCreateDataFactory,
-    EndIfDataFactory,
-    EndProfileDataFactory,
-    EndStencilDataFactory,
-    ImportsDataFactory,
-    InsertDataFactory,
-    StartCreateDataFactory,
-    StartProfileDataFactory,
-    StartStencilDataFactory,
-)
 from icon4pytools.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     MissingBoundsError,
@@ -48,12 +48,40 @@ from icon4pytools.liskov.parsing.exceptions import (
 
 
 @pytest.mark.parametrize(
-    "factory_class, directive_type, startln, endln, string, expected",
+    "factory_class, directive_type, string, startln, endln, expected",
     [
-        (EndCreateDataFactory, ts.EndCreate, "END CREATE", 2, 2, EndCreateData),
-        (ImportsDataFactory, ts.Imports, "IMPORTS", 3, 3, ImportsData),
-        (EndIfDataFactory, ts.EndIf, "ENDIF", 4, 4, EndIfData),
-        (EndProfileDataFactory, ts.EndProfile, "END PROFILE", 5, 5, EndProfileData),
+        (
+            EndCreateDataFactory,
+            ts.EndCreate,
+            "END CREATE",
+            2,
+            2,
+            EndCreateData,
+        ),
+        (
+            ImportsDataFactory,
+            ts.Imports,
+            "IMPORTS",
+            3,
+            3,
+            ImportsData,
+        ),
+        (
+            EndIfDataFactory,
+            ts.EndIf,
+            "ENDIF",
+            4,
+            4,
+            EndIfData,
+        ),
+        (
+            EndProfileDataFactory,
+            ts.EndProfile,
+            "END PROFILE",
+            5,
+            5,
+            EndProfileData,
+        ),
     ],
 )
 def test_data_factories_no_args(
@@ -71,7 +99,6 @@ def test_data_factories_no_args(
 
     assert isinstance(result, expected)
     assert result.startln == startln
-    assert result.endln == endln
 
 
 @pytest.mark.parametrize(

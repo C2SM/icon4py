@@ -16,14 +16,16 @@ from inspect import getmembers
 from typing import Any
 
 from gt4py.next.ffront.decorator import Program
+from icon4pytools.common.logger import setup_logger
 from icon4pytools.icon4pygen.metadata import get_stencil_info
-from icon4pytools.liskov.codegen.interface import DeserialisedDirectives
-from icon4pytools.liskov.common import Step
+from icon4pytools.liskov.codegen.integration.interface import (
+    IntegrationCodeInterface,
+)
 from icon4pytools.liskov.external.exceptions import (
     IncompatibleFieldError,
     UnknownStencilError,
 )
-from icon4pytools.liskov.logger import setup_logger
+from icon4pytools.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)
@@ -32,10 +34,10 @@ logger = setup_logger(__name__)
 class UpdateFieldsWithGt4PyStencils(Step):
     _STENCIL_PACKAGES = ["atm_dyn_iconam", "advection"]
 
-    def __init__(self, parsed: DeserialisedDirectives):
+    def __init__(self, parsed: IntegrationCodeInterface):
         self.parsed = parsed
 
-    def __call__(self, data: Any = None) -> DeserialisedDirectives:
+    def __call__(self, data: Any = None) -> IntegrationCodeInterface:
         logger.info("Updating parsed fields with data from icon4py stencils...")
 
         for s in self.parsed.StartStencil:
@@ -47,7 +49,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
                     field_info = gt4py_fields[f.variable]
                 except KeyError:
                     raise IncompatibleFieldError(
-                        f"Used field variable name that is incompatible with the expected field names defined in {s.name} in icon4py."
+                        f"Used field variable name that is incompatible with the expected field names defined in {s.name} in icon4pytools."
                     )
                 f.out = field_info.out
                 f.inp = field_info.inp
@@ -65,7 +67,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
 
         if err_counter == len(self._STENCIL_PACKAGES):
             raise UnknownStencilError(
-                f"Did not find module: {stencil_name} in icon4py."
+                f"Did not find module: {stencil_name} in icon4pytools."
             )
 
         module_members = getmembers(module)
@@ -73,7 +75,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
 
         if len(found_stencil) == 0:
             raise UnknownStencilError(
-                f"Did not find module member: {stencil_name} in module: {module.__name__} in icon4py."
+                f"Did not find module member: {stencil_name} in module: {module.__name__} in icon4pytools."
             )
 
         return found_stencil[0][1]

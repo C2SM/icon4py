@@ -14,8 +14,8 @@
 import pathlib
 
 import click
-from icon4pytools.liskov.logger import setup_logger
-from icon4pytools.liskov.pipeline import (
+from icon4pytools.common.logger import setup_logger
+from icon4pytools.liskov.pipeline.collection import (
     load_gt4py_stencils,
     parse_fortran_file,
     run_code_generation,
@@ -25,43 +25,81 @@ from icon4pytools.liskov.pipeline import (
 logger = setup_logger(__name__)
 
 
-@click.command("icon_liskov")
+@click.group(invoke_without_command=True)
+@click.pass_context
 @click.argument(
-    "input_filepath",
+    "input_path",
     type=click.Path(
         exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
     ),
 )
 @click.argument(
-    "output_filepath",
+    "output_path",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
-@click.option(
-    "--profile", "-p", is_flag=True, help="Add nvtx profile statements to stencils."
-)
-@click.option(
-    "--metadatagen",
-    "-m",
-    is_flag=True,
-    help="Add metadata header with information about program (requires git).",
-)
-def main(
-    input_filepath: pathlib.Path,
-    output_filepath: pathlib.Path,
-    profile: bool,
-    metadatagen: bool,
-) -> None:
+def main(ctx, input_path, output_path):
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
 
     Arguments:
         INPUT_PATH: Path to input file containing Liskov directives.
         OUTPUT_PATH: Path to new file to be generated.
     """
-    parsed = parse_fortran_file(input_filepath, output_filepath)
-    parsed_checked = load_gt4py_stencils(parsed)
+    if ctx.invoked_subcommand is None:
+        click.echo(
+            "Need to choose one of the following commands:\nintegrate\nserialise"
+        )
+    else:
+        ctx.ensure_object(dict)
+        ctx.obj["INPUT"] = input_path
+        ctx.obj["OUTPUT"] = output_path
+
+
+@main.command()
+@click.option(
+    "--profile",
+    "-p",
+    is_flag=True,
+    help="Add nvtx profile statements to integration code.",
+)
+@click.option(
+    "--metadatagen",
+    "-m",
+    is_flag=True,
+    help="Add metadata header with information about program.",
+)
+@click.pass_context
+def integrate(ctx, profile, metadatagen):
+    mode = "integration"
+    inp = ctx.obj["INPUT"]
+    out = ctx.obj["OUTPUT"]
+
+    iface = parse_fortran_file(inp, out, mode)
+    iface_gt4py = load_gt4py_stencils(iface)
     run_code_generation(
-        parsed_checked, input_filepath, output_filepath, profile, metadatagen
+        inp,
+        out,
+        mode,
+        iface_gt4py,
+        profile=profile,
+        metadatagen=metadatagen,
     )
+
+
+@main.command()
+@click.option(
+    "--multinode",
+    is_flag=True,
+    type=bool,
+    help="Specify whether it is a multinode run. Will generate mpi rank information.",
+    default=False,
+)
+@click.pass_context
+def serialise(ctx, multinode):
+    mode = "serialisation"
+    inp = ctx.obj["INPUT"]
+    out = ctx.obj["OUTPUT"]
+    iface = parse_fortran_file(inp, out, mode)
+    run_code_generation(inp, out, mode, iface, multinode=multinode)
 
 
 if __name__ == "__main__":

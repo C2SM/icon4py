@@ -12,11 +12,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from icon4pytools.liskov.codegen.generate import IntegrationGenerator
-from icon4pytools.liskov.codegen.interface import (
+from icon4pytools.liskov.codegen.integration.generate import (
+    IntegrationCodeGenerator,
+)
+from icon4pytools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
-    DeserialisedDirectives,
     EndCreateData,
     EndIfData,
     EndProfileData,
@@ -24,15 +25,28 @@ from icon4pytools.liskov.codegen.interface import (
     FieldAssociationData,
     ImportsData,
     InsertData,
+    IntegrationCodeInterface,
     StartCreateData,
     StartProfileData,
     StartStencilData,
 )
 
-
 # TODO: fix tests to adapt to new custom output fields
+from icon4pytools.liskov.codegen.serialisation.generate import (
+    SerialisationCodeGenerator,
+)
+from icon4pytools.liskov.codegen.serialisation.interface import (
+    FieldSerialisationData,
+    ImportData,
+    InitData,
+    Metadata,
+    SavepointData,
+    SerialisationCodeInterface,
+)
+
+
 @pytest.fixture
-def serialised_directives():
+def integration_code_interface():
     start_stencil_data = StartStencilData(
         name="stencil1",
         fields=[
@@ -64,32 +78,28 @@ def serialised_directives():
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
         startln=1,
-        endln=2,
         acc_present=False,
         mergecopy=False,
         copies=True,
     )
     end_stencil_data = EndStencilData(
-        name="stencil1", startln=3, endln=4, noendif=False, noprofile=False
+        name="stencil1", startln=3, noendif=False, noprofile=False
     )
     declare_data = DeclareData(
         startln=5,
-        endln=6,
         declarations={"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"},
         ident_type="REAL(wp)",
         suffix="before",
     )
-    imports_data = ImportsData(startln=7, endln=8)
-    start_create_data = StartCreateData(
-        extra_fields=["foo", "bar"], startln=9, endln=10
-    )
-    end_create_data = EndCreateData(startln=11, endln=11)
-    endif_data = EndIfData(startln=12, endln=12)
-    start_profile_data = StartProfileData(startln=13, endln=13, name="test_stencil")
-    end_profile_data = EndProfileData(startln=14, endln=14)
-    insert_data = InsertData(startln=15, endln=15, content="print *, 'Hello, World!'")
+    imports_data = ImportsData(startln=7)
+    start_create_data = StartCreateData(extra_fields=["foo", "bar"], startln=9)
+    end_create_data = EndCreateData(startln=11)
+    endif_data = EndIfData(startln=12)
+    start_profile_data = StartProfileData(startln=13, name="test_stencil")
+    end_profile_data = EndProfileData(startln=14)
+    insert_data = InsertData(startln=15, content="print *, 'Hello, World!'")
 
-    return DeserialisedDirectives(
+    return IntegrationCodeInterface(
         StartStencil=[start_stencil_data],
         EndStencil=[end_stencil_data],
         Declare=[declare_data],
@@ -200,12 +210,14 @@ def expected_insert_source():
 
 
 @pytest.fixture
-def generator(serialised_directives):
-    return IntegrationGenerator(serialised_directives, profile=True, metadata_gen=False)
+def integration_code_generator(integration_code_interface):
+    return IntegrationCodeGenerator(
+        integration_code_interface, profile=True, metadatagen=False
+    )
 
 
-def test_generate(
-    generator,
+def test_integration_code_generation(
+    integration_code_generator,
     expected_start_create_source,
     expected_end_create_source,
     expected_imports_source,
@@ -218,7 +230,7 @@ def test_generate(
     expected_insert_source,
 ):
     # Check that the generated code snippets are as expected
-    generated = generator()
+    generated = integration_code_generator()
     assert len(generated) == 10
     assert generated[0].source == expected_start_create_source
     assert generated[1].source == expected_end_create_source
@@ -230,3 +242,107 @@ def test_generate(
     assert generated[7].source == expected_start_profile_source
     assert generated[8].source == expected_end_profile_source
     assert generated[9].source == expected_insert_source
+
+
+@pytest.fixture
+def serialisation_code_interface():
+    interface = {
+        "Import": ImportData(startln=0),
+        "Init": InitData(startln=1, directory=".", prefix="liskov-serialisation"),
+        "Savepoint": [
+            SavepointData(
+                startln=9,
+                subroutine="apply_nabla2_to_vn_in_lateral_boundary",
+                intent="start",
+                fields=[
+                    FieldSerialisationData(
+                        variable="z_nabla2_e",
+                        association="z_nabla2_e(:,:,1)",
+                        decomposed=False,
+                        dimension=None,
+                        typespec=None,
+                        typename=None,
+                        ptr_var=None,
+                    ),
+                ],
+                metadata=[
+                    Metadata(key="jstep", value="jstep_ptr"),
+                    Metadata(key="diffctr", value="diffctr"),
+                ],
+            ),
+            SavepointData(
+                startln=38,
+                subroutine="apply_nabla2_to_vn_in_lateral_boundary",
+                intent="end",
+                fields=[
+                    FieldSerialisationData(
+                        variable="z_nabla2_e",
+                        association="z_nabla2_e(:,:,1)",
+                        decomposed=False,
+                        dimension=None,
+                        typespec=None,
+                        typename=None,
+                        ptr_var=None,
+                    ),
+                    FieldSerialisationData(
+                        variable="vn",
+                        association="p_nh_prog%vn(:,:,1)",
+                        decomposed=False,
+                        dimension=None,
+                        typespec=None,
+                        typename=None,
+                        ptr_var=None,
+                    ),
+                ],
+                metadata=[
+                    Metadata(key="jstep", value="jstep_ptr"),
+                    Metadata(key="diffctr", value="diffctr"),
+                ],
+            ),
+        ],
+    }
+
+    return SerialisationCodeInterface(**interface)
+
+
+@pytest.fixture
+def expected_savepoints():
+    return [
+        "  USE mo_mpi, ONLY: get_my_mpi_work_id",
+        """
+    !$ser init directory="." prefix="liskov-serialisation" mpi_rank=get_my_mpi_work_id()
+
+    !$ser savepoint apply_nabla2_to_vn_in_lateral_boundary_start jstep=jstep_ptr diffctr=diffctr
+
+    PRINT *, 'Serializing z_nabla2_e=z_nabla2_e(:,:,1)'
+
+    !$ser data z_nabla2_e=z_nabla2_e(:,:,1)""",
+        """
+    !$ser savepoint apply_nabla2_to_vn_in_lateral_boundary_end jstep=jstep_ptr diffctr=diffctr
+
+    PRINT *, 'Serializing z_nabla2_e=z_nabla2_e(:,:,1)'
+
+    !$ser data z_nabla2_e=z_nabla2_e(:,:,1)
+
+    PRINT *, 'Serializing vn=p_nh_prog%vn(:,:,1)'
+
+    !$ser data vn=p_nh_prog%vn(:,:,1)""",
+    ]
+
+
+@pytest.mark.parametrize("multinode", [False, True])
+def test_serialisation_code_generation(
+    serialisation_code_interface, expected_savepoints, multinode
+):
+    generated = SerialisationCodeGenerator(
+        serialisation_code_interface, multinode=multinode
+    )()
+
+    if multinode:
+        assert len(generated) == 3
+        assert generated[0].source == expected_savepoints[0]
+        assert generated[1].source == expected_savepoints[1]
+        assert generated[2].source == expected_savepoints[2]
+    else:
+        assert len(generated) == 2
+        assert generated[1].source == expected_savepoints[2]

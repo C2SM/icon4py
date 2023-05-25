@@ -14,7 +14,7 @@
 
 from collections import defaultdict
 
-import icon4pytools.liskov.parsing.types as ts
+import icon4pytools.liskov.parsing.parse as ts
 import pytest
 from icon4pytools.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4pytools.liskov.parsing.parse import DirectivesParser

@@ -10,49 +10,79 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from pathlib import Path
 
-from icon4pytools.liskov.codegen.generate import IntegrationGenerator
-from icon4pytools.liskov.codegen.interface import DeserialisedDirectives
-from icon4pytools.liskov.codegen.write import IntegrationWriter
-from icon4pytools.liskov.common import Step, linear_pipeline
+from icon4pytools.liskov.codegen.integration.deserialise import (
+    IntegrationCodeDeserialiser,
+)
+from icon4pytools.liskov.codegen.integration.generate import (
+    IntegrationCodeGenerator,
+)
+from icon4pytools.liskov.codegen.integration.interface import (
+    IntegrationCodeInterface,
+)
+from icon4pytools.liskov.codegen.serialisation.deserialise import (
+    SerialisationCodeDeserialiser,
+)
+from icon4pytools.liskov.codegen.serialisation.generate import (
+    SerialisationCodeGenerator,
+)
+from icon4pytools.liskov.codegen.shared.write import CodegenWriter
 from icon4pytools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
-from icon4pytools.liskov.parsing.deserialise import DirectiveDeserialiser
 from icon4pytools.liskov.parsing.parse import DirectivesParser
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
+from icon4pytools.liskov.pipeline.definition import Step, linear_pipeline
+
+
+DESERIALISERS = {
+    "integration": IntegrationCodeDeserialiser,
+    "serialisation": SerialisationCodeDeserialiser,
+}
+
+CODEGENS = {
+    "integration": IntegrationCodeGenerator,
+    "serialisation": SerialisationCodeGenerator,
+}
 
 
 @linear_pipeline
-def parse_fortran_file(input_filepath: Path, output_filepath: Path) -> list[Step]:
+def parse_fortran_file(
+    input_filepath: Path,
+    output_filepath: Path,
+    deserialiser_type: str,
+    **kwargs,
+) -> list[Step]:
     """Execute a pipeline to parse and deserialize directives from a file.
 
         The pipeline consists of three steps: DirectivesScanner, DirectivesParser, and
         DirectiveDeserialiser. The DirectivesScanner scans the file for directives,
         the DirectivesParser parses the directives into a dictionary, and the
         DirectiveDeserialiser deserializes the dictionary into a
-        DeserialisedDirectives object.
+        its corresponding Interface object.
 
     Args:
         input_filepath: Path to the input file to process.
         output_filepath: Path to the output file to generate.
+        deserialiser_type: What deserialiser to use.
 
     Returns:
-        DeserialisedDirectives: The deserialized directives object.
+        IntegrationCodeInterface | SerialisationCodeInterface: The interface object.
     """
+    deserialiser = DESERIALISERS[deserialiser_type]
+
     return [
         DirectivesScanner(input_filepath),
         DirectivesParser(input_filepath, output_filepath),
-        DirectiveDeserialiser(),
+        deserialiser(**kwargs),
     ]
 
 
 @linear_pipeline
-def load_gt4py_stencils(parsed: DeserialisedDirectives) -> list[Step]:
-    """Execute a pipeline to update fields of a DeserialisedDirectives object with GT4Py stencils.
+def load_gt4py_stencils(parsed: IntegrationCodeInterface) -> list[Step]:
+    """Execute a pipeline to update fields of a IntegrationCodeInterface object with GT4Py stencils.
 
     Args:
-        parsed: The input DeserialisedDirectives object.
+        parsed: The input IntegrationCodeInterface object.
 
     Returns:
         The updated object with fields containing information from GT4Py stencils.
@@ -62,26 +92,25 @@ def load_gt4py_stencils(parsed: DeserialisedDirectives) -> list[Step]:
 
 @linear_pipeline
 def run_code_generation(
-    parsed: DeserialisedDirectives,
     input_filepath: Path,
     output_filepath: Path,
-    profile: bool,
-    metadatagen: bool,
+    codegen_type: str,
+    *args,
+    **kwargs,
 ) -> list[Step]:
-    """Execute a pipeline to generate and write code for a set of directives.
-
-    The pipeline consists of two steps: IntegrationGenerator and IntegrationWriter. The IntegrationGenerator generates
-    code based on the parsed directives and profile flag. The IntegrationWriter writes the generated code to the
-    specified filepath.
+    """Execute a pipeline to generate and write code.
 
     Args:
-        parsed: The deserialized directives object.
         input_filepath: The original file containing the DSL preprocessor directives.
         output_filepath: The file path to write the generated code to.
-        profile: A flag to indicate if profiling information should be included in the generated code.
-        metadatagen: A flag to indicate if a metadata header should be included in the generated code.
+        codegen_type: Which type of code generator to use.
+
+    Note:
+        Additional positional and keyword arguments are passed to the code generator.
     """
+    code_generator = CODEGENS[codegen_type]
+
     return [
-        IntegrationGenerator(parsed, profile, metadatagen),
-        IntegrationWriter(input_filepath, output_filepath),
+        code_generator(*args, **kwargs),
+        CodegenWriter(input_filepath, output_filepath),
     ]

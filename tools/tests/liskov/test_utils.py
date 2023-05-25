@@ -12,9 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from copy import deepcopy
 
-import icon4pytools.liskov.parsing.types as ts
+import icon4pytools.liskov.parsing.parse as ts
 import pytest
-from icon4pytools.liskov.parsing.types import Imports, StartCreate
 from icon4pytools.liskov.parsing.utils import (
     extract_directive,
     print_parsed_directive,
@@ -25,22 +24,22 @@ from icon4pytools.liskov.parsing.utils import (
 
 def test_extract_directive():
     directives = [
-        Imports("IMPORTS()", 1, 1),
-        StartCreate("START CREATE()", 3, 4),
+        ts.Imports("IMPORTS()", 1, 1),
+        ts.StartCreate("START CREATE()", 3, 4),
     ]
 
     # Test that only the expected directive is extracted.
-    assert extract_directive(directives, Imports) == [directives[0]]
-    assert extract_directive(directives, StartCreate) == [directives[1]]
+    assert extract_directive(directives, ts.Imports) == [directives[0]]
+    assert extract_directive(directives, ts.StartCreate) == [directives[1]]
 
 
 def test_remove_directive():
     directives = [
-        Imports("IMPORTS()", 1, 1),
-        StartCreate("START CREATE()", 3, 4),
+        ts.Imports("IMPORTS()", 1, 1),
+        ts.StartCreate("START CREATE()", 3, 4),
     ]
     new_directives = deepcopy(directives)
-    assert remove_directive_types(new_directives, [Imports]) == [directives[1]]
+    assert remove_directive_types(new_directives, [ts.Imports]) == [directives[1]]
 
 
 @pytest.mark.parametrize(

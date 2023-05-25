@@ -72,21 +72,11 @@ A preprocessor that facilitates integration of GT4Py code into the ICON model. `
 
 To use the `icon_liskov` tool, run the following command:
 
+```bash
+icon_liskov <input_filepath> <output_filepath> [--profile] [--metadatagen]
 ```
-Usage: icon_liskov [OPTIONS] INPUT_FILEPATH OUTPUT_FILEPATH
 
-  Command line interface for interacting with the ICON-Liskov DSL
-  Preprocessor.
-
-  Arguments:
-    INPUT_PATH: Path to input file containing Liskov directives.
-    OUTPUT_PATH: Path to new file to be generated.
-
-Options:
-  -p, --profile      Add nvtx profile statements to stencils.
-  -m, --metadatagen  Add metadata header with information about program.
-  --help             Show this message and exit.
-```
+Where `input_filepath` is the path to the input file to be processed, and `output_filepath` is the path to the output file. The optional `--profile` flag adds nvtx profile statements to the stencils.
 
 ### Preprocessor directives
 
@@ -192,3 +182,28 @@ This directive allows generating an nvtx end profile statement.
 #### `!$DSL ENDIF()`
 
 This directive generates an `#endif` statement.
+
+### `f2ser`
+
+This tool is designed to parse a well-defined Fortran granule interface and generate ppser statements for each variable in the interface. It uses the `f2py` library to perform the parsing and `liskov` for the generation tasks.
+
+### Usage
+
+`f2ser [OPTIONS] GRANULE_PATH OUTPUT_FILEPATH`
+
+### Arguments
+
+```
+GRANULE_PATH      A path to the Fortran source file to be parsed.
+OUTPUT_FILEPATH   A path to the output Fortran source file to be generated.
+```
+
+### Options
+
+```
+--dependencies PATH  Optional list of dependency paths.
+--directory TEXT      The directory to serialise the variables to.
+--prefix TEXT         The prefix to use for each serialised variable.
+```
+
+**Note:** The output of f2ser still has to be preprocessed using `pp_ser.py`, which then yields a compilable unit. The serialised files will have `f2ser` as their prefix in the default folder location of the experiment.

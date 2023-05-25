@@ -22,9 +22,9 @@ import click
 
 class ModuleType(click.ParamType):
     names = [
-        "icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_",
-        "icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_",
-        "icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_",
+        "icon4pytools.atm_dyn_iconam.mo_nh_diffusion_stencil_",
+        "icon4pytools.atm_dyn_iconam.mo_solve_nonhydro_stencil_",
+        "icon4pytools.atm_dyn_iconam.mo_velocity_advection_stencil_",
     ]
 
     def shell_complete(self, ctx, param, incomplete):

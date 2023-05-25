@@ -14,7 +14,7 @@ import datetime
 from typing import Any
 
 import click
-import icon4pytools
+import icon4pytools.liskov
 from icon4pytools.liskov.external.exceptions import MissingClickContextError
 
 
@@ -29,7 +29,9 @@ class CodeMetadata:
     def cli_params(self) -> dict[str, Any]:
         try:
             ctx = click.get_current_context()
-            return ctx.params
+            params = ctx.params.copy()
+            params.update(ctx.parent.params)
+            return params
         except Exception as e:
             raise MissingClickContextError(
                 f"Cannot fetch click context in this thread as no click command has been executed.\n {e}"
@@ -38,4 +40,4 @@ class CodeMetadata:
     @property
     def version(self) -> str:
         """Get the current version."""
-        return icon4pytools.__version__
+        return icon4pytools.liskov.__version__
