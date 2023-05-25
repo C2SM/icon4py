@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Sequence, Type
 
-import icon4py.liskov.parsing.types as ts
+from icon4py.liskov.parsing import types as ts
 
 
 def flatten_list_of_dicts(list_of_dicts: list[dict]) -> dict:
@@ -36,11 +36,6 @@ def string_to_bool(string: str) -> bool:
         raise ValueError(f"Cannot convert '{string}' to a boolean.")
 
 
-def print_parsed_directive(directive: ts.ParsedDirective) -> str:
-    """Print a parsed directive, including its contents, and start and end line numbers."""
-    return f"Directive: {directive.string}, start line: {directive.startln}, end line: {directive.endln}\n"
-
-
 def extract_directive(
     directives: Sequence[ts.ParsedDirective],
     required_type: Type[ts.ParsedDirective],
@@ -48,6 +43,11 @@ def extract_directive(
     """Extract a directive type from a list of directives."""
     directives = [d for d in directives if type(d) == required_type]
     return directives
+
+
+def print_parsed_directive(directive: ts.ParsedDirective) -> str:
+    """Print a parsed directive, including its contents, and start and end line numbers."""
+    return f"Directive: {directive.string}, start line: {directive.startln}, end line: {directive.endln}\n"
 
 
 def remove_directive_types(

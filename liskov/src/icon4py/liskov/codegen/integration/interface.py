@@ -14,15 +14,11 @@ import dataclasses
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
+from icon4py.liskov.codegen.shared.types import CodeGenInput
+
 
 class UnusedDirective:
     ...
-
-
-@dataclass
-class CodeGenInput:
-    startln: int
-    endln: int
 
 
 @dataclass
@@ -104,7 +100,7 @@ class InsertData(CodeGenInput):
 
 
 @dataclass
-class DeserialisedDirectives:
+class IntegrationCodeInterface:
     StartStencil: Sequence[StartStencilData]
     EndStencil: Sequence[EndStencilData]
     Declare: Sequence[DeclareData]

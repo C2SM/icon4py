@@ -30,7 +30,9 @@ class CodeMetadata:
     def cli_params(self) -> dict[str, Any]:
         try:
             ctx = click.get_current_context()
-            return ctx.params
+            params = ctx.params.copy()
+            params.update(ctx.parent.params)
+            return params
         except Exception as e:
             raise MissingClickContextError(
                 f"Cannot fetch click context in this thread as no click command has been executed.\n {e}"
