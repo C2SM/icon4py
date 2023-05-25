@@ -11,16 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.icon4pygen.bindings.exceptions import BindingsRenderingException
+from dataclasses import dataclass
 
 
-class LocationRenderer:
-    type_dispatcher = {"Cell": "Cells", "Edge": "Edges", "Vertex": "Vertices"}
+@dataclass
+class CodeGenInput:
+    startln: int
 
-    @classmethod
-    def location_type(cls, cls_name: str) -> str:
-        if cls_name not in cls.type_dispatcher.keys():
-            raise BindingsRenderingException(
-                f"cls name {cls_name} needs to be either 'Cell', 'Edge' or 'Vertex'"
-            )
-        return cls.type_dispatcher[cls_name]
+
+@dataclass
+class GeneratedCode(CodeGenInput):
+    source: str

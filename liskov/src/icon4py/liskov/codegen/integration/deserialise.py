@@ -11,15 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
-from typing import Any, Callable, Optional, Protocol, Type
+from typing import Any, Optional, Protocol, Type
 
+import icon4py.liskov.parsing.parse
 import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.codegen.interface import (
+from icon4py.common.logger import setup_logger
+from icon4py.liskov.codegen.integration.interface import (
     BoundsData,
-    CodeGenInput,
     DeclareData,
-    DeserialisedDirectives,
     EndCreateData,
     EndIfData,
     EndProfileData,
@@ -27,13 +26,14 @@ from icon4py.liskov.codegen.interface import (
     FieldAssociationData,
     ImportsData,
     InsertData,
+    IntegrationCodeInterface,
     StartCreateData,
     StartProfileData,
     StartStencilData,
     UnusedDirective,
 )
-from icon4py.liskov.common import Step
-from icon4py.liskov.logger import setup_logger
+from icon4py.liskov.codegen.shared.deserialise import Deserialiser
+from icon4py.liskov.codegen.shared.types import CodeGenInput
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     MissingBoundsError,
@@ -89,13 +89,11 @@ class DirectiveInputFactory(Protocol):
         ...
 
 
-@dataclass
 class DataFactoryBase:
     directive_cls: Type[ts.ParsedDirective]
     dtype: Type[CodeGenInput]
 
 
-@dataclass
 class OptionalMultiUseDataFactory(DataFactoryBase):
     def __call__(
         self, parsed: ts.ParsedDict, **kwargs: Any
@@ -106,48 +104,38 @@ class OptionalMultiUseDataFactory(DataFactoryBase):
         else:
             deserialised = []
             for directive in extracted:
-                deserialised.append(
-                    self.dtype(
-                        startln=directive.startln, endln=directive.endln, **kwargs
-                    )
-                )
+                deserialised.append(self.dtype(startln=directive.startln, **kwargs))
             return deserialised
 
 
-@dataclass
 class RequiredSingleUseDataFactory(DataFactoryBase):
     def __call__(self, parsed: ts.ParsedDict) -> CodeGenInput:
         extracted = extract_directive(parsed["directives"], self.directive_cls)[0]
-        return self.dtype(startln=extracted.startln, endln=extracted.endln)
+        return self.dtype(startln=extracted.startln)
 
 
-@dataclass
 class EndCreateDataFactory(RequiredSingleUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = ts.EndCreate
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.EndCreate
     dtype: Type[EndCreateData] = EndCreateData
 
 
-@dataclass
 class ImportsDataFactory(RequiredSingleUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = ts.Imports
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.Imports
     dtype: Type[ImportsData] = ImportsData
 
 
-@dataclass
 class EndIfDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = ts.EndIf
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.EndIf
     dtype: Type[EndIfData] = EndIfData
 
 
-@dataclass
 class EndProfileDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = ts.EndProfile
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.EndProfile
     dtype: Type[EndProfileData] = EndProfileData
 
 
-@dataclass
 class StartCreateDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = ts.StartCreate
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.StartCreate
     dtype: Type[StartCreateData] = StartCreateData
 
     def __call__(self, parsed: ts.ParsedDict) -> StartCreateData:
@@ -159,14 +147,11 @@ class StartCreateDataFactory(DataFactoryBase):
         if named_args:
             extra_fields = named_args["extra_fields"].split(",")
 
-        return self.dtype(
-            startln=directive.startln, endln=directive.endln, extra_fields=extra_fields
-        )
+        return self.dtype(startln=directive.startln, extra_fields=extra_fields)
 
 
-@dataclass
 class DeclareDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = ts.Declare
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.Declare
     dtype: Type[DeclareData] = DeclareData
 
     @staticmethod
@@ -185,7 +170,6 @@ class DeclareDataFactory(DataFactoryBase):
             deserialised.append(
                 self.dtype(
                     startln=directive.startln,
-                    endln=directive.endln,
                     declarations=named_args,
                     ident_type=ident_type,
                     suffix=suffix,
@@ -194,9 +178,8 @@ class DeclareDataFactory(DataFactoryBase):
         return deserialised
 
 
-@dataclass
 class StartProfileDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = ts.StartProfile
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.StartProfile
     dtype: Type[StartProfileData] = StartProfileData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartProfileData]:
@@ -206,18 +189,13 @@ class StartProfileDataFactory(DataFactoryBase):
             named_args = parsed["content"]["StartProfile"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
             deserialised.append(
-                self.dtype(
-                    name=stencil_name,
-                    startln=directive.startln,
-                    endln=directive.endln,
-                )
+                self.dtype(name=stencil_name, startln=directive.startln)
             )
         return deserialised
 
 
-@dataclass
 class EndStencilDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = ts.EndStencil
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.EndStencil
     dtype: Type[EndStencilData] = EndStencilData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[EndStencilData]:
@@ -232,7 +210,6 @@ class EndStencilDataFactory(DataFactoryBase):
                 self.dtype(
                     name=stencil_name,
                     startln=directive.startln,
-                    endln=directive.endln,
                     noendif=noendif,
                     noprofile=noprofile,
                 )
@@ -240,9 +217,8 @@ class EndStencilDataFactory(DataFactoryBase):
         return deserialised
 
 
-@dataclass
 class StartStencilDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = ts.StartStencil
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.StartStencil
     dtype: Type[StartStencilData] = StartStencilData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
@@ -282,7 +258,6 @@ class StartStencilDataFactory(DataFactoryBase):
                     fields=fields_w_tolerance,
                     bounds=bounds,
                     startln=directive.startln,
-                    endln=directive.endln,
                     acc_present=acc_present,
                     mergecopy=mergecopy,
                     copies=copies,
@@ -377,9 +352,8 @@ class StartStencilDataFactory(DataFactoryBase):
         return fields
 
 
-@dataclass
 class InsertDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = ts.Insert
+    directive_cls: Type[ts.ParsedDirective] = icon4py.liskov.parsing.parse.Insert
     dtype: Type[InsertData] = InsertData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[InsertData]:
@@ -388,15 +362,13 @@ class InsertDataFactory(DataFactoryBase):
         for i, directive in enumerate(extracted):
             content = parsed["content"]["Insert"][i]
             deserialised.append(
-                self.dtype(
-                    startln=directive.startln, endln=directive.endln, content=content  # type: ignore
-                )
+                self.dtype(startln=directive.startln, content=content)  # type: ignore
             )
         return deserialised
 
 
-class DirectiveDeserialiser(Step):
-    _FACTORIES: dict[str, Callable] = {
+class IntegrationCodeDeserialiser(Deserialiser):
+    _FACTORIES = {
         "StartCreate": StartCreateDataFactory(),
         "EndCreate": EndCreateDataFactory(),
         "Imports": ImportsDataFactory(),
@@ -408,27 +380,4 @@ class DirectiveDeserialiser(Step):
         "EndProfile": EndProfileDataFactory(),
         "Insert": InsertDataFactory(),
     }
-
-    def __call__(self, directives: ts.ParsedDict) -> DeserialisedDirectives:
-        """Deserialise the provided parsed directives to a DeserialisedDirectives object.
-
-        Args:
-            directives: The parsed directives to deserialise.
-
-        Returns:
-            A DeserialisedDirectives object containing the deserialised directives.
-
-        Note:
-            The method uses the `_FACTORIES` class attribute to create the appropriate
-            factory object for each directive type, and uses these objects to deserialise
-            the parsed directives. The DeserialisedDirectives class is a dataclass
-            containing the deserialised versions of the different directives.
-        """
-        logger.info("Deserialising directives ...")
-        deserialised = dict()
-
-        for key, func in self._FACTORIES.items():
-            ser = func(directives)
-            deserialised[key] = ser
-
-        return DeserialisedDirectives(**deserialised)
+    _INTERFACE_TYPE = IntegrationCodeInterface
