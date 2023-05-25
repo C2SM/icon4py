@@ -16,9 +16,8 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Match, Optional, Protocol
 
-import icon4py.liskov.parsing.parse
 import icon4py.liskov.parsing.types as ts
-from icon4py.common.logger import setup_logger
+from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     RepeatedDirectiveError,
@@ -118,12 +117,14 @@ class DirectiveSemanticsValidator:
         repeated = remove_directive_types(
             [d for d in directives if directives.count(d) > 1],
             [
-                icon4py.liskov.parsing.parse.StartStencil,
-                icon4py.liskov.parsing.parse.EndStencil,
-                icon4py.liskov.parsing.parse.EndIf,
-                icon4py.liskov.parsing.parse.EndProfile,
-                icon4py.liskov.parsing.parse.StartProfile,
-                icon4py.liskov.parsing.parse.Insert,
+                ts.StartCreate,
+                ts.EndCreate,
+                ts.StartStencil,
+                ts.EndStencil,
+                ts.EndIf,
+                ts.EndProfile,
+                ts.StartProfile,
+                ts.Insert,
             ],
         )
         if repeated:
@@ -137,12 +138,10 @@ class DirectiveSemanticsValidator:
     ) -> None:
         """Check that all required directives are used at least once."""
         expected = [
-            icon4py.liskov.parsing.parse.Declare,
-            icon4py.liskov.parsing.parse.Imports,
-            icon4py.liskov.parsing.parse.StartCreate,
-            icon4py.liskov.parsing.parse.EndCreate,
-            icon4py.liskov.parsing.parse.StartStencil,
-            icon4py.liskov.parsing.parse.EndStencil,
+            ts.Declare,
+            ts.Imports,
+            ts.StartStencil,
+            ts.EndStencil,
         ]
         for expected_type in expected:
             if not any([isinstance(d, expected_type) for d in directives]):
@@ -172,23 +171,13 @@ class DirectiveSemanticsValidator:
             directives (list[ts.ParsedDirective]): List of stencil directives to validate.
         """
         stencil_directives = [
-            d
-            for d in directives
-            if isinstance(
-                d,
-                (
-                    icon4py.liskov.parsing.parse.StartStencil,
-                    icon4py.liskov.parsing.parse.EndStencil,
-                ),
-            )
+            d for d in directives if isinstance(d, (ts.StartStencil, ts.EndStencil))
         ]
         stencil_counts: dict = {}
         for directive in stencil_directives:
             stencil_name = self.extract_arg_from_directive(directive.string, "name")
             stencil_counts[stencil_name] = stencil_counts.get(stencil_name, 0) + (
-                1
-                if isinstance(directive, icon4py.liskov.parsing.parse.StartStencil)
-                else -1
+                1 if isinstance(directive, ts.StartStencil) else -1
             )
 
         unbalanced_stencils = [

@@ -15,21 +15,17 @@
 from collections import defaultdict
 
 import pytest
+from conftest import insert_new_lines, scan_for_directives
 from pytest import mark
-
-import icon4py.liskov.parsing.parse
-import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
-from icon4py.liskov.parsing.parse import DirectivesParser
-from icon4py.testutils.liskov_fortran_samples import (
+from samples.fortran_samples import (
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,
 )
-from icon4py.testutils.liskov_test_utils import (
-    insert_new_lines,
-    scan_for_directives,
-)
+
+import icon4py.liskov.parsing.types as ts
+from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
+from icon4py.liskov.parsing.parse import DirectivesParser
 
 
 def test_parse_no_input():
@@ -41,23 +37,21 @@ def test_parse_no_input():
     "directive, string, startln, endln, expected_content",
     [
         (
-            icon4py.liskov.parsing.parse.Imports("IMPORTS()", 1, 1),
+            ts.Imports("IMPORTS()", 1, 1),
             "IMPORTS()",
             1,
             1,
             defaultdict(list, {"Imports": [{}]}),
         ),
         (
-            icon4py.liskov.parsing.parse.StartCreate(
-                "START CREATE(extra_fields=foo)", 2, 2
-            ),
+            ts.StartCreate("START CREATE(extra_fields=foo)", 2, 2),
             "START CREATE()",
             2,
             2,
             defaultdict(list, {"StartCreate": [{"extra_fields": "foo"}]}),
         ),
         (
-            icon4py.liskov.parsing.parse.StartStencil(
+            ts.StartStencil(
                 "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)", 3, 4
             ),
             "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)",
@@ -85,7 +79,7 @@ def test_parse_single_directive(directive, string, startln, endln, expected_cont
 
 @mark.parametrize(
     "stencil, num_directives, num_content",
-    [(SINGLE_STENCIL, 9, 8), (MULTIPLE_STENCILS, 11, 7)],
+    [(SINGLE_STENCIL, 7, 6), (MULTIPLE_STENCILS, 9, 5)],
 )
 def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
     fpath = make_f90_tmpfile(content=stencil)

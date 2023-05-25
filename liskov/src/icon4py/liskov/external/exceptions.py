@@ -16,6 +16,10 @@ class MissingClickContextError(Exception):
     pass
 
 
+class MissingGitError(Exception):
+    pass
+
+
 class UnknownStencilError(Exception):
     pass
 

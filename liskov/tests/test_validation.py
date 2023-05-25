@@ -12,7 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
+from conftest import insert_new_lines, scan_for_directives
 from pytest import mark
+from samples.fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
 
 from icon4py.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
@@ -20,22 +22,9 @@ from icon4py.liskov.parsing.exceptions import (
     RequiredDirectivesError,
     UnbalancedStencilDirectiveError,
 )
-from icon4py.liskov.parsing.parse import (
-    Declare,
-    DirectivesParser,
-    Imports,
-    StartCreate,
-    StartStencil,
-)
+from icon4py.liskov.parsing.parse import DirectivesParser
+from icon4py.liskov.parsing.types import Declare, Imports, StartStencil
 from icon4py.liskov.parsing.validation import DirectiveSyntaxValidator
-from icon4py.testutils.liskov_fortran_samples import (
-    MULTIPLE_STENCILS,
-    SINGLE_STENCIL,
-)
-from icon4py.testutils.liskov_test_utils import (
-    insert_new_lines,
-    scan_for_directives,
-)
 
 
 @mark.parametrize(
@@ -69,7 +58,6 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
         [Declare("!$DSL DECLARE(name=foo; bar)", 0, 0)],
         [Imports("!$DSL IMPORTS(foo)", 0, 0)],
         [Imports("!$DSL IMPORTS())", 0, 0)],
-        [StartCreate("!$DSL START CREATE(;)", 0, 0)],
     ),
 )
 def test_directive_syntax_validator(directive):
@@ -82,7 +70,6 @@ def test_directive_syntax_validator(directive):
     "directive",
     [
         "!$DSL IMPORTS()",
-        "!$DSL START CREATE()",
     ],
 )
 def test_directive_semantics_validation_repeated_directives(
@@ -120,7 +107,6 @@ def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, direc
     "directive",
     [
         """!$DSL IMPORTS()""",
-        """!$DSL START CREATE()""",
         """!$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; noprofile=True)""",
     ],
 )

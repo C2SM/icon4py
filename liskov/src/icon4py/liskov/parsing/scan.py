@@ -15,9 +15,9 @@ from pathlib import Path
 from typing import Any
 
 import icon4py.liskov.parsing.types as ts
-from icon4py.common.logger import setup_logger
+from icon4py.liskov.common import Step
+from icon4py.liskov.logger import setup_logger
 from icon4py.liskov.parsing.exceptions import DirectiveSyntaxError
-from icon4py.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)

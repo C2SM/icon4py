@@ -15,18 +15,10 @@ The icon4py-liskov package includes the `icon_liskov` CLI tool which takes a for
 To use the `icon_liskov` tool, run the following command:
 
 ```bash
-icon_liskov <input_filepath> <output_filepath> [--profile] [--metadatagen] [--ppser]
+icon_liskov <input_filepath> <output_filepath> [--profile] [--metadatagen]
 ```
 
-The following are descriptions of the arguments and options:
-
-- input_filepath: path to the input file to be processed.
-- output_filepath: path to the output file.
-- profile flag: adds nvtx profile statements to the stencils (optional).
-- metadatagen flag: generates a metadata header at the top of the file which includes information on icon_liskov such as the version used.
-- ppser flag: activates serialisation mode and will trigger the generation of ppser serialisation statements serialising all variables at the start and end of each stencil directive.
-
-**Note**: By default the data will be saved at the default folder location of the currently run experiment and will have a prefix of `liskov-serialisation`.
+Where `input_filepath` is the path to the input file to be processed, and `output_filepath` is the path to the output file. The optional `--profile` flag adds nvtx profile statements to the stencils.
 
 ### Preprocessor directives
 
@@ -38,7 +30,7 @@ This directive generates the necessary `USE` statements to import the Fortran to
 
 #### `!$DSL START CREATE()`
 
-This directive generates an OpenACC `DATA CREATE` statement for all output fields used in each DSL (icon4py) stencil. The directive also takes an **optional** keyword argument to specify extra fields to include in the `DATA CREATE` statement called `extra_fields`. Here you can specify a comma-separated list of strings which should be added to the `DATA CREATE` statement as follows `extra_fields=foo,bar`.
+This directive generates an OpenACC `DATA CREATE` statement. The directive requires an **optional** keyword argument to specify extra fields to include in the `DATA CREATE` statement called `extra_fields`. Here you can specify a comma-separated list of strings which should be added to the `DATA CREATE` statement as follows `extra_fields=foo,bar`.
 
 #### `!$DSL END CREATE()`
 
@@ -89,9 +81,9 @@ Together, the `START STENCIL` and `END STENCIL` directives result in the followi
 
 ```fortran
 #ifdef __DSL_VERIFY
-!$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+!$ACC KERNELS IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
 vn_before(:, :, :) = vn(:, :, :)
-!$ACC END PARALLEL
+!$ACC END KERNELS
 ```
 
 ```fortran

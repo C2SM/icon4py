@@ -11,34 +11,63 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import datetime
+import subprocess
+from pathlib import Path
 from typing import Any
 
 import click
 
-import icon4py.liskov
-from icon4py.liskov.external.exceptions import MissingClickContextError
+from icon4py.liskov.external.exceptions import (
+    MissingClickContextError,
+    MissingGitError,
+)
 
 
 class CodeMetadata:
     """Class that handles retrieval of icon-liskov runtime metadata."""
 
-    @property
-    def generated_on(self) -> str:
-        return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    def __init__(self) -> None:
+        self.generated_on = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.parent_dir = Path(__file__).parent
 
     @property
     def cli_params(self) -> dict[str, Any]:
         try:
             ctx = click.get_current_context()
-            params = ctx.params.copy()
-            params.update(ctx.parent.params)
-            return params
+            return ctx.params
         except Exception as e:
             raise MissingClickContextError(
                 f"Cannot fetch click context in this thread as no click command has been executed.\n {e}"
             )
 
     @property
-    def version(self) -> str:
-        """Get the current version."""
-        return icon4py.liskov.__version__
+    def commit_hash(self) -> str:
+        """Get the latest git commit hash."""
+        try:
+            return (
+                subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=self.parent_dir
+                )
+                .decode()
+                .strip()
+            )
+        except Exception as e:
+            raise MissingGitError(
+                f"Git is not available or there is no commit or tag.\n {e}"
+            )
+
+    @property
+    def tag(self) -> str:
+        """Get the latest git tag."""
+        try:
+            return (
+                subprocess.check_output(
+                    ["git", "describe", "--tags", "--abbrev=0"], cwd=self.parent_dir
+                )
+                .decode()
+                .strip()
+            )
+        except Exception as e:
+            raise MissingGitError(
+                f"Git is not available or there is no commit or tag.\n {e}"
+            )
