@@ -93,5 +93,18 @@ def as_1D_sparse_field(
     return it_embedded.np_as_located_field(dim)(np.asarray(field).reshape(new_shape))
 
 
+def flatten_first_two_dims(
+    *dims: gt_common.Dimension, field: it_embedded.MutableLocatedField
+) -> it_embedded.MutableLocatedField:
+    """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
+    old_shape = np.asarray(field).shape
+    assert len(old_shape) >= 2
+    flattened_size = old_shape[0] * old_shape[1]
+    flattened_shape = (flattened_size,)
+    new_shape = flattened_shape + old_shape[2:]
+    newarray = np.asarray(field).reshape(new_shape)
+    return it_embedded.np_as_located_field(*dims)(newarray)
+
+
 def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
     return f"icon4py.{stencil_module}.{stencil_name}:{stencil_name}"

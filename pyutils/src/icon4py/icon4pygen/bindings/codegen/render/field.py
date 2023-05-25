@@ -50,13 +50,15 @@ class FieldRenderer:
             raise BindingsRenderingException("can not render sid of a scalar")
 
         # We want to compute the rank without the sparse dimension, i.e. if a field is horizontal, vertical or both.
-        # This only works since compound fields are not sparse.
-        dense_rank = self.entity.rank() - int(self.entity.is_sparse())
-        values_str = (
-            "1"
-            if dense_rank == 1 or self.entity.is_compound()
-            else f"1, mesh_.{self.render_stride_type()}"
+        dense_rank = self.entity.rank() - int(
+            self.entity.is_sparse() or self.entity.is_compound()
         )
+        if dense_rank == 1:
+            values_str = "1"
+        elif self.entity.is_compound():
+            values_str = f"1, {self.entity.get_num_neighbors()} * mesh_.{self.render_stride_type()}"
+        else:
+            values_str = f"1, mesh_.{self.render_stride_type()}"
         return f"gridtools::hymap::keys<{self.render_dim_tags()}>::make_values({values_str})"
 
     def render_ranked_dim_string(self) -> str:
@@ -88,12 +90,10 @@ class FieldRenderer:
         _strides = {"E": "EdgeStride", "C": "CellStride", "V": "VertexStride"}
         if self.entity.is_dense():
             return _strides[str(self.entity.location)]
-        elif self.entity.is_sparse():
+        elif self.entity.is_sparse() or self.entity.is_compound():
             return _strides[str(self.entity.location[0])]  # type: ignore
         else:
-            raise BindingsRenderingException(
-                "stride type called on compound location or scalar"
-            )
+            raise BindingsRenderingException("stride type called on scalar")
 
     def render_ctype(self, binding_type: str) -> str:
         """Render C datatype for a corresponding binding type."""

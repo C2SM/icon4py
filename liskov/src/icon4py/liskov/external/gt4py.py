@@ -17,14 +17,14 @@ from typing import Any
 
 from gt4py.next.ffront.decorator import Program
 
+from icon4py.common.logger import setup_logger
 from icon4py.icon4pygen.metadata import get_stencil_info
-from icon4py.liskov.codegen.interface import DeserialisedDirectives
-from icon4py.liskov.common import Step
+from icon4py.liskov.codegen.integration.interface import IntegrationCodeInterface
 from icon4py.liskov.external.exceptions import (
     IncompatibleFieldError,
     UnknownStencilError,
 )
-from icon4py.liskov.logger import setup_logger
+from icon4py.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)
@@ -33,10 +33,10 @@ logger = setup_logger(__name__)
 class UpdateFieldsWithGt4PyStencils(Step):
     _STENCIL_PACKAGES = ["atm_dyn_iconam", "advection"]
 
-    def __init__(self, parsed: DeserialisedDirectives):
+    def __init__(self, parsed: IntegrationCodeInterface):
         self.parsed = parsed
 
-    def __call__(self, data: Any = None) -> DeserialisedDirectives:
+    def __call__(self, data: Any = None) -> IntegrationCodeInterface:
         logger.info("Updating parsed fields with data from icon4py stencils...")
 
         for s in self.parsed.StartStencil:
