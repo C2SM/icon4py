@@ -27,7 +27,8 @@ def step_advection_stencil_01_numpy(
     pd_time: float,
 ) -> np.ndarray:
     tmp = pd_time * (
-        p_mflx_contra_v[:,1:] * deepatmo_divzl - p_mflx_contra_v[:,:-1] * deepatmo_divzu
+        p_mflx_contra_v[:, 1:] * deepatmo_divzl
+        - p_mflx_contra_v[:, :-1] * deepatmo_divzu
     )
     return rhodz_ast + tmp
 

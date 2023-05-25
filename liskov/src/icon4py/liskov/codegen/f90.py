@@ -365,6 +365,7 @@ class ImportsStatementGenerator(TemplatedGenerator):
 class StartCreateStatement(eve.Node):
     extra_fields: Optional[list[str]]
 
+
 class StartCreateStatementGenerator(TemplatedGenerator):
     StartCreateStatement = as_jinja(
         """

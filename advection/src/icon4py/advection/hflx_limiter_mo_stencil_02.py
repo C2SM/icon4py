@@ -27,7 +27,11 @@ def _hflx_limiter_mo_stencil_02(
     z_tracer_min: Field[[CellDim, KDim], float],
     lo_bound: int32,
     hi_bound: int32,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
     condition = (refin_ctrl == lo_bound) | (refin_ctrl == hi_bound)
     z_tracer_new_out = where(
         condition,
@@ -38,7 +42,7 @@ def _hflx_limiter_mo_stencil_02(
     z_tracer_max_out = where(condition, maximum(p_cc, z_tracer_new_out), z_tracer_max)
     z_tracer_min_out = where(condition, minimum(p_cc, z_tracer_new_out), z_tracer_min)
 
-    return(z_tracer_new_out, z_tracer_max_out, z_tracer_min_out)
+    return (z_tracer_new_out, z_tracer_max_out, z_tracer_min_out)
 
 
 @program

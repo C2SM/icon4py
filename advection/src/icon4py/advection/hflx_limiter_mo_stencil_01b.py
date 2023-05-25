@@ -12,9 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum, neighbor_sum
+from gt4py.next.ffront.fbuiltins import (
+    Field,
+    broadcast,
+    maximum,
+    minimum,
+    neighbor_sum,
+)
 
-from icon4py.common.dimension import C2CE, C2E, CEDim, CellDim, EdgeDim, KDim, C2EDim, E2C
+from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -27,19 +33,31 @@ def _hflx_limiter_mo_stencil_01b(
     p_cc: Field[[CellDim, KDim], float],
     z_fluxdiv_c: Field[[CellDim, KDim], float],
     p_dtime: float,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
 
     z_mflx_anti = broadcast(p_rhodz_new, (CellDim, C2EDim, KDim))
 
-    z_mflx_anti_in  = -1. * neighbor_sum(p_rhodz_now(C2E) * z_mflx_anti, axis=C2EDim)
-    z_mflx_anti_out =      neighbor_sum(p_rhodz_now(C2E) * z_mflx_anti, axis=C2EDim)
-    z_fluxdiv_c     =      neighbor_sum( z_mflx_low(C2E) * geofac_div, axis=C2EDim)
+    z_mflx_anti_in = -1.0 * neighbor_sum(p_rhodz_now(C2E) * z_mflx_anti, axis=C2EDim)
+    z_mflx_anti_out = neighbor_sum(p_rhodz_now(C2E) * z_mflx_anti, axis=C2EDim)
+    z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div, axis=C2EDim)
 
-    z_tracer_new_low = ( p_cc * p_rhodz_now - p_dtime * z_fluxdiv_c ) / p_rhodz_new
-    z_tracer_max = maximum(p_cc,z_tracer_new_low)
-    z_tracer_min = minimum(p_cc,z_tracer_new_low)
+    z_tracer_new_low = (p_cc * p_rhodz_now - p_dtime * z_fluxdiv_c) / p_rhodz_new
+    z_tracer_max = maximum(p_cc, z_tracer_new_low)
+    z_tracer_min = minimum(p_cc, z_tracer_new_low)
 
-    return (z_mflx_anti_in, z_mflx_anti_out, z_tracer_new_low, z_tracer_max, z_tracer_min)
+    return (
+        z_mflx_anti_in,
+        z_mflx_anti_out,
+        z_tracer_new_low,
+        z_tracer_max,
+        z_tracer_min,
+    )
 
 
 @program
@@ -67,5 +85,11 @@ def hflx_limiter_mo_stencil_01b(
         p_cc,
         z_fluxdiv_c,
         p_dtime,
-        out=(z_mflx_anti_in, z_mflx_anti_out, z_tracer_new_low, z_tracer_max, z_tracer_min),
+        out=(
+            z_mflx_anti_in,
+            z_mflx_anti_out,
+            z_tracer_new_low,
+            z_tracer_max,
+            z_tracer_min,
+        ),
     )

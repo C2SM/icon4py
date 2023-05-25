@@ -23,12 +23,7 @@ from icon4py.liskov.parsing.exceptions import (
     UnbalancedStencilDirectiveError,
 )
 from icon4py.liskov.parsing.parse import DirectivesParser
-from icon4py.liskov.parsing.types import (
-    Declare,
-    Imports,
-    StartCreate,
-    StartStencil,
-)
+from icon4py.liskov.parsing.types import Declare, Imports, StartStencil
 from icon4py.liskov.parsing.validation import DirectiveSyntaxValidator
 
 

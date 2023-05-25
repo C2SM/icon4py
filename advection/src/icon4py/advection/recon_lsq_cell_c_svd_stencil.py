@@ -14,7 +14,7 @@
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.common.dimension import C2CECEC, C2E2C2E2C, CECECDim, C2E2C2E2C, CECECDim, CellDim, KDim
+from icon4py.common.dimension import C2CECEC, C2E2C2E2C, CECECDim, CellDim, KDim
 
 
 @field_operator
@@ -38,21 +38,143 @@ def _recon_lsq_cell_c_svd_stencil(
     lsq_moments_7: Field[[CellDim], float],
     lsq_moments_8: Field[[CellDim], float],
     lsq_moments_9: Field[[CellDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
 
-    p_coeff_10 = lsq_pseudoinv_9(C2CECEC[0])*(p_cc(C2E2C2E2C[0]) - p_cc) + lsq_pseudoinv_9(C2CECEC[1])*(p_cc(C2E2C2E2C[1]) - p_cc) + lsq_pseudoinv_9(C2CECEC[2])*(p_cc(C2E2C2E2C[2]) - p_cc) + lsq_pseudoinv_9(C2CECEC[3])*(p_cc(C2E2C2E2C[3]) - p_cc) + lsq_pseudoinv_9(C2CECEC[4])*(p_cc(C2E2C2E2C[4]) - p_cc) + lsq_pseudoinv_9(C2CECEC[5])*(p_cc(C2E2C2E2C[5]) - p_cc) + lsq_pseudoinv_9(C2CECEC[6])*(p_cc(C2E2C2E2C[6]) - p_cc) + lsq_pseudoinv_9(C2CECEC[7])*(p_cc(C2E2C2E2C[7]) - p_cc) + lsq_pseudoinv_9(C2CECEC[8])*(p_cc(C2E2C2E2C[8]) - p_cc)
-    p_coeff_9 = lsq_pseudoinv_8(C2CECEC[0])*(p_cc(C2E2C2E2C[0]) - p_cc) + lsq_pseudoinv_8(C2CECEC[1])*(p_cc(C2E2C2E2C[1]) - p_cc) + lsq_pseudoinv_8(C2CECEC[2])*(p_cc(C2E2C2E2C[2]) - p_cc) + lsq_pseudoinv_8(C2CECEC[3])*(p_cc(C2E2C2E2C[3]) - p_cc) + lsq_pseudoinv_8(C2CECEC[4])*(p_cc(C2E2C2E2C[4]) - p_cc) + lsq_pseudoinv_8(C2CECEC[5])*(p_cc(C2E2C2E2C[5]) - p_cc) + lsq_pseudoinv_8(C2CECEC[6])*(p_cc(C2E2C2E2C[6]) - p_cc) + lsq_pseudoinv_8(C2CECEC[7])*(p_cc(C2E2C2E2C[7]) - p_cc) + lsq_pseudoinv_8(C2CECEC[8])*(p_cc(C2E2C2E2C[8]) - p_cc)
-    p_coeff_8 = lsq_pseudoinv_7(C2CECEC[0])*(p_cc(C2E2C2E2C[0]) - p_cc) + lsq_pseudoinv_7(C2CECEC[1])*(p_cc(C2E2C2E2C[1]) - p_cc) + lsq_pseudoinv_7(C2CECEC[2])*(p_cc(C2E2C2E2C[2]) - p_cc) + lsq_pseudoinv_7(C2CECEC[3])*(p_cc(C2E2C2E2C[3]) - p_cc) + lsq_pseudoinv_7(C2CECEC[4])*(p_cc(C2E2C2E2C[4]) - p_cc) + lsq_pseudoinv_7(C2CECEC[5])*(p_cc(C2E2C2E2C[5]) - p_cc) + lsq_pseudoinv_7(C2CECEC[6])*(p_cc(C2E2C2E2C[6]) - p_cc) + lsq_pseudoinv_7(C2CECEC[7])*(p_cc(C2E2C2E2C[7]) - p_cc) + lsq_pseudoinv_7(C2CECEC[8])*(p_cc(C2E2C2E2C[8]) - p_cc)
-    p_coeff_7 = lsq_pseudoinv_6(C2CECEC[0])*(p_cc(C2E2C2E2C[0]) - p_cc) + lsq_pseudoinv_6(C2CECEC[1])*(p_cc(C2E2C2E2C[1]) - p_cc) + lsq_pseudoinv_6(C2CECEC[2])*(p_cc(C2E2C2E2C[2]) - p_cc) + lsq_pseudoinv_6(C2CECEC[3])*(p_cc(C2E2C2E2C[3]) - p_cc) + lsq_pseudoinv_6(C2CECEC[4])*(p_cc(C2E2C2E2C[4]) - p_cc) + lsq_pseudoinv_6(C2CECEC[5])*(p_cc(C2E2C2E2C[5]) - p_cc) + lsq_pseudoinv_6(C2CECEC[6])*(p_cc(C2E2C2E2C[6]) - p_cc) + lsq_pseudoinv_6(C2CECEC[7])*(p_cc(C2E2C2E2C[7]) - p_cc) + lsq_pseudoinv_6(C2CECEC[8])*(p_cc(C2E2C2E2C[8]) - p_cc)
-    p_coeff_6 = lsq_pseudoinv_5(C2CECEC[0])*(p_cc(C2E2C2E2C[0]) - p_cc) + lsq_pseudoinv_5(C2CECEC[1])*(p_cc(C2E2C2E2C[1]) - p_cc) + lsq_pseudoinv_5(C2CECEC[2])*(p_cc(C2E2C2E2C[2]) - p_cc) + lsq_pseudoinv_5(C2CECEC[3])*(p_cc(C2E2C2E2C[3]) - p_cc) + lsq_pseudoinv_5(C2CECEC[4])*(p_cc(C2E2C2E2C[4]) - p_cc) + lsq_pseudoinv_5(C2CECEC[5])*(p_cc(C2E2C2E2C[5]) - p_cc) + lsq_pseudoinv_5(C2CECEC[6])*(p_cc(C2E2C2E2C[6]) - p_cc) + lsq_pseudoinv_5(C2CECEC[7])*(p_cc(C2E2C2E2C[7]) - p_cc) + lsq_pseudoinv_5(C2CECEC[8])*(p_cc(C2E2C2E2C[8]) - p_cc)
-    p_coeff_5 = lsq_pseudoinv_4(C2CECEC[0])*(p_cc(C2E2C2E2C[0]) - p_cc) + lsq_pseudoinv_4(C2CECEC[1])*(p_cc(C2E2C2E2C[1]) - p_cc) + lsq_pseudoinv_4(C2CECEC[2])*(p_cc(C2E2C2E2C[2]) - p_cc) + lsq_pseudoinv_4(C2CECEC[3])*(p_cc(C2E2C2E2C[3]) - p_cc) + lsq_pseudoinv_4(C2CECEC[4])*(p_cc(C2E2C2E2C[4]) - p_cc) + lsq_pseudoinv_4(C2CECEC[5])*(p_cc(C2E2C2E2C[5]) - p_cc) + lsq_pseudoinv_4(C2CECEC[6])*(p_cc(C2E2C2E2C[6]) - p_cc) + lsq_pseudoinv_4(C2CECEC[7])*(p_cc(C2E2C2E2C[7]) - p_cc) + lsq_pseudoinv_4(C2CECEC[8])*(p_cc(C2E2C2E2C[8]) - p_cc)
-    p_coeff_4 = lsq_pseudoinv_3(C2CECEC[0])*(p_cc(C2E2C2E2C[0]) - p_cc) + lsq_pseudoinv_3(C2CECEC[1])*(p_cc(C2E2C2E2C[1]) - p_cc) + lsq_pseudoinv_3(C2CECEC[2])*(p_cc(C2E2C2E2C[2]) - p_cc) + lsq_pseudoinv_3(C2CECEC[3])*(p_cc(C2E2C2E2C[3]) - p_cc) + lsq_pseudoinv_3(C2CECEC[4])*(p_cc(C2E2C2E2C[4]) - p_cc) + lsq_pseudoinv_3(C2CECEC[5])*(p_cc(C2E2C2E2C[5]) - p_cc) + lsq_pseudoinv_3(C2CECEC[6])*(p_cc(C2E2C2E2C[6]) - p_cc) + lsq_pseudoinv_3(C2CECEC[7])*(p_cc(C2E2C2E2C[7]) - p_cc) + lsq_pseudoinv_3(C2CECEC[8])*(p_cc(C2E2C2E2C[8]) - p_cc)
-    p_coeff_3 = lsq_pseudoinv_2(C2CECEC[0])*(p_cc(C2E2C2E2C[0]) - p_cc) + lsq_pseudoinv_2(C2CECEC[1])*(p_cc(C2E2C2E2C[1]) - p_cc) + lsq_pseudoinv_2(C2CECEC[2])*(p_cc(C2E2C2E2C[2]) - p_cc) + lsq_pseudoinv_2(C2CECEC[3])*(p_cc(C2E2C2E2C[3]) - p_cc) + lsq_pseudoinv_2(C2CECEC[4])*(p_cc(C2E2C2E2C[4]) - p_cc) + lsq_pseudoinv_2(C2CECEC[5])*(p_cc(C2E2C2E2C[5]) - p_cc) + lsq_pseudoinv_2(C2CECEC[6])*(p_cc(C2E2C2E2C[6]) - p_cc) + lsq_pseudoinv_2(C2CECEC[7])*(p_cc(C2E2C2E2C[7]) - p_cc) + lsq_pseudoinv_2(C2CECEC[8])*(p_cc(C2E2C2E2C[8]) - p_cc)
-    p_coeff_2 = lsq_pseudoinv_1(C2CECEC[0])*(p_cc(C2E2C2E2C[0]) - p_cc) + lsq_pseudoinv_1(C2CECEC[1])*(p_cc(C2E2C2E2C[1]) - p_cc) + lsq_pseudoinv_1(C2CECEC[2])*(p_cc(C2E2C2E2C[2]) - p_cc) + lsq_pseudoinv_1(C2CECEC[3])*(p_cc(C2E2C2E2C[3]) - p_cc) + lsq_pseudoinv_1(C2CECEC[4])*(p_cc(C2E2C2E2C[4]) - p_cc) + lsq_pseudoinv_1(C2CECEC[5])*(p_cc(C2E2C2E2C[5]) - p_cc) + lsq_pseudoinv_1(C2CECEC[6])*(p_cc(C2E2C2E2C[6]) - p_cc) + lsq_pseudoinv_1(C2CECEC[7])*(p_cc(C2E2C2E2C[7]) - p_cc) + lsq_pseudoinv_1(C2CECEC[8])*(p_cc(C2E2C2E2C[8]) - p_cc)
+    p_coeff_10 = (
+        lsq_pseudoinv_9(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_9(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_9(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
+        + lsq_pseudoinv_9(C2CECEC[3]) * (p_cc(C2E2C2E2C[3]) - p_cc)
+        + lsq_pseudoinv_9(C2CECEC[4]) * (p_cc(C2E2C2E2C[4]) - p_cc)
+        + lsq_pseudoinv_9(C2CECEC[5]) * (p_cc(C2E2C2E2C[5]) - p_cc)
+        + lsq_pseudoinv_9(C2CECEC[6]) * (p_cc(C2E2C2E2C[6]) - p_cc)
+        + lsq_pseudoinv_9(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
+        + lsq_pseudoinv_9(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
+    )
+    p_coeff_9 = (
+        lsq_pseudoinv_8(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_8(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_8(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
+        + lsq_pseudoinv_8(C2CECEC[3]) * (p_cc(C2E2C2E2C[3]) - p_cc)
+        + lsq_pseudoinv_8(C2CECEC[4]) * (p_cc(C2E2C2E2C[4]) - p_cc)
+        + lsq_pseudoinv_8(C2CECEC[5]) * (p_cc(C2E2C2E2C[5]) - p_cc)
+        + lsq_pseudoinv_8(C2CECEC[6]) * (p_cc(C2E2C2E2C[6]) - p_cc)
+        + lsq_pseudoinv_8(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
+        + lsq_pseudoinv_8(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
+    )
+    p_coeff_8 = (
+        lsq_pseudoinv_7(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_7(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_7(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
+        + lsq_pseudoinv_7(C2CECEC[3]) * (p_cc(C2E2C2E2C[3]) - p_cc)
+        + lsq_pseudoinv_7(C2CECEC[4]) * (p_cc(C2E2C2E2C[4]) - p_cc)
+        + lsq_pseudoinv_7(C2CECEC[5]) * (p_cc(C2E2C2E2C[5]) - p_cc)
+        + lsq_pseudoinv_7(C2CECEC[6]) * (p_cc(C2E2C2E2C[6]) - p_cc)
+        + lsq_pseudoinv_7(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
+        + lsq_pseudoinv_7(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
+    )
+    p_coeff_7 = (
+        lsq_pseudoinv_6(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_6(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_6(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
+        + lsq_pseudoinv_6(C2CECEC[3]) * (p_cc(C2E2C2E2C[3]) - p_cc)
+        + lsq_pseudoinv_6(C2CECEC[4]) * (p_cc(C2E2C2E2C[4]) - p_cc)
+        + lsq_pseudoinv_6(C2CECEC[5]) * (p_cc(C2E2C2E2C[5]) - p_cc)
+        + lsq_pseudoinv_6(C2CECEC[6]) * (p_cc(C2E2C2E2C[6]) - p_cc)
+        + lsq_pseudoinv_6(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
+        + lsq_pseudoinv_6(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
+    )
+    p_coeff_6 = (
+        lsq_pseudoinv_5(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_5(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_5(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
+        + lsq_pseudoinv_5(C2CECEC[3]) * (p_cc(C2E2C2E2C[3]) - p_cc)
+        + lsq_pseudoinv_5(C2CECEC[4]) * (p_cc(C2E2C2E2C[4]) - p_cc)
+        + lsq_pseudoinv_5(C2CECEC[5]) * (p_cc(C2E2C2E2C[5]) - p_cc)
+        + lsq_pseudoinv_5(C2CECEC[6]) * (p_cc(C2E2C2E2C[6]) - p_cc)
+        + lsq_pseudoinv_5(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
+        + lsq_pseudoinv_5(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
+    )
+    p_coeff_5 = (
+        lsq_pseudoinv_4(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_4(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_4(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
+        + lsq_pseudoinv_4(C2CECEC[3]) * (p_cc(C2E2C2E2C[3]) - p_cc)
+        + lsq_pseudoinv_4(C2CECEC[4]) * (p_cc(C2E2C2E2C[4]) - p_cc)
+        + lsq_pseudoinv_4(C2CECEC[5]) * (p_cc(C2E2C2E2C[5]) - p_cc)
+        + lsq_pseudoinv_4(C2CECEC[6]) * (p_cc(C2E2C2E2C[6]) - p_cc)
+        + lsq_pseudoinv_4(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
+        + lsq_pseudoinv_4(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
+    )
+    p_coeff_4 = (
+        lsq_pseudoinv_3(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_3(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_3(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
+        + lsq_pseudoinv_3(C2CECEC[3]) * (p_cc(C2E2C2E2C[3]) - p_cc)
+        + lsq_pseudoinv_3(C2CECEC[4]) * (p_cc(C2E2C2E2C[4]) - p_cc)
+        + lsq_pseudoinv_3(C2CECEC[5]) * (p_cc(C2E2C2E2C[5]) - p_cc)
+        + lsq_pseudoinv_3(C2CECEC[6]) * (p_cc(C2E2C2E2C[6]) - p_cc)
+        + lsq_pseudoinv_3(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
+        + lsq_pseudoinv_3(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
+    )
+    p_coeff_3 = (
+        lsq_pseudoinv_2(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_2(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_2(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
+        + lsq_pseudoinv_2(C2CECEC[3]) * (p_cc(C2E2C2E2C[3]) - p_cc)
+        + lsq_pseudoinv_2(C2CECEC[4]) * (p_cc(C2E2C2E2C[4]) - p_cc)
+        + lsq_pseudoinv_2(C2CECEC[5]) * (p_cc(C2E2C2E2C[5]) - p_cc)
+        + lsq_pseudoinv_2(C2CECEC[6]) * (p_cc(C2E2C2E2C[6]) - p_cc)
+        + lsq_pseudoinv_2(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
+        + lsq_pseudoinv_2(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
+    )
+    p_coeff_2 = (
+        lsq_pseudoinv_1(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
+        + lsq_pseudoinv_1(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
+        + lsq_pseudoinv_1(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
+        + lsq_pseudoinv_1(C2CECEC[3]) * (p_cc(C2E2C2E2C[3]) - p_cc)
+        + lsq_pseudoinv_1(C2CECEC[4]) * (p_cc(C2E2C2E2C[4]) - p_cc)
+        + lsq_pseudoinv_1(C2CECEC[5]) * (p_cc(C2E2C2E2C[5]) - p_cc)
+        + lsq_pseudoinv_1(C2CECEC[6]) * (p_cc(C2E2C2E2C[6]) - p_cc)
+        + lsq_pseudoinv_1(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
+        + lsq_pseudoinv_1(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
+    )
 
-    p_coeff_1 = p_cc - (p_coeff_2*lsq_moments_1 + p_coeff_3*lsq_moments_2 + p_coeff_4*lsq_moments_3 + p_coeff_5*lsq_moments_4 + p_coeff_6*lsq_moments_5 + p_coeff_7*lsq_moments_6 + p_coeff_8*lsq_moments_7 + p_coeff_9*lsq_moments_8 + p_coeff_10*lsq_moments_9)
+    p_coeff_1 = p_cc - (
+        p_coeff_2 * lsq_moments_1
+        + p_coeff_3 * lsq_moments_2
+        + p_coeff_4 * lsq_moments_3
+        + p_coeff_5 * lsq_moments_4
+        + p_coeff_6 * lsq_moments_5
+        + p_coeff_7 * lsq_moments_6
+        + p_coeff_8 * lsq_moments_7
+        + p_coeff_9 * lsq_moments_8
+        + p_coeff_10 * lsq_moments_9
+    )
 
-    return p_coeff_1, p_coeff_2, p_coeff_3, p_coeff_4, p_coeff_5, p_coeff_6, p_coeff_7, p_coeff_8, p_coeff_9, p_coeff_10
+    return (
+        p_coeff_1,
+        p_coeff_2,
+        p_coeff_3,
+        p_coeff_4,
+        p_coeff_5,
+        p_coeff_6,
+        p_coeff_7,
+        p_coeff_8,
+        p_coeff_9,
+        p_coeff_10,
+    )
 
 
 @program
@@ -88,4 +210,35 @@ def recon_lsq_cell_c_svd_stencil(
     p_coeff_10: Field[[CellDim, KDim], float],
 ):
     _recon_lsq_cell_c_svd_stencil(
-        p_cc, lsq_pseudoinv_1, lsq_pseudoinv_2, lsq_pseudoinv_3, lsq_pseudoinv_4, lsq_pseudoinv_5, lsq_pseudoinv_6, lsq_pseudoinv_7, lsq_pseudoinv_8, lsq_pseudoinv_9, lsq_moments_1, lsq_moments_2, lsq_moments_3, lsq_moments_4, lsq_moments_5, lsq_moments_6, lsq_moments_7, lsq_moments_8, lsq_moments_9, out=(p_coeff_1, p_coeff_2, p_coeff_3, p_coeff_4, p_coeff_5, p_coeff_6, p_coeff_7, p_coeff_8, p_coeff_9, p_coeff_10))
+        p_cc,
+        lsq_pseudoinv_1,
+        lsq_pseudoinv_2,
+        lsq_pseudoinv_3,
+        lsq_pseudoinv_4,
+        lsq_pseudoinv_5,
+        lsq_pseudoinv_6,
+        lsq_pseudoinv_7,
+        lsq_pseudoinv_8,
+        lsq_pseudoinv_9,
+        lsq_moments_1,
+        lsq_moments_2,
+        lsq_moments_3,
+        lsq_moments_4,
+        lsq_moments_5,
+        lsq_moments_6,
+        lsq_moments_7,
+        lsq_moments_8,
+        lsq_moments_9,
+        out=(
+            p_coeff_1,
+            p_coeff_2,
+            p_coeff_3,
+            p_coeff_4,
+            p_coeff_5,
+            p_coeff_6,
+            p_coeff_7,
+            p_coeff_8,
+            p_coeff_9,
+            p_coeff_10,
+        ),
+    )

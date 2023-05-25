@@ -12,14 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator import embedded as it_embedded
 
 from icon4py.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field, _shape
-from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator import embedded as it_embedded
-
+from icon4py.testutils.utils import _shape, random_field, zero_field
 
 
 def face_val_ppm_stencil_01_numpy(
@@ -29,25 +28,49 @@ def face_val_ppm_stencil_01_numpy(
     elev: int32,
 ):
 
-    # vert_idx = np.broadcast_to(vert_idx, p_cc.shape)
+    # this is a comment: vert_idx = np.broadcast_to(vert_idx, p_cc.shape)
 
     # 01a
-    zfac_m1 = (p_cc[:,1:-1] - p_cc[:,:-2]) / (p_cellhgt_mc_now[:,1:-1] + p_cellhgt_mc_now[:,:-2])
-    zfac = (p_cc[:,2:] - p_cc[:,1:-1]) / (p_cellhgt_mc_now[:,2:] + p_cellhgt_mc_now[:,1:-1])
-    z_slope_a = ( p_cellhgt_mc_now[:,1:-1] / (p_cellhgt_mc_now[:,:-2] + p_cellhgt_mc_now[:,1:-1] + p_cellhgt_mc_now[:,2:]) ) * ( (2.*p_cellhgt_mc_now[:,:-2] + p_cellhgt_mc_now[:,1:-1]) * zfac + (p_cellhgt_mc_now[:,1:-1] + 2.*p_cellhgt_mc_now[:,2:]) * zfac_m1)
-
+    zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
+        p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
+    )
+    zfac = (p_cc[:, 2:] - p_cc[:, 1:-1]) / (
+        p_cellhgt_mc_now[:, 2:] + p_cellhgt_mc_now[:, 1:-1]
+    )
+    z_slope_a = (
+        p_cellhgt_mc_now[:, 1:-1]
+        / (
+            p_cellhgt_mc_now[:, :-2]
+            + p_cellhgt_mc_now[:, 1:-1]
+            + p_cellhgt_mc_now[:, 2:]
+        )
+    ) * (
+        (2.0 * p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1]) * zfac
+        + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 2:]) * zfac_m1
+    )
 
     # 01b
-    zfac_m1 = (p_cc[:,1:-1] - p_cc[:,:-2]) / (p_cellhgt_mc_now[:,1:-1] + p_cellhgt_mc_now[:,:-2])
-    zfac = (p_cc[:,1:-1] - p_cc[:,1:-1]) / (p_cellhgt_mc_now[:,1:-1] + p_cellhgt_mc_now[:,1:-1])
-    z_slope_b = ( p_cellhgt_mc_now[:,1:-1] / (p_cellhgt_mc_now[:,:-2] + p_cellhgt_mc_now[:,1:-1] + p_cellhgt_mc_now[:,1:-1]) ) * ( (2.*p_cellhgt_mc_now[:,:-2] + p_cellhgt_mc_now[:,1:-1]) * zfac + (p_cellhgt_mc_now[:,1:-1] + 2.*p_cellhgt_mc_now[:,1:-1]) * zfac_m1)
+    zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
+        p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
+    )
+    zfac = (p_cc[:, 1:-1] - p_cc[:, 1:-1]) / (
+        p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1]
+    )
+    z_slope_b = (
+        p_cellhgt_mc_now[:, 1:-1]
+        / (
+            p_cellhgt_mc_now[:, :-2]
+            + p_cellhgt_mc_now[:, 1:-1]
+            + p_cellhgt_mc_now[:, 1:-1]
+        )
+    ) * (
+        (2.0 * p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1]) * zfac
+        + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 1:-1]) * zfac_m1
+    )
 
-    z_slope =  np.where(vert_idx[1:-1]<elev,
-      z_slope_a,
-      z_slope_b)
+    z_slope = np.where(vert_idx[1:-1] < elev, z_slope_a, z_slope_b)
 
     return z_slope
-
 
 
 def test_face_val_ppm_stencil_01():
@@ -56,7 +79,9 @@ def test_face_val_ppm_stencil_01():
     p_cellhgt_mc_now = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     vert_idx = zero_field(mesh, KDim, dtype=int32, extend={KDim: 1})
 
-    vert_idx = it_embedded.np_as_located_field(KDim)( np.arange(0, _shape(mesh, KDim, extend={KDim: 1})[0], dtype=int32) )
+    vert_idx = it_embedded.np_as_located_field(KDim)(
+        np.arange(0, _shape(mesh, KDim, extend={KDim: 1})[0], dtype=int32)
+    )
     elev = vert_idx[-2]
 
     z_slope = random_field(mesh, CellDim, KDim)
@@ -77,4 +102,4 @@ def test_face_val_ppm_stencil_01():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:,:-1], z_slope[:,1:-1])
+    assert np.allclose(ref[:, :-1], z_slope[:, 1:-1])

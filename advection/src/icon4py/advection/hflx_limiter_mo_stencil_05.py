@@ -13,9 +13,9 @@
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import max_over, maximum, min_over, minimum, where
+from gt4py.next.ffront.fbuiltins import minimum, where
 
-from icon4py.common.dimension import C2E2C, C2E2CDim, CellDim, KDim, EdgeDim, E2C
+from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -26,16 +26,14 @@ def _hflx_limiter_mo_stencil_05(
     r_p: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
 
-    z_signum = where( (z_anti>0.), 1., -1.)
+    z_signum = where((z_anti > 0.0), 1.0, -1.0)
 
-    r_frac = 0.5*( (1. + z_signum)*
-              minimum(r_m(E2C[0]),
-                  r_p(E2C[1]) )
-              +  (1.-z_signum)* 
-              minimum( r_m(E2C[1]),
-                  r_p(E2C[0]) )   )
+    r_frac = 0.5 * (
+        (1.0 + z_signum) * minimum(r_m(E2C[0]), r_p(E2C[1]))
+        + (1.0 - z_signum) * minimum(r_m(E2C[1]), r_p(E2C[0]))
+    )
 
-    p_mflx_tracer_h = z_mflx_low + minimum(1.,r_frac) * z_anti
+    p_mflx_tracer_h = z_mflx_low + minimum(1.0, r_frac) * z_anti
 
     return p_mflx_tracer_h
 
@@ -48,11 +46,4 @@ def hflx_limiter_mo_stencil_05(
     r_p: Field[[CellDim, KDim], float],
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
 ):
-    _hflx_limiter_mo_stencil_05(
-      z_anti,
-      z_mflx_low,
-      r_m,
-      r_p,
-      out=p_mflx_tracer_h
-    )
-
+    _hflx_limiter_mo_stencil_05(z_anti, z_mflx_low, r_m, r_p, out=p_mflx_tracer_h)

@@ -167,7 +167,11 @@ class StartCreateDataFactory(DataFactoryBase):
                 extra_fields = named_args["extra_fields"].split(",")
 
             deserialised.append(
-                self.dtype( startln=directive.startln, endln=directive.endln, extra_fields=extra_fields )
+                self.dtype(
+                    startln=directive.startln,
+                    endln=directive.endln,
+                    extra_fields=extra_fields,
+                )
             )
 
         return deserialised

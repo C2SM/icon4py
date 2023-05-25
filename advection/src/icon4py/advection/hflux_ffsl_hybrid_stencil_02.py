@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
+
 from icon4py.common.dimension import EdgeDim, KDim
 
 
@@ -20,7 +21,7 @@ from icon4py.common.dimension import EdgeDim, KDim
 def _hflux_ffsl_hybrid_stencil_02(
     p_out_e: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    z_dreg_area: Field[[EdgeDim, KDim], float]
+    z_dreg_area: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
 
     p_out_e = p_mass_flx_e * p_out_e / z_dreg_area
@@ -32,7 +33,7 @@ def _hflux_ffsl_hybrid_stencil_02(
 def hflux_ffsl_hybrid_stencil_02(
     p_out_e: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    z_dreg_area: Field[[EdgeDim, KDim], float]
+    z_dreg_area: Field[[EdgeDim, KDim], float],
 ):
     _hflux_ffsl_hybrid_stencil_02(
         p_out_e,

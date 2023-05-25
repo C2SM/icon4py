@@ -28,8 +28,8 @@ def step_advection_stencil_02_numpy(
 ) -> np.ndarray:
 
     tmp = (
-        p_mflx_contra_v[:,1:] * deepatmo_divzl
-        - p_mflx_contra_v[:,:-1] * deepatmo_divzu
+        p_mflx_contra_v[:, 1:] * deepatmo_divzl
+        - p_mflx_contra_v[:, :-1] * deepatmo_divzu
     )
     return np.maximum(0.1 * rhodz_new, rhodz_new) - pd_time * tmp
 

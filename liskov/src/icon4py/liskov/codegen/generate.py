@@ -205,7 +205,7 @@ class IntegrationGenerator(Step):
                 profile=self.profile,
                 noendif=self.directives.EndStencil[i].noendif,
                 noprofile=self.directives.EndStencil[i].noprofile,
-                noaccenddata=self.directives.EndStencil[i].noaccenddata
+                noaccenddata=self.directives.EndStencil[i].noaccenddata,
             )
 
     def _generate_imports(self) -> None:
@@ -222,24 +222,24 @@ class IntegrationGenerator(Step):
     def _generate_create(self) -> None:
         """Generate f90 code for OpenACC DATA CREATE statements."""
         if self.directives.StartCreate != UnusedDirective:
-          for startcreate in self.directives.StartCreate:  # type: ignore
-            logger.info("Generating DATA CREATE statement.")
-            self._generate(
-                StartCreateStatement,
-                StartCreateStatementGenerator,
-                startcreate.startln,
-                startcreate.endln,
-                extra_fields=startcreate.extra_fields,
-            )
+            for startcreate in self.directives.StartCreate:  # type: ignore
+                logger.info("Generating DATA CREATE statement.")
+                self._generate(
+                    StartCreateStatement,
+                    StartCreateStatementGenerator,
+                    startcreate.startln,
+                    startcreate.endln,
+                    extra_fields=startcreate.extra_fields,
+                )
 
         if self.directives.EndCreate != UnusedDirective:
-          for endcreate in self.directives.EndCreate:  # type: ignore
-            self._generate(
-                EndCreateStatement,
-                EndCreateStatementGenerator,
-                endcreate.startln,
-                endcreate.endln,
-            )
+            for endcreate in self.directives.EndCreate:  # type: ignore
+                self._generate(
+                    EndCreateStatement,
+                    EndCreateStatementGenerator,
+                    endcreate.startln,
+                    endcreate.endln,
+                )
 
     def _generate_endif(self) -> None:
         """Generate f90 code for endif statements."""

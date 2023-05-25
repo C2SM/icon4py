@@ -24,15 +24,15 @@ def face_val_ppm_stencil_05_numpy(
     p_cellhgt_mc_now: np.array,
     z_slope: np.array,
 ):
-    p_cellhgt_mc_now_k_minus_1 = p_cellhgt_mc_now[:,1:-2]
-    p_cellhgt_mc_now_k_minus_2 = p_cellhgt_mc_now[:,0:-3]
-    p_cellhgt_mc_now_k_plus_1 = p_cellhgt_mc_now[:,3:]
-    p_cellhgt_mc_now = p_cellhgt_mc_now[:,2:-1]
+    p_cellhgt_mc_now_k_minus_1 = p_cellhgt_mc_now[:, 1:-2]
+    p_cellhgt_mc_now_k_minus_2 = p_cellhgt_mc_now[:, 0:-3]
+    p_cellhgt_mc_now_k_plus_1 = p_cellhgt_mc_now[:, 3:]
+    p_cellhgt_mc_now = p_cellhgt_mc_now[:, 2:-1]
 
-    p_cc_k_minus_1 = p_cc[:,1:-1]
-    p_cc           = p_cc[:,2:]
-    z_slope_k_minus_1 = z_slope[:,1:-1]
-    z_slope = z_slope[:,2:]
+    p_cc_k_minus_1 = p_cc[:, 1:-1]
+    p_cc = p_cc[:, 2:]
+    z_slope_k_minus_1 = z_slope[:, 1:-1]
+    z_slope = z_slope[:, 2:]
 
     zgeo1 = p_cellhgt_mc_now_k_minus_1 / (p_cellhgt_mc_now_k_minus_1 + p_cellhgt_mc_now)
     zgeo2 = 1.0 / (
@@ -83,4 +83,4 @@ def test_face_val_ppm_stencil_05():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:,:], p_face[:, 2:])
+    assert np.allclose(ref[:, :], p_face[:, 2:])

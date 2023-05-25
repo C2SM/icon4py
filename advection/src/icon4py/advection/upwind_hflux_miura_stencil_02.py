@@ -22,7 +22,11 @@ def _upwind_hflux_miura_stencil_02(
     p_cc: Field[[CellDim, KDim], float],
     lsq_pseudoinv_1: Field[[CECDim], float],
     lsq_pseudoinv_2: Field[[CECDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
     p_coeff_1 = p_cc
     p_coeff_2 = (
         lsq_pseudoinv_1(C2CEC[0]) * (p_cc(C2E2C[0]) - p_cc)

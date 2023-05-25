@@ -12,13 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator import embedded as it_embedded
 
 from icon4py.advection.face_val_ppm_stencil_02 import face_val_ppm_stencil_02
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field, _shape
-from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator import embedded as it_embedded
+from icon4py.testutils.utils import _shape, random_field
 
 
 def face_val_ppm_stencil_02_numpy(
@@ -34,14 +34,20 @@ def face_val_ppm_stencil_02_numpy(
 
     p_face_a = p_face_in
 
-    p_face_a[:,1:] = p_cc[:,1:]*(1. - (p_cellhgt_mc_now[:,1:] / p_cellhgt_mc_now[:,:-1])) + (p_cellhgt_mc_now[:,1:]/(p_cellhgt_mc_now[:,:-1] + p_cellhgt_mc_now[:,1:])) * ((p_cellhgt_mc_now[:,1:] / p_cellhgt_mc_now[:,:-1])* p_cc[:,1:] + p_cc[:,:-1])
+    p_face_a[:, 1:] = p_cc[:, 1:] * (
+        1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
+    ) + (
+        p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])
+    ) * (
+        (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1]) * p_cc[:, 1:]
+        + p_cc[:, :-1]
+    )
 
-    p_face = np.where( (vert_idx==slevp1) | (vert_idx==elev), p_face_a, p_face_in)
-    p_face = np.where( (vert_idx==slev), p_cc, p_face)
-    p_face[:,1:] = np.where( (vert_idx[1:]==elevp1), p_cc[:,:-1], p_face[:,1:])
+    p_face = np.where((vert_idx == slevp1) | (vert_idx == elev), p_face_a, p_face_in)
+    p_face = np.where((vert_idx == slev), p_cc, p_face)
+    p_face[:, 1:] = np.where((vert_idx[1:] == elevp1), p_cc[:, :-1], p_face[:, 1:])
 
     return p_face
-
 
 
 def test_face_val_ppm_stencil_02():
@@ -51,7 +57,9 @@ def test_face_val_ppm_stencil_02():
     p_face_in = random_field(mesh, CellDim, KDim)
     p_face = random_field(mesh, CellDim, KDim)
 
-    vert_idx = it_embedded.np_as_located_field(KDim)( np.arange(0, _shape(mesh, KDim)[0], dtype=int32) )
+    vert_idx = it_embedded.np_as_located_field(KDim)(
+        np.arange(0, _shape(mesh, KDim)[0], dtype=int32)
+    )
 
     slev = int32(1)
     slevp1 = slev + int32(1)
