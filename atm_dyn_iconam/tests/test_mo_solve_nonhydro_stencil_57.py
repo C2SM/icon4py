@@ -18,8 +18,8 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_57 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .simple_mesh import SimpleMesh
-from .utils import zero_field
+from .test_utils.helpers import zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_solve_nonhydro_stencil_57_numpy(mass_flx_ic: np.array) -> np.array:

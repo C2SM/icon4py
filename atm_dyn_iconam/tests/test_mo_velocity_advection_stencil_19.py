@@ -38,8 +38,8 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 
-from .simple_mesh import SimpleMesh
-from .utils import as_1D_sparse_field, random_field, zero_field
+from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_velocity_advection_stencil_19_numpy(

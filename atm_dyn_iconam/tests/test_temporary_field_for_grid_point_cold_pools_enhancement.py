@@ -18,8 +18,8 @@ from icon4py.atm_dyn_iconam.temporary_field_for_grid_point_cold_pools_enhancemen
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .simple_mesh import SimpleMesh
-from .utils import random_field, zero_field
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def temporary_field_for_grid_point_cold_pools_enhancement_numpy(

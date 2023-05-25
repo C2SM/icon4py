@@ -16,8 +16,8 @@ import numpy as np
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import calculate_nabla2_for_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
-from .simple_mesh import SimpleMesh
-from .utils import random_field, zero_field
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def calculate_nabla2_for_w_numpy(

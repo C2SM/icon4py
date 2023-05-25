@@ -18,8 +18,8 @@ from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .simple_mesh import SimpleMesh
-from .utils import random_field
+from .test_utils.helpers import random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def apply_nabla2_to_w_in_upper_damping_layer_numpy(

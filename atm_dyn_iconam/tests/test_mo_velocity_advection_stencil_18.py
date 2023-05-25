@@ -18,8 +18,8 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
 )
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
-from .simple_mesh import SimpleMesh
-from .utils import random_field, random_mask
+from .test_utils.helpers import random_field, random_mask
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_velocity_advection_stencil_18_numpy(

@@ -18,8 +18,8 @@ from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
-from .simple_mesh import SimpleMesh
-from .utils import random_field
+from .test_utils.helpers import random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def apply_nabla2_and_nabla4_global_to_vn_numpy(

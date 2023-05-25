@@ -20,8 +20,8 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_20 import (
 )
 from icon4py.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 
-from .simple_mesh import SimpleMesh
-from .utils import flatten_first_two_dims, random_field, zero_field
+from .test_utils.helpers import flatten_first_two_dims, random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_solve_nonhydro_stencil_20_numpy(

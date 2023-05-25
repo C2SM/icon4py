@@ -18,8 +18,8 @@ from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
 )
 from icon4py.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
 
-from .simple_mesh import SimpleMesh
-from .utils import random_field, zero_field
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_intp_rbf_rbf_vec_interpol_vertex_numpy(

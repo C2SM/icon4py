@@ -18,8 +18,8 @@ from icon4py.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_cold_po
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
-from .simple_mesh import SimpleMesh
-from .utils import random_field
+from .test_utils.helpers import random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def enhance_diffusion_coefficient_for_grid_point_cold_pools_numpy(
