@@ -608,7 +608,7 @@ class Diffusion:
                 vertex_endindex_local,
             ) = self.grid.get_indices_from_to(
                 VertexDim,
-                HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+                HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
                 HorizontalMarkerIndex.local(VertexDim),
             )
 
@@ -617,13 +617,13 @@ class Diffusion:
                 vertex_endindex_local_minus1,
             ) = self.grid.get_indices_from_to(
                 VertexDim,
-                HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+                HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
                 HorizontalMarkerIndex.local(VertexDim) - 1,
             )
             edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
                 EdgeDim,
-                HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-                HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+                HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+                HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
             )
             log.info("diffusion program: start")
             diff_prog.diffusion_run(
@@ -777,8 +777,8 @@ class Diffusion:
 
         edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
         )
 
         (
@@ -795,7 +795,7 @@ class Diffusion:
             vertex_end_local,
         ) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
             HorizontalMarkerIndex.local(VertexDim),
         )
         (
@@ -803,7 +803,7 @@ class Diffusion:
             vertex_end_local_minus1,
         ) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
