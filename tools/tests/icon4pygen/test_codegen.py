@@ -17,10 +17,11 @@ import re
 
 import pytest
 from click.testing import CliRunner
-from helpers import get_stencil_module_path
 from icon4pytools.icon4pygen.cli import main
 
 import icon4py.atm_dyn_iconam
+
+from .helpers import get_stencil_module_path
 
 
 LEVELS_PER_THREAD = "1"
