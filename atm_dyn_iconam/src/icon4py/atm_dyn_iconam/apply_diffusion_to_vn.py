@@ -12,8 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, where
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
+from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
+    _apply_nabla2_and_nabla4_global_to_vn,
+)
 from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_to_vn import (
     _apply_nabla2_and_nabla4_to_vn,
 )
@@ -42,8 +45,8 @@ def _apply_diffusion_to_vn(
     nudgezone_diff: float,
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
+    limited_area: bool,
 ) -> Field[[EdgeDim, KDim], float]:
-
     z_nabla4_e2 = _calculate_nabla4(
         u_vert,
         v_vert,
@@ -56,15 +59,26 @@ def _apply_diffusion_to_vn(
 
     vn = where(
         horz_idx >= start_2nd_nudge_line_idx_e,
-        _apply_nabla2_and_nabla4_to_vn(
-            area_edge,
-            kh_smag_e,
-            z_nabla2_e,
-            z_nabla4_e2,
-            diff_multfac_vn,
-            nudgecoeff_e,
-            vn,
-            nudgezone_diff,
+        where(
+            broadcast(limited_area, (EdgeDim, KDim)),
+            _apply_nabla2_and_nabla4_to_vn(
+                area_edge,
+                kh_smag_e,
+                z_nabla2_e,
+                z_nabla4_e2,
+                diff_multfac_vn,
+                nudgecoeff_e,
+                vn,
+                nudgezone_diff,
+            ),
+            _apply_nabla2_and_nabla4_global_to_vn(
+                area_edge,
+                kh_smag_e,
+                z_nabla2_e,
+                z_nabla4_e2,
+                diff_multfac_vn,
+                vn,
+            ),
         ),
         _apply_nabla2_to_vn_in_lateral_boundary(
             z_nabla2_e, area_edge, vn, fac_bdydiff_v
@@ -92,6 +106,7 @@ def apply_diffusion_to_vn(
     nudgezone_diff: float,
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
+    limited_area: bool,
 ):
     _apply_diffusion_to_vn(
         u_vert,
@@ -110,5 +125,6 @@ def apply_diffusion_to_vn(
         nudgezone_diff,
         fac_bdydiff_v,
         start_2nd_nudge_line_idx_e,
+        limited_area,
         out=vn,
     )
