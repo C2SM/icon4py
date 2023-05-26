@@ -15,12 +15,10 @@ from pathlib import Path
 
 import pytest
 
-from . import test_utils
-
 
 @pytest.fixture
 def samples_path():
-    return Path(test_utils.__file__).parent
+    return Path(__file__).parent / "fortran_samples"
 
 
 @pytest.fixture
