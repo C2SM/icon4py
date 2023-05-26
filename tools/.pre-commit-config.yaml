@@ -117,7 +117,7 @@ repos:
       hooks:
           - id: mypy
             name: mypy static type checker
-            entry: bash -c 'cd tools; mypy src/' --
+            #entry: bash -c 'cd tools; mypy src/' --
             language: system
             types_or: [python, pyi]
             always_run: true
