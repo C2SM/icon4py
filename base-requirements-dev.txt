@@ -25,3 +25,5 @@ setuptools>=40.8.0
 wheel>=0.37.1
 tox >= 3.25
 wget >= 3.2
+mpi4py<=3.1.4
+pytest-mpi>=0.6

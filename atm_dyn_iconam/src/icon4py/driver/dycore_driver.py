@@ -194,7 +194,7 @@ def initialize(n_time_steps, file_path: Path):
     (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(file_path)
     (metric_state, interpolation_state) = read_static_fields(file_path)
 
-    log.info("initializing dycore")
+    log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
     diffusion = Diffusion(run_program=False)
     diffusion.init(
