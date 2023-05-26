@@ -25,10 +25,7 @@ from icon4pytools.liskov.parsing.exceptions import (
     RequiredDirectivesError,
     UnbalancedStencilDirectiveError,
 )
-from icon4pytools.liskov.parsing.utils import (
-    print_parsed_directive,
-    remove_directive_types,
-)
+from icon4pytools.liskov.parsing.utils import print_parsed_directive, remove_directive_types
 
 
 logger = setup_logger(__name__)
@@ -68,16 +65,12 @@ class DirectiveSyntaxValidator:
             self._validate_outer(d.string, d.pattern, d)
             self._validate_inner(d.string, d.pattern, d)
 
-    def _validate_outer(
-        self, to_validate: str, pattern: str, d: ts.ParsedDirective
-    ) -> None:
+    def _validate_outer(self, to_validate: str, pattern: str, d: ts.ParsedDirective) -> None:
         regex = f"{pattern}\\((.*)\\)"
         match = re.fullmatch(regex, to_validate)
         self.exception_handler.check_for_matches(d, match, regex, self.filepath)
 
-    def _validate_inner(
-        self, to_validate: str, pattern: str, d: ts.ParsedDirective
-    ) -> None:
+    def _validate_inner(self, to_validate: str, pattern: str, d: ts.ParsedDirective) -> None:
         inner = to_validate.replace(f"{pattern}", "")[1:-1].split(";")
         for arg in inner:
             match = re.fullmatch(d.regex, arg)
@@ -108,9 +101,7 @@ class DirectiveSemanticsValidator:
         self._validate_required_directives(directives)
         self._validate_stencil_directives(directives)
 
-    def _validate_directive_uniqueness(
-        self, directives: list[ts.ParsedDirective]
-    ) -> None:
+    def _validate_directive_uniqueness(self, directives: list[ts.ParsedDirective]) -> None:
         """Check that all used directives are unique.
 
         Note: Allow repeated START STENCIL, END STENCIL and ENDIF directives.
@@ -132,9 +123,7 @@ class DirectiveSemanticsValidator:
                 f"Error in {self.filepath}.\n Found same directive more than once in the following directives:\n {pretty_printed}"
             )
 
-    def _validate_required_directives(
-        self, directives: list[ts.ParsedDirective]
-    ) -> None:
+    def _validate_required_directives(self, directives: list[ts.ParsedDirective]) -> None:
         """Check that all required directives are used at least once."""
         expected = [
             icon4pytools.liskov.parsing.parse.Declare,
@@ -156,13 +145,9 @@ class DirectiveSemanticsValidator:
         if match:
             return match.group(1)
         else:
-            raise ValueError(
-                f"Invalid directive string, could not find '{arg}' parameter."
-            )
+            raise ValueError(f"Invalid directive string, could not find '{arg}' parameter.")
 
-    def _validate_stencil_directives(
-        self, directives: list[ts.ParsedDirective]
-    ) -> None:
+    def _validate_stencil_directives(self, directives: list[ts.ParsedDirective]) -> None:
         """Validate that the number of start and end stencil directives match in the input `directives`.
 
             Also verifies that each unique stencil has a corresponding start and end directive.
@@ -186,14 +171,10 @@ class DirectiveSemanticsValidator:
         for directive in stencil_directives:
             stencil_name = self.extract_arg_from_directive(directive.string, "name")
             stencil_counts[stencil_name] = stencil_counts.get(stencil_name, 0) + (
-                1
-                if isinstance(directive, icon4pytools.liskov.parsing.parse.StartStencil)
-                else -1
+                1 if isinstance(directive, icon4pytools.liskov.parsing.parse.StartStencil) else -1
             )
 
-        unbalanced_stencils = [
-            stencil for stencil, count in stencil_counts.items() if count != 0
-        ]
+        unbalanced_stencils = [stencil for stencil, count in stencil_counts.items() if count != 0]
         if unbalanced_stencils:
             raise UnbalancedStencilDirectiveError(
                 f"Error in {self.filepath}. Each unique stencil must have a corresponding START STENCIL and END STENCIL directive."

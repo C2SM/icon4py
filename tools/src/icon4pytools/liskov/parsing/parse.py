@@ -81,18 +81,14 @@ class DirectivesParser(Step):
                 )
         return typed
 
-    def _preprocess(
-        self, directives: Sequence[ts.ParsedDirective]
-    ) -> Sequence[ts.ParsedDirective]:
+    def _preprocess(self, directives: Sequence[ts.ParsedDirective]) -> Sequence[ts.ParsedDirective]:
         """Preprocess the directives by removing unnecessary characters and formatting the directive strings."""
         return [
             d.__class__(self._clean_string(d.string), d.startln, d.endln)  # type: ignore
             for d in directives
         ]
 
-    def _run_validation_passes(
-        self, preprocessed: Sequence[ts.ParsedDirective]
-    ) -> None:
+    def _run_validation_passes(self, preprocessed: Sequence[ts.ParsedDirective]) -> None:
         """Run validation passes on the directives."""
         for validator in VALIDATORS:
             validator(self.input_filepath).validate(preprocessed)

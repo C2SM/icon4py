@@ -15,10 +15,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
-from icon4pytools.liskov.codegen.shared.write import (
-    DIRECTIVE_IDENT,
-    CodegenWriter,
-)
+from icon4pytools.liskov.codegen.shared.write import DIRECTIVE_IDENT, CodegenWriter
 
 
 def test_write_from():
@@ -67,9 +64,7 @@ def test_insert_generated_code():
         "another line",
         "generated code2\n",
     ]
-    assert (
-        CodegenWriter._insert_generated_code(current_file, generated) == expected_output
-    )
+    assert CodegenWriter._insert_generated_code(current_file, generated) == expected_output
 
 
 def test_write_file():

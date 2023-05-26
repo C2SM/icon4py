@@ -15,9 +15,7 @@ import pytest
 
 from icon4pytools.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4pytools.f2ser.parse import GranuleParser
-from icon4pytools.liskov.codegen.serialisation.generate import (
-    SerialisationCodeGenerator,
-)
+from icon4pytools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
 
 

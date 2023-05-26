@@ -22,11 +22,7 @@ from icon4pytools.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4pytools.liskov.parsing.parse import DirectivesParser
 
 from .conftest import insert_new_lines, scan_for_directives
-from .fortran_samples import (
-    MULTIPLE_STENCILS,
-    NO_DIRECTIVES_STENCIL,
-    SINGLE_STENCIL,
-)
+from .fortran_samples import MULTIPLE_STENCILS, NO_DIRECTIVES_STENCIL, SINGLE_STENCIL
 
 
 def test_parse_no_input():

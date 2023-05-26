@@ -15,10 +15,7 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from icon4pytools.icon4pygen.bindings.codegen.types import OffsetEntity
-from icon4pytools.icon4pygen.bindings.locations import (
-    BasicLocation,
-    ChainedLocation,
-)
+from icon4pytools.icon4pygen.bindings.locations import BasicLocation, ChainedLocation
 
 
 @dataclass(frozen=True)
@@ -80,9 +77,7 @@ class GpuTriMeshOffsetRenderer:
     def make_table_vars(self) -> list[str]:
         if not self.has_offsets:
             return []
-        unique_offsets = sorted(
-            {self._make_table_var(offset) for offset in self.offsets}
-        )
+        unique_offsets = sorted({self._make_table_var(offset) for offset in self.offsets})
         return list(unique_offsets)
 
     def make_neighbor_tables(self) -> list[str]:
@@ -106,7 +101,4 @@ class GpuTriMeshOffsetRenderer:
 
     @staticmethod
     def _make_location_type(offset: OffsetEntity) -> list[str]:
-        return [
-            f"LocationType::{loc.render_location_type()}"
-            for loc in offset.target[1].chain
-        ]
+        return [f"LocationType::{loc.render_location_type()}" for loc in offset.target[1].chain]
