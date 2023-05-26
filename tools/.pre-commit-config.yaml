@@ -61,8 +61,6 @@ repos:
           - id: pretty-format-ini
             name: format INI config files
             args: [--autofix]
-          - id: pretty-format-toml
-            args: [--autofix]
 
     - repo: https://github.com/pre-commit/mirrors-prettier
       rev: v2.2.1
