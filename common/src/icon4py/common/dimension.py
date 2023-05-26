@@ -11,15 +11,17 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.common import DimensionKind
-from functional.ffront.fbuiltins import Dimension, FieldOffset
+from gt4py.next.common import DimensionKind
+from gt4py.next.ffront.fbuiltins import Dimension, FieldOffset
 
 
 KDim = Dimension("K", kind=DimensionKind.VERTICAL)
+KHalfDim = Dimension("KHalf", kind=DimensionKind.VERTICAL)
 EdgeDim = Dimension("Edge")
 CellDim = Dimension("Cell")
 VertexDim = Dimension("Vertex")
 CEDim = Dimension("CE")
+CECDim = Dimension("CEC")
 ECDim = Dimension("EC")
 ECVDim = Dimension("ECV")
 E2CDim = Dimension("E2C", DimensionKind.LOCAL)
@@ -38,6 +40,7 @@ V2C = FieldOffset("V2C", source=CellDim, target=(VertexDim, V2CDim))
 V2E = FieldOffset("V2E", source=EdgeDim, target=(VertexDim, V2EDim))
 E2V = FieldOffset("E2V", source=VertexDim, target=(EdgeDim, E2VDim))
 C2CE = FieldOffset("C2CE", source=CEDim, target=(CellDim, C2EDim))
+C2CEC = FieldOffset("C2CEC", source=CECDim, target=(CellDim, C2E2CDim))
 E2EC = FieldOffset("E2EC", source=ECDim, target=(EdgeDim, E2CDim))
 E2ECV = FieldOffset("E2ECV", source=ECVDim, target=(EdgeDim, E2C2VDim))
 E2C2V = FieldOffset("E2C2V", source=VertexDim, target=(EdgeDim, E2C2VDim))
@@ -46,3 +49,4 @@ E2C2EO = FieldOffset("E2C2EO", source=EdgeDim, target=(EdgeDim, E2C2EODim))
 E2C2E = FieldOffset("E2C2E", source=EdgeDim, target=(EdgeDim, E2C2EDim))
 C2E2C = FieldOffset("C2E2C", source=CellDim, target=(CellDim, C2E2CDim))
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
+KHalfOff = FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))

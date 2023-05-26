@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import (
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import (
     Field,
     abs,
     broadcast,
@@ -54,7 +54,6 @@ def _mo_velocity_advection_stencil_20(
     scalfac_exdiff: float,
     d_time: float,
 ) -> Field[[EdgeDim, KDim], float]:
-
     w_con_e = broadcast(0.0, (EdgeDim, KDim))
     difcoef = broadcast(0.0, (EdgeDim, KDim))
 
@@ -116,5 +115,5 @@ def mo_velocity_advection_stencil_20(
         cfl_w_limit,
         scalfac_exdiff,
         d_time,
-        out=ddt_vn_adv,
+        out=ddt_vn_adv[:, :-1],
     )

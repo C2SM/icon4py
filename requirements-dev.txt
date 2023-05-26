@@ -6,4 +6,5 @@
 -e ./pyutils
 -e ./testutils
 -e ./atm_dyn_iconam
+-e ./liskov
 -e ./atm_phy_schemes

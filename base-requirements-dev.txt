@@ -1,5 +1,5 @@
 # VCS
--e git+https://github.com/BenWeber42/gt4py.git@gt4py-scalar-if#egg=gt4py-functional
+-e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
 
 # PyPI
 flake8>=3.8
@@ -18,7 +18,6 @@ pytest-cache>=1.0
 pytest-cov>=2.8
 pytest-factoryboy>=2.0
 pytest-xdist[psutil]>=2.2
-hypothesis>=6.51.1
 setuptools>=40.8.0
 wheel>=0.37.1
 tox >= 3.25

@@ -7,3 +7,5 @@
 ./testutils
 ./atm_dyn_iconam
 ./atm_phy_schemes
+./liskov
+

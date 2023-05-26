@@ -1,3 +1,2 @@
 # VCS
-gt4py-functional @ git+https://github.com/BenWeber42/gt4py.git@gt4py-scalar-if
-
+gt4py @ git+https://github.com/GridTools/gt4py.git@main

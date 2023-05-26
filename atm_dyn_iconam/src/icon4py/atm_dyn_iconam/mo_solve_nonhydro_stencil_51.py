@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import CellDim, KDim, Koff
 
@@ -63,5 +63,5 @@ def mo_solve_nonhydro_stencil_51(
         z_exner_expl,
         dtime,
         cpd,
-        out=(z_q, w_nnew),
+        out=(z_q[:, 1:], w_nnew[:, 1:]),
     )

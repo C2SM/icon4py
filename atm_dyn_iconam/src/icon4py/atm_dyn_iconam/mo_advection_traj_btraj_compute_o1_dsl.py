@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, int32, where
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, int32, where
 
 from icon4py.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
@@ -36,7 +36,6 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-
     lvn_pos = where(p_vn > 0.0, True, False)
 
     p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))

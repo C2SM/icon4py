@@ -11,13 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, FieldOffset
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import EdgeDim, KDim
-
-
-Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
+from icon4py.common.dimension import EdgeDim, KDim, Koff
 
 
 @field_operator
