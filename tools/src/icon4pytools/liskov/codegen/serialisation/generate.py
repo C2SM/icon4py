@@ -13,7 +13,9 @@
 from typing import Any
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.codegen.serialisation.interface import SerialisationCodeInterface
+from icon4pytools.liskov.codegen.serialisation.interface import (
+    SerialisationCodeInterface,
+)
 from icon4pytools.liskov.codegen.serialisation.template import (
     ImportStatement,
     ImportStatementGenerator,

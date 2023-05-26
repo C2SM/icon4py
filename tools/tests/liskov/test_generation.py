@@ -13,7 +13,9 @@
 
 import pytest
 
-from icon4pytools.liskov.codegen.integration.generate import IntegrationCodeGenerator
+from icon4pytools.liskov.codegen.integration.generate import (
+    IntegrationCodeGenerator,
+)
 from icon4pytools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
@@ -31,7 +33,9 @@ from icon4pytools.liskov.codegen.integration.interface import (
 )
 
 # TODO: fix tests to adapt to new custom output fields
-from icon4pytools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
+from icon4pytools.liskov.codegen.serialisation.generate import (
+    SerialisationCodeGenerator,
+)
 from icon4pytools.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     ImportData,

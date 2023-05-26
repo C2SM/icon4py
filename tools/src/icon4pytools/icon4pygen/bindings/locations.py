@@ -17,7 +17,9 @@ from typing import Iterator
 from gt4py.next.ffront.fbuiltins import Dimension
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 
-from icon4pytools.icon4pygen.bindings.codegen.render.location import LocationRenderer
+from icon4pytools.icon4pygen.bindings.codegen.render.location import (
+    LocationRenderer,
+)
 
 
 class BasicLocation:

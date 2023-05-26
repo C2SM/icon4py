@@ -27,7 +27,9 @@ from icon4pytools.icon4pygen.bindings.codegen.header import (
     run_func_declaration,
     run_verify_func_declaration,
 )
-from icon4pytools.icon4pygen.bindings.codegen.render.offset import GpuTriMeshOffsetRenderer
+from icon4pytools.icon4pygen.bindings.codegen.render.offset import (
+    GpuTriMeshOffsetRenderer,
+)
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
 from icon4pytools.icon4pygen.bindings.utils import write_string
 

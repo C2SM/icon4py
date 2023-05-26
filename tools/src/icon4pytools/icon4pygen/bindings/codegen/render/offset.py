@@ -15,7 +15,10 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from icon4pytools.icon4pygen.bindings.codegen.types import OffsetEntity
-from icon4pytools.icon4pygen.bindings.locations import BasicLocation, ChainedLocation
+from icon4pytools.icon4pygen.bindings.locations import (
+    BasicLocation,
+    ChainedLocation,
+)
 
 
 @dataclass(frozen=True)

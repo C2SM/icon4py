@@ -17,7 +17,10 @@ import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
-from icon4pytools.liskov.codegen.serialisation.interface import InitData, SavepointData
+from icon4pytools.liskov.codegen.serialisation.interface import (
+    InitData,
+    SavepointData,
+)
 
 
 class Field(eve.Node):

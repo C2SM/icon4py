@@ -19,8 +19,14 @@ from gt4py.next.type_system import type_specifications as ts
 
 from icon4pytools.icon4pygen.bindings.codegen.render.field import FieldRenderer
 from icon4pytools.icon4pygen.bindings.codegen.render.offset import OffsetRenderer
-from icon4pytools.icon4pygen.bindings.codegen.types import FieldEntity, FieldIntent, OffsetEntity
-from icon4pytools.icon4pygen.bindings.exceptions import BindingsTypeConsistencyException
+from icon4pytools.icon4pygen.bindings.codegen.types import (
+    FieldEntity,
+    FieldIntent,
+    OffsetEntity,
+)
+from icon4pytools.icon4pygen.bindings.exceptions import (
+    BindingsTypeConsistencyException,
+)
 from icon4pytools.icon4pygen.bindings.locations import (
     BASIC_LOCATIONS,
     BasicLocation,

@@ -78,7 +78,10 @@ def main(
     """
     from icon4pytools.icon4pygen.backend import GTHeader
     from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
-    from icon4pytools.icon4pygen.metadata import get_stencil_info, import_definition
+    from icon4pytools.icon4pygen.metadata import (
+        get_stencil_info,
+        import_definition,
+    )
 
     fencil_def = import_definition(fencil)
     stencil_info = get_stencil_info(fencil_def, is_global)
