@@ -14,7 +14,7 @@ import datetime
 from typing import Any
 
 import click
-import icon4pytools.liskov
+from icon4pytools import __version__
 from icon4pytools.liskov.external.exceptions import MissingClickContextError
 
 
@@ -40,4 +40,4 @@ class CodeMetadata:
     @property
     def version(self) -> str:
         """Get the current version."""
-        return icon4pytools.liskov.__version__
+        return __version__
