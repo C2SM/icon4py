@@ -25,8 +25,8 @@ Comment from FORTRAN version:
 - Suggested by U. Blahak: Replace pres_sat_water, pres_sat_ice and spec_humi by
 lookup tables in mo_convect_tables. Bit incompatible change!
 """
-from functional.ffront.decorator import field_operator, program
-from functional.ffront.fbuiltins import Field, abs, exp, maximum, where
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, abs, exp, maximum, where
 
 from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
 from icon4py.common.dimension import CellDim, KDim

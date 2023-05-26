@@ -54,8 +54,8 @@ import sys
 from typing import Final
 
 from eve.utils import FrozenNamespace
-from functional.ffront.decorator import program, scan_operator
-from functional.ffront.fbuiltins import (
+from gt4py.next.ffront.decorator import program, scan_operator
+from gt4py.next.ffront.fbuiltins import (
     Field,
     abs,
     exp,

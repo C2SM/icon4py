@@ -11,7 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Optional
+
+from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -20,6 +21,20 @@ from gt4py.next.iterator import embedded as it_embedded
 
 from . import simple_mesh
 
+from hypothesis import strategies as st
+from hypothesis import target
+from hypothesis.extra.numpy import arrays as hypothesis_array
+
+def objShape(
+    obj: Union[tuple, np.ndarray, simple_mesh.SimpleMesh], *dims: gt_common.Dimension
+):
+
+    if isinstance(obj, simple_mesh.SimpleMesh):
+        return tuple(map(lambda x: obj.size[x], dims))
+    if isinstance(obj, tuple):
+        return obj
+    if isinstance(obj, np.ndarray):
+        return obj.shape
 
 def _shape(
     mesh,
@@ -91,6 +106,24 @@ def constant_field(
         value * np.ones(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)
     )
 
+def random_field_strategy(
+    mesh: Union[tuple, np.ndarray, simple_mesh.SimpleMesh],
+    *dims,
+    min_value=None,
+    max_value=None,
+) -> st.SearchStrategy[float]:
+    """Return a hypothesis strategy of a random field."""
+    return hypothesis_array(
+        dtype=np.float64,
+        shape=objShape(mesh, *dims),
+        elements=st.floats(
+            min_value=min_value,
+            max_value=max_value,
+            exclude_min=min_value is not None,
+            allow_nan=False,
+            allow_infinity=False,
+        ),
+    ).map(it_embedded.np_as_located_field(*dims))
 
 def as_1D_sparse_field(
     field: it_embedded.MutableLocatedField, dim: gt_common.Dimension

@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from functional.ffront.decorator import program, scan_operator
-from functional.ffront.fbuiltins import Field
+from gt4py.next.ffront.decorator import program, scan_operator
+from gt4py.next.ffront.fbuiltins import Field
 from hypothesis import given, settings
 
 from icon4py.common.dimension import CellDim, KDim
