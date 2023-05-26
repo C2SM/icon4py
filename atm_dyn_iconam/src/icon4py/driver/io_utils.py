@@ -15,15 +15,18 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+from icon4py.decomposition.decomposed import ProcessProperties
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.driver.parallel_setup import DecompositionInfo
 from icon4py.testutils import serialbox_utils
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
+SERIALBOX_ONLY_MSG = "Only ser_type='sb (Serialbox)' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
@@ -105,7 +108,31 @@ def read_geometry_fields(
         )
         return edge_geometry, cell_geometry, vertical_geometry
     else:
-        raise NotImplementedError("Only ser_type='sb' is implemented so far.")
+        raise NotImplementedError(SERIALBOX_ONLY_MSG)
+
+
+# /home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/node2/mch_ch_r04b09_dsl/icon_grid
+def read_decomp_info(
+    path: Path, procs_props: ProcessProperties, ser_type = SerializationType.SB,
+)->DecompositionInfo:
+    if ser_type == SerializationType.SB:
+        sp = serialbox_utils.IconSerialDataProvider("icon_grid", str(path.absolute()), True,
+                                                    procs_props.rank)
+        return \
+            sp.from_savepoint_grid().construct_decomposition_info()
+    else:
+        raise NotImplementedError(SERIALBOX_ONLY_MSG)
+
+def read_grid(
+    path: Path, procs_props: ProcessProperties, ser_type = SerializationType.SB,
+)->IconGrid:
+    if ser_type == SerializationType.SB:
+        sp = serialbox_utils.IconSerialDataProvider("icon_grid", str(path.absolute()), True,
+                                                    procs_props.rank)
+        return \
+            sp.from_savepoint_grid().construct_icon_grid()
+    else:
+        raise NotImplementedError(SERIALBOX_ONLY_MSG)
 
 
 def read_static_fields(
@@ -130,7 +157,7 @@ def read_static_fields(
         interpolation_state = sp.construct_interpolation_state()
         return metric_state, interpolation_state
     else:
-        raise NotImplementedError("Only ser_type='sb' is implemented so far.")
+        raise NotImplementedError(SERIALBOX_ONLY_MSG)
 
 
 def configure_logging(run_path: str, start_time):

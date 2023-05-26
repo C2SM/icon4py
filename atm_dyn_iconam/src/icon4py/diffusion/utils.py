@@ -265,3 +265,11 @@ def init_nabla2_factor_in_upper_damping_zone(
         ** 4
     )
     return np_as_located_field(KDim)(buffer)
+
+
+def builder(func):
+    def wrapper(self, *args, **kwargs):
+        func(self, *args, **kwargs)
+        return self
+
+    return wrapper

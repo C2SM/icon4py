@@ -763,11 +763,7 @@ class Diffusion:
             HorizontalMarkerIndex.local(CellDim),
         )
 
-        cell_start_nudging, _ = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
+
 
         edge_start_nudging_plus_one, edge_end_local = self.grid.get_indices_from_to(
             EdgeDim,

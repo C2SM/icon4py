@@ -5,10 +5,11 @@ class ProcessProperties():
     def __init__(self, name='', rank = 0):
         self._communicator_name: str = name
         self._rank: int = rank
-
+    @property
     def rank(self):
         return self._rank
 
+    @property
     def comm_name(self):
         return self._communicator_name
     @classmethod

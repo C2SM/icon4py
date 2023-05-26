@@ -20,6 +20,7 @@ from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.horizontal import HorizontalMeshSize
+from icon4py.diffusion.utils import builder
 
 
 # TODO @magdalena keep naming grid vs mesh consistent
@@ -69,12 +70,6 @@ class MeshConfig:
         return self._horizontal.num_cells
 
 
-def builder(func):
-    def wrapper(self, *args, **kwargs):
-        func(self, *args, **kwargs)
-        return self
-
-    return wrapper
 
 
 class IconGrid:
