@@ -238,9 +238,7 @@ class StartStencilStatement(eve.Node):
 
     def __post_init__(self) -> None:  # type: ignore
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
-        self.copy_declarations = [
-            self.make_copy_declaration(f) for f in all_fields if f.out
-        ]
+        self.copy_declarations = [self.make_copy_declaration(f) for f in all_fields if f.out]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
 
     @staticmethod

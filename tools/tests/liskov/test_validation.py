@@ -80,9 +80,7 @@ def test_directive_syntax_validator(directive):
         "!$DSL START CREATE()",
     ],
 )
-def test_directive_semantics_validation_repeated_directives(
-    make_f90_tmpfile, directive
-):
+def test_directive_semantics_validation_repeated_directives(make_f90_tmpfile, directive):
     fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
     opath = fpath.with_suffix(".gen")
     insert_new_lines(fpath, [directive])
@@ -119,9 +117,7 @@ def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, direc
         """!$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; noprofile=True)""",
     ],
 )
-def test_directive_semantics_validation_required_directives(
-    make_f90_tmpfile, directive
-):
+def test_directive_semantics_validation_required_directives(make_f90_tmpfile, directive):
     new = SINGLE_STENCIL.replace(directive, "")
     fpath = make_f90_tmpfile(content=new)
     opath = fpath.with_suffix(".gen")

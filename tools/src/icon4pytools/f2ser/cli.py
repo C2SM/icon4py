@@ -27,9 +27,7 @@ from icon4pytools.liskov.codegen.shared.write import CodegenWriter
 @click.command("icon_f2ser")
 @click.argument(
     "granule_path",
-    type=click.Path(
-        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
-    ),
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
 @click.argument(
     "output_filepath",

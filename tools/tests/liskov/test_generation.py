@@ -53,9 +53,7 @@ def integration_code_interface():
         fields=[
             FieldAssociationData("scalar1", "scalar1", inp=True, out=False, dims=None),
             FieldAssociationData("inp1", "inp1(:,:,1)", inp=True, out=False, dims=2),
-            FieldAssociationData(
-                "out1", "out1(:,:,1)", inp=False, out=True, dims=2, abs_tol="0.5"
-            ),
+            FieldAssociationData("out1", "out1(:,:,1)", inp=False, out=True, dims=2, abs_tol="0.5"),
             FieldAssociationData(
                 "out2",
                 "p_nh%prog(nnew)%out2(:,:,1)",
@@ -64,12 +62,8 @@ def integration_code_interface():
                 dims=3,
                 abs_tol="0.2",
             ),
-            FieldAssociationData(
-                "out3", "p_nh%prog(nnew)%w(:,:,jb)", inp=False, out=True, dims=2
-            ),
-            FieldAssociationData(
-                "out4", "p_nh%prog(nnew)%w(:,:,1,2)", inp=False, out=True, dims=3
-            ),
+            FieldAssociationData("out3", "p_nh%prog(nnew)%w(:,:,jb)", inp=False, out=True, dims=2),
+            FieldAssociationData("out4", "p_nh%prog(nnew)%w(:,:,1,2)", inp=False, out=True, dims=3),
             FieldAssociationData(
                 "out5", "p_nh%prog(nnew)%w(:,:,:,ntnd)", inp=False, out=True, dims=3
             ),
@@ -83,9 +77,7 @@ def integration_code_interface():
         mergecopy=False,
         copies=True,
     )
-    end_stencil_data = EndStencilData(
-        name="stencil1", startln=3, noendif=False, noprofile=False
-    )
+    end_stencil_data = EndStencilData(name="stencil1", startln=3, noendif=False, noprofile=False)
     declare_data = DeclareData(
         startln=5,
         declarations={"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"},
@@ -212,9 +204,7 @@ def expected_insert_source():
 
 @pytest.fixture
 def integration_code_generator(integration_code_interface):
-    return IntegrationCodeGenerator(
-        integration_code_interface, profile=True, metadatagen=False
-    )
+    return IntegrationCodeGenerator(integration_code_interface, profile=True, metadatagen=False)
 
 
 def test_integration_code_generation(
@@ -335,9 +325,7 @@ def expected_savepoints():
 def test_serialisation_code_generation(
     serialisation_code_interface, expected_savepoints, multinode
 ):
-    generated = SerialisationCodeGenerator(
-        serialisation_code_interface, multinode=multinode
-    )()
+    generated = SerialisationCodeGenerator(serialisation_code_interface, multinode=multinode)()
 
     if multinode:
         assert len(generated) == 3

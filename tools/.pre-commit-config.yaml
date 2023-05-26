@@ -82,7 +82,8 @@ repos:
       hooks:
           - id: black
             name: black Python formatter
-            args: [--target-version, py310]
+            args: [--target-version, py310, --config, tools/pyproject.toml]
+            exclude: "atm_dyn_iconam/.*"
 
     - repo: https://github.com/asottile/blacken-docs
       rev: v1.12.1
@@ -96,7 +97,6 @@ repos:
       hooks:
           - id: isort
             name: sort Python imports for icon4pytools
-            args: ["--src", "tools/src", "--profile", "black"]
             exclude: "atm_dyn_iconam/.*"
 
     - repo: https://github.com/PyCQA/flake8
@@ -113,6 +113,7 @@ repos:
                 - flake8-eradicate
                 - flake8-mutable
                 - pygments
+            exclude: "atm_dyn_iconam/.*"
 
     - repo: local
       hooks:

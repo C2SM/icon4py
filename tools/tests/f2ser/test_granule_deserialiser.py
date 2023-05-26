@@ -83,11 +83,7 @@ def test_deserialiser_mock(mock_parsed_granule):
     assert len(interface.Savepoint) == 3
     assert all([isinstance(s, SavepointData) for s in interface.Savepoint])
     assert all(
-        [
-            isinstance(f, FieldSerialisationData)
-            for s in interface.Savepoint
-            for f in s.fields
-        ]
+        [isinstance(f, FieldSerialisationData) for s in interface.Savepoint for f in s.fields]
     )
 
 

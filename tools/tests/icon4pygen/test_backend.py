@@ -28,8 +28,6 @@ from icon4pytools.icon4pygen.backend import GTHeader
 )
 def test_missing_domain_args(input_params, expected_complement):
     params = [itir.Sym(id=p) for p in input_params]
-    domain_boundaries = set(
-        map(lambda s: str(s.id), GTHeader._missing_domain_params(params))
-    )
+    domain_boundaries = set(map(lambda s: str(s.id), GTHeader._missing_domain_params(params)))
     assert len(domain_boundaries) == len(expected_complement)
     assert domain_boundaries == set(expected_complement)
