@@ -243,7 +243,7 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("bdy_halo_c", CellDim)
 
     def ipeidx_dsl(self):
-        return self._get_field("ipeidx_dsl", EdgeDim, KDim)
+        return self._get_field("ipeidx_dsl", EdgeDim, KDim, dtype=bool)
 
     def pg_exdist(self):
         return self._get_field("pg_exdist", EdgeDim, KDim)
@@ -262,9 +262,6 @@ class IconNonHydroInitSavepoint(IconSavepoint):
 
     def theta_ref_me(self):
         return self._get_field("theta_ref_me", EdgeDim, KDim)
-
-    def zdiff_gradp(self):
-        return self._get_field("zdiff_gradp", EdgeDim, E2CDim, KDim)
 
     def mask_prog_halo_c(self):
         return self._get_field("mask_prog_halo_c", CellDim, KDim)
@@ -332,6 +329,12 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def mass_flx_me(self):
         return self._get_field("mass_flx_me", EdgeDim, KDim)
 
+    def bdy_divdamp(self):
+        return self._get_field("bdy_divdamp", KDim)
+
+    def scal_divdamp_o2(self) -> float:
+        return self.serializer.read("scal_divdamp_o2", self.savepoint)[0]
+
 
 class IconVelocityInitSavepoint(IconSavepoint):
     def c_lin_e(self):
@@ -371,10 +374,11 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self._get_field("geofac_grdiv", EdgeDim, E2C2EODim)
 
     def rbf_vec_coeff_e(self):
+        # return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
         ).transpose()
-        return np_as_located_field(EdgeDim, E2C2EDim)(buffer)
+        return np_as_located_field(ECDim, E2C2EDim)(buffer)
 
     def c_intp(self):
         return self._get_field("c_intp", VertexDim, V2CDim)
@@ -465,7 +469,11 @@ class InterpolationStateSavepoint(IconSavepoint):
         )  # TODO @nfarabullini: check dimensions here
 
     def rbf_vec_coeff_e(self):
-        return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
+        buffer = np.squeeze(
+            self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
+        ).transpose()
+        return np_as_located_field(EdgeDim, E2C2EDim)(buffer)
+        # return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field(
@@ -533,7 +541,7 @@ class MetricStateSavepoint(IconSavepoint):
         return self._get_field("pg_edgeidx_dsl", CellDim, KDim)
 
     def pg_exdist_dsl(self):
-        return self._get_field("pg_exdist_dsl", CellDim, KDim)
+        return self._get_field("pg_exdist_dsl", EdgeDim, KDim)
 
     def rayleigh_w(self):
         return self._get_field("rayleigh_w", KDim)
@@ -561,6 +569,12 @@ class MetricStateSavepoint(IconSavepoint):
 
     def vwind_expl_wgt(self):
         return self._get_field("vwind_expl_wgt", CellDim)
+
+    def vwind_impl_wgt(self):
+        return self._get_field("vwind_impl_wgt", CellDim)
+
+    def bdy_halo_c(self):
+        return self._get_field("bdy_halo_c", CellDim)
 
     def wgtfac_c(self):
         return self._get_field("wgtfac_c", CellDim, KDim)
@@ -594,9 +608,21 @@ class MetricStateSavepoint(IconSavepoint):
         return self._get_field("zd_vertoffset", CellDim, KDim)
 
     def zdiff_gradp_dsl(self):
-        return self._get_field(
-            "zdiff_gradp_dsl", ECDim, KDim
-        )  # TODO @nfarabullini: check dimensions here
+        buffer = self._get_field("zdiff_gradp_dsl", CellDim, KDim, ECDim)
+        np_array_reshape = np.asarray(buffer).reshape(
+            (buffer.shape[0] * buffer.shape[2], buffer.shape[1])
+        )
+        return np_as_located_field(ECDim, KDim)(np_array_reshape)
+        # return self._get_field("zdiff_gradp_dsl", ECDim, KDim) # TODO @nfarabullini: input data set should have dimensions (ECDim, KDim), not (CellDim, KDim, ECDim)
+
+    def d_exner_dz_ref_ic(self):
+        return self._get_field("d_exner_dz_ref_ic", CellDim, KDim)
+
+    def ipeidx_dsl(self):
+        return self._get_field("ipeidx_dsl", EdgeDim, KDim, dtype=bool)
+
+    def mask_prog_halo_c(self):
+        return self._get_field("mask_prog_halo_c", CellDim)
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
@@ -721,7 +747,9 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_ddt_w_adv_pc", CellDim, KDim)
 
     def vn_ie(self):
-        return self._get_field("x_vn_ie", EdgeDim, KHalfDim)
+        return self._get_field(
+            "x_vn_ie", EdgeDim, KDim
+        )  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
 
     def vt(self):
         return self._get_field("x_vt", EdgeDim, KDim)
@@ -736,7 +764,10 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_z_w_concorr_me", EdgeDim, KDim)
 
     def exner_new(self):
-        return self._get_field("x_exner_new", EdgeDim, KDim)
+        return self._get_field("x_exner_new", CellDim, KDim)
+
+    def exner_now(self):
+        return self._get_field("x_exner_now", CellDim, KDim)
 
     def mass_fl_e(self):
         return self._get_field("x_mass_fl_e", EdgeDim, KDim)
@@ -748,13 +779,13 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_prep_adv_vn_traj", EdgeDim, KDim)
 
     def rho_ic(self):
-        return self._get_field("x_rho_ic", EdgeDim, KDim)
+        return self._get_field("x_rho_ic", CellDim, KDim)
 
     def theta_v_ic(self):
-        return self._get_field("x_theta_v_ic", EdgeDim, KDim)
+        return self._get_field("x_theta_v_ic", CellDim, KDim)
 
     def theta_v_new(self):
-        return self._get_field("x_theta_v_new", EdgeDim, KDim)
+        return self._get_field("x_theta_v_new", CellDim, KDim)
 
     def vn_ie(self):
         return self._get_field("x_vn_ie", EdgeDim, KDim)
@@ -763,10 +794,10 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_vn_new", EdgeDim, KDim)
 
     def w_concorr_c(self):
-        return self._get_field("x_w_concorr_c", EdgeDim, KDim)
+        return self._get_field("x_w_concorr_c", CellDim, KDim)
 
     def w_new(self):
-        return self._get_field("x_w_new", EdgeDim, KDim)
+        return self._get_field("x_w_new", CellDim, KDim)
 
 
 class IconSerialDataProvider:

@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import maximum, where
+from gt4py.next.ffront.fbuiltins import where
 from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_02 import (
@@ -456,33 +456,6 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         z_rth_pr_2,
         out=(z_rho_e, z_theta_v_e),
         domain={EdgeDim: (6, edge_endindex_interior_minus1), KDim: (0, nlev)},
-    )
-
-
-@program(backend=gtfn_cpu.run_gtfn, grid_type=GridType.UNSTRUCTURED)
-def nhsolve_predictor_tendencies_19_20(
-    inv_dual_edge_length: Field[[EdgeDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-    ddxn_z_full: Field[[EdgeDim, KDim], float],
-    c_lin_e: Field[[EdgeDim, E2CDim], float],
-    z_dexner_dz_c_1: Field[[CellDim, KDim], float],
-    z_gradh_exner: Field[[EdgeDim, KDim], float],
-    edge_startindex_nudging_plus1: int,
-    edge_endindex_interior: int,
-    nflatlev: int,
-    nflat_gradp: int,
-):
-    _mo_solve_nonhydro_stencil_19(
-        inv_dual_edge_length,
-        z_exner_ex_pr,
-        ddxn_z_full,
-        c_lin_e,
-        z_dexner_dz_c_1,
-        out=z_gradh_exner,
-        domain={
-            EdgeDim: (edge_startindex_nudging_plus1, edge_endindex_interior),
-            KDim: (nflatlev, nflat_gradp),
-        },
     )
 
 
@@ -1259,8 +1232,8 @@ def _stencils_66_67(
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
 
     (theta_v, exner) = where(
-        (cell_field >= cell_startindex_interior_minus1)
-        & (cell_field < cell_endindex_local),
+        # (cell_field >= cell_startindex_interior_minus1) & (cell_field < cell_endindex_local),
+        cell_field >= cell_startindex_interior_minus1,
         _mo_solve_nonhydro_stencil_66(
             bdy_halo_c,
             rho,
@@ -1272,7 +1245,8 @@ def _stencils_66_67(
         (theta_v, exner),
     )
     (theta_v, exner) = where(
-        (cell_field >= 0) & (cell_field < cell_endindex_nudging),
+        # (cell_field >= 0) & (cell_field < cell_endindex_nudging),
+        cell_field >= 0,
         _mo_solve_nonhydro_stencil_67(rho, theta_v, exner, rd_o_cvd, rd_o_p0ref),
         (theta_v, exner),
     )
@@ -1305,5 +1279,5 @@ def stencils_66_67(
         cell_endindex_local,
         cell_endindex_nudging,
         out=(theta_v, exner),
-        domain={KDim: (0, nlev)},
+        domain={CellDim: (0, cell_endindex_local), KDim: (0, nlev)},
     )

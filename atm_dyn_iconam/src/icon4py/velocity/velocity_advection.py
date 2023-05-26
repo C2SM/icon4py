@@ -12,7 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Optional
 
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.common import Field
+from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 import icon4py.velocity.velocity_advection_program as velocity_prog
 from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
@@ -181,18 +182,18 @@ class VelocityAdvection:
             },
         )
 
-        # mo_velocity_advection_stencil_01(
-        #     prognostic_state.vn,
-        #     self.interpolation_state.rbf_vec_coeff_e,
-        #     diagnostic_state.vt,
-        #     horizontal_start=4, # TODO: @nfarabullini: input data for rbf_vec_coeff_e has a start of 4 which does not work for the lower bound. Problem with the input data?
-        #     horizontal_end=edge_startindex_interior - 1,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={
-        #         "E2C2E": self.grid.get_e2c2e_connectivity(),
-        #     }
-        # )
+        mo_velocity_advection_stencil_01(
+            prognostic_state.vn,
+            self.interpolation_state.rbf_vec_coeff_e,
+            diagnostic_state.vt,
+            horizontal_start=4,
+            horizontal_end=edge_startindex_interior - 1,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={
+                "E2C2E": self.grid.get_e2c2e_connectivity(),
+            },
+        )
 
         mo_velocity_advection_stencil_02(
             self.metric_state.wgtfac_e,
@@ -241,8 +242,9 @@ class VelocityAdvection:
             },
         )
 
+        # seg fault for (E2C[1])
         # if not vn_only:
-        #     mo_velocity_advection_stencil_07(
+        #     mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
         #         diagnostic_state.vn_ie,
         #         inv_dual_edge_length,
         #         prognostic_state.w,
@@ -481,25 +483,25 @@ class VelocityAdvection:
             },
         )
 
-        # if not vn_only:
-        #     mo_velocity_advection_stencil_07(
-        #         diagnostic_state.vn_ie,
-        #         inv_dual_edge_length,
-        #         prognostic_state.w,
-        #         z_vt_ie,
-        #         inv_primal_edge_length,
-        #         tangent_orientation,
-        #         self.z_w_v,
-        #         self.z_v_grad_w,
-        #         horizontal_start=6,
-        #         horizontal_end=edge_startindex_interior - 1,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={
-        #             "E2C": self.grid.get_e2c_connectivity(),
-        #             "E2V": self.grid.get_e2v_connectivity(),
-        #         },
-        #     )
+        if not vn_only:
+            mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
+                diagnostic_state.vn_ie,
+                inv_dual_edge_length,
+                prognostic_state.w,
+                z_vt_ie,
+                inv_primal_edge_length,
+                tangent_orientation,
+                self.z_w_v,
+                self.z_v_grad_w,
+                horizontal_start=6,
+                horizontal_end=edge_startindex_interior - 1,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={
+                    "E2C": self.grid.get_e2c_connectivity(),
+                    "E2V": self.grid.get_e2v_connectivity(),
+                },
+            )
 
         mo_velocity_advection_stencil_08(
             z_kin_hor_e,

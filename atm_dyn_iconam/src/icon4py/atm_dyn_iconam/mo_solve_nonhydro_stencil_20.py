@@ -10,10 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import (
     E2C,
@@ -67,7 +68,7 @@ def _mo_solve_nonhydro_stencil_20(
     return z_gradh_exner
 
 
-@program
+@program(backend=gtfn_cpu.run_gtfn, grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_20(
     inv_dual_edge_length: Field[[EdgeDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
@@ -76,6 +77,10 @@ def mo_solve_nonhydro_stencil_20(
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
     z_dexner_dz_c_2: Field[[CellDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
+    horizontal_lower: int,
+    horizontal_upper: int,
+    vertical_lower: int,
+    vertical_upper: int,
 ):
     _mo_solve_nonhydro_stencil_20(
         inv_dual_edge_length,
@@ -85,4 +90,8 @@ def mo_solve_nonhydro_stencil_20(
         z_dexner_dz_c_1,
         z_dexner_dz_c_2,
         out=z_gradh_exner,
+        domain={
+            EdgeDim: (horizontal_lower, horizontal_upper),
+            KDim: (vertical_lower, vertical_upper),
+        },
     )

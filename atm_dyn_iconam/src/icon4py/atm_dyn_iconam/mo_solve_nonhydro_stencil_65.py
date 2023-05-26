@@ -37,7 +37,7 @@ def _mo_solve_nonhydro_stencil_65(
     return mass_flx_ic
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_solve_nonhydro_stencil_65(
     rho_ic: Field[[CellDim, KDim], float],
     vwind_expl_wgt: Field[[CellDim], float],

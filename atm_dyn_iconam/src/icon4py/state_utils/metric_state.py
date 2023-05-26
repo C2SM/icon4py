@@ -70,7 +70,7 @@ class MetricStateNonHydro:
     rayleigh_w: Field[[KDim], float]
     rho_ref_me: Field[[EdgeDim, KDim], float]
     theta_ref_me: Field[[EdgeDim, KDim], float]
-    zdiff_gradp: Field[[EdgeDim, E2CDim, KDim], float]
+    zdiff_gradp: Field[[ECDim, KDim], float]
 
     # Finally, a mask field that excludes boundary halo points
     mask_prog_halo_c: Field[[CellDim, KDim], bool]

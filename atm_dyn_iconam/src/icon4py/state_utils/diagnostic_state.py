@@ -38,8 +38,8 @@ class DiagnosticState:
 
     vt: Field[[EdgeDim, KDim], float]
     vn_ie: Field[
-        [EdgeDim, KHalfDim], float
-    ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s]
+        [EdgeDim, KDim], float
+    ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     w_concorr_c: Field[
         [CellDim, KDim], float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
