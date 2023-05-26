@@ -18,8 +18,8 @@ from icon4py.atm_dyn_iconam.calculate_nabla2_for_z import _calculate_nabla2_for_
 from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import (
     _calculate_nabla2_of_theta,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
-    _mo_nh_diffusion_stencil_15,
+from icon4py.atm_dyn_iconam.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
+    _truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.atm_dyn_iconam.update_theta_and_exner import _update_theta_and_exner
 from icon4py.common.dimension import CECDim, CEDim, CellDim, EdgeDim, KDim
@@ -43,7 +43,7 @@ def _apply_diffusion_to_theta_and_exner(
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v_in)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
-    z_temp = _mo_nh_diffusion_stencil_15(
+    z_temp = _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         mask,
         zd_vertoffset,
         zd_diffcoef,
