@@ -19,13 +19,8 @@ import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
-from icon4pytools.liskov.codegen.integration.exceptions import (
-    UndeclaredFieldError,
-)
-from icon4pytools.liskov.codegen.integration.interface import (
-    DeclareData,
-    StartStencilData,
-)
+from icon4pytools.liskov.codegen.integration.exceptions import UndeclaredFieldError
+from icon4pytools.liskov.codegen.integration.interface import DeclareData, StartStencilData
 from icon4pytools.liskov.external.metadata import CodeMetadata
 
 
@@ -238,7 +233,9 @@ class StartStencilStatement(eve.Node):
 
     def __post_init__(self) -> None:  # type: ignore
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
-        self.copy_declarations = [self.make_copy_declaration(f) for f in all_fields if f.out]
+        self.copy_declarations = [
+            self.make_copy_declaration(f) for f in all_fields if f.out
+        ]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
 
     @staticmethod

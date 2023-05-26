@@ -95,8 +95,9 @@ repos:
       rev: v5.10.1
       hooks:
           - id: isort
-            name: sort Python imports
-            args: ["--profile", "black", --line-length=82]
+            name: sort Python imports for icon4pytools
+            args: ["--src", "tools/src", "--profile", "black"]
+            exclude: "atm_dyn_iconam/.*"
 
     - repo: https://github.com/PyCQA/flake8
       rev: 4.0.1

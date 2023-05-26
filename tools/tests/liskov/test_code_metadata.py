@@ -14,8 +14,9 @@ from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
-import icon4pytools
 import pytest
+
+import icon4pytools
 from icon4pytools.liskov.external.metadata import CodeMetadata
 
 

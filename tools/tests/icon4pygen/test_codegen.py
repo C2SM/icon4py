@@ -15,11 +15,11 @@ import os
 import pkgutil
 import re
 
+import icon4py.atm_dyn_iconam
 import pytest
 from click.testing import CliRunner
-from icon4pytools.icon4pygen.cli import main
 
-import icon4py.atm_dyn_iconam
+from icon4pytools.icon4pygen.cli import main
 
 from .helpers import get_stencil_module_path
 

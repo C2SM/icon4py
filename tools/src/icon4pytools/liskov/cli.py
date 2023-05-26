@@ -30,7 +30,9 @@ logger = setup_logger(__name__)
 @click.pass_context
 @click.argument(
     "input_path",
-    type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
+    type=click.Path(
+        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
+    ),
 )
 @click.argument(
     "output_path",
@@ -44,7 +46,9 @@ def main(ctx, input_path, output_path):
         OUTPUT_PATH: Path to new file to be generated.
     """
     if ctx.invoked_subcommand is None:
-        click.echo("Need to choose one of the following commands:\nintegrate\nserialise")
+        click.echo(
+            "Need to choose one of the following commands:\nintegrate\nserialise"
+        )
     else:
         ctx.ensure_object(dict)
         ctx.obj["INPUT"] = input_path

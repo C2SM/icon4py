@@ -15,10 +15,11 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from pytest import mark
+
 from icon4pytools.liskov.parsing.exceptions import DirectiveSyntaxError
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
 from icon4pytools.liskov.parsing.types import RawDirective
-from pytest import mark
 
 from .fortran_samples import DIRECTIVES_SAMPLE, NO_DIRECTIVES_STENCIL
 

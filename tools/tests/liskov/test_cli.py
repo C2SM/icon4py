@@ -14,6 +14,7 @@
 import itertools
 
 import pytest
+
 from icon4pytools.liskov.cli import main
 
 from .fortran_samples import (

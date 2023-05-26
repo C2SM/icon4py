@@ -34,7 +34,11 @@ class FieldRenderer:
     def render_dim_tags(self) -> str:
         """Render c++ dimension tags."""
         tags = []
-        if self.entity.is_dense() or self.entity.is_sparse() or self.entity.is_compound():
+        if (
+            self.entity.is_dense()
+            or self.entity.is_sparse()
+            or self.entity.is_compound()
+        ):
             tags.append("unstructured::dim::horizontal")
         if self.entity.has_vertical_dimension:
             tags.append("unstructured::dim::vertical")
@@ -46,7 +50,9 @@ class FieldRenderer:
             raise BindingsRenderingException("can not render sid of a scalar")
 
         # We want to compute the rank without the sparse dimension, i.e. if a field is horizontal, vertical or both.
-        dense_rank = self.entity.rank() - int(self.entity.is_sparse() or self.entity.is_compound())
+        dense_rank = self.entity.rank() - int(
+            self.entity.is_sparse() or self.entity.is_compound()
+        )
         if dense_rank == 1:
             values_str = "1"
         elif self.entity.is_compound():

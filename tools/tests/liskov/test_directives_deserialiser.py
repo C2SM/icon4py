@@ -13,8 +13,9 @@
 
 import unittest
 
-import icon4pytools.liskov.parsing.parse as ts
 import pytest
+
+import icon4pytools.liskov.parsing.parse as ts
 from icon4pytools.liskov.codegen.integration.deserialise import (
     DeclareDataFactory,
     EndCreateDataFactory,

@@ -13,9 +13,10 @@
 
 from pathlib import Path
 
-import icon4pytools.liskov.parsing.parse as ts
 import pytest
 from click.testing import CliRunner
+
+import icon4pytools.liskov.parsing.parse as ts
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
 
 

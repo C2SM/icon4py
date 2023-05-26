@@ -59,7 +59,9 @@ class GranuleParser:
         parsed_types = parser()
     """
 
-    def __init__(self, granule: Path, dependencies: Optional[list[Path]] = None) -> None:
+    def __init__(
+        self, granule: Path, dependencies: Optional[list[Path]] = None
+    ) -> None:
         self.granule_path = granule
         self.dependencies = dependencies
 
@@ -72,9 +74,12 @@ class GranuleParser:
     def parse_subroutines(self):
         subroutines = self._extract_subroutines(crack(self.granule_path))
         variables_grouped_by_intent = {
-            name: self._extract_intent_vars(routine) for name, routine in subroutines.items()
+            name: self._extract_intent_vars(routine)
+            for name, routine in subroutines.items()
         }
-        intrinsic_type_vars, derived_type_vars = self._parse_types(variables_grouped_by_intent)
+        intrinsic_type_vars, derived_type_vars = self._parse_types(
+            variables_grouped_by_intent
+        )
         combined_type_vars = self._combine_types(derived_type_vars, intrinsic_type_vars)
         with_lines = self._update_with_codegen_lines(combined_type_vars)
         return with_lines
@@ -95,7 +100,9 @@ class GranuleParser:
                 subroutines[name] = elt
 
         if len(subroutines) != 2:
-            raise ParsingError(f"Did not find _init and _run subroutines in {self.granule_path}")
+            raise ParsingError(
+                f"Did not find _init and _run subroutines in {self.granule_path}"
+            )
 
         return subroutines
 
@@ -209,7 +216,9 @@ class GranuleParser:
                             new_type_name = f"{var_name}_{subtype_name}"
                             new_var_dict = var_dict.copy()
                             new_var_dict.update(subtype_spec)
-                            decomposed_vars[subroutine][intent][new_type_name] = new_var_dict
+                            decomposed_vars[subroutine][intent][
+                                new_type_name
+                            ] = new_var_dict
                             new_var_dict["ptr_var"] = subtype_name
                     else:
                         decomposed_vars[subroutine][intent][var_name] = var_dict
@@ -246,9 +255,9 @@ class GranuleParser:
         with_lines = deepcopy(parsed_types)
         for subroutine in with_lines:
             for intent in with_lines[subroutine]:
-                with_lines[subroutine][intent]["codegen_ctx"] = self.get_subroutine_lines(
-                    subroutine
-                )
+                with_lines[subroutine][intent][
+                    "codegen_ctx"
+                ] = self.get_subroutine_lines(subroutine)
         return with_lines
 
     def find_last_fortran_use_statement(self):
@@ -296,7 +305,9 @@ class GranuleParser:
         declaration_pattern = r".*::\s*(\w+\b)"
         declaration_pattern_lines = [
             i
-            for i, line in enumerate(code.splitlines()[start_subroutine_ln:end_subroutine_ln])
+            for i, line in enumerate(
+                code.splitlines()[start_subroutine_ln:end_subroutine_ln]
+            )
             if re.search(declaration_pattern, line)
         ]
         if not declaration_pattern_lines:
@@ -308,4 +319,6 @@ class GranuleParser:
             end_subroutine_ln - 1
         )  # we want to generate the code before the end of the subroutine
 
-        return CodegenContext(first_declaration_ln, last_declaration_ln, pre_end_subroutine_ln)
+        return CodegenContext(
+            first_declaration_ln, last_declaration_ln, pre_end_subroutine_ln
+        )

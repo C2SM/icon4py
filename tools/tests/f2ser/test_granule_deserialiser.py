@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import pytest
+
 from icon4pytools.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4pytools.f2ser.parse import CodegenContext, GranuleParser, ParsedGranule
 from icon4pytools.liskov.codegen.serialisation.interface import (
