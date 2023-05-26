@@ -25,13 +25,13 @@ from gt4py.next.ffront.decorator import FieldOperator, Program, program
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
+from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
+
 from icon4pytools.icon4pygen.exceptions import (
     InvalidConnectivityException,
     MultipleFieldOperatorException,
 )
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
-
-from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 
 
 @dataclass(frozen=True)
@@ -118,7 +118,9 @@ def _get_domain_arg_ids(fvprog: Program) -> list | set[str]:
     return domain_arg_ids
 
 
-def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
+def import_definition(
+    name: str,
+) -> Program | FieldOperator | types.FunctionType:
     """Import a stencil from a given module.
 
     Note:
@@ -142,9 +144,7 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(
-    offset: str, is_global: bool = False
-) -> DummyConnectivity | Dimension:
+def provide_offset(offset: str, is_global: bool = False) -> DummyConnectivity | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
@@ -166,9 +166,7 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     and pass the tokens after to the algorithm below
     """
     # note: this seems really brittle. maybe agree on a keyword to indicate new sparse fields?
-    new_sparse_field = any(
-        len(token) > 1 for token in chain.split("2")
-    ) and not chain.endswith("O")
+    new_sparse_field = any(len(token) > 1 for token in chain.split("2")) and not chain.endswith("O")
     if new_sparse_field:
         chain = chain.split("2")[1]
     skip_values = False
@@ -199,13 +197,9 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
 
 def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     """Scan PAST node for offsets and return a set of all offsets."""
-    all_types = (
-        fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
-    )
+    all_types = fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
     all_field_types = [
-        symbol_type
-        for symbol_type in all_types
-        if isinstance(symbol_type, ts.FieldType)
+        symbol_type for symbol_type in all_types if isinstance(symbol_type, ts.FieldType)
     ]
     all_dims = set(i for j in all_field_types for i in j.dims)
     all_offset_labels = (
@@ -223,7 +217,8 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 
 
 def get_stencil_info(
-    fencil_def: Program | FieldOperator | types.FunctionType, is_global: bool = False
+    fencil_def: Program | FieldOperator | types.FunctionType,
+    is_global: bool = False,
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     if isinstance(fencil_def, FendefDispatcher):

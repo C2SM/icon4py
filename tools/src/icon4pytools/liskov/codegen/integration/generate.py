@@ -217,7 +217,9 @@ class IntegrationCodeGenerator(CodeGenerator):
                 for end in self.interface.EndProfile:  # type: ignore
                     logger.info("Generating nvtx end statement.")
                     self._generate(
-                        EndProfileStatement, EndProfileStatementGenerator, end.startln
+                        EndProfileStatement,
+                        EndProfileStatementGenerator,
+                        end.startln,
                     )
 
     def _generate_insert(self) -> None:

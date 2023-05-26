@@ -16,6 +16,7 @@ from typing import Optional
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
+
 from icon4pytools.liskov.codegen.serialisation.interface import (
     InitData,
     SavepointData,
@@ -51,15 +52,11 @@ class SavepointStatement(eve.Node):
     multinode: bool
     standard_fields: StandardFields = eve.datamodels.field(init=False)
     decomposed_fields: DecomposedFields = eve.datamodels.field(init=False)
-    decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(
-        init=False
-    )
+    decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(init=False)
 
     def __post_init__(self):
         self.standard_fields = StandardFields(
-            fields=[
-                Field(**asdict(f)) for f in self.savepoint.fields if not f.decomposed
-            ]
+            fields=[Field(**asdict(f)) for f in self.savepoint.fields if not f.decomposed]
         )
         self.decomposed_fields = DecomposedFields(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if f.decomposed]

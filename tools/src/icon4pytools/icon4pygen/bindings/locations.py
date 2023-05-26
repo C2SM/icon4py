@@ -15,11 +15,11 @@ from abc import ABCMeta, abstractmethod
 from typing import Iterator
 
 from gt4py.next.ffront.fbuiltins import Dimension
+from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
+
 from icon4pytools.icon4pygen.bindings.codegen.render.location import (
     LocationRenderer,
 )
-
-from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 
 
 class BasicLocation:
@@ -66,9 +66,7 @@ class MultiLocation(metaclass=ABCMeta):
         if is_valid(chain):
             self.chain = chain
         else:
-            raise Exception(
-                f"chain {chain} contains two of the same elements in succession"
-            )
+            raise Exception(f"chain {chain} contains two of the same elements in succession")
 
     def __iter__(self) -> Iterator[BasicLocation]:
         return iter(self.chain)

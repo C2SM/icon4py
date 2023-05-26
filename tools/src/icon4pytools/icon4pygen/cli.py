@@ -45,9 +45,7 @@ class ModuleType(click.ParamType):
 @click.argument("fencil", type=ModuleType())
 @click.argument("block_size", type=int, default=128)
 @click.argument("levels_per_thread", type=int, default=4)
-@click.option(
-    "--is_global", is_flag=True, type=bool, help="Whether this is a global run."
-)
+@click.option("--is_global", is_flag=True, type=bool, help="Whether this is a global run.")
 @click.argument(
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),

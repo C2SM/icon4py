@@ -16,6 +16,7 @@ from inspect import getmembers
 from typing import Any
 
 from gt4py.next.ffront.decorator import Program
+
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.icon4pygen.metadata import get_stencil_info
 from icon4pytools.liskov.codegen.integration.interface import (
@@ -66,9 +67,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
                 err_counter += 1
 
         if err_counter == len(self._STENCIL_PACKAGES):
-            raise UnknownStencilError(
-                f"Did not find module: {stencil_name} in icon4pytools."
-            )
+            raise UnknownStencilError(f"Did not find module: {stencil_name} in icon4pytools.")
 
         module_members = getmembers(module)
         found_stencil = [elt for elt in module_members if elt[0] == stencil_name]

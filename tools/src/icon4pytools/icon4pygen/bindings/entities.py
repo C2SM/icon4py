@@ -16,6 +16,7 @@ from typing import Union
 from gt4py.eve import Node
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.type_system import type_specifications as ts
+
 from icon4pytools.icon4pygen.bindings.codegen.render.field import FieldRenderer
 from icon4pytools.icon4pygen.bindings.codegen.render.offset import OffsetRenderer
 from icon4pytools.icon4pygen.bindings.codegen.types import (
@@ -76,9 +77,7 @@ class Offset(Node, OffsetEntity):
 
         if source in [str(loc()) for loc in BASIC_LOCATIONS.values()]:
             return chain_from_str(source)[0]
-        elif all(
-            char in [str(loc()) for loc in BASIC_LOCATIONS.values()] for char in source
-        ):
+        elif all(char in [str(loc()) for loc in BASIC_LOCATIONS.values()] for char in source):
             return CompoundLocation(chain_from_str(source))
         else:
             raise BindingsTypeConsistencyException(f"Invalid source {source}")
@@ -164,9 +163,7 @@ class Field(Node, FieldEntity):
         if not isinstance(field.type, ts.FieldType):
             return
 
-        maybe_horizontal_dimension = list(
-            filter(lambda dim: dim.value != "K", field.type.dims)
-        )
+        maybe_horizontal_dimension = list(filter(lambda dim: dim.value != "K", field.type.dims))
 
         # early abort if field is vertical
         if not len(maybe_horizontal_dimension):

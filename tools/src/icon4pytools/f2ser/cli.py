@@ -15,6 +15,7 @@ import pathlib
 from typing import Optional
 
 import click
+
 from icon4pytools.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4pytools.f2ser.parse import GranuleParser
 from icon4pytools.liskov.codegen.serialisation.generate import (
@@ -26,9 +27,7 @@ from icon4pytools.liskov.codegen.shared.write import CodegenWriter
 @click.command("icon_f2ser")
 @click.argument(
     "granule_path",
-    type=click.Path(
-        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
-    ),
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
 @click.argument(
     "output_filepath",
@@ -42,10 +41,16 @@ from icon4pytools.liskov.codegen.shared.write import CodegenWriter
     help="Optional list of dependency paths.",
 )
 @click.option(
-    "--directory", type=str, help="Directory to serialise variables to.", default="."
+    "--directory",
+    type=str,
+    help="Directory to serialise variables to.",
+    default=".",
 )
 @click.option(
-    "--prefix", type=str, help="Prefix to use for serialised files.", default="f2ser"
+    "--prefix",
+    type=str,
+    help="Prefix to use for serialised files.",
+    default="f2ser",
 )
 @click.option(
     "--multinode",
