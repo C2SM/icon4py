@@ -11,16 +11,19 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.icon4pygen.bindings.exceptions import BindingsRenderingException
+from pathlib import Path
+
+import icon4py.liskov.parsing.types as ts
+from icon4py.liskov.parsing.scan import DirectivesScanner
 
 
-class LocationRenderer:
-    type_dispatcher = {"Cell": "Cells", "Edge": "Edges", "Vertex": "Vertices"}
+def scan_for_directives(fpath: Path) -> list[ts.RawDirective]:
+    collector = DirectivesScanner(fpath)
+    return collector()
 
-    @classmethod
-    def location_type(cls, cls_name: str) -> str:
-        if cls_name not in cls.type_dispatcher.keys():
-            raise BindingsRenderingException(
-                f"cls name {cls_name} needs to be either 'Cell', 'Edge' or 'Vertex'"
-            )
-        return cls.type_dispatcher[cls_name]
+
+def insert_new_lines(fname: Path, lines: list[str]) -> None:
+    """Append new lines into file."""
+    with open(fname, "a") as f:
+        for ln in lines:
+            f.write(f"{ln}\n")

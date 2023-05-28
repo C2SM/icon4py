@@ -14,26 +14,30 @@
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
+
+import icon4py.testutils as testutils
 
 
 @pytest.fixture
-def make_f90_tmpfile(tmp_path) -> Path:
-    """Fixture factory which creates a temporary Fortran file.
-
-    Args:
-        content: Content to be present in the file.
-    """
-
-    def _make_f90_tmpfile(content: str):
-        fn = tmp_path / "tmp.f90"
-        with open(fn, "w") as f:
-            f.write(content)
-        return fn
-
-    return _make_f90_tmpfile
+def samples_path():
+    return Path(testutils.__file__).parent / "fortran"
 
 
 @pytest.fixture
-def cli():
-    return CliRunner()
+def diffusion_granule(samples_path):
+    return samples_path / "diffusion_granule.f90"
+
+
+@pytest.fixture
+def diffusion_granule_deps(samples_path):
+    return [samples_path / "derived_types_example.f90"]
+
+
+@pytest.fixture
+def no_deps_source_file(samples_path):
+    return samples_path / "no_deps_subroutine_example.f90"
+
+
+@pytest.fixture
+def not_existing_diffusion_granule(samples_path):
+    return samples_path / "not_existing_file.f90"
