@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import Field, int32, where
 
 from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
     _apply_nabla2_and_nabla4_global_to_vn,
@@ -39,8 +39,8 @@ def _apply_nabla2_and_nabla4_to_vn_switcher(
     nudgezone_diff: float,
     limited_area: bool,
 ) -> Field[[EdgeDim, KDim], float]:
-    vn = where(
-        broadcast(limited_area, (EdgeDim, KDim)),
+    # TODO: Use normal if-else instead
+    vn = (
         _apply_nabla2_and_nabla4_to_vn(
             area_edge,
             kh_smag_e,
@@ -50,15 +50,16 @@ def _apply_nabla2_and_nabla4_to_vn_switcher(
             nudgecoeff_e,
             vn,
             nudgezone_diff,
-        ),
-        _apply_nabla2_and_nabla4_global_to_vn(
+        )
+        if limited_area
+        else _apply_nabla2_and_nabla4_global_to_vn(
             area_edge,
             kh_smag_e,
             z_nabla2_e,
             z_nabla4_e2,
             diff_multfac_vn,
             vn,
-        ),
+        )
     )
 
     return vn
