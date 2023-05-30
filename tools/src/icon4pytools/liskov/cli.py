@@ -31,9 +31,7 @@ logger = setup_logger(__name__)
 def main(ctx):
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor."""
     if ctx.invoked_subcommand is None:
-        click.echo(
-            "Need to choose one of the following commands:\nintegrate\nserialise"
-        )
+        click.echo("Need to choose one of the following commands:\nintegrate\nserialise")
 
 
 @main.command()
@@ -51,9 +49,7 @@ def main(ctx):
 )
 @click.argument(
     "input_path",
-    type=click.Path(
-        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
-    ),
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
 @click.argument(
     "output_path",
@@ -83,9 +79,7 @@ def integrate(input_path, output_path, profile, metadatagen):
 )
 @click.argument(
     "input_path",
-    type=click.Path(
-        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
-    ),
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
 @click.argument(
     "output_path",

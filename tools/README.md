@@ -70,7 +70,6 @@ A preprocessor that facilitates integration of GT4Py code into the ICON model. `
 
 `icon_liskov` can either operate in **integration** or **serialisation** mode. In **integration** mode liskov generates calls to Fortran wrapper functions which enable calling icon4py DSL code inside of ICON from Fortran. In **serialisation** mode ppser serialbox statements are generated allowing the serialisation of all variables in all stencils decorated with liskov directives.
 
-
 ### Usage
 
 #### Integration mode
