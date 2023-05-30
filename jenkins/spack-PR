@@ -1,12 +1,3 @@
-properties([
-  pipelineTriggers([
-    [
-      $class: 'org.jenkinsci.plugins.ghprb.GhprbTrigger',
-      triggerPhrase: 'launch jenkins'
-    ]
-  ])
-])
-
 pipeline {
     agent none
     stages {
