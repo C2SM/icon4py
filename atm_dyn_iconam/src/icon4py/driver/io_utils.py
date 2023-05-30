@@ -56,7 +56,7 @@ def read_icon_grid(path: Path, ser_type=SerializationType.SB) -> IconGrid:
             .construct_icon_grid()
         )
     else:
-        raise NotImplementedError("Only ser_type='sb' is implemented so far.")
+        raise NotImplementedError(SERIALBOX_ONLY_MSG)
 
 
 def read_initial_state(

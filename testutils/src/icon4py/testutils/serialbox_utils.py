@@ -191,7 +191,7 @@ class IconGridSavePoint(IconSavepoint):
             case dimension.VertexDim:
                 return self.serializer.read("num_vert", savepoint=self.savepoint).astype(int32)[0]
             case dimension.KDim:
-                return self.get_metadata("nlev")
+                return self.get_metadata("nlev")["nlev"]
             case _:
                 raise NotImplementedError(f"only {CellDim, EdgeDim, VertexDim, KDim} are supported")
 
