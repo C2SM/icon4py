@@ -119,3 +119,6 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 testpaths = 'tests'
+
+[tool.setuptools.package-data]
+'icon4pytools' = ['py.typed']

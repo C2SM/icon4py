@@ -118,9 +118,7 @@ def _get_domain_arg_ids(fvprog: Program) -> list | set[str]:
     return domain_arg_ids
 
 
-def import_definition(
-    name: str,
-) -> Program | FieldOperator | types.FunctionType:
+def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
     """Import a stencil from a given module.
 
     Note:
@@ -217,8 +215,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 
 
 def get_stencil_info(
-    fencil_def: Program | FieldOperator | types.FunctionType,
-    is_global: bool = False,
+    fencil_def: Program | FieldOperator | types.FunctionType, is_global: bool = False
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     if isinstance(fencil_def, FendefDispatcher):
