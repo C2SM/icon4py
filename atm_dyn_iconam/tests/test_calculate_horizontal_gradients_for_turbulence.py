@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+
 from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import (
     calculate_horizontal_gradients_for_turbulence,
 )

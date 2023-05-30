@@ -5,6 +5,7 @@ default_language_version:
     # Remove frozen version once we migrated away from tsa
     node: 17.9.1
 minimum_pre_commit_version: 2.20.0
+exclude: "tools/.*"
 
 repos:
     - repo: meta

@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_16 import (
     mo_velocity_advection_stencil_16,
 )
