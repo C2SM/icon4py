@@ -26,6 +26,7 @@ from icon4py.driver.parallel_setup import DecompositionInfo
 from icon4py.testutils import serialbox_utils
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
+
 SERIALBOX_ONLY_MSG = "Only ser_type='sb (Serialbox)' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
@@ -113,24 +114,29 @@ def read_geometry_fields(
 
 # /home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/node2/mch_ch_r04b09_dsl/icon_grid
 def read_decomp_info(
-    path: Path, procs_props: ProcessProperties, ser_type = SerializationType.SB,
-)->DecompositionInfo:
+    path: Path,
+    procs_props: ProcessProperties,
+    ser_type=SerializationType.SB,
+) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
-        sp = serialbox_utils.IconSerialDataProvider("icon_grid", str(path.absolute()), True,
-                                                    procs_props.rank)
-        return \
-            sp.from_savepoint_grid().construct_decomposition_info()
+        sp = serialbox_utils.IconSerialDataProvider(
+            "icon_grid", str(path.absolute()), True, procs_props.rank
+        )
+        return sp.from_savepoint_grid().construct_decomposition_info()
     else:
         raise NotImplementedError(SERIALBOX_ONLY_MSG)
 
+
 def read_grid(
-    path: Path, procs_props: ProcessProperties, ser_type = SerializationType.SB,
-)->IconGrid:
+    path: Path,
+    procs_props: ProcessProperties,
+    ser_type=SerializationType.SB,
+) -> IconGrid:
     if ser_type == SerializationType.SB:
-        sp = serialbox_utils.IconSerialDataProvider("icon_grid", str(path.absolute()), True,
-                                                    procs_props.rank)
-        return \
-            sp.from_savepoint_grid().construct_icon_grid()
+        sp = serialbox_utils.IconSerialDataProvider(
+            "icon_grid", str(path.absolute()), True, procs_props.rank
+        )
+        return sp.from_savepoint_grid().construct_icon_grid()
     else:
         raise NotImplementedError(SERIALBOX_ONLY_MSG)
 

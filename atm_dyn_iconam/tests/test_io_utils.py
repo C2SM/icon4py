@@ -25,6 +25,7 @@ from icon4py.driver.io_utils import (
 )
 from icon4py.driver.parallel_setup import get_processor_properties
 
+
 test_data_path = pathlib.Path(__file__).parent.joinpath(
     "./ser_icondata/mch_ch_r04b09_dsl/ser_data"
 )
@@ -115,6 +116,3 @@ def assert_interpolation_state_fields(interpolation_state):
     assert interpolation_state.rbf_coeff_2
     assert interpolation_state.rbf_coeff_1
     assert interpolation_state.geofac_n2s_c
-
-
-

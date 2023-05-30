@@ -77,7 +77,7 @@ class IconSavepoint:
 
     def _read_int32(self, name: str):
         """
-        Read a int field by name.
+        Read an int field by name.
 
         use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
         this accounts for being exclusive python exclusive bounds: [from:to)
@@ -185,18 +185,23 @@ class IconGridSavePoint(IconSavepoint):
     def num(self, dim: Dimension):
         match (dim):
             case dimension.CellDim:
-                return self.serializer.read("num_cells", savepoint=self.savepoint).astype(int32)[0]
+                return self.serializer.read(
+                    "num_cells", savepoint=self.savepoint
+                ).astype(int32)[0]
             case dimension.EdgeDim:
-                return self.serializer.read("num_edges", savepoint=self.savepoint).astype(int32)[0]
+                return self.serializer.read(
+                    "num_edges", savepoint=self.savepoint
+                ).astype(int32)[0]
             case dimension.VertexDim:
-                return self.serializer.read("num_vert", savepoint=self.savepoint).astype(int32)[0]
+                return self.serializer.read(
+                    "num_vert", savepoint=self.savepoint
+                ).astype(int32)[0]
             case dimension.KDim:
                 return self.get_metadata("nlev")["nlev"]
             case _:
-                raise NotImplementedError(f"only {CellDim, EdgeDim, VertexDim, KDim} are supported")
-
-
-
+                raise NotImplementedError(
+                    f"only {CellDim, EdgeDim, VertexDim, KDim} are supported"
+                )
 
     def _read_field_for_dim(self, field_name, read_func, dim):
         match (dim):
@@ -208,7 +213,8 @@ class IconGridSavePoint(IconSavepoint):
                 return read_func(f"v_{field_name}")
             case _:
                 raise NotImplementedError(
-                    f"only {dimension.CellDim, dimension.EdgeDim, dimension.VertexDim} are handled")
+                    f"only {dimension.CellDim, dimension.EdgeDim, dimension.VertexDim} are handled"
+                )
 
     def owner_mask(self, dim: Dimension):
         field_name = "owner_mask"
@@ -218,6 +224,7 @@ class IconGridSavePoint(IconSavepoint):
     def global_index(self, dim: Dimension):
         field_name = "glb_index"
         return self._read_field_for_dim(field_name, self._read_int32_shift1, dim)
+
     def decomp_domain(self, dim):
         field_name = "decomp_domain"
         return self._read_field_for_dim(field_name, self._read_int32, dim)
@@ -228,7 +235,6 @@ class IconGridSavePoint(IconSavepoint):
         mask = self.owner_mask(CellDim)[0:num_cells]
 
         return DecompositionInfo().with_dimension(CellDim, index, mask)
-
 
     def construct_icon_grid(self) -> IconGrid:
 
@@ -499,5 +505,3 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconDiffusionExitSavepoint(savepoint, self.serializer)
-
-

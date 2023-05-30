@@ -19,18 +19,27 @@ import pytest
 import wget
 
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.driver.io_utils import read_decomp_info, SerializationType
-from icon4py.driver.parallel_setup import get_processor_properties, DecompositionInfo
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider, IconGridSavePoint
+from icon4py.driver.io_utils import SerializationType, read_decomp_info
+from icon4py.driver.parallel_setup import (
+    DecompositionInfo,
+    get_processor_properties,
+)
+from icon4py.testutils.serialbox_utils import (
+    IconGridSavePoint,
+    IconSerialDataProvider,
+)
+
 
 data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
 data_path = Path(__file__).parent.joinpath("ser_icondata")
 extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
 
+
 @pytest.fixture
 def mpi():
     from mpi4py import MPI
+
     mpi4py.rc.initialize = False
     return MPI
 
@@ -59,9 +68,6 @@ def setup_icon_data():
 @pytest.fixture
 def data_provider(setup_icon_data) -> IconSerialDataProvider:
     return IconSerialDataProvider("icon_pydycore", str(extracted_path), True)
-
-
-
 
 
 @pytest.fixture

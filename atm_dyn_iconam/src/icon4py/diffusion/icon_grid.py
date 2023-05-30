@@ -46,30 +46,28 @@ class MeshConfig:
         self._horizontal = horizontal_config
 
     @property
-    def limited_area(self)->bool:
+    def limited_area(self) -> bool:
         return self._limited_area
 
     @property
-    def num_k_levels(self)->int:
+    def num_k_levels(self) -> int:
         return self._vertical.num_lev
 
     @property
-    def n_shift_total(self)->int:
+    def n_shift_total(self) -> int:
         return self._n_shift_total
 
     @property
-    def num_vertices(self)->int:
+    def num_vertices(self) -> int:
         return self._horizontal.num_vertices
 
     @property
-    def num_edges(self)->int:
+    def num_edges(self) -> int:
         return self._horizontal.num_edges
 
     @property
-    def num_cells(self)->int:
+    def num_cells(self) -> int:
         return self._horizontal.num_cells
-
-
 
 
 class IconGrid:
