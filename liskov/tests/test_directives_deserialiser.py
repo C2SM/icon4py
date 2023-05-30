@@ -244,6 +244,8 @@ def test_data_factories_with_args(factory, target, mock_data):
 def test_start_create_factory(mock_data, extra_fields):
     factory = StartCreateDataFactory()
     result = factory(mock_data)
+    if type(result) == list:
+        result = result[0]
     assert isinstance(result, StartCreateData)
     assert result.extra_fields == extra_fields
 
