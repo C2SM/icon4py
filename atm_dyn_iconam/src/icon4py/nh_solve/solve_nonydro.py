@@ -865,38 +865,38 @@ class SolveNonhydro:
                     offset_provider={},
                 )
 
-            if config.iadv_rhotheta == 2:
-                # Compute upwind-biased values for rho and theta starting from centered differences
-                # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
-                # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
-
-                nhsolve_prog.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
-                    prognostic_state[nnow].vn,
-                    diagnostic_state.vt,
-                    self.interpolation_state.pos_on_tplane_e_1,
-                    self.interpolation_state.pos_on_tplane_e_2,
-                    primal_normal_cell_1,
-                    dual_normal_cell_1,
-                    primal_normal_cell_2,
-                    dual_normal_cell_2,
-                    p_dthalf,
-                    self.metric_state_nonhydro.rho_ref_me,
-                    self.metric_state_nonhydro.theta_ref_me,
-                    self.z_grad_rth_1,
-                    self.z_grad_rth_2,
-                    self.z_grad_rth_3,
-                    self.z_grad_rth_4,
-                    self.z_rth_pr_1,
-                    self.z_rth_pr_2,
-                    self.z_rho_e,
-                    self.z_theta_v_e,
-                    edge_endindex_interior - 1,
-                    self.vertical_params.nflatlev - 1,  # TODO: self.grid.n_lev(),
-                    offset_provider={
-                        "E2C": self.grid.get_e2c_connectivity(),
-                        "E2EC": self.grid.get_e2ec_connectivity(),
-                    },
-                )
+            # if config.iadv_rhotheta == 2:
+            #     # Compute upwind-biased values for rho and theta starting from centered differences
+            #     # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
+            #     # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
+            #
+            #     nhsolve_prog.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
+            #         prognostic_state[nnow].vn,
+            #         diagnostic_state.vt,
+            #         self.interpolation_state.pos_on_tplane_e_1,
+            #         self.interpolation_state.pos_on_tplane_e_2,
+            #         primal_normal_cell_1,
+            #         dual_normal_cell_1,
+            #         primal_normal_cell_2,
+            #         dual_normal_cell_2,
+            #         p_dthalf,
+            #         self.metric_state_nonhydro.rho_ref_me,
+            #         self.metric_state_nonhydro.theta_ref_me,
+            #         self.z_grad_rth_1,
+            #         self.z_grad_rth_2,
+            #         self.z_grad_rth_3,
+            #         self.z_grad_rth_4,
+            #         self.z_rth_pr_1,
+            #         self.z_rth_pr_2,
+            #         self.z_rho_e,
+            #         self.z_theta_v_e,
+            #         edge_endindex_interior - 1,
+            #         self.vertical_params.nflatlev - 1,  # TODO: self.grid.n_lev(),
+            #         offset_provider={
+            #             "E2C": self.grid.get_e2c_connectivity(),
+            #             "E2EC": self.grid.get_e2ec_connectivity(),
+            #         },
+            #     )
 
         # Remaining computations at edge points
         mo_solve_nonhydro_stencil_18(
