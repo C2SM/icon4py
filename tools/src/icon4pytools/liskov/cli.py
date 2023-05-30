@@ -28,27 +28,12 @@ logger = setup_logger(__name__)
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-@click.argument(
-    "input_path",
-    type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
-)
-@click.argument(
-    "output_path",
-    type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
-)
-def main(ctx, input_path, output_path):
-    """Command line interface for interacting with the ICON-Liskov DSL Preprocessor.
-
-    Arguments:
-        INPUT_PATH: Path to input file containing Liskov directives.
-        OUTPUT_PATH: Path to new file to be generated.
-    """
+def main(ctx):
+    """Command line interface for interacting with the ICON-Liskov DSL Preprocessor."""
     if ctx.invoked_subcommand is None:
-        click.echo("Need to choose one of the following commands:\nintegrate\nserialise")
-    else:
-        ctx.ensure_object(dict)
-        ctx.obj["INPUT"] = input_path
-        ctx.obj["OUTPUT"] = output_path
+        click.echo(
+            "Need to choose one of the following commands:\nintegrate\nserialise"
+        )
 
 
 @main.command()
@@ -64,17 +49,23 @@ def main(ctx, input_path, output_path):
     is_flag=True,
     help="Add metadata header with information about program.",
 )
-@click.pass_context
-def integrate(ctx, profile, metadatagen):
+@click.argument(
+    "input_path",
+    type=click.Path(
+        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
+    ),
+)
+@click.argument(
+    "output_path",
+    type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
+)
+def integrate(input_path, output_path, profile, metadatagen):
     mode = "integration"
-    inp = ctx.obj["INPUT"]
-    out = ctx.obj["OUTPUT"]
-
-    iface = parse_fortran_file(inp, out, mode)
+    iface = parse_fortran_file(input_path, output_path, mode)
     iface_gt4py = load_gt4py_stencils(iface)
     run_code_generation(
-        inp,
-        out,
+        input_path,
+        output_path,
         mode,
         iface_gt4py,
         profile=profile,
@@ -90,13 +81,20 @@ def integrate(ctx, profile, metadatagen):
     help="Specify whether it is a multinode run. Will generate mpi rank information.",
     default=False,
 )
-@click.pass_context
-def serialise(ctx, multinode):
+@click.argument(
+    "input_path",
+    type=click.Path(
+        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
+    ),
+)
+@click.argument(
+    "output_path",
+    type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
+)
+def serialise(input_path, output_path, multinode):
     mode = "serialisation"
-    inp = ctx.obj["INPUT"]
-    out = ctx.obj["OUTPUT"]
-    iface = parse_fortran_file(inp, out, mode)
-    run_code_generation(inp, out, mode, iface, multinode=multinode)
+    iface = parse_fortran_file(input_path, output_path, mode)
+    run_code_generation(input_path, output_path, mode, iface, multinode=multinode)
 
 
 if __name__ == "__main__":

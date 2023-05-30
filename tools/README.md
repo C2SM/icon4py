@@ -66,17 +66,35 @@ To permanently enable autocomplete on your system add the above statement to you
 
 ## `icon_liskov`
 
-A preprocessor that facilitates integration of GT4Py code into the ICON model. `icon_liskov` is a CLI tool which takes a Fortran file as input and processes it with the ICON-Liskov DSL Preprocessor. This preprocessor adds the necessary `USE` statements and generates OpenACC `DATA CREATE` statements and declares DSL input/output fields based on directives in the input file. The preprocessor also processes stencils defined in the input file using the `START STENCIL` and `END STENCIL` directives, inserting the necessary code to run the stencils and adding nvtx profile statements if specified with the `--profile` or `-p` flag. Additionally, specifying the `--metadatagen` or `-m` flag will result in the generation of runtime metadata at the top of the generated file.
+A preprocessor that facilitates integration of GT4Py code into the ICON model. `icon_liskov` is a CLI tool which takes a fortran file as input and processes it with the ICON-Liskov DSL Preprocessor, generating code and inserting that into the target output file.
+
+`icon_liskov` can either operate in **integration** or **serialisation** mode. In **integration** mode liskov generates calls to Fortran wrapper functions which enable calling icon4py DSL code inside of ICON from Fortran. In **serialisation** mode ppser serialbox statements are generated allowing the serialisation of all variables in all stencils decorated with liskov directives.
+
 
 ### Usage
 
-To use the `icon_liskov` tool, run the following command:
+#### Integration mode
 
 ```bash
-icon_liskov <input_filepath> <output_filepath> [--profile] [--metadatagen]
+icon_liskov integrate [--profile] [--metadatagen] <input_filepath> <output_filepath>
 ```
 
-Where `input_filepath` is the path to the input file to be processed, and `output_filepath` is the path to the output file. The optional `--profile` flag adds nvtx profile statements to the stencils.
+Options:
+
+- `profile`: adds nvtx profile statements to the stencils (optional).
+- `metadatagen`: generates a metadata header at the top of the file which includes information on icon_liskov such as the version used.
+
+#### Serialisation mode
+
+```bash
+icon_liskov serialise [--multinode] <input_filepath> <output_filepath>
+```
+
+Options:
+
+- `multinode`: ppser init contains the rank of the MPI process to facilitate writing files in a multinode context.
+
+**Note**: By default the data will be saved at the default folder location of the currently run experiment and will have a prefix of `liskov-serialisation`.
 
 ### Preprocessor directives
 

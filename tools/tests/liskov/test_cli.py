@@ -63,6 +63,6 @@ for file_name, file_content in files:
 )
 def test_cli(make_f90_tmpfile, cli, outfile, file_name, file_content, cmd, cmd_flags):
     fpath = str(make_f90_tmpfile(content=file_content))
-    args = [fpath, outfile, cmd, *cmd_flags]
+    args = [cmd, *cmd_flags, fpath, outfile]
     result = cli.invoke(main, args)
     assert result.exit_code == 0
