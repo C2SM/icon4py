@@ -230,11 +230,18 @@ class IconGridSavePoint(IconSavepoint):
         return self._read_field_for_dim(field_name, self._read_int32, dim)
 
     def construct_decomposition_info(self):
-        index = self.global_index(CellDim)
-        num_cells = self.num(CellDim)
-        mask = self.owner_mask(CellDim)[0:num_cells]
+        return (
+            DecompositionInfo()
+            .with_dimension(*self._get_decomp_fields(CellDim))
+            .with_dimension(*self._get_decomp_fields(EdgeDim))
+            .with_dimension(*self._get_decomp_fields(VertexDim))
+        )
 
-        return DecompositionInfo().with_dimension(CellDim, index, mask)
+    def _get_decomp_fields(self, dim: Dimension):
+        index = self.global_index(dim)
+        number = self.num(dim)
+        mask = self.owner_mask(dim)[0:number]
+        return dim, index, mask
 
     def construct_icon_grid(self) -> IconGrid:
 

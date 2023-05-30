@@ -13,12 +13,10 @@
 
 import pathlib
 
-import mpi4py
 import pytest
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.decomposition.decomposed import ProcessProperties
-from icon4py.driver.io_utils import SerializationType, read_decomp_info, read_grid
+from icon4py.driver.io_utils import SerializationType, read_decomp_info
 from icon4py.driver.parallel_setup import (
     DecompositionInfo,
     get_processor_properties,
@@ -35,15 +33,20 @@ mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
 
 """
 
-#TODO [magdalena] fix this
+
+# TODO [magdalena] fix this
 @pytest.mark.mpi
 def test_processor_properties_from_comm_world(mpi):
     props = get_processor_properties()
     assert props.rank < mpi.COMM_WORLD.Get_size()
     assert props.comm_name == mpi.COMM_WORLD.Get_name()
 
+
 # TODO s [magdalena] extract fixture, more useful asserts..., fix run parallel (as is will not work on second node...)
-@pytest.mark.parametrize(("dim, owned, total"), ((CellDim, 10448, 10611), (EdgeDim, 15820, 16065), (VertexDim, 5373, 5455)))
+@pytest.mark.parametrize(
+    ("dim, owned, total"),
+    ((CellDim, 10448, 10611), (EdgeDim, 15820, 16065), (VertexDim, 5373, 5455)),
+)
 def test_decomposition_info_masked(dim, owned, total):
     path = pathlib.Path(
         "/home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/node2/mch_ch_r04b09_dsl/icon_grid"
@@ -60,9 +63,7 @@ def test_decomposition_info_masked(dim, owned, total):
     )
     assert owned_indices.shape[0] == owned
 
-    halo_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.HALO)
+    halo_indices = decomposition_info.global_index(
+        dim, DecompositionInfo.EntryType.HALO
+    )
     assert halo_indices.shape[0] == total - owned
-
-
-
-

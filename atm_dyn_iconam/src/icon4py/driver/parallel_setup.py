@@ -68,9 +68,15 @@ class DecompositionInfo:
     def __init__(self):
         self._global_index = {}
 
-    def global_index(self, dim: Dimension, type: EntryType = EntryType.ALL):
-        match (type):
+    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+        match (entry_type):
             case DecompositionInfo.EntryType.ALL:
                 return ma.getdata(self._global_index[dim], subok=False)
+            case DecompositionInfo.EntryType.OWNED:
+                global_index = self._global_index[dim]
+                return ma.getdata(global_index[global_index.mask])
+            case DecompositionInfo.EntryType.HALO:
+                global_index = self._global_index[dim]
+                return ma.getdata(global_index[~global_index.mask])
             case _:
                 raise NotImplementedError()

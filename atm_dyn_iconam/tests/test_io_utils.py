@@ -23,7 +23,6 @@ from icon4py.driver.io_utils import (
     read_icon_grid,
     read_static_fields,
 )
-from icon4py.driver.parallel_setup import get_processor_properties
 
 
 test_data_path = pathlib.Path(__file__).parent.joinpath(
@@ -51,13 +50,14 @@ def assert_grid_size_and_connectivities(grid):
     assert grid.get_c2e2c_connectivity()
     assert grid.get_e2ecv_connectivity()
 
-@pytest.mark.skip("fix: switch geofac_grg changed in new dataset")
+
 @pytest.mark.datatest
 def test_read_icon_grid_for_type_sb():
     grid = read_icon_grid(test_data_path, ser_type=SerializationType.SB)
     assert_grid_size_and_connectivities(grid)
 
 
+@pytest.mark.skip("fix: switch geofac_grg changed in new dataset")
 @pytest.mark.datatest
 def test_read_static_fields_for_type_sb():
     metric_state, interpolation_state = read_static_fields(

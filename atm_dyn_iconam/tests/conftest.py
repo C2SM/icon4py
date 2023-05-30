@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pathlib
 import tarfile
 from pathlib import Path
 
@@ -19,15 +18,7 @@ import pytest
 import wget
 
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.driver.io_utils import SerializationType, read_decomp_info
-from icon4py.driver.parallel_setup import (
-    DecompositionInfo,
-    get_processor_properties,
-)
-from icon4py.testutils.serialbox_utils import (
-    IconGridSavePoint,
-    IconSerialDataProvider,
-)
+from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
 data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
