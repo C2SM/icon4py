@@ -82,7 +82,11 @@ def integration_code_interface():
         copies=True,
     )
     end_stencil_data = EndStencilData(
-        name="stencil1", startln=3, noendif=False, noprofile=False,noaccenddata=False,
+        name="stencil1",
+        startln=3,
+        noendif=False,
+        noprofile=False,
+        noaccenddata=False,
     )
     declare_data = DeclareData(
         startln=5,

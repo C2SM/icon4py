@@ -24,7 +24,6 @@ from icon4py.liskov.parsing.parse import (
     Declare,
     DirectivesParser,
     Imports,
-    StartCreate,
     StartStencil,
 )
 from icon4py.liskov.parsing.validation import DirectiveSyntaxValidator
