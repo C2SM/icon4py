@@ -20,7 +20,7 @@ pipeline {
                     stage('Clone Repos') {
                         steps {
                             sh """
-                            git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/C2SM/spack-c2sm.git
+                            git clone -b icon4py_004 --depth 1 --recurse-submodules --shallow-submodules https://github.com/C2SM/spack-c2sm.git
                             git clone . local_copy
                             """
                         }
