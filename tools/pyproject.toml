@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "icon4pytools"
-version = "0.0.3"
 description = "Tools and utilities for integrating icon4py code into the ICON model."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -34,6 +33,7 @@ dependencies = [
     "tabulate>=0.8.9",
     "fprettify>=0.3.7"
 ]
+dynamic = ['version']
 
 [project.scripts]
 icon_liskov = "icon4pytools.liskov.cli:main"
@@ -119,6 +119,9 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 testpaths = 'tests'
+
+[tool.setuptools.dynamic]
+version = {attr = 'icon4pytools.__init__.__version__'}
 
 [tool.setuptools.package-data]
 'icon4pytools' = ['py.typed']
