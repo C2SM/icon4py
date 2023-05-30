@@ -121,5 +121,4 @@ show_error_codes = true
 testpaths = 'tests'
 
 [tool.setuptools.package-data]
-'icon4pytools.data' = ["*.f90"]
 'icon4pytools' = ['py.typed']
