@@ -32,7 +32,6 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
     w_old: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
     diff_multfac_w: float,
@@ -51,7 +50,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     dwdx, dwdy = where(
-        vert_idx > int32(0),
+        int32(0) < vert_idx,
         _calculate_horizontal_gradients_for_turbulence(
             w_old, geofac_grg_x, geofac_grg_y
         ),
@@ -61,15 +60,15 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
 
     w = where(
-        (horz_idx >= interior_idx) & (horz_idx < halo_idx),
+        (interior_idx <= horz_idx) & (horz_idx < halo_idx),
         _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
         w_old,
     )
 
     w = where(
-        (vert_idx > int32(0))
+        (int32(0) < vert_idx)
         & (vert_idx < nrdmax)
-        & (horz_idx >= interior_idx)
+        & (interior_idx <= horz_idx)
         & (horz_idx < halo_idx),
         _apply_nabla2_to_w_in_upper_damping_layer(
             w, diff_multfac_n2w, area, z_nabla2_c
@@ -104,7 +103,6 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
         geofac_grg_x,
         geofac_grg_y,
         w_old,
-        w,
         dwdx,
         dwdy,
         diff_multfac_w,
