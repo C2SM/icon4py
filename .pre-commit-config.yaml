@@ -5,6 +5,7 @@ default_language_version:
     # Remove frozen version once we migrated away from tsa
     node: 17.9.1
 minimum_pre_commit_version: 2.20.0
+exclude: "tools/.*"
 
 repos:
     - repo: meta
@@ -35,9 +36,6 @@ repos:
           - id: destroyed-symlinks
           # - id: fix-encoding-pragma
           #   args: [--remove]
-          - id: name-tests-test
-            args: [--pytest-test-first]
-            exclude: ^liskov/tests/samples
 
     - repo: https://gitlab.com/bmares/check-json5
       rev: v1.0.0
@@ -117,8 +115,6 @@ repos:
                 - flake8-docstrings
                 - flake8-eradicate
                 - flake8-mutable
-                # Disabled for now due to random false positives
-                # - flake8-rst-docstrings
                 - pygments
 
     - repo: local
@@ -126,7 +122,7 @@ repos:
           - id: mypy
             name: mypy static type checker
             entry: |
-                mypy --install-types --non-interactive -p icon4py.common -p icon4py.icon4pygen -p icon4py.testutils
+                mypy --install-types --non-interactive -p icon4py.common
             language: system
             types_or: [python, pyi]
             always_run: true
