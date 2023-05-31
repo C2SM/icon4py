@@ -14,8 +14,8 @@ from copy import deepcopy
 
 import pytest
 
-import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.parsing.types import Imports, StartCreate
+import icon4py.liskov.parsing.parse
+from icon4py.liskov.parsing.parse import Imports, StartCreate
 from icon4py.liskov.parsing.utils import (
     extract_directive,
     print_parsed_directive,
@@ -64,6 +64,6 @@ def test_string_to_bool(string, expected):
 
 
 def test_print_parsed_directive():
-    directive = ts.Imports("IMPORTS()", 1, 1)
+    directive = icon4py.liskov.parsing.parse.Imports("IMPORTS()", 1, 1)
     expected_output = "Directive: IMPORTS(), start line: 1, end line: 1\n"
     assert print_parsed_directive(directive) == expected_output
