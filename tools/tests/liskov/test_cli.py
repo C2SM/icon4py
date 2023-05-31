@@ -16,7 +16,7 @@ import itertools
 import pytest
 
 from icon4pytools.liskov.cli import main
-
+from icon4pytools.liskov.external.exceptions import MissingCommandError
 from .fortran_samples import (
     CONSECUTIVE_STENCIL,
     FREE_FORM_STENCIL,
@@ -66,3 +66,10 @@ def test_cli(make_f90_tmpfile, cli, outfile, file_name, file_content, cmd, cmd_f
     args = [cmd, *cmd_flags, fpath, outfile]
     result = cli.invoke(main, args)
     assert result.exit_code == 0
+
+
+def test_cli_missing_command(cli):
+    args = []
+    result = cli.invoke(main, args)
+    assert result.exit_code == 1
+    assert isinstance(result.exception, MissingCommandError)

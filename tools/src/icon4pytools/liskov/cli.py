@@ -21,6 +21,7 @@ from icon4pytools.liskov.pipeline.collection import (
     parse_fortran_file,
     run_code_generation,
 )
+from icon4pytools.liskov.external.exceptions import MissingCommandError
 
 
 logger = setup_logger(__name__)
@@ -31,7 +32,9 @@ logger = setup_logger(__name__)
 def main(ctx):
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor."""
     if ctx.invoked_subcommand is None:
-        click.echo("Need to choose one of the following commands:\nintegrate\nserialise")
+        raise MissingCommandError(
+            "Need to choose one of the following commands:\nintegrate\nserialise"
+        )
 
 
 @main.command()

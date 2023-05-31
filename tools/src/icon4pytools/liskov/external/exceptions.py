@@ -22,3 +22,7 @@ class UnknownStencilError(Exception):
 
 class IncompatibleFieldError(Exception):
     pass
+
+
+class MissingCommandError(Exception):
+    pass
