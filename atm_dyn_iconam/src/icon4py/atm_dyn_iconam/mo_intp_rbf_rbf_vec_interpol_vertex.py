@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import V2E, EdgeDim, KDim, V2EDim, VertexDim
 
@@ -29,7 +28,7 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
     return p_u_out, p_v_out
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: Field[[EdgeDim, KDim], float],
     ptr_coeff_1: Field[[VertexDim, V2EDim], float],

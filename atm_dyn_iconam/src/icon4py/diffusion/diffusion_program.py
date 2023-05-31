@@ -54,7 +54,7 @@ from icon4py.common.dimension import (
 from icon4py.diffusion.utils import _scale_k, _set_zero_v_k
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def diffusion_run(
     diagnostic_hdef_ic: Field[[CellDim, KDim], float],
     diagnostic_div_ic: Field[[CellDim, KDim], float],
