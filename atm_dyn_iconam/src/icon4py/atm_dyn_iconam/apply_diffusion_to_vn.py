@@ -28,44 +28,6 @@ from icon4py.common.dimension import ECVDim, EdgeDim, KDim, VertexDim
 
 
 @field_operator
-def _apply_nabla2_and_nabla4_to_vn_switcher(
-    area_edge: Field[[EdgeDim], float],
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    z_nabla4_e2: Field[[EdgeDim, KDim], float],
-    diff_multfac_vn: Field[[KDim], float],
-    nudgecoeff_e: Field[[EdgeDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    nudgezone_diff: float,
-    limited_area: bool,
-) -> Field[[EdgeDim, KDim], float]:
-    # TODO: Use normal if-else instead
-    vn = (
-        _apply_nabla2_and_nabla4_to_vn(
-            area_edge,
-            kh_smag_e,
-            z_nabla2_e,
-            z_nabla4_e2,
-            diff_multfac_vn,
-            nudgecoeff_e,
-            vn,
-            nudgezone_diff,
-        )
-        if limited_area
-        else _apply_nabla2_and_nabla4_global_to_vn(
-            area_edge,
-            kh_smag_e,
-            z_nabla2_e,
-            z_nabla4_e2,
-            diff_multfac_vn,
-            vn,
-        )
-    )
-
-    return vn
-
-
-@field_operator
 def _apply_diffusion_to_vn(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],
@@ -85,6 +47,7 @@ def _apply_diffusion_to_vn(
     start_2nd_nudge_line_idx_e: int32,
     limited_area: bool,
 ) -> Field[[EdgeDim, KDim], float]:
+
     z_nabla4_e2 = _calculate_nabla4(
         u_vert,
         v_vert,
@@ -95,22 +58,33 @@ def _apply_diffusion_to_vn(
         inv_primal_edge_length,
     )
 
-    vn = where(
-        horz_idx >= start_2nd_nudge_line_idx_e,
-        _apply_nabla2_and_nabla4_to_vn_switcher(
+    # TODO: Use if-else statement instead
+    vn = (
+        where(
+            horz_idx >= start_2nd_nudge_line_idx_e,
+            _apply_nabla2_and_nabla4_to_vn(
+                area_edge,
+                kh_smag_e,
+                z_nabla2_e,
+                z_nabla4_e2,
+                diff_multfac_vn,
+                nudgecoeff_e,
+                vn,
+                nudgezone_diff,
+            ),
+            _apply_nabla2_to_vn_in_lateral_boundary(
+                z_nabla2_e, area_edge, vn, fac_bdydiff_v
+            ),
+        )
+        if limited_area
+        else _apply_nabla2_and_nabla4_global_to_vn(
             area_edge,
             kh_smag_e,
             z_nabla2_e,
             z_nabla4_e2,
             diff_multfac_vn,
-            nudgecoeff_e,
             vn,
-            nudgezone_diff,
-            limited_area,
-        ),
-        _apply_nabla2_to_vn_in_lateral_boundary(
-            z_nabla2_e, area_edge, vn, fac_bdydiff_v
-        ),
+        )
     )
 
     return vn
