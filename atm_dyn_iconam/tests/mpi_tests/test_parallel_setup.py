@@ -49,7 +49,7 @@ def test_processor_properties_from_comm_world(mpi):
 )
 def test_decomposition_info_masked(dim, owned, total):
     path = pathlib.Path(
-        "/home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/node2/mch_ch_r04b09_dsl/icon_grid"
+        "/home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/mpitasks2/mch_ch_r04b09_dsl/ser_data"
     )
     props = get_processor_properties()
     decomposition_info = read_decomp_info(path, props, SerializationType.SB)
