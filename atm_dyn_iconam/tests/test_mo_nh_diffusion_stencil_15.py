@@ -19,13 +19,14 @@ from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
     mo_nh_diffusion_stencil_15,
 )
 from icon4py.common.dimension import C2E2CDim, CECDim, CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import (
+
+from .test_utils.helpers import (
     flatten_first_two_dims,
     random_field,
     random_mask,
     zero_field,
 )
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_nh_diffusion_stencil_15_numpy(
