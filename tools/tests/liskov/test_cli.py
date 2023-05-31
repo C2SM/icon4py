@@ -17,6 +17,7 @@ import pytest
 
 from icon4pytools.liskov.cli import main
 from icon4pytools.liskov.external.exceptions import MissingCommandError
+
 from .fortran_samples import (
     CONSECUTIVE_STENCIL,
     FREE_FORM_STENCIL,

@@ -16,12 +16,12 @@ import pathlib
 import click
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.liskov.external.exceptions import MissingCommandError
 from icon4pytools.liskov.pipeline.collection import (
     load_gt4py_stencils,
     parse_fortran_file,
     run_code_generation,
 )
-from icon4pytools.liskov.external.exceptions import MissingCommandError
 
 
 logger = setup_logger(__name__)
