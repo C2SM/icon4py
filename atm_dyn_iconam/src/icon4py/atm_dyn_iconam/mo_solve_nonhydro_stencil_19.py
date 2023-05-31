@@ -40,10 +40,10 @@ def mo_solve_nonhydro_stencil_19(
     c_lin_e: Field[[EdgeDim, E2CDim], float],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
-    horizontal_lower: int,
-    horizontal_upper: int,
-    vertical_lower: int,
-    vertical_upper: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _mo_solve_nonhydro_stencil_19(
         inv_dual_edge_length,
@@ -53,7 +53,7 @@ def mo_solve_nonhydro_stencil_19(
         z_dexner_dz_c_1,
         out=z_gradh_exner,
         domain={
-            EdgeDim: (horizontal_lower, horizontal_upper),
-            KDim: (vertical_lower, vertical_upper),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

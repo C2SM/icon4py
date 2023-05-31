@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import CellDim, KDim
 

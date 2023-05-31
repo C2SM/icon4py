@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import maximum, where
+from gt4py.next.ffront.fbuiltins import where
 from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
@@ -116,10 +116,12 @@ def fused_stencils_4_5_6(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     wgtfacq_e: Field[[EdgeDim, KDim], float],
     k_field: Field[[KDim], int],
-    edge_startindex_interior_minus2: int,
     nflatlev_startindex: int,
     nlev: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _fused_stencils_4_5_6(
         vn,
@@ -135,7 +137,10 @@ def fused_stencils_4_5_6(
         nflatlev_startindex,
         nlev,
         out=(z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e),
-        domain={EdgeDim: (4, edge_startindex_interior_minus2), KDim: (0, nlev_k)},
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -173,10 +178,12 @@ def fused_stencils_9_10(
     wgtfac_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int],
-    cell_startindex_interior_minus1: int,
     nflatlev_startindex: int,
     nlev: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _fused_stencils_9_10(
         z_w_concorr_me,
@@ -188,7 +195,10 @@ def fused_stencils_9_10(
         nflatlev_startindex,
         nlev,
         out=(local_z_w_concorr_mc, w_concorr_c),
-        domain={CellDim: (4, cell_startindex_interior_minus1), KDim: (0, nlev_k)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -226,11 +236,13 @@ def fused_stencils_11_to_13(
     w_concorr_c: Field[[CellDim, KDim], float],
     local_z_w_con_c: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int],
-    cell_endindex_interior_minus1: int,
     nflatlev_startindex: int,
     nlev: int,
     nlevp1: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _fused_stencils_11_to_13(
         w,
@@ -241,7 +253,10 @@ def fused_stencils_11_to_13(
         nlev,
         nlevp1,
         out=local_z_w_con_c,
-        domain={CellDim: (4, cell_endindex_interior_minus1), KDim: (0, nlev_k)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -283,9 +298,10 @@ def fused_stencil_14(
     local_vcfl: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
     dtime: float,
-    cell_endindex_interior_minus1: int,
-    nlev: int,
-    k_lower: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _fused_stencil_14(
         local_z_w_con_c,
@@ -293,7 +309,10 @@ def fused_stencil_14(
         cfl_w_limit,
         dtime,
         out=(local_cfl_clipping, local_pre_levelmask, local_vcfl, local_z_w_con_c),
-        domain={CellDim: (4, cell_endindex_interior_minus1), KDim: (k_lower, nlev)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 

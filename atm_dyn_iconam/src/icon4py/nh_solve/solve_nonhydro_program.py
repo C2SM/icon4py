@@ -169,8 +169,10 @@ def predictor_stencils_2_3(
     exner_ref_mc: Field[[CellDim, KDim], float],
     exner_pr: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
-    cell_endindex_interior_minus1: int,
-    nlev: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _predictor_stencils_2_3(
         exner_exfac,
@@ -178,7 +180,10 @@ def predictor_stencils_2_3(
         exner_ref_mc,
         exner_pr,
         out=(z_exner_ex_pr, exner_pr),
-        domain={CellDim: (2, cell_endindex_interior_minus1), KDim: (0, nlev)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -229,11 +234,12 @@ def predictor_stencils_4_5_6(
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int],
-    cell_endindex_interior_minus1: int,
-    max_nflatlev_startindex: int,
     nlev: int,
     nlevp1: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _predictor_stencils_4_5_6(
         wgtfacq_c,
@@ -247,8 +253,8 @@ def predictor_stencils_4_5_6(
         nlevp1,
         out=(z_exner_ic, z_dexner_dz_c_1),
         domain={
-            CellDim: (2, cell_endindex_interior_minus1),
-            KDim: (max_nflatlev_startindex, nlev_k),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -329,9 +335,11 @@ def predictor_stencils_7_8_9(
     theta_v_ic: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int],
-    cell_endindex_interior_minus1: int,
     nlev: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _predictor_stencils_7_8_9(
         rho,
@@ -359,7 +367,10 @@ def predictor_stencils_7_8_9(
             theta_v_ic,
             z_th_ddz_exner_c,
         ),
-        domain={CellDim: (2, cell_endindex_interior_minus1), KDim: (0, nlev_k)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -395,9 +406,11 @@ def predictor_stencils_11_lower_upper(
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int],
-    cell_endindex_interior_minus1: int,
     nlevp1: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _predictor_stencils_11_lower_upper(
         wgtfacq_c,
@@ -408,7 +421,10 @@ def predictor_stencils_11_lower_upper(
         k_field,
         nlevp1,
         out=(z_theta_v_pr_ic, theta_v_ic),
-        domain={CellDim: (2, cell_endindex_interior_minus1), KDim: (0, nlev_k)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -433,8 +449,10 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     z_rth_pr_2: Field[[CellDim, KDim], float],
     z_rho_e: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
-    edge_endindex_interior_minus1: int,
-    nlev: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         p_vn,
@@ -455,7 +473,10 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         z_rth_pr_1,
         z_rth_pr_2,
         out=(z_rho_e, z_theta_v_e),
-        domain={EdgeDim: (6, edge_endindex_interior_minus1), KDim: (0, nlev)},
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -506,10 +527,12 @@ def predictor_stencils_35_36(
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     k_field: Field[[KDim], int],
-    edge_endindex_interior_minus2: int,
     nflatlev_startindex: int,
     nlev: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _predictor_stencils_35_36(
         vn,
@@ -525,7 +548,10 @@ def predictor_stencils_35_36(
         nflatlev_startindex,
         nlev,
         out=(z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e),
-        domain={EdgeDim: (4, edge_endindex_interior_minus2), KDim: (0, nlev_k)},
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -564,9 +590,11 @@ def predictor_stencils_37_38(
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     wgtfacq_e: Field[[EdgeDim, KDim], float],
     k_field: Field[[KDim], int],
-    edge_endindex_local_minus2: int,
     nlevp1: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _predictor_stencils_37_38(
         vn,
@@ -578,7 +606,10 @@ def predictor_stencils_37_38(
         k_field,
         nlevp1,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
-        domain={EdgeDim: (4, edge_endindex_local_minus2), KDim: (0, nlev_k)},
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -618,11 +649,13 @@ def stencils_39_40(
     wgtfacq_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int],
-    cell_endindex_local_minus1: int,
     nflatlev_startindex_plus1: int,
     nlev: int,
     nlevp1: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _stencils_39_40(
         e_bln_c_s,
@@ -635,7 +668,10 @@ def stencils_39_40(
         nlev,
         nlevp1,
         out=w_concorr_c,
-        domain={CellDim: (2, cell_endindex_local_minus1), KDim: (0, nlev_k - 1)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -1193,10 +1229,12 @@ def stencils_61_62(
     w_new: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int],
     dtime: float,
-    cell_endindex_nudging: int,
     nlev: int,
     nlevp1: int,
-    nlev_k: int,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _stencils_61_62(
         rho_now,
@@ -1213,71 +1251,8 @@ def stencils_61_62(
         nlev,
         nlevp1,
         out=(rho_new, exner_new, w_new),
-        domain={CellDim: (0, cell_endindex_nudging), KDim: (0, nlev_k)},
-    )
-
-
-@field_operator
-def _stencils_66_67(
-    bdy_halo_c: Field[[CellDim], bool],
-    rho: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    cell_field: Field[[CellDim], int],
-    rd_o_cvd: float,
-    rd_o_p0ref: float,
-    cell_startindex_interior_minus1: int,
-    cell_endindex_local: int,
-    cell_endindex_nudging: int,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-
-    (theta_v, exner) = where(
-        # (cell_field >= cell_startindex_interior_minus1) & (cell_field < cell_endindex_local),
-        cell_field >= cell_startindex_interior_minus1,
-        _mo_solve_nonhydro_stencil_66(
-            bdy_halo_c,
-            rho,
-            theta_v,
-            exner,
-            rd_o_cvd,
-            rd_o_p0ref,
-        ),
-        (theta_v, exner),
-    )
-    (theta_v, exner) = where(
-        # (cell_field >= 0) & (cell_field < cell_endindex_nudging),
-        cell_field >= 0,
-        _mo_solve_nonhydro_stencil_67(rho, theta_v, exner, rd_o_cvd, rd_o_p0ref),
-        (theta_v, exner),
-    )
-    return theta_v, exner
-
-
-@program(backend=gtfn_cpu.run_gtfn)
-def stencils_66_67(
-    bdy_halo_c: Field[[CellDim], bool],
-    rho: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    cell_field: Field[[CellDim], int],
-    rd_o_cvd: float,
-    rd_o_p0ref: float,
-    cell_startindex_interior_minus1: int,
-    cell_endindex_local: int,
-    cell_endindex_nudging: int,
-    nlev: int,
-):
-    _stencils_66_67(
-        bdy_halo_c,
-        rho,
-        theta_v,
-        exner,
-        cell_field,
-        rd_o_cvd,
-        rd_o_p0ref,
-        cell_startindex_interior_minus1,
-        cell_endindex_local,
-        cell_endindex_nudging,
-        out=(theta_v, exner),
-        domain={CellDim: (0, cell_endindex_local), KDim: (0, nlev)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

@@ -240,7 +240,7 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("vwind_impl_wgt", CellDim)
 
     def bdy_halo_c(self):
-        return self._get_field("bdy_halo_c", CellDim)
+        return self._get_field("bdy_halo_c", CellDim, dtype=bool)
 
     def ipeidx_dsl(self):
         return self._get_field("ipeidx_dsl", EdgeDim, KDim, dtype=bool)
@@ -574,7 +574,7 @@ class MetricStateSavepoint(IconSavepoint):
         return self._get_field("vwind_impl_wgt", CellDim)
 
     def bdy_halo_c(self):
-        return self._get_field("bdy_halo_c", CellDim)
+        return self._get_field("bdy_halo_c", CellDim, dtype=bool)
 
     def wgtfac_c(self):
         return self._get_field("wgtfac_c", CellDim, KDim)
@@ -622,7 +622,7 @@ class MetricStateSavepoint(IconSavepoint):
         return self._get_field("ipeidx_dsl", EdgeDim, KDim, dtype=bool)
 
     def mask_prog_halo_c(self):
-        return self._get_field("mask_prog_halo_c", CellDim)
+        return self._get_field("mask_prog_halo_c", CellDim, dtype=bool)
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):

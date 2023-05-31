@@ -136,7 +136,7 @@ class VelocityAdvection:
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
     ):
-
+        print("Inside")
         (
             edge_startindex_nudging,
             edge_endindex_nudging,
@@ -155,13 +155,19 @@ class VelocityAdvection:
             dtime * (0.85 - self.cfl_w_limit * dtime)
         )
 
+        (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
+            VertexDim,
+            2,
+            HorizontalMarkerIndex.interior(VertexDim) - 1,
+        )
+
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 prognostic_state.w,
                 self.interpolation_state.c_intp,
                 self.z_w_v,
-                horizontal_start=2,
-                horizontal_end=vert_startindex_interior - 1,
+                horizontal_start=indices_0_1,
+                horizontal_end=indices_0_2,
                 vertical_start=1,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={
@@ -173,8 +179,8 @@ class VelocityAdvection:
             prognostic_state.vn,
             self.interpolation_state.geofac_rot,
             self.zeta,
-            horizontal_start=2,
-            horizontal_end=vert_startindex_interior - 1,
+            horizontal_start=indices_0_1,
+            horizontal_end=indices_0_2,
             vertical_start=1,
             vertical_end=self.grid.n_lev(),
             offset_provider={
@@ -182,18 +188,25 @@ class VelocityAdvection:
             },
         )
 
+        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            4,
+            HorizontalMarkerIndex.interior(EdgeDim) - 2,
+        )
+
         mo_velocity_advection_stencil_01(
             prognostic_state.vn,
             self.interpolation_state.rbf_vec_coeff_e,
             diagnostic_state.vt,
-            horizontal_start=4,
-            horizontal_end=edge_startindex_interior - 1,
+            horizontal_start=indices_1_1,
+            horizontal_end=indices_1_2,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={
                 "E2C2E": self.grid.get_e2c2e_connectivity(),
             },
         )
+        print("1_v")
 
         mo_velocity_advection_stencil_02(
             self.metric_state.wgtfac_e,
@@ -201,8 +214,8 @@ class VelocityAdvection:
             diagnostic_state.vt,
             diagnostic_state.vn_ie,
             z_kin_hor_e,
-            horizontal_start=4,
-            horizontal_end=edge_startindex_interior - 2,
+            horizontal_start=indices_1_1,
+            horizontal_end=indices_1_2,
             vertical_start=1,
             vertical_end=self.grid.n_lev(),
             offset_provider={
@@ -215,9 +228,9 @@ class VelocityAdvection:
                 diagnostic_state.vt,
                 self.metric_state.wgtfac_e,
                 z_vt_ie,
-                horizontal_start=4,
-                horizontal_end=edge_startindex_interior - 2,
-                vertical_start=0,
+                horizontal_start=indices_1_1,
+                horizontal_end=indices_1_2,
+                vertical_start=1,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
@@ -233,46 +246,63 @@ class VelocityAdvection:
             z_w_concorr_me,
             self.metric_state.wgtfacq_e,
             self.k_field,
-            edge_startindex_interior - 2,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
-            self.grid.n_lev(),
+            horizontal_start=indices_1_1,
+            horizontal_end=indices_1_1,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
             offset_provider={
                 "Koff": KDim,
             },
         )
+        print("6_v")
 
-        # seg fault for (E2C[1])
-        # if not vn_only:
-        #     mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
-        #         diagnostic_state.vn_ie,
-        #         inv_dual_edge_length,
-        #         prognostic_state.w,
-        #         z_vt_ie,
-        #         inv_primal_edge_length,
-        #         tangent_orientation,
-        #         self.z_w_v,
-        #         self.z_v_grad_w,
-        #         horizontal_start=6,
-        #         horizontal_end=edge_endindex_interior - 1,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={
-        #             "E2C": self.grid.get_e2c_connectivity(),
-        #             "E2V": self.grid.get_e2v_connectivity(),
-        #         },
-        #     )
+        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.interior(
+                EdgeDim
+            ),  # TODO: this should be HorizontalMarkerIndex.interior(EdgeDim) - 7
+            HorizontalMarkerIndex.interior(EdgeDim) - 1,
+        )
+
+        if not vn_only:
+            mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
+                diagnostic_state.vn_ie,
+                inv_dual_edge_length,
+                prognostic_state.w,
+                z_vt_ie,
+                inv_primal_edge_length,
+                tangent_orientation,
+                self.z_w_v,
+                self.z_v_grad_w,
+                horizontal_start=indices_2_1,
+                horizontal_end=indices_2_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={
+                    "E2C": self.grid.get_e2c_connectivity(),
+                    "E2V": self.grid.get_e2v_connectivity(),
+                },
+            )
+
+        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
+            CellDim,
+            3,
+            HorizontalMarkerIndex.interior(CellDim) - 1,
+        )
 
         mo_velocity_advection_stencil_08(
             z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
             self.z_ekinh,
-            horizontal_start=3,
-            horizontal_end=cell_endindex_interior - 1,
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={"C2E": self.grid.get_c2e_connectivity()},
         )
+        print("8_v")
 
         velocity_prog.fused_stencils_9_10(
             z_w_concorr_me,
@@ -281,10 +311,12 @@ class VelocityAdvection:
             self.metric_state.wgtfac_c,
             diagnostic_state.w_concorr_c,
             self.k_field,
-            cell_startindex_interior - 1,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
-            self.grid.n_lev(),
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
                 "Koff": KDim,
@@ -296,11 +328,13 @@ class VelocityAdvection:
             diagnostic_state.w_concorr_c,
             self.z_w_con_c,
             self.k_field,
-            cell_endindex_interior - 1,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
             self.grid.n_lev() + 1,
-            self.grid.n_lev(),
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
             offset_provider={},
         )
 
@@ -312,21 +346,32 @@ class VelocityAdvection:
             self.vcfl,
             cfl_w_limit,
             dtime,
-            cell_endindex_interior - 1,
-            self.grid.n_lev(),
-            max(3, self.vertical_params.index_of_damping_layer - 2),
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
+            vertical_start=max(3, self.vertical_params.index_of_damping_layer - 2),
+            vertical_end=self.grid.n_lev() - 3,
             offset_provider={},
         )
+        print("14_v")
 
         mo_velocity_advection_stencil_15(
             self.z_w_con_c,
             self.z_w_con_c_full,
-            horizontal_start=4,
-            horizontal_end=cell_endindex_interior - 1,
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
+
+        # TODO: put these bounds back
+        # (indices_4_1,
+        #  indices_4_2
+        #  ) = self.grid.get_indices_from_to(
+        #     CellDim,
+        #     HorizontalMarkerIndex.nudging(CellDim) + 1,
+        #     HorizontalMarkerIndex.interior(CellDim),
+        # )
 
         velocity_prog.fused_stencils_16_to_17(
             prognostic_state.w,
@@ -336,8 +381,8 @@ class VelocityAdvection:
             self.metric_state.coeff1_dwdz,
             self.metric_state.coeff2_dwdz,
             diagnostic_state.ddt_w_adv_pc,
-            horizontal_start=cell_startindex_nudging,
-            horizontal_end=cell_endindex_interior,
+            horizontal_start=cell_startindex_nudging,  # indices_4_1,
+            horizontal_end=cell_endindex_interior,  # indices_4_2,
             vertical_start=1,
             vertical_end=self.grid.n_lev(),
             offset_provider={
@@ -359,13 +404,20 @@ class VelocityAdvection:
             scalfac_exdiff,
             cfl_w_limit,
             dtime,
-            horizontal_start=cell_startindex_nudging,
-            horizontal_end=cell_endindex_interior,
+            horizontal_start=cell_startindex_nudging,  # indices_4_1,
+            horizontal_end=cell_endindex_interior,  # indices_4_2,
             vertical_start=max(3, self.vertical_params.index_of_damping_layer - 2),
             vertical_end=self.grid.n_lev() - 4,
             offset_provider={
                 "C2E2CO": self.grid.get_c2e2co_connectivity(),
             },
+        )
+        print("18_v")
+
+        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            HorizontalMarkerIndex.interior(EdgeDim),
         )
 
         mo_velocity_advection_stencil_19(
@@ -380,8 +432,8 @@ class VelocityAdvection:
             diagnostic_state.vn_ie,
             self.metric_state.ddqz_z_full_e,
             diagnostic_state.ddt_vn_apc_pc,
-            horizontal_start=edge_startindex_nudging + 1,
-            horizontal_end=edge_endindex_interior,
+            horizontal_start=indices_5_1,
+            horizontal_end=indices_5_2,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={
@@ -407,8 +459,8 @@ class VelocityAdvection:
             cfl_w_limit,
             scalfac_exdiff,
             dtime,
-            horizontal_start=edge_startindex_nudging + 1,
-            horizontal_end=edge_endindex_interior,
+            horizontal_start=indices_5_1,
+            horizontal_end=indices_5_2,
             vertical_start=max(3, self.vertical_params.index_of_damping_layer - 2),
             vertical_end=self.grid.n_lev() - 4,
             offset_provider={
@@ -418,6 +470,7 @@ class VelocityAdvection:
                 "Koff": KDim,
             },
         )
+        print("20_v")
 
     def run_corrector_step(
         self,
@@ -456,13 +509,19 @@ class VelocityAdvection:
             dtime * (0.85 - self.cfl_w_limit * dtime)
         )
 
+        (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
+            VertexDim,
+            2,
+            HorizontalMarkerIndex.interior(VertexDim) - 1,
+        )
+
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 prognostic_state.w,
                 self.interpolation_state.c_intp,
                 self.z_w_v,
-                horizontal_start=2,
-                horizontal_end=vert_startindex_interior - 1,
+                horizontal_start=indices_0_1,
+                horizontal_end=indices_0_2,
                 vertical_start=1,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={
@@ -474,13 +533,21 @@ class VelocityAdvection:
             prognostic_state.vn,
             self.interpolation_state.geofac_rot,
             self.zeta,
-            horizontal_start=2,
-            horizontal_end=vert_startindex_interior - 1,
+            horizontal_start=indices_0_1,
+            horizontal_end=indices_0_2,
             vertical_start=1,
             vertical_end=self.grid.n_lev(),
             offset_provider={
                 "V2E": self.grid.get_v2e_connectivity(),
             },
+        )
+
+        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.interior(
+                EdgeDim
+            ),  # TODO: this should be HorizontalMarkerIndex.interior(EdgeDim) - 7
+            HorizontalMarkerIndex.interior(EdgeDim) - 1,
         )
 
         if not vn_only:
@@ -493,8 +560,8 @@ class VelocityAdvection:
                 tangent_orientation,
                 self.z_w_v,
                 self.z_v_grad_w,
-                horizontal_start=6,
-                horizontal_end=edge_endindex_interior,
+                horizontal_start=indices_2_1,
+                horizontal_end=indices_2_2,
                 vertical_start=0,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={
@@ -503,12 +570,18 @@ class VelocityAdvection:
                 },
             )
 
+        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
+            CellDim,
+            3,
+            HorizontalMarkerIndex.interior(CellDim) - 1,
+        )
+
         mo_velocity_advection_stencil_08(
             z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
             self.z_ekinh,
-            horizontal_start=3,
-            horizontal_end=cell_endindex_interior - 1,
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={"C2E": self.grid.get_c2e_connectivity()},
@@ -519,11 +592,13 @@ class VelocityAdvection:
             diagnostic_state.w_concorr_c,
             self.z_w_con_c,
             self.k_field,
-            cell_endindex_interior - 1,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
             self.grid.n_lev() + 1,
-            self.grid.n_lev(),
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
             offset_provider={},
         )
 
@@ -535,21 +610,31 @@ class VelocityAdvection:
             self.vcfl,
             cfl_w_limit,
             dtime,
-            cell_endindex_interior - 1,
-            self.grid.n_lev(),
-            max(3, self.vertical_params.index_of_damping_layer - 2),
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
+            vertical_start=max(3, self.vertical_params.index_of_damping_layer - 2),
+            vertical_end=self.grid.n_lev() - 3,
             offset_provider={},
         )
 
         mo_velocity_advection_stencil_15(
             self.z_w_con_c,
             self.z_w_con_c_full,
-            horizontal_start=4,
-            horizontal_end=cell_endindex_interior - 1,
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
+
+        # TODO: put these bounds back
+        # (indices_4_1,
+        #  indices_4_2
+        #  ) = self.grid.get_indices_from_to(
+        #     CellDim,
+        #     HorizontalMarkerIndex.nudging(CellDim) + 1,
+        #     HorizontalMarkerIndex.interior(CellDim),
+        # )
 
         velocity_prog.fused_stencils_16_to_17(
             prognostic_state.w,
@@ -559,8 +644,8 @@ class VelocityAdvection:
             self.metric_state.coeff1_dwdz,
             self.metric_state.coeff2_dwdz,
             diagnostic_state.ddt_w_adv_pc,
-            horizontal_start=cell_startindex_nudging,
-            horizontal_end=cell_endindex_interior,
+            horizontal_start=cell_startindex_nudging,  # indices_4_1,
+            horizontal_end=cell_endindex_interior,  # indices_4_2,
             vertical_start=1,
             vertical_end=self.grid.n_lev(),
             offset_provider={
@@ -582,13 +667,19 @@ class VelocityAdvection:
             scalfac_exdiff,
             cfl_w_limit,
             dtime,
-            horizontal_start=cell_startindex_nudging,
-            horizontal_end=cell_endindex_interior,
+            horizontal_start=cell_startindex_nudging,  # indices_4_1,
+            horizontal_end=cell_endindex_interior,  # indices_4_2,
             vertical_start=max(3, self.vertical_params.index_of_damping_layer - 2),
             vertical_end=self.grid.n_lev() - 4,
             offset_provider={
                 "C2E2CO": self.grid.get_c2e2co_connectivity(),
             },
+        )
+
+        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            HorizontalMarkerIndex.interior(EdgeDim),
         )
 
         mo_velocity_advection_stencil_19(
@@ -603,8 +694,8 @@ class VelocityAdvection:
             diagnostic_state.vn_ie,
             self.metric_state.ddqz_z_full_e,
             diagnostic_state.ddt_vn_apc_pc,
-            horizontal_start=edge_startindex_nudging + 1,
-            horizontal_end=edge_endindex_interior,
+            horizontal_start=indices_5_1,
+            horizontal_end=indices_5_2,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={
@@ -630,8 +721,8 @@ class VelocityAdvection:
             cfl_w_limit,
             scalfac_exdiff,
             dtime,
-            horizontal_start=edge_startindex_nudging + 1,
-            horizontal_end=edge_endindex_interior,
+            horizontal_start=indices_5_1,
+            horizontal_end=indices_5_2,
             vertical_start=max(3, self.vertical_params.index_of_damping_layer - 2),
             vertical_end=self.grid.n_lev() - 4,
             offset_provider={
@@ -643,6 +734,12 @@ class VelocityAdvection:
         )
 
     def init_dimensions_boundaries(self):
+        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            5,
+            HorizontalMarkerIndex.interior(EdgeDim) - 2,
+        )
+
         (
             edge_startindex_nudging,
             edge_endindex_nudging,
