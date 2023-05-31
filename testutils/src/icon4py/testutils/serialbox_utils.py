@@ -249,6 +249,84 @@ class IconGridSavePoint(IconSavepoint):
         return CellParams(area=self.cell_areas())
 
 
+class InterpolationSavepoint(IconSavepoint):
+    def geofac_grg(self):
+        grg = np.squeeze(self.serializer.read("geofac_grg", self.savepoint))
+        return np_as_located_field(CellDim, C2E2CODim)(
+            grg[:, :, 0]
+        ), np_as_located_field(CellDim, C2E2CODim)(grg[:, :, 1])
+
+    def zd_intcoef(self):
+        return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
+
+    def e_bln_c_s(self):
+        return self._get_field("e_bln_c_s", CellDim, C2EDim)
+
+    def geofac_div(self):
+        return self._get_field("geofac_div", CellDim, C2EDim)
+
+    def geofac_n2s(self):
+        return self._get_field("geofac_n2s", CellDim, C2E2CODim)
+
+    def rbf_vec_coeff_v1(self):
+        return self._get_field("rbf_vec_coeff_v1", VertexDim, V2EDim)
+
+    def rbf_vec_coeff_v2(self):
+        return self._get_field("rbf_vec_coeff_v2", VertexDim, V2EDim)
+
+    def nudgecoeff_e(self):
+        return self._get_field("nudgecoeff_e", EdgeDim)
+
+    def construct_interpolation_state(self) -> InterpolationState:
+        grg = self.geofac_grg()
+        return InterpolationState(
+            e_bln_c_s=self.e_bln_c_s(),
+            rbf_coeff_1=self.rbf_vec_coeff_v1(),
+            rbf_coeff_2=self.rbf_vec_coeff_v2(),
+            geofac_div=self.geofac_div(),
+            geofac_n2s=self.geofac_n2s(),
+            geofac_grg_x=grg[0],
+            geofac_grg_y=grg[1],
+            nudgecoeff_e=self.nudgecoeff_e(),
+        )
+
+
+class MetricSavepoint(IconSavepoint):
+    def construct_metric_state(self) -> MetricState:
+        return MetricState(
+            mask_hdiff=self.mask_diff(),
+            theta_ref_mc=self.theta_ref_mc(),
+            wgtfac_c=self.wgtfac_c(),
+            zd_intcoef=self.zd_intcoef(),
+            zd_vertidx=self.zd_vertoffset(),
+            zd_diffcoef=self.zd_diffcoef(),
+        )
+
+    def zd_diffcoef(self):
+        return self._get_field("zd_diffcoef", CellDim, KDim)
+
+    def zd_intcoef(self):
+        return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
+
+    def zd_vertidx(self):
+        return self._get_field("zd_vertidx", CellDim, C2E2CDim, dtype=int)
+
+    def zd_vertoffset(self):
+        return self._get_field("zd_vertoffset", CellDim, C2E2CDim, KDim, dtype=int)
+
+    def theta_ref_mc(self):
+        return self._get_field("theta_ref_mc", CellDim, KDim)
+
+    def wgtfac_c(self):
+        return self._get_field("wgtfac_c", CellDim, KDim)
+
+    def wgtfac_e(self):
+        return self._get_field("wgtfac_e", EdgeDim, KDim)
+
+    def mask_diff(self):
+        return self._get_field("mask_hdiff", CellDim, KDim, dtype=int)
+
+
 class IconDiffusionInitSavepoint(IconSavepoint):
     def hdef_ic(self):
         return self._get_field("hdef_ic", CellDim, KDim)
@@ -273,55 +351,6 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
     def exner(self):
         return self._get_field("exner", CellDim, KDim)
-
-    def theta_ref_mc(self):
-        return self._get_field("theta_ref_mc", CellDim, KDim)
-
-    def wgtfac_c(self):
-        return self._get_field("wgtfac_c", CellDim, KDim)
-
-    def wgtfac_e(self):
-        return self._get_field("wgtfac_e", EdgeDim, KDim)
-
-    def mask_diff(self):
-        return self._get_field("mask_hdiff", CellDim, KDim, dtype=int)
-
-    def zd_diffcoef(self):
-        return self._get_field("zd_diffcoef", CellDim, KDim)
-
-    def zd_intcoef(self):
-        return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
-
-    def e_bln_c_s(self):
-        return self._get_field("e_bln_c_s", CellDim, C2EDim)
-
-    def geofac_div(self):
-        return self._get_field("geofac_div", CellDim, C2EDim)
-
-    def geofac_n2s(self):
-        return self._get_field("geofac_n2s", CellDim, C2E2CODim)
-
-    def geofac_grg(self):
-        grg = np.squeeze(self.serializer.read("geofac_grg", self.savepoint))
-        return np_as_located_field(CellDim, C2E2CODim)(
-            grg[:, :, 0]
-        ), np_as_located_field(CellDim, C2E2CODim)(grg[:, :, 1])
-
-    def nudgecoeff_e(self):
-        return self._get_field("nudgecoeff_e", EdgeDim)
-
-    def zd_vertidx(self):
-        # TODO fix this
-        return self._get_field("zd_vertidx", CellDim, C2E2CDim, dtype=int)
-
-    def zd_vertoffset(self):
-        return self._get_field("zd_vertoffset", CellDim, C2E2CDim, KDim, dtype=int)
-
-    def rbf_vec_coeff_v1(self):
-        return self._get_field("rbf_vec_coeff_v1", VertexDim, V2EDim)
-
-    def rbf_vec_coeff_v2(self):
-        return self._get_field("rbf_vec_coeff_v2", VertexDim, V2EDim)
 
     def diff_multfac_smag(self):
         return np.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint))
@@ -349,29 +378,6 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
     def diff_multfac_vn(self):
         return self.serializer.read("diff_multfac_vn", self.savepoint)
-
-    def construct_interpolation_state(self) -> InterpolationState:
-        grg = self.geofac_grg()
-        return InterpolationState(
-            e_bln_c_s=self.e_bln_c_s(),
-            rbf_coeff_1=self.rbf_vec_coeff_v1(),
-            rbf_coeff_2=self.rbf_vec_coeff_v2(),
-            geofac_div=self.geofac_div(),
-            geofac_n2s=self.geofac_n2s(),
-            geofac_grg_x=grg[0],
-            geofac_grg_y=grg[1],
-            nudgecoeff_e=self.nudgecoeff_e(),
-        )
-
-    def construct_metric_state(self) -> MetricState:
-        return MetricState(
-            mask_hdiff=self.mask_diff(),
-            theta_ref_mc=self.theta_ref_mc(),
-            wgtfac_c=self.wgtfac_c(),
-            zd_intcoef=self.zd_intcoef(),
-            zd_vertidx=self.zd_vertoffset(),
-            zd_diffcoef=self.zd_diffcoef(),
-        )
 
     def construct_prognostics(self) -> PrognosticState:
         return PrognosticState(
@@ -440,6 +446,14 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconDiffusionInitSavepoint(savepoint, self.serializer)
+
+    def from_interpolation_savepoint(self) -> InterpolationSavepoint:
+        savepoint = self.serializer.savepoint["interpolation_state"].as_savepoint()
+        return InterpolationSavepoint(savepoint, self.serializer)
+
+    def from_metrics_savepoint(self) -> MetricSavepoint:
+        savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
+        return MetricSavepoint(savepoint, self.serializer)
 
     def from_savepoint_diffusion_exit(
         self, linit: bool, date: str
