@@ -311,9 +311,6 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def grf_tend_vn(self):
         return self._get_field("grf_tend_vn", EdgeDim, KDim)
 
-    # def ddt_vn_adv(self):
-    #     return self._get_field("ddt_vn_adv", EdgeDim, KDim)
-
     def rho_incr(self):
         return self._get_field("rho_incr", EdgeDim, KDim)
 
@@ -374,7 +371,6 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self._get_field("geofac_grdiv", EdgeDim, E2C2EODim)
 
     def rbf_vec_coeff_e(self):
-        # return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
         ).transpose()
@@ -473,7 +469,6 @@ class InterpolationStateSavepoint(IconSavepoint):
             self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
         ).transpose()
         return np_as_located_field(EdgeDim, E2C2EDim)(buffer)
-        # return self._get_field("rbf_vec_coeff_e", EdgeDim, E2C2EDim)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field(
@@ -613,7 +608,6 @@ class MetricStateSavepoint(IconSavepoint):
             (buffer.shape[0] * buffer.shape[2], buffer.shape[1])
         )
         return np_as_located_field(ECDim, KDim)(np_array_reshape)
-        # return self._get_field("zdiff_gradp_dsl", ECDim, KDim) # TODO @nfarabullini: input data set should have dimensions (ECDim, KDim), not (CellDim, KDim, ECDim)
 
     def d_exner_dz_ref_ic(self):
         return self._get_field("d_exner_dz_ref_ic", CellDim, KDim)
@@ -684,7 +678,6 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         return self._get_field("nudgecoeff_e", EdgeDim)
 
     def zd_vertidx(self):
-        # TODO fix this
         return self._get_field("zd_vertidx", CellDim, C2E2CDim, dtype=int)
 
     def zd_vertoffset(self):

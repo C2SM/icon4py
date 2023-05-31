@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -23,7 +22,7 @@ def _mo_solve_nonhydro_stencil_53_scan(w_state: float, z_q: float, w: float) -> 
     return w + w_state * z_q
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_solve_nonhydro_stencil_53(
     z_q: Field[[CellDim, KDim], float],
     w: Field[[CellDim, KDim], float],

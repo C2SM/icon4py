@@ -136,7 +136,6 @@ class VelocityAdvection:
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
     ):
-        print("Inside")
         (
             edge_startindex_nudging,
             edge_endindex_nudging,
@@ -162,7 +161,9 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
+                run_gtfn
+            )(
                 prognostic_state.w,
                 self.interpolation_state.c_intp,
                 self.z_w_v,
@@ -175,7 +176,7 @@ class VelocityAdvection:
                 },
             )
 
-        mo_math_divrot_rot_vertex_ri_dsl(
+        mo_math_divrot_rot_vertex_ri_dsl.with_backend(run_gtfn)(
             prognostic_state.vn,
             self.interpolation_state.geofac_rot,
             self.zeta,
@@ -194,7 +195,7 @@ class VelocityAdvection:
             HorizontalMarkerIndex.interior(EdgeDim) - 2,
         )
 
-        mo_velocity_advection_stencil_01(
+        mo_velocity_advection_stencil_01.with_backend(run_gtfn)(
             prognostic_state.vn,
             self.interpolation_state.rbf_vec_coeff_e,
             diagnostic_state.vt,
@@ -206,9 +207,8 @@ class VelocityAdvection:
                 "E2C2E": self.grid.get_e2c2e_connectivity(),
             },
         )
-        print("1_v")
 
-        mo_velocity_advection_stencil_02(
+        mo_velocity_advection_stencil_02.with_backend(run_gtfn)(
             self.metric_state.wgtfac_e,
             prognostic_state.vn,
             diagnostic_state.vt,
@@ -224,7 +224,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_03(
+            mo_velocity_advection_stencil_03.with_backend(run_gtfn)(
                 diagnostic_state.vt,
                 self.metric_state.wgtfac_e,
                 z_vt_ie,
@@ -235,7 +235,7 @@ class VelocityAdvection:
                 offset_provider={"Koff": KDim},
             )
 
-        velocity_prog.fused_stencils_4_5_6(
+        velocity_prog.fused_stencils_4_5_6.with_backend(run_gtfn)(
             prognostic_state.vn,
             diagnostic_state.vt,
             diagnostic_state.vn_ie,
@@ -256,7 +256,6 @@ class VelocityAdvection:
                 "Koff": KDim,
             },
         )
-        print("6_v")
 
         (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
             EdgeDim,
@@ -292,7 +291,7 @@ class VelocityAdvection:
             HorizontalMarkerIndex.interior(CellDim) - 1,
         )
 
-        mo_velocity_advection_stencil_08(
+        mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
             z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
             self.z_ekinh,
@@ -302,9 +301,8 @@ class VelocityAdvection:
             vertical_end=self.grid.n_lev(),
             offset_provider={"C2E": self.grid.get_c2e_connectivity()},
         )
-        print("8_v")
 
-        velocity_prog.fused_stencils_9_10(
+        velocity_prog.fused_stencils_9_10.with_backend(run_gtfn)(
             z_w_concorr_me,
             self.interpolation_state.e_bln_c_s,
             self.z_w_concorr_mc,
@@ -323,7 +321,7 @@ class VelocityAdvection:
             },
         )
 
-        velocity_prog.fused_stencils_11_to_13(
+        velocity_prog.fused_stencils_11_to_13.with_backend(run_gtfn)(
             prognostic_state.w,
             diagnostic_state.w_concorr_c,
             self.z_w_con_c,
@@ -338,7 +336,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        velocity_prog.fused_stencil_14(
+        velocity_prog.fused_stencil_14.with_backend(run_gtfn)(
             self.z_w_con_c,
             self.metric_state.ddqz_z_half,
             self.cfl_clipping,
@@ -352,9 +350,8 @@ class VelocityAdvection:
             vertical_end=self.grid.n_lev() - 3,
             offset_provider={},
         )
-        print("14_v")
 
-        mo_velocity_advection_stencil_15(
+        mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
             self.z_w_con_c,
             self.z_w_con_c_full,
             horizontal_start=indices_3_1,
@@ -373,7 +370,7 @@ class VelocityAdvection:
         #     HorizontalMarkerIndex.interior(CellDim),
         # )
 
-        velocity_prog.fused_stencils_16_to_17(
+        velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
             prognostic_state.w,
             self.z_v_grad_w,
             self.interpolation_state.e_bln_c_s,
@@ -391,7 +388,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_18(
+        mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
             self.levelmask,
             self.cfl_clipping,
             owner_mask,
@@ -412,7 +409,6 @@ class VelocityAdvection:
                 "C2E2CO": self.grid.get_c2e2co_connectivity(),
             },
         )
-        print("18_v")
 
         (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
             EdgeDim,
@@ -420,7 +416,7 @@ class VelocityAdvection:
             HorizontalMarkerIndex.interior(EdgeDim),
         )
 
-        mo_velocity_advection_stencil_19(
+        mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
             z_kin_hor_e,
             self.metric_state.coeff_gradekin,
             self.z_ekinh,
@@ -444,7 +440,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_20(
+        mo_velocity_advection_stencil_20.with_backend(run_gtfn)(
             self.levelmask,
             self.interpolation_state.c_lin_e,
             self.z_w_con_c_full,
@@ -470,7 +466,6 @@ class VelocityAdvection:
                 "Koff": KDim,
             },
         )
-        print("20_v")
 
     def run_corrector_step(
         self,
@@ -516,7 +511,9 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
+                run_gtfn
+            )(
                 prognostic_state.w,
                 self.interpolation_state.c_intp,
                 self.z_w_v,
@@ -529,7 +526,7 @@ class VelocityAdvection:
                 },
             )
 
-        mo_math_divrot_rot_vertex_ri_dsl(
+        mo_math_divrot_rot_vertex_ri_dsl.with_backend(run_gtfn)(
             prognostic_state.vn,
             self.interpolation_state.geofac_rot,
             self.zeta,
@@ -576,7 +573,7 @@ class VelocityAdvection:
             HorizontalMarkerIndex.interior(CellDim) - 1,
         )
 
-        mo_velocity_advection_stencil_08(
+        mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
             z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
             self.z_ekinh,
@@ -587,7 +584,7 @@ class VelocityAdvection:
             offset_provider={"C2E": self.grid.get_c2e_connectivity()},
         )
 
-        velocity_prog.fused_stencils_11_to_13(
+        velocity_prog.fused_stencils_11_to_13.with_backend(run_gtfn)(
             prognostic_state.w,
             diagnostic_state.w_concorr_c,
             self.z_w_con_c,
@@ -602,7 +599,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        velocity_prog.fused_stencil_14(
+        velocity_prog.fused_stencil_14.with_backend(run_gtfn)(
             self.z_w_con_c,
             self.metric_state.ddqz_z_half,
             self.cfl_clipping,
@@ -617,7 +614,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        mo_velocity_advection_stencil_15(
+        mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
             self.z_w_con_c,
             self.z_w_con_c_full,
             horizontal_start=indices_3_1,
@@ -636,7 +633,7 @@ class VelocityAdvection:
         #     HorizontalMarkerIndex.interior(CellDim),
         # )
 
-        velocity_prog.fused_stencils_16_to_17(
+        velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
             prognostic_state.w,
             self.z_v_grad_w,
             self.interpolation_state.e_bln_c_s,
@@ -654,7 +651,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_18(
+        mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
             self.levelmask,
             self.cfl_clipping,
             owner_mask,
@@ -682,7 +679,7 @@ class VelocityAdvection:
             HorizontalMarkerIndex.interior(EdgeDim),
         )
 
-        mo_velocity_advection_stencil_19(
+        mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
             z_kin_hor_e,
             self.metric_state.coeff_gradekin,
             self.z_ekinh,
@@ -706,7 +703,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_20(
+        mo_velocity_advection_stencil_20.with_backend(run_gtfn)(
             self.levelmask,
             self.interpolation_state.c_lin_e,
             self.z_w_con_c_full,

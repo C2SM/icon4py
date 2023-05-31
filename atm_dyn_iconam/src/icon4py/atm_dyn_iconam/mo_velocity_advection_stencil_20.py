@@ -19,7 +19,6 @@ from gt4py.next.ffront.fbuiltins import (
     neighbor_sum,
     where,
 )
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import (
     E2C,
@@ -82,7 +81,7 @@ def _mo_velocity_advection_stencil_20(
     return ddt_vn_adv
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_velocity_advection_stencil_20(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], float],

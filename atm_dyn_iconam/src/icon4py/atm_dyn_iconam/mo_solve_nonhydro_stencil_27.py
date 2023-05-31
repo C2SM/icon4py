@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -32,7 +31,7 @@ def _mo_solve_nonhydro_stencil_27(
     return vn
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_solve_nonhydro_stencil_27(
     scal_divdamp: Field[[KDim], float],
     bdy_divdamp: Field[[KDim], float],

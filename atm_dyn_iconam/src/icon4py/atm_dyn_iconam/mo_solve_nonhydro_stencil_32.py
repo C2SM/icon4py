@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -30,7 +29,7 @@ def _mo_solve_nonhydro_stencil_32(
     return mass_fl_e, z_theta_v_fl_e
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_solve_nonhydro_stencil_32(
     z_rho_e: Field[[EdgeDim, KDim], float],
     z_vn_avg: Field[[EdgeDim, KDim], float],

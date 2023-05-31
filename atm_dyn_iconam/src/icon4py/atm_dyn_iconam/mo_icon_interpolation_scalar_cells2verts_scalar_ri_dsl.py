@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import V2C, CellDim, KDim, V2CDim, VertexDim
 
@@ -27,7 +26,7 @@ def _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     return p_vert_out
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     p_cell_in: Field[[CellDim, KDim], float],
     c_intp: Field[[VertexDim, V2CDim], float],

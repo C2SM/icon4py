@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import CellDim, KDim, Koff
 
@@ -26,7 +25,7 @@ def _mo_velocity_advection_stencil_15(
     return z_w_con_c_full
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_velocity_advection_stencil_15(
     z_w_con_c: Field[[CellDim, KDim], float],
     z_w_con_c_full: Field[[CellDim, KDim], float],

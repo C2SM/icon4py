@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import E2C2EO, E2C2EODim, EdgeDim, KDim
 
@@ -27,7 +26,7 @@ def _mo_solve_nonhydro_stencil_25(
     return z_graddiv2_vn
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_solve_nonhydro_stencil_25(
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
     z_graddiv_vn: Field[[EdgeDim, KDim], float],

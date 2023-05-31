@@ -14,7 +14,6 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import E2C, CellDim, EdgeDim, KDim
 
@@ -37,7 +36,7 @@ def _mo_solve_nonhydro_stencil_17(
     return z_graddiv_vn
 
 
-@program(backend=gtfn_cpu.run_gtfn, grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_17(
     hmask_dd3d: Field[[EdgeDim], float],
     scalfac_dd3d: Field[[KDim], float],

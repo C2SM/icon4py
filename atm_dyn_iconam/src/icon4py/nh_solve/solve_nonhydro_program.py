@@ -13,7 +13,6 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import where
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_02 import (
     _mo_solve_nonhydro_stencil_02,
@@ -44,9 +43,6 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_11_upper import (
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
-)
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_19 import (
-    _mo_solve_nonhydro_stencil_19,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_35 import (
     _mo_solve_nonhydro_stencil_35,
@@ -90,12 +86,6 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_48 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_49 import (
     _mo_solve_nonhydro_stencil_49,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_52 import (
-    _mo_solve_nonhydro_stencil_52,
-)
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_53 import (
-    _mo_solve_nonhydro_stencil_53_scan,
-)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_59 import (
     _mo_solve_nonhydro_stencil_59,
 )
@@ -108,17 +98,11 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_61 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_62 import (
     _mo_solve_nonhydro_stencil_62,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_66 import (
-    _mo_solve_nonhydro_stencil_66,
-)
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_67 import (
-    _mo_solve_nonhydro_stencil_67,
-)
-from icon4py.common.dimension import C2EDim, CellDim, E2CDim, ECDim, EdgeDim, KDim
+from icon4py.common.dimension import C2EDim, CellDim, ECDim, EdgeDim, KDim
 from icon4py.state_utils.utils import _set_zero_c_k, _set_zero_e_k
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def init_test_fields(
     z_rho_e: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
@@ -162,7 +146,7 @@ def _predictor_stencils_2_3(
     return z_exner_ex_pr, exner_pr
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def predictor_stencils_2_3(
     exner_exfac: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
@@ -225,7 +209,7 @@ def _predictor_stencils_4_5_6(
     return z_exner_ic, z_dexner_dz_c_1
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def predictor_stencils_4_5_6(
     wgtfacq_c: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
@@ -317,7 +301,7 @@ def _predictor_stencils_7_8_9(
     return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def predictor_stencils_7_8_9(
     rho: Field[[CellDim, KDim], float],
     rho_ref_mc: Field[[CellDim, KDim], float],
@@ -398,7 +382,7 @@ def _predictor_stencils_11_lower_upper(
     return z_theta_v_pr_ic, theta_v_ic
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def predictor_stencils_11_lower_upper(
     wgtfacq_c: Field[[CellDim, KDim], float],
     z_rth_pr: Field[[CellDim, KDim], float],
@@ -428,7 +412,7 @@ def predictor_stencils_11_lower_upper(
     )
 
 
-@program(backend=gtfn_cpu.run_gtfn, grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
@@ -515,7 +499,7 @@ def _predictor_stencils_35_36(
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def predictor_stencils_35_36(
     vn: Field[[EdgeDim, KDim], float],
     ddxn_z_full: Field[[EdgeDim, KDim], float],
@@ -581,7 +565,7 @@ def _predictor_stencils_37_38(
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def predictor_stencils_37_38(
     vn: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
@@ -641,7 +625,7 @@ def _stencils_39_40(
     return w_concorr_c
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def stencils_39_40(
     e_bln_c_s: Field[[CellDim, C2EDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
@@ -751,7 +735,7 @@ def _stencils_42_44_45_45b(
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def stencils_42_44_45_45b(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
@@ -889,7 +873,7 @@ def _stencils_43_44_45_45b(
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def stencils_43_44_45_45b(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
@@ -1018,7 +1002,7 @@ def _stencils_47_48_49(
     return w_nnew, z_contr_w_fl_l, z_rho_expl, z_exner_expl
 
 
-@program(backend=gtfn_cpu.run_gtfn, grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED)
 def stencils_47_48_49(
     w_nnew: Field[[CellDim, KDim], float],
     z_contr_w_fl_l: Field[[CellDim, KDim], float],
@@ -1067,77 +1051,6 @@ def stencils_47_48_49(
     )
 
 
-# @field_operator
-# def _stencils_52_53(
-#     vwind_impl_wgt: Field[[CellDim], float],
-#     theta_v_ic: Field[[CellDim, KDim], float],
-#     ddqz_z_half: Field[[CellDim, KDim], float],
-#     z_alpha: Field[[CellDim, KDim], float],
-#     z_beta: Field[[CellDim, KDim], float],
-#     z_w_expl: Field[[CellDim, KDim], float],
-#     z_exner_expl: Field[[CellDim, KDim], float],
-#     z_q: Field[[CellDim, KDim], float],
-#     w: Field[[CellDim, KDim], float],
-#     dtime: float,
-#     cpd: float,
-# ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-#     (z_q, w) = _mo_solve_nonhydro_stencil_52(
-#         vwind_impl_wgt,
-#         theta_v_ic,
-#         ddqz_z_half,
-#         z_alpha,
-#         z_beta,
-#         z_w_expl,
-#         z_exner_expl,
-#         z_q,
-#         w,
-#         dtime,
-#         cpd,
-#     )
-#     w = _mo_solve_nonhydro_stencil_53_scan(
-#         z_q,
-#         w,
-#     )
-#     return z_q, w
-#
-#
-# @program(backend=gtfn_cpu.run_gtfn)
-# def stencils_52_53(
-#     vwind_impl_wgt: Field[[CellDim], float],
-#     theta_v_ic: Field[[CellDim, KDim], float],
-#     ddqz_z_half: Field[[CellDim, KDim], float],
-#     z_alpha: Field[[CellDim, KDim], float],
-#     z_beta: Field[[CellDim, KDim], float],
-#     z_w_expl: Field[[CellDim, KDim], float],
-#     z_exner_expl: Field[[CellDim, KDim], float],
-#     z_q: Field[[CellDim, KDim], float],
-#     w: Field[[CellDim, KDim], float],
-#     dtime: float,
-#     cpd: float,
-#     cell_startindex_nudging_plus1: int,
-#     cell_endindex_interior: int,
-#     nlev: int,
-# ):
-#     _stencils_52_53(
-#         vwind_impl_wgt,
-#         theta_v_ic,
-#         ddqz_z_half,
-#         z_alpha,
-#         z_beta,
-#         z_w_expl,
-#         z_exner_expl,
-#         z_q,
-#         w,
-#         dtime,
-#         cpd,
-#         out=(z_q, w),
-#         domain={
-#             CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
-#             KDim: (1, nlev),
-#         },
-#     )
-
-
 @field_operator
 def _predictor_stencils_59_60(
     exner_nnow: Field[[CellDim, KDim], float],
@@ -1153,7 +1066,7 @@ def _predictor_stencils_59_60(
     return exner_dyn_incr
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def predictor_stencils_59_60(
     exner_nnow: Field[[CellDim, KDim], float],
     exner_nnew: Field[[CellDim, KDim], float],
@@ -1216,7 +1129,7 @@ def _stencils_61_62(
     return rho_new, exner_new, w_new
 
 
-@program(backend=gtfn_cpu.run_gtfn, grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED)
 def stencils_61_62(
     rho_now: Field[[CellDim, KDim], float],
     grf_tend_rho: Field[[CellDim, KDim], float],

@@ -80,7 +80,7 @@ def _set_zero_e_k() -> Field[[EdgeDim, KDim], float]:
     return broadcast(0.0, (EdgeDim, KDim))
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def set_zero_e_k(
     field: Field[[EdgeDim, KDim], float],
     horizontal_start: int,
@@ -102,7 +102,7 @@ def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
     return broadcast(0.0, (CellDim, KDim))
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def set_zero_c_k(
     field: Field[[CellDim, KDim], float],
     horizontal_start: int,
@@ -281,7 +281,7 @@ def _compute_z_raylfac(
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def compute_z_raylfac(
     rayleigh_w: Field[[KDim], float], dtime: float, z_raylfac: Field[[KDim], float]
 ):

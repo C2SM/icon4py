@@ -13,14 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import where
-from gt4py.next.program_processors.runners import gtfn_cpu
 
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
-    _mo_velocity_advection_stencil_01,
-)
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_02 import (
-    _mo_velocity_advection_stencil_02,
-)
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_04 import (
     _mo_velocity_advection_stencil_04,
 )
@@ -53,12 +46,6 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_16 import (
 )
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
-)
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_19 import (
-    _mo_velocity_advection_stencil_19,
-)
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_20 import (
-    _mo_velocity_advection_stencil_20,
 )
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 from icon4py.state_utils.utils import _set_bool_c_k, _set_zero_c_k
@@ -104,7 +91,7 @@ def _fused_stencils_4_5_6(
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@program(backend=gtfn_cpu.run_gtfn, grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED)
 def fused_stencils_4_5_6(
     vn: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
@@ -170,7 +157,7 @@ def _fused_stencils_9_10(
     return local_z_w_concorr_mc, w_concorr_c
 
 
-@program(backend=gtfn_cpu.run_gtfn, grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED)
 def fused_stencils_9_10(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CellDim, C2EDim], float],
@@ -230,7 +217,7 @@ def _fused_stencils_11_to_13(
     return local_z_w_con_c
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def fused_stencils_11_to_13(
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
@@ -289,7 +276,7 @@ def _fused_stencil_14(
     return local_cfl_clipping, local_pre_levelmask, local_vcfl, local_z_w_con_c
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def fused_stencil_14(
     local_z_w_con_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
@@ -336,7 +323,7 @@ def _fused_stencils_16_to_17(
     return ddt_w_adv
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def fused_stencils_16_to_17(
     w: Field[[CellDim, KDim], float],
     local_z_v_grad_w: Field[[EdgeDim, KDim], float],

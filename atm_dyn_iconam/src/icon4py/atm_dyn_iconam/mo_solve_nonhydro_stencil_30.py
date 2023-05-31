@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import (
     E2C2E,
@@ -42,7 +41,7 @@ def _mo_solve_nonhydro_stencil_30(
     return z_vn_avg, z_graddiv_vn, vt
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def mo_solve_nonhydro_stencil_30(
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
     vn: Field[[EdgeDim, KDim], float],
