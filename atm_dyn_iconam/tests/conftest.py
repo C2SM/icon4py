@@ -21,7 +21,7 @@ from icon4py.diffusion.diffusion import DiffusionConfig
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
-data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
+data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
 data_path = Path(__file__).parent.joinpath("ser_icondata")
 extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
@@ -114,6 +114,18 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
     """
     sp = data_provider.from_savepoint_diffusion_exit(linit=False, date=step_date_exit)
     return sp
+
+
+@pytest.fixture
+def interpolation_savepoint(data_provider):
+    """Load data from ICON interplation state savepoint."""
+    return data_provider.from_interpolation_savepoint()
+
+
+@pytest.fixture
+def metrics_savepoint(data_provider):
+    """Load data from ICON mestric state savepoint."""
+    return data_provider.from_metrics_savepoint()
 
 
 @pytest.fixture
