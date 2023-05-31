@@ -37,7 +37,7 @@ def apply_nabla2_and_nabla4_global_to_vn_numpy(
     return vn
 
 
-def test_apply_nabla2_and_nabla4_global_to_vn():
+def test_apply_nabla2_and_nabla4_global_to_vn(benchmark):
     mesh = SimpleMesh()
 
     area_edge = random_field(mesh, EdgeDim)
@@ -56,13 +56,10 @@ def test_apply_nabla2_and_nabla4_global_to_vn():
         np.asarray(vn),
     )
 
-    apply_nabla2_and_nabla4_global_to_vn(
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        vn,
-        offset_provider={},
+    benchmark.pedantic(
+        apply_nabla2_and_nabla4_global_to_vn,
+        args=(area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn),
+        kwargs={"offset_provider": {}},
+        rounds=1,
     )
     assert np.allclose(vn, vn_ref)

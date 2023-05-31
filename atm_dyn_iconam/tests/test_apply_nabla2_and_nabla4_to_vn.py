@@ -41,7 +41,7 @@ def apply_nabla2_and_nabla4_to_vn_numpy(
     return vn
 
 
-def test_apply_nabla2_and_nabla4_to_vn():
+def test_apply_nabla2_and_nabla4_to_vn(benchmark):
     mesh = SimpleMesh()
 
     area_edge = random_field(mesh, EdgeDim)
@@ -64,15 +64,19 @@ def test_apply_nabla2_and_nabla4_to_vn():
         nudgezone_diff,
     )
 
-    apply_nabla2_and_nabla4_to_vn(
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        nudgecoeff_e,
-        vn,
-        nudgezone_diff,
-        offset_provider={},
+    benchmark.pedantic(
+        apply_nabla2_and_nabla4_to_vn,
+        args=(
+            area_edge,
+            kh_smag_e,
+            z_nabla2_e,
+            z_nabla4_e2,
+            diff_multfac_vn,
+            nudgecoeff_e,
+            vn,
+            nudgezone_diff,
+        ),
+        kwargs={"offset_provider": {}},
+        rounds=1,
     )
     assert np.allclose(vn, vn_ref)
