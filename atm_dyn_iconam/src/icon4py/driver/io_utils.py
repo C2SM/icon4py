@@ -120,7 +120,7 @@ def read_decomp_info(
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
         sp = serialbox_utils.IconSerialDataProvider(
-            "icon_grid", str(path.absolute()), True, procs_props.rank
+            "icon_pydycore", str(path.absolute()), True, procs_props.rank
         )
         return sp.from_savepoint_grid().construct_decomposition_info()
     else:
