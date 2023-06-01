@@ -1,4 +1,4 @@
 -r ../base-requirements-dev.txt
--e ../common
--e ../atm_dyn_iconam
+-e ../model/atm_dyn_iconam
+-e ../model/common
 -e .
