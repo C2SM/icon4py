@@ -17,11 +17,13 @@ from typing import Any
 
 from gt4py.next.ffront.decorator import Program
 
+from icon4pytools.common import ICON4PY_IMPORT_PATH
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.icon4pygen.metadata import get_stencil_info
 from icon4pytools.liskov.codegen.integration.interface import IntegrationCodeInterface
 from icon4pytools.liskov.external.exceptions import IncompatibleFieldError, UnknownStencilError
 from icon4pytools.liskov.pipeline.definition import Step
+
 
 
 logger = setup_logger(__name__)
@@ -56,7 +58,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
         err_counter = 0
         for pkg in self._STENCIL_PACKAGES:
             try:
-                module_name = f"icon4py.{pkg}.{stencil_name}"
+                module_name = f"{ICON4PY_IMPORT_PATH}.{pkg}.{stencil_name}"
                 module = importlib.import_module(module_name)
             except ModuleNotFoundError:
                 err_counter += 1

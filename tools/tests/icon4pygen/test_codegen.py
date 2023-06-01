@@ -15,7 +15,7 @@ import os
 import pkgutil
 import re
 
-import icon4py.atm_dyn_iconam
+import icon4py.model.atm_dyn_iconam as atm_dyn_iconam
 import pytest
 from click.testing import CliRunner
 
@@ -35,7 +35,7 @@ def cli():
 
 
 def atm_dyn_iconam_fencils() -> list[tuple[str, str]]:
-    pkgpath = os.path.dirname(icon4py.atm_dyn_iconam.__file__)
+    pkgpath = os.path.dirname(atm_dyn_iconam.__file__)
     stencils = [name for _, name, _ in pkgutil.iter_modules([pkgpath])]
     fencils = [("atm_dyn_iconam", stencil) for stencil in stencils]
     return fencils

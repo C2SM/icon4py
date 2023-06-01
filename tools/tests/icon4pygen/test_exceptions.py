@@ -14,7 +14,7 @@
 import pytest
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Dimension, Field
-from icon4py.common.dimension import EdgeDim, KDim
+from icon4py.model.common.dimension import EdgeDim, KDim
 
 from icon4pytools.icon4pygen.bindings.codegen.render.location import LocationRenderer
 from icon4pytools.icon4pygen.bindings.entities import Offset, chain_from_str
