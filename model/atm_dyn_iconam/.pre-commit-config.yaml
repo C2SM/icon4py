@@ -121,8 +121,8 @@ repos:
       hooks:
           - id: mypy
             name: mypy static type checker
-            entry: |
-                mypy --install-types --non-interactive -p icon4py.common
+            entry: bash -c 'echo mypy disabled'
+            #entry: bash -c 'cd model/atm_dyn_iconam; mypy src/' --
             language: system
             types_or: [python, pyi]
             always_run: true

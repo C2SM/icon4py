@@ -25,7 +25,6 @@ from icon4pytools.liskov.external.exceptions import IncompatibleFieldError, Unkn
 from icon4pytools.liskov.pipeline.definition import Step
 
 
-
 logger = setup_logger(__name__)
 
 

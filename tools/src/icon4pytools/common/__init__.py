@@ -13,6 +13,4 @@
 
 ICON4PY_IMPORT_PATH = "icon4py.model"
 
-__all__ = [
-    "ICON4PY_IMPORT_PATH"
-]
+__all__ = ["ICON4PY_IMPORT_PATH"]

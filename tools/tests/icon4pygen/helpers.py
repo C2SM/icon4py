@@ -13,5 +13,6 @@
 
 from icon4pytools.common import ICON4PY_IMPORT_PATH
 
+
 def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
     return f"{ICON4PY_IMPORT_PATH}.{stencil_module}.{stencil_name}:{stencil_name}"
