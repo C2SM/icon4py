@@ -36,7 +36,6 @@ def _mo_solve_nonhydro_stencil_21(
     inv_dual_edge_length: Field[[EdgeDim], float],
     grav_o_cpd: float,
 ) -> Field[[EdgeDim, KDim], float]:
-
     theta_v_0 = theta_v(as_offset(Koff, ikoffset(E2EC[0])))
     theta_v_1 = theta_v(as_offset(Koff, ikoffset(E2EC[1])))
 

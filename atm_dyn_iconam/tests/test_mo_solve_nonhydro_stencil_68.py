@@ -31,7 +31,6 @@ def mo_solve_nonhydro_stencil_68_numpy(
     theta_v_new: np.array,
     cvd_o_rd: float,
 ) -> np.array:
-
     mask_prog_halo_c = np.expand_dims(mask_prog_halo_c, axis=-1)
 
     theta_v_new = np.where(

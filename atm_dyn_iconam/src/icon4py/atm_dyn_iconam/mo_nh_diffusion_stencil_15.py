@@ -29,7 +29,6 @@ def _mo_nh_diffusion_stencil_15(
     theta_v: Field[[CellDim, KDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-
     theta_v_0 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0])))
     theta_v_1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1])))
     theta_v_2 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2])))

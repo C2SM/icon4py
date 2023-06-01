@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_to_vn import (
     apply_nabla2_and_nabla4_to_vn,
@@ -41,9 +42,8 @@ def apply_nabla2_and_nabla4_to_vn_numpy(
     return vn
 
 
-def test_apply_nabla2_and_nabla4_to_vn(benchmark):
+def setup_apply_nabla2_and_nabla4_to_vn():
     mesh = SimpleMesh()
-
     area_edge = random_field(mesh, EdgeDim)
     kh_smag_e = random_field(mesh, EdgeDim, KDim)
     z_nabla2_e = random_field(mesh, EdgeDim, KDim)
@@ -52,7 +52,29 @@ def test_apply_nabla2_and_nabla4_to_vn(benchmark):
     nudgecoeff_e = random_field(mesh, EdgeDim)
     vn = random_field(mesh, EdgeDim, KDim)
     nudgezone_diff = 9.0
+    return (
+        area_edge,
+        kh_smag_e,
+        z_nabla2_e,
+        z_nabla4_e2,
+        diff_multfac_vn,
+        nudgecoeff_e,
+        vn,
+        nudgezone_diff,
+    )
 
+
+def test_apply_nabla2_and_nabla4_to_vn():
+    (
+        area_edge,
+        kh_smag_e,
+        z_nabla2_e,
+        z_nabla4_e2,
+        diff_multfac_vn,
+        nudgecoeff_e,
+        vn,
+        nudgezone_diff,
+    ) = setup_apply_nabla2_and_nabla4_to_vn()
     vn_ref = apply_nabla2_and_nabla4_to_vn_numpy(
         np.asarray(area_edge),
         np.asarray(kh_smag_e),
@@ -63,7 +85,32 @@ def test_apply_nabla2_and_nabla4_to_vn(benchmark):
         np.asarray(vn),
         nudgezone_diff,
     )
+    apply_nabla2_and_nabla4_to_vn(
+        area_edge,
+        kh_smag_e,
+        z_nabla2_e,
+        z_nabla4_e2,
+        diff_multfac_vn,
+        nudgecoeff_e,
+        vn,
+        nudgezone_diff,
+        offset_provider={},
+    )
+    assert np.allclose(vn, vn_ref)
 
+
+@pytest.mark.benchmark
+def test_benchmark_nabla2_and_nabla4_to_vn(benchmark, benchmark_rounds):
+    (
+        area_edge,
+        kh_smag_e,
+        z_nabla2_e,
+        z_nabla4_e2,
+        diff_multfac_vn,
+        nudgecoeff_e,
+        vn,
+        nudgezone_diff,
+    ) = setup_apply_nabla2_and_nabla4_to_vn()
     benchmark.pedantic(
         apply_nabla2_and_nabla4_to_vn,
         args=(
@@ -77,6 +124,5 @@ def test_apply_nabla2_and_nabla4_to_vn(benchmark):
             nudgezone_diff,
         ),
         kwargs={"offset_provider": {}},
-        rounds=1,
+        rounds=benchmark_rounds,
     )
-    assert np.allclose(vn, vn_ref)

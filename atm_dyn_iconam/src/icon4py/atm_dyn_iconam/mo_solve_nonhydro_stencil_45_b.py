@@ -18,7 +18,7 @@ from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_45_b() -> (Field[[CellDim, KDim], float]):
+def _mo_solve_nonhydro_stencil_45_b() -> Field[[CellDim, KDim], float]:
     return broadcast(0.0, (CellDim, KDim))
 
 

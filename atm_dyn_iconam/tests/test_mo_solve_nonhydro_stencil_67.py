@@ -24,7 +24,6 @@ from icon4py.testutils.utils import random_field
 def mo_solve_nonhydro_stencil_67_numpy(
     rho: np.array, exner: np.array, rd_o_cvd: float, rd_o_p0ref: float
 ) -> tuple[np.array]:
-
     theta_v = np.copy(exner)
     exner = np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * theta_v))
 

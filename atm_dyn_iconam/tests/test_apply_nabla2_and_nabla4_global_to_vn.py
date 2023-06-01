@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
     apply_nabla2_and_nabla4_global_to_vn,
@@ -37,15 +38,26 @@ def apply_nabla2_and_nabla4_global_to_vn_numpy(
     return vn
 
 
-def test_apply_nabla2_and_nabla4_global_to_vn(benchmark):
+def setup_apply_nabla2_and_nabla4_global_to_vn():
     mesh = SimpleMesh()
-
     area_edge = random_field(mesh, EdgeDim)
     kh_smag_e = random_field(mesh, EdgeDim, KDim)
     z_nabla2_e = random_field(mesh, EdgeDim, KDim)
     z_nabla4_e2 = random_field(mesh, EdgeDim, KDim)
     diff_multfac_vn = random_field(mesh, KDim)
     vn = random_field(mesh, EdgeDim, KDim)
+    return area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
+
+
+def test_apply_nabla2_and_nabla4_global_to_vn():
+    (
+        area_edge,
+        kh_smag_e,
+        z_nabla2_e,
+        z_nabla4_e2,
+        diff_multfac_vn,
+        vn,
+    ) = setup_apply_nabla2_and_nabla4_global_to_vn()
 
     vn_ref = apply_nabla2_and_nabla4_global_to_vn_numpy(
         np.asarray(area_edge),
@@ -56,10 +68,32 @@ def test_apply_nabla2_and_nabla4_global_to_vn(benchmark):
         np.asarray(vn),
     )
 
+    apply_nabla2_and_nabla4_global_to_vn(
+        area_edge,
+        kh_smag_e,
+        z_nabla2_e,
+        z_nabla4_e2,
+        diff_multfac_vn,
+        vn,
+        offset_provider={},
+    )
+    assert np.allclose(vn, vn_ref)
+
+
+@pytest.mark.benchmark
+def test_benchmark_apply_nabla2_and_nabla4_global_to_vn(benchmark, benchmark_rounds):
+    (
+        area_edge,
+        kh_smag_e,
+        z_nabla2_e,
+        z_nabla4_e2,
+        diff_multfac_vn,
+        vn,
+    ) = setup_apply_nabla2_and_nabla4_global_to_vn()
+
     benchmark.pedantic(
         apply_nabla2_and_nabla4_global_to_vn,
         args=(area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn),
         kwargs={"offset_provider": {}},
-        rounds=1,
+        rounds=benchmark_rounds,
     )
-    assert np.allclose(vn, vn_ref)
