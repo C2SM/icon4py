@@ -1,6 +1,6 @@
 [flake8]
 # Some sane defaults for the code style checker flake8
-max-line-length = 100
+max-line-length = 10
 max-complexity = 15
 doctests = true
 extend-ignore =
@@ -40,3 +40,6 @@ rst-roles =
     py:attr, attr,
     py:exc, exc,
     py:obj, obj,
+
+per-file-ignores =
+    ./src/icon4pytools/icon4pygen/icochainsize.py:RST201
