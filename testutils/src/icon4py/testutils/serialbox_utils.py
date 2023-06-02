@@ -409,8 +409,18 @@ class IconDiffusionExitSavepoint(IconSavepoint):
     def w(self):
         return self._get_field("x_w", CellDim, KDim)
 
+    def dwdx(self):
+        return self._get_field("x_dwdx", CellDim, KDim)
+
+    def dwdy(self):
+        return self._get_field("x_dwdy", CellDim, KDim)
     def exner(self):
         return self._get_field("x_exner", CellDim, KDim)
+
+    def div_ic(self):
+        return self._get_field("x_div_ic",CellDim, KDim )
+    def hdef_ic(self):
+        return self._get_field("x_hdef_ic", CellDim, KDim)
 
 
 class IconSerialDataProvider:
