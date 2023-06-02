@@ -116,6 +116,7 @@ repos:
                 - flake8-eradicate
                 - flake8-mutable
                 - pygments
+            args: [--config=model/atm_dyn_iconam/.flake8, model/atm_dyn_iconam/src]
 
     - repo: local
       hooks:
