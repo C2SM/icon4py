@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import pathlib
 
 import pytest
 
@@ -34,6 +33,7 @@ mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
 """
 props = get_processor_properties()
 
+
 @pytest.mark.mpi
 def test_processor_properties_from_comm_world(mpi):
     props = get_processor_properties()
@@ -42,20 +42,23 @@ def test_processor_properties_from_comm_world(mpi):
 
 
 # TODO s [magdalena] extract fixture, more useful asserts...
-@pytest.mark.skipif(props.comm_size > 2, reason="input files available for 1 or 2 nodes")
+@pytest.mark.skipif(
+    props.comm_size > 2, reason="input files available for 1 or 2 nodes"
+)
 @pytest.mark.parametrize(
     ("dim, owned, total"),
-    ((CellDim, (10448, 10448), (10611, 10612)), (EdgeDim, (15820, 15738), (16065, 16067)), (VertexDim, (5373, 5290), (5455, 5456)))
+    (
+        (CellDim, (10448, 10448), (10611, 10612)),
+        (EdgeDim, (15820, 15738), (16065, 16067)),
+        (VertexDim, (5373, 5290), (5455, 5456)),
+    ),
 )
-def test_decomposition_info_masked(mpi, dim, owned, total):
-    path = pathlib.Path(
-        "/home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/mpitasks2/mch_ch_r04b09_dsl/ser_data"
-    )
+def test_decomposition_info_masked(mpi, datapath, dim, owned, total):
+
     props = get_processor_properties()
 
-
     my_rank = props.rank
-    decomposition_info = read_decomp_info(path, props, SerializationType.SB)
+    decomposition_info = read_decomp_info(datapath, props, SerializationType.SB)
     owned_indices = decomposition_info.global_index(
         dim, DecompositionInfo.EntryType.ALL
     )
@@ -72,4 +75,3 @@ def test_decomposition_info_masked(mpi, dim, owned, total):
         dim, DecompositionInfo.EntryType.HALO
     )
     assert halo_indices.shape[0] == my_total - my_owned
-

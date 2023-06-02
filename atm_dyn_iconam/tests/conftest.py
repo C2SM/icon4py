@@ -25,6 +25,13 @@ data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
 data_path = Path(__file__).parent.joinpath("ser_icondata")
 extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
+data_2_nodes = data_path.joinpath("mpitasks2/mch_ch_r04b09_dsl/ser_data")
+
+
+@pytest.fixture
+def datapath(num_nodes=2):
+    local_path = f"mpitasks{num_nodes}/mch_ch_r04b09_dsl/ser_data"
+    return data_path.joinpath(local_path)
 
 
 @pytest.fixture

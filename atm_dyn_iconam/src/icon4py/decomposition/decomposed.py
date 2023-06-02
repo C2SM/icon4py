@@ -15,7 +15,7 @@ import mpi4py.MPI
 
 
 class ProcessProperties:
-    def __init__(self,  name="", size = 0, rank=0):
+    def __init__(self, name="", size=0, rank=0):
         self._communicator_name: str = name
         self._rank: int = rank
         self._comm_size = size
@@ -27,6 +27,7 @@ class ProcessProperties:
     @property
     def comm_name(self):
         return self._communicator_name
+
     @property
     def comm_size(self):
         return self._comm_size

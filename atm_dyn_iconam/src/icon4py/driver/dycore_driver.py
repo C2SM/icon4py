@@ -28,10 +28,11 @@ from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,
     configure_logging,
+    read_decomp_info,
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
-    read_static_fields, read_decomp_info,
+    read_static_fields,
 )
 from icon4py.driver.parallel_setup import get_processor_properties
 from icon4py.testutils.serialbox_utils import IconSerialDataProvider
@@ -188,7 +189,10 @@ def initialize(n_time_steps, file_path: Path):
     """
     log.info("initialize parallel runtime")
     parallel_props = get_processor_properties()
-    decomp_info = read_decomp_info("/home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/node2/mch_ch_r04b09_dsl/icon_grid", parallel_props)
+    decomp_info = read_decomp_info(
+        "/home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/node2/mch_ch_r04b09_dsl/icon_grid",
+        parallel_props,
+    )
 
     experiment_name = "mch_ch_r04b09_dsl"
     log.info(f"reading configuration: experiment {experiment_name}")
