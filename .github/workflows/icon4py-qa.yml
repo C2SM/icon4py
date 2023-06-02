@@ -32,5 +32,5 @@ jobs:
               run: |
                   python -m pip list
             - name: Run checks atm_dyn_iconam
-                    run: |
-                        pre-commit run --config model/atm_dyn_iconam/.pre-commit-config.yaml --all-files
+              run: |
+                  pre-commit run --config model/atm_dyn_iconam/.pre-commit-config.yaml --all-files
