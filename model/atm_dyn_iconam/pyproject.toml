@@ -70,10 +70,10 @@ exclude_lines = [
 ]
 ignore_errors = true
 
-#[tool.coverage.run]
-#parallel = true
-#branch = true
-#source_pkgs = ['atm_dyn_iconam']
+[tool.coverage.run]
+parallel = true
+branch = true
+source_pkgs = ['atm_dyn_iconam']
 
 [tool.isort]
 lexicographical = true
@@ -110,8 +110,5 @@ show_error_codes = true
 [tool.pytest.ini_options]
 testpaths = 'tests'
 
-#[tool.setuptools.dynamic]
-#version = {attr = 'icon4pytools.__init__.__version__'}
-#
-#[tool.setuptools.package-data]
-#'icon4pytools' = ['py.typed']
+[tool.setuptools.package-data]
+'icon4py.model.atm_dyn_iconam' = ['py.typed']
