@@ -14,6 +14,7 @@
 from dataclasses import dataclass
 
 from gt4py.next.common import Field
+from numpy import int32
 
 from icon4py.common.dimension import CECDim, CellDim, KDim
 
@@ -25,6 +26,6 @@ class MetricState:
         [CellDim, KDim], float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     mask_hdiff: Field[[CellDim, KDim], bool]
-    zd_vertidx: Field[[CECDim, KDim], int]
+    zd_vertidx: Field[[CECDim, KDim], int32]
     zd_diffcoef: Field[[CellDim, KDim], float]
     zd_intcoef: Field[[CECDim, KDim], float]

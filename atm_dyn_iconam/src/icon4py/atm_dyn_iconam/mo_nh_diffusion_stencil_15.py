@@ -75,6 +75,10 @@ def mo_nh_diffusion_stencil_15(
     vcoef: Field[[CECDim, KDim], float],
     theta_v: Field[[CellDim, KDim], float],
     z_temp: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end:int,
+    vertical_start:int,
+    vertical_end:int,
 ):
     _mo_nh_diffusion_stencil_15(
         mask,
@@ -86,4 +90,5 @@ def mo_nh_diffusion_stencil_15(
         theta_v,
         z_temp,
         out=z_temp,
+        domain = {CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end), }
     )

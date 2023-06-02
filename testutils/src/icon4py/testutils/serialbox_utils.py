@@ -30,7 +30,7 @@ from icon4py.common.dimension import (
     EdgeDim,
     KDim,
     V2EDim,
-    VertexDim,
+    VertexDim, CECDim,
 )
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import VectorTuple
@@ -256,9 +256,6 @@ class InterpolationSavepoint(IconSavepoint):
             grg[:, :, 0]
         ), np_as_located_field(CellDim, C2E2CODim)(grg[:, :, 1])
 
-    def zd_intcoef(self):
-        return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
-
     def e_bln_c_s(self):
         return self._get_field("e_bln_c_s", CellDim, C2EDim)
 
@@ -306,13 +303,19 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
     def zd_intcoef(self):
-        return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
+        return self._from_cell_c2e2c_to_cec("vcoef")
 
-    def zd_vertidx(self):
-        return self._get_field("zd_vertidx", CellDim, C2E2CDim, dtype=int)
+
+    def _from_cell_c2e2c_to_cec(self, field_name:str ):
+        ser_input = np.squeeze(self.serializer.read(field_name, self.savepoint))
+        old_shape = ser_input.shape
+        return np_as_located_field(CECDim, KDim)(
+            ser_input.reshape(old_shape[0] * old_shape[1], old_shape[2])
+        )
 
     def zd_vertoffset(self):
-        return self._get_field("zd_vertoffset", CellDim, C2E2CDim, KDim, dtype=int)
+        return self._from_cell_c2e2c_to_cec("zd_vertoffset")
+
 
     def theta_ref_mc(self):
         return self._get_field("theta_ref_mc", CellDim, KDim)
@@ -324,7 +327,7 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("wgtfac_e", EdgeDim, KDim)
 
     def mask_diff(self):
-        return self._get_field("mask_hdiff", CellDim, KDim, dtype=int)
+        return self._get_field("mask_hdiff", CellDim, KDim, dtype=bool)
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
