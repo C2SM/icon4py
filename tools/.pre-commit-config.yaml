@@ -110,7 +110,7 @@ repos:
                 - flake8-eradicate
                 - flake8-mutable
                 - pygments
-            args: [--config=tools/.flake8, tools/src]
+            args: [--config=tools/.flake8, tools/src/icon4pytools]
 
     - repo: local
       hooks:
