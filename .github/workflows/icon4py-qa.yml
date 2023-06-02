@@ -28,7 +28,9 @@ jobs:
                   python -m pip install $(cat ./base-requirements-dev.txt | grep mypy)
                   python -m pip install $(cat ./base-requirements-dev.txt | grep gt4py)
                   python -m pip install $(cat ./requirements-dev.txt | grep '\-e')
-            - name: Run checks
+            - name: Check installed packages
               run: |
                   python -m pip list
-                  pre-commit run --config .pre-commit-config.yaml --all-files
+            - name: Run checks atm_dyn_iconam
+                    run: |
+                        pre-commit run --config model/atm_dyn_iconam/.pre-commit-config.yaml --all-files

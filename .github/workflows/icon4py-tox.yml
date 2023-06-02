@@ -39,7 +39,7 @@ jobs:
                   pyversion_no_dot="${{ matrix.python-version }}"
                   pyversion_no_dot="${pyversion_no_dot/./}"
                   pip install tox clang-format
-                  tox -r -e py${pyversion_no_dot}
+                  tox -r -e py${pyversion_no_dot} -c model/atm_dyn_iconam
 
             - name: Archive code coverage results
               uses: actions/upload-artifact@v2

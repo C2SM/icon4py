@@ -17,9 +17,6 @@ jobs:
         strategy:
             matrix:
                 python-version: ["3.10"]
-        defaults:
-            run:
-                working-directory: tools
 
         steps:
             - uses: actions/checkout@v2
@@ -43,7 +40,7 @@ jobs:
                   pyversion_no_dot="${{ matrix.python-version }}"
                   pyversion_no_dot="${pyversion_no_dot/./}"
                   pip install tox clang-format
-                  tox -r -e py${pyversion_no_dot}
+                  tox -r -e py${pyversion_no_dot} -c tools/
 
             - name: Archive code coverage results
               uses: actions/upload-artifact@v2
