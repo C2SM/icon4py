@@ -460,9 +460,7 @@ class InterpolationStateSavepoint(IconSavepoint):
         return self._get_field("pos_on_tplane_e", ECDim)
 
     def rbf_vec_blk_v(self):
-        return self._get_field(
-            "rbf_vec_blk_v", CellDim, KDim
-        )  # TODO @nfarabullini: check dimensions here
+        return self._get_field("rbf_vec_blk_v", CellDim, KDim)
 
     def rbf_vec_coeff_e(self):
         buffer = np.squeeze(
@@ -471,19 +469,13 @@ class InterpolationStateSavepoint(IconSavepoint):
         return np_as_located_field(EdgeDim, E2C2EDim)(buffer)
 
     def rbf_vec_coeff_v1(self):
-        return self._get_field(
-            "rbf_vec_coeff_v1", CellDim, KDim
-        )  # TODO @nfarabullini: check dimensions here
+        return self._get_field("rbf_vec_coeff_v1", CellDim, KDim)
 
     def rbf_vec_coeff_v2(self):
-        return self._get_field(
-            "rbf_vec_coeff_v2", CellDim, KDim
-        )  # TODO @nfarabullini: check dimensions here
+        return self._get_field("rbf_vec_coeff_v2", CellDim, KDim)
 
     def rbf_vec_idx_v(self):
-        return self._get_field(
-            "rbf_vec_idx_v", CellDim, KDim
-        )  # TODO @nfarabullini: check dimensions here
+        return self._get_field("rbf_vec_idx_v", CellDim, KDim)
 
 
 class MetricStateSavepoint(IconSavepoint):
@@ -581,9 +573,7 @@ class MetricStateSavepoint(IconSavepoint):
         return self._get_field("wgtfacq_c", CellDim, KDim)
 
     def wgtfacq_c_dsl(self):
-        return self._get_field(
-            "wgtfacq_c_dsl", CellDim, KDim
-        )  # TODO @nfarabullini: check dimensions here
+        return self._get_field("wgtfacq_c_dsl", CellDim, KDim)
 
     def wgtfacq_e(self):
         return self._get_field("wgtfacq_e", EdgeDim, KDim)
@@ -592,9 +582,7 @@ class MetricStateSavepoint(IconSavepoint):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
     def zd_indlist(self):
-        return self._get_field(
-            "zd_indlist", CellDim, KDim
-        )  # TODO @nfarabullini: check dimensions here
+        return self._get_field("zd_indlist", CellDim, KDim)
 
     def zd_vertidx(self):
         return self._get_field("zd_vertidx", CellDim, KDim)
@@ -740,9 +728,7 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_ddt_w_adv_pc", CellDim, KDim)
 
     def vn_ie(self):
-        return self._get_field(
-            "x_vn_ie", EdgeDim, KDim
-        )  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+        return self._get_field("x_vn_ie", EdgeDim, KDim)
 
     def vt(self):
         return self._get_field("x_vt", EdgeDim, KDim)

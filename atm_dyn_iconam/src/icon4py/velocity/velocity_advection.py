@@ -136,18 +136,6 @@ class VelocityAdvection:
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
     ):
-        (
-            edge_startindex_nudging,
-            edge_endindex_nudging,
-            edge_startindex_interior,
-            edge_endindex_interior,
-            cell_startindex_nudging,
-            cell_endindex_nudging,
-            cell_startindex_interior,
-            cell_endindex_interior,
-            vert_startindex_interior,
-            vert_endindex_interior,
-        ) = self.init_dimensions_boundaries()
 
         self.cfl_w_limit = self.cfl_w_limit / dtime
         self.scalfac_exdiff = self.scalfac_exdiff / (
@@ -156,7 +144,7 @@ class VelocityAdvection:
 
         (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
             VertexDim,
-            2,
+            HorizontalMarkerIndex.local_boundary(VertexDim) + 2,
             HorizontalMarkerIndex.interior(VertexDim) - 1,
         )
 
@@ -191,7 +179,7 @@ class VelocityAdvection:
 
         (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
             EdgeDim,
-            4,
+            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
             HorizontalMarkerIndex.interior(EdgeDim) - 2,
         )
 
@@ -259,9 +247,7 @@ class VelocityAdvection:
 
         (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.interior(
-                EdgeDim
-            ),  # TODO: this should be HorizontalMarkerIndex.interior(EdgeDim) - 7
+            HorizontalMarkerIndex.local_boundary(EdgeDim) + 6,
             HorizontalMarkerIndex.interior(EdgeDim) - 1,
         )
 
@@ -287,7 +273,7 @@ class VelocityAdvection:
 
         (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
             CellDim,
-            3,
+            HorizontalMarkerIndex.local_boundary(CellDim) + 3,
             HorizontalMarkerIndex.interior(CellDim) - 1,
         )
 
@@ -361,14 +347,11 @@ class VelocityAdvection:
             offset_provider={"Koff": KDim},
         )
 
-        # TODO: put these bounds back
-        # (indices_4_1,
-        #  indices_4_2
-        #  ) = self.grid.get_indices_from_to(
-        #     CellDim,
-        #     HorizontalMarkerIndex.nudging(CellDim) + 1,
-        #     HorizontalMarkerIndex.interior(CellDim),
-        # )
+        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.nudging(CellDim),
+            HorizontalMarkerIndex.interior(CellDim),
+        )
 
         velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
             prognostic_state.w,
@@ -378,8 +361,8 @@ class VelocityAdvection:
             self.metric_state.coeff1_dwdz,
             self.metric_state.coeff2_dwdz,
             diagnostic_state.ddt_w_adv_pc,
-            horizontal_start=cell_startindex_nudging,  # indices_4_1,
-            horizontal_end=cell_endindex_interior,  # indices_4_2,
+            horizontal_start=indices_4_1,
+            horizontal_end=indices_4_2,
             vertical_start=1,
             vertical_end=self.grid.n_lev(),
             offset_provider={
@@ -401,8 +384,8 @@ class VelocityAdvection:
             scalfac_exdiff,
             cfl_w_limit,
             dtime,
-            horizontal_start=cell_startindex_nudging,  # indices_4_1,
-            horizontal_end=cell_endindex_interior,  # indices_4_2,
+            horizontal_start=indices_4_1,
+            horizontal_end=indices_4_2,
             vertical_start=max(3, self.vertical_params.index_of_damping_layer - 2),
             vertical_end=self.grid.n_lev() - 4,
             offset_provider={
@@ -412,7 +395,7 @@ class VelocityAdvection:
 
         (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            HorizontalMarkerIndex.nudging(EdgeDim),
             HorizontalMarkerIndex.interior(EdgeDim),
         )
 
@@ -486,19 +469,6 @@ class VelocityAdvection:
         area_edge: Field[[EdgeDim], float],
     ):
 
-        (
-            edge_startindex_nudging,
-            edge_endindex_nudging,
-            edge_startindex_interior,
-            edge_endindex_interior,
-            cell_startindex_nudging,
-            cell_endindex_nudging,
-            cell_startindex_interior,
-            cell_endindex_interior,
-            vert_startindex_interior,
-            vert_endindex_interior,
-        ) = self.init_dimensions_boundaries()
-
         self.cfl_w_limit = self.cfl_w_limit / dtime
         self.scalfac_exdiff = self.scalfac_exdiff / (
             dtime * (0.85 - self.cfl_w_limit * dtime)
@@ -506,7 +476,7 @@ class VelocityAdvection:
 
         (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
             VertexDim,
-            2,
+            HorizontalMarkerIndex.local_boundary(VertexDim) + 2,
             HorizontalMarkerIndex.interior(VertexDim) - 1,
         )
 
@@ -541,9 +511,7 @@ class VelocityAdvection:
 
         (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.interior(
-                EdgeDim
-            ),  # TODO: this should be HorizontalMarkerIndex.interior(EdgeDim) - 7
+            HorizontalMarkerIndex.local_boundary(EdgeDim) + 6,
             HorizontalMarkerIndex.interior(EdgeDim) - 1,
         )
 
@@ -569,7 +537,7 @@ class VelocityAdvection:
 
         (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
             CellDim,
-            3,
+            HorizontalMarkerIndex.local_boundary(CellDim) + 3,
             HorizontalMarkerIndex.interior(CellDim) - 1,
         )
 
@@ -624,14 +592,11 @@ class VelocityAdvection:
             offset_provider={"Koff": KDim},
         )
 
-        # TODO: put these bounds back
-        # (indices_4_1,
-        #  indices_4_2
-        #  ) = self.grid.get_indices_from_to(
-        #     CellDim,
-        #     HorizontalMarkerIndex.nudging(CellDim) + 1,
-        #     HorizontalMarkerIndex.interior(CellDim),
-        # )
+        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.nudging(CellDim),
+            HorizontalMarkerIndex.interior(CellDim),
+        )
 
         velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
             prognostic_state.w,
@@ -641,8 +606,8 @@ class VelocityAdvection:
             self.metric_state.coeff1_dwdz,
             self.metric_state.coeff2_dwdz,
             diagnostic_state.ddt_w_adv_pc,
-            horizontal_start=cell_startindex_nudging,  # indices_4_1,
-            horizontal_end=cell_endindex_interior,  # indices_4_2,
+            horizontal_start=indices_4_1,
+            horizontal_end=indices_4_2,
             vertical_start=1,
             vertical_end=self.grid.n_lev(),
             offset_provider={
@@ -664,8 +629,8 @@ class VelocityAdvection:
             scalfac_exdiff,
             cfl_w_limit,
             dtime,
-            horizontal_start=cell_startindex_nudging,  # indices_4_1,
-            horizontal_end=cell_endindex_interior,  # indices_4_2,
+            horizontal_start=indices_4_1,
+            horizontal_end=indices_4_2,
             vertical_start=max(3, self.vertical_params.index_of_damping_layer - 2),
             vertical_end=self.grid.n_lev() - 4,
             offset_provider={
@@ -675,7 +640,7 @@ class VelocityAdvection:
 
         (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            HorizontalMarkerIndex.nudging(EdgeDim),
             HorizontalMarkerIndex.interior(EdgeDim),
         )
 
@@ -728,68 +693,4 @@ class VelocityAdvection:
                 "E2C2EO": self.grid.get_e2c2eo_connectivity(),
                 "Koff": KDim,
             },
-        )
-
-    def init_dimensions_boundaries(self):
-        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            5,
-            HorizontalMarkerIndex.interior(EdgeDim) - 2,
-        )
-
-        (
-            edge_startindex_nudging,
-            edge_endindex_nudging,
-        ) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim),
-            HorizontalMarkerIndex.nudging(EdgeDim),
-        )
-
-        (
-            edge_startindex_interior,
-            edge_endindex_interior,
-        ) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.interior(EdgeDim),
-            HorizontalMarkerIndex.interior(EdgeDim),
-        )
-
-        (
-            cell_startindex_nudging,
-            cell_endindex_nudging,
-        ) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.nudging(CellDim),
-        )
-
-        (
-            cell_startindex_interior,
-            cell_endindex_interior,
-        ) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.interior(CellDim),
-            HorizontalMarkerIndex.interior(CellDim),
-        )
-
-        (
-            vert_startindex_interior,
-            vert_endindex_interior,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.interior(VertexDim),
-            HorizontalMarkerIndex.interior(VertexDim),
-        )
-        return (
-            edge_startindex_nudging,
-            edge_endindex_nudging,
-            edge_startindex_interior,
-            edge_endindex_interior,
-            cell_startindex_nudging,
-            cell_endindex_nudging,
-            cell_startindex_interior,
-            cell_endindex_interior,
-            vert_startindex_interior,
-            vert_endindex_interior,
         )

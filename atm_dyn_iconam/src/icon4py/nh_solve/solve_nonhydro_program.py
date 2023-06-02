@@ -108,25 +108,27 @@ def init_test_fields(
     z_theta_v_e: Field[[EdgeDim, KDim], float],
     z_dwdz_dd: Field[[CellDim, KDim], float],
     z_graddiv_vn: Field[[EdgeDim, KDim], float],
-    edge_endindex_local: int,
-    cell_endindex_local: int,
+    indices_edges_1: int,
+    indices_edges_2: int,
+    indices_cells_1: int,
+    indices_cells_2: int,
     nlev: int,
 ):
     _set_zero_e_k(
         out=z_rho_e,
-        domain={EdgeDim: (0, edge_endindex_local), KDim: (0, nlev)},
+        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
     _set_zero_e_k(
         out=z_theta_v_e,
-        domain={EdgeDim: (0, edge_endindex_local), KDim: (0, nlev)},
+        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
     _set_zero_e_k(
         out=z_graddiv_vn,
-        domain={EdgeDim: (0, edge_endindex_local), KDim: (0, nlev)},
+        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
     _set_zero_c_k(
         out=z_dwdz_dd,
-        domain={CellDim: (0, cell_endindex_local), KDim: (0, nlev)},
+        domain={CellDim: (indices_cells_1, indices_cells_2), KDim: (0, nlev)},
     )
 
 
