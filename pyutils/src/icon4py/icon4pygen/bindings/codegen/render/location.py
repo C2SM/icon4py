@@ -15,7 +15,6 @@ from icon4py.icon4pygen.bindings.exceptions import BindingsRenderingException
 
 
 class LocationRenderer:
-
     type_dispatcher = {"Cell": "Cells", "Edge": "Edges", "Vertex": "Vertices"}
 
     @classmethod

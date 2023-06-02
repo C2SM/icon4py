@@ -11,13 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
-from typing import Any, Optional, Sequence, Type
+from typing import Any
 
-import gt4py.eve as eve
-from gt4py.eve.codegen import TemplatedGenerator
-
-from icon4py.liskov.codegen.f90 import (
+from icon4py.common.logger import setup_logger
+from icon4py.liskov.codegen.integration.interface import (
+    IntegrationCodeInterface,
+    StartStencilData,
+    UnusedDirective,
+)
+from icon4py.liskov.codegen.integration.template import (
     DeclareStatement,
     DeclareStatementGenerator,
     EndCreateStatement,
@@ -40,42 +42,26 @@ from icon4py.liskov.codegen.f90 import (
     StartProfileStatementGenerator,
     StartStencilStatement,
     StartStencilStatementGenerator,
-    generate_fortran_code,
 )
-from icon4py.liskov.codegen.interface import (
-    CodeGenInput,
-    DeserialisedDirectives,
-    StartStencilData,
-    UnusedDirective,
-)
-from icon4py.liskov.common import Step
+from icon4py.liskov.codegen.shared.generate import CodeGenerator
+from icon4py.liskov.codegen.shared.types import GeneratedCode
 from icon4py.liskov.external.metadata import CodeMetadata
-from icon4py.liskov.logger import setup_logger
 
 
 logger = setup_logger(__name__)
 
 
-@dataclass
-class GeneratedCode:
-    """A class for storing generated f90 code and its line number information."""
-
-    source: str
-    startln: int
-    endln: int
-
-
-class IntegrationGenerator(Step):
+class IntegrationCodeGenerator(CodeGenerator):
     def __init__(
         self,
-        directives: DeserialisedDirectives,
-        profile: bool,
-        metadata_gen: bool,
+        interface: IntegrationCodeInterface,
+        profile: bool = False,
+        metadatagen: bool = False,
     ):
+        super().__init__()
         self.profile = profile
-        self.directives = directives
-        self.generated: list[GeneratedCode] = []
-        self.metadata_gen = metadata_gen
+        self.interface = interface
+        self.metadatagen = metadatagen
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:
         """Generate all f90 code for integration.
@@ -94,48 +80,25 @@ class IntegrationGenerator(Step):
         self._generate_insert()
         return self.generated
 
-    def _generate(
-        self,
-        parent_node: Type[eve.Node],
-        code_generator: Type[TemplatedGenerator],
-        startln: int,
-        endln: int,
-        **kwargs: CodeGenInput | Sequence[CodeGenInput] | Optional[bool] | Any,
-    ) -> None:
-        """Add a GeneratedCode object to the `generated` attribute with the given source code and line number information.
-
-        Args:
-            parent_node: The parent node of the code to be generated.
-            code_generator: The code generator to use for generating the code.
-            startln: The start line number of the generated code.
-            endln: The end line number of the generated code.
-            **kwargs: Additional keyword arguments to be passed to the code generator.
-        """
-        source = generate_fortran_code(parent_node, code_generator, **kwargs)
-        code = GeneratedCode(source=source, startln=startln, endln=endln)
-        self.generated.append(code)
-
     def _generate_metadata(self) -> None:
         """Generate metadata about the current liskov execution."""
-        if self.metadata_gen:
+        if self.metadatagen:
             logger.info("Generating icon-liskov metadata.")
             self._generate(
                 MetadataStatement,
                 MetadataStatementGenerator,
                 startln=0,
-                endln=0,
                 metadata=CodeMetadata(),
             )
 
     def _generate_declare(self) -> None:
         """Generate f90 code for declaration statements."""
-        for i, declare in enumerate(self.directives.Declare):
+        for i, declare in enumerate(self.interface.Declare):
             logger.info("Generating DECLARE statement.")
             self._generate(
                 DeclareStatement,
                 DeclareStatementGenerator,
-                self.directives.Declare[i].startln,
-                self.directives.Declare[i].endln,
+                self.interface.Declare[i].startln,
                 declare_data=declare,
             )
 
@@ -147,19 +110,18 @@ class IntegrationGenerator(Step):
         """
         i = 0
 
-        while i < len(self.directives.StartStencil):
-            stencil = self.directives.StartStencil[i]
+        while i < len(self.interface.StartStencil):
+            stencil = self.interface.StartStencil[i]
             logger.info(f"Generating START statement for {stencil.name}")
 
             try:
-                next_stencil = self.directives.StartStencil[i + 1]
+                next_stencil = self.interface.StartStencil[i + 1]
             except IndexError:
                 pass
 
             if stencil.mergecopy and next_stencil.mergecopy:
                 stencil = StartStencilData(
                     startln=stencil.startln,
-                    endln=next_stencil.endln,
                     name=stencil.name + "_" + next_stencil.name,
                     fields=stencil.fields + next_stencil.fields,
                     bounds=stencil.bounds,
@@ -173,7 +135,6 @@ class IntegrationGenerator(Step):
                     StartStencilStatement,
                     StartStencilStatementGenerator,
                     stencil.startln,
-                    next_stencil.endln,
                     stencil_data=stencil,
                     profile=self.profile,
                 )
@@ -181,8 +142,7 @@ class IntegrationGenerator(Step):
                 self._generate(
                     StartStencilStatement,
                     StartStencilStatementGenerator,
-                    self.directives.StartStencil[i].startln,
-                    self.directives.StartStencil[i].endln,
+                    self.interface.StartStencil[i].startln,
                     stencil_data=stencil,
                     profile=self.profile,
                 )
@@ -194,17 +154,16 @@ class IntegrationGenerator(Step):
         Args:
             profile: A boolean indicating whether to include profiling calls in the generated code.
         """
-        for i, stencil in enumerate(self.directives.StartStencil):
+        for i, stencil in enumerate(self.interface.StartStencil):
             logger.info(f"Generating END statement for {stencil.name}")
             self._generate(
                 EndStencilStatement,
                 EndStencilStatementGenerator,
-                self.directives.EndStencil[i].startln,
-                self.directives.EndStencil[i].endln,
+                self.interface.EndStencil[i].startln,
                 stencil_data=stencil,
                 profile=self.profile,
-                noendif=self.directives.EndStencil[i].noendif,
-                noprofile=self.directives.EndStencil[i].noprofile,
+                noendif=self.interface.EndStencil[i].noendif,
+                noprofile=self.interface.EndStencil[i].noprofile,
             )
 
     def _generate_imports(self) -> None:
@@ -213,9 +172,8 @@ class IntegrationGenerator(Step):
         self._generate(
             ImportsStatement,
             ImportsStatementGenerator,
-            self.directives.Imports.startln,
-            self.directives.Imports.endln,
-            stencils=self.directives.StartStencil,
+            self.interface.Imports.startln,
+            stencils=self.interface.StartStencil,
         )
 
     def _generate_create(self) -> None:
@@ -224,64 +182,52 @@ class IntegrationGenerator(Step):
         self._generate(
             StartCreateStatement,
             StartCreateStatementGenerator,
-            self.directives.StartCreate.startln,
-            self.directives.StartCreate.endln,
-            stencils=self.directives.StartStencil,
-            extra_fields=self.directives.StartCreate.extra_fields,
+            self.interface.StartCreate.startln,
+            stencils=self.interface.StartStencil,
+            extra_fields=self.interface.StartCreate.extra_fields,
         )
 
         self._generate(
             EndCreateStatement,
             EndCreateStatementGenerator,
-            self.directives.EndCreate.startln,
-            self.directives.EndCreate.endln,
+            self.interface.EndCreate.startln,
         )
 
     def _generate_endif(self) -> None:
         """Generate f90 code for endif statements."""
-        if self.directives.EndIf != UnusedDirective:
-            for endif in self.directives.EndIf:  # type: ignore
+        if self.interface.EndIf != UnusedDirective:
+            for endif in self.interface.EndIf:  # type: ignore
                 logger.info("Generating ENDIF statement.")
-                self._generate(
-                    EndIfStatement,
-                    EndIfStatementGenerator,
-                    endif.startln,
-                    endif.endln,
-                )
+                self._generate(EndIfStatement, EndIfStatementGenerator, endif.startln)
 
     def _generate_profile(self) -> None:
         """Generate additional nvtx profiling statements."""
         if self.profile:
-            if self.directives.StartProfile != UnusedDirective:
-                for start in self.directives.StartProfile:  # type: ignore
+            if self.interface.StartProfile != UnusedDirective:
+                for start in self.interface.StartProfile:  # type: ignore
                     logger.info("Generating nvtx start statement.")
                     self._generate(
                         StartProfileStatement,
                         StartProfileStatementGenerator,
                         start.startln,
-                        start.endln,
                         name=start.name,
                     )
 
-            if self.directives.EndProfile != UnusedDirective:
-                for end in self.directives.EndProfile:  # type: ignore
+            if self.interface.EndProfile != UnusedDirective:
+                for end in self.interface.EndProfile:  # type: ignore
                     logger.info("Generating nvtx end statement.")
                     self._generate(
-                        EndProfileStatement,
-                        EndProfileStatementGenerator,
-                        end.startln,
-                        end.endln,
+                        EndProfileStatement, EndProfileStatementGenerator, end.startln
                     )
 
     def _generate_insert(self) -> None:
         """Generate free form statement from insert directive."""
-        if self.directives.Insert != UnusedDirective:
-            for insert in self.directives.Insert:  # type: ignore
+        if self.interface.Insert != UnusedDirective:
+            for insert in self.interface.Insert:  # type: ignore
                 logger.info("Generating free form statement.")
                 self._generate(
                     InsertStatement,
                     InsertStatementGenerator,
                     insert.startln,
-                    insert.endln,
                     content=insert.content,
                 )

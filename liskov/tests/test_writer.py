@@ -14,8 +14,8 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from icon4py.liskov.codegen.generate import GeneratedCode
-from icon4py.liskov.codegen.write import DIRECTIVE_IDENT, IntegrationWriter
+from icon4py.liskov.codegen.shared.types import GeneratedCode
+from icon4py.liskov.codegen.shared.write import DIRECTIVE_IDENT, CodegenWriter
 
 
 def test_write_from():
@@ -28,8 +28,8 @@ def test_write_from():
             f.write("!$DSL\n some code\n another line")
 
         # create an instance of IntegrationWriter and write generated code
-        generated = [GeneratedCode("generated code", 1, 3)]
-        integration_writer = IntegrationWriter(input_filepath, output_filepath)
+        generated = [GeneratedCode(1, "generated code")]
+        integration_writer = CodegenWriter(input_filepath, output_filepath)
         integration_writer(generated)
 
         # check that the generated code was inserted into the file
@@ -49,14 +49,14 @@ def test_remove_directives():
         "!$DSL another directive",
     ]
     expected_output = ["some code", "another line"]
-    assert IntegrationWriter._remove_directives(current_file) == expected_output
+    assert CodegenWriter._remove_directives(current_file) == expected_output
 
 
 def test_insert_generated_code():
     current_file = ["some code", "another line"]
     generated = [
-        GeneratedCode("generated code2", 5, 6),
-        GeneratedCode("generated code1", 1, 3),
+        GeneratedCode(5, "generated code2"),
+        GeneratedCode(1, "generated code1"),
     ]
     expected_output = [
         "some code",
@@ -65,8 +65,7 @@ def test_insert_generated_code():
         "generated code2\n",
     ]
     assert (
-        IntegrationWriter._insert_generated_code(current_file, generated)
-        == expected_output
+        CodegenWriter._insert_generated_code(current_file, generated) == expected_output
     )
 
 
@@ -77,7 +76,7 @@ def test_write_file():
         output_filepath = input_filepath.with_suffix(".gen")
 
         generated_code = ["some code", "another line"]
-        writer = IntegrationWriter(input_filepath, output_filepath)
+        writer = CodegenWriter(input_filepath, output_filepath)
         writer._write_file(generated_code)
 
         # check that the generated code was written to the file

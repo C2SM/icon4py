@@ -17,7 +17,6 @@ from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, minimum
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
@@ -42,7 +41,7 @@ def _identity_e_k(
     return field
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def copy_diagnostic_and_prognostics(
     hdef_ic_new: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
@@ -76,7 +75,7 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
     return field * factor
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def scale_k(
     field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]
 ):
@@ -88,7 +87,7 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
 
@@ -123,7 +122,7 @@ def _setup_fields_for_initial_step(
     return diff_multfac_vn, smag_limit
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
@@ -198,7 +197,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
     )
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def init_diffusion_local_fields_for_regular_timestep(
     k4: float,
     dyn_substeps: float,

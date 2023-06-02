@@ -15,17 +15,21 @@
 from collections import defaultdict
 
 import pytest
-from conftest import insert_new_lines, scan_for_directives
 from pytest import mark
-from samples.fortran_samples import (
+
+import icon4py.liskov.parsing.parse
+import icon4py.liskov.parsing.types as ts
+from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
+from icon4py.liskov.parsing.parse import DirectivesParser
+from icon4py.testutils.liskov_fortran_samples import (
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,
 )
-
-import icon4py.liskov.parsing.types as ts
-from icon4py.liskov.parsing.exceptions import UnsupportedDirectiveError
-from icon4py.liskov.parsing.parse import DirectivesParser
+from icon4py.testutils.liskov_test_utils import (
+    insert_new_lines,
+    scan_for_directives,
+)
 
 
 def test_parse_no_input():
@@ -37,21 +41,23 @@ def test_parse_no_input():
     "directive, string, startln, endln, expected_content",
     [
         (
-            ts.Imports("IMPORTS()", 1, 1),
+            icon4py.liskov.parsing.parse.Imports("IMPORTS()", 1, 1),
             "IMPORTS()",
             1,
             1,
             defaultdict(list, {"Imports": [{}]}),
         ),
         (
-            ts.StartCreate("START CREATE(extra_fields=foo)", 2, 2),
+            icon4py.liskov.parsing.parse.StartCreate(
+                "START CREATE(extra_fields=foo)", 2, 2
+            ),
             "START CREATE()",
             2,
             2,
             defaultdict(list, {"StartCreate": [{"extra_fields": "foo"}]}),
         ),
         (
-            ts.StartStencil(
+            icon4py.liskov.parsing.parse.StartStencil(
                 "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)", 3, 4
             ),
             "START STENCIL(name=mo_nh_diffusion_06; vn=p_patch%p%vn; foo=abc)",

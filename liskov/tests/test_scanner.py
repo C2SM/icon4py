@@ -16,11 +16,14 @@ from pathlib import Path
 
 import pytest
 from pytest import mark
-from samples.fortran_samples import DIRECTIVES_SAMPLE, NO_DIRECTIVES_STENCIL
 
 from icon4py.liskov.parsing.exceptions import DirectiveSyntaxError
 from icon4py.liskov.parsing.scan import DirectivesScanner
 from icon4py.liskov.parsing.types import RawDirective
+from icon4py.testutils.liskov_fortran_samples import (
+    DIRECTIVES_SAMPLE,
+    NO_DIRECTIVES_STENCIL,
+)
 
 
 ALLOWED_EOL_CHARS = [")", "&"]

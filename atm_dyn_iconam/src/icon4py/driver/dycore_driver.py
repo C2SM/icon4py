@@ -18,6 +18,7 @@ from typing import Callable
 import click
 import pytz
 from devtools import Timer
+from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
@@ -69,7 +70,7 @@ class DummyAtmoNonHydro:
         )
         new_p = sp.construct_prognostics()
         new_d = sp.construct_diagnostics()
-        copy_diagnostic_and_prognostics(
+        copy_diagnostic_and_prognostics.with_backend(run_gtfn)(
             new_d.hdef_ic,
             diagnostic_state.hdef_ic,
             new_d.div_ic,

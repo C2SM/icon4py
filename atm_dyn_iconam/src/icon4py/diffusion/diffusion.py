@@ -20,6 +20,7 @@ import numpy as np
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
 from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 import icon4py.diffusion.diffusion_program as diff_prog
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
@@ -428,7 +429,7 @@ class Diffusion:
             1.0 / 48.0, params.K4W * config.substep_as_float()
         )
 
-        init_diffusion_local_fields_for_regular_timestep(
+        init_diffusion_local_fields_for_regular_timestep.with_backend(run_gtfn)(
             params.K4,
             config.substep_as_float(),
             *params.smagorinski_factor,
@@ -504,7 +505,7 @@ class Diffusion:
         diff_multfac_vn = zero_field(self.grid, KDim)
         smag_limit = zero_field(self.grid, KDim)
 
-        setup_fields_for_initial_step(
+        setup_fields_for_initial_step.with_backend(run_gtfn)(
             self.params.K4,
             self.config.hdiff_efdt_ratio,
             diff_multfac_vn,
@@ -608,7 +609,7 @@ class Diffusion:
                 vertex_endindex_local,
             ) = self.grid.get_indices_from_to(
                 VertexDim,
-                HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+                HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
                 HorizontalMarkerIndex.local(VertexDim),
             )
 
@@ -617,16 +618,16 @@ class Diffusion:
                 vertex_endindex_local_minus1,
             ) = self.grid.get_indices_from_to(
                 VertexDim,
-                HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+                HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
                 HorizontalMarkerIndex.local(VertexDim) - 1,
             )
             edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
                 EdgeDim,
-                HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-                HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+                HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+                HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
             )
             log.info("diffusion program: start")
-            diff_prog.diffusion_run(
+            diff_prog.diffusion_run.with_backend(run_gtfn)(
                 diagnostic_hdef_ic=diagnostic_state.hdef_ic,
                 diagnostic_div_ic=diagnostic_state.div_ic,
                 diagnostic_dwdx=diagnostic_state.dwdx,
@@ -778,8 +779,8 @@ class Diffusion:
 
         edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
         )
 
         (
@@ -796,7 +797,7 @@ class Diffusion:
             vertex_end_local,
         ) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 3,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
             HorizontalMarkerIndex.local(VertexDim),
         )
         (
@@ -804,18 +805,20 @@ class Diffusion:
             vertex_end_local_minus1,
         ) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
         # 0b call timer start
         #
         # 0c. dtime dependent stuff: enh_smag_factor,
-        scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
+        scale_k.with_backend(run_gtfn)(
+            self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
+        )
 
         # TODO: @magdalena is this needed?, if not remove
-        set_zero_v_k(self.u_vert, offset_provider={})
-        set_zero_v_k(self.v_vert, offset_provider={})
+        set_zero_v_k.with_backend(run_gtfn)(self.u_vert, offset_provider={})
+        set_zero_v_k.with_backend(run_gtfn)(self.v_vert, offset_provider={})
         log.debug("rbf interpolation: start")
         # # 1.  CALL rbf_vec_interpol_vertex
         mo_intp_rbf_rbf_vec_interpol_vertex(
@@ -835,7 +838,7 @@ class Diffusion:
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
 
         log.debug("running calculate_nabla2_and_smag_coefficients_for_vn: start")
-        calculate_nabla2_and_smag_coefficients_for_vn(
+        calculate_nabla2_and_smag_coefficients_for_vn.with_backend(run_gtfn)(
             diff_multfac_smag=self.diff_multfac_smag,
             tangent_orientation=tangent_orientation,
             inv_primal_edge_length=inverse_primal_edge_lengths,
@@ -863,7 +866,7 @@ class Diffusion:
         )
         log.debug("running calculate_nabla2_and_smag_coefficients_for_vn: end")
         log.debug("running fused stencil fused stencil 02_03: start")
-        fused_mo_nh_diffusion_stencil_02_03(
+        fused_mo_nh_diffusion_stencil_02_03.with_backend(run_gtfn)(
             kh_smag_ec=self.kh_smag_ec,
             vn=prognostic_state.vn,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -887,7 +890,7 @@ class Diffusion:
         #
         # # 5.  CALL rbf_vec_interpol_vertex_wp
         log.debug("rbf interpolation: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex(
+        mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(run_gtfn)(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
@@ -907,7 +910,7 @@ class Diffusion:
         #
 
         log.debug("running fused stencil 04_05_06: start")
-        fused_mo_nh_diffusion_stencil_04_05_06(
+        fused_mo_nh_diffusion_stencil_04_05_06.with_backend(run_gtfn)(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             primal_normal_vert_v1=primal_normal_vert[0],
@@ -938,7 +941,7 @@ class Diffusion:
         log.debug("running fused stencil 04_05_06: end")
 
         log.debug("running fused stencil 07_08_09_10: start")
-        fused_mo_nh_diffusion_stencil_07_08_09_10(
+        fused_mo_nh_diffusion_stencil_07_08_09_10.with_backend(run_gtfn)(
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
@@ -974,7 +977,7 @@ class Diffusion:
         # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
         #
         log.debug("running fused stencil 11_12: start")
-        fused_mo_nh_diffusion_stencil_11_12(
+        fused_mo_nh_diffusion_stencil_11_12.with_backend(run_gtfn)(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
@@ -990,7 +993,7 @@ class Diffusion:
         )
         log.debug("running fused stencil 11_12: end")
         log.debug("running fused stencil 13_14: start")
-        fused_mo_nh_diffusion_stencil_13_14(
+        fused_mo_nh_diffusion_stencil_13_14.with_backend(run_gtfn)(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=inverse_dual_edge_length,
             theta_v=prognostic_state.theta_v,
@@ -1029,7 +1032,7 @@ class Diffusion:
 
         log.debug("running fused stencil 15: end")
         log.debug("running fused stencil update_theta_and_exner: start")
-        update_theta_and_exner(
+        update_theta_and_exner.with_backend(run_gtfn)(
             z_temp=self.z_temp,
             area=cell_areas,
             theta_v=prognostic_state.theta_v,

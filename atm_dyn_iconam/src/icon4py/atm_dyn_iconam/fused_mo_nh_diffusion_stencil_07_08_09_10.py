@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import _apply_nabla2_to_w
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
@@ -81,7 +80,7 @@ def _fused_mo_nh_diffusion_stencil_07_08_09_10(
     return w, dwdx, dwdy
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def fused_mo_nh_diffusion_stencil_07_08_09_10(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
