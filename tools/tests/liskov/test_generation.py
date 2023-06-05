@@ -73,7 +73,9 @@ def integration_code_interface():
         mergecopy=False,
         copies=True,
     )
-    end_stencil_data = EndStencilData(name="stencil1", startln=3, noendif=False, noprofile=False,noaccenddata=False)
+    end_stencil_data = EndStencilData(
+        name="stencil1", startln=3, noendif=False, noprofile=False, noaccenddata=False
+    )
     declare_data = DeclareData(
         startln=5,
         declarations={"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"},
