@@ -10,3 +10,51 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import numpy as np
+import pytest
+from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
+from gt4py.next.program_processors.runners.roundtrip import executor
+
+from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
+
+
+BACKENDS = [executor, run_gtfn]
+BACKEND_NAMES = ["embedded", "gtfn_cpu"]
+
+MESHES = [SimpleMesh()]
+MESH_NAMES = ["simple_mesh"]
+
+
+@pytest.fixture(params=MESHES, ids=MESH_NAMES)
+def mesh(request):
+    return request.param
+
+
+@pytest.fixture(params=BACKENDS, ids=BACKEND_NAMES)
+def backend(request):
+    return request.param
+
+
+def _test_validation(self, backend, input_data):
+    reference_outputs = self.reference(
+        **{k: np.array(v) for k, v in input_data.items()}
+    )
+    self.PROGRAM.with_backend(backend)(
+        **input_data,
+        offset_provider=self.OFFSET_PROVIDER,
+    )
+    for name in self.OUTPUTS:
+        assert np.allclose(
+            input_data[name], reference_outputs[name]
+        ), f"Validation failed for '{name}'"
+
+
+def _bench_execution(self, pytestconfig, backend, input_data, benchmark):
+    if pytestconfig.getoption("--benchmark-disable"):
+        pytest.skip("Test skipped due to 'benchmark-disable' option.")
+    else:
+        benchmark(
+            self.PROGRAM.with_backend(backend),
+            **input_data,
+            offset_provider=self.OFFSET_PROVIDER,
+        )
