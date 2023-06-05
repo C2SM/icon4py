@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-import pytest
 
 from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_to_vn import (
     apply_nabla2_and_nabla4_to_vn,
@@ -65,7 +64,7 @@ def setup_apply_nabla2_and_nabla4_to_vn():
     )
 
 
-def test_apply_nabla2_and_nabla4_to_vn():
+def run_apply_nabla2_and_nabla4_to_vn():
     (
         area_edge,
         kh_smag_e,
@@ -100,30 +99,5 @@ def test_apply_nabla2_and_nabla4_to_vn():
     assert np.allclose(vn, vn_ref)
 
 
-@pytest.mark.benchmark
-def test_benchmark_nabla2_and_nabla4_to_vn(benchmark, benchmark_rounds):
-    (
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        nudgecoeff_e,
-        vn,
-        nudgezone_diff,
-    ) = setup_apply_nabla2_and_nabla4_to_vn()
-    benchmark.pedantic(
-        apply_nabla2_and_nabla4_to_vn,
-        args=(
-            area_edge,
-            kh_smag_e,
-            z_nabla2_e,
-            z_nabla4_e2,
-            diff_multfac_vn,
-            nudgecoeff_e,
-            vn,
-            nudgezone_diff,
-        ),
-        kwargs={"offset_provider": {}},
-        rounds=benchmark_rounds,
-    )
+def test_apply_nabla2_and_nabla4_to_vn(benchmark):
+    benchmark(run_apply_nabla2_and_nabla4_to_vn)
