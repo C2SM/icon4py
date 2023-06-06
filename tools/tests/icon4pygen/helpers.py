@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4pytools.common import ICON4PY_IMPORT_PATH
+from icon4pytools.common import ICON4PY_MODEL_QUALIFIED_NAME
 
 
 def get_stencil_module_path(stencil_module: str, stencil_name: str) -> str:
-    return f"{ICON4PY_IMPORT_PATH}.{stencil_module}.{stencil_name}:{stencil_name}"
+    return f"{ICON4PY_MODEL_QUALIFIED_NAME}.{stencil_module}.{stencil_name}:{stencil_name}"

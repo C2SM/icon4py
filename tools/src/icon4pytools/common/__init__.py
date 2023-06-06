@@ -11,6 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-ICON4PY_IMPORT_PATH = "icon4py.model"
+ICON4PY_MODEL_QUALIFIED_NAME = "icon4py.model"
 
-__all__ = ["ICON4PY_IMPORT_PATH"]
+__all__ = ["ICON4PY_MODEL_QUALIFIED_NAME"]
