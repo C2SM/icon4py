@@ -37,4 +37,3 @@ jobs:
               run: |
                   python -m pip list
                   pre-commit run --config model/common/.pre-commit-config.yaml --all-files
-

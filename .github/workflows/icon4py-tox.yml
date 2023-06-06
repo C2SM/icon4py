@@ -46,7 +46,7 @@ jobs:
               with:
                   name: code-coverage-report
                   path: _reports/coverage_html/
-            
+
             - name: Test icon4py-common with tox
               run: |
                   pyversion_no_dot="${{ matrix.python-version }}"
