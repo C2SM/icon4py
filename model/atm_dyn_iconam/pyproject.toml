@@ -83,6 +83,7 @@ profile = 'black'
 sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'TESTS', 'LOCALFOLDER']
 skip_gitignore = true
 skip_glob = ['*.venv/**', '_local/**']
+known_first_party = ['icon4py.model']
 known_third_party = ['gt4py']
 multi_line_output = 3
 use_parentheses = true
