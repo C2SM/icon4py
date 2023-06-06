@@ -123,11 +123,13 @@ def read_static_fields(
 
     """
     if ser_type == SerializationType.SB:
-        sp = serialbox_utils.IconSerialDataProvider(
+        dataprovider = serialbox_utils.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False
-        ).from_savepoint_diffusion_init(linit=True, date=SIMULATION_START_DATE)
-        metric_state = sp.construct_metric_state()
-        interpolation_state = sp.construct_interpolation_state()
+        )
+        interpolation_state = (
+            dataprovider.from_interpolation_savepoint().construct_interpolation_state()
+        )
+        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state()
         return metric_state, interpolation_state
     else:
         raise NotImplementedError("Only ser_type='sb' is implemented so far.")
