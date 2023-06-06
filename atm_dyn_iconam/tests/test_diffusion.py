@@ -454,20 +454,30 @@ def test_run_diffusion_single_step(
         edge_areas=edge_geometry.edge_areas,
         cell_areas=cell_geometry.area,
     )
+    assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
+    icon_result_div_ic = diffusion_savepoint_exit.div_ic()
+    assert np.allclose(np.asarray(icon_result_div_ic), np.asarray(diagnostic_state.div_ic))
+    icon_result_hdef_ic = diffusion_savepoint_exit.hdef_ic()
+    assert np.allclose(np.asarray(icon_result_hdef_ic), np.asarray(diagnostic_state.hdef_ic))
 
-    icon_result_exner = diffusion_savepoint_exit.exner()
-    icon_result_vn = diffusion_savepoint_exit.vn()
-    icon_result_w = diffusion_savepoint_exit.w()
-    icon_result_theta_w = diffusion_savepoint_exit.theta_v()
+    ref_w = np.asarray(diffusion_savepoint_exit.w())
+    val_w = np.asarray(prognostic_state.w)
+    ref_dwdx = np.asarray(diffusion_savepoint_exit.dwdx())
+    val_dwdx = np.asarray(diagnostic_state.dwdx)
+    ref_dwdy = np.asarray(diffusion_savepoint_exit.dwdy())
+    val_dwdy = np.asarray(diagnostic_state.dwdy)
+    ref_vn = np.asarray(diffusion_savepoint_exit.vn())
+    val_vn = np.asarray(prognostic_state.vn)
 
-    assert np.allclose(icon_result_w, np.asarray(prognostic_state.w))
-    assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.vn))
-    assert np.allclose(
-        np.asarray(icon_result_theta_w), np.asarray(prognostic_state.theta_v)
-    )
-    assert np.allclose(
-        np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure)
-    )
+    assert np.allclose(ref_vn, val_vn)
+    assert np.allclose(ref_dwdx, val_dwdx)
+    assert np.allclose(ref_dwdy, val_dwdy)
+    assert np.allclose(ref_w, np.asarray(val_w))
+    ref_exner = np.asarray(diffusion_savepoint_exit.exner())
+    ref_theta_v = np.asarray(diffusion_savepoint_exit.theta_v())
+    val_theta_v = np.asarray(prognostic_state.theta_v)
+    val_exner = np.asarray(prognostic_state.exner_pressure)
+    #
 
 
 @pytest.mark.skip("fix: diffusion_stencil_15")

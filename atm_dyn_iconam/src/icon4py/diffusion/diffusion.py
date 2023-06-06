@@ -23,9 +23,15 @@ from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn, run_gtfn_cached
 
 import icon4py.diffusion.diffusion_program as diff_prog
+from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
+from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import \
+    apply_nabla2_to_w_in_upper_damping_layer
+from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import \
+    calculate_horizontal_gradients_for_turbulence
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
+from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import calculate_nabla2_for_w
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
     fused_mo_nh_diffusion_stencil_02_03,
 )
@@ -81,7 +87,6 @@ from icon4py.diffusion.utils import (
     zero_field,
 )
 
-
 # flake8: noqa
 log = logging.getLogger(__name__)
 
@@ -89,7 +94,9 @@ VectorTuple = namedtuple("VectorTuple", "x y")
 
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
-backend = compiled_backend #
+backend = compiled_backend  #
+
+
 class DiffusionConfig:
     """
     Contains necessary parameter to configure a diffusion run.
@@ -381,8 +388,8 @@ class Diffusion:
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
         self.vertical_params: Optional[VerticalModelParams] = None
-        self.interpolation_state:InterpolationState = None
-        self.metric_state:MetricState = None
+        self.interpolation_state: InterpolationState = None
+        self.metric_state: MetricState = None
         self.diff_multfac_w: Optional[float] = None
         self.diff_multfac_n2w: Field[[KDim], float] = None
         self.smag_offset: Optional[float] = None
@@ -767,16 +774,21 @@ class Diffusion:
             HorizontalMarkerIndex.local(CellDim),
         )
 
-        cell_start_nudging, _ = self.grid.get_indices_from_to(
+        cell_start_nudging, cell_end_local_minus1 = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
+            HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
         edge_start_nudging_plus_one, edge_end_local = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.nudging(EdgeDim) + 1,
             HorizontalMarkerIndex.local(EdgeDim),
+        )
+        edge_start_interior, edge_end_nudging = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.interior(EdgeDim),
+            HorizontalMarkerIndex.nudging(EdgeDim),
         )
 
         edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
@@ -823,14 +835,14 @@ class Diffusion:
         set_zero_v_k.with_backend(backend)(self.v_vert, offset_provider={})
         log.debug("rbf interpolation: start")
         # # 1.  CALL rbf_vec_interpol_vertex
-        mo_intp_rbf_rbf_vec_interpol_vertex(
+        mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
-            horizontal_start=vertex_start_local_boundary_plus3,
-            horizontal_end=vertex_end_local_minus1,
+            horizontal_start=vertex_start_local_boundary_plus1,
+            horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity()},
@@ -879,7 +891,7 @@ class Diffusion:
             hdef_ic=diagnostic_state.hdef_ic,
             horizontal_start=cell_start_nudging,
             horizontal_end=cell_end_local,
-            vertical_start=0,
+            vertical_start=1,
             vertical_end=klevels,
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
@@ -898,19 +910,19 @@ class Diffusion:
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
-            horizontal_start=vertex_start_local_boundary_plus3,
+            horizontal_start=vertex_start_local_boundary_plus1,
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity()},
         )
         log.debug("rbf interpolation: end")
-        # # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
+        # # # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
+        # #
+        # # # 7.  mo_nh_diffusion_stencil_04, mo_nh_diffusion_stencil_05
+        # # # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
+        # #
         #
-        # # 7.  mo_nh_diffusion_stencil_04, mo_nh_diffusion_stencil_05
-        # # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
-        #
-
         log.debug("running fused stencil 04_05_06: start")
         fused_mo_nh_diffusion_stencil_04_05_06.with_backend(backend)(
             u_vert=self.u_vert,
@@ -928,8 +940,8 @@ class Diffusion:
             horz_idx=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=int32(edge_start_nudging_minus1),
-            horizontal_start=edge_start_nudging_plus_one,
+            start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
+            horizontal_start=edge_start_lb_plus4,
             horizontal_end=edge_end_local,
             vertical_start=0,
             vertical_end=klevels,
@@ -938,113 +950,165 @@ class Diffusion:
                 "E2ECV": self.grid.get_e2ecv_connectivity(),
             },
         )
+        log.debug("running fused stencil 04_05_06: end")
         # # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
         # #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
-        log.debug("running fused stencil 04_05_06: end")
 
         log.debug("running fused stencil 07_08_09_10: start")
-        fused_mo_nh_diffusion_stencil_07_08_09_10.with_backend(backend)(
-            area=cell_areas,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
+        w_old = prognostic_state.w
+        calculate_horizontal_gradients_for_turbulence.with_backend(backend)(
+            w=prognostic_state.w,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
             geofac_grg_y=self.interpolation_state.geofac_grg_y,
-            w_old=prognostic_state.w,
-            w=prognostic_state.w,
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
-            diff_multfac_w=self.diff_multfac_w,
-            diff_multfac_n2w=self.diff_multfac_n2w,
-            vert_idx=self.vertical_index,
-            horz_idx=self.horizontal_cell_index,
-            nrdmax=self.vertical_params.index_of_damping_layer,
-            interior_idx=int32(
-                cell_start_interior
-            ),  # h end index for stencil_09 and stencil_10
-            halo_idx=int32(
-                cell_end_local
-            ),  # h end index for stencil_09 and stencil_10,
-            horizontal_start=cell_start_nudging,  # h start index for stencil_07 and stencil_08
-            horizontal_end=cell_end_local_plus1,  # h end index for stencil_07 and stencil_08
-            vertical_start=0,
+            vertical_start=1,
             vertical_end=klevels,
-            offset_provider={
-                "C2E2CO": self.grid.get_c2e2co_connectivity(),
-            },
-        )
-        log.debug("running fused stencil 07_08_09_10: start")
-        # # 8.  HALO EXCHANGE: CALL sync_patch_array
-        # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
-        # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
-        #
-        # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
-        #
-        log.debug("running fused stencil 11_12: start")
-        fused_mo_nh_diffusion_stencil_11_12.with_backend(backend)(
-            theta_v=prognostic_state.theta_v,
-            theta_ref_mc=self.metric_state.theta_ref_mc,
-            thresh_tdiff=self.thresh_tdiff,
-            kh_smag_e=self.kh_smag_e,
-            horizontal_start=edge_start_nudging_plus_one,
-            horizontal_end=edge_end_local,
-            vertical_start=k_start_end_minus2,
-            vertical_end=klevels,
-            offset_provider={
-                "E2C": self.grid.get_e2c_connectivity(),
-                "C2E2C": self.grid.get_c2e2c_connectivity(),
-            },
-        )
-        log.debug("running fused stencil 11_12: end")
-        log.debug("running fused stencil 13_14: start")
-        fused_mo_nh_diffusion_stencil_13_14.with_backend(backend)(
-            kh_smag_e=self.kh_smag_e,
-            inv_dual_edge_length=inverse_dual_edge_length,
-            theta_v=prognostic_state.theta_v,
-            geofac_div=self.interpolation_state.geofac_div,
-            z_temp=self.z_temp,
             horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "C2E": self.grid.get_c2e_connectivity(),
-                "E2C": self.grid.get_e2c_connectivity(),
-            },
-        )
-        log.debug("running fused stencil 13_14: end")
-        log.debug("running fused stencil 15: start")
-        mo_nh_diffusion_stencil_15.with_backend(backend)(
-            mask=self.metric_state.mask_hdiff,
-            zd_vertoffset=self.metric_state.zd_vertidx,
-            zd_diffcoef=self.metric_state.zd_diffcoef,
-            geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
-            geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
-            vcoef=self.metric_state.zd_intcoef,
-            theta_v=prognostic_state.theta_v,
-            z_temp=self.z_temp,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "C2CEC": self.grid.get_c2cec_connectivity(),
-                "C2E2C": self.grid.get_c2e2c_connectivity(),
-                "Koff": KDim,
-            },
+            horizontal_end=cell_end_local_minus1,
+            offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()}
         )
 
-        log.debug("running fused stencil 15: end")
-        log.debug("running fused stencil update_theta_and_exner: start")
-        update_theta_and_exner.with_backend(backend)(
-            z_temp=self.z_temp,
-            area=cell_areas,
-            theta_v=prognostic_state.theta_v,
-            exner=prognostic_state.exner_pressure,
-            rd_o_cvd=self.rd_o_cvd,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={},
+        z_nabla2_c = zero_field(self.grid, CellDim, KDim, dtype=float)
+
+        calculate_nabla2_for_w.with_backend(backend)(w=prognostic_state.w,
+                                                     geofac_n2s=self.interpolation_state.geofac_n2s,
+                                                     z_nabla2_c=z_nabla2_c,
+                                                     vertical_start=0,
+                                                     vertical_end=klevels,
+                                                     horizontal_start=cell_start_nudging,
+                                                     horizontal_end=cell_end_local_minus1,
+                                                     offset_provider={
+                                                         "C2E2CO": self.grid.get_c2e2co_connectivity()}
+                                                     )
+        apply_nabla2_to_w.with_backend(backend)(area=cell_areas,
+                                                z_nabla2_c=z_nabla2_c,
+                                                w=prognostic_state.w,
+                                                diff_multfac_w=self.diff_multfac_w,
+                                                geofac_n2s=self.interpolation_state.geofac_n2s,
+                                                vertical_start=0,
+                                                vertical_end=klevels,
+                                                horizontal_start=cell_start_interior,
+                                                horizontal_end=cell_end_local,
+                                                offset_provider={
+                                                    "C2E2CO": self.grid.get_c2e2co_connectivity()}
+                                                )
+
+        apply_nabla2_to_w_in_upper_damping_layer.with_backend(backend)(
+            w=prognostic_state.w,
+            diff_multfac_n2w=self.diff_multfac_n2w,
+            cell_area=cell_areas,
+            z_nabla2_c=z_nabla2_c,
+            vertical_start=1,
+            vertical_end=int(self.vertical_params.index_of_damping_layer + 1),
+            horizontal_start=int(cell_start_interior),
+            horizontal_end=int(cell_end_local),
+            offset_provider = {}
+
         )
+        # fused_mo_nh_diffusion_stencil_07_08_09_10.with_backend(backend)(
+        #     area=cell_areas,
+        #     geofac_n2s=self.interpolation_state.geofac_n2s,
+        #     geofac_grg_x=self.interpolation_state.geofac_grg_x,
+        #     geofac_grg_y=self.interpolation_state.geofac_grg_y,
+        #     w_old=w_old,
+        #     w=prognostic_state.w,
+        #     dwdx=diagnostic_state.dwdx,
+        #     dwdy=diagnostic_state.dwdy,
+        #     diff_multfac_w=self.diff_multfac_w,
+        #     diff_multfac_n2w=self.diff_multfac_n2w,
+        #     vert_idx=self.vertical_index,
+        #     horz_idx=self.horizontal_cell_index,
+        #     nrdmax=self.vertical_params.index_of_damping_layer,
+        #     interior_idx=int32(
+        #         cell_start_interior
+        #     ),  # h end index for stencil_09 and stencil_10
+        #     halo_idx=int32(
+        #         cell_end_local
+        #     ),  # h end index for stencil_09 and stencil_10,
+        #     horizontal_start=cell_start_nudging,  # h start index for stencil_07 and stencil_08
+        #     horizontal_end=cell_end_local_minus1,  # h end index for stencil_07 and stencil_08
+        #     vertical_start=0,
+        #     vertical_end=klevels,
+        #     offset_provider={
+        #         "C2E2CO": self.grid.get_c2e2co_connectivity(),
+        #     },
+        # )
+        log.debug("running fused stencil 07_08_09_10: end")
+        # # # 8.  HALO EXCHANGE: CALL sync_patch_array
+        # # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
+        # # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
+        # #
+        # # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
+        # #
+        # log.debug("running fused stencil 11_12: start")
+        # fused_mo_nh_diffusion_stencil_11_12.with_backend(backend)(
+        #     theta_v=prognostic_state.theta_v,
+        #     theta_ref_mc=self.metric_state.theta_ref_mc,
+        #     thresh_tdiff=self.thresh_tdiff,
+        #     kh_smag_e=self.kh_smag_e,
+        #     horizontal_start=edge_start_nudging_plus_one,
+        #     horizontal_end=edge_end_local,
+        #     vertical_start=k_start_end_minus2,
+        #     vertical_end=klevels,
+        #     offset_provider={
+        #         "E2C": self.grid.get_e2c_connectivity(),
+        #         "C2E2C": self.grid.get_c2e2c_connectivity(),
+        #     },
+        # )
+        # log.debug("running fused stencil 11_12: end")
+        # log.debug("running fused stencil 13_14: start")
+        # fused_mo_nh_diffusion_stencil_13_14.with_backend(backend)(
+        #     kh_smag_e=self.kh_smag_e,
+        #     inv_dual_edge_length=inverse_dual_edge_length,
+        #     theta_v=prognostic_state.theta_v,
+        #     geofac_div=self.interpolation_state.geofac_div,
+        #     z_temp=self.z_temp,
+        #     horizontal_start=cell_start_nudging,
+        #     horizontal_end=cell_end_local,
+        #     vertical_start=0,
+        #     vertical_end=klevels,
+        #     offset_provider={
+        #         "C2E": self.grid.get_c2e_connectivity(),
+        #         "E2C": self.grid.get_e2c_connectivity(),
+        #     },
+        # )
+        # log.debug("running fused stencil 13_14: end")
+        # log.debug("running fused stencil 15: start")
+        # mo_nh_diffusion_stencil_15.with_backend(backend)(
+        #     mask=self.metric_state.mask_hdiff,
+        #     zd_vertoffset=self.metric_state.zd_vertidx,
+        #     zd_diffcoef=self.metric_state.zd_diffcoef,
+        #     geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
+        #     geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
+        #     vcoef=self.metric_state.zd_intcoef,
+        #     theta_v=prognostic_state.theta_v,
+        #     z_temp=self.z_temp,
+        #     horizontal_start=cell_start_nudging,
+        #     horizontal_end=cell_end_local,
+        #     vertical_start=0,
+        #     vertical_end=klevels,
+        #     offset_provider={
+        #         "C2CEC": self.grid.get_c2cec_connectivity(),
+        #         "C2E2C": self.grid.get_c2e2c_connectivity(),
+        #         "Koff": KDim,
+        #     },
+        # )
+        #
+        # log.debug("running fused stencil 15: end")
+        # log.debug("running fused stencil update_theta_and_exner: start")
+        # update_theta_and_exner.with_backend(backend)(
+        #     z_temp=self.z_temp,
+        #     area=cell_areas,
+        #     theta_v=prognostic_state.theta_v,
+        #     exner=prognostic_state.exner_pressure,
+        #     rd_o_cvd=self.rd_o_cvd,
+        #     horizontal_start=cell_start_nudging,
+        #     horizontal_end=cell_end_local,
+        #     vertical_start=0,
+        #     vertical_end=klevels,
+        #     offset_provider={},
+        # )
+
         log.debug("running fused stencil update_theta_and_exner: end")
         # 10. HALO EXCHANGE sync_patch_array

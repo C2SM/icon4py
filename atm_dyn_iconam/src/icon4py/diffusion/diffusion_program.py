@@ -188,7 +188,7 @@ def diffusion_run(
         ),
         domain={
             CellDim: (cell_startindex_nudging, cell_endindex_local),
-            KDim: (0, nlev),
+            KDim: (1, nlev),
         },
     )
     #
