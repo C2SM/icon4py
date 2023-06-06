@@ -77,12 +77,17 @@ def _apply_diffusion_to_vn(
             ),
         )
         if limited_area
-        else _apply_nabla2_and_nabla4_global_to_vn(
-            area_edge,
-            kh_smag_e,
-            z_nabla2_e,
-            z_nabla4_e2,
-            diff_multfac_vn,
+        else
+        where(
+            start_2nd_nudge_line_idx_e <= horz_idx,
+            _apply_nabla2_and_nabla4_global_to_vn(
+                area_edge,
+                kh_smag_e,
+                z_nabla2_e,
+                z_nabla4_e2,
+                diff_multfac_vn,
+                vn,
+            ),
             vn,
         )
     )
