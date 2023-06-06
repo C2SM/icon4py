@@ -77,8 +77,7 @@ def _apply_diffusion_to_vn(
             ),
         )
         if limited_area
-        else
-        where(
+        else where(
             start_2nd_nudge_line_idx_e <= horz_idx,
             _apply_nabla2_and_nabla4_global_to_vn(
                 area_edge,
