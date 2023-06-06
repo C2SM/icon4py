@@ -12,11 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from icon4py.model.common.dimension import CellDim, KDim
 
 from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
 )
+from icon4py.model.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field
 from .test_utils.simple_mesh import SimpleMesh

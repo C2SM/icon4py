@@ -12,11 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
 
 from icon4py.model.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
     mo_velocity_advection_stencil_01,
 )
+from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh

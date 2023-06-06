@@ -12,6 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+
+from icon4py.model.atm_dyn_iconam.mo_velocity_advection_stencil_20 import (
+    mo_velocity_advection_stencil_20,
+)
 from icon4py.model.common.dimension import (
     CellDim,
     E2C2EODim,
@@ -19,10 +23,6 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
     VertexDim,
-)
-
-from icon4py.model.atm_dyn_iconam.mo_velocity_advection_stencil_20 import (
-    mo_velocity_advection_stencil_20,
 )
 
 from .test_utils.helpers import random_field, random_mask

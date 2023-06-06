@@ -14,6 +14,7 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, int32, where
+
 from icon4py.model.common.dimension import (
     C2CEC,
     C2E2C,

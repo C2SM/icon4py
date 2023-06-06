@@ -13,16 +13,16 @@
 
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+
+from icon4py.model.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
+    calculate_nabla2_and_smag_coefficients_for_vn,
+)
 from icon4py.model.common.dimension import (
     E2C2VDim,
     ECVDim,
     EdgeDim,
     KDim,
     VertexDim,
-)
-
-from icon4py.model.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
-    calculate_nabla2_and_smag_coefficients_for_vn,
 )
 
 from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field

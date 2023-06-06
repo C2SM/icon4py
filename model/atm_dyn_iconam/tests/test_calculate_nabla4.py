@@ -13,6 +13,8 @@
 
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+
+from icon4py.model.atm_dyn_iconam.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common.dimension import (
     E2C2VDim,
     ECVDim,
@@ -20,8 +22,6 @@ from icon4py.model.common.dimension import (
     KDim,
     VertexDim,
 )
-
-from icon4py.model.atm_dyn_iconam.calculate_nabla4 import calculate_nabla4
 
 from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh

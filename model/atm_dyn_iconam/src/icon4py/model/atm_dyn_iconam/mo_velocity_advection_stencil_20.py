@@ -21,6 +21,7 @@ from gt4py.next.ffront.fbuiltins import (
     neighbor_sum,
     where,
 )
+
 from icon4py.model.common.dimension import (
     E2C,
     E2C2EO,

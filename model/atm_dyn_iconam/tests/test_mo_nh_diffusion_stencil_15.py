@@ -14,11 +14,11 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 
 from icon4py.model.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
     mo_nh_diffusion_stencil_15,
 )
+from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 
 from .test_utils.helpers import (
     flatten_first_two_dims,

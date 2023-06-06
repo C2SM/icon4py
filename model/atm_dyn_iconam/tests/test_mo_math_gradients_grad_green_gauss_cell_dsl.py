@@ -12,11 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 
 from icon4py.model.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
+from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh

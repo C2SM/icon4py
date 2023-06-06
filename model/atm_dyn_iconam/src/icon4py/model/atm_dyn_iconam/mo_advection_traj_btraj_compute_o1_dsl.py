@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
+
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
 

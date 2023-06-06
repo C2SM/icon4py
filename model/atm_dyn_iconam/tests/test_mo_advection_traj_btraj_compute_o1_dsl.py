@@ -14,11 +14,11 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
 
 from icon4py.model.atm_dyn_iconam.mo_advection_traj_btraj_compute_o1_dsl import (
     mo_advection_traj_btraj_compute_o1_dsl,
 )
+from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
 
 from .test_utils.helpers import as_1D_sparse_field, constant_field, random_field
 from .test_utils.simple_mesh import SimpleMesh

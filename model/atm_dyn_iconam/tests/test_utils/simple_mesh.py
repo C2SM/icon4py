@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
+
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,

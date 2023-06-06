@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+
 from icon4py.model.common.dimension import V2C, CellDim, KDim, V2CDim, VertexDim
 
 
