@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "gt4py>=1.0.1",
-    "icon4py_common",
+    "icon4py_common>=0.0.5",
 ]
 dynamic = ['version']
 
@@ -110,6 +110,9 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 testpaths = 'tests'
+
+[tool.setuptools.dynamic]
+version = {attr = 'icon4py.model.atm_dyn_iconam.__init__.__version__'}
 
 [tool.setuptools.package-data]
 'icon4py.model.atm_dyn_iconam' = ['py.typed']

@@ -110,5 +110,8 @@ show_error_codes = true
 [tool.pytest.ini_options]
 testpaths = 'tests'
 
+[tool.setuptools.dynamic]
+version = {attr = 'icon4py.model.common.__init__.__version__'}
+
 [tool.setuptools.package-data]
 'icon4py.model.common' = ['py.typed']
