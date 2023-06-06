@@ -26,7 +26,6 @@ from .test_utils.helpers import random_field
 class TestApplyNabla2AndNabla4ToVn:
     PROGRAM = apply_nabla2_and_nabla4_to_vn
     OUTPUTS = ("vn",)
-    OFFSET_PROVIDER = {}
     test_apply_nabla2_and_nabla4_to_vn = _test_validation
     bench_apply_nabla2_and_nabla4_to_vn = _bench_execution
 

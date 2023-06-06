@@ -19,7 +19,7 @@ from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
 
 
 BACKENDS = [executor, run_gtfn]
-BACKEND_NAMES = ["embedded", "gtfn_cpu"]
+BACKEND_NAMES = ["embedded", run_gtfn.name]
 
 MESHES = [SimpleMesh()]
 MESH_NAMES = ["simple_mesh"]
@@ -35,13 +35,13 @@ def backend(request):
     return request.param
 
 
-def _test_validation(self, backend, input_data):
+def _test_validation(self, mesh, backend, input_data):
     reference_outputs = self.reference(
         **{k: np.array(v) for k, v in input_data.items()}
     )
     self.PROGRAM.with_backend(backend)(
         **input_data,
-        offset_provider=self.OFFSET_PROVIDER,
+        offset_provider=mesh.get_offset_provider(),
     )
     for name in self.OUTPUTS:
         assert np.allclose(
@@ -49,12 +49,14 @@ def _test_validation(self, backend, input_data):
         ), f"Validation failed for '{name}'"
 
 
-def _bench_execution(self, pytestconfig, backend, input_data, benchmark):
-    if pytestconfig.getoption("--benchmark-disable"):
+def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
+    if pytestconfig.getoption(
+        "--benchmark-disable"
+    ):  # skipping as otherwise program calls are duplicated in tests.
         pytest.skip("Test skipped due to 'benchmark-disable' option.")
     else:
         benchmark(
             self.PROGRAM.with_backend(backend),
             **input_data,
-            offset_provider=self.OFFSET_PROVIDER,
+            offset_provider=mesh.get_offset_provider(),
         )

@@ -425,3 +425,17 @@ class SimpleMesh:
 
     def get_e2c2v_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.e2c2v, EdgeDim, VertexDim, self.n_e2c2v)
+
+    def get_offset_provider(self):
+        return {
+            "C2E": self.get_c2e_offset_provider(),
+            "C2E2CO": self.get_c2e2cO_offset_provider(),
+            "C2E2C": self.get_c2e2c_offset_provider(),
+            "E2C2EO": self.get_e2c2eO_offset_provider(),
+            "E2C2E": self.get_e2c2e_offset_provider(),
+            "V2C": self.get_v2c_offset_provider(),
+            "V2E": self.get_v2e_offset_provider(),
+            "E2C": self.get_e2c_offset_provider(),
+            "E2V": self.get_e2v_offset_provider(),
+            "E2C2V": self.get_e2c2v_offset_provider(),
+        }
