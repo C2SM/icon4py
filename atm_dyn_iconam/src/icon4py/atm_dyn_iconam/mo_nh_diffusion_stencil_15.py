@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, int32, where
@@ -64,7 +65,7 @@ def _mo_nh_diffusion_stencil_15(
     return z_temp
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_nh_diffusion_stencil_15(
     mask: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],

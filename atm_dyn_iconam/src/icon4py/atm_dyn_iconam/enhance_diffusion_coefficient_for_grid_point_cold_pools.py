@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, max_over, maximum
 
@@ -26,7 +27,7 @@ def _enhance_diffusion_coefficient_for_grid_point_cold_pools(
     return kh_smag_e
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def enhance_diffusion_coefficient_for_grid_point_cold_pools(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     enh_diffu_3d: Field[[CellDim, KDim], float],
