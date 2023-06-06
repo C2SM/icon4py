@@ -35,12 +35,12 @@ pipeline {
                             """
                         }
                     }
-                    stage('Install with gt4py@1.1.1') {
+                    stage('Install with gt4py@stable') {
                         steps {
                             sh """
                             . ./spack-c2sm/setup-env.sh
                             cd local_copy
-                            spack env activate spack/gt4py-1.1.1
+                            spack env activate spack/gt4py-stable
                             spack install -v --test=root
                             """
                         }
