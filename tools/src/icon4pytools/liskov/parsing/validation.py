@@ -109,6 +109,8 @@ class DirectiveSemanticsValidator:
         repeated = remove_directive_types(
             [d for d in directives if directives.count(d) > 1],
             [
+                icon4pytools.liskov.parsing.parse.StartCreate,
+                icon4pytools.liskov.parsing.parse.EndCreate,
                 icon4pytools.liskov.parsing.parse.StartStencil,
                 icon4pytools.liskov.parsing.parse.EndStencil,
                 icon4pytools.liskov.parsing.parse.EndIf,
@@ -128,8 +130,6 @@ class DirectiveSemanticsValidator:
         expected = [
             icon4pytools.liskov.parsing.parse.Declare,
             icon4pytools.liskov.parsing.parse.Imports,
-            icon4pytools.liskov.parsing.parse.StartCreate,
-            icon4pytools.liskov.parsing.parse.EndCreate,
             icon4pytools.liskov.parsing.parse.StartStencil,
             icon4pytools.liskov.parsing.parse.EndStencil,
         ]
