@@ -648,7 +648,7 @@ class Diffusion:
                 metric_theta_ref_mc=self.metric_state.theta_ref_mc,
                 metric_wgtfac_c=self.metric_state.wgtfac_c,
                 metric_mask_hdiff=self.metric_state.mask_hdiff,  #
-                metric_zd_vertidx=self.metric_state.zd_vertidx,  #
+                metric_zd_vertoffset=self.metric_state.zd_vertoffset,  #
                 metric_zd_diffcoef=self.metric_state.zd_diffcoef,  #
                 metric_zd_intcoef=self.metric_state.zd_intcoef,  #
                 interpolation_e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -789,6 +789,12 @@ class Diffusion:
             EdgeDim,
             HorizontalMarkerIndex.interior(EdgeDim),
             HorizontalMarkerIndex.nudging(EdgeDim),
+        )
+
+        edge_start_nudging, edge_end_halo = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.nudging(EdgeDim),
+            HorizontalMarkerIndex.halo(EdgeDim),
         )
 
         edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
@@ -1047,8 +1053,8 @@ class Diffusion:
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
             kh_smag_e=self.kh_smag_e,
-            horizontal_start=edge_start_nudging_plus_one,
-            horizontal_end=edge_end_local,
+            horizontal_start=edge_start_nudging,
+            horizontal_end=edge_end_halo,
             vertical_start=k_start_end_minus2,
             vertical_end=klevels,
             offset_provider={
@@ -1077,7 +1083,7 @@ class Diffusion:
         log.debug("running fused stencil 15: start")
         mo_nh_diffusion_stencil_15.with_backend(backend)(
             mask=self.metric_state.mask_hdiff,
-            zd_vertoffset=self.metric_state.zd_vertidx,
+            zd_vertoffset=self.metric_state.zd_vertoffset,
             zd_diffcoef=self.metric_state.zd_diffcoef,
             geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
             geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,

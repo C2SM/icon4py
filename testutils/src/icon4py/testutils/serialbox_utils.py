@@ -298,7 +298,7 @@ class MetricSavepoint(IconSavepoint):
             theta_ref_mc=self.theta_ref_mc(),
             wgtfac_c=self.wgtfac_c(),
             zd_intcoef=self.zd_intcoef(),
-            zd_vertidx=self.zd_vertoffset(),
+            zd_vertoffset=self.zd_vertoffset(),
             zd_diffcoef=self.zd_diffcoef(),
         )
 
@@ -420,8 +420,12 @@ class IconDiffusionExitSavepoint(IconSavepoint):
     def exner(self):
         return self._get_field("x_exner", CellDim, KDim)
 
+    def z_temp(self):
+        return self._get_field("x_z_temp", CellDim, KDim)
+
     def div_ic(self):
         return self._get_field("x_div_ic",CellDim, KDim )
+
     def hdef_ic(self):
         return self._get_field("x_hdef_ic", CellDim, KDim)
 

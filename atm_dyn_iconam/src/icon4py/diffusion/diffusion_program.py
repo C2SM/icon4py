@@ -16,7 +16,7 @@
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners import gtfn_cpu
+
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     _calculate_nabla2_and_smag_coefficients_for_vn,
@@ -71,7 +71,7 @@ def diffusion_run(
     metric_theta_ref_mc: Field[[CellDim, KDim], float],
     metric_wgtfac_c: Field[[CellDim, KDim], float],
     metric_mask_hdiff: Field[[CellDim, KDim], bool],
-    metric_zd_vertidx: Field[[CECDim, KDim], int32],
+    metric_zd_vertoffset: Field[[CECDim, KDim], int32],
     metric_zd_diffcoef: Field[[CellDim, KDim], float],
     metric_zd_intcoef: Field[[CECDim, KDim], float],
     interpolation_e_bln_c_s: Field[[CellDim, C2EDim], float],
@@ -295,7 +295,7 @@ def diffusion_run(
     # MO_NH_DIFFUSION_STENCIL_15: as_offset index fields!
     _mo_nh_diffusion_stencil_15(
         metric_mask_hdiff,
-        metric_zd_vertidx,
+        metric_zd_vertoffset,
         metric_zd_diffcoef,
         interpolation_geofac_n2s_c,
         interpolation_geofac_n2s_nbh,
