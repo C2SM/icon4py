@@ -18,19 +18,19 @@ from gt4py.next.program_processors.runners.roundtrip import executor
 from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
 
 
-BACKENDS = [executor, run_gtfn]
-BACKEND_NAMES = ["embedded", run_gtfn.name]
-
-MESHES = [SimpleMesh()]
-MESH_NAMES = ["simple_mesh"]
+BACKENDS = {"embedded": executor, run_gtfn.name: run_gtfn}
+MESHES = {"simple_mesh": SimpleMesh()}
 
 
-@pytest.fixture(params=MESHES, ids=MESH_NAMES)
+@pytest.fixture(
+    ids=MESHES.keys(),
+    params=MESHES.values(),
+)
 def mesh(request):
     return request.param
 
 
-@pytest.fixture(params=BACKENDS, ids=BACKEND_NAMES)
+@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
 def backend(request):
     return request.param
 
