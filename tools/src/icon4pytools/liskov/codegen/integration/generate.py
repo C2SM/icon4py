@@ -164,6 +164,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                 profile=self.profile,
                 noendif=self.interface.EndStencil[i].noendif,
                 noprofile=self.interface.EndStencil[i].noprofile,
+                noaccenddata=self.interface.EndStencil[i].noaccenddata,
             )
 
     def _generate_imports(self) -> None:
@@ -178,20 +179,23 @@ class IntegrationCodeGenerator(CodeGenerator):
 
     def _generate_create(self) -> None:
         """Generate f90 code for OpenACC DATA CREATE statements."""
-        logger.info("Generating DATA CREATE statement.")
-        self._generate(
-            StartCreateStatement,
-            StartCreateStatementGenerator,
-            self.interface.StartCreate.startln,
-            stencils=self.interface.StartStencil,
-            extra_fields=self.interface.StartCreate.extra_fields,
-        )
+        if self.interface.StartCreate != UnusedDirective:
+            for startcreate in self.interface.StartCreate:  # type: ignore
+                logger.info("Generating DATA CREATE statement.")
+                self._generate(
+                    StartCreateStatement,
+                    StartCreateStatementGenerator,
+                    startcreate.startln,
+                    extra_fields=startcreate.extra_fields,
+                )
 
-        self._generate(
-            EndCreateStatement,
-            EndCreateStatementGenerator,
-            self.interface.EndCreate.startln,
-        )
+        if self.interface.EndCreate != UnusedDirective:
+            for endcreate in self.interface.EndCreate:  # type: ignore
+                self._generate(
+                    EndCreateStatement,
+                    EndCreateStatementGenerator,
+                    endcreate.startln,
+                )
 
     def _generate_endif(self) -> None:
         """Generate f90 code for endif statements."""

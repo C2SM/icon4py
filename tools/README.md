@@ -105,7 +105,7 @@ This directive generates the necessary `USE` statements to import the Fortran to
 
 #### `!$DSL START CREATE()`
 
-This directive generates an OpenACC `DATA CREATE` statement for all output fields used in each DSL (icon4py) stencil. The directive also takes an **optional** keyword argument to specify extra fields to include in the `DATA CREATE` statement called `extra_fields`. Here you can specify a comma-separated list of strings which should be added to the `DATA CREATE` statement as follows `extra_fields=foo,bar`.
+This directive generates an OpenACC `DATA CREATE` statement. The directive requires an **optional** keyword argument to specify extra fields to include in the `DATA CREATE` statement called `extra_fields`. Here you can specify a comma-separated list of strings which should be added to the `DATA CREATE` statement as follows `extra_fields=foo,bar`.
 
 #### `!$DSL END CREATE()`
 
@@ -130,7 +130,7 @@ Furthermore, this directive also takes two optional keyword arguments. `type` ta
 
 #### `!$DSL START STENCIL()`
 
-This directive denotes the start of a stencil. Required arguments are `name`, `vertical_lower`, `vertical_upper`, `horizontal_lower`, `horizontal_upper`. The value for `name` must correspond to a stencil found in one of the stencil modules inside `icon4py`, and all fields defined in the directive must correspond to the fields defined in the respective icon4py stencil. Optionally, absolute and relative tolerances for the output fields can also be set using the `_tol` or `_abs` suffixes respectively. An example call looks like this:
+This directive denotes the start of a stencil. Required arguments are `name`, `vertical_lower`, `vertical_upper`, `horizontal_lower`, `horizontal_upper`. The value for `name` must correspond to a stencil found in one of the stencil modules inside `icon4py`, and all fields defined in the directive must correspond to the fields defined in the respective icon4py stencil. Optionally, absolute and relative tolerances for the output fields can also be set using the `_tol` or `_abs` suffixes respectively. For each stencil, an ACC DATA region will be created. This ACC DATA region contains the before fileds of the according stencil. An example call looks like this:
 
 ```fortran
 !$DSL START STENCIL(name=mo_nh_diffusion_stencil_06; &
@@ -155,10 +155,14 @@ This directive denotes the end of a stencil. The required argument is `name`, wh
 Together, the `START STENCIL` and `END STENCIL` directives result in the following generated code at the start and end of a stencil respectively.
 
 ```fortran
+!$ACC DATA CREATE( &
+!$ACC   vn_before, &
+!$ACC      IF ( i_am_accel_node )
+
 #ifdef __DSL_VERIFY
-!$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+!$ACC KERNELS IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
 vn_before(:, :, :) = vn(:, :, :)
-!$ACC END PARALLEL
+!$ACC END KERNELS
 ```
 
 ```fortran
@@ -176,6 +180,8 @@ vertical_upper=nlev, &
 horizontal_lower=i_startidx, &
 horizontal_upper=i_endidx
 )
+
+!$ACC END DATA
 ```
 
 Additionally, there are the following keyword arguments:
@@ -183,6 +189,8 @@ Additionally, there are the following keyword arguments:
 - `noendif`: Takes a boolean string input and controls whether an `#endif` is generated or not. Defaults to false.<br><br>
 
 - `noprofile`: Takes a boolean string input and controls whether a nvtx end profile directive is generated or not. Defaults to false.<br><br>
+
+- `noaccenddata`: Takes a boolean string input and controls whether a `!$ACC END DATA` directive is generated or not. Defaults to false.<br><br>
 
 #### `!$DSL INSERT()`
 
