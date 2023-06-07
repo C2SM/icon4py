@@ -472,12 +472,13 @@ def test_run_diffusion_single_step(
     assert np.allclose(ref_vn, val_vn)
     assert np.allclose(ref_dwdx, val_dwdx)
     assert np.allclose(ref_dwdy, val_dwdy)
-    assert np.allclose(ref_w, np.asarray(val_w))
+    assert np.allclose(ref_w, val_w)
     ref_exner = np.asarray(diffusion_savepoint_exit.exner())
     ref_theta_v = np.asarray(diffusion_savepoint_exit.theta_v())
     val_theta_v = np.asarray(prognostic_state.theta_v)
     val_exner = np.asarray(prognostic_state.exner_pressure)
-    #
+    assert np.allclose(ref_theta_v, val_theta_v)
+    assert np.allclose(ref_exner, val_exner)
 
 
 @pytest.mark.skip("fix: diffusion_stencil_15")

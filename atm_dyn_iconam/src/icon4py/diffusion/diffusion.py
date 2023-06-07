@@ -1035,80 +1035,80 @@ class Diffusion:
         #     },
         # )
         log.debug("running fused stencil 07_08_09_10: end")
-        # # # 8.  HALO EXCHANGE: CALL sync_patch_array
-        # # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
-        # # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
-        # #
-        # # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
-        # #
-        # log.debug("running fused stencil 11_12: start")
-        # fused_mo_nh_diffusion_stencil_11_12.with_backend(backend)(
-        #     theta_v=prognostic_state.theta_v,
-        #     theta_ref_mc=self.metric_state.theta_ref_mc,
-        #     thresh_tdiff=self.thresh_tdiff,
-        #     kh_smag_e=self.kh_smag_e,
-        #     horizontal_start=edge_start_nudging_plus_one,
-        #     horizontal_end=edge_end_local,
-        #     vertical_start=k_start_end_minus2,
-        #     vertical_end=klevels,
-        #     offset_provider={
-        #         "E2C": self.grid.get_e2c_connectivity(),
-        #         "C2E2C": self.grid.get_c2e2c_connectivity(),
-        #     },
-        # )
-        # log.debug("running fused stencil 11_12: end")
-        # log.debug("running fused stencil 13_14: start")
-        # fused_mo_nh_diffusion_stencil_13_14.with_backend(backend)(
-        #     kh_smag_e=self.kh_smag_e,
-        #     inv_dual_edge_length=inverse_dual_edge_length,
-        #     theta_v=prognostic_state.theta_v,
-        #     geofac_div=self.interpolation_state.geofac_div,
-        #     z_temp=self.z_temp,
-        #     horizontal_start=cell_start_nudging,
-        #     horizontal_end=cell_end_local,
-        #     vertical_start=0,
-        #     vertical_end=klevels,
-        #     offset_provider={
-        #         "C2E": self.grid.get_c2e_connectivity(),
-        #         "E2C": self.grid.get_e2c_connectivity(),
-        #     },
-        # )
-        # log.debug("running fused stencil 13_14: end")
-        # log.debug("running fused stencil 15: start")
-        # mo_nh_diffusion_stencil_15.with_backend(backend)(
-        #     mask=self.metric_state.mask_hdiff,
-        #     zd_vertoffset=self.metric_state.zd_vertidx,
-        #     zd_diffcoef=self.metric_state.zd_diffcoef,
-        #     geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
-        #     geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
-        #     vcoef=self.metric_state.zd_intcoef,
-        #     theta_v=prognostic_state.theta_v,
-        #     z_temp=self.z_temp,
-        #     horizontal_start=cell_start_nudging,
-        #     horizontal_end=cell_end_local,
-        #     vertical_start=0,
-        #     vertical_end=klevels,
-        #     offset_provider={
-        #         "C2CEC": self.grid.get_c2cec_connectivity(),
-        #         "C2E2C": self.grid.get_c2e2c_connectivity(),
-        #         "Koff": KDim,
-        #     },
-        # )
+        # # 8.  HALO EXCHANGE: CALL sync_patch_array
+        # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
+        # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
         #
-        # log.debug("running fused stencil 15: end")
-        # log.debug("running fused stencil update_theta_and_exner: start")
-        # update_theta_and_exner.with_backend(backend)(
-        #     z_temp=self.z_temp,
-        #     area=cell_areas,
-        #     theta_v=prognostic_state.theta_v,
-        #     exner=prognostic_state.exner_pressure,
-        #     rd_o_cvd=self.rd_o_cvd,
-        #     horizontal_start=cell_start_nudging,
-        #     horizontal_end=cell_end_local,
-        #     vertical_start=0,
-        #     vertical_end=klevels,
-        #     offset_provider={},
-        # )
+        # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
+        #
+        log.debug("running fused stencil 11_12: start")
+        fused_mo_nh_diffusion_stencil_11_12.with_backend(backend)(
+            theta_v=prognostic_state.theta_v,
+            theta_ref_mc=self.metric_state.theta_ref_mc,
+            thresh_tdiff=self.thresh_tdiff,
+            kh_smag_e=self.kh_smag_e,
+            horizontal_start=edge_start_nudging_plus_one,
+            horizontal_end=edge_end_local,
+            vertical_start=k_start_end_minus2,
+            vertical_end=klevels,
+            offset_provider={
+                "E2C": self.grid.get_e2c_connectivity(),
+                "C2E2C": self.grid.get_c2e2c_connectivity(),
+            },
+        )
+        log.debug("running fused stencil 11_12: end")
+        log.debug("running fused stencil 13_14: start")
+        fused_mo_nh_diffusion_stencil_13_14.with_backend(backend)(
+            kh_smag_e=self.kh_smag_e,
+            inv_dual_edge_length=inverse_dual_edge_length,
+            theta_v=prognostic_state.theta_v,
+            geofac_div=self.interpolation_state.geofac_div,
+            z_temp=self.z_temp,
+            horizontal_start=cell_start_nudging,
+            horizontal_end=cell_end_local,
+            vertical_start=0,
+            vertical_end=klevels,
+            offset_provider={
+                "C2E": self.grid.get_c2e_connectivity(),
+                "E2C": self.grid.get_e2c_connectivity(),
+            },
+        )
+        log.debug("running fused stencil 13_14: end")
+        log.debug("running fused stencil 15: start")
+        mo_nh_diffusion_stencil_15.with_backend(backend)(
+            mask=self.metric_state.mask_hdiff,
+            zd_vertoffset=self.metric_state.zd_vertidx,
+            zd_diffcoef=self.metric_state.zd_diffcoef,
+            geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
+            geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
+            vcoef=self.metric_state.zd_intcoef,
+            theta_v=prognostic_state.theta_v,
+            z_temp=self.z_temp,
+            horizontal_start=cell_start_nudging,
+            horizontal_end=cell_end_local,
+            vertical_start=0,
+            vertical_end=klevels,
+            offset_provider={
+                "C2CEC": self.grid.get_c2cec_connectivity(),
+                "C2E2C": self.grid.get_c2e2c_connectivity(),
+                "Koff": KDim,
+            },
+        )
+
+        log.debug("running fused stencil 15: end")
+        log.debug("running fused stencil update_theta_and_exner: start")
+        update_theta_and_exner.with_backend(backend)(
+            z_temp=self.z_temp,
+            area=cell_areas,
+            theta_v=prognostic_state.theta_v,
+            exner=prognostic_state.exner_pressure,
+            rd_o_cvd=self.rd_o_cvd,
+            horizontal_start=cell_start_nudging,
+            horizontal_end=cell_end_local,
+            vertical_start=0,
+            vertical_end=klevels,
+            offset_provider={},
+        )
 
         log.debug("running fused stencil update_theta_and_exner: end")
         # 10. HALO EXCHANGE sync_patch_array
