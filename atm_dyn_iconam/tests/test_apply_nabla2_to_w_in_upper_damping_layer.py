@@ -51,6 +51,7 @@ def test_apply_nabla2_to_w_in_upper_damping_layer():
         diff_multfac_n2w,
         cell_area,
         z_nabla2_c,
+        0, mesh.n_cells, 0, mesh.k_level,
         offset_provider={},
     )
     assert np.allclose(w, ref)

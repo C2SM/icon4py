@@ -41,6 +41,7 @@ def test_calculate_nabla2_for_w():
         w,
         geofac_n2s,
         z_nabla2_c,
+        0, mesh.n_cells, 0, mesh.k_level,
         offset_provider={
             "C2E2CO": mesh.get_c2e2cO_offset_provider(),
             "C2E2CODim": C2E2CODim,
