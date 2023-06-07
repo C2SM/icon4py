@@ -26,7 +26,6 @@ from .test_utils.helpers import random_field, zero_field
 class TestMoSolveNonhydroStencil04(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_04
     OUTPUTS = ("z_exner_ic",)
-    OUT_INDEX = ":, 3:"
 
     @staticmethod
     def reference(
@@ -35,14 +34,14 @@ class TestMoSolveNonhydroStencil04(StencilTest):
         wgtfacq_c: np.array,
         z_exner_ic: np.array,
     ) -> np.array:
-        z_exner_ic = (
+        z_exner_ic[:, 3:] = (
             np.roll(wgtfacq_c, shift=1, axis=1)
             * np.roll(z_exner_ex_pr, shift=1, axis=1)
             + np.roll(wgtfacq_c, shift=2, axis=1)
             * np.roll(z_exner_ex_pr, shift=2, axis=1)
             + np.roll(wgtfacq_c, shift=3, axis=1)
             * np.roll(z_exner_ex_pr, shift=3, axis=1)
-        )
+        )[:, 3:]
         return {"z_exner_ic": z_exner_ic}
 
     @pytest.fixture

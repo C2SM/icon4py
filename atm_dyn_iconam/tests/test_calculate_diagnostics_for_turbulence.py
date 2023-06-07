@@ -26,7 +26,6 @@ from .test_utils.helpers import random_field, zero_field
 class TestCalculateDiagnosticsForTurbulence(StencilTest):
     PROGRAM = calculate_diagnostics_for_turbulence
     OUTPUTS = ("div_ic", "hdef_ic")
-    OUT_INDEX = ":, 1:"
 
     @staticmethod
     def reference(
@@ -34,8 +33,10 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
     ) -> tuple[np.array, np.array]:
         kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
         div_offset_1 = np.roll(div, shift=1, axis=1)
-        div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1
-        hdef_ic = (wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2
+        div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
+        hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[
+            :, 1:
+        ]
         return {"div_ic": div_ic, "hdef_ic": hdef_ic}
 
     @pytest.fixture

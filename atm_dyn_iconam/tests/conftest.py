@@ -36,7 +36,7 @@ def backend(request):
 
 
 def _test_validation(self, mesh, backend, input_data):
-    reference_outputs = self.reference(  # noqa: F841
+    reference_outputs = self.reference(
         mesh, **{k: np.array(v) for k, v in input_data.items()}
     )
     self.PROGRAM.with_backend(backend)(
@@ -44,9 +44,9 @@ def _test_validation(self, mesh, backend, input_data):
         offset_provider=mesh.get_offset_provider(),
     )
     for name in self.OUTPUTS:
-        exec(
-            f"assert np.allclose(input_data['{name}'][{self.OUT_INDEX}], reference_outputs['{name}'][{self.OUT_INDEX}])"
-        )
+        assert np.allclose(
+            input_data[name], reference_outputs[name]
+        ), f"Validation failed for '{name}'"
 
 
 def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
