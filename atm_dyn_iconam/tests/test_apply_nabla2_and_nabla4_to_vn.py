@@ -19,15 +19,13 @@ from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_to_vn import (
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
-from .conftest import _bench_execution, _test_validation
+from .conftest import StencilTestMeta
 from .test_utils.helpers import random_field
 
 
-class TestApplyNabla2AndNabla4ToVn:
+class TestApplyNabla2AndNabla4ToVn(metaclass=StencilTestMeta):
     PROGRAM = apply_nabla2_and_nabla4_to_vn
     OUTPUTS = ("vn",)
-    test_apply_nabla2_and_nabla4_to_vn = _test_validation
-    bench_apply_nabla2_and_nabla4_to_vn = _bench_execution
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -53,6 +51,7 @@ class TestApplyNabla2AndNabla4ToVn:
 
     @staticmethod
     def reference(
+        mesh,
         area_edge,
         kh_smag_e,
         z_nabla2_e,

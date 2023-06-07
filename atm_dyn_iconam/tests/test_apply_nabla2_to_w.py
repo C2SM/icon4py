@@ -12,55 +12,47 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
+from .conftest import StencilTestMeta
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
-def mo_apply_nabla2_to_w(
-    c2e2c0: np.array,
-    area: np.array,
-    z_nabla2_c: np.array,
-    geofac_n2s: np.array,
-    w: np.array,
-    diff_multfac_w,
-) -> np.array:
-    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
-    area = np.expand_dims(area, axis=-1)
-    w = w - diff_multfac_w * area * area * np.sum(
-        z_nabla2_c[c2e2c0] * geofac_n2s, axis=1
-    )
-    return w
+class TestMoApplyNabla2ToW(metaclass=StencilTestMeta):
+    PROGRAM = apply_nabla2_to_w
+    OUTPUTS = ("w",)
 
-
-def test_apply_nabla2_to_w():
-    mesh = SimpleMesh()
-
-    area = random_field(mesh, CellDim)
-    z_nabla2_c = random_field(mesh, CellDim, KDim)
-    geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
-    w = random_field(mesh, CellDim, KDim)
-    diff_multfac_w = 5.0
-
-    ref = mo_apply_nabla2_to_w(
-        mesh.c2e2cO,
-        np.asarray(area),
-        np.asarray(z_nabla2_c),
-        np.asarray(geofac_n2s),
-        np.asarray(w),
+    @staticmethod
+    def reference(
+        mesh,
+        area: np.array,
+        z_nabla2_c: np.array,
+        geofac_n2s: np.array,
+        w: np.array,
         diff_multfac_w,
-    )
+    ) -> np.array:
+        geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+        area = np.expand_dims(area, axis=-1)
+        w = w - diff_multfac_w * area * area * np.sum(
+            z_nabla2_c[mesh.c2e2cO] * geofac_n2s, axis=1
+        )
+        return {"w": w}
 
-    apply_nabla2_to_w(
-        area,
-        z_nabla2_c,
-        geofac_n2s,
-        w,
-        diff_multfac_w,
-        offset_provider={"C2E2CO": mesh.get_c2e2cO_offset_provider()},
-    )
+    @pytest.fixture
+    def input_data(self, mesh):
+        area = random_field(mesh, CellDim)
+        z_nabla2_c = random_field(mesh, CellDim, KDim)
+        geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
+        w = random_field(mesh, CellDim, KDim)
+        diff_multfac_w = 5.0
 
-    assert np.allclose(w, ref)
+        return dict(
+            area=area,
+            z_nabla2_c=z_nabla2_c,
+            geofac_n2s=geofac_n2s,
+            w=w,
+            diff_multfac_w=diff_multfac_w,
+        )

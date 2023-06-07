@@ -37,7 +37,7 @@ def backend(request):
 
 def _test_validation(self, mesh, backend, input_data):
     reference_outputs = self.reference(
-        **{k: np.array(v) for k, v in input_data.items()}
+        mesh, **{k: np.array(v) for k, v in input_data.items()}
     )
     self.PROGRAM.with_backend(backend)(
         **input_data,
@@ -60,3 +60,13 @@ def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
             **input_data,
             offset_provider=mesh.get_offset_provider(),
         )
+
+
+class StencilTestMeta(type):
+    def __init__(cls, name, bases, attrs):
+        super().__init__(name, bases, attrs)
+        if name != "StencilTestMeta":
+            # Only apply the logic to subclasses of StencilTestMeta
+            name = name.replace("Test", "")
+            setattr(cls, f"test_{name}", _test_validation)
+            setattr(cls, f"bench_{name}", _bench_execution)

@@ -19,15 +19,13 @@ from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
-from .conftest import _bench_execution, _test_validation
+from .conftest import StencilTestMeta
 from .test_utils.helpers import random_field
 
 
-class TestApplyNabla2AndNabla4GlobalToVn:
+class TestApplyNabla2AndNabla4GlobalToVn(metaclass=StencilTestMeta):
     PROGRAM = apply_nabla2_and_nabla4_global_to_vn
     OUTPUTS = ("vn",)
-    test_apply_nabla2_and_nabla4_global_to_vn = _test_validation
-    bench_apply_nabla2_and_nabla4_global_to_vn = _bench_execution
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -48,7 +46,9 @@ class TestApplyNabla2AndNabla4GlobalToVn:
         )
 
     @staticmethod
-    def reference(area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn):
+    def reference(
+        mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
+    ):
         area_edge = np.expand_dims(area_edge, axis=-1)
         diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
         vn = vn + area_edge * (
