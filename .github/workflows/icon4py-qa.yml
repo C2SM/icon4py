@@ -33,7 +33,7 @@ jobs:
               run: |
                   python -m pip install --upgrade pip setuptools wheel
                   python -m pip install -r ./requirements-dev.txt
-            - name: Run checks
+            - name: Run checks icon4py-common
               run: |
                   python -m pip list
                   pre-commit run --config model/common/.pre-commit-config.yaml --all-files
