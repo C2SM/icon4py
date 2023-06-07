@@ -19,13 +19,14 @@ from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .conftest import StencilTestMeta
+from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
 
 
-class TestCalculateDiagnosticsForTurbulence(metaclass=StencilTestMeta):
+class TestCalculateDiagnosticsForTurbulence(StencilTest):
     PROGRAM = calculate_diagnostics_for_turbulence
     OUTPUTS = ("div_ic", "hdef_ic")
+    OUT_INDEX = ":, 1:"
 
     @staticmethod
     def reference(

@@ -19,11 +19,11 @@ from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .conftest import StencilTestMeta
+from .conftest import StencilTest
 from .test_utils.helpers import random_field
 
 
-class TestApplyNabla2ToWInUpperDampingLayer(metaclass=StencilTestMeta):
+class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
     PROGRAM = apply_nabla2_to_w_in_upper_damping_layer
     OUTPUTS = ("w",)
 

@@ -17,11 +17,11 @@ import pytest
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
-from .conftest import StencilTestMeta
+from .conftest import StencilTest
 from .test_utils.helpers import random_field
 
 
-class TestMoApplyNabla2ToW(metaclass=StencilTestMeta):
+class TestMoApplyNabla2ToW(StencilTest):
     PROGRAM = apply_nabla2_to_w
     OUTPUTS = ("w",)
 

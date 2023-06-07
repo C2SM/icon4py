@@ -438,4 +438,5 @@ class SimpleMesh:
             "E2C": self.get_e2c_offset_provider(),
             "E2V": self.get_e2v_offset_provider(),
             "E2C2V": self.get_e2c2v_offset_provider(),
+            "Koff": KDim,
         }

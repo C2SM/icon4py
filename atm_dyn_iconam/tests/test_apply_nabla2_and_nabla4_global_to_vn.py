@@ -19,11 +19,11 @@ from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
-from .conftest import StencilTestMeta
+from .conftest import StencilTest
 from .test_utils.helpers import random_field
 
 
-class TestApplyNabla2AndNabla4GlobalToVn(metaclass=StencilTestMeta):
+class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
     PROGRAM = apply_nabla2_and_nabla4_global_to_vn
     OUTPUTS = ("vn",)
 

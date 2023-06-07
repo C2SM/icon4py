@@ -36,7 +36,7 @@ def backend(request):
 
 
 def _test_validation(self, mesh, backend, input_data):
-    reference_outputs = self.reference(
+    reference_outputs = self.reference(  # noqa: F841
         mesh, **{k: np.array(v) for k, v in input_data.items()}
     )
     self.PROGRAM.with_backend(backend)(
@@ -44,9 +44,9 @@ def _test_validation(self, mesh, backend, input_data):
         offset_provider=mesh.get_offset_provider(),
     )
     for name in self.OUTPUTS:
-        assert np.allclose(
-            input_data[name], reference_outputs[name]
-        ), f"Validation failed for '{name}'"
+        exec(
+            f"assert np.allclose(input_data['{name}'][{self.OUT_INDEX}], reference_outputs['{name}'][{self.OUT_INDEX}])"
+        )
 
 
 def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
@@ -62,11 +62,13 @@ def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
         )
 
 
-class StencilTestMeta(type):
-    def __init__(cls, name, bases, attrs):
-        super().__init__(name, bases, attrs)
-        if name != "StencilTestMeta":
-            # Only apply the logic to subclasses of StencilTestMeta
-            name = name.replace("Test", "")
-            setattr(cls, f"test_{name}", _test_validation)
-            setattr(cls, f"bench_{name}", _bench_execution)
+class StencilTest:
+    # The out index is specifiable in the cases in which the output domain needs to be specified due to offsets.
+    OUT_INDEX = ":"
+
+    def __init_subclass__(cls, **kwargs):
+        # The subclass will have two methods which are registered as test functions by pytest.
+        # This allows both the validation test and the benchmark test to be run.
+        super().__init_subclass__(**kwargs)
+        setattr(cls, f"test_{cls.__name__}", _test_validation)
+        setattr(cls, f"bench_{cls.__name__}", _bench_execution)

@@ -19,11 +19,11 @@ from icon4py.atm_dyn_iconam.apply_nabla2_to_vn_in_lateral_boundary import (
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
-from .conftest import StencilTestMeta
+from .conftest import StencilTest
 from .test_utils.helpers import random_field
 
 
-class TestApplyNabla2ToVnInLateralBoundary(metaclass=StencilTestMeta):
+class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
     PROGRAM = apply_nabla2_to_vn_in_lateral_boundary
     OUTPUTS = ("vn",)
 
