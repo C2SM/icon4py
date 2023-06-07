@@ -41,21 +41,9 @@ jobs:
                   pip install tox clang-format
                   tox -r -e py${pyversion_no_dot} -c model/atm_dyn_iconam
 
-            - name: Archive code coverage results
-              uses: actions/upload-artifact@v2
-              with:
-                  name: code-coverage-report
-                  path: _reports/coverage_html/
-
             - name: Test icon4py-common with tox
               run: |
                   pyversion_no_dot="${{ matrix.python-version }}"
                   pyversion_no_dot="${pyversion_no_dot/./}"
                   pip install tox clang-format
                   tox -r -e py${pyversion_no_dot} -c model/common
-
-            - name: Archive code coverage results
-              uses: actions/upload-artifact@v2
-              with:
-                  name: code-coverage-report
-                  path: _reports/coverage_html/

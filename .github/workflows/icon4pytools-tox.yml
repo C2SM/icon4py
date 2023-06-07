@@ -41,9 +41,3 @@ jobs:
                   pyversion_no_dot="${pyversion_no_dot/./}"
                   pip install tox clang-format
                   tox -r -e py${pyversion_no_dot} -c tools/
-
-            - name: Archive code coverage results
-              uses: actions/upload-artifact@v2
-              with:
-                  name: code-coverage-report
-                  path: _reports/coverage_html/
