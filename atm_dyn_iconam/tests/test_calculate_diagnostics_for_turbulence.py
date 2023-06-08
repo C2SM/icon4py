@@ -29,7 +29,7 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
 
     @staticmethod
     def reference(
-        meta, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic
+        mesh, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic
     ) -> tuple[np.array, np.array]:
         kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
         div_offset_1 = np.roll(div, shift=1, axis=1)

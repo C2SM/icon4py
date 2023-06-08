@@ -29,12 +29,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
-        w: np.array,
-        geofac_grg_x: np.array,
-        geofac_grg_y: np.array,
-        dwdx: np.array,
-        dwdy: np.array,
+        mesh, w: np.array, geofac_grg_x: np.array, geofac_grg_y: np.array, **kwargs
     ) -> tuple[np.array]:
         geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
         dwdx = np.sum(geofac_grg_x * w[mesh.c2e2cO], axis=1)
