@@ -480,10 +480,12 @@ def test_run_diffusion_single_step(
     val_exner = np.asarray(prognostic_state.exner_pressure)
     val_z_temp = np.asarray(diffusion.z_temp)
     ref_z_temp = np.asarray(diffusion_savepoint_exit.z_temp())
-    #assert np.allclose(ref_z_temp, val_z_temp)
-    flat_points = ~np.asarray(diffusion.metric_state.mask_hdiff)
-    assert np.allclose(ref_theta_v[flat_points], val_theta_v[flat_points])
-    assert np.allclose(ref_exner[flat_points], val_exner[flat_points])
+    steep_points = np.asarray(diffusion.metric_state.mask_hdiff)
+    assert np.allclose(ref_z_temp[~steep_points], val_z_temp[~steep_points], atol=1e-7)
+    assert np.allclose(ref_theta_v[~steep_points], val_theta_v[~steep_points])
+    assert np.allclose(ref_exner[~steep_points], val_exner[~steep_points])
+    assert np.allclose(ref_theta_v[steep_points], val_theta_v[steep_points])
+    assert np.allclose(ref_exner[steep_points], val_exner[steep_points])
 
 
 @pytest.mark.skip("fix: diffusion_stencil_15")

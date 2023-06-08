@@ -309,15 +309,15 @@ class MetricSavepoint(IconSavepoint):
         return self._from_cell_c2e2c_to_cec("vcoef")
 
 
-    def _from_cell_c2e2c_to_cec(self, field_name:str ):
-        ser_input = np.squeeze(self.serializer.read(field_name, self.savepoint))
+    def _from_cell_c2e2c_to_cec(self, field_name:str , offset:int = 0):
+        ser_input = np.squeeze(self.serializer.read(field_name, self.savepoint)) + offset
         old_shape = ser_input.shape
         return np_as_located_field(CECDim, KDim)(
             ser_input.reshape(old_shape[0] * old_shape[1], old_shape[2])
         )
 
     def zd_vertoffset(self):
-        return self._from_cell_c2e2c_to_cec("zd_vertoffset")
+        return self._from_cell_c2e2c_to_cec("zd_vertoffset", 0)
 
 
     def theta_ref_mc(self):
