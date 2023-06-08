@@ -21,7 +21,6 @@ from icon4py.common.dimension import CellDim, KDim, V2CDim, VertexDim
 
 from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
 class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
@@ -36,8 +35,6 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        mesh = SimpleMesh()
-
         p_cell_in = random_field(mesh, CellDim, KDim)
         c_intp = random_field(mesh, VertexDim, V2CDim)
         p_vert_out = zero_field(mesh, VertexDim, KDim)

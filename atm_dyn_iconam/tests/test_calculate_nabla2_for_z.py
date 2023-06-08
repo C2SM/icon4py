@@ -19,7 +19,6 @@ from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 from .conftest import StencilTest
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
 class TestCalculateNabla2ForZ(StencilTest):
@@ -44,8 +43,6 @@ class TestCalculateNabla2ForZ(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        mesh = SimpleMesh()
-
         kh_smag_e = random_field(mesh, EdgeDim, KDim)
         inv_dual_edge_length = random_field(mesh, EdgeDim)
         theta_v = random_field(mesh, CellDim, KDim)

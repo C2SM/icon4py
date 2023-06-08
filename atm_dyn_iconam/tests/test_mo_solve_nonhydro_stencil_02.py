@@ -12,41 +12,48 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_02 import (
     mo_solve_nonhydro_stencil_02,
 )
 from icon4py.common.dimension import CellDim, KDim
 
+from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
-def mo_solve_nonhydro_stencil_02_numpy(
-    exner: np.array, exner_ref_mc: np.array, exner_pr: np.array, exner_exfac: np.array
-) -> tuple[np.array]:
-    z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
-    exner_pr = exner - exner_ref_mc
-    return z_exner_ex_pr, exner_pr
+class TestMoSolveNonhydroStencil02(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_02
+    OUTPUTS = ("z_exner_ex_pr", "exner_pr")
 
+    @staticmethod
+    def reference(
+        mesh,
+        exner: np.array,
+        exner_ref_mc: np.array,
+        exner_pr: np.array,
+        exner_exfac: np.array,
+        **kwargs,
+    ) -> dict:
+        z_exner_ex_pr = (1 + exner_exfac) * (
+            exner - exner_ref_mc
+        ) - exner_exfac * exner_pr
+        exner_pr = exner - exner_ref_mc
+        return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
 
-def test_mo_solve_nonhydro_stencil_02():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        exner = random_field(mesh, CellDim, KDim)
+        exner_ref_mc = random_field(mesh, CellDim, KDim)
+        exner_pr = zero_field(mesh, CellDim, KDim)
+        exner_exfac = random_field(mesh, CellDim, KDim)
+        z_exner_ex_pr = zero_field(mesh, CellDim, KDim)
 
-    exner = random_field(mesh, CellDim, KDim)
-    exner_ref_mc = random_field(mesh, CellDim, KDim)
-    exner_pr = zero_field(mesh, CellDim, KDim)
-    exner_exfac = random_field(mesh, CellDim, KDim)
-    z_exner_ex_pr = zero_field(mesh, CellDim, KDim)
-
-    z_exner_ex_pr_ref, exner_pr_ref = mo_solve_nonhydro_stencil_02_numpy(
-        np.asarray(exner),
-        np.asarray(exner_ref_mc),
-        np.asarray(exner_pr),
-        np.asarray(exner_exfac),
-    )
-    mo_solve_nonhydro_stencil_02(
-        exner_exfac, exner, exner_ref_mc, exner_pr, z_exner_ex_pr, offset_provider={}
-    )
-    assert np.allclose(z_exner_ex_pr_ref, z_exner_ex_pr)
-    assert np.allclose(exner_pr_ref, exner_pr)
+        return dict(
+            exner_exfac=exner_exfac,
+            exner=exner,
+            exner_ref_mc=exner_ref_mc,
+            exner_pr=exner_pr,
+            z_exner_ex_pr=z_exner_ex_pr,
+        )

@@ -21,7 +21,6 @@ from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 from .conftest import StencilTest
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
 class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
@@ -39,7 +38,6 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        mesh = SimpleMesh()
         kh_smag_e = random_field(mesh, EdgeDim, KDim)
         enh_diffu_3d = random_field(mesh, CellDim, KDim)
 

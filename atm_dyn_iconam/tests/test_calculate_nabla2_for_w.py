@@ -19,7 +19,6 @@ from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
 from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
 class TestCalculateNabla2ForW(StencilTest):
@@ -34,8 +33,6 @@ class TestCalculateNabla2ForW(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        mesh = SimpleMesh()
-
         w = random_field(mesh, CellDim, KDim)
         geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
         z_nabla2_c = zero_field(mesh, CellDim, KDim)
