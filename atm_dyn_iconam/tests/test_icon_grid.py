@@ -238,5 +238,3 @@ def test_horizontal_vertex_indices(icon_grid):
         HorizontalMarkerIndex.interior(VertexDim),
         HorizontalMarkerIndex.interior(VertexDim),
     ) == (2071, 10663)
-
-

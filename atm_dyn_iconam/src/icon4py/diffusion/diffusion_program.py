@@ -17,7 +17,6 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
 from gt4py.next.ffront.fbuiltins import int32
 
-
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     _calculate_nabla2_and_smag_coefficients_for_vn,
 )

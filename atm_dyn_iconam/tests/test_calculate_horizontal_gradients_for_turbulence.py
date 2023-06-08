@@ -53,7 +53,10 @@ def test_calculate_horizontal_gradients_for_turbulence():
         geofac_grg_y,
         dwdx,
         dwdy,
-        0, mesh.n_cells, 0, mesh.k_level,
+        0,
+        mesh.n_cells,
+        0,
+        mesh.k_level,
         offset_provider={
             "C2E2CO": mesh.get_c2e2cO_offset_provider(),
         },

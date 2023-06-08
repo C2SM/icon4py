@@ -59,7 +59,10 @@ def test_apply_nabla2_to_w():
         geofac_n2s,
         w,
         diff_multfac_w,
-        0, mesh.n_cells, 0, mesh.k_level,
+        0,
+        mesh.n_cells,
+        0,
+        mesh.k_level,
         offset_provider={
             "C2E2CO": mesh.get_c2e2cO_offset_provider(),
             "C2E2CODim": C2E2CODim,

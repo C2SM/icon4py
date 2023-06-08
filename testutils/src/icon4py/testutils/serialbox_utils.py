@@ -22,6 +22,7 @@ from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    CECDim,
     CellDim,
     E2C2VDim,
     E2CDim,
@@ -30,7 +31,7 @@ from icon4py.common.dimension import (
     EdgeDim,
     KDim,
     V2EDim,
-    VertexDim, CECDim,
+    VertexDim,
 )
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import VectorTuple
@@ -308,9 +309,10 @@ class MetricSavepoint(IconSavepoint):
     def zd_intcoef(self):
         return self._from_cell_c2e2c_to_cec("vcoef")
 
-
-    def _from_cell_c2e2c_to_cec(self, field_name:str , offset:int = 0):
-        ser_input = np.squeeze(self.serializer.read(field_name, self.savepoint)) + offset
+    def _from_cell_c2e2c_to_cec(self, field_name: str, offset: int = 0):
+        ser_input = (
+            np.squeeze(self.serializer.read(field_name, self.savepoint)) + offset
+        )
         old_shape = ser_input.shape
         return np_as_located_field(CECDim, KDim)(
             ser_input.reshape(old_shape[0] * old_shape[1], old_shape[2])
@@ -318,7 +320,6 @@ class MetricSavepoint(IconSavepoint):
 
     def zd_vertoffset(self):
         return self._from_cell_c2e2c_to_cec("zd_vertoffset", 0)
-
 
     def theta_ref_mc(self):
         return self._get_field("theta_ref_mc", CellDim, KDim)
@@ -417,6 +418,7 @@ class IconDiffusionExitSavepoint(IconSavepoint):
 
     def dwdy(self):
         return self._get_field("x_dwdy", CellDim, KDim)
+
     def exner(self):
         return self._get_field("x_exner", CellDim, KDim)
 
@@ -424,7 +426,7 @@ class IconDiffusionExitSavepoint(IconSavepoint):
         return self._get_field("x_z_temp", CellDim, KDim)
 
     def div_ic(self):
-        return self._get_field("x_div_ic",CellDim, KDim )
+        return self._get_field("x_div_ic", CellDim, KDim)
 
     def hdef_ic(self):
         return self._get_field("x_hdef_ic", CellDim, KDim)

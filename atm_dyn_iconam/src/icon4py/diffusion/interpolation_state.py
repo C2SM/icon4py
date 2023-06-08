@@ -53,10 +53,10 @@ class InterpolationState:
     geofac_n2s: Field[
         [CellDim, C2E2CODim], float
     ]  # factor for nabla2-scalar (nproma,cell_type+1,nblks_c)
-    geofac_grg_x: Field[
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float]
+    geofac_grg_y: Field[
         [CellDim, C2E2CODim], float
-    ]
-    geofac_grg_y: Field[[CellDim, C2E2CODim], float] # factors for green gauss gradient (nproma,4,nblks_c,2)
+    ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
     @property

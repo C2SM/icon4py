@@ -20,14 +20,19 @@ import numpy as np
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn, run_gtfn_cached
+from gt4py.next.program_processors.runners.gtfn_cpu import (
+    run_gtfn,
+    run_gtfn_cached,
+)
 
 import icon4py.diffusion.diffusion_program as diff_prog
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
-from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import \
-    apply_nabla2_to_w_in_upper_damping_layer
-from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import \
-    calculate_horizontal_gradients_for_turbulence
+from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
+    apply_nabla2_to_w_in_upper_damping_layer,
+)
+from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import (
+    calculate_horizontal_gradients_for_turbulence,
+)
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
@@ -86,6 +91,7 @@ from icon4py.diffusion.utils import (
     setup_fields_for_initial_step,
     zero_field,
 )
+
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -972,33 +978,33 @@ class Diffusion:
             vertical_end=klevels,
             horizontal_start=cell_start_nudging,
             horizontal_end=cell_end_local_minus1,
-            offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()}
+            offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
         )
 
         z_nabla2_c = zero_field(self.grid, CellDim, KDim, dtype=float)
 
-        calculate_nabla2_for_w.with_backend(backend)(w=prognostic_state.w,
-                                                     geofac_n2s=self.interpolation_state.geofac_n2s,
-                                                     z_nabla2_c=z_nabla2_c,
-                                                     vertical_start=0,
-                                                     vertical_end=klevels,
-                                                     horizontal_start=cell_start_nudging,
-                                                     horizontal_end=cell_end_local_minus1,
-                                                     offset_provider={
-                                                         "C2E2CO": self.grid.get_c2e2co_connectivity()}
-                                                     )
-        apply_nabla2_to_w.with_backend(backend)(area=cell_areas,
-                                                z_nabla2_c=z_nabla2_c,
-                                                w=prognostic_state.w,
-                                                diff_multfac_w=self.diff_multfac_w,
-                                                geofac_n2s=self.interpolation_state.geofac_n2s,
-                                                vertical_start=0,
-                                                vertical_end=klevels,
-                                                horizontal_start=cell_start_interior,
-                                                horizontal_end=cell_end_local,
-                                                offset_provider={
-                                                    "C2E2CO": self.grid.get_c2e2co_connectivity()}
-                                                )
+        calculate_nabla2_for_w.with_backend(backend)(
+            w=prognostic_state.w,
+            geofac_n2s=self.interpolation_state.geofac_n2s,
+            z_nabla2_c=z_nabla2_c,
+            vertical_start=0,
+            vertical_end=klevels,
+            horizontal_start=cell_start_nudging,
+            horizontal_end=cell_end_local_minus1,
+            offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
+        )
+        apply_nabla2_to_w.with_backend(backend)(
+            area=cell_areas,
+            z_nabla2_c=z_nabla2_c,
+            w=prognostic_state.w,
+            diff_multfac_w=self.diff_multfac_w,
+            geofac_n2s=self.interpolation_state.geofac_n2s,
+            vertical_start=0,
+            vertical_end=klevels,
+            horizontal_start=cell_start_interior,
+            horizontal_end=cell_end_local,
+            offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
+        )
 
         apply_nabla2_to_w_in_upper_damping_layer.with_backend(backend)(
             w=prognostic_state.w,
@@ -1009,8 +1015,7 @@ class Diffusion:
             vertical_end=int(self.vertical_params.index_of_damping_layer + 1),
             horizontal_start=int(cell_start_interior),
             horizontal_end=int(cell_end_local),
-            offset_provider = {}
-
+            offset_provider={},
         )
         # fused_mo_nh_diffusion_stencil_07_08_09_10.with_backend(backend)(
         #     area=cell_areas,

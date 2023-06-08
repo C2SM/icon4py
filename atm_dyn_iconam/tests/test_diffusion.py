@@ -401,7 +401,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
-#@pytest.mark.parametrize("run_with_program", [True, False])
+# @pytest.mark.parametrize("run_with_program", [True, False])
 @pytest.mark.parametrize("run_with_program", [False])
 @pytest.mark.datatest
 def test_run_diffusion_single_step(
