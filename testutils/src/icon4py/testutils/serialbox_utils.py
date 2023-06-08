@@ -157,7 +157,6 @@ class IconGridSavePoint(IconSavepoint):
             return None
 
     def c2e(self):
-
         return self._get_connectiviy_array("c2e")
 
     def _get_connectiviy_array(self, name: str):
@@ -203,7 +202,7 @@ class IconGridSavePoint(IconSavepoint):
             VerticalMeshConfig(num_lev=sp_meta["nlev"]),
         )
         c2e2c = self.c2e2c()
-        c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
+        c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
         grid = (
             IconGrid()
             .with_config(config)
