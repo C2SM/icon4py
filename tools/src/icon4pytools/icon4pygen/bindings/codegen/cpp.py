@@ -17,7 +17,6 @@ from typing import Sequence
 from gt4py import eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import Node, TemplatedGenerator, format_source
-
 from icon4pytools.icon4pygen.bindings.codegen.header import (
     CppFreeFunc,
     CppRunAndVerifyFuncDeclaration,

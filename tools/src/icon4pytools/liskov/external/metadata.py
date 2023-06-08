@@ -14,7 +14,6 @@ import datetime
 from typing import Any
 
 import click
-
 from icon4pytools import __version__
 from icon4pytools.liskov.external.exceptions import MissingClickContextError
 

@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-
 from icon4pytools.liskov.codegen.integration.generate import IntegrationCodeGenerator
 from icon4pytools.liskov.codegen.integration.interface import (
     BoundsData,

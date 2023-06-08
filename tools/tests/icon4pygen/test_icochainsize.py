@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-
 from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
 from icon4pytools.icon4pygen.metadata import provide_offset
 

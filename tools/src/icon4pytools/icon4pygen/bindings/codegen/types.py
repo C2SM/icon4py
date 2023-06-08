@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from typing import Union
 
 from gt4py.next.type_system import type_specifications as ts
-
 from icon4pytools.icon4pygen.bindings.locations import (
     BasicLocation,
     ChainedLocation,

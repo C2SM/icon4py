@@ -14,7 +14,6 @@
 import itertools
 
 import pytest
-
 from icon4pytools.liskov.cli import main
 from icon4pytools.liskov.external.exceptions import MissingCommandError
 

@@ -13,7 +13,6 @@
 
 import pytest
 from click.testing import CliRunner
-
 from icon4pytools.f2ser.cli import main
 from icon4pytools.f2ser.exceptions import MissingDerivedTypeError
 

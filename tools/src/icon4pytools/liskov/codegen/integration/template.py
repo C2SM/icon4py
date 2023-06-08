@@ -18,7 +18,6 @@ from typing import Optional
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
-
 from icon4pytools.liskov.codegen.integration.exceptions import UndeclaredFieldError
 from icon4pytools.liskov.codegen.integration.interface import DeclareData, StartStencilData
 from icon4pytools.liskov.external.metadata import CodeMetadata

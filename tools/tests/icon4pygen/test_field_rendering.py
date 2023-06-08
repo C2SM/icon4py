@@ -13,10 +13,10 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
-from icon4py.common.dimension import E2CDim, EdgeDim, KDim
-
 from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
 from icon4pytools.icon4pygen.metadata import get_stencil_info
+
+from icon4py.common.dimension import E2CDim, EdgeDim, KDim
 
 
 def test_horizontal_field_sid_rendering():

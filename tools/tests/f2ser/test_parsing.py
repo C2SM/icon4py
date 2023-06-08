@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-
 from icon4pytools.f2ser.exceptions import MissingDerivedTypeError, ParsingError
 from icon4pytools.f2ser.parse import CodegenContext, GranuleParser
 

@@ -25,13 +25,13 @@ from gt4py.next.ffront.decorator import FieldOperator, Program, program
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
-
 from icon4pytools.icon4pygen.exceptions import (
     InvalidConnectivityException,
     MultipleFieldOperatorException,
 )
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
+
+from icon4py.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 
 
 @dataclass(frozen=True)
