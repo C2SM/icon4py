@@ -19,12 +19,9 @@ from icon4py.atm_dyn_iconam.mo_advection_traj_btraj_compute_o1_dsl import (
     mo_advection_traj_btraj_compute_o1_dsl,
 )
 from icon4py.common.dimension import E2CDim, ECDim, EdgeDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import (
-    as_1D_sparse_field,
-    constant_field,
-    random_field,
-)
+
+from .test_utils.helpers import as_1D_sparse_field, constant_field, random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_advection_traj_btraj_compute_o1_dsl_numpy(
