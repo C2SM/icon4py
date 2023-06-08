@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, int32, where
@@ -20,7 +19,7 @@ from icon4py.common.dimension import C2CEC, C2E2C, CECDim, CellDim, KDim, Koff
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_15(
+def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     mask: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
     zd_diffcoef: Field[[CellDim, KDim], float],
@@ -30,6 +29,7 @@ def _mo_nh_diffusion_stencil_15(
     theta_v: Field[[CellDim, KDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
+
     theta_v_0 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0])))
     theta_v_1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1])))
     theta_v_2 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2])))
@@ -65,8 +65,8 @@ def _mo_nh_diffusion_stencil_15(
     return z_temp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def mo_nh_diffusion_stencil_15(
+@program
+def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     mask: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
     zd_diffcoef: Field[[CellDim, KDim], float],
@@ -76,7 +76,7 @@ def mo_nh_diffusion_stencil_15(
     theta_v: Field[[CellDim, KDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_15(
+    _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         mask,
         zd_vertoffset,
         zd_diffcoef,

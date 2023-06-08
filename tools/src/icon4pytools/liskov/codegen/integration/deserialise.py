@@ -114,7 +114,7 @@ class RequiredSingleUseDataFactory(DataFactoryBase):
         return self.dtype(startln=extracted.startln)
 
 
-class EndCreateDataFactory(RequiredSingleUseDataFactory):
+class EndCreateDataFactory(OptionalMultiUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndCreate
     dtype: Type[EndCreateData] = EndCreateData
 
@@ -138,16 +138,30 @@ class StartCreateDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartCreate
     dtype: Type[StartCreateData] = StartCreateData
 
-    def __call__(self, parsed: ts.ParsedDict) -> StartCreateData:
-        directive = extract_directive(parsed["directives"], self.directive_cls)[0]
+    def __call__(self, parsed: ts.ParsedDict) -> list[StartCreateData]:
 
-        named_args = parsed["content"]["StartCreate"][0]
+        deserialised = []
+        extracted = extract_directive(parsed["directives"], self.directive_cls)
 
-        extra_fields = None
-        if named_args:
-            extra_fields = named_args["extra_fields"].split(",")
+        if len(extracted) < 1:
+            return UnusedDirective
 
-        return self.dtype(startln=directive.startln, extra_fields=extra_fields)
+        for i, directive in enumerate(extracted):
+
+            named_args = parsed["content"]["StartCreate"][i]
+
+            extra_fields = None
+            if named_args:
+                extra_fields = named_args["extra_fields"].split(",")
+
+            deserialised.append(
+                self.dtype(
+                    startln=directive.startln,
+                    extra_fields=extra_fields,
+                )
+            )
+
+        return deserialised
 
 
 class DeclareDataFactory(DataFactoryBase):
@@ -202,12 +216,14 @@ class EndStencilDataFactory(DataFactoryBase):
             stencil_name = _extract_stencil_name(named_args, directive)
             noendif = _extract_boolean_kwarg(directive, named_args, "noendif")
             noprofile = _extract_boolean_kwarg(directive, named_args, "noprofile")
+            noaccenddata = _extract_boolean_kwarg(directive, named_args, "noaccenddata")
             deserialised.append(
                 self.dtype(
                     name=stencil_name,
                     startln=directive.startln,
                     noendif=noendif,
                     noprofile=noprofile,
+                    noaccenddata=noaccenddata,
                 )
             )
         return deserialised
