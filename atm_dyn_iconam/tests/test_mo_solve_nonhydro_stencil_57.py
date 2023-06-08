@@ -12,29 +12,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_57 import (
     mo_solve_nonhydro_stencil_57,
 )
 from icon4py.common.dimension import CellDim, KDim
 
+from .conftest import StencilTest
 from .test_utils.helpers import zero_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
-def mo_solve_nonhydro_stencil_57_numpy(mass_flx_ic: np.array) -> np.array:
-    mass_flx_ic = np.zeros_like(mass_flx_ic)
-    return mass_flx_ic
+class TestMoSolveNonhydroStencil57(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_57
+    OUTPUTS = ("mass_flx_ic",)
 
+    @staticmethod
+    def reference(mesh, mass_flx_ic: np.array, **kwargs) -> dict:
+        mass_flx_ic = np.zeros_like(mass_flx_ic)
+        return dict(mass_flx_ic=mass_flx_ic)
 
-def test_mo_solve_nonhydro_stencil_57():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        mass_flx_ic = zero_field(mesh, CellDim, KDim)
 
-    mass_flx_ic = zero_field(mesh, CellDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_57_numpy(np.asarray(mass_flx_ic))
-    mo_solve_nonhydro_stencil_57(
-        mass_flx_ic,
-        offset_provider={},
-    )
-    assert np.allclose(mass_flx_ic, ref)
+        return dict(
+            mass_flx_ic=mass_flx_ic,
+        )

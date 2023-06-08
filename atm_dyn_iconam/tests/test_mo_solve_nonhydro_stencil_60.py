@@ -12,51 +12,47 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_60 import (
     mo_solve_nonhydro_stencil_60,
 )
 from icon4py.common.dimension import CellDim, KDim
 
+from .conftest import StencilTest
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
-def mo_solve_nonhydro_stencil_60_numpy(
-    exner: np.array,
-    ddt_exner_phy: np.array,
-    exner_dyn_incr: np.array,
-    ndyn_substeps_var: float,
-    dtime: float,
-) -> np.array:
-    exner_dyn_incr = exner - (
-        exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy
-    )
-    return exner_dyn_incr
+class TestMoSolveNonhydroStencil60(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_60
+    OUTPUTS = ("exner_dyn_incr",)
 
+    @staticmethod
+    def reference(
+        mesh,
+        exner: np.array,
+        ddt_exner_phy: np.array,
+        exner_dyn_incr: np.array,
+        ndyn_substeps_var: float,
+        dtime: float,
+        **kwargs,
+    ) -> np.array:
+        exner_dyn_incr = exner - (
+            exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy
+        )
+        return dict(exner_dyn_incr=exner_dyn_incr)
 
-def test_mo_solve_nonhydro_stencil_60():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        ndyn_substeps_var, dtime = 10.0, 12.0
+        exner = random_field(mesh, CellDim, KDim)
+        ddt_exner_phy = random_field(mesh, CellDim, KDim)
+        exner_dyn_incr = random_field(mesh, CellDim, KDim)
 
-    ndyn_substeps_var, dtime = 10.0, 12.0
-    exner = random_field(mesh, CellDim, KDim)
-    ddt_exner_phy = random_field(mesh, CellDim, KDim)
-    exner_dyn_incr = random_field(mesh, CellDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_60_numpy(
-        np.asarray(exner),
-        np.asarray(ddt_exner_phy),
-        np.asarray(exner_dyn_incr),
-        ndyn_substeps_var,
-        dtime,
-    )
-
-    mo_solve_nonhydro_stencil_60(
-        exner,
-        ddt_exner_phy,
-        exner_dyn_incr,
-        ndyn_substeps_var,
-        dtime,
-        offset_provider={},
-    )
-    assert np.allclose(exner_dyn_incr, ref)
+        return dict(
+            exner=exner,
+            ddt_exner_phy=ddt_exner_phy,
+            exner_dyn_incr=exner_dyn_incr,
+            ndyn_substeps_var=ndyn_substeps_var,
+            dtime=dtime,
+        )

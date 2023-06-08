@@ -12,38 +12,33 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_33 import (
     mo_solve_nonhydro_stencil_33,
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
+from .conftest import StencilTest
 from .test_utils.helpers import zero_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
-def mo_solve_nonhydro_stencil_33_numpy(
-    vn_traj: np.array, mass_flx_me: np.array
-) -> tuple[np.array]:
-    vn_traj = np.zeros_like(vn_traj)
-    mass_flx_me = np.zeros_like(mass_flx_me)
-    return vn_traj, mass_flx_me
+class TestMoSolveNonhydroStencil33(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_33
+    OUTPUTS = ("vn_traj", "mass_flx_me")
 
+    @staticmethod
+    def reference(mesh, vn_traj: np.array, mass_flx_me: np.array, **kwargs) -> dict:
+        vn_traj = np.zeros_like(vn_traj)
+        mass_flx_me = np.zeros_like(mass_flx_me)
+        return dict(vn_traj=vn_traj, mass_flx_me=mass_flx_me)
 
-def test_mo_solve_nonhydro_stencil_33():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        vn_traj = zero_field(mesh, EdgeDim, KDim)
+        mass_flx_me = zero_field(mesh, EdgeDim, KDim)
 
-    vn_traj = zero_field(mesh, EdgeDim, KDim)
-    mass_flx_me = zero_field(mesh, EdgeDim, KDim)
-
-    vn_traj_ref, mass_flx_me_ref = mo_solve_nonhydro_stencil_33_numpy(
-        np.asarray(vn_traj), np.asarray(mass_flx_me)
-    )
-    mo_solve_nonhydro_stencil_33(
-        vn_traj,
-        mass_flx_me,
-        offset_provider={},
-    )
-
-    assert np.allclose(vn_traj, vn_traj_ref)
-    assert np.allclose(mass_flx_me, mass_flx_me_ref)
+        return dict(
+            vn_traj=vn_traj,
+            mass_flx_me=mass_flx_me,
+        )
