@@ -55,7 +55,7 @@ repos:
                     --comment-style,
                     "|#|",
                     --license-filepath,
-                    .license_header.txt,
+                    model/common/.license_header.txt,
                     --fuzzy-match-generates-todo,
                 ]
 
