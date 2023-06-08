@@ -87,8 +87,8 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):
     """
     Load data from ICON savepoint at start of diffusion module.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    date of the timestamp to be selected can be set seperately by overriding the 'step_date_init'
+    fixture, passing 'step_date_init=<iso_string>'
 
     linit flag can be set by overriding the 'linit' fixture
     """
@@ -96,14 +96,14 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):
 
 
 @pytest.fixture
-def diffusion_savepoint_exit(data_provider, step_date_exit):
+def diffusion_savepoint_exit(data_provider,linit, step_date_exit):
     """
     Load data from ICON savepoint at exist of diffusion module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    sp = data_provider.from_savepoint_diffusion_exit(linit=False, date=step_date_exit)
+    sp = data_provider.from_savepoint_diffusion_exit(linit=linit, date=step_date_exit)
     return sp
 
 
