@@ -25,9 +25,13 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn_cached,
 )
 
+from icon4py.atm_dyn_iconam.calculate_diagnostic_quantities_for_turbulence import calculate_diagnostic_quantities_for_turbulence
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer,
+)
+from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
 )
 from icon4py.atm_dyn_iconam.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
@@ -42,9 +46,7 @@ from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import (
     calculate_nabla2_for_theta,
 )
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import calculate_nabla2_for_w
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
-    fused_mo_nh_diffusion_stencil_02_03,
-)
+
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
     fused_mo_nh_diffusion_stencil_04_05_06,
 )
@@ -716,7 +718,7 @@ class Diffusion:
         )
         log.debug("running calculate_nabla2_and_smag_coefficients_for_vn: end")
         log.debug("running fused stencil fused stencil 02_03: start")
-        fused_mo_nh_diffusion_stencil_02_03.with_backend(backend)(
+        calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
             kh_smag_ec=self.kh_smag_ec,
             vn=prognostic_state.vn,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -842,7 +844,7 @@ class Diffusion:
             offset_provider={},
         )
         # w_old = prognostic_state.w
-        # fused_mo_nh_diffusion_stencil_07_08_09_10.with_backend(backend)(
+        # apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance.with_backend(backend)(
         #     area=cell_areas,
         #     geofac_n2s=self.interpolation_state.geofac_n2s,
         #     geofac_grg_x=self.interpolation_state.geofac_grg_x,
