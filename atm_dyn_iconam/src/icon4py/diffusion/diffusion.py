@@ -722,7 +722,7 @@ class Diffusion:
             kh_smag_ec=self.kh_smag_ec,
             vn=prognostic_state.vn,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            geofac_div=self.interpolation_state._geofac_div,
+            geofac_div=self.interpolation_state.geofac_div,
             diff_multfac_smag=self.diff_multfac_smag,
             wgtfac_c=self.metric_state.wgtfac_c,
             div_ic=diagnostic_state.div_ic,
@@ -733,6 +733,7 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
+                "C2CE": self.grid.get_c2ce_connectivity(),
                 "Koff": KDim,
             },
         )

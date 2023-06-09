@@ -109,7 +109,7 @@ def assert_interpolation_state_fields(interpolation_state):
     assert interpolation_state.e_bln_c_s
     assert interpolation_state.nudgecoeff_e
     assert interpolation_state.geofac_n2s_nbh
-    assert interpolation_state._geofac_div
+    assert interpolation_state.geofac_div
     assert interpolation_state.geofac_grg_y
     assert interpolation_state.geofac_grg_x
     assert interpolation_state.rbf_coeff_2

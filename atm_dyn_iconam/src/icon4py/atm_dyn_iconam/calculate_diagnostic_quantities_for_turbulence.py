@@ -20,15 +20,15 @@ from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
 from icon4py.atm_dyn_iconam.temporary_fields_for_turbulence_diagnostics import (
     _temporary_fields_for_turbulence_diagnostics,
 )
-from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim, CEDim
 
 
 @field_operator
 def _calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
+    geofac_div: Field[[CEDim], float],
     diff_multfac_smag: Field[[KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
@@ -43,8 +43,8 @@ def _calculate_diagnostic_quantities_for_turbulence(
 def calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
+    geofac_div: Field[[CEDim], float],
     diff_multfac_smag: Field[[KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     div_ic: Field[[CellDim, KDim], float],

@@ -18,7 +18,7 @@ from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from atm_dyn_iconam.tests.test_utils.helpers import as_1D_sparse_field
+from .helpers import as_1D_sparse_field
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -32,7 +32,7 @@ from icon4py.common.dimension import (
     EdgeDim,
     KDim,
     V2EDim,
-    VertexDim,
+    VertexDim, CEDim,
 )
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import VectorTuple
@@ -88,7 +88,6 @@ class IconSavepoint:
         buffer = self.serializer.read(name, self.savepoint).astype(int)
         self.log.debug(f"{name} {buffer.shape}")
         return buffer
-
 
 class IconGridSavePoint(IconSavepoint):
     def vct_a(self):
@@ -283,10 +282,10 @@ class InterpolationSavepoint(IconSavepoint):
     def construct_interpolation_state(self) -> InterpolationState:
         grg = self.geofac_grg()
         return InterpolationState(
-            e_bln_c_s=self.e_bln_c_s(),
+            e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),
             rbf_coeff_1=self.rbf_vec_coeff_v1(),
             rbf_coeff_2=self.rbf_vec_coeff_v2(),
-            _geofac_div=self.geofac_div(),
+            geofac_div=as_1D_sparse_field(self.geofac_div(), CEDim),
             geofac_n2s=self.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],
