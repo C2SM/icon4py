@@ -63,9 +63,6 @@ def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
 
 
 class StencilTest:
-    # The out index is specifiable in the cases in which the output domain needs to be specified due to offsets.
-    OUT_INDEX = ":"
-
     def __init_subclass__(cls, **kwargs):
         # The subclass will have two methods which are registered as test functions by pytest.
         # This allows both the validation test and the benchmark test to be run.
