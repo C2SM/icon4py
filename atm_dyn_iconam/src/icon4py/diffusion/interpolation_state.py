@@ -65,8 +65,8 @@ class InterpolationState:
 
     @property
     def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
-        np_array = np.asarray(self.geofac_n2s)[:, 1:]
-        old_shape = np_array.shape
+        geofac_nbh_ar = np.asarray(self.geofac_n2s)[:, 1:]
+        old_shape = geofac_nbh_ar.shape
         return np_as_located_field(CECDim)(
-            np_array.reshape(old_shape[0] * old_shape[1])
+            geofac_nbh_ar.reshape(old_shape[0] * old_shape[1],)
         )
