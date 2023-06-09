@@ -271,7 +271,7 @@ def test_nonhydro_predictor_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep, step_date_init, step_date_exit",
-    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_nonhydro_corrector_step(
     icon_grid,
@@ -468,6 +468,13 @@ def test_nonhydro_corrector_step(
 
     icon_result_prep_adv_mass_flx_me = sp_exit.prep_adv_mass_flx_me()
     icon_result_prep_adv_vn_traj = sp_exit.prep_adv_vn_traj()
+
+    #icon_result_z_graddiv_vn = sp_exit.z_graddiv_vn()
+    #icon_result_exner_now = sp_exit.exner_now()
+
+    #assert np.allclose(np.asarray(icon_result_z_graddiv_vn), np.asarray(prognostic_state_ls[nnew].exner))
+    #assert np.allclose(np.asarray(icon_result_exner_now), np.asarray(prognostic_state_ls[nnow].exner))
+
 
     assert np.allclose(
         np.asarray(icon_result_prep_adv_mass_flx_me), np.asarray(prep_adv.mass_flx_me)
