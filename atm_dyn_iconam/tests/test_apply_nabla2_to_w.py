@@ -17,8 +17,8 @@ import pytest
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field
+from .test_utils.stencil import StencilTest
 
 
 class TestMoApplyNabla2ToW(StencilTest):
@@ -39,7 +39,7 @@ class TestMoApplyNabla2ToW(StencilTest):
         w = w - diff_multfac_w * area * area * np.sum(
             z_nabla2_c[mesh.c2e2cO] * geofac_n2s, axis=1
         )
-        return {"w": w}
+        return dict(w=w)
 
     @pytest.fixture
     def input_data(self, mesh):

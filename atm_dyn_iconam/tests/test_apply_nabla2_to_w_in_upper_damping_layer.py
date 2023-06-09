@@ -19,8 +19,8 @@ from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field
+from .test_utils.stencil import StencilTest
 
 
 class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
@@ -51,4 +51,4 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
     ) -> np.array:
         cell_area = np.expand_dims(cell_area, axis=-1)
         w = w + diff_multfac_n2w * cell_area * z_nabla2_c
-        return {"w": w}
+        return dict(w=w)

@@ -19,8 +19,8 @@ from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import
 )
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
+from .test_utils.stencil import StencilTest
 
 
 class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
@@ -36,7 +36,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
 
         geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
         dwdy = np.sum(geofac_grg_y * w[mesh.c2e2cO], axis=1)
-        return {"dwdx": dwdx, "dwdy": dwdy}
+        return dict(dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
     def input_data(self, mesh):

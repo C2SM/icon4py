@@ -19,8 +19,8 @@ from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field
+from .test_utils.stencil import StencilTest
 
 
 class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
@@ -54,4 +54,4 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
         vn = vn + area_edge * (
             kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge
         )
-        return {"vn": vn}
+        return dict(vn=vn)

@@ -19,8 +19,8 @@ from icon4py.atm_dyn_iconam.mo_math_divrot_rot_vertex_ri_dsl import (
 )
 from icon4py.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
+from .test_utils.stencil import StencilTest
 
 
 class TestMoMathDivrotRotVertexRiDsl(StencilTest):

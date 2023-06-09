@@ -19,8 +19,8 @@ from icon4py.atm_dyn_iconam.apply_nabla2_to_vn_in_lateral_boundary import (
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field
+from .test_utils.stencil import StencilTest
 
 
 class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
@@ -46,4 +46,4 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
     ) -> np.array:
         area_edge = np.expand_dims(area_edge, axis=-1)
         vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
-        return {"vn": vn}
+        return dict(vn=vn)

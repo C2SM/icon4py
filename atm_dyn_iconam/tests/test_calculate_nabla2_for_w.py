@@ -17,8 +17,8 @@ import pytest
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import calculate_nabla2_for_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
+from .test_utils.stencil import StencilTest
 
 
 class TestCalculateNabla2ForW(StencilTest):

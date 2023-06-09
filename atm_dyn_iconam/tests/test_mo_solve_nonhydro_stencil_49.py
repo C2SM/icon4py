@@ -14,13 +14,13 @@
 import numpy as np
 import pytest
 
-from atm_dyn_iconam.tests.conftest import StencilTest
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_49 import (
     mo_solve_nonhydro_stencil_49,
 )
 from icon4py.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
+from .test_utils.stencil import StencilTest
 
 
 class TestMoSolveNonhydroStencil49(StencilTest):

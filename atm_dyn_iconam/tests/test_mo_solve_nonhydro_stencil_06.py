@@ -19,8 +19,8 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_06 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
+from .test_utils.stencil import StencilTest
 
 
 class TestMoSolveNonhydroStencil06(StencilTest):

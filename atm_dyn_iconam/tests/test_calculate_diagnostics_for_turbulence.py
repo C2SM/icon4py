@@ -19,8 +19,8 @@ from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
+from .test_utils.stencil import StencilTest
 
 
 class TestCalculateDiagnosticsForTurbulence(StencilTest):
@@ -37,7 +37,7 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
         hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[
             :, 1:
         ]
-        return {"div_ic": div_ic, "hdef_ic": hdef_ic}
+        return dict(div_ic=div_ic, hdef_ic=hdef_ic)
 
     @pytest.fixture
     def input_data(self, mesh):
