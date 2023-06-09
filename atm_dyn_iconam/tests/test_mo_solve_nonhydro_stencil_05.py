@@ -12,39 +12,41 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_05 import (
     mo_solve_nonhydro_stencil_05,
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .conftest import StencilTest
 from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
-class TestMoSolveNonhydroStencil05(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_05
-    OUTPUTS = ("z_exner_ic",)
+def mo_solve_nonhydro_stencil_05_numpy(
+    wgtfac_c: np.array,
+    z_exner_ex_pr: np.array,
+) -> np.array:
+    z_exner_ex_pr_offset_1 = np.roll(z_exner_ex_pr, shift=1, axis=1)
+    z_exner_ic = wgtfac_c * z_exner_ex_pr + (1.0 - wgtfac_c) * z_exner_ex_pr_offset_1
+    return z_exner_ic
 
-    @staticmethod
-    def reference(
-        mesh, wgtfac_c: np.array, z_exner_ex_pr: np.array, **kwargs
-    ) -> np.array:
-        z_exner_ex_pr_offset_1 = np.roll(z_exner_ex_pr, shift=1, axis=1)
-        z_exner_ic = (
-            wgtfac_c * z_exner_ex_pr + (1.0 - wgtfac_c) * z_exner_ex_pr_offset_1
-        )
-        return dict(z_exner_ic=z_exner_ic)
 
-    @pytest.fixture
-    def input_data(self, mesh):
-        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-        wgtfac_c = random_field(mesh, CellDim, KDim)
-        z_exner_ic = zero_field(mesh, CellDim, KDim)
+def test_mo_solve_nonhydro_stencil_05():
+    mesh = SimpleMesh()
+    z_exner_ex_pr = random_field(mesh, CellDim, KDim)
+    wgtfac_c = random_field(mesh, CellDim, KDim)
+    z_exner_ic = zero_field(mesh, CellDim, KDim)
 
-        return dict(
-            wgtfac_c=wgtfac_c,
-            z_exner_ex_pr=z_exner_ex_pr,
-            z_exner_ic=z_exner_ic,
-        )
+    z_exner_ic_ref = mo_solve_nonhydro_stencil_05_numpy(
+        np.asarray(wgtfac_c),
+        np.asarray(z_exner_ex_pr),
+    )
+
+    mo_solve_nonhydro_stencil_05(
+        wgtfac_c,
+        z_exner_ex_pr,
+        z_exner_ic,
+        offset_provider={"Koff": KDim},
+    )
+
+    assert np.allclose(z_exner_ic, z_exner_ic_ref)
