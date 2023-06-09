@@ -144,8 +144,8 @@ class VelocityAdvection:
 
         (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 2,
-            HorizontalMarkerIndex.interior(VertexDim) - 1,
+            HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+            HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
         if not vn_only:
@@ -180,7 +180,7 @@ class VelocityAdvection:
         (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.interior(EdgeDim) - 2,
+            HorizontalMarkerIndex.local(EdgeDim) - 2,
         )
 
         mo_velocity_advection_stencil_01.with_backend(run_gtfn)(
@@ -248,7 +248,7 @@ class VelocityAdvection:
         (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.local_boundary(EdgeDim) + 6,
-            HorizontalMarkerIndex.interior(EdgeDim) - 1,
+            HorizontalMarkerIndex.local(EdgeDim) - 1,
         )
 
         if not vn_only:
@@ -274,7 +274,7 @@ class VelocityAdvection:
         (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.local_boundary(CellDim) + 3,
-            HorizontalMarkerIndex.interior(CellDim) - 1,
+            HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
@@ -350,7 +350,7 @@ class VelocityAdvection:
         (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.interior(CellDim),
+            HorizontalMarkerIndex.local(CellDim),
         )
 
         velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
@@ -395,8 +395,8 @@ class VelocityAdvection:
 
         (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim),
-            HorizontalMarkerIndex.interior(EdgeDim),
+            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            HorizontalMarkerIndex.local(EdgeDim),
         )
 
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
@@ -476,8 +476,8 @@ class VelocityAdvection:
 
         (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 2,
-            HorizontalMarkerIndex.interior(VertexDim) - 1,
+            HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+            HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
         if not vn_only:
@@ -512,7 +512,7 @@ class VelocityAdvection:
         (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.local_boundary(EdgeDim) + 6,
-            HorizontalMarkerIndex.interior(EdgeDim) - 1,
+            HorizontalMarkerIndex.local(EdgeDim) - 1,
         )
 
         if not vn_only:
@@ -538,7 +538,7 @@ class VelocityAdvection:
         (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.local_boundary(CellDim) + 3,
-            HorizontalMarkerIndex.interior(CellDim) - 1,
+            HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
@@ -595,7 +595,7 @@ class VelocityAdvection:
         (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.interior(CellDim),
+            HorizontalMarkerIndex.local(CellDim),
         )
 
         velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
@@ -640,8 +640,8 @@ class VelocityAdvection:
 
         (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
             EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim),
-            HorizontalMarkerIndex.interior(EdgeDim),
+            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            HorizontalMarkerIndex.local(EdgeDim),
         )
 
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(

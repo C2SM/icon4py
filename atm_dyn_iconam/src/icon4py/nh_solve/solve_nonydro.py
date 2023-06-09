@@ -546,14 +546,14 @@ class SolveNonhydro:
 
         (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
             CellDim,
-            HorizontalMarkerIndex.interior(CellDim) - 1,
+            HorizontalMarkerIndex.local(CellDim) - 1,
             HorizontalMarkerIndex.local(CellDim),
         )
 
         (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
             CellDim,
-            0,
-            HorizontalMarkerIndex.nudging(CellDim),
+            HorizontalMarkerIndex.local_boundary(CellDim),
+            HorizontalMarkerIndex.nudging(CellDim) - 1,
         )
 
         if self.grid.limited_area():
@@ -694,7 +694,7 @@ class SolveNonhydro:
         (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.local_boundary(CellDim) + 2,
-            HorizontalMarkerIndex.interior(CellDim) - 1,
+            HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
         nhsolve_prog.predictor_stencils_2_3.with_backend(run_gtfn)(
@@ -812,7 +812,7 @@ class SolveNonhydro:
 
         (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 1,
+            HorizontalMarkerIndex.local_boundary(VertexDim) + 1, #TODO: check
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
@@ -869,24 +869,24 @@ class SolveNonhydro:
         if config.iadv_rhotheta <= 2:
             (tmp_0_0, tmp_0_1) = self.grid.get_indices_from_to(
                 EdgeDim,
-                HorizontalMarkerIndex.interior(EdgeDim) - 2,
-                HorizontalMarkerIndex.interior(EdgeDim) - 3,
+                HorizontalMarkerIndex.local(EdgeDim) - 2,
+                HorizontalMarkerIndex.local(EdgeDim) - 3,
             )
             if config.idiv_method == 1:
                 (tmp_0_0, tmp_0_1) = self.grid.get_indices_from_to(
                     EdgeDim,
-                    HorizontalMarkerIndex.interior(EdgeDim) - 2,
-                    HorizontalMarkerIndex.interior(EdgeDim) - 2,
+                    HorizontalMarkerIndex.local(EdgeDim) - 2,
+                    HorizontalMarkerIndex.local(EdgeDim) - 2,
                 )
             # TODO: this makes the code crash but it should not, it is most likely a bounds problem
-            # set_zero_e_k.with_backend(run_gtfn)(
-            #     field=self.z_rho_e,
-            #     horizontal_start=tmp_0_0,
-            #     horizontal_end=tmp_0_1,
-            #     vertical_start=0,
-            #     vertical_end=self.grid.n_lev(),
-            #     offset_provider={},
-            # )
+            set_zero_e_k.with_backend(run_gtfn)(
+                field=self.z_rho_e,
+                horizontal_start=tmp_0_0,
+                horizontal_end=tmp_0_1,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={},
+            )
 
             set_zero_e_k.with_backend(run_gtfn)(
                 field=self.z_theta_v_e,
@@ -968,7 +968,7 @@ class SolveNonhydro:
         (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.interior(EdgeDim),
+            HorizontalMarkerIndex.local(EdgeDim),
         )
 
         # Remaining computations at edge points
@@ -1118,7 +1118,7 @@ class SolveNonhydro:
         (indices_7_1, indices_7_2) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.interior(EdgeDim) - 2,
+            HorizontalMarkerIndex.local(EdgeDim) - 2,
         )
 
         mo_solve_nonhydro_stencil_30.with_backend(run_gtfn)(
@@ -1194,7 +1194,7 @@ class SolveNonhydro:
         (indices_9_1, indices_9_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.local_boundary(CellDim) + 2,
-            HorizontalMarkerIndex.interior(CellDim) - 1,
+            HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
         nhsolve_prog.stencils_39_40.with_backend(run_gtfn)(
@@ -1220,7 +1220,7 @@ class SolveNonhydro:
         (indices_10_1, indices_10_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.interior(CellDim),
+            HorizontalMarkerIndex.local(CellDim),
         )
 
         if config.idiv_method == 1:
@@ -1421,7 +1421,7 @@ class SolveNonhydro:
         (indices_11_1, indices_11_2) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.local_boundary(EdgeDim),
-            HorizontalMarkerIndex.nudging(CellDim),
+            HorizontalMarkerIndex.nudging(CellDim) - 1,
         )
 
         if self.grid.limited_area():  # for MPI-parallelized case
@@ -1538,7 +1538,7 @@ class SolveNonhydro:
         (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.local_boundary(CellDim) + 2,
-            HorizontalMarkerIndex.interior(CellDim),
+            HorizontalMarkerIndex.local(CellDim),
         )
 
         mo_solve_nonhydro_stencil_10.with_backend(run_gtfn)(
@@ -1574,7 +1574,7 @@ class SolveNonhydro:
         (indices_0_2, indices_0_3) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.local_boundary(EdgeDim) + 6,
-            HorizontalMarkerIndex.interior(EdgeDim) - 2,
+            HorizontalMarkerIndex.local(EdgeDim) - 2,
         )
 
         mo_solve_nonhydro_stencil_17.with_backend(run_gtfn)(
@@ -1595,7 +1595,7 @@ class SolveNonhydro:
         (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.interior(EdgeDim),
+            HorizontalMarkerIndex.local(EdgeDim),
         )
 
         if config.itime_scheme == 4:
@@ -1689,7 +1689,7 @@ class SolveNonhydro:
         (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.local_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.interior(EdgeDim) - 2,
+            HorizontalMarkerIndex.local(EdgeDim) - 2,
         )
 
         mo_solve_nonhydro_stencil_31.with_backend(run_gtfn)(
@@ -1771,7 +1771,7 @@ class SolveNonhydro:
         (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.interior(CellDim),
+            HorizontalMarkerIndex.local(CellDim),
         )
 
         if config.itime_scheme == 4:
@@ -1987,7 +1987,7 @@ class SolveNonhydro:
         (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.local_boundary(CellDim),
-            HorizontalMarkerIndex.nudging(CellDim),
+            HorizontalMarkerIndex.nudging(CellDim) - 1,
         )
 
         if lprep_adv:
