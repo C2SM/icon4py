@@ -29,7 +29,9 @@ def _mo_solve_nonhydro_stencil_65(
     r_nsubsteps: float,
 ) -> Field[[CellDim, KDim], float]:
     mass_flx_ic = mass_flx_ic + (
-        r_nsubsteps * rho_ic * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c)
+        r_nsubsteps
+        * rho_ic
+        * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c)
     )
     return mass_flx_ic
 

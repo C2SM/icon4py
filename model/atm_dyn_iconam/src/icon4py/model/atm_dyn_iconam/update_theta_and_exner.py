@@ -39,4 +39,6 @@ def update_theta_and_exner(
     exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
 ):
-    _update_theta_and_exner(z_temp, area, theta_v, exner, rd_o_cvd, out=(theta_v, exner))
+    _update_theta_and_exner(
+        z_temp, area, theta_v, exner, rd_o_cvd, out=(theta_v, exner)
+    )

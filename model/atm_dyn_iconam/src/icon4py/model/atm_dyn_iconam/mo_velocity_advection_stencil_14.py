@@ -42,9 +42,13 @@ def _mo_velocity_advection_stencil_14(
 
     vcfl = where(cfl_clipping, z_w_con_c * dtime / ddqz_z_half, 0.0)
 
-    z_w_con_c = where((cfl_clipping) & (vcfl < -0.85), -0.85 * ddqz_z_half / dtime, z_w_con_c)
+    z_w_con_c = where(
+        (cfl_clipping) & (vcfl < -0.85), -0.85 * ddqz_z_half / dtime, z_w_con_c
+    )
 
-    z_w_con_c = where((cfl_clipping) & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c)
+    z_w_con_c = where(
+        (cfl_clipping) & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c
+    )
 
     return cfl_clipping, pre_levelmask, vcfl, z_w_con_c
 

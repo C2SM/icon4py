@@ -14,7 +14,14 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.model.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import (
+    E2C,
+    E2V,
+    CellDim,
+    EdgeDim,
+    KDim,
+    VertexDim,
+)
 
 
 @field_operator
@@ -29,7 +36,9 @@ def _mo_velocity_advection_stencil_07(
 ) -> Field[[EdgeDim, KDim], float]:
     return vn_ie * inv_dual_edge_length * (
         w(E2C[0]) - w(E2C[1])
-    ) + z_vt_ie * inv_primal_edge_length * tangent_orientation * (z_w_v(E2V[0]) - z_w_v(E2V[1]))
+    ) + z_vt_ie * inv_primal_edge_length * tangent_orientation * (
+        z_w_v(E2V[0]) - z_w_v(E2V[1])
+    )
 
 
 @program

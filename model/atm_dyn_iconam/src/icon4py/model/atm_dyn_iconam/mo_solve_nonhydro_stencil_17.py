@@ -27,7 +27,10 @@ def _mo_solve_nonhydro_stencil_17(
 ) -> Field[[EdgeDim, KDim], float]:
     scalfac_dd3d = broadcast(scalfac_dd3d, (EdgeDim, KDim))
     z_graddiv_vn = z_graddiv_vn + (
-        hmask_dd3d * scalfac_dd3d * inv_dual_edge_length * (z_dwdz_dd(E2C[1]) - z_dwdz_dd(E2C[0]))
+        hmask_dd3d
+        * scalfac_dd3d
+        * inv_dual_edge_length
+        * (z_dwdz_dd(E2C[1]) - z_dwdz_dd(E2C[0]))
     )
     return z_graddiv_vn
 

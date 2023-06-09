@@ -15,7 +15,15 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim, Koff
+from icon4py.model.common.dimension import (
+    E2C,
+    E2EC,
+    CellDim,
+    ECDim,
+    EdgeDim,
+    KDim,
+    Koff,
+)
 
 
 @field_operator
@@ -40,12 +48,18 @@ def _mo_solve_nonhydro_stencil_20(
         (
             z_exner_ex_pr_1(E2C[1])
             + zdiff_gradp(E2EC[1])
-            * (z_dexner_dz_c1_1(E2C[1]) + zdiff_gradp(E2EC[1]) * z_dexner_dz_c2_1(E2C[1]))
+            * (
+                z_dexner_dz_c1_1(E2C[1])
+                + zdiff_gradp(E2EC[1]) * z_dexner_dz_c2_1(E2C[1])
+            )
         )
         - (
             z_exner_ex_pr_0(E2C[0])
             + zdiff_gradp(E2EC[0])
-            * (z_dexner_dz_c1_0(E2C[0]) + zdiff_gradp(E2EC[0]) * z_dexner_dz_c2_0(E2C[0]))
+            * (
+                z_dexner_dz_c1_0(E2C[0])
+                + zdiff_gradp(E2EC[0]) * z_dexner_dz_c2_0(E2C[0])
+            )
         )
     )
 

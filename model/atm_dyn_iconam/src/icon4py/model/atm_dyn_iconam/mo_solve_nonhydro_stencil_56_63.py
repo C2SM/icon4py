@@ -23,7 +23,9 @@ def _mo_solve_nonhydro_stencil_56_63(
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    z_dwdz_dd = inv_ddqz_z_full * ((w - w(Koff[1])) - (w_concorr_c - w_concorr_c(Koff[1])))
+    z_dwdz_dd = inv_ddqz_z_full * (
+        (w - w(Koff[1])) - (w_concorr_c - w_concorr_c(Koff[1]))
+    )
     return z_dwdz_dd
 
 
