@@ -20,6 +20,7 @@ from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import (
     CECDim,
+    CEDim,
     CellDim,
     ECVDim,
     EdgeDim,
@@ -192,6 +193,11 @@ class IconGrid:
         return NeighborTableOffsetProvider(
             c2cec_table, CellDim, CECDim, c2cec_table.shape[1]
         )
+
+    def get_c2ce_connectivity(self):
+        old_shape = self.connectivities["c2e"].shape
+        table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return NeighborTableOffsetProvider(table, CellDim, CEDim, table.shape[1])
 
 
 class VerticalModelParams:

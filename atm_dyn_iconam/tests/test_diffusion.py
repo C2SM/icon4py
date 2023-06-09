@@ -14,6 +14,9 @@
 import numpy as np
 import pytest
 
+from atm_dyn_iconam.tests.test_utils.serialbox_utils import (
+    IconDiffusionInitSavepoint,
+)
 from icon4py.common.dimension import KDim, VertexDim
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
@@ -26,9 +29,9 @@ from icon4py.diffusion.utils import (
     set_zero_v_k,
     setup_fields_for_initial_step,
 )
-from icon4py.testutils.serialbox_utils import IconDiffusionInitSavepoint
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 datarun_reduced_substeps = 2
@@ -401,9 +404,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
-
 @pytest.mark.datatest
-@pytest.mark.parametrize("step_date_init, step_date_exit", [("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"), ("2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"), ("2021-06-20T12:01:00.000", "2021-06-20T12:01:00.000")] )
+# @pytest.mark.parametrize("step_date_init, step_date_exit", [("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"), ("2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"), ("2021-06-20T12:01:00.000", "2021-06-20T12:01:00.000")] )
 def test_run_diffusion_single_step(
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
@@ -480,8 +482,8 @@ def test_run_diffusion_single_step(
     steep_points = np.asarray(diffusion.metric_state.mask_hdiff)
     assert np.allclose(ref_theta_v[~steep_points], val_theta_v[~steep_points])
     assert np.allclose(ref_exner[~steep_points], val_exner[~steep_points])
-    #assert np.allclose(ref_theta_v[steep_points], val_theta_v[steep_points])
-    #assert np.allclose(ref_exner[steep_points], val_exner[steep_points])
+    # assert np.allclose(ref_theta_v[steep_points], val_theta_v[steep_points])
+    # assert np.allclose(ref_exner[steep_points], val_exner[steep_points])
 
 
 @pytest.mark.datatest
@@ -562,6 +564,5 @@ def test_run_diffusion_initial_step(
     steep_points = np.asarray(diffusion.metric_state.mask_hdiff)
     assert np.allclose(ref_theta_v[~steep_points], val_theta_v[~steep_points])
     assert np.allclose(ref_exner[~steep_points], val_exner[~steep_points])
-    #assert np.allclose(ref_theta_v[steep_points], val_theta_v[steep_points])
-    #assert np.allclose(ref_exner[steep_points], val_exner[steep_points])
-
+    # assert np.allclose(ref_theta_v[steep_points], val_theta_v[steep_points])
+    # assert np.allclose(ref_exner[steep_points], val_exner[steep_points])

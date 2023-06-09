@@ -29,11 +29,17 @@ from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer,
 )
+from icon4py.atm_dyn_iconam.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
+    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+)
 from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import (
     calculate_horizontal_gradients_for_turbulence,
 )
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
+)
+from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import (
+    calculate_nabla2_for_theta,
 )
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import calculate_nabla2_for_w
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
@@ -42,20 +48,11 @@ from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
     fused_mo_nh_diffusion_stencil_04_05_06,
 )
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_07_08_09_10 import (
-    fused_mo_nh_diffusion_stencil_07_08_09_10,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import (
-    fused_mo_nh_diffusion_stencil_11_12,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
-    fused_mo_nh_diffusion_stencil_13_14,
-)
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
-    mo_nh_diffusion_stencil_15,
+from icon4py.atm_dyn_iconam.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
+    truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.constants import (
@@ -63,19 +60,7 @@ from icon4py.common.constants import (
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
 )
-from icon4py.common.dimension import (
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    CellDim,
-    E2C2VDim,
-    E2CDim,
-    ECVDim,
-    EdgeDim,
-    KDim,
-    V2EDim,
-    VertexDim,
-)
+from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import HorizontalMarkerIndex
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
@@ -735,7 +720,7 @@ class Diffusion:
             kh_smag_ec=self.kh_smag_ec,
             vn=prognostic_state.vn,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            geofac_div=self.interpolation_state.geofac_div,
+            geofac_div=self.interpolation_state._geofac_div,
             diff_multfac_smag=self.diff_multfac_smag,
             wgtfac_c=self.metric_state.wgtfac_c,
             div_ic=diagnostic_state.div_ic,
@@ -893,7 +878,9 @@ class Diffusion:
         # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
         #
         log.debug("running fused stencil 11_12: start")
-        fused_mo_nh_diffusion_stencil_11_12.with_backend(backend)(
+        calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
+            backend
+        )(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
@@ -909,7 +896,7 @@ class Diffusion:
         )
         log.debug("running fused stencil 11_12: end")
         log.debug("running fused stencil 13_14: start")
-        fused_mo_nh_diffusion_stencil_13_14.with_backend(backend)(
+        calculate_nabla2_for_theta.with_backend(backend)(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=inverse_dual_edge_length,
             theta_v=prognostic_state.theta_v,
@@ -922,11 +909,14 @@ class Diffusion:
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
                 "E2C": self.grid.get_e2c_connectivity(),
+                "C2CE": self.grid.get_c2ce_connectivity(),
             },
         )
         log.debug("running fused stencil 13_14: end")
         log.debug("running fused stencil 15: start")
-        mo_nh_diffusion_stencil_15.with_backend(backend)(
+        truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(
+            backend
+        )(
             mask=self.metric_state.mask_hdiff,
             zd_vertoffset=self.metric_state.zd_vertoffset,
             zd_diffcoef=self.metric_state.zd_diffcoef,
@@ -960,6 +950,5 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={},
         )
-
         log.debug("running fused stencil update_theta_and_exner: end")
         # 10. HALO EXCHANGE sync_patch_array

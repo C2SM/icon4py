@@ -20,6 +20,7 @@ import pytz
 from devtools import Timer
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
+from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
@@ -34,7 +35,6 @@ from icon4py.driver.io_utils import (
     read_initial_state,
     read_static_fields,
 )
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
 log = logging.getLogger(__name__)

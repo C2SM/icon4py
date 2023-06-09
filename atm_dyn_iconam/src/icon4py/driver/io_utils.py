@@ -15,14 +15,14 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+from atm_dyn_iconam.tests.test_utils import serialbox_utils
+from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.testutils import serialbox_utils
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"

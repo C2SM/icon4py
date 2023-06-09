@@ -17,7 +17,8 @@ import pytest
 import wget
 
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
+
+from .test_utils.serialbox_utils import IconSerialDataProvider
 
 
 data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
@@ -96,7 +97,7 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):
 
 
 @pytest.fixture
-def diffusion_savepoint_exit(data_provider,linit, step_date_exit):
+def diffusion_savepoint_exit(data_provider, linit, step_date_exit):
     """
     Load data from ICON savepoint at exist of diffusion module.
 

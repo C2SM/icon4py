@@ -21,6 +21,7 @@ from icon4py.common.dimension import (
     C2E2CODim,
     C2EDim,
     CECDim,
+    CEDim,
     CellDim,
     EdgeDim,
     V2EDim,
@@ -46,7 +47,7 @@ class InterpolationState:
         [VertexDim, V2EDim], float
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
-    geofac_div: Field[
+    _geofac_div: Field[
         [CellDim, C2EDim], float
     ]  # factor for divergence (nproma,cell_type,nblks_c)
 
@@ -60,6 +61,13 @@ class InterpolationState:
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
     @property
+    def geofac_div(self):
+        old_shape = np.asarray(self._geofac_div).shape
+        return np_as_located_field(CEDim)(
+            np.asarray(self._geofac_div).reshape((old_shape[0] * old_shape[1],))
+        )
+
+    @property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
         return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
 
@@ -68,5 +76,7 @@ class InterpolationState:
         geofac_nbh_ar = np.asarray(self.geofac_n2s)[:, 1:]
         old_shape = geofac_nbh_ar.shape
         return np_as_located_field(CECDim)(
-            geofac_nbh_ar.reshape(old_shape[0] * old_shape[1],)
+            geofac_nbh_ar.reshape(
+                old_shape[0] * old_shape[1],
+            )
         )

@@ -15,8 +15,9 @@ import numpy as np
 
 from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+
+from .test_utils.helpers import random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def update_theta_and_exner_numpy(
