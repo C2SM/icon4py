@@ -64,8 +64,9 @@ def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
 
 class StencilTest:
     def __init_subclass__(cls, **kwargs):
-        # The subclass will have two methods which are registered as test functions by pytest.
-        # This allows both the validation test and the benchmark test to be run.
+        # Add two methods for verification and benchmarking. In order to have names that 
+        # reflect the name of the test we do this dynamically here instead of using regular
+        # inheritance.
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
         setattr(cls, f"bench_{cls.__name__}", _bench_execution)
