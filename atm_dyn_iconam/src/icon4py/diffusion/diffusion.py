@@ -23,29 +23,24 @@ from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 import icon4py.diffusion.diffusion_program as diff_prog
+from icon4py.atm_dyn_iconam import calculate_diagnostic_quantities_for_turbulence
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
-    fused_mo_nh_diffusion_stencil_02_03,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
     fused_mo_nh_diffusion_stencil_04_05_06,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_07_08_09_10 import (
-    fused_mo_nh_diffusion_stencil_07_08_09_10,
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import (
-    fused_mo_nh_diffusion_stencil_11_12,
+    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
-    fused_mo_nh_diffusion_stencil_13_14,
+    calculate_nabla2_for_theta,
 )
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
-)
-from icon4py.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
-    mo_nh_diffusion_stencil_15,
 )
 from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
 from icon4py.common.constants import (
@@ -645,7 +640,7 @@ class Diffusion:
                 interpolation_e_bln_c_s=self.interpolation_state.e_bln_c_s,
                 interpolation_rbf_coeff_1=self.interpolation_state.rbf_coeff_1,
                 interpolation_rbf_coeff_2=self.interpolation_state.rbf_coeff_2,
-                interpolation_geofac_div=self.interpolation_state.geofac_div,
+                interpolation_geofac_div=self.interpolation_state._geofac_div,
                 interpolation_geofac_grg_x=self.interpolation_state.geofac_grg_x,
                 interpolation_geofac_grg_y=self.interpolation_state.geofac_grg_y,
                 interpolation_nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
@@ -865,11 +860,11 @@ class Diffusion:
         )
         log.debug("running calculate_nabla2_and_smag_coefficients_for_vn: end")
         log.debug("running fused stencil fused stencil 02_03: start")
-        fused_mo_nh_diffusion_stencil_02_03.with_backend(run_gtfn)(
+        calculate_diagnostic_quantities_for_turbulence.with_backend(run_gtfn)(
             kh_smag_ec=self.kh_smag_ec,
             vn=prognostic_state.vn,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            geofac_div=self.interpolation_state.geofac_div,
+            geofac_div=self.interpolation_state._geofac_div,
             diff_multfac_smag=self.diff_multfac_smag,
             wgtfac_c=self.metric_state.wgtfac_c,
             div_ic=diagnostic_state.div_ic,
@@ -940,12 +935,15 @@ class Diffusion:
         log.debug("running fused stencil 04_05_06: end")
 
         log.debug("running fused stencil 07_08_09_10: start")
-        fused_mo_nh_diffusion_stencil_07_08_09_10.with_backend(run_gtfn)(
+        w_old = prognostic_state.w
+        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance.with_backend(
+            run_gtfn
+        )(
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
             geofac_grg_y=self.interpolation_state.geofac_grg_y,
-            w_old=prognostic_state.w,
+            w_old=w_old,
             w=prognostic_state.w,
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
@@ -976,7 +974,9 @@ class Diffusion:
         # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
         #
         log.debug("running fused stencil 11_12: start")
-        fused_mo_nh_diffusion_stencil_11_12.with_backend(run_gtfn)(
+        calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
+            run_gtfn
+        )(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
@@ -992,7 +992,7 @@ class Diffusion:
         )
         log.debug("running fused stencil 11_12: end")
         log.debug("running fused stencil 13_14: start")
-        fused_mo_nh_diffusion_stencil_13_14.with_backend(run_gtfn)(
+        calculate_nabla2_for_theta.with_backend(run_gtfn)(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=inverse_dual_edge_length,
             theta_v=prognostic_state.theta_v,
@@ -1009,7 +1009,7 @@ class Diffusion:
         )
         log.debug("running fused stencil 13_14: end")
         log.debug("running fused stencil 15: start")
-        # mo_nh_diffusion_stencil_15(
+        # truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         #     self.metric_state.mask_hdiff,
         #     self.metric_state.zd_vertidx,
         #     self.metric_state.zd_diffcoef,

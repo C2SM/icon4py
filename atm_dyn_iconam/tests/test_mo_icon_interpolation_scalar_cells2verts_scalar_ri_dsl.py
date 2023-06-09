@@ -17,8 +17,9 @@ from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_d
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.common.dimension import CellDim, KDim, V2CDim, VertexDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(

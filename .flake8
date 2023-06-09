@@ -42,5 +42,5 @@ rst-roles =
     py:obj, obj,
 
 per-file-ignores =
-    pyutils/src/icon4py/pyutils/icochainsize.py:E800
+    tools/src/icon4pytools/icon4pygen/icochainsize.py:E800
     atm_dyn_iconam/src/icon4py/diffusion/horizontal.py:W605

@@ -17,7 +17,8 @@ import pytest
 import wget
 
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
+
+from .test_utils.serialbox_utils import IconSerialDataProvider
 
 
 data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"

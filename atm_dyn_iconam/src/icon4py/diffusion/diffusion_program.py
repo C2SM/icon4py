@@ -18,23 +18,20 @@ from gt4py.next.ffront.decorator import program
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.program_processors.runners import gtfn_cpu
 
+from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
+    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
+)
+from icon4py.atm_dyn_iconam.calculate_diagnostic_quantities_for_turbulence import (
+    _calculate_diagnostic_quantities_for_turbulence,
+)
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     _calculate_nabla2_and_smag_coefficients_for_vn,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_02_03 import (
-    _fused_mo_nh_diffusion_stencil_02_03,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
     _fused_mo_nh_diffusion_stencil_04_05_06,
 )
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_07_08_09_10 import (
-    _fused_mo_nh_diffusion_stencil_07_08_09_10,
-)
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import (
-    _fused_mo_nh_diffusion_stencil_11_12,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
-    _fused_mo_nh_diffusion_stencil_13_14,
+    _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
 )
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     _mo_intp_rbf_rbf_vec_interpol_vertex,
@@ -171,7 +168,7 @@ def diffusion_run(
         },
     )
 
-    _fused_mo_nh_diffusion_stencil_02_03(
+    _calculate_diagnostic_quantities_for_turbulence(
         local_kh_smag_ec,
         prognostic_vn,
         interpolation_e_bln_c_s,
@@ -232,12 +229,11 @@ def diffusion_run(
     # # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
     # #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
 
-    _fused_mo_nh_diffusion_stencil_07_08_09_10(
+    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
         cell_areas,
         interpolation_geofac_n2s,
         interpolation_geofac_grg_x,
         interpolation_geofac_grg_y,
-        prognostic_w,
         prognostic_w,
         diagnostic_dwdx,
         diagnostic_dwdy,
@@ -265,7 +261,7 @@ def diffusion_run(
     # # TODO @magdalena check: kh_smag_e is an out field, should  not be calculated in init?
     #
 
-    _fused_mo_nh_diffusion_stencil_11_12(
+    _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
         prognostic_theta_v,
         metric_theta_ref_mc,
         local_thresh_tdiff,
@@ -276,17 +272,17 @@ def diffusion_run(
             KDim: (nlev - 2, nlev),
         },
     )
-    _fused_mo_nh_diffusion_stencil_13_14(
-        local_kh_smag_e,
-        inverse_dual_edge_lengths,
-        prognostic_theta_v,
-        interpolation_geofac_div,
-        out=local_z_temp,
-        domain={
-            CellDim: (cell_startindex_nudging, cell_endindex_local),
-            KDim: (0, nlev),
-        },
-    )
+    # _calculate_nabla2_for_theta(
+    #     local_kh_smag_e,
+    #     inverse_dual_edge_lengths,
+    #     prognostic_theta_v,
+    #     interpolation_geofac_div,
+    #     out=local_z_temp,
+    #     domain={
+    #         CellDim: (cell_startindex_nudging, cell_endindex_local),
+    #         KDim: (0, nlev),
+    #     },
+    # )
 
     # MO_NH_DIFFUSION_STENCIL_15: as_offset index fields!
     # _mo_nh_diffusion_stencil_15(

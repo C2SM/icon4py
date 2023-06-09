@@ -18,7 +18,7 @@ from icon4py.atm_dyn_iconam.calculate_nabla2_for_z import _calculate_nabla2_for_
 from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import (
     _calculate_nabla2_of_theta,
 )
-from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, CEDim
 
 
 @field_operator
@@ -26,7 +26,7 @@ def _fused_mo_nh_diffusion_stencil_13_14(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
     theta_v: Field[[CellDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
+    geofac_div: Field[[CEDim], float],
 ) -> Field[[CellDim, KDim], float]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
@@ -38,7 +38,7 @@ def fused_mo_nh_diffusion_stencil_13_14(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
     theta_v: Field[[CellDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
+    geofac_div: Field[[CEDim], float],
     z_temp: Field[[CellDim, KDim], float],
     horizontal_start: int,
     horizontal_end: int,

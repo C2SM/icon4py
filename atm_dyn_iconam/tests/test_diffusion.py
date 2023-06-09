@@ -14,6 +14,9 @@
 import numpy as np
 import pytest
 
+from atm_dyn_iconam.tests.test_utils.serialbox_utils import (
+    IconDiffusionInitSavepoint,
+)
 from icon4py.common.dimension import KDim, VertexDim
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
@@ -26,9 +29,9 @@ from icon4py.diffusion.utils import (
     set_zero_v_k,
     setup_fields_for_initial_step,
 )
-from icon4py.testutils.serialbox_utils import IconDiffusionInitSavepoint
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 datarun_reduced_substeps = 2
