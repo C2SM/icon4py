@@ -22,9 +22,7 @@ def _mo_solve_nonhydro_stencil_18(
     inv_dual_edge_length: Field[[EdgeDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    z_gradh_exner = inv_dual_edge_length * (
-        z_exner_ex_pr(E2C[1]) - z_exner_ex_pr(E2C[0])
-    )
+    z_gradh_exner = inv_dual_edge_length * (z_exner_ex_pr(E2C[1]) - z_exner_ex_pr(E2C[0]))
     return z_gradh_exner
 
 

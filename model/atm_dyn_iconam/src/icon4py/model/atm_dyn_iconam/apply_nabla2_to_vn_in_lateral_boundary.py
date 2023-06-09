@@ -34,6 +34,4 @@ def apply_nabla2_to_vn_in_lateral_boundary(
     vn: Field[[EdgeDim, KDim], float],
     fac_bdydiff_v: float,
 ):
-    _apply_nabla2_to_vn_in_lateral_boundary(
-        z_nabla2_e, area_edge, vn, fac_bdydiff_v, out=vn
-    )
+    _apply_nabla2_to_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v, out=vn)

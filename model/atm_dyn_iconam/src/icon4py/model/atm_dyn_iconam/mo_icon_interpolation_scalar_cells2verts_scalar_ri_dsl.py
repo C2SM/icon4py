@@ -32,6 +32,4 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     c_intp: Field[[VertexDim, V2CDim], float],
     p_vert_out: Field[[VertexDim, KDim], float],
 ):
-    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-        p_cell_in, c_intp, out=p_vert_out
-    )
+    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(p_cell_in, c_intp, out=p_vert_out)

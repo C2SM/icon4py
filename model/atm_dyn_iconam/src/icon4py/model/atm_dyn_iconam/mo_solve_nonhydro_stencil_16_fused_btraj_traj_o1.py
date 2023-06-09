@@ -14,14 +14,7 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, where
 
-from icon4py.model.common.dimension import (
-    E2C,
-    E2EC,
-    CellDim,
-    ECDim,
-    EdgeDim,
-    KDim,
-)
+from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim
 
 
 @field_operator
@@ -39,13 +32,11 @@ def _compute_btraj(
     lvn_pos = where(p_vn > 0.0, True, False)
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf
-        + where(lvn_pos, pos_on_tplane_e_1(E2EC[0]), pos_on_tplane_e_1(E2EC[1]))
+        p_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1(E2EC[0]), pos_on_tplane_e_1(E2EC[1]))
     )
 
     z_ntdistv_bary_2 = -(
-        p_vt * p_dthalf
-        + where(lvn_pos, pos_on_tplane_e_2(E2EC[0]), pos_on_tplane_e_2(E2EC[1]))
+        p_vt * p_dthalf + where(lvn_pos, pos_on_tplane_e_2(E2EC[0]), pos_on_tplane_e_2(E2EC[1]))
     )
 
     p_distv_bary_1 = where(
