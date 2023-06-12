@@ -21,27 +21,41 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 
 @field_operator
-def _v_limit_prbl_sm_stencil_01(
+def _v_limit_prbl_sm_stencil_02(
+    l_limit: Field[[CellDim, KDim], int32],
     p_face: Field[[CellDim, KDim], float],
     p_cc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], int32]:
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
 
-    z_delta = p_face - p_face(Koff[1])
-    z_a6i = 6.0 * (p_cc - 0.5 * (p_face + p_face(Koff[1])))
 
-    l_limit = where(abs(z_delta) < -1.0*z_a6i, int32(1), int32(0))
- 
-    return l_limit
+    q_face_up, q_face_low = where(
+        l_limit!=int32(0),
+        where(
+            (p_cc < minimum(p_face, p_face(Koff[1]))),
+            (p_cc, p_cc),
+            where(
+                p_face > p_face(Koff[1]),
+                (3.0 * p_cc - 2.0 * p_face(Koff[1]), p_face(Koff[1])),
+                (p_face, 3.0 * p_cc - 2.0 * p_face),
+            ),
+        ),
+        (p_face, p_face(Koff[1])),
+    )
+
+    return q_face_up, q_face_low
 
 
 @program
-def v_limit_prbl_sm_stencil_01(
+def v_limit_prbl_sm_stencil_02(
+    l_limit: Field[[CellDim, KDim], int32],
     p_face: Field[[CellDim, KDim], float],
     p_cc: Field[[CellDim, KDim], float],
-    l_limit: Field[[CellDim, KDim], int32],
+    p_face_up: Field[[CellDim, KDim], float],
+    p_face_low: Field[[CellDim, KDim], float],
 ):
-    _v_limit_prbl_sm_stencil_01(
+    _v_limit_prbl_sm_stencil_02(
+        l_limit,
         p_face,
         p_cc,
-        out=l_limit,
+        out=(p_face_up, p_face_low),
     )
