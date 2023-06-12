@@ -16,8 +16,8 @@ from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.advection.hor_adv_stencil_01 import hor_adv_stencil_01
 from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import as_1D_sparse_field, random_field
+from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.utils import as_1D_sparse_field, random_field
 
 
 def hor_adv_stencil_01_numpy(

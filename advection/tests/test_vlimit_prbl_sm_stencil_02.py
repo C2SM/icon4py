@@ -19,8 +19,6 @@ from icon4py.advection.v_limit_prbl_sm_stencil_01 import (
 from icon4py.common.dimension import CellDim, KDim
 from .test_utils.simple_mesh import SimpleMesh
 from .test_utils.utils import random_field, zero_field
-from gt4py.next.ffront.fbuiltins import int32
-
 
 
 def v_limit_prbl_sm_stencil_01_numpy(
@@ -31,18 +29,31 @@ def v_limit_prbl_sm_stencil_01_numpy(
     z_delta = p_face[:, :-1] - p_face[:, 1:]
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face[:, :-1] + p_face[:, 1:]))
 
-    l_limit = np.where( np.abs(z_delta) < -1 * z_a6i, int32(1), int32(0))
+    q_face_up, q_face_low = np.where(
+        np.abs(z_delta) < -1 * z_a6i,
+        np.where(
+            (p_cc < np.minimum(p_face[:, :-1], p_face[:, 1:])),
+            (p_cc, p_cc),
+            np.where(
+                p_face[:, :-1] > p_face[:, 1:],
+                (3.0 * p_cc - 2.0 * p_face[:, 1:], p_face[:, 1:]),
+                (p_face[:, :-1], 3.0 * p_cc - 2.0 * p_face[:, :-1]),
+            ),
+        ),
+        (p_face[:, :-1], p_face[:, 1:]),
+    )
 
-    return l_limit
+    return q_face_up, q_face_low
 
 
 def test_v_limit_prbl_sm_stencil_01():
     mesh = SimpleMesh()
     p_cc = random_field(mesh, CellDim, KDim)
     p_face = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    l_limit = zero_field(mesh, CellDim, KDim, dtype=in32)
+    p_face_up = zero_field(mesh, CellDim, KDim)
+    p_face_low = zero_field(mesh, CellDim, KDim)
 
-    l_limit_ref = v_limit_prbl_sm_stencil_01_numpy(
+    p_face_up_ref, p_face_low_ref = v_limit_prbl_sm_stencil_01_numpy(
         np.asarray(p_face),
         np.asarray(p_cc),
     )
@@ -50,8 +61,10 @@ def test_v_limit_prbl_sm_stencil_01():
     v_limit_prbl_sm_stencil_01(
         p_face,
         p_cc,
-        l_limit,
+        p_face_up,
+        p_face_low,
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(l_limit_ref, l_limit)
+    assert np.allclose(p_face_up_ref[:, :-1], p_face_up[:, :-1])
+    assert np.allclose(p_face_low_ref[:, :-1], p_face_low[:, :-1])

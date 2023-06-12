@@ -18,8 +18,8 @@ from icon4py.advection.hflx_limiter_mo_stencil_02 import (
     hflx_limiter_mo_stencil_02,
 )
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import constant_field, random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.utils import constant_field, random_field, zero_field
 
 
 def hflx_limiter_mo_stencil_02_numpy(

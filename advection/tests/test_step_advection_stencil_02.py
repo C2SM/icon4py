@@ -15,8 +15,8 @@ import numpy as np
 
 from icon4py.advection.step_advection_stencil_02 import step_advection_stencil_02
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.utils import random_field, zero_field
 
 
 def step_advection_stencil_02_numpy(
