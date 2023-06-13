@@ -36,7 +36,7 @@ from icon4py.driver.io_utils import (
     read_initial_state,
     read_static_fields,
 )
-
+from icon4py.driver.parallel_setup import get_processor_properties
 
 log = logging.getLogger(__name__)
 
@@ -188,15 +188,18 @@ def initialize(n_time_steps, file_path: Path):
          diagnostic_state:
     """
     log.info("initialize parallel runtime")
-    parallel_props = get_processor_properties()
-    decomp_info = read_decomp_info(
-        "/home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/node2/mch_ch_r04b09_dsl/icon_grid",
-        parallel_props,
-    )
-
     experiment_name = "mch_ch_r04b09_dsl"
     log.info(f"reading configuration: experiment {experiment_name}")
     config = read_config(experiment_name, n_time_steps=n_time_steps)
+
+    parallel_props = get_processor_properties()
+    decomp_info = read_decomp_info(
+        f"/home/magdalena/data/exclaim/dycore/{experiment_name}/mpitasks2/{experiment_name}/ser_data",
+        parallel_props,
+    )
+
+
+
     log.info("initializing the grid")
     icon_grid = read_icon_grid(file_path)
     log.info("reading input fields")
