@@ -13,25 +13,26 @@
 
 import numpy as np
 
-from icon4py.advection.v_limit_prbl_sm_stencil_01 import (
-    v_limit_prbl_sm_stencil_01,
+from gt4py.next.ffront.fbuiltins import int32
+
+
+from icon4py.advection.v_limit_prbl_sm_stencil_02 import (
+    v_limit_prbl_sm_stencil_02,
 )
 from icon4py.common.dimension import CellDim, KDim
 
-from .test_utils.helpers import random_field, zero_field
+from .test_utils.helpers import random_field, zero_field, random_mask
 from .test_utils.simple_mesh import SimpleMesh
 
 
-def v_limit_prbl_sm_stencil_01_numpy(
+def v_limit_prbl_sm_stencil_02_numpy(
+    l_limit: np.array,
     p_face: np.array,
     p_cc: np.array,
 ):
 
-    z_delta = p_face[:, :-1] - p_face[:, 1:]
-    z_a6i = 6.0 * (p_cc - 0.5 * (p_face[:, :-1] + p_face[:, 1:]))
-
     q_face_up, q_face_low = np.where(
-        np.abs(z_delta) < -1 * z_a6i,
+        l_limit != int32(0),
         np.where(
             (p_cc < np.minimum(p_face[:, :-1], p_face[:, 1:])),
             (p_cc, p_cc),
@@ -47,19 +48,22 @@ def v_limit_prbl_sm_stencil_01_numpy(
     return q_face_up, q_face_low
 
 
-def test_v_limit_prbl_sm_stencil_01():
+def test_v_limit_prbl_sm_stencil_02():
     mesh = SimpleMesh()
+    l_limit = random_mask(mesh, CellDim, KDim, dtype=int32)
     p_cc = random_field(mesh, CellDim, KDim)
     p_face = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     p_face_up = zero_field(mesh, CellDim, KDim)
     p_face_low = zero_field(mesh, CellDim, KDim)
 
-    p_face_up_ref, p_face_low_ref = v_limit_prbl_sm_stencil_01_numpy(
+    p_face_up_ref, p_face_low_ref = v_limit_prbl_sm_stencil_02_numpy(
+        np.asarray(l_limit),
         np.asarray(p_face),
         np.asarray(p_cc),
     )
 
-    v_limit_prbl_sm_stencil_01(
+    v_limit_prbl_sm_stencil_02(
+        l_limit,
         p_face,
         p_cc,
         p_face_up,
