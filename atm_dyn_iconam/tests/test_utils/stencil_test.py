@@ -74,7 +74,7 @@ class StencilTest:
     ...        return {"some_input": ..., "some_output": ...}
     ...
     ...    @staticmethod
-    ...    def reference(some_input):
+    ...    def reference(some_input, **kwargs):
     ...        return dict(some_output=np.asarray(some_input)*2)
     """
 
