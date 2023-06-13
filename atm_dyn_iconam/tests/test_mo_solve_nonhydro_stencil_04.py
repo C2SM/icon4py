@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_04 import (
     mo_solve_nonhydro_stencil_04,
@@ -19,37 +20,38 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_04 import (
 from icon4py.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_04_numpy(
-    wgtfacq_c: np.array,
-    z_exner_ex_pr: np.array,
-) -> np.array:
-    z_exner_ic = (
-        np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_exner_ex_pr, shift=1, axis=1)
-        + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_exner_ex_pr, shift=2, axis=1)
-        + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_exner_ex_pr, shift=3, axis=1)
-    )
-    return z_exner_ic
+class TestMoSolveNonhydroStencil04(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_04
+    OUTPUTS = ("z_exner_ic",)
 
+    @staticmethod
+    def reference(
+        mesh,
+        z_exner_ex_pr: np.array,
+        wgtfacq_c: np.array,
+        z_exner_ic: np.array,
+    ) -> np.array:
+        z_exner_ic[:, 3:] = (
+            np.roll(wgtfacq_c, shift=1, axis=1)
+            * np.roll(z_exner_ex_pr, shift=1, axis=1)
+            + np.roll(wgtfacq_c, shift=2, axis=1)
+            * np.roll(z_exner_ex_pr, shift=2, axis=1)
+            + np.roll(wgtfacq_c, shift=3, axis=1)
+            * np.roll(z_exner_ex_pr, shift=3, axis=1)
+        )[:, 3:]
+        return {"z_exner_ic": z_exner_ic}
 
-def test_mo_solve_nonhydro_stencil_04():
-    mesh = SimpleMesh()
-    z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-    wgtfacq_c = random_field(mesh, CellDim, KDim)
-    z_exner_ic = zero_field(mesh, CellDim, KDim)
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
+        wgtfacq_c = random_field(mesh, CellDim, KDim)
+        z_exner_ic = zero_field(mesh, CellDim, KDim)
 
-    z_exner_ic_ref = mo_solve_nonhydro_stencil_04_numpy(
-        np.asarray(wgtfacq_c),
-        np.asarray(z_exner_ex_pr),
-    )
-
-    mo_solve_nonhydro_stencil_04(
-        z_exner_ex_pr,
-        wgtfacq_c,
-        z_exner_ic,
-        offset_provider={"Koff": KDim},
-    )
-
-    assert np.allclose(z_exner_ic, z_exner_ic_ref)
+        return dict(
+            z_exner_ex_pr=z_exner_ex_pr,
+            wgtfacq_c=wgtfacq_c,
+            z_exner_ic=z_exner_ic,
+        )

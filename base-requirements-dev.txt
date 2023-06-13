@@ -16,6 +16,7 @@ isort~=5.10
 mypy>=0.942
 pre-commit~=2.15
 pytest>=6.1
+pytest-benchmark>=4.0.0
 pytest-cache>=1.0
 pytest-cov>=2.8
 pytest-factoryboy>=2.0
