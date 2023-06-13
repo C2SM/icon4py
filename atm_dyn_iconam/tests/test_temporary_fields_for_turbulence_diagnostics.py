@@ -17,9 +17,9 @@ from gt4py.next import StridedNeighborOffsetProvider
 from icon4py.atm_dyn_iconam.temporary_fields_for_turbulence_diagnostics import (
     temporary_fields_for_turbulence_diagnostics,
 )
-from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim, CEDim
+from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 
-from .test_utils.helpers import random_field, zero_field, as_1D_sparse_field
+from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh
 
 

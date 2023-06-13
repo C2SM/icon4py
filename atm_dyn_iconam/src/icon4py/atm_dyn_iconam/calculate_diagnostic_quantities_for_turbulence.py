@@ -20,7 +20,7 @@ from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
 from icon4py.atm_dyn_iconam.temporary_fields_for_turbulence_diagnostics import (
     _temporary_fields_for_turbulence_diagnostics,
 )
-from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim, CEDim
+from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
 
 @field_operator

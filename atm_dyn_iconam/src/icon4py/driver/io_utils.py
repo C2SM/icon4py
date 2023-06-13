@@ -27,7 +27,6 @@ from icon4py.diffusion.prognostic_state import PrognosticState
 from icon4py.driver.parallel_setup import DecompositionInfo
 
 
-
 SERIALBOX_ONLY_MSG = "Only ser_type='sb (Serialbox)' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"

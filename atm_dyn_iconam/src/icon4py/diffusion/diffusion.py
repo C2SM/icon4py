@@ -25,14 +25,15 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn_cached,
 )
 
-from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import calculate_nabla2_for_theta
-from icon4py.atm_dyn_iconam.calculate_diagnostic_quantities_for_turbulence import calculate_diagnostic_quantities_for_turbulence
+from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
+)
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer,
 )
-from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
+from icon4py.atm_dyn_iconam.calculate_diagnostic_quantities_for_turbulence import (
+    calculate_diagnostic_quantities_for_turbulence,
 )
 from icon4py.atm_dyn_iconam.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
@@ -43,9 +44,10 @@ from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-
+from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import (
+    calculate_nabla2_for_theta,
+)
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import calculate_nabla2_for_w
-
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
     fused_mo_nh_diffusion_stencil_04_05_06,
 )
