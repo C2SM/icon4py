@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, maximum, minimum, sqrt
 
@@ -135,7 +136,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     return kh_smag_e, kh_smag_ec, z_nabla2_e
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[KDim], float],
     tangent_orientation: Field[[EdgeDim], float],

@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
     Field,
@@ -83,7 +84,7 @@ def _mo_velocity_advection_stencil_20(
     return ddt_vn_adv
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_20(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], float],
