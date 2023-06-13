@@ -12,15 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.advection.v_limit_prbl_sm_stencil_01 import (
     v_limit_prbl_sm_stencil_01,
 )
 from icon4py.common.dimension import CellDim, KDim
-from .test_utils.simple_mesh import SimpleMesh
-from .test_utils.helpers import random_field, zero_field
-from gt4py.next.ffront.fbuiltins import int32
 
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def v_limit_prbl_sm_stencil_01_numpy(
@@ -31,7 +31,7 @@ def v_limit_prbl_sm_stencil_01_numpy(
     z_delta = p_face[:, :-1] - p_face[:, 1:]
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face[:, :-1] + p_face[:, 1:]))
 
-    l_limit = np.where( np.abs(z_delta) < -1 * z_a6i, int32(1), int32(0))
+    l_limit = np.where(np.abs(z_delta) < -1 * z_a6i, int32(1), int32(0))
 
     return l_limit
 
@@ -40,7 +40,7 @@ def test_v_limit_prbl_sm_stencil_01():
     mesh = SimpleMesh()
     p_cc = random_field(mesh, CellDim, KDim)
     p_face = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    l_limit = zero_field(mesh, CellDim, KDim, dtype=in32)
+    l_limit = zero_field(mesh, CellDim, KDim, dtype=int32)
 
     l_limit_ref = v_limit_prbl_sm_stencil_01_numpy(
         np.asarray(p_face),

@@ -15,8 +15,9 @@ import numpy as np
 
 from icon4py.atm_dyn_iconam.compute_airmass import compute_airmass
 from icon4py.common.dimension import CellDim, KDim
-from .test_utils.simple_mesh import SimpleMesh
+
 from .test_utils.helpers import random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def compute_airmass_numpy(
