@@ -18,7 +18,7 @@ from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.stencil import StencilTest
+from .test_utils.stencil_test import StencilTest
 
 
 class TestMoApplyNabla2ToW(StencilTest):

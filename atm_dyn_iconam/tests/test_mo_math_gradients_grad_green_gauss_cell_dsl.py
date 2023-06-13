@@ -20,7 +20,7 @@ from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.stencil import StencilTest
+from .test_utils.stencil_test import StencilTest
 
 
 class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):

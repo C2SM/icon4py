@@ -20,7 +20,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_67 import (
 from icon4py.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.stencil import StencilTest
+from .test_utils.stencil_test import StencilTest
 
 
 class TestMoSolveNonhydroStencil67(StencilTest):

@@ -20,7 +20,7 @@ from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_to_vn import (
 from icon4py.common.dimension import EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.stencil import StencilTest
+from .test_utils.stencil_test import StencilTest
 
 
 class TestApplyNabla2AndNabla4ToVn(StencilTest):

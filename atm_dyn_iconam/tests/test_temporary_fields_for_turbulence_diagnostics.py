@@ -20,7 +20,7 @@ from icon4py.atm_dyn_iconam.temporary_fields_for_turbulence_diagnostics import (
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.stencil import StencilTest
+from .test_utils.stencil_test import StencilTest
 
 
 class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):

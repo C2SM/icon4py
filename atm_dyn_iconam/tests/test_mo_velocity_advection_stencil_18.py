@@ -20,7 +20,7 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
 from .test_utils.helpers import random_field, random_mask
-from .test_utils.stencil import StencilTest
+from .test_utils.stencil_test import StencilTest
 
 
 class TestMoVelocityAdvectionStencil18(StencilTest):
