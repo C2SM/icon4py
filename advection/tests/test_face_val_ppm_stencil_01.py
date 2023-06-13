@@ -18,7 +18,7 @@ from gt4py.next.iterator import embedded as it_embedded
 from icon4py.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
 from icon4py.common.dimension import CellDim, KDim
 from .test_utils.simple_mesh import SimpleMesh
-from .test_utils.utils import _shape, random_field, zero_field
+from .test_utils.helpers import _shape, random_field, zero_field
 
 
 def face_val_ppm_stencil_01_numpy(

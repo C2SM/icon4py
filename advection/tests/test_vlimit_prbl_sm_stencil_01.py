@@ -18,7 +18,7 @@ from icon4py.advection.v_limit_prbl_sm_stencil_01 import (
 )
 from icon4py.common.dimension import CellDim, KDim
 from .test_utils.simple_mesh import SimpleMesh
-from .test_utils.utils import random_field, zero_field
+from .test_utils.helpers import random_field, zero_field
 from gt4py.next.ffront.fbuiltins import int32
 
 

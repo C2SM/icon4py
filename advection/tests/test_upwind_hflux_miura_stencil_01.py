@@ -18,7 +18,7 @@ from icon4py.advection.upwind_hflux_miura_stencil_01 import (
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 from .test_utils.simple_mesh import SimpleMesh
-from .test_utils.utils import random_field, zero_field
+from .test_utils.helpers import random_field, zero_field
 
 
 def upwind_hflux_miura_stencil_01_numpy(

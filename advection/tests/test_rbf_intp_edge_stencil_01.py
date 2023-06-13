@@ -16,7 +16,7 @@ import numpy as np
 from icon4py.advection.rbf_intp_edge_stencil_01 import rbf_intp_edge_stencil_01
 from icon4py.common.dimension import E2C2EDim, EdgeDim, KDim
 from .test_utils.simple_mesh import SimpleMesh
-from .test_utils.utils import random_field, zero_field
+from .test_utils.helpers import random_field, zero_field
 
 
 def rbf_intp_edge_stencil_01_numpy(

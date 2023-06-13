@@ -10,18 +10,3 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-import numpy as np
-
-from icon4py.advection.set_zero_c_k import set_zero_c_k
-from icon4py.common.dimension import CellDim, KDim
-from .test_utils.simple_mesh import SimpleMesh
-from .test_utils.helpers import random_field, zero_field
-
-
-def test_set_zero_c_k():
-    mesh = SimpleMesh()
-    field = random_field(mesh, CellDim, KDim)
-
-    set_zero_c_k(field, offset_provider={})
-    assert np.allclose(field, zero_field(mesh, CellDim, KDim))

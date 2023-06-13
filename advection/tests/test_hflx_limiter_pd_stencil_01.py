@@ -19,7 +19,7 @@ from icon4py.advection.hflx_limiter_pd_stencil_01 import (
 )
 from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from .test_utils.simple_mesh import SimpleMesh
-from .test_utils.utils import as_1D_sparse_field, random_field, zero_field
+from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 
 
 def hflx_limiter_pd_stencil_01_numpy(
