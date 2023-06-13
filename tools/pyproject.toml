@@ -27,6 +27,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
+    "icon4py_advection",
     "icon4py_atm_dyn_iconam",
     "gt4py>=1.0.1",
     "icon4py_common",

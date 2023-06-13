@@ -5,7 +5,7 @@ default_language_version:
     # Remove frozen version once we migrated away from tsa
     node: 17.9.1
 minimum_pre_commit_version: 2.20.0
-exclude: "atm_dyn_iconam/.*"
+exclude: "advection/.*", "atm_dyn_iconam/.*"
 
 repos:
     - repo: meta

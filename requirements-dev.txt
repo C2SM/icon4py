@@ -3,6 +3,7 @@
 # Concretized dependencies in local repo
 -e ./common
 -e ./atm_dyn_iconam
+-e ./advection
 
 # icon4pytools
 -e ./tools
