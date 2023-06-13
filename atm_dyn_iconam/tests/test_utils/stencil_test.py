@@ -57,10 +57,7 @@ if is_pytest_benchmark_available():
 else:
 
     def _bench_execution(self, pytestconfig):
-        if not pytestconfig.getoption("--benchmark-disable"):
-            raise RuntimeError(
-                "Package `pytest_benchmark` required to execute benchmarks."
-            )
+        pytest.skip("Test skipped as `pytest-benchmark` is not installed.")
 
 
 class StencilTest:
