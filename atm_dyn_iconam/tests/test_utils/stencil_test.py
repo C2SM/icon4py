@@ -14,16 +14,13 @@ from typing import ClassVar
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.decorator import Program
 
 
-def is_pytest_benchmark_available():
-    try:
-        import pytest_benchmark  # noqa: F401
-
-        return True
-    except ModuleNotFoundError:
-        pass
-    return False
+try:
+    import pytest_benchmark
+except ModuleNotFoundError:
+    pytest_benchmark = None
 
 
 def _test_validation(self, mesh, backend, input_data):
@@ -40,7 +37,7 @@ def _test_validation(self, mesh, backend, input_data):
         ), f"Validation failed for '{name}'"
 
 
-if is_pytest_benchmark_available():
+if pytest_benchmark:
 
     def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
         if pytestconfig.getoption(
@@ -64,21 +61,22 @@ class StencilTest:
     """
     Base class to be used for testing stencils.
 
-    Example:
-    >>> class TestMultiplyByTwo(StencilTest): # doctest: +SKIP
-    ...    PROGRAM = multiply_by_two  # noqa: F821
-    ...    OUTPUTS = ("some_output",)
-    ...
-    ...    @pytest.fixture
-    ...    def input_data(self):
-    ...        return {"some_input": ..., "some_output": ...}
-    ...
-    ...    @staticmethod
-    ...    def reference(some_input, **kwargs):
-    ...        return dict(some_output=np.asarray(some_input)*2)
+    Example (pseudo-code):
+
+        >>> class TestMultiplyByTwo(StencilTest): # doctest: +SKIP
+        ...    PROGRAM = multiply_by_two  # noqa: F821
+        ...    OUTPUTS = ("some_output",)
+        ...
+        ...    @pytest.fixture
+        ...    def input_data(self):
+        ...        return {"some_input": ..., "some_output": ...}
+        ...
+        ...    @staticmethod
+        ...    def reference(some_input, **kwargs):
+        ...        return dict(some_output=np.asarray(some_input)*2)
     """
 
-    PROGRAM: ClassVar[str]
+    PROGRAM: ClassVar[Program]
     OUTPUTS: ClassVar[tuple[str, ...]]
 
     def __init_subclass__(cls, **kwargs):
