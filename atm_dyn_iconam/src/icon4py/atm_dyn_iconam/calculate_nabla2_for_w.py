@@ -30,5 +30,17 @@ def calculate_nabla2_for_w(
     w: Field[[CellDim, KDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
-    _calculate_nabla2_for_w(w, geofac_n2s, out=z_nabla2_c)
+    _calculate_nabla2_for_w(
+        w,
+        geofac_n2s,
+        out=z_nabla2_c,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

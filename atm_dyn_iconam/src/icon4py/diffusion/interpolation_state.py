@@ -18,9 +18,10 @@ from gt4py.next.common import Field
 from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
-    C2E2CDim,
     C2E2CODim,
     C2EDim,
+    CECDim,
+    CEDim,
     CellDim,
     EdgeDim,
     V2EDim,
@@ -37,7 +38,7 @@ class InterpolationState:
     """
 
     e_bln_c_s: Field[
-        [CellDim, C2EDim], float
+        [CEDim], float
     ]  # coefficent for bilinear interpolation from edge to cell ()
     rbf_coeff_1: Field[
         [VertexDim, V2EDim], float
@@ -47,16 +48,16 @@ class InterpolationState:
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
     geofac_div: Field[
-        [CellDim, C2EDim], float
+        [CEDim], float
     ]  # factor for divergence (nproma,cell_type,nblks_c)
 
     geofac_n2s: Field[
         [CellDim, C2E2CODim], float
     ]  # factor for nabla2-scalar (nproma,cell_type+1,nblks_c)
-    geofac_grg_x: Field[
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float]
+    geofac_grg_y: Field[
         [CellDim, C2E2CODim], float
-    ]  # factor for green gauss gradient (nproma,4,nblks_c,2)
-    geofac_grg_y: Field[[CellDim, C2E2CODim], float]
+    ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
     @property
@@ -64,7 +65,11 @@ class InterpolationState:
         return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
 
     @property
-    def geofac_n2s_nbh(self) -> Field[[CellDim, C2E2CDim], float]:
-        return np_as_located_field(CellDim, C2E2CDim)(
-            np.asarray(self.geofac_n2s)[:, 1:]
+    def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
+        geofac_nbh_ar = np.asarray(self.geofac_n2s)[:, 1:]
+        old_shape = geofac_nbh_ar.shape
+        return np_as_located_field(CECDim)(
+            geofac_nbh_ar.reshape(
+                old_shape[0] * old_shape[1],
+            )
         )

@@ -17,8 +17,9 @@ from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer,
 )
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+
+from .test_utils.helpers import random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def apply_nabla2_to_w_in_upper_damping_layer_numpy(
@@ -51,6 +52,10 @@ def test_apply_nabla2_to_w_in_upper_damping_layer():
         diff_multfac_n2w,
         cell_area,
         z_nabla2_c,
+        0,
+        mesh.n_cells,
+        0,
+        mesh.k_level,
         offset_provider={},
     )
     assert np.allclose(w, ref)

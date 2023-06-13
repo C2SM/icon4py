@@ -12,16 +12,18 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next import StridedNeighborOffsetProvider
 
 from icon4py.atm_dyn_iconam.temporary_fields_for_turbulence_diagnostics import (
     temporary_fields_for_turbulence_diagnostics,
 )
-from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim, CEDim
+
+from .test_utils.helpers import random_field, zero_field, as_1D_sparse_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
-def mo_nh_diffusion_stencil_02_numpy(
+def temporary_fields_for_turbulence_diagnostics_numpy(
     c2e: np.array,
     kh_smag_ec: np.array,
     vn: np.array,
@@ -42,7 +44,7 @@ def mo_nh_diffusion_stencil_02_numpy(
     return div, kh_c
 
 
-def test_mo_nh_diffusion_stencil_02():
+def test_temporary_fields_for_turbulence_diagnostics_numpy():
     mesh = SimpleMesh()
 
     vn = random_field(mesh, EdgeDim, KDim)
@@ -54,7 +56,7 @@ def test_mo_nh_diffusion_stencil_02():
     kh_c = zero_field(mesh, CellDim, KDim)
     div = zero_field(mesh, CellDim, KDim)
 
-    div_ref, kh_c_ref = mo_nh_diffusion_stencil_02_numpy(
+    div_ref, kh_c_ref = temporary_fields_for_turbulence_diagnostics_numpy(
         mesh.c2e,
         np.asarray(kh_smag_ec),
         np.asarray(vn),
@@ -66,14 +68,14 @@ def test_mo_nh_diffusion_stencil_02():
     temporary_fields_for_turbulence_diagnostics(
         kh_smag_ec,
         vn,
-        e_bln_c_s,
-        geofac_div,
+        as_1D_sparse_field(e_bln_c_s, CEDim),
+        as_1D_sparse_field(geofac_div, CEDim),
         diff_multfac_smag,
         kh_c,
         div,
         offset_provider={
             "C2E": mesh.get_c2e_offset_provider(),
-            "C2EDim": C2EDim,
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
         },
     )
     assert np.allclose(kh_c, kh_c_ref)

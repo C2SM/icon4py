@@ -38,5 +38,20 @@ def apply_nabla2_to_w(
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     w: Field[[CellDim, KDim], float],
     diff_multfac_w: float,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
-    _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w, diff_multfac_w, out=w)
+    _apply_nabla2_to_w(
+        area,
+        z_nabla2_c,
+        geofac_n2s,
+        w,
+        diff_multfac_w,
+        out=w,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

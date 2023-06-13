@@ -143,13 +143,13 @@ def diffusion_run(
         theta_v=theta_v,
     )
     if linit:
-        diffusion.initial_step(
+        diffusion.initial_run(
             diagnostic_state,
             prognostic_state,
             dtime,
         )
     else:
-        diffusion.time_step(diagnostic_state, prognostic_state, dtime)
+        diffusion.run(diagnostic_state, prognostic_state, dtime)
 
 
 class DuplicateInitializationException(Exception):

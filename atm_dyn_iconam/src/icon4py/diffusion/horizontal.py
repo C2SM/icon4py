@@ -42,19 +42,22 @@ class HorizontalMarkerIndex:
     _LOCAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES
     _INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES
     _NUDGING_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + _ICON_INDEX_OFFSET_EDGES
-    _HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES
+    _HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES
+    _LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES
     _END_EDGES: Final[int] = 0
 
     _LOCAL_BOUNDARY_CELLS: Final[int] = 1 + _ICON_INDEX_OFFSET_CELLS
     _INTERIOR_CELLS: Final[int] = _ICON_INDEX_OFFSET_CELLS
     _NUDGING_CELLS: Final[int] = _GRF_BOUNDARY_WIDTH_CELL + 1 + _ICON_INDEX_OFFSET_CELLS
-    _HALO_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS
+    _HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS
+    _LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS
     _END_CELLS: Final[int] = 0
 
     _LOCAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX
     _INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX
     _NUDGING_VERTICES: Final[int] = 0
-    _HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
+    _HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX
+    _LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
     _END_VERTICES: Final[int] = 0
 
     @classmethod
@@ -69,6 +72,16 @@ class HorizontalMarkerIndex:
 
     @classmethod
     def local(cls, dim: Dimension) -> int:
+        match (dim):
+            case (dimension.CellDim):
+                return cls._LOCAL_CELLS
+            case (dimension.EdgeDim):
+                return cls._LOCAL_EDGES
+            case (dimension.VertexDim):
+                return cls._LOCAL_VERTICES
+
+    @classmethod
+    def halo(cls, dim: Dimension) -> int:
         match (dim):
             case (dimension.CellDim):
                 return cls._HALO_CELLS

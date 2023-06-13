@@ -14,22 +14,30 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import (
+    C2CE,
+    C2E,
+    C2EDim,
+    CEDim,
+    CellDim,
+    EdgeDim,
+    KDim,
+)
 
 
 @field_operator
 def _calculate_nabla2_of_theta(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
+    geofac_div: Field[[CEDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div, axis=C2EDim)
+    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)
     return z_temp
 
 
 @program
 def calculate_nabla2_of_theta(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
+    geofac_div: Field[[CEDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ):
     _calculate_nabla2_of_theta(z_nabla2_e, geofac_div, out=z_temp)

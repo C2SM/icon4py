@@ -18,7 +18,9 @@ from typing import Callable
 import click
 import pytz
 from devtools import Timer
+from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
+from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
@@ -34,8 +36,6 @@ from icon4py.driver.io_utils import (
     read_initial_state,
     read_static_fields,
 )
-from icon4py.driver.parallel_setup import get_processor_properties
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
 
 
 log = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class DummyAtmoNonHydro:
         )
         new_p = sp.construct_prognostics()
         new_d = sp.construct_diagnostics()
-        copy_diagnostic_and_prognostics(
+        copy_diagnostic_and_prognostics.with_backend(run_gtfn)(
             new_d.hdef_ic,
             diagnostic_state.hdef_ic,
             new_d.div_ic,
@@ -123,7 +123,7 @@ class Timeloop:
         self.atmo_non_hydro.do_dynamics_substepping(
             self.config.dtime, diagnostic_state, prognostic_state
         )
-        self.diffusion.time_step(
+        self.diffusion.run(
             diagnostic_state,
             prognostic_state,
             self.config.dtime,
@@ -146,7 +146,7 @@ class Timeloop:
             f"starting time loop for dtime={self.config.dtime} n_timesteps={self.config.n_time_steps}"
         )
         log.info("running initial step to diffuse fields before timeloop starts")
-        self.diffusion.initial_step(
+        self.diffusion.initial_run(
             diagnostic_state,
             prognostic_state,
             self.config.dtime,

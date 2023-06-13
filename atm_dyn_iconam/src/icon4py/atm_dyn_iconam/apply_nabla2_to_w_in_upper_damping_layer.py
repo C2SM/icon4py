@@ -34,7 +34,19 @@ def apply_nabla2_to_w_in_upper_damping_layer(
     diff_multfac_n2w: Field[[KDim], float],
     cell_area: Field[[CellDim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _apply_nabla2_to_w_in_upper_damping_layer(
-        w, diff_multfac_n2w, cell_area, z_nabla2_c, out=w
+        w,
+        diff_multfac_n2w,
+        cell_area,
+        z_nabla2_c,
+        out=w,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

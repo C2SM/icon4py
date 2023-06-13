@@ -35,7 +35,18 @@ def calculate_horizontal_gradients_for_turbulence(
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
 ):
     _calculate_horizontal_gradients_for_turbulence(
-        w, geofac_grg_x, geofac_grg_y, out=(dwdx, dwdy)
+        w,
+        geofac_grg_x,
+        geofac_grg_y,
+        out=(dwdx, dwdy),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

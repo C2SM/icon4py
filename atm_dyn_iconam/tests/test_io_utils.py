@@ -102,7 +102,7 @@ def assert_metric_state_fields(metric_state):
     assert metric_state.zd_diffcoef
     assert metric_state.theta_ref_mc
     assert metric_state.mask_hdiff
-    assert metric_state.zd_vertidx
+    assert metric_state.zd_vertoffset
 
 
 def assert_interpolation_state_fields(interpolation_state):

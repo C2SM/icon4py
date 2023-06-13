@@ -15,8 +15,9 @@ import numpy as np
 
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+
+from .test_utils.helpers import random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_apply_nabla2_to_w(
@@ -59,6 +60,10 @@ def test_apply_nabla2_to_w():
         geofac_n2s,
         w,
         diff_multfac_w,
+        0,
+        mesh.n_cells,
+        0,
+        mesh.k_level,
         offset_provider={
             "C2E2CO": mesh.get_c2e2cO_offset_provider(),
             "C2E2CODim": C2E2CODim,
