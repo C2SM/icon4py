@@ -38,6 +38,7 @@ from icon4py.driver.io_utils import (
 )
 from icon4py.driver.parallel_setup import get_processor_properties
 
+
 log = logging.getLogger(__name__)
 
 
@@ -198,8 +199,6 @@ def initialize(n_time_steps, file_path: Path):
         parallel_props,
     )
 
-
-
     log.info("initializing the grid")
     icon_grid = read_icon_grid(file_path)
     log.info("reading input fields")
@@ -208,7 +207,7 @@ def initialize(n_time_steps, file_path: Path):
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
-    diffusion = Diffusion(run_program=False)
+    diffusion = Diffusion()
     diffusion.init(
         icon_grid,
         config.diffusion_config,

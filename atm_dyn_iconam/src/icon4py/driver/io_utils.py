@@ -38,7 +38,7 @@ class SerializationType(str, Enum):
     NC = "netcdf"
 
 
-def read_icon_grid(path: Path, ser_type=SerializationType.SB) -> IconGrid:
+def read_icon_grid(path: Path, rank=0, ser_type=SerializationType.SB) -> IconGrid:
     """
     Return IconGrid parsed from a given input type.
 
@@ -51,7 +51,7 @@ def read_icon_grid(path: Path, ser_type=SerializationType.SB) -> IconGrid:
     if ser_type == SerializationType.SB:
         return (
             serialbox_utils.IconSerialDataProvider(
-                "icon_pydycore", str(path.absolute()), False
+                "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
             )
             .from_savepoint_grid()
             .construct_icon_grid()
@@ -61,7 +61,7 @@ def read_icon_grid(path: Path, ser_type=SerializationType.SB) -> IconGrid:
 
 
 def read_initial_state(
-    gridfile_path: Path,
+    gridfile_path: Path, rank=0
 ) -> tuple[IconSerialDataProvider, DiagnosticState, PrognosticState]:
     """
     Read prognostic and diagnostic state from serialized data.
@@ -75,7 +75,7 @@ def read_initial_state(
 
     """
     data_provider = serialbox_utils.IconSerialDataProvider(
-        "icon_pydycore", str(gridfile_path), False
+        "icon_pydycore", str(gridfile_path), False, mpi_rank=rank
     )
     init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
@@ -86,7 +86,7 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    path: Path, ser_type=SerializationType.SB
+    path: Path, ser_type=SerializationType.SB, rank=0
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams]:
     """
     Read fields containing grid properties.
@@ -100,7 +100,7 @@ def read_geometry_fields(
     """
     if ser_type == SerializationType.SB:
         sp = serialbox_utils.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False
+            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         ).from_savepoint_grid()
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
@@ -142,7 +142,7 @@ def read_grid(
 
 
 def read_static_fields(
-    path: Path, ser_type=SerializationType.SB
+    path: Path, ser_type=SerializationType.SB, rank=0
 ) -> tuple[MetricState, InterpolationState]:
     """
     Read fields for metric and interpolation state.
@@ -157,7 +157,7 @@ def read_static_fields(
     """
     if ser_type == SerializationType.SB:
         dataprovider = serialbox_utils.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False
+            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         )
         interpolation_state = (
             dataprovider.from_interpolation_savepoint().construct_interpolation_state()

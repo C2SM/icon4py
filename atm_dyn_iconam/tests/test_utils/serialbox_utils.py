@@ -234,7 +234,7 @@ class IconGridSavePoint(IconSavepoint):
 
     def construct_decomposition_info(self):
         return (
-            DecompositionInfo()
+            DecompositionInfo(klevels=self.num(KDim))
             .with_dimension(*self._get_decomp_fields(CellDim))
             .with_dimension(*self._get_decomp_fields(EdgeDim))
             .with_dimension(*self._get_decomp_fields(VertexDim))

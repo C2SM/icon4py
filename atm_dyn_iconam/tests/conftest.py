@@ -65,8 +65,10 @@ def setup_icon_data():
 
 
 @pytest.fixture
-def data_provider(setup_icon_data) -> IconSerialDataProvider:
-    return IconSerialDataProvider("icon_pydycore", str(extracted_path), True)
+def data_provider(
+    setup_icon_data, path=extracted_path, rank=0
+) -> IconSerialDataProvider:
+    return IconSerialDataProvider("icon_pydycore", str(path), True)
 
 
 @pytest.fixture

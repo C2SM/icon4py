@@ -15,10 +15,11 @@ import mpi4py.MPI
 
 
 class ProcessProperties:
-    def __init__(self, name="", size=0, rank=0):
-        self._communicator_name: str = name
-        self._rank: int = rank
-        self._comm_size = size
+    def __init__(self, comm: mpi4py.MPI.Comm):
+        self._communicator_name: str = comm.Get_name()
+        self._rank: int = comm.Get_rank()
+        self._comm_size = comm.Get_size()
+        self._comm = comm
 
     @property
     def rank(self):
@@ -32,6 +33,10 @@ class ProcessProperties:
     def comm_size(self):
         return self._comm_size
 
+    @property
+    def comm(self):
+        return self._comm
+
     @classmethod
     def from_mpi_comm(cls, comm: mpi4py.MPI.Comm):
-        return ProcessProperties(comm.Get_name(), comm.Get_rank())
+        return ProcessProperties(comm)
