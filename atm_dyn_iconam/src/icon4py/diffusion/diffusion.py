@@ -762,88 +762,188 @@ class Diffusion:
         # # # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
         # #
         #
-        log.debug("running fused stencil 04_05_06: start")
-        fused_mo_nh_diffusion_stencil_04_05_06.with_backend(backend)(
-            u_vert=self.u_vert,
-            v_vert=self.v_vert,
-            primal_normal_vert_v1=primal_normal_vert[0],
-            primal_normal_vert_v2=primal_normal_vert[1],
-            z_nabla2_e=self.z_nabla2_e,
-            inv_vert_vert_length=inverse_vertex_vertex_lengths,
-            inv_primal_edge_length=inverse_primal_edge_lengths,
-            area_edge=edge_areas,
-            kh_smag_e=self.kh_smag_e,
-            diff_multfac_vn=diff_multfac_vn,
-            nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
-            vn=prognostic_state.vn,
-            horz_idx=self.horizontal_edge_index,
-            nudgezone_diff=self.nudgezone_diff,
-            fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
-            horizontal_start=edge_start_lb_plus4,
-            horizontal_end=edge_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "E2C2V": self.grid.get_e2c2v_connectivity(),
-                "E2ECV": self.grid.get_e2ecv_connectivity(),
-            },
-        )
-        log.debug("running fused stencil 04_05_06: end")
+        if self.grid.limited_area :
+            log.debug("running fused stencil 04_05_06: start")
+            fused_mo_nh_diffusion_stencil_04_05_06.with_backend(backend)(
+                u_vert=self.u_vert,
+                v_vert=self.v_vert,
+                primal_normal_vert_v1=primal_normal_vert[0],
+                primal_normal_vert_v2=primal_normal_vert[1],
+                z_nabla2_e=self.z_nabla2_e,
+                inv_vert_vert_length=inverse_vertex_vertex_lengths,
+                inv_primal_edge_length=inverse_primal_edge_lengths,
+                area_edge=edge_areas,
+                kh_smag_e=self.kh_smag_e,
+                diff_multfac_vn=diff_multfac_vn,
+                nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+                vn=prognostic_state.vn,
+                horz_idx=self.horizontal_edge_index,
+                nudgezone_diff=self.nudgezone_diff,
+                fac_bdydiff_v=self.fac_bdydiff_v,
+                start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
+                horizontal_start=edge_start_lb_plus4,
+                horizontal_end=edge_end_local,
+                vertical_start=0,
+                vertical_end=klevels,
+                offset_provider={
+                    "E2C2V": self.grid.get_e2c2v_connectivity(),
+                    "E2ECV": self.grid.get_e2ecv_connectivity(),
+                },
+            )
+            log.debug("running fused stencil 04_05_06: end")
+        else :
+            log.debug("running stencil calculate_nabla4: start")
+            calculate_nabla4(
+                u_vert=self.u_vert,
+                v_vert=self.v_vert,
+                primal_normal_vert_v1=primal_normal_vert[0],
+                primal_normal_vert_v2=primal_normal_vert[1],
+                z_nabla2_e=self.z_nabla2_e,
+                inv_vert_vert_length=inverse_vertex_vertex_lengths,
+                inv_primal_edge_length=inverse_primal_edge_lengths,
+                z_nabla4_e2=self.z_nabla4_e2,
+                offset_provider={
+                    "E2C2V": self.grid.get_e2c2v_connectivity(),
+                    "E2ECV": self.grid.get_e2ecv_connectivity(),
+                },
+            )
+            log.debug("running stencil calculate_nabla4: end")
+
+            log.debug("running stencil apply_nabla2_and_nabla4_global_to_vn: start")
+            apply_nabla2_and_nabla4_global_to_vn(
+#                u_vert=self.u_vert,
+#                v_vert=self.v_vert,
+#                primal_normal_vert_v1=primal_normal_vert[0],
+#                primal_normal_vert_v2=primal_normal_vert[1],
+                z_nabla2_e=self.z_nabla2_e,
+                z_nabla4_e2=self.z_nabla4_e2,
+#                inv_vert_vert_length=inverse_vertex_vertex_lengths,
+#                inv_primal_edge_length=inverse_primal_edge_lengths,
+                area_edge=edge_areas,
+                kh_smag_e=self.kh_smag_e,
+                diff_multfac_vn=diff_multfac_vn,
+#                nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+                vn=prognostic_state.vn,
+#                horz_idx=self.horizontal_edge_index,
+#                nudgezone_diff=self.nudgezone_diff,
+#                fac_bdydiff_v=self.fac_bdydiff_v,
+#                start_2nd_nudge_line_idx_e=int32(edge_start_nudging_minus1),
+#                horizontal_start=edge_start_nudging_plus_one,
+#                horizontal_end=edge_end_local,
+#                vertical_start=0,
+#                vertical_end=klevels,
+                offset_provider={
+                    "E2C2V": self.grid.get_e2c2v_connectivity(),
+                    "E2ECV": self.grid.get_e2ecv_connectivity(),
+                },
+            )
+            log.debug("running stencil apply_nabla2_and_nabla4_global_to_vn: end")
         # # 7b. mo_nh_diffusion_stencil_07, mo_nh_diffusion_stencil_08,
         # #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
 
         log.debug("running stencils 07_08_09_10: start")
-        calculate_horizontal_gradients_for_turbulence.with_backend(backend)(
-            w=prognostic_state.w,
-            geofac_grg_x=self.interpolation_state.geofac_grg_x,
-            geofac_grg_y=self.interpolation_state.geofac_grg_y,
-            dwdx=diagnostic_state.dwdx,
-            dwdy=diagnostic_state.dwdy,
-            vertical_start=1,
-            vertical_end=klevels,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_halo,
-            offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
-        )
+        if self.grid.limited_area :
+            calculate_horizontal_gradients_for_turbulence.with_backend(backend)(
+                w=prognostic_state.w,
+                geofac_grg_x=self.interpolation_state.geofac_grg_x,
+                geofac_grg_y=self.interpolation_state.geofac_grg_y,
+                dwdx=diagnostic_state.dwdx,
+                dwdy=diagnostic_state.dwdy,
+                vertical_start=1,
+                vertical_end=klevels,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_halo,
+                offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
+            )
 
-        z_nabla2_c = zero_field(self.grid, CellDim, KDim, dtype=float)
+            z_nabla2_c = zero_field(self.grid, CellDim, KDim, dtype=float)
 
-        calculate_nabla2_for_w.with_backend(backend)(
-            w=prognostic_state.w,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            z_nabla2_c=z_nabla2_c,
-            vertical_start=0,
-            vertical_end=klevels,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_halo,
-            offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
-        )
-        apply_nabla2_to_w.with_backend(backend)(
-            area=cell_areas,
-            z_nabla2_c=z_nabla2_c,
-            w=prognostic_state.w,
-            diff_multfac_w=self.diff_multfac_w,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            vertical_start=0,
-            vertical_end=klevels,
-            horizontal_start=cell_start_interior,
-            horizontal_end=cell_end_local,
-            offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
-        )
+            calculate_nabla2_for_w.with_backend(backend)(
+                w=prognostic_state.w,
+                geofac_n2s=self.interpolation_state.geofac_n2s,
+                z_nabla2_c=z_nabla2_c,
+                vertical_start=0,
+                vertical_end=klevels,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_halo,
+                offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
+            )
+            apply_nabla2_to_w.with_backend(backend)(
+                area=cell_areas,
+                z_nabla2_c=z_nabla2_c,
+                w=prognostic_state.w,
+                diff_multfac_w=self.diff_multfac_w,
+                geofac_n2s=self.interpolation_state.geofac_n2s,
+                vertical_start=0,
+                vertical_end=klevels,
+                horizontal_start=cell_start_interior,
+                horizontal_end=cell_end_local,
+                offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
+            )
 
-        # TODO @magdalena: fix this python offset problem (+1): int(self.vertical_params.index_of_damping_layer + 1)
-        apply_nabla2_to_w_in_upper_damping_layer.with_backend(backend)(
-            w=prognostic_state.w,
-            diff_multfac_n2w=self.diff_multfac_n2w,
-            cell_area=cell_areas,
-            z_nabla2_c=z_nabla2_c,
-            vertical_start=1,
-            vertical_end=int(self.vertical_params.index_of_damping_layer + 1),
-            horizontal_start=int(cell_start_interior),
-            horizontal_end=int(cell_end_local),
-            offset_provider={},
-        )
+            # TODO @magdalena: fix this python offset problem (+1): int(self.vertical_params.index_of_damping_layer + 1)
+            apply_nabla2_to_w_in_upper_damping_layer.with_backend(backend)(
+                w=prognostic_state.w,
+                diff_multfac_n2w=self.diff_multfac_n2w,
+                cell_area=cell_areas,
+                z_nabla2_c=z_nabla2_c,
+                vertical_start=1,
+                vertical_end=int(self.vertical_params.index_of_damping_layer + 1),
+                horizontal_start=int(cell_start_interior),
+                horizontal_end=int(cell_end_local),
+                offset_provider={},
+            )
+        else :
+            calculate_horizontal_gradients_for_turbulence.with_backend(backend)(
+                w=prognostic_state.w,
+                geofac_grg_x=self.interpolation_state.geofac_grg_x,
+                geofac_grg_y=self.interpolation_state.geofac_grg_y,
+                dwdx=diagnostic_state.dwdx,
+                dwdy=diagnostic_state.dwdy,
+                vertical_start=1,
+                vertical_end=klevels,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_halo,
+                offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
+            )
+
+            z_nabla2_c = zero_field(self.grid, CellDim, KDim, dtype=float)
+
+            calculate_nabla2_for_w.with_backend(backend)(
+                w=prognostic_state.w,
+                geofac_n2s=self.interpolation_state.geofac_n2s,
+                z_nabla2_c=z_nabla2_c,
+                vertical_start=0,
+                vertical_end=klevels,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_halo,
+                offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
+            )
+            apply_nabla2_to_w.with_backend(backend)(
+                area=cell_areas,
+                z_nabla2_c=z_nabla2_c,
+                w=prognostic_state.w,
+                diff_multfac_w=self.diff_multfac_w,
+                geofac_n2s=self.interpolation_state.geofac_n2s,
+                vertical_start=0,
+                vertical_end=klevels,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_local,
+                offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
+            )
+
+            # TODO @magdalena: fix this python offset problem (+1): int(self.vertical_params.index_of_damping_layer + 1)
+            apply_nabla2_to_w_in_upper_damping_layer.with_backend(backend)(
+                w=prognostic_state.w,
+                diff_multfac_n2w=self.diff_multfac_n2w,
+                cell_area=cell_areas,
+                z_nabla2_c=z_nabla2_c,
+                vertical_start=1,
+                vertical_end=int(self.vertical_params.index_of_damping_layer + 1),
+                horizontal_start=int(cell_start_nudging),
+                horizontal_end=int(cell_end_local),
+                offset_provider={},
+            )
         # w_old = prognostic_state.w
         # apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance.with_backend(backend)(
         #     area=cell_areas,
