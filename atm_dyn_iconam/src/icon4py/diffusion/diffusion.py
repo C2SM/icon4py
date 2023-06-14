@@ -25,6 +25,7 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn_cached,
 )
 
+from icon4py.atm_dyn_iconam.calculate_nabla4 import calculate_nabla4
 from icon4py.atm_dyn_iconam.calculate_diagnostic_quantities_for_turbulence import calculate_diagnostic_quantities_for_turbulence
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
@@ -472,6 +473,7 @@ class Diffusion:
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
+        self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
         # TODO @magdalena this is KHalfDim
         self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
         self.horizontal_cell_index = _index_field(CellDim)
