@@ -52,8 +52,15 @@ def init_mpi():
     from mpi4py import MPI
 
     if not MPI.Is_initialized():
+        log.info("initializing MPI")
         MPI.Init()
 
+
+def finalize_mpi():
+    from mpi4py import MPI
+    if not MPI.Is_finalized():
+        log.info("finalizing MPI")
+        MPI.Finalize()
 
 class DecompositionInfo:
     class EntryType(int, Enum):
@@ -113,86 +120,87 @@ class Exchange:
         self._context = context
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
-            CellDim: self._create_domain_descriptor(CellDim),
-            VertexDim: self._create_domain_descriptor(VertexDim),
-            EdgeDim: self._create_domain_descriptor(EdgeDim),
+            (CellDim, KDim): self._create_domain_descriptor(CellDim, domain_decomposition.klevels),
+            (CellDim, KHalfDim): self._create_domain_descriptor(CellDim, domain_decomposition.klevels + 1),
+            (VertexDim, KDim): self._create_domain_descriptor(VertexDim, domain_decomposition.klevels),
+            (VertexDim, KHalfDim): self._create_domain_descriptor(VertexDim,
+                                                                domain_decomposition.klevels + 1),
+            (EdgeDim, KDim): self._create_domain_descriptor(EdgeDim, domain_decomposition.klevels),
+            (EdgeDim, KHalfDim): self._create_domain_descriptor(EdgeDim,
+                                                                domain_decomposition.klevels + 1),
 
         }
-        log.info(f"exchange patterns initialized {self._domain_descriptors}")
-
-        self._patterns = {
-            CellDim: self._create_pattern(CellDim),
-            VertexDim: self._create_pattern(VertexDim),
-            EdgeDim: self._create_pattern(EdgeDim)
-        }
-        log.info(f"exchange patterns initialized {self._patterns}")
+        print(f"rank={self._context.rank()}/{self._context.size()} :domain descriptors initialized")
         self._field_size = {
             CellDim: self._decomposition_info.global_index(
-            CellDim, DecompositionInfo.EntryType.ALL
-        ).shape[0],
-         EdgeDim: self._decomposition_info.global_index(
-             EdgeDim, DecompositionInfo.EntryType.ALL
-         ).shape[0],
-         VertexDim: self._decomposition_info.global_index(
-             VertexDim, DecompositionInfo.EntryType.ALL
-         ).shape[0],
-         KDim: domain_decomposition.klevels,
-         KHalfDim: domain_decomposition.klevels + 1
+                CellDim, DecompositionInfo.EntryType.ALL
+            ).shape[0],
+            EdgeDim: self._decomposition_info.global_index(
+                EdgeDim, DecompositionInfo.EntryType.ALL
+            ).shape[0],
+            VertexDim: self._decomposition_info.global_index(
+                VertexDim, DecompositionInfo.EntryType.ALL
+            ).shape[0],
+            KDim: domain_decomposition.klevels,
+            KHalfDim: domain_decomposition.klevels + 1
         }
+        print(f"rank={self._context.rank()}/{self._context.size()} : field sizes = {self._field_size}")
+
+        self._patterns = {
+            (CellDim, KDim): self._create_pattern(CellDim, KDim),
+            (CellDim, KHalfDim): self._create_pattern(CellDim, KHalfDim),
+            (VertexDim, KDim): self._create_pattern(VertexDim, KDim),
+            (VertexDim, KHalfDim): self._create_pattern(VertexDim, KHalfDim),
+            (EdgeDim, KDim): self._create_pattern(EdgeDim, KDim),
+            (EdgeDim, KHalfDim): self._create_pattern(EdgeDim, KHalfDim),
+        }
+        print(f"rank={self._context.rank()}/{self._context.size()} : patterns initialized ")
+        print(f"rank={self._context.rank()}/{self._context.size()} : exchange initialized")
 
 
+    def _domain_descriptor_info(self, descr):
+        return f" id={descr.domain_id()} levels = {descr.levels()}, size={descr.size()}, inner_size={descr.inner_size()}"
     def get_size(self):
         return self._context.size()
 
     # TODO [magdalena] is the tolist() necessary?
-    def _create_domain_descriptor(self, dim: Dimension):
+    def _create_domain_descriptor(self, dim: Dimension, levels:int):
         all_global = self._decomposition_info.global_index(
             dim, DecompositionInfo.EntryType.ALL
         )
         local_halo = self._decomposition_info.local_index(
             dim, DecompositionInfo.EntryType.HALO
         )
-        domain_desc_full_levels = ghex.domain_descriptor(
+        domain_desc = ghex.domain_descriptor(
             self._context.rank(),
             all_global.tolist(),
             local_halo.tolist(),
-            self._decomposition_info.klevels
+            levels
         )
-        domain_descr_half_levels = ghex.domain_descriptor(
-            self._context.rank(),
-            all_global.tolist(),
-            local_halo.tolist(),
-            self._decomposition_info.klevels + 1
-        )
-        return (domain_desc_full_levels, domain_descr_half_levels)
+        print(f"rank={self._context.rank()}/{self._context.size()}: domain descriptor for dim {dim} with properties {self._domain_descriptor_info(domain_desc)}")
 
-    def _create_pattern(self, dim):
+        return domain_desc
+
+    def _create_pattern(self, horizontal_dim:Dimension, vertical_dim:Dimension):
         halo_generator = ghex.halo_generator_with_gids(
-            self._decomposition_info.global_index(dim, DecompositionInfo.EntryType.HALO)
+            self._decomposition_info.global_index(horizontal_dim, DecompositionInfo.EntryType.HALO)
         )
+        print(f"rank={self._context.rank()}/{self._context.size()}: halo generator for dim={horizontal_dim} created")
+        dimensions = (horizontal_dim, vertical_dim)
         pattern = ghex.make_pattern(
-            self._context, halo_generator, self._domain_descriptors[dim]
+            self._context, halo_generator,[self._domain_descriptors[dimensions]]
         )
+        print(f"rank={self._context.rank()}/{self._context.size()}: pattern for dim={dimensions} and {self._domain_descriptors[dimensions]} created")
         return pattern
 
-    def exchange(self, dim: Dimension, *fields):
-
-        def _get_descriptor_type(f):
-            return 0 if f.shape[1] == self._decomposition_info.klevels else 1
-
-        assert dim in [CellDim, EdgeDim, VertexDim]
-        log.info(f"exchanging fields for dim={dim}:")
-        horizontal_size = self._field_size[dim]
-        pattern = self._patterns[dim]
-        communicator = ghex.make_co(self._context, pattern)
-
+    def exchange(self, dims: tuple[Dimension, Dimension], *fields):
+        assert dims[0] in [CellDim, EdgeDim, VertexDim]
+        horizontal_size = self._field_size[dims[0]]
+        pattern = self._patterns[dims]
+        assert pattern is not None
         fields = [np.asarray(f)[:horizontal_size, :] for f in fields]
-        for f in fields:
-            log.info(f"{f.shape}")
-        pattern_of_fields = [
-            pattern(ghex.field_descriptor(
-                self._domain_descriptors[dim][_get_descriptor_type(f)], f)) for f in fields
-        ]
-        communicator.exchange(pattern_of_fields)
-
+        print(f"rank = {self._context.rank()}/{self._context.size()}: communicating fields of dim = {dims} (shape = {fields[0].shape})")
+        communicator = ghex.make_co(self._context, pattern)
+        patterns_of_field = [pattern(ghex.field_descriptor(self._domain_descriptors[dims], f)) for f in fields]
+        return communicator.exchange(patterns_of_field)
 
