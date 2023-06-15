@@ -51,6 +51,12 @@ class IconSavepoint:
             return np_as_located_field(*dimensions)(buffer[0])
         return np_as_located_field(*dimensions)(buffer)
 
+    def _get_field_from_ndarray(self, buffer, *dimensions, dtype=float): #TODO: @abishekg7 Is this required after serialized data is fixed?
+        buffer = np.squeeze(buffer).astype(dtype)
+        if len(dimensions) < len(buffer.shape):
+            return np_as_located_field(*dimensions)(buffer[0])
+        return np_as_located_field(*dimensions)(buffer)
+
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()
         return {n: metadata[n] for n in names if n in metadata}
@@ -577,6 +583,13 @@ class MetricStateSavepoint(IconSavepoint):
 
     def wgtfacq_e(self):
         return self._get_field("wgtfacq_e", EdgeDim, KDim)
+
+    def wgtfacq_e_dsl(self, k_level): #TODO: @abishekg7 Simplify this after serialized data is fixed
+        ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
+        k = k_level - 3
+        ar = np.pad(ar, ((0,0),(k,0)), 'constant', constant_values=(0.0,))
+        return self._get_field_from_ndarray(ar, EdgeDim, KDim)
+
 
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)

@@ -32,7 +32,7 @@ class MetricState:
     coeff_gradekin: Field[[ECDim], float]
     ddqz_z_full_e: Field[[EdgeDim, KDim], float]
     wgtfac_e: Field[[EdgeDim, KDim], float]
-    wgtfacq_e: Field[[EdgeDim, KDim], float]
+    wgtfacq_e_dsl: Field[[EdgeDim, KDim], float]
     ddxn_z_full: Field[[EdgeDim, KDim], float]
     ddxt_z_full: Field[[EdgeDim, KDim], float]
     ddqz_z_half: Field[[CellDim, KDim], float]

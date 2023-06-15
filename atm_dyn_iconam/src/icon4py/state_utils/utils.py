@@ -28,8 +28,9 @@ def zero_field(*dims: Dimension, mesh, dtype=float):
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
 
-def indices_field(dim: Dimension, mesh, dtype=int):
-    shapex = mesh.size[dim]
+def indices_field(dim: Dimension, mesh, is_halfdim, dtype=int):
+
+    shapex = mesh.size[dim] + 1 if is_halfdim else mesh.size[dim]
     return np_as_located_field(dim)(np.arange(shapex, dtype=dtype))
 
 
@@ -37,8 +38,8 @@ def _allocate(*dims: Dimension, mesh, dtype=float):
     return zero_field(*dims, mesh=mesh, dtype=dtype)
 
 
-def _allocate_indices(*dims: Dimension, mesh, dtype=int):
-    return indices_field(*dims, mesh=mesh, dtype=dtype)
+def _allocate_indices(*dims: Dimension, mesh, is_halfdim=False, dtype=int):
+    return indices_field(*dims, mesh=mesh, is_halfdim=is_halfdim, dtype=dtype)
 
 
 @field_operator

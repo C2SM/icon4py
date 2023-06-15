@@ -14,6 +14,7 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import where
 
+
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_04 import (
     _mo_velocity_advection_stencil_04,
 )
@@ -61,7 +62,7 @@ def _fused_stencils_4_5_6(
     ddxn_z_full: Field[[EdgeDim, KDim], float],
     ddxt_z_full: Field[[EdgeDim, KDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfacq_e: Field[[EdgeDim, KDim], float],
+    wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
     k_field: Field[[KDim], int],
     nflatlev_startindex: int,
     nlev: int,
@@ -85,7 +86,7 @@ def _fused_stencils_4_5_6(
     )
 
     vn_ie = where(
-        k_field == nlev, _mo_velocity_advection_stencil_06(wgtfacq_e, vn), vn_ie
+        k_field == nlev, _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn), vn_ie
     )
 
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
@@ -101,7 +102,7 @@ def fused_stencils_4_5_6(
     ddxn_z_full: Field[[EdgeDim, KDim], float],
     ddxt_z_full: Field[[EdgeDim, KDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfacq_e: Field[[EdgeDim, KDim], float],
+    wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
     k_field: Field[[KDim], int],
     nflatlev_startindex: int,
     nlev: int,
@@ -119,7 +120,7 @@ def fused_stencils_4_5_6(
         ddxn_z_full,
         ddxt_z_full,
         z_w_concorr_me,
-        wgtfacq_e,
+        wgtfacq_e_dsl,
         k_field,
         nflatlev_startindex,
         nlev,

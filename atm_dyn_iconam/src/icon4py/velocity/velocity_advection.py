@@ -115,7 +115,7 @@ class VelocityAdvection:
         self.pre_levelmask = _allocate(CellDim, KDim, mesh=self.grid, dtype=bool)
         self.levelmask = _allocate(KDim, mesh=self.grid, dtype=bool)
         self.vcfl = _allocate(CellDim, KDim, mesh=self.grid)
-        self.k_field = _allocate_indices(KDim, mesh=self.grid)
+        self.k_field = _allocate_indices(KDim, mesh=self.grid, is_halfdim=True)
 
     def run_predictor_step(
         self,
@@ -223,6 +223,7 @@ class VelocityAdvection:
                 offset_provider={"Koff": KDim},
             )
 
+
         velocity_prog.fused_stencils_4_5_6.with_backend(run_gtfn)(
             prognostic_state.vn,
             diagnostic_state.vt,
@@ -232,14 +233,14 @@ class VelocityAdvection:
             self.metric_state.ddxn_z_full,
             self.metric_state.ddxt_z_full,
             z_w_concorr_me,
-            self.metric_state.wgtfacq_e,
+            self.metric_state.wgtfacq_e_dsl,
             self.k_field,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
             horizontal_start=indices_1_1,
-            horizontal_end=indices_1_1,
+            horizontal_end=indices_1_2,
             vertical_start=0,
-            vertical_end=self.grid.n_lev(),
+            vertical_end=self.grid.n_lev()+1,
             offset_provider={
                 "Koff": KDim,
             },

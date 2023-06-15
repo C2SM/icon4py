@@ -207,7 +207,8 @@ def test_velocity_predictor_step(
         coeff_gradekin=sp_met.coeff_gradekin(),
         ddqz_z_full_e=sp_met.ddqz_z_full_e(),
         wgtfac_e=sp_met.wgtfac_e(),
-        wgtfacq_e=sp_met.wgtfacq_e(),
+        #wgtfacq_e_dsl=sp_met.wgtfacq_e(),
+        wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
         ddxn_z_full=sp_met.ddxn_z_full(),
         ddxt_z_full=sp_met.ddxt_z_full(),
         ddqz_z_half=sp_met.ddqz_z_half(),
@@ -232,12 +233,13 @@ def test_velocity_predictor_step(
         vertical_params=vertical_params,
     )
     tmp_z_vt_ie = sp.z_vt_ie()
+    tmp_z_kin_hor_e = sp.z_kin_hor_e()
     velocity_advection.run_predictor_step(
         vn_only=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         z_w_concorr_me=sp.z_w_concorr_me(),
-        z_kin_hor_e=sp.z_kin_hor_e(),
+        z_kin_hor_e=tmp_z_kin_hor_e,
         z_vt_ie=tmp_z_vt_ie,
         inv_dual_edge_length=inverse_dual_edge_length,
         inv_primal_edge_length=inverse_primal_edge_lengths,
@@ -255,7 +257,7 @@ def test_velocity_predictor_step(
     icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc()
     icon_result_vt = savepoint_velocity_exit.vt()
     icon_result_z_kin_hor_e = savepoint_velocity_exit.z_kin_hor_e()
-    icon_result_z_vt_ie = savepoint_velocity_exit.z_vt_ie()
+    icon_result_vn_ie = savepoint_velocity_exit.vn_ie()
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c()
 
     assert np.allclose(
@@ -267,11 +269,13 @@ def test_velocity_predictor_step(
         np.asarray(diagnostic_state.ddt_w_adv_pc),
     )
     assert np.allclose(np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt))
-    #assert np.allclose(np.asarray(icon_result_z_vt_ie), np.asarray(tmp_z_vt_ie))
+    assert np.allclose(
+        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
+    )
     assert np.allclose(np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c))
-    #assert np.allclose(
-    #     np.asarray(icon_result_z_kin_hor_e), np.asarray(z_fields.z_kin_hor_e)
-    #)
+    assert np.allclose(
+         np.asarray(icon_result_z_kin_hor_e), np.asarray(tmp_z_kin_hor_e)
+    )
 
     #assert np.allclose(
     #    np.asarray(icon_result_z_w_concorr_me), np.asarray(z_fields.z_w_concorr_me)
