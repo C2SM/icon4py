@@ -150,31 +150,31 @@ def test_decomposition_info_matches_gridsize(datapath):
                0] == icon_grid.num_edges()
 
 #@pytest.mark.mpi
-@pytest.mark.skip
-def test_parallel_diffusion(r04b09_diffusion_config, parallel_props, step_date_init, caplog):
+#@pytest.mark.skip
+def test_parallel_diffusion(r04b09_diffusion_config, step_date_init, caplog):
     caplog.set_level(logging.INFO)
     experiment_name = "mch_ch_r04b09_dsl"
     path = Path(
         f"/home/magdalena/data/exclaim/dycore/{experiment_name}/mpitasks2/{experiment_name}/ser_data"
     )
 
-    icon_grid = read_icon_grid(path, rank=parallel_props.rank)
+    icon_grid = read_icon_grid(path, rank=props.rank)
     decomp_info = read_decomp_info(
         path,
-        parallel_props,
+        props,
     )
-    context = ghex.context(ghex.mpi_comm(parallel_props.comm), True)
+    context = ghex.context(ghex.mpi_comm(props.comm), True)
     #assert context.size() == 2
 
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
     diffusion_initial_data = IconSerialDataProvider(
-        "icon_pydycore", str(path), True, mpi_rank=parallel_props.rank
+        "icon_pydycore", str(path), True, mpi_rank=props.rank
     ).from_savepoint_diffusion_init(linit=True, date=step_date_init)
     (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(
-        path, rank=parallel_props.rank
+        path, rank=props.rank
     )
     (metric_state, interpolation_state) = read_static_fields(
-        path, rank=parallel_props.rank
+        path, rank=props.rank
     )
 
     dtime = diffusion_initial_data.get_metadata("dtime").get("dtime")

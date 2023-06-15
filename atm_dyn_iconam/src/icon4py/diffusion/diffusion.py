@@ -23,6 +23,7 @@ from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn,
     run_gtfn_cached,
+run_gtfn_imperative,
 )
 
 from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
@@ -88,6 +89,7 @@ VectorTuple = namedtuple("VectorTuple", "x y")
 
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
+imperative_backend = run_gtfn_imperative
 backend = compiled_backend  #
 
 

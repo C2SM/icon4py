@@ -21,7 +21,7 @@ import numpy.ma as ma
 from gt4py.next.common import Dimension
 from mpi4py.MPI import Comm
 
-from icon4py.common.dimension import CellDim, VertexDim, EdgeDim
+from icon4py.common.dimension import CellDim, VertexDim, EdgeDim, KDim, KHalfDim
 from icon4py.decomposition.decomposed import ProcessProperties
 from icon4py.diffusion.utils import builder
 
@@ -115,7 +115,8 @@ class Exchange:
         self._domain_descriptors = {
             CellDim: self._create_domain_descriptor(CellDim),
             VertexDim: self._create_domain_descriptor(VertexDim),
-            EdgeDim: self._create_domain_descriptor(EdgeDim)
+            EdgeDim: self._create_domain_descriptor(EdgeDim),
+
         }
         log.info(f"exchange patterns initialized {self._domain_descriptors}")
 
@@ -125,9 +126,25 @@ class Exchange:
             EdgeDim: self._create_pattern(EdgeDim)
         }
         log.info(f"exchange patterns initialized {self._patterns}")
+        self._field_size = {
+            CellDim: self._decomposition_info.global_index(
+            CellDim, DecompositionInfo.EntryType.ALL
+        ).shape[0],
+         EdgeDim: self._decomposition_info.global_index(
+             EdgeDim, DecompositionInfo.EntryType.ALL
+         ).shape[0],
+         VertexDim: self._decomposition_info.global_index(
+             VertexDim, DecompositionInfo.EntryType.ALL
+         ).shape[0],
+         KDim: domain_decomposition.klevels,
+         KHalfDim: domain_decomposition.klevels + 1
+        }
+
 
     def get_size(self):
         return self._context.size()
+
+    # TODO [magdalena] is the tolist() necessary?
     def _create_domain_descriptor(self, dim: Dimension):
         all_global = self._decomposition_info.global_index(
             dim, DecompositionInfo.EntryType.ALL
@@ -135,32 +152,47 @@ class Exchange:
         local_halo = self._decomposition_info.local_index(
             dim, DecompositionInfo.EntryType.HALO
         )
-        domain_descr = ghex.domain_descriptor(
+        domain_desc_full_levels = ghex.domain_descriptor(
             self._context.rank(),
             all_global.tolist(),
             local_halo.tolist(),
-            self._decomposition_info.klevels,
+            self._decomposition_info.klevels
         )
-        return domain_descr
+        domain_descr_half_levels = ghex.domain_descriptor(
+            self._context.rank(),
+            all_global.tolist(),
+            local_halo.tolist(),
+            self._decomposition_info.klevels + 1
+        )
+        return (domain_desc_full_levels, domain_descr_half_levels)
 
     def _create_pattern(self, dim):
         halo_generator = ghex.halo_generator_with_gids(
             self._decomposition_info.global_index(dim, DecompositionInfo.EntryType.HALO)
         )
         pattern = ghex.make_pattern(
-            self._context, halo_generator, [self._domain_descriptors[dim]]
+            self._context, halo_generator, self._domain_descriptors[dim]
         )
         return pattern
 
     def exchange(self, dim: Dimension, *fields):
+
+        def _get_descriptor_type(f):
+            return 0 if f.shape[1] == self._decomposition_info.klevels else 1
+
         assert dim in [CellDim, EdgeDim, VertexDim]
         log.info(f"exchanging fields for dim={dim}:")
-        for f in fields:
-            log.info(f"{f.shape}")
-        domain_descriptor = self._domain_descriptors[dim]
+        horizontal_size = self._field_size[dim]
         pattern = self._patterns[dim]
         communicator = ghex.make_co(self._context, pattern)
+
+        fields = [np.asarray(f)[:horizontal_size, :] for f in fields]
+        for f in fields:
+            log.info(f"{f.shape}")
         pattern_of_fields = [
-            pattern(ghex.field_descriptor(domain_descriptor, np.asarray(f))) for f in fields
+            pattern(ghex.field_descriptor(
+                self._domain_descriptors[dim][_get_descriptor_type(f)], f)) for f in fields
         ]
         communicator.exchange(pattern_of_fields)
+
+
