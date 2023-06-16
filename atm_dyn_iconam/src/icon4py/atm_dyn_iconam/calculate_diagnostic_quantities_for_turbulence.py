@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
     _calculate_diagnostics_for_turbulence,
@@ -49,10 +49,10 @@ def calculate_diagnostic_quantities_for_turbulence(
     wgtfac_c: Field[[CellDim, KDim], float],
     div_ic: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _calculate_diagnostic_quantities_for_turbulence(
         kh_smag_ec,

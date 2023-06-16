@@ -18,7 +18,7 @@ from icon4py.atm_dyn_iconam.calculate_nabla2_for_z import _calculate_nabla2_for_
 from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import (
     _calculate_nabla2_of_theta,
 )
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, CEDim
+from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
 
 @field_operator

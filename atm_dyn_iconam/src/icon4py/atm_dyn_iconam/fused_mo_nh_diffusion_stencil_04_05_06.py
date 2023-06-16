@@ -92,10 +92,10 @@ def fused_mo_nh_diffusion_stencil_04_05_06(
     nudgezone_diff: float,
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _fused_mo_nh_diffusion_stencil_04_05_06(
         u_vert,
