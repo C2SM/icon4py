@@ -30,7 +30,8 @@ from icon4py.driver.io_utils import (
 from icon4py.driver.parallel_setup import (
     DecompositionInfo,
     Exchange,
-    get_processor_properties, finalize_mpi,
+    finalize_mpi,
+    get_processor_properties,
 )
 
 
@@ -45,6 +46,8 @@ mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
 """
 
 props = get_processor_properties()
+
+
 @pytest.mark.skipif(
     props.comm_size > 2, reason="input files only available for 1 or 2 nodes"
 )
@@ -113,7 +116,6 @@ def test_decomposition_info_local_index(mpi, datapath, dim, owned, total, caplog
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
 
 
-
 def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
     owned_list = owned_indices.tolist()
     halos_list = halo_indices.tolist()
@@ -122,6 +124,7 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
     assert set(owned_list) & set(all_list) == set(owned_list)
     assert set(halos_list) & set(all_list) == set(halos_list)
     assert set(halos_list) | set(owned_list) == set(all_list)
+
 
 @pytest.mark.mpi
 def test_processor_properties_from_comm_world(mpi, caplog):
@@ -135,42 +138,64 @@ def test_processor_properties_from_comm_world(mpi, caplog):
 @pytest.mark.mpi
 def test_decomposition_info_matches_gridsize(datapath, caplog):
     props = get_processor_properties()
-    decomposition_info = read_decomp_info(datapath, props, SerializationType.SB,)
+    decomposition_info = read_decomp_info(
+        datapath,
+        props,
+        SerializationType.SB,
+    )
     icon_grid = read_icon_grid(datapath, props.rank)
-    assert \
-    decomposition_info.global_index(dim=CellDim, entry_type=DecompositionInfo.EntryType.ALL).shape[
-        0] == icon_grid.num_cells()
-    assert decomposition_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape[
-               0] == icon_grid.num_vertices()
-    assert decomposition_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape[
-               0] == icon_grid.num_edges()
+    assert (
+        decomposition_info.global_index(
+            dim=CellDim, entry_type=DecompositionInfo.EntryType.ALL
+        ).shape[0]
+        == icon_grid.num_cells()
+    )
+    assert (
+        decomposition_info.global_index(
+            VertexDim, DecompositionInfo.EntryType.ALL
+        ).shape[0]
+        == icon_grid.num_vertices()
+    )
+    assert (
+        decomposition_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape[
+            0
+        ]
+        == icon_grid.num_edges()
+    )
+
 
 @pytest.mark.mpi
 def test_parallel_diffusion(r04b09_diffusion_config, step_date_init):
-   # caplog.set_level(logging.DEBUG)
+    # caplog.set_level(logging.DEBUG)
     props = get_processor_properties()
 
     experiment_name = "mch_ch_r04b09_dsl"
     path = Path(
         f"/home/magdalena/data/exclaim/dycore/{experiment_name}/mpitasks2/{experiment_name}/ser_data"
     )
-    print(f"rank={props.rank}/{props.comm_size}: inializing diffusion for experiment {experiment_name}")
-
+    print(
+        f"rank={props.rank}/{props.comm_size}: inializing diffusion for experiment {experiment_name}"
+    )
 
     decomp_info = read_decomp_info(
         path,
         props,
     )
-    print(f"rank={props.rank}/{props.comm_size}: decomposition info : klevels = {decomp_info.klevels}, "
-          f"local cells = {decomp_info.global_index(CellDim, DecompositionInfo.EntryType.ALL).shape} "
-          f"local edges = {decomp_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape} local vertices = {decomp_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape}")
+    print(
+        f"rank={props.rank}/{props.comm_size}: decomposition info : klevels = {decomp_info.klevels}, "
+        f"local cells = {decomp_info.global_index(CellDim, DecompositionInfo.EntryType.ALL).shape} "
+        f"local edges = {decomp_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape} local vertices = {decomp_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape}"
+    )
     context = ghex.context(ghex.mpi_comm(props.comm), True)
-    print(f"rank={props.rank}/{props.comm_size}:  GHEX context setup: from {props.comm_name} with {props.comm_size} nodes")
+    print(
+        f"rank={props.rank}/{props.comm_size}:  GHEX context setup: from {props.comm_name} with {props.comm_size} nodes"
+    )
     assert context.size() == 2
 
-
     icon_grid = read_icon_grid(path, rank=props.rank)
-    print(f"rank={props.rank}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices")
+    print(
+        f"rank={props.rank}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
+    )
 
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
     diffusion_initial_data = IconSerialDataProvider(
@@ -179,12 +204,12 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init):
     (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(
         path, rank=props.rank
     )
-    (metric_state, interpolation_state) = read_static_fields(
-        path, rank=props.rank
-    )
+    (metric_state, interpolation_state) = read_static_fields(path, rank=props.rank)
 
     dtime = diffusion_initial_data.get_metadata("dtime").get("dtime")
-    print(f"rank={props.rank}/{props.comm_size}:  setup: using {props.comm_name} with {props.comm_size} nodes")
+    print(
+        f"rank={props.rank}/{props.comm_size}:  setup: using {props.comm_name} with {props.comm_size} nodes"
+    )
     exchange = Exchange(context, decomp_info)
 
     diffusion = Diffusion(exchange)
@@ -212,5 +237,3 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init):
         cell_areas=cell_geometry.area,
     )
     print(f"rank={props.rank}/{props.comm_size}: diffusion run ")
-
-

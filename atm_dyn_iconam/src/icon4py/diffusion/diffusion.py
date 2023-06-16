@@ -23,7 +23,7 @@ from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn,
     run_gtfn_cached,
-run_gtfn_imperative,
+    run_gtfn_imperative,
 )
 
 from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
@@ -64,7 +64,14 @@ from icon4py.common.constants import (
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
 )
-from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim, KHalfDim
+from icon4py.common.dimension import (
+    CellDim,
+    ECVDim,
+    EdgeDim,
+    KDim,
+    KHalfDim,
+    VertexDim,
+)
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import HorizontalMarkerIndex
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
@@ -379,7 +386,6 @@ class Diffusion:
         self.thresh_tdiff: float = (
             -5.0
         )  # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
-        self._run_program = run_program
         self.grid: Optional[IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
@@ -887,9 +893,8 @@ class Diffusion:
         # )
         log.debug("running fused stencil 07_08_09_10: end")
         # # 8.  HALO EXCHANGE: CALL sync_patch_array
-        comm_res = self._sync_fields((EdgeDim,KDim), prognostic_state.vn)
+        comm_res = self._sync_fields((EdgeDim, KDim), prognostic_state.vn)
         self._wait(comm_res)
-
 
         # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
         # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
@@ -974,20 +979,18 @@ class Diffusion:
         # TODO @magdalena why not trigger the exchange of w earlier?
         # TODO if condition: IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         # TODO magdalena: why does this crash?
-        res_1 = self._sync_fields((CellDim,KDim),
-             prognostic_state.theta_v,
-             prognostic_state.exner_pressure,
-         )
+        res_1 = self._sync_fields(
+            (CellDim, KDim),
+            prognostic_state.theta_v,
+            prognostic_state.exner_pressure,
+        )
         self._wait(res_1)
         res_w = self._sync_fields((CellDim, KHalfDim), prognostic_state.w)
-        #self._wait(res_w)
+        # self._wait(res_w)
 
     def _sync_fields(self, dim: tuple[Dimension, Dimension], *field):
         if self._exchange:
             return self._exchange.exchange(dim, *field)
-
-
-
 
     def _wait(self, comm_handle):
         if comm_handle:
