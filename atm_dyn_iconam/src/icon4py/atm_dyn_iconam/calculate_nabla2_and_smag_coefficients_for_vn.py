@@ -13,7 +13,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, maximum, minimum, sqrt
+from gt4py.next.ffront.fbuiltins import Field, maximum, minimum, sqrt, int32
+
 
 from icon4py.common.dimension import (
     E2C2V,
@@ -154,10 +155,10 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     smag_offset: float,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _calculate_nabla2_and_smag_coefficients_for_vn(
         diff_multfac_smag,
