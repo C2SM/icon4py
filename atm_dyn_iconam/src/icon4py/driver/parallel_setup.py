@@ -27,6 +27,7 @@ from icon4py.diffusion.utils import builder
 
 
 mpi4py.rc.initialize = False
+#mpi4py.rc.finalize = False
 
 CommId = Union[int, Comm, None]
 log = logging.getLogger(__name__)

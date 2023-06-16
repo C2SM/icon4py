@@ -973,12 +973,13 @@ class Diffusion:
         # TODO @magdalena why not trigger the exchange of w earlier?
         # TODO if condition: IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         # TODO magdalena: why does this crash?
-        # res = self._sync_fields((CellDim,KDim),
-        #     prognostic_state.theta_v,
-        #     prognostic_state.exner_pressure,
-        # )
-        res = self._sync_fields((CellDim, KHalfDim), prognostic_state.w)
-        self._wait(res)
+        res_1 = self._sync_fields((CellDim,KDim),
+             prognostic_state.theta_v,
+             prognostic_state.exner_pressure,
+         )
+        self._wait(res_1)
+        res_w = self._sync_fields((CellDim, KHalfDim), prognostic_state.w)
+        #self._wait(res_w)
 
     def _sync_fields(self, dim: tuple[Dimension, Dimension], *field):
         if self._exchange:
