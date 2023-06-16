@@ -986,7 +986,7 @@ class Diffusion:
         )
         self._wait(res_1)
         res_w = self._sync_fields((CellDim, KHalfDim), prognostic_state.w)
-        # self._wait(res_w)
+        self._wait(res_w)
 
     def _sync_fields(self, dim: tuple[Dimension, Dimension], *field):
         if self._exchange:
