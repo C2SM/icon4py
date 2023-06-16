@@ -155,7 +155,9 @@ class Exchange:
             (EdgeDim, KDim): self._create_pattern(EdgeDim, KDim),
             (EdgeDim, KHalfDim): self._create_pattern(EdgeDim, KHalfDim),
         }
-        print(f"rank={self._context.rank()}/{self._context.size()} : patterns initialized ")
+
+        self._comms = {k: ghex.make_co(context, v) for k, v in self._patterns.items()}
+        print(f"rank={self._context.rank()}/{self._context.size()} : patterns and communicators initialized ")
         print(f"rank={self._context.rank()}/{self._context.size()} : exchange initialized")
 
 
@@ -201,7 +203,7 @@ class Exchange:
         assert pattern is not None
         fields = [np.asarray(f)[:horizontal_size, :] for f in fields]
         print(f"rank = {self._context.rank()}/{self._context.size()}: communicating fields of dim = {dims} (shape = {fields[0].shape})")
-        communicator = ghex.make_co(self._context, pattern)
+        communicator = self._comms[dims]
         patterns_of_field = [pattern(ghex.field_descriptor(self._domain_descriptors[dims], f)) for f in fields]
         return communicator.exchange(patterns_of_field)
 
