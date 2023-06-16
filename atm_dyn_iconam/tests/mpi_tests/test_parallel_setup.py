@@ -168,10 +168,12 @@ def test_decomposition_info_matches_gridsize(datapath, caplog):
 def test_parallel_diffusion(r04b09_diffusion_config, step_date_init):
     # caplog.set_level(logging.DEBUG)
     props = get_processor_properties()
+    num_nodes = props.comm_size
 
     experiment_name = "mch_ch_r04b09_dsl"
+
     path = Path(
-        f"/home/magdalena/data/exclaim/dycore/{experiment_name}/mpitasks2/{experiment_name}/ser_data"
+        f"/home/magdalena/data/exclaim/dycore/{experiment_name}/mpitasks{num_nodes}/{experiment_name}/ser_data"
     )
     print(
         f"rank={props.rank}/{props.comm_size}: inializing diffusion for experiment {experiment_name}"
@@ -190,17 +192,19 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init):
     print(
         f"rank={props.rank}/{props.comm_size}:  GHEX context setup: from {props.comm_name} with {props.comm_size} nodes"
     )
-    assert context.size() == 2
+    #assert context.size() == 2
 
     icon_grid = read_icon_grid(path, rank=props.rank)
     print(
         f"rank={props.rank}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
     )
-
+    initial_run = False
+    r04b09_diffusion_config.ndyn_substeps = 2
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
+
     diffusion_initial_data = IconSerialDataProvider(
         "icon_pydycore", str(path), True, mpi_rank=props.rank
-    ).from_savepoint_diffusion_init(linit=True, date=step_date_init)
+    ).from_savepoint_diffusion_init(linit=initial_run, date=step_date_init)
     (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(
         path, rank=props.rank
     )
@@ -223,9 +227,11 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init):
         interpolation_state,
     )
     print(f"rank={props.rank}/{props.comm_size}: diffusion initialized ")
+    diagnostic_state = diffusion_initial_data.construct_diagnostics()
+    prognostic_state = diffusion_initial_data.construct_prognostics()
     diffusion.run(
-        diagnostic_state=diffusion_initial_data.construct_diagnostics(),
-        prognostic_state=diffusion_initial_data.construct_prognostics(),
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
         dtime=dtime,
         tangent_orientation=edge_geometry.tangent_orientation,
         inverse_primal_edge_lengths=edge_geometry.inverse_primal_edge_lengths,
@@ -237,3 +243,38 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init):
         cell_areas=cell_geometry.area,
     )
     print(f"rank={props.rank}/{props.comm_size}: diffusion run ")
+
+    diffusion_savepoint_exit = IconSerialDataProvider(
+        "icon_pydycore", str(path), True, mpi_rank=props.rank
+    ).from_savepoint_diffusion_init(linit=initial_run, date=step_date_init)
+    verify_fields(diffusion_savepoint_exit, diagnostic_state, prognostic_state,
+                  diffusion.metric_state.mask_hdiff)
+
+
+def verify_fields(diffusion_savepoint_exit, diagnostic_state, prognostic_state, steep_points):
+    ref_div_ic = np.asarray(diffusion_savepoint_exit.div_ic())
+    val_div_ic = np.asarray(diagnostic_state.div_ic)
+    ref_hdef_ic = np.asarray(diffusion_savepoint_exit.hdef_ic())
+    val_hdef_ic = np.asarray(diagnostic_state.hdef_ic)
+    assert np.allclose(ref_div_ic, val_div_ic)
+    assert np.allclose(ref_hdef_ic, val_hdef_ic)
+    ref_w = np.asarray(diffusion_savepoint_exit.w())
+    val_w = np.asarray(prognostic_state.w)
+    ref_dwdx = np.asarray(diffusion_savepoint_exit.dwdx())
+    val_dwdx = np.asarray(prognostic_state.dwdx)
+    ref_dwdy = np.asarray(diffusion_savepoint_exit.dwdy())
+    val_dwdy = np.asarray(prognostic_state.dwdy)
+    ref_vn = np.asarray(diffusion_savepoint_exit.vn())
+    val_vn = np.asarray(prognostic_state.vn)
+    assert np.allclose(ref_vn, val_vn)
+    assert np.allclose(ref_dwdx, val_dwdx)
+    assert np.allclose(ref_dwdy, val_dwdy)
+    assert np.allclose(ref_w, val_w)
+    ref_exner = np.asarray(diffusion_savepoint_exit.exner())
+    ref_theta_v = np.asarray(diffusion_savepoint_exit.theta_v())
+    val_theta_v = np.asarray(prognostic_state.theta_v)
+    val_exner = np.asarray(prognostic_state.exner_pressure)
+    assert np.allclose(ref_theta_v[~steep_points], val_theta_v[~steep_points])
+    assert np.allclose(ref_exner[~steep_points], val_exner[~steep_points])
+    # assert np.allclose(ref_theta_v[steep_points], val_theta_v[steep_points])
+    # assert np.allclose(ref_exner[steep_points], val_exner[steep_points])
