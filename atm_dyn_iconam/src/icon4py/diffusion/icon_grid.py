@@ -101,8 +101,8 @@ class IconGrid:
     def with_start_end_indices(
         self, dim: Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
-        self.start_indices[dim] = start_indices.astype(int)
-        self.end_indices[dim] = end_indices.astype(int)
+        self.start_indices[dim] = start_indices.astype(int32)
+        self.end_indices[dim] = end_indices.astype(int32)
 
     @builder
     def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
@@ -129,7 +129,7 @@ class IconGrid:
 
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
-    ) -> Tuple[int, int]:
+    ) -> Tuple[int32, int32]:
         """
         Use to specify domains of a field for field_operator.
 

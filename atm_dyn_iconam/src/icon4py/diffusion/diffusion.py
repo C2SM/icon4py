@@ -379,6 +379,7 @@ class Diffusion:
         self.thresh_tdiff: float = (
             -5.0
         )  # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        self._run_program = run_program
         self.grid: Optional[IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
