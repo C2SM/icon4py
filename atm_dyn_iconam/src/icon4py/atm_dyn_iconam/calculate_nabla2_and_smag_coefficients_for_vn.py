@@ -13,8 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, maximum, minimum, sqrt, int32
-
+from gt4py.next.ffront.fbuiltins import Field, int32, maximum, minimum, sqrt
 
 from icon4py.common.dimension import (
     E2C2V,
