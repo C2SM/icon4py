@@ -66,9 +66,9 @@ def _face_val_ppm_stencil_01(
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     z_slope = where(
-        vert_idx < elev,
-        _face_val_ppm_stencil_01a(p_cc, p_cellhgt_mc_now),
+        vert_idx == elev,
         _face_val_ppm_stencil_01b(p_cc, p_cellhgt_mc_now),
+        _face_val_ppm_stencil_01a(p_cc, p_cellhgt_mc_now),
     )
 
     return z_slope
