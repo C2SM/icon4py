@@ -12,13 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator import embedded as it_embedded
 
 from icon4py.advection.face_val_ppm_stencil_02a import face_val_ppm_stencil_02a
 from icon4py.common.dimension import CellDim, KDim
 
-from .test_utils.helpers import _shape, random_field
+from .test_utils.helpers import random_field
 from .test_utils.simple_mesh import SimpleMesh
 
 
@@ -47,7 +45,6 @@ def test_face_val_ppm_stencil_02a():
     p_cellhgt_mc_now = random_field(mesh, CellDim, KDim)
     p_face = random_field(mesh, CellDim, KDim)
 
-
     ref = face_val_ppm_stencil_02a_numpy(
         np.asarray(p_cc),
         np.asarray(p_cellhgt_mc_now),
@@ -60,4 +57,4 @@ def test_face_val_ppm_stencil_02a():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:,1:], p_face[:,1:])
+    assert np.allclose(ref[:, 1:], p_face[:, 1:])
