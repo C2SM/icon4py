@@ -46,6 +46,8 @@ from icon4pytools.liskov.codegen.integration.template import (
 from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
 from icon4pytools.liskov.external.metadata import CodeMetadata
+from icon4pytools.liskov.codegen.integration.exceptions import UnmergedCopyError
+
 
 
 logger = setup_logger(__name__)
@@ -114,30 +116,48 @@ class IntegrationCodeGenerator(CodeGenerator):
             stencil = self.interface.StartStencil[i]
             logger.info(f"Generating START statement for {stencil.name}")
 
-            try:
-                next_stencil = self.interface.StartStencil[i + 1]
-            except IndexError:
-                pass
+            if stencil.mergecopy:
 
-            if stencil.mergecopy and next_stencil.mergecopy:
-                stencil = StartStencilData(
-                    startln=stencil.startln,
-                    name=stencil.name + "_" + next_stencil.name,
-                    fields=stencil.fields + next_stencil.fields,
-                    bounds=stencil.bounds,
-                    acc_present=stencil.acc_present,
-                    mergecopy=stencil.mergecopy,
-                    copies=stencil.copies,
-                )
-                i += 2
+              merged_name=stencil.name 
+              merged_fields=stencil.fields.copy()
+              j = 1
+              try:
+                  next_stencil = self.interface.StartStencil[i + j]
+              except IndexError:
+                  pass
 
-                self._generate(
-                    StartStencilStatement,
-                    StartStencilStatementGenerator,
-                    stencil.startln,
-                    stencil_data=stencil,
-                    profile=self.profile,
-                )
+              while( next_stencil.mergecopy ):
+                merged_name += " " + next_stencil.name
+                merged_fields += next_stencil.fields
+                j += 1
+                try:
+                    next_stencil = self.interface.StartStencil[i + j]
+                except IndexError:
+                    pass
+              
+              stencil = StartStencilData(
+                  startln=stencil.startln,
+                  name=merged_name,
+                  fields=merged_fields,
+                  bounds=stencil.bounds,
+                  acc_present=stencil.acc_present,
+                  mergecopy=stencil.mergecopy,
+                  copies=stencil.copies,
+              )
+
+              self._generate(
+                  StartStencilStatement,
+                  StartStencilStatementGenerator,
+                  stencil.startln,
+                  stencil_data=stencil,
+                  profile=self.profile,
+              )
+
+              if j==1:
+                error_msg = f"{merged_name} cannot be merged with other stencil."
+                raise UnmergedCopyError(error_msg)
+              i += j
+
             else:
                 self._generate(
                     StartStencilStatement,
