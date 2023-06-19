@@ -12,9 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.common.dimension import CellDim, KDim, Koff
+from icon4py.common.dimension import CellDim, KDim
 
 
 @field_operator

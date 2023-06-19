@@ -12,10 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.common.dimension import CellDim, KDim, Koff
-
 
 
 @field_operator
@@ -25,7 +24,6 @@ def _face_val_ppm_stencil_02c(
 
     p_face = p_cc(Koff[-1])
     return p_face
-
 
 
 @program
