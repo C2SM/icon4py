@@ -16,7 +16,6 @@
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import program
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
     _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
@@ -24,14 +23,14 @@ from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradient
 from icon4py.atm_dyn_iconam.calculate_diagnostic_quantities_for_turbulence import (
     _calculate_diagnostic_quantities_for_turbulence,
 )
+from icon4py.atm_dyn_iconam.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
+    _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+)
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     _calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
     _fused_mo_nh_diffusion_stencil_04_05_06,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import (
-    _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
 )
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     _mo_intp_rbf_rbf_vec_interpol_vertex,
@@ -110,20 +109,20 @@ def diffusion_run(
     local_horizontal_edge_index: Field[[EdgeDim], int32],
     cell_startindex_interior: int32,
     cell_halo_idx: int32,
-    cell_startindex_nudging: int,
-    cell_endindex_local_plus1: int,
-    cell_endindex_local: int,
-    edge_startindex_nudging_plus1: int,
+    cell_startindex_nudging: int32,
+    cell_endindex_local_plus1: int32,
+    cell_endindex_local: int32,
+    edge_startindex_nudging_plus1: int32,
     edge_startindex_nudging_minus1: int32,
-    edge_endindex_local: int,
-    edge_endindex_local_minus2: int,
-    vertex_startindex_lb_plus3: int,
-    vertex_startindex_lb_plus1: int,
-    vertex_endindex_local: int,
-    vertex_endindex_local_minus1: int,
+    edge_endindex_local: int32,
+    edge_endindex_local_minus2: int32,
+    vertex_startindex_lb_plus3: int32,
+    vertex_startindex_lb_plus1: int32,
+    vertex_endindex_local: int32,
+    vertex_endindex_local_minus1: int32,
     index_of_damping_height: int32,
-    nlev: int,
-    boundary_diffusion_start_index_edges: int,
+    nlev: int32,
+    boundary_diffusion_start_index_edges: int32,
 ):
     _scale_k(local_enh_smag_fac, dtime, out=local_diff_multfac_smag)
 

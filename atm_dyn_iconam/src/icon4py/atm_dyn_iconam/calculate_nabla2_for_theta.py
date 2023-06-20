@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_z import _calculate_nabla2_for_z
 from icon4py.atm_dyn_iconam.calculate_nabla2_of_theta import (
@@ -40,10 +40,10 @@ def calculate_nabla2_for_theta(
     theta_v: Field[[CellDim, KDim], float],
     geofac_div: Field[[CEDim], float],
     z_temp: Field[[CellDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _calculate_nabla2_for_theta(
         kh_smag_e,

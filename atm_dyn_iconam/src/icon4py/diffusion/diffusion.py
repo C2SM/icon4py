@@ -23,21 +23,23 @@ from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 import icon4py.diffusion.diffusion_program as diff_prog
-from icon4py.atm_dyn_iconam import calculate_diagnostic_quantities_for_turbulence
+from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
+)
+from icon4py.atm_dyn_iconam.calculate_diagnostic_quantities_for_turbulence import (
+    calculate_diagnostic_quantities_for_turbulence,
+)
+from icon4py.atm_dyn_iconam.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
+    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+)
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
+from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import (
+    calculate_nabla2_for_theta,
+)
 from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
     fused_mo_nh_diffusion_stencil_04_05_06,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_07_08_09_10 import (
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_11_12 import (
-    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_13_14 import (
-    calculate_nabla2_for_theta,
 )
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
@@ -815,7 +817,7 @@ class Diffusion:
         set_zero_v_k.with_backend(run_gtfn)(self.v_vert, offset_provider={})
         log.debug("rbf interpolation: start")
         # # 1.  CALL rbf_vec_interpol_vertex
-        mo_intp_rbf_rbf_vec_interpol_vertex(
+        mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(run_gtfn)(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
