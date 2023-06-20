@@ -198,7 +198,6 @@ def _fused_stencils_11_to_13(
     k_field: Field[[KDim], int],
     nflatlev_startindex: int,
     nlev: int,
-    nlevp1: int,
 ):
     local_z_w_con_c = where(
         (k_field >= 0) & (k_field < nlev),
@@ -207,7 +206,7 @@ def _fused_stencils_11_to_13(
     )
 
     local_z_w_con_c = where(
-        k_field == nlevp1, _mo_velocity_advection_stencil_12(), local_z_w_con_c
+        k_field == nlev, _mo_velocity_advection_stencil_12(), local_z_w_con_c
     )
 
     local_z_w_con_c = where(
@@ -226,7 +225,6 @@ def fused_stencils_11_to_13(
     k_field: Field[[KDim], int],
     nflatlev_startindex: int,
     nlev: int,
-    nlevp1: int,
     horizontal_start: int,
     horizontal_end: int,
     vertical_start: int,
@@ -239,7 +237,6 @@ def fused_stencils_11_to_13(
         k_field,
         nflatlev_startindex,
         nlev,
-        nlevp1,
         out=local_z_w_con_c,
         domain={
             CellDim: (horizontal_start, horizontal_end),

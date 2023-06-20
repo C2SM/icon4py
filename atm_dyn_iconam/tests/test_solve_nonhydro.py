@@ -184,7 +184,7 @@ def test_nonhydro_predictor_step(
         coeff_gradekin=sp_met.coeff_gradekin(),
         ddqz_z_full_e=sp_met.ddqz_z_full_e(),
         wgtfac_e=sp_met.wgtfac_e(),
-        wgtfacq_e=sp_met.wgtfacq_e(),
+        wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
         ddxn_z_full=sp_met.ddxn_z_full(),
         ddxt_z_full=sp_met.ddxt_z_full(),
         ddqz_z_half=sp_met.ddqz_z_half(),
@@ -196,6 +196,7 @@ def test_nonhydro_predictor_step(
         exner_exfac=sp_met.exner_exfac(),
         exner_ref_mc=sp_met.exner_ref_mc(),
         wgtfacq_c=sp_met.wgtfacq_c(),
+        wgtfacq_c_dsl=sp_met.wgtfacq_c_dsl(),
         inv_ddqz_z_full=sp_met.inv_ddqz_z_full(),
         rho_ref_mc=sp_met.rho_ref_mc(),
         theta_ref_mc=sp_met.theta_ref_mc(),
@@ -265,6 +266,55 @@ def test_nonhydro_predictor_step(
         l_init=linit,
         nnow=nnow,
         nnew=nnew,
+    )
+
+    icon_result_vn_new = sp_exit.vn_new()
+    icon_result_vn_ie = sp_exit.vn_ie()
+    icon_result_w_new = sp_exit.w_new()
+    icon_result_exner_new = sp_exit.exner_new()
+    icon_result_exner_now = sp_exit.exner_now()
+    icon_result_theta_v_new = sp_exit.theta_v_new()
+    icon_result_theta_v_ic = sp_exit.theta_v_ic()
+    icon_result_rho_ic = sp_exit.rho_ic()
+    icon_result_w_concorr_c = sp_exit.w_concorr_c()
+    icon_result_mass_fl_e = sp_exit.mass_fl_e()
+
+    icon_result_prep_adv_mass_flx_me = sp_exit.prep_adv_mass_flx_me()
+    icon_result_prep_adv_vn_traj = sp_exit.prep_adv_vn_traj()
+
+    assert np.allclose(
+        np.asarray(icon_result_vn_new), np.asarray(prognostic_state.vn)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_w_new), np.asarray(prognostic_state.w)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_exner_new), np.asarray(prognostic_state.exner)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_theta_v_new), np.asarray(prognostic_state.theta_v)
+    )
+
+    assert np.allclose(
+        np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_theta_v_ic), np.asarray(diagnostic_state_nonhydro.theta_v_ic)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_rho_ic), np.asarray(diagnostic_state_nonhydro.rho_ic)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_mass_fl_e), np.asarray(diagnostic_state_nonhydro.mass_fl_e)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_prep_adv_mass_flx_me), np.asarray(prep_adv.mass_flx_me)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_prep_adv_vn_traj), np.asarray(prep_adv.vn_traj)
     )
 
 
@@ -384,7 +434,7 @@ def test_nonhydro_corrector_step(
         coeff_gradekin=sp_met.coeff_gradekin(),
         ddqz_z_full_e=sp_met.ddqz_z_full_e(),
         wgtfac_e=sp_met.wgtfac_e(),
-        wgtfacq_e=sp_met.wgtfacq_e(),
+        wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
         ddxn_z_full=sp_met.ddxn_z_full(),
         ddxt_z_full=sp_met.ddxt_z_full(),
         ddqz_z_half=sp_met.ddqz_z_half(),
@@ -615,6 +665,7 @@ def test_run_solve_nonhydro_multi_step(
         exner_exfac=sp_met.exner_exfac(),
         exner_ref_mc=sp_met.exner_ref_mc(),
         wgtfacq_c=sp_met.wgtfacq_c(),
+        wgtfacq_c_dsl=sp_met.wgtfacq_c_dsl(),
         inv_ddqz_z_full=sp_met.inv_ddqz_z_full(),
         rho_ref_mc=sp_met.rho_ref_mc(),
         theta_ref_mc=sp_met.theta_ref_mc(),

@@ -709,10 +709,10 @@ class SolveNonhydro:
             vertical_end=self.grid.n_lev(),
             offset_provider={},
         )
-
+        # TODO: @abishekg7 check size and ordering of wgtfac_c
         if config.igradp_method == 3:
             nhsolve_prog.predictor_stencils_4_5_6.with_backend(run_gtfn)(
-                self.metric_state_nonhydro.wgtfacq_c,
+                self.metric_state_nonhydro.wgtfacq_c_dsl,
                 self.z_exner_ex_pr,
                 self.z_exner_ic,
                 self.metric_state.wgtfac_c,
@@ -720,11 +720,10 @@ class SolveNonhydro:
                 self.z_dexner_dz_c_1,
                 self.k_field,
                 self.grid.n_lev(),
-                self.grid.n_lev() + 1,
                 horizontal_start=indices_1_1,
                 horizontal_end=indices_1_2,
                 vertical_start=max(1, self.vertical_params.nflatlev),
-                vertical_end=self.grid.n_lev(),
+                vertical_end=self.grid.n_lev()+1,
                 offset_provider={"Koff": KDim},
             )
 
@@ -759,17 +758,17 @@ class SolveNonhydro:
 
         # Perturbation theta at top and surface levels
         nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(run_gtfn)(
-            self.metric_state_nonhydro.wgtfacq_c,
+            self.metric_state_nonhydro.wgtfacq_c_dsl,
             self.z_rth_pr_2,
             self.metric_state_nonhydro.theta_ref_ic,
             self.z_theta_v_pr_ic,
             diagnostic_state_nonhydro.theta_v_ic,
             self.k_field,
-            self.grid.n_lev() + 1,
+            self.grid.n_lev(),
             horizontal_start=indices_1_1,
             horizontal_end=indices_1_2,
             vertical_start=0,
-            vertical_end=self.grid.n_lev(),
+            vertical_end=self.grid.n_lev()+1,
             offset_provider={"Koff": KDim},
         )
 
@@ -1181,9 +1180,9 @@ class SolveNonhydro:
                 diagnostic_state.vn_ie,
                 self.z_vt_ie,
                 self.z_kin_hor_e,
-                self.metric_state.wgtfacq_e,
+                self.metric_state.wgtfac_e_dsl,
                 self.k_field,
-                self.grid.n_lev() + 1,
+                self.grid.n_lev(),
                 horizontal_start=indices_7_1,
                 horizontal_end=indices_7_2,
                 vertical_start=0,
@@ -1201,16 +1200,15 @@ class SolveNonhydro:
             self.interpolation_state.e_bln_c_s,
             self.z_w_concorr_me,
             self.metric_state.wgtfac_c,
-            self.metric_state_nonhydro.wgtfacq_c,
+            self.metric_state_nonhydro.wgtfacq_c_dsl,
             diagnostic_state.w_concorr_c,
             self.k_field,
             self.vertical_params.nflatlev + 1,
             self.grid.n_lev(),
-            self.grid.n_lev() + 1,
             horizontal_start=indices_9_1,
             horizontal_end=indices_9_2,
             vertical_start=0,
-            vertical_end=self.grid.n_lev(),
+            vertical_end=self.grid.n_lev()+1,
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
                 "Koff": KDim,
@@ -1267,7 +1265,6 @@ class SolveNonhydro:
             indices_10_2,
             self.grid.n_lev(),
             self.grid.n_lev() + 1,
-            self.grid.n_lev() + 1,
             offset_provider={},
         )
 
@@ -1301,7 +1298,6 @@ class SolveNonhydro:
             indices_10_2,
             self.grid.n_lev(),
             self.grid.n_lev() + 1,
-            self.grid.n_lev(),
             offset_provider={
                 "Koff": KDim,
             },
@@ -1438,11 +1434,10 @@ class SolveNonhydro:
                 self.k_field,
                 dtime,
                 self.grid.n_lev(),
-                self.grid.n_lev() + 1,
                 horizontal_start=indices_11_1,
                 horizontal_end=indices_11_2,
                 vertical_start=0,
-                vertical_end=self.grid.n_lev(),
+                vertical_end=self.grid.n_lev()+1,
                 offset_provider={},
             )
 
@@ -1805,7 +1800,6 @@ class SolveNonhydro:
                 indices_1_2,
                 self.grid.n_lev(),
                 self.grid.n_lev() + 1,
-                self.grid.n_lev() + 1,
                 offset_provider={},
             )
         else:
@@ -1835,7 +1829,6 @@ class SolveNonhydro:
                 indices_5_1,
                 indices_5_2,
                 self.grid.n_lev(),
-                self.grid.n_lev() + 1,
                 self.grid.n_lev() + 1,
                 offset_provider={},
             )
@@ -1871,7 +1864,6 @@ class SolveNonhydro:
             indices_1_2,
             self.grid.n_lev(),
             self.grid.n_lev() + 1,
-            self.grid.n_lev(),
             offset_provider={
                 "Koff": KDim,
             },

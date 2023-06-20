@@ -315,11 +315,10 @@ class VelocityAdvection:
             self.k_field,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
-            self.grid.n_lev() + 1,
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
             vertical_start=0,
-            vertical_end=self.grid.n_lev(),
+            vertical_end=self.grid.n_lev()+1,
             offset_provider={},
         )
 
@@ -560,7 +559,6 @@ class VelocityAdvection:
             self.k_field,
             self.vertical_params.nflatlev,
             self.grid.n_lev(),
-            self.grid.n_lev() + 1,
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
             vertical_start=0,

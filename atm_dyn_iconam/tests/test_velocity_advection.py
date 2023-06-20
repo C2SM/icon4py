@@ -269,6 +269,7 @@ def test_velocity_predictor_step(
         np.asarray(diagnostic_state.ddt_w_adv_pc),
     )
     assert np.allclose(np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt))
+
     assert np.allclose(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
     )
@@ -353,7 +354,7 @@ def test_velocity_corrector_step(
         coeff_gradekin=sp_met.coeff_gradekin(),
         ddqz_z_full_e=sp_met.ddqz_z_full_e(),
         wgtfac_e=sp_met.wgtfac_e(),
-        wgtfacq_e=sp_met.wgtfacq_e(),
+        wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
         ddxn_z_full=sp_met.ddxn_z_full(),
         ddxt_z_full=sp_met.ddxt_z_full(),
         ddqz_z_half=sp_met.ddqz_z_half(),

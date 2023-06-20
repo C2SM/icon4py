@@ -45,6 +45,7 @@ class MetricStateNonHydro:
     exner_exfac: Field[[CellDim, KDim], float]
     exner_ref_mc: Field[[CellDim, KDim], float]
     wgtfacq_c: Field[[CellDim, KDim], float]
+    wgtfacq_c_dsl: Field[[CellDim, KDim], float]
     inv_ddqz_z_full: Field[[CellDim, KDim], float]
     rho_ref_mc: Field[[CellDim, KDim], float]
     theta_ref_mc: Field[[CellDim, KDim], float]
