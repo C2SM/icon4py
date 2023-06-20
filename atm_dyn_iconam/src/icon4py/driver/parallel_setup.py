@@ -123,24 +123,13 @@ class Exchange:
         self._context = context
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
-            (CellDim, KDim): self._create_domain_descriptor(
-                CellDim, domain_decomposition.klevels
+            CellDim: self._create_domain_descriptor(
+                CellDim,
             ),
-            (CellDim, KHalfDim): self._create_domain_descriptor(
-                CellDim, domain_decomposition.klevels + 1
+            VertexDim: self._create_domain_descriptor(
+                VertexDim,
             ),
-            (VertexDim, KDim): self._create_domain_descriptor(
-                VertexDim, domain_decomposition.klevels
-            ),
-            (VertexDim, KHalfDim): self._create_domain_descriptor(
-                VertexDim, domain_decomposition.klevels + 1
-            ),
-            (EdgeDim, KDim): self._create_domain_descriptor(
-                EdgeDim, domain_decomposition.klevels
-            ),
-            (EdgeDim, KHalfDim): self._create_domain_descriptor(
-                EdgeDim, domain_decomposition.klevels + 1
-            ),
+            EdgeDim: self._create_domain_descriptor(EdgeDim),
         }
         print(
             f"rank={self._context.rank()}/{self._context.size()} :domain descriptors initialized"
@@ -163,16 +152,11 @@ class Exchange:
         )
 
         self._patterns = {
-            (CellDim, KDim): self._create_pattern(CellDim, KDim),
-            (CellDim, KHalfDim): self._create_pattern(CellDim, KHalfDim),
-            (VertexDim, KDim): self._create_pattern(VertexDim, KDim),
-            (VertexDim, KHalfDim): self._create_pattern(VertexDim, KHalfDim),
-            (EdgeDim, KDim): self._create_pattern(EdgeDim, KDim),
-            (EdgeDim, KHalfDim): self._create_pattern(EdgeDim, KHalfDim),
+            CellDim: self._create_pattern(CellDim),
+            VertexDim: self._create_pattern(VertexDim),
+            EdgeDim: self._create_pattern(EdgeDim),
         }
-        # TODO [magdalena] reuse communication object as much as possible. The pattern argument is needed for template args and should go away here
-        # if the pattern arg weren't there, we would need only as many communiciation objects as there are overlapping exchanges not as many as there are different patterns
-        self._comms = {k: ghex.make_co(context, v) for k, v in self._patterns.items()}
+        self._comms = {k: ghex.make_co(context) for k, v in self._patterns.items()}
         print(
             f"rank={self._context.rank()}/{self._context.size()} : patterns and communicators initialized "
         )
@@ -181,13 +165,13 @@ class Exchange:
         )
 
     def _domain_descriptor_info(self, descr):
-        return f" id={descr.domain_id()} levels = {descr.levels()}, size={descr.size()}, inner_size={descr.inner_size()}"
+        return f" id={descr.domain_id()}, size={descr.size()}, inner_size={descr.inner_size()}"
 
     def get_size(self):
         return self._context.size()
 
     # TODO [magdalena] is the tolist() necessary?
-    def _create_domain_descriptor(self, dim: Dimension, levels: int):
+    def _create_domain_descriptor(self, dim: Dimension):
         all_global = self._decomposition_info.global_index(
             dim, DecompositionInfo.EntryType.ALL
         )
@@ -198,7 +182,7 @@ class Exchange:
         # on the contrary it is safer if those are different for all domain descriptors (otherwise the system deadlocks if 2 parallel exchanges are done
         # with the same domain-id
         domain_desc = ghex.domain_descriptor(
-            self._context.rank(), all_global.tolist(), local_halo.tolist(), levels
+            self._context.rank(), all_global.tolist(), local_halo.tolist()
         )
         print(
             f"rank={self._context.rank()}/{self._context.size()}: domain descriptor for dim {dim} with properties {self._domain_descriptor_info(domain_desc)}"
@@ -206,7 +190,7 @@ class Exchange:
 
         return domain_desc
 
-    def _create_pattern(self, horizontal_dim: Dimension, vertical_dim: Dimension):
+    def _create_pattern(self, horizontal_dim: Dimension):
         halo_generator = ghex.halo_generator_with_gids(
             self._decomposition_info.global_index(
                 horizontal_dim, DecompositionInfo.EntryType.HALO
@@ -215,27 +199,27 @@ class Exchange:
         print(
             f"rank={self._context.rank()}/{self._context.size()}: halo generator for dim={horizontal_dim} created"
         )
-        dimensions = (horizontal_dim, vertical_dim)
         pattern = ghex.make_pattern(
-            self._context, halo_generator, [self._domain_descriptors[dimensions]]
+            self._context, halo_generator, [self._domain_descriptors[horizontal_dim]]
         )
         print(
-            f"rank={self._context.rank()}/{self._context.size()}: pattern for dim={dimensions} and {self._domain_descriptors[dimensions]} created"
+            f"rank={self._context.rank()}/{self._context.size()}: pattern for dim={horizontal_dim} and {self._domain_descriptors[horizontal_dim]} created"
         )
         return pattern
 
-    def exchange(self, dims: tuple[Dimension, Dimension], *fields):
-        assert dims[0] in [CellDim, EdgeDim, VertexDim]
-        horizontal_size = self._field_size[dims[0]]
-        pattern = self._patterns[dims]
+    def exchange(self, dim: Dimension, *fields):
+        assert dim in [CellDim, EdgeDim, VertexDim]
+        horizontal_size = self._field_size[dim]
+        pattern = self._patterns[dim]
         assert pattern is not None
         fields = [np.asarray(f)[:horizontal_size, :] for f in fields]
+        shapes = list(map(lambda f: f.shape, fields))
         print(
-            f"rank = {self._context.rank()}/{self._context.size()}: communicating fields of dim = {dims} (shape = {fields[0].shape})"
+            f"rank = {self._context.rank()}/{self._context.size()}: communicating fields of dim = {dim} : shapes = {shapes}"
         )
-        communicator = self._comms[dims]
+
         patterns_of_field = [
-            pattern(ghex.field_descriptor(self._domain_descriptors[dims], f))
+            pattern(ghex.field_descriptor(self._domain_descriptors[dim], f))
             for f in fields
         ]
-        return communicator.exchange(patterns_of_field)
+        return self._comms[dim].exchange(patterns_of_field)

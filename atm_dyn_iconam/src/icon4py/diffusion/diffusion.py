@@ -698,8 +698,8 @@ class Diffusion:
         )
         log.debug("rbf interpolation: end")
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
-        res = self._sync_fields((VertexDim, KDim), self.u_vert, self.v_vert)
-        self._wait(res)
+        res = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
+        self._wait(res, VertexDim)
 
         # 3.  mo_nh_diffusion_stencil_01, mo_nh_diffusion_stencil_02, mo_nh_diffusion_stencil_03
 
@@ -754,8 +754,8 @@ class Diffusion:
         log.debug("running fused stencil fused stencil 02_03: end")
         #
         # # 4.  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
-        res = self._sync_fields((EdgeDim, KDim), self.z_nabla2_e)
-        self._wait(res)
+        res = self._sync_fields(EdgeDim, self.z_nabla2_e)
+        self._wait(res, EdgeDim)
 
         # # 5.  CALL rbf_vec_interpol_vertex_wp
         log.debug("rbf interpolation: start")
@@ -774,9 +774,8 @@ class Diffusion:
         log.debug("rbf interpolation: end")
         # # # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
         # #
-        res = self._sync_fields((VertexDim, KDim), self.u_vert, self.v_vert)
-        self._wait(res)
-
+        res = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
+        self._wait(res, VertexDim)
         # # # 7.  mo_nh_diffusion_stencil_04, mo_nh_diffusion_stencil_05
         # # # 7a. IF (l_limited_area .OR. jg > 1) mo_nh_diffusion_stencil_06
         log.debug("running fused stencil 04_05_06: start")
@@ -893,8 +892,8 @@ class Diffusion:
         # )
         log.debug("running fused stencil 07_08_09_10: end")
         # # 8.  HALO EXCHANGE: CALL sync_patch_array
-        comm_res = self._sync_fields((EdgeDim, KDim), prognostic_state.vn)
-        self._wait(comm_res)
+        comm_res = self._sync_fields(EdgeDim, prognostic_state.vn)
+        self._wait(comm_res, EdgeDim)
 
         # # 9.  mo_nh_diffusion_stencil_11, mo_nh_diffusion_stencil_12, mo_nh_diffusion_stencil_13,
         # #     mo_nh_diffusion_stencil_14, mo_nh_diffusion_stencil_15, mo_nh_diffusion_stencil_16
@@ -978,20 +977,21 @@ class Diffusion:
         # 10. HALO EXCHANGE sync_patch_array (Cell fields)
         # TODO @magdalena why not trigger the exchange of w earlier?
         # TODO if condition: IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
-        # TODO magdalena: why does this crash?
-        res_1 = self._sync_fields(
-            (CellDim, KDim),
+        res = self._sync_fields(
+            CellDim,
             prognostic_state.theta_v,
             prognostic_state.exner_pressure,
+            prognostic_state.w,
         )
-        self._wait(res_1)
-        res_w = self._sync_fields((CellDim, KHalfDim), prognostic_state.w)
-        self._wait(res_w)
+        self._wait(res, CellDim)
 
-    def _sync_fields(self, dim: tuple[Dimension, Dimension], *field):
+    def _sync_fields(self, dim: Dimension, *field):
         if self._exchange:
             return self._exchange.exchange(dim, *field)
 
-    def _wait(self, comm_handle):
+    def _wait(self, comm_handle, dim):
         if comm_handle:
             comm_handle.wait()
+            print(
+                f"rank={self._exchange._context.rank()}/{self._exchange._context.size()}:communication dim={dim} done"
+            )
