@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
@@ -31,7 +32,7 @@ def _update_theta_and_exner(
     return theta_v, exner
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def update_theta_and_exner(
     z_temp: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],

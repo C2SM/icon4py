@@ -113,7 +113,6 @@ class Field(Node, FieldEntity):
 
     def is_integral(self) -> bool:
         scalar_types = [
-            ts.ScalarKind.INT,
             ts.ScalarKind.INT32,
             ts.ScalarKind.INT64,
         ]

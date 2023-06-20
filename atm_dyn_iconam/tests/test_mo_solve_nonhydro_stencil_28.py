@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_28 import (
     mo_solve_nonhydro_stencil_28,
@@ -19,30 +20,28 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_28 import (
 from icon4py.common.dimension import EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_28_numpy(
-    vn_incr: np.array, vn: np.array, iau_wgt_dyn
-) -> np.array:
-    vn = vn + (iau_wgt_dyn * vn_incr)
-    return vn
+class TestMoSolveNonhydroStencil28(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_28
+    OUTPUTS = ("vn",)
 
+    @staticmethod
+    def reference(
+        mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn, **kwargs
+    ) -> np.array:
+        vn = vn + (iau_wgt_dyn * vn_incr)
+        return dict(vn=vn)
 
-def test_mo_solve_nonhydro_stencil_28():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        vn_incr = random_field(mesh, EdgeDim, KDim)
+        vn = random_field(mesh, EdgeDim, KDim)
+        iau_wgt_dyn = 5.0
 
-    vn_incr = random_field(mesh, EdgeDim, KDim)
-    vn = random_field(mesh, EdgeDim, KDim)
-    iau_wgt_dyn = 5.0
-
-    ref = mo_solve_nonhydro_stencil_28_numpy(
-        np.asarray(vn_incr), np.asarray(vn), iau_wgt_dyn
-    )
-    mo_solve_nonhydro_stencil_28(
-        vn_incr,
-        vn,
-        iau_wgt_dyn,
-        offset_provider={},
-    )
-    assert np.allclose(vn, ref)
+        return dict(
+            vn_incr=vn_incr,
+            vn=vn,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )

@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_31 import (
     mo_solve_nonhydro_stencil_31,
@@ -19,31 +20,27 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_31 import (
 from icon4py.common.dimension import E2C2EODim, EdgeDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_31_numpy(
-    e2c2eO: np.array, e_flx_avg: np.array, vn: np.array
-) -> np.array:
-    geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
-    z_temp = np.sum(vn[e2c2eO] * geofac_grdiv, axis=1)
-    return z_temp
+class TestMoSolveNonhydroStencil31(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_31
+    OUTPUTS = ("z_vn_avg",)
 
+    @staticmethod
+    def reference(mesh, e_flx_avg: np.array, vn: np.array, **kwargs) -> np.array:
+        geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
+        z_vn_avg = np.sum(vn[mesh.e2c2eO] * geofac_grdiv, axis=1)
+        return dict(z_vn_avg=z_vn_avg)
 
-def test_mo_solve_nonhydro_stencil_31():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        e_flx_avg = random_field(mesh, EdgeDim, E2C2EODim)
+        vn = random_field(mesh, EdgeDim, KDim)
+        z_vn_avg = zero_field(mesh, EdgeDim, KDim)
 
-    e_flx_avg = random_field(mesh, EdgeDim, E2C2EODim)
-    vn = random_field(mesh, EdgeDim, KDim)
-    z_vn_avg = zero_field(mesh, EdgeDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_31_numpy(
-        mesh.e2c2eO, np.asarray(e_flx_avg), np.asarray(vn)
-    )
-    mo_solve_nonhydro_stencil_31(
-        e_flx_avg,
-        vn,
-        z_vn_avg,
-        offset_provider={"E2C2EO": mesh.get_e2c2eO_offset_provider()},
-    )
-    assert np.allclose(z_vn_avg, ref)
+        return dict(
+            e_flx_avg=e_flx_avg,
+            vn=vn,
+            z_vn_avg=z_vn_avg,
+        )
