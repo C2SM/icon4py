@@ -19,7 +19,6 @@ from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
     C2E2CODim,
-    C2EDim,
     CECDim,
     CEDim,
     CellDim,

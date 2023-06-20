@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     _enhance_diffusion_coefficient_for_grid_point_cold_pools,
@@ -45,10 +45,10 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_ref_mc: Field[[CellDim, KDim], float],
     thresh_tdiff: float,
     kh_smag_e: Field[[EdgeDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
         theta_v,

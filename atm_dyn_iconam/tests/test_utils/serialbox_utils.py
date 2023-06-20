@@ -18,12 +18,12 @@ from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from .helpers import as_1D_sparse_field
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
     CECDim,
+    CEDim,
     CellDim,
     E2C2VDim,
     E2CDim,
@@ -32,7 +32,7 @@ from icon4py.common.dimension import (
     EdgeDim,
     KDim,
     V2EDim,
-    VertexDim, CEDim,
+    VertexDim,
 )
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import VectorTuple
@@ -45,6 +45,8 @@ from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
+
+from .helpers import as_1D_sparse_field
 
 
 class IconSavepoint:
@@ -88,6 +90,7 @@ class IconSavepoint:
         buffer = self.serializer.read(name, self.savepoint).astype(int)
         self.log.debug(f"{name} {buffer.shape}")
         return buffer
+
 
 class IconGridSavePoint(IconSavepoint):
     def vct_a(self):

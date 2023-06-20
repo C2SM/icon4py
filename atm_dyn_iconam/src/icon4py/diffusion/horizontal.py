@@ -62,6 +62,11 @@ class HorizontalMarkerIndex:
 
     @classmethod
     def lateral_boundary(cls, dim: Dimension) -> int:
+        """Indicate lateral boundary.
+
+        These points correspond to the sorted points in ICON, the marker can be incremented in order
+        to accesss higher boundary lines
+        """
         match (dim):
             case (dimension.CellDim):
                 return cls._LOCAL_BOUNDARY_CELLS
@@ -72,6 +77,7 @@ class HorizontalMarkerIndex:
 
     @classmethod
     def local(cls, dim: Dimension) -> int:
+        """Indicate points that are owned by the processing unit, i.e. no halo points."""
         match (dim):
             case (dimension.CellDim):
                 return cls._LOCAL_CELLS
@@ -92,6 +98,7 @@ class HorizontalMarkerIndex:
 
     @classmethod
     def nudging(cls, dim: Dimension) -> int:
+        """Indicate the nudging zone."""
         match (dim):
             case (dimension.CellDim):
                 return cls._NUDGING_CELLS
@@ -102,6 +109,7 @@ class HorizontalMarkerIndex:
 
     @classmethod
     def interior(cls, dim: Dimension) -> int:
+        """Indicate interior i.e. unordered prognostic cells in ICON."""
         match (dim):
             case (dimension.CellDim):
                 return cls._INTERIOR_CELLS
