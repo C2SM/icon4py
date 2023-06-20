@@ -170,7 +170,8 @@ class Exchange:
             (EdgeDim, KDim): self._create_pattern(EdgeDim, KDim),
             (EdgeDim, KHalfDim): self._create_pattern(EdgeDim, KHalfDim),
         }
-
+        # TODO [magdalena] reuse communication object as much as possible. The pattern argument is needed for template args and should go away here
+        # if the pattern arg weren't there, we would need only as many communiciation objects as there are overlapping exchanges not as many as there are different patterns
         self._comms = {k: ghex.make_co(context, v) for k, v in self._patterns.items()}
         print(
             f"rank={self._context.rank()}/{self._context.size()} : patterns and communicators initialized "
@@ -193,6 +194,9 @@ class Exchange:
         local_halo = self._decomposition_info.local_index(
             dim, DecompositionInfo.EntryType.HALO
         )
+        # TOOD [magdalena]  first arg is the domain ID which builds up an MPI Tag, doesn't need to be the MPI rank.
+        # on the contrary it is safer if those are different for all domain descriptors (otherwise the system deadlocks if 2 parallel exchanges are done
+        # with the same domain-id
         domain_desc = ghex.domain_descriptor(
             self._context.rank(), all_global.tolist(), local_halo.tolist(), levels
         )
