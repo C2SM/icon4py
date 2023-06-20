@@ -10,6 +10,8 @@ on:
         branches:
             - main
         types: [opened, reopened, assigned, ready_for_review]
+    pull_request_review:
+        types: [ submitted, edited ]
 jobs:
     tox-tests:
         runs-on: ubuntu-latest
