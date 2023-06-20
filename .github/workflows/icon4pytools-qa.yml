@@ -1,6 +1,7 @@
 name: ICON4PyTools Quality Assurance
 
 on:
+    workflow_dispatch:
     push:
         branches:
             - main

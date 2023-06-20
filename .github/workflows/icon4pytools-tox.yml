@@ -1,6 +1,7 @@
 name: ICON4PyTools Tox
 
 on:
+    workflow_dispatch:
     push:
         branches:
             - main
