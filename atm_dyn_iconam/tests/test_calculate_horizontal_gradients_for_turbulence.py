@@ -17,8 +17,9 @@ from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import
     calculate_horizontal_gradients_for_turbulence,
 )
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def calculate_horizontal_gradients_for_turbulence_numpy(

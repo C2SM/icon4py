@@ -13,32 +13,15 @@
 import tarfile
 from pathlib import Path
 
-import numpy as np
 import pytest
 import wget
 
-from icon4py.common.dimension import (
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    CellDim,
-    E2C2EDim,
-    E2C2EODim,
-    E2C2VDim,
-    E2CDim,
-    E2VDim,
-    EdgeDim,
-    V2CDim,
-    V2EDim,
-    VertexDim,
-)
 from icon4py.diffusion.diffusion import DiffusionConfig
-from icon4py.state_utils.horizontal import HorizontalMeshSize
-from icon4py.state_utils.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
+
+from .test_utils.serialbox_utils import IconSerialDataProvider
 
 
-data_uri = "https://polybox.ethz.ch/index.php/s/rzuvPf7p9sM801I/download"
+data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
 data_path = Path(__file__).parent.joinpath("ser_icondata")
 extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
@@ -101,16 +84,6 @@ def step_date_exit():
 
 
 @pytest.fixture
-def metric_savepoint(data_provider):
-    return data_provider.from_savepoint_metric_state()
-
-
-@pytest.fixture
-def interpolation_savepoint(data_provider):
-    return data_provider.from_savepoint_interpolation_state()
-
-
-@pytest.fixture
 def diffusion_savepoint_init(data_provider, linit, step_date_init):
     """
     Load data from ICON savepoint at start of diffusion module.
@@ -160,7 +133,6 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
     sp = data_provider.from_savepoint_diffusion_exit(linit=False, date=step_date_exit)
     return sp
 
-
 @pytest.fixture
 def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only, jstep):
     """
@@ -186,58 +158,26 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep, jstep):
         istep=istep, date=step_date_exit, jstep=jstep
     )
 
+@pytest.fixture
+def interpolation_savepoint(data_provider):
+    """Load data from ICON interplation state savepoint."""
+    return data_provider.from_interpolation_savepoint()
+
 
 @pytest.fixture
-def icon_grid(data_provider):
+def metrics_savepoint(data_provider):
+    """Load data from ICON mestric state savepoint."""
+    return data_provider.from_metrics_savepoint()
+
+
+@pytest.fixture
+def icon_grid(grid_savepoint):
     """
     Load the icon grid from an ICON savepoint.
 
-    Uses the default save_point from 'savepoint_init' fixture, however these data don't change for
-    different time steps.
+    Uses the special grid_savepoint that contains data from p_patch
     """
-    sp = data_provider.from_savepoint_grid()
-    sp_meta = sp.get_metadata("nproma", "nlev", "num_vert", "num_cells", "num_edges")
-
-    cell_starts = sp.cells_start_index()
-    cell_ends = sp.cells_end_index()
-    vertex_starts = sp.vertex_start_index()
-    vertex_ends = sp.vertex_end_index()
-    edge_starts = sp.edge_start_index()
-    edge_ends = sp.edge_end_index()
-
-    config = MeshConfig(
-        HorizontalMeshSize(
-            num_vertices=sp_meta["nproma"],  # or rather "num_vert"
-            num_cells=sp_meta["nproma"],  # or rather "num_cells"
-            num_edges=sp_meta["nproma"],  # or rather "num_edges"
-        ),
-        VerticalMeshConfig(num_lev=sp_meta["nlev"]),
-    )
-
-    c2e2c = sp.c2e2c()
-    c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
-    e2c2e = sp.e2c2e()
-    e2c2e0 = np.column_stack((e2c2e, (np.asarray(range(e2c2e.shape[0])))))
-    grid = (
-        IconGrid()
-        .with_config(config)
-        .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
-        .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
-        .with_start_end_indices(CellDim, cell_starts, cell_ends)
-        .with_connectivities(
-            {
-                C2EDim: sp.c2e(),
-                E2CDim: sp.e2c(),
-                V2CDim: sp.v2c(),
-                C2E2CDim: c2e2c,
-                C2E2CODim: c2e2c0,
-                E2C2EDim: e2c2e,
-                E2C2EODim: e2c2e0,
-            }
-        )
-        .with_connectivities({E2VDim: sp.e2v(), V2EDim: sp.v2e(), E2C2VDim: sp.e2c2v()})
-    )
-    return grid
+    return grid_savepoint.construct_icon_grid()
 
 
 @pytest.fixture

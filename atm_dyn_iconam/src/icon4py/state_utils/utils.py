@@ -17,29 +17,68 @@ from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import abs, broadcast, int32, maximum, minimum
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
 
-# TODO fix duplication: duplicated from test testutils/utils.py
-def zero_field(*dims: Dimension, mesh, dtype=float):
+# TODO [@Magdalena] fix duplication: duplicated from test testutils/utils.py
+def zero_field(mesh, *dims: Dimension, dtype=float):
     shapex = tuple(map(lambda x: mesh.size[x], dims))
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
 
-def indices_field(dim: Dimension, mesh, is_halfdim, dtype=int):
+@field_operator
+def _identity_c_k(
+    field: Field[[CellDim, KDim], float]
+) -> Field[[CellDim, KDim], float]:
+    return field
 
+
+@field_operator
+def _identity_e_k(
+    field: Field[[EdgeDim, KDim], float]
+) -> Field[[EdgeDim, KDim], float]:
+    return field
+
+def indices_field(dim: Dimension, mesh, is_halfdim, dtype=int):
     shapex = mesh.size[dim] + 1 if is_halfdim else mesh.size[dim]
     return np_as_located_field(dim)(np.arange(shapex, dtype=dtype))
-
 
 def _allocate(*dims: Dimension, mesh, dtype=float):
     return zero_field(*dims, mesh=mesh, dtype=dtype)
 
-
 def _allocate_indices(*dims: Dimension, mesh, is_halfdim=False, dtype=int):
     return indices_field(*dims, mesh=mesh, is_halfdim=is_halfdim, dtype=dtype)
+
+
+
+@program
+def copy_diagnostic_and_prognostics(
+    hdef_ic_new: Field[[CellDim, KDim], float],
+    hdef_ic: Field[[CellDim, KDim], float],
+    div_ic_new: Field[[CellDim, KDim], float],
+    div_ic: Field[[CellDim, KDim], float],
+    dwdx_new: Field[[CellDim, KDim], float],
+    dwdx: Field[[CellDim, KDim], float],
+    dwdy_new: Field[[CellDim, KDim], float],
+    dwdy: Field[[CellDim, KDim], float],
+    vn_new: Field[[EdgeDim, KDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    w_new: Field[[CellDim, KDim], float],
+    w: Field[[CellDim, KDim], float],
+    exner_new: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], float],
+    theta_v_new: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+):
+    _identity_c_k(hdef_ic_new, out=hdef_ic)
+    _identity_c_k(div_ic_new, out=div_ic)
+    _identity_c_k(dwdx_new, out=dwdx)
+    _identity_c_k(dwdy_new, out=dwdy)
+    _identity_e_k(vn_new, out=vn)
+    _identity_c_k(w_new, out=w)
+    _identity_c_k(exner_new, out=exner)
+    _identity_c_k(theta_v_new, out=theta_v)
 
 
 @field_operator
@@ -47,7 +86,7 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
     return field * factor
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def scale_k(
     field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]
 ):
@@ -59,7 +98,7 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def set_zero_v_k(
     field: Field[[VertexDim, KDim], float],
     horizontal_start: int,
@@ -139,7 +178,6 @@ def _setup_runtime_diff_multfac_vn(
     return broadcast(minimum(con, dyn), (KDim,))
 
 
-# @field_operator(backend=run_gtfn)
 @field_operator
 def _setup_initial_diff_multfac_vn(
     k4: float, hdiff_efdt_ratio: float
@@ -156,7 +194,7 @@ def _setup_fields_for_initial_step(
     return diff_multfac_vn, smag_limit
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
@@ -238,7 +276,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
     )
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def init_diffusion_local_fields_for_regular_timestep(
     k4: float,
     dyn_substeps: float,
@@ -296,7 +334,7 @@ def init_nabla2_factor_in_upper_damping_zone(
     Calculate diff_multfac_n2w.
 
     numpy version, since gt4py does not allow non-constant indexing into fields
-    TODO: [ml] fix this once IndexedFields are implemented
+    TODO: @magdalena fix this once IndexedFields are implemented
 
     Args
         k_size: number of vertical levels

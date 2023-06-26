@@ -10,9 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, maximum
+from gt4py.next.ffront.fbuiltins import Field, int32, maximum
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -40,10 +39,10 @@ def mo_nh_diffusion_stencil_05_global_mode(
     z_nabla4_e2: Field[[EdgeDim, KDim], float],
     diff_multfac_vn: Field[[KDim], float],
     vn: Field[[EdgeDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_nh_diffusion_stencil_05_global_mode(
         area_edge,

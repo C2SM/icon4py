@@ -12,8 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
-from gt4py.next.program_processors.runners import gtfn_cpu
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -32,17 +31,17 @@ def _update_theta_and_exner(
     return theta_v, exner
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def update_theta_and_exner(
     z_temp: Field[[CellDim, KDim], float],
     area: Field[[CellDim], float],
     theta_v: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
     rd_o_cvd: float,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _update_theta_and_exner(
         z_temp,

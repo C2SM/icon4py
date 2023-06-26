@@ -21,6 +21,7 @@ from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    CEDim,
     CellDim,
     E2C2EDim,
     E2C2EODim,
@@ -51,7 +52,7 @@ class InterpolationState:
         [VertexDim, V2EDim], float
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
-    geofac_div: Field[
+    _geofac_div: Field[
         [CellDim, C2EDim], float
     ]  # factor for divergence (nproma,cell_type,nblks_c)
 
@@ -70,6 +71,13 @@ class InterpolationState:
     geofac_rot: Field[[VertexDim, V2EDim], float]
     pos_on_tplane_e: Field[[ECDim], float]
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float]
+
+    @property
+    def geofac_div(self):
+        old_shape = np.asarray(self._geofac_div).shape
+        return np_as_located_field(CEDim)(
+            np.asarray(self._geofac_div).reshape((old_shape[0] * old_shape[1],))
+        )
 
     @property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
