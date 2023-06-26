@@ -405,7 +405,14 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 
 @pytest.mark.datatest
-# @pytest.mark.parametrize("step_date_init, step_date_exit", [("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"), ("2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"), ("2021-06-20T12:01:00.000", "2021-06-20T12:01:00.000")] )
+@pytest.mark.parametrize(
+    "step_date_init, step_date_exit",
+    [
+        ("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        ("2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
+        ("2021-06-20T12:01:00.000", "2021-06-20T12:01:00.000"),
+    ],
+)
 def test_run_diffusion_single_step(
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
@@ -479,11 +486,8 @@ def test_run_diffusion_single_step(
     ref_theta_v = np.asarray(diffusion_savepoint_exit.theta_v())
     val_theta_v = np.asarray(prognostic_state.theta_v)
     val_exner = np.asarray(prognostic_state.exner_pressure)
-    steep_points = np.asarray(diffusion.metric_state.mask_hdiff)
-    assert np.allclose(ref_theta_v[~steep_points], val_theta_v[~steep_points])
-    assert np.allclose(ref_exner[~steep_points], val_exner[~steep_points])
-    # assert np.allclose(ref_theta_v[steep_points], val_theta_v[steep_points])
-    # assert np.allclose(ref_exner[steep_points], val_exner[steep_points])
+    assert np.allclose(ref_theta_v, val_theta_v)
+    assert np.allclose(ref_exner, val_exner)
 
 
 @pytest.mark.datatest
@@ -561,8 +565,15 @@ def test_run_diffusion_initial_step(
     ref_theta_v = np.asarray(diffusion_savepoint_exit.theta_v())
     val_theta_v = np.asarray(prognostic_state.theta_v)
     val_exner = np.asarray(prognostic_state.exner_pressure)
-    steep_points = np.asarray(diffusion.metric_state.mask_hdiff)
-    assert np.allclose(ref_theta_v[~steep_points], val_theta_v[~steep_points])
-    assert np.allclose(ref_exner[~steep_points], val_exner[~steep_points])
-    # assert np.allclose(ref_theta_v[steep_points], val_theta_v[steep_points])
-    # assert np.allclose(ref_exner[steep_points], val_exner[steep_points])
+    assert np.allclose(ref_theta_v, val_theta_v)
+    assert np.allclose(ref_exner, val_exner)
+
+
+def test_verify_stencil15_field_manipulation(interpolation_savepoint, icon_grid):
+    geofac_n2s = np.asarray(interpolation_savepoint.geofac_n2s())
+    int_state = interpolation_savepoint.construct_interpolation_state()
+    geofac_c = np.asarray(int_state.geofac_n2s_c)
+    geofac_nbh = np.asarray(int_state.geofac_n2s_nbh)
+    cec_table = icon_grid.get_c2cec_connectivity().table
+    assert np.allclose(geofac_c, geofac_n2s[:, 0])
+    assert np.allclose(geofac_nbh[cec_table], geofac_n2s[:, 1:])
