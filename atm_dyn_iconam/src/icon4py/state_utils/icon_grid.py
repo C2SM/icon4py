@@ -107,8 +107,8 @@ class IconGrid:
     def with_start_end_indices(
         self, dim: Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
-        self.start_indices[dim] = start_indices.astype(int32)
-        self.end_indices[dim] = end_indices.astype(int32)
+        self.start_indices[dim] = start_indices  # start_indices.astype(int32)
+        self.end_indices[dim] = end_indices  # end_indices.astype(int32)
 
     @builder
     def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):

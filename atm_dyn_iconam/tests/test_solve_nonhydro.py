@@ -25,8 +25,7 @@ from icon4py.state_utils.diagnostic_state import (
 )
 from icon4py.state_utils.horizontal import CellParams, EdgeParams
 from icon4py.state_utils.icon_grid import VerticalModelParams
-from icon4py.state_utils.interpolation_state import InterpolationState
-from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
+from icon4py.state_utils.metric_state import MetricStateNonHydro
 from icon4py.state_utils.prep_adv_state import PrepAdvection
 from icon4py.state_utils.prognostic_state import PrognosticState
 
@@ -332,7 +331,7 @@ def test_nonhydro_corrector_step(
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(),
+        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc(),
         ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(),
         ntnd=ntnd,
     )
@@ -385,13 +384,11 @@ def test_nonhydro_corrector_step(
         vwind_impl_wgt=sp_met.vwind_impl_wgt(),
         bdy_halo_c=sp_met.bdy_halo_c(),
         ipeidx_dsl=sp_met.ipeidx_dsl(),
-        pg_exdist=sp_met.pg_exdist_dsl(),
         hmask_dd3d=sp_met.hmask_dd3d(),
         scalfac_dd3d=sp_met.scalfac_dd3d(),
         rayleigh_w=sp_met.rayleigh_w(),
         rho_ref_me=sp_met.rho_ref_me(),
         theta_ref_me=sp_met.theta_ref_me(),
-        zdiff_gradp=sp_met.zdiff_gradp_dsl(),
         mask_prog_halo_c=sp_met.mask_prog_halo_c(),
     )
 
