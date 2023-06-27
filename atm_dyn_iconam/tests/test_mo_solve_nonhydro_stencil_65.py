@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
@@ -19,61 +20,53 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_65 import (
 from icon4py.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_65_numpy(
-    rho_ic: np.array,
-    vwind_expl_wgt: np.array,
-    vwind_impl_wgt: np.array,
-    w_now: np.array,
-    w_new: np.array,
-    w_concorr_c: np.array,
-    mass_flx_ic: np.array,
-    r_nsubsteps: float,
-) -> np.array:
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-    mass_flx_ic = mass_flx_ic + (
-        r_nsubsteps
-        * rho_ic
-        * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c)
-    )
-    return mass_flx_ic
+class TestMoSolveNonhydroStencil65(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_65
+    OUTPUTS = ("mass_flx_ic",)
 
+    @staticmethod
+    def reference(
+        mesh,
+        rho_ic: np.array,
+        vwind_expl_wgt: np.array,
+        vwind_impl_wgt: np.array,
+        w_now: np.array,
+        w_new: np.array,
+        w_concorr_c: np.array,
+        mass_flx_ic: np.array,
+        r_nsubsteps: float,
+        **kwargs,
+    ) -> np.array:
+        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+        mass_flx_ic = mass_flx_ic + (
+            r_nsubsteps
+            * rho_ic
+            * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c)
+        )
+        return dict(mass_flx_ic=mass_flx_ic)
 
-def test_mo_solve_nonhydro_stencil_65():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        r_nsubsteps = 10.0
+        rho_ic = random_field(mesh, CellDim, KDim)
+        vwind_expl_wgt = random_field(mesh, CellDim)
+        vwind_impl_wgt = random_field(mesh, CellDim)
+        w_now = random_field(mesh, CellDim, KDim)
+        w_new = random_field(mesh, CellDim, KDim)
+        w_concorr_c = random_field(mesh, CellDim, KDim)
+        mass_flx_ic = random_field(mesh, CellDim, KDim)
 
-    r_nsubsteps = 10.0
-    rho_ic = random_field(mesh, CellDim, KDim)
-    vwind_expl_wgt = random_field(mesh, CellDim)
-    vwind_impl_wgt = random_field(mesh, CellDim)
-    w_now = random_field(mesh, CellDim, KDim)
-    w_new = random_field(mesh, CellDim, KDim)
-    w_concorr_c = random_field(mesh, CellDim, KDim)
-    mass_flx_ic = random_field(mesh, CellDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_65_numpy(
-        np.asarray(rho_ic),
-        np.asarray(vwind_expl_wgt),
-        np.asarray(vwind_impl_wgt),
-        np.asarray(w_now),
-        np.asarray(w_new),
-        np.asarray(w_concorr_c),
-        np.asarray(mass_flx_ic),
-        r_nsubsteps,
-    )
-
-    mo_solve_nonhydro_stencil_65(
-        rho_ic,
-        vwind_expl_wgt,
-        vwind_impl_wgt,
-        w_now,
-        w_new,
-        w_concorr_c,
-        mass_flx_ic,
-        r_nsubsteps,
-        offset_provider={},
-    )
-    assert np.allclose(mass_flx_ic, ref)
+        return dict(
+            rho_ic=rho_ic,
+            vwind_expl_wgt=vwind_expl_wgt,
+            vwind_impl_wgt=vwind_impl_wgt,
+            w_now=w_now,
+            w_new=w_new,
+            w_concorr_c=w_concorr_c,
+            mass_flx_ic=mass_flx_ic,
+            r_nsubsteps=r_nsubsteps,
+        )

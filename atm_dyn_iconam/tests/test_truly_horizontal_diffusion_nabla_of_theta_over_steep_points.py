@@ -106,11 +106,6 @@ def test_mo_nh_diffusion_stencil_15():
         np.asarray(z_temp),
     )
 
-    hstart = 0
-    hend = mesh.n_cells
-    kstart = 0
-    kend = mesh.k_level
-
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         mask,
         zd_vertoffset_new,
@@ -120,10 +115,6 @@ def test_mo_nh_diffusion_stencil_15():
         vcoef_new,
         theta_v,
         z_temp,
-        hstart,
-        hend,
-        kstart,
-        kend,
         offset_provider={
             "C2E2C": mesh.get_c2e2c_offset_provider(),
             "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, mesh.n_c2e2c),
