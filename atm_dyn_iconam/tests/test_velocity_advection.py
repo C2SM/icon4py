@@ -207,7 +207,7 @@ def test_velocity_predictor_step(
         coeff_gradekin=sp_met.coeff_gradekin(),
         ddqz_z_full_e=sp_met.ddqz_z_full_e(),
         wgtfac_e=sp_met.wgtfac_e(),
-        #wgtfacq_e_dsl=sp_met.wgtfacq_e(),
+        # wgtfacq_e_dsl=sp_met.wgtfacq_e(),
         wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
         ddxn_z_full=sp_met.ddxn_z_full(),
         ddxt_z_full=sp_met.ddxt_z_full(),
@@ -273,18 +273,19 @@ def test_velocity_predictor_step(
     assert np.allclose(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
     )
-    assert np.allclose(np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c))
     assert np.allclose(
-         np.asarray(icon_result_z_kin_hor_e), np.asarray(tmp_z_kin_hor_e)
+        np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c)
     )
+    assert np.allclose(np.asarray(icon_result_z_kin_hor_e), np.asarray(tmp_z_kin_hor_e))
 
-    #assert np.allclose(
+    # assert np.allclose(
     #    np.asarray(icon_result_z_w_concorr_me), np.asarray(z_fields.z_w_concorr_me)
-    #)
+    # )
 
 
-#@pytest.mark.datatest
-#@pytest.mark.parametrize("istep, jstep", [(2, 0)])
+# @pytest.mark.datatest
+# @pytest.mark.parametrize("istep, jstep", [(2, 0)])
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -418,4 +419,3 @@ def test_velocity_corrector_step(
     assert np.allclose(
         np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c)
     )
-

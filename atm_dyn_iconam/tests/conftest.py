@@ -133,6 +133,7 @@ def diffusion_savepoint_exit(data_provider, step_date_exit):
     sp = data_provider.from_savepoint_diffusion_exit(linit=False, date=step_date_exit)
     return sp
 
+
 @pytest.fixture
 def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only, jstep):
     """
@@ -157,6 +158,7 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep, jstep):
     return data_provider.from_savepoint_nonhydro_exit(
         istep=istep, date=step_date_exit, jstep=jstep
     )
+
 
 @pytest.fixture
 def interpolation_savepoint(data_provider):

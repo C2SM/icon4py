@@ -14,7 +14,6 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import where
 
-
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_04 import (
     _mo_velocity_advection_stencil_04,
 )
@@ -80,7 +79,7 @@ def _fused_stencils_4_5_6(
     )
 
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k_field == 0,
+        k_field == int(0),
         _mo_velocity_advection_stencil_05(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -150,7 +149,7 @@ def _fused_stencils_9_10(
     )
 
     w_concorr_c = where(
-        (k_field >= nflatlev_startindex + 1) & (k_field < nlev),
+        (k_field >= nflatlev_startindex + int(1)) & (k_field < nlev),
         _mo_velocity_advection_stencil_10(local_z_w_concorr_mc, wgtfac_c),
         w_concorr_c,
     )
@@ -200,7 +199,7 @@ def _fused_stencils_11_to_13(
     nlev: int,
 ):
     local_z_w_con_c = where(
-        (k_field >= 0) & (k_field < nlev),
+        (k_field >= int(0)) & (k_field < nlev),
         _mo_velocity_advection_stencil_11(w),
         local_z_w_con_c,
     )
@@ -210,7 +209,7 @@ def _fused_stencils_11_to_13(
     )
 
     local_z_w_con_c = where(
-        (k_field >= (nflatlev_startindex + 1)) & (k_field < nlev),
+        (k_field >= (nflatlev_startindex + int(1))) & (k_field < nlev),
         _mo_velocity_advection_stencil_13(local_z_w_con_c, w_concorr_c),
         local_z_w_con_c,
     )

@@ -23,13 +23,15 @@ from icon4py.state_utils.diagnostic_state import (
     DiagnosticState,
     DiagnosticStateNonHydro,
 )
+from icon4py.state_utils.horizontal import CellParams, EdgeParams
 from icon4py.state_utils.icon_grid import VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
 from icon4py.state_utils.prep_adv_state import PrepAdvection
 from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 @pytest.mark.datatest
@@ -83,7 +85,7 @@ def test_nonhydro_predictor_step(
     grid_savepoint,
     savepoint_velocity_init,
     diffusion_savepoint_init,
-    metric_savepoint,
+    metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
 ):
@@ -91,8 +93,7 @@ def test_nonhydro_predictor_step(
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     sp_dif = diffusion_savepoint_init
-    sp_int = interpolation_savepoint
-    sp_met = metric_savepoint
+    sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
@@ -156,41 +157,8 @@ def test_nonhydro_predictor_step(
         rho=sp_dif.rho(),
         exner=sp_dif.exner(),
     )
-
-    interpolation_state = InterpolationState(
-        e_bln_c_s=sp_int.e_bln_c_s(),
-        rbf_coeff_1=sp_int.rbf_vec_coeff_v1(),
-        rbf_coeff_2=sp_int.rbf_vec_coeff_v1(),
-        geofac_div=sp_int.geofac_div(),
-        geofac_n2s=sp_int.geofac_n2s(),
-        geofac_grg=(sp_int.geofac_grg(), sp_int.geofac_grg()),
-        nudgecoeff_e=sp_int.nudgecoeff_e(),
-        c_lin_e=sp_int.c_lin_e(),
-        geofac_grdiv=sp_int.geofac_grdiv(),
-        rbf_vec_coeff_e=sp_int.rbf_vec_coeff_e(),
-        c_intp=sp_int.c_intp(),
-        geofac_rot=sp_int.geofac_rot(),
-        pos_on_tplane_e=sp_int.pos_on_tplane_e(),
-        e_flx_avg=sp_int.e_flx_avg(),
-    )
-
-    metric_state = MetricState(
-        mask_hdiff=sp_met.mask_hdiff(),
-        theta_ref_mc=sp_met.theta_ref_mc(),
-        wgtfac_c=sp_met.wgtfac_c(),
-        zd_intcoef=None,
-        zd_vertidx=sp_met.zd_vertidx(),
-        zd_diffcoef=sp_met.zd_diffcoef(),
-        coeff_gradekin=sp_met.coeff_gradekin(),
-        ddqz_z_full_e=sp_met.ddqz_z_full_e(),
-        wgtfac_e=sp_met.wgtfac_e(),
-        wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
-        ddxn_z_full=sp_met.ddxn_z_full(),
-        ddxt_z_full=sp_met.ddxt_z_full(),
-        ddqz_z_half=sp_met.ddqz_z_half(),
-        coeff1_dwdz=sp_met.coeff1_dwdz(),
-        coeff2_dwdz=sp_met.coeff2_dwdz(),
-    )
+    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    metric_state = metrics_savepoint.construct_metric_state()
 
     metric_state_nonhydro = MetricStateNonHydro(
         exner_exfac=sp_met.exner_exfac(),
@@ -218,12 +186,8 @@ def test_nonhydro_predictor_step(
         zdiff_gradp=sp_met.zdiff_gradp_dsl(),
         mask_prog_halo_c=sp_met.mask_prog_halo_c(),
     )
-
-    orientation = sp_d.tangent_orientation()
-    inverse_primal_edge_lengths = sp_d.inverse_primal_edge_lengths()
-    inverse_dual_edge_length = sp_d.inv_dual_edge_length()
-    edge_areas = sp_d.edge_areas()
-    cell_areas = sp_d.cell_areas()
+    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
 
     solve_nonhydro = SolveNonhydro()
     solve_nonhydro.init(
@@ -236,7 +200,7 @@ def test_nonhydro_predictor_step(
         vertical_params=vertical_params,
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
-        cell_areas=cell_areas,
+        cell_areas=cell_geometry.area,
         fac=fac,
         z=z,
     )
@@ -247,19 +211,17 @@ def test_nonhydro_predictor_step(
         prognostic_state=prognostic_state_ls,
         config=config,
         params=nonhydro_params,
-        inv_dual_edge_length=inverse_dual_edge_length,
-        primal_normal_cell_1=sp_d.primal_normal_cell_x(),
-        dual_normal_cell_1=sp_d.dual_normal_cell_x(),
-        primal_normal_cell_2=sp_d.primal_normal_cell_y(),
-        dual_normal_cell_2=sp_d.dual_normal_cell_y(),
-        inv_primal_edge_length=inverse_primal_edge_lengths,
-        tangent_orientation=orientation,
+        inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+        primal_normal_cell=edge_geometry.primal_normal_cell,
+        dual_normal_cell=edge_geometry.dual_normal_cell,
+        inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
+        tangent_orientation=edge_geometry.tangent_orientation,
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=sp_v.scalfac_exdiff(),
-        cell_areas=cell_areas,
+        cell_areas=cell_geometry.area,
         owner_mask=sp_d.owner_mask(),
         f_e=sp_d.f_e(),
-        area_edge=edge_areas,
+        area_edge=edge_geometry.edge_areas,
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
@@ -282,12 +244,8 @@ def test_nonhydro_predictor_step(
     icon_result_prep_adv_mass_flx_me = sp_exit.prep_adv_mass_flx_me()
     icon_result_prep_adv_vn_traj = sp_exit.prep_adv_vn_traj()
 
-    assert np.allclose(
-        np.asarray(icon_result_vn_new), np.asarray(prognostic_state.vn)
-    )
-    assert np.allclose(
-        np.asarray(icon_result_w_new), np.asarray(prognostic_state.w)
-    )
+    assert np.allclose(np.asarray(icon_result_vn_new), np.asarray(prognostic_state.vn))
+    assert np.allclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state.w))
     assert np.allclose(
         np.asarray(icon_result_exner_new), np.asarray(prognostic_state.exner)
     )
@@ -302,13 +260,15 @@ def test_nonhydro_predictor_step(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
     )
     assert np.allclose(
-        np.asarray(icon_result_theta_v_ic), np.asarray(diagnostic_state_nonhydro.theta_v_ic)
+        np.asarray(icon_result_theta_v_ic),
+        np.asarray(diagnostic_state_nonhydro.theta_v_ic),
     )
     assert np.allclose(
         np.asarray(icon_result_rho_ic), np.asarray(diagnostic_state_nonhydro.rho_ic)
     )
     assert np.allclose(
-        np.asarray(icon_result_mass_fl_e), np.asarray(diagnostic_state_nonhydro.mass_fl_e)
+        np.asarray(icon_result_mass_fl_e),
+        np.asarray(diagnostic_state_nonhydro.mass_fl_e),
     )
     assert np.allclose(
         np.asarray(icon_result_prep_adv_mass_flx_me), np.asarray(prep_adv.mass_flx_me)
@@ -332,7 +292,7 @@ def test_nonhydro_corrector_step(
     grid_savepoint,
     savepoint_velocity_init,
     diffusion_savepoint_init,
-    metric_savepoint,
+    metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
 ):
@@ -340,8 +300,7 @@ def test_nonhydro_corrector_step(
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     sp_dif = diffusion_savepoint_init
-    sp_int = interpolation_savepoint
-    sp_met = metric_savepoint
+    sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
@@ -407,40 +366,8 @@ def test_nonhydro_corrector_step(
         exner=sp_dif.exner(),
     )
 
-    interpolation_state = InterpolationState(
-        e_bln_c_s=sp_int.e_bln_c_s(),
-        rbf_coeff_1=sp_int.rbf_vec_coeff_v1(),
-        rbf_coeff_2=sp_int.rbf_vec_coeff_v1(),
-        geofac_div=sp_int.geofac_div(),
-        geofac_n2s=sp_int.geofac_n2s(),
-        geofac_grg=(sp_int.geofac_grg(), sp_int.geofac_grg()),
-        nudgecoeff_e=sp_int.nudgecoeff_e(),
-        c_lin_e=sp_int.c_lin_e(),
-        geofac_grdiv=sp_int.geofac_grdiv(),
-        rbf_vec_coeff_e=sp_int.rbf_vec_coeff_e(),
-        c_intp=sp_int.c_intp(),
-        geofac_rot=sp_int.geofac_rot(),
-        pos_on_tplane_e=sp_int.pos_on_tplane_e(),
-        e_flx_avg=sp_int.e_flx_avg(),
-    )
-
-    metric_state = MetricState(
-        mask_hdiff=sp_met.mask_hdiff(),
-        theta_ref_mc=sp_met.theta_ref_mc(),
-        wgtfac_c=sp_met.wgtfac_c(),
-        zd_intcoef=None,
-        zd_vertidx=sp_met.zd_vertidx(),
-        zd_diffcoef=sp_met.zd_diffcoef(),
-        coeff_gradekin=sp_met.coeff_gradekin(),
-        ddqz_z_full_e=sp_met.ddqz_z_full_e(),
-        wgtfac_e=sp_met.wgtfac_e(),
-        wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
-        ddxn_z_full=sp_met.ddxn_z_full(),
-        ddxt_z_full=sp_met.ddxt_z_full(),
-        ddqz_z_half=sp_met.ddqz_z_half(),
-        coeff1_dwdz=sp_met.coeff1_dwdz(),
-        coeff2_dwdz=sp_met.coeff2_dwdz(),
-    )
+    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    metric_state = metrics_savepoint.construct_metric_state()
 
     metric_state_nonhydro = MetricStateNonHydro(
         exner_exfac=sp_met.exner_exfac(),
@@ -468,11 +395,9 @@ def test_nonhydro_corrector_step(
         mask_prog_halo_c=sp_met.mask_prog_halo_c(),
     )
 
-    orientation = sp_d.tangent_orientation()
-    inverse_primal_edge_lengths = sp_d.inverse_primal_edge_lengths()
-    inverse_dual_edge_length = sp_d.inv_dual_edge_length()
-    edge_areas = sp_d.edge_areas()
-    cell_areas = sp_d.cell_areas()
+    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+
     prognostic_state_ls = [prognostic_state, prognostic_state]
 
     solve_nonhydro = SolveNonhydro()
@@ -486,7 +411,7 @@ def test_nonhydro_corrector_step(
         vertical_params=vertical_params,
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
-        cell_areas=cell_areas,
+        cell_areas=cell_geometry.area,
         fac=fac,
         z=z,
     )
@@ -497,19 +422,19 @@ def test_nonhydro_corrector_step(
         prognostic_state=prognostic_state_ls,
         config=config,
         params=nonhydro_params,
-        inv_dual_edge_length=inverse_dual_edge_length,
-        inv_primal_edge_length=inverse_primal_edge_lengths,
-        tangent_orientation=orientation,
+        inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+        inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
+        tangent_orientation=edge_geometry.tangent_orientation,
         prep_adv=prep_adv,
         dtime=dtime,
         nnew=nnew,
         nnow=nnow,
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=sp_v.scalfac_exdiff(),
-        cell_areas=cell_areas,
+        cell_areas=cell_geometry.area,
         owner_mask=sp_d.owner_mask(),
         f_e=sp_d.f_e(),
-        area_edge=edge_areas,
+        area_edge=edge_geometry.edge_areas,
         lclean_mflx=clean_mflx,
         scal_divdamp_o2=sp.scal_divdamp_o2(),
         bdy_divdamp=sp.bdy_divdamp(),
@@ -519,12 +444,11 @@ def test_nonhydro_corrector_step(
     icon_result_prep_adv_mass_flx_me = sp_exit.prep_adv_mass_flx_me()
     icon_result_prep_adv_vn_traj = sp_exit.prep_adv_vn_traj()
 
-    #icon_result_z_graddiv_vn = sp_exit.z_graddiv_vn()
-    #icon_result_exner_now = sp_exit.exner_now()
+    # icon_result_z_graddiv_vn = sp_exit.z_graddiv_vn()
+    # icon_result_exner_now = sp_exit.exner_now()
 
-    #assert np.allclose(np.asarray(icon_result_z_graddiv_vn), np.asarray(prognostic_state_ls[nnew].exner))
-    #assert np.allclose(np.asarray(icon_result_exner_now), np.asarray(prognostic_state_ls[nnow].exner))
-
+    # assert np.allclose(np.asarray(icon_result_z_graddiv_vn), np.asarray(prognostic_state_ls[nnew].exner))
+    # assert np.allclose(np.asarray(icon_result_exner_now), np.asarray(prognostic_state_ls[nnow].exner))
 
     assert np.allclose(
         np.asarray(icon_result_prep_adv_mass_flx_me), np.asarray(prep_adv.mass_flx_me)
@@ -548,7 +472,7 @@ def test_run_solve_nonhydro_multi_step(
     grid_savepoint,
     savepoint_velocity_init,
     diffusion_savepoint_init,
-    metric_savepoint,
+    metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
 ):
@@ -557,7 +481,7 @@ def test_run_solve_nonhydro_multi_step(
     sp_exit = savepoint_nonhydro_exit
     sp_dif = diffusion_savepoint_init
     sp_int = interpolation_savepoint
-    sp_met = metric_savepoint
+    sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
@@ -626,40 +550,8 @@ def test_run_solve_nonhydro_multi_step(
         exner=sp_dif.exner(),
     )
 
-    interpolation_state = InterpolationState(
-        e_bln_c_s=sp_int.e_bln_c_s(),
-        rbf_coeff_1=sp_int.rbf_vec_coeff_v1(),
-        rbf_coeff_2=sp_int.rbf_vec_coeff_v1(),
-        geofac_div=sp_int.geofac_div(),
-        geofac_n2s=sp_int.geofac_n2s(),
-        geofac_grg=(sp_int.geofac_grg(), sp_int.geofac_grg()),
-        nudgecoeff_e=sp_int.nudgecoeff_e(),
-        c_lin_e=sp_int.c_lin_e(),
-        geofac_grdiv=sp_int.geofac_grdiv(),
-        rbf_vec_coeff_e=sp_int.rbf_vec_coeff_e(),
-        c_intp=sp_int.c_intp(),
-        geofac_rot=sp_int.geofac_rot(),
-        pos_on_tplane_e=sp_int.pos_on_tplane_e(),
-        e_flx_avg=sp_int.e_flx_avg(),
-    )
-
-    metric_state = MetricState(
-        mask_hdiff=sp_met.mask_hdiff(),
-        theta_ref_mc=sp_met.theta_ref_mc(),
-        wgtfac_c=sp_met.wgtfac_c(),
-        zd_intcoef=None,
-        zd_vertidx=sp_met.zd_vertidx(),
-        zd_diffcoef=sp_met.zd_diffcoef(),
-        coeff_gradekin=sp_met.coeff_gradekin(),
-        ddqz_z_full_e=sp_met.ddqz_z_full_e(),
-        wgtfac_e=sp_met.wgtfac_e(),
-        wgtfacq_e=sp_met.wgtfacq_e(),
-        ddxn_z_full=sp_met.ddxn_z_full(),
-        ddxt_z_full=sp_met.ddxt_z_full(),
-        ddqz_z_half=sp_met.ddqz_z_half(),
-        coeff1_dwdz=sp_met.coeff1_dwdz(),
-        coeff2_dwdz=sp_met.coeff2_dwdz(),
-    )
+    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    metric_state = metrics_savepoint.construct_metric_state()
 
     metric_state_nonhydro = MetricStateNonHydro(
         exner_exfac=sp_met.exner_exfac(),
@@ -688,11 +580,8 @@ def test_run_solve_nonhydro_multi_step(
         mask_prog_halo_c=sp_met.mask_prog_halo_c(),
     )
 
-    orientation = sp_d.tangent_orientation()
-    inverse_primal_edge_lengths = sp_d.inverse_primal_edge_lengths()
-    inverse_dual_edge_length = sp_d.inv_dual_edge_length()
-    edge_areas = sp_d.edge_areas()
-    cell_areas = sp_d.cell_areas()
+    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     prognostic_state_ls = [prognostic_state, prognostic_state]
 
     solve_nonhydro = SolveNonhydro()
@@ -706,7 +595,7 @@ def test_run_solve_nonhydro_multi_step(
         vertical_params=vertical_params,
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
-        cell_areas=cell_areas,
+        cell_areas=cell_geometry.area,
         fac=fac,
         z=z,
     )
@@ -719,16 +608,14 @@ def test_run_solve_nonhydro_multi_step(
             prep_adv=prep_adv,
             config=config,
             params=nonhydro_params,
-            inv_dual_edge_length=sp_d.inv_dual_edge_length(),
-            primal_normal_cell_1=sp_d.primal_normal_cell_x(),
-            dual_normal_cell_1=sp_d.dual_normal_cell_x(),
-            primal_normal_cell_2=sp_d.primal_normal_cell_y(),
-            dual_normal_cell_2=sp_d.dual_normal_cell_y(),
-            inv_primal_edge_length=sp_d.inverse_primal_edge_lengths(),
-            tangent_orientation=sp_d.tangent_orientation(),
+            inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+            primal_normal_cell=edge_geometry.primal_normal_cell,
+            dual_normal_cell=edge_geometry.dual_normal_cell,
+            inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
+            tangent_orientation=edge_geometry.tangent_orientation,
             cfl_w_limit=sp_v.cfl_w_limit(),
             scalfac_exdiff=sp_v.scalfac_exdiff(),
-            cell_areas=sp_d.cell_areas(),
+            cell_areas=cell_geometry.area,
             owner_mask=sp_d.owner_mask(),
             f_e=sp_d.f_e(),
             area_edge=sp_d.edge_areas(),

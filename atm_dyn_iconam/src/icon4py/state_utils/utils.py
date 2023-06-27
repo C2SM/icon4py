@@ -40,16 +40,18 @@ def _identity_e_k(
 ) -> Field[[EdgeDim, KDim], float]:
     return field
 
+
 def indices_field(dim: Dimension, mesh, is_halfdim, dtype=int):
     shapex = mesh.size[dim] + 1 if is_halfdim else mesh.size[dim]
     return np_as_located_field(dim)(np.arange(shapex, dtype=dtype))
 
+
 def _allocate(*dims: Dimension, mesh, dtype=float):
     return zero_field(*dims, mesh=mesh, dtype=dtype)
 
+
 def _allocate_indices(*dims: Dimension, mesh, is_halfdim=False, dtype=int):
     return indices_field(*dims, mesh=mesh, is_halfdim=is_halfdim, dtype=dtype)
-
 
 
 @program
@@ -99,20 +101,8 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
 
 
 @program
-def set_zero_v_k(
-    field: Field[[VertexDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
-):
-    _set_zero_v_k(
-        out=field,
-        domain={
-            VertexDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
+def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
+    _set_zero_v_k(out=field)
 
 
 @field_operator

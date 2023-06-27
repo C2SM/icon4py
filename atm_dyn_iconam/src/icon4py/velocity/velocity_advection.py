@@ -223,7 +223,6 @@ class VelocityAdvection:
                 offset_provider={"Koff": KDim},
             )
 
-
         velocity_prog.fused_stencils_4_5_6.with_backend(run_gtfn)(
             prognostic_state.vn,
             diagnostic_state.vt,
@@ -240,7 +239,7 @@ class VelocityAdvection:
             horizontal_start=indices_1_1,
             horizontal_end=indices_1_2,
             vertical_start=0,
-            vertical_end=self.grid.n_lev()+1,
+            vertical_end=self.grid.n_lev() + 1,
             offset_provider={
                 "Koff": KDim,
             },
@@ -318,7 +317,7 @@ class VelocityAdvection:
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
             vertical_start=0,
-            vertical_end=self.grid.n_lev()+1,
+            vertical_end=self.grid.n_lev() + 1,
             offset_provider={},
         )
 

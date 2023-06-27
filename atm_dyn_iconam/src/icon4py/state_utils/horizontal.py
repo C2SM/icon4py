@@ -16,7 +16,7 @@ from typing import Final
 from gt4py.next.common import Dimension, Field
 
 from icon4py.common import dimension
-from icon4py.common.dimension import CellDim, ECVDim, EdgeDim
+from icon4py.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
 
 
 class HorizontalMarkerIndex:
@@ -153,6 +153,10 @@ class EdgeParams:
         primal_normal_vert_y=None,
         dual_normal_vert_x=None,
         dual_normal_vert_y=None,
+        primal_normal_cell_x=None,
+        dual_normal_cell_x=None,
+        primal_normal_cell_y=None,
+        dual_normal_cell_y=None,
         edge_areas=None,
     ):
 
@@ -245,6 +249,16 @@ class EdgeParams:
 
          defined int ICON in mo_model_domain.f90:t_grid_edges%dual_normal_vert
         """
+
+        self.primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+            primal_normal_cell_x,
+            primal_normal_cell_y,
+        )
+
+        self.dual_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+            dual_normal_cell_x,
+            dual_normal_cell_y,
+        )
 
         self.edge_areas: Field[[EdgeDim], float] = edge_areas
         """

@@ -419,10 +419,8 @@ class SolveNonhydro:
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
         inv_dual_edge_length: Field[[EdgeDim], float],
-        primal_normal_cell_1: Field[[ECDim], float],
-        dual_normal_cell_1: Field[[ECDim], float],
-        primal_normal_cell_2: Field[[ECDim], float],
-        dual_normal_cell_2: Field[[ECDim], float],
+        primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]],
+        dual_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]],
         inv_primal_edge_length: Field[[EdgeDim], float],
         tangent_orientation: Field[[EdgeDim], float],
         cfl_w_limit: float,
@@ -441,7 +439,10 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-
+        primal_normal_cell_1 = primal_normal_cell[0]
+        primal_normal_cell_2 = primal_normal_cell[1]
+        dual_normal_cell_1 = dual_normal_cell[0]
+        dual_normal_cell_2 = dual_normal_cell[1]
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / config.ndyn_substeps_var
 
@@ -608,10 +609,8 @@ class SolveNonhydro:
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
         inv_dual_edge_length: Field[[EdgeDim], float],
-        primal_normal_cell_1: Field[[ECDim], float],
-        dual_normal_cell_1: Field[[ECDim], float],
-        primal_normal_cell_2: Field[[ECDim], float],
-        dual_normal_cell_2: Field[[ECDim], float],
+        primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]],
+        dual_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]],
         inv_primal_edge_length: Field[[EdgeDim], float],
         tangent_orientation: Field[[EdgeDim], float],
         cfl_w_limit: float,
@@ -640,6 +639,11 @@ class SolveNonhydro:
         else:
             ntl1 = 1
             ntl2 = 1
+
+        primal_normal_cell_1 = primal_normal_cell[0]
+        dual_normal_cell_1 = dual_normal_cell[0]
+        primal_normal_cell_2 = primal_normal_cell[1]
+        dual_normal_cell_2 = dual_normal_cell[1]
 
         velocity_advection.VelocityAdvection(
             self.grid, self.metric_state, self.interpolation_state, self.vertical_params
@@ -723,7 +727,7 @@ class SolveNonhydro:
                 horizontal_start=indices_1_1,
                 horizontal_end=indices_1_2,
                 vertical_start=max(1, self.vertical_params.nflatlev),
-                vertical_end=self.grid.n_lev()+1,
+                vertical_end=self.grid.n_lev() + 1,
                 offset_provider={"Koff": KDim},
             )
 
@@ -768,7 +772,7 @@ class SolveNonhydro:
             horizontal_start=indices_1_1,
             horizontal_end=indices_1_2,
             vertical_start=0,
-            vertical_end=self.grid.n_lev()+1,
+            vertical_end=self.grid.n_lev() + 1,
             offset_provider={"Koff": KDim},
         )
 
@@ -811,7 +815,7 @@ class SolveNonhydro:
 
         (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.local_boundary(VertexDim) + 1, #TODO: check
+            HorizontalMarkerIndex.local_boundary(VertexDim) + 1,  # TODO: check
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
@@ -1208,7 +1212,7 @@ class SolveNonhydro:
             horizontal_start=indices_9_1,
             horizontal_end=indices_9_2,
             vertical_start=0,
-            vertical_end=self.grid.n_lev()+1,
+            vertical_end=self.grid.n_lev() + 1,
             offset_provider={
                 "C2E": self.grid.get_c2e_connectivity(),
                 "Koff": KDim,
@@ -1437,7 +1441,7 @@ class SolveNonhydro:
                 horizontal_start=indices_11_1,
                 horizontal_end=indices_11_2,
                 vertical_start=0,
-                vertical_end=self.grid.n_lev()+1,
+                vertical_end=self.grid.n_lev() + 1,
                 offset_provider={},
             )
 

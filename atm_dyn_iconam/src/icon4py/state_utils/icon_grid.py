@@ -16,6 +16,7 @@ from typing import Dict, Tuple
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int64
+from gt4py.next.iterator.builtins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import (

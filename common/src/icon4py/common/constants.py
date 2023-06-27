@@ -14,6 +14,11 @@
 from typing import Annotated
 
 
+GAS_CONSTANT_DRY_AIR: Annotated[
+    float,
+    "gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90), https://glossary.ametsoc.org/wiki/Gas_constant",
+] = 287.04
+
 # Physical constants
 
 RD: Annotated[

@@ -270,21 +270,21 @@ def _predictor_stencils_7_8_9(
     Field[[CellDim, KDim], float],
 ]:
     (z_rth_pr_1, z_rth_pr_2) = where(
-        k_field == 0,
+        k_field == int(0),
         _mo_solve_nonhydro_stencil_07(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
     (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
         # (k_field >= 1) & (k_field < nlev),
-        k_field >= 1,
+        k_field >= int(1),
         _mo_solve_nonhydro_stencil_08(wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
     (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
         # (k_field >= 1) & (k_field < nlev),
-        k_field >= 1,
+        k_field >= int(1),
         _mo_solve_nonhydro_stencil_09(
             wgtfac_c,
             z_rth_pr_2,
@@ -368,7 +368,7 @@ def _predictor_stencils_11_lower_upper(
     nlev: int,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_theta_v_pr_ic = where(
-        k_field == 0, _mo_solve_nonhydro_stencil_11_lower(), z_theta_v_pr_ic
+        k_field == int(0), _mo_solve_nonhydro_stencil_11_lower(), z_theta_v_pr_ic
     )
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
@@ -491,7 +491,7 @@ def _predictor_stencils_35_36(
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         # (k_field >= 1) & (k_field < nlev),
-        k_field >= 1,
+        k_field >= int(1),
         _mo_solve_nonhydro_stencil_36(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -554,7 +554,7 @@ def _predictor_stencils_37_38(
     Field[[EdgeDim, KDim], float],
 ]:
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k_field == 0,
+        k_field == int(0),
         _mo_solve_nonhydro_stencil_37(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -691,7 +691,7 @@ def _stencils_42_44_45_45b(
     Field[[CellDim, KDim], float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
-        (k_field >= 1) & (k_field < nlev),
+        (k_field >= int(1)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_42(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -709,7 +709,7 @@ def _stencils_42_44_45_45b(
     )
 
     (z_beta, z_alpha) = where(
-        (k_field >= 0) & (k_field < nlev),
+        (k_field >= int(0)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_44(
             exner_nnow,
             rho_nnow,
@@ -726,7 +726,7 @@ def _stencils_42_44_45_45b(
     )
     z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
 
-    z_q = where(k_field == 0, _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_q = where(k_field == int(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -830,7 +830,7 @@ def _stencils_43_44_45_45b(
     Field[[CellDim, KDim], float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
-        (k_field >= 1) & (k_field < nlev),
+        (k_field >= int(1)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_43(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -844,7 +844,7 @@ def _stencils_43_44_45_45b(
         (z_w_expl, z_contr_w_fl_l),
     )
     (z_beta, z_alpha) = where(
-        (k_field >= 0) & (k_field < nlev),
+        (k_field >= int(0)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_44(
             exner_nnow,
             rho_nnow,
@@ -860,7 +860,7 @@ def _stencils_43_44_45_45b(
         (z_beta, z_alpha),
     )
     z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
-    z_q = where(k_field == 0, _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_q = where(k_field == int(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -956,7 +956,7 @@ def _stencils_47_48_49(
         (w_nnew, z_contr_w_fl_l),
     )
     (z_rho_expl, z_exner_expl) = where(
-        k_field == 0,
+        k_field == int(0),
         _mo_solve_nonhydro_stencil_48(
             rho_nnow,
             inv_ddqz_z_full,
@@ -973,7 +973,7 @@ def _stencils_47_48_49(
     )
     (z_rho_expl, z_exner_expl) = where(
         # (k_field >= 0) & (k_field < nlev),
-        k_field >= 0,
+        k_field >= int(0),
         _mo_solve_nonhydro_stencil_49(
             rho_nnow,
             inv_ddqz_z_full,
@@ -1101,7 +1101,7 @@ def _stencils_61_62(
 ]:
     (rho_new, exner_new, w_new) = where(
         # (k_field >= 0) & (k_field < nlev),
-        k_field >= 0,
+        k_field >= int(0),
         _mo_solve_nonhydro_stencil_61(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
