@@ -107,7 +107,7 @@ class IconGrid:
     def with_start_end_indices(
         self, dim: Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
-        self.start_indices[dim] = start_indices  # start_indices.astype(int32)
+        self.start_indices[dim] = start_indices  # start_indices.astype(int32) # TODO @nfarabullini: put these back
         self.end_indices[dim] = end_indices  # end_indices.astype(int32)
 
     @builder
