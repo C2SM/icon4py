@@ -38,7 +38,11 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
 ]:
     lvn_pos = where(p_vn > 0.0, True, False)
 
-    p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))
+#    p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))
+
+    # Replace the absolute index of the upwind cell by index 0 and 1
+    # Corresponding to neighboring cell 0 or 1 of an edge.
+    p_cell_rel_idx_dsl = where(lvn_pos, int32(0), int32(1))
     p_cell_blk = where(lvn_pos, cell_blk(E2EC[0]), cell_blk(E2EC[1]))
 
     z_ntdistv_bary_1 = -(
@@ -67,7 +71,7 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
         + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[1]),
     )
 
-    return p_cell_idx, p_cell_blk, p_distv_bary_1, p_distv_bary_2
+    return p_cell_rel_idx_dsl, p_cell_blk, p_distv_bary_1, p_distv_bary_2
 
 
 @program
@@ -82,7 +86,7 @@ def mo_advection_traj_btraj_compute_o1_dsl(
     dual_normal_cell_1: Field[[ECDim], float],
     primal_normal_cell_2: Field[[ECDim], float],
     dual_normal_cell_2: Field[[ECDim], float],
-    p_cell_idx: Field[[EdgeDim, KDim], int32],
+    p_cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
     p_cell_blk: Field[[EdgeDim, KDim], int32],
     p_distv_bary_1: Field[[EdgeDim, KDim], float],
     p_distv_bary_2: Field[[EdgeDim, KDim], float],
@@ -100,5 +104,5 @@ def mo_advection_traj_btraj_compute_o1_dsl(
         primal_normal_cell_2,
         dual_normal_cell_2,
         p_dthalf,
-        out=(p_cell_idx, p_cell_blk, p_distv_bary_1, p_distv_bary_2),
+        out=(p_cell_rel_idx_dsl, p_cell_blk, p_distv_bary_1, p_distv_bary_2),
     )
