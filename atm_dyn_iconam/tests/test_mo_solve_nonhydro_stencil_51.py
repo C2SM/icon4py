@@ -26,7 +26,6 @@ def mo_solve_nonhydro_stencil_51_z_q_numpy(
     z_c: np.array,
     z_b: np.array,
 ) -> np.array:
-
     return -z_c / z_b
 
 

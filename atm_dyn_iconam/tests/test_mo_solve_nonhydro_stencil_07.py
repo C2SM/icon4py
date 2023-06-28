@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_07 import (
     mo_solve_nonhydro_stencil_07,
@@ -19,42 +20,40 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_07 import (
 from icon4py.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_07_numpy(
-    rho: np.array, rho_ref_mc: np.array, theta_v: np.array, theta_ref_mc: np.array
-) -> tuple[np.array]:
-    z_rth_pr_1 = rho - rho_ref_mc
-    z_rth_pr_2 = theta_v - theta_ref_mc
-    return z_rth_pr_1, z_rth_pr_2
+class TestMoSolveNonhydroStencil07(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_07
+    OUTPUTS = ("z_rth_pr_1", "z_rth_pr_2")
 
+    @staticmethod
+    def reference(
+        mesh,
+        rho: np.array,
+        rho_ref_mc: np.array,
+        theta_v: np.array,
+        theta_ref_mc: np.array,
+        **kwargs,
+    ) -> tuple[np.array]:
+        z_rth_pr_1 = rho - rho_ref_mc
+        z_rth_pr_2 = theta_v - theta_ref_mc
+        return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
-def test_mo_solve_nonhydro_stencil_07():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        rho = random_field(mesh, CellDim, KDim)
+        rho_ref_mc = random_field(mesh, CellDim, KDim)
+        theta_v = random_field(mesh, CellDim, KDim)
+        theta_ref_mc = random_field(mesh, CellDim, KDim)
+        z_rth_pr_1 = zero_field(mesh, CellDim, KDim)
+        z_rth_pr_2 = zero_field(mesh, CellDim, KDim)
 
-    rho = random_field(mesh, CellDim, KDim)
-    rho_ref_mc = random_field(mesh, CellDim, KDim)
-    theta_v = random_field(mesh, CellDim, KDim)
-    theta_ref_mc = random_field(mesh, CellDim, KDim)
-    z_rth_pr_1 = zero_field(mesh, CellDim, KDim)
-    z_rth_pr_2 = zero_field(mesh, CellDim, KDim)
-
-    z_rth_pr_1_ref, z_rth_pr_2_ref = mo_solve_nonhydro_stencil_07_numpy(
-        np.asarray(rho),
-        np.asarray(rho_ref_mc),
-        np.asarray(theta_v),
-        np.asarray(theta_ref_mc),
-    )
-    mo_solve_nonhydro_stencil_07(
-        rho,
-        rho_ref_mc,
-        theta_v,
-        theta_ref_mc,
-        z_rth_pr_1,
-        z_rth_pr_2,
-        offset_provider={},
-    )
-
-    assert np.allclose(z_rth_pr_1, z_rth_pr_1_ref)
-    assert np.allclose(z_rth_pr_2, z_rth_pr_2_ref)
+        return dict(
+            rho=rho,
+            rho_ref_mc=rho_ref_mc,
+            theta_v=theta_v,
+            theta_ref_mc=theta_ref_mc,
+            z_rth_pr_1=z_rth_pr_1,
+            z_rth_pr_2=z_rth_pr_2,
+        )
