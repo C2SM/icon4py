@@ -18,12 +18,12 @@ import numpy as np
 import numpy.typing as npt
 from gt4py.next import common as gt_common
 from gt4py.next.iterator import embedded as it_embedded
-
-from . import simple_mesh
-
 from hypothesis import strategies as st
 from hypothesis import target
 from hypothesis.extra.numpy import arrays as hypothesis_array
+
+from . import simple_mesh
+
 
 def objShape(
     obj: Union[tuple, np.ndarray, simple_mesh.SimpleMesh], *dims: gt_common.Dimension
@@ -35,6 +35,7 @@ def objShape(
         return obj
     if isinstance(obj, np.ndarray):
         return obj.shape
+
 
 def _shape(
     mesh,
@@ -106,6 +107,7 @@ def constant_field(
         value * np.ones(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)
     )
 
+
 def random_field_strategy(
     mesh: Union[tuple, np.ndarray, simple_mesh.SimpleMesh],
     *dims,
@@ -124,6 +126,7 @@ def random_field_strategy(
             allow_infinity=False,
         ),
     ).map(it_embedded.np_as_located_field(*dims))
+
 
 def as_1D_sparse_field(
     field: it_embedded.MutableLocatedField, dim: gt_common.Dimension

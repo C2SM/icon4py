@@ -169,7 +169,7 @@ def test_graupel_serialized_data():
             "tendency specific rain content",
             "tendency specific snow content",
             "tendency specific graupel content",
-            "qrsflux"
+            "qrsflux",
         ):
             ser_fields[field] = zero_field(shape_2D, CellDim, KDim)
             # ser_fields[field] = zero_field((shape_1D, ser_config_parameters["nlev"] - ser_config_parameters["kstart_moist"]), CellDim, KDim)  # DL: Debug single column
@@ -282,8 +282,6 @@ def test_graupel_serialized_data():
                     shape_1D=shape_1D,
                 )
 
-
     assert (
         numErrors == 0
     ), f"{bcolors.FAIL}{numErrors} tests failed validation{bcolors.ENDC}"
-
