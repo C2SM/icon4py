@@ -136,7 +136,7 @@ class IconGrid:
 
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
-    ) -> Tuple[int32, int32]:
+    ) -> tuple[int32, int32]:
         """
         Use to specify domains of a field for field_operator.
 
@@ -181,23 +181,23 @@ class IconGrid:
         return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
 
     def get_e2ecv_connectivity(self):
-        old_shape = self.connectivities["e2c2v"].shape
-        v2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return self._neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities["e2c2v"].shape, EdgeDim, ECVDim)
+
+    def _neighbortable_offset_provider_for_1d_sparse_fields(self, old_shape:tuple[int, int], origin_axis:Dimension, neighbor_axis:Dimension ):
+        table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
         return NeighborTableOffsetProvider(
-            v2ecv_table, EdgeDim, ECVDim, v2ecv_table.shape[1]
+            table, origin_axis, neighbor_axis, table.shape[1]
         )
 
     def get_c2cec_connectivity(self):
-        old_shape = self.connectivities["c2e2c"].shape
-        c2cec_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(
-            c2cec_table, CellDim, CECDim, c2cec_table.shape[1]
-        )
+        return self._neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities["c2e2c"].shape, CellDim, CECDim)
 
     def get_c2ce_connectivity(self):
-        old_shape = self.connectivities["c2e"].shape
-        table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(table, CellDim, CEDim, table.shape[1])
+        return self._neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities["c2e"].shape, CellDim, CEDim)
+
 
 
 class VerticalModelParams:

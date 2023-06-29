@@ -66,7 +66,7 @@ from icon4py.diffusion.utils import (
     init_nabla2_factor_in_upper_damping_zone,
     scale_k,
     setup_fields_for_initial_step,
-    zero_field, copy_field,
+    zero_field, copy_field, set_zero_v_k,
 )
 
 
@@ -111,6 +111,7 @@ class DiffusionConfig:
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
     ):
+        """ Set the diffusion configuration parameters with the ICON default values."""
 
         # parameters from namelist diffusion_nml
         self.diffusion_type: int = diffusion_type
@@ -659,8 +660,8 @@ class Diffusion:
         )
 
         # TODO: @magdalena is this needed?, if not remove
-        #set_zero_v_k.with_backend(backend)(self.u_vert, offset_provider={})
-        #set_zero_v_k.with_backend(backend)(self.v_vert, offset_provider={})
+        set_zero_v_k.with_backend(backend)(self.u_vert, offset_provider={})
+        set_zero_v_k.with_backend(backend)(self.v_vert, offset_provider={})
         log.debug("rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
             p_e_in=prognostic_state.vn,
