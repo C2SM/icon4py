@@ -360,7 +360,7 @@ class DiffusionParams:
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def __init__(self, run_program=True):
+    def __init__(self):
 
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
