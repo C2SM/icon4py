@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Dict, Tuple
+from typing import Dict
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind, Field
@@ -182,9 +182,15 @@ class IconGrid:
 
     def get_e2ecv_connectivity(self):
         return self._neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities["e2c2v"].shape, EdgeDim, ECVDim)
+            self.connectivities["e2c2v"].shape, EdgeDim, ECVDim
+        )
 
-    def _neighbortable_offset_provider_for_1d_sparse_fields(self, old_shape:tuple[int, int], origin_axis:Dimension, neighbor_axis:Dimension ):
+    def _neighbortable_offset_provider_for_1d_sparse_fields(
+        self,
+        old_shape: tuple[int, int],
+        origin_axis: Dimension,
+        neighbor_axis: Dimension,
+    ):
         table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
         return NeighborTableOffsetProvider(
             table, origin_axis, neighbor_axis, table.shape[1]
@@ -192,12 +198,13 @@ class IconGrid:
 
     def get_c2cec_connectivity(self):
         return self._neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities["c2e2c"].shape, CellDim, CECDim)
+            self.connectivities["c2e2c"].shape, CellDim, CECDim
+        )
 
     def get_c2ce_connectivity(self):
         return self._neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities["c2e"].shape, CellDim, CEDim)
-
+            self.connectivities["c2e"].shape, CellDim, CEDim
+        )
 
 
 class VerticalModelParams:

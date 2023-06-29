@@ -16,7 +16,10 @@ from typing import Optional
 
 from icon4py.diffusion.diffusion import DiffusionConfig
 
+
 n_substeps_reduced = 2
+
+
 @dataclass
 class IconRunConfig:
     n_time_steps: int = 5

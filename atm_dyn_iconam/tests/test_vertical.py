@@ -34,10 +34,9 @@ def test_nrdmax_calculation(max_h, damping, delta):
 
 
 @pytest.mark.datatest
-def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint):
+def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint, damping_height):
     a = grid_savepoint.vct_a()
     nrdmax = grid_savepoint.nrdmax()
-    damping_height = 12500
     vertical_params = VerticalModelParams(
         rayleigh_damping_height=damping_height, vct_a=a
     )

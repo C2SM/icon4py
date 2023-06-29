@@ -39,7 +39,7 @@ from icon4py.diffusion.prognostic_state import PrognosticState
 from icon4py.py2f.cffi_utils import CffiMethod
 
 
-diffusion: Diffusion(run_program=True)
+diffusion: Diffusion()
 
 
 @CffiMethod.register
@@ -154,5 +154,4 @@ def diffusion_run(
 
 class DuplicateInitializationException(Exception):
     """Raised if the component is already initilalized."""
-
     pass

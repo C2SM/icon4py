@@ -29,14 +29,16 @@ from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,
     configure_logging,
+    import_testutils,
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
-    read_static_fields, import_testutils,
+    read_static_fields,
 )
 
+
 helpers = import_testutils()
-from helpers import serialbox_utils as sb_utils
+from helpers import serialbox_utils as sb_utils  # noqa
 
 
 log = logging.getLogger(__name__)

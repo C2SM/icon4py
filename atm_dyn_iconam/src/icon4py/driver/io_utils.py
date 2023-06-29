@@ -30,16 +30,20 @@ log = logging.getLogger(__name__)
 
 
 def import_testutils():
-    testutils =  Path(__file__).parent.__str__() + "/../../../tests/test_utils/__init__.py"
+    testutils = (
+        Path(__file__).parent.__str__() + "/../../../tests/test_utils/__init__.py"
+    )
     spec = importlib.util.spec_from_file_location("helpers", testutils)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
+
 helpers = import_testutils()
 
-from helpers import serialbox_utils as sb
+from helpers import serialbox_utils as sb  # noqa
+
 
 class SerializationType(str, Enum):
     SB = "serialbox"
@@ -58,9 +62,7 @@ def read_icon_grid(path: Path, ser_type=SerializationType.SB) -> IconGrid:
     """
     if ser_type == SerializationType.SB:
         return (
-            sb.IconSerialDataProvider(
-                "icon_pydycore", str(path.absolute()), False
-            )
+            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False)
             .from_savepoint_grid()
             .construct_icon_grid()
         )
