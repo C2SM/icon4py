@@ -359,6 +359,8 @@ def test_scan_multiple_output():
     wrapper_1output(a, b, threshold_level, out=out1, offset_provider={})
     wrapper_2output(a, b, threshold_level, out=(out2, out3), offset_provider={})
     wrapper_3output(a, b, threshold_level, out=(out4, out5, out6), offset_provider={})
+    print(a.array())
+    print(b.array())
     print(out1.array())
     print(out2.array())
     print(out3.array())
@@ -387,7 +389,94 @@ def test_scan_multiple_output():
 
     print("test_scan_multiple_output finish")
 
+def test_program():
 
+    size = 10
+    threshold_level = int32(5)
+
+    sequence1d = np.arange(size,dtype=float64)
+    sequence2d = np.tile(sequence1d,(size,1))
+    print(sequence2d)
+    
+    @scan_operator(
+        axis=KDim,
+        forward=True,
+        init=(0.0,0.0,0),
+    )
+    def k_scan(
+        state: tuple[float64,float64,int32],
+        input_var1: float64,
+        input_var2: float64,
+        input_var3: float64,
+        threshold: int32
+    ) -> tuple[float64,float64,int32]:
+        (acm1, acm2, acm3) = state
+        acm1 = input_var1 + input_var2
+        if ( acm3 < threshold ):
+            return (acm1, acm2 + input_var3, acm3 + int32(1))
+        else:
+            return (acm1, acm2, acm3 + int32(1))
+    
+
+    @field_operator
+    def wrapper(
+        input_var1: Field[[CellDim,KDim], float64],
+        input_var2: Field[[CellDim,KDim], float64],
+        input_var3: Field[[CellDim,KDim], float64],
+        threshold: int32,
+    ):
+        output1, output2, redundant  = k_scan(input_var1,input_var2,input_var3,threshold)
+        return (output1,output2)
+    
+    @program
+    def program_wrapper(
+        input_var1: Field[[CellDim,KDim], float64],
+        input_var2: Field[[CellDim,KDim], float64],
+        input_var3: Field[[CellDim,KDim], float64],
+        threshold: int32,
+        input_size: int32
+    ):
+        wrapper(
+            input_var1,
+            input_var2,
+            input_var3,
+            threshold,
+            out=(
+                input_var2,
+                input_var3
+            ),
+            domain={CellDim: (0, input_size), KDim: (0, input_size)}
+        )
+
+
+    # gt4py version
+    a = np_as_located_field(CellDim,KDim)(sequence2d)
+    b = np_as_located_field(CellDim,KDim)(sequence2d)
+    c = np_as_located_field(CellDim,KDim)(np.ones((size,size),dtype=float64))
+    program_wrapper(a,b,c,threshold_level,size,offset_provider={})
+    print("a: ", a.array())
+    print("b: ", b.array())
+    print("c: ", c.array())
+
+    # numpy version
+    np_a = sequence2d
+    np_b = sequence2d
+    np_c = np.ones((size,size),dtype=float64)
+    np_out = np.zeros((size,size),dtype=float64)
+    for i in range(0,size):
+        np_out[i,0] = np_c[i,0]
+        for k in range(1,size):
+            if ( k < threshold_level ):
+                np_out[i,k] = np_out[i,k-1] + np_c[i,k]
+            else:
+                np_out[i,k] = np_out[i,k-1]
+
+    print(np_out)
+    assert np.allclose(c.array(),np_out)
+
+    print('test_program finish')
+
+    
 def test_k_level_ellipsis():
 
     cell_size = 5
@@ -431,3 +520,4 @@ def test_k_level_ellipsis():
     # assert np.allclose(LWP.array(),np_LWP)
 
     print("test_k_level_ellipsis finish")
+
