@@ -243,15 +243,19 @@ def test_diffusion_init(
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
+    edge_params = grid_savepoint.construct_edge_geometry()
+    cell_params = grid_savepoint.construct_cell_geometry()
 
     diffusion = Diffusion()
     diffusion.init(
         grid=icon_grid,
-        vertical_params=vertical_params,
         config=config,
         params=additional_parameters,
+        vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_params,
+        cell_params=cell_params,
     )
 
     assert diffusion.diff_multfac_w == min(
@@ -355,18 +359,22 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     config.ndyn_substeps = datarun_reduced_substeps
     additional_parameters = DiffusionParams(config)
     vct_a = grid_savepoint.vct_a()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
 
     diffusion = Diffusion()
     diffusion.init(
-        config=config,
         grid=icon_grid,
+        config=config,
         params=additional_parameters,
         vertical_params=VerticalModelParams(vct_a, damping_height),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
     )
 
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
@@ -390,6 +398,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
+    edge_params = grid_savepoint.construct_edge_geometry()
+    cell_params = grid_savepoint.construct_cell_geometry()
 
     diffusion = Diffusion()
     diffusion.init(
@@ -399,6 +409,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         vertical_params,
         metric_state,
         interpolation_state,
+        edge_params,
+        cell_params,
     )
 
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
@@ -446,27 +458,24 @@ def test_run_diffusion_single_step(
         vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
     )
+    _verify_diffusion_fields(
+        diagnostic_state, prognostic_state, diffusion_savepoint_init
+    )
+    assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
     diffusion.run(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
-        tangent_orientation=edge_geometry.tangent_orientation,
-        inverse_primal_edge_lengths=edge_geometry.inverse_primal_edge_lengths,
-        inverse_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-        inverse_vert_vert_lengths=edge_geometry.inverse_vertex_vertex_lengths,
-        primal_normal_vert=edge_geometry.primal_normal_vert,
-        dual_normal_vert=edge_geometry.dual_normal_vert,
-        edge_areas=edge_geometry.edge_areas,
-        cell_areas=cell_geometry.area,
     )
-    assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    _verify_diffusion_exit_fields(
+    _verify_diffusion_fields(
         diagnostic_state, prognostic_state, diffusion_savepoint_exit
     )
 
 
-def _verify_diffusion_exit_fields(
+def _verify_diffusion_fields(
     diagnostic_state, prognostic_state, diffusion_savepoint_exit
 ):
     ref_div_ic = np.asarray(diffusion_savepoint_exit.div_ic())
@@ -530,22 +539,18 @@ def test_run_diffusion_initial_step(
         vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
     )
+    assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
+
     diffusion.initial_run(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
-        tangent_orientation=edge_geometry.tangent_orientation,
-        inverse_primal_edge_lengths=edge_geometry.inverse_primal_edge_lengths,
-        inverse_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-        inverse_vert_vert_lengths=edge_geometry.inverse_vertex_vertex_lengths,
-        primal_normal_vert=edge_geometry.primal_normal_vert,
-        dual_normal_vert=edge_geometry.dual_normal_vert,
-        edge_areas=edge_geometry.edge_areas,
-        cell_areas=cell_geometry.area,
     )
-    assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    _verify_diffusion_exit_fields(
+
+    _verify_diffusion_fields(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         diffusion_savepoint_exit=diffusion_savepoint_exit,

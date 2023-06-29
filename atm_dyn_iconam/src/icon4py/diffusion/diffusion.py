@@ -57,7 +57,11 @@ from icon4py.common.constants import (
 )
 from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.diagnostic_state import DiagnosticState
-from icon4py.diffusion.horizontal import HorizontalMarkerIndex
+from icon4py.diffusion.horizontal import (
+    CellParams,
+    EdgeParams,
+    HorizontalMarkerIndex,
+)
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
@@ -382,6 +386,8 @@ class Diffusion:
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
         self.nudgezone_diff: Optional[float] = None
+        self.edge_params: Optional[EdgeParams] = None
+        self.cell_params: Optional[CellParams] = None
 
     def init(
         self,
@@ -391,11 +397,23 @@ class Diffusion:
         vertical_params: VerticalModelParams,
         metric_state: MetricState,
         interpolation_state: InterpolationState,
+        edge_params: EdgeParams,
+        cell_params: CellParams,
     ):
         """
         Initialize Diffusion granule with configuration.
 
         calculates all local fields that are used in diffusion within the time loop.
+
+        Args:
+            grid:
+            config:
+            params:
+            vertical_params:
+            metric_state:
+            interpolation_state:
+            edge_params:
+            cell_params:
         """
         self.config: DiffusionConfig = config
         self.params: DiffusionParams = params
@@ -403,6 +421,8 @@ class Diffusion:
         self.vertical_params = vertical_params
         self.metric_state: MetricState = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
+        self.edge_params = edge_params
+        self.cell_params = cell_params
 
         self._allocate_local_fields()
 
@@ -480,14 +500,6 @@ class Diffusion:
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
-        tangent_orientation: Field[[EdgeDim], float],
-        inverse_primal_edge_lengths: Field[[EdgeDim], float],
-        inverse_dual_edge_length: Field[[EdgeDim], float],
-        inverse_vert_vert_lengths: Field[[EdgeDim], float],
-        primal_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        dual_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        edge_areas: Field[[EdgeDim], float],
-        cell_areas: Field[[CellDim], float],
     ):
         """
         Calculate initial diffusion step.
@@ -514,14 +526,6 @@ class Diffusion:
             diagnostic_state,
             prognostic_state,
             dtime,
-            tangent_orientation,
-            inverse_primal_edge_lengths,
-            inverse_dual_edge_length,
-            inverse_vert_vert_lengths,
-            primal_normal_vert,
-            dual_normal_vert,
-            edge_areas,
-            cell_areas,
             diff_multfac_vn,
             smag_limit,
             0.0,
@@ -532,14 +536,6 @@ class Diffusion:
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
-        tangent_orientation: Field[[EdgeDim], float],
-        inverse_primal_edge_lengths: Field[[EdgeDim], float],
-        inverse_dual_edge_length: Field[[EdgeDim], float],
-        inverse_vert_vert_lengths: Field[[EdgeDim], float],
-        primal_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        dual_normal_vert: VectorTuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        edge_areas: Field[[EdgeDim], float],
-        cell_areas: Field[[CellDim], float],
     ):
         """
         Do one diffusion step within regular time loop.
@@ -551,33 +547,16 @@ class Diffusion:
             diagnostic_state=diagnostic_state,
             prognostic_state=prognostic_state,
             dtime=dtime,
-            tangent_orientation=tangent_orientation,
-            inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-            inverse_dual_edge_length=inverse_dual_edge_length,
-            inverse_vertex_vertex_lengths=inverse_vert_vert_lengths,
-            primal_normal_vert=primal_normal_vert,
-            dual_normal_vert=dual_normal_vert,
-            edge_areas=edge_areas,
-            cell_areas=cell_areas,
             diff_multfac_vn=self.diff_multfac_vn,
             smag_limit=self.smag_limit,
             smag_offset=self.smag_offset,
         )
-        log.info("diffusion program: end")
 
     def _do_diffusion_step(
         self,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
-        tangent_orientation: Field[[EdgeDim], float],
-        inverse_primal_edge_lengths: Field[[EdgeDim], float],
-        inverse_dual_edge_length: Field[[EdgeDim], float],
-        inverse_vertex_vertex_lengths: Field[[EdgeDim], float],
-        primal_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        dual_normal_vert: Tuple[Field[[ECVDim], float], Field[[ECVDim], float]],
-        edge_areas: Field[[EdgeDim], float],
-        cell_areas: Field[[CellDim], float],
         diff_multfac_vn: Field[[KDim], float],
         smag_limit: Field[[KDim], float],
         smag_offset: float,
@@ -589,14 +568,6 @@ class Diffusion:
             diagnostic_state: output argument, data class that contains diagnostic variables
             prognostic_state: output argument, data class that contains prognostic variables
             dtime: the time step,
-            tangent_orientation:
-            inverse_primal_edge_lengths:
-            inverse_dual_edge_length:
-            inverse_vertex_vertex_lengths:
-            primal_normal_vert:
-            dual_normal_vert:
-            edge_areas:
-            cell_areas:
             diff_multfac_vn:
             smag_limit:
             smag_offset:
@@ -688,15 +659,15 @@ class Diffusion:
         )
         calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)(
             diff_multfac_smag=self.diff_multfac_smag,
-            tangent_orientation=tangent_orientation,
-            inv_primal_edge_length=inverse_primal_edge_lengths,
-            inv_vert_vert_length=inverse_vertex_vertex_lengths,
+            tangent_orientation=self.edge_params.tangent_orientation,
+            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
+            inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
             u_vert=self.u_vert,
             v_vert=self.v_vert,
-            primal_normal_vert_x=primal_normal_vert[0],
-            primal_normal_vert_y=primal_normal_vert[1],
-            dual_normal_vert_x=dual_normal_vert[0],
-            dual_normal_vert_y=dual_normal_vert[1],
+            primal_normal_vert_x=self.edge_params.primal_normal_vert[0],
+            primal_normal_vert_y=self.edge_params.primal_normal_vert[1],
+            dual_normal_vert_x=self.edge_params.dual_normal_vert[0],
+            dual_normal_vert_y=self.edge_params.dual_normal_vert[1],
             vn=prognostic_state.vn,
             smag_limit=smag_limit,
             kh_smag_e=self.kh_smag_e,
@@ -764,12 +735,12 @@ class Diffusion:
         fused_mo_nh_diffusion_stencil_04_05_06.with_backend(backend)(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
-            primal_normal_vert_v1=primal_normal_vert[0],
-            primal_normal_vert_v2=primal_normal_vert[1],
+            primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
+            primal_normal_vert_v2=self.edge_params.primal_normal_vert[1],
             z_nabla2_e=self.z_nabla2_e,
-            inv_vert_vert_length=inverse_vertex_vertex_lengths,
-            inv_primal_edge_length=inverse_primal_edge_lengths,
-            area_edge=edge_areas,
+            inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
+            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
+            area_edge=self.edge_params.edge_areas,
             kh_smag_e=self.kh_smag_e,
             diff_multfac_vn=diff_multfac_vn,
             nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
@@ -798,7 +769,7 @@ class Diffusion:
         apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance.with_backend(
             backend
         )(
-            area=cell_areas,
+            area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
             geofac_grg_y=self.interpolation_state.geofac_grg_y,
@@ -853,7 +824,7 @@ class Diffusion:
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
         calculate_nabla2_for_theta.with_backend(backend)(
             kh_smag_e=self.kh_smag_e,
-            inv_dual_edge_length=inverse_dual_edge_length,
+            inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             theta_v=prognostic_state.theta_v,
             geofac_div=self.interpolation_state.geofac_div,
             z_temp=self.z_temp,
@@ -899,7 +870,7 @@ class Diffusion:
         log.debug("running fused stencil 16 (update_theta_and_exner): start")
         update_theta_and_exner.with_backend(backend)(
             z_temp=self.z_temp,
-            area=cell_areas,
+            area=self.cell_params.area,
             theta_v=prognostic_state.theta_v,
             exner=prognostic_state.exner_pressure,
             rd_o_cvd=self.rd_o_cvd,
