@@ -345,7 +345,7 @@ class DiffusionParams:
     @staticmethod
     def _diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
         """
-        Initialize smagorinski factors used in diffusion type 5.
+        Initialize Smagorinski factors used in diffusion type 5.
 
         The calculation and magic numbers are taken from mo_diffusion_nml.f90
         """
@@ -392,7 +392,7 @@ class Diffusion:
         """
         Initialize Diffusion granule with configuration.
 
-        calculates all local fields that are used in diffusion within the time loop
+        calculates all local fields that are used in diffusion within the time loop.
         """
         self.config: DiffusionConfig = config
         self.params: DiffusionParams = params
@@ -470,7 +470,7 @@ class Diffusion:
         self.horizontal_edge_index = _index_field(EdgeDim)
         self.w_tmp = np_as_located_field(CellDim, KDim)(np.zeros((self.grid.num_cells(), self.grid.n_lev() + 1), dtype=float))
 
-    def initial_step(
+    def initial_run(
         self,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,

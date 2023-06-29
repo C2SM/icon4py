@@ -20,7 +20,6 @@ import pytz
 from devtools import Timer
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
-from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
@@ -33,15 +32,18 @@ from icon4py.driver.io_utils import (
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
-    read_static_fields,
+    read_static_fields, import_testutils,
 )
+
+helpers = import_testutils()
+from helpers import serialbox_utils as sb_utils
 
 
 log = logging.getLogger(__name__)
 
 
 class DummyAtmoNonHydro:
-    def __init__(self, data_provider: IconSerialDataProvider):
+    def __init__(self, data_provider: sb_utils.IconSerialDataProvider):
         self.config = None
         self.data_provider = data_provider
         self.simulation_date = datetime.fromisoformat(SIMULATION_START_DATE)
@@ -197,7 +199,7 @@ def initialize(n_time_steps, file_path: Path):
 
     log.info("initializing dycore")
     diffusion_params = DiffusionParams(config.diffusion_config)
-    diffusion = Diffusion(run_program=False)
+    diffusion = Diffusion()
     diffusion.init(
         icon_grid,
         config.diffusion_config,

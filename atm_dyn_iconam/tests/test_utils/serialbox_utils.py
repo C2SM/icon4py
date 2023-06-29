@@ -49,9 +49,6 @@ from icon4py.diffusion.prognostic_state import PrognosticState
 from .helpers import as_1D_sparse_field
 
 
-C2E2C_DIM = 3
-
-
 class IconSavepoint:
     def __init__(self, sp: ser.Savepoint, ser: ser.Serializer):
         self.savepoint = sp
