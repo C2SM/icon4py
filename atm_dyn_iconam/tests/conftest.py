@@ -30,6 +30,11 @@ extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
 
 
+@pytest.fixture
+def get_data_path(setup_icon_data):
+    return extracted_path
+
+
 @pytest.fixture(scope="session")
 def setup_icon_data():
     """
@@ -139,7 +144,7 @@ def grid_savepoint(data_provider):
 
 
 @pytest.fixture
-def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
+def r04b09_diffusion_config() -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 

@@ -556,7 +556,7 @@ def test_run_diffusion_initial_step(
         diffusion_savepoint_exit=diffusion_savepoint_exit,
     )
 
-
+@pytest.mark.datatest
 def test_verify_stencil15_field_manipulation(interpolation_savepoint, icon_grid):
     geofac_n2s = np.asarray(interpolation_savepoint.geofac_n2s())
     int_state = interpolation_savepoint.construct_interpolation_state()
