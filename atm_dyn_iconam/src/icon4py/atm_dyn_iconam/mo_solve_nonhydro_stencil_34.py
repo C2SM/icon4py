@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
@@ -30,7 +31,7 @@ def _mo_solve_nonhydro_stencil_34(
     return vn_traj, mass_flx_me
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_34(
     z_vn_avg: Field[[EdgeDim, KDim], float],
     mass_fl_e: Field[[EdgeDim, KDim], float],

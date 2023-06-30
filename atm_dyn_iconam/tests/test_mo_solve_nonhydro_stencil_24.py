@@ -12,61 +12,55 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_24 import (
-    _mo_solve_nonhydro_stencil_24,
+    mo_solve_nonhydro_stencil_24,
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_24_numpy(
-    vn_nnow: np.array,
-    ddt_vn_adv_ntl1: np.array,
-    ddt_vn_phy: np.array,
-    z_theta_v_e: np.array,
-    z_gradh_exner: np.array,
-    dtime: float,
-    cpd: float,
-) -> np.array:
-    vn_nnew = vn_nnow + dtime * (
-        ddt_vn_adv_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner
-    )
-    return vn_nnew
+class TestMoSolveNonhydroStencil24(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_24
+    OUTPUTS = ("vn_nnew",)
 
+    @staticmethod
+    def reference(
+        mesh,
+        vn_nnow: np.array,
+        ddt_vn_adv_ntl1: np.array,
+        ddt_vn_phy: np.array,
+        z_theta_v_e: np.array,
+        z_gradh_exner: np.array,
+        dtime: float,
+        cpd: float,
+        **kwargs,
+    ) -> np.array:
+        vn_nnew = vn_nnow + dtime * (
+            ddt_vn_adv_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner
+        )
+        return dict(vn_nnew=vn_nnew)
 
-def test_mo_solve_nonhydro_stencil_24():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        dtime, cpd = 10.0, 10.0
+        vn_nnow = random_field(mesh, EdgeDim, KDim)
+        ddt_vn_adv_ntl1 = random_field(mesh, EdgeDim, KDim)
+        ddt_vn_phy = random_field(mesh, EdgeDim, KDim)
+        z_theta_v_e = random_field(mesh, EdgeDim, KDim)
+        z_gradh_exner = random_field(mesh, EdgeDim, KDim)
+        vn_nnew = zero_field(mesh, EdgeDim, KDim)
 
-    dtime, cpd = 10.0, 10.0
-    vn_nnow = random_field(mesh, EdgeDim, KDim)
-    ddt_vn_adv_ntl1 = random_field(mesh, EdgeDim, KDim)
-    ddt_vn_phy = random_field(mesh, EdgeDim, KDim)
-    z_theta_v_e = random_field(mesh, EdgeDim, KDim)
-    z_gradh_exner = random_field(mesh, EdgeDim, KDim)
-    vn_nnew = zero_field(mesh, EdgeDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_24_numpy(
-        np.asarray(vn_nnow),
-        np.asarray(ddt_vn_adv_ntl1),
-        np.asarray(ddt_vn_phy),
-        np.asarray(z_theta_v_e),
-        np.asarray(z_gradh_exner),
-        dtime,
-        cpd,
-    )
-    _mo_solve_nonhydro_stencil_24(
-        vn_nnow,
-        ddt_vn_adv_ntl1,
-        ddt_vn_phy,
-        z_theta_v_e,
-        z_gradh_exner,
-        vn_nnew,
-        dtime,
-        cpd,
-        out=vn_nnew,
-        offset_provider={},
-    )
-    assert np.allclose(vn_nnew, ref)
+        return dict(
+            vn_nnow=vn_nnow,
+            ddt_vn_adv_ntl1=ddt_vn_adv_ntl1,
+            ddt_vn_phy=ddt_vn_phy,
+            z_theta_v_e=z_theta_v_e,
+            z_gradh_exner=z_gradh_exner,
+            vn_nnew=vn_nnew,
+            dtime=dtime,
+            cpd=cpd,
+        )

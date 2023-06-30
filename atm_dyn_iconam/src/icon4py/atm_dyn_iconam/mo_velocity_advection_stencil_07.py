@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field, GridType
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, VertexDim
 
@@ -28,12 +28,11 @@ def _mo_velocity_advection_stencil_07(
     tangent_orientation: Field[[EdgeDim], float],
     z_w_v: Field[[VertexDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    f = vn_ie * inv_dual_edge_length * (
+    return vn_ie * inv_dual_edge_length * (
         w(E2C[0]) - w(E2C[1])
     ) + z_vt_ie * inv_primal_edge_length * tangent_orientation * (
         z_w_v(E2V[0]) - z_w_v(E2V[1])
     )
-    return f
 
 
 @program(grid_type=GridType.UNSTRUCTURED)

@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
     calculate_diagnostics_for_turbulence,
@@ -19,45 +20,32 @@ from icon4py.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
 from icon4py.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def calculate_diagnostics_for_turbulence_numpy(
-    div: np.array,
-    k_hc: np.array,
-    wgtfac_c: np.array,
-) -> tuple[np.array, np.array]:
-    kc_offset_1 = np.roll(k_hc, shift=1, axis=1)
-    div_offset_1 = np.roll(div, shift=1, axis=1)
-    div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1
-    hdef_ic = (wgtfac_c * k_hc + (1.0 - wgtfac_c) * kc_offset_1) ** 2
-    return div_ic, hdef_ic
+class TestCalculateDiagnosticsForTurbulence(StencilTest):
+    PROGRAM = calculate_diagnostics_for_turbulence
+    OUTPUTS = ("div_ic", "hdef_ic")
 
+    @staticmethod
+    def reference(
+        mesh, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic
+    ) -> tuple[np.array, np.array]:
+        kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
+        div_offset_1 = np.roll(div, shift=1, axis=1)
+        div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
+        hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[
+            :, 1:
+        ]
+        return dict(div_ic=div_ic, hdef_ic=hdef_ic)
 
-def test_calculate_diagnostics_for_turbulence():
-    mesh = SimpleMesh()
-
-    wgtfac_c = random_field(mesh, CellDim, KDim)
-    div = random_field(mesh, CellDim, KDim)
-    kh_c = random_field(mesh, CellDim, KDim)
-
-    div_ic = zero_field(mesh, CellDim, KDim)
-    hdef_ic = zero_field(mesh, CellDim, KDim)
-
-    div_ref, kh_c_ref = calculate_diagnostics_for_turbulence_numpy(
-        np.asarray(div),
-        np.asarray(kh_c),
-        np.asarray(wgtfac_c),
-    )
-
-    calculate_diagnostics_for_turbulence(
-        div,
-        kh_c,
-        wgtfac_c,
-        div_ic,
-        hdef_ic,
-        offset_provider={"Koff": KDim},
-    )
-
-    assert np.allclose(hdef_ic[:, 1:], kh_c_ref[:, 1:])
-    assert np.allclose(div_ic[:, 1:], div_ref[:, 1:])
+    @pytest.fixture
+    def input_data(self, mesh):
+        wgtfac_c = random_field(mesh, CellDim, KDim)
+        div = random_field(mesh, CellDim, KDim)
+        kh_c = random_field(mesh, CellDim, KDim)
+        div_ic = zero_field(mesh, CellDim, KDim)
+        hdef_ic = zero_field(mesh, CellDim, KDim)
+        return dict(
+            wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic
+        )

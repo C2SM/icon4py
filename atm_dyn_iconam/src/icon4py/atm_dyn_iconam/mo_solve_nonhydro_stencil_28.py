@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
-from gt4py.next.program_processors.runners import gtfn_cpu
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -28,15 +28,15 @@ def _mo_solve_nonhydro_stencil_28(
     return vn
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_28(
     vn_incr: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
     iau_wgt_dyn: float,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_28(
         vn_incr,

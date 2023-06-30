@@ -10,12 +10,15 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
 import tarfile
 from pathlib import Path
 
 import pytest
 import wget
+from gt4py.next.program_processors.runners.roundtrip import executor
 
+from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
 from icon4py.diffusion.diffusion import DiffusionConfig
 
 from .test_utils.serialbox_utils import IconSerialDataProvider
@@ -239,3 +242,20 @@ def ntnd(savepoint_velocity_init):
 @pytest.fixture
 def vn_only():
     return False
+
+
+BACKENDS = {"embedded": executor}
+MESHES = {"simple_mesh": SimpleMesh()}
+
+
+@pytest.fixture(
+    ids=MESHES.keys(),
+    params=MESHES.values(),
+)
+def mesh(request):
+    return request.param
+
+
+@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
+def backend(request):
+    return request.param

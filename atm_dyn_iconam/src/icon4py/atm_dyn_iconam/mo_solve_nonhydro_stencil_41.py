@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
@@ -28,7 +29,7 @@ def _mo_solve_nonhydro_stencil_41(
     return z_flxdiv_mass, z_flxdiv_theta
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_41(
     geofac_div: Field[[CellDim, C2EDim], float],
     mass_fl_e: Field[[EdgeDim, KDim], float],

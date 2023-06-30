@@ -12,38 +12,36 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_26 import (
-    _mo_solve_nonhydro_stencil_26,
+    mo_solve_nonhydro_stencil_26,
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_26_numpy(
-    z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2
-) -> np.array:
-    vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
-    return vn
+class TestMoSolveNonhydroStencil26(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_26
+    OUTPUTS = ("vn",)
 
+    @staticmethod
+    def reference(
+        mesh, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2, **kwargs
+    ) -> dict:
+        vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
+        return dict(vn=vn)
 
-def test_mo_solve_nonhydro_stencil_26():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_graddiv_vn = random_field(mesh, EdgeDim, KDim)
+        vn = random_field(mesh, EdgeDim, KDim)
+        scal_divdamp_o2 = 5.0
 
-    z_graddiv_vn = random_field(mesh, EdgeDim, KDim)
-    vn = random_field(mesh, EdgeDim, KDim)
-    scal_divdamp_o2 = 5.0
-
-    ref = mo_solve_nonhydro_stencil_26_numpy(
-        np.asarray(z_graddiv_vn), np.asarray(vn), scal_divdamp_o2
-    )
-    _mo_solve_nonhydro_stencil_26(
-        z_graddiv_vn,
-        vn,
-        scal_divdamp_o2,
-        out=vn,
-        offset_provider={},
-    )
-    assert np.allclose(vn, ref)
+        return dict(
+            z_graddiv_vn=z_graddiv_vn,
+            vn=vn,
+            scal_divdamp_o2=scal_divdamp_o2,
+        )

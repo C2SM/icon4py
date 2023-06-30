@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_06 import (
     mo_solve_nonhydro_stencil_06,
@@ -19,33 +20,28 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_06 import (
 from icon4py.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_06_numpy(
-    z_exner_ic: np.array,
-    inv_ddqz_z_full: np.array,
-) -> np.array:
-    z_dexner_dz_c_1 = (z_exner_ic[:, :-1] - z_exner_ic[:, 1:]) * inv_ddqz_z_full
-    return z_dexner_dz_c_1
+class TestMoSolveNonhydroStencil06(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_06
+    OUTPUTS = ("z_dexner_dz_c_1",)
 
+    @staticmethod
+    def reference(
+        mesh, z_exner_ic: np.array, inv_ddqz_z_full: np.array, **kwargs
+    ) -> np.array:
+        z_dexner_dz_c_1 = (z_exner_ic[:, :-1] - z_exner_ic[:, 1:]) * inv_ddqz_z_full
+        return dict(z_dexner_dz_c_1=z_dexner_dz_c_1)
 
-def test_mo_solve_nonhydro_stencil_06():
-    mesh = SimpleMesh()
-    z_exner_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-    z_dexner_dz_c_1 = zero_field(mesh, CellDim, KDim)
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_exner_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1})
+        inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
+        z_dexner_dz_c_1 = zero_field(mesh, CellDim, KDim)
 
-    z_dexner_dz_c_1_ref = mo_solve_nonhydro_stencil_06_numpy(
-        np.asarray(z_exner_ic),
-        np.asarray(inv_ddqz_z_full),
-    )
-
-    mo_solve_nonhydro_stencil_06(
-        z_exner_ic,
-        inv_ddqz_z_full,
-        z_dexner_dz_c_1,
-        offset_provider={"Koff": KDim},
-    )
-
-    assert np.allclose(z_dexner_dz_c_1, z_dexner_dz_c_1_ref)
+        return dict(
+            z_exner_ic=z_exner_ic,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            z_dexner_dz_c_1=z_dexner_dz_c_1,
+        )
