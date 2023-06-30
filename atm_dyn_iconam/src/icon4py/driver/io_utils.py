@@ -10,13 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import importlib
 import logging
+import sys
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from atm_dyn_iconam.tests.test_utils import serialbox_utils
-from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.decomposition.decomposed import ProcessProperties
 from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
@@ -31,6 +31,22 @@ SERIALBOX_ONLY_MSG = "Only ser_type='sb (Serialbox)' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
+
+
+def import_testutils():
+    testutils = (
+        Path(__file__).parent.__str__() + "/../../../tests/test_utils/__init__.py"
+    )
+    spec = importlib.util.spec_from_file_location("helpers", testutils)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+helpers = import_testutils()
+
+from helpers import serialbox_utils as sb  # noqa
 
 
 class SerializationType(str, Enum):
@@ -50,7 +66,7 @@ def read_icon_grid(path: Path, rank=0, ser_type=SerializationType.SB) -> IconGri
     """
     if ser_type == SerializationType.SB:
         return (
-            serialbox_utils.IconSerialDataProvider(
+            sb.IconSerialDataProvider(
                 "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
             )
             .from_savepoint_grid()
@@ -62,19 +78,19 @@ def read_icon_grid(path: Path, rank=0, ser_type=SerializationType.SB) -> IconGri
 
 def read_initial_state(
     gridfile_path: Path, rank=0
-) -> tuple[IconSerialDataProvider, DiagnosticState, PrognosticState]:
+) -> tuple[sb.IconSerialDataProvider, DiagnosticState, PrognosticState]:
     """
     Read prognostic and diagnostic state from serialized data.
 
     Args:
-        gridfile_path: path the the serialized input data
+        gridfile_path: path the serialized input data
 
     Returns: a tuple containing the data_provider, the initial diagnostic and prognostic state.
     The data_provider is returned such that further timesteps of diagnostics and prognostics can be
     read from within the dummy timeloop
 
     """
-    data_provider = serialbox_utils.IconSerialDataProvider(
+    data_provider = sb.IconSerialDataProvider(
         "icon_pydycore", str(gridfile_path), False, mpi_rank=rank
     )
     init_savepoint = data_provider.from_savepoint_diffusion_init(
@@ -99,7 +115,7 @@ def read_geometry_fields(
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
     """
     if ser_type == SerializationType.SB:
-        sp = serialbox_utils.IconSerialDataProvider(
+        sp = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         ).from_savepoint_grid()
         edge_geometry = sp.construct_edge_geometry()
@@ -119,7 +135,7 @@ def read_decomp_info(
     ser_type=SerializationType.SB,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
-        sp = serialbox_utils.IconSerialDataProvider(
+        sp = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), True, procs_props.rank
         )
         return sp.from_savepoint_grid().construct_decomposition_info()
@@ -133,7 +149,7 @@ def read_grid(
     ser_type=SerializationType.SB,
 ) -> IconGrid:
     if ser_type == SerializationType.SB:
-        sp = serialbox_utils.IconSerialDataProvider(
+        sp = sb.IconSerialDataProvider(
             "icon_grid", str(path.absolute()), True, procs_props.rank
         )
         return sp.from_savepoint_grid().construct_icon_grid()
@@ -156,7 +172,7 @@ def read_static_fields(
 
     """
     if ser_type == SerializationType.SB:
-        dataprovider = serialbox_utils.IconSerialDataProvider(
+        dataprovider = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         )
         interpolation_state = (

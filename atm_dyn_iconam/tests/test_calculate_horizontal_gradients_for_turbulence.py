@@ -12,6 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import (
     calculate_horizontal_gradients_for_turbulence,
@@ -19,49 +21,40 @@ from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def calculate_horizontal_gradients_for_turbulence_numpy(
-    c2e2c0: np.array,
-    w: np.array,
-    geofac_grg_x: np.array,
-    geofac_grg_y: np.array,
-) -> tuple[np.array]:
-    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-    dwdx = np.sum(geofac_grg_x * w[c2e2c0], axis=1)
+class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
+    PROGRAM = calculate_horizontal_gradients_for_turbulence
+    OUTPUTS = ("dwdx", "dwdy")
 
-    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-    dwdy = np.sum(geofac_grg_y * w[c2e2c0], axis=1)
-    return dwdx, dwdy
+    @staticmethod
+    def reference(
+        mesh, w: np.array, geofac_grg_x: np.array, geofac_grg_y: np.array, **kwargs
+    ) -> tuple[np.array]:
+        geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
+        dwdx = np.sum(geofac_grg_x * w[mesh.c2e2cO], axis=1)
 
+        geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
+        dwdy = np.sum(geofac_grg_y * w[mesh.c2e2cO], axis=1)
+        return dict(dwdx=dwdx, dwdy=dwdy)
 
-def test_calculate_horizontal_gradients_for_turbulence():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        w = random_field(mesh, CellDim, KDim)
+        geofac_grg_x = random_field(mesh, CellDim, C2E2CODim)
+        geofac_grg_y = random_field(mesh, CellDim, C2E2CODim)
+        dwdx = zero_field(mesh, CellDim, KDim)
+        dwdy = zero_field(mesh, CellDim, KDim)
 
-    w = random_field(mesh, CellDim, KDim)
-    geofac_grg_x = random_field(mesh, CellDim, C2E2CODim)
-    geofac_grg_y = random_field(mesh, CellDim, C2E2CODim)
-    dwdx = zero_field(mesh, CellDim, KDim)
-    dwdy = zero_field(mesh, CellDim, KDim)
-
-    dwdx_ref, dwdy_ref = calculate_horizontal_gradients_for_turbulence_numpy(
-        mesh.c2e2cO, np.asarray(w), np.asarray(geofac_grg_x), np.asarray(geofac_grg_y)
-    )
-    calculate_horizontal_gradients_for_turbulence(
-        w,
-        geofac_grg_x,
-        geofac_grg_y,
-        dwdx,
-        dwdy,
-        0,
-        mesh.n_cells,
-        0,
-        mesh.k_level,
-        offset_provider={
-            "C2E2CO": mesh.get_c2e2cO_offset_provider(),
-        },
-    )
-
-    assert np.allclose(dwdx, dwdx_ref)
-    assert np.allclose(dwdy, dwdy_ref)
+        return dict(
+            w=w,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
+            dwdx=dwdx,
+            dwdy=dwdy,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
+        )

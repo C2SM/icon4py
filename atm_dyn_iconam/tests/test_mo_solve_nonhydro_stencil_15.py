@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_15 import (
     mo_solve_nonhydro_stencil_15,
@@ -19,31 +20,27 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_15 import (
 from icon4py.common.dimension import EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_15_numpy(
-    z_rho_e: np.array, z_theta_v_e: np.array
-) -> tuple[np.array]:
-    z_rho_e = np.zeros_like(z_rho_e)
-    z_theta_v_e = np.zeros_like(z_theta_v_e)
-    return z_rho_e, z_theta_v_e
+class TestMoSolveNonhydroStencil15(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_15
+    OUTPUTS = ("z_rho_e", "z_theta_v_e")
 
+    @staticmethod
+    def reference(
+        mesh, z_rho_e: np.array, z_theta_v_e: np.array, **kwargs
+    ) -> tuple[np.array]:
+        z_rho_e = np.zeros_like(z_rho_e)
+        z_theta_v_e = np.zeros_like(z_theta_v_e)
+        return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)
 
-def test_mo_solve_nonhydro_stencil_15_z_theta_v_e():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_rho_e = random_field(mesh, EdgeDim, KDim)
+        z_theta_v_e = random_field(mesh, EdgeDim, KDim)
 
-    z_rho_e = random_field(mesh, EdgeDim, KDim)
-    z_theta_v_e = random_field(mesh, EdgeDim, KDim)
-
-    z_rho_e_ref, z_theta_v_e_ref = mo_solve_nonhydro_stencil_15_numpy(
-        np.asarray(z_rho_e), np.asarray(z_theta_v_e)
-    )
-
-    mo_solve_nonhydro_stencil_15(
-        z_rho_e,
-        z_theta_v_e,
-        offset_provider={},
-    )
-    assert np.allclose(z_rho_e, z_rho_e_ref)
-    assert np.allclose(z_theta_v_e, z_theta_v_e_ref)
+        return dict(
+            z_rho_e=z_rho_e,
+            z_theta_v_e=z_theta_v_e,
+        )

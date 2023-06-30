@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
@@ -28,7 +29,7 @@ def _apply_nabla2_to_w_in_upper_damping_layer(
     return w
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_nabla2_to_w_in_upper_damping_layer(
     w: Field[[CellDim, KDim], float],
     diff_multfac_n2w: Field[[KDim], float],

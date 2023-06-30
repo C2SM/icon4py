@@ -369,19 +369,28 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
     def zd_intcoef(self):
-        return self._from_cell_c2e2c_to_cec("vcoef")
-
-    def _from_cell_c2e2c_to_cec(self, field_name: str, offset: int = 0):
-        ser_input = (
-            np.squeeze(self.serializer.read(field_name, self.savepoint)) + offset
+        ser_input = np.moveaxis(
+            (np.squeeze(self.serializer.read("vcoef", self.savepoint))), 1, -1
         )
-        old_shape = ser_input.shape
+        return self._linearize_first_2dims(ser_input, sparse_size=3)
+
+    def _linearize_first_2dims(self, data: np.ndarray, sparse_size):
+        old_shape = data.shape
+        assert old_shape[1] == sparse_size
         return np_as_located_field(CECDim, KDim)(
-            ser_input.reshape(old_shape[0] * old_shape[1], old_shape[2])
+            data.reshape(old_shape[0] * old_shape[1], old_shape[2])
         )
 
     def zd_vertoffset(self):
-        return self._from_cell_c2e2c_to_cec("zd_vertoffset", 0)
+        ser_input = np.squeeze(self.serializer.read("zd_vertoffset", self.savepoint))
+        ser_input = np.moveaxis(ser_input, 1, -1)
+        return self._linearize_first_2dims(ser_input, sparse_size=3)
+
+    def zd_vertidx(self):
+        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
+
+    def zd_indlist(self):
+        return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
     def theta_ref_mc(self):
         return self._get_field("theta_ref_mc", CellDim, KDim)

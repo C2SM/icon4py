@@ -17,6 +17,9 @@ from typing import Optional
 from icon4py.diffusion.diffusion import DiffusionConfig
 
 
+n_substeps_reduced = 2
+
+
 @dataclass
 class IconRunConfig:
     n_time_steps: int = 5
@@ -35,7 +38,6 @@ class IconConfig:
     dycore_config: AtmoNonHydroConfig
 
 
-# TODO @magdalena move to io_utils?
 def read_config(experiment: Optional[str], n_time_steps: int) -> IconConfig:
     def _default_run_config(n_steps: int):
         if n_steps > 5:
@@ -46,6 +48,7 @@ def read_config(experiment: Optional[str], n_time_steps: int) -> IconConfig:
         return DiffusionConfig(
             diffusion_type=5,
             hdiff_w=True,
+            n_substeps=n_substeps_reduced,
             hdiff_vn=True,
             type_t_diffu=2,
             type_vn_diffu=1,

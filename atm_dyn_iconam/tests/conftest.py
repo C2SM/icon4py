@@ -10,13 +10,16 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
 import tarfile
 from pathlib import Path
 
 import mpi4py
 import pytest
 import wget
+from gt4py.next.program_processors.runners.roundtrip import executor
 
+from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
 from icon4py.diffusion.diffusion import DiffusionConfig
 
 from .test_utils.serialbox_utils import IconSerialDataProvider
@@ -51,7 +54,7 @@ def setup_icon_data():
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
     data_path.mkdir(parents=True, exist_ok=True)
-    if not any(data_path.iterdir()):
+    if not data_path.joinpath(extracted_path).exists():
         print(
             f"directory {data_path} is empty: downloading data from {data_uri} and extracting"
         )
@@ -179,3 +182,20 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
 @pytest.fixture
 def damping_height():
     return 12500
+
+
+BACKENDS = {"embedded": executor}
+MESHES = {"simple_mesh": SimpleMesh()}
+
+
+@pytest.fixture(
+    ids=MESHES.keys(),
+    params=MESHES.values(),
+)
+def mesh(request):
+    return request.param
+
+
+@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
+def backend(request):
+    return request.param
