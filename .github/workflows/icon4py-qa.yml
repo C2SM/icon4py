@@ -10,8 +10,14 @@ on:
     pull_request:
         branches:
             - main
+        paths-ignore:
+            - "tools/**"
         types: [opened, reopened, assigned, ready_for_review]
     pull_request_review:
+        branches:
+            - main
+        paths-ignore:
+            - "tools/**"
         types: [submitted, edited]
 
 jobs:
