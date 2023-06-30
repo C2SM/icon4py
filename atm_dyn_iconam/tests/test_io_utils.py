@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import pathlib
 
 import pytest
 
@@ -23,9 +22,6 @@ from icon4py.driver.io_utils import (
     read_icon_grid,
     read_static_fields,
 )
-
-
-
 
 
 @pytest.mark.parametrize(
