@@ -461,7 +461,7 @@ def test_run_diffusion_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
     )
-    _verify_diffusion_fields(
+    verify_diffusion_fields(
         diagnostic_state, prognostic_state, diffusion_savepoint_init
     )
     assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
@@ -470,12 +470,12 @@ def test_run_diffusion_single_step(
         prognostic_state=prognostic_state,
         dtime=dtime,
     )
-    _verify_diffusion_fields(
+    verify_diffusion_fields(
         diagnostic_state, prognostic_state, diffusion_savepoint_exit
     )
 
 
-def _verify_diffusion_fields(
+def verify_diffusion_fields(
     diagnostic_state, prognostic_state, diffusion_savepoint_exit
 ):
     ref_div_ic = np.asarray(diffusion_savepoint_exit.div_ic())
@@ -550,7 +550,7 @@ def test_run_diffusion_initial_step(
         dtime=dtime,
     )
 
-    _verify_diffusion_fields(
+    verify_diffusion_fields(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         diffusion_savepoint_exit=diffusion_savepoint_exit,
