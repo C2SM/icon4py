@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_w import calculate_nabla2_for_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
@@ -41,4 +42,8 @@ class TestCalculateNabla2ForW(StencilTest):
             w=w,
             geofac_n2s=geofac_n2s,
             z_nabla2_c=z_nabla2_c,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

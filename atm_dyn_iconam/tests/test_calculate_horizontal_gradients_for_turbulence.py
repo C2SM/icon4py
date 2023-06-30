@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.calculate_horizontal_gradients_for_turbulence import (
     calculate_horizontal_gradients_for_turbulence,
@@ -52,4 +53,8 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
             geofac_grg_y=geofac_grg_y,
             dwdx=dwdx,
             dwdy=dwdy,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

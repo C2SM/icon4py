@@ -18,11 +18,12 @@ from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from atm_dyn_iconam.tests.test_utils.helpers import as_1D_sparse_field
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    CECDim,
+    CEDim,
     CellDim,
     E2C2VDim,
     E2CDim,
@@ -44,6 +45,8 @@ from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
+
+from .helpers import as_1D_sparse_field
 
 
 class IconSavepoint:
@@ -183,6 +186,9 @@ class IconGridSavePoint(IconSavepoint):
     def v2e(self):
         return self._get_connectiviy_array("v2e")
 
+    def nrdmax(self):
+        return self._get_connectiviy_array("nrdmax")
+
     def construct_icon_grid(self) -> IconGrid:
         sp_meta = self.get_metadata(
             "nproma", "nlev", "num_vert", "num_cells", "num_edges"
@@ -279,10 +285,10 @@ class InterpolationSavepoint(IconSavepoint):
     def construct_interpolation_state(self) -> InterpolationState:
         grg = self.geofac_grg()
         return InterpolationState(
-            e_bln_c_s=self.e_bln_c_s(),
+            e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),
             rbf_coeff_1=self.rbf_vec_coeff_v1(),
             rbf_coeff_2=self.rbf_vec_coeff_v2(),
-            _geofac_div=self.geofac_div(),
+            geofac_div=as_1D_sparse_field(self.geofac_div(), CEDim),
             geofac_n2s=self.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],
@@ -297,7 +303,7 @@ class MetricSavepoint(IconSavepoint):
             theta_ref_mc=self.theta_ref_mc(),
             wgtfac_c=self.wgtfac_c(),
             zd_intcoef=self.zd_intcoef(),
-            zd_vertidx=self.zd_vertoffset(),
+            zd_vertoffset=self.zd_vertoffset(),
             zd_diffcoef=self.zd_diffcoef(),
         )
 
@@ -305,13 +311,28 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
     def zd_intcoef(self):
-        return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
+        ser_input = np.moveaxis(
+            (np.squeeze(self.serializer.read("vcoef", self.savepoint))), 1, -1
+        )
+        return self._linearize_first_2dims(ser_input, sparse_size=3)
 
-    def zd_vertidx(self):
-        return self._get_field("zd_vertidx", CellDim, C2E2CDim, dtype=int)
+    def _linearize_first_2dims(self, data: np.ndarray, sparse_size):
+        old_shape = data.shape
+        assert old_shape[1] == sparse_size
+        return np_as_located_field(CECDim, KDim)(
+            data.reshape(old_shape[0] * old_shape[1], old_shape[2])
+        )
 
     def zd_vertoffset(self):
-        return self._get_field("zd_vertoffset", CellDim, C2E2CDim, KDim, dtype=int)
+        ser_input = np.squeeze(self.serializer.read("zd_vertoffset", self.savepoint))
+        ser_input = np.moveaxis(ser_input, 1, -1)
+        return self._linearize_first_2dims(ser_input, sparse_size=3)
+
+    def zd_vertidx(self):
+        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
+
+    def zd_indlist(self):
+        return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
     def theta_ref_mc(self):
         return self._get_field("theta_ref_mc", CellDim, KDim)
@@ -323,7 +344,7 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("wgtfac_e", EdgeDim, KDim)
 
     def mask_diff(self):
-        return self._get_field("mask_hdiff", CellDim, KDim, dtype=int)
+        return self._get_field("mask_hdiff", CellDim, KDim, dtype=bool)
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
@@ -405,8 +426,23 @@ class IconDiffusionExitSavepoint(IconSavepoint):
     def w(self):
         return self._get_field("x_w", CellDim, KDim)
 
+    def dwdx(self):
+        return self._get_field("x_dwdx", CellDim, KDim)
+
+    def dwdy(self):
+        return self._get_field("x_dwdy", CellDim, KDim)
+
     def exner(self):
         return self._get_field("x_exner", CellDim, KDim)
+
+    def z_temp(self):
+        return self._get_field("x_z_temp", CellDim, KDim)
+
+    def div_ic(self):
+        return self._get_field("x_div_ic", CellDim, KDim)
+
+    def hdef_ic(self):
+        return self._get_field("x_hdef_ic", CellDim, KDim)
 
 
 class IconSerialDataProvider:

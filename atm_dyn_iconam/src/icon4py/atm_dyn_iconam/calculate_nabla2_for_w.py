@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
@@ -31,5 +31,17 @@ def calculate_nabla2_for_w(
     w: Field[[CellDim, KDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _calculate_nabla2_for_w(w, geofac_n2s, out=z_nabla2_c)
+    _calculate_nabla2_for_w(
+        w,
+        geofac_n2s,
+        out=z_nabla2_c,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

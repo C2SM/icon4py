@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer,
@@ -39,6 +40,10 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
             diff_multfac_n2w=diff_multfac_n2w,
             cell_area=cell_area,
             z_nabla2_c=z_nabla2_c,
+            horizontal_start=int32(0),
+            horizontal_end=int(mesh.n_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )
 
     @staticmethod
@@ -48,6 +53,7 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
         diff_multfac_n2w: np.array,
         cell_area: np.array,
         z_nabla2_c: np.array,
+        **kwargs,
     ) -> np.array:
         cell_area = np.expand_dims(cell_area, axis=-1)
         w = w + diff_multfac_n2w * cell_area * z_nabla2_c

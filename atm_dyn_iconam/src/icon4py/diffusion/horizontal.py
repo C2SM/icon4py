@@ -88,7 +88,6 @@ class HorizontalMarkerIndex:
 
     @classmethod
     def halo(cls, dim: Dimension) -> int:
-        """Indicate the halo points."""
         match (dim):
             case (dimension.CellDim):
                 return cls._HALO_CELLS
