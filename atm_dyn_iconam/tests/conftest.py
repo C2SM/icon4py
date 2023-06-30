@@ -38,7 +38,7 @@ def setup_icon_data():
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
     data_path.mkdir(parents=True, exist_ok=True)
-    if not any(data_path.iterdir()):
+    if not data_path.joinpath(extracted_path).exists():
         print(
             f"directory {data_path} is empty: downloading data from {data_uri} and extracting"
         )
