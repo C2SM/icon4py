@@ -15,8 +15,7 @@ from typing import Dict, Tuple
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind, Field
-from gt4py.next.ffront.fbuiltins import int64
-from gt4py.next.iterator.builtins import int32
+from gt4py.next.ffront.fbuiltins import int32, int64
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import (
@@ -107,8 +106,8 @@ class IconGrid:
     def with_start_end_indices(
         self, dim: Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
-        self.start_indices[dim] = start_indices  # start_indices.astype(int32) # TODO @nfarabullini: put these back
-        self.end_indices[dim] = end_indices  # end_indices.astype(int32)
+        self.start_indices[dim] = start_indices.astype(int32)
+        self.end_indices[dim] = end_indices.astype(int32)
 
     @builder
     def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):

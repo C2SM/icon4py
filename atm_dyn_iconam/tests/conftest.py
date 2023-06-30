@@ -173,6 +173,12 @@ def metrics_savepoint(data_provider):
 
 
 @pytest.fixture
+def metrics_nonhydro_savepoint(data_provider):
+    """Load data from ICON mestric state nonhydro savepoint."""
+    return data_provider.from_metrics_nonhydro_savepoint()
+
+
+@pytest.fixture
 def icon_grid(grid_savepoint):
     """
     Load the icon grid from an ICON savepoint.

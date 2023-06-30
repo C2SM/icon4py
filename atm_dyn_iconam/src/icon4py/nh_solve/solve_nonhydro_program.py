@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.fbuiltins import int32, where
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_02 import (
     _mo_solve_nonhydro_stencil_02,
@@ -108,11 +108,11 @@ def init_test_fields(
     z_theta_v_e: Field[[EdgeDim, KDim], float],
     z_dwdz_dd: Field[[CellDim, KDim], float],
     z_graddiv_vn: Field[[EdgeDim, KDim], float],
-    indices_edges_1: int,
-    indices_edges_2: int,
-    indices_cells_1: int,
-    indices_cells_2: int,
-    nlev: int,
+    indices_edges_1: int32,
+    indices_edges_2: int32,
+    indices_cells_1: int32,
+    indices_cells_2: int32,
+    nlev: int32,
 ):
     _set_zero_e_k(
         out=z_rho_e,
@@ -155,10 +155,10 @@ def predictor_stencils_2_3(
     exner_ref_mc: Field[[CellDim, KDim], float],
     exner_pr: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _predictor_stencils_2_3(
         exner_exfac,
@@ -181,8 +181,8 @@ def _predictor_stencils_4_5_6(
     wgtfac_c: Field[[CellDim, KDim], float],
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nlev: int,
+    k_field: Field[[KDim], int32],
+    nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     # Perturbation Exner pressure on bottom half level
     z_exner_ic = where(
@@ -218,12 +218,12 @@ def predictor_stencils_4_5_6(
     wgtfac_c: Field[[CellDim, KDim], float],
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nlev: int,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    k_field: Field[[KDim], int32],
+    nlev: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _predictor_stencils_4_5_6(
         wgtfacq_c_dsl,
@@ -259,8 +259,8 @@ def _predictor_stencils_7_8_9(
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nlev: int,
+    k_field: Field[[KDim], int32],
+    nlev: int32,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -270,21 +270,21 @@ def _predictor_stencils_7_8_9(
     Field[[CellDim, KDim], float],
 ]:
     (z_rth_pr_1, z_rth_pr_2) = where(
-        k_field == int(0),
+        k_field == int32(0),
         _mo_solve_nonhydro_stencil_07(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
     (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
         # (k_field >= 1) & (k_field < nlev),
-        k_field >= int(1),
+        k_field >= int32(1),
         _mo_solve_nonhydro_stencil_08(wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
     (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
         # (k_field >= 1) & (k_field < nlev),
-        k_field >= int(1),
+        k_field >= int32(1),
         _mo_solve_nonhydro_stencil_09(
             wgtfac_c,
             z_rth_pr_2,
@@ -317,12 +317,12 @@ def predictor_stencils_7_8_9(
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nlev: int,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    k_field: Field[[KDim], int32],
+    nlev: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _predictor_stencils_7_8_9(
         rho,
@@ -364,11 +364,11 @@ def _predictor_stencils_11_lower_upper(
     theta_ref_ic: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nlev: int,
+    k_field: Field[[KDim], int32],
+    nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_theta_v_pr_ic = where(
-        k_field == int(0), _mo_solve_nonhydro_stencil_11_lower(), z_theta_v_pr_ic
+        k_field == int32(0), _mo_solve_nonhydro_stencil_11_lower(), z_theta_v_pr_ic
     )
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
@@ -388,12 +388,12 @@ def predictor_stencils_11_lower_upper(
     theta_ref_ic: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nlev: int,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    k_field: Field[[KDim], int32],
+    nlev: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _predictor_stencils_11_lower_upper(
         wgtfacq_c_dsl,
@@ -432,10 +432,10 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     z_rth_pr_2: Field[[CellDim, KDim], float],
     z_rho_e: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         p_vn,
@@ -474,9 +474,9 @@ def _predictor_stencils_35_36(
     vn_ie: Field[[EdgeDim, KDim], float],
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nflatlev_startindex: int,
-    nlev: int,
+    k_field: Field[[KDim], int32],
+    nflatlev_startindex: int32,
+    nlev: int32,
 ) -> tuple[
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
@@ -491,7 +491,7 @@ def _predictor_stencils_35_36(
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         # (k_field >= 1) & (k_field < nlev),
-        k_field >= int(1),
+        k_field >= int32(1),
         _mo_solve_nonhydro_stencil_36(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -509,13 +509,13 @@ def predictor_stencils_35_36(
     vn_ie: Field[[EdgeDim, KDim], float],
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nflatlev_startindex: int,
-    nlev: int,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    k_field: Field[[KDim], int32],
+    nflatlev_startindex: int32,
+    nlev: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _predictor_stencils_35_36(
         vn,
@@ -546,15 +546,15 @@ def _predictor_stencils_37_38(
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nlev: int,
+    k_field: Field[[KDim], int32],
+    nlev: int32,
 ) -> tuple[
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k_field == int(0),
+        k_field == int32(0),
         _mo_solve_nonhydro_stencil_37(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -572,12 +572,12 @@ def predictor_stencils_37_38(
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nlev: int,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    k_field: Field[[KDim], int32],
+    nlev: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _predictor_stencils_37_38(
         vn,
@@ -603,9 +603,9 @@ def _stencils_39_40(
     wgtfac_c: Field[[CellDim, KDim], float],
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nflatlev_startindex_plus1: int,
-    nlev: int,
+    k_field: Field[[KDim], int32],
+    nflatlev_startindex_plus1: int32,
+    nlev: int32,
 ) -> Field[[CellDim, KDim], float]:
     w_concorr_c = where(
         # (k_field >= nflatlev_startindex_plus1) & (k_field < nlev),
@@ -630,13 +630,13 @@ def stencils_39_40(
     wgtfac_c: Field[[CellDim, KDim], float],
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
-    nflatlev_startindex_plus1: int,
-    nlev: int,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    k_field: Field[[KDim], int32],
+    nflatlev_startindex_plus1: int32,
+    nlev: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _stencils_39_40(
         e_bln_c_s,
@@ -675,14 +675,14 @@ def _stencils_42_44_45_45b(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
+    k_field: Field[[KDim], int32],
     rd: float,
     cvd: float,
     dtime: float,
     cpd: float,
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
-    nlev: int,
+    nlev: int32,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -691,7 +691,7 @@ def _stencils_42_44_45_45b(
     Field[[CellDim, KDim], float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
-        (k_field >= int(1)) & (k_field < nlev),
+        (k_field >= int32(1)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_42(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -709,7 +709,7 @@ def _stencils_42_44_45_45b(
     )
 
     (z_beta, z_alpha) = where(
-        (k_field >= int(0)) & (k_field < nlev),
+        (k_field >= int32(0)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_44(
             exner_nnow,
             rho_nnow,
@@ -726,7 +726,7 @@ def _stencils_42_44_45_45b(
     )
     z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
 
-    z_q = where(k_field == int(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -750,17 +750,17 @@ def stencils_42_44_45_45b(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
+    k_field: Field[[KDim], int32],
     rd: float,
     cvd: float,
     dtime: float,
     cpd: float,
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
-    cell_startindex_nudging_plus1: int,
-    cell_endindex_interior: int,
-    nlev: int,
-    nlev_k: int,
+    cell_startindex_nudging_plus1: int32,
+    cell_endindex_interior: int32,
+    nlev: int32,
+    nlev_k: int32,
 ):
     _stencils_42_44_45_45b(
         z_w_expl,
@@ -816,12 +816,12 @@ def _stencils_43_44_45_45b(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
+    k_field: Field[[KDim], int32],
     rd: float,
     cvd: float,
     dtime: float,
     cpd: float,
-    nlev: int,
+    nlev: int32,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -830,7 +830,7 @@ def _stencils_43_44_45_45b(
     Field[[CellDim, KDim], float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
-        (k_field >= int(1)) & (k_field < nlev),
+        (k_field >= int32(1)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_43(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -844,7 +844,7 @@ def _stencils_43_44_45_45b(
         (z_w_expl, z_contr_w_fl_l),
     )
     (z_beta, z_alpha) = where(
-        (k_field >= int(0)) & (k_field < nlev),
+        (k_field >= int32(0)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_44(
             exner_nnow,
             rho_nnow,
@@ -860,7 +860,7 @@ def _stencils_43_44_45_45b(
         (z_beta, z_alpha),
     )
     z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
-    z_q = where(k_field == int(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -884,15 +884,15 @@ def stencils_43_44_45_45b(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
+    k_field: Field[[KDim], int32],
     rd: float,
     cvd: float,
     dtime: float,
     cpd: float,
-    cell_startindex_nudging_plus1: int,
-    cell_endindex_interior: int,
-    nlev: int,
-    nlev_k: int,
+    cell_startindex_nudging_plus1: int32,
+    cell_endindex_interior: int32,
+    nlev: int32,
+    nlev_k: int32,
 ):
     _stencils_43_44_45_45b(
         z_w_expl,
@@ -941,9 +941,9 @@ def _stencils_47_48_49(
     z_flxdiv_theta: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     ddt_exner_phy: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
+    k_field: Field[[KDim], int32],
     dtime: float,
-    nlev: int,
+    nlev: int32,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -956,7 +956,7 @@ def _stencils_47_48_49(
         (w_nnew, z_contr_w_fl_l),
     )
     (z_rho_expl, z_exner_expl) = where(
-        k_field == int(0),
+        k_field == int32(0),
         _mo_solve_nonhydro_stencil_48(
             rho_nnow,
             inv_ddqz_z_full,
@@ -973,7 +973,7 @@ def _stencils_47_48_49(
     )
     (z_rho_expl, z_exner_expl) = where(
         # (k_field >= 0) & (k_field < nlev),
-        k_field >= int(0),
+        k_field >= int32(0),
         _mo_solve_nonhydro_stencil_49(
             rho_nnow,
             inv_ddqz_z_full,
@@ -1006,12 +1006,12 @@ def stencils_47_48_49(
     z_flxdiv_theta: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     ddt_exner_phy: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
+    k_field: Field[[KDim], int32],
     dtime: float,
-    cell_startindex_nudging_plus1: int,
-    cell_endindex_interior: int,
-    nlev: int,
-    nlev_k: int,
+    cell_startindex_nudging_plus1: int32,
+    cell_endindex_interior: int32,
+    nlev: int32,
+    nlev_k: int32,
 ):
     _stencils_47_48_49(
         w_nnew,
@@ -1061,10 +1061,10 @@ def predictor_stencils_59_60(
     ddt_exner_phy: Field[[CellDim, KDim], float],
     ndyn_substeps_var: float,
     dtime: float,
-    cell_startindex_nudging_plus1: int,
-    cell_endindex_interior: int,
-    kstart_moist: int,
-    nlev: int,
+    cell_startindex_nudging_plus1: int32,
+    cell_endindex_interior: int32,
+    kstart_moist: int32,
+    nlev: int32,
 ):
     _predictor_stencils_59_60(
         exner_nnow,
@@ -1091,9 +1091,9 @@ def _stencils_61_62(
     rho_new: Field[[CellDim, KDim], float],
     exner_new: Field[[CellDim, KDim], float],
     w_new: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
+    k_field: Field[[KDim], int32],
     dtime: float,
-    nlev: int,
+    nlev: int32,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -1101,7 +1101,7 @@ def _stencils_61_62(
 ]:
     (rho_new, exner_new, w_new) = where(
         # (k_field >= 0) & (k_field < nlev),
-        k_field >= int(0),
+        k_field >= int32(0),
         _mo_solve_nonhydro_stencil_61(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
@@ -1126,13 +1126,13 @@ def stencils_61_62(
     rho_new: Field[[CellDim, KDim], float],
     exner_new: Field[[CellDim, KDim], float],
     w_new: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int],
+    k_field: Field[[KDim], int32],
     dtime: float,
-    nlev: int,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    nlev: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _stencils_61_62(
         rho_now,

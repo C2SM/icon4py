@@ -76,10 +76,10 @@ def mo_solve_nonhydro_stencil_20(
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
     z_dexner_dz_c_2: Field[[CellDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_20(
         inv_dual_edge_length,

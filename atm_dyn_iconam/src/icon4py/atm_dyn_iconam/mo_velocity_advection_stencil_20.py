@@ -15,6 +15,7 @@ from gt4py.next.ffront.fbuiltins import (
     Field,
     abs,
     broadcast,
+    int32,
     minimum,
     neighbor_sum,
     where,
@@ -97,10 +98,10 @@ def mo_velocity_advection_stencil_20(
     cfl_w_limit: float,
     scalfac_exdiff: float,
     dtime: float,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_velocity_advection_stencil_20(
         levelmask,

@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 
@@ -35,10 +35,10 @@ def mo_solve_nonhydro_stencil_41(
     z_theta_v_fl_e: Field[[EdgeDim, KDim], float],
     z_flxdiv_mass: Field[[CellDim, KDim], float],
     z_flxdiv_theta: Field[[CellDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_41(
         geofac_div,

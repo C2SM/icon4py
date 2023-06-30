@@ -85,6 +85,7 @@ def test_nonhydro_predictor_step(
     savepoint_velocity_init,
     diffusion_savepoint_init,
     metrics_savepoint,
+    metrics_nonhydro_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
 ):
@@ -97,6 +98,7 @@ def test_nonhydro_predictor_step(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
     )
+    sp_met_nh = metrics_nonhydro_savepoint
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
     ntl1 = sp.get_metadata("ntl1").get("ntl1")
@@ -123,8 +125,8 @@ def test_nonhydro_predictor_step(
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(),
-        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(),
+        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(ntnd),
+        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(ntnd),
         ntnd=ntnd,
     )
 
@@ -139,8 +141,6 @@ def test_nonhydro_predictor_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_adv=sp_v.ddt_vn_apc_pc_before(),
-        ddt_w_adv=sp_v.ddt_w_adv_pc_before(),
         ntl1=ntl1,
         ntl2=ntl2,
         rho_incr=None,  # TODO @nfarabullini: change back to this sp.rho_incr()
@@ -156,37 +156,39 @@ def test_nonhydro_predictor_step(
         rho=sp_dif.rho(),
         exner=sp_dif.exner(),
     )
+
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
 
     metric_state_nonhydro = MetricStateNonHydro(
-        exner_exfac=sp_met.exner_exfac(),
-        exner_ref_mc=sp_met.exner_ref_mc(),
-        wgtfacq_c=sp_met.wgtfacq_c(),
-        wgtfacq_c_dsl=sp_met.wgtfacq_c_dsl(),
-        inv_ddqz_z_full=sp_met.inv_ddqz_z_full(),
-        rho_ref_mc=sp_met.rho_ref_mc(),
-        theta_ref_mc=sp_met.theta_ref_mc(),
-        vwind_expl_wgt=sp_met.vwind_expl_wgt(),
-        d_exner_dz_ref_ic=sp_met.d_exner_dz_ref_ic(),
-        ddqz_z_half=sp_met.ddqz_z_half(),
-        theta_ref_ic=sp_met.theta_ref_ic(),
-        d2dexdz2_fac1_mc=sp_met.d2dexdz2_fac1_mc(),
-        d2dexdz2_fac2_mc=sp_met.d2dexdz2_fac2_mc(),
-        vwind_impl_wgt=sp_met.vwind_impl_wgt(),
-        bdy_halo_c=sp_met.bdy_halo_c(),
-        ipeidx_dsl=sp_met.ipeidx_dsl(),
-        pg_exdist=sp_met.pg_exdist_dsl(),
-        hmask_dd3d=sp_met.hmask_dd3d(),
-        scalfac_dd3d=sp_met.scalfac_dd3d(),
-        rayleigh_w=sp_met.rayleigh_w(),
-        rho_ref_me=sp_met.rho_ref_me(),
-        theta_ref_me=sp_met.theta_ref_me(),
-        zdiff_gradp=sp_met.zdiff_gradp_dsl(),
-        mask_prog_halo_c=sp_met.mask_prog_halo_c(),
+        exner_exfac=sp_met_nh.exner_exfac(),
+        exner_ref_mc=sp_met_nh.exner_ref_mc(),
+        wgtfacq_c=sp_met_nh.wgtfacq_c(),
+        inv_ddqz_z_full=sp_met_nh.inv_ddqz_z_full(),
+        rho_ref_mc=sp_met_nh.rho_ref_mc(),
+        vwind_expl_wgt=sp_met_nh.vwind_expl_wgt(),
+        d_exner_dz_ref_ic=sp_met_nh.d_exner_dz_ref_ic(),
+        theta_ref_ic=sp_met_nh.theta_ref_ic(),
+        d2dexdz2_fac1_mc=sp_met_nh.d2dexdz2_fac1_mc(),
+        d2dexdz2_fac2_mc=sp_met_nh.d2dexdz2_fac2_mc(),
+        vwind_impl_wgt=sp_met_nh.vwind_impl_wgt(),
+        bdy_halo_c=sp_met_nh.bdy_halo_c(),
+        ipeidx_dsl=sp_met_nh.ipeidx_dsl(),
+        hmask_dd3d=sp_met_nh.hmask_dd3d(),
+        scalfac_dd3d=sp_met_nh.scalfac_dd3d(),
+        rayleigh_w=sp_met_nh.rayleigh_w(),
+        rho_ref_me=sp_met_nh.rho_ref_me(),
+        theta_ref_me=sp_met_nh.theta_ref_me(),
+        mask_prog_halo_c=sp_met_nh.mask_prog_halo_c(),
+        pg_exdist=sp_met_nh.pg_exdist(),
+        wgtfacq_c_dsl=sp_met_nh.wgtfacq_c_dsl(),
+        zdiff_gradp=sp_met_nh.zdiff_gradp(),
     )
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+
+    prognostic_state_ls = [prognostic_state, prognostic_state]
 
     solve_nonhydro = SolveNonhydro()
     solve_nonhydro.init(
@@ -203,7 +205,7 @@ def test_nonhydro_predictor_step(
         fac=fac,
         z=z,
     )
-    prognostic_state_ls = [prognostic_state, prognostic_state]
+
     solve_nonhydro.run_predictor_step(
         diagnostic_state=diagnostic_state,
         diagnostic_state_nonhydro=diagnostic_state_nonhydro,
@@ -292,6 +294,7 @@ def test_nonhydro_corrector_step(
     savepoint_velocity_init,
     diffusion_savepoint_init,
     metrics_savepoint,
+    metrics_nonhydro_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
 ):
@@ -300,6 +303,7 @@ def test_nonhydro_corrector_step(
     sp_exit = savepoint_nonhydro_exit
     sp_dif = diffusion_savepoint_init
     sp_met = metrics_savepoint
+    sp_met_nh = metrics_nonhydro_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
@@ -331,8 +335,8 @@ def test_nonhydro_corrector_step(
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc(),
-        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(),
+        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(ntnd),
+        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(ntnd),
         ntnd=ntnd,
     )
 
@@ -347,8 +351,6 @@ def test_nonhydro_corrector_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_adv=sp_v.ddt_vn_apc_pc_before(),
-        ddt_w_adv=sp_v.ddt_w_adv_pc_before(),
         ntl1=ntl1,
         ntl2=ntl2,
         rho_incr=None,  # TODO @nfarabullini: change back to this sp.rho_incr()
@@ -369,27 +371,28 @@ def test_nonhydro_corrector_step(
     metric_state = metrics_savepoint.construct_metric_state()
 
     metric_state_nonhydro = MetricStateNonHydro(
-        exner_exfac=sp_met.exner_exfac(),
-        exner_ref_mc=sp_met.exner_ref_mc(),
-        wgtfacq_c=sp_met.wgtfacq_c(),
-        inv_ddqz_z_full=sp_met.inv_ddqz_z_full(),
-        rho_ref_mc=sp_met.rho_ref_mc(),
-        theta_ref_mc=sp_met.theta_ref_mc(),
-        vwind_expl_wgt=sp_met.vwind_expl_wgt(),
-        d_exner_dz_ref_ic=sp_met.d_exner_dz_ref_ic(),
-        ddqz_z_half=sp_met.ddqz_z_half(),
-        theta_ref_ic=sp_met.theta_ref_ic(),
-        d2dexdz2_fac1_mc=sp_met.d2dexdz2_fac1_mc(),
-        d2dexdz2_fac2_mc=sp_met.d2dexdz2_fac2_mc(),
-        vwind_impl_wgt=sp_met.vwind_impl_wgt(),
-        bdy_halo_c=sp_met.bdy_halo_c(),
-        ipeidx_dsl=sp_met.ipeidx_dsl(),
-        hmask_dd3d=sp_met.hmask_dd3d(),
-        scalfac_dd3d=sp_met.scalfac_dd3d(),
-        rayleigh_w=sp_met.rayleigh_w(),
-        rho_ref_me=sp_met.rho_ref_me(),
-        theta_ref_me=sp_met.theta_ref_me(),
-        mask_prog_halo_c=sp_met.mask_prog_halo_c(),
+        exner_exfac=sp_met_nh.exner_exfac(),
+        exner_ref_mc=sp_met_nh.exner_ref_mc(),
+        wgtfacq_c=sp_met_nh.wgtfacq_c(),
+        inv_ddqz_z_full=sp_met_nh.inv_ddqz_z_full(),
+        rho_ref_mc=sp_met_nh.rho_ref_mc(),
+        vwind_expl_wgt=sp_met_nh.vwind_expl_wgt(),
+        d_exner_dz_ref_ic=sp_met_nh.d_exner_dz_ref_ic(),
+        theta_ref_ic=sp_met_nh.theta_ref_ic(),
+        d2dexdz2_fac1_mc=sp_met_nh.d2dexdz2_fac1_mc(),
+        d2dexdz2_fac2_mc=sp_met_nh.d2dexdz2_fac2_mc(),
+        vwind_impl_wgt=sp_met_nh.vwind_impl_wgt(),
+        bdy_halo_c=sp_met_nh.bdy_halo_c(),
+        ipeidx_dsl=sp_met_nh.ipeidx_dsl(),
+        hmask_dd3d=sp_met_nh.hmask_dd3d(),
+        scalfac_dd3d=sp_met_nh.scalfac_dd3d(),
+        rayleigh_w=sp_met_nh.rayleigh_w(),
+        rho_ref_me=sp_met_nh.rho_ref_me(),
+        theta_ref_me=sp_met_nh.theta_ref_me(),
+        mask_prog_halo_c=sp_met_nh.mask_prog_halo_c(),
+        pg_exdist=sp_met_nh.pg_exdist(),
+        wgtfacq_c_dsl=sp_met_nh.wgtfacq_c_dsl(),
+        zdiff_gradp=sp_met_nh.zdiff_gradp(),
     )
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
@@ -470,6 +473,7 @@ def test_run_solve_nonhydro_multi_step(
     savepoint_velocity_init,
     diffusion_savepoint_init,
     metrics_savepoint,
+    metrics_nonhydro_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
 ):
@@ -489,6 +493,7 @@ def test_run_solve_nonhydro_multi_step(
     ntl2 = sp.get_metadata("ntl2").get("ntl2")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     mesh = SimpleMesh()
+    sp_met_nh = metrics_nonhydro_savepoint
     dtime = sp_v.get_metadata("dtime").get("dtime")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     r_nsubsteps = sp_d.get_metadata("nsteps").get("nsteps")
@@ -513,8 +518,8 @@ def test_run_solve_nonhydro_multi_step(
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(),
-        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(),
+        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(ntnd),
+        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(ntnd),
         ntnd=ntnd,
     )
 
@@ -529,8 +534,6 @@ def test_run_solve_nonhydro_multi_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_adv=sp_v.ddt_vn_apc_pc_before(),
-        ddt_w_adv=sp_v.ddt_w_adv_pc_before(),
         ntl1=ntl1,
         ntl2=ntl2,
         rho_incr=None,  # TODO @nfarabullini: change back to this sp.rho_incr()
@@ -551,34 +554,33 @@ def test_run_solve_nonhydro_multi_step(
     metric_state = metrics_savepoint.construct_metric_state()
 
     metric_state_nonhydro = MetricStateNonHydro(
-        exner_exfac=sp_met.exner_exfac(),
-        exner_ref_mc=sp_met.exner_ref_mc(),
-        wgtfacq_c=sp_met.wgtfacq_c(),
-        wgtfacq_c_dsl=sp_met.wgtfacq_c_dsl(),
-        inv_ddqz_z_full=sp_met.inv_ddqz_z_full(),
-        rho_ref_mc=sp_met.rho_ref_mc(),
-        theta_ref_mc=sp_met.theta_ref_mc(),
-        vwind_expl_wgt=sp_met.vwind_expl_wgt(),
-        d_exner_dz_ref_ic=sp_met.d_exner_dz_ref_ic(),
-        ddqz_z_half=sp_met.ddqz_z_half(),
-        theta_ref_ic=sp_met.theta_ref_ic(),
-        d2dexdz2_fac1_mc=sp_met.d2dexdz2_fac1_mc(),
-        d2dexdz2_fac2_mc=sp_met.d2dexdz2_fac2_mc(),
-        vwind_impl_wgt=sp_met.vwind_impl_wgt(),
-        bdy_halo_c=sp_met.bdy_halo_c(),
-        ipeidx_dsl=sp_met.ipeidx_dsl(),
-        pg_exdist=sp_met.pg_exdist_dsl(),
-        hmask_dd3d=sp_met.hmask_dd3d(),
-        scalfac_dd3d=sp_met.scalfac_dd3d(),
-        rayleigh_w=sp_met.rayleigh_w(),
-        rho_ref_me=sp_met.rho_ref_me(),
-        theta_ref_me=sp_met.theta_ref_me(),
-        zdiff_gradp=sp_met.zdiff_gradp_dsl(),
-        mask_prog_halo_c=sp_met.mask_prog_halo_c(),
+        exner_exfac=sp_met_nh.exner_exfac(),
+        exner_ref_mc=sp_met_nh.exner_ref_mc(),
+        wgtfacq_c=sp_met_nh.wgtfacq_c(),
+        inv_ddqz_z_full=sp_met_nh.inv_ddqz_z_full(),
+        rho_ref_mc=sp_met_nh.rho_ref_mc(),
+        vwind_expl_wgt=sp_met_nh.vwind_expl_wgt(),
+        d_exner_dz_ref_ic=sp_met_nh.d_exner_dz_ref_ic(),
+        theta_ref_ic=sp_met_nh.theta_ref_ic(),
+        d2dexdz2_fac1_mc=sp_met_nh.d2dexdz2_fac1_mc(),
+        d2dexdz2_fac2_mc=sp_met_nh.d2dexdz2_fac2_mc(),
+        vwind_impl_wgt=sp_met_nh.vwind_impl_wgt(),
+        bdy_halo_c=sp_met_nh.bdy_halo_c(),
+        ipeidx_dsl=sp_met_nh.ipeidx_dsl(),
+        hmask_dd3d=sp_met_nh.hmask_dd3d(),
+        scalfac_dd3d=sp_met_nh.scalfac_dd3d(),
+        rayleigh_w=sp_met_nh.rayleigh_w(),
+        rho_ref_me=sp_met_nh.rho_ref_me(),
+        theta_ref_me=sp_met_nh.theta_ref_me(),
+        mask_prog_halo_c=sp_met_nh.mask_prog_halo_c(),
+        pg_exdist=sp_met_nh.pg_exdist(),
+        wgtfacq_c_dsl=sp_met_nh.wgtfacq_c_dsl(),
+        zdiff_gradp=sp_met_nh.zdiff_gradp(),
     )
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+
     prognostic_state_ls = [prognostic_state, prognostic_state]
 
     solve_nonhydro = SolveNonhydro()

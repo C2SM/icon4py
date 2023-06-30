@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -37,10 +37,10 @@ def mo_solve_nonhydro_stencil_34(
     vn_traj: Field[[EdgeDim, KDim], float],
     mass_flx_me: Field[[EdgeDim, KDim], float],
     r_nsubsteps: float,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_34(
         z_vn_avg,

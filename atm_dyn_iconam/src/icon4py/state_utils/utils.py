@@ -47,10 +47,10 @@ def indices_field(dim: Dimension, mesh, is_halfdim, dtype=int):
 
 
 def _allocate(*dims: Dimension, mesh, dtype=float):
-    return zero_field(*dims, mesh=mesh, dtype=dtype)
+    return zero_field(mesh, *dims, dtype=dtype)
 
 
-def _allocate_indices(*dims: Dimension, mesh, is_halfdim=False, dtype=int):
+def _allocate_indices(*dims: Dimension, mesh, is_halfdim=False, dtype=int32):
     return indices_field(*dims, mesh=mesh, is_halfdim=is_halfdim, dtype=dtype)
 
 
@@ -113,10 +113,10 @@ def _set_zero_e_k() -> Field[[EdgeDim, KDim], float]:
 @program
 def set_zero_e_k(
     field: Field[[EdgeDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _set_zero_e_k(
         out=field,
@@ -135,10 +135,10 @@ def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
 @program
 def set_zero_c_k(
     field: Field[[CellDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _set_zero_c_k(
         out=field,

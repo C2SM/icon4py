@@ -35,9 +35,10 @@ class MetricState:
     wgtfacq_e_dsl: Field[[EdgeDim, KDim], float]
     ddxn_z_full: Field[[EdgeDim, KDim], float]
     ddxt_z_full: Field[[EdgeDim, KDim], float]
-    ddqz_z_half: Field[[CellDim, KDim], float]
+    ddqz_z_half: Field[[CellDim, KDim], float]  # half KDim ?
     coeff1_dwdz: Field[[CellDim, KDim], float]
     coeff2_dwdz: Field[[CellDim, KDim], float]
+    zd_vertoffset: Field[[CellDim, C2E2CDim, KDim], int]
 
 
 @dataclass
@@ -48,10 +49,8 @@ class MetricStateNonHydro:
     wgtfacq_c_dsl: Field[[CellDim, KDim], float]
     inv_ddqz_z_full: Field[[CellDim, KDim], float]
     rho_ref_mc: Field[[CellDim, KDim], float]
-    theta_ref_mc: Field[[CellDim, KDim], float]
     vwind_expl_wgt: Field[[CellDim], float]
     d_exner_dz_ref_ic: Field[[CellDim, KDim], float]
-    ddqz_z_half: Field[[CellDim, KDim], float]  # half KDim ?
     theta_ref_ic: Field[[CellDim, KDim], float]
     d2dexdz2_fac1_mc: Field[[CellDim, KDim], float]
     d2dexdz2_fac2_mc: Field[[CellDim, KDim], float]

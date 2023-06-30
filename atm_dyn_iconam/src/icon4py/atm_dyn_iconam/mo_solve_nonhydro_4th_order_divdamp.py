@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -33,10 +33,10 @@ def mo_solve_nonhydro_4th_order_divdamp(
     scal_divdamp: Field[[KDim], float],
     z_graddiv2_vn: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_4th_order_divdamp(
         scal_divdamp,

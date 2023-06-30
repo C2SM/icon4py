@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import program, scan_operator
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.common.dimension import CellDim, KDim
 
@@ -26,10 +26,10 @@ def _mo_solve_nonhydro_stencil_53_scan(w_state: float, z_q: float, w: float) -> 
 def mo_solve_nonhydro_stencil_53(
     z_q: Field[[CellDim, KDim], float],
     w: Field[[CellDim, KDim], float],
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_53_scan(
         z_q,

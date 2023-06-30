@@ -12,7 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, abs, minimum, neighbor_sum, where
+from gt4py.next.ffront.fbuiltins import (
+    Field,
+    abs,
+    int32,
+    minimum,
+    neighbor_sum,
+    where,
+)
 
 from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
@@ -66,10 +73,10 @@ def mo_velocity_advection_stencil_18(
     scalfac_exdiff: float,
     cfl_w_limit: float,
     dtime: float,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_velocity_advection_stencil_18(
         levelmask,
