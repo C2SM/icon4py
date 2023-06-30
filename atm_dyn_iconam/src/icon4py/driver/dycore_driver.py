@@ -35,7 +35,7 @@ from icon4py.driver.io_utils import (
     read_initial_state,
     read_static_fields,
 )
-from icon4py.driver.parallel_setup import get_processor_properties
+from icon4py.decomposition.parallel_setup import get_processor_properties
 
 
 helpers = import_testutils()

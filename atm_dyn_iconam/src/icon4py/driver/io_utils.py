@@ -24,7 +24,7 @@ from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.interpolation_state import InterpolationState
 from icon4py.diffusion.metric_state import MetricState
 from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.driver.parallel_setup import DecompositionInfo
+from icon4py.decomposition.parallel_setup import DecompositionInfo
 
 
 SERIALBOX_ONLY_MSG = "Only ser_type='sb (Serialbox)' is implemented so far."

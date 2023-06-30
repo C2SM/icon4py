@@ -27,7 +27,7 @@ from icon4py.driver.io_utils import (
     read_icon_grid,
     read_static_fields,
 )
-from icon4py.driver.parallel_setup import (
+from icon4py.decomposition.parallel_setup import (
     DecompositionInfo,
     Exchange,
     get_processor_properties,
