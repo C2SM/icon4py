@@ -62,7 +62,7 @@ class DirectivesScanner(Step):
             scanned_directives = []
             lines = f.readlines()
             for lnumber, string in enumerate(lines):
-                if ts.DIRECTIVE_IDENT in string:
+                if ts.DIRECTIVE_IDENT in string and not '!' + ts.DIRECTIVE_IDENT in string:
                     stripped = string.strip()
                     eol = stripped[-1]
                     scanned = Scanned(string, lnumber)
