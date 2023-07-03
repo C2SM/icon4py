@@ -30,6 +30,11 @@ extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
 
 
+@pytest.fixture
+def get_data_path(setup_icon_data):
+    return extracted_path
+
+
 @pytest.fixture(scope="session")
 def setup_icon_data():
     """
@@ -91,8 +96,8 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):
     """
     Load data from ICON savepoint at start of diffusion module.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    date of the timestamp to be selected can be set seperately by overriding the 'step_date_init'
+    fixture, passing 'step_date_init=<iso_string>'
 
     linit flag can be set by overriding the 'linit' fixture
     """
@@ -126,14 +131,15 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep, jstep):
 
 
 @pytest.fixture
-def diffusion_savepoint_exit(data_provider, step_date_exit):
+def diffusion_savepoint_exit(data_provider, linit, step_date_exit):
+
     """
     Load data from ICON savepoint at exist of diffusion module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    sp = data_provider.from_savepoint_diffusion_exit(linit=False, date=step_date_exit)
+    sp = data_provider.from_savepoint_diffusion_exit(linit=linit, date=step_date_exit)
     return sp
 
 
@@ -197,7 +203,7 @@ def grid_savepoint(data_provider):
 
 
 @pytest.fixture
-def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
+def r04b09_diffusion_config() -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 

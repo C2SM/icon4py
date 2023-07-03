@@ -115,6 +115,10 @@ def test_mo_nh_diffusion_stencil_15():
         vcoef_new,
         theta_v,
         z_temp,
+        horizontal_start=int32(0),
+        horizontal_end=int32(mesh.n_cells),
+        vertical_start=int32(0),
+        vertical_end=int32(mesh.k_level),
         offset_provider={
             "C2E2C": mesh.get_c2e2c_offset_provider(),
             "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, mesh.n_c2e2c),

@@ -47,7 +47,7 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_16 import (
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
 )
-from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.state_utils.utils import _set_bool_c_k, _set_zero_c_k
 
 
@@ -134,7 +134,7 @@ def fused_stencils_4_5_6(
 @field_operator
 def _fused_stencils_9_10(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     local_z_w_concorr_mc: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
@@ -160,7 +160,7 @@ def _fused_stencils_9_10(
 @program(grid_type=GridType.UNSTRUCTURED)
 def fused_stencils_9_10(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     local_z_w_concorr_mc: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
@@ -304,7 +304,7 @@ def fused_stencil_14(
 def _fused_stencils_16_to_17(
     w: Field[[CellDim, KDim], float],
     local_z_v_grad_w: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     local_z_w_con_c: Field[[CellDim, KDim], float],
     coeff1_dwdz: Field[[CellDim, KDim], float],
     coeff2_dwdz: Field[[CellDim, KDim], float],
@@ -324,7 +324,7 @@ def _fused_stencils_16_to_17(
 def fused_stencils_16_to_17(
     w: Field[[CellDim, KDim], float],
     local_z_v_grad_w: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     local_z_w_con_c: Field[[CellDim, KDim], float],
     coeff1_dwdz: Field[[CellDim, KDim], float],
     coeff2_dwdz: Field[[CellDim, KDim], float],

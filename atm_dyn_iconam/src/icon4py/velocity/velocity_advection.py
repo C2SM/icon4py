@@ -279,36 +279,40 @@ class VelocityAdvection:
         )
 
         # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
-        # mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
-        #     z_kin_hor_e,
-        #     self.interpolation_state.e_bln_c_s,
-        #     self.z_ekinh,
-        #     horizontal_start=indices_3_1,
-        #     horizontal_end=indices_3_2,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={"C2E": self.grid.get_c2e_connectivity()},
-        # )
+        mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
+            z_kin_hor_e,
+            self.interpolation_state.e_bln_c_s,
+            self.z_ekinh,
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={
+                "C2E": self.grid.get_c2e_connectivity(),
+                "C2CE": self.grid.get_c2ce_connectivity(),
+            },
+        )
 
         # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
-        # velocity_prog.fused_stencils_9_10.with_backend(run_gtfn)(
-        #     z_w_concorr_me,
-        #     self.interpolation_state.e_bln_c_s,
-        #     self.z_w_concorr_mc,
-        #     self.metric_state.wgtfac_c,
-        #     diagnostic_state.w_concorr_c,
-        #     self.k_field,
-        #     self.vertical_params.nflatlev,
-        #     self.grid.n_lev(),
-        #     horizontal_start=indices_3_1,
-        #     horizontal_end=indices_3_2,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={
-        #         "C2E": self.grid.get_c2e_connectivity(),
-        #         "Koff": KDim,
-        #     },
-        # )
+        velocity_prog.fused_stencils_9_10.with_backend(run_gtfn)(
+            z_w_concorr_me,
+            self.interpolation_state.e_bln_c_s,
+            self.z_w_concorr_mc,
+            self.metric_state.wgtfac_c,
+            diagnostic_state.w_concorr_c,
+            self.k_field,
+            self.vertical_params.nflatlev,
+            self.grid.n_lev(),
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={
+                "C2E": self.grid.get_c2e_connectivity(),
+                "C2CE": self.grid.get_c2ce_connectivity(),
+                "Koff": KDim,
+            },
+        )
 
         velocity_prog.fused_stencils_11_to_13.with_backend(run_gtfn)(
             prognostic_state.w,
@@ -358,23 +362,24 @@ class VelocityAdvection:
         )
 
         # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
-        # velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
-        #     prognostic_state.w,
-        #     self.z_v_grad_w,
-        #     self.interpolation_state.e_bln_c_s,
-        #     self.z_w_con_c,
-        #     self.metric_state.coeff1_dwdz,
-        #     self.metric_state.coeff2_dwdz,
-        #     diagnostic_state.ddt_w_adv_pc,
-        #     horizontal_start=indices_4_1,
-        #     horizontal_end=indices_4_2,
-        #     vertical_start=1,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={
-        #         "C2E": self.grid.get_c2e_connectivity(),
-        #         "Koff": KDim,
-        #     },
-        # )
+        velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
+            prognostic_state.w,
+            self.z_v_grad_w,
+            self.interpolation_state.e_bln_c_s,
+            self.z_w_con_c,
+            self.metric_state.coeff1_dwdz,
+            self.metric_state.coeff2_dwdz,
+            diagnostic_state.ddt_w_adv_pc,
+            horizontal_start=indices_4_1,
+            horizontal_end=indices_4_2,
+            vertical_start=1,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={
+                "C2E": self.grid.get_c2e_connectivity(),
+                "C2CE": self.grid.get_c2ce_connectivity(),
+                "Koff": KDim,
+            },
+        )
 
         mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
             self.levelmask,
@@ -551,16 +556,19 @@ class VelocityAdvection:
         )
 
         # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
-        # mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
-        #     z_kin_hor_e,
-        #     self.interpolation_state.e_bln_c_s,
-        #     self.z_ekinh,
-        #     horizontal_start=indices_3_1,
-        #     horizontal_end=indices_3_2,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={"C2E": self.grid.get_c2e_connectivity()},
-        # )
+        mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
+            z_kin_hor_e,
+            self.interpolation_state.e_bln_c_s,
+            self.z_ekinh,
+            horizontal_start=indices_3_1,
+            horizontal_end=indices_3_2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={
+                "C2E": self.grid.get_c2e_connectivity(),
+                "C2CE": self.grid.get_c2ce_connectivity(),
+            },
+        )
 
         velocity_prog.fused_stencils_11_to_13.with_backend(run_gtfn)(
             prognostic_state.w,
@@ -610,23 +618,24 @@ class VelocityAdvection:
         )
 
         # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
-        # velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
-        #     prognostic_state.w,
-        #     self.z_v_grad_w,
-        #     self.interpolation_state.e_bln_c_s,
-        #     self.z_w_con_c,
-        #     self.metric_state.coeff1_dwdz,
-        #     self.metric_state.coeff2_dwdz,
-        #     diagnostic_state.ddt_w_adv_pc,
-        #     horizontal_start=indices_4_1,
-        #     horizontal_end=indices_4_2,
-        #     vertical_start=1,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={
-        #         "C2E": self.grid.get_c2e_connectivity(),
-        #         "Koff": KDim,
-        #     },
-        # )
+        velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
+            prognostic_state.w,
+            self.z_v_grad_w,
+            self.interpolation_state.e_bln_c_s,
+            self.z_w_con_c,
+            self.metric_state.coeff1_dwdz,
+            self.metric_state.coeff2_dwdz,
+            diagnostic_state.ddt_w_adv_pc,
+            horizontal_start=indices_4_1,
+            horizontal_end=indices_4_2,
+            vertical_start=1,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={
+                "C2E": self.grid.get_c2e_connectivity(),
+                "C2CE": self.grid.get_c2ce_connectivity(),
+                "Koff": KDim,
+            },
+        )
 
         mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
             self.levelmask,

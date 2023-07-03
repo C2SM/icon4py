@@ -14,8 +14,12 @@
 from dataclasses import dataclass
 
 from gt4py.next.common import Field
+from numpy import int32
 
-from icon4py.common.dimension import C2E2CDim, CellDim, ECDim, EdgeDim, KDim
+from icon4py.common.dimension import CellDim, CECDim, ECDim, EdgeDim, KDim
+
+
+
 
 
 @dataclass
@@ -25,9 +29,9 @@ class MetricState:
     wgtfac_c: Field[
         [CellDim, KDim], float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
-    zd_vertidx: Field[[CellDim, C2E2CDim, KDim], int]
+    zd_vertidx: Field[[CECDim, KDim], int32]
     zd_diffcoef: Field[[CellDim, KDim], float]
-    zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float]
+    zd_intcoef: Field[[CECDim, KDim], float]
 
     coeff_gradekin: Field[[ECDim], float]
     ddqz_z_full_e: Field[[EdgeDim, KDim], float]
@@ -38,7 +42,7 @@ class MetricState:
     ddqz_z_half: Field[[CellDim, KDim], float]  # half KDim ?
     coeff1_dwdz: Field[[CellDim, KDim], float]
     coeff2_dwdz: Field[[CellDim, KDim], float]
-    zd_vertoffset: Field[[CellDim, C2E2CDim, KDim], int]
+    zd_vertoffset: Field[[CECDim, KDim], int32]
 
 
 @dataclass

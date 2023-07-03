@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Dict, Tuple
+from typing import Dict
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind, Field
@@ -19,8 +19,10 @@ from gt4py.next.ffront.fbuiltins import int32, int64
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import (
-    CellDim,
     ECDim,
+    CECDim,
+    CEDim,
+    CellDim,
     ECVDim,
     EdgeDim,
     KDim,
@@ -145,7 +147,7 @@ class IconGrid:
 
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
-    ) -> Tuple[int32, int32]:
+    ) -> tuple[int32, int32]:
         """
         Use to specify domains of a field for field_operator.
 
@@ -201,10 +203,29 @@ class IconGrid:
         return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
 
     def get_e2ecv_connectivity(self):
-        old_shape = self.connectivities["e2c2v"].shape
-        v2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return self._neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities["e2c2v"].shape, EdgeDim, ECVDim
+        )
+
+    def _neighbortable_offset_provider_for_1d_sparse_fields(
+        self,
+        old_shape: tuple[int, int],
+        origin_axis: Dimension,
+        neighbor_axis: Dimension,
+    ):
+        table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
         return NeighborTableOffsetProvider(
-            v2ecv_table, EdgeDim, ECVDim, v2ecv_table.shape[1]
+            table, origin_axis, neighbor_axis, table.shape[1]
+        )
+
+    def get_c2cec_connectivity(self):
+        return self._neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities["c2e2c"].shape, CellDim, CECDim
+        )
+
+    def get_c2ce_connectivity(self):
+        return self._neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities["c2e"].shape, CellDim, CEDim
         )
 
     def get_e2c2e_connectivity(self):

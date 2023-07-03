@@ -244,15 +244,19 @@ def test_diffusion_init(
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
+    edge_params = grid_savepoint.construct_edge_geometry()
+    cell_params = grid_savepoint.construct_cell_geometry()
 
     diffusion = Diffusion()
     diffusion.init(
         grid=icon_grid,
-        vertical_params=vertical_params,
         config=config,
         params=additional_parameters,
+        vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_params,
+        cell_params=cell_params,
     )
 
     assert diffusion.diff_multfac_w == min(
@@ -356,18 +360,22 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     config.ndyn_substeps = datarun_reduced_substeps
     additional_parameters = DiffusionParams(config)
     vct_a = grid_savepoint.vct_a()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
 
     diffusion = Diffusion()
     diffusion.init(
-        config=config,
         grid=icon_grid,
+        config=config,
         params=additional_parameters,
         vertical_params=VerticalModelParams(vct_a, damping_height),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
     )
 
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
@@ -391,6 +399,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
+    edge_params = grid_savepoint.construct_edge_geometry()
+    cell_params = grid_savepoint.construct_cell_geometry()
 
     diffusion = Diffusion()
     diffusion.init(
@@ -400,16 +410,23 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         vertical_params,
         metric_state,
         interpolation_state,
+        edge_params,
+        cell_params,
     )
 
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
-@pytest.mark.skip("fix: diffusion_stencil_15")
-@pytest.mark.parametrize("run_with_program", [True, False])
 @pytest.mark.datatest
+@pytest.mark.parametrize(
+    "step_date_init, step_date_exit",
+    [
+        ("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        ("2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
+        ("2021-06-20T12:01:00.000", "2021-06-20T12:01:00.000"),
+    ],
+)
 def test_run_diffusion_single_step(
-    run_with_program,
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
     interpolation_savepoint,
@@ -434,73 +451,6 @@ def test_run_diffusion_single_step(
     config.ndyn_substeps = datarun_reduced_substeps
     additional_parameters = DiffusionParams(config)
 
-    diffusion = Diffusion(run_program=run_with_program)
-    diffusion.init(
-        grid=icon_grid,
-        config=config,
-        params=additional_parameters,
-        vertical_params=vertical_params,
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
-    )
-    diffusion.time_step(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        dtime=dtime,
-        tangent_orientation=edge_geometry.tangent_orientation,
-        inverse_primal_edge_lengths=edge_geometry.inverse_primal_edge_lengths,
-        inverse_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-        inverse_vert_vert_lengths=edge_geometry.inverse_vertex_vertex_lengths,
-        primal_normal_vert=edge_geometry.primal_normal_vert,
-        dual_normal_vert=edge_geometry.dual_normal_vert,
-        edge_areas=edge_geometry.edge_areas,
-        cell_areas=cell_geometry.area,
-    )
-
-    icon_result_exner = diffusion_savepoint_exit.exner()
-    icon_result_vn = diffusion_savepoint_exit.vn()
-    icon_result_w = diffusion_savepoint_exit.w()
-    icon_result_theta_w = diffusion_savepoint_exit.theta_v()
-
-    assert np.allclose(icon_result_w, np.asarray(prognostic_state.w))
-    assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.vn))
-    assert np.allclose(
-        np.asarray(icon_result_theta_w), np.asarray(prognostic_state.theta_v)
-    )
-    assert np.allclose(
-        np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure)
-    )
-
-
-@pytest.mark.skip("fix: diffusion_stencil_15")
-@pytest.mark.datatest
-def test_diffusion_five_steps(
-    damping_height,
-    r04b09_diffusion_config,
-    icon_grid,
-    grid_savepoint,
-    interpolation_savepoint,
-    metrics_savepoint,
-    diffusion_savepoint_init,
-    diffusion_savepoint_exit,
-    linit=True,
-    step_date_exit="2021-06-20T12:01:00.000",
-):
-    dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
-    metric_state = metrics_savepoint.construct_metric_state()
-    diagnostic_state = diffusion_savepoint_init.construct_diagnostics()
-    prognostic_state = diffusion_savepoint_init.construct_prognostics()
-
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
-    )
-
-    additional_parameters = DiffusionParams(r04b09_diffusion_config)
-    config = r04b09_diffusion_config
-    config.ndyn_substeps = datarun_reduced_substeps
     diffusion = Diffusion()
     diffusion.init(
         grid=icon_grid,
@@ -509,44 +459,111 @@ def test_diffusion_five_steps(
         vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
     )
-    diffusion.initial_step(
+    _verify_diffusion_fields(
+        diagnostic_state, prognostic_state, diffusion_savepoint_init
+    )
+    assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
+    diffusion.run(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
-        tangent_orientation=edge_geometry.tangent_orientation,
-        inverse_primal_edge_lengths=edge_geometry.inverse_primal_edge_lengths,
-        inverse_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-        inverse_vert_vert_lengths=edge_geometry.inverse_vertex_vertex_lengths,
-        primal_normal_vert=edge_geometry.primal_normal_vert,
-        dual_normal_vert=edge_geometry.dual_normal_vert,
-        edge_areas=edge_geometry.edge_areas,
-        cell_areas=cell_geometry.area,
     )
-    for _ in range(4):
-        diffusion.time_step(
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-            tangent_orientation=edge_geometry.tangent_orientation,
-            inverse_primal_edge_lengths=edge_geometry.inverse_primal_edge_lengths,
-            inverse_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-            inverse_vert_vert_lengths=edge_geometry.inverse_vertex_vertex_lengths,
-            primal_normal_vert=edge_geometry.primal_normal_vert,
-            dual_normal_vert=edge_geometry.dual_normal_vert,
-            edge_areas=edge_geometry.edge_areas,
-            cell_areas=cell_geometry.area,
-        )
+    _verify_diffusion_fields(
+        diagnostic_state, prognostic_state, diffusion_savepoint_exit
+    )
 
-    icon_result_exner = diffusion_savepoint_exit.exner()
-    icon_result_vn = diffusion_savepoint_exit.vn()
-    icon_result_w = diffusion_savepoint_exit.w()
-    icon_result_theta_w = diffusion_savepoint_exit.theta_v()
-    assert np.allclose(icon_result_w, np.asarray(prognostic_state.w))
-    assert np.allclose(np.asarray(icon_result_vn), np.asarray(prognostic_state.vn))
-    assert np.allclose(
-        np.asarray(icon_result_theta_w), np.asarray(prognostic_state.theta_v)
+
+def _verify_diffusion_fields(
+    diagnostic_state, prognostic_state, diffusion_savepoint_exit
+):
+    ref_div_ic = np.asarray(diffusion_savepoint_exit.div_ic())
+    val_div_ic = np.asarray(diagnostic_state.div_ic)
+    ref_hdef_ic = np.asarray(diffusion_savepoint_exit.hdef_ic())
+    val_hdef_ic = np.asarray(diagnostic_state.hdef_ic)
+    assert np.allclose(ref_div_ic, val_div_ic)
+    assert np.allclose(ref_hdef_ic, val_hdef_ic)
+    ref_w = np.asarray(diffusion_savepoint_exit.w())
+    val_w = np.asarray(prognostic_state.w)
+    ref_dwdx = np.asarray(diffusion_savepoint_exit.dwdx())
+    val_dwdx = np.asarray(diagnostic_state.dwdx)
+    ref_dwdy = np.asarray(diffusion_savepoint_exit.dwdy())
+    val_dwdy = np.asarray(diagnostic_state.dwdy)
+    ref_vn = np.asarray(diffusion_savepoint_exit.vn())
+    val_vn = np.asarray(prognostic_state.vn)
+    assert np.allclose(ref_vn, val_vn)
+    assert np.allclose(ref_dwdx, val_dwdx)
+    assert np.allclose(ref_dwdy, val_dwdy)
+    assert np.allclose(ref_w, val_w)
+    ref_exner = np.asarray(diffusion_savepoint_exit.exner())
+    ref_theta_v = np.asarray(diffusion_savepoint_exit.theta_v())
+    val_theta_v = np.asarray(prognostic_state.theta_v)
+    val_exner = np.asarray(prognostic_state.exner_pressure)
+    assert np.allclose(ref_theta_v, val_theta_v)
+    assert np.allclose(ref_exner, val_exner)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("linit", [True])
+def test_run_diffusion_initial_step(
+    diffusion_savepoint_init,
+    diffusion_savepoint_exit,
+    interpolation_savepoint,
+    metrics_savepoint,
+    grid_savepoint,
+    icon_grid,
+    r04b09_diffusion_config,
+    damping_height,
+):
+    dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
+    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
+    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    metric_state = metrics_savepoint.construct_metric_state()
+    diagnostic_state = diffusion_savepoint_init.construct_diagnostics()
+    prognostic_state = diffusion_savepoint_init.construct_prognostics()
+    vct_a = grid_savepoint.vct_a()
+    vertical_params = VerticalModelParams(
+        vct_a=vct_a, rayleigh_damping_height=damping_height
     )
-    assert np.allclose(
-        np.asarray(icon_result_exner), np.asarray(prognostic_state.exner_pressure)
+    config = r04b09_diffusion_config
+    config.ndyn_substeps = datarun_reduced_substeps
+    additional_parameters = DiffusionParams(config)
+
+    diffusion = Diffusion()
+    diffusion.init(
+        grid=icon_grid,
+        config=config,
+        params=additional_parameters,
+        vertical_params=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
     )
+    assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
+
+    diffusion.initial_run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        dtime=dtime,
+    )
+
+    _verify_diffusion_fields(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        diffusion_savepoint_exit=diffusion_savepoint_exit,
+    )
+
+
+@pytest.mark.datatest
+def test_verify_stencil15_field_manipulation(interpolation_savepoint, icon_grid):
+    geofac_n2s = np.asarray(interpolation_savepoint.geofac_n2s())
+    int_state = interpolation_savepoint.construct_interpolation_state()
+    geofac_c = np.asarray(int_state.geofac_n2s_c)
+    geofac_nbh = np.asarray(int_state.geofac_n2s_nbh)
+    cec_table = icon_grid.get_c2cec_connectivity().table
+    assert np.allclose(geofac_c, geofac_n2s[:, 0])
+    assert np.allclose(geofac_nbh[cec_table], geofac_n2s[:, 1:])

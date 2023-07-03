@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.common.dimension import C2E2CODim, CellDim, KDim
@@ -32,7 +33,8 @@ class TestMoApplyNabla2ToW(StencilTest):
         z_nabla2_c: np.array,
         geofac_n2s: np.array,
         w: np.array,
-        diff_multfac_w,
+        diff_multfac_w: float,
+        **kwargs,
     ) -> np.array:
         geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
         area = np.expand_dims(area, axis=-1)
@@ -47,12 +49,14 @@ class TestMoApplyNabla2ToW(StencilTest):
         z_nabla2_c = random_field(mesh, CellDim, KDim)
         geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
         w = random_field(mesh, CellDim, KDim)
-        diff_multfac_w = 5.0
-
         return dict(
             area=area,
             z_nabla2_c=z_nabla2_c,
             geofac_n2s=geofac_n2s,
             w=w,
-            diff_multfac_w=diff_multfac_w,
+            diff_multfac_w=5.0,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

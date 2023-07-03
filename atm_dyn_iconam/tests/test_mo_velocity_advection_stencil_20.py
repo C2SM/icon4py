@@ -141,9 +141,7 @@ def test_mo_velocity_advection_stencil_20():
         offset_provider={
             "Koff": KDim,
             "E2C": mesh.get_e2c_offset_provider(),
-            "E2CDim": E2CDim,
             "E2C2EO": mesh.get_e2c2eO_offset_provider(),
-            "E2C2EODim": E2C2EODim,
             "E2V": mesh.get_e2v_offset_provider(),
         },
     )
