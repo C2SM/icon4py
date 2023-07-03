@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
@@ -55,7 +56,7 @@ def _calculate_nabla4(
     return z_nabla4_e2
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_nabla4(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],

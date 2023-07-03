@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_17 import (
     mo_solve_nonhydro_stencil_17,
@@ -19,56 +20,47 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_17 import (
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_17_numpy(
-    e2c: np.array,
-    hmask_dd3d: np.array,
-    scalfac_dd3d: np.array,
-    inv_dual_edge_length: np.array,
-    z_dwdz_dd: np.array,
-    z_graddiv_vn: np.array,
-) -> np.array:
-    scalfac_dd3d = np.expand_dims(scalfac_dd3d, axis=0)
-    hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
-    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+class TestMoSolveNonhydroStencil17(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_17
+    OUTPUTS = ("z_graddiv_vn",)
 
-    z_dwdz_dd_e2c = z_dwdz_dd[e2c]
-    z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
+    @staticmethod
+    def reference(
+        mesh,
+        hmask_dd3d: np.array,
+        scalfac_dd3d: np.array,
+        inv_dual_edge_length: np.array,
+        z_dwdz_dd: np.array,
+        z_graddiv_vn: np.array,
+        **kwargs,
+    ) -> dict:
+        scalfac_dd3d = np.expand_dims(scalfac_dd3d, axis=0)
+        hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
+        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    z_graddiv_vn = z_graddiv_vn + (
-        hmask_dd3d * scalfac_dd3d * inv_dual_edge_length * z_dwdz_dd_weighted
-    )
-    return z_graddiv_vn
+        z_dwdz_dd_e2c = z_dwdz_dd[mesh.e2c]
+        z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
 
+        z_graddiv_vn = z_graddiv_vn + (
+            hmask_dd3d * scalfac_dd3d * inv_dual_edge_length * z_dwdz_dd_weighted
+        )
+        return dict(z_graddiv_vn=z_graddiv_vn)
 
-def test_mo_solve_nonhydro_stencil_17():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        hmask_dd3d = random_field(mesh, EdgeDim)
+        scalfac_dd3d = random_field(mesh, KDim)
+        inv_dual_edge_length = random_field(mesh, EdgeDim)
+        z_dwdz_dd = random_field(mesh, CellDim, KDim)
+        z_graddiv_vn = random_field(mesh, EdgeDim, KDim)
 
-    hmask_dd3d = random_field(mesh, EdgeDim)
-    scalfac_dd3d = random_field(mesh, KDim)
-    inv_dual_edge_length = random_field(mesh, EdgeDim)
-    z_dwdz_dd = random_field(mesh, CellDim, KDim)
-    z_graddiv_vn = random_field(mesh, EdgeDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_17_numpy(
-        mesh.e2c,
-        np.asarray(hmask_dd3d),
-        np.asarray(scalfac_dd3d),
-        np.asarray(inv_dual_edge_length),
-        np.asarray(z_dwdz_dd),
-        np.asarray(z_graddiv_vn),
-    )
-
-    mo_solve_nonhydro_stencil_17(
-        hmask_dd3d,
-        scalfac_dd3d,
-        inv_dual_edge_length,
-        z_dwdz_dd,
-        z_graddiv_vn,
-        offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
-        },
-    )
-    assert np.allclose(z_graddiv_vn, ref)
+        return dict(
+            hmask_dd3d=hmask_dd3d,
+            scalfac_dd3d=scalfac_dd3d,
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_dwdz_dd=z_dwdz_dd,
+            z_graddiv_vn=z_graddiv_vn,
+        )

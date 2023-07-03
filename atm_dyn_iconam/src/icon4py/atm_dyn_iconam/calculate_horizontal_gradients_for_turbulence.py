@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
@@ -28,7 +29,7 @@ def _calculate_horizontal_gradients_for_turbulence(
     return dwdx, dwdy
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_horizontal_gradients_for_turbulence(
     w: Field[[CellDim, KDim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],

@@ -20,13 +20,7 @@ from icon4pytools.liskov.parsing.exceptions import (
     RequiredDirectivesError,
     UnbalancedStencilDirectiveError,
 )
-from icon4pytools.liskov.parsing.parse import (
-    Declare,
-    DirectivesParser,
-    Imports,
-    StartCreate,
-    StartStencil,
-)
+from icon4pytools.liskov.parsing.parse import Declare, DirectivesParser, Imports, StartStencil
 from icon4pytools.liskov.parsing.validation import DirectiveSyntaxValidator
 
 from .conftest import insert_new_lines, scan_for_directives
@@ -64,7 +58,6 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
         [Declare("!$DSL DECLARE(name=foo; bar)", 0, 0)],
         [Imports("!$DSL IMPORTS(foo)", 0, 0)],
         [Imports("!$DSL IMPORTS())", 0, 0)],
-        [StartCreate("!$DSL START CREATE(;)", 0, 0)],
     ),
 )
 def test_directive_syntax_validator(directive):
@@ -77,7 +70,6 @@ def test_directive_syntax_validator(directive):
     "directive",
     [
         "!$DSL IMPORTS()",
-        "!$DSL START CREATE()",
     ],
 )
 def test_directive_semantics_validation_repeated_directives(make_f90_tmpfile, directive):
@@ -113,7 +105,6 @@ def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, direc
     "directive",
     [
         """!$DSL IMPORTS()""",
-        """!$DSL START CREATE()""",
         """!$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; noprofile=True)""",
     ],
 )
