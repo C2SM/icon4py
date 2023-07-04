@@ -62,7 +62,7 @@ class DirectivesScanner(Step):
             scanned_directives = []
             lines = f.readlines()
             for lnumber, string in enumerate(lines):
-                if ts.DIRECTIVE_IDENT in string and not '!' + ts.DIRECTIVE_IDENT in string:
+                if string.strip().startswith(ts.DIRECTIVE_IDENT):
                     stripped = string.strip()
                     eol = stripped[-1]
                     scanned = Scanned(string, lnumber)
@@ -77,12 +77,12 @@ class DirectivesScanner(Step):
                             if ts.DIRECTIVE_IDENT not in next_line:
                                 raise DirectiveSyntaxError(
                                     f"Error in directive on line number: {lnumber + 1}\n Invalid use of & in single line "
-                                    f"directive. "
+                                    f"directive in file {self.input_filepath} ."
                                 )
                             continue
                         case _:
                             raise DirectiveSyntaxError(
-                                f"Error in directive on line number: {lnumber + 1}\n Used invalid end of line character."
+                                f"Error in directive on line number: {lnumber + 1}\n Used invalid end of line characterat in file {self.input_filepath} ."
                             )
         logger.info(f"Scanning for directives at {self.input_filepath}")
         return directives
