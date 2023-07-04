@@ -24,6 +24,7 @@ from gt4py.next.ffront.fbuiltins import (
     log,
     neighbor_sum,
     sqrt,
+    maximum
 )
 
 # from icon4py.testutils.utils import to_icon4py_field, zero_field
@@ -172,7 +173,7 @@ def test_scan_float():
     def k_level_simple(
         state: tuple[float64, float64], input_var1: float64, threshold_level: float64
     ) -> tuple[float64, float64]:
-        if state[0] < threshold_level:
+        if ( state[0] < threshold_level ):
             return (state[0] + 1.0, state[1] + input_var1)
         else:
             return (state[0] + 1.0, state[1])
@@ -196,7 +197,7 @@ def test_scan_float():
     np_a = np.arange(size, dtype=float64)
     np_out = np.zeros(size, dtype=float64)
     for k in range(1, size):
-        if k < int(threshold_level):
+        if ( k < int(threshold_level) ):
             np_out[k] = np_out[k - 1] + np_a[k]
         else:
             np_out[k] = np_out[k - 1]
@@ -221,7 +222,7 @@ def test_scan_integer():
         state: tuple[float64, int32], input_var1: float64, threshold_level: int32
     ) -> tuple[float64, int32]:
         (acm1, acm2) = state
-        if acm2 < threshold_level:
+        if ( acm2 < threshold_level) :
             return (acm1 + input_var1, acm2 + int32(1))
         else:
             return (acm1, acm2 + int32(1))
@@ -244,7 +245,7 @@ def test_scan_integer():
     np_a = np.arange(size, dtype=float64)
     np_out = np.zeros(size, dtype=float64)
     for k in range(1, size):
-        if k < threshold_level:
+        if ( k < threshold_level ):
             np_out[k] = np_out[k - 1] + np_a[k]
         else:
             np_out[k] = np_out[k - 1]
@@ -253,6 +254,56 @@ def test_scan_integer():
     assert np.allclose(out.array(), np_out)
 
     print("test_scan_integer finish")
+
+
+def test_scan_bool():
+
+    size = 10
+    threshold_bool = True
+
+    @scan_operator(
+        axis=KDim,
+        forward=True,
+        init=(0.0, 0),
+    )
+    def k_level_simple(
+        state: tuple[float64, int32], input_var1: float64, threshold_bool: bool
+    ) -> tuple[float64, int32]:
+        (acm1, acm2) = state
+        if ( threshold_bool ):
+            return (acm1 + input_var1, acm2 + int32(1))
+        else:
+            return (acm1, acm2 + int32(1))
+
+    @field_operator
+    def wrapper(
+        input_var1: Field[[KDim], float64],
+        threshold_bool: bool,
+    ) -> Field[[KDim], float64]:
+        output, redundant = k_level_simple(input_var1, threshold_bool)
+        return output
+
+    # gt4py version
+    a = np_as_located_field(KDim)(np.arange(size, dtype=float64))
+    out = np_as_located_field(KDim)(np.zeros((size,), dtype=float64))
+    wrapper(a, threshold_bool, out=out, offset_provider={})
+    print(a.array())
+    print(out.array())
+
+    # numpy version
+    np_a = np.arange(size, dtype=float64)
+    np_out = np.zeros(size, dtype=float64)
+    for k in range(1, size):
+        if ( threshold_bool ):
+            np_out[k] = np_out[k - 1] + np_a[k]
+        else:
+            np_out[k] = np_out[k - 1]
+
+    print(np_out)
+    assert np.allclose(out.array(), np_out)
+
+    print("test_scan_bool finish")
+
 
 
 def test_k_level_1d2d():
@@ -396,7 +447,7 @@ def test_program():
 
     sequence1d = np.arange(size,dtype=float64)
     sequence2d = np.tile(sequence1d,(size,1))
-    print(sequence2d)
+    print("original sequence: ", sequence2d)
     
     @scan_operator(
         axis=KDim,
@@ -450,30 +501,48 @@ def test_program():
 
 
     # gt4py version
-    a = np_as_located_field(CellDim,KDim)(sequence2d)
-    b = np_as_located_field(CellDim,KDim)(sequence2d)
+    a = np_as_located_field(CellDim,KDim)(np.tile(sequence1d,(size,1)))
+    b = np_as_located_field(CellDim,KDim)(np.tile(sequence1d,(size,1)))
     c = np_as_located_field(CellDim,KDim)(np.ones((size,size),dtype=float64))
+    print("before a: ", a.array())
+    print("before b: ", b.array())
     program_wrapper(a,b,c,threshold_level,size,offset_provider={})
     print("a: ", a.array())
     print("b: ", b.array())
     print("c: ", c.array())
 
     # numpy version
-    np_a = sequence2d
-    np_b = sequence2d
+    np_a = np.tile(sequence1d,(size,1))
+    np_b = np.tile(sequence1d,(size,1))
     np_c = np.ones((size,size),dtype=float64)
     np_out = np.zeros((size,size),dtype=float64)
     for i in range(0,size):
         np_out[i,0] = np_c[i,0]
+        np_b[i,0] = np_b[i,0] + np_a[i,0]
         for k in range(1,size):
+            np_b[i,k] = np_b[i,k] + np_a[i,k]
             if ( k < threshold_level ):
                 np_out[i,k] = np_out[i,k-1] + np_c[i,k]
             else:
                 np_out[i,k] = np_out[i,k-1]
 
+    print(np_a)
+    print(sequence2d)
     print(np_out)
+    assert np.allclose(a.array(),np_a)
+    assert np.allclose(b.array(),np_b)
     assert np.allclose(c.array(),np_out)
 
+    print("--------------------------")
+    np_a = sequence1d
+    np_b = sequence1d
+    print("test before a: ", np_a)
+    print("test before b: ", np_b)
+    for i in range(len(sequence1d)):
+        np_b[i] = 0.0
+    print("test after a: ", np_a)
+    print("test after b: ", np_b)
+    
     print('test_program finish')
 
     
@@ -485,39 +554,148 @@ def test_k_level_ellipsis():
     @scan_operator(
         axis=KDim,
         forward=True,
-        init=(0.0, 0.0, 0.0, 0.0),
+        init=(*(0.0,)*3,0.0),
+        #init=(0.0,0.0,0.0,0.0),
     )
     def k_level_add(
-        state: tuple[float64, ...],
+        state: tuple[float64,float64, float64, float64],
         input_var1: float64,
         input_var2: float64,
-    ) -> tuple[float64, ...]:
-        return (state, state + 1.0, state + input_var1, state + input_var1 + input_var2)
+    ) -> tuple[float64, float64, float64, float64]:
+        return (state[0], state[1] + 1.0, state[2] + input_var1, state[3] + input_var1 + input_var2)
 
     @field_operator
     def wrapper(
         input_var1: Field[[KDim], float64],
         input_var2: Field[[KDim], float64],
-    ) -> Field[[KDim], float64]:
+    ) -> tuple[Field[[KDim], float64],Field[[KDim], float64],Field[[KDim], float64],Field[[KDim], float64]]:
         output1, output2, output3, output4 = k_level_add(input_var1, input_var2)
-        return output4
+        return (output1, output2, output3, output4)
 
     # numpy version
     np_cloud = np.ones(k_size, dtype=float64)
     np_ice = np.ones(k_size, dtype=float64)
-    np_all = np.zeros(k_size, dtype=float64)
+    np_out1 = np.zeros(k_size, dtype=float64)
+    np_out2 = np.zeros(k_size, dtype=float64)
+    np_out3 = np.zeros(k_size, dtype=float64)
+    np_out4 = np.zeros(k_size, dtype=float64)
+    np_out2[0] = np_out2[0] + 1.0
+    np_out3[0] = np_cloud[0]
+    np_out4[0] = np_cloud[0] + np_ice[0]
     for k in range(1, k_size):
-        np_all[k] = np_all[k - 1] + np_cloud[k] + np_ice[k]
-    print(np_all)
+        np_out2[k] = np_out2[k - 1] + 1.0
+        np_out3[k] = np_out3[k - 1] + np_cloud[k]
+        np_out4[k] = np_out4[k - 1] + np_cloud[k] + np_ice[k]
+    print(np_out4)
 
     # gt4py version
     cloud = np_as_located_field(KDim)(np.ones((k_size)))
     ice = np_as_located_field(KDim)(np.ones(k_size))
-    out = np_as_located_field(KDim)(np.zeros(k_size))
-    wrapper(cloud, out=out, offset_provider={})
-    print(out.array())
+    out1 = np_as_located_field(KDim)(np.zeros(k_size))
+    out2 = np_as_located_field(KDim)(np.zeros(k_size))
+    out3 = np_as_located_field(KDim)(np.zeros(k_size))
+    out4 = np_as_located_field(KDim)(np.zeros(k_size))
+    wrapper(cloud,ice, out=(out1,out2,out3,out4), offset_provider={})
+    print(out4.array())
 
-    # assert np.allclose(LWP.array(),np_LWP)
+    assert np.allclose(out1.array(),np_out1)
+    assert np.allclose(out2.array(),np_out2)
+    assert np.allclose(out3.array(),np_out3)
+    assert np.allclose(out4.array(),np_out4)
 
     print("test_k_level_ellipsis finish")
+
+
+def test_k_precFlux():
+
+    cell_size = 5
+    k_size = 10
+
+    @field_operator
+    def velocity_precFlux(
+        input_TV: float64,
+        V_intg_factor: float64,
+        V_intg_exp: float64,
+        input_rhoq: float64,
+        input_q: float64,
+        input_q_kup: float64,
+        input_rho_kup: float64,
+        rho_factor: float64,
+        rho_factor_kup: float64,
+        V_intg_exp_1o2: float64,
+        input_V_sedi_min: float64,
+        intercept_param: float64,
+        input_is_top: bool,
+        input_is_surface: bool,
+        is_intercept_param: bool
+    ) -> tuple[float64,float64]:
+
+        TV = 0.0
+        precFlux = 0.0
+        terminal_velocity = V_intg_factor * exp (V_intg_exp * log (input_rhoq)) * rho_factor
+        # Prevent terminal fall speed of snow from being zero at the surface level
+        if ( (input_V_sedi_min != 0.0) & input_is_surface ):
+       
+            terminal_velocity = maximum( terminal_velocity, input_V_sedi_min )
+
+        #if ( input_rhoq > graupel_const.GrConst_qmin ):
+        #   precFlux = input_rhoq * terminal_velocity 
+        TV = terminal_velocity
+
+        return (TV, precFlux)
+
+    @scan_operator(
+        axis=KDim,
+        forward=True,
+        init=(0.0,0.0),
+    )
+    def k_level_add(
+        state: tuple[float64,float64],
+        input_var1: float64,
+        input_var2: float64,
+    ) -> tuple[float64, float64]:
+        (vnew_kup, q_kup) = state
+        vnew, precflux = velocity_precFlux(vnew_kup,1.0,1.0,input_var1,input_var2,q_kup,1.0,1.0,1.0,1.0,1.0,1.0,True,True,True)
+        return (vnew, q_kup)
+
+    @field_operator
+    def wrapper(
+        input_var1: Field[[KDim], float64],
+        input_var2: Field[[KDim], float64],
+    ) -> tuple[Field[[KDim], float64],Field[[KDim], float64]]:
+        output1, output2 = k_level_add(input_var1, input_var2)
+        return (output1, output2)
+
+    # numpy version
+    np_cloud = np.ones(k_size, dtype=float64)
+    np_ice = np.ones(k_size, dtype=float64)
+    np_out1 = np.zeros(k_size, dtype=float64)
+    np_out2 = np.zeros(k_size, dtype=float64)
+    np_out3 = np.zeros(k_size, dtype=float64)
+    np_out4 = np.zeros(k_size, dtype=float64)
+    np_out2[0] = np_out2[0] + 1.0
+    np_out3[0] = np_cloud[0]
+    np_out4[0] = np_cloud[0] + np_ice[0]
+    for k in range(1, k_size):
+        np_out2[k] = np_out2[k - 1] + 1.0
+        np_out3[k] = np_out3[k - 1] + np_cloud[k]
+        np_out4[k] = np_out4[k - 1] + np_cloud[k] + np_ice[k]
+    print(np_out4)
+
+    # gt4py version
+    cloud = np_as_located_field(KDim)(np.ones((k_size)))
+    ice = np_as_located_field(KDim)(np.ones(k_size))
+    out1 = np_as_located_field(KDim)(np.zeros(k_size))
+    out2 = np_as_located_field(KDim)(np.zeros(k_size))
+    out3 = np_as_located_field(KDim)(np.zeros(k_size))
+    out4 = np_as_located_field(KDim)(np.zeros(k_size))
+    wrapper(cloud,ice, out=(out1,out2), offset_provider={})
+    print(out4.array())
+
+    #assert np.allclose(out1.array(),np_out1)
+    #assert np.allclose(out2.array(),np_out2)
+    #assert np.allclose(out3.array(),np_out3)
+    #assert np.allclose(out4.array(),np_out4)
+
+    print("test_k_precFlux finish")
 
