@@ -401,8 +401,8 @@ class SolveNonhydro:
         self.p_ccpr_1 = self.p_ccpr
         self.p_ccpr_2 = self.p_ccpr
         self.ikoffset = np_as_located_field(ECDim, KDim)(
-            np.zeros((100000, 65), dtype=np.int32)
-        )  # TODO: this should not be np_as_located_field, rather a separate function
+            np.zeros((self.grid.num_cells() * 2, self.grid.n_lev()), dtype=np.int32)
+        )
         self.z_graddiv2_vn = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.mass_flx_ic = _allocate(CellDim, KDim, mesh=self.grid)
         self.k_field = _allocate_indices(KDim, mesh=self.grid)
@@ -857,8 +857,8 @@ class SolveNonhydro:
                 self.p_grad_4,
                 self.p_ccpr_1,
                 self.p_ccpr_2,
-                self.interpolation_state.geofac_grg[0],
-                self.interpolation_state.geofac_grg[1],
+                self.interpolation_state.geofac_grg_x,
+                self.interpolation_state.geofac_grg_y,
                 horizontal_start=indices_1_1,
                 horizontal_end=indices_1_2,
                 vertical_start=0,
@@ -880,7 +880,7 @@ class SolveNonhydro:
                     HorizontalMarkerIndex.local(EdgeDim) - 2,
                     HorizontalMarkerIndex.local(EdgeDim) - 2,
                 )
-            # TODO: this makes the code crash but it should not, it is most likely a bounds problem
+
             set_zero_e_k.with_backend(run_gtfn)(
                 field=self.z_rho_e,
                 horizontal_start=tmp_0_0,
@@ -1200,25 +1200,25 @@ class SolveNonhydro:
             HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
-        # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
-        # nhsolve_prog.stencils_39_40.with_backend(run_gtfn)(
-        #     self.interpolation_state.e_bln_c_s,
-        #     self.z_w_concorr_me,
-        #     self.metric_state.wgtfac_c,
-        #     self.metric_state_nonhydro.wgtfacq_c_dsl,
-        #     diagnostic_state.w_concorr_c,
-        #     self.k_field,
-        #     self.vertical_params.nflatlev + 1,
-        #     self.grid.n_lev(),
-        #     horizontal_start=indices_9_1,
-        #     horizontal_end=indices_9_2,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.n_lev() + 1,
-        #     offset_provider={
-        #         "C2E": self.grid.get_c2e_connectivity(),
-        #         "Koff": KDim,
-        #     },
-        # )
+        nhsolve_prog.stencils_39_40.with_backend(run_gtfn)(
+            self.interpolation_state.e_bln_c_s,
+            self.z_w_concorr_me,
+            self.metric_state.wgtfac_c,
+            self.metric_state_nonhydro.wgtfacq_c_dsl,
+            diagnostic_state.w_concorr_c,
+            self.k_field,
+            self.vertical_params.nflatlev + 1,
+            self.grid.n_lev(),
+            horizontal_start=indices_9_1,
+            horizontal_end=indices_9_2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev() + 1,
+            offset_provider={
+                "C2E": self.grid.get_c2e_connectivity(),
+                "C2CE": self.grid.get_c2ce_connectivity(),
+                "Koff": KDim,
+            },
+        )
 
         (indices_10_1, indices_10_2) = self.grid.get_indices_from_to(
             CellDim,
@@ -1226,22 +1226,22 @@ class SolveNonhydro:
             HorizontalMarkerIndex.local(CellDim),
         )
 
-        # TODO: @nfarabullini geofac_div has wrong dimensions
-        # if config.idiv_method == 1:
-        #     mo_solve_nonhydro_stencil_41.with_backend(run_gtfn)(
-        #         self.interpolation_state.geofac_div,
-        #         diagnostic_state_nonhydro.mass_fl_e,
-        #         self.z_theta_v_fl_e,
-        #         self.z_flxdiv_mass,
-        #         self.z_flxdiv_theta,
-        #         horizontal_start=indices_10_1,
-        #         horizontal_end=indices_10_2,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={
-        #             "C2E": self.grid.get_c2e_connectivity(),
-        #         },
-        #     )
+        if config.idiv_method == 1:
+            mo_solve_nonhydro_stencil_41.with_backend(run_gtfn)(
+                self.interpolation_state.geofac_div,
+                diagnostic_state_nonhydro.mass_fl_e,
+                self.z_theta_v_fl_e,
+                self.z_flxdiv_mass,
+                self.z_flxdiv_theta,
+                horizontal_start=indices_10_1,
+                horizontal_end=indices_10_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={
+                    "C2E": self.grid.get_c2e_connectivity(),
+                    "C2CE": self.grid.get_c2ce_connectivity(),
+                },
+            )
 
         # TODO @nfarabullini: ddt_vn_adv and ddt_w_adv missing from serialzed data, implement also in structure again
         # check for p_nh%prog(nnow)% fields and new
@@ -1757,22 +1757,21 @@ class SolveNonhydro:
                     offset_provider={},
                 )
 
-        # TODO: @nfarabullini geofac_div has wrong dimensions
-        # if config.idiv_method == 1:
-        #     mo_solve_nonhydro_stencil_41.with_backend(run_gtfn)(
-        #         self.interpolation_state.geofac_div,
-        #         diagnostic_state_nonhydro.mass_fl_e,
-        #         self.z_theta_v_fl_e,
-        #         self.z_flxdiv_mass,
-        #         self.z_flxdiv_theta,
-        #         horizontal_start=indices_1_1,
-        #         horizontal_end=indices_1_2,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={
-        #             "C2E": self.grid.get_c2e_connectivity(),
-        #         },
-        #     )
+        if config.idiv_method == 1:
+            mo_solve_nonhydro_stencil_41.with_backend(run_gtfn)(
+                self.interpolation_state.geofac_div,
+                diagnostic_state_nonhydro.mass_fl_e,
+                self.z_theta_v_fl_e,
+                self.z_flxdiv_mass,
+                self.z_flxdiv_theta,
+                horizontal_start=indices_1_1,
+                horizontal_end=indices_1_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={
+                    "C2E": self.grid.get_c2e_connectivity(),
+                },
+            )
 
         (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
             CellDim,

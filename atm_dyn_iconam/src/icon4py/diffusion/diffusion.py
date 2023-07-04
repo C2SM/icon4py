@@ -543,7 +543,6 @@ class Diffusion:
         runs a diffusion step for the parameter linit=False, within regular time loop.
         """
 
-
         self._do_diffusion_step(
             diagnostic_state=diagnostic_state,
             prognostic_state=prognostic_state,

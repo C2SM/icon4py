@@ -19,10 +19,10 @@ from gt4py.next.ffront.fbuiltins import int32, int64
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.common.dimension import (
-    ECDim,
     CECDim,
     CEDim,
     CellDim,
+    ECDim,
     ECVDim,
     EdgeDim,
     KDim,

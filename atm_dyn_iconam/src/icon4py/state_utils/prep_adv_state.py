@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 from gt4py.next.common import Field
 
-
 from icon4py.common.dimension import EdgeDim, KDim
 
 

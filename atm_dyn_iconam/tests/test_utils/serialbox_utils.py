@@ -389,7 +389,6 @@ class InterpolationSavepoint(IconSavepoint):
 
 
 class MetricSavepoint(IconSavepoint):
-
     def coeff1_dwdz(self):
         return self._get_field("coeff1_dwdz", CellDim, KDim)
 

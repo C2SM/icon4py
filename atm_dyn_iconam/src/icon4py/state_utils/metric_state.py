@@ -16,10 +16,7 @@ from dataclasses import dataclass
 from gt4py.next.common import Field
 from numpy import int32
 
-from icon4py.common.dimension import CellDim, CECDim, ECDim, EdgeDim, KDim
-
-
-
+from icon4py.common.dimension import CECDim, CellDim, ECDim, EdgeDim, KDim
 
 
 @dataclass

@@ -98,7 +98,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_61 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_62 import (
     _mo_solve_nonhydro_stencil_62,
 )
-from icon4py.common.dimension import C2EDim, CellDim, ECDim, EdgeDim, KDim
+from icon4py.common.dimension import C2EDim, CEDim, CellDim, ECDim, EdgeDim, KDim
 from icon4py.state_utils.utils import _set_zero_c_k, _set_zero_e_k
 
 
@@ -598,7 +598,7 @@ def predictor_stencils_37_38(
 
 @field_operator
 def _stencils_39_40(
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],
@@ -625,7 +625,7 @@ def _stencils_39_40(
 
 @program
 def stencils_39_40(
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],

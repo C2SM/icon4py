@@ -278,7 +278,6 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
-        # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
             z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
@@ -293,7 +292,6 @@ class VelocityAdvection:
             },
         )
 
-        # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
         velocity_prog.fused_stencils_9_10.with_backend(run_gtfn)(
             z_w_concorr_me,
             self.interpolation_state.e_bln_c_s,
@@ -361,7 +359,6 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(CellDim),
         )
 
-        # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
         velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
             prognostic_state.w,
             self.z_v_grad_w,
@@ -555,7 +552,6 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
-        # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
             z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
@@ -617,7 +613,6 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(CellDim),
         )
 
-        # TODO @nfarabullini: e_bln_c_s here has dimensions (Cell:C2E) but in serialized data (CE)
         velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
             prognostic_state.w,
             self.z_v_grad_w,
