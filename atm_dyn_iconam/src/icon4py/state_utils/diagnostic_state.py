@@ -72,9 +72,10 @@ class DiagnosticStateNonHydro:
     mass_fl_e: Field[[EdgeDim, KDim], float]
     ddt_vn_phy: Field[[EdgeDim, KDim], float]
     grf_tend_vn: Field[[EdgeDim, KDim], float]
+    # ddt_vn_adv: Field[[EdgeDim, KDim], float]
+    # ddt_w_adv: Field[[CellDim, KDim], float]
     ntl1: float
     ntl2: float
-
     # Analysis increments
     rho_incr: Field[[EdgeDim, KDim], float]  # moist density increment [kg/m^3]
     vn_incr: Field[[EdgeDim, KDim], float]  # normal velocity increment [m/s]

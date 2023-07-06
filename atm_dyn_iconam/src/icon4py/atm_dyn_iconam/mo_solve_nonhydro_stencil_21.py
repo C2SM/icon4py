@@ -62,7 +62,7 @@ def _mo_solve_nonhydro_stencil_21(
         * inv_dual_edge_length
         * (z_theta_1 - z_theta_0)
         * float(4.0)
-        / (z_theta_0 + z_theta_1) ** 2
+        / (z_theta_0 + z_theta_1) ** 2.0
     )
 
     return z_hydro_corr
@@ -76,8 +76,8 @@ def mo_solve_nonhydro_stencil_21(
     theta_v_ic: Field[[CellDim, KDim], float],
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
-    grav_o_cpd: float,
     z_hydro_corr: Field[[EdgeDim, KDim], float],
+    grav_o_cpd: float,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

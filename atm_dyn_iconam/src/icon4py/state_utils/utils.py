@@ -15,7 +15,14 @@ from typing import Tuple
 import numpy as np
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import abs, broadcast, int32, maximum, minimum
+from gt4py.next.ffront.fbuiltins import (
+    abs,
+    broadcast,
+    int32,
+    maximum,
+    minimum,
+    power,
+)
 from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
@@ -356,7 +363,16 @@ def init_nabla2_factor_in_upper_damping_zone(
 
 
 @field_operator
-def scal_divdamp_calcs(
+def _scal_divdamp_calcs(
     enh_divdamp_fac: Field[[KDim], float], mean_cell_area: float
 ) -> Field[[KDim], float]:
-    return -enh_divdamp_fac * mean_cell_area**2
+    return -enh_divdamp_fac * mean_cell_area**2.0
+
+
+@program
+def scal_divdamp_calcs(
+    enh_divdamp_fac: Field[[KDim], float],
+    out: Field[[KDim], float],
+    mean_cell_area: float,
+):
+    _scal_divdamp_calcs(enh_divdamp_fac, mean_cell_area, out=out)

@@ -141,6 +141,8 @@ def test_nonhydro_predictor_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
+        # ddt_vn_adv=sp.ddt_vn_adv_ntl(),
+        # ddt_w_adv=sp.ddt_w_adv_ntl(),
         ntl1=ntl1,
         ntl2=ntl2,
         rho_incr=None,  # TODO @nfarabullini: change back to this sp.rho_incr()
@@ -642,17 +644,42 @@ def test_run_solve_nonhydro_multi_step(
     icon_result_w_concorr_c = sp_exit.w_concorr_c()
     icon_result_w_new = sp_exit.w_new()
 
-    a = 1
-
-    # assert np.allclose(np.asarray(icon_result_exner_new), np.asarray(prognostic_state_ls[nnew].exner)
-    # assert np.allclose(np.asarray(icon_result_exner_now), np.asarray(prognostic_state_ls[nnow].exner))
-    # assert np.allclose(np.asarray(icon_result_prep_adv_mass_flx_me), np.asarray(prep_adv.mass_flx_me))
-    # assert np.allclose(np.asarray(icon_result_mass_fl_e), np.asarray(diagnostic_state_nonhydro.mass_fl_e))
-    # assert np.allclose(np.asarray(icon_result_prep_adv_vn_traj), np.asarray(prep_adv.vn_traj))
-    # assert np.allclose(np.asarray(icon_result_rho_ic), np.asarray(diagnostic_state_nonhydro.rho_ic))
-    # assert np.allclose(np.asarray(icon_result_theta_v_ic), np.asarray(diagnostic_state_nonhydro.theta_v_ic))
-    # assert np.allclose(np.asarray(icon_result_theta_v_new), np.asarray(prognostic_state_ls[nnew].theta_v))
-    # assert np.allclose(np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie))
-    # assert np.allclose(np.asarray(icon_result_vn_new), np.asarray(prognostic_state_ls[nnew].vn))
-    # assert np.allclose(np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c))
-    # assert np.allclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state_ls[nnew].w))
+    assert np.allclose(
+        np.asarray(icon_result_exner_new), np.asarray(prognostic_state_ls[nnew].exner)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_exner_now), np.asarray(prognostic_state_ls[nnow].exner)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_prep_adv_mass_flx_me), np.asarray(prep_adv.mass_flx_me)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_mass_fl_e),
+        np.asarray(diagnostic_state_nonhydro.mass_fl_e),
+    )
+    assert np.allclose(
+        np.asarray(icon_result_prep_adv_vn_traj), np.asarray(prep_adv.vn_traj)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_rho_ic), np.asarray(diagnostic_state_nonhydro.rho_ic)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_theta_v_ic),
+        np.asarray(diagnostic_state_nonhydro.theta_v_ic),
+    )
+    assert np.allclose(
+        np.asarray(icon_result_theta_v_new),
+        np.asarray(prognostic_state_ls[nnew].theta_v),
+    )
+    assert np.allclose(
+        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_vn_new), np.asarray(prognostic_state_ls[nnew].vn)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c)
+    )
+    assert np.allclose(
+        np.asarray(icon_result_w_new), np.asarray(prognostic_state_ls[nnew].w)
+    )
