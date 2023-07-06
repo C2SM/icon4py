@@ -71,7 +71,7 @@ def test_graupel_serialized_data():
     ldiag_ttend = True
     ldiag_qtend = True
     num_cells = int32(2)
-    kstart_moist = 0
+    kstart_moist = int32(0)
     kend = int32(2)
     kend_moist = int32(2)
 
@@ -106,9 +106,9 @@ def test_graupel_serialized_data():
         ddt_tend_qr,
         ddt_tend_qs,
         ddt_tend_qg,
-        pri_gsp,
         prr_gsp,
         prs_gsp,
+        pri_gsp,
         prg_gsp,
         qrsflux,
         l_cv,
