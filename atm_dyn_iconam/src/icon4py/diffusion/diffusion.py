@@ -332,7 +332,7 @@ class DiffusionParams:
                 (
                     smagorinski_factor,
                     smagorinski_height,
-                ) = self._diffusion_type_5_smagorinski_factor(config)
+                ) = diffusion_type_5_smagorinski_factor(config)
             case 4:
                 # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
                 # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
@@ -349,19 +349,20 @@ class DiffusionParams:
                 pass
         return smagorinski_factor, smagorinski_height
 
-    @staticmethod
-    def _diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
-        """
-        Initialize Smagorinski factors used in diffusion type 5.
 
-        The calculation and magic numbers are taken from mo_diffusion_nml.f90
-        """
-        magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
-        magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
-        magic_z2 = 1600.0 + 50000.0 + magic_sqrt
-        factor = (config.smagorinski_scaling_factor, magic_fac2_value, 0.0, 1.0)
-        heights = (32500.0, magic_z2, 50000.0, 90000.0)
-        return factor, heights
+
+def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
+    """
+    Initialize Smagorinski factors used in diffusion type 5.
+
+    The calculation and magic numbers are taken from mo_diffusion_nml.f90
+    """
+    magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
+    magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
+    magic_z2 = 1600.0 + 50000.0 + magic_sqrt
+    factor = (config.smagorinski_scaling_factor, magic_fac2_value, 0.0, 1.0)
+    heights = (32500.0, magic_z2, 50000.0, 90000.0)
+    return factor, heights
 
 
 class Diffusion:
