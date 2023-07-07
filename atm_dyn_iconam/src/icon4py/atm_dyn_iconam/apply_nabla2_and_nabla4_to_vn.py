@@ -32,34 +32,6 @@ def _mo_nh_diffusion_stencil_05_global_mode(
     return vn + z_d_vn_hdf
 
 
-@program
-def mo_nh_diffusion_stencil_05_global_mode(
-    area_edge: Field[[EdgeDim], float],
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    z_nabla4_e2: Field[[EdgeDim, KDim], float],
-    diff_multfac_vn: Field[[KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _mo_nh_diffusion_stencil_05_global_mode(
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        vn,
-        out=vn,
-        domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 @field_operator
 def _apply_nabla2_and_nabla4_to_vn(
     area_edge: Field[[EdgeDim], float],
