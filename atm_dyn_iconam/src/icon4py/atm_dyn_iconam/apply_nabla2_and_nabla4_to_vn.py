@@ -12,24 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, maximum
+from gt4py.next.ffront.fbuiltins import Field, maximum
 
 from icon4py.common.dimension import EdgeDim, KDim
 
 
-@field_operator
-def _mo_nh_diffusion_stencil_05_global_mode(
-    area_edge: Field[[EdgeDim], float],
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    z_nabla_e2: Field[[EdgeDim, KDim], float],
-    diff_multfac_vn: Field[[KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    z_d_vn_hdf = area_edge * (
-        kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla_e2 * area_edge
-    )
-    return vn + z_d_vn_hdf
 
 
 @field_operator
