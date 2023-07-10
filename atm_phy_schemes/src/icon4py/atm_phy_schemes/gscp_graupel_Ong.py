@@ -173,11 +173,11 @@ class GraupelGlobalConstants(FrozenNamespace):
    GrConst_lstickeff      = True  # switch for sticking coeff. (work from Guenther Zaengl)
    GrConst_lred_depgrow   = True  # separate switch for reduced depositional growth near tops of water clouds
    #GrConst_ithermo_water  = False #
-   #GrConst_l_cv           = True
-   #GrConst_lpres_pri      = True
-   #GrConst_ldass_lhn      = True # if true, latent heat nudging is applied
-   #GrConst_ldiag_ttend    = True # if true, temperature tendency shall be diagnosed
-   #GrConst_ldiag_qtend    = True # if true, moisture tendencies shall be diagnosed
+   GrConst_l_cv           = True
+   GrConst_lpres_pri      = True
+   GrConst_ldass_lhn      = True # if true, latent heat nudging is applied
+   GrConst_ldiag_ttend    = True # if true, temperature tendency shall be diagnosed
+   GrConst_ldiag_qtend    = True # if true, moisture tendencies shall be diagnosed
    
    
    GrConst_x1o3   =  1.0/ 3.0
@@ -1206,12 +1206,12 @@ def _graupel_scan(
    prg_gsp: float64,  # originally 2D Field, now 3D Field
    qrsflux: float64,
    # Option Switches
-   l_cv: bool,
-   lpres_pri: bool,
-   ithermo_water: int32,
-   ldass_lhn: bool, # if true, latent heat nudging is applied
-   ldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
-   ldiag_qtend: bool  # if true, moisture tendencies shall be diagnosed
+   #l_cv: bool,
+   #lpres_pri: bool,
+   ithermo_water: int32
+   #ldass_lhn: bool, # if true, latent heat nudging is applied
+   #ldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
+   #ldiag_qtend: bool  # if true, moisture tendencies shall be diagnosed
    ):
 
    # unpack carry
@@ -1277,7 +1277,7 @@ def _graupel_scan(
       is_surface = False
 
    # Define reciprocal of heat capacity of dry air (at constant pressure vs at constant volume)
-   if ( l_cv ):
+   if ( graupel_const.GrConst_l_cv ):
       Cheat_cap_r = phy_const.rcvd
    else:
       Cheat_cap_r = phy_const.rcpd
@@ -1796,7 +1796,7 @@ def _graupel_scan(
 
       # Precipitation fluxes at the ground
       prr_gsp = 0.5 * (qr * rho * Vnew_r + rhoqrV)
-      if (graupel_const.GrConst_lsedi_ice & lpres_pri):
+      if (graupel_const.GrConst_lsedi_ice & graupel_const.GrConst_lpres_pri):
          prs_gsp = 0.5 * (rho * qs * Vnew_s + rhoqsV)
          pri_gsp = 0.5 * (rho * qi * Vnew_i + rhoqiV)
       elif (graupel_const.GrConst_lsedi_ice):
@@ -1806,13 +1806,13 @@ def _graupel_scan(
       prg_gsp = 0.5 * (qg * rho * Vnew_g + rhoqgV)
 
       # for the latent heat nudging
-      if ( ldass_lhn ): # THEN default: true
+      if ( graupel_const.GrConst_ldass_lhn ): # THEN default: true
          qrsflux = prr_gsp + prs_gsp + prg_gsp
       
    else:
 
       # for the latent heat nudging
-      if ( ldass_lhn ): # THEN default: true
+      if ( graupel_const.GrConst_ldass_lhn ): # THEN default: true
          if (graupel_const.GrConst_lsedi_ice):
             qrsflux = rhoqrV_new_kup + rhoqsV_new_kup + rhoqgV_new_kup + rhoqiV_new_kup
             qrsflux = 0.5*(qrsflux + rhoqrV + rhoqsV + rhoqgV + rhoqiV)
@@ -1830,8 +1830,8 @@ def _graupel_scan(
    qc = maximum( 0.0 , qc + Cqct * dt )
    
    ddt_tend_t = 0.0
-   #if ( ldiag_ttend ):
-   #   ddt_tend_t = (temperature - temperature_in) * Cdtr
+   if ( graupel_const.GrConst_ldiag_ttend ):
+      ddt_tend_t = (temperature - temperature_in) * Cdtr
    
    ddt_tend_qv = 0.0
    ddt_tend_qc = 0.0
@@ -1839,7 +1839,7 @@ def _graupel_scan(
    ddt_tend_qr = 0.0
    ddt_tend_qs = 0.0
    ddt_tend_qg = 0.0
-   if ( ldiag_qtend ):
+   if ( graupel_const.GrConst_ldiag_qtend ):
       ddt_tend_qv = maximum( -qv_in * Cdtr , (qv - qv_in) * Cdtr )
       ddt_tend_qc = maximum( -qc_in * Cdtr , (qc - qc_in) * Cdtr )
       ddt_tend_qi = maximum( -qi_in * Cdtr , (qi - qi_in) * Cdtr )
@@ -2014,12 +2014,12 @@ def _graupel(
          pri_gsp,
          prg_gsp,
          qrsflux,
-         l_cv,
-         lpres_pri,
-         ithermo_water,
-         ldass_lhn,
-         ldiag_ttend,
-         ldiag_qtend
+         #l_cv,
+         #lpres_pri,
+         ithermo_water
+         #ldass_lhn,
+         #ldiag_ttend,
+         #ldiag_qtend
          )
 
    return(

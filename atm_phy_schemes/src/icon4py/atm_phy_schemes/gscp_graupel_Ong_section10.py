@@ -1287,12 +1287,12 @@ def _graupel_scan(
    prg_gsp: float64,
    qrsflux: float64,
    # Option Switches
-   l_cv: bool,
-   lpres_pri: bool,
-   ithermo_water: int32,
-   ldass_lhn: bool, # if true, latent heat nudging is applied
-   ldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
-   ldiag_qtend: bool  # if true, moisture tendencies shall be diagnosed
+   #l_cv: bool,
+   #lpres_pri: bool,
+   ithermo_water: int32
+   #ldass_lhn: bool, # if true, latent heat nudging is applied
+   #ldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
+   #ldiag_qtend: bool  # if true, moisture tendencies shall be diagnosed
    ):
 
    # unpack carry
@@ -1358,7 +1358,7 @@ def _graupel_scan(
       is_surface = False
 
    # Define reciprocal of heat capacity of dry air (at constant pressure vs at constant volume)
-   if ( l_cv ):
+   if ( graupel_const.GrConst_l_cv ):
       Cheat_cap_r = phy_const.rcvd
    else:
       Cheat_cap_r = phy_const.rcpd
@@ -1725,12 +1725,12 @@ def _graupel(
          pri_gsp,
          prg_gsp,
          qrsflux,
-         l_cv,
-         lpres_pri,
-         ithermo_water,
-         ldass_lhn,
-         ldiag_ttend,
-         ldiag_qtend
+         #l_cv,
+         #lpres_pri,
+         ithermo_water
+         #ldass_lhn,
+         #ldiag_ttend,
+         #ldiag_qtend
          )
 
    return(
