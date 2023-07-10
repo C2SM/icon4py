@@ -108,6 +108,7 @@ def test_nonhydro_predictor_step(
     recompute = sp_v.get_metadata("recompute").get("recompute")
     dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     linit = sp_v.get_metadata("linit").get("linit")
+    prep_adv = PrepAdvection(vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me())
 
     enh_smag_fac = zero_field(mesh, KDim)
     a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})

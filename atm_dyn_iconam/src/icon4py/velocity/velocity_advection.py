@@ -149,6 +149,36 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
+        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+            HorizontalMarkerIndex.local(EdgeDim) - 2,
+        )
+
+        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
+            HorizontalMarkerIndex.local(EdgeDim) - 1,
+        )
+
+        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.lateral_boundary(CellDim) + 4,
+            HorizontalMarkerIndex.local(CellDim) - 1,
+        )
+
+        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.nudging(CellDim),
+            HorizontalMarkerIndex.local(CellDim),
+        )
+
+        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            HorizontalMarkerIndex.local(EdgeDim),
+        )
+
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
                 run_gtfn
@@ -176,12 +206,6 @@ class VelocityAdvection:
             offset_provider={
                 "V2E": self.grid.get_v2e_connectivity(),
             },
-        )
-
-        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
         )
 
         mo_velocity_advection_stencil_01.with_backend(run_gtfn)(
@@ -246,12 +270,6 @@ class VelocityAdvection:
             },
         )
 
-        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
-            HorizontalMarkerIndex.local(EdgeDim) - 1,
-        )
-
         if not vn_only:
             mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
                 diagnostic_state.vn_ie,
@@ -271,12 +289,6 @@ class VelocityAdvection:
                     "E2V": self.grid.get_e2v_connectivity(),
                 },
             )
-
-        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
-            HorizontalMarkerIndex.local(CellDim) - 1,
-        )
 
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
             z_kin_hor_e,
@@ -353,12 +365,6 @@ class VelocityAdvection:
             offset_provider={"Koff": KDim},
         )
 
-        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
-
         velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
             prognostic_state.w,
             self.z_v_grad_w,
@@ -400,12 +406,6 @@ class VelocityAdvection:
             offset_provider={
                 "C2E2CO": self.grid.get_c2e2co_connectivity(),
             },
-        )
-
-        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
         )
 
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
