@@ -28,7 +28,9 @@ from gt4py.next.ffront.fbuiltins import (
     int32
 )
 
-from icon4py.atm_phy_schemes.gscp_graupel_Ong import graupel
+#from icon4py.atm_phy_schemes.gscp_graupel_Ong import graupel
+from icon4py.atm_phy_schemes.gscp_graupel_Ong_noTernaryInSection7 import graupel
+#from icon4py.atm_phy_schemes.gscp_graupel_Ong_section10 import graupel
 from icon4py.common.dimension import CellDim, KDim
 #from icon4py.testutils.utils import to_icon4py_field, zero_field
 from gt4py.next.iterator.embedded import index_field, np_as_located_field

@@ -32,7 +32,6 @@ from gt4py.next.ffront.fbuiltins import (
     minimum,
     sqrt
 )
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.shared.mo_math_utilities import gamma_fct
@@ -41,8 +40,7 @@ from icon4py.shared.mo_math_constants import math_const
 from icon4py.shared.mo_physical_constants import phy_const
 
 
-sys.setrecursionlimit(350000)
-
+sys.setrecursionlimit(800000)
 
 # This class contains all constants that are used in the transfer rate calculations
 class GraupelFunctionConstants(FrozenNamespace):
@@ -173,11 +171,11 @@ class GraupelGlobalConstants(FrozenNamespace):
    GrConst_lstickeff      = True  # switch for sticking coeff. (work from Guenther Zaengl)
    GrConst_lred_depgrow   = True  # separate switch for reduced depositional growth near tops of water clouds
    #GrConst_ithermo_water  = False #
-   #GrConst_l_cv           = True
-   #GrConst_lpres_pri      = True
-   #GrConst_ldass_lhn      = True # if true, latent heat nudging is applied
-   #GrConst_ldiag_ttend    = True # if true, temperature tendency shall be diagnosed
-   #GrConst_ldiag_qtend    = True # if true, moisture tendencies shall be diagnosed
+   GrConst_l_cv           = True
+   GrConst_lpres_pri      = True
+   GrConst_ldass_lhn      = True # if true, latent heat nudging is applied
+   GrConst_ldiag_ttend    = True # if true, temperature tendency shall be diagnosed
+   GrConst_ldiag_qtend    = True # if true, moisture tendencies shall be diagnosed
    
    
    GrConst_x1o3   =  1.0/ 3.0
@@ -412,6 +410,7 @@ def velocity_precFlux(
       TV = maximum( TV, input_V_sedi_min )
 
    return (TV, precFlux)
+
 
 
 @field_operator
@@ -1020,10 +1019,10 @@ def clearSky_evaporationAndFreezing(
 def latent_heat_vaporization(
    input_t: float64
 ) -> float64:
-   '''Return latent heat of vaporization.
+   """Return latent heat of vaporization.
 
    Computed as internal energy and taking into account Kirchoff's relations
-   '''
+   """
    # specific heat of water vapor at constant pressure (Landolt-Bornstein)
    #cp_v = 1850.0
 
@@ -1096,6 +1095,7 @@ def sat_pres_ice_murphykoop(
      exp(9.550426 - 5723.265/input_t + 3.53068*log(input_t) - 0.00728332*input_t )
   )
 
+
 @field_operator
 def TV(
    input_t: float64
@@ -1105,7 +1105,6 @@ def TV(
    return (
       graupel_funcConst.GrFuncConst_c1es * exp( graupel_funcConst.GrFuncConst_c3les * (input_t - phy_const.tmelt) / (input_t - graupel_funcConst.GrFuncConst_c4les) )
    )
-
 
 @scan_operator(
    axis=KDim,
@@ -1358,7 +1357,7 @@ def _graupel_scan(
    #----------------------------------------------------------------------------
    # 2.1: Preparations for computations and to check the different conditions
    #----------------------------------------------------------------------------
-   
+
    #qrg  = make_normalized(qr(iv,k))
    #qsg  = make_normalized(qs(iv,k))
    #qgg  = make_normalized(qg(iv,k))
@@ -1452,7 +1451,7 @@ def _graupel_scan(
    rhoqsV   = minimum( rhoqsV , rhoqs_intermediate )
    rhoqgV   = minimum( rhoqgV , maximum(0.0 , rhoqg_intermediate) )
    rhoqiV   = minimum( rhoqiV , rhoqi_intermediate )
-   
+
    # store the precipitation flux for computation at next k+1 level
    rhoqrV_old_kup = rhoqrV
    rhoqsV_old_kup = rhoqsV
@@ -1673,8 +1672,14 @@ def _graupel_scan(
    #            Update the prognostic variables in the interior domain.
    #--------------------------------------------------------------------------
 
-   Snucl_v2i = Scnuc_v2i if Scnuc_v2i != 0.0 else Sdnuc_v2i
-   Srfrz_r2g = Ssrfr_r2g if Ssrfr_r2g != 0.0 else Scrfr_r2g
+   if ( Scnuc_v2i != 0.0 ):
+      Snucl_v2i = Scnuc_v2i
+   else:
+      Snucl_v2i = Sdnuc_v2i
+   if ( Ssrfr_r2g != 0.0 ):
+      Srfrz_r2g = Ssrfr_r2g
+   else:
+      Srfrz_r2g = Scrfr_r2g
    Ssdep_v2s = Ssdpc_v2s + Ssdph_v2s
    Sgdep_v2g = Sgdpc_v2g + Sgdph_v2g
    
@@ -1694,14 +1699,23 @@ def _graupel_scan(
          
       
    if ( (qi > graupel_const.GrConst_qmin) | (rhoqs > graupel_const.GrConst_qmin) | (rhoqg > graupel_const.GrConst_qmin) ):
-      llqs = True if rhoqs > graupel_const.GrConst_qmin else False
-      llqi = True if qi > graupel_const.GrConst_qmin else False
+      if ( rhoqs > graupel_const.GrConst_qmin ):
+         llqs = True
+      else:
+         llqs = False
+      if ( qi > graupel_const.GrConst_qmin ):
+         llqi = True
+      else:
+         llqi = False
 
       if ( temperature <= phy_const.tmelt ):           # cold case
 
          Cqvsidiff = qv - Cqvsi
          if (llqi):
-            Csimax = rhoqi_intermediate * C1orho * Cdtr if ( graupel_const.GrConst_lsedi_ice ) else qi * Cdtr
+            if ( graupel_const.GrConst_lsedi_ice ):
+               Csimax = rhoqi_intermediate * C1orho * Cdtr
+            else:
+               Csimax = qi * Cdtr
          else:
             Csimax =  0.0
             
@@ -1754,99 +1768,14 @@ def _graupel_scan(
    Ctt = Cheat_cap_r * ( CLHv * (Cqct + Cqrt) + CLHs * (Cqit + Cqst + Cqgt) )
 
    # Update variables and add qi to qrs for water loading
-   qi = maximum( 0.0 , (rhoqi_intermediate * C1orho + Cqit * dt) * Cimi ) if ( graupel_const.GrConst_lsedi_ice ) else maximum( 0.0 , qi + Cqit * dt )
+   if ( graupel_const.GrConst_lsedi_ice ):
+      qi = maximum( 0.0 , (rhoqi_intermediate * C1orho + Cqit * dt) * Cimi )
+   else:
+      qi = maximum( 0.0 , qi + Cqit * dt )
    qr = maximum( 0.0 , (rhoqr_intermediate * C1orho + Cqrt * dt) * Cimr )
    qs = maximum( 0.0 , (rhoqs_intermediate * C1orho + Cqst * dt) * Cims )
    qg = maximum( 0.0 , (rhoqg_intermediate * C1orho + Cqgt * dt) * Cimg )
-   
-
-   #----------------------------------------------------------------------
-   # Section 10: Complete time step
-   #----------------------------------------------------------------------
-
-   # Store precipitation fluxes for the next level
-   rhoqrV_new_kup = qr * rho * Vnew_r
-   rhoqsV_new_kup = qs * rho * Vnew_s
-   rhoqgV_new_kup = qg * rho * Vnew_g
-   rhoqiV_new_kup = qi * rho * Vnew_i
-   if ( rhoqrV_new_kup <= graupel_const.GrConst_qmin ): rhoqrV_new_kup = 0.0
-   if ( rhoqsV_new_kup <= graupel_const.GrConst_qmin ): rhoqsV_new_kup = 0.0
-   if ( rhoqgV_new_kup <= graupel_const.GrConst_qmin ): rhoqgV_new_kup = 0.0
-   if ( rhoqiV_new_kup <= graupel_const.GrConst_qmin ): rhoqiV_new_kup = 0.0
-
-   # Store the mixing ratios for the next level
-   qs_forV_kup = qs
-   qr_forV_kup = qr
-   qg_forV_kup = qg
-   qi_forV_kup = qi
-
-   # store the saturation mixing ratio, density, density factors for the next level
-   qvsw_kup = Cqvsw
-   rho_kup = rho
-   Crho1o2_kup = Crho1o2
-   Crhofac_qi_kup = Crhofac_qi
-   Cvz0s_kup = Cvz0s
-
-   prr_gsp = 0.0
-   prs_gsp = 0.0
-   pri_gsp = 0.0
-   prg_gsp = 0.0
-   # good solution provided by Nikki to know where I am along the KDim axis
-   if ( k_lev == kend - int32(1) ):
-
-      # Precipitation fluxes at the ground
-      prr_gsp = 0.5 * (qr * rho * Vnew_r + rhoqrV)
-      if (graupel_const.GrConst_lsedi_ice & lpres_pri):
-         prs_gsp = 0.5 * (rho * qs * Vnew_s + rhoqsV)
-         pri_gsp = 0.5 * (rho * qi * Vnew_i + rhoqiV)
-      elif (graupel_const.GrConst_lsedi_ice):
-         prs_gsp = 0.5 * (rho * (qs * Vnew_s + qi * Vnew_i) + rhoqsV + rhoqiV)
-      else:
-         prs_gsp = 0.5 * (qs * rho * Vnew_s + rhoqsV)
-      prg_gsp = 0.5 * (qg * rho * Vnew_g + rhoqgV)
-
-      # for the latent heat nudging
-      if ( ldass_lhn ): # THEN default: true
-         qrsflux = prr_gsp + prs_gsp + prg_gsp
       
-   else:
-
-      # for the latent heat nudging
-      if ( ldass_lhn ): # THEN default: true
-         if (graupel_const.GrConst_lsedi_ice):
-            qrsflux = rhoqrV_new_kup + rhoqsV_new_kup + rhoqgV_new_kup + rhoqiV_new_kup
-            qrsflux = 0.5*(qrsflux + rhoqrV + rhoqsV + rhoqgV + rhoqiV)
-         else:
-            qrsflux = rhoqrV_new_kup + rhoqsV_new_kup + rhoqgV_new_kup
-            qrsflux = 0.5*(qrsflux + rhoqrV + rhoqsV + rhoqgV)
-   
-   # Update of prognostic variables or tendencies
-   qr = maximum( 0.0 , qr )
-   qs = maximum( 0.0 , qs )
-   qi = maximum( 0.0 , qi )
-   qg = maximum( 0.0 , qg )
-   temperature = temperature + Ctt * dt 
-   qv = maximum( 0.0 , qv + Cqvt * dt )
-   qc = maximum( 0.0 , qc + Cqct * dt )
-   
-   ddt_tend_t = 0.0
-   #if ( ldiag_ttend ):
-   #   ddt_tend_t = (temperature - temperature_in) * Cdtr
-   
-   ddt_tend_qv = 0.0
-   ddt_tend_qc = 0.0
-   ddt_tend_qi = 0.0
-   ddt_tend_qr = 0.0
-   ddt_tend_qs = 0.0
-   ddt_tend_qg = 0.0
-   if ( ldiag_qtend ):
-      ddt_tend_qv = maximum( -qv_in * Cdtr , (qv - qv_in) * Cdtr )
-      ddt_tend_qc = maximum( -qc_in * Cdtr , (qc - qc_in) * Cdtr )
-      ddt_tend_qi = maximum( -qi_in * Cdtr , (qi - qi_in) * Cdtr )
-      ddt_tend_qr = maximum( -qr_in * Cdtr , (qr - qr_in) * Cdtr )
-      ddt_tend_qs = maximum( -qs_in * Cdtr , (qs - qs_in) * Cdtr )
-      ddt_tend_qg = maximum( -qg_in * Cdtr , (qg - qg_in) * Cdtr )
-
    
    # tracing current k level
    k_lev = k_lev + int32(1)
@@ -1897,6 +1826,7 @@ def _graupel_scan(
     )
 
 
+
 @field_operator
 def _graupel(
    # Grid information
@@ -1916,7 +1846,7 @@ def _graupel(
    qg: Field[[CellDim, KDim], float64],
    # Number Densities
    qnc: Field[[CellDim, KDim], float64],
-   # Tendencies
+   # tendencies, Optional Fields in Fortran code:
    ddt_tend_t: Field[[CellDim, KDim], float64],
    ddt_tend_qv: Field[[CellDim, KDim], float64],
    ddt_tend_qc: Field[[CellDim, KDim], float64],
@@ -1924,16 +1854,12 @@ def _graupel(
    ddt_tend_qr: Field[[CellDim, KDim], float64],
    ddt_tend_qs: Field[[CellDim, KDim], float64],
    ddt_tend_qg: Field[[CellDim, KDim], float64],
-   # Precipitation Fluxes
-   prr_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field so record all precipitation flux at all grid cells
-   prs_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field so record all precipitation flux at all grid cells
-   pri_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field so record all precipitation flux at all grid cells
-   prg_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field so record all precipitation flux at all grid cells
-   #pri_gsp: Field[[CellDim], float64], # 2D ice precipitation Field
-   #prr_gsp: Field[[CellDim], float64], # 2D rain precipitation Field
-   #prs_gsp: Field[[CellDim], float64], # 2D snow precipitation Field
-   #prg_gsp: Field[[CellDim], float64], # 2D graupel precipitation Field
-   qrsflux: Field[[CellDim, KDim], float64], # 3D total precipitation field
+   # Precipitation Fluxes TODO: scan operator only returns field(KDim), I need a fix here
+   prr_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
+   prs_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
+   pri_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
+   prg_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
+   qrsflux: Field[[CellDim, KDim], float64],
    # Option Switches
    l_cv: bool,
    lpres_pri: bool,
@@ -2037,14 +1963,13 @@ def _graupel(
       ddt_tend_qr_,
       ddt_tend_qs_,
       ddt_tend_qg_,
-      pri_gsp_,
       prr_gsp_,
       prs_gsp_,
+      pri_gsp_,
       prg_gsp_,
-      qrsflux_
+      qrsflux_,
       )
 
-#(backend=roundtrip.executor)
 
 @program
 def graupel(
@@ -2076,10 +2001,6 @@ def graupel(
    prs_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
    pri_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
    prg_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
-   #pri_gsp: Field[[CellDim], float64], # 2D ice precipitation Field
-   #prr_gsp: Field[[CellDim], float64], # 2D rain precipitation Field
-   #prs_gsp: Field[[CellDim], float64], # 2D snow precipitation Field
-   #prg_gsp: Field[[CellDim], float64], # 2D graupel precipitation Field
    qrsflux: Field[[CellDim, KDim], float64],
    # Option Switches
    l_cv: bool,
@@ -2120,7 +2041,6 @@ def graupel(
       ddt_tend_qr,
       ddt_tend_qs,
       ddt_tend_qg,
-      # Precipitation Fluxes
       prr_gsp,
       prs_gsp,
       pri_gsp,
