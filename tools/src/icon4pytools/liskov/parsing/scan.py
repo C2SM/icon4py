@@ -61,11 +61,11 @@ class DirectivesScanner(Step):
         with self.input_filepath.open() as f:
             scanned_directives = []
             lines = f.readlines()
-            for lnumber, string in enumerate(lines):
-                if string.strip().startswith(ts.DIRECTIVE_IDENT):
-                    stripped = string.strip()
+            for lnumber, line in enumerate(lines):
+                stripped = line.strip()
+                if stripped.startswith(ts.DIRECTIVE_IDENT):
                     eol = stripped[-1]
-                    scanned = Scanned(string, lnumber)
+                    scanned = Scanned(line, lnumber)
                     scanned_directives.append(scanned)
 
                     match eol:
