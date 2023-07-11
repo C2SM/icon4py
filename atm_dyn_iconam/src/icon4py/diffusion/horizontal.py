@@ -151,7 +151,7 @@ class EdgeParams:
     ):
 
         self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
-        """
+        r"""
         Orientation of vector product of the edge and the adjacent cell centers
              v3
             /  \
@@ -205,7 +205,7 @@ class EdgeParams:
         self.inverse_vertex_vertex_lengths: Field[
             [EdgeDim], float
         ] = inverse_vertex_vertex_lengths
-        """
+        r"""
         Inverse distance between outer vertices of adjacent cells.
 
         v1--------

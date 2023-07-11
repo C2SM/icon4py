@@ -43,4 +43,3 @@ rst-roles =
 
 per-file-ignores =
     tools/src/icon4pytools/icon4pygen/icochainsize.py:E800
-    atm_dyn_iconam/src/icon4py/diffusion/horizontal.py:W605
