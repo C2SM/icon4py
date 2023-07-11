@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import functools
 from dataclasses import dataclass
 
 import numpy as np
@@ -28,7 +28,7 @@ from icon4py.common.dimension import (
 )
 
 
-@dataclass
+@dataclass(frozen=True)
 class InterpolationState:
     """Represents the ICON interpolation state."""
 
@@ -57,11 +57,11 @@ class InterpolationState:
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
-    @property
+    @functools.cached_property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
         return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
 
-    @property
+    @functools.cached_property
     def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
         geofac_nbh_ar = np.asarray(self.geofac_n2s)[:, 1:]
         old_shape = geofac_nbh_ar.shape
