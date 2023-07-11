@@ -16,7 +16,9 @@ from typing import Callable
 import icon4pytools.liskov.parsing.types as ts
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.liskov.codegen.integration.interface import IntegrationCodeInterface
-from icon4pytools.liskov.codegen.serialisation.interface import SerialisationCodeInterface
+from icon4pytools.liskov.codegen.serialisation.interface import (
+    SerialisationCodeInterface,
+)
 from icon4pytools.liskov.pipeline.definition import Step
 
 

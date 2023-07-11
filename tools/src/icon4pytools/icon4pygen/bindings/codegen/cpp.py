@@ -27,7 +27,9 @@ from icon4pytools.icon4pygen.bindings.codegen.header import (
     run_func_declaration,
     run_verify_func_declaration,
 )
-from icon4pytools.icon4pygen.bindings.codegen.render.offset import GpuTriMeshOffsetRenderer
+from icon4pytools.icon4pygen.bindings.codegen.render.offset import (
+    GpuTriMeshOffsetRenderer,
+)
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
 from icon4pytools.icon4pygen.bindings.utils import write_string
 
@@ -663,8 +665,12 @@ class CppDefTemplate(Node):
         ]
         sparse_fields = [field for field in self.fields if field.is_sparse()]
         compound_fields = [field for field in self.fields if field.is_compound()]
-        sparse_offsets = [offset for offset in self.offsets if not offset.is_compound_location()]
-        strided_offsets = [offset for offset in self.offsets if offset.is_compound_location()]
+        sparse_offsets = [
+            offset for offset in self.offsets if not offset.is_compound_location()
+        ]
+        strided_offsets = [
+            offset for offset in self.offsets if offset.is_compound_location()
+        ]
         all_fields = self.fields
 
         offsets = dict(sparse=sparse_offsets, strided=strided_offsets)
@@ -709,7 +715,9 @@ class CppDefTemplate(Node):
             ),
             public_utilities=PublicUtilities(fields=fields["output"]),
             copy_pointers=CopyPointers(fields=self.fields),
-            private_members=PrivateMembers(fields=self.fields, out_fields=fields["output"]),
+            private_members=PrivateMembers(
+                fields=self.fields, out_fields=fields["output"]
+            ),
             setup_func=StencilClassSetupFunc(
                 funcname=self.stencil_name,
                 out_fields=fields["output"],

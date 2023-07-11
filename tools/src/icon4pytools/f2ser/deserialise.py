@@ -55,7 +55,9 @@ class ParsedGranuleDeserialiser:
             for intent, var_dict in intent_dict.items():
                 self._create_savepoint(subroutine_name, intent, var_dict)
 
-    def _create_savepoint(self, subroutine_name: str, intent: str, var_dict: dict) -> None:
+    def _create_savepoint(
+        self, subroutine_name: str, intent: str, var_dict: dict
+    ) -> None:
         """Create a savepoint for the given variables.
 
         Args:
@@ -71,7 +73,9 @@ class ParsedGranuleDeserialiser:
             FieldSerialisationData(
                 variable=var_name,
                 association=self._create_association(var_data, var_name),
-                decomposed=var_data["decomposed"] if var_data.get("decomposed") else False,
+                decomposed=var_data["decomposed"]
+                if var_data.get("decomposed")
+                else False,
                 dimension=var_data.get("dimension"),
                 typespec=var_data.get("typespec"),
                 typename=var_data.get("typename"),
@@ -135,7 +139,9 @@ class ParsedGranuleDeserialiser:
             for intent, var_dict in intent_dict.items()
             if intent == "in"
         ][0]
-        startln = self._get_codegen_line(first_intent_in_subroutine["codegen_ctx"], "init")
+        startln = self._get_codegen_line(
+            first_intent_in_subroutine["codegen_ctx"], "init"
+        )
         self.data["Init"] = InitData(
             startln=startln,
             directory=self.directory,

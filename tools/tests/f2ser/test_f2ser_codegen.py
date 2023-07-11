@@ -15,7 +15,9 @@ import pytest
 
 from icon4pytools.f2ser.deserialise import ParsedGranuleDeserialiser
 from icon4pytools.f2ser.parse import GranuleParser
-from icon4pytools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
+from icon4pytools.liskov.codegen.serialisation.generate import (
+    SerialisationCodeGenerator,
+)
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
 
 
@@ -102,5 +104,7 @@ def test_deserialiser_directives_diffusion_codegen(
     parsed = GranuleParser(diffusion_granule, diffusion_granule_deps)()
     interface = ParsedGranuleDeserialiser(parsed)()
     generated = SerialisationCodeGenerator(interface)()
-    reference_savepoint = (samples_path / "expected_diffusion_granule_savepoint.f90").read_text()
+    reference_savepoint = (
+        samples_path / "expected_diffusion_granule_savepoint.f90"
+    ).read_text()
     assert generated[0].source == reference_savepoint.rstrip()

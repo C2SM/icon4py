@@ -51,7 +51,9 @@ def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
 def test_granule_parsing_missing_derived_typedef(diffusion_granule, samples_path):
     dependencies = [samples_path / "subroutine_example.f90"]
     parser = GranuleParser(diffusion_granule, dependencies)
-    with pytest.raises(MissingDerivedTypeError, match="Could not find type definition for TYPE"):
+    with pytest.raises(
+        MissingDerivedTypeError, match="Could not find type definition for TYPE"
+    ):
         parser()
 
 

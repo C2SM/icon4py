@@ -109,7 +109,9 @@ def parsed_dict():
             ],
             "StartProfile": [{"name": "apply_nabla2_to_vn_in_lateral_boundary"}],
             "EndProfile": [{}],
-            "EndStencil": [{"name": "apply_nabla2_to_vn_in_lateral_boundary", "noprofile": "True"}],
+            "EndStencil": [
+                {"name": "apply_nabla2_to_vn_in_lateral_boundary", "noprofile": "True"}
+            ],
             "EndCreate": [{}],
         },
     }

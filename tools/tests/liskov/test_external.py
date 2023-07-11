@@ -22,7 +22,10 @@ from icon4pytools.liskov.codegen.integration.interface import (
     IntegrationCodeInterface,
     StartStencilData,
 )
-from icon4pytools.liskov.external.exceptions import IncompatibleFieldError, UnknownStencilError
+from icon4pytools.liskov.external.exceptions import (
+    IncompatibleFieldError,
+    UnknownStencilError,
+)
 from icon4pytools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 
 
