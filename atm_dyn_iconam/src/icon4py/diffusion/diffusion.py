@@ -85,7 +85,7 @@ VectorTuple = namedtuple("VectorTuple", "x y")
 
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
-backend = compiled_backend  #
+backend = compiled_backend
 
 
 class DiffusionConfig:
