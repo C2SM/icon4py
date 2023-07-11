@@ -30,7 +30,7 @@ from icon4py.common.dimension import (
 from icon4py.diffusion.horizontal import HorizontalMeshSize
 
 
-# TODO @magdalena keep naming grid vs mesh consistent
+# TODO(Magdalena): keep naming grid vs mesh consistent
 class VerticalMeshConfig:
     def __init__(self, num_lev: int):
         self._num_lev = num_lev

@@ -33,8 +33,8 @@ class InterpolationState:
     """
     represents the ICON interpolation state.
 
-    TODO [magdalena]: keep? does this state make sense at all?
     """
+    # TODO(Magdalena): keep? does this state make sense at all?
 
     e_bln_c_s: Field[
         [CEDim], float

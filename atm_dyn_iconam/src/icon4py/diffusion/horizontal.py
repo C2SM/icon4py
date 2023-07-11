@@ -136,7 +136,7 @@ class HorizontalMeshSize:
     num_cells: int
 
 
-# TODO [@Magdalena] allow initialization with only partial values
+# TODO(Magdalena): allow initialization with only partial values
 #  (becomes tedious for testing otherwise): hence this should
 #  that should not be a data class
 class EdgeParams:

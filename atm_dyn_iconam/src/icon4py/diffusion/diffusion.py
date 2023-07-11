@@ -95,9 +95,9 @@ class DiffusionConfig:
     Encapsulates namelist parameters and derived parameters.
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
-    TODO: @magdalena to be read from config
-    TODO: @magdalena handle dependencies on other namelists (see below...)
     """
+    # TODO(Magdalena): to be read from config
+    # TODO(Magdalena):  handle dependencies on other namelists (see below...)
 
     def __init__(
         self,
@@ -497,7 +497,7 @@ class Diffusion:
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
-        # TODO @magdalena this is KHalfDim
+        # TODO(Magdalena): this is KHalfDim
         self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
