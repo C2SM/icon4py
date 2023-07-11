@@ -178,9 +178,7 @@ class SavepointDataFactory:
 
         if "mo_icon_interpolation_scalar" in stencil_name:
             timestep_variables["jstep"] = "jstep_ptr"
-            timestep_variables[
-                "mo_icon_interpolation_ctr"
-            ] = "mo_icon_interpolation_ctr"
+            timestep_variables["mo_icon_interpolation_ctr"] = "mo_icon_interpolation_ctr"
 
         if "mo_advection_traj" in stencil_name:
             timestep_variables["jstep"] = "jstep_ptr"

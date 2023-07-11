@@ -34,9 +34,7 @@ class PyBindGen:
         Furthermore, we also serialise data to .csv or .vtk files in case of verification failure.
     """
 
-    def __init__(
-        self, stencil_info: StencilInfo, levels_per_thread: int, block_size: int
-    ) -> None:
+    def __init__(self, stencil_info: StencilInfo, levels_per_thread: int, block_size: int) -> None:
         self.stencil_name = stencil_info.itir.id
         self.fields, self.offsets = self._stencil_info_to_binding_type(stencil_info)
         self.levels_per_thread = levels_per_thread

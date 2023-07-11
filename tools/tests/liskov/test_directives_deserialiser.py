@@ -85,9 +85,7 @@ from icon4pytools.liskov.parsing.exceptions import (
         ),
     ],
 )
-def test_data_factories_no_args(
-    factory_class, directive_type, string, startln, endln, expected
-):
+def test_data_factories_no_args(factory_class, directive_type, string, startln, endln, expected):
     parsed = {
         "directives": [directive_type(string=string, startln=startln, endln=endln)],
         "content": {},
@@ -111,9 +109,7 @@ def test_data_factories_no_args(
             {
                 "directives": [
                     ts.EndStencil("END STENCIL(name=foo)", 5, 5),
-                    ts.EndStencil(
-                        "END STENCIL(name=bar; noendif=true; noprofile=true)", 20, 20
-                    ),
+                    ts.EndStencil("END STENCIL(name=bar; noendif=true; noprofile=true)", 20, 20),
                 ],
                 "content": {
                     "EndStencil": [
@@ -127,9 +123,7 @@ def test_data_factories_no_args(
             EndStencilDataFactory,
             EndStencilData,
             {
-                "directives": [
-                    ts.EndStencil("END STENCIL(name=foo; noprofile=true)", 5, 5)
-                ],
+                "directives": [ts.EndStencil("END STENCIL(name=foo; noprofile=true)", 5, 5)],
                 "content": {"EndStencil": [{"name": "foo"}]},
             },
         ),
@@ -203,9 +197,7 @@ def test_data_factories_with_args(factory, target, mock_data):
         ),
         (
             {
-                "directives": [
-                    ts.StartCreate("START CREATE(extra_fields=foo,xyz)", 5, 5)
-                ],
+                "directives": [ts.StartCreate("START CREATE(extra_fields=foo,xyz)", 5, 5)],
                 "content": {"StartCreate": [{"extra_fields": "foo,xyz"}]},
             },
             ["foo", "xyz"],
@@ -239,9 +231,7 @@ def test_start_create_factory(mock_data, extra_fields):
                     ts.EndStencil("END STENCIL(name=foo)", 5, 5),
                     ts.EndStencil("END STENCIL(name=bar; noendif=foo)", 20, 20),
                 ],
-                "content": {
-                    "EndStencil": [{"name": "foo"}, {"name": "bar", "noendif": "foo"}]
-                },
+                "content": {"EndStencil": [{"name": "foo"}, {"name": "bar", "noendif": "foo"}]},
             },
         ),
     ],
@@ -324,10 +314,7 @@ class TestStartStencilFactory(unittest.TestCase):
             FieldAssociationData("x", "i", 3, rel_tol="0.01", abs_tol="0.1"),
             FieldAssociationData("y", "i", 3, rel_tol="0.001"),
         ]
-        assert (
-            self.factory._update_tolerances(named_args, self.mock_fields)
-            == expected_fields
-        )
+        assert self.factory._update_tolerances(named_args, self.mock_fields) == expected_fields
 
     def test_update_field_tolerances_not_all_fields(self):
         # Test that tolerance is not set for fields that are not provided in the named_args.
@@ -339,15 +326,9 @@ class TestStartStencilFactory(unittest.TestCase):
             FieldAssociationData("x", "i", 3, rel_tol="0.01", abs_tol="0.1"),
             FieldAssociationData("y", "i", 3),
         ]
-        assert (
-            self.factory._update_tolerances(named_args, self.mock_fields)
-            == expected_fields
-        )
+        assert self.factory._update_tolerances(named_args, self.mock_fields) == expected_fields
 
     def test_update_field_tolerances_no_tolerances(self):
         # Test that fields are not updated if named_args does not contain any tolerances.
         named_args = {}
-        assert (
-            self.factory._update_tolerances(named_args, self.mock_fields)
-            == self.mock_fields
-        )
+        assert self.factory._update_tolerances(named_args, self.mock_fields) == self.mock_fields

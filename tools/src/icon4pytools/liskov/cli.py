@@ -52,9 +52,7 @@ def main(ctx):
 )
 @click.argument(
     "input_path",
-    type=click.Path(
-        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
-    ),
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
 @click.argument(
     "output_path",
@@ -84,9 +82,7 @@ def integrate(input_path, output_path, profile, metadatagen):
 )
 @click.argument(
     "input_path",
-    type=click.Path(
-        exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path
-    ),
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
 @click.argument(
     "output_path",

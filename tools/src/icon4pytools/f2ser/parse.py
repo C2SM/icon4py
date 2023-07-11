@@ -59,9 +59,7 @@ class GranuleParser:
         parsed_types = parser()
     """
 
-    def __init__(
-        self, granule: Path, dependencies: Optional[list[Path]] = None
-    ) -> None:
+    def __init__(self, granule: Path, dependencies: Optional[list[Path]] = None) -> None:
         self.granule_path = granule
         self.dependencies = dependencies
 
@@ -72,7 +70,7 @@ class GranuleParser:
         return ParsedGranule(subroutines=subroutines, last_import_ln=last_import_ln)
 
     def _find_last_fortran_use_statement(self) -> Optional[int]:
-        """Finds the line number of the last Fortran USE statement in the code.
+        """Find the line number of the last Fortran USE statement in the code.
 
         Returns:
             int: the line number of the last USE statement, or None if no USE statement is found.
@@ -95,7 +93,7 @@ class GranuleParser:
         return None
 
     def _read_code_from_file(self) -> str:
-        """Reads the content of the granule and returns it as a string."""
+        """Read the content of the granule and returns it as a string."""
         with open(self.granule_path) as f:
             code = f.read()
         return code
@@ -103,12 +101,9 @@ class GranuleParser:
     def parse_subroutines(self):
         subroutines = self._extract_subroutines(crack(self.granule_path))
         variables_grouped_by_intent = {
-            name: self._extract_intent_vars(routine)
-            for name, routine in subroutines.items()
+            name: self._extract_intent_vars(routine) for name, routine in subroutines.items()
         }
-        intrinsic_type_vars, derived_type_vars = self._parse_types(
-            variables_grouped_by_intent
-        )
+        intrinsic_type_vars, derived_type_vars = self._parse_types(variables_grouped_by_intent)
         combined_type_vars = self._combine_types(derived_type_vars, intrinsic_type_vars)
         with_lines = self._update_with_codegen_lines(combined_type_vars)
         return with_lines
@@ -129,9 +124,7 @@ class GranuleParser:
                 subroutines[name] = elt
 
         if len(subroutines) != 2:
-            raise ParsingError(
-                f"Did not find _init and _run subroutines in {self.granule_path}"
-            )
+            raise ParsingError(f"Did not find _init and _run subroutines in {self.granule_path}")
 
         return subroutines
 
@@ -245,9 +238,7 @@ class GranuleParser:
                             new_type_name = f"{var_name}_{subtype_name}"
                             new_var_dict = var_dict.copy()
                             new_var_dict.update(subtype_spec)
-                            decomposed_vars[subroutine][intent][
-                                new_type_name
-                            ] = new_var_dict
+                            decomposed_vars[subroutine][intent][new_type_name] = new_var_dict
                             new_var_dict["ptr_var"] = subtype_name
                     else:
                         decomposed_vars[subroutine][intent][var_name] = var_dict
@@ -284,9 +275,9 @@ class GranuleParser:
         with_lines = deepcopy(parsed_types)
         for subroutine in with_lines:
             for intent in with_lines[subroutine]:
-                with_lines[subroutine][intent][
-                    "codegen_ctx"
-                ] = self._get_subroutine_lines(subroutine)
+                with_lines[subroutine][intent]["codegen_ctx"] = self._get_subroutine_lines(
+                    subroutine
+                )
         return with_lines
 
     def _get_subroutine_lines(self, subroutine_name: str) -> CodegenContext:
@@ -300,9 +291,7 @@ class GranuleParser:
         """
         code = self._read_code_from_file()
 
-        start_subroutine_ln, end_subroutine_ln = self._find_subroutine_lines(
-            code, subroutine_name
-        )
+        start_subroutine_ln, end_subroutine_ln = self._find_subroutine_lines(code, subroutine_name)
 
         variable_declaration_ln = self._find_variable_declarations(
             code, start_subroutine_ln, end_subroutine_ln
@@ -314,21 +303,17 @@ class GranuleParser:
         (
             first_declaration_ln,
             last_declaration_ln,
-        ) = self._get_variable_declaration_bounds(
-            variable_declaration_ln, start_subroutine_ln
-        )
+        ) = self._get_variable_declaration_bounds(variable_declaration_ln, start_subroutine_ln)
 
         pre_end_subroutine_ln = (
             end_subroutine_ln - 1
         )  # we want to generate the code before the end of the subroutine
 
-        return CodegenContext(
-            first_declaration_ln, last_declaration_ln, pre_end_subroutine_ln
-        )
+        return CodegenContext(first_declaration_ln, last_declaration_ln, pre_end_subroutine_ln)
 
     @staticmethod
     def _find_subroutine_lines(code: str, subroutine_name: str) -> tuple[int]:
-        """Finds line numbers of a subroutine within a code block.
+        """Find line numbers of a subroutine within a code block.
 
         Args:
             code (str): The code block to search for the subroutine.
@@ -351,7 +336,7 @@ class GranuleParser:
     def _find_variable_declarations(
         code: str, start_subroutine_ln: int, end_subroutine_ln: int
     ) -> list:
-        """Finds line numbers of variable declarations within a code block.
+        """Find line numbers of variable declarations within a code block.
 
         Args:
             code (str): The code block to search for variable declarations.
@@ -370,9 +355,7 @@ class GranuleParser:
         is_multiline_declaration = False
         declaration_pattern_lines = []
 
-        for i, line in enumerate(
-            code.splitlines()[start_subroutine_ln:end_subroutine_ln]
-        ):
+        for i, line in enumerate(code.splitlines()[start_subroutine_ln:end_subroutine_ln]):
             if not is_multiline_declaration:
                 if re.search(declaration_pattern, line):
                     declaration_pattern_lines.append(i)
@@ -390,7 +373,7 @@ class GranuleParser:
     def _get_variable_declaration_bounds(
         declaration_pattern_lines: list, start_subroutine_ln: int
     ) -> tuple:
-        """Returns the line numbers of the bounds for a variable declaration block.
+        """Return the line numbers of the bounds for a variable declaration block.
 
         Args:
             declaration_pattern_lines (list): List of line numbers representing the relative positions of lines within the declaration block.

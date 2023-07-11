@@ -115,9 +115,7 @@ class RequiredSingleUseDataFactory(DataFactoryBase):
 
 
 class EndCreateDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: Type[
-        ts.ParsedDirective
-    ] = icon4pytools.liskov.parsing.parse.EndCreate
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndCreate
     dtype: Type[EndCreateData] = EndCreateData
 
 
@@ -132,16 +130,12 @@ class EndIfDataFactory(OptionalMultiUseDataFactory):
 
 
 class EndProfileDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: Type[
-        ts.ParsedDirective
-    ] = icon4pytools.liskov.parsing.parse.EndProfile
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndProfile
     dtype: Type[EndProfileData] = EndProfileData
 
 
 class StartCreateDataFactory(DataFactoryBase):
-    directive_cls: Type[
-        ts.ParsedDirective
-    ] = icon4pytools.liskov.parsing.parse.StartCreate
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartCreate
     dtype: Type[StartCreateData] = StartCreateData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartCreateData]:
@@ -181,9 +175,7 @@ class DeclareDataFactory(DataFactoryBase):
         extracted = extract_directive(parsed["directives"], self.directive_cls)
         for i, directive in enumerate(extracted):
             named_args = parsed["content"]["Declare"][i]
-            ident_type = pop_item_from_dict(
-                named_args, "type", DEFAULT_DECLARE_IDENT_TYPE
-            )
+            ident_type = pop_item_from_dict(named_args, "type", DEFAULT_DECLARE_IDENT_TYPE)
             suffix = pop_item_from_dict(named_args, "suffix", DEFAULT_DECLARE_SUFFIX)
             deserialised.append(
                 self.dtype(
@@ -197,9 +189,7 @@ class DeclareDataFactory(DataFactoryBase):
 
 
 class StartProfileDataFactory(DataFactoryBase):
-    directive_cls: Type[
-        ts.ParsedDirective
-    ] = icon4pytools.liskov.parsing.parse.StartProfile
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartProfile
     dtype: Type[StartProfileData] = StartProfileData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartProfileData]:
@@ -208,16 +198,12 @@ class StartProfileDataFactory(DataFactoryBase):
         for i, directive in enumerate(extracted):
             named_args = parsed["content"]["StartProfile"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
-            deserialised.append(
-                self.dtype(name=stencil_name, startln=directive.startln)
-            )
+            deserialised.append(self.dtype(name=stencil_name, startln=directive.startln))
         return deserialised
 
 
 class EndStencilDataFactory(DataFactoryBase):
-    directive_cls: Type[
-        ts.ParsedDirective
-    ] = icon4pytools.liskov.parsing.parse.EndStencil
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndStencil
     dtype: Type[EndStencilData] = EndStencilData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[EndStencilData]:
@@ -242,9 +228,7 @@ class EndStencilDataFactory(DataFactoryBase):
 
 
 class StartStencilDataFactory(DataFactoryBase):
-    directive_cls: Type[
-        ts.ParsedDirective
-    ] = icon4pytools.liskov.parsing.parse.StartStencil
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartStencil
     dtype: Type[StartStencilData] = StartStencilData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
@@ -258,20 +242,13 @@ class StartStencilDataFactory(DataFactoryBase):
         """
         deserialised = []
         field_dimensions = flatten_list_of_dicts(
-            [
-                DeclareDataFactory.get_field_dimensions(dim)
-                for dim in parsed["content"]["Declare"]
-            ]
+            [DeclareDataFactory.get_field_dimensions(dim) for dim in parsed["content"]["Declare"]]
         )
         directives = extract_directive(parsed["directives"], self.directive_cls)
         for i, directive in enumerate(directives):
             named_args = parsed["content"]["StartStencil"][i]
-            acc_present = string_to_bool(
-                pop_item_from_dict(named_args, "accpresent", "true")
-            )
-            mergecopy = string_to_bool(
-                pop_item_from_dict(named_args, "mergecopy", "false")
-            )
+            acc_present = string_to_bool(pop_item_from_dict(named_args, "accpresent", "true"))
+            mergecopy = string_to_bool(pop_item_from_dict(named_args, "mergecopy", "false"))
             copies = string_to_bool(pop_item_from_dict(named_args, "copies", "true"))
             stencil_name = _extract_stencil_name(named_args, directive)
             bounds = self._make_bounds(named_args)

@@ -61,9 +61,7 @@ def test_dense_field_sid_rendering():
         return field
 
     @program
-    def identity_prog(
-        field: Field[[EdgeDim, KDim], float], out: Field[[EdgeDim, KDim], float]
-    ):
+    def identity_prog(field: Field[[EdgeDim, KDim], float], out: Field[[EdgeDim, KDim], float]):
         identity(field, out=out)
 
     stencil_info = get_stencil_info(identity_prog)
@@ -77,9 +75,7 @@ def test_dense_field_sid_rendering():
 
 def test_vertical_sparse_field_sid_rendering():
     @field_operator
-    def reduction(
-        nb_field: Field[[EdgeDim, E2CDim, KDim], float]
-    ) -> Field[[EdgeDim, KDim], float]:
+    def reduction(nb_field: Field[[EdgeDim, E2CDim, KDim], float]) -> Field[[EdgeDim, KDim], float]:
         return neighbor_sum(nb_field, axis=E2CDim)
 
     @program

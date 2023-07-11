@@ -64,9 +64,7 @@ class MultiLocation(metaclass=ABCMeta):
         if is_valid(chain):
             self.chain = chain
         else:
-            raise Exception(
-                f"chain {chain} contains two of the same elements in succession"
-            )
+            raise Exception(f"chain {chain} contains two of the same elements in succession")
 
     def __iter__(self) -> Iterator[BasicLocation]:
         return iter(self.chain)

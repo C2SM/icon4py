@@ -12,17 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
 
-from icon4pytools.liskov.codegen.integration.deserialise import (
-    IntegrationCodeDeserialiser,
-)
+from icon4pytools.liskov.codegen.integration.deserialise import IntegrationCodeDeserialiser
 from icon4pytools.liskov.codegen.integration.generate import IntegrationCodeGenerator
 from icon4pytools.liskov.codegen.integration.interface import IntegrationCodeInterface
-from icon4pytools.liskov.codegen.serialisation.deserialise import (
-    SerialisationCodeDeserialiser,
-)
-from icon4pytools.liskov.codegen.serialisation.generate import (
-    SerialisationCodeGenerator,
-)
+from icon4pytools.liskov.codegen.serialisation.deserialise import SerialisationCodeDeserialiser
+from icon4pytools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
 from icon4pytools.liskov.codegen.shared.write import CodegenWriter
 from icon4pytools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4pytools.liskov.parsing.parse import DirectivesParser
