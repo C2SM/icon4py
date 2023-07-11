@@ -29,6 +29,9 @@ SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
 
 
+# TODO(Magdalena): for preliminary version of the driver we need serialbox data which is in
+#  testutils, since that is no proper package we need to import it by hand here.
+#  Hence: Turn testutils into a package again?
 def import_testutils():
     testutils = (
         Path(__file__).parent.__str__() + "/../../../tests/test_utils/__init__.py"
