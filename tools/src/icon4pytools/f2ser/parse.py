@@ -21,7 +21,6 @@ from numpy.f2py.crackfortran import crackfortran
 
 from icon4pytools.f2ser.exceptions import MissingDerivedTypeError, ParsingError
 
-
 def crack(path: Path) -> dict:
     return crackfortran(path)[0]
 
@@ -293,12 +292,25 @@ class GranuleParser:
         end_subroutine_ln = code[: end_match.start()].count("\n") + 1
 
         # Find the last intent statement line number in the subroutine
-        declaration_pattern = r".*::\s*(\w+\b)"
-        declaration_pattern_lines = [
-            i
-            for i, line in enumerate(code.splitlines()[start_subroutine_ln:end_subroutine_ln])
-            if re.search(declaration_pattern, line)
-        ]
+        declaration_pattern = r".*::\s*(\w+\b)|.*::.*(\&)"
+        is_multiline_declaration = False
+        declaration_pattern_lines = []
+        for i, line in enumerate(code.splitlines()[start_subroutine_ln:end_subroutine_ln]):
+            if is_multiline_declaration == False:
+                if re.search(declaration_pattern, line):
+                    # this is a declaration line, don't know if single or multiline
+                    declaration_pattern_lines.append(i)
+                    if line.find("&") != -1:
+                        # this is a multiline declaration block
+                        is_multiline_declaration = True
+            else:
+                if is_multiline_declaration == True:
+                    # this is the continuation of a multiline declaration block
+                    declaration_pattern_lines.append(i)
+                    if line.find("&") == -1:
+                        # this is the last line of a multiline declaration block
+                        is_multiline_declaration = False
+
         if not declaration_pattern_lines:
             raise ParsingError(f"No declarations found in {self.granule_path}")
         last_declaration_ln = declaration_pattern_lines[-1] + start_subroutine_ln + 1
