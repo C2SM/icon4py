@@ -260,12 +260,9 @@ def test_horizontal_vertex_markers(
 
 @pytest.mark.datatest
 def test_cross_check_marker_equivalences(icon_grid):
-    """
-    Check actual equivalences of calculated markers.
+    """Check actual equivalences of calculated markers."""
+    # TODO(Magdalena): This should go away once we refactor these markers in a good way, such that no calculation need to be done with them anymore.
 
-    TODO [magdalena] This should go away once we refactor these markers in a good way, such that no
-    calculation need to be done with them anymore.
-    """
     assert icon_grid.get_indices_from_to(
         CellDim,
         HorizontalMarkerIndex.local(CellDim) - 1,

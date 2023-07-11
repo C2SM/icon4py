@@ -14,7 +14,7 @@ import logging
 import math
 import sys
 from collections import namedtuple
-from dataclasses import dataclass, field, InitVar
+from dataclasses import InitVar, dataclass, field
 from typing import Final, Optional, Tuple
 
 import numpy as np
@@ -96,6 +96,7 @@ class DiffusionConfig:
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     """
+
     # TODO(Magdalena): to be read from config
     # TODO(Magdalena):  handle dependencies on other namelists (see below...)
 
@@ -291,42 +292,54 @@ class DiffusionConfig:
     def substep_as_float(self):
         return float(self.ndyn_substeps)
 
+
 @dataclass(frozen=True)
 class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
+
     config: InitVar[DiffusionConfig]
     K2: Final[float] = field(init=False)
     K4: Final[float] = field(init=False)
     K6: Final[float] = field(init=False)
-    K4W: Final[float]= field(init=False)
+    K4W: Final[float] = field(init=False)
     smagorinski_factor: Final[float] = field(init=False)
     smagorinski_height: Final[float] = field(init=False)
     scaled_nudge_max_coeff: Final[float] = field(init=False)
 
-
     def __post_init__(self, config):
-        object.__setattr__(self, 'K2', (
-            1.0 / (config.hdiff_efdt_ratio * 8.0)
-            if config.hdiff_efdt_ratio > 0.0
-            else 0.0
-        ))
-        object.__setattr__(self, 'K4', self.K2 / 8.0)
-        object.__setattr__(self, 'K6', self.K2 / 64.0)
-        object.__setattr__(self, 'K4W',  (
-            1.0 / (config.hdiff_w_efdt_ratio * 36.0)
-            if config.hdiff_w_efdt_ratio > 0
-            else 0.0
-        ) )
+        object.__setattr__(
+            self,
+            "K2",
+            (
+                1.0 / (config.hdiff_efdt_ratio * 8.0)
+                if config.hdiff_efdt_ratio > 0.0
+                else 0.0
+            ),
+        )
+        object.__setattr__(self, "K4", self.K2 / 8.0)
+        object.__setattr__(self, "K6", self.K2 / 64.0)
+        object.__setattr__(
+            self,
+            "K4W",
+            (
+                1.0 / (config.hdiff_w_efdt_ratio * 36.0)
+                if config.hdiff_w_efdt_ratio > 0
+                else 0.0
+            ),
+        )
 
         (
             smagorinski_factor,
             smagorinski_height,
         ) = self._determine_smagorinski_factor(config)
-        object.__setattr__(self, 'smagorinski_factor', smagorinski_factor)
-        object.__setattr__(self, 'smagorinski_height', smagorinski_height)
+        object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
+        object.__setattr__(self, "smagorinski_height", smagorinski_height)
         # see mo_interpol_nml.f90:
-        object.__setattr__(self, 'scaled_nudge_max_coeff', config.nudge_max_coeff * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO)
-
+        object.__setattr__(
+            self,
+            "scaled_nudge_max_coeff",
+            config.nudge_max_coeff * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+        )
 
     def _determine_smagorinski_factor(self, config: DiffusionConfig):
         """Enhanced Smagorinsky diffusion factor.
@@ -357,7 +370,6 @@ class DiffusionParams:
                 smagorinski_height = None
                 pass
         return smagorinski_factor, smagorinski_height
-
 
 
 def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):

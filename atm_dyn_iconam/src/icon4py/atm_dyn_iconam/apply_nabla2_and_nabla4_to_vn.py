@@ -17,8 +17,6 @@ from gt4py.next.ffront.fbuiltins import Field, maximum
 from icon4py.common.dimension import EdgeDim, KDim
 
 
-
-
 @field_operator
 def _apply_nabla2_and_nabla4_to_vn(
     area_edge: Field[[EdgeDim], float],

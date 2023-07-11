@@ -30,10 +30,8 @@ from icon4py.common.dimension import (
 
 @dataclass
 class InterpolationState:
-    """
-    represents the ICON interpolation state.
+    """Represents the ICON interpolation state."""
 
-    """
     # TODO(Magdalena): keep? does this state make sense at all?
 
     e_bln_c_s: Field[
