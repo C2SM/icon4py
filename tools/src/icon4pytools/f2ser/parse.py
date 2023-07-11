@@ -21,6 +21,7 @@ from numpy.f2py.crackfortran import crackfortran
 
 from icon4pytools.f2ser.exceptions import MissingDerivedTypeError, ParsingError
 
+
 def crack(path: Path) -> dict:
     return crackfortran(path)[0]
 
@@ -65,8 +66,37 @@ class GranuleParser:
     def __call__(self) -> ParsedGranule:
         """Parse the granule and return the parsed data."""
         subroutines = self.parse_subroutines()
-        last_import_ln = self.find_last_fortran_use_statement()
+        last_import_ln = self._find_last_fortran_use_statement()
         return ParsedGranule(subroutines=subroutines, last_import_ln=last_import_ln)
+
+    def _find_last_fortran_use_statement(self) -> Optional[int]:
+        """Finds the line number of the last Fortran USE statement in the code.
+
+        Returns:
+            int: the line number of the last USE statement, or None if no USE statement is found.
+        """
+        # Reverse the order of the lines so we can search from the end
+        code = self._read_code_from_file()
+        code_lines = code.splitlines()
+        code_lines.reverse()
+
+        # Look for the last USE statement
+        use_ln = None
+        for i, line in enumerate(code_lines):
+            if line.strip().lower().startswith("use"):
+                use_ln = len(code_lines) - i
+                if i > 0 and code_lines[i - 1].strip().lower() == "#endif":
+                    # If the USE statement is preceded by an #endif statement, return the line number after the #endif statement
+                    return use_ln + 1
+                else:
+                    return use_ln
+        return None
+
+    def _read_code_from_file(self) -> str:
+        """Reads the content of the granule and returns it as a string."""
+        with open(self.granule_path) as f:
+            code = f.read()
+        return code
 
     def parse_subroutines(self):
         subroutines = self._extract_subroutines(crack(self.granule_path))
@@ -245,31 +275,12 @@ class GranuleParser:
         with_lines = deepcopy(parsed_types)
         for subroutine in with_lines:
             for intent in with_lines[subroutine]:
-                with_lines[subroutine][intent]["codegen_ctx"] = self.get_subroutine_lines(
+                with_lines[subroutine][intent]["codegen_ctx"] = self._get_subroutine_lines(
                     subroutine
                 )
         return with_lines
 
-    def find_last_fortran_use_statement(self):
-        with open(self.granule_path) as f:
-            file_contents = f.readlines()
-
-        # Reverse the order of the lines so we can search from the end
-        file_contents.reverse()
-
-        # Look for the last USE statement
-        use_ln = None
-        for i, line in enumerate(file_contents):
-            if line.strip().lower().startswith("use"):
-                use_ln = len(file_contents) - i
-                if i > 0 and file_contents[i - 1].strip().lower() == "#endif":
-                    # If the USE statement is preceded by an #endif statement, return the line number after the #endif statement
-                    return use_ln + 1
-                else:
-                    return use_ln
-        return None
-
-    def get_subroutine_lines(self, subroutine_name: str) -> CodegenContext:
+    def _get_subroutine_lines(self, subroutine_name: str) -> CodegenContext:
         """Return CodegenContext object containing line numbers of the last declaration statement and the code before the end of the given subroutine.
 
         Args:
@@ -278,10 +289,33 @@ class GranuleParser:
         Returns:
             CodegenContext: Object containing the line number of the last declaration statement and the line number of the last line of the code before the end of the given subroutine.
         """
-        with open(self.granule_path) as f:
-            code = f.read()
+        code = self._read_code_from_file()
 
-        # Find the line number where the subroutine is defined
+        start_subroutine_ln, end_subroutine_ln = self._find_subroutine_lines(code, subroutine_name)
+
+        variable_declaration_ln = self._find_variable_declarations(code, start_subroutine_ln, end_subroutine_ln)
+
+        if not variable_declaration_ln:
+            raise ParsingError(f"No variable declarations found in {self.granule_path}")
+
+        first_declaration_ln, last_declaration_ln = self._get_variable_declaration_bounds(variable_declaration_ln,
+                                                                                          start_subroutine_ln)
+
+        pre_end_subroutine_ln = end_subroutine_ln - 1  # we want to generate the code before the end of the subroutine
+
+        return CodegenContext(first_declaration_ln, last_declaration_ln, pre_end_subroutine_ln)
+
+    @staticmethod
+    def _find_subroutine_lines(code: str, subroutine_name: str) -> tuple[int]:
+        """Finds line numbers of a subroutine within a code block.
+
+        Args:
+            code (str): The code block to search for the subroutine.
+            subroutine_name (str): Name of the subroutine to find.
+
+        Returns:
+            tuple: Line numbers of the start and end of the subroutine.
+        """
         start_subroutine_pattern = r"SUBROUTINE\s+" + subroutine_name + r"\s*\("
         end_subroutine_pattern = r"END\s+SUBROUTINE\s+" + subroutine_name + r"\s*"
         start_match = re.search(start_subroutine_pattern, code)
@@ -290,34 +324,54 @@ class GranuleParser:
             return None
         start_subroutine_ln = code[: start_match.start()].count("\n") + 1
         end_subroutine_ln = code[: end_match.start()].count("\n") + 1
+        return start_subroutine_ln, end_subroutine_ln
 
-        # Find the last intent statement line number in the subroutine
+    @staticmethod
+    def _find_variable_declarations(code: str, start_subroutine_ln: int, end_subroutine_ln: int) -> list:
+        """Finds line numbers of variable declarations within a code block.
+
+        Args:
+            code (str): The code block to search for variable declarations.
+            start_subroutine_ln (int): Starting line number of the subroutine.
+            end_subroutine_ln (int): Ending line number of the subroutine.
+
+        Returns:
+            list: Line numbers of variable declaration lines.
+
+        This method identifies single-line and multiline variable declarations within
+        the specified code block, delimited by the start and end line numbers of the
+        subroutine. Multiline declarations are detected by the presence of an ampersand
+        character ('&') at the end of a line.
+        """
         declaration_pattern = r".*::\s*(\w+\b)|.*::.*(\&)"
         is_multiline_declaration = False
         declaration_pattern_lines = []
+
         for i, line in enumerate(code.splitlines()[start_subroutine_ln:end_subroutine_ln]):
-            if is_multiline_declaration == False:
+            if not is_multiline_declaration:
                 if re.search(declaration_pattern, line):
-                    # this is a declaration line, don't know if single or multiline
                     declaration_pattern_lines.append(i)
                     if line.find("&") != -1:
-                        # this is a multiline declaration block
                         is_multiline_declaration = True
             else:
-                if is_multiline_declaration == True:
-                    # this is the continuation of a multiline declaration block
+                if is_multiline_declaration:
                     declaration_pattern_lines.append(i)
                     if line.find("&") == -1:
-                        # this is the last line of a multiline declaration block
                         is_multiline_declaration = False
 
-        if not declaration_pattern_lines:
-            raise ParsingError(f"No declarations found in {self.granule_path}")
-        last_declaration_ln = declaration_pattern_lines[-1] + start_subroutine_ln + 1
+        return declaration_pattern_lines
+
+    @staticmethod
+    def _get_variable_declaration_bounds(declaration_pattern_lines: list, start_subroutine_ln: int) -> tuple:
+        """Returns the line numbers of the bounds for a variable declaration block.
+
+        Args:
+            declaration_pattern_lines (list): List of line numbers representing the relative positions of lines within the declaration block.
+            start_subroutine_ln (int): Line number indicating the starting line of the subroutine.
+
+        Returns:
+            tuple: Line number of the first declaration line, line number following the last declaration line.
+        """
         first_declaration_ln = declaration_pattern_lines[0] + start_subroutine_ln
-
-        pre_end_subroutine_ln = (
-            end_subroutine_ln - 1
-        )  # we want to generate the code before the end of the subroutine
-
-        return CodegenContext(first_declaration_ln, last_declaration_ln, pre_end_subroutine_ln)
+        last_declaration_ln = declaration_pattern_lines[-1] + start_subroutine_ln + 1
+        return first_declaration_ln, last_declaration_ln
