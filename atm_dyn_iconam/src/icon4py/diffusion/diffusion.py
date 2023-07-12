@@ -609,8 +609,6 @@ class Diffusion:
             self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
         )
 
-        set_zero_v_k.with_backend(backend)(self.u_vert, offset_provider={})
-        set_zero_v_k.with_backend(backend)(self.v_vert, offset_provider={})
         log.debug("rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
             p_e_in=prognostic_state.vn,
