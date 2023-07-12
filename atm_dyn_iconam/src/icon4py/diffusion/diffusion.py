@@ -15,6 +15,7 @@ import math
 import sys
 from collections import namedtuple
 from dataclasses import InitVar, dataclass, field
+from enum import Enum
 from typing import Final, Optional, Tuple
 
 import numpy as np
@@ -87,6 +88,18 @@ cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 backend = compiled_backend
 
+class DiffusionType(int, Enum):
+    """
+    Order of nabla operator for diffusion.
+    Note: Called `hdiff_order` in `mo_diffusion_nml.f90`.
+    Note: We currently only support type 5.
+    """
+    NO_DIFFUSION = -1  #: no diffusion
+    LINEAR_2ND_ORDER = 2  #: 2nd order linear diffusion on all vertical levels
+    SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
+    LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
+    SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
+
 
 class DiffusionConfig:
     """
@@ -102,7 +115,7 @@ class DiffusionConfig:
 
     def __init__(
         self,
-        diffusion_type: int = 5,
+        diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         hdiff_temp=True,
@@ -121,150 +134,89 @@ class DiffusionConfig:
         nudging_decay_rate: float = 2.0,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
-
         # parameters from namelist diffusion_nml
+
         self.diffusion_type: int = diffusion_type
-        """
-        Order of nabla operator for diffusion.
 
-        Called `hdiff_order` in mo_diffusion_nml.f90.
-        Possible values are:
-        - -1: no diffusion
-        - 2: 2nd order linear diffusion on all vertical levels
-        - 3: Smagorinsky diffusion without background diffusion
-        - 4: 4th order linear diffusion on all vertical levels
-        - 5: Smagorinsky diffusion with fourth-order background diffusion
-
-        We only support type 5.
-        TODO: [ml] use enum
-        """
-
+        #: If True, apply diffusion on the vertical wind field
+        #: Called `lhdiff_w` in mo_diffusion_nml.f90
         self.apply_to_vertical_wind: bool = hdiff_w
-        """
-        If True, apply diffusion on the vertical wind field
 
-        Called `lhdiff_w` in in mo_diffusion_nml.f90
-        """
-
+        #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
+        #: Called `lhdiff_vn` in mo_diffusion_nml.f90
         self.apply_to_horizontal_wind = hdiff_vn
-        """
-        If True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
 
-        Called `lhdiff_vn` in in mo_diffusion_nml.f90
-        """
-
+        #:  If True, apply horizontal diffusion to temperature field
+        #: Called `lhdiff_temp` in mo_diffusion_nml.f90
         self.apply_to_temperature: bool = hdiff_temp
-        """
-        If True, apply horizontal diffusion to temperature field
 
-        Called `lhdiff_temp` in in mo_diffusion_nml.f90
-        """
-
+        #: If True, compute 3D Smagorinsky diffusion coefficient
+        #: Called `lsmag_3d` in mo_diffusion_nml.f90
         self.compute_3d_smag_coeff: bool = smag_3d
-        """
-        If True, compute 3D Smagorinsky diffusion coefficient.
 
-        Called `lsmag_3d` in in mo_diffusion_nml.f90
-        """
-
+        #: Options for discretizing the Smagorinsky momentum diffusion
+        #: Called `itype_vn_diffu` in mo_diffusion_nml.f90
         self.type_vn_diffu: int = type_vn_diffu
-        """
-        Options for discretizing the Smagorinsky momentum diffusion.
 
-        Called `itype_vn_diffu` in in mo_diffusion_nml.f90
-        """
-
+        #: Options for discretizing the Smagorinsky temperature diffusion
+        #: Called `itype_t_diffu` inmo_diffusion_nml.f90
         self.type_t_diffu = type_t_diffu
-        """
-        Options for discretizing the Smagorinsky temperature diffusion.
 
-        Called `itype_t_diffu` in in mo_diffusion_nml.f90
-        """
-
+        #: Ratio of e-folding time to (2*)time step
+        #: Called `hdiff_efdt_ratio` inmo_diffusion_nml.f90
         self.hdiff_efdt_ratio: float = hdiff_efdt_ratio
-        """
-        Ratio of e-folding time to (2*)time step.
 
-        Called `hdiff_efdt_ratio` in in mo_diffusion_nml.f90.
-        """
-
+        #: Ratio of e-folding time to time step for w diffusion (NH only)
+        #: Called `hdiff_w_efdt_ratio` inmo_diffusion_nml.f90.
         self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
-        """
-        Ratio of e-folding time to time step for w diffusion (NH only).
 
-        Called `hdiff_w_efdt_ratio` in in mo_diffusion_nml.f90.
-        """
-
+        #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
+        #: Called `hdiff_smag_fac` inmo_diffusion_nml.f90
         self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
-        """
-        Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below.
 
-        Called `hdiff_smag_fac` in in mo_diffusion_nml.f90.
-        """
-
+        #: If True, apply truly horizontal temperature diffusion over steep slopes
+        #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
-        """
-        If True, apply truly horizontal temperature diffusion over steep slopes.
 
-        From parent namelist mo_nonhydrostatic_nml.f90, but is only used in diffusion,
-        and in mo_vertical_grid.f90>prepare_zdiffu.
-        Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90.
-        """
-
-        # from other namelists
-
+        # from other namelists:
         # from parent namelist mo_nonhydrostatic_nml
+
+        #: Number of dynamics substeps per fast-physics step
+        #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
         self.ndyn_substeps: int = n_substeps
-        """
-        Number of dynamics substeps per fast-physics step.
 
-        Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90.
-        """
-
+        #: If True, compute horizontal diffusion only at the large time step
+        #: Called 'lhdiff_rcf' in mo_nonhydrostatic_nml.f90
         self.lhdiff_rcf: bool = hdiff_rcf
-        """
-        If True, compute horizontal diffusion only at the large time step.
-
-        Called 'lhdiff_rcf' in mo_nonhydrostatic_nml.f90.
-        """
 
         # namelist mo_gridref_nml.f90
+
+        #: Denominator for temperature boundary diffusion
+        #: Called 'denom_diffu_t' in mo_gridref_nml.f90
         self.temperature_boundary_diffusion_denominator: float = (
             temperature_boundary_diffusion_denom
         )
-        """
-        Denominator for temperature boundary diffusion.
 
-        Called 'denom_diffu_t' in mo_gridref_nml.f90.
-        """
-
+        #: Denominator for velocity boundary diffusion
+        #: Called 'denom_diffu_v' in mo_gridref_nml.f90
         self.velocity_boundary_diffusion_denominator: float = (
             velocity_boundary_diffusion_denom
         )
-        """
-        Denominator for velocity boundary diffusion.
-
-        Called 'denom_diffu_v' in mo_gridref_nml.f90.
-        """
 
         # parameters from namelist: mo_interpol_nml.f90
+
+        #: Parameter describing the lateral boundary nudging in limited area mode.
+        #:
+        #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
+        #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
+        #: Called `nudge_max_coeff` in mo_interpol_nml.f90
         self.nudge_max_coeff: float = max_nudging_coeff
-        """
-        Parameter describing the lateral boundary nudging in limited area mode.
 
-        Maximal value of the nudging coefficients used cell row bordering the boundary
-        interpolation zone, from there nudging coefficients decay exponentially with
-        `nudge_efold_width` in units of cell rows.
 
-        Called `nudge_max_coeff` in mo_interpol_nml.f90
-        """
 
+        #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
+        #: Called `nudge_efold_width` in mo_interpol_nml.f90
         self.nudge_efold_width: float = nudging_decay_rate
-        """
-        Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients.
-
-        Called `nudge_efold_width` in mo_interpol_nml.f90
-        """
 
         self._validate()
 
