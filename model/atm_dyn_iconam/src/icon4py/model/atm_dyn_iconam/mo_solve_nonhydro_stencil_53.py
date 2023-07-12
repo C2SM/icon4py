@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field
 
@@ -22,7 +23,7 @@ def _mo_solve_nonhydro_stencil_53_scan(w_state: float, z_q: float, w: float) -> 
     return w + w_state * z_q
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_53(
     z_q: Field[[CellDim, KDim], float],
     w: Field[[CellDim, KDim], float],

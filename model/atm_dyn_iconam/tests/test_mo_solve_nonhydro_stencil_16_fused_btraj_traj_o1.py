@@ -84,7 +84,6 @@ def sten_16_numpy(
     z_rth_pr_1: np.array,
     z_rth_pr_2: np.array,
 ) -> np.array:
-
     z_rth_pr_1_e2c = z_rth_pr_1[e2c]
     z_rth_pr_2_e2c = z_rth_pr_2[e2c]
     z_grad_rth_1_e2c = z_grad_rth_1[e2c]

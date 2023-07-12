@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_46 import (
     mo_solve_nonhydro_stencil_46,
@@ -19,31 +20,25 @@ from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_46 import (
 from icon4py.model.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_46_numpy(
-    w_nnew: np.array,
-    z_contr_w_fl_l: np.array,
-) -> tuple[np.array]:
-    w_nnew = np.zeros_like(w_nnew)
-    z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
-    return w_nnew, z_contr_w_fl_l
+class TestMoSolveNonhydroStencil46(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_46
+    OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
 
+    @staticmethod
+    def reference(mesh, w_nnew: np.array, z_contr_w_fl_l: np.array, **kwargs) -> dict:
+        w_nnew = np.zeros_like(w_nnew)
+        z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
+        return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)
 
-def test_mo_solve_nonhydro_stencil_46_z_contr_w_fl_l():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_contr_w_fl_l = zero_field(mesh, CellDim, KDim)
+        w_nnew = zero_field(mesh, CellDim, KDim)
 
-    z_contr_w_fl_l = zero_field(mesh, CellDim, KDim)
-    w_nnew = zero_field(mesh, CellDim, KDim)
-
-    w_nnew_ref, z_contr_w_fl_l_ref = mo_solve_nonhydro_stencil_46_numpy(
-        np.asarray(w_nnew), np.asarray(z_contr_w_fl_l)
-    )
-    mo_solve_nonhydro_stencil_46(
-        w_nnew,
-        z_contr_w_fl_l,
-        offset_provider={},
-    )
-    assert np.allclose(w_nnew_ref, w_nnew)
-    assert np.allclose(z_contr_w_fl_l_ref, z_contr_w_fl_l)
+        return dict(
+            w_nnew=w_nnew,
+            z_contr_w_fl_l=z_contr_w_fl_l,
+        )

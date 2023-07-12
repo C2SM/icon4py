@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
@@ -28,7 +29,7 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
     return p_u_out, p_v_out
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: Field[[EdgeDim, KDim], float],
     ptr_coeff_1: Field[[VertexDim, V2EDim], float],

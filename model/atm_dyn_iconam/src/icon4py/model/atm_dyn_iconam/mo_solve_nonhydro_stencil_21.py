@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, int32
@@ -54,19 +55,19 @@ def _mo_solve_nonhydro_stencil_21(
     z_theta_1 = theta_v_1(E2C[1]) + zdiff_gradp(E2EC[1]) * (
         theta_v_ic_1(E2C[1]) - theta_v_ic_p1_1(E2C[1])
     ) * inv_ddqz_z_full_1(E2C[1])
-
+    # TODO(magdalena): change exponent back to int (workaround for gt4py)
     z_hydro_corr = (
         grav_o_cpd
         * inv_dual_edge_length
         * (z_theta_1 - z_theta_0)
         * float(4.0)
-        / (z_theta_0 + z_theta_1) ** 2
+        / (z_theta_0 + z_theta_1) ** 2.0
     )
 
     return z_hydro_corr
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_21(
     theta_v: Field[[CellDim, KDim], float],
     ikoffset: Field[[ECDim, KDim], int32],

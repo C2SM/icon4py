@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atm_dyn_iconam.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
@@ -19,46 +20,39 @@ from icon4py.model.atm_dyn_iconam.calculate_nabla2_for_z import (
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def calculate_nabla2_for_z_numpy(
-    e2c: np.array,
-    kh_smag_e: np.array,
-    inv_dual_edge_length: np.array,
-    theta_v: np.array,
-) -> np.array:
-    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+class TestCalculateNabla2ForZ(StencilTest):
+    PROGRAM = calculate_nabla2_for_z
+    OUTPUTS = ("z_nabla2_e",)
 
-    theta_v_e2c = theta_v[e2c]
-    theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
+    @staticmethod
+    def reference(
+        mesh,
+        kh_smag_e: np.array,
+        inv_dual_edge_length: np.array,
+        theta_v: np.array,
+        **kwargs,
+    ) -> np.array:
+        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
-    return z_nabla2_e
+        theta_v_e2c = theta_v[mesh.e2c]
+        theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
+        z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
+        return dict(z_nabla2_e=z_nabla2_e)
 
-def test_calculate_nabla2_for_z():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        kh_smag_e = random_field(mesh, EdgeDim, KDim)
+        inv_dual_edge_length = random_field(mesh, EdgeDim)
+        theta_v = random_field(mesh, CellDim, KDim)
+        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
 
-    kh_smag_e = random_field(mesh, EdgeDim, KDim)
-    inv_dual_edge_length = random_field(mesh, EdgeDim)
-    theta_v = random_field(mesh, CellDim, KDim)
-    z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-
-    ref = calculate_nabla2_for_z_numpy(
-        mesh.e2c,
-        np.asarray(kh_smag_e),
-        np.asarray(inv_dual_edge_length),
-        np.asarray(theta_v),
-    )
-
-    calculate_nabla2_for_z(
-        kh_smag_e,
-        inv_dual_edge_length,
-        theta_v,
-        z_nabla2_e,
-        offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
-        },
-    )
-    assert np.allclose(z_nabla2_e, ref)
+        return dict(
+            kh_smag_e=kh_smag_e,
+            inv_dual_edge_length=inv_dual_edge_length,
+            theta_v=theta_v,
+            z_nabla2_e=z_nabla2_e,
+        )

@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
@@ -48,14 +49,15 @@ def _calculate_nabla4(
         u_vert(E2C2V[3]) * primal_normal_vert_v1(E2ECV[3])
         + v_vert(E2C2V[3]) * primal_normal_vert_v2(E2ECV[3])
     )
+    # TODO(magdalena): change exponent back to int (workaround for gt4py)
     z_nabla4_e2 = 4.0 * (
-        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2
-        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2
+        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2.0
+        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2.0
     )
     return z_nabla4_e2
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_nabla4(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],

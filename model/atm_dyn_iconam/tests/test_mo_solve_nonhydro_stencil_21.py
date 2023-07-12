@@ -123,11 +123,6 @@ def test_mo_solve_nonhydro_stencil_21():
         grav_o_cpd,
     )
 
-    hstart = 0
-    hend = mesh.n_edges
-    kstart = 0
-    kend = mesh.k_level
-
     mo_solve_nonhydro_stencil_21(
         theta_v,
         ikoffset_new,
@@ -137,10 +132,6 @@ def test_mo_solve_nonhydro_stencil_21():
         inv_dual_edge_length,
         grav_o_cpd,
         z_hydro_corr,
-        hstart,
-        hend,
-        kstart,
-        kend,
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),

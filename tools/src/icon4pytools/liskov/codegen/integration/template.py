@@ -102,6 +102,7 @@ class EndStencilStatement(eve.Node):
     profile: bool
     noendif: Optional[bool]
     noprofile: Optional[bool]
+    noaccenddata: Optional[bool]
 
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -132,6 +133,10 @@ class EndStencilStatementGenerator(TemplatedGenerator):
             {{ output_fields }}
             {{ tolerance_fields }}
             {{ bounds_fields }}
+
+        {%- if not _this_node.noaccenddata %}
+        !$ACC END DATA
+        {%- endif %}
         """
     )
 
@@ -286,13 +291,20 @@ def render_index(n: int) -> str:
 class StartStencilStatementGenerator(TemplatedGenerator):
     StartStencilStatement = as_jinja(
         """
+
+        !$ACC DATA CREATE( &
+        {%- for d in _this_node.copy_declarations %}
+        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
+        {%- endfor %}
+        !$ACC      IF ( i_am_accel_node )
+
         #ifdef __DSL_VERIFY
         {% if _this_node.stencil_data.copies -%}
-        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
+        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
-        !$ACC END PARALLEL
+        !$ACC END KERNELS
         {%- endif -%}
 
         {%- if _this_node.profile %}
@@ -317,21 +329,7 @@ class ImportsStatementGenerator(TemplatedGenerator):
 
 
 class StartCreateStatement(eve.Node):
-    stencils: list[StartStencilData]
     extra_fields: Optional[list[str]]
-    out_field_names: list[str] = eve.datamodels.field(init=False)
-
-    def __post_init__(self) -> None:  # type: ignore
-        self.out_field_names = sorted(
-            set(
-                [
-                    field.variable
-                    for stencil in self.stencils
-                    for field in stencil.fields
-                    if field.out
-                ]
-            )
-        )
 
 
 class StartCreateStatementGenerator(TemplatedGenerator):
@@ -340,14 +338,10 @@ class StartCreateStatementGenerator(TemplatedGenerator):
         !$ACC DATA CREATE( &
         {%- if _this_node.extra_fields -%}
         {%- for name in extra_fields %}
-        !$ACC   {{ name }} {%- if not loop.last -%}, & {% else %}, & {%- endif -%}
+        !$ACC   {{ name }} {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
         {%- endfor %}
-        {%- endif -%}
-        {%- for name in out_field_names %}
-        !$ACC   {{ name }}_before {%- if not loop.last -%}, & {% else %} & {%- endif -%}
-        {%- endfor %}
-        !$ACC   ), &
-        !$ACC      IF ( i_am_accel_node )
+        {%- endif %}
+        !$ACC   IF ( i_am_accel_node )
         """
     )
 

@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, maximum
 
@@ -34,7 +35,7 @@ def _apply_nabla2_and_nabla4_to_vn(
     return vn
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_nabla2_and_nabla4_to_vn(
     area_edge: Field[[EdgeDim], float],
     kh_smag_e: Field[[EdgeDim, KDim], float],

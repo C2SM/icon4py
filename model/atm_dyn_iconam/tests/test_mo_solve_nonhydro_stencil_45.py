@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_45 import (
     mo_solve_nonhydro_stencil_45,
@@ -19,22 +20,22 @@ from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_45 import (
 from icon4py.model.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_45_numpy(z_alpha: np.array) -> np.array:
-    z_alpha = np.zeros_like(z_alpha)
-    return z_alpha
+class TestMoSolveNonhydroStencil45(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_45
+    OUTPUTS = ("z_alpha",)
 
+    @staticmethod
+    def reference(mesh, z_alpha: np.array, **kwargs) -> dict:
+        z_alpha = np.zeros_like(z_alpha)
+        return dict(z_alpha=z_alpha)
 
-def test_mo_solve_nonhydro_stencil_45():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_alpha = zero_field(mesh, CellDim, KDim)
 
-    z_alpha = zero_field(mesh, CellDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_45_numpy(np.asarray(z_alpha))
-    mo_solve_nonhydro_stencil_45(
-        z_alpha,
-        offset_provider={},
-    )
-    assert np.allclose(z_alpha, ref)
+        return dict(
+            z_alpha=z_alpha,
+        )

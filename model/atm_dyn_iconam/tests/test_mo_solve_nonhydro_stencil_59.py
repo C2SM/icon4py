@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_59 import (
     mo_solve_nonhydro_stencil_59,
@@ -19,27 +20,24 @@ from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_59 import (
 from icon4py.model.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_59_numpy(exner: np.array) -> np.array:
-    exner_dyn_incr = exner
-    return exner_dyn_incr
+class TestMoSolveNonhydroStencil59(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_59
+    OUTPUTS = ("exner_dyn_incr",)
 
+    @staticmethod
+    def reference(mesh, exner: np.array, **kwargs) -> dict:
+        exner_dyn_incr = exner
+        return dict(exner_dyn_incr=exner_dyn_incr)
 
-def test_mo_solve_nonhydro_stencil_59():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        exner = random_field(mesh, CellDim, KDim)
+        exner_dyn_incr = zero_field(mesh, CellDim, KDim)
 
-    exner = random_field(mesh, CellDim, KDim)
-    exner_dyn_incr = zero_field(mesh, CellDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_59_numpy(
-        np.asarray(exner),
-    )
-
-    mo_solve_nonhydro_stencil_59(
-        exner,
-        exner_dyn_incr,
-        offset_provider={},
-    )
-    assert np.allclose(exner_dyn_incr, ref)
+        return dict(
+            exner=exner,
+            exner_dyn_incr=exner_dyn_incr,
+        )

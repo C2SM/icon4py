@@ -1,6 +1,7 @@
 name: ICON4Py Quality Assurance
 
 on:
+    workflow_dispatch:
     push:
         branches:
             - main
@@ -9,6 +10,15 @@ on:
     pull_request:
         branches:
             - main
+        paths-ignore:
+            - "tools/**"
+        types: [opened, reopened, assigned, ready_for_review]
+    pull_request_review:
+        branches:
+            - main
+        paths-ignore:
+            - "tools/**"
+        types: [submitted]
 
 jobs:
     pre-commit:

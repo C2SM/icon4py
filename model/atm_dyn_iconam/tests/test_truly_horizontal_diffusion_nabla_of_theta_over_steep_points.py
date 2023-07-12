@@ -15,8 +15,8 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atm_dyn_iconam.mo_nh_diffusion_stencil_15 import (
-    mo_nh_diffusion_stencil_15,
+from icon4py.model.atm_dyn_iconam.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
+    truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 
@@ -106,12 +106,7 @@ def test_mo_nh_diffusion_stencil_15():
         np.asarray(z_temp),
     )
 
-    hstart = 0
-    hend = mesh.n_cells
-    kstart = 0
-    kend = mesh.k_level
-
-    mo_nh_diffusion_stencil_15(
+    truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         mask,
         zd_vertoffset_new,
         zd_diffcoef,
@@ -120,10 +115,6 @@ def test_mo_nh_diffusion_stencil_15():
         vcoef_new,
         theta_v,
         z_temp,
-        hstart,
-        hend,
-        kstart,
-        kend,
         offset_provider={
             "C2E2C": mesh.get_c2e2c_offset_provider(),
             "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, mesh.n_c2e2c),

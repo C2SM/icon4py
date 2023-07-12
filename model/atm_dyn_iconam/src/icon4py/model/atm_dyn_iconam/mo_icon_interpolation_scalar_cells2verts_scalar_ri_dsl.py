@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
@@ -26,7 +27,7 @@ def _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     return p_vert_out
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     p_cell_in: Field[[CellDim, KDim], float],
     c_intp: Field[[VertexDim, V2CDim], float],

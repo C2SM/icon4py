@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
     apply_nabla2_and_nabla4_global_to_vn,
@@ -19,51 +20,38 @@ from icon4py.model.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
 from icon4py.model.common.dimension import EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def apply_nabla2_and_nabla4_global_to_vn_numpy(
-    area_edge: np.array,
-    kh_smag_e: np.array,
-    z_nabla2_e: np.array,
-    z_nabla4_e2: np.array,
-    diff_multfac_vn: np.array,
-    vn: np.array,
-):
-    area_edge = np.expand_dims(area_edge, axis=-1)
-    diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
-    vn = vn + area_edge * (
-        kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge
-    )
-    return vn
+class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
+    PROGRAM = apply_nabla2_and_nabla4_global_to_vn
+    OUTPUTS = ("vn",)
 
+    @pytest.fixture
+    def input_data(self, mesh):
+        area_edge = random_field(mesh, EdgeDim)
+        kh_smag_e = random_field(mesh, EdgeDim, KDim)
+        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
+        z_nabla4_e2 = random_field(mesh, EdgeDim, KDim)
+        diff_multfac_vn = random_field(mesh, KDim)
+        vn = random_field(mesh, EdgeDim, KDim)
 
-def test_apply_nabla2_and_nabla4_global_to_vn():
-    mesh = SimpleMesh()
+        return dict(
+            area_edge=area_edge,
+            kh_smag_e=kh_smag_e,
+            z_nabla2_e=z_nabla2_e,
+            z_nabla4_e2=z_nabla4_e2,
+            diff_multfac_vn=diff_multfac_vn,
+            vn=vn,
+        )
 
-    area_edge = random_field(mesh, EdgeDim)
-    kh_smag_e = random_field(mesh, EdgeDim, KDim)
-    z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-    z_nabla4_e2 = random_field(mesh, EdgeDim, KDim)
-    diff_multfac_vn = random_field(mesh, KDim)
-    vn = random_field(mesh, EdgeDim, KDim)
-
-    vn_ref = apply_nabla2_and_nabla4_global_to_vn_numpy(
-        np.asarray(area_edge),
-        np.asarray(kh_smag_e),
-        np.asarray(z_nabla2_e),
-        np.asarray(z_nabla4_e2),
-        np.asarray(diff_multfac_vn),
-        np.asarray(vn),
-    )
-
-    apply_nabla2_and_nabla4_global_to_vn(
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        vn,
-        offset_provider={},
-    )
-    assert np.allclose(vn, vn_ref)
+    @staticmethod
+    def reference(
+        mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
+    ):
+        area_edge = np.expand_dims(area_edge, axis=-1)
+        diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
+        vn = vn + area_edge * (
+            kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge
+        )
+        return dict(vn=vn)

@@ -1,15 +1,30 @@
 name: ICON4PyTools Tox
 
 on:
+    workflow_dispatch:
     push:
         branches:
             - main
         paths:
             - "tools/**"
             - "base-requirements*"
+            - ".github/workflows/icon4pytools*"
     pull_request:
         branches:
             - main
+        paths:
+            - "tools/**"
+            - "base-requirements*"
+            - ".github/workflows/icon4pytools*"
+        types: [opened, reopened, assigned, ready_for_review]
+    pull_request_review:
+        branches:
+            - main
+        paths:
+            - "tools/**"
+            - "base-requirements*"
+            - ".github/workflows/icon4pytools*"
+        types: [submitted]
 
 jobs:
     tox-tests:

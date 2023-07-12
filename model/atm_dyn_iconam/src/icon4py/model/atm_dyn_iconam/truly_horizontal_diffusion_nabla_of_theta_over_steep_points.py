@@ -26,7 +26,7 @@ from icon4py.model.common.dimension import (
 
 
 @field_operator
-def _mo_nh_diffusion_stencil_15(
+def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     mask: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
     zd_diffcoef: Field[[CellDim, KDim], float],
@@ -72,7 +72,7 @@ def _mo_nh_diffusion_stencil_15(
 
 
 @program
-def mo_nh_diffusion_stencil_15(
+def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     mask: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
     zd_diffcoef: Field[[CellDim, KDim], float],
@@ -82,7 +82,7 @@ def mo_nh_diffusion_stencil_15(
     theta_v: Field[[CellDim, KDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ):
-    _mo_nh_diffusion_stencil_15(
+    _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         mask,
         zd_vertoffset,
         zd_diffcoef,

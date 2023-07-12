@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
@@ -30,7 +31,7 @@ def _temporary_fields_for_turbulence_diagnostics(
     return kh_c, div
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def temporary_fields_for_turbulence_diagnostics(
     kh_smag_ec: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],

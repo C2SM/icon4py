@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
@@ -19,29 +20,28 @@ from icon4py.model.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_c
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def enhance_diffusion_coefficient_for_grid_point_cold_pools_numpy(
-    e2c: np.array,
-    kh_smag_e: np.array,
-    enh_diffu_3d: np.array,
-) -> np.array:
-    kh_smag_e = np.maximum(kh_smag_e, np.max(enh_diffu_3d[e2c], axis=1))
-    return kh_smag_e
+class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
+    PROGRAM = enhance_diffusion_coefficient_for_grid_point_cold_pools
+    OUTPUTS = ("kh_smag_e",)
 
+    @staticmethod
+    def reference(
+        mesh,
+        kh_smag_e: np.array,
+        enh_diffu_3d: np.array,
+    ) -> np.array:
+        kh_smag_e = np.maximum(kh_smag_e, np.max(enh_diffu_3d[mesh.e2c], axis=1))
+        return dict(kh_smag_e=kh_smag_e)
 
-def test_enhance_diffusion_coefficient_for_grid_point_cold_pools():
-    mesh = SimpleMesh()
-    kh_smag_e = random_field(mesh, EdgeDim, KDim)
-    enh_diffu_3d = random_field(mesh, CellDim, KDim)
+    @pytest.fixture
+    def input_data(self, mesh):
+        kh_smag_e = random_field(mesh, EdgeDim, KDim)
+        enh_diffu_3d = random_field(mesh, CellDim, KDim)
 
-    kh_smag_e_ref = enhance_diffusion_coefficient_for_grid_point_cold_pools_numpy(
-        mesh.e2c, np.asarray(kh_smag_e), np.asarray(enh_diffu_3d)
-    )
-
-    enhance_diffusion_coefficient_for_grid_point_cold_pools(
-        kh_smag_e, enh_diffu_3d, offset_provider={"E2C": mesh.get_e2c_offset_provider()}
-    )
-
-    np.allclose(kh_smag_e_ref, kh_smag_e)
+        return dict(
+            kh_smag_e=kh_smag_e,
+            enh_diffu_3d=enh_diffu_3d,
+        )

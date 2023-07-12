@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atm_dyn_iconam.mo_velocity_advection_stencil_05 import (
     mo_velocity_advection_stencil_05,
@@ -19,40 +20,33 @@ from icon4py.model.atm_dyn_iconam.mo_velocity_advection_stencil_05 import (
 from icon4py.model.common.dimension import EdgeDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_velocity_advection_stencil_05_numpy(
-    vn: np.array, vt: np.array
-) -> tuple[np.array]:
-    vn_ie = vn
-    z_vt_ie = vt
-    z_kin_hor_e = 0.5 * ((vn * vn) + (vt * vt))
-    return vn_ie, z_vt_ie, z_kin_hor_e
+class TestMoVelocityAdvectionStencil05(StencilTest):
+    PROGRAM = mo_velocity_advection_stencil_05
+    OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
 
+    @staticmethod
+    def reference(mesh, vn: np.array, vt: np.array, **kwargs) -> dict:
+        vn_ie = vn
+        z_vt_ie = vt
+        z_kin_hor_e = 0.5 * ((vn * vn) + (vt * vt))
+        return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
-def test_mo_velocity_advection_stencil_05():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        vn = random_field(mesh, EdgeDim, KDim)
+        vt = random_field(mesh, EdgeDim, KDim)
 
-    vn = random_field(mesh, EdgeDim, KDim)
-    vt = random_field(mesh, EdgeDim, KDim)
+        vn_ie = zero_field(mesh, EdgeDim, KDim)
+        z_vt_ie = zero_field(mesh, EdgeDim, KDim)
+        z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
 
-    vn_ie = zero_field(mesh, EdgeDim, KDim)
-    z_vt_ie = zero_field(mesh, EdgeDim, KDim)
-    z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
-
-    vn_ie_ref, z_vt_ie_ref, z_kin_hor_e_ref = mo_velocity_advection_stencil_05_numpy(
-        np.asarray(vn), np.asarray(vt)
-    )
-
-    mo_velocity_advection_stencil_05(
-        vn,
-        vt,
-        vn_ie,
-        z_vt_ie,
-        z_kin_hor_e,
-        offset_provider={},
-    )
-    assert np.allclose(vn_ie, vn_ie_ref)
-    assert np.allclose(z_vt_ie, z_vt_ie_ref)
-    assert np.allclose(z_kin_hor_e, z_kin_hor_e_ref)
+        return dict(
+            vn=vn,
+            vt=vt,
+            vn_ie=vn_ie,
+            z_vt_ie=z_vt_ie,
+            z_kin_hor_e=z_kin_hor_e,
+        )

@@ -73,7 +73,9 @@ def integration_code_interface():
         mergecopy=False,
         copies=True,
     )
-    end_stencil_data = EndStencilData(name="stencil1", startln=3, noendif=False, noprofile=False)
+    end_stencil_data = EndStencilData(
+        name="stencil1", startln=3, noendif=False, noprofile=False, noaccenddata=False
+    )
     declare_data = DeclareData(
         startln=5,
         declarations={"field2": "(nproma, p_patch%nlev, p_patch%nblks_e)"},
@@ -93,8 +95,8 @@ def integration_code_interface():
         EndStencil=[end_stencil_data],
         Declare=[declare_data],
         Imports=imports_data,
-        StartCreate=start_create_data,
-        EndCreate=end_create_data,
+        StartCreate=[start_create_data],
+        EndCreate=[end_create_data],
         EndIf=[endif_data],
         StartProfile=[start_profile_data],
         EndProfile=[end_profile_data],
@@ -107,15 +109,8 @@ def expected_start_create_source():
     return """
 !$ACC DATA CREATE( &
 !$ACC   foo, &
-!$ACC   bar, &
-!$ACC   out1_before, &
-!$ACC   out2_before, &
-!$ACC   out3_before, &
-!$ACC   out4_before, &
-!$ACC   out5_before, &
-!$ACC   out6_before &
-!$ACC   ), &
-!$ACC      IF ( i_am_accel_node )"""
+!$ACC   bar ) &
+!$ACC   IF ( i_am_accel_node )"""
 
 
 @pytest.fixture
@@ -138,15 +133,24 @@ def expected_declare_source():
 @pytest.fixture
 def expected_start_stencil_source():
     return """
+        !$ACC DATA CREATE( &
+        !$ACC   out1_before, &
+        !$ACC   out2_before, &
+        !$ACC   out3_before, &
+        !$ACC   out4_before, &
+        !$ACC   out5_before, &
+        !$ACC   out6_before ) &
+        !$ACC      IF ( i_am_accel_node )
+
 #ifdef __DSL_VERIFY
-        !$ACC PARALLEL IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
+        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
         out1_before(:, :) = out1(:, :, 1)
         out2_before(:, :, :) = p_nh%prog(nnew)%out2(:, :, :)
         out3_before(:, :) = p_nh%prog(nnew)%w(:, :, jb)
         out4_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, 2)
         out5_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
         out6_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
-        !$ACC END PARALLEL
+        !$ACC END KERNELS
         call nvtxStartRange("stencil1")"""
 
 
@@ -175,7 +179,9 @@ def expected_end_stencil_source():
            vertical_lower=-1, &
            vertical_upper=-10, &
            horizontal_lower=1, &
-           horizontal_upper=10)"""
+           horizontal_upper=10)
+
+        !$ACC END DATA"""
 
 
 @pytest.fixture

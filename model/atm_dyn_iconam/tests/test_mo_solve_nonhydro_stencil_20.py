@@ -101,11 +101,6 @@ def test_mo_solve_nonhydro_stencil_20():
         np.asarray(z_dexner_dz_c_2),
     )
 
-    hstart = 0
-    hend = mesh.n_edges
-    kstart = 0
-    kend = mesh.k_level
-
     mo_solve_nonhydro_stencil_20(
         inv_dual_edge_length,
         z_exner_ex_pr,
@@ -114,10 +109,6 @@ def test_mo_solve_nonhydro_stencil_20():
         z_dexner_dz_c_1,
         z_dexner_dz_c_2,
         z_gradh_exner,
-        hstart,
-        hend,
-        kstart,
-        kend,
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),

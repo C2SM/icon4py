@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_50 import (
     mo_solve_nonhydro_stencil_50,
@@ -19,46 +20,39 @@ from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_50 import (
 from icon4py.model.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_50_numpy(
-    z_rho_expl: np.array,
-    rho_incr: np.array,
-    z_exner_expl: np.array,
-    exner_incr: np.array,
-    iau_wgt_dyn,
-) -> tuple[np.array]:
-    z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
-    z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
-    return z_rho_expl, z_exner_expl
+class TestMoSolveNonhydroStencil50(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_50
+    OUTPUTS = ("z_rho_expl", "z_exner_expl")
 
-
-def test_mo_solve_nonhydro_stencil_50():
-    mesh = SimpleMesh()
-
-    z_exner_expl = random_field(mesh, CellDim, KDim)
-    exner_incr = random_field(mesh, CellDim, KDim)
-    z_rho_expl = random_field(mesh, CellDim, KDim)
-    rho_incr = random_field(mesh, CellDim, KDim)
-    iau_wgt_dyn = 8.0
-
-    z_rho_expl_ref, z_exner_expl_ref = mo_solve_nonhydro_stencil_50_numpy(
-        np.asarray(z_rho_expl),
-        np.asarray(rho_incr),
-        np.asarray(z_exner_expl),
-        np.asarray(exner_incr),
+    @staticmethod
+    def reference(
+        mesh,
+        z_rho_expl: np.array,
+        rho_incr: np.array,
+        z_exner_expl: np.array,
+        exner_incr: np.array,
         iau_wgt_dyn,
-    )
+        **kwargs,
+    ) -> dict:
+        z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
+        z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
+        return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
-    mo_solve_nonhydro_stencil_50(
-        z_rho_expl,
-        z_exner_expl,
-        rho_incr,
-        exner_incr,
-        iau_wgt_dyn,
-        offset_provider={},
-    )
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_exner_expl = random_field(mesh, CellDim, KDim)
+        exner_incr = random_field(mesh, CellDim, KDim)
+        z_rho_expl = random_field(mesh, CellDim, KDim)
+        rho_incr = random_field(mesh, CellDim, KDim)
+        iau_wgt_dyn = 8.0
 
-    assert np.allclose(z_rho_expl, z_rho_expl_ref)
-    assert np.allclose(z_exner_expl, z_exner_expl_ref)
+        return dict(
+            z_rho_expl=z_rho_expl,
+            z_exner_expl=z_exner_expl,
+            rho_incr=rho_incr,
+            exner_incr=exner_incr,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )

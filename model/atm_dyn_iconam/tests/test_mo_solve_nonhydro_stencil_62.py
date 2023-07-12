@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_62 import (
     mo_solve_nonhydro_stencil_62,
@@ -19,33 +20,30 @@ from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_62 import (
 from icon4py.model.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_62_numpy(
-    w_now: np.array, grf_tend_w: np.array, dtime: float
-) -> np.array:
-    w_new = w_now + dtime * grf_tend_w
-    return w_new
+class TestMoSolveNonhydroStencil62(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_62
+    OUTPUTS = ("w_new",)
 
+    @staticmethod
+    def reference(
+        mesh, w_now: np.array, grf_tend_w: np.array, dtime: float, **kwargs
+    ) -> np.array:
+        w_new = w_now + dtime * grf_tend_w
+        return dict(w_new=w_new)
 
-def test_mo_solve_nonhydro_stencil_62():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        dtime = 10.0
+        w_now = random_field(mesh, CellDim, KDim)
+        grf_tend_w = random_field(mesh, CellDim, KDim)
+        w_new = zero_field(mesh, CellDim, KDim)
 
-    dtime = 10.0
-    w_now = random_field(mesh, CellDim, KDim)
-    grf_tend_w = random_field(mesh, CellDim, KDim)
-    w_new = zero_field(mesh, CellDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_62_numpy(
-        np.asarray(w_now), np.asarray(grf_tend_w), dtime
-    )
-
-    mo_solve_nonhydro_stencil_62(
-        w_now,
-        grf_tend_w,
-        w_new,
-        dtime,
-        offset_provider={},
-    )
-    assert np.allclose(w_new, ref)
+        return dict(
+            w_now=w_now,
+            grf_tend_w=grf_tend_w,
+            w_new=w_new,
+            dtime=dtime,
+        )
