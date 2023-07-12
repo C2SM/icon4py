@@ -34,7 +34,6 @@ from gt4py.next.ffront.fbuiltins import (
 )
 from gt4py.next.program_processors.runners import roundtrip
 
-
 from icon4py.common.dimension import CellDim, KDim
 from icon4py.shared.mo_math_utilities import gamma_fct
 from icon4py.shared.mo_math_constants import math_const
@@ -42,7 +41,8 @@ from icon4py.shared.mo_math_constants import math_const
 from icon4py.shared.mo_physical_constants import phy_const
 
 
-sys.setrecursionlimit(200000)
+sys.setrecursionlimit(350000)
+
 
 # This class contains all constants that are used in the transfer rate calculations
 class GraupelFunctionConstants(FrozenNamespace):
@@ -138,11 +138,11 @@ class GraupelGlobalConstants(FrozenNamespace):
    GrConst_v_sedi_rain_min    = 0.7              # in m/s; minimum terminal fall velocity of rain    particles (applied only near the ground)
    GrConst_v_sedi_snow_min    = 0.1              # in m/s; minimum terminal fall velocity of snow    particles (applied only near the ground)
    GrConst_v_sedi_graupel_min = 0.4              # in m/s; minimum terminal fall velocity of graupel particles (applied only near the ground)
-   GrConst_nimax_Thom         = 250.e+3          # FR: maximal number of ice crystals
+   GrConst_nimax_Thom         = 250.0e+3          # FR: maximal number of ice crystals
    #zams_ci= 0.069           # Formfactor in the mass-size relation of snow particles for cloud ice scheme
    #zams_gr= 0.069           # Formfactor in the mass-size relation of snow particles for graupel scheme
    GrConst_ams                = 0.069            # Formfactor in the mass-size relation of snow particles for graupel scheme
-   GrConst_n0s0               = 8.0E5            #
+   GrConst_n0s0               = 8.0e5            #
    GrConst_rimexp_g           = 0.94878          #
    GrConst_expsedg            = 0.217            # exponent for graupel sedimentation
    GrConst_vz0g               = 12.24            # coefficient of sedimentation velocity for graupel
@@ -158,7 +158,7 @@ class GraupelGlobalConstants(FrozenNamespace):
    GrConst_v1s                = 0.50             # Exponent in the terminal velocity for snow
    GrConst_eta                = 1.75e-5          # kinematic viscosity of air
    GrConst_dv                 = 2.22e-5          # molecular diffusion coefficient for water vapour
-   GrConst_lheat              = 2.40E-2          # thermal conductivity of dry air
+   GrConst_lheat              = 2.40e-2          # thermal conductivity of dry air
    GrConst_bms                = 2.000            # Exponent in the mass-size relation of snow particles
    GrConst_ami                = 130.0            # Formfactor in the mass-size relation of cloud ice
    GrConst_rhow               = 1.000e+3         # density of liquid water
@@ -173,11 +173,11 @@ class GraupelGlobalConstants(FrozenNamespace):
    GrConst_lstickeff      = True  # switch for sticking coeff. (work from Guenther Zaengl)
    GrConst_lred_depgrow   = True  # separate switch for reduced depositional growth near tops of water clouds
    #GrConst_ithermo_water  = False #
-   GrConst_l_cv           = True
-   GrConst_lpres_pri      = True
-   GrConst_ldass_lhn      = True # if true, latent heat nudging is applied
-   GrConst_ldiag_ttend    = True # if true, temperature tendency shall be diagnosed
-   GrConst_ldiag_qtend    = True # if true, moisture tendencies shall be diagnosed
+   #GrConst_l_cv           = True
+   #GrConst_lpres_pri      = True
+   #GrConst_ldass_lhn      = True # if true, latent heat nudging is applied
+   #GrConst_ldiag_ttend    = True # if true, temperature tendency shall be diagnosed
+   #GrConst_ldiag_qtend    = True # if true, moisture tendencies shall be diagnosed
    
    
    GrConst_x1o3   =  1.0/ 3.0
@@ -289,6 +289,7 @@ def snow_intercept(
    #
    #------------------------------------------------------------------------------
 
+
    output_n0s = 0.0
    # Calculate n0s using the temperature-dependent moment
    # relations of Field et al. (2005)
@@ -327,6 +328,7 @@ def snow_intercept(
    local_m3s = local_alf * exp(local_bet * log(local_m2s))
 
    local_hlp  = graupel_funcConst.GrFuncConst_n0s1 * exp(graupel_funcConst.GrFuncConst_n0s2 * local_tc)
+   output_n0s = 13.50 * local_m2s * (local_m2s / local_m3s)**3.0
    output_n0s = maximum( output_n0s , 0.5 * local_hlp )
    output_n0s = minimum( output_n0s , 1.0e2 * local_hlp )
    output_n0s = minimum( output_n0s , 1.0e9 )
@@ -334,7 +336,7 @@ def snow_intercept(
   
    return output_n0s
 
-
+  
 @field_operator
 def velocity_precFlux(
    input_TV: float64,
@@ -409,90 +411,6 @@ def velocity_precFlux(
    if ( (input_V_sedi_min != 0.0) & input_is_surface ):
       TV = maximum( TV, input_V_sedi_min )
 
-   return (TV, precFlux)
-
-
-
-
-@field_operator
-def velocity_precFlux_int(
-   input_TV: float64,
-   V_intg_factor: float64,
-   V_intg_exp: float64,
-   input_rhoq: float64,
-   input_q: float64,
-   input_q_kup: float64,
-   input_rho_kup: float64,
-   rho_factor: float64,
-   rho_factor_kup: float64,
-   V_intg_exp_1o2: float64,
-   input_V_sedi_min: float64,
-   intercept_param: float64,
-   input_is_top: bool,
-   input_is_surface: bool,
-   is_intercept_param: bool
-   ) -> tuple[float64,float64]:
-
-   #------------------------------------------------------------------------------
-   # Description:
-   #   This subroutine computes the precipitation flux and terminal velocity (only the new V , Eq. 5.18 in the documentation, will be output as TV) weighted by number density integrated over the size distribution. 
-   #   The terminal velocity is modified with a density factor that aims to take into account the effect of air density variation.
-   #
-   #   m = alpha D^beta, v = v0 D^b
-   #   rho q V = int_0^inf m v f dD rho_factor
-   #
-   #   exponential distribution: f = N0 exp(-lamda D)
-   #       V = v0 Gamma(b + beta + 1) 1 / (alpha N0 Gamma(beta + 1) )^(b/(beta + 1)) (rho q)^(b/(beta + 1)) rho_factor
-   #       V = V_intg_factor (rho q)^(V_intg_exp) rho_factor
-   #       precFlux = rho q V
-   #
-   #   gamma distribution: f = N0 D^(mu) exp(-lamda D)
-   #       V = v0 Gamma(b + beta + mu + 1) 1 / (alpha N0 Gamma(beta + mu + 1) )^(b/(beta + mu + 1)) (rho q)^(b/(beta + mu + 1)) rho_factor
-   #       V = V_intg_factor (rho q)^(V_intg_exp) rho_factor
-   #       precFlux = rho q V
-   #
-   #   V_new = V( 0.5(rho q new_k-1 + rho q old_k) )
-   #  
-   #------------------------------------------------------------------------------
-
-
-   TV = input_TV
-   precFlux = 0.0
-   terminal_velocity = V_intg_factor * exp(V_intg_exp * log(input_rhoq)) * rho_factor
-   # Prevent terminal fall speed of snow from being zero at the surface level
-   if ( (input_V_sedi_min != 0.0) & input_is_surface ):
-       
-      terminal_velocity = maximum( terminal_velocity, input_V_sedi_min )
-
-   if ( input_rhoq > graupel_const.GrConst_qmin ):
-      precFlux = input_rhoq * terminal_velocity
-
-   if ( not input_is_top ):
-      if ( input_q_kup + input_q <= graupel_const.GrConst_qmin ):
-         
-         TV = 0.0
-         
-      else:
-
-         if ( is_intercept_param ):
-            TV = intercept_param * exp(V_intg_exp * log((input_q_kup + input_q) * 0.5 * input_rho_kup)) * rho_factor_kup
-         else:
-            TV = V_intg_factor * exp(V_intg_exp * log((input_q_kup + input_q) * 0.5 * input_rho_kup)) * rho_factor_kup
-
-   if ( TV == 0.0 ):
-     
-      # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
-      if ( input_rhoq > graupel_const.GrConst_qmin ):
-         TV = terminal_velocity * V_intg_exp_1o2
-   
-      
-   # Prevent terminal fall speeds of precip hydrometeors from being zero at the surface level
-   if ( input_V_sedi_min != 0.0 ):
-     
-      if ( input_is_surface ):
-
-         TV = maximum( TV, input_V_sedi_min )
-   
    return (TV, precFlux)
 
 
@@ -1102,10 +1020,10 @@ def clearSky_evaporationAndFreezing(
 def latent_heat_vaporization(
    input_t: float64
 ) -> float64:
-   """Return latent heat of vaporization.
+   '''Return latent heat of vaporization.
 
    Computed as internal energy and taking into account Kirchoff's relations
-   """
+   '''
    # specific heat of water vapor at constant pressure (Landolt-Bornstein)
    #cp_v = 1850.0
 
@@ -1133,7 +1051,7 @@ def latent_heat_sublimation(
    #ci = 2108.0
 
    return(
-      phy_const.als + (graupel_const.GrConst_cp_v - graupel_const.GrConst_ci)*(input_t - phy_const.tmelt) - phy_const.rv * input_t
+      phy_const.als + (graupel_const.GrConst_cp_v - graupel_const.GrConst_ci) * (input_t - phy_const.tmelt) - phy_const.rv * input_t
    )
 
 
@@ -1165,7 +1083,7 @@ def sat_pres_water_murphykoop(
   
   # Eq. (10) of Murphy and Koop (2005)
   return ( 
-     exp( 54.842763 - 6763.22/input_t - 4.210*log(input_t) + 0.000367*input_t  + tanh(0.0415*(input_t - 218.8)) * (53.878 - 1331.22/input_t - 9.44523*log(input_t) + 0.014025*input_t) )
+     exp( 54.842763 - 6763.22 / input_t - 4.210 * log(input_t) + 0.000367 * input_t  + tanh(0.0415 * (input_t - 218.8)) * (53.878 - 1331.22 / input_t - 9.44523 * log(input_t) + 0.014025 * input_t) )
   )
     
 @field_operator
@@ -1175,9 +1093,8 @@ def sat_pres_ice_murphykoop(
   
   # Eq. (7) of Murphy and Koop (2005)
   return (
-     exp(9.550426 - 5723.265/input_t + 3.53068*log(input_t) - 0.00728332*input_t )
+     exp(9.550426 - 5723.265 / input_t + 3.53068 * log(input_t) - 0.00728332 * input_t )
   )
-
 
 @field_operator
 def TV(
@@ -1189,6 +1106,7 @@ def TV(
       graupel_funcConst.GrFuncConst_c1es * exp( graupel_funcConst.GrFuncConst_c3les * (input_t - phy_const.tmelt) / (input_t - graupel_funcConst.GrFuncConst_c4les) )
    )
 
+
 @scan_operator(
    axis=KDim,
    forward=True,
@@ -1197,7 +1115,7 @@ def TV(
       *(0.0,)*6, # mixing ratios
       0.0, # temperature tendency
       *(0.0,)*6, # mixing ratio tendencies
-      *(0.0,)*5, # precipitation fluxes
+      *(0.0,)*5, # rain, snow, graupel, ice, solid predicitation fluxes
       0.0, # density
       0.0, # density factor
       0.0, # density factor for ice
@@ -1229,8 +1147,8 @@ def _graupel_scan(
       float64, # qg tendency
       float64, # rain flux
       float64, # snow flux
-      float64, # graupel flux
       float64, # ice flux
+      float64, # graupel flux
       float64, # solid precipitation flux
       float64, # density
       float64, # density factor
@@ -1281,18 +1199,19 @@ def _graupel_scan(
    ddt_tend_qr: float64,
    ddt_tend_qs: float64,
    ddt_tend_qg: float64,
-   prr_gsp: float64,
-   prs_gsp: float64,
-   pri_gsp: float64,
-   prg_gsp: float64,
+   # Precipitation Fluxes
+   prr_gsp: float64,  # originally 2D Field, now 3D Field
+   prs_gsp: float64,  # originally 2D Field, now 3D Field
+   pri_gsp: float64,  # originally 2D Field, now 3D Field
+   prg_gsp: float64,  # originally 2D Field, now 3D Field
    qrsflux: float64,
    # Option Switches
-   #l_cv: bool,
-   #lpres_pri: bool,
-   ithermo_water: int32
-   #ldass_lhn: bool, # if true, latent heat nudging is applied
-   #ldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
-   #ldiag_qtend: bool  # if true, moisture tendencies shall be diagnosed
+   l_cv: bool,
+   lpres_pri: bool,
+   ithermo_water: int32,
+   ldass_lhn: bool, # if true, latent heat nudging is applied
+   ldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
+   ldiag_qtend: bool  # if true, moisture tendencies shall be diagnosed
    ):
 
    # unpack carry
@@ -1352,13 +1271,13 @@ def _graupel_scan(
    else:
       is_top = False
 
-   if ( k_lev == kend ):
+   if ( k_lev == kend - int32(1) ):
       is_surface = True
    else:
       is_surface = False
 
    # Define reciprocal of heat capacity of dry air (at constant pressure vs at constant volume)
-   if ( graupel_const.GrConst_l_cv ):
+   if ( l_cv ):
       Cheat_cap_r = phy_const.rcvd
    else:
       Cheat_cap_r = phy_const.rcpd
@@ -1384,7 +1303,7 @@ def _graupel_scan(
       # Calculate Latent heats if necessary
       CLHv = latent_heat_vaporization(temperature)
       CLHs = latent_heat_sublimation(temperature)
-
+   
    # for diagnosing the tendencies
    #if ( ldiag_ttend ):
    temperature_in = temperature
@@ -1396,17 +1315,23 @@ def _graupel_scan(
    qs_in = qs
    qg_in = qg
 
-   Cqvsw = sat_pres_water(temperature) / (rho * phy_const.rv * temperature)
-   
    #----------------------------------------------------------------------------
    # Section 2: Check for existence of rain and snow
    #            Initialize microphysics and sedimentation scheme
    #----------------------------------------------------------------------------
 
    # initialization of source terms (all set to zero)
-   Sidep_v2i = 0.0 # vapor   -> ice,     ice vapor deposition
+   Szdep_v2i = 0.0 # vapor   -> ice,     ice vapor deposition
+   Szsub_v2i = 0.0 # vapor   -> ice,     ice vapor sublimation
+   Sidep_v2i = 0.0 # vapor   -> ice,     ice vapor net deposition
+   #Ssdpc_v2s = 0.0 # vapor   -> snow,    snow vapor deposition below freezing temperature
+   #Sgdpc_v2g = 0.0 # vapor   -> graupel, graupel vapor deposition below freezing temperature
+   #Ssdph_v2s = 0.0 # vapor   -> snow,    snow vapor deposition above freezing temperature
+   #Sgdph_v2g = 0.0 # vapor   -> graupel, graupel vapor deposition above freezing temperature
    Ssdep_v2s = 0.0 # vapor   -> snow,    snow vapor deposition
    Sgdep_v2g = 0.0 # vapor   -> graupel, graupel vapor deposition
+   #Sdnuc_v2i = 0.0 # vapor   -> ice,     low temperature heterogeneous ice deposition nucleation
+   #Scnuc_v2i = 0.0 # vapor   -> ice,     incloud ice nucleation
    Snucl_v2i = 0.0 # vapor   -> ice,     ice nucleation
    Sconr_v2r = 0.0 # vapor   -> rain,    rain condensation on melting snow/graupel
    Scaut_c2r = 0.0 # cloud   -> rain,    cloud autoconversion into rain
@@ -1422,16 +1347,30 @@ def _graupel_scan(
    Saggg_i2g = 0.0 # ice     -> graupel, graupel-ice aggregation
    Siaut_i2s = 0.0 # ice     -> snow,    ice autoconversion into snow
    Srcri_r2g = 0.0 # rain    -> graupel, rain loss in rain-ice accretion
+   #Scrfr_r2g = 0.0 # rain    -> graupel, rain freezing in clouds
+   #Ssrfr_r2g = 0.0 # rain    -> graupel, rain freezing in clear sky
    Srfrz_r2g = 0.0 # rain    -> graupel, rain freezing
    Sevap_r2v = 0.0 # rain    -> vapor,   rain evaporation
    Ssmlt_s2r = 0.0 # snow    -> rain,    snow melting
    Scosg_s2g = 0.0 # snow    -> graupel, snow autoconversion into graupel
    Sgmlt_g2r = 0.0 # graupel -> rain,    graupel melting
 
+   reduce_dep = 1.0 # FR: Reduction coeff. for dep. growth of rain and ice
+   
    #----------------------------------------------------------------------------
    # 2.1: Preparations for computations and to check the different conditions
    #----------------------------------------------------------------------------
-
+   
+   #qrg  = make_normalized(qr(iv,k))
+   #qsg  = make_normalized(qs(iv,k))
+   #qgg  = make_normalized(qg(iv,k))
+   #qvg  = make_normalized(qv(iv,k))
+   #qcg  = make_normalized(qc(iv,k))
+   #qig  = make_normalized(qi(iv,k))
+   #tg   = t(iv,k)
+   #ppg  = p(iv,k)
+   #rhog = rho(iv,k)
+   
    #..for density correction of fall speeds
    C1orho     = 1.0 / rho
    Chlp       = log(graupel_const.GrConst_rho0 * C1orho)
@@ -1453,11 +1392,11 @@ def _graupel_scan(
    #-------------------------------------------------------------------------
    # qs_prepare:
    #-------------------------------------------------------------------------
-   Cvz0s = 0.0
    Cn0s   = graupel_const.GrConst_n0s0
-   #Crim   = 0.0
-   #Cagg   = 0.0
-   #Cbsdep = 0.0
+   Cvz0s  = 0.0
+   Crim   = 0.0
+   Cagg   = 0.0
+   Cbsdep = 0.0
    if (llqs):
       
       Cn0s = snow_intercept(qs,temperature,rho)
@@ -1465,9 +1404,10 @@ def _graupel_scan(
       # compute integration factor for terminal velocity
       Cvz0s  = graupel_const.GrConst_ccsvel * exp(graupel_const.GrConst_ccsvxp * log(Cn0s))
       # compute constants for riming, aggregation, and deposition processes for snow
-      #Crim   = graupel_const.GrConst_ccsrim * Cn0s
-      #Cagg   = graupel_const.GrConst_ccsagg * Cn0s
-      #Cbsdep = graupel_const.GrConst_ccsdep * sqrt(graupel_const.GrConst_v0snow)
+      Crim   = graupel_const.GrConst_ccsrim * Cn0s
+      Cagg   = graupel_const.GrConst_ccsagg * Cn0s
+      Cbsdep = graupel_const.GrConst_ccsdep * sqrt(graupel_const.GrConst_v0snow)
+      
 
    #----------------------------------------------------------------------------
    # 2.2: sedimentation fluxes
@@ -1476,6 +1416,7 @@ def _graupel_scan(
    #-------------------------------------------------------------------------
    # qs_sedi:
    #-------------------------------------------------------------------------
+   
    terminal_velocity = Cvz0s * exp (graupel_const.GrConst_ccswxp * log (rhoqs)) * Crho1o2
    # Prevent terminal fall speed of snow from being zero at the surface level
    if (is_surface): terminal_velocity = maximum( terminal_velocity, graupel_const.GrConst_v_sedi_snow_min )
@@ -1585,7 +1526,7 @@ def _graupel_scan(
    rhoqsV   = minimum( rhoqsV , rhoqs_intermediate )
    rhoqgV   = minimum( rhoqgV , maximum(0.0 , rhoqg_intermediate) )
    rhoqiV   = minimum( rhoqiV , rhoqi_intermediate )
-
+   
    # store the precipitation flux for computation at next k+1 level
    rhoqrV_old_kup = rhoqrV
    rhoqsV_old_kup = rhoqsV
@@ -1608,27 +1549,753 @@ def _graupel_scan(
    rhoqg = rhoqg_intermediate * Cimg
    rhoqi = rhoqi_intermediate * Cimi
 
+
+   #--------------------------------------------------------------------------
+   # 2.3: Second part of preparations
+   #--------------------------------------------------------------------------
+
+   Celn7o8qrk    = 0.0
+   Celn7o4qrk    = 0.0
+   Celn27o16qrk  = 0.0
+   Celn13o8qrk   = 0.0
+   Celn3o4qsk    = 0.0
+   Celn8qsk      = 0.0
+   Celn6qgk      = 0.0
+   Celnrimexp_g  = 0.0
+   Csrmax        = 0.0
+   Cssmax        = 0.0
+   Csgmax        = 0.0
+
+   #FR old
+   #   Csdep    = 3.2E-2
+   Csdep        = 3.367e-2
+   Cidep        = 1.3e-5
+   Cslam        = 1.0e10
+
+   Cscmax = qc * Cdtr
+   Cnin = 0.0
+   if ( graupel_const.GrConst_lsuper_coolw ):
+      Cnin = _fxna_cooper(temperature)
+      Cnin = minimum( Cnin , graupel_const.GrConst_nimax ) #_fxna_cooper(temperature) #5.0 * exp(0.304 * (phy_const.tmelt - temperature))
+   else:
+      Cnin = _fxna(temperature)
+      Cnin = minimum( Cnin , graupel_const.GrConst_nimax ) #_fxna_cooper(temperature) #5.0 * exp(0.304 * (phy_const.tmelt - temperature))
+   Cmi = minimum( rho * qi / Cnin , graupel_const.GrConst_mimax )
+   Cmi = maximum( graupel_const.GrConst_mi0 , Cmi )
+
+   Cqvsw = sat_pres_water(temperature) / (rho * phy_const.rv * temperature)
+   Cqvsi = sat_pres_ice(temperature) / (rho * phy_const.rv * temperature)
+   #Cqvsi = graupel_funcConst.GrFuncConst_c1es * exp( graupel_funcConst.GrFuncConst_c3ies * (temperature - phy_const.tmelt) / (temperature - graupel_funcConst.GrFuncConst_c4ies) ) /(rho * phy_const.rv * temperature)
+
+   llqr = True if rhoqr > graupel_const.GrConst_qmin else False
+   llqs = True if rhoqs > graupel_const.GrConst_qmin else False
+   llqg = True if rhoqg > graupel_const.GrConst_qmin else False
+   llqi = True if qi > graupel_const.GrConst_qmin else False
+   llqc = True if qc > graupel_const.GrConst_qmin else False
+
+   
+   ##----------------------------------------------------------------------------
+   ## 2.4: IF (llqr): ic1
+   ##----------------------------------------------------------------------------
+
+   if (llqr):
+      Clnrhoqr = log(rhoqr)
+      Csrmax   = rhoqr_intermediate / rho * Cdtr  # GZ: shifting this computation ahead of the IF condition changes results!
+      if ( qi + qc > graupel_const.GrConst_qmin ):
+         Celn7o8qrk   = exp(graupel_const.GrConst_x7o8   * Clnrhoqr)
+      if ( temperature < graupel_const.GrConst_trfrz ):
+         Celn7o4qrk   = exp(graupel_const.GrConst_x7o4   * Clnrhoqr) #FR new
+         Celn27o16qrk = exp(graupel_const.GrConst_x27o16 * Clnrhoqr)
+      if (llqi):
+         Celn13o8qrk  = exp(graupel_const.GrConst_x13o8  * Clnrhoqr)
       
+        
+   ##----------------------------------------------------------------------------
+   ## 2.5: IF (llqs): ic2
+   ##----------------------------------------------------------------------------
+
+   # ** GZ: the following computation differs substantially from the corresponding code in cloudice **
+   if (llqs):
+      Clnrhoqs = log(rhoqs)
+      Cssmax   = rhoqs_intermediate / rho * Cdtr  # GZ: shifting this computation ahead of the IF condition changes results#
+      if ( qi + qc > graupel_const.GrConst_qmin ):
+         Celn3o4qsk = exp(graupel_const.GrConst_x3o4 *Clnrhoqs)
+      Celn8qsk = exp(0.8 *Clnrhoqs)
+      
+   ##----------------------------------------------------------------------------
+   ## 2.6: IF (llqg): ic3
+   ##----------------------------------------------------------------------------
+
+   if (llqg):
+      Clnrhoqg = log(rhoqg)
+      Csgmax   = rhoqg_intermediate / rho * Cdtr
+      if ( qi + qc > graupel_const.GrConst_qmin ):
+         Celnrimexp_g = exp(graupel_const.GrConst_rimexp_g * Clnrhoqg)
+      Celn6qgk = exp(0.6 *Clnrhoqg)
+      
+   ##----------------------------------------------------------------------------
+   ## 2.7:  slope of snow PSD and coefficients for depositional growth (llqi,llqs)
+   ##----------------------------------------------------------------------------
+
+   if ( (qi > graupel_const.GrConst_qmin) | (rhoqs > graupel_const.GrConst_qmin) ):
+      Cdvtp  = graupel_const.GrConst_ccdvtp * exp(1.94 * log(temperature)) / pres
+      Chi    = graupel_const.GrConst_ccshi1 * Cdvtp * rho * Cqvsi/(temperature*temperature)
+      Chlp    = Cdvtp / (1.0 + Chi)
+      Cidep = graupel_const.GrConst_ccidep * Chlp
+
+      if (llqs):
+         Cslam = exp(graupel_const.GrConst_ccslxp * log(graupel_const.GrConst_ccslam * Cn0s / rhoqs ))
+         Cslam = minimum( Cslam , 1.0e15 )
+         Csdep = 4.0 * Cn0s * Chlp
+        
+   ##----------------------------------------------------------------------------
+   ## 2.8: Deposition nucleation for low temperatures below a threshold (llqv)
+   ##----------------------------------------------------------------------------
+   
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the heterogeneous ice deposition nucleation rate. 
+   #
+   #   ice nucleation rate = mi0 Ni / rho / dt, Eq. 5.101
+   #   mi0 is the initial ice crystal mass
+   #
+   #------------------------------------------------------------------------------
+   
+   if ( (temperature < graupel_funcConst.GrFuncConst_thet) | (qv > 8.e-6) & (qi <= 0.0) & (qv > Cqvsi) ):
+      Snucl_v2i = graupel_const.GrConst_mi0 * C1orho * Cnin * Cdtr
+
+
+
+   #--------------------------------------------------------------------------
+   # Section 3: Search for cloudy grid points with cloud water and
+   #            calculation of the conversion rates involving qc (ic6)
+   #--------------------------------------------------------------------------
+
+   ##----------------------------------------------------------------------------
+   ## 3.1: Autoconversion of clouds and accretion of rain
+   ##----------------------------------------------------------------------------
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the rate of autoconversion and accretion by rain. 
+   #
+   #   Method 1: iautocon = 1, Kessler (1969)
+   #   Method 2: iautocon = 2, Seifert and beheng (2001)
+   #
+   #------------------------------------------------------------------------------
+
+   # if there is cloud water and the temperature is above homogeneuous freezing temperature
+   if ( (qc > graupel_const.GrConst_qmin) & (temperature > graupel_const.GrConst_thn) ):
+
+      # Seifert and Beheng (2001) autoconversion rate
+      local_const = graupel_funcConst.GrFuncConst_kcau / (20.0 * graupel_funcConst.GrFuncConst_xstar) * (graupel_funcConst.GrFuncConst_cnue + 2.0) * (graupel_funcConst.GrFuncConst_cnue + 4.0) / (graupel_funcConst.GrFuncConst_cnue + 1.0)**2.0
+
+      # with constant cloud droplet number concentration qnc
+      if ( qc > 1.0e-6 ):
+         local_tau = minimum( 1.0 - qc / (qc + qr) , 0.9 )
+         local_tau = maximum( local_tau , 1.e-30 )
+         local_hlp  = exp(graupel_funcConst.GrFuncConst_kphi2 * log(local_tau))
+         local_phi = graupel_funcConst.GrFuncConst_kphi1 * local_hlp * (1.0 - local_hlp)**3.0
+         Scaut_c2r = local_const * qc * qc * qc * qc / (qnc * qnc) * (1.0 + local_phi / (1.0 - local_tau)**2.0)
+         local_phi = (local_tau / (local_tau + graupel_funcConst.GrFuncConst_kphi3))**4.0
+         Scacr_c2r = graupel_funcConst.GrFuncConst_kcac * qc * qr * local_phi
+
+
+   ##----------------------------------------------------------------------------
+   ## 3.2: Cloud and rain freezing in clouds
+   ##----------------------------------------------------------------------------
+
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the freezing rate of rain in clouds.
+   #
+   #   Method 1: lsuper_coolw = true, Eq. 5.80
+   #   Method 2: lsuper_coolw = false, Eq. 5.126, an approximation of combined immersion Eq. 5.80 and contact freezing Eq. 5.83 (ABANDONED)
+   #
+   #------------------------------------------------------------------------------
+
+   # if there is cloud water, and the temperature is above homogeneuous freezing temperature
+   if ( qc > graupel_const.GrConst_qmin ):
+      if ( temperature > graupel_const.GrConst_thn ):
+         # Calculation of in-cloud rainwater freezing
+         if ( (rhoqr > graupel_const.GrConst_qmin) & (temperature < graupel_const.GrConst_trfrz) & (qr > 0.1 * qc) ):
+            if ( graupel_const.GrConst_lsuper_coolw ):
+               Srfrz_r2g = graupel_const.GrConst_crfrz1 * ( exp(graupel_const.GrConst_crfrz2 * (graupel_const.GrConst_trfrz - temperature)) - 1.0 ) * Celn7o4qrk
+            else:
+               local_tfrzdiff = graupel_const.GrConst_trfrz - temperature
+               Srfrz_r2g = graupel_const.GrConst_crfrz * local_tfrzdiff * sqrt(local_tfrzdiff) * Celn27o16qrk
+      else:  
+         # tg <= tg: ! hom. freezing of cloud and rain water
+         Scfrz_c2i = Cscmax
+         Srfrz_r2g = Csrmax
+
+   
+
+   ##----------------------------------------------------------------------------
+   ## 3.3: Riming in clouds
+   ##----------------------------------------------------------------------------
+
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the rate of riming by snow and graupel in clouds.
+   #
+   #   riming or accretion rate = 1/rho intg_0^inf m_dot f dD (Eq. 5.64)
+   #   m_dot = pi/4 D^2 E(D) v(D) rho qc (Eq. 5.67)
+   #  
+   #   snow: f = N0 exp(-lamda D), E is constant, m(D) = alpha D^beta, v(D) = v0 D^b
+   #      snow riming = pi/4 qc N0 E v0 Gamma(b+3) / lamda^(b+3), lamda = (alpha N0 Gamma(beta+1) / rhoqs)^(beta+1)
+   #
+   #   graupel:
+   #      graupel riming = 4.43 qc rhoqg^0.94878 (Eq 5.152)
+   #      snow to graupel conversion = 0.5 qc rhoqs^0.75 (above Eq 5.132)
+   #
+   #   rain shedding is on if temperature is above zero degree celcius. In this case, riming tendencies are converted to rain shedding.
+   #  
+   #------------------------------------------------------------------------------
+   
+   # if there is cloud water and the temperature is above homogeneuous freezing temperature
+   if ( (qc > graupel_const.GrConst_qmin) & (temperature > graupel_const.GrConst_thn) ):
+     
+      if ( rhoqs > graupel_const.GrConst_qmin ): Srims_c2s = Crim * qc * exp(graupel_const.GrConst_ccsaxp * log(Cslam))
+      
+      Srimg_c2g = graupel_funcConst.GrFuncConst_crim_g * qc * Celnrimexp_g
+  
+      if ( temperature >= phy_const.tmelt ):
+         Sshed_c2r = Srims_c2s + Srimg_c2g
+         Srims_c2s = 0.0
+         Srimg_c2g = 0.0
+      else:
+         if ( qc >= graupel_funcConst.GrFuncConst_qc0 ):
+            Scosg_s2g = graupel_funcConst.GrFuncConst_csg * qc * Celn3o4qsk
+
+   
+
+   ##----------------------------------------------------------------------------
+   ## 3.4: Ice nucleation in clouds
+   ##----------------------------------------------------------------------------
+
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the ice nucleation in clouds.
+   #
+   #   Calculation of heterogeneous nucleation of cloud ice in clouds.
+   #   This is done in this section, because we require water saturation
+   #   for this process (i.e. the existence of cloud water) to exist.
+   #   Heterogeneous nucleation is assumed to occur only when no
+   #   cloud ice is present and the temperature is below a nucleation
+   #   threshold.
+   #  
+   #------------------------------------------------------------------------------
+
+   # if there is cloud water
+   if ( (qc > graupel_const.GrConst_qmin) & (temperature <= 267.15) & (qi <= graupel_const.GrConst_qmin) ):
+      if ( graupel_const.GrConst_lsuper_coolw ):
+         Snucl_v2i = graupel_const.GrConst_mi0 * C1orho * Cnin * Cdtr
+      else:
+         Snucl_v2i = graupel_const.GrConst_mi0 / rho * Cnin * Cdtr
+
+   
+
+   ##----------------------------------------------------------------------------
+   ## 3.5: Reduced deposition in clouds
+   ##----------------------------------------------------------------------------
+   # finalizing transfer rates in clouds and calculate depositional growth reduction
+   if ( llqc & (k_lev > kstart_moist) & (k_lev < kend - int32(1)) & graupel_const.GrConst_lred_depgrow ):
+      Cnin_cooper = _fxna_cooper(temperature)
+      Cnin_cooper = minimum( Cnin_cooper , graupel_const.GrConst_nimax )
+      Cfnuc = minimum( Cnin_cooper / graupel_const.GrConst_nimix , 1.0 )
+
+      Cqcgk_1 = qi_kup + qs_kup + qg_kup
+
+      # distance from cloud top
+      if ( (qv_kup + qc_kup < qvsw_kup) & (Cqcgk_1 < graupel_const.GrConst_qmin) ):      # upper cloud layer
+         dist_cldtop = 0.0    # reset distance to upper cloud layer
+      else:
+         dist_cldtop = dist_cldtop + dz
+
+      # with asymptotic behaviour dz -> 0 (xxx)
+      #        reduce_dep = MIN(fnuc + (1.0_wp-fnuc)*(reduce_dep_ref + &
+      #                             dist_cldtop(iv)/dist_cldtop_ref + &
+      #                             (1.0_wp-reduce_dep_ref)*(zdh/dist_cldtop_ref)**4), 1.0_wp)
+
+      # without asymptotic behaviour dz -> 0
+      reduce_dep = minimum( Cfnuc + (1.0 - Cfnuc) * ( graupel_const.GrConst_reduce_dep_ref + dist_cldtop / graupel_const.GrConst_dist_cldtop_ref ) , 1.0 )
+   
+   #------------------------------------------------------------------------
+   # Section 4: Search for cold grid points with cloud ice and/or snow and
+   #            calculation of the conversion rates involving qi, qs and qg
+   #------------------------------------------------------------------------
+   
+   ##----------------------------------------------------------------------------
+   ## 4.1: Aggregation in ice clouds
+   ##----------------------------------------------------------------------------
+
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the aggregation of snow and graupel in ice clouds when temperature is below zero degree celcius.
+   #
+   #
+   #   aggregation rate = 1/rho intg_0^inf m_dot f dD (Eq. 5.64)
+   #   m_dot = pi/4 D^2 E(T) v(D) rho qi (Eq. 5.67)
+   #  
+   #   snow: f = N0 exp(-lamda D), E changes with temperature, m(D) = alpha D^beta, v(D) = v0 D^b
+   #      snow aggregation = pi/4 qi N0 E(T) v0 Gamma(b+3) / lamda^(b+3), lamda = (alpha N0 Gamma(beta+1) / rhoqs)^(beta+1)
+   #
+   #   graupel:
+   #      graupel aggregation = 2.46 qc rhoqg^0.94878 (Eq 5.154)
+   #
+   #------------------------------------------------------------------------------
+
+   if ( (qi > graupel_const.GrConst_qmin) | (rhoqs > graupel_const.GrConst_qmin) | (rhoqg > graupel_const.GrConst_qmin) ):
+
+      if ( (temperature <= phy_const.tmelt) & (qi > graupel_const.GrConst_qmin) ):
+
+         # Change in sticking efficiency needed in case of cloud ice sedimentation
+         # (based on Guenther Zaengls work)
+         if ( graupel_const.GrConst_lstickeff ):
+            local_eff = minimum( exp(0.09 * (temperature - phy_const.tmelt)) , 1.0 )
+            local_eff = maximum( local_eff , graupel_const.GrConst_ceff_min )
+            local_eff = maximum( local_eff , graupel_const.GrConst_ceff_fac * (temperature - graupel_const.GrConst_tmin_iceautoconv) )
+         else: #original sticking efficiency of cloud ice
+            local_eff = minimum( exp(0.09 * (temperature - phy_const.tmelt)) , 1.0 )
+            local_eff = maximum( local_eff , 0.2 )
+         Saggs_i2s = local_eff * qi * Cagg * exp(graupel_const.GrConst_ccsaxp * log(Cslam))
+         Saggg_i2g = local_eff * qi * graupel_funcConst.GrFuncConst_cagg_g * Celnrimexp_g
+
+   
+   ##----------------------------------------------------------------------------
+   ## 4.2: Autoconversion of ice
+   ##----------------------------------------------------------------------------
+
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the autoconversion of ice crystals in ice clouds when temperature is below zero degree celcius.
+   #
+   #
+   #   iceAutoconversion = max(0.001 (qi - qi0), 0) Eq. 5.133
+   #
+   #------------------------------------------------------------------------------
+
+   if ( (qi > graupel_const.GrConst_qmin) | (rhoqs > graupel_const.GrConst_qmin) | (rhoqg > graupel_const.GrConst_qmin) ):
+
+      if ( (temperature <= phy_const.tmelt) & (qi > graupel_const.GrConst_qmin) ):
+
+         # Change in sticking efficiency needed in case of cloud ice sedimentation
+         # (based on Guenther Zaengls work)
+         if ( graupel_const.GrConst_lstickeff ):
+            local_eff = minimum( exp(0.09 * (temperature - phy_const.tmelt)) , 1.0 )
+            local_eff = maximum( local_eff , graupel_const.GrConst_ceff_min ) 
+            local_eff = maximum( local_eff , graupel_const.GrConst_ceff_fac * (temperature - graupel_const.GrConst_tmin_iceautoconv) )
+         else: #original sticking efficiency of cloud ice
+            local_eff = minimum( exp(0.09 * (temperature - phy_const.tmelt)) , 1.0 )
+            local_eff = maximum( local_eff , 0.2 )
+
+         Siaut_i2s = local_eff * graupel_funcConst.GrFuncConst_ciau * maximum( qi - graupel_funcConst.GrFuncConst_qi0 , 0.0 )
+
+
+
+   ##----------------------------------------------------------------------------
+   ## 4.3: Vapor deposition in ice clouds
+   ##----------------------------------------------------------------------------
+
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the vapor deposition of ice crystals and snow in ice clouds when temperature is below zero degree celcius.
+   #
+   #
+   #   deposition rate = 1/rho intg_0^inf m_dot f dD (Eq. 5.64)
+   #   m_dot = 4 pi C(D) G F(v,D) d (qv - qvsi),
+   #   G = 1/(1+Hw) and d are functions of environment
+   #   F = 1 + 0.26 sqrt(D v(D)/eta/2) is ventilation factor
+   #   C(D) = C0 D is capacitance (C0 = D/2 for a sphere, D/pi for a circular disk)
+   #
+   #   ice: f = Ni delta(D-Di), mi = ai Di^3 = rho qi / Nin, v(D) = 0
+   #   ice deposition or sublimation rate = c_dep Ni mi (qv - qvsi), Eq. 5.104
+   #
+   #   snow resulted from fast ice deposition = ice deposition rate / time_scale, Eq. 5.108
+   #
+   #   snow: f = N0 exp(-lamda D), v = v0 D^b
+   #   snow deposition rate = Eq. 5.118 (wrong?) , derived from Eq. 5.71 and 5.72
+   #      = 4 G d (qv - qvsi) N0 (1 + 0.26 sqrt(v0/eta/2) Gamma((5+b)/2)) / lamda^((1+b)/2) 1/lamda^(2)
+   #
+   #   graupel deposition = Eq. 5.140
+   #
+   #------------------------------------------------------------------------------
+ 
+   if ( (qi > graupel_const.GrConst_qmin) | (rhoqs > graupel_const.GrConst_qmin) | (rhoqg > graupel_const.GrConst_qmin) ):
+
+      if ( temperature <= phy_const.tmelt ):
+
+         local_qvsidiff = qv - Cqvsi
+         local_svmax    = local_qvsidiff * Cdtr
+
+         if ( qi > graupel_const.GrConst_qmin ):
+
+            local_nid     = rho * qi / Cmi
+            local_lnlogmi = log(Cmi)
+           
+            local_iceTotalDeposition = Cidep * local_nid * exp(0.33 * local_lnlogmi) * local_qvsidiff
+            #Szdep_v2i = 0.0
+            #Szsub_v2i = 0.0
+        
+            # for sedimenting quantities the maximum 
+            # allowed depletion is determined by the predictor value. 
+            if ( graupel_const.GrConst_lsedi_ice ):
+               local_simax = rhoqi_intermediate * C1orho * Cdtr
+            else:
+               local_simax  = qi * Cdtr
+           
+            if ( local_iceTotalDeposition > 0.0 ):
+               if ( graupel_const.GrConst_lred_depgrow ):
+                  local_iceTotalDeposition = local_iceTotalDeposition * reduce_dep  #FR new: depositional growth reduction
+               Szdep_v2i = minimum( local_iceTotalDeposition , local_svmax )
+            elif ( local_iceTotalDeposition < 0.0 ):
+               Szsub_v2i  =   maximum( local_iceTotalDeposition ,  local_svmax )
+               Szsub_v2i  = - maximum( Szsub_v2i , -local_simax )
+           
+            local_lnlogmi = log(graupel_funcConst.GrFuncConst_msmin / Cmi)
+            local_ztau    = 1.5 * (exp(0.66 * local_lnlogmi) - 1.0)
+            Sdaut_i2s     = Szdep_v2i / local_ztau
+           
+         
+         local_xfac = 1.0 + Cbsdep * exp(graupel_const.GrConst_ccsdxp * log(Cslam))
+         Ssdep_v2s = Csdep * local_xfac * local_qvsidiff / (Cslam + graupel_const.GrConst_eps)**2.0
+         #FR new: depositional growth reduction
+         if ( (graupel_const.GrConst_lred_depgrow) & (Ssdep_v2s > 0.0) ):
+            Ssdep_v2s = Ssdep_v2s * reduce_dep
+
+         # GZ: This limitation, which was missing in the original graupel scheme,
+         # is crucial for numerical stability in the tropics!
+         if ( Ssdep_v2s > 0.0 ): 
+            Ssdep_v2s = minimum( Ssdep_v2s , local_svmax - Szdep_v2i )
+         # Suppress depositional growth of snow if the existing amount is too small for a
+         # a meaningful distiction between cloud ice and snow
+         if ( qs <= 1.e-7 ):
+            Ssdep_v2s = minimum( Ssdep_v2s , 0.0 )
+         # ** GZ: this numerical fit should be replaced with a physically more meaningful formulation **
+         Sgdep_v2g = (
+            (
+               0.398561 -
+               0.00152398 * temperature +
+               2554.99 /
+               pres +
+               2.6531e-7 *
+               pres
+               ) * local_qvsidiff * Celn6qgk)
+
+
+   ##----------------------------------------------------------------------------
+   ## 4.4: Riming between rain and ice in ice clouds
+   ##----------------------------------------------------------------------------
+
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the ice loss and rain loss due to accretion of rain in ice clouds when temperature is below zero degree celcius.
+   #
+   #   riming rate = 1/rho intg_0^inf m_dot f dD (Eq. 5.64)
+   #   m_dot(ice loss) = pi/4 D^2 E(T) v(D) rho qi (Eq. 5.67)
+   #   m_dot(rain loss) = pi/4 D^5 E(T) v(D) rho qi (Eq. 5.67)
+   #  
+   #   rain: f = N0 D^mu exp(-lamda D), E is a constant, m(D) = alpha D^beta, v(D) = v0 D^b, b = 0.5 (Eq. 5.57)
+   #   ice: uniform size=Di and mass=mi
+   #
+   #   ice loss = pi/4 qi N0 E v0 Gamma(b+3) / lamda^(b+3), lamda = (alpha N0 Gamma(beta+1) / rhoqs)^(beta+1)
+   #
+   #   rain loss = pi/4 qi N0 E v0 Gamma(b+3) / lamda^(b+3), lamda = (alpha N0 Gamma(beta+1) / rhoqs)^(beta+1)
+   #
+   #------------------------------------------------------------------------------
+
+   if ( (qi > graupel_const.GrConst_qmin) | (rhoqs > graupel_const.GrConst_qmin) | (rhoqg > graupel_const.GrConst_qmin) ):
+
+      if ( (temperature <= phy_const.tmelt) & (qi > graupel_const.GrConst_qmin) ):
+
+         Sicri_i2g = graupel_funcConst.GrFuncConst_cicri * qi * Celn7o8qrk
+         if ( qs > 1.e-7 ):
+            Srcri_r2g = graupel_funcConst.GrFuncConst_crcri * (qi / Cmi) * Celn13o8qrk
+   
+   #------------------------------------------------------------------------
+   # Section 5: Search for warm grid points with cloud ice and/or snow and
+   #            calculation of the melting rates of qi and ps
+   #------------------------------------------------------------------------
+
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the vapor deposition of ice crystals, snow, and graupel in ice clouds when temperature is above zero degree celcius.
+   #
+   #
+   #   Ice crystals completely melt when temperature is above zero.
+   #
+   #   For snow and graupel, follow Eqs. 5.141 - 5.146
+   #
+   #------------------------------------------------------------------------------ 
+
+   if ( (qi > graupel_const.GrConst_qmin) | (rhoqs > graupel_const.GrConst_qmin) | (rhoqg > graupel_const.GrConst_qmin) ):
+
+      if ( temperature > phy_const.tmelt ):
+
+         # cloud ice melts instantaneously
+         if ( graupel_const.GrConst_lsedi_ice ):
+            Simlt_i2c = rhoqi_intermediate * C1orho * Cdtr
+         else:
+            Simlt_i2c = qi * Cdtr
+        
+         local_qvsw0     = graupel_const.GrConst_pvsw0 / (rho * phy_const.rv * phy_const.tmelt)
+         local_qvsw0diff = qv - local_qvsw0
+
+         # ** GZ: several numerical fits in this section should be replaced with physically more meaningful formulations **
+         if ( temperature > phy_const.tmelt - graupel_funcConst.GrFuncConst_tcrit * local_qvsw0diff ):
+            #calculate melting rate
+            local_x1  = temperature - phy_const.tmelt + graupel_funcConst.GrFuncConst_asmel * local_qvsw0diff
+            Ssmlt_s2r = (79.6863 / pres + 0.612654e-3) * local_x1 * Celn8qsk
+            Ssmlt_s2r = minimum( Ssmlt_s2r , Cssmax )
+            Sgmlt_g2r = (12.31698 / pres + 7.39441e-05) * local_x1 * Celn6qgk
+            Sgmlt_g2r = minimum( Sgmlt_g2r , Csgmax )
+            #deposition + melting, ice particle temperature: t0
+            #calculation without howell-factor!
+            Ssdep_v2s  = (31282.3 / pres + 0.241897) * local_qvsw0diff * Celn8qsk
+            Sgdep_v2g  = (0.153907 - pres * 7.86703e-07) * local_qvsw0diff * Celn6qgk
+            if ( local_qvsw0diff < 0.0 ):
+               #melting + evaporation of snow/graupel
+               Ssdep_v2s = maximum( -Cssmax , Ssdep_v2s )
+               Sgdep_v2g = maximum( -Csgmax , Sgdep_v2g )
+               #melt water evaporates
+               Ssmlt_s2r = Ssmlt_s2r + Ssdep_v2s
+               Sgmlt_g2r = Sgmlt_g2r + Sgdep_v2g
+               Ssmlt_s2r = maximum( Ssmlt_s2r , 0.0 )
+               Sgmlt_g2r = maximum( Sgmlt_g2r , 0.0 )
+            else:
+               #deposition on snow/graupel is interpreted as increase
+               #in rain water ( qv --> qr, sconr)
+               #therefore,  sconr=(zssdep+zsgdep)
+               Sconr_v2r = Ssdep_v2s + Sgdep_v2g
+               Ssdep_v2s = 0.0
+               Sgdep_v2g = 0.0
+         else: 
+            #if t<t_crit
+            #no melting, only evaporation of snow/graupel
+            #local_qvsw      = sat_pres_water(input_t) / (input_rho * phy_const.rv * input_t)
+            #output_qvsw_kup = local_qvsw ! redundant in the original code?
+            local_qvsidiff  = qv - Cqvsw
+            Ssdep_v2s = (0.28003 - pres * 0.146293e-6) * local_qvsidiff * Celn8qsk
+            Sgdep_v2g = (0.0418521 - pres * 4.7524e-8) * local_qvsidiff * Celn6qgk
+            Ssdep_v2s = maximum( -Cssmax , Ssdep_v2s )
+            Sgdep_v2g = maximum( -Csgmax , Sgdep_v2g )
+
+   #--------------------------------------------------------------------------
+   # Section 6: Search for grid points with rain in subsaturated areas
+   #            and calculation of the evaporation rate of rain
+   #--------------------------------------------------------------------------
+
+   #------------------------------------------------------------------------------
+   # Description:
+   #   This subroutine computes the evaporation rate of rain in subsaturated condition.
+   #
+   #
+   #   deposition rate = 1/rho intg_0^inf m_dot f dD (Eq. 5.64)
+   #   m_dot = 4 pi C(D) G F(v,D) d (qv - qvsw),
+   #   G = 1/(1+Hw) and d are functions of environment
+   #   F = 1 + 0.26 sqrt(D v(D)/eta/2) is ventilation factor
+   #   C(D) = C0 D is capacitance (C0 = D/2 for a sphere, D/pi for a circular disk)
+   #
+   #   snow resulted from fast ice deposition = ice deposition rate / time_scale, Eq. 5.108
+   #
+   #   rain: gamma distribution f = N0 D^(mu) exp(-lamda D), m = alpha D^beta, v = v0 D^b
+   #       V = v0 Gamma(b + beta + mu + 1) 1 / (alpha N0 Gamma(beta + mu + 1) )^(b/(beta + mu + 1)) (rho q)^(b/(beta + mu + 1)) rho_factor
+   #       rain evaporation rate = Eq. 5.117 (wrong?) , derived from Eq. 5.71 and 5.72
+   #                             = 2 pi G d (qv - qvsw) N0 (Gamma(2+mu) + 0.26 sqrt(v0/eta/2) Gamma((5+b+mu)/2)) / lamda^((1+b)/2) 1/lamda^(2+mu)
+   #       lamda = (alpha N0 Gamma(beta+mu+1) / rhoq )^(1/(beta+mu+1))
+   #
+   #       rain freezing rate =
+   #          Method 1: lsuper_coolw = true, Eq. 5.80
+   #          Method 2: lsuper_coolw = false, Eq. 5.126, an approximation of combined immersion Eq. 5.80 and contact freezing Eq. 5.83
+   #
+   #------------------------------------------------------------------------------
+
+   if ( (rhoqr > graupel_const.GrConst_qmin) & (qv + qc <= Cqvsw) ):
+
+      local_lnqr = log(rhoqr)
+      local_x1   = 1.0 + graupel_const.GrConst_bev * exp(graupel_const.GrConst_bevxp * local_lnqr)
+      #sev  = zcev*zx1*(zqvsw - qvg) * EXP (zcevxp  * zlnqrk)
+      # Limit evaporation rate in order to avoid overshoots towards supersaturation
+      # the pre-factor approximates (esat(T_wb)-e)/(esat(T)-e) at temperatures between 0 degC and 30 degC
+      local_temp_c  = temperature - phy_const.tmelt
+      local_maxevap = (0.61 - 0.0163 * local_temp_c + 1.111e-4 * local_temp_c**2.0) * (Cqvsw - qv) / dt
+      Sevap_r2v     = minimum( graupel_const.GrConst_cev * local_x1 * (Cqvsw - qv) * exp(graupel_const.GrConst_cevxp * local_lnqr) , local_maxevap )
+
+      if ( temperature > graupel_const.GrConst_thn ):
+         # Calculation of below-cloud rainwater freezing
+         if ( temperature < graupel_const.GrConst_trfrz ):
+            if (graupel_const.GrConst_lsuper_coolw):
+               #FR new: reduced rain freezing rate
+               Srfrz_r2g = graupel_const.GrConst_crfrz1 * (exp(graupel_const.GrConst_crfrz2 * (graupel_const.GrConst_trfrz - temperature)) - 1.0 ) * Celn7o4qrk
+            else:
+               Srfrz_r2g = graupel_const.GrConst_crfrz * sqrt( (graupel_const.GrConst_trfrz - temperature)**3.0 ) * Celn27o16qrk
+      else: # Hom. freezing of rain water
+         Srfrz_r2g = Csrmax
+
+   #--------------------------------------------------------------------------
+   # Section 7: Calculate the total tendencies of the prognostic variables.
+   #            Update the prognostic variables in the interior domain.
+   #--------------------------------------------------------------------------
+
+   #Snucl_v2i = Scnuc_v2i if Scnuc_v2i != 0.0 else Sdnuc_v2i
+   #Srfrz_r2g = Ssrfr_r2g if Ssrfr_r2g != 0.0 else Scrfr_r2g
+   #Ssdep_v2s = Ssdpc_v2s + Ssdph_v2s
+   #Sgdep_v2g = Sgdpc_v2g + Sgdph_v2g
+   
+   # finalizing transfer rates in clouds and calculate depositional growth reduction
+   if ( (qc > graupel_const.GrConst_qmin) & (temperature > graupel_const.GrConst_thn) ):
+
+      # Check for maximum depletion of cloud water and adjust the
+      # transfer rates accordingly
+      Csum      = Scaut_c2r + Scacr_c2r + Srims_c2s + Srimg_c2g + Sshed_c2r
+      Ccorr     = Cscmax / maximum( Cscmax, Csum )
+      Scaut_c2r = Ccorr*Scaut_c2r
+      Scacr_c2r = Ccorr*Scacr_c2r
+      Srims_c2s = Ccorr*Srims_c2s
+      Srimg_c2g = Ccorr*Srimg_c2g
+      Sshed_c2r = Ccorr*Sshed_c2r
+      Scosg_s2g = minimum (Scosg_s2g, Srims_c2s + Cssmax)
+         
+      
+   if ( (qi > graupel_const.GrConst_qmin) | (rhoqs > graupel_const.GrConst_qmin) | (rhoqg > graupel_const.GrConst_qmin) ):
+      llqs = True if rhoqs > graupel_const.GrConst_qmin else False
+      llqi = True if qi > graupel_const.GrConst_qmin else False
+
+      if ( temperature <= phy_const.tmelt ):           # cold case
+
+         Cqvsidiff = qv - Cqvsi
+         if (llqi):
+            Csimax = rhoqi_intermediate * C1orho * Cdtr if ( graupel_const.GrConst_lsedi_ice ) else qi * Cdtr
+         else:
+            Csimax =  0.0
+            
+         # Check for maximal depletion of cloud ice
+         # No check is done for depositional autoconversion (sdau) because
+         # this is a always a fraction of the gain rate due to
+         # deposition (i.e the sum of this rates is always positive)
+         Csum = Siaut_i2s + Saggs_i2s + Saggg_i2g + Sicri_i2g + Szsub_v2i
+         Ccorr  = 0.0
+         if ( Csimax > 0.0 ): Ccorr  = Csimax / maximum( Csimax , Csum )
+         Sidep_v2i = Szdep_v2i - Ccorr * Szsub_v2i
+         Siaut_i2s = Ccorr * Siaut_i2s
+         Saggs_i2s = Ccorr * Saggs_i2s
+         Saggg_i2g = Ccorr * Saggg_i2g
+         Sicri_i2g = Ccorr * Sicri_i2g
+         if ( Cqvsidiff < 0.0 ):
+            Ssdep_v2s = maximum( Ssdep_v2s , -Cssmax )
+            Sgdep_v2g = maximum( Sgdep_v2g , -Csgmax )
+            
+            
+   Csum  = Sevap_r2v + Srfrz_r2g + Srcri_r2g
+   Ccorr = 1.0
+   if ( Csum > 0.0 ): Ccorr  = Csrmax / maximum( Csrmax , Csum )
+   Sevap_r2v = Ccorr * Sevap_r2v
+   Srfrz_r2g = Ccorr * Srfrz_r2g
+   Srcri_r2g = Ccorr * Srcri_r2g
+
+   # limit snow depletion in order to avoid negative values of qs
+   Ccorr  = 1.0
+   if ( Ssdep_v2s <= 0.0 ):
+      Csum = Ssmlt_s2r + Scosg_s2g - Ssdep_v2s
+      if ( Csum > 0.0 ): Ccorr  = Cssmax / maximum( Cssmax , Csum )
+      Ssmlt_s2r = Ccorr * Ssmlt_s2r
+      Scosg_s2g = Ccorr * Scosg_s2g
+      Ssdep_v2s = Ccorr * Ssdep_v2s
+   else:
+      Csum = Ssmlt_s2r + Scosg_s2g
+      if ( Csum > 0.0 ): Ccorr  = Cssmax / maximum( Cssmax , Csum )
+      Ssmlt_s2r = Ccorr * Ssmlt_s2r
+      Scosg_s2g = Ccorr * Scosg_s2g
+      
+   Cqvt = Sevap_r2v - Sidep_v2i - Ssdep_v2s - Sgdep_v2g - Snucl_v2i - Sconr_v2r
+   Cqct = Simlt_i2c - Scaut_c2r - Scfrz_c2i - Scacr_c2r - Sshed_c2r - Srims_c2s - Srimg_c2g
+   Cqit = Snucl_v2i + Scfrz_c2i - Simlt_i2c - Sicri_i2g + Sidep_v2i - Sdaut_i2s - Saggs_i2s - Saggg_i2g - Siaut_i2s
+   Cqrt = Scaut_c2r + Sshed_c2r + Scacr_c2r + Ssmlt_s2r + Sgmlt_g2r - Sevap_r2v - Srcri_r2g - Srfrz_r2g + Sconr_v2r
+   Cqst = Siaut_i2s + Sdaut_i2s - Ssmlt_s2r + Srims_c2s + Ssdep_v2s + Saggs_i2s - Scosg_s2g
+   Cqgt = Saggg_i2g - Sgmlt_g2r + Sicri_i2g + Srcri_r2g + Sgdep_v2g + Srfrz_r2g + Srimg_c2g + Scosg_s2g
+
+
+   Ctt = Cheat_cap_r * ( CLHv * (Cqct + Cqrt) + CLHs * (Cqit + Cqst + Cqgt) )
+
+   # Update variables and add qi to qrs for water loading
+   qi = maximum( 0.0 , (rhoqi_intermediate * C1orho + Cqit * dt) * Cimi ) if ( graupel_const.GrConst_lsedi_ice ) else maximum( 0.0 , qi + Cqit * dt )
+   qr = maximum( 0.0 , (rhoqr_intermediate * C1orho + Cqrt * dt) * Cimr )
+   qs = maximum( 0.0 , (rhoqs_intermediate * C1orho + Cqst * dt) * Cims )
+   qg = maximum( 0.0 , (rhoqg_intermediate * C1orho + Cqgt * dt) * Cimg )
+   
+
    #----------------------------------------------------------------------
    # Section 10: Complete time step
    #----------------------------------------------------------------------
 
-   #prr_gsp_kup = 0.0
-   #prs_gsp_kup = 0.0
-   #pri_gsp_kup = 0.0
-   #prg_gsp_kup = 0.0
-   # good solution provided by Nikki to know where I am along the KDim axis
-   
-   # Precipitation fluxes at the ground
-   prr_gsp_kup = 0.5 * (qr * rho * Vnew_r + rhoqrV)
-   prs_gsp_kup = 0.5 * (rho * qs * Vnew_s + rhoqsV)
-   pri_gsp_kup = 0.5 * (rho * qi * Vnew_i + rhoqiV)
-   prg_gsp_kup = 0.5 * (qg * rho * Vnew_g + rhoqgV)
+   # Store precipitation fluxes for the next level
+   rhoqrV_new_kup = qr * rho * Vnew_r
+   rhoqsV_new_kup = qs * rho * Vnew_s
+   rhoqgV_new_kup = qg * rho * Vnew_g
+   rhoqiV_new_kup = qi * rho * Vnew_i
+   if ( rhoqrV_new_kup <= graupel_const.GrConst_qmin ): rhoqrV_new_kup = 0.0
+   if ( rhoqsV_new_kup <= graupel_const.GrConst_qmin ): rhoqsV_new_kup = 0.0
+   if ( rhoqgV_new_kup <= graupel_const.GrConst_qmin ): rhoqgV_new_kup = 0.0
+   if ( rhoqiV_new_kup <= graupel_const.GrConst_qmin ): rhoqiV_new_kup = 0.0
 
-   # for the latent heat nudging
-   qrsflux_kup = prr_gsp_kup + prs_gsp_kup + prg_gsp_kup
+   # Store the mixing ratios for the next level
+   qs_forV_kup = qs
+   qr_forV_kup = qr
+   qg_forV_kup = qg
+   qi_forV_kup = qi
+
+   # store the saturation mixing ratio, density, density factors for the next level
+   qvsw_kup = Cqvsw
+   rho_kup = rho
+   Crho1o2_kup = Crho1o2
+   Crhofac_qi_kup = Crhofac_qi
+   Cvz0s_kup = Cvz0s
+
+   prr_gsp = 0.0
+   prs_gsp = 0.0
+   pri_gsp = 0.0
+   prg_gsp = 0.0
+   # good solution provided by Nikki to know where I am along the KDim axis
+   if ( k_lev == kend - int32(1) ):
+
+      # Precipitation fluxes at the ground
+      prr_gsp = 0.5 * (qr * rho * Vnew_r + rhoqrV)
+      if (graupel_const.GrConst_lsedi_ice & lpres_pri):
+         prs_gsp = 0.5 * (rho * qs * Vnew_s + rhoqsV)
+         pri_gsp = 0.5 * (rho * qi * Vnew_i + rhoqiV)
+      elif (graupel_const.GrConst_lsedi_ice):
+         prs_gsp = 0.5 * (rho * (qs * Vnew_s + qi * Vnew_i) + rhoqsV + rhoqiV)
+      else:
+         prs_gsp = 0.5 * (qs * rho * Vnew_s + rhoqsV)
+      prg_gsp = 0.5 * (qg * rho * Vnew_g + rhoqgV)
+
+      # for the latent heat nudging
+      if ( ldass_lhn ): # THEN default: true
+         qrsflux = prr_gsp + prs_gsp + prg_gsp
+      
+   else:
+
+      # for the latent heat nudging
+      if ( ldass_lhn ): # THEN default: true
+         if (graupel_const.GrConst_lsedi_ice):
+            qrsflux = rhoqrV_new_kup + rhoqsV_new_kup + rhoqgV_new_kup + rhoqiV_new_kup
+            qrsflux = 0.5*(qrsflux + rhoqrV + rhoqsV + rhoqgV + rhoqiV)
+         else:
+            qrsflux = rhoqrV_new_kup + rhoqsV_new_kup + rhoqgV_new_kup
+            qrsflux = 0.5*(qrsflux + rhoqrV + rhoqsV + rhoqgV)
+   
+   # Update of prognostic variables or tendencies
+   qr = maximum( 0.0 , qr )
+   qs = maximum( 0.0 , qs )
+   qi = maximum( 0.0 , qi )
+   qg = maximum( 0.0 , qg )
+   temperature = temperature + Ctt * dt 
+   qv = maximum( 0.0 , qv + Cqvt * dt )
+   qc = maximum( 0.0 , qc + Cqct * dt )
    
    ddt_tend_t = 0.0
+   if ( ldiag_ttend ):
+      ddt_tend_t = (temperature - temperature_in) * Cdtr
    
    ddt_tend_qv = 0.0
    ddt_tend_qc = 0.0
@@ -1636,8 +2303,16 @@ def _graupel_scan(
    ddt_tend_qr = 0.0
    ddt_tend_qs = 0.0
    ddt_tend_qg = 0.0
+   if ( ldiag_qtend ):
+      ddt_tend_qv = maximum( -qv_in * Cdtr , (qv - qv_in) * Cdtr )
+      ddt_tend_qc = maximum( -qc_in * Cdtr , (qc - qc_in) * Cdtr )
+      ddt_tend_qi = maximum( -qi_in * Cdtr , (qi - qi_in) * Cdtr )
+      ddt_tend_qr = maximum( -qr_in * Cdtr , (qr - qr_in) * Cdtr )
+      ddt_tend_qs = maximum( -qs_in * Cdtr , (qs - qs_in) * Cdtr )
+      ddt_tend_qg = maximum( -qg_in * Cdtr , (qg - qg_in) * Cdtr )
 
-    # tracing current k level
+   
+   # tracing current k level
    k_lev = k_lev + int32(1)
    
    return (
@@ -1655,11 +2330,11 @@ def _graupel_scan(
       ddt_tend_qr,
       ddt_tend_qs,
       ddt_tend_qg,
-      prr_gsp_kup,
-      prs_gsp_kup,
-      pri_gsp_kup,
-      prg_gsp_kup,
-      qrsflux_kup,
+      prr_gsp,
+      prs_gsp,
+      pri_gsp,
+      prg_gsp,
+      qrsflux,
       rho_kup,
       Crho1o2_kup,
       Crhofac_qi_kup,
@@ -1705,7 +2380,7 @@ def _graupel(
    qg: Field[[CellDim, KDim], float64],
    # Number Densities
    qnc: Field[[CellDim, KDim], float64],
-   # tendencies, Optional Fields in Fortran code:
+   # Tendencies
    ddt_tend_t: Field[[CellDim, KDim], float64],
    ddt_tend_qv: Field[[CellDim, KDim], float64],
    ddt_tend_qc: Field[[CellDim, KDim], float64],
@@ -1713,12 +2388,16 @@ def _graupel(
    ddt_tend_qr: Field[[CellDim, KDim], float64],
    ddt_tend_qs: Field[[CellDim, KDim], float64],
    ddt_tend_qg: Field[[CellDim, KDim], float64],
-   # Precipitation Fluxes TODO: scan operator only returns field(KDim), I need a fix here
-   prr_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
-   prs_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
-   pri_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
-   prg_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
-   qrsflux: Field[[CellDim, KDim], float64],
+   # Precipitation Fluxes
+   prr_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field so record all precipitation flux at all grid cells
+   prs_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field so record all precipitation flux at all grid cells
+   pri_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field so record all precipitation flux at all grid cells
+   prg_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field so record all precipitation flux at all grid cells
+   #pri_gsp: Field[[CellDim], float64], # 2D ice precipitation Field
+   #prr_gsp: Field[[CellDim], float64], # 2D rain precipitation Field
+   #prs_gsp: Field[[CellDim], float64], # 2D snow precipitation Field
+   #prg_gsp: Field[[CellDim], float64], # 2D graupel precipitation Field
+   qrsflux: Field[[CellDim, KDim], float64], # 3D total precipitation field
    # Option Switches
    l_cv: bool,
    lpres_pri: bool,
@@ -1799,12 +2478,12 @@ def _graupel(
          pri_gsp,
          prg_gsp,
          qrsflux,
-         #l_cv,
-         #lpres_pri,
-         ithermo_water
-         #ldass_lhn,
-         #ldiag_ttend,
-         #ldiag_qtend
+         l_cv,
+         lpres_pri,
+         ithermo_water,
+         ldass_lhn,
+         ldiag_ttend,
+         ldiag_qtend
          )
 
    return(
@@ -1822,11 +2501,11 @@ def _graupel(
       ddt_tend_qr_,
       ddt_tend_qs_,
       ddt_tend_qg_,
+      pri_gsp_,
       prr_gsp_,
       prs_gsp_,
-      pri_gsp_,
       prg_gsp_,
-      qrsflux_,
+      qrsflux_
       )
 
 #(backend=roundtrip.executor)
@@ -1856,11 +2535,15 @@ def graupel(
    ddt_tend_qr: Field[[CellDim, KDim], float64],
    ddt_tend_qs: Field[[CellDim, KDim], float64],
    ddt_tend_qg: Field[[CellDim, KDim], float64],
-   # Precipitation Fluxes
+   # Precipitation Fluxes TODO: scan operator only returns field(KDim), I need a fix here
    prr_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
    prs_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
    pri_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
    prg_gsp: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
+   #pri_gsp: Field[[CellDim], float64], # 2D ice precipitation Field
+   #prr_gsp: Field[[CellDim], float64], # 2D rain precipitation Field
+   #prs_gsp: Field[[CellDim], float64], # 2D snow precipitation Field
+   #prg_gsp: Field[[CellDim], float64], # 2D graupel precipitation Field
    qrsflux: Field[[CellDim, KDim], float64],
    # Option Switches
    l_cv: bool,
@@ -1901,6 +2584,7 @@ def graupel(
       ddt_tend_qr,
       ddt_tend_qs,
       ddt_tend_qg,
+      # Precipitation Fluxes
       prr_gsp,
       prs_gsp,
       pri_gsp,
