@@ -12,7 +12,7 @@ on:
             - main
         paths-ignore:
             - "tools/**"
-        types: [opened, reopened, assigned, ready_for_review]
+        types: [opened, reopened, assigned, ready_for_review, edited]
     pull_request_review:
         branches:
             - main
@@ -43,12 +43,12 @@ jobs:
               run: |
                   python -m pip install --upgrade pip setuptools wheel
 
-            - name: Test icon4py-atm_dyn_iconam with tox
+            - name: Test icon4py-atmosphere-dycore with tox
               run: |
                   pyversion_no_dot="${{ matrix.python-version }}"
                   pyversion_no_dot="${pyversion_no_dot/./}"
                   pip install tox clang-format
-                  tox -r -e py${pyversion_no_dot} -c model/atm_dyn_iconam
+                  tox -r -e py${pyversion_no_dot} -c model/atmosphere/dycore
 
             - name: Test icon4py-common with tox
               run: |

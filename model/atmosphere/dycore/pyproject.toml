@@ -73,7 +73,7 @@ ignore_errors = true
 [tool.coverage.run]
 parallel = true
 branch = true
-source_pkgs = ['atm_dyn_iconam']
+source_pkgs = ['dycore']
 
 [tool.isort]
 lexicographical = true

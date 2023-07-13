@@ -16,7 +16,7 @@ on:
             - "tools/**"
             - "base-requirements*"
             - ".github/workflows/icon4pytools*"
-        types: [opened, reopened, assigned, ready_for_review]
+        types: [opened, reopened, assigned, ready_for_review, edited]
     pull_request_review:
         branches:
             - main
