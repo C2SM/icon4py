@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
+from icon4py.model.atmosphere.dycore.calculate_diagnostics_for_turbulence import (
     calculate_diagnostics_for_turbulence,
 )
 from icon4py.model.common.dimension import CellDim, KDim

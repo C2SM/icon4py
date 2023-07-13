@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from icon4py.model.atm_dyn_iconam.mo_velocity_advection_stencil_06 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
     mo_velocity_advection_stencil_06,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

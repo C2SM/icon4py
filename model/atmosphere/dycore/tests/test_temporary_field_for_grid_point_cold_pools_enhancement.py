@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.temporary_field_for_grid_point_cold_pools_enhancement import (
+from icon4py.model.atmosphere.dycore.temporary_field_for_grid_point_cold_pools_enhancement import (
     temporary_field_for_grid_point_cold_pools_enhancement,
 )
 from icon4py.model.common.dimension import CellDim, KDim

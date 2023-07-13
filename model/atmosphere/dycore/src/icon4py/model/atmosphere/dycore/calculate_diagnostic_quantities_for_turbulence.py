@@ -14,10 +14,10 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.model.atm_dyn_iconam.calculate_diagnostics_for_turbulence import (
+from icon4py.model.atmosphere.dycore.calculate_diagnostics_for_turbulence import (
     _calculate_diagnostics_for_turbulence,
 )
-from icon4py.model.atm_dyn_iconam.temporary_fields_for_turbulence_diagnostics import (
+from icon4py.model.atmosphere.dycore.temporary_fields_for_turbulence_diagnostics import (
     _temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim

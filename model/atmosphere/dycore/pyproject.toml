@@ -112,7 +112,7 @@ show_error_codes = true
 testpaths = 'tests'
 
 [tool.setuptools.dynamic]
-version = {attr = 'icon4py.model.atm_dyn_iconam.__init__.__version__'}
+version = {attr = 'icon4py.model.atmosphere.dycore.__init__.__version__'}
 
 [tool.setuptools.package-data]
-'icon4py.model.atm_dyn_iconam' = ['py.typed']
+'icon4py.model.atmosphere.dycore' = ['py.typed']

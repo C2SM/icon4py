@@ -1,7 +1,7 @@
 -r base-requirements-dev.txt
 
 # icon4py model
--e ./model/atm_dyn_iconam
+-e ./model/atmosphere/dycore
 -e ./model/common
 
 # icon4pytools

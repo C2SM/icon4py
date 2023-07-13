@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_01 import (
     mo_velocity_advection_stencil_01,
 )
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim

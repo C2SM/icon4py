@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
+from icon4py.model.atmosphere.dycore.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim

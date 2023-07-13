@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
+from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim

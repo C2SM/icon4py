@@ -14,16 +14,16 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 
-from icon4py.model.atm_dyn_iconam.apply_nabla2_and_nabla4_global_to_vn import (
+from icon4py.model.atmosphere.dycore.apply_nabla2_and_nabla4_global_to_vn import (
     _apply_nabla2_and_nabla4_global_to_vn,
 )
-from icon4py.model.atm_dyn_iconam.apply_nabla2_and_nabla4_to_vn import (
+from icon4py.model.atmosphere.dycore.apply_nabla2_and_nabla4_to_vn import (
     _apply_nabla2_and_nabla4_to_vn,
 )
-from icon4py.model.atm_dyn_iconam.apply_nabla2_to_vn_in_lateral_boundary import (
+from icon4py.model.atmosphere.dycore.apply_nabla2_to_vn_in_lateral_boundary import (
     _apply_nabla2_to_vn_in_lateral_boundary,
 )
-from icon4py.model.atm_dyn_iconam.calculate_nabla4 import _calculate_nabla4
+from icon4py.model.atmosphere.dycore.calculate_nabla4 import _calculate_nabla4
 from icon4py.model.common.dimension import ECVDim, EdgeDim, KDim, VertexDim
 
 

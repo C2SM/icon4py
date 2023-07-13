@@ -14,7 +14,7 @@
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atm_dyn_iconam.calculate_nabla4 import calculate_nabla4
+from icon4py.model.atmosphere.dycore.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common.dimension import (
     E2C2VDim,
     ECVDim,

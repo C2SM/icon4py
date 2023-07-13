@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_51 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_51 import (
     mo_solve_nonhydro_stencil_51,
 )
 from icon4py.model.common.dimension import CellDim, KDim

@@ -15,7 +15,7 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atm_dyn_iconam.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
+from icon4py.model.atmosphere.dycore.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim

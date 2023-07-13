@@ -14,10 +14,10 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.model.atm_dyn_iconam.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
+from icon4py.model.atmosphere.dycore.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     _enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
-from icon4py.model.atm_dyn_iconam.temporary_field_for_grid_point_cold_pools_enhancement import (
+from icon4py.model.atmosphere.dycore.temporary_field_for_grid_point_cold_pools_enhancement import (
     _temporary_field_for_grid_point_cold_pools_enhancement,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim

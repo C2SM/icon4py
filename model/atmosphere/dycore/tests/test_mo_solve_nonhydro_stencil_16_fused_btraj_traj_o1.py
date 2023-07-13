@@ -14,7 +14,7 @@
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim

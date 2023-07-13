@@ -70,7 +70,7 @@ source .venv/bin/activate
 pip install --upgrade wheel
 
 # Install a specific ICON4Py subpackage and its dependencies
-cd _SUBPACKAGE_  # where _SUBPACKAGE_ in atm_dyn_iconam | tools | ...
+cd _SUBPACKAGE_  # where _SUBPACKAGE_ in model/atmosphere/dycore | tools | ...
 pip install -r requirements-dev.txt
 
 # or in the case of there being a pyproject.toml file

@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.apply_nabla2_to_w_in_upper_damping_layer import (
+from icon4py.model.atmosphere.dycore.apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer,
 )
 from icon4py.model.common.dimension import CellDim, KDim

@@ -26,7 +26,7 @@
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atm_dyn_iconam.mo_velocity_advection_stencil_19 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
     mo_velocity_advection_stencil_19,
 )
 from icon4py.model.common.dimension import (

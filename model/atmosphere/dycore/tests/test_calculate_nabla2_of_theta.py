@@ -14,7 +14,7 @@
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atm_dyn_iconam.calculate_nabla2_of_theta import (
+from icon4py.model.atmosphere.dycore.calculate_nabla2_of_theta import (
     calculate_nabla2_of_theta,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim

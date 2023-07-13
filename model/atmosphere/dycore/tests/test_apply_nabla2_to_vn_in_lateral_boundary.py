@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.apply_nabla2_to_vn_in_lateral_boundary import (
+from icon4py.model.atmosphere.dycore.apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

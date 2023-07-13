@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_03 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_03 import (
     mo_solve_nonhydro_stencil_03,
 )
 from icon4py.model.common.dimension import CellDim, KDim

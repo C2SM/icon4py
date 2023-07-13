@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
+from icon4py.model.atmosphere.dycore.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim, V2EDim, VertexDim

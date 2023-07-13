@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atm_dyn_iconam.temporary_fields_for_turbulence_diagnostics import (
+from icon4py.model.atmosphere.dycore.temporary_fields_for_turbulence_diagnostics import (
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
