@@ -127,7 +127,7 @@ repos:
           - id: mypy
             name: mypy static type checker
             entry: bash -c 'echo mypy disabled'
-            #entry: bash -c 'cd model/atm_dyn_iconam; mypy src/' --
+            #entry: bash -c 'cd model/atmosphere/dycore; mypy src/' --
             language: system
             types_or: [python, pyi]
             always_run: true
