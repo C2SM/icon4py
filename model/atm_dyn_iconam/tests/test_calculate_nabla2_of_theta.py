@@ -19,8 +19,8 @@ from icon4py.model.atm_dyn_iconam.calculate_nabla2_of_theta import (
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 
-from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def calculate_nabla2_of_theta_numpy(

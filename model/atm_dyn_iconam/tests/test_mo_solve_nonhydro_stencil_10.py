@@ -18,8 +18,8 @@ from icon4py.model.atm_dyn_iconam.mo_solve_nonhydro_stencil_10 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 
-from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import random_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def mo_solve_nonhydro_stencil_10_numpy(

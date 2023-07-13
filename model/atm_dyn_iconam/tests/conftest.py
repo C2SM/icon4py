@@ -13,7 +13,7 @@
 import pytest
 from gt4py.next.program_processors.runners.roundtrip import executor
 
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 BACKENDS = {"embedded": executor}

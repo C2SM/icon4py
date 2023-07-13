@@ -19,8 +19,8 @@ from icon4py.model.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scala
 )
 from icon4py.model.common.dimension import CellDim, KDim, V2CDim, VertexDim
 
-from .test_utils.helpers import random_field, zero_field
-from .test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.stencil_test import StencilTest
 
 
 class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):

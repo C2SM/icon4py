@@ -19,8 +19,8 @@ from icon4py.model.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
 )
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
 
-from .test_utils.helpers import random_field, zero_field
-from .test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.stencil_test import StencilTest
 
 
 class TestMoVelocityAdvectionStencil01(StencilTest):

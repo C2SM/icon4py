@@ -20,13 +20,13 @@ from icon4py.model.atm_dyn_iconam.truly_horizontal_diffusion_nabla_of_theta_over
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 
-from .test_utils.helpers import (
+from icon4py.model.common.test_utils.helpers import (
     flatten_first_two_dims,
     random_field,
     random_mask,
     zero_field,
 )
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def mo_nh_diffusion_stencil_15_numpy(

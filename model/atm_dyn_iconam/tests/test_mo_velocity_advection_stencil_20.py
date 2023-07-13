@@ -25,8 +25,8 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 
-from .test_utils.helpers import random_field, random_mask
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import random_field, random_mask
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def mo_velocity_advection_stencil_20_numpy(
