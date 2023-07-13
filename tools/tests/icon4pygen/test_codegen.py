@@ -20,7 +20,9 @@ import pytest
 from click.testing import CliRunner
 
 from icon4pytools.icon4pygen.cli import main
+
 from .helpers import get_stencil_module_path
+
 
 DYCORE_PKG = "atmosphere.dycore"
 LEVELS_PER_THREAD = "1"
