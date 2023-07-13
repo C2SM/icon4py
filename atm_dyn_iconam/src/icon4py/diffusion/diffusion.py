@@ -782,8 +782,8 @@ class Diffusion:
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
-#            limited_area=self.grid.limited_area,
-            limited_area=True,
+            limited_area=self.grid.limited_area(),
+#            limited_area=True,
 #            horizontal_start=edge_start_lb_plus4,
 #            horizontal_end=edge_end_local,
 #            vertical_start=0,
@@ -798,6 +798,10 @@ class Diffusion:
         # #     mo_nh_diffusion_stencil_09, mo_nh_diffusion_stencil_10
 
         log.debug("running stencils 07_08_09_10: start")
+        if self.grid.limited_area():
+            horizontal_start__ = cell_start_interior
+        else:
+            horizontal_start__ = cell_start_nudging
         calculate_horizontal_gradients_for_turbulence.with_backend(backend)(
             w=prognostic_state.w,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
@@ -831,7 +835,7 @@ class Diffusion:
             geofac_n2s=self.interpolation_state.geofac_n2s,
             vertical_start=0,
             vertical_end=klevels,
-            horizontal_start=cell_start_interior,
+            horizontal_start=horizontal_start__,
             horizontal_end=cell_end_local,
             offset_provider={"C2E2CO": self.grid.get_c2e2co_connectivity()},
         )
@@ -844,7 +848,7 @@ class Diffusion:
             z_nabla2_c=z_nabla2_c,
             vertical_start=1,
             vertical_end=int(self.vertical_params.index_of_damping_layer + 1),
-            horizontal_start=int(cell_start_interior),
+            horizontal_start=int(horizontal_start__),
             horizontal_end=int(cell_end_local),
             offset_provider={},
         )
