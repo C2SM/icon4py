@@ -107,6 +107,9 @@ class VelocityAdvection:
     def _allocate_local_fields(self):
         self.z_w_v = _allocate(VertexDim, KDim, mesh=self.grid)
         self.z_v_grad_w = _allocate(EdgeDim, KDim, mesh=self.grid)
+        self.z_kin_hor_e = _allocate(EdgeDim, KDim, mesh=self.grid)
+        self.z_vt_ie = _allocate(EdgeDim, KDim, mesh=self.grid)
+        self.z_w_concorr_me = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_ekinh = _allocate(CellDim, KDim, mesh=self.grid)
         self.z_w_concorr_mc = _allocate(CellDim, KDim, mesh=self.grid)
         self.z_w_con_c = _allocate(CellDim, KDim, mesh=self.grid)
@@ -123,9 +126,6 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
-        z_w_concorr_me: Field[[EdgeDim, KDim], float],
-        z_kin_hor_e: Field[[EdgeDim, KDim], float],
-        z_vt_ie: Field[[EdgeDim, KDim], float],
         inv_dual_edge_length: Field[[EdgeDim], float],
         inv_primal_edge_length: Field[[EdgeDim], float],
         dtime: float,
@@ -163,7 +163,7 @@ class VelocityAdvection:
 
         (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
             CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 4,
+            HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
             HorizontalMarkerIndex.local(CellDim) - 1,
         )
 
@@ -178,6 +178,7 @@ class VelocityAdvection:
             HorizontalMarkerIndex.nudging(EdgeDim) + 1,
             HorizontalMarkerIndex.local(EdgeDim),
         )
+
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
@@ -226,7 +227,7 @@ class VelocityAdvection:
             prognostic_state.vn,
             diagnostic_state.vt,
             diagnostic_state.vn_ie,
-            z_kin_hor_e,
+            self.z_kin_hor_e,
             horizontal_start=indices_1_1,
             horizontal_end=indices_1_2,
             vertical_start=1,
@@ -238,9 +239,9 @@ class VelocityAdvection:
 
         if not vn_only:
             mo_velocity_advection_stencil_03.with_backend(run_gtfn)(
-                diagnostic_state.vt,
                 self.metric_state.wgtfac_e,
-                z_vt_ie,
+                diagnostic_state.vt,
+                self.z_vt_ie,
                 horizontal_start=indices_1_1,
                 horizontal_end=indices_1_2,
                 vertical_start=1,
@@ -252,11 +253,11 @@ class VelocityAdvection:
             prognostic_state.vn,
             diagnostic_state.vt,
             diagnostic_state.vn_ie,
-            z_vt_ie,
-            z_kin_hor_e,
+            self.z_vt_ie,
+            self.z_kin_hor_e,
             self.metric_state.ddxn_z_full,
             self.metric_state.ddxt_z_full,
-            z_w_concorr_me,
+            self.z_w_concorr_me,
             self.metric_state.wgtfacq_e_dsl,
             self.k_field,
             self.vertical_params.nflatlev,
@@ -275,7 +276,7 @@ class VelocityAdvection:
                 diagnostic_state.vn_ie,
                 inv_dual_edge_length,
                 prognostic_state.w,
-                z_vt_ie,
+                self.z_vt_ie,
                 inv_primal_edge_length,
                 tangent_orientation,
                 self.z_w_v,
@@ -291,7 +292,7 @@ class VelocityAdvection:
             )
 
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
-            z_kin_hor_e,
+            self.z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
             self.z_ekinh,
             horizontal_start=indices_3_1,
@@ -305,7 +306,7 @@ class VelocityAdvection:
         )
 
         velocity_prog.fused_stencils_9_10.with_backend(run_gtfn)(
-            z_w_concorr_me,
+            self.z_w_concorr_me,
             self.interpolation_state.e_bln_c_s,
             self.z_w_concorr_mc,
             self.metric_state.wgtfac_c,
@@ -339,8 +340,8 @@ class VelocityAdvection:
         )
 
         velocity_prog.fused_stencil_14.with_backend(run_gtfn)(
-            self.z_w_con_c,
             self.metric_state.ddqz_z_half,
+            self.z_w_con_c,
             self.cfl_clipping,
             self.pre_levelmask,
             self.vcfl,
@@ -409,7 +410,7 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
-            z_kin_hor_e,
+            self.z_kin_hor_e,
             self.metric_state.coeff_gradekin,
             self.z_ekinh,
             self.zeta,
@@ -466,8 +467,6 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
-        z_kin_hor_e: Field[[EdgeDim, KDim], float],
-        z_vt_ie: Field[[EdgeDim, KDim], float],
         inv_dual_edge_length: Field[[EdgeDim], float],
         inv_primal_edge_length: Field[[EdgeDim], float],
         dtime: float,
@@ -531,7 +530,7 @@ class VelocityAdvection:
                 diagnostic_state.vn_ie,
                 inv_dual_edge_length,
                 prognostic_state.w,
-                z_vt_ie,
+                self.z_vt_ie,
                 inv_primal_edge_length,
                 tangent_orientation,
                 self.z_w_v,
@@ -553,7 +552,7 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
-            z_kin_hor_e,
+            self.z_kin_hor_e,
             self.interpolation_state.e_bln_c_s,
             self.z_ekinh,
             horizontal_start=indices_3_1,
@@ -663,7 +662,7 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
-            z_kin_hor_e,
+            self.z_kin_hor_e,
             self.metric_state.coeff_gradekin,
             self.z_ekinh,
             self.zeta,
