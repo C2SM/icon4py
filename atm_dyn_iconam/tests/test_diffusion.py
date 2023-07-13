@@ -241,7 +241,9 @@ def test_diffusion_init(
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = (
+        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    )
     metric_state = metrics_savepoint.construct_metric_state()
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
@@ -362,7 +364,9 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = (
+        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    )
     metric_state = metrics_savepoint.construct_metric_state()
 
     diffusion = Diffusion()
@@ -396,7 +400,9 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     additional_parameters = DiffusionParams(config)
 
     vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = (
+        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    )
     metric_state = metrics_savepoint.construct_metric_state()
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
@@ -438,9 +444,11 @@ def test_run_diffusion_single_step(
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = (
+        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    )
     metric_state = metrics_savepoint.construct_metric_state()
-    diagnostic_state = diffusion_savepoint_init.construct_diagnostics()
+    diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(
@@ -519,9 +527,11 @@ def test_run_diffusion_initial_step(
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = (
+        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    )
     metric_state = metrics_savepoint.construct_metric_state()
-    diagnostic_state = diffusion_savepoint_init.construct_diagnostics()
+    diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(
@@ -560,7 +570,7 @@ def test_run_diffusion_initial_step(
 @pytest.mark.datatest
 def test_verify_stencil15_field_manipulation(interpolation_savepoint, icon_grid):
     geofac_n2s = np.asarray(interpolation_savepoint.geofac_n2s())
-    int_state = interpolation_savepoint.construct_interpolation_state()
+    int_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
     geofac_c = np.asarray(int_state.geofac_n2s_c)
     geofac_nbh = np.asarray(int_state.geofac_n2s_nbh)
     cec_table = icon_grid.get_c2cec_connectivity().table

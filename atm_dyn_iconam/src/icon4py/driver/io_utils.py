@@ -17,12 +17,14 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.diffusion.state_utils import (
+    DiagnosticState,
+    InterpolationState,
+    MetricState,
+    PrognosticState,
+)
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -98,7 +100,7 @@ def read_initial_state(
         linit=True, date=SIMULATION_START_DATE
     )
     prognostic_state = init_savepoint.construct_prognostics()
-    diagnostic_state = init_savepoint.construct_diagnostics()
+    diagnostic_state = init_savepoint.construct_diagnostics_for_diffusion()
     return data_provider, diagnostic_state, prognostic_state
 
 
@@ -149,7 +151,7 @@ def read_static_fields(
             "icon_pydycore", str(path.absolute()), False
         )
         interpolation_state = (
-            dataprovider.from_interpolation_savepoint().construct_interpolation_state()
+            dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
         )
         metric_state = dataprovider.from_metrics_savepoint().construct_metric_state()
         return metric_state, interpolation_state

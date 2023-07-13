@@ -57,23 +57,24 @@ from icon4py.common.constants import (
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
 )
-from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
-from icon4py.diffusion.diagnostic_state import DiagnosticState
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.horizontal import (
     CellParams,
     EdgeParams,
     HorizontalMarkerIndex,
 )
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.diffusion.state_utils import (
+    DiagnosticState,
+    InterpolationState,
+    MetricState,
+    PrognosticState,
+)
 from icon4py.diffusion.utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
     scale_k,
-    set_zero_v_k,
     setup_fields_for_initial_step,
     zero_field,
 )
@@ -88,17 +89,21 @@ cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 backend = compiled_backend
 
+
 class DiffusionType(int, Enum):
     """
     Order of nabla operator for diffusion.
     Note: Called `hdiff_order` in `mo_diffusion_nml.f90`.
     Note: We currently only support type 5.
     """
+
     NO_DIFFUSION = -1  #: no diffusion
     LINEAR_2ND_ORDER = 2  #: 2nd order linear diffusion on all vertical levels
     SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
     LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
-    SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
+    SMAGORINSKY_4TH_ORDER = (
+        5  #: Smagorinsky diffusion with fourth-order background diffusion
+    )
 
 
 class DiffusionConfig:
@@ -211,8 +216,6 @@ class DiffusionConfig:
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
         #: Called `nudge_max_coeff` in mo_interpol_nml.f90
         self.nudge_max_coeff: float = max_nudging_coeff
-
-
 
         #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
         #: Called `nudge_efold_width` in mo_interpol_nml.f90

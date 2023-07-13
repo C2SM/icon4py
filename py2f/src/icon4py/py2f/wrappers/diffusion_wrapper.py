@@ -25,7 +25,6 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -33,9 +32,12 @@ from icon4py.diffusion.diffusion import (
 )
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.diffusion.state_utils import (
+    DiagnosticState,
+    InterpolationState,
+    MetricState,
+    PrognosticState,
+)
 from icon4py.py2f.cffi_utils import CffiMethod
 
 
