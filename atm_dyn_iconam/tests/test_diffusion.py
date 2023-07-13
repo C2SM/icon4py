@@ -28,6 +28,7 @@ from .test_diffusion_utils import (
     smag_limit_numpy,
 )
 
+
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(r04b09_diffusion_config):
     config = r04b09_diffusion_config
     config.hdiff_efdt_ratio = 1.0
@@ -322,9 +323,10 @@ def test_run_diffusion_single_step(
 
 
 def _verify_diffusion_fields(
-    diagnostic_state, prognostic_state, diffusion_savepoint_exit, diffusion_savepoint_init = None
+    diagnostic_state,
+    prognostic_state,
+    diffusion_savepoint_exit,
 ):
-    start_nudging = 3317
     ref_div_ic = np.asarray(diffusion_savepoint_exit.div_ic())
     val_div_ic = np.asarray(diagnostic_state.div_ic)
     ref_hdef_ic = np.asarray(diffusion_savepoint_exit.hdef_ic())
@@ -333,7 +335,6 @@ def _verify_diffusion_fields(
     assert np.allclose(ref_hdef_ic, val_hdef_ic)
     ref_w = np.asarray(diffusion_savepoint_exit.w())
     val_w = np.asarray(prognostic_state.w)
-    init_w = np.asarray(diffusion_savepoint_init.w()) if diffusion_savepoint_init else None
     ref_dwdx = np.asarray(diffusion_savepoint_exit.dwdx())
     val_dwdx = np.asarray(diagnostic_state.dwdx)
     ref_dwdy = np.asarray(diffusion_savepoint_exit.dwdy())
@@ -402,7 +403,7 @@ def test_run_diffusion_initial_step(
     _verify_diffusion_fields(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        diffusion_savepoint_exit=diffusion_savepoint_exit, diffusion_savepoint_init= diffusion_savepoint_init
+        diffusion_savepoint_exit=diffusion_savepoint_exit,
     )
 
 
