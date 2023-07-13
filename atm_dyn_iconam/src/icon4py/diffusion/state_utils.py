@@ -106,7 +106,7 @@ class InterpolationState:
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class PrognosticState:
     """Class that contains the prognostic state.
 

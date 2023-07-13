@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import functools
 import logging
 import math
 import sys
@@ -244,6 +245,7 @@ class DiffusionConfig:
                 "zdiffu_t = False is not implemented (leaves out stencil_15)"
             )
 
+    @functools.cached_property
     def substep_as_float(self):
         return float(self.ndyn_substeps)
 
@@ -410,20 +412,20 @@ class Diffusion:
             params.scaled_nudge_max_coeff + sys.float_info.epsilon
         )
         self.fac_bdydiff_v: float = (
-            math.sqrt(config.substep_as_float())
+            math.sqrt(config.substep_as_float)
             / config.velocity_boundary_diffusion_denominator
             if config.lhdiff_rcf
             else 1.0 / config.velocity_boundary_diffusion_denominator
         )
 
-        self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float()
+        self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(
-            1.0 / 48.0, params.K4W * config.substep_as_float()
+            1.0 / 48.0, params.K4W * config.substep_as_float
         )
 
         init_diffusion_local_fields_for_regular_timestep.with_backend(backend)(
             params.K4,
-            config.substep_as_float(),
+            config.substep_as_float,
             *params.smagorinski_factor,
             *params.smagorinski_height,
             self.vertical_params.physical_heights,
