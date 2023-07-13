@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.diffusion.utils import copy_diagnostic_and_prognostics
+from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
 
 from .test_utils.helpers import random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh

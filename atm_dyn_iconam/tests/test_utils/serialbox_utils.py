@@ -35,7 +35,7 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.diagnostic_state import DiagnosticState
+from icon4py.decomposition.parallel_setup import DecompositionInfo
 from icon4py.diffusion.diffusion import VectorTuple
 from icon4py.diffusion.horizontal import (
     CellParams,
@@ -43,10 +43,12 @@ from icon4py.diffusion.horizontal import (
     HorizontalMeshSize,
 )
 from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.decomposition.parallel_setup import DecompositionInfo
+from icon4py.diffusion.state_utils import (
+    DiagnosticState,
+    InterpolationState,
+    MetricState,
+    PrognosticState,
+)
 
 from .helpers import as_1D_sparse_field
 
@@ -340,7 +342,7 @@ class InterpolationSavepoint(IconSavepoint):
     def nudgecoeff_e(self):
         return self._get_field("nudgecoeff_e", EdgeDim)
 
-    def construct_interpolation_state(self) -> InterpolationState:
+    def construct_interpolation_state_for_diffusion(self) -> InterpolationState:
         grg = self.geofac_grg()
         return InterpolationState(
             e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),
@@ -465,7 +467,7 @@ class IconDiffusionInitSavepoint(IconSavepoint):
             theta_v=self.theta_v(),
         )
 
-    def construct_diagnostics(self) -> DiagnosticState:
+    def construct_diagnostics_for_diffusion(self) -> DiagnosticState:
         return DiagnosticState(
             hdef_ic=self.hdef_ic(),
             div_ic=self.div_ic(),

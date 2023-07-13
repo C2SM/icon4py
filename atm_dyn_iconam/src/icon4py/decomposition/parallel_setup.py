@@ -23,7 +23,7 @@ from mpi4py.MPI import Comm
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, KHalfDim, VertexDim
 from icon4py.decomposition.decomposed import ProcessProperties
-from icon4py.diffusion.utils import builder
+from icon4py.diffusion.diffusion_utils import builder
 
 
 mpi4py.rc.initialize = False

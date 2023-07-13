@@ -17,7 +17,7 @@ import ghex
 import numpy as np
 import pytest
 
-from atm_dyn_iconam.tests.test_diffusion import verify_diffusion_fields
+
 from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
@@ -29,9 +29,8 @@ from icon4py.driver.io_utils import (
     read_static_fields,
 )
 from icon4py.decomposition.parallel_setup import (
-    DecompositionInfo,
     Exchange,
-    get_processor_properties,
+    get_processor_properties, DecompositionInfo,
 )
 
 

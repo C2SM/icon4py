@@ -10,8 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-from typing import Dict
+from dataclasses import dataclass, field
+from typing import Dict, Final
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind, Field
@@ -28,54 +28,47 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.diffusion.horizontal import HorizontalMeshSize
-from icon4py.diffusion.utils import builder
 
 
-# TODO @magdalena keep naming grid vs mesh consistent
+
+# TODO(Magdalena): keep naming grid vs mesh consistent
+@dataclass(frozen=True)
 class VerticalMeshConfig:
-    def __init__(self, num_lev: int):
-        self._num_lev = num_lev
-
-    @property
-    def num_lev(self) -> int:
-        return self._num_lev
+    num_lev: int
 
 
+@dataclass(
+    frozen=True,
+)
 class MeshConfig:
-    def __init__(
-        self,
-        horizontal_config: HorizontalMeshSize,
-        vertical_config: VerticalMeshConfig,
-        limited_area=True,
-    ):
-        self._vertical = vertical_config
-        self._n_shift_total = 0
-        self._limited_area = limited_area
-        self._horizontal = horizontal_config
+    horizontal_config: HorizontalMeshSize
+    vertical_config: VerticalMeshConfig
+    limited_area: bool = True
+    n_shift_total: int = 0
 
     @property
-    def limited_area(self) -> bool:
-        return self._limited_area
+    def num_k_levels(self):
+        return self.vertical_config.num_lev
 
     @property
-    def num_k_levels(self) -> int:
-        return self._vertical.num_lev
+    def num_vertices(self):
+        return self.horizontal_config.num_vertices
 
     @property
-    def n_shift_total(self) -> int:
-        return self._n_shift_total
+    def num_edges(self):
+        return self.horizontal_config.num_edges
 
     @property
-    def num_vertices(self) -> int:
-        return self._horizontal.num_vertices
+    def num_cells(self):
+        return self.horizontal_config.num_cells
 
-    @property
-    def num_edges(self) -> int:
-        return self._horizontal.num_edges
 
-    @property
-    def num_cells(self) -> int:
-        return self._horizontal.num_cells
+def builder(func):
+    def wrapper(self, *args, **kwargs):
+        func(self, *args, **kwargs)
+        return self
+
+    return wrapper
 
 
 class IconGrid:
@@ -200,31 +193,32 @@ class IconGrid:
         )
 
 
+@dataclass(frozen=True)
 class VerticalModelParams:
-    def __init__(self, vct_a: Field[[KDim], float], rayleigh_damping_height: float):
-        """
-        Contains vertical physical parameters defined on the grid.
+    """
+    Contains vertical physical parameters defined on the grid.
 
-        Args:
-            vct_a:  field containing the physical heights of the k level
-            rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
-        """
-        self._rayleigh_damping_height = rayleigh_damping_height
-        self._vct_a = vct_a
-        self._index_of_damping_height = int32(
-            np.argmax(
-                np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height)
-            )
+    vct_a:  field containing the physical heights of the k level
+    rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
+    """
+
+    vct_a: Field[[KDim], float]
+    rayleigh_damping_height: Final[float]
+    index_of_damping_layer: Final[int32] = field(init=False)
+
+    def __post_init__(self):
+        object.__setattr__(
+            self,
+            "index_of_damping_layer",
+            self._determine_damping_height_index(
+                np.asarray(self.vct_a), self.rayleigh_damping_height
+            ),
         )
 
-    @property
-    def index_of_damping_layer(self):
-        return self._index_of_damping_height
+    @classmethod
+    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float):
+        return int32(np.argmax(np.where(vct_a >= damping_height)))
 
     @property
     def physical_heights(self) -> Field[[KDim], float]:
-        return self._vct_a
-
-    @property
-    def rayleigh_damping_height(self):
-        return self._rayleigh_damping_height
+        return self.vct_a

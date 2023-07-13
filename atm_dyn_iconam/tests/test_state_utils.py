@@ -17,7 +17,9 @@ import pytest
 
 @pytest.mark.datatest
 def test_cecdim(interpolation_savepoint, icon_grid):
-    interpolation_fields = interpolation_savepoint.construct_interpolation_state()
+    interpolation_fields = (
+        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    )
     geofac_n2s = np.asarray(interpolation_fields.geofac_n2s)
     geofac_n2s_nbh = np.asarray(interpolation_fields.geofac_n2s_nbh)
     assert np.count_nonzero(geofac_n2s_nbh) > 0

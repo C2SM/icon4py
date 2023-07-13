@@ -46,6 +46,22 @@ def mpi():
     return MPI
 
 
+@pytest.fixture
+def get_data_path(setup_icon_data):
+    return extracted_path
+
+
+@pytest.fixture
+def ndyn_substeps():
+    """
+    Return number of dynamical substeps.
+
+    Serialized data uses a reduced number (2 instead of the default 5) in order to reduce the amount
+    of data generated.
+    """
+    return 2
+
+
 @pytest.fixture(scope="session")
 def setup_icon_data():
     """
@@ -157,7 +173,7 @@ def grid_savepoint(data_provider):
 
 
 @pytest.fixture
-def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
+def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
@@ -176,6 +192,7 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
         zdiffu_t=True,
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coeff=0.075,
+        n_substeps=ndyn_substeps,
     )
 
 

@@ -20,10 +20,9 @@ import pytz
 from devtools import Timer
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.diffusion.utils import copy_diagnostic_and_prognostics
+from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
+from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
 from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,
@@ -36,6 +35,10 @@ from icon4py.driver.io_utils import (
     read_static_fields,
 )
 from icon4py.decomposition.parallel_setup import get_processor_properties
+
+
+helpers = import_testutils()
+from helpers import serialbox_utils as sb_utils  # noqa
 
 
 helpers = import_testutils()
@@ -74,7 +77,7 @@ class DummyAtmoNonHydro:
             linit=False, date=self.simulation_date.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         )
         new_p = sp.construct_prognostics()
-        new_d = sp.construct_diagnostics()
+        new_d = sp.construct_diagnostics_for_diffusion()
         copy_diagnostic_and_prognostics.with_backend(run_gtfn)(
             new_d.hdef_ic,
             diagnostic_state.hdef_ic,
