@@ -21,8 +21,8 @@ from devtools import Timer
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
+from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
 from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
-from icon4py.diffusion.utils import copy_diagnostic_and_prognostics
 from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,

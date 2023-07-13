@@ -30,9 +30,9 @@ from icon4py.common.dimension import (
 )
 
 
-@dataclass
+@dataclass(frozen=True)
 class DiagnosticState:
-    """Represent diagnostic fields needed in diffusion."""
+    """Represents the diagnostic fields needed in diffusion."""
 
     # fields for 3D elements in turbdiff
     hdef_ic: Field[
@@ -50,7 +50,7 @@ class DiagnosticState:
     ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
 
 
-@dataclass
+@dataclass(frozen=True)
 class MetricState:
     """Represents the metric state fields needed in diffusion."""
 
@@ -106,11 +106,11 @@ class InterpolationState:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class PrognosticState:
     """Class that contains the prognostic state.
 
-    corresponds to ICON t_nh_prog
+    Corresponds to ICON t_nh_prog
     """
 
     w: Field[
