@@ -113,6 +113,8 @@ def test_velocity_predictor_step(
 ):
     sp_v = savepoint_velocity_init
     sp_d = data_provider.from_savepoint_grid()
+    sp_int = interpolation_savepoint
+    sp_met = metrics_savepoint
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
@@ -139,8 +141,43 @@ def test_velocity_predictor_step(
         exner=None,
     )
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
-    metric_state = metrics_savepoint.construct_metric_state()
+    interpolation_state = InterpolationState(
+        e_bln_c_s=sp_int.e_bln_c_s(),
+        rbf_coeff_1=None,
+        rbf_coeff_2=None,
+        geofac_div=None,
+        geofac_n2s=sp_int.geofac_n2s(),
+        geofac_grg_x=sp_int.geofac_grg()[0],
+        geofac_grg_y=sp_int.geofac_grg()[1],
+        nudgecoeff_e=None,
+        c_lin_e=sp_int.c_lin_e(),
+        geofac_grdiv=sp_int.geofac_grdiv(),
+        rbf_vec_coeff_e=sp_int.rbf_vec_coeff_e(),
+        c_intp=sp_int.c_intp(),
+        geofac_rot=sp_int.geofac_rot(),
+        pos_on_tplane_e=None,
+        e_flx_avg=None,
+    )
+
+    metric_state = MetricState(
+        mask_hdiff=None,
+        theta_ref_mc=None,
+        wgtfac_c=sp_met.wgtfac_c(),
+        zd_intcoef=None,
+        zd_vertidx=None,
+        zd_diffcoef=None,
+        zd_vertoffset=sp_met.zd_vertoffset(),
+        coeff_gradekin=sp_met.coeff_gradekin(),
+        ddqz_z_full_e=sp_met.ddqz_z_full_e(),
+        wgtfac_e=sp_met.wgtfac_e(),
+        wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
+        ddxn_z_full=sp_met.ddxn_z_full(),
+        ddxt_z_full=sp_met.ddxt_z_full(),
+        ddqz_z_half=sp_met.ddqz_z_half(),
+        coeff1_dwdz=sp_met.coeff1_dwdz(),
+        coeff2_dwdz=sp_met.coeff2_dwdz(),
+    )
+
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -160,9 +197,6 @@ def test_velocity_predictor_step(
         vn_only=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        z_w_concorr_me=sp_v.z_w_concorr_me(),
-        z_kin_hor_e=sp_v.z_vt_ie(),
-        z_vt_ie=sp_v.z_kin_hor_e(),
         inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
         inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
         dtime=dtime,
@@ -175,37 +209,64 @@ def test_velocity_predictor_step(
         area_edge=edge_geometry.edge_areas,
     )
 
-    # icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc()
-    # icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc()
+    icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd)
+    icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(ntnd)
     # icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
     icon_result_vn_ie = savepoint_velocity_exit.vn_ie()
     icon_result_vt = savepoint_velocity_exit.vt()
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c()
+    icon_result_z_w_concorr_mc = savepoint_velocity_exit.z_w_concorr_mc()
+    icon_result_z_vt_ie = savepoint_velocity_exit.z_vt_ie()
 
-    # assert np.allclose(
-    #     np.asarray(icon_result_ddt_vn_apc_pc)[ntnd:, :],
-    #     np.asarray(diagnostic_state.ddt_vn_apc_pc),
-    # )
-    # assert np.allclose(
-    #     np.asarray(icon_result_ddt_w_adv_pc)[ntnd:, :],
-    #     np.asarray(diagnostic_state.ddt_w_adv_pc),
-    # )
+    icon_result_z_kin_hor_e = savepoint_velocity_exit.z_kin_hor_e()
+    icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w()
+    icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
+    icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
+    #   assert np.allclose(np.asarray(icon_result_z_v_grad_w), np.asarray(diagnostic_state.z_v_grad_w))
 
+    # stencil 01
     assert np.allclose(np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt))
-
-    # for i in range(icon_result_vn_ie.array().shape[0]):
-    #     for j in range(icon_result_vn_ie.array().shape[1]):
-    #         if not (icon_result_vn_ie.array()[i][j] - diagnostic_state.vn_ie.array()[i][j]) == 0e-5:
-    #             print(str(i) + ", " + str(j))
-    #             print("")
-
+    # stencil 02,05
     assert np.allclose(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
     )
-
+    # stencil 02
+    assert np.allclose(np.asarray(icon_result_z_kin_hor_e)[2538:31558, :],
+                np.asarray(velocity_advection.z_kin_hor_e)[2538:31558, :])
+    # stencil 03,05,06
+    assert np.allclose(np.asarray(icon_result_z_vt_ie), np.asarray(velocity_advection.z_vt_ie))
+    # stencil 04
     assert np.allclose(
-        np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c)
+        np.asarray(icon_result_z_w_concorr_me)[:,vertical_params.nflatlev:icon_grid.n_lev()], np.asarray(velocity_advection.z_w_concorr_me)[:,vertical_params.nflatlev:icon_grid.n_lev()]
     )
+    # stencil 07
+    assert np.allclose(np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
+                       np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :])
+    # stencil 08
+    assert np.allclose(np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],
+                np.asarray(velocity_advection.z_ekinh)[3316:20896, :])
+    # stencil 09
+    assert np.allclose(
+        np.asarray(icon_result_z_w_concorr_mc)[3316:20896,vertical_params.nflatlev:icon_grid.n_lev()], np.asarray(velocity_advection.z_w_concorr_mc)[3316:20896,vertical_params.nflatlev:icon_grid.n_lev()]
+    )
+    # stencil 10
+    assert np.allclose(
+        np.asarray(icon_result_w_concorr_c)[3316:20896, vertical_params.nflatlev + 1:icon_grid.n_lev()],
+        np.asarray(diagnostic_state.w_concorr_c)[3316:20896, vertical_params.nflatlev + 1:icon_grid.n_lev()]
+    )
+    # stencil 11,12,13,14
+    assert np.allclose(np.asarray(savepoint_velocity_exit.z_w_con_c()), np.asarray(velocity_advection.z_w_con_c))
+    #stencil 16
+    assert np.allclose(
+        np.asarray(icon_result_ddt_w_adv_pc),
+        np.asarray(diagnostic_state.ddt_w_adv_pc),
+    )
+    # stencil 19
+    assert np.allclose(
+        np.asarray(icon_result_ddt_vn_apc_pc),
+        np.asarray(diagnostic_state.ddt_vn_apc_pc),
+    )
+
 
 
 @pytest.mark.datatest
@@ -225,6 +286,8 @@ def test_velocity_corrector_step(
 ):
     sp_v = savepoint_velocity_init
     sp_d = data_provider.from_savepoint_grid()
+    sp_int = interpolation_savepoint
+    sp_met = metrics_savepoint
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
@@ -252,8 +315,42 @@ def test_velocity_corrector_step(
         exner=None,
     )
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
-    metric_state = metrics_savepoint.construct_metric_state()
+    interpolation_state = InterpolationState(
+        e_bln_c_s=sp_int.e_bln_c_s(),
+        rbf_coeff_1=None,
+        rbf_coeff_2=None,
+        geofac_div=None,
+        geofac_n2s=sp_int.geofac_n2s(),
+        geofac_grg_x=sp_int.geofac_grg()[0],
+        geofac_grg_y=sp_int.geofac_grg()[1],
+        nudgecoeff_e=None,
+        c_lin_e=sp_int.c_lin_e(),
+        geofac_grdiv=sp_int.geofac_grdiv(),
+        rbf_vec_coeff_e=sp_int.rbf_vec_coeff_e(),
+        c_intp=sp_int.c_intp(),
+        geofac_rot=sp_int.geofac_rot(),
+        pos_on_tplane_e=None,
+        e_flx_avg=None,
+    )
+
+    metric_state = MetricState(
+        mask_hdiff=None,
+        theta_ref_mc=None,
+        wgtfac_c=sp_met.wgtfac_c(),
+        zd_intcoef=None,
+        zd_vertidx=None,
+        zd_diffcoef=None,
+        zd_vertoffset=sp_met.zd_vertoffset(),
+        coeff_gradekin=sp_met.coeff_gradekin(),
+        ddqz_z_full_e=sp_met.ddqz_z_full_e(),
+        wgtfac_e=sp_met.wgtfac_e(),
+        wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
+        ddxn_z_full=sp_met.ddxn_z_full(),
+        ddxt_z_full=sp_met.ddxt_z_full(),
+        ddqz_z_half=sp_met.ddqz_z_half(),
+        coeff1_dwdz=sp_met.coeff1_dwdz(),
+        coeff2_dwdz=sp_met.coeff2_dwdz(),
+    )
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()

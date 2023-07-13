@@ -171,7 +171,7 @@ class IconGridSavePoint(IconSavepoint):
         return self.serializer.read("e_end_index", self.savepoint)
 
     def owner_mask(self):
-        return self._get_field("owner_mask", CellDim, dtype=bool)
+        return self._get_field("c_owner_mask", CellDim, dtype=bool)
 
     def f_e(self):
         return self._get_field("f_e", EdgeDim)
@@ -445,9 +445,10 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
     def zd_intcoef(self):
-        ser_input = np.moveaxis(
-            (np.squeeze(self.serializer.read("vcoef", self.savepoint))), 1, -1
-        )
+        ser_input = np.squeeze(self.serializer.read("vcoef", self.savepoint))
+        #ser_input = np.moveaxis(
+        #    (np.squeeze(self.serializer.read("vcoef", self.savepoint))), 1, -1
+        #)
         return self._linearize_first_2dims(ser_input, sparse_size=3)
 
     def _linearize_first_2dims(self, data: np.ndarray, sparse_size):
@@ -459,7 +460,7 @@ class MetricSavepoint(IconSavepoint):
 
     def zd_vertoffset(self):
         ser_input = np.squeeze(self.serializer.read("zd_vertoffset", self.savepoint))
-        ser_input = np.moveaxis(ser_input, 1, -1)
+        #ser_input = np.moveaxis(ser_input, 1, -1)
         return self._linearize_first_2dims(ser_input, sparse_size=3)
 
     def zd_vertidx(self):
@@ -792,7 +793,7 @@ class IconExitSavepoint(IconSavepoint):
     #     return self._get_field("x_ddt_w_adv_pc", CellDim, KDim)
 
     def ddt_vn_apc_pc(self, ntnd):
-        # return self._get_field("ddt_vn_apc_pc", EdgeDim, KDim)
+        #return self._get_field("x_ddt_vn_apc_pc", EdgeDim, KDim)
         buffer = np.squeeze(
             self.serializer.read("x_ddt_vn_apc_pc", self.savepoint).astype(float)
         )
@@ -817,11 +818,32 @@ class IconExitSavepoint(IconSavepoint):
     def z_kin_hor_e(self):
         return self._get_field("x_z_kin_hor_e", EdgeDim, KDim)
 
+    def z_ekinh(self):
+        return self._get_field("x_z_ekinh", CellDim, KDim)
+
     def z_vt_ie(self):
         return self._get_field("x_z_vt_ie", EdgeDim, KDim)
 
+    def z_v_grad_w(self):
+        return self._get_field("x_z_v_grad_w", EdgeDim, KDim)
+
     def z_w_concorr_me(self):
         return self._get_field("x_z_w_concorr_me", EdgeDim, KDim)
+
+    def z_w_concorr_mc(self):
+        return self._get_field("x_z_w_concorr_mc", CellDim, KDim)
+
+    def z_w_con_c_full(self):
+        return self._get_field("x_z_w_con_c_full", CellDim, KDim)
+
+    def z_w_con_c(self):
+        return self._get_field("x_z_w_con_c", CellDim, KDim)
+
+    def cfl_clipping(self):
+        return self._get_field("x_cfl_clipping", CellDim, KDim, dtype=bool)
+
+    def vcfl(self):
+        return self._get_field("x_vcfl_dsl", CellDim, KDim)
 
     def exner_new(self):
         return self._get_field("x_exner_new", CellDim, KDim)
@@ -858,6 +880,7 @@ class IconExitSavepoint(IconSavepoint):
 
     def w_new(self):
         return self._get_field("x_w_new", CellDim, KDim)
+
 
 
 class IconSerialDataProvider:
