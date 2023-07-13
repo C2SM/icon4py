@@ -32,9 +32,7 @@ def _mo_solve_nonhydro_stencil_39(
     wgtfac_c: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
     z_w_concorr_me_offset_1 = z_w_concorr_me(Koff[-1])
-    z_w_concorr_mc_m1 = neighbor_sum(
-        e_bln_c_s * z_w_concorr_me_offset_1(C2E), axis=C2EDim
-    )
+    z_w_concorr_mc_m1 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_1(C2E), axis=C2EDim)
     z_w_concorr_mc_m0 = neighbor_sum(e_bln_c_s * z_w_concorr_me(C2E), axis=C2EDim)
     w_concorr_c = wgtfac_c * z_w_concorr_mc_m0 + (1.0 - wgtfac_c) * z_w_concorr_mc_m1
     return w_concorr_c

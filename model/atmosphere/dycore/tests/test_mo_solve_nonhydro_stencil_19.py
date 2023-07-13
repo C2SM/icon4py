@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_19 import (
     mo_solve_nonhydro_stencil_19,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 
@@ -43,9 +42,8 @@ class TestMoSolveNonhydroStencil19(StencilTest):
         z_exner_ex_pr_e2c = z_exner_ex_pr[mesh.e2c]
         z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
 
-        z_gradh_exner = (
-            inv_dual_edge_length * z_exner_ex_weighted
-            - ddxn_z_full * np.sum(c_lin_e * z_dexner_dz_c_1[mesh.e2c], axis=1)
+        z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted - ddxn_z_full * np.sum(
+            c_lin_e * z_dexner_dz_c_1[mesh.e2c], axis=1
         )
         return dict(z_gradh_exner=z_gradh_exner)
 

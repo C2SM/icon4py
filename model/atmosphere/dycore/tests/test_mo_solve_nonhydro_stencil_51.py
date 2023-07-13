@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_51 import (
     mo_solve_nonhydro_stencil_51,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -58,9 +57,7 @@ def mo_solve_nonhydro_stencil_51_numpy(
     z_c = -z_gamma * z_beta * z_alpha_k_plus_1
     z_b = 1.0 + z_gamma * z_alpha[:, :-1] * (z_beta_k_minus_1 + z_beta)
     z_q = mo_solve_nonhydro_stencil_51_z_q_numpy(z_c, z_b)
-    w_nnew = mo_solve_nonhydro_stencil_51_w_nnew_numpy(
-        z_gamma, z_b, z_w_expl, z_exner_expl
-    )
+    w_nnew = mo_solve_nonhydro_stencil_51_w_nnew_numpy(z_gamma, z_b, z_w_expl, z_exner_expl)
 
     return z_q, w_nnew
 

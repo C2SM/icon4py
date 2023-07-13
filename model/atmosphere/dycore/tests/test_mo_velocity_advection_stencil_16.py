@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
     mo_velocity_advection_stencil_16,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 

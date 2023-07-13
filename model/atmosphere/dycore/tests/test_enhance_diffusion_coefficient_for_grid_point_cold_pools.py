@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.enhance_diffusion_coefficient_for_grid_poin
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 

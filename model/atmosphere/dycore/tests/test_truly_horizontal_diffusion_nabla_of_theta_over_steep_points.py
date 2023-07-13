@@ -19,7 +19,6 @@ from icon4py.model.atmosphere.dycore.truly_horizontal_diffusion_nabla_of_theta_o
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import (
     flatten_first_two_dims,
     random_field,
@@ -57,15 +56,12 @@ def mo_nh_diffusion_stencil_15_numpy(
                 ]
 
     sum_over = np.sum(
-        geofac_n2s_nbh
-        * (vcoef * theta_v_at_zd_vertidx + (1.0 - vcoef) * theta_v_at_zd_vertidx_p1),
+        geofac_n2s_nbh * (vcoef * theta_v_at_zd_vertidx + (1.0 - vcoef) * theta_v_at_zd_vertidx_p1),
         axis=1,
     )
 
     geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add KDim
-    return np.where(
-        mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over), z_temp
-    )
+    return np.where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over), z_temp)
 
 
 def test_mo_nh_diffusion_stencil_15():

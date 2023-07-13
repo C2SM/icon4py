@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     mo_velocity_advection_stencil_13,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 
@@ -28,9 +27,7 @@ class TestMoVelocityAdvectionStencil13(StencilTest):
     OUTPUTS = ("z_w_con_c",)
 
     @staticmethod
-    def reference(
-        mesh, w_concorr_c: np.array, z_w_con_c: np.array, **kwargs
-    ) -> np.array:
+    def reference(mesh, w_concorr_c: np.array, z_w_con_c: np.array, **kwargs) -> np.array:
         z_w_con_c = z_w_con_c - w_concorr_c
         return dict(z_w_con_c=z_w_con_c)
 

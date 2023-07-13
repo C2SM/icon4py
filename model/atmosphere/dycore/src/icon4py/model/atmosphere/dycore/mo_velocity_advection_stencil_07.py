@@ -37,9 +37,7 @@ def _mo_velocity_advection_stencil_07(
 ) -> Field[[EdgeDim, KDim], float]:
     return vn_ie * inv_dual_edge_length * (
         w(E2C[0]) - w(E2C[1])
-    ) + z_vt_ie * inv_primal_edge_length * tangent_orientation * (
-        z_w_v(E2V[0]) - z_w_v(E2V[1])
-    )
+    ) + z_vt_ie * inv_primal_edge_length * tangent_orientation * (z_w_v(E2V[0]) - z_w_v(E2V[1]))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)

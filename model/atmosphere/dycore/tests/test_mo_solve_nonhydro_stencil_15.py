@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_15 import (
     mo_solve_nonhydro_stencil_15,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 
@@ -28,9 +27,7 @@ class TestMoSolveNonhydroStencil15(StencilTest):
     OUTPUTS = ("z_rho_e", "z_theta_v_e")
 
     @staticmethod
-    def reference(
-        mesh, z_rho_e: np.array, z_theta_v_e: np.array, **kwargs
-    ) -> tuple[np.array]:
+    def reference(mesh, z_rho_e: np.array, z_theta_v_e: np.array, **kwargs) -> tuple[np.array]:
         z_rho_e = np.zeros_like(z_rho_e)
         z_theta_v_e = np.zeros_like(z_theta_v_e)
         return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)

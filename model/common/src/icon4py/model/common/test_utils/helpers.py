@@ -58,9 +58,7 @@ def random_field(
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.random.default_rng().uniform(
-            low=low, high=high, size=_shape(mesh, *dims, extend=extend)
-        )
+        np.random.default_rng().uniform(low=low, high=high, size=_shape(mesh, *dims, extend=extend))
     )
 
 

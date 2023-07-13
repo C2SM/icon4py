@@ -24,7 +24,7 @@ on:
             - "tools/**"
             - "base-requirements*"
             - ".github/workflows/icon4pytools*"
-        types: [submitted, edited]
+        types: [submitted]
 
 jobs:
     pre-commit:

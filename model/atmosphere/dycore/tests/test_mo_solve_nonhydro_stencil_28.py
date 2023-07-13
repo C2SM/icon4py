@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_28 import (
     mo_solve_nonhydro_stencil_28,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 
@@ -28,9 +27,7 @@ class TestMoSolveNonhydroStencil28(StencilTest):
     OUTPUTS = ("vn",)
 
     @staticmethod
-    def reference(
-        mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn, **kwargs
-    ) -> np.array:
+    def reference(mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn, **kwargs) -> np.array:
         vn = vn + (iau_wgt_dyn * vn_incr)
         return dict(vn=vn)
 

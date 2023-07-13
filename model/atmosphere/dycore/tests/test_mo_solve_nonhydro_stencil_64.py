@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_64 import (
     mo_solve_nonhydro_stencil_64,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import zero_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 

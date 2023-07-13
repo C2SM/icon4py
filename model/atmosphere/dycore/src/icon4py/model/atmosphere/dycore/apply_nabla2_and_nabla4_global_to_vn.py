@@ -27,9 +27,7 @@ def _apply_nabla2_and_nabla4_global_to_vn(
     diff_multfac_vn: Field[[KDim], float],
     vn: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    vn = vn + area_edge * (
-        kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge
-    )
+    vn = vn + area_edge * (kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge)
     return vn
 
 

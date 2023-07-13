@@ -18,8 +18,10 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_tr
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
-
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    random_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -43,28 +45,22 @@ def compute_btraj_numpy(
     dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf
-        + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
+        p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
     )
     z_ntdistv_bary_2 = -(
-        p_vt * p_dthalf
-        + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
+        p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
     )
 
     p_distv_bary_1 = np.where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_1[:, 0]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
-        z_ntdistv_bary_1 * primal_normal_cell_1[:, 1]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
+        z_ntdistv_bary_1 * primal_normal_cell_1[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_1[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
     )
 
     p_distv_bary_2 = np.where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_2[:, 0]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
-        z_ntdistv_bary_1 * primal_normal_cell_2[:, 1]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
+        z_ntdistv_bary_1 * primal_normal_cell_2[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_2[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
     )
 
     return p_distv_bary_1, p_distv_bary_2
@@ -198,10 +194,7 @@ def test_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1():
     z_rho_e = random_field(mesh, EdgeDim, KDim)
     z_theta_v_e = random_field(mesh, EdgeDim, KDim)
 
-    (
-        z_rho_e_ref,
-        z_theta_v_e_ref,
-    ) = mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
+    (z_rho_e_ref, z_theta_v_e_ref,) = mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
         mesh.e2c,
         np.asarray(p_vn),
         np.asarray(p_vt),

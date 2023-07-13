@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_04 import (
     mo_solve_nonhydro_stencil_04,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 
@@ -35,12 +34,9 @@ class TestMoSolveNonhydroStencil04(StencilTest):
         z_exner_ic: np.array,
     ) -> np.array:
         z_exner_ic[:, 3:] = (
-            np.roll(wgtfacq_c, shift=1, axis=1)
-            * np.roll(z_exner_ex_pr, shift=1, axis=1)
-            + np.roll(wgtfacq_c, shift=2, axis=1)
-            * np.roll(z_exner_ex_pr, shift=2, axis=1)
-            + np.roll(wgtfacq_c, shift=3, axis=1)
-            * np.roll(z_exner_ex_pr, shift=3, axis=1)
+            np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_exner_ex_pr, shift=1, axis=1)
+            + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_exner_ex_pr, shift=2, axis=1)
+            + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_exner_ex_pr, shift=3, axis=1)
         )[:, 3:]
         return {"z_exner_ic": z_exner_ic}
 

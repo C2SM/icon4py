@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.apply_nabla2_and_nabla4_global_to_vn import
     apply_nabla2_and_nabla4_global_to_vn,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 
@@ -46,12 +45,8 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
         )
 
     @staticmethod
-    def reference(
-        mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
-    ):
+    def reference(mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn):
         area_edge = np.expand_dims(area_edge, axis=-1)
         diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
-        vn = vn + area_edge * (
-            kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge
-        )
+        vn = vn + area_edge * (kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge)
         return dict(vn=vn)

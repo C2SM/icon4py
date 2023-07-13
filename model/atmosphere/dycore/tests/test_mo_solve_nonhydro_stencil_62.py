@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
     mo_solve_nonhydro_stencil_62,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 
@@ -28,9 +27,7 @@ class TestMoSolveNonhydroStencil62(StencilTest):
     OUTPUTS = ("w_new",)
 
     @staticmethod
-    def reference(
-        mesh, w_now: np.array, grf_tend_w: np.array, dtime: float, **kwargs
-    ) -> np.array:
+    def reference(mesh, w_now: np.array, grf_tend_w: np.array, dtime: float, **kwargs) -> np.array:
         w_new = w_now + dtime * grf_tend_w
         return dict(w_new=w_new)
 

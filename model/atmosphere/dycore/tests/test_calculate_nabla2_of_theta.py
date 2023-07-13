@@ -18,8 +18,11 @@ from icon4py.model.atmosphere.dycore.calculate_nabla2_of_theta import (
     calculate_nabla2_of_theta,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
-
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -40,9 +43,7 @@ def test_calculate_nabla2_of_theta():
 
     out = zero_field(mesh, CellDim, KDim)
 
-    ref = calculate_nabla2_of_theta_numpy(
-        mesh.c2e, np.asarray(z_nabla2_e), np.asarray(geofac_div)
-    )
+    ref = calculate_nabla2_of_theta_numpy(mesh.c2e, np.asarray(z_nabla2_e), np.asarray(geofac_div))
     calculate_nabla2_of_theta(
         z_nabla2_e,
         geofac_div_new,

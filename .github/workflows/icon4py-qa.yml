@@ -18,7 +18,7 @@ on:
             - main
         paths-ignore:
             - "tools/**"
-        types: [submitted, edited]
+        types: [submitted]
 
 jobs:
     pre-commit:

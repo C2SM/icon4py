@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
     mo_solve_nonhydro_stencil_58,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.stencil_test import StencilTest
 
@@ -39,9 +38,7 @@ class TestMoSolveNonhydroStencil58(StencilTest):
         **kwargs,
     ) -> dict:
         vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-        mass_flx_ic = mass_flx_ic + (
-            r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
-        )
+        mass_flx_ic = mass_flx_ic + (r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w))
         return dict(mass_flx_ic=mass_flx_ic)
 
     @pytest.fixture

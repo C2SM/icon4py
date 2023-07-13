@@ -24,9 +24,7 @@ except ModuleNotFoundError:
 
 
 def _test_validation(self, mesh, backend, input_data):
-    reference_outputs = self.reference(
-        mesh, **{k: np.array(v) for k, v in input_data.items()}
-    )
+    reference_outputs = self.reference(mesh, **{k: np.array(v) for k, v in input_data.items()})
     self.PROGRAM.with_backend(backend)(
         **input_data,
         offset_provider=mesh.get_offset_provider(),

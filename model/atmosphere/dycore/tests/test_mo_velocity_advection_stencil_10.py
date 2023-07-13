@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     mo_velocity_advection_stencil_10,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -26,9 +25,7 @@ def mo_velocity_advection_stencil_10_numpy(
     wgtfac_c: np.array, z_w_concorr_mc: np.array
 ) -> np.array:
     z_w_concorr_mc_k_minus_1 = np.roll(z_w_concorr_mc, shift=1, axis=1)
-    w_concorr_c = (
-        wgtfac_c * z_w_concorr_mc + (1.0 - wgtfac_c) * z_w_concorr_mc_k_minus_1
-    )
+    w_concorr_c = wgtfac_c * z_w_concorr_mc + (1.0 - wgtfac_c) * z_w_concorr_mc_k_minus_1
 
     return w_concorr_c
 

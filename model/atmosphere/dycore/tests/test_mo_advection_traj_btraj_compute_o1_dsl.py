@@ -19,8 +19,11 @@ from icon4py.model.atmosphere.dycore.mo_advection_traj_btraj_compute_o1_dsl impo
     mo_advection_traj_btraj_compute_o1_dsl,
 )
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
-
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, constant_field, random_field
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    constant_field,
+    random_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -51,28 +54,22 @@ def mo_advection_traj_btraj_compute_o1_dsl_numpy(
     p_cell_blk = np.where(lvn_pos, cell_blk[:, 0], cell_blk[:, 1])
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf
-        + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
+        p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
     )
     z_ntdistv_bary_2 = -(
-        p_vt * p_dthalf
-        + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
+        p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
     )
 
     p_distv_bary_1 = np.where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_1[:, 0]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
-        z_ntdistv_bary_1 * primal_normal_cell_1[:, 1]
-        + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
+        z_ntdistv_bary_1 * primal_normal_cell_1[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_1[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
     )
 
     p_distv_bary_2 = np.where(
         lvn_pos,
-        z_ntdistv_bary_1 * primal_normal_cell_2[:, 0]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
-        z_ntdistv_bary_1 * primal_normal_cell_2[:, 1]
-        + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
+        z_ntdistv_bary_1 * primal_normal_cell_2[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
+        z_ntdistv_bary_1 * primal_normal_cell_2[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
     )
 
     return p_cell_idx, p_cell_blk, p_distv_bary_1, p_distv_bary_2
