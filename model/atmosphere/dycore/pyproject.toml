@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "icon4py_atm_dyn_iconam"
+name = "icon4py-atmosphere-dycore"
 description = "ICON dynamical core."
 readme = "README.md"
 requires-python = ">=3.10"

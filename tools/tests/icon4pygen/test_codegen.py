@@ -15,15 +15,14 @@ import os
 import pkgutil
 import re
 
-import icon4py.model.atm_dyn_iconam as atm_dyn_iconam
+import icon4py.model.atmosphere.dycore as dycore
 import pytest
 from click.testing import CliRunner
 
 from icon4pytools.icon4pygen.cli import main
-
 from .helpers import get_stencil_module_path
 
-
+DYCORE_PKG = "atmosphere.dycore"
 LEVELS_PER_THREAD = "1"
 BLOCK_SIZE = "128"
 OUTPATH = "."
@@ -34,10 +33,10 @@ def cli():
     return CliRunner()
 
 
-def atm_dyn_iconam_fencils() -> list[tuple[str, str]]:
-    pkgpath = os.path.dirname(atm_dyn_iconam.__file__)
+def dycore_fencils() -> list[tuple[str, str]]:
+    pkgpath = os.path.dirname(dycore.__file__)
     stencils = [name for _, name, _ in pkgutil.iter_modules([pkgpath])]
-    fencils = [("atm_dyn_iconam", stencil) for stencil in stencils]
+    fencils = [(DYCORE_PKG, stencil) for stencil in stencils]
     return fencils
 
 
@@ -110,8 +109,8 @@ def check_code_was_generated(stencil_name: str) -> None:
     check_cpp_codegen(f"{stencil_name}.cpp")
 
 
-@pytest.mark.parametrize(("stencil_module", "stencil_name"), atm_dyn_iconam_fencils())
-def test_codegen_atm_dyn_iconam(cli, stencil_module, stencil_name) -> None:
+@pytest.mark.parametrize(("stencil_module", "stencil_name"), dycore_fencils())
+def test_codegen_dycore(cli, stencil_module, stencil_name) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
         result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
