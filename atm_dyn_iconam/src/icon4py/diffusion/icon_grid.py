@@ -191,18 +191,6 @@ class IconGrid:
             self.connectivities["c2e"].shape, CellDim, CEDim
         )
 
-    def get_c2cec_connectivity(self):
-        old_shape = self.connectivities["c2e2c"].shape
-        c2cec_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(
-            c2cec_table, CellDim, CECDim, c2cec_table.shape[1]
-        )
-
-    def get_c2ce_connectivity(self):
-        old_shape = self.connectivities["c2e"].shape
-        table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(table, CellDim, CEDim, table.shape[1])
-
 
 @dataclass(frozen=True)
 class VerticalModelParams:

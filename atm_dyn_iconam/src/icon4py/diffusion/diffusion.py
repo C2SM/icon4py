@@ -29,7 +29,6 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
 )
 
 from icon4py.atm_dyn_iconam.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import calculate_nabla2_for_theta
 from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
 )
@@ -41,6 +40,9 @@ from icon4py.atm_dyn_iconam.calculate_enhanced_diffusion_coefficients_for_grid_p
 )
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
+)
+from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import (
+    calculate_nabla2_for_theta,
 )
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,

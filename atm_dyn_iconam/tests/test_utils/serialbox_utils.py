@@ -32,7 +32,7 @@ from icon4py.common.dimension import (
     EdgeDim,
     KDim,
     V2EDim,
-    VertexDim, CEDim,
+    VertexDim,
 )
 from icon4py.diffusion.diffusion import VectorTuple
 from icon4py.diffusion.horizontal import (
@@ -92,6 +92,7 @@ class IconSavepoint:
         buffer = self.serializer.read(name, self.savepoint).astype(int)
         self.log.debug(f"{name} {buffer.shape}")
         return buffer
+
 
 class IconGridSavePoint(IconSavepoint):
     def vct_a(self):
