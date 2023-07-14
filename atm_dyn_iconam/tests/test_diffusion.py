@@ -405,14 +405,3 @@ def test_run_diffusion_initial_step(
         prognostic_state=prognostic_state,
         diffusion_savepoint_exit=diffusion_savepoint_exit,
     )
-
-
-@pytest.mark.datatest
-def test_verify_stencil15_field_manipulation(interpolation_savepoint, icon_grid):
-    geofac_n2s = np.asarray(interpolation_savepoint.geofac_n2s())
-    int_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    geofac_c = np.asarray(int_state.geofac_n2s_c)
-    geofac_nbh = np.asarray(int_state.geofac_n2s_nbh)
-    cec_table = icon_grid.get_c2cec_connectivity().table
-    assert np.allclose(geofac_c, geofac_n2s[:, 0])
-    assert np.allclose(geofac_nbh[cec_table], geofac_n2s[:, 1:])
