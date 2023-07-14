@@ -365,6 +365,7 @@ class Diffusion:
         self.nudgezone_diff: Optional[float] = None
         self.edge_params: Optional[EdgeParams] = None
         self.cell_params: Optional[CellParams] = None
+        self._horizontal_start_index_w_diffusion: int32 = 0
 
     def init(
         self,
@@ -403,6 +404,17 @@ class Diffusion:
 
         self._allocate_temporary_fields()
 
+        def _get_start_index_for_w_diffusion() -> int32:
+            marker = (
+                HorizontalMarkerIndex.nudging(CellDim)
+                if self.grid.limited_area()
+                else HorizontalMarkerIndex.interior(CellDim)
+            )
+
+            return self.grid.get_indices_from_to(
+                CellDim, marker, HorizontalMarkerIndex.interior(CellDim)
+            )[0]
+
         self.nudgezone_diff: float = 0.04 / (
             params.scaled_nudge_max_coeff + sys.float_info.epsilon
         )
@@ -439,6 +451,7 @@ class Diffusion:
             physical_heights=np.asarray(self.vertical_params.physical_heights),
             nrdmax=self.vertical_params.index_of_damping_layer,
         )
+        self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
         self._initialized = True
 
     @property
@@ -740,10 +753,6 @@ class Diffusion:
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
         )
-        if not self.grid.limited_area():
-            horizontal_start__ = cell_start_interior
-        else:
-            horizontal_start__ = cell_start_nudging
         copy_field.with_backend(backend)(
             prognostic_state.w, self.w_tmp, offset_provider={}
         )
@@ -767,7 +776,7 @@ class Diffusion:
             ),  # +1 since Fortran includes boundaries
             interior_idx=int32(cell_start_interior),
             halo_idx=int32(cell_end_local),
-            horizontal_start=horizontal_start__,
+            horizontal_start=self._horizontal_start_index_w_diffusion,
             horizontal_end=cell_end_halo,
             vertical_start=0,
             vertical_end=klevels,
