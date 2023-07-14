@@ -17,7 +17,7 @@ import sys
 from collections import namedtuple
 from dataclasses import InitVar, dataclass, field
 from enum import Enum
-from typing import Final, Optional, Tuple
+from typing import Final, Optional
 
 import numpy as np
 from gt4py.next.common import Dimension
@@ -28,6 +28,7 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn_cached,
 )
 
+from icon4py.atm_dyn_iconam.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
 )
@@ -42,9 +43,6 @@ from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import
 )
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import (
     calculate_nabla2_for_theta,
-)
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
-    fused_mo_nh_diffusion_stencil_04_05_06,
 )
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
@@ -367,6 +365,7 @@ class Diffusion:
         self.nudgezone_diff: Optional[float] = None
         self.edge_params: Optional[EdgeParams] = None
         self.cell_params: Optional[CellParams] = None
+        self._horizontal_start_index_w_diffusion: int32 = 0
 
     def init(
         self,
@@ -405,6 +404,17 @@ class Diffusion:
 
         self._allocate_temporary_fields()
 
+        def _get_start_index_for_w_diffusion() -> int32:
+            marker = (
+                HorizontalMarkerIndex.nudging(CellDim)
+                if self.grid.limited_area()
+                else HorizontalMarkerIndex.interior(CellDim)
+            )
+
+            return self.grid.get_indices_from_to(
+                CellDim, marker, HorizontalMarkerIndex.interior(CellDim)
+            )[0]
+
         self.nudgezone_diff: float = 0.04 / (
             params.scaled_nudge_max_coeff + sys.float_info.epsilon
         )
@@ -441,6 +451,7 @@ class Diffusion:
             physical_heights=np.asarray(self.vertical_params.physical_heights),
             nrdmax=self.vertical_params.index_of_damping_layer,
         )
+        self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
         self._initialized = True
 
     @property
@@ -466,6 +477,7 @@ class Diffusion:
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
+        self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
         # TODO(Magdalena): this is KHalfDim
         self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
         self.horizontal_cell_index = _index_field(CellDim)
@@ -708,8 +720,8 @@ class Diffusion:
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
 
-        log.debug("running stencil 04 05 06: start")
-        fused_mo_nh_diffusion_stencil_04_05_06.with_backend(backend)(
+        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
+        apply_diffusion_to_vn.with_backend(backend)(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
@@ -726,6 +738,7 @@ class Diffusion:
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
+            limited_area=self.grid.limited_area(),
             horizontal_start=edge_start_lb_plus4,
             horizontal_end=edge_end_local,
             vertical_start=0,
@@ -735,7 +748,7 @@ class Diffusion:
                 "E2ECV": self.grid.get_e2ecv_connectivity(),
             },
         )
-        log.debug("runningstencils 04 05 06: end")
+        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
@@ -763,7 +776,7 @@ class Diffusion:
             ),  # +1 since Fortran includes boundaries
             interior_idx=int32(cell_start_interior),
             halo_idx=int32(cell_end_local),
-            horizontal_start=cell_start_nudging,
+            horizontal_start=self._horizontal_start_index_w_diffusion,
             horizontal_end=cell_end_halo,
             vertical_start=0,
             vertical_end=klevels,
