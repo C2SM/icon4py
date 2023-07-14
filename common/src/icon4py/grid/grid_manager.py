@@ -37,7 +37,7 @@ from icon4py.common.dimension import (
 )
 from icon4py.grid.horizontal import HorizontalGridSize
 from icon4py.grid.icon_grid import GridConfig, IconGrid
-from icon4py.grid.vertical import VerticalGridConfig
+from icon4py.grid.icon_grid import VerticalGridConfig
 
 
 class GridFileName(str, Enum):

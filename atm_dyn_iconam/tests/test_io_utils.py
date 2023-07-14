@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import pathlib
 
 import pytest
 
@@ -22,20 +21,17 @@ from icon4py.driver.io_utils import (
     read_static_fields,
 )
 from icon4py.grid.horizontal import CellParams, EdgeParams
-from icon4py.grid.vertical import VerticalModelParams
-
-
-test_data_path = pathlib.Path(__file__).parent.joinpath(
-    "./ser_icondata/mch_ch_r04b09_dsl/ser_data"
-)
+from icon4py.grid.icon_grid import VerticalModelParams
 
 
 @pytest.mark.parametrize(
     "read_fun", (read_geometry_fields, read_static_fields, read_icon_grid)
 )
-def test_read_geometry_fields_not_implemented_type(read_fun):
+@pytest.mark.datatest
+def test_read_geometry_fields_not_implemented_type(read_fun, get_data_path):
+    path = get_data_path
     with pytest.raises(NotImplementedError, match=r"Only ser_type='sb'"):
-        read_fun(path=test_data_path, ser_type=SerializationType.NC)
+        read_fun(path=path, ser_type=SerializationType.NC)
 
 
 def assert_grid_size_and_connectivities(grid):
@@ -52,24 +48,24 @@ def assert_grid_size_and_connectivities(grid):
 
 
 @pytest.mark.datatest
-def test_read_icon_grid_for_type_sb():
-    grid = read_icon_grid(test_data_path, ser_type=SerializationType.SB)
+def test_read_icon_grid_for_type_sb(get_data_path):
+    grid = read_icon_grid(get_data_path, ser_type=SerializationType.SB)
     assert_grid_size_and_connectivities(grid)
 
 
 @pytest.mark.datatest
-def test_read_static_fields_for_type_sb():
+def test_read_static_fields_for_type_sb(get_data_path):
     metric_state, interpolation_state = read_static_fields(
-        test_data_path, ser_type=SerializationType.SB
+        get_data_path, ser_type=SerializationType.SB
     )
     assert_metric_state_fields(metric_state)
     assert_interpolation_state_fields(interpolation_state)
 
 
 @pytest.mark.datatest
-def test_read_geometry_fields_for_type_sb():
+def test_read_geometry_fields_for_type_sb(get_data_path):
     edge_geometry, cell_geometry, vertical_geometry = read_geometry_fields(
-        test_data_path, ser_type=SerializationType.SB
+        get_data_path, ser_type=SerializationType.SB
     )
     assert_edge_geometry_fields(edge_geometry)
     assert_cell_geometry_fields(cell_geometry)
@@ -101,7 +97,7 @@ def assert_metric_state_fields(metric_state):
     assert metric_state.zd_diffcoef
     assert metric_state.theta_ref_mc
     assert metric_state.mask_hdiff
-    assert metric_state.zd_vertidx
+    assert metric_state.zd_vertoffset
 
 
 def assert_interpolation_state_fields(interpolation_state):

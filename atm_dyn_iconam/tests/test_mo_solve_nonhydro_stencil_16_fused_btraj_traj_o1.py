@@ -18,8 +18,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 imp
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
 from icon4py.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import as_1D_sparse_field, random_field
+
+from .test_utils.helpers import as_1D_sparse_field, random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def compute_btraj_numpy(
@@ -83,7 +84,6 @@ def sten_16_numpy(
     z_rth_pr_1: np.array,
     z_rth_pr_2: np.array,
 ) -> np.array:
-
     z_rth_pr_1_e2c = z_rth_pr_1[e2c]
     z_rth_pr_2_e2c = z_rth_pr_2[e2c]
     z_grad_rth_1_e2c = z_grad_rth_1[e2c]

@@ -2,8 +2,7 @@
 
 # Concretized dependencies in local repo
 -e ./common
--e ./pyutils
--e ./testutils
 -e ./atm_dyn_iconam
 -e ./py2f
--e ./liskov
+# icon4pytools
+-e ./tools

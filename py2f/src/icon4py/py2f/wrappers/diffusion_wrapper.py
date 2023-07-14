@@ -25,22 +25,23 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
 )
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.grid.horizontal import CellParams, EdgeParams
-from icon4py.grid.icon_grid import IconGrid
-from icon4py.grid.vertical import VerticalModelParams
+from icon4py.diffusion.horizontal import CellParams, EdgeParams
+from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
+from icon4py.diffusion.state_utils import (
+    DiagnosticState,
+    InterpolationState,
+    MetricState,
+    PrognosticState,
+)
 from icon4py.py2f.cffi_utils import CffiMethod
 
 
-diffusion: Diffusion(run_program=True)
+diffusion: Diffusion()
 
 
 @CffiMethod.register
@@ -81,8 +82,8 @@ def diffusion_init(
     Fortran ICON Diffusion component (aka Diffusion granule)
 
     """
-    grid = IconGrid()  # TODO @magdalena: where to get this from?
-    edges_params = EdgeParams(
+    grid = IconGrid()  # TODO(Magdalena) where to get this from
+    edge_params = EdgeParams(
         tangent_orientation=tangent_orientation,
         primal_edge_lengths=primal_edge_lengths,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
@@ -113,13 +114,13 @@ def diffusion_init(
 
     diffusion.init(
         grid=grid,
-        cell_params=cell_params,
-        edges_params=edges_params,
         config=config,
         params=derived_diffusion_params,
         vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_params,
+        cell_params=cell_params,
     )
 
 
@@ -144,13 +145,13 @@ def diffusion_run(
         theta_v=theta_v,
     )
     if linit:
-        diffusion.initial_step(
+        diffusion.initial_run(
             diagnostic_state,
             prognostic_state,
             dtime,
         )
     else:
-        diffusion.time_step(diagnostic_state, prognostic_state, dtime)
+        diffusion.run(diagnostic_state, prognostic_state, dtime)
 
 
 class DuplicateInitializationException(Exception):

@@ -12,38 +12,35 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.common.dimension import CellDim, KDim, V2CDim, VertexDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
-    v2c: np.array, p_cell_in: np.array, c_intp: np.array
-) -> np.array:
-    c_intp = np.expand_dims(c_intp, axis=-1)
-    p_vert_out = np.sum(p_cell_in[v2c] * c_intp, axis=1)
-    return p_vert_out
+class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
+    PROGRAM = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl
+    OUTPUTS = ("p_vert_out",)
 
+    @staticmethod
+    def reference(mesh, p_cell_in: np.array, c_intp: np.array, **kwargs) -> np.array:
+        c_intp = np.expand_dims(c_intp, axis=-1)
+        p_vert_out = np.sum(p_cell_in[mesh.v2c] * c_intp, axis=1)
+        return dict(p_vert_out=p_vert_out)
 
-def test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        p_cell_in = random_field(mesh, CellDim, KDim)
+        c_intp = random_field(mesh, VertexDim, V2CDim)
+        p_vert_out = zero_field(mesh, VertexDim, KDim)
 
-    p_cell_in = random_field(mesh, CellDim, KDim)
-    c_intp = random_field(mesh, VertexDim, V2CDim)
-    p_vert_out = zero_field(mesh, VertexDim, KDim)
-
-    ref = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
-        mesh.v2c, np.asarray(p_cell_in), np.asarray(c_intp)
-    )
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-        p_cell_in,
-        c_intp,
-        p_vert_out,
-        offset_provider={"V2C": mesh.get_v2c_offset_provider(), "V2CDim": V2CDim},
-    )
-
-    assert np.allclose(p_vert_out, ref)
+        return dict(
+            p_cell_in=p_cell_in,
+            c_intp=c_intp,
+            p_vert_out=p_vert_out,
+        )

@@ -12,41 +12,35 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_math_divrot_rot_vertex_ri_dsl_numpy(
-    v2e: np.array, vec_e: np.array, geofac_rot: np.array
-) -> np.array:
-    geofac_rot = np.expand_dims(geofac_rot, axis=-1)
-    rot_vec = np.sum(vec_e[v2e] * geofac_rot, axis=1)
-    return rot_vec
+class TestMoMathDivrotRotVertexRiDsl(StencilTest):
+    PROGRAM = mo_math_divrot_rot_vertex_ri_dsl
+    OUTPUTS = ("rot_vec",)
 
+    @staticmethod
+    def reference(mesh, vec_e: np.array, geofac_rot: np.array, **kwargs) -> np.array:
+        geofac_rot = np.expand_dims(geofac_rot, axis=-1)
+        rot_vec = np.sum(vec_e[mesh.v2e] * geofac_rot, axis=1)
+        return dict(rot_vec=rot_vec)
 
-def test_mo_math_divrot_rot_vertex_ri_dsl_numpy():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        vec_e = random_field(mesh, EdgeDim, KDim)
+        geofac_rot = random_field(mesh, VertexDim, V2EDim)
+        rot_vec = zero_field(mesh, VertexDim, KDim)
 
-    vec_e = random_field(mesh, EdgeDim, KDim)
-    geofac_rot = random_field(mesh, VertexDim, V2EDim)
-    rot_vec = zero_field(mesh, VertexDim, KDim)
-
-    ref = mo_math_divrot_rot_vertex_ri_dsl_numpy(
-        mesh.v2e,
-        np.asarray(vec_e),
-        np.asarray(geofac_rot),
-    )
-
-    mo_math_divrot_rot_vertex_ri_dsl(
-        vec_e,
-        geofac_rot,
-        rot_vec,
-        offset_provider={"V2E": mesh.get_v2e_offset_provider(), "V2EDim": V2EDim},
-    )
-
-    assert np.allclose(rot_vec, ref)
+        return dict(
+            vec_e=vec_e,
+            geofac_rot=geofac_rot,
+            rot_vec=rot_vec,
+        )

@@ -18,29 +18,32 @@ from typing import Callable
 import click
 import pytz
 from devtools import Timer
+from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.prognostic_state import PrognosticState
-from icon4py.diffusion.utils import copy_diagnostic_and_prognostics
+from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
+from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
 from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,
     configure_logging,
+    import_testutils,
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
     read_static_fields,
 )
-from icon4py.testutils.serialbox_utils import IconSerialDataProvider
+
+
+helpers = import_testutils()
+from helpers import serialbox_utils as sb_utils  # noqa
 
 
 log = logging.getLogger(__name__)
 
 
 class DummyAtmoNonHydro:
-    def __init__(self, data_provider: IconSerialDataProvider):
+    def __init__(self, data_provider: sb_utils.IconSerialDataProvider):
         self.config = None
         self.data_provider = data_provider
         self.simulation_date = datetime.fromisoformat(SIMULATION_START_DATE)
@@ -68,8 +71,8 @@ class DummyAtmoNonHydro:
             linit=False, date=self.simulation_date.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         )
         new_p = sp.construct_prognostics()
-        new_d = sp.construct_diagnostics()
-        copy_diagnostic_and_prognostics(
+        new_d = sp.construct_diagnostics_for_diffusion()
+        copy_diagnostic_and_prognostics.with_backend(run_gtfn)(
             new_d.hdef_ic,
             diagnostic_state.hdef_ic,
             new_d.div_ic,
@@ -100,14 +103,10 @@ class Timeloop:
         config: IconRunConfig,
         diffusion: Diffusion,
         atmo_non_hydro: DummyAtmoNonHydro,
-        edge_geometry: EdgeParams,
-        cell_geometry: CellParams,
     ):
         self.config = config
         self.diffusion = diffusion
         self.atmo_non_hydro = atmo_non_hydro
-        self.edges = edge_geometry
-        self.cells = cell_geometry
 
     def _full_name(self, func: Callable):
         return ":".join((self.__class__.__name__, func.__name__))
@@ -121,18 +120,10 @@ class Timeloop:
         self.atmo_non_hydro.do_dynamics_substepping(
             self.config.dtime, diagnostic_state, prognostic_state
         )
-        self.diffusion.time_step(
+        self.diffusion.run(
             diagnostic_state,
             prognostic_state,
             self.config.dtime,
-            self.edges.tangent_orientation,
-            self.edges.inverse_primal_edge_lengths,
-            self.edges.inverse_dual_edge_lengths,
-            self.edges.inverse_vertex_vertex_lengths,
-            self.edges.primal_normal_vert,
-            self.edges.dual_normal_vert,
-            self.edges.edge_areas,
-            self.cells.area,
         )
 
     def __call__(
@@ -144,18 +135,10 @@ class Timeloop:
             f"starting time loop for dtime={self.config.dtime} n_timesteps={self.config.n_time_steps}"
         )
         log.info("running initial step to diffuse fields before timeloop starts")
-        self.diffusion.initial_step(
+        self.diffusion.initial_run(
             diagnostic_state,
             prognostic_state,
             self.config.dtime,
-            self.edges.tangent_orientation,
-            self.edges.inverse_primal_edge_lengths,
-            self.edges.inverse_dual_edge_lengths,
-            self.edges.inverse_vertex_vertex_lengths,
-            self.edges.primal_normal_vert,
-            self.edges.dual_normal_vert,
-            self.edges.edge_areas,
-            self.cells.area,
         )
         log.info(
             f"starting real time loop for dtime={self.config.dtime} n_timesteps={self.config.n_time_steps}"
@@ -196,7 +179,7 @@ def initialize(n_time_steps, file_path: Path):
 
     log.info("initializing dycore")
     diffusion_params = DiffusionParams(config.diffusion_config)
-    diffusion = Diffusion(run_program=False)
+    diffusion = Diffusion()
     diffusion.init(
         icon_grid,
         config.diffusion_config,
@@ -204,6 +187,8 @@ def initialize(n_time_steps, file_path: Path):
         vertical_geometry,
         metric_state,
         interpolation_state,
+        edge_geometry,
+        cell_geometry,
     )
 
     data_provider, diagnostic_state, prognostic_state = read_initial_state(file_path)
@@ -215,8 +200,6 @@ def initialize(n_time_steps, file_path: Path):
         config=config.run_config,
         diffusion=diffusion,
         atmo_non_hydro=atmo_non_hydro,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
     )
     return tl, diagnostic_state, prognostic_state
 

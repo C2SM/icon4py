@@ -37,8 +37,9 @@ from icon4py.common.dimension import (
     KDim,
     VertexDim,
 )
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
+
+from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_velocity_advection_stencil_19_numpy(
@@ -120,7 +121,6 @@ def test_mo_velocity_advection_stencil_19():
         offset_provider={
             "E2V": mesh.get_e2v_offset_provider(),
             "E2C": mesh.get_e2c_offset_provider(),
-            "E2CDim": E2CDim,
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
             "Koff": KDim,
         },

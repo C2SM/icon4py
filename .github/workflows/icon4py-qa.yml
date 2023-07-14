@@ -1,0 +1,44 @@
+name: ICON4Py Quality Assurance
+
+on:
+    workflow_dispatch:
+    push:
+        branches:
+            - main
+        paths-ignore:
+            - "tools/**"
+    pull_request:
+        branches:
+            - main
+        paths-ignore:
+            - "tools/**"
+        types: [opened, reopened, assigned, ready_for_review]
+    pull_request_review:
+        branches:
+            - main
+        paths-ignore:
+            - "tools/**"
+        types: [submitted]
+
+jobs:
+    pre-commit:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Set up Python
+              uses: actions/setup-python@v3
+              with:
+                  python-version: "3.10"
+            - name: Install dependencies
+              run: |
+                  python -m pip install --upgrade pip setuptools wheel
+                  python -m pip install $(cat ./base-requirements-dev.txt | grep pre-commit)
+                  pre-commit install-hooks
+                  # mypy hook uses local repo and thus requires installing icon4py & gt4py
+                  python -m pip install $(cat ./base-requirements-dev.txt | grep mypy)
+                  python -m pip install $(cat ./base-requirements-dev.txt | grep gt4py)
+                  python -m pip install $(cat ./requirements-dev.txt | grep '\-e')
+            - name: Run checks
+              run: |
+                  python -m pip list
+                  pre-commit run --config .pre-commit-config.yaml --all-files

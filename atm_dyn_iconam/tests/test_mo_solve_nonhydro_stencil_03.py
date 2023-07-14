@@ -12,32 +12,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_03 import (
     mo_solve_nonhydro_stencil_03,
 )
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+
+from .test_utils.helpers import random_field
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_03_numpy(
-    z_exner_ex_pr: np.array,
-) -> np.array:
-    z_exner_ex_pr = np.zeros_like(z_exner_ex_pr)
-    return z_exner_ex_pr
+class TestMoSolveNonhydroStencil03(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_03
+    OUTPUTS = ("z_exner_ex_pr",)
 
+    @staticmethod
+    def reference(mesh, z_exner_ex_pr: np.array, **kwargs) -> dict:
+        z_exner_ex_pr = np.zeros_like(z_exner_ex_pr)
+        return dict(z_exner_ex_pr=z_exner_ex_pr)
 
-def test_mo_solve_nonhydro_stencil_03():
-    mesh = SimpleMesh()
-    z_exner_ex_pr = random_field(mesh, CellDim, KDim)
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
 
-    ref = mo_solve_nonhydro_stencil_03_numpy(
-        np.asarray(z_exner_ex_pr),
-    )
-
-    mo_solve_nonhydro_stencil_03(
-        z_exner_ex_pr,
-        offset_provider={},
-    )
-    assert np.allclose(z_exner_ex_pr, ref)
+        return dict(
+            z_exner_ex_pr=z_exner_ex_pr,
+        )

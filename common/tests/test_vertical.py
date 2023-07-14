@@ -16,12 +16,8 @@ import math
 import numpy as np
 import pytest
 
-from icon4py.grid.vertical import VerticalModelParams
-from icon4py.testutils.fixtures import (  # noqa F401
-    data_provider,
-    grid_savepoint,
-    setup_icon_data,
-)
+from icon4py.grid.icon_grid import VerticalModelParams
+
 
 
 @pytest.mark.parametrize(
@@ -31,10 +27,7 @@ from icon4py.testutils.fixtures import (  # noqa F401
 def test_nrdmax_calculation(max_h, damping, delta):
     vct_a = np.arange(0, max_h, delta)
     vct_a = vct_a[::-1]
-    vertical_params = VerticalModelParams(
-        rayleigh_damping_height=damping,
-        vct_a=vct_a,
-    )
+    vertical_params = VerticalModelParams(rayleigh_damping_height=damping, vct_a=vct_a)
     assert (
         vertical_params.index_of_damping_layer
         == vct_a.shape[0] - math.ceil(damping / delta) - 1
@@ -42,13 +35,14 @@ def test_nrdmax_calculation(max_h, damping, delta):
 
 
 @pytest.mark.datatest
-def test_nrdmax_calculation_from_icon_input(grid_savepoint):  # noqa: F811
+@pytest.mark.skip("fix location of testdata - dont want to download it twice")
+def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint, damping_height):
     a = grid_savepoint.vct_a()
-    damping_height = 12500
+    nrdmax = grid_savepoint.nrdmax()
     vertical_params = VerticalModelParams(
         rayleigh_damping_height=damping_height, vct_a=a
     )
-    assert 9 == vertical_params.index_of_damping_layer
+    assert nrdmax == vertical_params.index_of_damping_layer
     a_array = np.asarray(a)
-    assert a_array[9] > damping_height
-    assert a_array[10] < damping_height
+    assert a_array[nrdmax] > damping_height
+    assert a_array[nrdmax + 1] < damping_height

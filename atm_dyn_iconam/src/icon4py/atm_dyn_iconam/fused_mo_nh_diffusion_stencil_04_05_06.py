@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
-from gt4py.next.program_processors.runners import gtfn_cpu
 
 from icon4py.atm_dyn_iconam.apply_nabla2_and_nabla4_to_vn import (
     _apply_nabla2_and_nabla4_to_vn,
@@ -75,7 +74,7 @@ def _fused_mo_nh_diffusion_stencil_04_05_06(
     return vn
 
 
-@program(backend=gtfn_cpu.run_gtfn)
+@program
 def fused_mo_nh_diffusion_stencil_04_05_06(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],
@@ -93,10 +92,10 @@ def fused_mo_nh_diffusion_stencil_04_05_06(
     nudgezone_diff: float,
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _fused_mo_nh_diffusion_stencil_04_05_06(
         u_vert,
