@@ -4,11 +4,11 @@
 
 ## Description
 
-ICON4Py contains Python (GT4Py) implementations of ICON (inspired) components for weather and climate models.
+ICON4Py contains Python (GT4Py) implementations of ICON (inspired) components for weather and climate models as well as `icon4pytools`, a package containing CLIs and utilties needed for the integration of ICON4Py code into the ICON Fortran model.
 
 ## Project structure
 
-Each directory contains Python packages of ICON components or utility packages that are deployable on its own. As these packages are not available from a package repository (yet), location of dependencies within this repository have to be provided explicitly, e.g. by installing the dependencies first. See [Installation instructions](#installation-instructions).
+Each directory contains Python packages of ICON components or utility packages that are deployable on their own. As these packages are not available from a package repository (yet), location of dependencies within this repository have to be provided explicitly, e.g. by installing the dependencies first. See [Installation instructions](#installation-instructions).
 
 ## Installation instructions
 
@@ -70,8 +70,11 @@ source .venv/bin/activate
 pip install --upgrade wheel
 
 # Install a specific ICON4Py subpackage and its dependencies
-cd _SUBPACKAGE_  # where _SUBPACKAGE_ in atm_dyn_iconam | common | pyutils | testutils | ...
+cd _SUBPACKAGE_  # where _SUBPACKAGE_ in atm_dyn_iconam | tools | ...
 pip install -r requirements-dev.txt
+
+# or in the case of there being a pyproject.toml file
+pip install .
 ```
 
 ## Development instructions

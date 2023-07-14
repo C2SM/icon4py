@@ -19,23 +19,27 @@ from gt4py.next.ffront.fbuiltins import float32, float64, int32, int64
 
 from icon4py.common.dimension import E2CDim, EdgeDim, KDim, VertexDim
 from icon4py.py2f.cffi_utils import UnknownDimensionException, to_fields
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
 
 
-mesh = SimpleMesh()
-
+n_vertices = 9
+n_edges = 27
+levels = 12
+e2c_sparse_size = 2
+def random(*sizes):
+    return np.random.default_rng().uniform(
+            size=sizes
+        )
 
 @pytest.mark.parametrize("pointer_type", ["float*", "double*"])
 def test_unpack_from_buffer_to_field(pointer_type: str):
-    @to_fields(dim_sizes={VertexDim: mesh.n_vertices, KDim: mesh.k_level})
+    @to_fields(dim_sizes={VertexDim: n_vertices, KDim: levels})
     def identity(
         f1: Field[[VertexDim, KDim], float], factor: float
     ) -> tuple[float, Field[[VertexDim, KDim], float]]:
         return factor, f1
 
     ffi = cffi.FFI()
-    input_array = np.asarray(random_field(mesh, VertexDim, KDim))
+    input_array = random(n_vertices, levels)
     input_factor = 0.5
     res_factor, result_field = identity(
         ffi.from_buffer(pointer_type, input_array), input_factor
@@ -58,11 +62,11 @@ def test_unpack_only_scalar_args():
 def test_unpack_local_field(field_type):
     ffi = cffi.FFI()
 
-    @to_fields(dim_sizes={EdgeDim: mesh.n_edges, E2CDim: mesh.e2c.shape[1]})
+    @to_fields(dim_sizes={EdgeDim: n_edges, E2CDim: e2c_sparse_size})
     def local_field(f1: Field[[EdgeDim, E2CDim], field_type]):
         return f1
 
-    input_field = np.arange(mesh.e2c.size).reshape(mesh.e2c.shape)
+    input_field = np.arange(n_edges * e2c_sparse_size).reshape((n_edges, e2c_sparse_size))
     res_field = local_field(ffi.from_buffer("int*", input_field))
     assert np.all(res_field == input_field)
 
@@ -72,6 +76,6 @@ def test_unknown_dimension_raises_exception():
     def do_nothing(f1: Field[[VertexDim], float]):
         pass
 
-    input_array = np.asarray(random_field(mesh, VertexDim, KDim))
+    input_array = random()
     with pytest.raises(UnknownDimensionException, match=r"size of dimension "):
         do_nothing(input_array)

@@ -12,37 +12,34 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest as pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_01 import (
     mo_solve_nonhydro_stencil_01,
 )
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+
+from .test_utils.helpers import random_field
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_01_numpy(
-    z_rth_pr_1: np.array,
-    z_rth_pr_2: np.array,
-) -> tuple[np.array]:
-    z_rth_pr_1 = np.zeros_like(z_rth_pr_1)
-    z_rth_pr_2 = np.zeros_like(z_rth_pr_2)
-    return z_rth_pr_1, z_rth_pr_2
+class TestMoSolveNonhydroStencil01(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_01
+    OUTPUTS = ("z_rth_pr_1", "z_rth_pr_2")
 
+    @staticmethod
+    def reference(
+        mesh,
+        z_rth_pr_1: np.array,
+        z_rth_pr_2: np.array,
+    ) -> tuple[np.array]:
+        z_rth_pr_1 = np.zeros_like(z_rth_pr_1)
+        z_rth_pr_2 = np.zeros_like(z_rth_pr_2)
+        return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
-def test_mo_solve_nonhydro_stencil_01_z_rth_pr_2():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_rth_pr_1 = random_field(mesh, CellDim, KDim)
+        z_rth_pr_2 = random_field(mesh, CellDim, KDim)
 
-    z_rth_pr_1 = random_field(mesh, CellDim, KDim)
-    z_rth_pr_2 = random_field(mesh, CellDim, KDim)
-
-    z_rth_pr_1_ref, z_rth_pr_2_ref = mo_solve_nonhydro_stencil_01_numpy(
-        z_rth_pr_1, z_rth_pr_2
-    )
-    mo_solve_nonhydro_stencil_01(
-        z_rth_pr_1,
-        z_rth_pr_2,
-        offset_provider={},
-    )
-    assert np.allclose(z_rth_pr_1, z_rth_pr_1_ref)
-    assert np.allclose(z_rth_pr_2, z_rth_pr_2_ref)
+        return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)

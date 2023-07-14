@@ -12,28 +12,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_12 import (
     mo_velocity_advection_stencil_12,
 )
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+
+from .test_utils.helpers import random_field
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_velocity_advection_stencil_12_numpy(z_w_con_c: np.array) -> np.array:
-    z_w_con_c = np.zeros_like(z_w_con_c)
-    return z_w_con_c
+class TestMoVelocityAdvectionStencil12(StencilTest):
+    PROGRAM = mo_velocity_advection_stencil_12
+    OUTPUTS = ("z_w_con_c",)
 
+    @staticmethod
+    def reference(mesh, z_w_con_c: np.array, **kwargs) -> np.array:
+        z_w_con_c = np.zeros_like(z_w_con_c)
+        return dict(z_w_con_c=z_w_con_c)
 
-def test_mo_velocity_advection_stencil_12():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_w_con_c = random_field(mesh, CellDim, KDim)
 
-    z_w_con_c = random_field(mesh, CellDim, KDim)
-
-    ref = mo_velocity_advection_stencil_12_numpy(np.asarray(z_w_con_c))
-    mo_velocity_advection_stencil_12(
-        z_w_con_c,
-        offset_provider={},
-    )
-    assert np.allclose(z_w_con_c, ref)
+        return dict(
+            z_w_con_c=z_w_con_c,
+        )

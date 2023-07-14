@@ -12,41 +12,40 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_56_63 import (
     mo_solve_nonhydro_stencil_56_63,
 )
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+
+from .test_utils.helpers import random_field
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_56_63_numpy(
-    inv_ddqz_z_full: np.array,
-    w: np.array,
-    w_concorr_c: np.array,
-) -> np.array:
-    z_dwdz_dd = inv_ddqz_z_full * (
-        (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
-    )
-    return z_dwdz_dd
+class TestMoSolveNonhydroStencil5663(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_56_63
+    OUTPUTS = ("z_dwdz_dd",)
 
+    @staticmethod
+    def reference(
+        mesh, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array, **kwargs
+    ) -> np.array:
+        z_dwdz_dd = inv_ddqz_z_full * (
+            (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
+        )
+        return dict(z_dwdz_dd=z_dwdz_dd)
 
-def test_mo_solve_nonhydro_stencil_56_63():
-    mesh = SimpleMesh()
-    inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-    w = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    w_concorr_c = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    z_dwdz_dd = random_field(mesh, CellDim, KDim)
+    @pytest.fixture
+    def input_data(self, mesh):
+        inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
+        w = random_field(mesh, CellDim, KDim, extend={KDim: 1})
+        w_concorr_c = random_field(mesh, CellDim, KDim, extend={KDim: 1})
+        z_dwdz_dd = random_field(mesh, CellDim, KDim)
 
-    z_dwdz_dd_ref = mo_solve_nonhydro_stencil_56_63_numpy(
-        np.asarray(inv_ddqz_z_full),
-        np.asarray(w),
-        np.asarray(w_concorr_c),
-    )
-
-    mo_solve_nonhydro_stencil_56_63(
-        inv_ddqz_z_full, w, w_concorr_c, z_dwdz_dd, offset_provider={"Koff": KDim}
-    )
-
-    assert np.allclose(z_dwdz_dd_ref, z_dwdz_dd)
+        return dict(
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            w=w,
+            w_concorr_c=w_concorr_c,
+            z_dwdz_dd=z_dwdz_dd,
+        )

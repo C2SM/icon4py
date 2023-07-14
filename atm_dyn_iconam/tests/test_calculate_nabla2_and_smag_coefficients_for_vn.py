@@ -12,14 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import as_1D_sparse_field, random_field, zero_field
+
+from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def calculate_nabla2_and_smag_coefficients_for_vn_numpy(
@@ -210,7 +210,7 @@ def test_calculate_nabla2_and_smag_coefficients_for_vn():
         mesh.k_level,
         offset_provider={
             "E2C2V": mesh.get_e2c2v_offset_provider(),
-            "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, mesh.n_e2c2v),
+            "E2ECV": mesh.get_e2ecv_offset_provider(),
         },
     )
     assert np.allclose(kh_smag_e_ref, kh_smag_e)

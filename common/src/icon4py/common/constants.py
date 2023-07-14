@@ -11,17 +11,21 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Annotated
+from typing import Final
 
 
-GAS_CONSTANT_DRY_AIR: Annotated[
-    float,
-    "gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90), https://glossary.ametsoc.org/wiki/Gas_constant",
-] = 287.04
-CPD: Annotated[float, "specific heat at constant pressure [J/K/kg]"] = 1004.64
-GAS_CONSTANT_WATER_VAPOR: Annotated[
-    float, "gas constant for water vapor [J/K/kg], rv in Icon"
-] = 461.51
-GRAVITATIONAL_ACCELERATION: Annotated[
-    float, "av. gravitational acceleration [m/s^2]"
-] = 9.8066
+#: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
+#: see https://glossary.ametsoc.org/wiki/Gas_constant.
+GAS_CONSTANT_DRY_AIR: Final[float] = 287.04
+
+#: Specific heat at constant pressure [J/K/kg]
+CPD: Final[float] = 1004.64
+
+#: Gas constant for water vapor [J/K/kg], rv in ICON.
+GAS_CONSTANT_WATER_VAPOR: Final[float] = 461.51
+
+#: Av. gravitational acceleration [m/s^2]
+GRAVITATIONAL_ACCELERATION: Final[float] = 9.8066
+
+#: Default physics to dynamics time step ratio
+DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0

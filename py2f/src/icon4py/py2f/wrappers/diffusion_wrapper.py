@@ -28,30 +28,23 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
 )
-from icon4py.diffusion.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalMeshSize,
+from icon4py.diffusion.horizontal import CellParams, EdgeParams
+from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
+from icon4py.diffusion.state_utils import (
+    DiagnosticState,
+    InterpolationState,
+    MetricState,
+    PrognosticState,
 )
-from icon4py.diffusion.icon_grid import (
-    IconGrid,
-    MeshConfig,
-    VerticalMeshConfig,
-    VerticalModelParams,
-)
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
 from icon4py.py2f.cffi_utils import CffiMethod, to_fields
 
 
-diffusion: Diffusion(run_program=True)
+diffusion: Diffusion()
 
 nproma = 50000
 field_sizes = {EdgeDim: nproma, CellDim: nproma, VertexDim:nproma}
@@ -229,8 +222,20 @@ def diffusion_init(
         primal_normal_vert=(edges_primal_normal_vert_1, edges_primal_normal_vert_2),
         edge_areas=edges_area_edge,
     )
+    edge_params = EdgeParams(
+        tangent_orientation=tangent_orientation,
+        primal_edge_lengths=primal_edge_lengths,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        dual_normal_vert=(dual_normal_vert_1, dual_normal_vert_2),
+        dual_edge_lengths=dual_edge_lengths,
+        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
+        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
+        primal_normal_vert=(primal_normal_vert_1, primal_normal_vert_2),
+        edge_areas=edge_areas,
+    )
     cell_params = CellParams(cells_area)
     vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=nrdmax)
+    config: DiffusionConfig = DiffusionConfig(grid, vertical_params)
     derived_diffusion_params = DiffusionParams(config)
     metric_state = MetricState(
         theta_ref_mc=theta_ref_mc,
@@ -254,13 +259,13 @@ def diffusion_init(
     )
     diffusion.init(
         grid=grid,
-        cell_params=cell_params,
-        edges_params=edges_params,
         config=config,
         params=derived_diffusion_params,
         vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_params,
+        cell_params=cell_params,
     )
 
 
@@ -292,13 +297,13 @@ def diffusion_run(
         theta_v=theta_v,
     )
     if linit:
-        diffusion.initial_step(
+        diffusion.initial_run(
             diagnostic_state,
             prognostic_state,
             dtime,
         )
     else:
-        diffusion.time_step(diagnostic_state, prognostic_state, dtime)
+        diffusion.run(diagnostic_state, prognostic_state, dtime)
 
 
 class DuplicateInitializationException(Exception):

@@ -12,51 +12,50 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_intp_rbf_rbf_vec_interpol_vertex_numpy(
-    v2e: np.array, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array
-) -> tuple[np.array]:
-    ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
-    p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
+class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
+    PROGRAM = mo_intp_rbf_rbf_vec_interpol_vertex
+    OUTPUTS = ("p_u_out", "p_v_out")
 
-    ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
-    p_v_out = np.sum(p_e_in[v2e] * ptr_coeff_2, axis=1)
+    @staticmethod
+    def reference(
+        mesh, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array, **kwargs
+    ) -> tuple[np.array]:
+        ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
+        p_u_out = np.sum(p_e_in[mesh.v2e] * ptr_coeff_1, axis=1)
 
-    return p_u_out, p_v_out
+        ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
+        p_v_out = np.sum(p_e_in[mesh.v2e] * ptr_coeff_2, axis=1)
 
+        return dict(p_v_out=p_v_out, p_u_out=p_u_out)
 
-def test_mo_intp_rbf_rbf_vec_interpol_vertex():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        p_e_in = random_field(mesh, EdgeDim, KDim)
+        ptr_coeff_1 = random_field(mesh, VertexDim, V2EDim)
+        ptr_coeff_2 = random_field(mesh, VertexDim, V2EDim)
+        p_v_out = zero_field(mesh, VertexDim, KDim)
+        p_u_out = zero_field(mesh, VertexDim, KDim)
 
-    p_e_in = random_field(mesh, EdgeDim, KDim)
-    ptr_coeff_1 = random_field(mesh, VertexDim, V2EDim)
-    ptr_coeff_2 = random_field(mesh, VertexDim, V2EDim)
-    p_v_out = zero_field(mesh, VertexDim, KDim)
-    p_u_out = zero_field(mesh, VertexDim, KDim)
-
-    mo_intp_rbf_rbf_vec_interpol_vertex(
-        p_e_in,
-        ptr_coeff_1,
-        ptr_coeff_2,
-        p_u_out,
-        p_v_out,
-        0,
-        mesh.n_vertices,
-        0,
-        mesh.k_level,
-        offset_provider={"V2E": mesh.get_v2e_offset_provider(), "V2EDim": V2EDim},
-    )
-    p_u_out_ref, p_v_out_ref = mo_intp_rbf_rbf_vec_interpol_vertex_numpy(
-        mesh.v2e, np.asarray(p_e_in), np.asarray(ptr_coeff_1), np.asarray(ptr_coeff_2)
-    )
-
-    assert np.allclose(p_v_out, p_v_out_ref)
-    assert np.allclose(p_u_out, p_u_out_ref)
+        return dict(
+            p_e_in=p_e_in,
+            ptr_coeff_1=ptr_coeff_1,
+            ptr_coeff_2=ptr_coeff_2,
+            p_v_out=p_v_out,
+            p_u_out=p_u_out,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_vertices),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
+        )

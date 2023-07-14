@@ -17,8 +17,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_40 import (
     mo_solve_nonhydro_stencil_40,
 )
 from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+
+from .test_utils.helpers import random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_solve_nonhydro_stencil_40_numpy(
@@ -63,11 +64,7 @@ def test_mo_solve_nonhydro_stencil_40():
         z_w_concorr_me,
         wgtfacq_c,
         w_concorr_c,
-        offset_provider={
-            "Koff": KDim,
-            "C2E": mesh.get_c2e_offset_provider(),
-            "C2EDim": C2EDim,
-        },
+        offset_provider={"Koff": KDim, "C2E": mesh.get_c2e_offset_provider()},
     )
 
     assert np.allclose(w_concorr_c[:, 3:], w_concorr_c_ref[:, 3:])

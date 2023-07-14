@@ -12,15 +12,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-import pytest
-from gt4py.next.iterator.embedded import constant_field
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_21 import (
     mo_solve_nonhydro_stencil_21,
 )
-from icon4py.common.dimension import CellDim, E2CDim, EdgeDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field, zero_field
+from icon4py.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+
+from .test_utils.helpers import flatten_first_two_dims, random_field, zero_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_solve_nonhydro_stencil_21_numpy(
@@ -86,11 +87,10 @@ def mo_solve_nonhydro_stencil_21_numpy(
     return z_hydro_corr
 
 
-@pytest.mark.skip("new lowering: dims in offset provider")
 def test_mo_solve_nonhydro_stencil_21():
     mesh = SimpleMesh()
 
-    ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int)
+    ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int32)
     rng = np.random.default_rng()
     for k in range(mesh.k_level):
         # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
@@ -107,6 +107,9 @@ def test_mo_solve_nonhydro_stencil_21():
     inv_dual_edge_length = random_field(mesh, EdgeDim)
     grav_o_cpd = 10.0
 
+    zdiff_gradp_new = flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp)
+    ikoffset_new = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
+
     z_hydro_corr = zero_field(mesh, EdgeDim, KDim)
 
     z_hydro_corr_ref = mo_solve_nonhydro_stencil_21_numpy(
@@ -120,27 +123,18 @@ def test_mo_solve_nonhydro_stencil_21():
         grav_o_cpd,
     )
 
-    hstart = 0
-    hend = mesh.n_edges
-    kstart = 0
-    kend = mesh.k_level
-
     mo_solve_nonhydro_stencil_21(
         theta_v,
-        ikoffset,
-        zdiff_gradp,
+        ikoffset_new,
+        zdiff_gradp_new,
         theta_v_ic,
         inv_ddqz_z_full,
         inv_dual_edge_length,
-        constant_field(grav_o_cpd),
+        grav_o_cpd,
         z_hydro_corr,
-        hstart,
-        hend,
-        kstart,
-        kend,
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
-            "E2CDim": E2CDim,
+            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
             "Koff": KDim,
         },
     )

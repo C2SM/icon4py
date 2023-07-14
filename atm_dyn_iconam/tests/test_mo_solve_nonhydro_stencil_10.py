@@ -17,8 +17,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
 )
 from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field
+
+from .test_utils.helpers import random_field
+from .test_utils.simple_mesh import SimpleMesh
 
 
 def mo_solve_nonhydro_stencil_10_numpy(
@@ -38,7 +39,6 @@ def mo_solve_nonhydro_stencil_10_numpy(
     wgt_nnow_rth,
     wgt_nnew_rth,
 ) -> tuple[np.array, np.array, np.array, np.array]:
-
     vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
     rho_now_offset = np.roll(rho_now, shift=1, axis=1)
     rho_var_offset = np.roll(rho_var, shift=1, axis=1)
