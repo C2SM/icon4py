@@ -29,8 +29,9 @@ from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
 
 # TODO [@Magdalena] fix duplication: duplicated from test testutils/utils.py
-def zero_field(mesh, *dims: Dimension, dtype=float):
+def zero_field(mesh, *dims: Dimension, is_halfdim=False, dtype=float):
     shapex = tuple(map(lambda x: mesh.size[x], dims))
+    shapex = tuple({shapex[0],shapex[1]+1}) if is_halfdim else shapex
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
 
@@ -60,8 +61,8 @@ def indices_field(dim: Dimension, mesh, is_halfdim, dtype=int):
     return np_as_located_field(dim)(np.arange(shapex, dtype=dtype))
 
 
-def _allocate(*dims: Dimension, mesh, dtype=float):
-    return zero_field(mesh, *dims, dtype=dtype)
+def _allocate(*dims: Dimension, mesh, is_halfdim=False, dtype=float):
+    return zero_field(mesh, *dims, is_halfdim=is_halfdim, dtype=dtype)
 
 
 def _allocate_indices(*dims: Dimension, mesh, is_halfdim=False, dtype=int32):

@@ -198,6 +198,7 @@ def _fused_stencils_11_to_13(
     nflatlev_startindex: int32,
     nlev: int32,
 ):
+
     local_z_w_con_c = where(
         (k_field >= int32(0)) & (k_field < nlev),
         _mo_velocity_advection_stencil_11(w),
@@ -216,7 +217,7 @@ def _fused_stencils_11_to_13(
     return local_z_w_con_c
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def fused_stencils_11_to_13(
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],

@@ -112,7 +112,7 @@ class VelocityAdvection:
         self.z_w_concorr_me = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_ekinh = _allocate(CellDim, KDim, mesh=self.grid)
         self.z_w_concorr_mc = _allocate(CellDim, KDim, mesh=self.grid)
-        self.z_w_con_c = _allocate(CellDim, KDim, mesh=self.grid)
+        self.z_w_con_c = _allocate(CellDim, KDim, is_halfdim=True, mesh=self.grid)
         self.zeta = _allocate(VertexDim, KDim, mesh=self.grid)
         self.z_w_con_c_full = _allocate(CellDim, KDim, mesh=self.grid)
         self.cfl_clipping = _allocate(CellDim, KDim, mesh=self.grid, dtype=bool)

@@ -253,7 +253,7 @@ class VerticalModelParams:
                 np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height)
             )
         )
-        self._nflatlev = 10  # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
+        self._nflatlev = 4  # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
 
     @property
     def index_of_damping_layer(self):
