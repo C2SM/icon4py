@@ -10,12 +10,15 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
 import tarfile
 from pathlib import Path
 
 import pytest
 import wget
+from gt4py.next.program_processors.runners.roundtrip import executor
 
+from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
 from icon4py.diffusion.diffusion import DiffusionConfig
 
 from .test_utils.serialbox_utils import IconSerialDataProvider
@@ -25,6 +28,22 @@ data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
 data_path = Path(__file__).parent.joinpath("ser_icondata")
 extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
+
+
+@pytest.fixture
+def get_data_path(setup_icon_data):
+    return extracted_path
+
+
+@pytest.fixture
+def ndyn_substeps():
+    """
+    Return number of dynamical substeps.
+
+    Serialized data uses a reduced number (2 instead of the default 5) in order to reduce the amount
+    of data generated.
+    """
+    return 2
 
 
 @pytest.fixture(scope="session")
@@ -136,7 +155,7 @@ def grid_savepoint(data_provider):
 
 
 @pytest.fixture
-def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
+def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
@@ -155,9 +174,27 @@ def r04b09_diffusion_config(setup_icon_data) -> DiffusionConfig:
         zdiffu_t=True,
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coeff=0.075,
+        n_substeps=ndyn_substeps,
     )
 
 
 @pytest.fixture
 def damping_height():
     return 12500
+
+
+BACKENDS = {"embedded": executor}
+MESHES = {"simple_mesh": SimpleMesh()}
+
+
+@pytest.fixture(
+    ids=MESHES.keys(),
+    params=MESHES.values(),
+)
+def mesh(request):
+    return request.param
+
+
+@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
+def backend(request):
+    return request.param

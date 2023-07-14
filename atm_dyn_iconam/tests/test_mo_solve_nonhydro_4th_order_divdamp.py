@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
@@ -19,35 +20,32 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_4th_order_divdamp import (
 from icon4py.common.dimension import EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_4th_order_divdamp_numpy(
-    scal_divdamp: np.array,
-    z_graddiv2_vn: np.array,
-    vn: np.array,
-) -> np.array:
-    scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
-    vn = vn + (scal_divdamp * z_graddiv2_vn)
-    return vn
+class TestMoSolveNonhydro4thOrderDivdamp(StencilTest):
+    PROGRAM = mo_solve_nonhydro_4th_order_divdamp
+    OUTPUTS = ("vn",)
 
+    @staticmethod
+    def reference(
+        mesh,
+        scal_divdamp: np.array,
+        z_graddiv2_vn: np.array,
+        vn: np.array,
+    ) -> np.array:
+        scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
+        vn = vn + (scal_divdamp * z_graddiv2_vn)
+        return dict(vn=vn)
 
-def test_mo_solve_nonhydro_4th_order_divdamp():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        scal_divdamp = random_field(mesh, KDim)
+        z_graddiv2_vn = random_field(mesh, EdgeDim, KDim)
+        vn = random_field(mesh, EdgeDim, KDim)
 
-    scal_divdamp = random_field(mesh, KDim)
-    z_graddiv2_vn = random_field(mesh, EdgeDim, KDim)
-    vn = random_field(mesh, EdgeDim, KDim)
-
-    ref = mo_solve_nonhydro_4th_order_divdamp_numpy(
-        np.asarray(scal_divdamp),
-        np.asarray(z_graddiv2_vn),
-        np.asarray(vn),
-    )
-    mo_solve_nonhydro_4th_order_divdamp(
-        scal_divdamp,
-        z_graddiv2_vn,
-        vn,
-        offset_provider={},
-    )
-    assert np.allclose(vn, ref)
+        return dict(
+            scal_divdamp=scal_divdamp,
+            z_graddiv2_vn=z_graddiv2_vn,
+            vn=vn,
+        )

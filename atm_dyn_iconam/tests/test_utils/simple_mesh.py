@@ -428,7 +428,30 @@ class SimpleMesh:
 
     def get_e2ecv_offset_provider(self):
         old_shape = self.e2c2v.shape
-        v2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        e2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
         return NeighborTableOffsetProvider(
-            v2ecv_table, EdgeDim, ECVDim, v2ecv_table.shape[1]
+            e2ecv_table, EdgeDim, ECVDim, e2ecv_table.shape[1]
         )
+
+    def get_c2ce_offset_provider(self):
+        old_shape = self.c2e.shape
+        c2ce_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return NeighborTableOffsetProvider(
+            c2ce_table, CellDim, CEDim, c2ce_table.shape[1]
+        )
+
+    def get_offset_provider(self):
+        return {
+            "C2E": self.get_c2e_offset_provider(),
+            "C2E2CO": self.get_c2e2cO_offset_provider(),
+            "C2E2C": self.get_c2e2c_offset_provider(),
+            "E2C2EO": self.get_e2c2eO_offset_provider(),
+            "E2C2E": self.get_e2c2e_offset_provider(),
+            "V2C": self.get_v2c_offset_provider(),
+            "V2E": self.get_v2e_offset_provider(),
+            "E2C": self.get_e2c_offset_provider(),
+            "E2V": self.get_e2v_offset_provider(),
+            "E2C2V": self.get_e2c2v_offset_provider(),
+            "C2CE": self.get_c2ce_offset_provider(),
+            "Koff": KDim,
+        }

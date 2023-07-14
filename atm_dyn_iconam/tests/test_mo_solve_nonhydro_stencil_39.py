@@ -57,11 +57,7 @@ def test_mo_solve_nonhydro_stencil_39():
         z_w_concorr_me,
         wgtfac_c,
         w_concorr_c,
-        offset_provider={
-            "Koff": KDim,
-            "C2E": mesh.get_c2e_offset_provider(),
-            "C2EDim": C2EDim,
-        },
+        offset_provider={"Koff": KDim, "C2E": mesh.get_c2e_offset_provider()},
     )
 
     assert np.allclose(w_concorr_c[:, 1:], w_concorr_c_ref[:, 1:])

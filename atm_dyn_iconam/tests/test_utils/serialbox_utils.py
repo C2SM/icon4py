@@ -18,12 +18,12 @@ from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from .helpers import as_1D_sparse_field
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
     CECDim,
+    CEDim,
     CellDim,
     E2C2VDim,
     E2CDim,
@@ -34,7 +34,6 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim, CEDim,
 )
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import VectorTuple
 from icon4py.diffusion.horizontal import (
     CellParams,
@@ -42,9 +41,14 @@ from icon4py.diffusion.horizontal import (
     HorizontalMeshSize,
 )
 from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.diffusion.state_utils import (
+    DiagnosticState,
+    InterpolationState,
+    MetricState,
+    PrognosticState,
+)
+
+from .helpers import as_1D_sparse_field
 
 
 class IconSavepoint:
@@ -279,7 +283,7 @@ class InterpolationSavepoint(IconSavepoint):
     def nudgecoeff_e(self):
         return self._get_field("nudgecoeff_e", EdgeDim)
 
-    def construct_interpolation_state(self) -> InterpolationState:
+    def construct_interpolation_state_for_diffusion(self) -> InterpolationState:
         grg = self.geofac_grg()
         return InterpolationState(
             e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),
@@ -308,19 +312,28 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
     def zd_intcoef(self):
-        return self._from_cell_c2e2c_to_cec("vcoef")
-
-    def _from_cell_c2e2c_to_cec(self, field_name: str, offset: int = 0):
-        ser_input = (
-            np.squeeze(self.serializer.read(field_name, self.savepoint)) + offset
+        ser_input = np.moveaxis(
+            (np.squeeze(self.serializer.read("vcoef", self.savepoint))), 1, -1
         )
-        old_shape = ser_input.shape
+        return self._linearize_first_2dims(ser_input, sparse_size=3)
+
+    def _linearize_first_2dims(self, data: np.ndarray, sparse_size):
+        old_shape = data.shape
+        assert old_shape[1] == sparse_size
         return np_as_located_field(CECDim, KDim)(
-            ser_input.reshape(old_shape[0] * old_shape[1], old_shape[2])
+            data.reshape(old_shape[0] * old_shape[1], old_shape[2])
         )
 
     def zd_vertoffset(self):
-        return self._from_cell_c2e2c_to_cec("zd_vertoffset", 0)
+        ser_input = np.squeeze(self.serializer.read("zd_vertoffset", self.savepoint))
+        ser_input = np.moveaxis(ser_input, 1, -1)
+        return self._linearize_first_2dims(ser_input, sparse_size=3)
+
+    def zd_vertidx(self):
+        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
+
+    def zd_indlist(self):
+        return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
     def theta_ref_mc(self):
         return self._get_field("theta_ref_mc", CellDim, KDim)
@@ -395,7 +408,7 @@ class IconDiffusionInitSavepoint(IconSavepoint):
             theta_v=self.theta_v(),
         )
 
-    def construct_diagnostics(self) -> DiagnosticState:
+    def construct_diagnostics_for_diffusion(self) -> DiagnosticState:
         return DiagnosticState(
             hdef_ic=self.hdef_ic(),
             div_ic=self.div_ic(),

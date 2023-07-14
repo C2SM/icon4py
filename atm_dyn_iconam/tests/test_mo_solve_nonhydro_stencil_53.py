@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_53 import (
     mo_solve_nonhydro_stencil_53,
@@ -19,33 +20,26 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_53 import (
 from icon4py.common.dimension import CellDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_53_numpy(
-    z_q: np.array,
-    w: np.array,
-) -> np.array:
-    w_new = np.zeros_like(w)
-    last_k_level = w.shape[1] - 1
+class TestMoSolveNonhydroStencil53(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_53
+    OUTPUTS = ("w",)
 
-    w_new[:, last_k_level] = w[:, last_k_level]
-    for k in reversed(range(1, last_k_level)):
-        w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
-    w_new[:, 0] = w[:, 0]
-    return w_new
+    @staticmethod
+    def reference(mesh, z_q: np.array, w: np.array, **kwargs) -> np.array:
+        w_new = np.zeros_like(w)
+        last_k_level = w.shape[1] - 1
 
+        w_new[:, last_k_level] = w[:, last_k_level]
+        for k in reversed(range(1, last_k_level)):
+            w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
+        w_new[:, 0] = w[:, 0]
+        return dict(w=w_new)
 
-def test_mo_solve_nonhydro_stencil_53():
-    mesh = SimpleMesh()
-    z_q = random_field(mesh, CellDim, KDim)
-    w = random_field(mesh, CellDim, KDim)
-
-    w_ref = mo_solve_nonhydro_stencil_53_numpy(
-        np.asarray(z_q),
-        np.asarray(w),
-    )
-
-    mo_solve_nonhydro_stencil_53(z_q, w, offset_provider={"Koff": KDim})
-
-    assert np.allclose(w_ref, w)
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_q = random_field(mesh, CellDim, KDim)
+        w = random_field(mesh, CellDim, KDim)
+        return dict(z_q=z_q, w=w)

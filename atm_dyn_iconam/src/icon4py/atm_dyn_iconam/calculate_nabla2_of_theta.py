@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
@@ -34,7 +35,7 @@ def _calculate_nabla2_of_theta(
     return z_temp
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_nabla2_of_theta(
     z_nabla2_e: Field[[EdgeDim, KDim], float],
     geofac_div: Field[[CEDim], float],

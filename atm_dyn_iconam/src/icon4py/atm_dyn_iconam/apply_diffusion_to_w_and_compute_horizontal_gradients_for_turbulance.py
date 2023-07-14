@@ -96,10 +96,10 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     nrdmax: int32,
     interior_idx: int32,
     halo_idx: int32,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
         area,

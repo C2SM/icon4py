@@ -10,32 +10,63 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import functools
 from dataclasses import dataclass
 
 import numpy as np
 from gt4py.next.common import Field
+from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import (
     C2E2CODim,
-    C2EDim,
     CECDim,
     CEDim,
     CellDim,
     EdgeDim,
+    KDim,
     V2EDim,
     VertexDim,
 )
 
 
-@dataclass
-class InterpolationState:
-    """
-    represents the ICON interpolation state.
+@dataclass(frozen=True)
+class DiagnosticState:
+    """Represents the diagnostic fields needed in diffusion."""
 
-    TODO [magdalena]: keep? does this state make sense at all?
-    """
+    # fields for 3D elements in turbdiff
+    hdef_ic: Field[
+        [CellDim, KDim], float
+    ]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
+    div_ic: Field[
+        [CellDim, KDim], float
+    ]  # ! horizontal wind field deformation (nproma,nlevp1,nblks_c)     [1/s^2]
+    dwdx: Field[
+        [CellDim, KDim], float
+    ]  # zonal gradient of vertical wind speed (nproma,nlevp1,nblks_c)     [1/s]
+
+    dwdy: Field[
+        [CellDim, KDim], float
+    ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
+
+
+@dataclass(frozen=True)
+class MetricState:
+    """Represents the metric state fields needed in diffusion."""
+
+    theta_ref_mc: Field[[CellDim, KDim], float]
+    wgtfac_c: Field[
+        [CellDim, KDim], float
+    ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
+    mask_hdiff: Field[[CellDim, KDim], bool]
+    zd_vertoffset: Field[[CECDim, KDim], int32]
+    zd_diffcoef: Field[[CellDim, KDim], float]
+    zd_intcoef: Field[[CECDim, KDim], float]
+
+
+@dataclass(frozen=True)
+class InterpolationState:
+    """Represents the ICON interpolation state needed in diffusion."""
 
     e_bln_c_s: Field[
         [CEDim], float
@@ -60,11 +91,11 @@ class InterpolationState:
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
-    @property
+    @functools.cached_property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
         return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
 
-    @property
+    @functools.cached_property
     def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
         geofac_nbh_ar = np.asarray(self.geofac_n2s)[:, 1:]
         old_shape = geofac_nbh_ar.shape
@@ -73,3 +104,18 @@ class InterpolationState:
                 old_shape[0] * old_shape[1],
             )
         )
+
+
+@dataclass
+class PrognosticState:
+    """Class that contains the prognostic state.
+
+    Corresponds to ICON t_nh_prog
+    """
+
+    w: Field[
+        [CellDim, KDim], float
+    ]  # vertical_wind field,  w(nproma, nlevp1, nblks_c) [m/s]
+    vn: Field[[EdgeDim, KDim], float]  # vn(nproma, nlev, nblks_e)  [m/s]
+    exner_pressure: Field[[CellDim, KDim], float]  # exner(nrpoma, nlev, nblks_c)
+    theta_v: Field[[CellDim, KDim], float]  # (nproma, nlev, nlbks_c) [K]

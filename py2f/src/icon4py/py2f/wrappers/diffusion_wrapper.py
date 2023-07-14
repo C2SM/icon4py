@@ -25,7 +25,6 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.diagnostic_state import DiagnosticState
 from icon4py.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -33,13 +32,16 @@ from icon4py.diffusion.diffusion import (
 )
 from icon4py.diffusion.horizontal import CellParams, EdgeParams
 from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.diffusion.state_utils import (
+    DiagnosticState,
+    InterpolationState,
+    MetricState,
+    PrognosticState,
+)
 from icon4py.py2f.cffi_utils import CffiMethod
 
 
-diffusion: Diffusion(run_program=True)
+diffusion: Diffusion()
 
 
 @CffiMethod.register
@@ -81,7 +83,7 @@ def diffusion_init(
 
     """
     grid = IconGrid()  # TODO where to get this from
-    edges_params = EdgeParams(
+    edge_params = EdgeParams(
         tangent_orientation=tangent_orientation,
         primal_edge_lengths=primal_edge_lengths,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
@@ -112,13 +114,13 @@ def diffusion_init(
 
     diffusion.init(
         grid=grid,
-        cell_params=cell_params,
-        edges_params=edges_params,
         config=config,
         params=derived_diffusion_params,
         vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
+        edge_params=edge_params,
+        cell_params=cell_params,
     )
 
 

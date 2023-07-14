@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_18 import (
     mo_solve_nonhydro_stencil_18,
@@ -19,42 +20,33 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_18 import (
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
+from .test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_18_numpy(
-    e2c: np.array,
-    inv_dual_edge_length: np.array,
-    z_exner_ex_pr: np.array,
-) -> np.array:
-    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+class TestMoSolveNonhydroStencil18(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_18
+    OUTPUTS = ("z_gradh_exner",)
 
-    z_exner_ex_pr_e2c = z_exner_ex_pr[e2c]
-    z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
+    @staticmethod
+    def reference(
+        mesh, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs
+    ) -> np.array:
+        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
-    return z_gradh_exner
+        z_exner_ex_pr_e2c = z_exner_ex_pr[mesh.e2c]
+        z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
 
+        z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
+        return dict(z_gradh_exner=z_gradh_exner)
 
-def test_mo_solve_nonhydro_stencil_18():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        inv_dual_edge_length = random_field(mesh, EdgeDim)
+        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
+        z_gradh_exner = random_field(mesh, EdgeDim, KDim)
 
-    inv_dual_edge_length = random_field(mesh, EdgeDim)
-    z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-    z_gradh_exner = random_field(mesh, EdgeDim, KDim)
-
-    ref = mo_solve_nonhydro_stencil_18_numpy(
-        mesh.e2c,
-        np.asarray(inv_dual_edge_length),
-        np.asarray(z_exner_ex_pr),
-    )
-
-    mo_solve_nonhydro_stencil_18(
-        inv_dual_edge_length,
-        z_exner_ex_pr,
-        z_gradh_exner,
-        offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
-        },
-    )
-    assert np.allclose(z_gradh_exner, ref)
+        return dict(
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=z_exner_ex_pr,
+            z_gradh_exner=z_gradh_exner,
+        )

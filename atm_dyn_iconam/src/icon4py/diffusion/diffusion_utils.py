@@ -21,7 +21,7 @@ from gt4py.next.iterator.embedded import np_as_located_field
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
 
-# TODO [@Magdalena] fix duplication: duplicated from test testutils/utils.py
+# TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
 def zero_field(mesh, *dims: Dimension, dtype=float):
     shapex = tuple(map(lambda x: mesh.size[x], dims))
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
@@ -32,6 +32,13 @@ def _identity_c_k(
     field: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
     return field
+
+
+@program
+def copy_field(
+    old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]
+):
+    _identity_c_k(old_f, out=new_f)
 
 
 @field_operator
@@ -241,7 +248,6 @@ def init_nabla2_factor_in_upper_damping_zone(
     Calculate diff_multfac_n2w.
 
     numpy version, since gt4py does not allow non-constant indexing into fields
-    TODO: @magdalena fix this once IndexedFields are implemented
 
     Args
         k_size: number of vertical levels
@@ -249,6 +255,8 @@ def init_nabla2_factor_in_upper_damping_zone(
         nshift:
         physcial_heights: vector of physical heights [m] of the height levels
     """
+    # TODO(Magdalena): fix with as_offset in gt4py
+
     buffer = np.zeros(k_size)
     buffer[1 : nrdmax + 1] = (
         1.0
