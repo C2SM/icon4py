@@ -12,8 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-
+import pytest
 from icon4py.model.atmosphere.dycore.calculate_nabla2_of_theta import (
     calculate_nabla2_of_theta,
 )
@@ -23,34 +22,34 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+
+from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
 
 
-def calculate_nabla2_of_theta_numpy(
-    c2e: np.array, z_nabla2_e: np.array, geofac_div: np.array
-) -> np.array:
-    geofac_div = np.expand_dims(geofac_div, axis=-1)
-    z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=1)  # sum along edge dimension
-    return z_temp
+class TestCalculateNabla2OfTheta(StencilTest):
+    PROGRAM = calculate_nabla2_of_theta
+    OUTPUTS = ('z_temp',)
 
+    @staticmethod
+    def reference(
+        mesh,
+        z_nabla2_e: np.array, geofac_div: np.array, **kwargs
+    ) -> np.array:
+        geofac_div = geofac_div.reshape(18, 3)
+        geofac_div = np.expand_dims(geofac_div, axis=-1)
+        z_temp = np.sum(z_nabla2_e[mesh.c2e] * geofac_div, axis=1)  # sum along edge dimension
+        return dict(z_temp=z_temp)
 
-def test_calculate_nabla2_of_theta():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
+        geofac_div = random_field(mesh, CellDim, C2EDim)
+        geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
 
-    z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-    geofac_div = random_field(mesh, CellDim, C2EDim)
-    geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
+        z_temp = zero_field(mesh, CellDim, KDim)
 
-    out = zero_field(mesh, CellDim, KDim)
-
-    ref = calculate_nabla2_of_theta_numpy(mesh.c2e, np.asarray(z_nabla2_e), np.asarray(geofac_div))
-    calculate_nabla2_of_theta(
-        z_nabla2_e,
-        geofac_div_new,
-        out,
-        offset_provider={
-            "C2E": mesh.get_c2e_offset_provider(),
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
-        },
-    )
-    assert np.allclose(out, ref)
+        return dict(
+            z_nabla2_e=z_nabla2_e,
+            geofac_div=geofac_div_new,
+            z_temp=z_temp
+        )
