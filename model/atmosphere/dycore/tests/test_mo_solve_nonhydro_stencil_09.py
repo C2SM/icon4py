@@ -12,81 +12,67 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-
+import pytest
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_09 import (
     mo_solve_nonhydro_stencil_09,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+
+from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
 
 
-def mo_solve_nonhydro_stencil_09_numpy(
-    wgtfac_c: np.array,
-    z_rth_pr_2: np.array,
-    theta_v: np.array,
-    vwind_expl_wgt: np.array,
-    exner_pr: np.array,
-    d_exner_dz_ref_ic: np.array,
-    ddqz_z_half: np.array,
-) -> tuple[np.array, np.array, np.array]:
-    z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
-    theta_v_offset = np.roll(theta_v, axis=1, shift=1)
-    exner_pr_offset = np.roll(exner_pr, axis=1, shift=1)
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+class TestMoSolveNonhydroStencil09(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_09
+    OUTPUTS = ('z_theta_v_pr_ic', 'theta_v_ic', 'z_th_ddz_exner_c')
 
-    z_theta_v_pr_ic = wgtfac_c * z_rth_pr_2 + (1.0 - wgtfac_c) * z_rth_pr_2_offset
-    theta_v_ic = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
-    z_th_ddz_exner_c = (
-        vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
-        + z_theta_v_pr_ic * d_exner_dz_ref_ic
-    )
-    return z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
+    @staticmethod
+    def reference(
+        mesh,
+        wgtfac_c: np.array,
+        z_rth_pr_2: np.array,
+        theta_v: np.array,
+        vwind_expl_wgt: np.array,
+        exner_pr: np.array,
+        d_exner_dz_ref_ic: np.array,
+        ddqz_z_half: np.array,
+        **kwargs
+    ) -> tuple[np.array, np.array, np.array]:
+        z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
+        theta_v_offset = np.roll(theta_v, axis=1, shift=1)
+        exner_pr_offset = np.roll(exner_pr, axis=1, shift=1)
+        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
 
+        z_theta_v_pr_ic = wgtfac_c * z_rth_pr_2 + (1.0 - wgtfac_c) * z_rth_pr_2_offset
+        theta_v_ic = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
+        z_th_ddz_exner_c = (
+            vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
+            + z_theta_v_pr_ic * d_exner_dz_ref_ic
+        )
+        return dict(z_theta_v_pr_ic=z_theta_v_pr_ic, theta_v_ic=theta_v_ic, z_th_ddz_exner_c=z_th_ddz_exner_c)
 
-def test_mo_solve_nonhydro_stencil_09():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        wgtfac_c = random_field(mesh, CellDim, KDim)
+        z_rth_pr_2 = random_field(mesh, CellDim, KDim)
+        theta_v = random_field(mesh, CellDim, KDim)
+        vwind_expl_wgt = random_field(mesh, CellDim)
+        exner_pr = random_field(mesh, CellDim, KDim)
+        d_exner_dz_ref_ic = random_field(mesh, CellDim, KDim)
+        ddqz_z_half = random_field(mesh, CellDim, KDim)
+        z_theta_v_pr_ic = zero_field(mesh, CellDim, KDim)
+        theta_v_ic = zero_field(mesh, CellDim, KDim)
+        z_th_ddz_exner_c = zero_field(mesh, CellDim, KDim)
 
-    wgtfac_c = random_field(mesh, CellDim, KDim)
-    z_rth_pr_2 = random_field(mesh, CellDim, KDim)
-    theta_v = random_field(mesh, CellDim, KDim)
-    vwind_expl_wgt = random_field(mesh, CellDim)
-    exner_pr = random_field(mesh, CellDim, KDim)
-    d_exner_dz_ref_ic = random_field(mesh, CellDim, KDim)
-    ddqz_z_half = random_field(mesh, CellDim, KDim)
-
-    z_theta_v_pr_ic = zero_field(mesh, CellDim, KDim)
-    theta_v_ic = zero_field(mesh, CellDim, KDim)
-    z_th_ddz_exner_c = zero_field(mesh, CellDim, KDim)
-
-    (
-        z_theta_v_pr_ic_ref,
-        theta_v_ic_ref,
-        z_th_ddz_exner_c_ref,
-    ) = mo_solve_nonhydro_stencil_09_numpy(
-        np.asarray(wgtfac_c),
-        np.asarray(z_rth_pr_2),
-        np.asarray(theta_v),
-        np.asarray(vwind_expl_wgt),
-        np.asarray(exner_pr),
-        np.asarray(d_exner_dz_ref_ic),
-        np.asarray(ddqz_z_half),
-    )
-
-    mo_solve_nonhydro_stencil_09(
-        wgtfac_c,
-        z_rth_pr_2,
-        theta_v,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
-        z_theta_v_pr_ic,
-        theta_v_ic,
-        z_th_ddz_exner_c,
-        offset_provider={"Koff": KDim},
-    )
-
-    assert np.allclose(z_theta_v_pr_ic[:, 1:], z_theta_v_pr_ic_ref[:, 1:])
-    assert np.allclose(theta_v_ic[:, 1:], theta_v_ic_ref[:, 1:])
-    assert np.allclose(z_th_ddz_exner_c[:, 1:], z_th_ddz_exner_c_ref[:, 1:])
+        return dict(
+            wgtfac_c=wgtfac_c,
+            z_rth_pr_2=z_rth_pr_2,
+            theta_v=theta_v,
+            vwind_expl_wgt=vwind_expl_wgt,
+            exner_pr=exner_pr,
+            d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+            ddqz_z_half=ddqz_z_half,
+            z_theta_v_pr_ic=z_theta_v_pr_ic,
+            theta_v_ic=theta_v_ic,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
+        )
