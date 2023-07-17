@@ -440,4 +440,5 @@ class SimpleMesh:
             "E2C2V": self.get_e2c2v_offset_provider(),
             "Koff": KDim,
             "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, self.n_c2e),
+            "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, self.n_e2c2v),
         }
