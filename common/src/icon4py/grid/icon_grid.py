@@ -17,6 +17,7 @@ import numpy as np
 from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
+from typing_extensions import deprecated
 
 from icon4py.common.dimension import (
     CECDim,
@@ -115,7 +116,8 @@ class IconGrid:
     def num_edges(self):
         return self.config.num_edges
 
-    # TODO(Magdalena) deprecate for after merge
+
+    @deprecated("use get_start_index and get_end_index instead, - should be removed after merge")
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
     ) -> tuple[int32, int32]:
