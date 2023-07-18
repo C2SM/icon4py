@@ -107,9 +107,6 @@ class VelocityAdvection:
     def _allocate_local_fields(self):
         self.z_w_v = _allocate(VertexDim, KDim, mesh=self.grid)
         self.z_v_grad_w = _allocate(EdgeDim, KDim, mesh=self.grid)
-        self.z_kin_hor_e = _allocate(EdgeDim, KDim, mesh=self.grid)
-        self.z_vt_ie = _allocate(EdgeDim, KDim, mesh=self.grid)
-        self.z_w_concorr_me = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_ekinh = _allocate(CellDim, KDim, mesh=self.grid)
         self.z_w_concorr_mc = _allocate(CellDim, KDim, mesh=self.grid)
         self.z_w_con_c = _allocate(CellDim, KDim, is_halfdim=True, mesh=self.grid)
@@ -126,6 +123,9 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
+        z_w_concorr_me: Field[[EdgeDim, KDim], float],
+        z_kin_hor_e: Field[[EdgeDim, KDim], float],
+        z_vt_ie: Field[[EdgeDim, KDim], float],
         inv_dual_edge_length: Field[[EdgeDim], float],
         inv_primal_edge_length: Field[[EdgeDim], float],
         dtime: float,
@@ -227,7 +227,7 @@ class VelocityAdvection:
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
-            z_kin_hor_e=self.z_kin_hor_e,
+            z_kin_hor_e=z_kin_hor_e,
             horizontal_start=indices_1_1,
             horizontal_end=indices_1_2,
             vertical_start=1,
@@ -241,7 +241,7 @@ class VelocityAdvection:
             mo_velocity_advection_stencil_03.with_backend(run_gtfn)(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
-                z_vt_ie=self.z_vt_ie,
+                z_vt_ie=z_vt_ie,
                 horizontal_start=indices_1_1,
                 horizontal_end=indices_1_2,
                 vertical_start=1,
@@ -253,11 +253,11 @@ class VelocityAdvection:
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
-            z_vt_ie=self.z_vt_ie,
-            z_kin_hor_e=self.z_kin_hor_e,
+            z_vt_ie=z_vt_ie,
+            z_kin_hor_e=z_kin_hor_e,
             ddxn_z_full=self.metric_state.ddxn_z_full,
             ddxt_z_full=self.metric_state.ddxt_z_full,
-            z_w_concorr_me=self.z_w_concorr_me,
+            z_w_concorr_me=z_w_concorr_me,
             wgtfacq_e_dsl=self.metric_state.wgtfacq_e_dsl,
             k_field=self.k_field,
             nflatlev_startindex=self.vertical_params.nflatlev,
@@ -276,7 +276,7 @@ class VelocityAdvection:
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=inv_dual_edge_length,
                 w=prognostic_state.w,
-                z_vt_ie=self.z_vt_ie,
+                z_vt_ie=z_vt_ie,
                 inv_primal_edge_length=inv_primal_edge_length,
                 tangent_orientation=tangent_orientation,
                 z_w_v=self.z_w_v,
@@ -292,7 +292,7 @@ class VelocityAdvection:
             )
 
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
-            z_kin_hor_e=self.z_kin_hor_e,
+            z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_ekinh=self.z_ekinh,
             horizontal_start=indices_3_1,
@@ -306,7 +306,7 @@ class VelocityAdvection:
         )
 
         velocity_prog.fused_stencils_9_10.with_backend(run_gtfn)(
-            z_w_concorr_me=self.z_w_concorr_me,
+            z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             local_z_w_concorr_mc=self.z_w_concorr_mc,
             wgtfac_c=self.metric_state.wgtfac_c,
@@ -410,7 +410,7 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
-            z_kin_hor_e=self.z_kin_hor_e,
+            z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
             zeta=self.zeta,
@@ -467,6 +467,8 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: DiagnosticState,
         prognostic_state: PrognosticState,
+        z_kin_hor_e: Field[[EdgeDim, KDim], float],
+        z_vt_ie: Field[[EdgeDim, KDim], float],
         inv_dual_edge_length: Field[[EdgeDim], float],
         inv_primal_edge_length: Field[[EdgeDim], float],
         dtime: float,
@@ -490,13 +492,43 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
+        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+            HorizontalMarkerIndex.local(EdgeDim) - 2,
+        )
+
+        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
+            HorizontalMarkerIndex.local(EdgeDim) - 1,
+        )
+
+        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
+            HorizontalMarkerIndex.local(CellDim) - 1,
+        )
+
+        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
+            CellDim,
+            HorizontalMarkerIndex.nudging(CellDim),
+            HorizontalMarkerIndex.local(CellDim),
+        )
+
+        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
+            EdgeDim,
+            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            HorizontalMarkerIndex.local(EdgeDim),
+        )
+
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
                 run_gtfn
             )(
-                prognostic_state.w,
-                self.interpolation_state.c_intp,
-                self.z_w_v,
+                p_cell_in=prognostic_state.w,
+                c_intp=self.interpolation_state.c_intp,
+                p_vert_out=self.z_w_v,
                 horizontal_start=indices_0_1,
                 horizontal_end=indices_0_2,
                 vertical_start=1,
@@ -507,9 +539,9 @@ class VelocityAdvection:
             )
 
         mo_math_divrot_rot_vertex_ri_dsl.with_backend(run_gtfn)(
-            prognostic_state.vn,
-            self.interpolation_state.geofac_rot,
-            self.zeta,
+            vec_e=prognostic_state.vn,
+            geofac_rot=self.interpolation_state.geofac_rot,
+            rot_vec=self.zeta,
             horizontal_start=indices_0_1,
             horizontal_end=indices_0_2,
             vertical_start=1,
@@ -519,22 +551,16 @@ class VelocityAdvection:
             },
         )
 
-        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
-            HorizontalMarkerIndex.local(EdgeDim) - 1,
-        )
-
         if not vn_only:
             mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
-                diagnostic_state.vn_ie,
-                inv_dual_edge_length,
-                prognostic_state.w,
-                self.z_vt_ie,
-                inv_primal_edge_length,
-                tangent_orientation,
-                self.z_w_v,
-                self.z_v_grad_w,
+                vn_ie=diagnostic_state.vn_ie,
+                inv_dual_edge_length=inv_dual_edge_length,
+                w=prognostic_state.w,
+                z_vt_ie=z_vt_ie,
+                inv_primal_edge_length=inv_primal_edge_length,
+                tangent_orientation=tangent_orientation,
+                z_w_v=self.z_w_v,
+                z_v_grad_w=self.z_v_grad_w,
                 horizontal_start=indices_2_1,
                 horizontal_end=indices_2_2,
                 vertical_start=0,
@@ -545,16 +571,11 @@ class VelocityAdvection:
                 },
             )
 
-        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
-            HorizontalMarkerIndex.local(CellDim) - 1,
-        )
 
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
-            self.z_kin_hor_e,
-            self.interpolation_state.e_bln_c_s,
-            self.z_ekinh,
+            z_kin_hor_e=z_kin_hor_e,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            z_ekinh=self.z_ekinh,
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
             vertical_start=0,
@@ -566,12 +587,12 @@ class VelocityAdvection:
         )
 
         velocity_prog.fused_stencils_11_to_13.with_backend(run_gtfn)(
-            prognostic_state.w,
-            diagnostic_state.w_concorr_c,
-            self.z_w_con_c,
-            self.k_field,
-            self.vertical_params.nflatlev,
-            self.grid.n_lev(),
+            w=prognostic_state.w,
+            w_concorr_c=diagnostic_state.w_concorr_c,
+            local_z_w_con_c=self.z_w_con_c,
+            k_field=self.k_field,
+            nflatlev_startindex=self.vertical_params.nflatlev,
+            nlev=self.grid.n_lev(),
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
             vertical_start=0,
@@ -580,13 +601,13 @@ class VelocityAdvection:
         )
 
         velocity_prog.fused_stencil_14.with_backend(run_gtfn)(
-            self.z_w_con_c,
-            self.metric_state.ddqz_z_half,
-            self.cfl_clipping,
-            self.pre_levelmask,
-            self.vcfl,
-            cfl_w_limit,
-            dtime,
+            ddqz_z_half=self.metric_state.ddqz_z_half,
+            local_z_w_con_c=self.z_w_con_c,
+            local_cfl_clipping=self.cfl_clipping,
+            local_pre_levelmask=self.pre_levelmask,
+            local_vcfl=self.vcfl,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
             vertical_start=int32(
@@ -597,8 +618,8 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
-            self.z_w_con_c,
-            self.z_w_con_c_full,
+            z_w_con_c=self.z_w_con_c,
+            z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
             vertical_start=0,
@@ -606,20 +627,14 @@ class VelocityAdvection:
             offset_provider={"Koff": KDim},
         )
 
-        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
-
         velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
-            prognostic_state.w,
-            self.z_v_grad_w,
-            self.interpolation_state.e_bln_c_s,
-            self.z_w_con_c,
-            self.metric_state.coeff1_dwdz,
-            self.metric_state.coeff2_dwdz,
-            diagnostic_state.ddt_w_adv_pc,
+            w=prognostic_state.w,
+            local_z_v_grad_w=self.z_v_grad_w,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            local_z_w_con_c=self.z_w_con_c,
+            coeff1_dwdz=self.metric_state.coeff1_dwdz,
+            coeff2_dwdz=self.metric_state.coeff2_dwdz,
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
             horizontal_start=indices_4_1,
             horizontal_end=indices_4_2,
             vertical_start=1,
@@ -632,18 +647,18 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
-            self.levelmask,
-            self.cfl_clipping,
-            owner_mask,
-            self.z_w_con_c,
-            self.metric_state.ddqz_z_half,
-            cell_areas,
-            self.interpolation_state.geofac_n2s,
-            prognostic_state.w,
-            diagnostic_state.ddt_w_adv_pc,
-            scalfac_exdiff,
-            cfl_w_limit,
-            dtime,
+            levelmask=self.levelmask,
+            cfl_clipping=self.cfl_clipping,
+            owner_mask=owner_mask,
+            z_w_con_c=self.z_w_con_c,
+            ddqz_z_half=self.metric_state.ddqz_z_half,
+            area=cell_areas,
+            geofac_n2s=self.interpolation_state.geofac_n2s,
+            w=prognostic_state.w,
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
             horizontal_start=indices_4_1,
             horizontal_end=indices_4_2,
             vertical_start=int32(
@@ -655,24 +670,18 @@ class VelocityAdvection:
             },
         )
 
-        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
-        )
-
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
-            self.z_kin_hor_e,
-            self.metric_state.coeff_gradekin,
-            self.z_ekinh,
-            self.zeta,
-            diagnostic_state.vt,
-            f_e,
-            self.interpolation_state.c_lin_e,
-            self.z_w_con_c_full,
-            diagnostic_state.vn_ie,
-            self.metric_state.ddqz_z_full_e,
-            diagnostic_state.ddt_vn_apc_pc,
+            z_kin_hor_e=z_kin_hor_e,
+            coeff_gradekin=self.metric_state.coeff_gradekin,
+            z_ekinh=self.z_ekinh,
+            zeta=self.zeta,
+            vt=diagnostic_state.vt,
+            f_e=f_e,
+            c_lin_e=self.interpolation_state.c_lin_e,
+            z_w_con_c_full=self.z_w_con_c_full,
+            vn_ie=diagnostic_state.vn_ie,
+            ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
+            ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
             horizontal_start=indices_5_1,
             horizontal_end=indices_5_2,
             vertical_start=0,
@@ -686,20 +695,20 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_20.with_backend(run_gtfn)(
-            self.levelmask,
-            self.interpolation_state.c_lin_e,
-            self.z_w_con_c_full,
-            self.metric_state.ddqz_z_full_e,
-            area_edge,
-            tangent_orientation,
-            inv_primal_edge_length,
-            self.zeta,
-            self.interpolation_state.geofac_grdiv,
-            prognostic_state.vn,
-            diagnostic_state.ddt_vn_apc_pc,
-            cfl_w_limit,
-            scalfac_exdiff,
-            dtime,
+            levelmask=self.levelmask,
+            c_lin_e=self.interpolation_state.c_lin_e,
+            z_w_con_c_full=self.z_w_con_c_full,
+            ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
+            area_edge=area_edge,
+            tangent_orientation=tangent_orientation,
+            inv_primal_edge_length=inv_primal_edge_length,
+            zeta=self.zeta,
+            geofac_grdiv=self.interpolation_state.geofac_grdiv,
+            vn=prognostic_state.vn,
+            ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
+            cfl_w_limit=cfl_w_limit,
+            scalfac_exdiff=scalfac_exdiff,
+            dtime=dtime,
             horizontal_start=indices_5_1,
             horizontal_end=indices_5_2,
             vertical_start=int32(
