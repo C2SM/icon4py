@@ -32,6 +32,7 @@ def test_nrdmax_calculation(max_h, damping, delta):
         == vct_a.shape[0] - math.ceil(damping / delta) - 1
     )
 
+
 # TODO(Magdalena) fix for merge
 @pytest.mark.datatest
 @pytest.mark.skip("fix location of testdata - dont want to download it twice")

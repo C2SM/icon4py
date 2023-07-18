@@ -380,6 +380,3 @@ class GridManager:
         sh = expanded.shape
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
         return np.apply_along_axis(np.unique, 1, flattened)
-
-    def get_c2v_connectivity(self):
-        return self._grid.get_c2v_connectivity()

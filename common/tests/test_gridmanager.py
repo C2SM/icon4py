@@ -33,7 +33,7 @@ from icon4py.grid.icon_grid import VerticalGridSize
 
 
 helpers = import_testutils()
-from helpers.simple_mesh import SimpleMesh
+from helpers.simple_mesh import SimpleMesh  # noqa E402
 
 
 SIMPLE_MESH_NC = "./simple_mesh_grid.nc"
@@ -153,7 +153,6 @@ def simple_mesh_data():
             GridFile.DimensionName.VERTEX_NAME,
         ),
     )
-    # add_to_dataset(data, mesh.v2e2v, GridFile.Offsets.V2E2V, (GridFile.Dimension.V2E_SIZE, GridFile.Dimension.VERTEX_NAME))
     _add_to_dataset(
         dataset,
         mesh.c2e2c,

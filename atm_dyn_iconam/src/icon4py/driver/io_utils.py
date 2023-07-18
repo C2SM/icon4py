@@ -24,8 +24,8 @@ from icon4py.diffusion.state_utils import (
     PrognosticState,
 )
 from icon4py.grid.horizontal import CellParams, EdgeParams
-from icon4py.grid.vertical import VerticalModelParams
 from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."

@@ -10,11 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from dataclasses import dataclass, field
-from typing import Dict, Final
+from dataclasses import dataclass
+from typing import Dict
 
 import numpy as np
-from gt4py.next.common import Dimension, DimensionKind, Field
+from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 from typing_extensions import deprecated
@@ -116,8 +116,9 @@ class IconGrid:
     def num_edges(self):
         return self.config.num_edges
 
-
-    @deprecated("use get_start_index and get_end_index instead, - should be removed after merge")
+    @deprecated(
+        "use get_start_index and get_end_index instead, - should be removed after merge"
+    )
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
     ) -> tuple[int32, int32]:
