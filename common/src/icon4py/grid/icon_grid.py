@@ -28,11 +28,7 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.grid.horizontal import HorizontalGridSize
-
-
-@dataclass(frozen=True)
-class VerticalGridConfig:
-    num_lev: int
+from icon4py.grid.vertical import VerticalGridSize
 
 
 @dataclass(
@@ -40,7 +36,7 @@ class VerticalGridConfig:
 )
 class GridConfig:
     horizontal_config: HorizontalGridSize
-    vertical_config: VerticalGridConfig
+    vertical_config: VerticalGridSize
     limited_area: bool = True
     n_shift_total: int = 0
 
@@ -119,6 +115,7 @@ class IconGrid:
     def num_edges(self):
         return self.config.num_edges
 
+    # TODO(Magdalena) deprecate for after merge
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
     ) -> tuple[int32, int32]:
@@ -216,34 +213,3 @@ class IconGrid:
         return self._neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities["c2e"].shape, CellDim, CEDim
         )
-
-
-@dataclass(frozen=True)
-class VerticalModelParams:
-    """
-    Contains vertical physical parameters defined on the grid.
-
-    vct_a:  field containing the physical heights of the k level
-    rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
-    """
-
-    vct_a: Field[[KDim], float]
-    rayleigh_damping_height: Final[float]
-    index_of_damping_layer: Final[int32] = field(init=False)
-
-    def __post_init__(self):
-        object.__setattr__(
-            self,
-            "index_of_damping_layer",
-            self._determine_damping_height_index(
-                np.asarray(self.vct_a), self.rayleigh_damping_height
-            ),
-        )
-
-    @classmethod
-    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float):
-        return int32(np.argmax(np.where(vct_a >= damping_height)))
-
-    @property
-    def physical_heights(self) -> Field[[KDim], float]:
-        return self.vct_a

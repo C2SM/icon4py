@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 from netCDF4 import Dataset
 
-
 from common.tests.conftest import import_testutils
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.grid.grid_manager import (
@@ -30,12 +29,11 @@ from icon4py.grid.grid_manager import (
     ToGt4PyTransformation,
 )
 from icon4py.grid.horizontal import HorizontalMarkerIndex
-from icon4py.grid.icon_grid import VerticalGridConfig
+from icon4py.grid.icon_grid import VerticalGridSize
 
 
 helpers = import_testutils()
 from helpers.simple_mesh import SimpleMesh
-
 
 
 SIMPLE_MESH_NC = "./simple_mesh_grid.nc"
@@ -413,7 +411,7 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 
 def init_grid_manager(fname):
-    gm = GridManager(ToGt4PyTransformation(), fname, VerticalGridConfig(65))
+    gm = GridManager(ToGt4PyTransformation(), fname, VerticalGridSize(65))
     gm.init()
     return gm
 
@@ -422,7 +420,7 @@ def init_grid_manager(fname):
 def test_grid_manager_getsize(simple_mesh_data, simple_mesh_path, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
     gm = GridManager(
-        IndexTransformation(), simple_mesh_path, VerticalGridConfig(num_lev=80)
+        IndexTransformation(), simple_mesh_path, VerticalGridSize(num_lev=80)
     )
     gm.init()
     assert size == gm.get_size(dim)
@@ -433,7 +431,7 @@ def test_grid_manager_diamond_offset(simple_mesh_path):
     gm = GridManager(
         IndexTransformation(),
         simple_mesh_path,
-        VerticalGridConfig(num_lev=mesh.k_level),
+        VerticalGridSize(num_lev=mesh.k_level),
     )
     gm.init()
     assert np.allclose(
@@ -444,7 +442,7 @@ def test_grid_manager_diamond_offset(simple_mesh_path):
 def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(SystemExit) as error:
-        gm = GridManager(IndexTransformation(), fname, VerticalGridConfig(num_lev=80))
+        gm = GridManager(IndexTransformation(), fname, VerticalGridSize(num_lev=80))
         gm.init()
         assert error.type == SystemExit
         assert error.value == 1

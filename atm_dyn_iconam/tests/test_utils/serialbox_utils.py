@@ -43,7 +43,7 @@ from icon4py.diffusion.state_utils import (
     PrognosticState,
 )
 from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.grid.icon_grid import GridConfig, IconGrid, VerticalGridConfig
+from icon4py.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
 
 from .helpers import as_1D_sparse_field
 
@@ -219,7 +219,7 @@ class IconGridSavePoint(IconSavepoint):
                 num_cells=sp_meta["nproma"],  # or rather "num_cells"
                 num_edges=sp_meta["nproma"],  # or rather "num_edges"
             ),
-            vertical_config=VerticalGridConfig(num_lev=sp_meta["nlev"]),
+            vertical_config=VerticalGridSize(num_lev=sp_meta["nlev"]),
         )
         c2e2c = self.c2e2c()
         c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))

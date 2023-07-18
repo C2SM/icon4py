@@ -18,6 +18,7 @@ import pytest
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 
+
 data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
 data_path = Path(__file__).parent.joinpath("ser_icondata")
 extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")

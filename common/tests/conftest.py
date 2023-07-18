@@ -17,7 +17,8 @@ from pathlib import Path
 
 def import_testutils():
     testutils = (
-        Path(__file__).parent.__str__() + "/../../atm_dyn_iconam/tests/test_utils/__init__.py"
+        Path(__file__).parent.__str__()
+        + "/../../atm_dyn_iconam/tests/test_utils/__init__.py"
     )
     spec = importlib.util.spec_from_file_location("helpers", testutils)
     module = importlib.util.module_from_spec(spec)
@@ -35,4 +36,3 @@ from helpers.fixtures import (  # noqa F401
     r04b09_dsl_gridfile,
     setup_icon_data,
 )
-

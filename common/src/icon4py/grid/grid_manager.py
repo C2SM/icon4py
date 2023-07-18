@@ -36,8 +36,7 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.grid.horizontal import HorizontalGridSize
-from icon4py.grid.icon_grid import GridConfig, IconGrid
-from icon4py.grid.icon_grid import VerticalGridConfig
+from icon4py.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
 
 
 class GridFileName(str, Enum):
@@ -156,7 +155,7 @@ class GridManager:
         self,
         transformation: IndexTransformation,
         grid_file: str,
-        config: VerticalGridConfig,
+        config: VerticalGridSize,
     ):
         self._log = logging.getLogger(__name__)
         self._transformation = transformation

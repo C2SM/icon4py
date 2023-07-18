@@ -30,8 +30,9 @@ from icon4py.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
 )
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
     InterpolationState,

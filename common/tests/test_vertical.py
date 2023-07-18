@@ -16,8 +16,7 @@ import math
 import numpy as np
 import pytest
 
-from icon4py.grid.icon_grid import VerticalModelParams
-
+from icon4py.grid.vertical import VerticalModelParams
 
 
 @pytest.mark.parametrize(
@@ -33,7 +32,7 @@ def test_nrdmax_calculation(max_h, damping, delta):
         == vct_a.shape[0] - math.ceil(damping / delta) - 1
     )
 
-
+# TODO(Magdalena) fix for merge
 @pytest.mark.datatest
 @pytest.mark.skip("fix location of testdata - dont want to download it twice")
 def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint, damping_height):
