@@ -47,7 +47,7 @@ from icon4py.py2f.cffi_utils import CffiMethod, to_fields
 diffusion: Diffusion()
 
 nproma = 50000
-field_sizes = {EdgeDim: nproma, CellDim: nproma, VertexDim:nproma}
+field_sizes = {EdgeDim: nproma, CellDim: nproma, VertexDim: nproma}
 
 
 @to_fields(dim_sizes=field_sizes)
@@ -308,4 +308,5 @@ def diffusion_run(
 
 class DuplicateInitializationException(Exception):
     """Raised if the component is already initilalized."""
+
     pass

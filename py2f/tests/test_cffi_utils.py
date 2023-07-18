@@ -25,10 +25,11 @@ n_vertices = 9
 n_edges = 27
 levels = 12
 e2c_sparse_size = 2
+
+
 def random(*sizes):
-    return np.random.default_rng().uniform(
-            size=sizes
-        )
+    return np.random.default_rng().uniform(size=sizes)
+
 
 @pytest.mark.parametrize("pointer_type", ["float*", "double*"])
 def test_unpack_from_buffer_to_field(pointer_type: str):
@@ -66,7 +67,9 @@ def test_unpack_local_field(field_type):
     def local_field(f1: Field[[EdgeDim, E2CDim], field_type]):
         return f1
 
-    input_field = np.arange(n_edges * e2c_sparse_size).reshape((n_edges, e2c_sparse_size))
+    input_field = np.arange(n_edges * e2c_sparse_size).reshape(
+        (n_edges, e2c_sparse_size)
+    )
     res_field = local_field(ffi.from_buffer("int*", input_field))
     assert np.all(res_field == input_field)
 

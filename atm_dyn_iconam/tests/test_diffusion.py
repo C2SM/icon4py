@@ -405,6 +405,3 @@ def test_run_diffusion_initial_step(
         prognostic_state=prognostic_state,
         diffusion_savepoint_exit=diffusion_savepoint_exit,
     )
-
-
-

@@ -14,6 +14,7 @@
 import numpy as np
 import pytest
 
+
 @pytest.mark.datatest
 def test_verify_geofac_n2s_field_manipulation(interpolation_savepoint, icon_grid):
     geofac_n2s = np.asarray(interpolation_savepoint.geofac_n2s())
