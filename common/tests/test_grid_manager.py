@@ -255,34 +255,32 @@ def test_grid_parser_index_fields(simple_mesh_data, caplog):
 @pytest.mark.datatest
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    num_vertex = gm.get_size(VertexDim)
-    seralized_v2e = grid_savepoint.v2e()[0:num_vertex, :]
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    seralized_v2e = grid_savepoint.v2e()[0 : grid.num_vertices(), :]
     # there are vertices at the boundary of a local domain or at a pentagon point that have less than
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(seralized_v2e)
-    assert has_invalid_index(gm.get_v2e_connectivity().table)
+    assert has_invalid_index(grid.get_v2e_connectivity().table)
     reset_invalid_index(seralized_v2e)
-    assert np.allclose(gm.get_v2e_connectivity().table, seralized_v2e)
+    assert np.allclose(grid.get_v2e_connectivity().table, seralized_v2e)
 
 
 # v2c: serial, simple, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    num_vertex = gm.get_size(VertexDim)
-    serialized_v2c = grid_savepoint.v2c()[0:num_vertex, :]
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    serialized_v2c = grid_savepoint.v2c()[0 : grid.num_vertices(), :]
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
     # hence in the grid file there are "missing values"
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(serialized_v2c)
-    assert has_invalid_index(gm.get_v2c_connectivity().table)
+    assert has_invalid_index(grid.get_v2c_connectivity().table)
     reset_invalid_index(serialized_v2c)
 
-    assert np.allclose(gm.get_v2c_connectivity().table, serialized_v2c)
+    assert np.allclose(grid.get_v2c_connectivity().table, serialized_v2c)
 
 
 def reset_invalid_index(index_array: np.ndarray):
@@ -316,15 +314,14 @@ def reset_invalid_index(index_array: np.ndarray):
 @pytest.mark.datatest
 def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    num_edges = gm.get_size(EdgeDim)
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
 
-    serialized_e2v = grid_savepoint.e2v()[0:num_edges, :]
+    serialized_e2v = grid_savepoint.e2v()[0 : grid.num_edges(), :]
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
     assert not has_invalid_index(serialized_e2v)
-    assert not has_invalid_index(gm.get_e2v_connectivity().table)
-    assert np.allclose(gm.get_e2v_connectivity().table, serialized_e2v)
+    assert not has_invalid_index(grid.get_e2v_connectivity().table)
+    assert np.allclose(grid.get_e2v_connectivity().table, serialized_e2v)
 
 
 def has_invalid_index(ar: np.ndarray):
@@ -335,31 +332,29 @@ def has_invalid_index(ar: np.ndarray):
 @pytest.mark.datatest
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    num_edges = gm.get_size(EdgeDim)
-    serialized_e2c = grid_savepoint.e2c()[0:num_edges, :]
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    serialized_e2c = grid_savepoint.e2c()[0 : grid.num_edges(), :]
     # there are edges at the boundary that have only one
     # neighboring cell, there are "missing values" in the grid file
     # and here they do not get substituted in the ICON preprocessing
     assert has_invalid_index(serialized_e2c)
-    assert has_invalid_index(gm.get_e2c_connectivity().table)
-    assert np.allclose(gm.get_e2c_connectivity().table, serialized_e2c)
+    assert has_invalid_index(grid.get_e2c_connectivity().table)
+    assert np.allclose(grid.get_e2c_connectivity().table, serialized_e2c)
 
 
 # c2e: serial, simple, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    num_cells = gm.get_size(CellDim)
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
 
-    serialized_c2e = grid_savepoint.c2e()[0:num_cells, :]
+    serialized_c2e = grid_savepoint.c2e()[0 : grid.num_cells(), :]
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
     # first place
     # hence there are no "missing values" in the grid file
     assert not has_invalid_index(serialized_c2e)
-    assert not has_invalid_index(gm.get_c2e_connectivity().table)
-    assert np.allclose(gm.get_c2e_connectivity().table, serialized_c2e)
+    assert not has_invalid_index(grid.get_c2e_connectivity().table)
+    assert np.allclose(grid.get_c2e_connectivity().table, serialized_c2e)
 
 
 # e2c2e (e2c2eo) - diamond: serial, simple_mesh, grid file????
@@ -371,18 +366,19 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     gm, num_cells, num_edges, num_vertex = init_grid_manager(r04b09_dsl_gridfile)
     serialized_e2c2e = grid_savepoint.e2c2e()[0:num_cells, :]
     assert has_invalid_index(serialized_e2c2e)
-    assert has_invalid_index(gm.get_e2c2e_connectivity().table)
-    assert np.allclose(gm.get_e2c2e_connectivity().table, serialized_e2c2e)
+    grid = gm.get_grid()
+    assert has_invalid_index(grid.get_e2c2e_connectivity().table)
+    assert np.allclose(grid.get_e2c2e_connectivity().table, serialized_e2c2e)
 
 
 # c2e2c: serial, simple_mesh, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    num_cells = gm.get_size(CellDim)
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     assert np.allclose(
-        gm.get_c2e2c_connectivity().table, grid_savepoint.c2e2c()[0:num_cells, :]
+        grid.get_c2e2c_connectivity().table,
+        grid_savepoint.c2e2c()[0 : grid.num_cells(), :],
     )
 
 
@@ -390,22 +386,21 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
 @pytest.mark.datatest
 def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    num_edges = gm.get_size(EdgeDim)
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     # the "far" (adjacent to edge normal ) is not there. why?
     # despite that: ordering is different
     assert np.allclose(
-        gm.get_e2c2v_connectivity().table, grid_savepoint.e2c2v()[0:num_edges, :]
+        grid.get_e2c2v_connectivity().table,
+        grid_savepoint.e2c2v()[0 : grid.num_edges(), :],
     )
 
 
 @pytest.mark.datatest
 def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    num_cells = gm.get_size(CellDim)
-    c2v = gm.get_c2v_connectivity().table
-    assert np.allclose(c2v, grid_savepoint.c2v()[0:num_cells, :])
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    c2v = grid.get_c2v_connectivity().table
+    assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.num_cells(), :])
 
 
 def init_grid_manager(fname):
@@ -432,8 +427,9 @@ def test_grid_manager_diamond_offset(simple_mesh_path):
         VerticalGridSize(num_lev=mesh.k_level),
     )
     gm.init()
+    grid = gm.get_grid()
     assert np.allclose(
-        np.sort(gm.get_e2c2v_connectivity().table, 1), np.sort(mesh.diamond_arr, 1)
+        np.sort(grid.get_e2c2v_connectivity().table, 1), np.sort(mesh.diamond_arr, 1)
     )
 
 
@@ -455,54 +451,97 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
     assert np.allclose(expected, offset)
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize(
     "dim, marker, index",
     [
-        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim), 0),
-        (VertexDim, HorizontalMarkerIndex.local(VertexDim), 10663),
-        (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 2071),
-        (VertexDim, HorizontalMarkerIndex.nudging(VertexDim), 10663),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim), 0),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1, 850),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2, 1688),
-        (CellDim, HorizontalMarkerIndex.local(CellDim), 20896),
         (CellDim, HorizontalMarkerIndex.interior(CellDim), 4104),
+        (CellDim, HorizontalMarkerIndex.interior(CellDim) + 1, 0),
+        (CellDim, HorizontalMarkerIndex.local(CellDim) - 1, 20896),
+        (CellDim, HorizontalMarkerIndex.halo(CellDim), 20896),
         (CellDim, HorizontalMarkerIndex.nudging(CellDim), 3316),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim), 0),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4, 2538),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5, 2954),
-        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim), 31558),
+        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3, 2511),
+        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2, 1688),
+        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1, 850),
+        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 0, 0),
         (EdgeDim, HorizontalMarkerIndex.interior(EdgeDim), 6176),
+        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2, 31558),
+        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1, 31558),
+        (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1, 5387),
         (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim), 4989),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 7, 4184),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6, 3777),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5, 2954),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4, 2538),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3, 1700),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2, 1278),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1, 428),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 0, 0),
+        (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 2071),
+        (VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1, 10663),
+        (VertexDim, HorizontalMarkerIndex.nudging(VertexDim) + 1, 10663),
+        (VertexDim, HorizontalMarkerIndex.nudging(VertexDim), 10663),
+        (VertexDim, HorizontalMarkerIndex.end(VertexDim), 10663),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 4, 1673),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3, 1266),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 2, 850),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1, 428),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0, 0),
     ],
 )
-def test_get_start_indices(r04b09_dsl_gridfile, dim, marker, index):
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    assert gm.get_grid().get_start_index(dim, marker) == index
+def test_get_start_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
+    grid_from_manager = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    assert grid_from_manager.get_start_index(dim, marker) == index
+    assert grid_from_manager.get_start_index(dim, marker) == icon_grid.get_start_index(
+        dim, marker
+    )
 
 
+@pytest.mark.datatest
 @pytest.mark.parametrize(
     "dim, marker, index",
     [
-        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim), 428),
-        (VertexDim, HorizontalMarkerIndex.local(VertexDim), 10663),
-        (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 10663),
-        (VertexDim, HorizontalMarkerIndex.nudging(VertexDim), 10663),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim), 850),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1, 1688),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2, 2511),
-        (CellDim, HorizontalMarkerIndex.local(CellDim), 20896),
-        (CellDim, HorizontalMarkerIndex.local(CellDim) + 1, 20896),
         (CellDim, HorizontalMarkerIndex.interior(CellDim), 20896),
+        (CellDim, HorizontalMarkerIndex.interior(CellDim) + 1, 850),
+        (CellDim, HorizontalMarkerIndex.local(CellDim) - 2, 20896),
+        (CellDim, HorizontalMarkerIndex.local(CellDim) - 1, 20896),
+        (CellDim, HorizontalMarkerIndex.local(CellDim), 20896),
         (CellDim, HorizontalMarkerIndex.nudging(CellDim), 4104),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim), 428),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4, 2954),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5, 3777),
-        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim), 31558),
+        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3, 3316),
+        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2, 2511),
+        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1, 1688),
+        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 0, 850),
         (EdgeDim, HorizontalMarkerIndex.interior(EdgeDim), 31558),
+        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2, 31558),
+        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1, 31558),
+        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim), 31558),
+        (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1, 6176),
         (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim), 5387),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 7, 4989),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6, 4184),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5, 3777),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4, 2954),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3, 2538),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2, 1700),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1, 1278),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 0, 428),
+        (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 10663),
+        (VertexDim, HorizontalMarkerIndex.local(VertexDim) - 2, 10663),
+        (VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1, 10663),
+        (VertexDim, HorizontalMarkerIndex.local(VertexDim), 10663),
+        (VertexDim, HorizontalMarkerIndex.nudging(VertexDim) + 1, 10663),
+        (VertexDim, HorizontalMarkerIndex.nudging(VertexDim), 10663),
+        (VertexDim, HorizontalMarkerIndex.end(VertexDim), 10663),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 4, 2071),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3, 1673),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 2, 1266),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1, 850),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0, 428),
     ],
 )
-def test_get_start_indices(r04b09_dsl_gridfile, dim, marker, index):  # noqa: F811
-    gm = init_grid_manager(r04b09_dsl_gridfile)
-    assert gm.get_grid().get_end_index(dim, marker) == index
+def test_get_end_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
+    grid_from_manager = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    assert grid_from_manager.get_end_index(dim, marker) == index
+    assert grid_from_manager.get_end_index(dim, marker) == icon_grid.get_end_index(
+        dim, marker
+    )

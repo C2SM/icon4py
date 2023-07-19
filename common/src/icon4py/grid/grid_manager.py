@@ -289,13 +289,6 @@ class GridManager:
 
         return start_indices, end_indices, refin_ctrl, refin_ctrl_max
 
-    # TODO(Magdalena) make HorizontalMarkerIndex a type that behaves and is compatible with an int
-    def get_start_index(self, dim: Dimension, start_marker: int):
-        return self._get_index(dim, start_marker, self._grid.start_indices)
-
-    def get_end_index(self, dim: Dimension, start_marker: int):
-        return self._get_index(dim, start_marker, self._grid.end_indices)
-
     def get_grid(self):
         return self._grid
 
@@ -314,39 +307,6 @@ class GridManager:
     def _read_grid(self, dataset: Dataset) -> tuple[UUID, IconGrid]:
         grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
         return grid_id, self.from_grid_dataset(dataset)
-
-    def get_c2e_connectivity(self):
-        return self._grid.get_c2e_connectivity()
-
-    def get_e2v_connectivity(self):
-        return self._grid.get_e2v_connectivity()
-
-    def get_e2c_connectivity(self):
-        return self._grid.get_e2c_connectivity()
-
-    def get_c2e2c_connectivity(self):
-        return self._grid.get_c2e2c_connectivity()
-
-    def get_v2c_connectivity(self):
-        return self._grid.get_v2c_connectivity()
-
-    def get_c2v_connectivity(self):
-        return self._grid.get_c2v_connectivity()
-
-    def get_c2e2co_connectivity(self):
-        return self._grid.get_c2e2co_connectivity()
-
-    def get_e2c2v_connectivity(self):
-        return self._grid.get_e2c2v_connectivity()
-
-    def get_v2e_connectivity(self):
-        return self._grid.get_v2e_connectivity()
-
-    def get_e2ecv_connectivity(self):
-        return self._grid.get_e2ecv_connectivity()
-
-    def get_e2c2e_connectivity(self):
-        return self._grid.get_e2c2e_connectivity()
 
     def get_size(self, dim: Dimension):
         if dim == VertexDim:
@@ -387,7 +347,7 @@ class GridManager:
         c2v = self._get_index_field(reader, GridFile.OffsetName.C2V)
         e2v = self._get_index_field(reader, GridFile.OffsetName.E2V)
 
-        e2c2v = self.construct_diamond_array(c2v, e2c)
+        e2c2v = self._construct_diamond_array(c2v, e2c)
 
         v2c = self._get_index_field(reader, GridFile.OffsetName.V2C)
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
@@ -435,7 +395,7 @@ class GridManager:
 
         return icon_grid
 
-    def construct_diamond_array(self, c2v: np.ndarray, e2c: np.ndarray):
+    def _construct_diamond_array(self, c2v: np.ndarray, e2c: np.ndarray):
         dummy_c2v = np.append(
             c2v,
             GridFile.INVALID_INDEX * np.ones((1, c2v.shape[1]), dtype=np.int32),
