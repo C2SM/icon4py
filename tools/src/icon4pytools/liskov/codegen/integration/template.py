@@ -20,7 +20,7 @@ from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
 from icon4pytools.liskov.codegen.integration.exceptions import UndeclaredFieldError
-from icon4pytools.liskov.codegen.integration.interface import DeclareData, StartStencilData
+from icon4pytools.liskov.codegen.integration.interface import DeclareData, StartStencilData, StartFusedStencilData
 from icon4pytools.liskov.external.metadata import CodeMetadata
 
 
@@ -120,7 +120,97 @@ class EndStencilStatement(eve.Node):
             fields=[f for f in all_fields if f.rel_tol or f.abs_tol]
         )
 
+class EndFusedStencilStatement(eve.Node):
+    stencil_data: StartFusedStencilData
 
+    name: str = eve.datamodels.field(init=False)
+    input_fields: InputFields = eve.datamodels.field(init=False)
+    output_fields: OutputFields = eve.datamodels.field(init=False)
+    tolerance_fields: ToleranceFields = eve.datamodels.field(init=False)
+    bounds_fields: BoundsFields = eve.datamodels.field(init=False)
+
+    def __post_init__(self) -> None:  # type: ignore
+        all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
+        self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
+        self.name = self.stencil_data.name
+        self.input_fields = InputFields(fields=[f for f in all_fields if f.inp])
+        self.output_fields = OutputFields(fields=[f for f in all_fields if f.out])
+        self.tolerance_fields = ToleranceFields(
+            fields=[f for f in all_fields if f.rel_tol or f.abs_tol]
+        )
+
+
+class EndFusedStencilStatementGenerator(TemplatedGenerator):
+    EndFusedStencilStatement = as_jinja(
+        """
+        call wrap_run_{{ name }}( &
+            {{ input_fields }}
+            {{ output_fields }}
+            {{ tolerance_fields }}
+            {{ bounds_fields }}
+
+        !$ACC END DATA
+        """
+    )
+
+    InputFields = as_jinja(
+        """
+        {%- for field in _this_node.fields %}
+            {%- if field.out %}
+
+            {%- else %}
+            {{ field.variable }}={{ field.association }},&
+            {%- endif -%}
+        {%- endfor %}
+        """
+    )
+
+    OutputFields = as_jinja(
+        """
+        {%- for field in _this_node.fields %}
+            {{ field.variable }}={{ field.association }},&
+            {{ field.variable }}_before={{ field.variable }}_before{{ field.rh_index }},&
+        {%- endfor %}
+        """
+    )
+
+    def visit_OutputFields(self, out: OutputFields) -> OutputFields:  # type: ignore
+        for f in out.fields:  # type: ignore
+            idx = render_index(f.dims)
+            split_idx = idx.split(",")
+
+            if len(split_idx) >= 3:
+                split_idx[-1] = "1"
+
+            f.rh_index = enclose_in_parentheses(",".join(split_idx))
+        return self.generic_visit(out)
+
+    ToleranceFields = as_jinja(
+        """
+        {%- if _this_node.fields|length < 1 -%}
+
+        {%- else -%}
+
+            {%- for f in _this_node.fields -%}
+                {% if f.rel_tol %}
+                {{ f.variable }}_rel_tol={{ f.rel_tol }}, &
+                {%- endif -%}
+                {% if f.abs_tol %}
+                {{ f.variable }}_abs_tol={{ f.abs_tol }}, &
+                {% endif %}
+            {%- endfor -%}
+
+        {%- endif -%}
+        """
+    )
+
+    BoundsFields = as_jinja(
+        """vertical_lower={{ vlower }}, &
+           vertical_upper={{ vupper }}, &
+           horizontal_lower={{ hlower }}, &
+           horizontal_upper={{ hupper }})
+        """
+    )
 class EndStencilStatementGenerator(TemplatedGenerator):
     EndStencilStatement = as_jinja(
         """
@@ -270,6 +360,44 @@ class StartStencilStatement(eve.Node):
             rh_index=rh_idx,
         )
 
+class StartFusedStencilStatement(eve.Node):
+    stencil_data: StartFusedStencilData
+    copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
+
+    def __post_init__(self) -> None:  # type: ignore
+        all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
+        self.copy_declarations = [self.make_copy_declaration(f) for f in all_fields if f.out]
+        self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
+
+    @staticmethod
+    def make_copy_declaration(f: Field) -> CopyDeclaration:
+        if f.dims is None:
+            raise UndeclaredFieldError(f"{f.variable} was not declared!")
+
+        lh_idx = render_index(f.dims)
+
+        # get length of association index
+        association_dims = get_array_dims(f.association).split(",")
+        n_association_dims = len(association_dims)
+
+        offset = len(",".join(association_dims)) + 2
+        truncated_association = f.association[:-offset]
+
+        if n_association_dims > f.dims:
+            rh_idx = f"{lh_idx},{association_dims[-1]}"
+        else:
+            rh_idx = f"{lh_idx}"
+
+        lh_idx = enclose_in_parentheses(lh_idx)
+        rh_idx = enclose_in_parentheses(rh_idx)
+
+        return CopyDeclaration(
+            variable=f.variable,
+            association=truncated_association,
+            lh_index=lh_idx,
+            rh_index=rh_idx,
+        )
+
 
 def render_index(n: int) -> str:
     """
@@ -312,6 +440,29 @@ class StartStencilStatementGenerator(TemplatedGenerator):
         {%- endif %}
         """
     )
+
+
+class StartFusedStencilStatementGenerator(TemplatedGenerator):
+    StartFusedStencilStatement = as_jinja(
+        """
+
+        !$ACC DATA CREATE( &
+        {%- for d in _this_node.copy_declarations %}
+        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
+        {%- endfor %}
+        !$ACC      IF ( i_am_accel_node )
+
+        #ifdef __DSL_VERIFY
+        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
+        {%- for d in _this_node.copy_declarations %}
+        {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
+        {%- endfor %}
+        !$ACC END KERNELS
+        #endif
+
+        """
+    )
+
 
 
 class ImportsStatement(eve.Node):

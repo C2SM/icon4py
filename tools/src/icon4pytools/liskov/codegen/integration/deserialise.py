@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import sys
 from typing import Any, Optional, Protocol, Type
 
 import icon4pytools.liskov.parsing.parse
@@ -21,6 +22,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     DeclareData,
     EndCreateData,
     EndIfData,
+    EndDeleteData,
     EndProfileData,
     EndStencilData,
     FieldAssociationData,
@@ -28,8 +30,11 @@ from icon4pytools.liskov.codegen.integration.interface import (
     InsertData,
     IntegrationCodeInterface,
     StartCreateData,
+    StartDeleteData,
     StartProfileData,
     StartStencilData,
+    StartFusedStencilData,
+    EndFusedStencilData,
     UnusedDirective,
 )
 from icon4pytools.liskov.codegen.shared.deserialise import Deserialiser
@@ -134,6 +139,14 @@ class EndProfileDataFactory(OptionalMultiUseDataFactory):
     dtype: Type[EndProfileData] = EndProfileData
 
 
+class EndDeleteDataFactory(OptionalMultiUseDataFactory):
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndDelete
+    dtype: Type[EndDeleteData] = EndDeleteData
+
+class StartDeleteDataFactory(OptionalMultiUseDataFactory):
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartDelete
+    dtype: Type[StartDeleteData] = StartDeleteData
+
 class StartCreateDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartCreate
     dtype: Type[StartCreateData] = StartCreateData
@@ -229,46 +242,27 @@ class EndStencilDataFactory(DataFactoryBase):
         return deserialised
 
 
-class StartStencilDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartStencil
-    dtype: Type[StartStencilData] = StartStencilData
+class EndFusedStencilDataFactory(DataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndFusedStencil
+    dtype: Type[EndFusedStencilData] = EndFusedStencilData
 
-    def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
-        """Create and return a list of StartStencilData objects from the parsed directives.
-
-        Args:
-            parsed (ParsedDict): Dictionary of parsed directives and their associated content.
-
-        Returns:
-            List[StartStencilData]: List of StartStencilData objects created from the parsed directives.
-        """
+    def __call__(self, parsed: ts.ParsedDict) -> list[EndFusedStencilData]:
         deserialised = []
-        field_dimensions = flatten_list_of_dicts(
-            [DeclareDataFactory.get_field_dimensions(dim) for dim in parsed["content"]["Declare"]]
-        )
-        directives = extract_directive(parsed["directives"], self.directive_cls)
-        for i, directive in enumerate(directives):
-            named_args = parsed["content"]["StartStencil"][i]
-            acc_present = string_to_bool(pop_item_from_dict(named_args, "accpresent", "true"))
-            mergecopy = string_to_bool(pop_item_from_dict(named_args, "mergecopy", "false"))
-            copies = string_to_bool(pop_item_from_dict(named_args, "copies", "true"))
+        extracted = extract_directive(parsed["directives"], self.directive_cls)
+        for i, directive in enumerate(extracted):
+            named_args = parsed["content"]["EndFusedStencil"][i]
             stencil_name = _extract_stencil_name(named_args, directive)
-            bounds = self._make_bounds(named_args)
-            fields = self._make_fields(named_args, field_dimensions)
-            fields_w_tolerance = self._update_tolerances(named_args, fields)
-
             deserialised.append(
                 self.dtype(
                     name=stencil_name,
-                    fields=fields_w_tolerance,
-                    bounds=bounds,
                     startln=directive.startln,
-                    acc_present=acc_present,
-                    mergecopy=mergecopy,
-                    copies=copies,
                 )
             )
         return deserialised
+
+
+
+class StartStencilDataFactoryBase(DataFactoryBase):
 
     @staticmethod
     def _make_bounds(named_args: dict) -> BoundsData:
@@ -356,6 +350,88 @@ class StartStencilDataFactory(DataFactoryBase):
                             setattr(f, tol, association)
         return fields
 
+class StartStencilDataFactory(StartStencilDataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartStencil
+    dtype: Type[StartStencilData] = StartStencilData
+
+    def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
+        """Create and return a list of StartStencilData objects from the parsed directives.
+
+        Args:
+            parsed (ParsedDict): Dictionary of parsed directives and their associated content.
+
+        Returns:
+            List[StartStencilData]: List of StartStencilData objects created from the parsed directives.
+        """
+        deserialised = []
+        field_dimensions = flatten_list_of_dicts(
+            [DeclareDataFactory.get_field_dimensions(dim) for dim in parsed["content"]["Declare"]]
+        )
+        directives = extract_directive(parsed["directives"], self.directive_cls)
+        for i, directive in enumerate(directives):
+            named_args = parsed["content"]["StartStencil"][i]
+            acc_present = string_to_bool(pop_item_from_dict(named_args, "accpresent", "true"))
+            mergecopy = string_to_bool(pop_item_from_dict(named_args, "mergecopy", "false"))
+            copies = string_to_bool(pop_item_from_dict(named_args, "copies", "true"))
+            stencil_name = _extract_stencil_name(named_args, directive)
+            bounds = self._make_bounds(named_args)
+            fields = self._make_fields(named_args, field_dimensions)
+            fields_w_tolerance = self._update_tolerances(named_args, fields)
+
+            deserialised.append(
+                self.dtype(
+                    name=stencil_name,
+                    fields=fields_w_tolerance,
+                    bounds=bounds,
+                    startln=directive.startln,
+                    acc_present=acc_present,
+                    mergecopy=mergecopy,
+                    copies=copies,
+                )
+            )
+        return deserialised
+
+
+
+class StartFusedStencilDataFactory(StartStencilDataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartFusedStencil
+    dtype: Type[StartFusedStencilData] = StartFusedStencilData
+
+    def __call__(self, parsed: ts.ParsedDict) -> list[StartFusedStencilData]:
+        """Create and return a list of StartStencilData objects from the parsed directives.
+
+        Args:
+            parsed (ParsedDict): Dictionary of parsed directives and their associated content.
+
+        Returns:
+            List[StartStencilData]: List of StartStencilData objects created from the parsed directives.
+        """
+        deserialised = []
+        field_dimensions = flatten_list_of_dicts(
+            [DeclareDataFactory.get_field_dimensions(dim) for dim in parsed["content"]["Declare"]]
+        )
+        directives = extract_directive(parsed["directives"], self.directive_cls)
+        for i, directive in enumerate(directives):
+            named_args = parsed["content"]["StartFusedStencil"][i]
+            acc_present = string_to_bool(pop_item_from_dict(named_args, "accpresent", "true"))
+            stencil_name = _extract_stencil_name(named_args, directive)
+            bounds = self._make_bounds(named_args)
+            fields = self._make_fields(named_args, field_dimensions)
+            fields_w_tolerance = self._update_tolerances(named_args, fields)
+
+            deserialised.append(
+                self.dtype(
+                    name=stencil_name,
+                    fields=fields_w_tolerance,
+                    bounds=bounds,
+                    startln=directive.startln,
+                    acc_present=acc_present,
+                )
+            )
+        return deserialised
+
+
+
 
 class InsertDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.Insert
@@ -380,6 +456,10 @@ class IntegrationCodeDeserialiser(Deserialiser):
         "Declare": DeclareDataFactory(),
         "StartStencil": StartStencilDataFactory(),
         "EndStencil": EndStencilDataFactory(),
+        "StartFusedStencil": StartFusedStencilDataFactory(),
+        "EndFusedStencil": EndFusedStencilDataFactory(),
+        "StartDelete": StartDeleteDataFactory(),
+        "EndDelete": EndDeleteDataFactory(),
         "EndIf": EndIfDataFactory(),
         "StartProfile": StartProfileDataFactory(),
         "EndProfile": EndProfileDataFactory(),

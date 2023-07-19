@@ -186,6 +186,11 @@ class StartStencil(WithArguments):
 class EndStencil(WithArguments):
     pattern = "END STENCIL"
 
+class StartFusedStencil(WithArguments):
+    pattern = "START FUSED STENCIL"
+
+class EndFusedStencil(WithArguments):
+    pattern = "END FUSED STENCIL"
 
 class Declare(WithArguments):
     pattern = "DECLARE"
@@ -215,6 +220,14 @@ class EndProfile(WithoutArguments):
     pattern = "END PROFILE"
 
 
+class StartDelete(WithoutArguments):
+  pattern = 'START DELETE'
+
+
+class EndDelete(WithoutArguments):
+  pattern = 'END DELETE'
+
+
 class Insert(FreeForm):
     pattern = "INSERT"
 
@@ -222,6 +235,10 @@ class Insert(FreeForm):
 SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     StartStencil,
     EndStencil,
+    StartFusedStencil,
+    EndFusedStencil,
+    StartDelete,
+    EndDelete,
     Imports,
     Declare,
     StartCreate,

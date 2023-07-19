@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pathlib
+import sys
 
 import click
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.liskov.external.exceptions import MissingCommandError
 from icon4pytools.liskov.pipeline.collection import (
-    load_gt4py_stencils,
+    process_stencils,
     parse_fortran_file,
     run_code_generation,
 )
@@ -50,6 +51,11 @@ def main(ctx):
     is_flag=True,
     help="Add metadata header with information about program.",
 )
+@click.option(
+    "--fused/--unfused",
+    "-f/-u", default=True,
+    help="Add metadata header with information about program.",
+)
 @click.argument(
     "input_path",
     type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
@@ -58,10 +64,10 @@ def main(ctx):
     "output_path",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
-def integrate(input_path, output_path, profile, metadatagen):
+def integrate(input_path, output_path, fused, profile, metadatagen):
     mode = "integration"
     iface = parse_fortran_file(input_path, output_path, mode)
-    iface_gt4py = load_gt4py_stencils(iface)
+    iface_gt4py = process_stencils(iface, fused)
     run_code_generation(
         input_path,
         output_path,

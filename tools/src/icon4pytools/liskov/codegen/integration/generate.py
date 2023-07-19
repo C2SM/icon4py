@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import sys
 from typing import Any
 
 from icon4pytools.common.logger import setup_logger
@@ -30,6 +31,8 @@ from icon4pytools.liskov.codegen.integration.template import (
     EndProfileStatementGenerator,
     EndStencilStatement,
     EndStencilStatementGenerator,
+    EndFusedStencilStatement,
+    EndFusedStencilStatementGenerator,
     ImportsStatement,
     ImportsStatementGenerator,
     InsertStatement,
@@ -42,6 +45,8 @@ from icon4pytools.liskov.codegen.integration.template import (
     StartProfileStatementGenerator,
     StartStencilStatement,
     StartStencilStatementGenerator,
+    StartFusedStencilStatement,
+    StartFusedStencilStatementGenerator,
 )
 from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
@@ -75,6 +80,8 @@ class IntegrationCodeGenerator(CodeGenerator):
         self._generate_declare()
         self._generate_start_stencil()
         self._generate_end_stencil()
+        self._generate_start_fused_stencil()
+        self._generate_end_fused_stencil()
         self._generate_endif()
         self._generate_profile()
         self._generate_insert()
@@ -148,6 +155,24 @@ class IntegrationCodeGenerator(CodeGenerator):
                 )
                 i += 1
 
+    def _generate_start_fused_stencil(self) -> None:
+        """Generate f90 integration code surrounding a stencil.
+
+        Args:
+            profile: A boolean indicating whether to include profiling calls in the generated code.
+        """
+
+        for stencil in self.interface.StartFusedStencil:
+        # while i < len(self.interface.StartStencil):
+            # stencil = self.interface.StartStencil[i]
+            logger.info(f"Generating START FUSED statement for {stencil.name}")
+            self._generate(
+                StartFusedStencilStatement,
+                StartFusedStencilStatementGenerator,
+                stencil.startln,
+                stencil_data=stencil,
+            )
+
     def _generate_end_stencil(self) -> None:
         """Generate f90 integration code surrounding a stencil.
 
@@ -166,6 +191,22 @@ class IntegrationCodeGenerator(CodeGenerator):
                 noprofile=self.interface.EndStencil[i].noprofile,
                 noaccenddata=self.interface.EndStencil[i].noaccenddata,
             )
+
+    def _generate_end_fused_stencil(self) -> None:
+        """Generate f90 integration code surrounding a stencil.
+
+        Args:
+            profile: A boolean indicating whether to include profiling calls in the generated code.
+        """
+        for i, stencil in enumerate(self.interface.StartFusedStencil):
+            logger.info(f"Generating END Fused statement for {stencil.name}")
+            self._generate(
+                EndFusedStencilStatement,
+                EndFusedStencilStatementGenerator,
+                self.interface.EndFusedStencil[i].startln,
+                stencil_data=stencil,
+            )
+        # sys.exit(1)
 
     def _generate_imports(self) -> None:
         """Generate f90 code for import statements."""
