@@ -1,0 +1,52 @@
+pipeline {
+    agent none
+    stages {
+        stage('Tests') {
+            matrix {
+                agent { label "${NODENAME}" }
+                axes {
+                    axis {
+                        name 'NODENAME'
+                        values 'daint'
+                    }
+                }
+                post {
+                    always {
+                        echo 'Cleaning up workspace'
+                        deleteDir()
+                    }
+                }
+                stages {
+                    stage('Clone Repos') {
+                        steps {
+                            sh """
+                            git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/C2SM/spack-c2sm.git
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b ci_cross_repo git@github.com:C2SM/icon-exclaim.git
+                            """
+                        }
+                    }
+                    stage('Build with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --until build
+                            """
+                        }
+                    }
+                    stage('Test with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --test=root
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
