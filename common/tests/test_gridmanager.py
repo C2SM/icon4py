@@ -221,7 +221,6 @@ def test_gridparser_dimension(simple_mesh_data):
     assert grid_parser.dimension(GridFile.DimensionName.EDGE_NAME) == mesh.n_edges
 
 
-@pytest.mark.xfail
 def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfile):
     data = Dataset(r04b09_dsl_gridfile, "r")
     grid_file = GridFile(data)
@@ -232,7 +231,6 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfil
     assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(
         EdgeDim
     )
-    # TODO: @magdalena fix in serialized data. it returns the num_cells
     assert grid_file.dimension(
         GridFile.DimensionName.VERTEX_NAME
     ) == grid_savepoint.num(VertexDim)
