@@ -10,16 +10,15 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import logging
 from pathlib import Path
 from uuid import uuid4
 
+import conftest
 import numpy as np
 import pytest
 from netCDF4 import Dataset
 
-from common.tests.conftest import import_testutils
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.grid.grid_manager import (
     GridFile,
@@ -32,7 +31,7 @@ from icon4py.grid.horizontal import HorizontalMarkerIndex
 from icon4py.grid.icon_grid import VerticalGridSize
 
 
-helpers = import_testutils()
+helpers = conftest.import_testutils()
 from helpers.simple_mesh import SimpleMesh  # noqa E402
 
 

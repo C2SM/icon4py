@@ -33,9 +33,7 @@ def test_nrdmax_calculation(max_h, damping, delta):
     )
 
 
-# TODO(Magdalena) fix for merge
 @pytest.mark.datatest
-@pytest.mark.skip("fix location of testdata - dont want to download it twice")
 def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint, damping_height):
     a = grid_savepoint.vct_a()
     nrdmax = grid_savepoint.nrdmax()

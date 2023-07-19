@@ -19,21 +19,24 @@ from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 
 
-data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
-data_path = Path(__file__).parent.joinpath("ser_icondata")
-extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
-data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
 mch_ch_r04b09_dsl_grid_uri = (
     "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 )
-
 r02b04_global_grid_uri = "https://polybox.ethz.ch/index.php/s/0EM8O8U53GKGsst/download"
-grids_path = Path(__file__).parent.joinpath("grids")
+data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
+data_path_old = Path(__file__).parent.joinpath("ser_icondata")
+base_path = Path(__file__).parent.parent.parent.parent.joinpath("testdata")
+
+data_path = base_path.joinpath("ser_icondata")
+extracted_path = data_path.joinpath("mpitask1/mch_ch_r04b09_dsl/ser_data")
+data_file = data_path.joinpath("mch_ch_r04b09_dsl.tar.gz").name
+
+grids_path = base_path.joinpath("grids")
 r04b09_dsl_grid_path = grids_path.joinpath("mch_ch_r04b09_dsl")
 r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath(
     "mch_ch_r04b09_dsl_grids_v1.tar.gz"
 ).name
-r02b04_global_grid_path = grids_path.joinpath("icon_r02b04_global")
+r02b04_global_grid_path = grids_path.joinpath("r02b04_global")
 r02b04_global_data_file = r02b04_global_grid_path.joinpath(
     "icon_grid_0013_R02B04_G.tar.gz"
 ).name
@@ -59,6 +62,21 @@ def grid_savepoint(data_provider):
     return data_provider.from_savepoint_grid()
 
 
+@pytest.fixture
+def icon_grid(grid_savepoint):
+    """
+    Load the icon grid from an ICON savepoint.
+
+    Uses the special grid_savepoint that contains data from p_patch
+    """
+    return grid_savepoint.construct_icon_grid()
+
+
+@pytest.fixture
+def damping_height():
+    return 12500
+
+
 @pytest.fixture(scope="session")
 def get_grid_files():
     """
@@ -77,3 +95,8 @@ def get_grid_files():
 @pytest.fixture()
 def r04b09_dsl_gridfile(get_grid_files):
     return r04b09_dsl_grid_path.joinpath("grid.nc")
+
+
+@pytest.fixture()
+def get_data_path():
+    return extracted_path

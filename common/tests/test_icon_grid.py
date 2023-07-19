@@ -23,7 +23,7 @@ from icon4py.grid.horizontal import HorizontalMarkerIndex
         (HorizontalMarkerIndex.interior(CellDim), 4104),
         (HorizontalMarkerIndex.interior(CellDim) + 1, 0),
         (HorizontalMarkerIndex.local(CellDim) - 1, 20896),
-        (HorizontalMarkerIndex.local(CellDim), -1),  # halo in icon is (1,20896)
+        (HorizontalMarkerIndex.local(CellDim), -1),
         (HorizontalMarkerIndex.nudging(CellDim), 3316),
         (HorizontalMarkerIndex.lateral_boundary(CellDim) + 3, 2511),
         (HorizontalMarkerIndex.lateral_boundary(CellDim) + 2, 1688),

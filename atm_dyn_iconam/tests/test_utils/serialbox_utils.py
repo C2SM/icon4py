@@ -201,7 +201,7 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_connectivity_array("v2c")
 
     def nrdmax(self):
-        return self._get_connectiviy_array("nrdmax")
+        return self._get_connectivity_array("nrdmax")
 
     def construct_icon_grid(self) -> IconGrid:
         sp_meta = self.get_metadata(

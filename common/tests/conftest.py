@@ -30,9 +30,11 @@ def import_testutils():
 helpers = import_testutils()
 
 from helpers.fixtures import (  # noqa F401
+    damping_height,
     data_provider,
     get_grid_files,
     grid_savepoint,
+    icon_grid,
     r04b09_dsl_gridfile,
     setup_icon_data,
 )
