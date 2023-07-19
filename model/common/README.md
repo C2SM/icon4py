@@ -6,4 +6,4 @@ Utilities shared by other ICON4Py components.
 
 ## Installation instructions
 
-Check `README.md` file in the root of the repository.
+Check the `README.md` at the root of the `model` folder for installation instructions.
