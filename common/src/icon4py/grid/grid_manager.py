@@ -32,6 +32,7 @@ from icon4py.common.dimension import (
     E2VDim,
     EdgeDim,
     V2CDim,
+    V2E2VDim,
     V2EDim,
     VertexDim,
 )
@@ -66,42 +67,96 @@ class GridFile:
         PARENT_GRID_ID = "uuidOfParHGrid"
 
     class OffsetName(GridFileName):
-        # e2c2e/e2c2eO: diamond edges (including origin) -> calculate?
-        # e2c2v: diamond vertices: constructed from e2c and c2v
+        """Names for connectivities used in the grid file."""
 
-        C2E2C = "neighbor_cell_index"  # dims(nv=3, cell)
-        V2E2V = "vertices_of_vertex"  # dims(ne=6, vertex) not in simple mesh, = v2c2v vertices in hexa/pentagon
-        V2E = "edges_of_vertex"  # dims(ne=6, vertex)
-        V2C = "cells_of_vertex"  # dims(ne=6, vertex)
-        E2V = "edge_vertices"  # dims(nc=2, edge)
-        C2V = "vertex_of_cell"  # dims(nv=3, cell) # not in simple mesh
-        E2C = "adjacent_cell_of_edge"  # dims(nc=2, edge)
-        C2E = "edge_of_cell"  # dims(nv=3, cell)
+        # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> calculate?
+        # e2c2v: diamond vertices: not present in grid file -> constructed from e2c and c2v
+
+        #: name of C2E2C connectivity in grid file: dims(nv=3, cell)
+        C2E2C = "neighbor_cell_index"
+
+        #: name of V2E2V connectivity in gridfile: dims(ne=6, vertex),
+        #: all vertices of a pentagon/hexagon, same as V2C2V
+        V2E2V = "vertices_of_vertex"  # does not exist in simple_mesh.py
+
+        #: name of V2E dimension in grid file: dims(ne=6, vertex)
+        V2E = "edges_of_vertex"
+
+        #: name fo V2C connectivity in grid file: dims(ne=6, vertex)
+        V2C = "cells_of_vertex"
+
+        #: name of E2V connectivity in grid file: dims(nc=2, edge)
+        E2V = "edge_vertices"
+
+        #: name of C2V connectivity in grid file: dims(nv=3, cell)
+        C2V = "vertex_of_cell"  # does not exist in simple_mesh.py
+
+        #: name of E2C connectivity in grid file: dims(nc=2, edge)
+        E2C = "adjacent_cell_of_edge"
+
+        #: name of C2E connectivity in grid file: dims(nv=3, cell)
+        C2E = "edge_of_cell"
 
     class DimensionName(GridFileName):
+        """Dimension values (sizes) used in grid file."""
+
+        #: number of vertices
         VERTEX_NAME = "vertex"
+
+        #: number of edges
         EDGE_NAME = "edge"
+
+        #: number of cells
         CELL_NAME = "cell"
-        DIAMOND_EDGE_SIZE = "no"  # 4
-        NEIGHBORS_TO_VERTEX_SIZE = "ne"  # 6
-        NEIGHBORS_TO_CELL_SIZE = "nv"  # 3
-        NEIGHBORS_TO_EDGE_SIZE = "nc"  # 2
+
+        #: number of edges in a diamond: 4
+        DIAMOND_EDGE_SIZE = "no"
+
+        #: number of edges/cells neibhboring one vertex: 6 (for regular, non pentagons)
+        NEIGHBORS_TO_VERTEX_SIZE = "ne"
+
+        #: number of cells edges, vertices and cells neighboring a cell: 3
+        NEIGHBORS_TO_CELL_SIZE = "nv"
+
+        #: number of vertices/cells neighboring an edge: 2
+        NEIGHBORS_TO_EDGE_SIZE = "nc"
+
+        #: number of child domains (for nesting)
         MAX_CHILD_DOMAINS = "max_chdom"
 
-        # TODO: @magdalena what does the grf abbrev. stand for 'grid_refinement'?
+        #: Grid refinement: maximal number in grid-refinement (refin_ctl) array for each dimension
         CELL_GRF = "cell_grf"
         EDGE_GRF = "edge_grf"
         VERTEX_GRF = "vert_grf"
 
     class GridRefinementName(GridFileName):
+        """Names of arrays in grid file defining the grid control, definition of boundaries layers, start and end indices of horizontal zones."""
+
+        #: refine control value of cell indices
         CONTROL_CELLS = "refin_c_ctrl"
+
+        #: refine control value of edge indices
         CONTROL_EDGES = "refin_e_ctrl"
+
+        #: refine control value of vertex indices
         CONTROL_VERTICES = "refin_v_ctrl"
+
+        #: start indices of horizontal grid zones for cell fields
         START_INDEX_CELLS = "start_idx_c"
+
+        #: start indices of horizontal grid zones for edge fields
         START_INDEX_EDGES = "start_idx_e"
+
+        #: start indices of horizontal grid zones for vertex fields
         START_INDEX_VERTICES = "start_idx_v"
+
+        #: end indices of horizontal grid zones for cell fields
         END_INDEX_CELLS = "end_idx_c"
+
+        #: end indices of horizontal grid zones for edge fields
         END_INDEX_EDGES = "end_idx_e"
+
+        #: end indices of horizontal grid zones for vertex fields
         END_INDEX_VERTICES = "end_idx_v"
 
     def __init__(self, dataset: Dataset):
@@ -131,7 +186,7 @@ class IconGridError(RuntimeError):
     pass
 
 
-class IndexTransformation(ABC):
+class IndexTransformation():
     def get_offset_for_index_field(
         self,
         array: np.ndarray,
@@ -182,55 +237,60 @@ class GridManager:
         _CHILD_DOM = 0
         reader = GridFile(dataset)
 
-        grf_vertices = reader.dimension(GridFile.DimensionName.VERTEX_GRF)
-        grf_edges = reader.dimension(GridFile.DimensionName.EDGE_GRF)
-        grf_cells = reader.dimension(GridFile.DimensionName.CELL_GRF)
-        refin_c_ctl = reader.int_field(GridFile.GridRefinementName.CONTROL_CELLS)
-        refin_v_ctl = reader.int_field(GridFile.GridRefinementName.CONTROL_VERTICES)
-        refin_e_ctl = reader.int_field(GridFile.GridRefinementName.CONTROL_EDGES)
-        start_indices = {}
-        end_indices = {}
-        start_indices[CellDim] = self._get_index_field(
-            reader, GridFile.GridRefinementName.START_INDEX_CELLS, transpose=False
-        )[_CHILD_DOM]
-        end_indices[CellDim] = self._get_index_field(
-            reader,
-            GridFile.GridRefinementName.END_INDEX_CELLS,
-            transpose=False,
-            apply_offset=False,
-            dtype=np.int64,
-        )[_CHILD_DOM]
-        start_indices[EdgeDim] = self._get_index_field(
-            reader,
-            GridFile.GridRefinementName.START_INDEX_EDGES,
-            transpose=False,
-            dtype=np.int64,
-        )[_CHILD_DOM]
-        end_indices[EdgeDim] = self._get_index_field(
-            reader,
-            GridFile.GridRefinementName.END_INDEX_EDGES,
-            transpose=False,
-            apply_offset=False,
-            dtype=np.int64,
-        )[_CHILD_DOM]
-        start_indices[VertexDim] = self._get_index_field(
-            reader,
-            GridFile.GridRefinementName.START_INDEX_VERTICES,
-            transpose=False,
-            dtype=np.int64,
-        )[_CHILD_DOM]
-        end_indices[VertexDim] = self._get_index_field(
-            reader,
-            GridFile.GridRefinementName.END_INDEX_VERTICES,
-            transpose=False,
-            apply_offset=False,
-            dtype=np.int64,
-        )[_CHILD_DOM]
+        refin_ctrl = {
+            CellDim: reader.int_field(GridFile.GridRefinementName.CONTROL_CELLS),
+            EdgeDim: reader.int_field(GridFile.GridRefinementName.CONTROL_EDGES),
+            VertexDim: reader.int_field(GridFile.GridRefinementName.CONTROL_VERTICES),
+        }
+        refin_ctrl_max = {
+            CellDim: reader.dimension(GridFile.DimensionName.CELL_GRF),
+            EdgeDim: reader.dimension(GridFile.DimensionName.EDGE_GRF),
+            VertexDim: reader.dimension(GridFile.DimensionName.VERTEX_GRF),
+        }
+        start_indices = {
+            CellDim: self._get_index_field(
+                reader, GridFile.GridRefinementName.START_INDEX_CELLS, transpose=False
+            )[_CHILD_DOM],
+            EdgeDim: self._get_index_field(
+                reader,
+                GridFile.GridRefinementName.START_INDEX_EDGES,
+                transpose=False,
+                dtype=np.int64,
+            )[_CHILD_DOM],
+            VertexDim: self._get_index_field(
+                reader,
+                GridFile.GridRefinementName.START_INDEX_VERTICES,
+                transpose=False,
+                dtype=np.int64,
+            )[_CHILD_DOM],
+        }
+        end_indices = {
+            CellDim: self._get_index_field(
+                reader,
+                GridFile.GridRefinementName.END_INDEX_CELLS,
+                transpose=False,
+                apply_offset=False,
+                dtype=np.int64,
+            )[_CHILD_DOM],
+            EdgeDim: self._get_index_field(
+                reader,
+                GridFile.GridRefinementName.END_INDEX_EDGES,
+                transpose=False,
+                apply_offset=False,
+                dtype=np.int64,
+            )[_CHILD_DOM],
+            VertexDim: self._get_index_field(
+                reader,
+                GridFile.GridRefinementName.END_INDEX_VERTICES,
+                transpose=False,
+                apply_offset=False,
+                dtype=np.int64,
+            )[_CHILD_DOM],
+        }
 
-        return start_indices, end_indices
+        return start_indices, end_indices, refin_ctrl, refin_ctrl_max
 
-    # TODO @magdalena make HorizontalMarkerIndex a type that behaves and is compatible with an int
-
+    # TODO(Magdalena) make HorizontalMarkerIndex a type that behaves and is compatible with an int
     def get_start_index(self, dim: Dimension, start_marker: int):
         return self._get_index(dim, start_marker, self._grid.start_indices)
 
@@ -335,7 +395,12 @@ class GridManager:
         v2e2v = self._get_index_field(reader, GridFile.OffsetName.V2E2V)
         c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C)
         c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
-        start_indices, end_indices = self._read_grid_refinement_information(dataset)
+        (
+            start_indices,
+            end_indices,
+            refine_ctrl,
+            refine_ctrl_max,
+        ) = self._read_grid_refinement_information(dataset)
 
         config = GridConfig(
             horizontal_config=grid_size,
@@ -355,6 +420,7 @@ class GridManager:
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
                     E2C2VDim: e2c2v,
+                    V2E2VDim: v2e2v,
                 }
             )
             .with_start_end_indices(
