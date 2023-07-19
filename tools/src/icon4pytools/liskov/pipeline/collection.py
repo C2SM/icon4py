@@ -20,9 +20,8 @@ from icon4pytools.liskov.codegen.serialisation.generate import SerialisationCode
 from icon4pytools.liskov.codegen.shared.write import CodegenWriter
 from icon4pytools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4pytools.liskov.parsing.parse import DirectivesParser
-# from icon4pytools.liskov.parsing.process import RemoveFusedStencils, RemoveSingleStencils
-from icon4pytools.liskov.parsing.transform import TransformFuseStencils
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
+from icon4pytools.liskov.parsing.transform import TransformFuseStencils
 from icon4pytools.liskov.pipeline.definition import Step, linear_pipeline
 
 
@@ -70,10 +69,8 @@ def parse_fortran_file(
 
 
 @linear_pipeline
-def process_stencils(
-  parsed: IntegrationCodeInterface, fused: bool
-) -> list[Step]:
-    """Execute a pipeline to transform stencils to fused or unfused execution, and a pipeline 
+def process_stencils(parsed: IntegrationCodeInterface, fused: bool) -> list[Step]:
+    """Execute a pipeline to transform stencils to fused or unfused execution, and a pipeline.
 
     Args:
         parsed: The input IntegrationCodeInterface object.
@@ -82,9 +79,7 @@ def process_stencils(
     Returns:
         The updated and transformed object with fields containing information from GT4Py stencils.
     """
-
     return [TransformFuseStencils(parsed, fused), UpdateFieldsWithGt4PyStencils(parsed)]
-
 
 
 @linear_pipeline

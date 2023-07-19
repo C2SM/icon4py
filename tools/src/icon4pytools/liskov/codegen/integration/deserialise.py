@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import sys
 from typing import Any, Optional, Protocol, Type
 
 import icon4pytools.liskov.parsing.parse
@@ -21,8 +20,9 @@ from icon4pytools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     EndCreateData,
-    EndIfData,
     EndDeleteData,
+    EndFusedStencilData,
+    EndIfData,
     EndProfileData,
     EndStencilData,
     FieldAssociationData,
@@ -31,10 +31,9 @@ from icon4pytools.liskov.codegen.integration.interface import (
     IntegrationCodeInterface,
     StartCreateData,
     StartDeleteData,
+    StartFusedStencilData,
     StartProfileData,
     StartStencilData,
-    StartFusedStencilData,
-    EndFusedStencilData,
     UnusedDirective,
 )
 from icon4pytools.liskov.codegen.shared.deserialise import Deserialiser
@@ -143,9 +142,11 @@ class EndDeleteDataFactory(OptionalMultiUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndDelete
     dtype: Type[EndDeleteData] = EndDeleteData
 
+
 class StartDeleteDataFactory(OptionalMultiUseDataFactory):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartDelete
     dtype: Type[StartDeleteData] = StartDeleteData
+
 
 class StartCreateDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartCreate
@@ -261,9 +262,7 @@ class EndFusedStencilDataFactory(DataFactoryBase):
         return deserialised
 
 
-
 class StartStencilDataFactoryBase(DataFactoryBase):
-
     @staticmethod
     def _make_bounds(named_args: dict) -> BoundsData:
         """Extract stencil bounds from directive arguments."""
@@ -350,6 +349,7 @@ class StartStencilDataFactoryBase(DataFactoryBase):
                             setattr(f, tol, association)
         return fields
 
+
 class StartStencilDataFactory(StartStencilDataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartStencil
     dtype: Type[StartStencilData] = StartStencilData
@@ -392,7 +392,6 @@ class StartStencilDataFactory(StartStencilDataFactoryBase):
         return deserialised
 
 
-
 class StartFusedStencilDataFactory(StartStencilDataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartFusedStencil
     dtype: Type[StartFusedStencilData] = StartFusedStencilData
@@ -429,8 +428,6 @@ class StartFusedStencilDataFactory(StartStencilDataFactoryBase):
                 )
             )
         return deserialised
-
-
 
 
 class InsertDataFactory(DataFactoryBase):

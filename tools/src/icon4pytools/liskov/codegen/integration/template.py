@@ -20,7 +20,11 @@ from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 
 from icon4pytools.liskov.codegen.integration.exceptions import UndeclaredFieldError
-from icon4pytools.liskov.codegen.integration.interface import DeclareData, StartStencilData, StartFusedStencilData
+from icon4pytools.liskov.codegen.integration.interface import (
+    DeclareData,
+    StartFusedStencilData,
+    StartStencilData,
+)
 from icon4pytools.liskov.external.metadata import CodeMetadata
 
 
@@ -120,6 +124,7 @@ class EndStencilStatement(eve.Node):
             fields=[f for f in all_fields if f.rel_tol or f.abs_tol]
         )
 
+
 class EndFusedStencilStatement(eve.Node):
     stencil_data: StartFusedStencilData
 
@@ -211,6 +216,8 @@ class EndFusedStencilStatementGenerator(TemplatedGenerator):
            horizontal_upper={{ hupper }})
         """
     )
+
+
 class EndStencilStatementGenerator(TemplatedGenerator):
     EndStencilStatement = as_jinja(
         """
@@ -360,6 +367,7 @@ class StartStencilStatement(eve.Node):
             rh_index=rh_idx,
         )
 
+
 class StartFusedStencilStatement(eve.Node):
     stencil_data: StartFusedStencilData
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
@@ -462,7 +470,6 @@ class StartFusedStencilStatementGenerator(TemplatedGenerator):
 
         """
     )
-
 
 
 class ImportsStatement(eve.Node):

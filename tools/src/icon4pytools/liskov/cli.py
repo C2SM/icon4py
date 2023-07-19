@@ -12,15 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pathlib
-import sys
 
 import click
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.liskov.external.exceptions import MissingCommandError
 from icon4pytools.liskov.pipeline.collection import (
-    process_stencils,
     parse_fortran_file,
+    process_stencils,
     run_code_generation,
 )
 
@@ -53,7 +52,8 @@ def main(ctx):
 )
 @click.option(
     "--fused/--unfused",
-    "-f/-u", default=True,
+    "-f/-u",
+    default=True,
     help="Add metadata header with information about program.",
 )
 @click.argument(

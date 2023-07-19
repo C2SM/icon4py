@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import sys
 from typing import Any
 
 from icon4pytools.common.logger import setup_logger
@@ -25,14 +24,14 @@ from icon4pytools.liskov.codegen.integration.template import (
     DeclareStatementGenerator,
     EndCreateStatement,
     EndCreateStatementGenerator,
+    EndFusedStencilStatement,
+    EndFusedStencilStatementGenerator,
     EndIfStatement,
     EndIfStatementGenerator,
     EndProfileStatement,
     EndProfileStatementGenerator,
     EndStencilStatement,
     EndStencilStatementGenerator,
-    EndFusedStencilStatement,
-    EndFusedStencilStatementGenerator,
     ImportsStatement,
     ImportsStatementGenerator,
     InsertStatement,
@@ -41,12 +40,12 @@ from icon4pytools.liskov.codegen.integration.template import (
     MetadataStatementGenerator,
     StartCreateStatement,
     StartCreateStatementGenerator,
+    StartFusedStencilStatement,
+    StartFusedStencilStatementGenerator,
     StartProfileStatement,
     StartProfileStatementGenerator,
     StartStencilStatement,
     StartStencilStatementGenerator,
-    StartFusedStencilStatement,
-    StartFusedStencilStatementGenerator,
 )
 from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
@@ -161,10 +160,7 @@ class IntegrationCodeGenerator(CodeGenerator):
         Args:
             profile: A boolean indicating whether to include profiling calls in the generated code.
         """
-
         for stencil in self.interface.StartFusedStencil:
-        # while i < len(self.interface.StartStencil):
-            # stencil = self.interface.StartStencil[i]
             logger.info(f"Generating START FUSED statement for {stencil.name}")
             self._generate(
                 StartFusedStencilStatement,
@@ -206,7 +202,6 @@ class IntegrationCodeGenerator(CodeGenerator):
                 self.interface.EndFusedStencil[i].startln,
                 stencil_data=stencil,
             )
-        # sys.exit(1)
 
     def _generate_imports(self) -> None:
         """Generate f90 code for import statements."""

@@ -76,6 +76,7 @@ class StartProfileData(CodeGenInput):
 class EndProfileData(CodeGenInput):
     ...
 
+
 @dataclass
 class StartBasicStencilData(CodeGenInput):
     name: str
@@ -89,13 +90,16 @@ class StartStencilData(StartBasicStencilData):
     mergecopy: Optional[bool]
     copies: Optional[bool]
 
+
 @dataclass
 class StartFusedStencilData(StartBasicStencilData):
-  ...
+    ...
+
 
 @dataclass
 class EndStencilBaseData(CodeGenInput):
     name: str
+
 
 @dataclass
 class EndStencilData(EndStencilBaseData):
@@ -106,7 +110,7 @@ class EndStencilData(EndStencilBaseData):
 
 @dataclass
 class EndFusedStencilData(EndStencilBaseData):
-  ...
+    ...
 
 
 @dataclass
@@ -119,6 +123,7 @@ class StartDeleteData(CodeGenInput):
 class EndDeleteData(CodeGenInput):
     def __init__(self, endStencil: EndStencilData):
         self.startln = endStencil.startln
+
 
 @dataclass
 class InsertData(CodeGenInput):
