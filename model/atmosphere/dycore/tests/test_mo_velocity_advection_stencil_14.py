@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_mask,
     zero_field,
 )
-from icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.benchmark import StencilTest
 
 
 class TestMoVelocityAdvectionStencil14(StencilTest):

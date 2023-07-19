@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.calculate_nabla2_for_z import (
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.benchmark import StencilTest
 
 
 class TestCalculateNabla2ForZ(StencilTest):

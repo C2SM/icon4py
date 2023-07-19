@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_intp_rbf_rbf_vec_interpol_vertex import 
 )
 from icon4py.model.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.benchmark import StencilTest
 
 
 class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):

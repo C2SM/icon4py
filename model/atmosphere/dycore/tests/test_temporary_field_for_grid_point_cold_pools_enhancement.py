@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.temporary_field_for_grid_point_cold_pools_e
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.benchmark import StencilTest
 
 
 class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):

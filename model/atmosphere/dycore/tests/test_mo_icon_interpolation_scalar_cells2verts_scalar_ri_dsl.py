@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 )
 from icon4py.model.common.dimension import CellDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.benchmark import StencilTest
 
 
 class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
