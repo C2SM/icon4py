@@ -2,17 +2,15 @@
 
 # ICON4Py
 
-## Description
+ICON4Py hosts Python implementations of various components from the ICON climate and weather model. Additionally, it includes icon4pytools, a collection of command-line interfaces (CLIs), and utilities required for the integration of ICON4Py code into the ICON Fortran model. ICON4Py leverages [GT4Py](https://github.com/GridTools/gt4py) to ensure efficient and performance portable implementations of these components.
 
-ICON4Py contains Python (GT4Py) implementations of ICON (inspired) components for weather and climate models as well as `icon4pytools`, a package containing CLIs and utilties needed for the integration of ICON4Py code into the ICON Fortran model.
+## Project Structure
 
-## Project structure
-
-Each directory contains Python packages of ICON components or utility packages that are deployable on their own. As these packages are not available from a package repository (yet), location of dependencies within this repository have to be provided explicitly, e.g. by installing the dependencies first. See [Installation instructions](#installation-instructions).
+The repository is organized into directories, each containing independent Python namespace packages for different ICON components or utility packages. These packages can be installed independently. Since these packages are not available from a package repository (yet), you need to specify the location of dependencies within this repository. This can be done by installing the required dependencies first. Refer to the [Installation instructions](#installation-instructions) below.
 
 ## Installation instructions
 
-We recommend to use [tox](https://tox.wiki/en/latest/) for the automatic installation of all packages in development mode in a single step:
+You can install all project dependencies
 
 ```bash
 # Clone the repository
@@ -83,24 +81,11 @@ After following the installation instructions above using the development requir
 
 ### Code quality checks
 
-[pre-commit](https://pre-commit.com/) is used to run several linting and checking tools. It should always be executed locally before opening a pull request. `pre-commit` can also be installed as a _git hook_ to automatically check the staged changes before committing:
+[pre-commit](https://pre-commit.com/) is used to run several linting and checking tools. It should always be executed locally before opening a pull request. When executing pre-commit locally it is important to specify the path to the respective configuration file of each subpackage as follows:
 
 ```bash
-# Install pre-commit as a git hook and set up all the tools
-pre-commit install --install-hooks
-```
-
-Or it can be executed on demand from the command line:
-
-```bash
-# Check only the staged changes
-pre-commit run
-
-# Check all the files in the repository
-pre-commit run -a
-
-# Run only some of the tools (e.g. mypy)
-pre-commit run -a mypy
+# running precommit for the model.atmosphere.dycore package
+pre-commit run --config model/atmosphere/dycore/.pre-commit-config.yaml --all-files
 ```
 
 ### Testing
@@ -126,3 +111,11 @@ tox -e py310
 ```
 
 The default `tox` environment is configured to generate HTML test coverage reports in `_reports/coverage_html/`.
+
+### Benchmarking
+
+We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) to benchmark the execution time of stencils in icon4py. To disable benchmarking during testing you can use `--benchmark-disable` when invoking `pytest`.
+
+### More Information
+
+For more information please consult the package specific READMEs found in the `model` and `tools` folders.
