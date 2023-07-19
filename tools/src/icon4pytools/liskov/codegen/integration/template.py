@@ -33,6 +33,8 @@ def enclose_in_parentheses(string: str) -> str:
     return f"({string})"
 
 
+
+
 class BoundsFields(eve.Node):
     vlower: str
     vupper: str
@@ -126,26 +128,6 @@ class EndStencilStatement(eve.Node):
         )
 
 
-class EndFusedStencilStatement(eve.Node):
-    stencil_data: StartFusedStencilData
-
-    name: str = eve.datamodels.field(init=False)
-    input_fields: InputFields = eve.datamodels.field(init=False)
-    output_fields: OutputFields = eve.datamodels.field(init=False)
-    tolerance_fields: ToleranceFields = eve.datamodels.field(init=False)
-    bounds_fields: BoundsFields = eve.datamodels.field(init=False)
-
-    def __post_init__(self) -> None:  # type: ignore
-        all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
-        self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
-        self.name = self.stencil_data.name
-        self.input_fields = InputFields(fields=[f for f in all_fields if f.inp])
-        self.output_fields = OutputFields(fields=[f for f in all_fields if f.out])
-        self.tolerance_fields = ToleranceFields(
-            fields=[f for f in all_fields if f.rel_tol or f.abs_tol]
-        )
-
-
 class EndFusedStencilStatementGenerator(TemplatedGenerator):
     EndFusedStencilStatement = as_jinja(
         """
@@ -155,7 +137,11 @@ class EndFusedStencilStatementGenerator(TemplatedGenerator):
             {{ tolerance_fields }}
             {{ bounds_fields }}
 
-        !$ACC END DATA
+        !$ACC EXIT DATA DELETE( &
+        {%- for d in _this_node.copy_declarations %}
+        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
+        {%- endfor %}
+        !$ACC      IF ( i_am_accel_node )
         """
     )
 
@@ -301,6 +287,9 @@ class EndStencilStatementGenerator(TemplatedGenerator):
 class Declaration(Assign):
     ...
 
+class CopyDeclaration(Declaration):
+    lh_index: str
+    rh_index: str
 
 class DeclareStatement(eve.Node):
     declare_data: DeclareData
@@ -322,11 +311,6 @@ class DeclareStatementGenerator(TemplatedGenerator):
         {%- endfor %}
         """
     )
-
-
-class CopyDeclaration(Declaration):
-    lh_index: str
-    rh_index: str
 
 
 class StartStencilStatement(eve.Node):
@@ -407,6 +391,57 @@ class StartFusedStencilStatement(eve.Node):
             rh_index=rh_idx,
         )
 
+class EndFusedStencilStatement(eve.Node):
+    stencil_data: StartFusedStencilData
+
+    name: str = eve.datamodels.field(init=False)
+    input_fields: InputFields = eve.datamodels.field(init=False)
+    output_fields: OutputFields = eve.datamodels.field(init=False)
+    tolerance_fields: ToleranceFields = eve.datamodels.field(init=False)
+    bounds_fields: BoundsFields = eve.datamodels.field(init=False)
+    copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
+
+    def __post_init__(self) -> None:  # type: ignore
+        all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
+        self.copy_declarations = [self.make_copy_declaration(f) for f in all_fields if f.out]
+        self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
+        self.name = self.stencil_data.name
+        self.input_fields = InputFields(fields=[f for f in all_fields if f.inp])
+        self.output_fields = OutputFields(fields=[f for f in all_fields if f.out])
+        self.tolerance_fields = ToleranceFields(
+            fields=[f for f in all_fields if f.rel_tol or f.abs_tol]
+        )
+
+    @staticmethod
+    def make_copy_declaration(f: Field) -> CopyDeclaration:
+        if f.dims is None:
+            raise UndeclaredFieldError(f"{f.variable} was not declared!")
+
+        lh_idx = render_index(f.dims)
+
+        # get length of association index
+        association_dims = get_array_dims(f.association).split(",")
+        n_association_dims = len(association_dims)
+
+        offset = len(",".join(association_dims)) + 2
+        truncated_association = f.association[:-offset]
+
+        if n_association_dims > f.dims:
+            rh_idx = f"{lh_idx},{association_dims[-1]}"
+        else:
+            rh_idx = f"{lh_idx}"
+
+        lh_idx = enclose_in_parentheses(lh_idx)
+        rh_idx = enclose_in_parentheses(rh_idx)
+
+        return CopyDeclaration(
+            variable=f.variable,
+            association=truncated_association,
+            lh_index=lh_idx,
+            rh_index=rh_idx,
+        )
+
+
 
 def render_index(n: int) -> str:
     """
@@ -455,14 +490,14 @@ class StartFusedStencilStatementGenerator(TemplatedGenerator):
     StartFusedStencilStatement = as_jinja(
         """
 
-        !$ACC DATA CREATE( &
+        !$ACC ENTER DATA CREATE( &
         {%- for d in _this_node.copy_declarations %}
         !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
         {%- endfor %}
         !$ACC      IF ( i_am_accel_node )
 
         #ifdef __DSL_VERIFY
-        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
+        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
