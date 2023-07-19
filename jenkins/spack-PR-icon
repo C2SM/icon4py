@@ -22,6 +22,7 @@ pipeline {
                             sh """
                             git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/C2SM/spack-c2sm.git
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b ci_cross_repo git@github.com:C2SM/icon-exclaim.git
+                            git clone . icon4py
                             """
                         }
                     }
