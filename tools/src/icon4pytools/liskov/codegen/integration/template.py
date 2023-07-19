@@ -22,17 +22,15 @@ from gt4py.eve.codegen import TemplatedGenerator
 from icon4pytools.liskov.codegen.integration.exceptions import UndeclaredFieldError
 from icon4pytools.liskov.codegen.integration.interface import (
     DeclareData,
+    StartBasicStencilData,
     StartFusedStencilData,
     StartStencilData,
-    StartBasicStencilData,
 )
 from icon4pytools.liskov.external.metadata import CodeMetadata
 
 
 def enclose_in_parentheses(string: str) -> str:
     return f"({string})"
-
-
 
 
 class BoundsFields(eve.Node):
@@ -287,9 +285,11 @@ class EndStencilStatementGenerator(TemplatedGenerator):
 class Declaration(Assign):
     ...
 
+
 class CopyDeclaration(Declaration):
     lh_index: str
     rh_index: str
+
 
 class DeclareStatement(eve.Node):
     declare_data: DeclareData
@@ -391,6 +391,7 @@ class StartFusedStencilStatement(eve.Node):
             rh_index=rh_idx,
         )
 
+
 class EndFusedStencilStatement(eve.Node):
     stencil_data: StartFusedStencilData
 
@@ -440,7 +441,6 @@ class EndFusedStencilStatement(eve.Node):
             lh_index=lh_idx,
             rh_index=rh_idx,
         )
-
 
 
 def render_index(n: int) -> str:
