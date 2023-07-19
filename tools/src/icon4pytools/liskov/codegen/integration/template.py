@@ -512,6 +512,19 @@ class EndCreateStatementGenerator(TemplatedGenerator):
     EndCreateStatement = as_jinja("!$ACC END DATA")
 
 
+class StartDeleteStatement(eve.Node):
+    ...
+
+class StartDeleteStatementGenerator(TemplatedGenerator):
+    StartDeleteStatement = as_jinja("#ifdef __DSL_VERIFY")
+
+
+class EndDeleteStatement(eve.Node):
+    ...
+
+class EndDeleteStatementGenerator(TemplatedGenerator):
+    EndDeleteStatement = as_jinja("#endif")
+
 class EndIfStatement(eve.Node):
     ...
 
