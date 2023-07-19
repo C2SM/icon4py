@@ -200,6 +200,9 @@ class IconGridSavePoint(IconSavepoint):
     def v2c(self):
         return self._get_connectivity_array("v2c")
 
+    def c2v(self):
+        return self._get_connectivity_array("c2v")
+
     def nrdmax(self):
         return self._get_connectivity_array("nrdmax")
 

@@ -117,7 +117,7 @@ class IconGrid:
         return self.config.num_edges
 
     @deprecated(
-        "use get_start_index and get_end_index instead, - should be removed after merge"
+        "use get_start_index and get_end_index instead, - should be removed after merge of solve_nonhydro"
     )
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int

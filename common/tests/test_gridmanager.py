@@ -363,7 +363,8 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 
 # e2c2e (e2c2eo) - diamond: serial, simple_mesh, grid file????
-@pytest.mark.skip(" TODO @magdalena: does this array exist in grid file?")
+@pytest.mark.skip(" TODO (Magdalena): does this array exist in grid file?")
+# TODO (Magdalena) construct from adjacent_cell_of_edge and then edge_of_cell
 @pytest.mark.datatest
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
@@ -386,18 +387,19 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 
 @pytest.mark.xfail
+@pytest.mark.datatest
 def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     gm = init_grid_manager(r04b09_dsl_gridfile)
     num_edges = gm.get_size(EdgeDim)
     # the "far" (adjacent to edge normal ) is not there. why?
-    # despite that ordering is different
+    # despite that: ordering is different
     assert np.allclose(
         gm.get_e2c2v_connectivity().table, grid_savepoint.e2c2v()[0:num_edges, :]
     )
 
 
-@pytest.mark.skip("TODO @magdalena: add this connectivity to savepoint")
+@pytest.mark.datatest
 def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     gm = init_grid_manager(r04b09_dsl_gridfile)
@@ -476,7 +478,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
 )
 def test_get_start_indices(r04b09_dsl_gridfile, dim, marker, index):
     gm = init_grid_manager(r04b09_dsl_gridfile)
-    assert gm.get_start_index(dim, marker) == index
+    assert gm.get_grid().get_start_index(dim, marker) == index
 
 
 @pytest.mark.parametrize(
@@ -503,4 +505,4 @@ def test_get_start_indices(r04b09_dsl_gridfile, dim, marker, index):
 )
 def test_get_start_indices(r04b09_dsl_gridfile, dim, marker, index):  # noqa: F811
     gm = init_grid_manager(r04b09_dsl_gridfile)
-    assert gm.get_end_index(dim, marker) == index
+    assert gm.get_grid().get_end_index(dim, marker) == index
