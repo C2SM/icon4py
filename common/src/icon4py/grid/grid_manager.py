@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import dataclasses
 import logging
-from abc import ABC
 from enum import Enum
 from typing import Optional
 from uuid import UUID
@@ -186,7 +185,7 @@ class IconGridError(RuntimeError):
     pass
 
 
-class IndexTransformation():
+class IndexTransformation:
     def get_offset_for_index_field(
         self,
         array: np.ndarray,

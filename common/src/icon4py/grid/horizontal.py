@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from abc import ABC
 from dataclasses import dataclass
 from typing import Final
 
@@ -142,36 +141,6 @@ class HorizontalMarkerIndex:
     @classmethod
     def end(cls, dim: Dimension) -> int:
         return cls._end[dim]
-
-
-class IconHorizontalDomainZone(ABC):
-    def __init__(self, dim: Dimension):
-        self._marker = HorizontalMarkerIndex.nudging(dim)
-
-    def __call__(self, *args, **kwargs):
-        return self._marker
-
-    def __add__(self, other: int):
-        return self._marker + other
-
-
-class Nudging(IconHorizontalDomainZone):
-    def __init__(self, dim: Dimension):
-        super().__init__(dim)
-
-
-class LateralBoundary(IconHorizontalDomainZone):
-    def __init__(self, dim: Dimension):
-        super().__init__(dim)
-
-
-class Interior(IconHorizontalDomainZone):
-    def __init__(self, dim: Dimension):
-        super().__init__(dim)
-
-
-def nudging(dim: CellDim, offset=0):
-    return HorizontalMarkerIndex.nudging(dim) + offset
 
 
 @dataclass(frozen=True)
