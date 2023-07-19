@@ -24,6 +24,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     DeclareData,
     StartFusedStencilData,
     StartStencilData,
+    StartBasicStencilData,
 )
 from icon4pytools.liskov.external.metadata import CodeMetadata
 
@@ -473,7 +474,7 @@ class StartFusedStencilStatementGenerator(TemplatedGenerator):
 
 
 class ImportsStatement(eve.Node):
-    stencils: list[StartStencilData]
+    stencils: list[StartBasicStencilData]
     stencil_names: list[str] = eve.datamodels.field(init=False)
 
     def __post_init__(self) -> None:  # type: ignore

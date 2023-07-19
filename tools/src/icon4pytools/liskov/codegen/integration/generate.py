@@ -227,7 +227,7 @@ class IntegrationCodeGenerator(CodeGenerator):
             ImportsStatement,
             ImportsStatementGenerator,
             self.interface.Imports.startln,
-            stencils=self.interface.StartStencil,
+            stencils=self.interface.StartStencil+self.interface.StartFusedStencil,
         )
 
     def _generate_create(self) -> None:
