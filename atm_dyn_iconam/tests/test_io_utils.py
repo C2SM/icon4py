@@ -14,14 +14,14 @@
 
 import pytest
 
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import VerticalModelParams
 from icon4py.driver.io_utils import (
     SerializationType,
     read_geometry_fields,
     read_icon_grid,
     read_static_fields,
 )
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.vertical import VerticalModelParams
 
 
 @pytest.mark.parametrize(

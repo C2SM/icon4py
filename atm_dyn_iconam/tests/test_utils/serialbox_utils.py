@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+from typing import Optional
 
 import numpy as np
 import serialbox as ser
@@ -35,18 +36,14 @@ from icon4py.common.dimension import (
     VertexDim,
 )
 from icon4py.diffusion.diffusion import VectorTuple
-from icon4py.diffusion.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalMeshSize,
-)
-from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
     InterpolationState,
     MetricState,
     PrognosticState,
 )
+from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
+from icon4py.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
 
 from .helpers import as_1D_sparse_field
 
@@ -151,7 +148,7 @@ class IconGridSavePoint(IconSavepoint):
     def print_connectivity_info(self, name: str, ar: np.ndarray):
         self.log.debug(f" connectivity {name} {ar.shape}")
 
-    def refin_ctrl(self, dim: Dimension):
+    def refin_ctrl(self, dim: Dimension) -> Optional[np.ndarray]:
         if dim == CellDim:
             return self.serializer.read("c_refin_ctl", self.savepoint)
         elif dim == EdgeDim:
@@ -161,35 +158,53 @@ class IconGridSavePoint(IconSavepoint):
         else:
             return None
 
-    def c2e(self):
-        return self._get_connectiviy_array("c2e")
+    def num(self, dim: Dimension) -> Optional[int]:
+        if dim == CellDim:
+            return int(self.serializer.read("num_cells", self.savepoint)[0])
+        elif dim == EdgeDim:
+            return int(self.serializer.read("num_edges", self.savepoint)[0])
+        elif dim == VertexDim:
+            return int(self.serializer.read("num_vert", self.savepoint)[0])
+        elif dim == KDim:
+            return int(self.serializer.read("nlev", self.savepoint)[0])
+        else:
+            return None
 
-    def _get_connectiviy_array(self, name: str):
+    def c2e(self):
+        return self._get_connectivity_array("c2e")
+
+    def _get_connectivity_array(self, name: str):
         connectivity = self.serializer.read(name, self.savepoint) - 1
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
     def c2e2c(self):
-        return self._get_connectiviy_array("c2e2c")
+        return self._get_connectivity_array("c2e2c")
 
     def e2c(self):
-        return self._get_connectiviy_array("e2c")
+        return self._get_connectivity_array("e2c")
 
     def e2v(self):
         # array "e2v" is actually e2c2v
-        v_ = self._get_connectiviy_array("e2v")[:, 0:2]
-        self.log.debug(f"real e2v {v_.shape}")
+        v_ = self._get_connectivity_array("e2v")[:, 0:2]
+        print(f"real e2v {v_.shape}")
         return v_
 
     def e2c2v(self):
-        # array "e2v" is actually e2c2v
-        return self._get_connectiviy_array("e2v")
+        # array "e2v" is actually e2c2v, that is hexagon or pentagon
+        return self._get_connectivity_array("e2v")
 
     def v2e(self):
-        return self._get_connectiviy_array("v2e")
+        return self._get_connectivity_array("v2e")
+
+    def v2c(self):
+        return self._get_connectivity_array("v2c")
+
+    def c2v(self):
+        return self._get_connectivity_array("c2v")
 
     def nrdmax(self):
-        return self._get_connectiviy_array("nrdmax")
+        return self._get_connectivity_array("nrdmax")
 
     def construct_icon_grid(self) -> IconGrid:
         sp_meta = self.get_metadata(
@@ -201,13 +216,13 @@ class IconGridSavePoint(IconSavepoint):
         vertex_ends = self.vertex_end_index()
         edge_starts = self.edge_start_index()
         edge_ends = self.edge_end_index()
-        config = MeshConfig(
-            HorizontalMeshSize(
+        config = GridConfig(
+            horizontal_config=HorizontalGridSize(
                 num_vertices=sp_meta["nproma"],  # or rather "num_vert"
                 num_cells=sp_meta["nproma"],  # or rather "num_cells"
                 num_edges=sp_meta["nproma"],  # or rather "num_edges"
             ),
-            VerticalMeshConfig(num_lev=sp_meta["nlev"]),
+            vertical_config=VerticalGridSize(num_lev=sp_meta["nlev"]),
         )
         c2e2c = self.c2e2c()
         c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))

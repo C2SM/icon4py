@@ -16,7 +16,7 @@ import math
 import numpy as np
 import pytest
 
-from icon4py.diffusion.icon_grid import VerticalModelParams
+from icon4py.grid.vertical import VerticalModelParams
 
 
 @pytest.mark.parametrize(

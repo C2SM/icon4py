@@ -17,14 +17,15 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
     InterpolationState,
     MetricState,
     PrognosticState,
 )
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
