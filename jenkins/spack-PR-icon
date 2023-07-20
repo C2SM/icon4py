@@ -21,7 +21,7 @@ triggerPhrase.each {
 }
 triggerPhrase.each {
     if(it.contains("spack${repo_identifier}")) {
-        (icon_fork, icon_branch) = parseTriggerPhrase(it)
+        (spack_fork, spack_branch) = parseTriggerPhrase(it)
         spack_default = false
     }
 }
