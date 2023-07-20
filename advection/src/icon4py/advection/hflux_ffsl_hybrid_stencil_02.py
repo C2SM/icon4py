@@ -19,25 +19,25 @@ from icon4py.common.dimension import EdgeDim, KDim
 
 @field_operator
 def _hflux_ffsl_hybrid_stencil_02(
-    p_out_e: Field[[EdgeDim, KDim], float],
+    p_out_e_hybrid_2: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
     z_dreg_area: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
 
-    p_out_e = p_mass_flx_e * p_out_e / z_dreg_area
+    p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
 
-    return p_out_e
+    return p_out_e_hybrid_2
 
 
 @program
 def hflux_ffsl_hybrid_stencil_02(
-    p_out_e: Field[[EdgeDim, KDim], float],
+    p_out_e_hybrid_2: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
     z_dreg_area: Field[[EdgeDim, KDim], float],
 ):
     _hflux_ffsl_hybrid_stencil_02(
-        p_out_e,
+        p_out_e_hybrid_2,
         p_mass_flx_e,
         z_dreg_area,
-        out=p_out_e,
+        out=p_out_e_hybrid_2,
     )
