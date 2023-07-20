@@ -2,7 +2,7 @@
 
 ## Description
 
-Utilities shared by other ICON4Py components.
+Utilities shared by several ICON4Py components.
 
 ## Installation instructions
 

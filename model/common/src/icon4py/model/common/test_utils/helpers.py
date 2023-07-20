@@ -111,6 +111,7 @@ def flatten_first_two_dims(
     newarray = np.asarray(field).reshape(new_shape)
     return it_embedded.np_as_located_field(*dims)(newarray)
 
+
 def _test_validation(self, mesh, backend, input_data):
     reference_outputs = self.reference(mesh, **{k: np.array(v) for k, v in input_data.items()})
     self.PROGRAM.with_backend(backend)(

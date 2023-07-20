@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.apply_nabla2_and_nabla4_to_vn import (
     apply_nabla2_and_nabla4_to_vn,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, StencilTest
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 class TestApplyNabla2AndNabla4ToVn(StencilTest):

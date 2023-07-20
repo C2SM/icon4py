@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, SimpleMesh
+from icon4py.model.common.test_utils.helpers import SimpleMesh, random_field
 
 
 def mo_solve_nonhydro_stencil_10_numpy(

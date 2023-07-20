@@ -19,12 +19,11 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
     random_field,
     random_mask,
     zero_field,
-    StencilTest
 )
-
 
 
 class TestMoVelocityAdvectionStencil14(StencilTest):
