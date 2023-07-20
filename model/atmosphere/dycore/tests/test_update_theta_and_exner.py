@@ -18,8 +18,7 @@ from icon4py.model.atmosphere.dycore.update_theta_and_exner import (
     update_theta_and_exner,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.benchmark import StencilTest
+from icon4py.model.common.test_utils.helpers import random_field, StencilTest
 
 
 class TestUpdateThetaAndExner(StencilTest):

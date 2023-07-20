@@ -11,12 +11,20 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import ClassVar
 from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
+import pytest
 from gt4py.next import common as gt_common
+from gt4py.next.ffront.decorator import Program
 from gt4py.next.iterator import embedded as it_embedded
+
+try:
+    import pytest_benchmark
+except ModuleNotFoundError:
+    pytest_benchmark = None
 
 from .simple_mesh import SimpleMesh
 
@@ -102,3 +110,65 @@ def flatten_first_two_dims(
     new_shape = flattened_shape + old_shape[2:]
     newarray = np.asarray(field).reshape(new_shape)
     return it_embedded.np_as_located_field(*dims)(newarray)
+
+def _test_validation(self, mesh, backend, input_data):
+    reference_outputs = self.reference(mesh, **{k: np.array(v) for k, v in input_data.items()})
+    self.PROGRAM.with_backend(backend)(
+        **input_data,
+        offset_provider=mesh.get_offset_provider(),
+    )
+    for name in self.OUTPUTS:
+        assert np.allclose(
+            input_data[name], reference_outputs[name]
+        ), f"Validation failed for '{name}'"
+
+
+if pytest_benchmark:
+
+    def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
+        if pytestconfig.getoption(
+            "--benchmark-disable"
+        ):  # skipping as otherwise program calls are duplicated in tests.
+            pytest.skip("Test skipped due to 'benchmark-disable' option.")
+        else:
+            benchmark(
+                self.PROGRAM.with_backend(backend),
+                **input_data,
+                offset_provider=mesh.get_offset_provider(),
+            )
+
+else:
+
+    def _bench_execution(self, pytestconfig):
+        pytest.skip("Test skipped as `pytest-benchmark` is not installed.")
+
+
+class StencilTest:
+    """
+    Base class to be used for testing stencils.
+
+    Example (pseudo-code):
+
+        >>> class TestMultiplyByTwo(StencilTest): # doctest: +SKIP
+        ...    PROGRAM = multiply_by_two  # noqa: F821
+        ...    OUTPUTS = ("some_output",)
+        ...
+        ...    @pytest.fixture
+        ...    def input_data(self):
+        ...        return {"some_input": ..., "some_output": ...}
+        ...
+        ...    @staticmethod
+        ...    def reference(some_input, **kwargs):
+        ...        return dict(some_output=np.asarray(some_input)*2)
+    """
+
+    PROGRAM: ClassVar[Program]
+    OUTPUTS: ClassVar[tuple[str, ...]]
+
+    def __init_subclass__(cls, **kwargs):
+        # Add two methods for verification and benchmarking. In order to have names that
+        # reflect the name of the test we do this dynamically here instead of using regular
+        # inheritance.
+        super().__init_subclass__(**kwargs)
+        setattr(cls, f"test_{cls.__name__}", _test_validation)
+        setattr(cls, f"bench_{cls.__name__}", _bench_execution)
