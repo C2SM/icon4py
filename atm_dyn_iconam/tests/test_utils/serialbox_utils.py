@@ -827,6 +827,9 @@ class IconExitSavepoint(IconSavepoint):
     def z_v_grad_w(self):
         return self._get_field("x_z_v_grad_w", EdgeDim, KDim)
 
+    def z_w_v(self):
+        return self._get_field("x_z_w_v", VertexDim, KDim)
+
     def z_w_concorr_me(self):
         return self._get_field("x_z_w_concorr_me", EdgeDim, KDim)
 

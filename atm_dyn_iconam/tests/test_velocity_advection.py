@@ -266,8 +266,8 @@ def test_velocity_predictor_step(
     )
     # stencil 19 level 0 not verifying
     assert np.allclose(
-        np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558,1:65],
-        np.asarray(diagnostic_state.ddt_vn_apc_pc)[5387:31558,1:65],
+        np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558,0:65],
+        np.asarray(diagnostic_state.ddt_vn_apc_pc)[5387:31558,0:65],
     )
 
 
@@ -417,7 +417,7 @@ def test_velocity_corrector_step(
     )
     # stencil 19 level 0 not verifying
     assert np.allclose(
-        np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558, 1:65],
-        np.asarray(diagnostic_state.ddt_vn_apc_pc)[5387:31558, 1:65],
+        np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558, 0:65],
+        np.asarray(diagnostic_state.ddt_vn_apc_pc)[5387:31558, 0:65],
     )
 

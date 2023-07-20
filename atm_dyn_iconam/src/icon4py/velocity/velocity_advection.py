@@ -105,7 +105,7 @@ class VelocityAdvection:
         return self._initialized
 
     def _allocate_local_fields(self):
-        self.z_w_v = _allocate(VertexDim, KDim, mesh=self.grid)
+        self.z_w_v = _allocate(VertexDim, KDim, is_halfdim=True, mesh=self.grid)
         self.z_v_grad_w = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_ekinh = _allocate(CellDim, KDim, mesh=self.grid)
         self.z_w_concorr_mc = _allocate(CellDim, KDim, mesh=self.grid)
@@ -189,7 +189,7 @@ class VelocityAdvection:
                 p_vert_out=self.z_w_v,
                 horizontal_start=indices_0_1,
                 horizontal_end=indices_0_2,
-                vertical_start=1,
+                vertical_start=0,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={
                     "V2C": self.grid.get_v2c_connectivity(),
@@ -202,7 +202,7 @@ class VelocityAdvection:
             rot_vec=self.zeta,
             horizontal_start=indices_0_1,
             horizontal_end=indices_0_2,
-            vertical_start=1,
+            vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={
                 "V2E": self.grid.get_v2e_connectivity(),
@@ -531,7 +531,7 @@ class VelocityAdvection:
                 p_vert_out=self.z_w_v,
                 horizontal_start=indices_0_1,
                 horizontal_end=indices_0_2,
-                vertical_start=1,
+                vertical_start=0,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={
                     "V2C": self.grid.get_v2c_connectivity(),
@@ -544,7 +544,7 @@ class VelocityAdvection:
             rot_vec=self.zeta,
             horizontal_start=indices_0_1,
             horizontal_end=indices_0_2,
-            vertical_start=1,
+            vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={
                 "V2E": self.grid.get_v2e_connectivity(),
