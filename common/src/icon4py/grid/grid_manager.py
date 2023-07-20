@@ -205,6 +205,12 @@ class ToGt4PyTransformation(IndexTransformation):
 
 
 class GridManager:
+    """
+    Read ICON grid file and set up  IconGrid
+
+    Reads an ICON grid file and extracts connectivity arrays and start-, end-indices for horizontal
+    domain boundaries. Provides an IconGrid instance for further usage.
+    """
     def __init__(
         self,
         transformation: IndexTransformation,
@@ -215,17 +221,16 @@ class GridManager:
         self._transformation = transformation
         self._config = config
         self._grid: Optional[IconGrid] = None
-        self._file_names = grid_file
+        self._file_name = grid_file
 
-    def init(self):
-        dataset = self._read_gridfile(self._file_names)
-        _, grid = self._read_grid(dataset)
-
+    def __call__(self):
+        dataset = self._read_gridfile(self._file_name)
+        _, grid = self._constuct_grid(dataset)
         self._grid = grid
 
     def _read_gridfile(self, fname: str) -> Dataset:
         try:
-            dataset = Dataset(self._file_names, "r", format="NETCDF4")
+            dataset = Dataset(self._file_name, "r", format="NETCDF4")
             self._log.debug(dataset)
             return dataset
         except FileNotFoundError:
@@ -304,9 +309,9 @@ class GridManager:
             self._log.error(msg)
             raise IconGridError(msg)
 
-    def _read_grid(self, dataset: Dataset) -> tuple[UUID, IconGrid]:
+    def _constuct_grid(self, dataset: Dataset) -> tuple[UUID, IconGrid]:
         grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
-        return grid_id, self.from_grid_dataset(dataset)
+        return grid_id, self._from_grid_dataset(dataset)
 
     def get_size(self, dim: Dimension):
         if dim == VertexDim:
@@ -332,7 +337,7 @@ class GridManager:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
-    def from_grid_dataset(self, dataset: Dataset) -> IconGrid:
+    def _from_grid_dataset(self, dataset: Dataset) -> IconGrid:
         reader = GridFile(dataset)
         num_cells = reader.dimension(GridFile.DimensionName.CELL_NAME)
         num_edges = reader.dimension(GridFile.DimensionName.EDGE_NAME)

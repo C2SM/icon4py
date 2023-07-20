@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 
 # TODO(Magdalena): for preliminary version of the driver we need serialbox data which is in
 #  testutils, since that is no proper package we need to import it by hand here.
-#  Hence: Turn testutils into a package again?
+#  remove once there is the testutils package again.
 def import_testutils():
     testutils = (
         Path(__file__).parent.__str__() + "/../../../tests/test_utils/__init__.py"
@@ -50,7 +50,7 @@ def import_testutils():
 
 helpers = import_testutils()
 
-from helpers import serialbox_utils as sb  # noqa
+from helpers import serialbox_utils as sb   # noqa F401
 
 
 class SerializationType(str, Enum):

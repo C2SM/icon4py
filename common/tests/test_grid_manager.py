@@ -58,7 +58,6 @@ def simple_mesh_data():
     dataset.createDimension(GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=mesh.n_e2c2e)
     dataset.createDimension(GridFile.DimensionName.MAX_CHILD_DOMAINS, size=1)
     # add dummy values for the grf dimensions
-    # TODO @magdalena fix to something more useful?
     dataset.createDimension(GridFile.DimensionName.CELL_GRF, size=14)
     dataset.createDimension(GridFile.DimensionName.EDGE_GRF, size=24)
     dataset.createDimension(GridFile.DimensionName.VERTEX_GRF, size=13)
@@ -248,10 +247,10 @@ def test_grid_parser_index_fields(simple_mesh_data, caplog):
     assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2C), mesh.v2c)
 
 
-# TODO @magdalena add test cases for
+# TODO @magdalena add test cases for hexagon vertices v2e2v
 # v2e2v: grid,???
 
-# v2e: serial, simple, grid
+# v2e: exists in serial, simple, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
@@ -266,7 +265,7 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert np.allclose(grid.get_v2e_connectivity().table, seralized_v2e)
 
 
-# v2c: serial, simple, grid
+# v2c: exists in serial, simple, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
@@ -310,7 +309,7 @@ def reset_invalid_index(index_array: np.ndarray):
         index_array[i, max(index) + 1 :] = GridFile.INVALID_INDEX
 
 
-# e2v: serial, simple, grid
+# e2v: exists in serial, simple, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
@@ -328,7 +327,7 @@ def has_invalid_index(ar: np.ndarray):
     return np.any(np.where(ar == GridFile.INVALID_INDEX))
 
 
-# e2c :serial, simple, grid
+# e2c : exists in serial, simple, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
@@ -357,8 +356,8 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert np.allclose(grid.get_c2e_connectivity().table, serialized_c2e)
 
 
-# e2c2e (e2c2eo) - diamond: serial, simple_mesh, grid file????
-@pytest.mark.skip(" TODO (Magdalena): does this array exist in grid file?")
+# e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
+@pytest.mark.skip("does not directly exist in the grid file, needs to be constructed")
 # TODO (Magdalena) construct from adjacent_cell_of_edge and then edge_of_cell
 @pytest.mark.datatest
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
@@ -371,7 +370,7 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert np.allclose(grid.get_e2c2e_connectivity().table, serialized_e2c2e)
 
 
-# c2e2c: serial, simple_mesh, grid
+# c2e2c: exists in  serial, simple_mesh, grid
 @pytest.mark.datatest
 def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
@@ -405,7 +404,7 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 def init_grid_manager(fname):
     gm = GridManager(ToGt4PyTransformation(), fname, VerticalGridSize(65))
-    gm.init()
+    gm()
     return gm
 
 
@@ -415,7 +414,7 @@ def test_grid_manager_getsize(simple_mesh_data, simple_mesh_path, dim, size, cap
     gm = GridManager(
         IndexTransformation(), simple_mesh_path, VerticalGridSize(num_lev=80)
     )
-    gm.init()
+    gm()
     assert size == gm.get_size(dim)
 
 
@@ -426,7 +425,7 @@ def test_grid_manager_diamond_offset(simple_mesh_path):
         simple_mesh_path,
         VerticalGridSize(num_lev=mesh.k_level),
     )
-    gm.init()
+    gm()
     grid = gm.get_grid()
     assert np.allclose(
         np.sort(grid.get_e2c2v_connectivity().table, 1), np.sort(mesh.diamond_arr, 1)
@@ -437,7 +436,7 @@ def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(SystemExit) as error:
         gm = GridManager(IndexTransformation(), fname, VerticalGridSize(num_lev=80))
-        gm.init()
+        gm()
         assert error.type == SystemExit
         assert error.value == 1
 

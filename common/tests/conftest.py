@@ -14,7 +14,7 @@ import importlib
 import sys
 from pathlib import Path
 
-
+# TODO(Magdalena) remove once test utils is a proper package
 def import_testutils():
     testutils = (
         Path(__file__).parent.__str__()
