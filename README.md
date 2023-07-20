@@ -10,7 +10,7 @@ The repository is organized into directories, each containing independent Python
 
 ## Installation instructions
 
-You can install all project dependencies
+We recommend to use [tox](https://tox.wiki/en/latest/) for the automatic installation of all packages in development mode in a single step:
 
 ```bash
 # Clone the repository
@@ -47,7 +47,7 @@ pip install --src _external_src -r requirements-dev.txt
 pytest -v
 ```
 
-The `--src _external_src` option tells `pip` to use a specific folder as base path for checked out sources, which is very convenient for development tasks involving changes in external dependencies like `gt4py`. For convenience, `./_external_src` has been already added to the repository `.gitignore`.
+The `--src _external_src` option tells `pip` to use a specific folder as the base path for checked out sources, which is very convenient for development tasks involving changes in external dependencies like `gt4py`. For convenience, `./_external_src` has been already added to the repository `.gitignore`.
 
 ### Installation of specific subpackages
 

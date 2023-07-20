@@ -21,4 +21,4 @@ cd model/atmosphere/dycore
 pip install -r requirements-dev.txt
 ```
 
-**Note**: For detailed information specific to each component, please refer to the README in their respective subfolders.
+**Note**: For more information specific to each component, please refer to the README in their respective subfolders.
