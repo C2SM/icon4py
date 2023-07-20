@@ -81,11 +81,14 @@ After following the installation instructions above using the development requir
 
 ### Code quality checks
 
-[pre-commit](https://pre-commit.com/) is used to run several linting and checking tools. It should always be executed locally before opening a pull request. When executing pre-commit locally it is important to specify the path to the respective configuration file of each subpackage as follows:
+[pre-commit](https://pre-commit.com/) is used to run several linting and checking tools. It should always be executed locally before opening a pull request. When executing pre-commit locally you can either run it for the `model` or `tools` folder:
+
+For example to run code checks on all components in `icon4py.model` you can do:
 
 ```bash
-# running precommit for the model.atmosphere.dycore package
-pre-commit run --config model/atmosphere/dycore/.pre-commit-config.yaml --all-files
+# running precommit for all components in model
+cd model/
+pre-commit run --all-files
 ```
 
 ### Testing
