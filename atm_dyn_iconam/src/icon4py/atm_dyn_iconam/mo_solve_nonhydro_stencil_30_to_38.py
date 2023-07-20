@@ -27,6 +27,12 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_32 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_34 import (
     _mo_solve_nonhydro_stencil_34,
 )
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_35 import (
+    _mo_solve_nonhydro_stencil_35,
+)
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_36 import (
+    _mo_solve_nonhydro_stencil_36,
+)
 from icon4py.common.dimension import E2C2EDim, E2C2EODim, EdgeDim, KDim
 
 
@@ -43,8 +49,15 @@ def _mo_solve_nonhydro_stencil_30_to_38(
     z_theta_v_e: Field[[EdgeDim, KDim], float],
     vn_traj: Field[[EdgeDim, KDim], float],
     mass_flx_me: Field[[EdgeDim, KDim], float],
+    ddxn_z_full: Field[[EdgeDim, KDim], float],
+    ddxt_z_full: Field[[EdgeDim, KDim], float],
+    wgtfac_e: Field[[EdgeDim, KDim], float],
     r_nsubsteps: float,
 ) -> tuple[
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
@@ -80,7 +93,26 @@ def _mo_solve_nonhydro_stencil_30_to_38(
         )
     )
 
-    return z_vn_avg, z_graddiv_vn, vt, mass_fl_e, z_theta_v_fl_e, vn_traj, mass_flx_me
+    z_w_concorr_me = _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt)
+    vn_ie, z_vt_ie, z_kin_hor_e = _mo_solve_nonhydro_stencil_36(
+        wgtfac_e,
+        vn,
+        vt,
+    )
+
+    return (
+        z_vn_avg,
+        z_graddiv_vn,
+        vt,
+        mass_fl_e,
+        z_theta_v_fl_e,
+        vn_traj,
+        mass_flx_me,
+        z_w_concorr_me,
+        vn_ie,
+        z_vt_ie,
+        z_kin_hor_e,
+    )
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -94,6 +126,9 @@ def mo_solve_nonhydro_stencil_30_to_38(
     z_rho_e: Field[[EdgeDim, KDim], float],
     ddqz_z_full_e: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
+    ddxn_z_full: Field[[EdgeDim, KDim], float],
+    ddxt_z_full: Field[[EdgeDim, KDim], float],
+    wgtfac_e: Field[[EdgeDim, KDim], float],
     z_vn_avg: Field[[EdgeDim, KDim], float],
     z_graddiv_vn: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
@@ -101,6 +136,10 @@ def mo_solve_nonhydro_stencil_30_to_38(
     z_theta_v_fl_e: Field[[EdgeDim, KDim], float],
     vn_traj: Field[[EdgeDim, KDim], float],
     mass_flx_me: Field[[EdgeDim, KDim], float],
+    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    vn_ie: Field[[EdgeDim, KDim], float],
+    z_vt_ie: Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], float],
     r_nsubsteps: float,
 ):
     _mo_solve_nonhydro_stencil_30_to_38(
@@ -115,6 +154,9 @@ def mo_solve_nonhydro_stencil_30_to_38(
         z_theta_v_e,
         vn_traj,
         mass_flx_me,
+        ddxn_z_full,
+        ddxt_z_full,
+        wgtfac_e,
         r_nsubsteps,
         out=(
             z_vn_avg,
@@ -124,5 +166,9 @@ def mo_solve_nonhydro_stencil_30_to_38(
             z_theta_v_fl_e,
             vn_traj,
             mass_flx_me,
+            z_w_concorr_me,
+            vn_ie,
+            z_vt_ie,
+            z_kin_hor_e,
         ),
     )

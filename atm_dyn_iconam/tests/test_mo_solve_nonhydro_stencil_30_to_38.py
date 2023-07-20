@@ -24,6 +24,10 @@ from . import (
     test_mo_solve_nonhydro_stencil_31,
     test_mo_solve_nonhydro_stencil_32,
     test_mo_solve_nonhydro_stencil_34,
+    test_mo_solve_nonhydro_stencil_35,
+    test_mo_solve_nonhydro_stencil_36,
+    test_mo_solve_nonhydro_stencil_37,
+    test_mo_solve_nonhydro_stencil_38,
 )
 from .test_utils.helpers import random_field, zero_field
 from .test_utils.stencil_test import StencilTest
@@ -49,6 +53,10 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
         "z_theta_v_fl_e",
         "vn_traj",
         "mass_flx_me",
+        "z_w_concorr_me",
+        "vn_ie",
+        "z_vt_ie",
+        "z_kin_hor_e",
     )
 
     @staticmethod
@@ -68,7 +76,10 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
         z_graddiv_vn: np.array,
         mass_fl_e: np.array,
         vn_traj: np.array,
+        ddxn_z_full: np.array,
+        ddxt_z_full: np.array,
         mass_flx_me: np.array,
+        wgtfac_e: np.array,
         r_nsubsteps: float,
         **kwargs,
     ) -> dict:
@@ -104,6 +115,20 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
             mesh, z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps
         ).values()
 
+        z_w_concorr_me = (
+            test_mo_solve_nonhydro_stencil_35.TestMoSolveNonhydroStencil35.reference(
+                mesh, vn, ddxn_z_full, ddxt_z_full, vt
+            )["z_w_concorr_me"]
+        )
+
+        (
+            vn_ie,
+            z_vt_ie,
+            z_kin_hor_e,
+        ) = test_mo_solve_nonhydro_stencil_36.TestMoSolveNonhydroStencil36.reference(
+            mesh, wgtfac_e, vn, vt
+        ).values()
+
         return dict(
             z_vn_avg=z_vn_avg,
             z_graddiv_vn=z_graddiv_vn,
@@ -112,6 +137,10 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
             z_theta_v_fl_e=z_theta_v_fl_e,
             vn_traj=vn_traj,
             mass_flx_me=mass_flx_me,
+            z_w_concorr_me=z_w_concorr_me,
+            vn_ie=vn_ie,
+            z_vt_ie=z_vt_ie,
+            z_kin_hor_e=z_kin_hor_e,
         )
 
     @pytest.fixture
@@ -125,11 +154,18 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
         z_theta_v_e = random_field(mesh, EdgeDim, KDim)
         mass_flx_me = random_field(mesh, EdgeDim, KDim)
         vn_traj = random_field(mesh, EdgeDim, KDim)
+        ddxn_z_full = random_field(mesh, EdgeDim, KDim)
+        ddxt_z_full = random_field(mesh, EdgeDim, KDim)
+        wgtfac_e = zero_field(mesh, EdgeDim, KDim)
         z_vn_avg = zero_field(mesh, EdgeDim, KDim)
         z_graddiv_vn = zero_field(mesh, EdgeDim, KDim)
         vt = zero_field(mesh, EdgeDim, KDim)
         mass_fl_e = zero_field(mesh, EdgeDim, KDim)
         z_theta_v_fl_e = zero_field(mesh, EdgeDim, KDim)
+        z_w_concorr_me = zero_field(mesh, EdgeDim, KDim)
+        vn_ie = zero_field(mesh, EdgeDim, KDim)
+        z_vt_ie = zero_field(mesh, EdgeDim, KDim)
+        z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
         r_nsubsteps = 9.0
 
         return dict(
@@ -144,10 +180,17 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
             z_theta_v_e=z_theta_v_e,
             mass_flx_me=mass_flx_me,
             vn_traj=vn_traj,
+            ddxn_z_full=ddxn_z_full,
+            ddxt_z_full=ddxt_z_full,
+            wgtfac_e=wgtfac_e,
             z_vn_avg=z_vn_avg,
             z_graddiv_vn=z_graddiv_vn,
             vt=vt,
             mass_fl_e=mass_fl_e,
             z_theta_v_fl_e=z_theta_v_fl_e,
+            z_w_concorr_me=z_w_concorr_me,
+            vn_ie=vn_ie,
+            z_vt_ie=z_vt_ie,
+            z_kin_hor_e=z_kin_hor_e,
             r_nsubsteps=r_nsubsteps,
         )
