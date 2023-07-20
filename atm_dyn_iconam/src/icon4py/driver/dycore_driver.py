@@ -20,6 +20,7 @@ import pytz
 from devtools import Timer
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
+from icon4py.decomposition.parallel_setup import get_processor_properties
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
 from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
@@ -34,7 +35,6 @@ from icon4py.driver.io_utils import (
     read_initial_state,
     read_static_fields,
 )
-from icon4py.decomposition.parallel_setup import get_processor_properties
 
 
 helpers = import_testutils()

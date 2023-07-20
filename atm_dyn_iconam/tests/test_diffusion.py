@@ -19,8 +19,8 @@ from atm_dyn_iconam.tests.test_utils.serialbox_utils import (
 )
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import scale_k
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import VerticalModelParams
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.vertical import VerticalModelParams
 
 from .test_diffusion_utils import (
     diff_multfac_vn_numpy,
@@ -91,6 +91,7 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_diffusion_init(
     diffusion_savepoint_init,
     interpolation_savepoint,
@@ -190,6 +191,7 @@ def _verify_init_values_against_savepoint(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_verify_diffusion_init_against_first_regular_savepoint(
     diffusion_savepoint_init,
     interpolation_savepoint,
@@ -226,6 +228,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
     r04b09_diffusion_config,
@@ -263,6 +266,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize(
     "step_date_init, step_date_exit",
     [
@@ -355,6 +359,7 @@ def _verify_diffusion_fields(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
+@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_run_diffusion_initial_step(
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
@@ -405,14 +410,3 @@ def test_run_diffusion_initial_step(
         prognostic_state=prognostic_state,
         diffusion_savepoint_exit=diffusion_savepoint_exit,
     )
-
-
-@pytest.mark.datatest
-def test_verify_stencil15_field_manipulation(interpolation_savepoint, icon_grid):
-    geofac_n2s = np.asarray(interpolation_savepoint.geofac_n2s())
-    int_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    geofac_c = np.asarray(int_state.geofac_n2s_c)
-    geofac_nbh = np.asarray(int_state.geofac_n2s_nbh)
-    cec_table = icon_grid.get_c2cec_connectivity().table
-    assert np.allclose(geofac_c, geofac_n2s[:, 0])
-    assert np.allclose(geofac_nbh[cec_table], geofac_n2s[:, 1:])

@@ -16,16 +16,18 @@ import sys
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+
 from icon4py.decomposition.decomposed import ProcessProperties
 from icon4py.decomposition.parallel_setup import DecompositionInfo
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
     InterpolationState,
     MetricState,
     PrognosticState,
 )
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -34,25 +36,9 @@ SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
 
 
-def import_testutils():
-    testutils = (
-        Path(__file__).parent.__str__() + "/../../../tests/test_utils/__init__.py"
-    )
-    spec = importlib.util.spec_from_file_location("helpers", testutils)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-helpers = import_testutils()
-
-from helpers import serialbox_utils as sb  # noqa
-
-
 # TODO(Magdalena): for preliminary version of the driver we need serialbox data which is in
 #  testutils, since that is no proper package we need to import it by hand here.
-#  Hence: Turn testutils into a package again?
+#  remove once there is the testutils package again.
 def import_testutils():
     testutils = (
         Path(__file__).parent.__str__() + "/../../../tests/test_utils/__init__.py"
@@ -66,7 +52,7 @@ def import_testutils():
 
 helpers = import_testutils()
 
-from helpers import serialbox_utils as sb  # noqa
+from helpers import serialbox_utils as sb  # noqa F401
 
 
 class SerializationType(str, Enum):
@@ -74,7 +60,9 @@ class SerializationType(str, Enum):
     NC = "netcdf"
 
 
-def read_icon_grid(path: Path, rank=0, ser_type:  SerializationType=SerializationType.SB) -> IconGrid:
+def read_icon_grid(
+    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+) -> IconGrid:
     """
     Read icon grid.
 
@@ -122,7 +110,7 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    path: Path, ser_type:SerializationType=SerializationType.SB, rank=0
+    path: Path, ser_type: SerializationType = SerializationType.SB, rank=0
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams]:
     """
     Read fields containing grid properties.
@@ -146,6 +134,7 @@ def read_geometry_fields(
         return edge_geometry, cell_geometry, vertical_geometry
     else:
         raise NotImplementedError(SB_ONLY_MSG)
+
 
 # /home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/node2/mch_ch_r04b09_dsl/icon_grid
 def read_decomp_info(
@@ -177,7 +166,7 @@ def read_grid(
 
 
 def read_static_fields(
-    path: Path, ser_type: SerializationType=SerializationType.SB, rank=0
+    path: Path, ser_type: SerializationType = SerializationType.SB, rank=0
 ) -> tuple[MetricState, InterpolationState]:
     """
     Read fields for metric and interpolation state.

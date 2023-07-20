@@ -1,16 +1,19 @@
 ## running parallel version of diffusion
 
 ### installation
-The parallelized code uses [GHEX](https://github.com/ghex-org/GHEX) with MPI for halo exchanges. 
-GHEX has a CMake build but no setup script for pip, so it needs to be installed manually:
+
+The parallelized code uses [GHEX](https://github.com/ghex-org/GHEX) with MPI for halo exchanges. GHEX has a CMake build but no setup script for pip, so it needs to be installed manually:
 
 1. You need a running MPI installation in the system.
 2. clone GHEX
+
 ```bash
 cd {icon4py}/_external_src
 git clone --recursive -b refactoring2 git@github.com:boeschf/GHEX.git
 ```
-3. build GHEX 
+
+3. build GHEX
+
 ```
 cd GHEX
 mkdir build
@@ -40,12 +43,15 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug \
 make
 make test  ## runs the C++ tests
 ```
+
 #### generating python bindings
+
 ```bash
-cmake -DGHEX_BUILD_PYTHON_BINDINGS=ON .  # turns on python bindings, need pybind11 wo we install it in the 
+cmake -DGHEX_BUILD_PYTHON_BINDINGS=ON .  # turns on python bindings, need pybind11 wo we install it in the
 ```
-builds GHEX including python bindings. If the build fails with an error message that `pybind11` was not found, you can either install it 
-int the Python `.venv` in GHEX build folder or set the `pybind11_DIR` variable to some other location.
+
+builds GHEX including python bindings. If the build fails with an error message that `pybind11` was not found, you can either install it int the Python `.venv` in GHEX build folder or set the `pybind11_DIR` variable to some other location.
+
 ```bash
 cd pyghex_venv/
 source bin/activate
@@ -54,18 +60,22 @@ export pybind11_DIR=./pyghex_venv/lib/python3.10/site-packages/pybind11
 make
 make test ## will now run the python tests
 ```
+
 #### use GHEX bindings from icon4py
+
 simply create a sym link the the installation above:
+
 ```
 cd {icon4py}/.venv/lib/python3.10/site-packages
 ln -s ../../../../_external_src/GHEX/build/bindings/python/ghex ghex
 ```
-### run parallel test
-all MPI related tests are in the folder 
-`icon4py/atm_dyn_iconam/tests/mpi_tests` tests depending on MPI are marked with `@pytest.mark.mpi`  are
-therefore skipped by any serial pytest run.
 
-run them with 
+### run parallel test
+
+all MPI related tests are in the folder `icon4py/atm_dyn_iconam/tests/mpi_tests` tests depending on MPI are marked with `@pytest.mark.mpi` are therefore skipped by any serial pytest run.
+
+run them with
+
 ```bash
 mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
 ```

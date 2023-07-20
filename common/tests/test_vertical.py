@@ -16,7 +16,7 @@ import math
 import numpy as np
 import pytest
 
-from icon4py.diffusion.icon_grid import VerticalModelParams
+from icon4py.grid.vertical import VerticalModelParams
 
 
 @pytest.mark.parametrize(
@@ -34,6 +34,7 @@ def test_nrdmax_calculation(max_h, damping, delta):
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint, damping_height):
     a = grid_savepoint.vct_a()
     nrdmax = grid_savepoint.nrdmax()

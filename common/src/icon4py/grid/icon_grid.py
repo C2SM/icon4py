@@ -10,13 +10,14 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from dataclasses import dataclass, field
-from typing import Dict, Final
+from dataclasses import dataclass
+from typing import Dict
 
 import numpy as np
-from gt4py.next.common import Dimension, DimensionKind, Field
+from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
+from typing_extensions import deprecated
 
 from icon4py.common.dimension import (
     CECDim,
@@ -27,22 +28,16 @@ from icon4py.common.dimension import (
     KDim,
     VertexDim,
 )
-from icon4py.diffusion.horizontal import HorizontalMeshSize
-
-
-
-# TODO(Magdalena): keep naming grid vs mesh consistent
-@dataclass(frozen=True)
-class VerticalMeshConfig:
-    num_lev: int
+from icon4py.grid.horizontal import HorizontalGridSize
+from icon4py.grid.vertical import VerticalGridSize
 
 
 @dataclass(
     frozen=True,
 )
-class MeshConfig:
-    horizontal_config: HorizontalMeshSize
-    vertical_config: VerticalMeshConfig
+class GridConfig:
+    horizontal_config: HorizontalGridSize
+    vertical_config: VerticalGridSize
     limited_area: bool = True
     n_shift_total: int = 0
 
@@ -73,20 +68,21 @@ def builder(func):
 
 class IconGrid:
     def __init__(self):
-        self.config: MeshConfig = None
+        self.config: GridConfig = None
+
         self.start_indices = {}
         self.end_indices = {}
         self.connectivities: Dict[str, np.ndarray] = {}
         self.size: Dict[Dimension, int] = {}
 
-    def _update_size(self, config: MeshConfig):
+    def _update_size(self, config: GridConfig):
         self.size[VertexDim] = config.num_vertices
         self.size[CellDim] = config.num_cells
         self.size[EdgeDim] = config.num_edges
         self.size[KDim] = config.num_k_levels
 
     @builder
-    def with_config(self, config: MeshConfig):
+    def with_config(self, config: GridConfig):
         self.config = config
         self._update_size(config)
 
@@ -120,6 +116,9 @@ class IconGrid:
     def num_edges(self):
         return self.config.num_edges
 
+    @deprecated(
+        "use get_start_index and get_end_index instead, - should be removed after merge of solve_nonhydro"
+    )
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
     ) -> tuple[int32, int32]:
@@ -137,6 +136,24 @@ class IconGrid:
                 "only defined for {} dimension kind ", DimensionKind.HORIZONTAL
             )
         return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
+
+    def get_start_index(self, dim: Dimension, marker: int) -> int32:
+        """
+        Use to specify lower end of domains of a field for field_operators.
+
+        For a given dimension, returns the start index of the
+        horizontal region in a field given by the marker.
+        """
+        return self.start_indices[dim][marker]
+
+    def get_end_index(self, dim: Dimension, marker: int) -> int32:
+        """
+        Use to specify upper end of domains of a field for field_operators.
+
+        For a given dimension, returns the end index of the
+        horizontal region in a field given by the marker.
+        """
+        return self.end_indices[dim][marker]
 
     def get_c2e_connectivity(self):
         table = self.connectivities["c2e"]
@@ -166,6 +183,14 @@ class IconGrid:
         table = self.connectivities["v2e"]
         return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
 
+    def get_v2c_connectivity(self):
+        table = self.connectivities["v2c"]
+        return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
+
+    def get_c2v_connectivity(self):
+        table = self.connectivities["c2v"]
+        return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
+
     def get_e2ecv_connectivity(self):
         return self._neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities["e2c2v"].shape, EdgeDim, ECVDim
@@ -191,34 +216,3 @@ class IconGrid:
         return self._neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities["c2e"].shape, CellDim, CEDim
         )
-
-
-@dataclass(frozen=True)
-class VerticalModelParams:
-    """
-    Contains vertical physical parameters defined on the grid.
-
-    vct_a:  field containing the physical heights of the k level
-    rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
-    """
-
-    vct_a: Field[[KDim], float]
-    rayleigh_damping_height: Final[float]
-    index_of_damping_layer: Final[int32] = field(init=False)
-
-    def __post_init__(self):
-        object.__setattr__(
-            self,
-            "index_of_damping_layer",
-            self._determine_damping_height_index(
-                np.asarray(self.vct_a), self.rayleigh_damping_height
-            ),
-        )
-
-    @classmethod
-    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float):
-        return int32(np.argmax(np.where(vct_a >= damping_height)))
-
-    @property
-    def physical_heights(self) -> Field[[KDim], float]:
-        return self.vct_a

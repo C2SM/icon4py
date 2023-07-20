@@ -30,14 +30,15 @@ from icon4py.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
 )
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
     InterpolationState,
     MetricState,
     PrognosticState,
 )
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 from icon4py.py2f.cffi_utils import CffiMethod
 
 
@@ -82,7 +83,7 @@ def diffusion_init(
     Fortran ICON Diffusion component (aka Diffusion granule)
 
     """
-    grid = IconGrid()  # TODO where to get this from
+    grid = IconGrid()  # TODO(Magdalena) where to get this from
     edge_params = EdgeParams(
         tangent_orientation=tangent_orientation,
         primal_edge_lengths=primal_edge_lengths,

@@ -17,9 +17,13 @@ import ghex
 import numpy as np
 import pytest
 
-
 from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.decomposition.parallel_setup import (
+    DecompositionInfo,
+    Exchange,
+    get_processor_properties,
+)
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.driver.io_utils import (
     SerializationType,
@@ -27,10 +31,6 @@ from icon4py.driver.io_utils import (
     read_geometry_fields,
     read_icon_grid,
     read_static_fields,
-)
-from icon4py.decomposition.parallel_setup import (
-    Exchange,
-    get_processor_properties, DecompositionInfo,
 )
 
 
@@ -58,6 +58,7 @@ props = get_processor_properties()
         (VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
+@pytest.mark.parametrize("datapath", [2], indirect=True)
 def test_decomposition_info_masked(mpi, datapath, dim, owned, total, caplog):
     props = get_processor_properties()
     my_rank = props.rank
@@ -82,6 +83,7 @@ def test_decomposition_info_masked(mpi, datapath, dim, owned, total, caplog):
 @pytest.mark.skipif(
     props.comm_size > 2, reason="input files only available for 1 or 2 nodes"
 )
+@pytest.mark.parametrize("datapath", [2], indirect=True)
 @pytest.mark.parametrize(
     ("dim, owned, total"),
     (
@@ -135,6 +137,7 @@ def test_processor_properties_from_comm_world(mpi, caplog):
 
 
 @pytest.mark.mpi
+@pytest.mark.parametrize("datapath", [2], indirect=True)
 def test_decomposition_info_matches_gridsize(datapath, caplog):
     props = get_processor_properties()
     decomposition_info = read_decomp_info(
@@ -225,10 +228,10 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init, caplog):
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
-        cell_params=cell_geometry
+        cell_params=cell_geometry,
     )
     print(f"rank={props.rank}/{props.comm_size}: diffusion initialized ")
-    diagnostic_state = diffusion_initial_data.construct_diagnostics()
+    diagnostic_state = diffusion_initial_data.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_initial_data.construct_prognostics()
     diffusion.run(
         diagnostic_state=diagnostic_state,
@@ -240,4 +243,4 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init, caplog):
     diffusion_savepoint_exit = IconSerialDataProvider(
         "icon_pydycore", str(path), True, mpi_rank=props.rank
     ).from_savepoint_diffusion_init(linit=initial_run, date=step_date_init)
-    #verify_diffusion_fields(diffusion_savepoint_exit, diagnostic_state, prognostic_state)
+    # verify_diffusion_fields(diffusion_savepoint_exit, diagnostic_state, prognostic_state)

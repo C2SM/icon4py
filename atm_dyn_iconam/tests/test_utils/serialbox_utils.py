@@ -37,18 +37,14 @@ from icon4py.common.dimension import (
 )
 from icon4py.decomposition.parallel_setup import DecompositionInfo
 from icon4py.diffusion.diffusion import VectorTuple
-from icon4py.diffusion.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalMeshSize,
-)
-from icon4py.diffusion.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
     InterpolationState,
     MetricState,
     PrognosticState,
 )
+from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
+from icon4py.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
 
 from .helpers import as_1D_sparse_field
 
@@ -177,11 +173,20 @@ class IconGridSavePoint(IconSavepoint):
         return v_
 
     def e2c2v(self):
-        # array "e2v" is actually e2c2v
+        # array "e2v" is actually e2c2v, that is hexagon or pentagon
         return self._get_connectivity_array("e2v")
 
     def v2e(self):
         return self._get_connectivity_array("v2e")
+
+    def v2c(self):
+        return self._get_connectivity_array("v2c")
+
+    def c2v(self):
+        return self._get_connectivity_array("c2v")
+
+    def nrdmax(self):
+        return self._get_connectivity_array("nrdmax")
 
     def refin_ctrl(self, dim: Dimension):
         field_name = "refin_ctl"
@@ -248,9 +253,6 @@ class IconGridSavePoint(IconSavepoint):
         mask = self.owner_mask(dim)[0:number]
         return dim, index, mask
 
-    def nrdmax(self):
-        return self._get_connectivity_array("nrdmax")
-
     def construct_icon_grid(self) -> IconGrid:
 
         cell_starts = self.cells_start_index()
@@ -259,13 +261,13 @@ class IconGridSavePoint(IconSavepoint):
         vertex_ends = self.vertex_end_index()
         edge_starts = self.edge_start_index()
         edge_ends = self.edge_end_index()
-        config = MeshConfig(
-            HorizontalMeshSize(
+        config = GridConfig(
+            horizontal_config=HorizontalGridSize(
                 num_vertices=self.num(VertexDim),
                 num_cells=self.num(CellDim),
                 num_edges=self.num(EdgeDim),
             ),
-            VerticalMeshConfig(num_lev=self.num(KDim)),
+            vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
         )
         c2e2c = self.c2e2c()
         c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
