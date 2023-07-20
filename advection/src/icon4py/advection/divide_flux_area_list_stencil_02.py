@@ -38,22 +38,22 @@ def _divide_flux_area_list_stencil_02(
     butterfly_idx_patch2_vnneg: Field[[EdgeDim], int32],
     butterfly_blk_patch2_vnpos: Field[[EdgeDim], int32],
     butterfly_blk_patch2_vnneg: Field[[EdgeDim], int32],
-    dreg_patch1_1_x: Field[[EdgeDim, KDim], float],
-    dreg_patch1_1_y: Field[[EdgeDim, KDim], float],
-    dreg_patch1_2_x: Field[[EdgeDim, KDim], float],
-    dreg_patch1_2_y: Field[[EdgeDim, KDim], float],
-    dreg_patch1_3_x: Field[[EdgeDim, KDim], float],
-    dreg_patch1_3_y: Field[[EdgeDim, KDim], float],
-    dreg_patch1_4_x: Field[[EdgeDim, KDim], float],
-    dreg_patch1_4_y: Field[[EdgeDim, KDim], float],
-    dreg_patch2_1_x: Field[[EdgeDim, KDim], float],
-    dreg_patch2_1_y: Field[[EdgeDim, KDim], float],
-    dreg_patch2_2_x: Field[[EdgeDim, KDim], float],
-    dreg_patch2_2_y: Field[[EdgeDim, KDim], float],
-    dreg_patch2_3_x: Field[[EdgeDim, KDim], float],
-    dreg_patch2_3_y: Field[[EdgeDim, KDim], float],
-    dreg_patch2_4_x: Field[[EdgeDim, KDim], float],
-    dreg_patch2_4_y: Field[[EdgeDim, KDim], float],
+    dreg_patch1_1_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_1_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_2_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_2_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_3_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_3_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_4_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_4_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_1_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_1_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_2_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_2_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_3_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_3_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_4_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_4_lat_vmask: Field[[EdgeDim, KDim], float],
 ) -> tuple[
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
@@ -101,23 +101,23 @@ def _divide_flux_area_list_stencil_02(
     )
 
     # patch1 in translated system
-    dreg_patch1_1_x = dreg_patch1_1_x - bf_cc_patch1_lon
-    dreg_patch1_1_y = dreg_patch1_1_y - bf_cc_patch1_lat
-    dreg_patch1_2_x = dreg_patch1_2_x - bf_cc_patch1_lon
-    dreg_patch1_2_y = dreg_patch1_2_y - bf_cc_patch1_lat
-    dreg_patch1_3_x = dreg_patch1_3_x - bf_cc_patch1_lon
-    dreg_patch1_3_y = dreg_patch1_3_y - bf_cc_patch1_lat
-    dreg_patch1_4_x = dreg_patch1_4_x - bf_cc_patch1_lon
-    dreg_patch1_4_y = dreg_patch1_4_y - bf_cc_patch1_lat
+    dreg_patch1_1_lon_vmask = dreg_patch1_1_lon_vmask - bf_cc_patch1_lon
+    dreg_patch1_1_lat_vmask = dreg_patch1_1_lat_vmask - bf_cc_patch1_lat
+    dreg_patch1_2_lon_vmask = dreg_patch1_2_lon_vmask - bf_cc_patch1_lon
+    dreg_patch1_2_lat_vmask = dreg_patch1_2_lat_vmask - bf_cc_patch1_lat
+    dreg_patch1_3_lon_vmask = dreg_patch1_3_lon_vmask - bf_cc_patch1_lon
+    dreg_patch1_3_lat_vmask = dreg_patch1_3_lat_vmask - bf_cc_patch1_lat
+    dreg_patch1_4_lon_vmask = dreg_patch1_4_lon_vmask - bf_cc_patch1_lon
+    dreg_patch1_4_lat_vmask = dreg_patch1_4_lat_vmask - bf_cc_patch1_lat
     # patch2 in translated system
-    dreg_patch2_1_x = dreg_patch2_1_x - bf_cc_patch2_lon
-    dreg_patch2_1_y = dreg_patch2_1_y - bf_cc_patch2_lat
-    dreg_patch2_2_x = dreg_patch2_2_x - bf_cc_patch2_lon
-    dreg_patch2_2_y = dreg_patch2_2_y - bf_cc_patch2_lat
-    dreg_patch2_3_x = dreg_patch2_3_x - bf_cc_patch2_lon
-    dreg_patch2_3_y = dreg_patch2_3_y - bf_cc_patch2_lat
-    dreg_patch2_4_x = dreg_patch2_4_x - bf_cc_patch2_lon
-    dreg_patch2_4_y = dreg_patch2_4_y - bf_cc_patch2_lat
+    dreg_patch2_1_lon_vmask = dreg_patch2_1_lon_vmask - bf_cc_patch2_lon
+    dreg_patch2_1_lat_vmask = dreg_patch2_1_lat_vmask - bf_cc_patch2_lat
+    dreg_patch2_2_lon_vmask = dreg_patch2_2_lon_vmask - bf_cc_patch2_lon
+    dreg_patch2_2_lat_vmask = dreg_patch2_2_lat_vmask - bf_cc_patch2_lat
+    dreg_patch2_3_lon_vmask = dreg_patch2_3_lon_vmask - bf_cc_patch2_lon
+    dreg_patch2_3_lat_vmask = dreg_patch2_3_lat_vmask - bf_cc_patch2_lat
+    dreg_patch2_4_lon_vmask = dreg_patch2_4_lon_vmask - bf_cc_patch2_lon
+    dreg_patch2_4_lat_vmask = dreg_patch2_4_lat_vmask - bf_cc_patch2_lat
 
     # Store global index of the underlying grid cell
     # Adapt dimensions to fit ofr multiple levels
@@ -145,48 +145,48 @@ def _divide_flux_area_list_stencil_02(
     butterfly_blk_patch2_vnneg_3d = broadcast(
         butterfly_blk_patch2_vnneg, (EdgeDim, KDim)
     )
-    patch1_cell_idx_dsl = where(
+    patch1_cell_idx_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_idx_patch1_vnpos_3d, butterfly_idx_patch1_vnneg_3d),
         int32(0),
     )
-    patch2_cell_idx_dsl = where(
+    patch2_cell_idx_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_idx_patch2_vnpos_3d, butterfly_idx_patch2_vnneg_3d),
         int32(0),
     )
-    patch1_cell_blk_dsl = where(
+    patch1_cell_blk_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_blk_patch1_vnpos_3d, butterfly_blk_patch1_vnneg_3d),
         int32(0),
     )
-    patch2_cell_blk_dsl = where(
+    patch2_cell_blk_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_blk_patch2_vnpos_3d, butterfly_blk_patch2_vnneg_3d),
         int32(0),
     )
 
     return (
-        dreg_patch1_1_x,
-        dreg_patch1_1_y,
-        dreg_patch1_2_x,
-        dreg_patch1_2_y,
-        dreg_patch1_3_x,
-        dreg_patch1_3_y,
-        dreg_patch1_4_x,
-        dreg_patch1_4_y,
-        dreg_patch2_1_x,
-        dreg_patch2_1_y,
-        dreg_patch2_2_x,
-        dreg_patch2_2_y,
-        dreg_patch2_3_x,
-        dreg_patch2_3_y,
-        dreg_patch2_4_x,
-        dreg_patch2_4_y,
-        patch1_cell_idx_dsl,
-        patch1_cell_blk_dsl,
-        patch2_cell_idx_dsl,
-        patch2_cell_blk_dsl,
+        dreg_patch1_1_lon_vmask,
+        dreg_patch1_1_lat_vmask,
+        dreg_patch1_2_lon_vmask,
+        dreg_patch1_2_lat_vmask,
+        dreg_patch1_3_lon_vmask,
+        dreg_patch1_3_lat_vmask,
+        dreg_patch1_4_lon_vmask,
+        dreg_patch1_4_lat_vmask,
+        dreg_patch2_1_lon_vmask,
+        dreg_patch2_1_lat_vmask,
+        dreg_patch2_2_lon_vmask,
+        dreg_patch2_2_lat_vmask,
+        dreg_patch2_3_lon_vmask,
+        dreg_patch2_3_lat_vmask,
+        dreg_patch2_4_lon_vmask,
+        dreg_patch2_4_lat_vmask,
+        patch1_cell_idx_vmask,
+        patch1_cell_blk_vmask,
+        patch2_cell_idx_vmask,
+        patch2_cell_blk_vmask,
     )
 
 
@@ -206,26 +206,26 @@ def divide_flux_area_list_stencil_02(
     butterfly_idx_patch2_vnneg: Field[[EdgeDim], int32],
     butterfly_blk_patch2_vnpos: Field[[EdgeDim], int32],
     butterfly_blk_patch2_vnneg: Field[[EdgeDim], int32],
-    dreg_patch1_1_x: Field[[EdgeDim, KDim], float],
-    dreg_patch1_1_y: Field[[EdgeDim, KDim], float],
-    dreg_patch1_2_x: Field[[EdgeDim, KDim], float],
-    dreg_patch1_2_y: Field[[EdgeDim, KDim], float],
-    dreg_patch1_3_x: Field[[EdgeDim, KDim], float],
-    dreg_patch1_3_y: Field[[EdgeDim, KDim], float],
-    dreg_patch1_4_x: Field[[EdgeDim, KDim], float],
-    dreg_patch1_4_y: Field[[EdgeDim, KDim], float],
-    dreg_patch2_1_x: Field[[EdgeDim, KDim], float],
-    dreg_patch2_1_y: Field[[EdgeDim, KDim], float],
-    dreg_patch2_2_x: Field[[EdgeDim, KDim], float],
-    dreg_patch2_2_y: Field[[EdgeDim, KDim], float],
-    dreg_patch2_3_x: Field[[EdgeDim, KDim], float],
-    dreg_patch2_3_y: Field[[EdgeDim, KDim], float],
-    dreg_patch2_4_x: Field[[EdgeDim, KDim], float],
-    dreg_patch2_4_y: Field[[EdgeDim, KDim], float],
-    patch1_cell_idx_dsl: Field[[EdgeDim, KDim], int32],
-    patch1_cell_blk_dsl: Field[[EdgeDim, KDim], int32],
-    patch2_cell_idx_dsl: Field[[EdgeDim, KDim], int32],
-    patch2_cell_blk_dsl: Field[[EdgeDim, KDim], int32],
+    dreg_patch1_1_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_1_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_2_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_2_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_3_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_3_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_4_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch1_4_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_1_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_1_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_2_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_2_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_3_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_3_lat_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_4_lon_vmask: Field[[EdgeDim, KDim], float],
+    dreg_patch2_4_lat_vmask: Field[[EdgeDim, KDim], float],
+    patch1_cell_idx_vmask: Field[[EdgeDim, KDim], int32],
+    patch1_cell_blk_vmask: Field[[EdgeDim, KDim], int32],
+    patch2_cell_idx_vmask: Field[[EdgeDim, KDim], int32],
+    patch2_cell_blk_vmask: Field[[EdgeDim, KDim], int32],
 ):
     _divide_flux_area_list_stencil_02(
         famask_int,
@@ -242,42 +242,42 @@ def divide_flux_area_list_stencil_02(
         butterfly_idx_patch2_vnneg,
         butterfly_blk_patch2_vnpos,
         butterfly_blk_patch2_vnneg,
-        dreg_patch1_1_x,
-        dreg_patch1_1_y,
-        dreg_patch1_2_x,
-        dreg_patch1_2_y,
-        dreg_patch1_3_x,
-        dreg_patch1_3_y,
-        dreg_patch1_4_x,
-        dreg_patch1_4_y,
-        dreg_patch2_1_x,
-        dreg_patch2_1_y,
-        dreg_patch2_2_x,
-        dreg_patch2_2_y,
-        dreg_patch2_3_x,
-        dreg_patch2_3_y,
-        dreg_patch2_4_x,
-        dreg_patch2_4_y,
+        dreg_patch1_1_lon_vmask,
+        dreg_patch1_1_lat_vmask,
+        dreg_patch1_2_lon_vmask,
+        dreg_patch1_2_lat_vmask,
+        dreg_patch1_3_lon_vmask,
+        dreg_patch1_3_lat_vmask,
+        dreg_patch1_4_lon_vmask,
+        dreg_patch1_4_lat_vmask,
+        dreg_patch2_1_lon_vmask,
+        dreg_patch2_1_lat_vmask,
+        dreg_patch2_2_lon_vmask,
+        dreg_patch2_2_lat_vmask,
+        dreg_patch2_3_lon_vmask,
+        dreg_patch2_3_lat_vmask,
+        dreg_patch2_4_lon_vmask,
+        dreg_patch2_4_lat_vmask,
         out=(
-            dreg_patch1_1_x,
-            dreg_patch1_1_y,
-            dreg_patch1_2_x,
-            dreg_patch1_2_y,
-            dreg_patch1_3_x,
-            dreg_patch1_3_y,
-            dreg_patch1_4_x,
-            dreg_patch1_4_y,
-            dreg_patch2_1_x,
-            dreg_patch2_1_y,
-            dreg_patch2_2_x,
-            dreg_patch2_2_y,
-            dreg_patch2_3_x,
-            dreg_patch2_3_y,
-            dreg_patch2_4_x,
-            dreg_patch2_4_y,
-            patch1_cell_idx_dsl,
-            patch1_cell_blk_dsl,
-            patch2_cell_idx_dsl,
-            patch2_cell_blk_dsl,
+            dreg_patch1_1_lon_vmask,
+            dreg_patch1_1_lat_vmask,
+            dreg_patch1_2_lon_vmask,
+            dreg_patch1_2_lat_vmask,
+            dreg_patch1_3_lon_vmask,
+            dreg_patch1_3_lat_vmask,
+            dreg_patch1_4_lon_vmask,
+            dreg_patch1_4_lat_vmask,
+            dreg_patch2_1_lon_vmask,
+            dreg_patch2_1_lat_vmask,
+            dreg_patch2_2_lon_vmask,
+            dreg_patch2_2_lat_vmask,
+            dreg_patch2_3_lon_vmask,
+            dreg_patch2_3_lat_vmask,
+            dreg_patch2_4_lon_vmask,
+            dreg_patch2_4_lat_vmask,
+            patch1_cell_idx_vmask,
+            patch1_cell_blk_vmask,
+            patch2_cell_idx_vmask,
+            patch2_cell_blk_vmask,
         ),
     )
