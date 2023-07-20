@@ -1,3 +1,31 @@
+def repo_identifier = "Project"
+def icon_fork = "C2SM"
+def icon_branch = "icon-dsl"
+def icon_default = true
+
+def spack_fork = "C2SM"
+def spack_branch = "main"
+def spack_default = true
+String[] triggerPhrase = env.ghprbCommentBody.split(" ")
+
+def parseTriggerPhrase(it) {
+    fork = it.split("=")[1].split("/")[0]
+    branch = it.split("=")[1].split("/")[1]
+    return [fork, branch]
+}
+triggerPhrase.each {
+    if(it.contains("icon${repo_identifier}")) {
+        (icon_fork, icon_branch) = parseTriggerPhrase(it)
+        icon_default = false
+    }
+}
+triggerPhrase.each {
+    if(it.contains("spack${repo_identifier}")) {
+        (icon_fork, icon_branch) = parseTriggerPhrase(it)
+        spack_default = false
+    }
+}
+
 pipeline {
     agent none
     options{
@@ -23,8 +51,8 @@ pipeline {
                     stage('Clone Repos') {
                         steps {
                             sh """
-                            git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/C2SM/spack-c2sm.git
-                            git clone --depth 1 --recurse-submodules --shallow-submodules -b ci_cross_repo git@github.com:C2SM/icon-exclaim.git
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch} https://github.com/${spack_fork}/spack-c2sm.git
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
                             git clone . icon4py
                             """
                         }
