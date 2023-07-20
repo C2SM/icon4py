@@ -19,9 +19,8 @@ from atm_dyn_iconam.tests.test_utils.serialbox_utils import (
 )
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import scale_k
-from icon4py.grid.grid_manager import GridManager, ToGt4PyTransformation
 from icon4py.grid.horizontal import CellParams, EdgeParams
-from icon4py.grid.vertical import VerticalGridSize, VerticalModelParams
+from icon4py.grid.vertical import VerticalModelParams
 
 from .test_diffusion_utils import (
     diff_multfac_vn_numpy,
@@ -89,13 +88,6 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
-
-
-def init_grid_manager(fname, nlev):
-    config = VerticalGridSize(nlev)
-    gm = GridManager(ToGt4PyTransformation(), fname, config)
-    gm.init()
-    return gm
 
 
 @pytest.mark.datatest
