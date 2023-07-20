@@ -37,7 +37,7 @@ def mo_solve_nonhydro_stencil_38_numpy(
 def test_mo_solve_nonhydro_stencil_38():
     mesh = SimpleMesh()
 
-    wgtfacq_e = zero_field(mesh, EdgeDim, KDim)
+    wgtfacq_e = random_field(mesh, EdgeDim, KDim)
     vn = random_field(mesh, EdgeDim, KDim)
 
     vn_ie = zero_field(mesh, EdgeDim, KDim)

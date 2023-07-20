@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_30 import (
     _mo_solve_nonhydro_stencil_30,
@@ -33,13 +33,96 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_35 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_36 import (
     _mo_solve_nonhydro_stencil_36,
 )
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_37 import (
+    _mo_solve_nonhydro_stencil_37,
+)
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_38 import (
+    _mo_solve_nonhydro_stencil_38,
+)
 from icon4py.common.dimension import E2C2EDim, E2C2EODim, EdgeDim, KDim
+
+
+@field_operator
+def _k_boundary(
+    k: Field[[KDim], int32],
+    nlev: int32,
+    first_level: tuple[
+        Field[[EdgeDim, KDim], float],
+        Field[[EdgeDim, KDim], float],
+        Field[[EdgeDim, KDim], float],
+    ],
+    interior: tuple[
+        Field[[EdgeDim, KDim], float],
+        Field[[EdgeDim, KDim], float],
+        Field[[EdgeDim, KDim], float],
+    ],
+    last_level: tuple[
+        Field[[EdgeDim, KDim], float],
+        Field[[EdgeDim, KDim], float],
+        Field[[EdgeDim, KDim], float],
+    ],
+) -> tuple[
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+]:
+    return where(k == 0, first_level, where(k == nlev - 1, last_level, interior))
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_36_to_38(
+    k: Field[[KDim], int32],
+    nlev: int32,
+    wgtfac_e: Field[[EdgeDim, KDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    vt: Field[[EdgeDim, KDim], float],
+) -> tuple[
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+]:
+    """
+    Fused 36 to 37.
+
+    37 is k==0
+    36 is 0<k<nlev-1
+    38 is k==nlev-1
+    """
+    last_level = (
+        _mo_solve_nonhydro_stencil_38(vn, wgtfac_e),
+        broadcast(0.0, (EdgeDim, KDim)),
+        broadcast(0.0, (EdgeDim, KDim)),
+    )
+    return _k_boundary(
+        k,
+        nlev,
+        _mo_solve_nonhydro_stencil_37(vn, vt),
+        _mo_solve_nonhydro_stencil_36(wgtfac_e, vn, vt),
+        last_level,
+    )
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def mo_solve_nonhydro_stencil_36_to_38(
+    k: Field[[KDim], int32],
+    nlev: int32,
+    wgtfac_e: Field[[EdgeDim, KDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    vt: Field[[EdgeDim, KDim], float],
+    vn_ie: Field[[EdgeDim, KDim], float],
+    z_vt_ie: Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], float],
+):
+    _mo_solve_nonhydro_stencil_36_to_38(
+        k, nlev, wgtfac_e, vn, vt, out=(vn_ie, z_vt_ie, z_kin_hor_e)
+    )
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_30_to_38(
     istep: int32,
     lclean_mflx: bool,
+    k: Field[[KDim], int32],
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
     vn: Field[[EdgeDim, KDim], float],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
@@ -53,6 +136,7 @@ def _mo_solve_nonhydro_stencil_30_to_38(
     ddxt_z_full: Field[[EdgeDim, KDim], float],
     wgtfac_e: Field[[EdgeDim, KDim], float],
     r_nsubsteps: float,
+    nlev: int32,
 ) -> tuple[
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
@@ -94,7 +178,9 @@ def _mo_solve_nonhydro_stencil_30_to_38(
     )
 
     z_w_concorr_me = _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt)
-    vn_ie, z_vt_ie, z_kin_hor_e = _mo_solve_nonhydro_stencil_36(
+    vn_ie, z_vt_ie, z_kin_hor_e = _mo_solve_nonhydro_stencil_36_to_38(
+        k,
+        nlev,
         wgtfac_e,
         vn,
         vt,
@@ -119,6 +205,7 @@ def _mo_solve_nonhydro_stencil_30_to_38(
 def mo_solve_nonhydro_stencil_30_to_38(
     istep: int32,  # zero-based
     lclean_mflx: bool,
+    k: Field[[KDim], int32],
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
     vn: Field[[EdgeDim, KDim], float],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
@@ -141,10 +228,12 @@ def mo_solve_nonhydro_stencil_30_to_38(
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     r_nsubsteps: float,
+    nlev: int32,
 ):
     _mo_solve_nonhydro_stencil_30_to_38(
         istep,
         lclean_mflx,
+        k,
         e_flx_avg,
         vn,
         geofac_grdiv,
@@ -158,6 +247,7 @@ def mo_solve_nonhydro_stencil_30_to_38(
         ddxt_z_full,
         wgtfac_e,
         r_nsubsteps,
+        nlev,
         out=(
             z_vn_avg,
             z_graddiv_vn,

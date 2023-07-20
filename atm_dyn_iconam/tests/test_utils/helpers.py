@@ -83,6 +83,12 @@ def constant_field(
     )
 
 
+def index_field(
+    mesh: SimpleMesh, dim: gt_common.Dimension, dtype=np.int32
+) -> it_embedded.MutableLocatedField:
+    return it_embedded.np_as_located_field(dim)(np.arange(mesh.size[dim], dtype=dtype))
+
+
 def as_1D_sparse_field(
     field: it_embedded.MutableLocatedField, dim: gt_common.Dimension
 ) -> it_embedded.MutableLocatedField:

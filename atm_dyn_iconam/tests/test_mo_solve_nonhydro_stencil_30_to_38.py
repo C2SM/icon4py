@@ -16,6 +16,7 @@ import pytest
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_30_to_38 import (
     mo_solve_nonhydro_stencil_30_to_38,
+    mo_solve_nonhydro_stencil_36_to_38,
 )
 from icon4py.common.dimension import E2C2EDim, E2C2EODim, EdgeDim, KDim
 
@@ -25,11 +26,8 @@ from . import (
     test_mo_solve_nonhydro_stencil_32,
     test_mo_solve_nonhydro_stencil_34,
     test_mo_solve_nonhydro_stencil_35,
-    test_mo_solve_nonhydro_stencil_36,
-    test_mo_solve_nonhydro_stencil_37,
-    test_mo_solve_nonhydro_stencil_38,
 )
-from .test_utils.helpers import random_field, zero_field
+from .test_utils.helpers import index_field, random_field, zero_field
 from .test_utils.stencil_test import StencilTest
 
 
@@ -41,6 +39,62 @@ def istep(request):
 @pytest.fixture(ids=["lclean_mflx=True", "lclean_mflx=False"], params=[True, False])
 def lclean_mflx(request):
     return request.param
+
+
+class TestMoSolveNonhydroStencil36_to_38(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_36_to_38
+    OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
+
+    @staticmethod
+    def reference(
+        mesh,
+        wgtfac_e: np.array,
+        vn: np.array,
+        vt: np.array,
+        vn_ie: np.array,
+        z_vt_ie: np.array,
+        z_kin_hor_e: np.array,
+        **kwargs,
+    ):
+        vn_ie[:, 0] = vn[:, 0]
+        z_vt_ie[:, 0] = vt[:, 0]
+        z_kin_hor_e[:, 0] = 0.5 * (pow(vn[:, 0], 2) + pow(vt[:, 0], 2))
+
+        vn_offset_1 = np.roll(vn, shift=1, axis=1)
+        vt_offset_1 = np.roll(vt, shift=1, axis=1)
+
+        vn_ie[:, 1:-1] = (wgtfac_e * vn + (1.0 - wgtfac_e) * vn_offset_1)[:, 1:-1]
+        z_vt_ie[:, 1:-1] = (wgtfac_e * vt + (1.0 - wgtfac_e) * vt_offset_1)[:, 1:-1]
+        z_kin_hor_e[:, 1:-1] = (0.5 * (vn**2 + vt**2))[:, 1:-1]
+
+        vn_ie[:, -1] = (
+            wgtfac_e[:, -2] * vn[:, -2]
+            + wgtfac_e[:, -3] * vn[:, -3]
+            + wgtfac_e[:, -4] * vn[:, -4]
+        )
+        # z_vt_ie, z_kin_hor_e should probably be undefined (here they are implicit still 0.)
+
+        return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
+
+    @pytest.fixture
+    def input_data(self, mesh):
+        wgtfac_e = random_field(mesh, EdgeDim, KDim)
+        vn = random_field(mesh, EdgeDim, KDim)
+        vt = random_field(mesh, EdgeDim, KDim)
+
+        vn_ie = zero_field(mesh, EdgeDim, KDim)
+        z_vt_ie = zero_field(mesh, EdgeDim, KDim)
+        z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
+        return dict(
+            wgtfac_e=wgtfac_e,
+            vn=vn,
+            vt=vt,
+            vn_ie=vn_ie,
+            z_vt_ie=z_vt_ie,
+            z_kin_hor_e=z_kin_hor_e,
+            k=index_field(mesh, KDim),
+            nlev=mesh.k_level,
+        )
 
 
 class TestMoSolveNonhydroStencil30_to_38(StencilTest):
@@ -80,6 +134,9 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
         ddxt_z_full: np.array,
         mass_flx_me: np.array,
         wgtfac_e: np.array,
+        vn_ie: np.array,
+        z_vt_ie: np.array,
+        z_kin_hor_e: np.array,
         r_nsubsteps: float,
         **kwargs,
     ) -> dict:
@@ -121,12 +178,8 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
             )["z_w_concorr_me"]
         )
 
-        (
-            vn_ie,
-            z_vt_ie,
-            z_kin_hor_e,
-        ) = test_mo_solve_nonhydro_stencil_36.TestMoSolveNonhydroStencil36.reference(
-            mesh, wgtfac_e, vn, vt
+        (vn_ie, z_vt_ie, z_kin_hor_e,) = TestMoSolveNonhydroStencil36_to_38.reference(
+            mesh, wgtfac_e, vn, vt, vn_ie, z_vt_ie, z_kin_hor_e
         ).values()
 
         return dict(
@@ -156,7 +209,7 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
         vn_traj = random_field(mesh, EdgeDim, KDim)
         ddxn_z_full = random_field(mesh, EdgeDim, KDim)
         ddxt_z_full = random_field(mesh, EdgeDim, KDim)
-        wgtfac_e = zero_field(mesh, EdgeDim, KDim)
+        wgtfac_e = random_field(mesh, EdgeDim, KDim)
         z_vn_avg = zero_field(mesh, EdgeDim, KDim)
         z_graddiv_vn = zero_field(mesh, EdgeDim, KDim)
         vt = zero_field(mesh, EdgeDim, KDim)
@@ -167,6 +220,8 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
         z_vt_ie = zero_field(mesh, EdgeDim, KDim)
         z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
         r_nsubsteps = 9.0
+        k = index_field(mesh, KDim)
+        nlev = mesh.k_level
 
         return dict(
             istep=istep,
@@ -193,4 +248,6 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
             z_vt_ie=z_vt_ie,
             z_kin_hor_e=z_kin_hor_e,
             r_nsubsteps=r_nsubsteps,
+            k=k,
+            nlev=nlev,
         )

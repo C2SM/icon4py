@@ -39,7 +39,7 @@ class TestMoSolveNonhydroStencil36(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        wgtfac_e = zero_field(mesh, EdgeDim, KDim)
+        wgtfac_e = random_field(mesh, EdgeDim, KDim)
         vn = random_field(mesh, EdgeDim, KDim)
         vt = random_field(mesh, EdgeDim, KDim)
 
