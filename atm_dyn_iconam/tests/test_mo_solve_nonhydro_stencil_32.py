@@ -45,8 +45,8 @@ class TestMoSolveNonhydroStencil32(StencilTest):
         z_rho_e = random_field(mesh, EdgeDim, KDim)
         z_vn_avg = random_field(mesh, EdgeDim, KDim)
         ddqz_z_full_e = random_field(mesh, EdgeDim, KDim)
-        mass_fl_e = random_field(mesh, EdgeDim, KDim)
         z_theta_v_e = random_field(mesh, EdgeDim, KDim)
+        mass_fl_e = zero_field(mesh, EdgeDim, KDim)
         z_theta_v_fl_e = zero_field(mesh, EdgeDim, KDim)
 
         return dict(
