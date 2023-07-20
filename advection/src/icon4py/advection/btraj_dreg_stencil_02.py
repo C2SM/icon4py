@@ -28,11 +28,11 @@ def _btraj_dreg_stencil_02(
     lvn_pos = where(p_vn >= 0.0, True, False)
     traj_length = sqrt(p_vn**2 + p_vt**2) * p_dt
     e2c_length = where(lvn_pos, edge_cell_length(E2EC[0]), edge_cell_length(E2EC[1]))
-    famask = where(
-        traj_length > 1.25 * broadcast(e2c_length, (EdgeDim, KDim)), int32(1), int32(0)
+    opt_famask_dsl = where(
+        traj_length > 0.25 * broadcast(e2c_length, (EdgeDim, KDim)), int32(1), int32(0)
     )
 
-    return famask
+    return opt_famask_dsl
 
 
 @program
@@ -40,7 +40,7 @@ def btraj_dreg_stencil_02(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
     edge_cell_length: Field[[ECDim], float],
-    famask: Field[[EdgeDim, KDim], int32],
+    opt_famask_dsl: Field[[EdgeDim, KDim], int32],
     p_dt: float,
 ):
-    _btraj_dreg_stencil_02(p_vn, p_vt, edge_cell_length, p_dt, out=famask)
+    _btraj_dreg_stencil_02(p_vn, p_vt, edge_cell_length, p_dt, out=opt_famask_dsl)
