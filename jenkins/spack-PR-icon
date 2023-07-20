@@ -51,7 +51,7 @@ pipeline {
                     stage('Clone Repos') {
                         steps {
                             sh """
-                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch} https://github.com/${spack_fork}/spack-c2sm.git
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
                             git clone . icon4py
                             """
