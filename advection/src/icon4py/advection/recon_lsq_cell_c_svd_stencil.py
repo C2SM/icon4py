@@ -51,7 +51,7 @@ def _recon_lsq_cell_c_svd_stencil(
     Field[[CellDim, KDim], float],
 ]:
 
-    p_coeff_10 = (
+    p_coeff_10_dsl = (
         lsq_pseudoinv_9(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_9(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
         + lsq_pseudoinv_9(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
@@ -62,7 +62,7 @@ def _recon_lsq_cell_c_svd_stencil(
         + lsq_pseudoinv_9(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
         + lsq_pseudoinv_9(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
     )
-    p_coeff_9 = (
+    p_coeff_9_dsl = (
         lsq_pseudoinv_8(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_8(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
         + lsq_pseudoinv_8(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
@@ -73,7 +73,7 @@ def _recon_lsq_cell_c_svd_stencil(
         + lsq_pseudoinv_8(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
         + lsq_pseudoinv_8(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
     )
-    p_coeff_8 = (
+    p_coeff_8_dsl = (
         lsq_pseudoinv_7(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_7(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
         + lsq_pseudoinv_7(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
@@ -84,7 +84,7 @@ def _recon_lsq_cell_c_svd_stencil(
         + lsq_pseudoinv_7(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
         + lsq_pseudoinv_7(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
     )
-    p_coeff_7 = (
+    p_coeff_7_dsl = (
         lsq_pseudoinv_6(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_6(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
         + lsq_pseudoinv_6(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
@@ -95,7 +95,7 @@ def _recon_lsq_cell_c_svd_stencil(
         + lsq_pseudoinv_6(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
         + lsq_pseudoinv_6(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
     )
-    p_coeff_6 = (
+    p_coeff_6_dsl = (
         lsq_pseudoinv_5(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_5(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
         + lsq_pseudoinv_5(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
@@ -106,7 +106,7 @@ def _recon_lsq_cell_c_svd_stencil(
         + lsq_pseudoinv_5(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
         + lsq_pseudoinv_5(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
     )
-    p_coeff_5 = (
+    p_coeff_5_dsl = (
         lsq_pseudoinv_4(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_4(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
         + lsq_pseudoinv_4(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
@@ -117,7 +117,7 @@ def _recon_lsq_cell_c_svd_stencil(
         + lsq_pseudoinv_4(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
         + lsq_pseudoinv_4(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
     )
-    p_coeff_4 = (
+    p_coeff_4_dsl = (
         lsq_pseudoinv_3(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_3(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
         + lsq_pseudoinv_3(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
@@ -128,7 +128,7 @@ def _recon_lsq_cell_c_svd_stencil(
         + lsq_pseudoinv_3(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
         + lsq_pseudoinv_3(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
     )
-    p_coeff_3 = (
+    p_coeff_3_dsl = (
         lsq_pseudoinv_2(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_2(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
         + lsq_pseudoinv_2(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
@@ -139,7 +139,7 @@ def _recon_lsq_cell_c_svd_stencil(
         + lsq_pseudoinv_2(C2CECEC[7]) * (p_cc(C2E2C2E2C[7]) - p_cc)
         + lsq_pseudoinv_2(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
     )
-    p_coeff_2 = (
+    p_coeff_2_dsl = (
         lsq_pseudoinv_1(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_1(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
         + lsq_pseudoinv_1(C2CECEC[2]) * (p_cc(C2E2C2E2C[2]) - p_cc)
@@ -151,29 +151,29 @@ def _recon_lsq_cell_c_svd_stencil(
         + lsq_pseudoinv_1(C2CECEC[8]) * (p_cc(C2E2C2E2C[8]) - p_cc)
     )
 
-    p_coeff_1 = p_cc - (
-        p_coeff_2 * lsq_moments_1
-        + p_coeff_3 * lsq_moments_2
-        + p_coeff_4 * lsq_moments_3
-        + p_coeff_5 * lsq_moments_4
-        + p_coeff_6 * lsq_moments_5
-        + p_coeff_7 * lsq_moments_6
-        + p_coeff_8 * lsq_moments_7
-        + p_coeff_9 * lsq_moments_8
-        + p_coeff_10 * lsq_moments_9
+    p_coeff_1_dsl = p_cc - (
+        p_coeff_2_dsl * lsq_moments_1
+        + p_coeff_3_dsl * lsq_moments_2
+        + p_coeff_4_dsl * lsq_moments_3
+        + p_coeff_5_dsl * lsq_moments_4
+        + p_coeff_6_dsl * lsq_moments_5
+        + p_coeff_7_dsl * lsq_moments_6
+        + p_coeff_8_dsl * lsq_moments_7
+        + p_coeff_9_dsl * lsq_moments_8
+        + p_coeff_10_dsl * lsq_moments_9
     )
 
     return (
-        p_coeff_1,
-        p_coeff_2,
-        p_coeff_3,
-        p_coeff_4,
-        p_coeff_5,
-        p_coeff_6,
-        p_coeff_7,
-        p_coeff_8,
-        p_coeff_9,
-        p_coeff_10,
+        p_coeff_1_dsl,
+        p_coeff_2_dsl,
+        p_coeff_3_dsl,
+        p_coeff_4_dsl,
+        p_coeff_5_dsl,
+        p_coeff_6_dsl,
+        p_coeff_7_dsl,
+        p_coeff_8_dsl,
+        p_coeff_9_dsl,
+        p_coeff_10_dsl,
     )
 
 
@@ -198,16 +198,16 @@ def recon_lsq_cell_c_svd_stencil(
     lsq_moments_7: Field[[CellDim], float],
     lsq_moments_8: Field[[CellDim], float],
     lsq_moments_9: Field[[CellDim], float],
-    p_coeff_1: Field[[CellDim, KDim], float],
-    p_coeff_2: Field[[CellDim, KDim], float],
-    p_coeff_3: Field[[CellDim, KDim], float],
-    p_coeff_4: Field[[CellDim, KDim], float],
-    p_coeff_5: Field[[CellDim, KDim], float],
-    p_coeff_6: Field[[CellDim, KDim], float],
-    p_coeff_7: Field[[CellDim, KDim], float],
-    p_coeff_8: Field[[CellDim, KDim], float],
-    p_coeff_9: Field[[CellDim, KDim], float],
-    p_coeff_10: Field[[CellDim, KDim], float],
+    p_coeff_1_dsl: Field[[CellDim, KDim], float],
+    p_coeff_2_dsl: Field[[CellDim, KDim], float],
+    p_coeff_3_dsl: Field[[CellDim, KDim], float],
+    p_coeff_4_dsl: Field[[CellDim, KDim], float],
+    p_coeff_5_dsl: Field[[CellDim, KDim], float],
+    p_coeff_6_dsl: Field[[CellDim, KDim], float],
+    p_coeff_7_dsl: Field[[CellDim, KDim], float],
+    p_coeff_8_dsl: Field[[CellDim, KDim], float],
+    p_coeff_9_dsl: Field[[CellDim, KDim], float],
+    p_coeff_10_dsl: Field[[CellDim, KDim], float],
 ):
     _recon_lsq_cell_c_svd_stencil(
         p_cc,
@@ -230,15 +230,15 @@ def recon_lsq_cell_c_svd_stencil(
         lsq_moments_8,
         lsq_moments_9,
         out=(
-            p_coeff_1,
-            p_coeff_2,
-            p_coeff_3,
-            p_coeff_4,
-            p_coeff_5,
-            p_coeff_6,
-            p_coeff_7,
-            p_coeff_8,
-            p_coeff_9,
-            p_coeff_10,
+            p_coeff_1_dsl,
+            p_coeff_2_dsl,
+            p_coeff_3_dsl,
+            p_coeff_4_dsl,
+            p_coeff_5_dsl,
+            p_coeff_6_dsl,
+            p_coeff_7_dsl,
+            p_coeff_8_dsl,
+            p_coeff_9_dsl,
+            p_coeff_10_dsl,
         ),
     )
