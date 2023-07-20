@@ -27,26 +27,27 @@ from icon4py.common.dimension import (
     KDim,
     Koff,
     VertexDim,
+    V2CDim,
 )
 
 
 @field_operator
 def _mo_icon_interpolation_fields_initalization_stencil(
-    edge_cell_length: Field[[CellDim, KDim], float],
-    dual_edge_length: Field[[VertexDim, V2CDim], float],
-    c_lin_e: Field[[EdgeDim, E2CDim], float],
-):
-    c_lin_e = (
+    edge_cell_length: Field[[EdgeDim], float],
+    dual_edge_length: Field[[EdgeDim], float],
+) -> tuple[Field[[EdgeDim], float], Field[[EdgeDim], float]]:
+    c_lin_e1 = (
         edge_cell_length / dual_edge_length
     )
-    return c_lin_e
+    c_lin_e2 = 1.0 - c_lin_e1
+    return c_lin_e1, c_lin_e2
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_icon_interpolation_fields_initalization_stencil(
-    edge_cell_length: Field[[CellDim, KDim], float],
-    dual_edge_length: Field[[VertexDim, V2CDim], float],
-    c_lin_e: Field[[EdgeDim, E2CDim], float],
+    edge_cell_length: Field[[EdgeDim], float],
+    dual_edge_length: Field[[EdgeDim], float],
+    c_lin_e: tuple[Field[[EdgeDim], float], Field[[EdgeDim], float]],
 ):
     _mo_icon_interpolation_fields_initalization_stencil(
         edge_cell_length,
