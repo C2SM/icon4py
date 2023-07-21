@@ -26,8 +26,8 @@
 import numpy as np
 #from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.field_management.mo_icon_interpolation_fields_initalization_stencil import (
-    mo_icon_interpolation_fields_initalization_stencil,
+from icon4py.field_management.interpolation_fields import (
+    InterpolationFields,
 )
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -35,38 +35,18 @@ from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh
 
 
-def mo_icon_interpolation_fields_initalization_stencil_numpy(
-    edge_cell_length: np.array,
-    dual_edge_length: np.array,
-) -> np.array:
-    c_lin_e = (edge_cell_length[:] / dual_edge_length[:], 1.0 - edge_cell_length[:] / dual_edge_length[:])
-#    c_lin_e[1, :] = 1.0 - c_lin_e[0, :]
-    return c_lin_e
-
-
-def test_mo_icon_interpolation_fields_initalization_stencil():
+def test_mo_icon_interpolation_fields_initalization():
     mesh = SimpleMesh()
 
     edge_cell_length = random_field(mesh, EdgeDim)
     dual_edge_length = random_field(mesh, EdgeDim)
     c_lin_e = (random_field(mesh, EdgeDim), random_field(mesh, EdgeDim))
 
-    c_lin_e_ref = mo_icon_interpolation_fields_initalization_stencil_numpy(
+    c_lin_e = InterpolationFields.initialization_1st_numpy(
         np.asarray(edge_cell_length),
         np.asarray(dual_edge_length),
     )
 
-    mo_icon_interpolation_fields_initalization_stencil(
-        edge_cell_length,
-        dual_edge_length,
-        c_lin_e,
-        offset_provider={
-                "E2V": mesh.get_e2v_offset_provider(),
-                "E2C": mesh.get_e2c_offset_provider(),
-#                "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
-                "E2EC": EdgeDim,
-                "Koff": KDim,
-        },
-    )
+    c_lin_e_ref = interpolation_state.c_lin_e
 
     assert np.allclose(c_lin_e, c_lin_e_ref)
