@@ -6,10 +6,13 @@ def icon_default = true
 def spack_fork = "C2SM"
 def spack_branch = "main"
 def spack_default = true
+<<<<<<< HEAD
 
 def gt4py_fork = "GridTools"
 def gt4py_branch = "icon4py_20230621"
 def gt4py_default = true
+=======
+>>>>>>> 5891182702905be2ff059d82facfadd50d1b2548
 String[] triggerPhrase = env.ghprbCommentBody.split(" ")
 
 def parseTriggerPhrase(it) {
@@ -29,12 +32,15 @@ triggerPhrase.each {
         spack_default = false
     }
 }
+<<<<<<< HEAD
 triggerPhrase.each {
     if(it.contains("gt4py${repo_identifier}")) {
         (gt4py_fork, gt4py_branch) = parseTriggerPhrase(it)
         gt4py_default = false
     }
 }
+=======
+>>>>>>> 5891182702905be2ff059d82facfadd50d1b2548
 
 pipeline {
     agent none
