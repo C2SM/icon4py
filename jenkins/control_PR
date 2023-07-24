@@ -11,7 +11,7 @@ def gt4py_branch = "icon4py_20230621"
 
 String[] triggerPhrase = env.ghprbCommentBody.split(" ")
 
-def SPACK_ENV_FOLDER = [
+def spack_env_folder = [
     daint: [
         stable: 'config/cscs/spack/v0.18.1.7/daint_dsl_nvhpc',
         dev: 'config/cscs/spack/latest/daint_dsl_dev'
@@ -63,12 +63,13 @@ pipeline {
                         deleteDir()
                     }
                 }
+                environment {
+                    SPACK_ENV_FOLDER = SPACK_ENV_FOLDER["${NODENAME}"]["${env_mode}"]
+                }
                 stages {
                     stage('Clone spack-c2sm') {
                         steps {
-                            echo "${NODENAME}"
-                            echo SPACK_ENV_FOLDER["${NODENAME}"].dev
-                            echo SPACK_ENV_FOLDER["${NODENAME}"]["${env_mode}"]
+                            echo "${env.SPACK_ENV_FOLDER}"
                             sh """
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
                             git clone . icon4py
