@@ -74,12 +74,11 @@ pipeline {
                         }
                     }
                     stage('Clone custom icon-exclaim') {
-                        when { equals( actual: env_mode ,expected: "dev" )
-                            steps {
-                                sh """
-                                git clone --depth 1 --recurse-submodules --shallow-submodules -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
-                                """
-                            }
+                        when { equals( actual: env_mode ,expected: "dev" )}
+                        steps {
+                            sh """
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
+                            """
                         }
                     }
                     stage('Build with icon4py@main') {
