@@ -66,11 +66,13 @@ pipeline {
                 stages {
                     stage('Clone spack-c2sm') {
                         steps {
-                            sh """
-                            git clone map_spack_env["${NODENAME}"]["${env_mode}"]
-                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
-                            git clone . icon4py
-                            """
+                            withEnv([SPACK_ENV_PATH=map_spack_env["${NODENAME}"]["${env_mode}"]]){
+                                sh """
+                                git clone "${env.SPACK_ENV_PATH}"
+                                git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
+                                git clone . icon4py
+                                """
+                            }
                         }
                     }
                     stage('Clone custom icon-exclaim') {
