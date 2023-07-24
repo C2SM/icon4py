@@ -47,61 +47,66 @@ pipeline {
     options{
         timeout(time: 3, unit: 'HOURS')
     }
-    matrix{
-        axes {
-            axis {
-                name 'NODENAME'
-                values 'daint'
-            }
-        }
-    }
+    environment {
+        SPACK_ENV_PATH = ""
+    } 
     stages {
         stage('Tests') {
-            agent { label "${NODENAME}" }
-            post {
-                always {
-                    echo 'Cleaning up workspace'
-                    deleteDir()
+            matrix {
+                agent { label "${NODENAME}" }
+                axes {
+                    axis {
+                        name 'NODENAME'
+                        values 'daint'
+                    }
                 }
-            }
-            stages {
-                stage('Clone spack-c2sm') {
-                    steps {
-                        script{
-                            echo "${env.SPACK_ENV_PATH}"
+                post {
+                    always {
+                        echo 'Cleaning up workspace'
+                        deleteDir()
+                    }
+                }
+                stages {
+                    stage('Clone spack-c2sm') {
+                        steps {
+                            script{
+                            def spack_env = map_spack_env["${NODENAME}"]["${env_mode}"]
+                            writeFile(file: 'spack_env_path.txt' , text: spack_env)
+                            sh """
+                            cat spack_env_path.txt
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_env}' https://github.com/${spack_fork}/spack-c2sm.git
+                            git clone . icon4py
+                            """
+                            }
                         }
-                        sh """
-                        git clone --depth 1 --recurse-submodules --shallow-submodules -b '${env.SPACK_ENV_PATH}' https://github.com/${spack_fork}/spack-c2sm.git
-                        """
                     }
-                }
-                stage('Clone custom icon-exclaim') {
-                    when { equals( actual: env_mode ,expected: "dev" )}
-                    steps {
-                        sh """
-                        git clone '${env.SPACK_ENV_PATH}' 
-                        git clone --depth 1 -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
-                        """
+                    stage('Clone custom icon-exclaim') {
+                        when { equals( actual: env_mode ,expected: "dev" )}
+                        steps {
+                            sh """
+                            git clone --depth 1 -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
+                            """
+                        }
                     }
-                }
-                stage('Build with icon4py@main') {
-                    steps {
-                        sh """
-                        . ./spack-c2sm/setup-env.sh
-                        cd icon-exclaim
-                        spack env activate config/cscs/spack/latest/daint_dsl_main_dev
-                        spack install -v --until build
-                        """
+                    stage('Build with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --until build
+                            """
+                        }
                     }
-                }
-                stage('Test with icon4py@main') {
-                    steps {
-                        sh """
-                        . ./spack-c2sm/setup-env.sh
-                        cd icon-exclaim
-                        spack env activate config/cscs/spack/latest/daint_dsl_main_dev
-                        spack install -v --test=root
-                        """
+                    stage('Test with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --test=root
+                            """
+                        }
                     }
                 }
             }
