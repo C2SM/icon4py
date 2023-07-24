@@ -69,9 +69,7 @@ pipeline {
                 stages {
                     stage('Clone spack-c2sm') {
                         steps {
-                            script{
                             def spack_env = map_spack_env["${NODENAME}"]["${env_mode}"]
-                            writeFile(file: 'spack_env_path.txt' , text: spack_env)
                             sh """
                             cat spack_env_path.txt
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_env}' https://github.com/${spack_fork}/spack-c2sm.git
