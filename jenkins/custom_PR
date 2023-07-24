@@ -1,0 +1,63 @@
+pipeline {
+    agent none
+    parameters {
+        string(name: 'spack_fork', defaultValue: 'C2SM')
+        string(name: 'spack_branch', defaultValue: 'main')
+        string(name: 'icon_fork', defaultValue: 'C2SM')
+        string(name: 'icon_branch', defaultValue: 'icon-dsl')
+    }
+    options{
+        timeout(time: 3, unit: 'HOURS')
+    }
+    stages {
+        stage('Tests') {
+            matrix {
+                agent { label "${NODENAME}" }
+                axes {
+                    axis {
+                        name 'NODENAME'
+                        values 'daint'
+                    }
+                }
+                post {
+                    always {
+                        echo 'Cleaning up workspace'
+                        deleteDir()
+                    }
+                }
+                stages {
+                    stage('Clone Repos') {
+                        steps {
+                            sh """
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${params.spack_branch}' https://github.com/${params.spack_fork}/spack-c2sm.git
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${params.icon_branch}' git@github.com:${params.icon_fork}/icon-exclaim.git
+                            git clone . icon4py
+                            """
+                        }
+                    }
+                    stage('Build with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --until build
+                            """
+                        }
+                    }
+                    stage('Test with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --test=root
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
