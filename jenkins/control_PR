@@ -44,6 +44,9 @@ triggerPhrase.each {
 }
 pipeline {
     agent none
+    options{
+        timeout(time: 3, unit: 'HOURS')
+    }
     matrix{
         axes {
             axis {
@@ -52,12 +55,6 @@ pipeline {
             }
         }
     }
-    options{
-        timeout(time: 3, unit: 'HOURS')
-    }
-    environment {
-        SPACK_ENV_PATH = map_spack_env["${NODENAME}"]["${env_mode}"]
-    } 
     stages {
         stage('Tests') {
             agent { label "${NODENAME}" }
