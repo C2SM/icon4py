@@ -75,7 +75,6 @@ pipeline {
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_env}' https://github.com/${spack_fork}/spack-c2sm.git
                             git clone . icon4py
                             """
-                            }
                         }
                     }
                     stage('Clone custom icon-exclaim') {
