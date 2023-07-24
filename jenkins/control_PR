@@ -74,7 +74,7 @@ pipeline {
                         }
                     }
                     stage('Clone custom icon-exclaim') {
-                        when { expression{ env_mode == 'dev' }
+                        when { equals{ env_mode == 'dev' }
                             steps {
                                 sh """
                                 git clone --depth 1 --recurse-submodules --shallow-submodules -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
