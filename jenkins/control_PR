@@ -71,7 +71,7 @@ pipeline {
                                 writeFile(file: 'spack_env_path.txt' , text: spack_env)
                             }
                             sh """
-                            echo $(cat spack_env_path.txt)
+                            cat spack_env_path.txt
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
                             git clone . icon4py
                             """
