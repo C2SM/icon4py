@@ -11,7 +11,7 @@ def gt4py_branch = "icon4py_20230621"
 
 String[] triggerPhrase = env.ghprbCommentBody.split(" ")
 
-def spack_env_folder = [
+def map_spack_env = [
     daint: [
         stable: 'config/cscs/spack/v0.18.1.7/daint_dsl_nvhpc',
         dev: 'config/cscs/spack/latest/daint_dsl_dev'
@@ -64,7 +64,7 @@ pipeline {
                     }
                 }
                 environment {
-                    SPACK_ENV_FOLDER = SPACK_ENV_FOLDER["${NODENAME}"]["${env_mode}"]
+                    SPACK_ENV_FOLDER = map_spack_env["${NODENAME}"]["${env_mode}"]
                 }
                 stages {
                     stage('Clone spack-c2sm') {
