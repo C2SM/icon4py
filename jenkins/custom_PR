@@ -1,6 +1,7 @@
 pipeline {
     agent none
     parameters {
+        string(name: 'upstream_root', defaultValue: '')
         string(name: 'spack_fork', defaultValue: 'C2SM')
         string(name: 'spack_branch', defaultValue: 'main')
         string(name: 'icon_fork', defaultValue: 'C2SM')
@@ -29,6 +30,7 @@ pipeline {
                     stage('Clone Repos') {
                         steps {
                             sh """
+                            git clone --recurse-submodules --shallow-submodules ${params.upstream_root} .
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b '${params.spack_branch}' https://github.com/${params.spack_fork}/spack-c2sm.git
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b '${params.icon_branch}' git@github.com:${params.icon_fork}/icon-exclaim.git
                             git clone . icon4py

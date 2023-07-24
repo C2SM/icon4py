@@ -42,7 +42,11 @@ pipeline {
                 parallel {
                     stage('run PR') {
                         steps {
-                        build job: 'icon4py-custom-PR'
+                        build job: 'icon4py-custom-PR', propagete: true, 
+                        parameters: [
+                            string(name: 'JENKINSFILE_PATH', value: "${WORKSPACE}/jenkins/custom_PR")
+                            string(name: 'upstream_root', value: "${WORKSPACE}")
+                            ]
                         }
                     }
                 }
