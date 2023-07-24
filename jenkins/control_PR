@@ -47,6 +47,9 @@ pipeline {
     options{
         timeout(time: 3, unit: 'HOURS')
     }
+    environment {
+        SPACK_ENV_PATH = ""
+    } 
     stages {
         stage('Tests') {
             matrix {
@@ -67,13 +70,10 @@ pipeline {
                     stage('Clone spack-c2sm') {
                         steps {
                             script{
-                                def spack_env = map_spack_env["${NODENAME}"]["${env_mode}"] 
-                                writeFile(file: 'spack_env_path.txt' , text: spack_env)
+                                env.SPACK_ENV_PATH = map_spack_env["${NODENAME}"]["${env_mode}"]
                             }
                             sh """
-                            cat spack_env_path.txt
-                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
-                            git clone . icon4py
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${env.SPACK_ENV_PATH}' https://github.com/${spack_fork}/spack-c2sm.git
                             """
                         }
                     }
@@ -81,7 +81,8 @@ pipeline {
                         when { equals( actual: env_mode ,expected: "dev" )}
                         steps {
                             sh """
-                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
+                            git clone '${env.SPACK_ENV_PATH}' 
+                            git clone --depth 1 -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
                             """
                         }
                     }
