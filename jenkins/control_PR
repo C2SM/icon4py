@@ -66,7 +66,7 @@ pipeline {
                 stages {
                     stage('Clone spack-c2sm') {
                         steps {
-                            echo ${params.NODENAME} 
+                            echo "${params.NODENAME}"
                             echo SPACK_ENV_FOLDER["${params.NODENAME}"]
                             echo SPACK_ENV_FOLDER["${params.NODENAME}"]["${env_mode}"] 
                             sh """
