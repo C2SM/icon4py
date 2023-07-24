@@ -12,9 +12,9 @@ def gt4py_branch = "icon4py_20230621"
 String[] triggerPhrase = env.ghprbCommentBody.split(" ")
 
 def SPACK_ENV_FOLDER = [
-    'daint': [
-        'stable': 'config/cscs/spack/v0.18.1.7/daint_dsl_nvhpc',
-        'dev': 'config/cscs/spack/latest/daint_dsl_dev'
+    daint: [
+        stable: 'config/cscs/spack/v0.18.1.7/daint_dsl_nvhpc',
+        dev: 'config/cscs/spack/latest/daint_dsl_dev'
     ]
 ]
 
