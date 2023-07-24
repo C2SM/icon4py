@@ -16,6 +16,7 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_30_to_38 import (
     mo_solve_nonhydro_stencil_30_to_38,
+    mo_solve_nonhydro_stencil_30_to_38_predictor,
     mo_solve_nonhydro_stencil_36_to_38,
 )
 from icon4py.model.common.dimension import E2C2EDim, E2C2EODim, EdgeDim, KDim
@@ -254,3 +255,184 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
             k=k,
             nlev=nlev,
         )
+
+
+class TestMoSolveNonhydroStencil30_to_38_predictor(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_30_to_38_predictor
+    OUTPUTS = (
+        "z_vn_avg",
+        "z_graddiv_vn",
+        "vt",
+        "mass_fl_e",
+        "z_theta_v_fl_e",
+        "z_w_concorr_me",
+        "vn_ie",
+        "z_vt_ie",
+        "z_kin_hor_e",
+    )
+
+    @staticmethod
+    def reference(
+        mesh,
+        e_flx_avg: np.array,
+        vn: np.array,
+        geofac_grdiv: np.array,
+        rbf_vec_coeff_e: np.array,
+        z_rho_e: np.array,
+        z_vn_avg: np.array,
+        ddqz_z_full_e: np.array,
+        z_theta_v_e: np.array,
+        vt: np.array,
+        z_graddiv_vn: np.array,
+        mass_fl_e: np.array,
+        # vn_traj: np.array,
+        ddxn_z_full: np.array,
+        ddxt_z_full: np.array,
+        # mass_flx_me: np.array,
+        wgtfac_e: np.array,
+        vn_ie: np.array,
+        z_vt_ie: np.array,
+        z_kin_hor_e: np.array,
+        r_nsubsteps: float,
+        **kwargs,
+    ) -> dict:
+        return TestMoSolveNonhydroStencil30_to_38.reference(
+            mesh,
+            0,
+            lclean_mflx,
+            e_flx_avg,
+            vn,
+            geofac_grdiv,
+            rbf_vec_coeff_e,
+            z_rho_e,
+            z_vn_avg,
+            ddqz_z_full_e,
+            z_theta_v_e,
+            vt,
+            z_graddiv_vn,
+            mass_fl_e,
+            # vn_traj,
+            np.zeros_like(vt),
+            ddxn_z_full,
+            ddxt_z_full,
+            # mass_flx_me,
+            np.zeros_like(vt),
+            wgtfac_e,
+            vn_ie,
+            z_vt_ie,
+            z_kin_hor_e,
+            r_nsubsteps,
+            **kwargs,
+        )
+
+    @pytest.fixture
+    def input_data(self, mesh):  # TODO resolve copy paste
+        e_flx_avg = random_field(mesh, EdgeDim, E2C2EODim)
+        geofac_grdiv = random_field(mesh, EdgeDim, E2C2EODim)
+        rbf_vec_coeff_e = random_field(mesh, EdgeDim, E2C2EDim)
+        vn = random_field(mesh, EdgeDim, KDim)
+        z_rho_e = random_field(mesh, EdgeDim, KDim)
+        ddqz_z_full_e = random_field(mesh, EdgeDim, KDim)
+        z_theta_v_e = random_field(mesh, EdgeDim, KDim)
+        # mass_flx_me = random_field(mesh, EdgeDim, KDim)
+        # vn_traj = random_field(mesh, EdgeDim, KDim)
+        ddxn_z_full = random_field(mesh, EdgeDim, KDim)
+        ddxt_z_full = random_field(mesh, EdgeDim, KDim)
+        wgtfac_e = random_field(mesh, EdgeDim, KDim)
+        z_vn_avg = zero_field(mesh, EdgeDim, KDim)
+        z_graddiv_vn = zero_field(mesh, EdgeDim, KDim)
+        vt = zero_field(mesh, EdgeDim, KDim)
+        mass_fl_e = zero_field(mesh, EdgeDim, KDim)
+        z_theta_v_fl_e = zero_field(mesh, EdgeDim, KDim)
+        z_w_concorr_me = zero_field(mesh, EdgeDim, KDim)
+        vn_ie = zero_field(mesh, EdgeDim, KDim)
+        z_vt_ie = zero_field(mesh, EdgeDim, KDim)
+        z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
+        r_nsubsteps = 9.0
+        k = index_field(mesh, KDim)
+        nlev = mesh.k_level
+
+        return dict(
+            # istep=istep,
+            # lclean_mflx=lclean_mflx,
+            e_flx_avg=e_flx_avg,
+            vn=vn,
+            geofac_grdiv=geofac_grdiv,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
+            z_rho_e=z_rho_e,
+            ddqz_z_full_e=ddqz_z_full_e,
+            z_theta_v_e=z_theta_v_e,
+            # mass_flx_me=mass_flx_me,
+            # vn_traj=vn_traj,
+            ddxn_z_full=ddxn_z_full,
+            ddxt_z_full=ddxt_z_full,
+            wgtfac_e=wgtfac_e,
+            z_vn_avg=z_vn_avg,
+            z_graddiv_vn=z_graddiv_vn,
+            vt=vt,
+            mass_fl_e=mass_fl_e,
+            z_theta_v_fl_e=z_theta_v_fl_e,
+            z_w_concorr_me=z_w_concorr_me,
+            vn_ie=vn_ie,
+            z_vt_ie=z_vt_ie,
+            z_kin_hor_e=z_kin_hor_e,
+            r_nsubsteps=r_nsubsteps,
+            k=k,
+            nlev=nlev,
+        )
+
+
+# class TestMoSolveNonhydroStencil30_to_38_predictor(StencilTest):
+#     @staticmethod
+#     def reference(
+#         mesh,
+#         istep: int,
+#         lclean_mflx: bool,
+#         e_flx_avg: np.array,
+#         vn: np.array,
+#         geofac_grdiv: np.array,
+#         rbf_vec_coeff_e: np.array,
+#         z_rho_e: np.array,
+#         z_vn_avg: np.array,
+#         ddqz_z_full_e: np.array,
+#         z_theta_v_e: np.array,
+#         vt: np.array,
+#         z_graddiv_vn: np.array,
+#         mass_fl_e: np.array,
+#         vn_traj: np.array,
+#         ddxn_z_full: np.array,
+#         ddxt_z_full: np.array,
+#         mass_flx_me: np.array,
+#         wgtfac_e: np.array,
+#         vn_ie: np.array,
+#         z_vt_ie: np.array,
+#         z_kin_hor_e: np.array,
+#         r_nsubsteps: float,
+#         **kwargs,
+#     ):
+#         return TestMoSolveNonhydroStencil30_to_38.reference(
+#             mesh,
+#             0,
+#             lclean_mflx,
+#             e_flx_avg,
+#             vn,
+#             geofac_grdiv,
+#             rbf_vec_coeff_e,
+#             z_rho_e,
+#             z_vn_avg,
+#             ddqz_z_full_e,
+#             z_theta_v_e,
+#             vt,
+#             z_graddiv_vn,
+#             mass_fl_e,
+#             vn_traj,
+#             ddxn_z_full,
+#             ddxt_z_full,
+#             mass_flx_me,
+#             wgtfac_e,
+#             vn_ie,
+#             z_vt_ie,
+#             z_kin_hor_e,
+#             r_nsubsteps,
+#             **kwargs,
+#         )

@@ -160,7 +160,7 @@ def _mo_solve_nonhydro_stencil_30_to_38(
         )
     )  # elif itime_scheme >= 5 not implemented
 
-    # IF (idiv_method == 1
+    # IF (idiv_method == 1)
     mass_fl_e, z_theta_v_fl_e = _mo_solve_nonhydro_stencil_32(
         z_rho_e, z_vn_avg, ddqz_z_full_e, z_theta_v_e
     )
@@ -279,6 +279,114 @@ def mo_solve_nonhydro_stencil_30_to_38(
             z_theta_v_fl_e,
             vn_traj,
             mass_flx_me,
+            z_w_concorr_me,
+            vn_ie,
+            z_vt_ie,
+            z_kin_hor_e,
+        ),
+    )
+
+
+@field_operator
+def _mo_solve_nonhydro_stencil_30_to_38_predictor(
+    k: Field[[KDim], int32],
+    e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
+    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
+    z_rho_e: Field[[EdgeDim, KDim], float],
+    ddqz_z_full_e: Field[[EdgeDim, KDim], float],
+    z_theta_v_e: Field[[EdgeDim, KDim], float],
+    ddxn_z_full: Field[[EdgeDim, KDim], float],
+    ddxt_z_full: Field[[EdgeDim, KDim], float],
+    wgtfac_e: Field[[EdgeDim, KDim], float],
+    nlev: int32,
+) -> tuple[
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+]:
+    z_vn_avg, z_graddiv_vn, vt = _mo_solve_nonhydro_stencil_30(
+        e_flx_avg, vn, geofac_grdiv, rbf_vec_coeff_e
+    )
+
+    # IF (idiv_method == 1)
+    mass_fl_e, z_theta_v_fl_e = _mo_solve_nonhydro_stencil_32(
+        z_rho_e, z_vn_avg, ddqz_z_full_e, z_theta_v_e
+    )
+    # END IF (idiv_method == 1)
+
+    z_w_concorr_me = _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt)
+    vn_ie, z_vt_ie, z_kin_hor_e = _mo_solve_nonhydro_stencil_36_to_38(
+        k,
+        nlev,
+        wgtfac_e,
+        vn,
+        vt,
+    )  # only l_vert_nested == False implemented
+    return (
+        z_vn_avg,
+        z_graddiv_vn,
+        vt,
+        mass_fl_e,
+        z_theta_v_fl_e,
+        z_w_concorr_me,
+        vn_ie,
+        z_vt_ie,
+        z_kin_hor_e,
+    )
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def mo_solve_nonhydro_stencil_30_to_38_predictor(
+    k: Field[[KDim], int32],
+    e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
+    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
+    z_rho_e: Field[[EdgeDim, KDim], float],
+    ddqz_z_full_e: Field[[EdgeDim, KDim], float],
+    z_theta_v_e: Field[[EdgeDim, KDim], float],
+    ddxn_z_full: Field[[EdgeDim, KDim], float],
+    ddxt_z_full: Field[[EdgeDim, KDim], float],
+    wgtfac_e: Field[[EdgeDim, KDim], float],
+    z_vn_avg: Field[[EdgeDim, KDim], float],
+    z_graddiv_vn: Field[[EdgeDim, KDim], float],
+    vt: Field[[EdgeDim, KDim], float],
+    mass_fl_e: Field[[EdgeDim, KDim], float],
+    z_theta_v_fl_e: Field[[EdgeDim, KDim], float],
+    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    vn_ie: Field[[EdgeDim, KDim], float],
+    z_vt_ie: Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], float],
+    r_nsubsteps: float,
+    nlev: int32,
+):
+    _mo_solve_nonhydro_stencil_30_to_38_predictor(
+        k,
+        e_flx_avg,
+        vn,
+        geofac_grdiv,
+        rbf_vec_coeff_e,
+        z_rho_e,
+        ddqz_z_full_e,
+        z_theta_v_e,
+        ddxn_z_full,
+        ddxt_z_full,
+        wgtfac_e,
+        nlev,
+        out=(
+            z_vn_avg,
+            z_graddiv_vn,
+            vt,
+            mass_fl_e,
+            z_theta_v_fl_e,
             z_w_concorr_me,
             vn_ie,
             z_vt_ie,
