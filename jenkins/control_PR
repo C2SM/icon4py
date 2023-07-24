@@ -66,9 +66,9 @@ pipeline {
                 stages {
                     stage('Clone spack-c2sm') {
                         steps {
-                            echo "${params.NODENAME}"
-                            echo SPACK_ENV_FOLDER["${params.NODENAME}"]
-                            echo SPACK_ENV_FOLDER["${params.NODENAME}"]["${env_mode}"] 
+                            echo "${NODENAME}"
+                            echo SPACK_ENV_FOLDER["${NODENAME}"]
+                            echo SPACK_ENV_FOLDER["${NODENAME}"]["${env_mode}"] 
                             sh """
                             git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
                             git clone . icon4py
