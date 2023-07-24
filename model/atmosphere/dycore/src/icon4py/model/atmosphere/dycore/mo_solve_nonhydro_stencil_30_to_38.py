@@ -158,32 +158,57 @@ def _mo_solve_nonhydro_stencil_30_to_38(
             broadcast(0.0, (EdgeDim, KDim)),
             broadcast(0.0, (EdgeDim, KDim)),
         )
-    )  # if itime_scheme >= 5 not implemented
+    )  # elif itime_scheme >= 5 not implemented
+
+    # IF (idiv_method == 1
     mass_fl_e, z_theta_v_fl_e = _mo_solve_nonhydro_stencil_32(
         z_rho_e, z_vn_avg, ddqz_z_full_e, z_theta_v_e
     )
 
+    # IF (lprep_adv)
     vn_traj, mass_flx_me = (
-        _mo_solve_nonhydro_stencil_34(
-            z_vn_avg,
-            mass_fl_e,
-            broadcast(0.0, (EdgeDim, KDim)),
-            broadcast(0.0, (EdgeDim, KDim)),
-            r_nsubsteps,
+        (
+            _mo_solve_nonhydro_stencil_34(  # 33 fused into this one (i.e. initializing with 0)
+                z_vn_avg,
+                mass_fl_e,
+                broadcast(0.0, (EdgeDim, KDim)),
+                broadcast(0.0, (EdgeDim, KDim)),
+                r_nsubsteps,
+            )
+            if lclean_mflx
+            else _mo_solve_nonhydro_stencil_34(
+                z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps
+            )
         )
-        if lclean_mflx
-        else _mo_solve_nonhydro_stencil_34(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps)
+        if istep == 1
+        else (
+            broadcast(0.0, (EdgeDim, KDim)),  # not needed for istep == 0
+            broadcast(0.0, (EdgeDim, KDim)),
+        )
     )
+    # END IF (lprep_adv)
+    # END IF (idiv_method == 1)
 
-    z_w_concorr_me = _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt)
-    vn_ie, z_vt_ie, z_kin_hor_e = _mo_solve_nonhydro_stencil_36_to_38(
-        k,
-        nlev,
-        wgtfac_e,
-        vn,
-        vt,
+    z_w_concorr_me = (
+        _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt)
+        if istep == 0  # or itime_scheme >= 5
+        else broadcast(0.0, (EdgeDim, KDim))  # not needed for istep == 1
     )
-
+    vn_ie, z_vt_ie, z_kin_hor_e = (
+        _mo_solve_nonhydro_stencil_36_to_38(
+            k,
+            nlev,
+            wgtfac_e,
+            vn,
+            vt,
+        )  # only l_vert_nested == False implemented
+        if istep == 0
+        else (
+            broadcast(0.0, (EdgeDim, KDim)),
+            broadcast(0.0, (EdgeDim, KDim)),
+            broadcast(0.0, (EdgeDim, KDim)),
+        )  # not needed for istep == 2
+    )
     return (
         z_vn_avg,
         z_graddiv_vn,

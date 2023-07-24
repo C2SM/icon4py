@@ -35,12 +35,12 @@ from . import (
 )
 
 
-@pytest.fixture(ids=["istep=0", "istep=1"], params=[0, 1])
+@pytest.fixture(ids=["predictor", "corrector"], params=[0, 1])
 def istep(request):
     return request.param
 
 
-@pytest.fixture(ids=["lclean_mflx=True", "lclean_mflx=False"], params=[True, False])
+@pytest.fixture(ids=["lclean_mflxTrue", "lclean_mflxFalse"], params=[True, False])
 def lclean_mflx(request):
     return request.param
 
@@ -165,20 +165,25 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
             vn_traj = np.zeros_like(vn_traj)
             mass_flx_me = np.zeros_like(mass_flx_me)
 
-        (
-            vn_traj,
-            mass_flx_me,
-        ) = test_mo_solve_nonhydro_stencil_34.TestMoSolveNonhydroStencil34.reference(
-            mesh, z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps
-        ).values()
+        if istep == 1:
+            (
+                vn_traj,
+                mass_flx_me,
+            ) = test_mo_solve_nonhydro_stencil_34.TestMoSolveNonhydroStencil34.reference(
+                mesh, z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps
+            ).values()
 
-        z_w_concorr_me = test_mo_solve_nonhydro_stencil_35.TestMoSolveNonhydroStencil35.reference(
-            mesh, vn, ddxn_z_full, ddxt_z_full, vt
-        )["z_w_concorr_me"]
+        if istep == 0:  # or itime_scheme >= 5
+            z_w_concorr_me = (
+                test_mo_solve_nonhydro_stencil_35.TestMoSolveNonhydroStencil35.reference(
+                    mesh, vn, ddxn_z_full, ddxt_z_full, vt
+                )["z_w_concorr_me"]
+            )
 
-        (vn_ie, z_vt_ie, z_kin_hor_e,) = TestMoSolveNonhydroStencil36_to_38.reference(
-            mesh, wgtfac_e, vn, vt, vn_ie, z_vt_ie, z_kin_hor_e
-        ).values()
+        if istep == 0:
+            (vn_ie, z_vt_ie, z_kin_hor_e,) = TestMoSolveNonhydroStencil36_to_38.reference(
+                mesh, wgtfac_e, vn, vt, vn_ie, z_vt_ie, z_kin_hor_e
+            ).values()
 
         return dict(
             z_vn_avg=z_vn_avg,
