@@ -1,0 +1,84 @@
+def repo_identifier = "Project"
+def icon_fork = "C2SM"
+def icon_branch = "icon-dsl"
+def icon_default = true
+
+def spack_fork = "C2SM"
+def spack_branch = "main"
+def spack_default = true
+String[] triggerPhrase = env.ghprbCommentBody.split(" ")
+
+def parseTriggerPhrase(it) {
+    fork = it.split("=")[1].split("/")[0]
+    branch = it.split("=")[1].split("/")[1]
+    return [fork, branch]
+}
+triggerPhrase.each {
+    if(it.contains("icon${repo_identifier}")) {
+        (icon_fork, icon_branch) = parseTriggerPhrase(it)
+        icon_default = false
+    }
+}
+triggerPhrase.each {
+    if(it.contains("spack${repo_identifier}")) {
+        (spack_fork, spack_branch) = parseTriggerPhrase(it)
+        spack_default = false
+    }
+}
+
+pipeline {
+    agent none
+    options{
+        timeout(time: 3, unit: 'HOURS')
+    }
+    stages {
+        stage('Tests') {
+            matrix {
+                agent { label "${NODENAME}" }
+                axes {
+                    axis {
+                        name 'NODENAME'
+                        values 'daint'
+                    }
+                }
+                post {
+                    always {
+                        echo 'Cleaning up workspace'
+                        deleteDir()
+                    }
+                }
+                stages {
+                    stage('Clone Repos') {
+                        steps {
+                            sh """
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
+                            git clone . icon4py
+                            """
+                        }
+                    }
+                    stage('Build with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --until build
+                            """
+                        }
+                    }
+                    stage('Test with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --test=root
+                            """
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
