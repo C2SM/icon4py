@@ -43,7 +43,7 @@ pipeline {
                     stage('run PR') {
                         steps {
                         build job: 'icon4py-custom-PR', propagate: true, 
-                        parameters: [ string(name: 'JENKINSFILE_PATH', value: "${WORKSPACE}/jenkins/custom_PR"), string(name: 'upstream_root', value: "${WORKSPACE}") ]
+                        parameters: [ string(name: 'JENKINSFILE_PATH', value: "${WORKSPACE}/jenkins/custom_PR"), string(name: 'upstream_root', value: "dummy") ]
                         }
                     }
                 }
