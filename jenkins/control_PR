@@ -1,16 +1,23 @@
 def repo_identifier = "Project"
+def env_mode = 'stable'
 def icon_fork = "C2SM"
 def icon_branch = "icon-dsl"
-def icon_default = true
 
 def spack_fork = "C2SM"
 def spack_branch = "main"
-def spack_default = true
 
 def gt4py_fork = "GridTools"
 def gt4py_branch = "icon4py_20230621"
-def gt4py_default = true
+
 String[] triggerPhrase = env.ghprbCommentBody.split(" ")
+
+def SPACK_ENV_FOLDER = [
+    'daint': [
+        'stable': 'config/cscs/spack/v0.18.1.7/daint_dsl_nvhpc',
+        'dev': 'config/cscs/spack/latest/daint_dsl_dev'
+    ]
+]
+
 
 def parseTriggerPhrase(it) {
     fork = it.split("=")[1].split("/")[0]
@@ -20,33 +27,83 @@ def parseTriggerPhrase(it) {
 triggerPhrase.each {
     if(it.contains("icon${repo_identifier}")) {
         (icon_fork, icon_branch) = parseTriggerPhrase(it)
-        icon_default = false
+        env_mode = 'dev'
     }
 }
 triggerPhrase.each {
     if(it.contains("spack${repo_identifier}")) {
         (spack_fork, spack_branch) = parseTriggerPhrase(it)
-        spack_default = false
+        fetch_repos = true
     }
 }
 triggerPhrase.each {
     if(it.contains("gt4py${repo_identifier}")) {
         (gt4py_fork, gt4py_branch) = parseTriggerPhrase(it)
-        gt4py_default = false
+        fetch_repos = true
     }
 }
 pipeline {
     agent none
+    options{
+        timeout(time: 3, unit: 'HOURS')
+    }
     stages {
-        stage('Launch builders') {
-                parallel {
-                    stage('run PR') {
+        stage('Tests') {
+            matrix {
+                agent { label "${NODENAME}" }
+                axes {
+                    axis {
+                        name 'NODENAME'
+                        values 'daint'
+                    }
+                }
+                post {
+                    always {
+                        echo 'Cleaning up workspace'
+                        deleteDir()
+                    }
+                }
+                stages {
+                    stage('Clone spack-c2sm') {
                         steps {
-                        build job: 'icon4py-custom-PR', propagate: true, 
-                        parameters: [ string(name: 'JENKINSFILE_PATH', value: "${env.WORKSPACE}/jenkins/custom_PR"), string(name: 'upstream_root', value: "${env.WORKSPACE}") ]
+                            echo SPACK_ENV_FOLDER["${params.NODENAME}"]["${env_mode}"] 
+                            sh """
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
+                            git clone . icon4py
+                            """
+                        }
+                    }
+                    stage('Clone custom icon-exclaim') {
+                        when { expression{ env_mode == 'dev' }
+                            steps {
+                                sh """
+                                git clone --depth 1 --recurse-submodules --shallow-submodules -b '${icon_branch}' git@github.com:${icon_fork}/icon-exclaim.git
+                                """
+                            }
+                        }
+                    }
+                    stage('Build with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --until build
+                            """
+                        }
+                    }
+                    stage('Test with icon4py@main') {
+                        steps {
+                            sh """
+                            . ./spack-c2sm/setup-env.sh
+                            cd icon-exclaim
+                            spack env activate config/cscs/spack/latest/daint_dsl_main_dev
+                            spack install -v --test=root
+                            """
                         }
                     }
                 }
-        }    
+            }
+        }
     }
 }
