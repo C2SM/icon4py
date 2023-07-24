@@ -19,6 +19,12 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_30_to_38 import (
     mo_solve_nonhydro_stencil_36_to_38,
 )
 from icon4py.model.common.dimension import E2C2EDim, E2C2EODim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    index_field,
+    random_field,
+    zero_field,
+)
 
 from . import (
     test_mo_solve_nonhydro_stencil_30,
@@ -26,13 +32,6 @@ from . import (
     test_mo_solve_nonhydro_stencil_32,
     test_mo_solve_nonhydro_stencil_34,
     test_mo_solve_nonhydro_stencil_35,
-)
-
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    index_field,
-    random_field,
-    zero_field,
 )
 
 
@@ -177,11 +176,7 @@ class TestMoSolveNonhydroStencil30_to_38(StencilTest):
             mesh, vn, ddxn_z_full, ddxt_z_full, vt
         )["z_w_concorr_me"]
 
-        (
-            vn_ie,
-            z_vt_ie,
-            z_kin_hor_e,
-        ) = TestMoSolveNonhydroStencil36_to_38.reference(
+        (vn_ie, z_vt_ie, z_kin_hor_e,) = TestMoSolveNonhydroStencil36_to_38.reference(
             mesh, wgtfac_e, vn, vt, vn_ie, z_vt_ie, z_kin_hor_e
         ).values()
 
