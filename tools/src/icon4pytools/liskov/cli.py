@@ -54,7 +54,7 @@ def main(ctx):
     "--fused/--unfused",
     "-f/-u",
     default=True,
-    help="Add metadata header with information about program.",
+    help="Adds fused or unfused stencils.",
 )
 @click.argument(
     "input_path",
