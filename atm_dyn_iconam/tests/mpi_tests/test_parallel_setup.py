@@ -13,6 +13,7 @@
 import logging
 
 import ghex
+import mpi4py.MPI
 import numpy as np
 import pytest
 
@@ -22,7 +23,7 @@ from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.decomposition.parallel_setup import (
     DecompositionInfo,
     Exchange,
-    get_processor_properties,
+    get_processor_properties, finalize_mpi,
 )
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.driver.io_utils import (
@@ -166,13 +167,13 @@ def test_decomposition_info_matches_gridsize(datapath, caplog):
     )
 
 
-@pytest.mark.mpi
+#@pytest.mark.mpi
 @pytest.mark.parametrize("datapath", [2], indirect=True)
 def test_parallel_diffusion(
-    datapath, r04b09_diffusion_config, step_date_init, caplog, ndyn_substeps
+    datapath, r04b09_diffusion_config, step_date_init, ndyn_substeps,caplog
 ):
 
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.WARN)
     props = get_processor_properties()
 
     print(
@@ -199,12 +200,11 @@ def test_parallel_diffusion(
     print(
         f"rank={props.rank}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
     )
-    initial_run = False
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
 
     diffusion_initial_data = IconSerialDataProvider(
         "icon_pydycore", str(path), True, mpi_rank=props.rank
-    ).from_savepoint_diffusion_init(linit=initial_run, date=step_date_init)
+    ).from_savepoint_diffusion_init(linit=False, date=step_date_init)
     (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(
         path, rank=props.rank
     )
@@ -241,10 +241,12 @@ def test_parallel_diffusion(
 
     diffusion_savepoint_exit = IconSerialDataProvider(
         "icon_pydycore", str(path), True, mpi_rank=props.rank
-    ).from_savepoint_diffusion_exit(linit=initial_run, date=step_date_init)
+    ).from_savepoint_diffusion_exit(linit=False, date=step_date_init)
     _verify_diffusion_fields(
-        decomp_info, diagnostic_state, prognostic_state, diffusion_savepoint_exit
+        diagnostic_state=diagnostic_state, prognostic_state=prognostic_state, diffusion_savepoint=diffusion_savepoint_exit, decomp_info=decomp_info
     )
     print(
         f"rank={props.rank}/{props.comm_size}:  running diffusion step - using {props.comm_name} with {props.comm_size} nodes - DONE"
     )
+
+

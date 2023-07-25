@@ -18,7 +18,7 @@ import ghex.unstructured as ghex
 import mpi4py
 import numpy as np
 import numpy.ma as ma
-from gt4py.next.common import Dimension
+from gt4py.next.common import Dimension, DimensionKind
 from mpi4py.MPI import Comm
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, KHalfDim, VertexDim
@@ -123,6 +123,7 @@ class DecompositionInfo:
 
 class Exchange:
     def __init__(self, context, domain_decomposition: DecompositionInfo):
+        self._counter = 0
         self._context = context
         self._decomposition_info = domain_decomposition
         self._log_id = f"rank={self._context.rank()}/{self._context.size()}"
@@ -166,7 +167,6 @@ class Exchange:
     def get_size(self):
         return self._context.size()
 
-    # TODO [magdalena] is the tolist() necessary?
     def _create_domain_descriptor(self, dim: Dimension):
         all_global = self._decomposition_info.global_index(
             dim, DecompositionInfo.EntryType.ALL
@@ -174,12 +174,18 @@ class Exchange:
         local_halo = self._decomposition_info.local_index(
             dim, DecompositionInfo.EntryType.HALO
         )
-        # TOOD [magdalena]  first arg is the domain ID which builds up an MPI Tag, doesn't need to be the MPI rank.
-        # on the contrary it is safer if those are different for all domain descriptors (otherwise the system deadlocks if 2 parallel exchanges are done
-        # with the same domain-id
+
+        print(
+            f"rank={self._context.rank()}/{self._context.size()}:  all global idx(dim={dim.value}) (shape = {all_global.shape}) {all_global}")
+        print(
+            f"rank={self._context.rank()}/{self._context.size()}:  local halo idx(dim={dim.value}) (shape = {local_halo.shape}) {local_halo}")
+        # first arg is the domain ID which builds up an MPI Tag.
+        # if those ids are not different for all domain descriptors the system might deadlock
+        # if two parallel exchanges with the same domain id are done
         domain_desc = ghex.domain_descriptor(
-            self._context.rank(), all_global.tolist(), local_halo.tolist()
+            self._context.rank() + self._counter, all_global.tolist(), local_halo.tolist()
         )
+        self._counter = self._counter +  1
         print(
             f"rank={self._context.rank()}/{self._context.size()}: domain descriptor for dim {dim} with properties {self._domain_descriptor_info(domain_desc)}"
         )
@@ -187,10 +193,13 @@ class Exchange:
         return domain_desc
 
     def _create_pattern(self, horizontal_dim: Dimension):
+        assert horizontal_dim.kind == DimensionKind.HORIZONTAL
+
+        global_halo_idx = self._decomposition_info.global_index(horizontal_dim,
+                                                      DecompositionInfo.EntryType.HALO)
+        print(f"rank={self._context.rank()}/{self._context.size()}:  global halo idx(dim={horizontal_dim.value}) (shape = {global_halo_idx.shape}) {global_halo_idx}")
         halo_generator = ghex.halo_generator_with_gids(
-            self._decomposition_info.global_index(
-                horizontal_dim, DecompositionInfo.EntryType.HALO
-            )
+            global_halo_idx
         )
         print(
             f"rank={self._context.rank()}/{self._context.size()}: halo generator for dim={horizontal_dim} created"

@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import pdb
 
 import numpy as np
 import pytest
@@ -18,6 +19,7 @@ from atm_dyn_iconam.tests.test_utils.serialbox_utils import (
     IconDiffusionExitSavepoint,
     IconDiffusionInitSavepoint,
 )
+from icon4py.common.dimension import EdgeDim, CellDim
 from icon4py.decomposition.parallel_setup import DecompositionInfo
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import scale_k
@@ -332,37 +334,36 @@ def test_run_diffusion_single_step(
 def _verify_diffusion_fields(
     diagnostic_state: DiagnosticState,
     prognostic_state: PrognosticState,
-    diffusion_savepoint_exit: IconDiffusionExitSavepoint,
-    decomp_info: DecompositionInfo = None,
+    diffusion_savepoint: IconDiffusionExitSavepoint,
+    decomp_info: DecompositionInfo,
 ):
-    # owned_cells = decomp_info.owner_mask(CellDim)
-    # num_cells = owned_cells.shape[0]
-    # owned_edges = decomp_info.owner_mask(EdgeDim)
-    # num_edges = owned_edges.shape
-    ref_div_ic = np.asarray(diffusion_savepoint_exit.div_ic())
+    owned_cells = decomp_info.owner_mask(CellDim)
+    owned_edges = decomp_info.owner_mask(EdgeDim)
+    ref_div_ic = np.asarray(diffusion_savepoint.div_ic())
     val_div_ic = np.asarray(diagnostic_state.div_ic)
-    ref_hdef_ic = np.asarray(diffusion_savepoint_exit.hdef_ic())
+    ref_hdef_ic = np.asarray(diffusion_savepoint.hdef_ic())
     val_hdef_ic = np.asarray(diagnostic_state.hdef_ic)
     assert np.allclose(ref_div_ic, val_div_ic)
     assert np.allclose(ref_hdef_ic, val_hdef_ic)
-    ref_w = np.asarray(diffusion_savepoint_exit.w())
+    ref_w = np.asarray(diffusion_savepoint.w())
     val_w = np.asarray(prognostic_state.w)
-    ref_dwdx = np.asarray(diffusion_savepoint_exit.dwdx())
+    ref_dwdx = np.asarray(diffusion_savepoint.dwdx())
     val_dwdx = np.asarray(diagnostic_state.dwdx)
-    ref_dwdy = np.asarray(diffusion_savepoint_exit.dwdy())
+    ref_dwdy = np.asarray(diffusion_savepoint.dwdy())
     val_dwdy = np.asarray(diagnostic_state.dwdy)
-    ref_vn = np.asarray(diffusion_savepoint_exit.vn())
+    ref_vn = np.asarray(diffusion_savepoint.vn())
     val_vn = np.asarray(prognostic_state.vn)
-    # assert np.allclose(ref_vn[owned_edges], val_vn[owned_edges])
     assert np.allclose(ref_dwdx, val_dwdx)
     assert np.allclose(ref_dwdy, val_dwdy)
-    # assert np.allclose(ref_w[owned_cells], val_w[owned_cells])
-    ref_exner = np.asarray(diffusion_savepoint_exit.exner())
-    ref_theta_v = np.asarray(diffusion_savepoint_exit.theta_v())
+   # pdb.set_trace()
+    assert np.allclose(ref_vn[owned_edges, :], val_vn[owned_edges, :])
+    assert np.allclose(ref_w[owned_cells, :], val_w[owned_cells, :])
+    ref_exner = np.asarray(diffusion_savepoint.exner())
+    ref_theta_v = np.asarray(diffusion_savepoint.theta_v())
     val_theta_v = np.asarray(prognostic_state.theta_v)
     val_exner = np.asarray(prognostic_state.exner_pressure)
-    # assert np.allclose(ref_theta_v[owned_cells], val_theta_v[owned_cells])
-    # assert np.allclose(ref_exner[owned_cells], val_exner[owned_cells])
+    assert np.allclose(ref_theta_v[owned_cells,:], val_theta_v[owned_cells, :])
+    assert np.allclose(ref_exner[owned_cells,:], val_exner[owned_cells, :])
 
 
 @pytest.mark.datatest
@@ -416,5 +417,5 @@ def test_run_diffusion_initial_step(
     _verify_diffusion_fields(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        diffusion_savepoint_exit=diffusion_savepoint_exit,
+        diffusion_savepoint=diffusion_savepoint_exit,
     )

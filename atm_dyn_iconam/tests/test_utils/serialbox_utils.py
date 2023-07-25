@@ -94,7 +94,7 @@ class IconSavepoint:
         return self._read(name, offset, dtype=int32)
 
     def _read_bool(self, name: str):
-        return self._read_int32(name, offset=0, dtype=bool)
+        return self._read(name, offset=0, dtype=bool)
 
     def _read(self, name: str, offset=0, dtype=int):
         return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
@@ -235,10 +235,9 @@ class IconGridSavePoint(IconSavepoint):
         )
 
     def _get_decomp_fields(self, dim: Dimension):
-        index = self.global_index(dim)
-        number = self.num(dim)
-        mask = self.owner_mask(dim)[0:number]
-        return dim, index, mask
+        global_index = self.global_index(dim)
+        mask = self.owner_mask(dim)[0:self.num(dim)]
+        return dim, global_index, mask
 
     def construct_icon_grid(self) -> IconGrid:
 

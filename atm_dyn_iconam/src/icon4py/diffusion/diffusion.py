@@ -13,6 +13,7 @@
 import functools
 import logging
 import math
+import pdb
 import sys
 from collections import namedtuple
 from dataclasses import InitVar, dataclass, field
@@ -625,8 +626,10 @@ class Diffusion:
         log.debug(f"{self._log_id} rbf interpolation: end")
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
+        print(f"{self._log_id} communication rbf extrapolation of vn - start")
         res = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
-        self._wait(res, VertexDim)
+        self._wait(res)
+        print(f"{self._log_id} communication rbf extrapolation of vn - end")
 
         log.debug(
             f"{self._log_id} running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start"
@@ -687,9 +690,10 @@ class Diffusion:
         )
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
+
         if self.config.type_vn_diffu > 1:
             comm_z_nabla_e = self._sync_fields(EdgeDim, self.z_nabla2_e)
-            self._wait(comm_z_nabla_e, EdgeDim)
+            self._wait(comm_z_nabla_e)
 
         log.debug(f"{self._log_id} 2nd rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
@@ -707,8 +711,10 @@ class Diffusion:
         log.debug(f"{self._log_id} 2nd rbf interpolation: end")
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
+        print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - start")
         comm_rbf_coef = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
-        self._wait(comm_rbf_coef, VertexDim)
+        self._wait(comm_rbf_coef)
+        print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - start")
 
         log.debug(
             f"{self._log_id} running stencils 04 05 06 (apply_diffusion_to_vn): start"
@@ -783,7 +789,7 @@ class Diffusion:
         )
         # HALO EXCHANGE: CALL sync_patch_array (Edge Fields)
         comm_res_vn = self._sync_fields(EdgeDim, prognostic_state.vn)
-        self._wait(comm_res_vn, EdgeDim)
+        self._wait(comm_res_vn)
         log.debug(
             f"{self._log_id} running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
@@ -878,13 +884,13 @@ class Diffusion:
             prognostic_state.exner_pressure,
             prognostic_state.w,
         )
-        self._wait(comm_res, CellDim)
+        self._wait(comm_res)
 
     def _sync_fields(self, dim: Dimension, *field):
         if self._exchange:
             return self._exchange.exchange(dim, *field)
 
-    def _wait(self, comm_handle, dim):
+    def _wait(self, comm_handle):
         if comm_handle:
             comm_handle.wait()
-            print(f"{self._log_id} :communication dim={dim} done")
+            print(f"{self._log_id} :communication ={comm_handle} done")
