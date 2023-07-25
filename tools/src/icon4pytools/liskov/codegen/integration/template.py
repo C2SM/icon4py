@@ -83,6 +83,7 @@ def get_array_dims(association: str) -> str:
     return "".join(list(dims))
 
 
+
 class MetadataStatement(eve.Node):
     metadata: CodeMetadata
 
@@ -101,19 +102,20 @@ class MetadataStatementGenerator(TemplatedGenerator):
     """
     )
 
-
-class EndStencilStatement(eve.Node):
-    stencil_data: StartStencilData
-    profile: bool
-    noendif: Optional[bool]
-    noprofile: Optional[bool]
-    noaccenddata: Optional[bool]
-
+class EndBasicStencilStatement(eve.Node):
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
     output_fields: OutputFields = eve.datamodels.field(init=False)
     tolerance_fields: ToleranceFields = eve.datamodels.field(init=False)
     bounds_fields: BoundsFields = eve.datamodels.field(init=False)
+
+
+class EndStencilStatement(EndBasicStencilStatement):
+    stencil_data: StartStencilData
+    profile: bool
+    noendif: Optional[bool]
+    noprofile: Optional[bool]
+    noaccenddata: Optional[bool]
 
     def __post_init__(self) -> None:  # type: ignore
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
@@ -290,6 +292,33 @@ class CopyDeclaration(Declaration):
     lh_index: str
     rh_index: str
 
+def _make_copy_declaration(f: Field) -> CopyDeclaration:
+    if f.dims is None:
+        raise UndeclaredFieldError(f"{f.variable} was not declared!")
+
+    lh_idx = render_index(f.dims)
+
+    # get length of association index
+    association_dims = get_array_dims(f.association).split(",")
+    n_association_dims = len(association_dims)
+
+    offset = len(",".join(association_dims)) + 2
+    truncated_association = f.association[:-offset]
+
+    if n_association_dims > f.dims:
+        rh_idx = f"{lh_idx},{association_dims[-1]}"
+    else:
+        rh_idx = f"{lh_idx}"
+
+    lh_idx = enclose_in_parentheses(lh_idx)
+    rh_idx = enclose_in_parentheses(rh_idx)
+
+    return CopyDeclaration(
+        variable=f.variable,
+        association=truncated_association,
+        lh_index=lh_idx,
+        rh_index=rh_idx,
+    )
 
 class DeclareStatement(eve.Node):
     declare_data: DeclareData
@@ -392,14 +421,8 @@ class StartFusedStencilStatement(eve.Node):
         )
 
 
-class EndFusedStencilStatement(eve.Node):
+class EndFusedStencilStatement(EndBasicStencilStatement):
     stencil_data: StartFusedStencilData
-
-    name: str = eve.datamodels.field(init=False)
-    input_fields: InputFields = eve.datamodels.field(init=False)
-    output_fields: OutputFields = eve.datamodels.field(init=False)
-    tolerance_fields: ToleranceFields = eve.datamodels.field(init=False)
-    bounds_fields: BoundsFields = eve.datamodels.field(init=False)
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
     def __post_init__(self) -> None:  # type: ignore
