@@ -11,12 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from pathlib import Path
 
 import ghex
 import numpy as np
 import pytest
 
+from atm_dyn_iconam.tests.test_diffusion import _verify_diffusion_fields
 from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.decomposition.parallel_setup import (
@@ -167,20 +167,18 @@ def test_decomposition_info_matches_gridsize(datapath, caplog):
 
 
 @pytest.mark.mpi
-def test_parallel_diffusion(r04b09_diffusion_config, step_date_init, caplog):
+@pytest.mark.parametrize("datapath", [2], indirect=True)
+def test_parallel_diffusion(
+    datapath, r04b09_diffusion_config, step_date_init, caplog, ndyn_substeps
+):
+
     caplog.set_level(logging.DEBUG)
     props = get_processor_properties()
-    num_nodes = props.comm_size
 
-    experiment_name = "mch_ch_r04b09_dsl"
-
-    path = Path(
-        f"/home/magdalena/data/exclaim/dycore/{experiment_name}/mpitasks{num_nodes}/{experiment_name}/ser_data"
-    )
     print(
-        f"rank={props.rank}/{props.comm_size}: inializing diffusion for experiment {experiment_name}"
+        f"rank={props.rank}/{props.comm_size}: inializing diffusion for experiment 'mch_ch_r04_b09_dsl"
     )
-
+    path = datapath
     decomp_info = read_decomp_info(
         path,
         props,
@@ -188,20 +186,20 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init, caplog):
     print(
         f"rank={props.rank}/{props.comm_size}: decomposition info : klevels = {decomp_info.klevels}, "
         f"local cells = {decomp_info.global_index(CellDim, DecompositionInfo.EntryType.ALL).shape} "
-        f"local edges = {decomp_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape} local vertices = {decomp_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape}"
+        f"local edges = {decomp_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape} "
+        f"local vertices = {decomp_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape}"
     )
     context = ghex.context(ghex.mpi_comm(props.comm), True)
     print(
         f"rank={props.rank}/{props.comm_size}:  GHEX context setup: from {props.comm_name} with {props.comm_size} nodes"
     )
-    assert context.size() == 2
+    # assert context.size() == 2
 
     icon_grid = read_icon_grid(path, rank=props.rank)
     print(
         f"rank={props.rank}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
     )
     initial_run = False
-    r04b09_diffusion_config.ndyn_substeps = 2
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
 
     diffusion_initial_data = IconSerialDataProvider(
@@ -233,6 +231,7 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init, caplog):
     print(f"rank={props.rank}/{props.comm_size}: diffusion initialized ")
     diagnostic_state = diffusion_initial_data.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_initial_data.construct_prognostics()
+
     diffusion.run(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
@@ -242,5 +241,10 @@ def test_parallel_diffusion(r04b09_diffusion_config, step_date_init, caplog):
 
     diffusion_savepoint_exit = IconSerialDataProvider(
         "icon_pydycore", str(path), True, mpi_rank=props.rank
-    ).from_savepoint_diffusion_init(linit=initial_run, date=step_date_init)
-    # verify_diffusion_fields(diffusion_savepoint_exit, diagnostic_state, prognostic_state)
+    ).from_savepoint_diffusion_exit(linit=initial_run, date=step_date_init)
+    _verify_diffusion_fields(
+        decomp_info, diagnostic_state, prognostic_state, diffusion_savepoint_exit
+    )
+    print(
+        f"rank={props.rank}/{props.comm_size}:  running diffusion step - using {props.comm_name} with {props.comm_size} nodes - DONE"
+    )

@@ -77,5 +77,5 @@ all MPI related tests are in the folder `icon4py/atm_dyn_iconam/tests/mpi_tests`
 run them with
 
 ```bash
-mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
+mpirun -np 2 pytest -v -s --with-mpi tests/mpi_tests/
 ```

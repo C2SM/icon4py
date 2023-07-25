@@ -399,3 +399,10 @@ def test_cross_check_marker_equivalences(icon_grid):
         HorizontalMarkerIndex.nudging(EdgeDim),
         HorizontalMarkerIndex.nudging(EdgeDim),
     )
+
+
+@pytest.mark.parametrize("datapath", [1], indirect=True)
+def test_grid_size(grid_savepoint):
+    assert 10663 == grid_savepoint.num(VertexDim)
+    assert 20896 == grid_savepoint.num(CellDim)
+    assert 31558 == grid_savepoint.num(EdgeDim)

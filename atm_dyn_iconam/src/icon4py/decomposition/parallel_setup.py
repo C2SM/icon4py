@@ -104,6 +104,9 @@ class DecompositionInfo:
         assert data.ndim == 1
         return np.arange(data.shape[0])
 
+    def owner_mask(self, dim: Dimension) -> np.ndarray:
+        return self._global_index[dim].mask
+
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
         match (entry_type):
             case DecompositionInfo.EntryType.ALL:
@@ -122,6 +125,7 @@ class Exchange:
     def __init__(self, context, domain_decomposition: DecompositionInfo):
         self._context = context
         self._decomposition_info = domain_decomposition
+        self._log_id = f"rank={self._context.rank()}/{self._context.size()}"
         self._domain_descriptors = {
             CellDim: self._create_domain_descriptor(
                 CellDim,
@@ -131,9 +135,7 @@ class Exchange:
             ),
             EdgeDim: self._create_domain_descriptor(EdgeDim),
         }
-        print(
-            f"rank={self._context.rank()}/{self._context.size()} :domain descriptors initialized"
-        )
+        print(f"{self._log_id} :domain descriptors initialized")
         self._field_size = {
             CellDim: self._decomposition_info.global_index(
                 CellDim, DecompositionInfo.EntryType.ALL
@@ -147,9 +149,7 @@ class Exchange:
             KDim: domain_decomposition.klevels,
             KHalfDim: domain_decomposition.klevels + 1,
         }
-        print(
-            f"rank={self._context.rank()}/{self._context.size()} : field sizes = {self._field_size}"
-        )
+        print(f"{self._log_id} : field sizes = {self._field_size}")
 
         self._patterns = {
             CellDim: self._create_pattern(CellDim),
@@ -157,12 +157,8 @@ class Exchange:
             EdgeDim: self._create_pattern(EdgeDim),
         }
         self._comms = {k: ghex.make_co(context) for k, v in self._patterns.items()}
-        print(
-            f"rank={self._context.rank()}/{self._context.size()} : patterns and communicators initialized "
-        )
-        print(
-            f"rank={self._context.rank()}/{self._context.size()} : exchange initialized"
-        )
+        print(f"{self._log_id} : patterns and communicators initialized ")
+        print(f"{self._log_id} : exchange initialized")
 
     def _domain_descriptor_info(self, descr):
         return f" id={descr.domain_id()}, size={descr.size()}, inner_size={descr.inner_size()}"

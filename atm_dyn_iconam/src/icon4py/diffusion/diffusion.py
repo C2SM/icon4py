@@ -346,6 +346,7 @@ class Diffusion:
 
     def __init__(self, exchange: Optional[Exchange] = None):
         self._exchange = exchange
+        self._log_id = exchange._log_id if exchange else ""
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
         self.thresh_tdiff: float = (
@@ -405,15 +406,14 @@ class Diffusion:
         self._allocate_temporary_fields()
 
         def _get_start_index_for_w_diffusion() -> int32:
-            marker = (
-                HorizontalMarkerIndex.nudging(CellDim)
-                if self.grid.limited_area()
-                else HorizontalMarkerIndex.interior(CellDim)
+            return self.grid.get_start_index(
+                CellDim,
+                (
+                    HorizontalMarkerIndex.nudging(CellDim)
+                    if self.grid.limited_area()
+                    else HorizontalMarkerIndex.interior(CellDim)
+                ),
             )
-
-            return self.grid.get_indices_from_to(
-                CellDim, marker, HorizontalMarkerIndex.interior(CellDim)
-            )[0]
 
         self.nudgezone_diff: float = 0.04 / (
             params.scaled_nudge_max_coeff + sys.float_info.epsilon
@@ -609,7 +609,7 @@ class Diffusion:
             self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
         )
 
-        log.debug("rbf interpolation: start")
+        log.debug(f"{self._log_id} rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -622,13 +622,14 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity()},
         )
-        log.debug("rbf interpolation: end")
+        log.debug(f"{self._log_id} rbf interpolation: end")
+
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         res = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
         self._wait(res, VertexDim)
 
         log.debug(
-            "running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start"
+            f"{self._log_id} running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start"
         )
         calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)(
             diff_multfac_smag=self.diff_multfac_smag,
@@ -657,10 +658,10 @@ class Diffusion:
             },
         )
         log.debug(
-            "running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end"
+            f"{self._log_id} running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end"
         )
         log.debug(
-            "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
+            f"{self._log_id} running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
         )
         calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
             kh_smag_ec=self.kh_smag_ec,
@@ -682,14 +683,15 @@ class Diffusion:
             },
         )
         log.debug(
-            "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
+            f"{self._log_id} running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
         )
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
-        res = self._sync_fields(EdgeDim, self.z_nabla2_e)
-        self._wait(res, EdgeDim)
+        if self.config.type_vn_diffu > 1:
+            comm_z_nabla_e = self._sync_fields(EdgeDim, self.z_nabla2_e)
+            self._wait(comm_z_nabla_e, EdgeDim)
 
-        log.debug("rbf interpolation: start")
+        log.debug(f"{self._log_id} 2nd rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -702,13 +704,15 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity()},
         )
-        log.debug("rbf interpolation: end")
+        log.debug(f"{self._log_id} 2nd rbf interpolation: end")
 
-        # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Edge Fields)
-        res = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
-        self._wait(res, VertexDim)
+        # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
+        comm_rbf_coef = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
+        self._wait(comm_rbf_coef, VertexDim)
 
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
+        log.debug(
+            f"{self._log_id} running stencils 04 05 06 (apply_diffusion_to_vn): start"
+        )
         apply_diffusion_to_vn.with_backend(backend)(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
@@ -736,10 +740,12 @@ class Diffusion:
                 "E2ECV": self.grid.get_e2ecv_connectivity(),
             },
         )
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
+        log.debug(
+            f"{self._log_id} running stencils 04 05 06 (apply_diffusion_to_vn): end"
+        )
 
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
+            f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
         )
         copy_field.with_backend(backend)(
             prognostic_state.w, self.w_tmp, offset_provider={}
@@ -773,13 +779,13 @@ class Diffusion:
             },
         )
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
+            f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
         )
         # HALO EXCHANGE: CALL sync_patch_array (Edge Fields)
-        comm_res = self._sync_fields(EdgeDim, prognostic_state.vn)
-        self._wait(comm_res, EdgeDim)
+        comm_res_vn = self._sync_fields(EdgeDim, prognostic_state.vn)
+        self._wait(comm_res_vn, EdgeDim)
         log.debug(
-            "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
+            f"{self._log_id} running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
         calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
             backend
@@ -798,7 +804,7 @@ class Diffusion:
             },
         )
         log.debug(
-            "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
+            f"{self._log_id} running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
         )
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
         calculate_nabla2_for_theta.with_backend(backend)(
@@ -817,9 +823,11 @@ class Diffusion:
                 "C2CE": self.grid.get_c2ce_connectivity(),
             },
         )
-        log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
         log.debug(
-            "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
+            f"{self._log_id} running stencils 13_14 (calculate_nabla2_for_theta): end"
+        )
+        log.debug(
+            f"{self._log_id} running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
         truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(
             backend
@@ -844,9 +852,9 @@ class Diffusion:
         )
 
         log.debug(
-            "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+            f"{self._log_id} running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
         )
-        log.debug("running fused stencil 16 (update_theta_and_exner): start")
+        log.debug(f"{self._log_id} running stencil 16 (update_theta_and_exner): start")
         update_theta_and_exner.with_backend(backend)(
             z_temp=self.z_temp,
             area=self.cell_params.area,
@@ -859,18 +867,18 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={},
         )
-        log.debug("running stencil 16 (update_theta_and_exner): end")
+        log.debug(f"{self._log_id} running stencil 16 (update_theta_and_exner): end")
         # 10. HALO EXCHANGE sync_patch_array (Cell fields)
         # TODO @magdalena why not trigger the exchange of w earlier?
         # TODO if condition: IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
 
-        res = self._sync_fields(
+        comm_res = self._sync_fields(
             CellDim,
             prognostic_state.theta_v,
             prognostic_state.exner_pressure,
             prognostic_state.w,
         )
-        self._wait(res, CellDim)
+        self._wait(comm_res, CellDim)
 
     def _sync_fields(self, dim: Dimension, *field):
         if self._exchange:
@@ -879,6 +887,4 @@ class Diffusion:
     def _wait(self, comm_handle, dim):
         if comm_handle:
             comm_handle.wait()
-            print(
-                f"rank={self._exchange._context.rank()}/{self._exchange._context.size()}:communication dim={dim} done"
-            )
+            print(f"{self._log_id} :communication dim={dim} done")

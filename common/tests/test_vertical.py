@@ -16,6 +16,7 @@ import math
 import numpy as np
 import pytest
 
+from icon4py.common.dimension import KDim
 from icon4py.grid.vertical import VerticalModelParams
 
 
@@ -45,3 +46,8 @@ def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint, damping_h
     a_array = np.asarray(a)
     assert a_array[nrdmax] > damping_height
     assert a_array[nrdmax + 1] < damping_height
+
+
+@pytest.mark.parametrize("datapath", [1], indirect=True)
+def test_grid_size(grid_savepoint):
+    assert 65 == grid_savepoint.num(KDim)

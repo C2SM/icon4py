@@ -14,7 +14,7 @@ import logging
 
 import numpy as np
 import serialbox as ser
-from gt4py.next.common import Dimension
+from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
@@ -50,9 +50,10 @@ from .helpers import as_1D_sparse_field
 
 
 class IconSavepoint:
-    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer):
+    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict):
         self.savepoint = sp
         self.serializer = ser
+        self.sizes = size
         self.log = logging.getLogger((__name__))
 
     def log_meta_info(self):
@@ -60,6 +61,12 @@ class IconSavepoint:
 
     def _get_field(self, name, *dimensions, dtype=float):
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer_size = (
+            self.sizes[d] if d.kind is DimensionKind.HORIZONTAL else s
+            for s, d in zip(buffer.shape, dimensions)
+        )
+        buffer = buffer[tuple(map(slice, buffer_size))]
+
         self.log.debug(f"{name} {buffer.shape}")
         return np_as_located_field(*dimensions)(buffer)
 
@@ -69,30 +76,28 @@ class IconSavepoint:
 
     def _read_int32_shift1(self, name: str):
         """
-        Read a index field and shift it by -1.
+        Read a start indices field.
 
         use for start indices: the shift accounts for the zero based python
         values are converted to int32
         """
-        return (self.serializer.read(name, self.savepoint) - 1).astype(int32)
+        return self._read_int32(name, offset=1)
 
-    def _read_int32(self, name: str):
+    def _read_int32(self, name: str, offset=0):
         """
-        Read an int field by name.
+        Read an end indices field.
 
         use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
         this accounts for being exclusive python exclusive bounds: [from:to)
         field values are convert to int32
         """
-        return self.serializer.read(name, self.savepoint).astype(int32)
+        return self._read(name, offset, dtype=int32)
 
     def _read_bool(self, name: str):
-        return self.serializer.read(name, self.savepoint).astype(bool)
+        return self._read_int32(name, offset=0, dtype=bool)
 
-    def read_int(self, name: str):
-        buffer = self.serializer.read(name, self.savepoint).astype(int)
-        self.log.debug(f"{name} {buffer.shape}")
-        return buffer
+    def _read(self, name: str, offset=0, dtype=int):
+        return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
 
 
 class IconGridSavePoint(IconSavepoint):
@@ -153,65 +158,47 @@ class IconGridSavePoint(IconSavepoint):
         self.log.debug(f" connectivity {name} {ar.shape}")
 
     def c2e(self):
-        return self._get_connectivity_array("c2e")
+        return self._get_connectivity_array("c2e", CellDim)
 
-    def _get_connectivity_array(self, name: str):
-        connectivity = self.serializer.read(name, self.savepoint) - 1
+    def _get_connectivity_array(self, name: str, target_dim: Dimension):
+        connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
     def c2e2c(self):
-        return self._get_connectivity_array("c2e2c")
+        return self._get_connectivity_array("c2e2c", CellDim)
 
     def e2c(self):
-        return self._get_connectivity_array("e2c")
+        return self._get_connectivity_array("e2c", EdgeDim)
 
     def e2v(self):
         # array "e2v" is actually e2c2v
-        v_ = self._get_connectivity_array("e2v")[:, 0:2]
+        v_ = self._get_connectivity_array("e2v", EdgeDim)[:, 0:2]
         self.log.debug(f"real e2v {v_.shape}")
         return v_
 
     def e2c2v(self):
         # array "e2v" is actually e2c2v, that is hexagon or pentagon
-        return self._get_connectivity_array("e2v")
+        return self._get_connectivity_array("e2v", EdgeDim)
 
     def v2e(self):
-        return self._get_connectivity_array("v2e")
+        return self._get_connectivity_array("v2e", VertexDim)
 
     def v2c(self):
-        return self._get_connectivity_array("v2c")
+        return self._get_connectivity_array("v2c", VertexDim)
 
     def c2v(self):
-        return self._get_connectivity_array("c2v")
+        return self._get_connectivity_array("c2v", CellDim)
 
     def nrdmax(self):
-        return self._get_connectivity_array("nrdmax")
+        return self._read_int32_shift1("nrdmax")
 
     def refin_ctrl(self, dim: Dimension):
         field_name = "refin_ctl"
         return self._read_field_for_dim(field_name, self._read_int32, dim)
 
     def num(self, dim: Dimension):
-        match (dim):
-            case dimension.CellDim:
-                return self.serializer.read(
-                    "num_cells", savepoint=self.savepoint
-                ).astype(int32)[0]
-            case dimension.EdgeDim:
-                return self.serializer.read(
-                    "num_edges", savepoint=self.savepoint
-                ).astype(int32)[0]
-            case dimension.VertexDim:
-                return self.serializer.read(
-                    "num_vert", savepoint=self.savepoint
-                ).astype(int32)[0]
-            case dimension.KDim:
-                return self.get_metadata("nlev")["nlev"]
-            case _:
-                raise NotImplementedError(
-                    f"only {CellDim, EdgeDim, VertexDim, KDim} are supported"
-                )
+        return self.sizes[dim]
 
     def _read_field_for_dim(self, field_name, read_func, dim):
         match (dim):
@@ -319,9 +306,10 @@ class IconGridSavePoint(IconSavepoint):
 class InterpolationSavepoint(IconSavepoint):
     def geofac_grg(self):
         grg = np.squeeze(self.serializer.read("geofac_grg", self.savepoint))
+        num_cells = self.sizes[CellDim]
         return np_as_located_field(CellDim, C2E2CODim)(
-            grg[:, :, 0]
-        ), np_as_located_field(CellDim, C2E2CODim)(grg[:, :, 1])
+            grg[:num_cells, :, 0]
+        ), np_as_located_field(CellDim, C2E2CODim)(grg[:num_cells, :, 1])
 
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
@@ -375,7 +363,7 @@ class MetricSavepoint(IconSavepoint):
     def zd_intcoef(self):
         ser_input = np.moveaxis(
             (np.squeeze(self.serializer.read("vcoef", self.savepoint))), 1, -1
-        )
+        )[: self.sizes[CellDim], :, :]
         return self._linearize_first_2dims(ser_input, sparse_size=3)
 
     def _linearize_first_2dims(self, data: np.ndarray, sparse_size):
@@ -388,7 +376,10 @@ class MetricSavepoint(IconSavepoint):
     def zd_vertoffset(self):
         ser_input = np.squeeze(self.serializer.read("zd_vertoffset", self.savepoint))
         ser_input = np.moveaxis(ser_input, 1, -1)
-        return self._linearize_first_2dims(ser_input, sparse_size=3)
+
+        return self._linearize_first_2dims(
+            ser_input[: self.sizes[CellDim], :, :], sparse_size=3
+        )
 
     def zd_vertidx(self):
         return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
@@ -515,6 +506,7 @@ class IconSerialDataProvider:
         self.fname = f"{fname_prefix}_rank{str(self.rank)}"
         self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
+        self.grid_size = self._grid_size()
 
     def _init_serializer(self, do_print: bool):
         if not self.fname:
@@ -529,16 +521,28 @@ class IconSerialDataProvider:
         self.log.info(f"SAVEPOINTS: {self.serializer.savepoint_list()}")
         self.log.info(f"FIELDNAMES: {self.serializer.fieldnames()}")
 
+    def _grid_size(self):
+        sp = self._get_icon_grid_savepoint()
+        grid_sizes = {
+            CellDim: self.serializer.read("num_cells", savepoint=sp).astype(int32)[0],
+            EdgeDim: self.serializer.read("num_edges", savepoint=sp).astype(int32)[0],
+            VertexDim: self.serializer.read("num_vert", savepoint=sp).astype(int32)[0],
+            KDim: sp.metainfo.to_dict()["nlev"],
+        }
+        return grid_sizes
+
     def from_savepoint_grid(self) -> IconGridSavePoint:
         savepoint = self._get_icon_grid_savepoint()
-        return IconGridSavePoint(savepoint, self.serializer)
+        return IconGridSavePoint(savepoint, self.serializer, size=self.grid_size)
 
     def _get_icon_grid_savepoint(self):
         savepoint = self.serializer.savepoint["icon-grid"].id[1].as_savepoint()
         return savepoint
 
     def from_savepoint_diffusion_init(
-        self, linit: bool, date: str
+        self,
+        linit: bool,
+        date: str,
     ) -> IconDiffusionInitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-diffusion-init"]
@@ -546,15 +550,17 @@ class IconSerialDataProvider:
             .date[date]
             .as_savepoint()
         )
-        return IconDiffusionInitSavepoint(savepoint, self.serializer)
+        return IconDiffusionInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size
+        )
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
         savepoint = self.serializer.savepoint["interpolation_state"].as_savepoint()
-        return InterpolationSavepoint(savepoint, self.serializer)
+        return InterpolationSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_metrics_savepoint(self) -> MetricSavepoint:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
-        return MetricSavepoint(savepoint, self.serializer)
+        return MetricSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_diffusion_exit(
         self, linit: bool, date: str
@@ -565,4 +571,6 @@ class IconSerialDataProvider:
             .date[date]
             .as_savepoint()
         )
-        return IconDiffusionExitSavepoint(savepoint, self.serializer)
+        return IconDiffusionExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size
+        )
