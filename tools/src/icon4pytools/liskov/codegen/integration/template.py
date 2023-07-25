@@ -349,38 +349,8 @@ class StartStencilStatement(eve.Node):
 
     def __post_init__(self) -> None:  # type: ignore
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
-        self.copy_declarations = [self.make_copy_declaration(f) for f in all_fields if f.out]
+        self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
-
-    @staticmethod
-    def make_copy_declaration(f: Field) -> CopyDeclaration:
-        if f.dims is None:
-            raise UndeclaredFieldError(f"{f.variable} was not declared!")
-
-        lh_idx = render_index(f.dims)
-
-        # get length of association index
-        association_dims = get_array_dims(f.association).split(",")
-        n_association_dims = len(association_dims)
-
-        offset = len(",".join(association_dims)) + 2
-        truncated_association = f.association[:-offset]
-
-        if n_association_dims > f.dims:
-            rh_idx = f"{lh_idx},{association_dims[-1]}"
-        else:
-            rh_idx = f"{lh_idx}"
-
-        lh_idx = enclose_in_parentheses(lh_idx)
-        rh_idx = enclose_in_parentheses(rh_idx)
-
-        return CopyDeclaration(
-            variable=f.variable,
-            association=truncated_association,
-            lh_index=lh_idx,
-            rh_index=rh_idx,
-        )
-
 
 class StartFusedStencilStatement(eve.Node):
     stencil_data: StartFusedStencilData
@@ -388,37 +358,8 @@ class StartFusedStencilStatement(eve.Node):
 
     def __post_init__(self) -> None:  # type: ignore
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
-        self.copy_declarations = [self.make_copy_declaration(f) for f in all_fields if f.out]
+        self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
-
-    @staticmethod
-    def make_copy_declaration(f: Field) -> CopyDeclaration:
-        if f.dims is None:
-            raise UndeclaredFieldError(f"{f.variable} was not declared!")
-
-        lh_idx = render_index(f.dims)
-
-        # get length of association index
-        association_dims = get_array_dims(f.association).split(",")
-        n_association_dims = len(association_dims)
-
-        offset = len(",".join(association_dims)) + 2
-        truncated_association = f.association[:-offset]
-
-        if n_association_dims > f.dims:
-            rh_idx = f"{lh_idx},{association_dims[-1]}"
-        else:
-            rh_idx = f"{lh_idx}"
-
-        lh_idx = enclose_in_parentheses(lh_idx)
-        rh_idx = enclose_in_parentheses(rh_idx)
-
-        return CopyDeclaration(
-            variable=f.variable,
-            association=truncated_association,
-            lh_index=lh_idx,
-            rh_index=rh_idx,
-        )
 
 
 class EndFusedStencilStatement(EndBasicStencilStatement):
@@ -427,42 +368,13 @@ class EndFusedStencilStatement(EndBasicStencilStatement):
 
     def __post_init__(self) -> None:  # type: ignore
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
-        self.copy_declarations = [self.make_copy_declaration(f) for f in all_fields if f.out]
+        self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
         self.name = self.stencil_data.name
         self.input_fields = InputFields(fields=[f for f in all_fields if f.inp])
         self.output_fields = OutputFields(fields=[f for f in all_fields if f.out])
         self.tolerance_fields = ToleranceFields(
             fields=[f for f in all_fields if f.rel_tol or f.abs_tol]
-        )
-
-    @staticmethod
-    def make_copy_declaration(f: Field) -> CopyDeclaration:
-        if f.dims is None:
-            raise UndeclaredFieldError(f"{f.variable} was not declared!")
-
-        lh_idx = render_index(f.dims)
-
-        # get length of association index
-        association_dims = get_array_dims(f.association).split(",")
-        n_association_dims = len(association_dims)
-
-        offset = len(",".join(association_dims)) + 2
-        truncated_association = f.association[:-offset]
-
-        if n_association_dims > f.dims:
-            rh_idx = f"{lh_idx},{association_dims[-1]}"
-        else:
-            rh_idx = f"{lh_idx}"
-
-        lh_idx = enclose_in_parentheses(lh_idx)
-        rh_idx = enclose_in_parentheses(rh_idx)
-
-        return CopyDeclaration(
-            variable=f.variable,
-            association=truncated_association,
-            lh_index=lh_idx,
-            rh_index=rh_idx,
         )
 
 
