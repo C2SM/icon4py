@@ -261,6 +261,54 @@ CONSECUTIVE_STENCIL = """\
 """
 
 
+FUSED_STENCIL = """\
+    !$DSL IMPORTS()
+
+    !$DSL INSERT(INTEGER :: start_interior_idx_c, end_interior_idx_c, start_nudging_idx_c, end_halo_1_idx_c)
+
+    !$DSL DECLARE(kh_smag_e=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      kh_smag_ec=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      z_nabla2_e=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      kh_c=nproma,p_patch%nlev; &
+    !$DSL      div=nproma,p_patch%nlev; &
+    !$DSL      div_ic=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      hdef_ic=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      z_nabla4_e2=nproma,p_patch%nlev; &
+    !$DSL      vn=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      z_nabla2_c=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      dwdx=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      dwdy=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      w=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      enh_diffu_3d=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      z_temp=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      theta_v=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      exner=nproma,p_patch%nlev,p_patch%nblks_c)
+
+        !$DSL START FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence; &
+        !$DSL  kh_smag_ec=kh_smag_ec(:,:,1); vn=p_nh_prog%vn(:,:,1); e_bln_c_s=p_int%e_bln_c_s(:,:,1); &
+        !$DSL  geofac_div=p_int%geofac_div(:,:,1); diff_multfac_smag=diff_multfac_smag(:); &
+        !$DSL  wgtfac_c=p_nh_metrics%wgtfac_c(:,:,1); div_ic=p_nh_diag%div_ic(:,:,1); &
+        !$DSL  hdef_ic=p_nh_diag%hdef_ic(:,:,1); &
+        !$DSL  div_ic_abs_tol=1e-18_wp; vertical_lower=2; &
+        !$DSL  vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
+        !$DSL START STENCIL(name=temporary_fields_for_turbulence_diagnostics; kh_smag_ec=kh_smag_ec(:,:,1); vn=p_nh_prog%vn(:,:,1); &
+        !$DSL       e_bln_c_s=p_int%e_bln_c_s(:,:,1); geofac_div=p_int%geofac_div(:,:,1); &
+        !$DSL       diff_multfac_smag=diff_multfac_smag(:); kh_c=kh_c(:,:); div=div(:,:); &
+        !$DSL       vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; &
+        !$DSL       horizontal_upper=i_endidx)
+
+        !$DSL END STENCIL(name=temporary_fields_for_turbulence_diagnostics)
+
+        !$DSL START STENCIL(name=calculate_diagnostics_for_turbulence; div=div; kh_c=kh_c; wgtfac_c=p_nh_metrics%wgtfac_c(:,:,1); &
+        !$DSL               div_ic=p_nh_diag%div_ic(:,:,1); hdef_ic=p_nh_diag%hdef_ic(:,:,1); div_ic_abs_tol=1e-18_wp; &
+        !$DSL               vertical_lower=2; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
+        !$DSL END STENCIL(name=calculate_diagnostics_for_turbulence)
+
+        !$DSL END FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence)
+    """
+
 FREE_FORM_STENCIL = """\
     !$DSL IMPORTS()
 

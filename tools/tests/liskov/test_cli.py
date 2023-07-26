@@ -25,6 +25,7 @@ from .fortran_samples import (
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,
     SINGLE_STENCIL_WITH_COMMENTS,
+    FUSED_STENCIL,
 )
 
 
@@ -42,9 +43,10 @@ files = [
     ("CONSECUTIVE", CONSECUTIVE_STENCIL),
     ("FREE_FORM", FREE_FORM_STENCIL),
     ("MULTIPLE", MULTIPLE_STENCILS),
+    ("FUSED", FUSED_STENCIL),
 ]
 
-flags = {"serialise": ["--multinode"], "integrate": ["-p", "-m"]}
+flags = {"serialise": ["--multinode"], "integrate": ["-p", "-m", "-f", "-u"]}
 
 for file_name, file_content in files:
     for cmd in flags.keys():
