@@ -22,7 +22,7 @@ from icon4pytools.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4pytools.liskov.parsing.parse import DirectivesParser
 
 from .conftest import insert_new_lines, scan_for_directives
-from .fortran_samples import MULTIPLE_STENCILS, NO_DIRECTIVES_STENCIL, SINGLE_STENCIL, SINGLE_STENCIL_WITH_COMMENTS
+from .fortran_samples import MULTIPLE_STENCILS, NO_DIRECTIVES_STENCIL, SINGLE_STENCIL, SINGLE_STENCIL_WITH_COMMENTS, FUSED_STENCIL
 
 
 def test_parse_no_input():
@@ -76,7 +76,7 @@ def test_parse_single_directive(directive, string, startln, endln, expected_cont
 
 @mark.parametrize(
     "stencil, num_directives, num_content",
-    [(SINGLE_STENCIL, 9, 8), (SINGLE_STENCIL_WITH_COMMENTS, 9, 8), (MULTIPLE_STENCILS, 11, 7)],
+    [(SINGLE_STENCIL, 9, 8), (SINGLE_STENCIL_WITH_COMMENTS, 9, 8), (MULTIPLE_STENCILS, 11, 7), (FUSED_STENCIL, 9, 7)],
 )
 def test_file_parsing(make_f90_tmpfile, stencil, num_directives, num_content):
     fpath = make_f90_tmpfile(content=stencil)
