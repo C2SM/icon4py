@@ -335,10 +335,7 @@ def _verify_diffusion_fields(
     diagnostic_state: DiagnosticState,
     prognostic_state: PrognosticState,
     diffusion_savepoint: IconDiffusionExitSavepoint,
-    decomp_info: DecompositionInfo,
 ):
-    owned_cells = decomp_info.owner_mask(CellDim)
-    owned_edges = decomp_info.owner_mask(EdgeDim)
     ref_div_ic = np.asarray(diffusion_savepoint.div_ic())
     val_div_ic = np.asarray(diagnostic_state.div_ic)
     ref_hdef_ic = np.asarray(diffusion_savepoint.hdef_ic())
@@ -353,26 +350,31 @@ def _verify_diffusion_fields(
     val_dwdy = np.asarray(diagnostic_state.dwdy)
     assert np.allclose(ref_dwdx, val_dwdx)
     assert np.allclose(ref_dwdy, val_dwdy)
-    # TODO (Magdalena) verification on 2 nodes fine until here..
-   # pdb.set_trace()
+
     ref_vn = np.asarray(diffusion_savepoint.vn())
     val_vn = np.asarray(prognostic_state.vn)
-    print_diff_into(ref_vn, val_vn)
-    assert np.allclose(ref_vn[owned_edges, :], val_vn[owned_edges, :])
-    assert np.allclose(ref_w[owned_cells, :], val_w[owned_cells, :])
+    assert np.allclose(ref_vn, val_vn)
+    assert np.allclose(ref_w, val_w)
     ref_exner = np.asarray(diffusion_savepoint.exner())
     ref_theta_v = np.asarray(diffusion_savepoint.theta_v())
     val_theta_v = np.asarray(prognostic_state.theta_v)
     val_exner = np.asarray(prognostic_state.exner_pressure)
-    assert np.allclose(ref_theta_v[owned_cells,:], val_theta_v[owned_cells, :])
-    assert np.allclose(ref_exner[owned_cells,:], val_exner[owned_cells, :])
+    assert np.allclose(ref_theta_v, val_theta_v)
+    assert np.allclose(ref_exner, val_exner)
+    #print(f" cell halo indices: shape = {halo_cells.shape}{halo_cells}")
+    #print_diff_info(ref_exner[halo_cells, :], val_exner[halo_cells, :])
+    #print_diff_info(ref_w[halo_cells, :], val_w[halo_cells, :])
+    #print_diff_info(ref_theta_v[halo_cells, :], val_theta_v[halo_cells, :])
 
 
-def print_diff_into(ref_vn, val_vn):
-    diff_vn = np.abs(ref_vn - val_vn)
-    print(f"max diff vn {np.max(diff_vn)}")
-    d = 0.00001
-    print(f"number of diffs > {d}: {np.count_nonzero(diff_vn > d)}")
+
+
+def print_diff_info(ref, value):
+    difference = np.abs(ref - value)
+    print("differences ----- ")
+    print(f" max diff vn {np.max(difference)}")
+    d = 0.000001
+    print(f"number of diffs > {d}: {np.count_nonzero(difference > d)}")
 
 
 @pytest.mark.datatest

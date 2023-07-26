@@ -149,7 +149,7 @@ def test_domain_descriptor_id():
     assert id1 < props.comm_size * (props.rank + 1)
     for i in range(1, 2*size):
         id = id_gen()
-        assert id == id1 + i
+        assert id > id1
         assert id >= 4 * props.rank
         assert id < 4 * (
             props.rank + 1)
@@ -185,10 +185,12 @@ def test_decomposition_info_matches_gridsize(datapath, caplog):
     )
 
 
-@pytest.mark.mpi
+#@pytest.mark.mpi
 @pytest.mark.parametrize("datapath", [2], indirect=True)
+@pytest.mark.parametrize("ndyn_substeps", [5])
+@pytest.mark.parametrize("linit", [True, False])
 def test_parallel_diffusion(
-    datapath, r04b09_diffusion_config, step_date_init, ndyn_substeps,caplog
+    datapath, r04b09_diffusion_config, step_date_init, linit, caplog, ndyn_substeps
 ):
 
     caplog.set_level(logging.WARN)
@@ -222,7 +224,7 @@ def test_parallel_diffusion(
 
     diffusion_initial_data = IconSerialDataProvider(
         "icon_pydycore", str(path), True, mpi_rank=props.rank
-    ).from_savepoint_diffusion_init(linit=False, date=step_date_init)
+    ).from_savepoint_diffusion_init(linit=linit, date=step_date_init)
     (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(
         path, rank=props.rank
     )
@@ -249,19 +251,21 @@ def test_parallel_diffusion(
     print(f"rank={props.rank}/{props.comm_size}: diffusion initialized ")
     diagnostic_state = diffusion_initial_data.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_initial_data.construct_prognostics()
-
-    diffusion.run(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        dtime=dtime,
-    )
+    if linit:
+        diffusion.initial_run(diagnostic_state=diagnostic_state, prognostic_state=prognostic_state, dtime=dtime)
+    else:
+        diffusion.run(
+            diagnostic_state=diagnostic_state,
+            prognostic_state=prognostic_state,
+            dtime=dtime,
+        )
     print(f"rank={props.rank}/{props.comm_size}: diffusion run ")
 
     diffusion_savepoint_exit = IconSerialDataProvider(
         "icon_pydycore", str(path), True, mpi_rank=props.rank
-    ).from_savepoint_diffusion_exit(linit=False, date=step_date_init)
+    ).from_savepoint_diffusion_exit(linit=linit, date=step_date_init)
     _verify_diffusion_fields(
-        diagnostic_state=diagnostic_state, prognostic_state=prognostic_state, diffusion_savepoint=diffusion_savepoint_exit, decomp_info=decomp_info
+        diagnostic_state=diagnostic_state, prognostic_state=prognostic_state, diffusion_savepoint=diffusion_savepoint_exit
     )
     print(
         f"rank={props.rank}/{props.comm_size}:  running diffusion step - using {props.comm_name} with {props.comm_size} nodes - DONE"

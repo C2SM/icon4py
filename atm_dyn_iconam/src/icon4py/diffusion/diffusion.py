@@ -522,6 +522,7 @@ class Diffusion:
             smag_limit,
             0.0,
         )
+        self._sync_cell_fields(prognostic_state)
 
     def run(
         self,
@@ -543,6 +544,25 @@ class Diffusion:
             smag_limit=self.smag_limit,
             smag_offset=self.smag_offset,
         )
+        if not self.config.lhdiff_rcf :
+            self._sync_cell_fields(prognostic_state)
+
+    def _sync_cell_fields(self, prognostic_state):
+        """
+        Communicate theta_v, exner and w.
+
+        communication only done in original code if the following condition applies:
+        IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
+        """
+        print(
+            f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - start")
+        theta_f, pattern_theta = self._exchange.prepare_field(CellDim, prognostic_state.theta_v)
+        exner_f, pattern_exner = self._exchange.prepare_field(CellDim,
+                                                              prognostic_state.exner_pressure)
+        w_f, pattern_w = self._exchange.prepare_field(CellDim, prognostic_state.w)
+        handle_cell_comm = self._exchange._comm.exchange([pattern_theta, pattern_exner, pattern_w])
+        handle_cell_comm.wait()
+        print(f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - end")
 
     def _do_diffusion_step(
         self,
@@ -755,6 +775,9 @@ class Diffusion:
         log.debug(
             f"{self._log_id} running stencils 04 05 06 (apply_diffusion_to_vn): end"
         )
+        print(f"{self._log_id}: communication of vn - start")
+        vn_f, pattern_vn = self._exchange.prepare_field(EdgeDim, prognostic_state.vn)
+        handle_edge_comm = self._exchange._comm.exchange([pattern_vn])
 
         log.debug(
             f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
@@ -793,10 +816,8 @@ class Diffusion:
         log.debug(
             f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
         )
-        # HALO EXCHANGE: CALL sync_patch_array (Edge Fields)
-        print(f"{self._log_id}: communication of vn - start")
-        vn_f, pattern_vn = self._exchange.prepare_field(EdgeDim, prognostic_state.vn)
-        h_vn = self._exchange._comm.exchange([pattern_vn])
+        # HALO EXCHANGE: CALL sync_patch_array (Edge Fields) (vn) (original location)
+
 
         log.debug(
             f"{self._log_id} running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
@@ -882,17 +903,18 @@ class Diffusion:
             offset_provider={},
         )
         log.debug(f"{self._log_id} running stencil 16 (update_theta_and_exner): end")
+        handle_edge_comm.wait() # need to do this here, since we currently only use 1 communication object.
+        print(f"{self._log_id}: communication of vn - end")
         # 10. HALO EXCHANGE sync_patch_array (Cell fields)
         # TODO @magdalena why not trigger the exchange of w earlier?
+
         # TODO if condition: IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
-        h_vn.wait()
-        print(f"{self._log_id}: communication of vn - end")
         print(f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - start")
         theta_f, pattern_theta = self._exchange.prepare_field(CellDim, prognostic_state.theta_v)
         exner_f, pattern_exner = self._exchange.prepare_field(CellDim, prognostic_state.exner_pressure)
         w_f, pattern_w = self._exchange.prepare_field(CellDim, prognostic_state.w)
-        h = self._exchange._comm.exchange([pattern_theta, pattern_exner, pattern_w])
-        h.wait()
+        #handle_cell_comm = self._exchange._comm.exchange([pattern_theta, pattern_exner, pattern_w])
+        #handle_cell_comm.wait()
         print(f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - end")
 
 
