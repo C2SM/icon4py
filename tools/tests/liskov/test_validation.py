@@ -24,7 +24,7 @@ from icon4pytools.liskov.parsing.parse import Declare, DirectivesParser, Imports
 from icon4pytools.liskov.parsing.validation import DirectiveSyntaxValidator
 
 from .conftest import insert_new_lines, scan_for_directives
-from .fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL, SINGLE_STENCIL_WITH_COMMENTS
+from .fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL, SINGLE_STENCIL_WITH_COMMENTS,FUSED_STENCIL
 
 
 @mark.parametrize(

@@ -309,6 +309,141 @@ FUSED_STENCIL = """\
         !$DSL END FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence)
     """
 
+
+FUSED_STENCILS = """\
+    !$DSL IMPORTS()
+
+    !$DSL INSERT(INTEGER :: start_interior_idx_c, end_interior_idx_c, start_nudging_idx_c, end_halo_1_idx_c)
+
+    !$DSL DECLARE(kh_smag_e=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      kh_smag_ec=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      z_nabla2_e=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      kh_c=nproma,p_patch%nlev; &
+    !$DSL      div=nproma,p_patch%nlev; &
+    !$DSL      div_ic=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      hdef_ic=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      z_nabla4_e2=nproma,p_patch%nlev; &
+    !$DSL      vn=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      z_nabla2_c=nproma,p_patch%nlev,p_patch%nblks_e; &
+    !$DSL      dwdx=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      dwdy=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      w=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      enh_diffu_3d=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      z_temp=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      theta_v=nproma,p_patch%nlev,p_patch%nblks_c; &
+    !$DSL      exner=nproma,p_patch%nlev,p_patch%nblks_c)
+
+        !$DSL INSERT(start_2nd_nudge_line_idx_e = i_startidx)
+        !$DSL INSERT(end_interior_idx_e = i_endidx)
+                 ! Compute nabla4(v)
+
+        !$DSL START FUSED STENCIL(name=apply_diffusion_to_vn; &
+        !$DSL     u_vert=u_vert(:,:,1); &
+        !$DSL     v_vert=v_vert(:,:,1); &
+        !$DSL     primal_normal_vert_v1=p_patch%edges%primal_normal_vert_x(:,:,1); &
+        !$DSL     primal_normal_vert_v2=p_patch%edges%primal_normal_vert_y(:,:,1); &
+        !$DSL     z_nabla2_e=z_nabla2_e(:,:,1); &
+        !$DSL     inv_vert_vert_length=p_patch%edges%inv_vert_vert_length(:,1); &
+        !$DSL     inv_primal_edge_length=p_patch%edges%inv_primal_edge_length(:,1); &
+        !$DSL     area_edge=p_patch%edges%area_edge(:,1); &
+        !$DSL     kh_smag_e=kh_smag_e(:,:,1); &
+        !$DSL     diff_multfac_vn=diff_multfac_vn(:); &
+        !$DSL     nudgecoeff_e=p_int%nudgecoeff_e(:,1); &
+        !$DSL     vn=p_nh_prog%vn(:,:,1); &
+        !$DSL     horz_idx=horz_idx(:); &
+        !$DSL     nudgezone_diff=nudgezone_diff; &
+        !$DSL     fac_bdydiff_v=fac_bdydiff_v; &
+        !$DSL     start_2nd_nudge_line_idx_e=start_2nd_nudge_line_idx_e-1; &
+        !$DSL     limited_area=l_limited_area; &
+        !$DSL     vn_rel_tol=1e-11_wp; &
+        !$DSL     vertical_lower=1; &
+        !$DSL     vertical_upper=nlev; &
+        !$DSL     horizontal_lower=start_bdydiff_idx_e; &
+        !$DSL     horizontal_upper=end_interior_idx_e)
+
+        !$DSL START STENCIL(name=calculate_nabla4; u_vert=u_vert(:,:,1); v_vert=v_vert(:,:,1); &
+        !$DSL       primal_normal_vert_v1=p_patch%edges%primal_normal_vert_x(:,:,1); &
+        !$DSL       primal_normal_vert_v2=p_patch%edges%primal_normal_vert_y(:,:,1); &
+        !$DSL       z_nabla2_e=z_nabla2_e(:,:,1); inv_vert_vert_length=p_patch%edges%inv_vert_vert_length(:,1); &
+        !$DSL       inv_primal_edge_length=p_patch%edges%inv_primal_edge_length(:,1); z_nabla4_e2_abs_tol=1e-27_wp; &
+        !$DSL       z_nabla4_e2=z_nabla4_e2(:, :); vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; &
+        !$DSL       horizontal_upper=i_endidx)
+
+        !$DSL END STENCIL(name=calculate_nabla4)
+
+        !$DSL START STENCIL(name=apply_nabla2_and_nabla4_to_vn; nudgezone_diff=nudgezone_diff; area_edge=p_patch%edges%area_edge(:,1); &
+        !$DSL       kh_smag_e=kh_smag_e(:,:,1); z_nabla2_e=z_nabla2_e(:,:,1); z_nabla4_e2=z_nabla4_e2(:,:); &
+        !$DSL       diff_multfac_vn=diff_multfac_vn(:); nudgecoeff_e=p_int%nudgecoeff_e(:,1); vn=p_nh_prog%vn(:,:,1); vn_rel_tol=1e-11_wp; &
+        !$DSL       vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
+        !$DSL END STENCIL(name=apply_nabla2_and_nabla4_to_vn)
+
+          !$DSL START STENCIL(name=apply_nabla2_and_nabla4_global_to_vn; area_edge=p_patch%edges%area_edge(:,1); kh_smag_e=kh_smag_e(:,:,1); &
+          !$DSL              z_nabla2_e=z_nabla2_e(:,:,1); z_nabla4_e2=z_nabla4_e2(:,:); diff_multfac_vn=diff_multfac_vn(:); vn=p_nh_prog%vn(:,:,1); &
+          !$DSL              vn_rel_tol=1e-10_wp; vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
+          !$DSL END STENCIL(name=apply_nabla2_and_nabla4_global_to_vn)
+
+        !$DSL INSERT(start_bdydiff_idx_e = i_startidx)
+
+        !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; z_nabla2_e=z_nabla2_e(:,:,1); area_edge=p_patch%edges%area_edge(:,1); &
+        !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); vn_abs_tol=1e-14_wp; vertical_lower=1; &
+        !$DSL       vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
+    !$DSL END FUSED STENCIL(name=apply_diffusion_to_vn)
+
+
+        !$DSL INSERT(start_nudging_idx_c = i_startidx)
+        !$DSL INSERT(end_halo_1_idx_c = i_endidx)
+
+        !$DSL INSERT(!$ACC PARALLEL IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1))
+        !$DSL INSERT(w_old(:,:,:) = p_nh_prog%w(:,:,:))
+        !$DSL INSERT(!$ACC END PARALLEL)
+
+        !$DSL START FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance; &
+        !$DSL       area=p_patch%cells%area(:,1); geofac_grg_x=p_int%geofac_grg(:,:,1,1); &
+        !$DSL       geofac_grg_y=p_int%geofac_grg(:,:,1,2); geofac_n2s=p_int%geofac_n2s(:,:,1); &
+        !$DSL       w_old=w_old(:,:,1); w=p_nh_prog%w(:,:,1); diff_multfac_w=diff_multfac_w; &
+        !$DSL       diff_multfac_n2w=diff_multfac_n2w(:); vert_idx=vert_idx(:); &
+        !$DSL       horz_idx=horz_idx(:); nrdmax=nrdmax(jg); interior_idx=start_interior_idx_c-1; &
+        !$DSL       halo_idx=end_interior_idx_c; dwdx=p_nh_diag%dwdx(:,:,1); &
+        !$DSL       dwdy=p_nh_diag%dwdy(:,:,1); &
+        !$DSL       w_rel_tol=1e-09_wp; dwdx_rel_tol=1e-09_wp; dwdy_abs_tol=1e-09_wp; &
+        !$DSL       vertical_lower=1; vertical_upper=nlev; horizontal_lower=start_nudging_idx_c; &
+        !$DSL       horizontal_upper=end_halo_1_idx_c)
+
+        !$DSL START STENCIL(name=calculate_nabla2_for_w; w=p_nh_prog%w(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1); &
+        !$DSL       z_nabla2_c=z_nabla2_c(:,:,1); z_nabla2_c_abs_tol=1e-21_wp; vertical_lower=1; vertical_upper=nlev; &
+        !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
+        !$DSL END STENCIL(name=calculate_nabla2_for_w)
+
+          !$DSL START STENCIL(name=calculate_horizontal_gradients_for_turbulence; w=p_nh_prog%w(:,:,1); geofac_grg_x=p_int%geofac_grg(:,:,1,1); geofac_grg_y=p_int%geofac_grg(:,:,1,2); &
+          !$DSL       dwdx=p_nh_diag%dwdx(:,:,1); dwdy=p_nh_diag%dwdy(:,:,1); dwdx_rel_tol=1e-09_wp; dwdy_rel_tol=1e-09_wp; vertical_lower=2; &
+          !$DSL       vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
+          !$DSL END STENCIL(name=calculate_horizontal_gradients_for_turbulence)
+
+        !$DSL INSERT(start_interior_idx_c = i_startidx)
+        !$DSL INSERT(end_interior_idx_c = i_endidx)
+
+        !$DSL START STENCIL(name=apply_nabla2_to_w; diff_multfac_w=diff_multfac_w; area=p_patch%cells%area(:,1); &
+        !$DSL       z_nabla2_c=z_nabla2_c(:,:,1); geofac_n2s=p_int%geofac_n2s(:,:,1); w=p_nh_prog%w(:,:,1); &
+        !$DSL       w_abs_tol=1e-15_wp; vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; &
+        !$DSL       horizontal_upper=i_endidx)
+
+        !$DSL END STENCIL(name=apply_nabla2_to_w)
+
+                  !$DSL START STENCIL(name=apply_nabla2_to_w_in_upper_damping_layer; w=p_nh_prog%w(:,:,1); diff_multfac_n2w=diff_multfac_n2w(:); &
+          !$DSL       cell_area=p_patch%cells%area(:,1); z_nabla2_c=z_nabla2_c(:,:,1); vertical_lower=2; w_abs_tol=1e-16_wp; w_rel_tol=1e-10_wp; &
+          !$DSL       vertical_upper=nrdmax(jg); horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+
+          !$DSL END STENCIL(name=apply_nabla2_to_w_in_upper_damping_layer)
+
+        !$DSL END FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance)
+    """
+
+
 FREE_FORM_STENCIL = """\
     !$DSL IMPORTS()
 
