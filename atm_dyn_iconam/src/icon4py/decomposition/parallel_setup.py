@@ -229,7 +229,8 @@ class Exchange:
         return field, pattern(descriptor)
 
 
-
+    def sync_patterns(self, patterns:list):
+        return self._comm.exchange(patterns)
 
 
     def exchange(self, dim: Dimension, *fields):
@@ -250,3 +251,5 @@ class Exchange:
         ]
 
         return self._comm.exchange(patterns_of_field)
+
+

@@ -139,7 +139,8 @@ def test_processor_properties_from_comm_world(mpi, caplog):
 
 
 @pytest.mark.mpi
-def test_domain_descriptor_id():
+@pytest.mark.parametrize("num", [1, 2, 3 ])
+def test_domain_descriptor_id_are_globally_unique(num):
     props = get_processor_properties()
     size = props.comm_size
     context = ghex.context(ghex.mpi_comm(props.comm), True)
@@ -147,12 +148,18 @@ def test_domain_descriptor_id():
     id1 = id_gen()
     assert id1 == props.comm_size * props.rank
     assert id1 < props.comm_size * (props.rank + 1)
-    for i in range(1, 2*size):
+    ids = []
+    ids.append(id1)
+    for i in range(1, num * size):
         id = id_gen()
         assert id > id1
-        assert id >= 4 * props.rank
-        assert id < 4 * (
-            props.rank + 1)
+        ids.append(id)
+    all_ids = props.comm.gather(ids, root=0)
+    if props.rank == 0:
+        all_ids = np.asarray(all_ids).flatten()
+        assert len(all_ids) == size * size * num
+        assert len(all_ids) == len(set(all_ids))
+
 
 
 @pytest.mark.mpi
@@ -185,7 +192,7 @@ def test_decomposition_info_matches_gridsize(datapath, caplog):
     )
 
 
-#@pytest.mark.mpi
+@pytest.mark.mpi
 @pytest.mark.parametrize("datapath", [2], indirect=True)
 @pytest.mark.parametrize("ndyn_substeps", [5])
 @pytest.mark.parametrize("linit", [True, False])

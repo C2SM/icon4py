@@ -560,7 +560,7 @@ class Diffusion:
         exner_f, pattern_exner = self._exchange.prepare_field(CellDim,
                                                               prognostic_state.exner_pressure)
         w_f, pattern_w = self._exchange.prepare_field(CellDim, prognostic_state.w)
-        handle_cell_comm = self._exchange._comm.exchange([pattern_theta, pattern_exner, pattern_w])
+        handle_cell_comm = self._exchange.sync_patterns([pattern_theta, pattern_exner, pattern_w])
         handle_cell_comm.wait()
         print(f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - end")
 
@@ -650,7 +650,7 @@ class Diffusion:
         #res = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
         vf, pattern_v = self._exchange.prepare_field(VertexDim, self.v_vert)
         uf, pattern_u = self._exchange.prepare_field(VertexDim, self.u_vert)
-        h = self._exchange._comm.exchange([pattern_u, pattern_v])
+        h = self._exchange.sync_patterns([pattern_u, pattern_v])
         h.wait()
         print(f"{self._log_id} communication rbf extrapolation of vn - end")
 
@@ -716,7 +716,7 @@ class Diffusion:
 
         if self.config.type_vn_diffu > 1:
             z_nablae_f, pattern = self._exchange.prepare_field(EdgeDim, self.z_nabla2_e)
-            h_z = self._exchange._comm.exchange(pattern)
+            h_z = self._exchange.sync_patterns(pattern)
             h_z.wait()
 
         log.debug(f"{self._log_id} 2nd rbf interpolation: start")
@@ -738,7 +738,7 @@ class Diffusion:
         print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - start")
         vf, pattern_v = self._exchange.prepare_field(VertexDim, self.v_vert)
         uf, pattern_u = self._exchange.prepare_field(VertexDim, self.u_vert)
-        h = self._exchange._comm.exchange([pattern_u, pattern_v])
+        h = self._exchange.sync_patterns([pattern_u, pattern_v])
         h.wait()
         print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - end")
 
@@ -777,7 +777,7 @@ class Diffusion:
         )
         print(f"{self._log_id}: communication of vn - start")
         vn_f, pattern_vn = self._exchange.prepare_field(EdgeDim, prognostic_state.vn)
-        handle_edge_comm = self._exchange._comm.exchange([pattern_vn])
+        handle_edge_comm = self._exchange.sync_patterns([pattern_vn])
 
         log.debug(
             f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
@@ -816,8 +816,6 @@ class Diffusion:
         log.debug(
             f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
         )
-        # HALO EXCHANGE: CALL sync_patch_array (Edge Fields) (vn) (original location)
-
 
         log.debug(
             f"{self._log_id} running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
@@ -905,16 +903,4 @@ class Diffusion:
         log.debug(f"{self._log_id} running stencil 16 (update_theta_and_exner): end")
         handle_edge_comm.wait() # need to do this here, since we currently only use 1 communication object.
         print(f"{self._log_id}: communication of vn - end")
-        # 10. HALO EXCHANGE sync_patch_array (Cell fields)
-        # TODO @magdalena why not trigger the exchange of w earlier?
-
-        # TODO if condition: IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
-        print(f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - start")
-        theta_f, pattern_theta = self._exchange.prepare_field(CellDim, prognostic_state.theta_v)
-        exner_f, pattern_exner = self._exchange.prepare_field(CellDim, prognostic_state.exner_pressure)
-        w_f, pattern_w = self._exchange.prepare_field(CellDim, prognostic_state.w)
-        #handle_cell_comm = self._exchange._comm.exchange([pattern_theta, pattern_exner, pattern_w])
-        #handle_cell_comm.wait()
-        print(f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - end")
-
 
