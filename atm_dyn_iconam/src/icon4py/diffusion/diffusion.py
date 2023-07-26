@@ -694,9 +694,10 @@ class Diffusion:
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
 
-        # if self.config.type_vn_diffu > 1:
-        #     comm_z_nabla_e = self._sync_fields(EdgeDim, self.z_nabla2_e)
-        #     self._wait(comm_z_nabla_e)
+        if self.config.type_vn_diffu > 1:
+            z_nablae_f, pattern = self._exchange.prepare_field(EdgeDim, self.z_nabla2_e)
+            h_z = self._exchange._comm.exchange(pattern)
+            h_z.wait()
 
         log.debug(f"{self._log_id} 2nd rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
@@ -793,8 +794,6 @@ class Diffusion:
             f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
         )
         # HALO EXCHANGE: CALL sync_patch_array (Edge Fields)
-        #comm_res_vn = self._sync_fields(EdgeDim, prognostic_state.vn)
-        #self._wait(comm_res_vn)
         print(f"{self._log_id}: communication of vn - start")
         vn_f, pattern_vn = self._exchange.prepare_field(EdgeDim, prognostic_state.vn)
         h_vn = self._exchange._comm.exchange([pattern_vn])
@@ -888,22 +887,12 @@ class Diffusion:
         # TODO if condition: IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         h_vn.wait()
         print(f"{self._log_id}: communication of vn - end")
-        # comm_c = self._sync_fields(
-        #     CellDim,
-        #     prognostic_state.theta_v,
-        #     prognostic_state.exner_pressure,
-        #     prognostic_state.w,
-        # )
-        # self._wait(comm_c)
-
+        print(f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - start")
         theta_f, pattern_theta = self._exchange.prepare_field(CellDim, prognostic_state.theta_v)
+        exner_f, pattern_exner = self._exchange.prepare_field(CellDim, prognostic_state.exner_pressure)
+        w_f, pattern_w = self._exchange.prepare_field(CellDim, prognostic_state.w)
+        h = self._exchange._comm.exchange([pattern_theta, pattern_exner, pattern_w])
+        h.wait()
+        print(f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - end")
 
 
-    def _sync_fields(self, dim: Dimension, *field):
-        if self._exchange:
-            return self._exchange.exchange(dim, *field)
-
-    def _wait(self, comm_handle):
-        if comm_handle:
-            comm_handle.wait()
-            print(f"{self._log_id} :communication ={comm_handle} done")
