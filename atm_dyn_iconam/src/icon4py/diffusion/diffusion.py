@@ -87,7 +87,7 @@ VectorTuple = namedtuple("VectorTuple", "x y")
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-backend = compiled_backend  #
+backend = run_gtfn_cached  #
 
 
 class DiffusionType(int, Enum):
@@ -347,7 +347,7 @@ class Diffusion:
 
     def __init__(self, exchange: Optional[Exchange] = None):
         self._exchange = exchange
-        self._log_id = exchange._log_id if exchange else ""
+        self._log_id = f"rank={exchange.my_rank()}/{exchange.get_size()}" if exchange else ""
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
         self.thresh_tdiff: float = (
@@ -610,7 +610,7 @@ class Diffusion:
             self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
         )
 
-        log.debug(f"{self._log_id} rbf interpolation: start")
+        log.debug(f"{self._log_id} rbf interpolation 1: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -623,12 +623,15 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity()},
         )
-        log.debug(f"{self._log_id} rbf interpolation: end")
+        log.debug(f"{self._log_id} rbf interpolation 1: end")
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         print(f"{self._log_id} communication rbf extrapolation of vn - start")
-        res = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
-        self._wait(res)
+        #res = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
+        vf, pattern_v = self._exchange.prepare_field(VertexDim, self.v_vert)
+        uf, pattern_u = self._exchange.prepare_field(VertexDim, self.u_vert)
+        h = self._exchange._comm.exchange([pattern_u, pattern_v])
+        h.wait()
         print(f"{self._log_id} communication rbf extrapolation of vn - end")
 
         log.debug(
@@ -691,9 +694,9 @@ class Diffusion:
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
 
-        if self.config.type_vn_diffu > 1:
-            comm_z_nabla_e = self._sync_fields(EdgeDim, self.z_nabla2_e)
-            self._wait(comm_z_nabla_e)
+        # if self.config.type_vn_diffu > 1:
+        #     comm_z_nabla_e = self._sync_fields(EdgeDim, self.z_nabla2_e)
+        #     self._wait(comm_z_nabla_e)
 
         log.debug(f"{self._log_id} 2nd rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
@@ -712,9 +715,11 @@ class Diffusion:
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - start")
-        comm_rbf_coef = self._sync_fields(VertexDim, self.u_vert, self.v_vert)
-        self._wait(comm_rbf_coef)
-        print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - start")
+        vf, pattern_v = self._exchange.prepare_field(VertexDim, self.v_vert)
+        uf, pattern_u = self._exchange.prepare_field(VertexDim, self.u_vert)
+        h = self._exchange._comm.exchange([pattern_u, pattern_v])
+        h.wait()
+        print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - end")
 
         log.debug(
             f"{self._log_id} running stencils 04 05 06 (apply_diffusion_to_vn): start"
@@ -788,8 +793,12 @@ class Diffusion:
             f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
         )
         # HALO EXCHANGE: CALL sync_patch_array (Edge Fields)
-        comm_res_vn = self._sync_fields(EdgeDim, prognostic_state.vn)
-        self._wait(comm_res_vn)
+        #comm_res_vn = self._sync_fields(EdgeDim, prognostic_state.vn)
+        #self._wait(comm_res_vn)
+        print(f"{self._log_id}: communication of vn - start")
+        vn_f, pattern_vn = self._exchange.prepare_field(EdgeDim, prognostic_state.vn)
+        h_vn = self._exchange._comm.exchange([pattern_vn])
+
         log.debug(
             f"{self._log_id} running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
@@ -877,14 +886,18 @@ class Diffusion:
         # 10. HALO EXCHANGE sync_patch_array (Cell fields)
         # TODO @magdalena why not trigger the exchange of w earlier?
         # TODO if condition: IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
+        h_vn.wait()
+        print(f"{self._log_id}: communication of vn - end")
+        # comm_c = self._sync_fields(
+        #     CellDim,
+        #     prognostic_state.theta_v,
+        #     prognostic_state.exner_pressure,
+        #     prognostic_state.w,
+        # )
+        # self._wait(comm_c)
 
-        comm_res = self._sync_fields(
-            CellDim,
-            prognostic_state.theta_v,
-            prognostic_state.exner_pressure,
-            prognostic_state.w,
-        )
-        self._wait(comm_res)
+        theta_f, pattern_theta = self._exchange.prepare_field(CellDim, prognostic_state.theta_v)
+
 
     def _sync_fields(self, dim: Dimension, *field):
         if self._exchange:

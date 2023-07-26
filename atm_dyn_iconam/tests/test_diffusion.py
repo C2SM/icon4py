@@ -351,11 +351,13 @@ def _verify_diffusion_fields(
     val_dwdx = np.asarray(diagnostic_state.dwdx)
     ref_dwdy = np.asarray(diffusion_savepoint.dwdy())
     val_dwdy = np.asarray(diagnostic_state.dwdy)
-    ref_vn = np.asarray(diffusion_savepoint.vn())
-    val_vn = np.asarray(prognostic_state.vn)
     assert np.allclose(ref_dwdx, val_dwdx)
     assert np.allclose(ref_dwdy, val_dwdy)
+    # TODO (Magdalena) verification on 2 nodes fine until here..
    # pdb.set_trace()
+    ref_vn = np.asarray(diffusion_savepoint.vn())
+    val_vn = np.asarray(prognostic_state.vn)
+    print_diff_into(ref_vn, val_vn)
     assert np.allclose(ref_vn[owned_edges, :], val_vn[owned_edges, :])
     assert np.allclose(ref_w[owned_cells, :], val_w[owned_cells, :])
     ref_exner = np.asarray(diffusion_savepoint.exner())
@@ -364,6 +366,13 @@ def _verify_diffusion_fields(
     val_exner = np.asarray(prognostic_state.exner_pressure)
     assert np.allclose(ref_theta_v[owned_cells,:], val_theta_v[owned_cells, :])
     assert np.allclose(ref_exner[owned_cells,:], val_exner[owned_cells, :])
+
+
+def print_diff_into(ref_vn, val_vn):
+    diff_vn = np.abs(ref_vn - val_vn)
+    print(f"max diff vn {np.max(diff_vn)}")
+    d = 0.00001
+    print(f"number of diffs > {d}: {np.count_nonzero(diff_vn > d)}")
 
 
 @pytest.mark.datatest

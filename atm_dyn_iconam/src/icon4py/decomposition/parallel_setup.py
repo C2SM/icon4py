@@ -14,14 +14,14 @@ import logging
 from enum import Enum
 from typing import Union
 
-import ghex.unstructured as ghex
 import mpi4py
 import numpy as np
 import numpy.ma as ma
+from ghex import unstructured as ghex
 from gt4py.next.common import Dimension, DimensionKind
 from mpi4py.MPI import Comm
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, KHalfDim, VertexDim
+from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.decomposition.decomposed import ProcessProperties
 from icon4py.diffusion.diffusion_utils import builder
 
@@ -64,6 +64,24 @@ def finalize_mpi():
         log.info("finalizing MPI")
         MPI.Finalize()
 
+class DomainDescriptorIdGenerator():
+    _counter = 0
+    _roundtrips = 0
+
+    def __init__(self, context):
+        self._comm_size = context.size()
+        self._roundtrips = context.rank()
+        self._base = self._roundtrips * self._comm_size
+
+    def __call__(self):
+        id = self._base + self._counter
+        if self._counter + 1 >= self._comm_size:
+            self._roundtrips = self._roundtrips + self._comm_size
+            self._base = self._roundtrips * self._comm_size
+            self._counter = 0
+        else:
+            self._counter = self._counter + 1
+        return id
 
 class DecompositionInfo:
     class EntryType(int, Enum):
@@ -123,10 +141,10 @@ class DecompositionInfo:
 
 class Exchange:
     def __init__(self, context, domain_decomposition: DecompositionInfo):
-        self._counter = 0
         self._context = context
+        self._domain_id_gen = DomainDescriptorIdGenerator(context)
         self._decomposition_info = domain_decomposition
-        self._log_id = f"rank={self._context.rank()}/{self._context.size()}"
+        self._log_id = f"rank={self._context.rank()}/{self._context.size()}>>>"
         self._domain_descriptors = {
             CellDim: self._create_domain_descriptor(
                 CellDim,
@@ -136,36 +154,26 @@ class Exchange:
             ),
             EdgeDim: self._create_domain_descriptor(EdgeDim),
         }
-        print(f"{self._log_id} :domain descriptors initialized")
-        self._field_size = {
-            CellDim: self._decomposition_info.global_index(
-                CellDim, DecompositionInfo.EntryType.ALL
-            ).shape[0],
-            EdgeDim: self._decomposition_info.global_index(
-                EdgeDim, DecompositionInfo.EntryType.ALL
-            ).shape[0],
-            VertexDim: self._decomposition_info.global_index(
-                VertexDim, DecompositionInfo.EntryType.ALL
-            ).shape[0],
-            KDim: domain_decomposition.klevels,
-            KHalfDim: domain_decomposition.klevels + 1,
-        }
-        print(f"{self._log_id} : field sizes = {self._field_size}")
+        print(f"{self._log_id}: domain descriptors initialized")
 
         self._patterns = {
             CellDim: self._create_pattern(CellDim),
             VertexDim: self._create_pattern(VertexDim),
             EdgeDim: self._create_pattern(EdgeDim),
         }
-        self._comms = {k: ghex.make_co(context) for k, v in self._patterns.items()}
-        print(f"{self._log_id} : patterns and communicators initialized ")
-        print(f"{self._log_id} : exchange initialized")
+        print(f"{self._log_id}: patterns initialized ")
+        self._comm  = ghex.make_co(context)
+        print(f"{self._log_id}: exchange initialized")
 
     def _domain_descriptor_info(self, descr):
-        return f" id={descr.domain_id()}, size={descr.size()}, inner_size={descr.inner_size()}"
+        return f" id={descr.domain_id()}, size={descr.size()}, inner_size={descr.inner_size()} (halo size = {descr.size() - descr.inner_size()})"
 
     def get_size(self):
         return self._context.size()
+
+
+    def my_rank(self):
+        return self._context.rank()
 
     def _create_domain_descriptor(self, dim: Dimension):
         all_global = self._decomposition_info.global_index(
@@ -175,21 +183,20 @@ class Exchange:
             dim, DecompositionInfo.EntryType.HALO
         )
 
-        print(
-            f"rank={self._context.rank()}/{self._context.size()}:  all global idx(dim={dim.value}) (shape = {all_global.shape}) {all_global}")
-        print(
-            f"rank={self._context.rank()}/{self._context.size()}:  local halo idx(dim={dim.value}) (shape = {local_halo.shape}) {local_halo}")
+        # print(
+        #     f"rank={self._context.rank()}/{self._context.size()}:  all global idx(dim={dim.value}) (shape = {all_global.shape}) {all_global}")
+        # print(
+        #     f"rank={self._context.rank()}/{self._context.size()}:  local halo idx(dim={dim.value}) (shape = {local_halo.shape}) {local_halo}")
+
         # first arg is the domain ID which builds up an MPI Tag.
         # if those ids are not different for all domain descriptors the system might deadlock
         # if two parallel exchanges with the same domain id are done
         domain_desc = ghex.domain_descriptor(
-            self._context.rank() + self._counter, all_global.tolist(), local_halo.tolist()
+            self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
-        self._counter = self._counter +  1
         print(
-            f"rank={self._context.rank()}/{self._context.size()}: domain descriptor for dim {dim} with properties {self._domain_descriptor_info(domain_desc)}"
+            f"{self._log_id}: domain descriptor for dim {dim} with properties {self._domain_descriptor_info(domain_desc)}"
         )
-
         return domain_desc
 
     def _create_pattern(self, horizontal_dim: Dimension):
@@ -197,34 +204,49 @@ class Exchange:
 
         global_halo_idx = self._decomposition_info.global_index(horizontal_dim,
                                                       DecompositionInfo.EntryType.HALO)
-        print(f"rank={self._context.rank()}/{self._context.size()}:  global halo idx(dim={horizontal_dim.value}) (shape = {global_halo_idx.shape}) {global_halo_idx}")
+        #print(f"rank={self._context.rank()}/{self._context.size()}:  global halo idx(dim={horizontal_dim.value}) (shape = {global_halo_idx.shape}) {global_halo_idx}")
         halo_generator = ghex.halo_generator_with_gids(
             global_halo_idx
         )
         print(
-            f"rank={self._context.rank()}/{self._context.size()}: halo generator for dim={horizontal_dim} created"
+            f"{self._log_id}: halo generator for dim={horizontal_dim} created"
         )
         pattern = ghex.make_pattern(
             self._context, halo_generator, [self._domain_descriptors[horizontal_dim]]
         )
         print(
-            f"rank={self._context.rank()}/{self._context.size()}: pattern for dim={horizontal_dim} and {self._domain_descriptors[horizontal_dim]} created"
+            f"{self._log_id}: pattern for dim={horizontal_dim} and {self._domain_descriptors[horizontal_dim]} created"
         )
         return pattern
 
-    def exchange(self, dim: Dimension, *fields):
+    def prepare_field(self, dim:Dimension, field):
         assert dim in [CellDim, EdgeDim, VertexDim]
-        horizontal_size = self._field_size[dim]
         pattern = self._patterns[dim]
         assert pattern is not None
-        fields = [np.asarray(f)[:horizontal_size, :] for f in fields]
-        shapes = list(map(lambda f: f.shape, fields))
-        print(
-            f"rank = {self._context.rank()}/{self._context.size()}: communicating fields of dim = {dim} : shapes = {shapes}"
-        )
+        domain_descriptor = self._domain_descriptors[dim]
+        assert domain_descriptor is not None
+        descriptor = ghex.field_descriptor(domain_descriptor, np.asarray(field))
+        return field, pattern(descriptor)
+
+
+
+
+
+    def exchange(self, dim: Dimension, *fields):
+        assert dim in [CellDim, EdgeDim, VertexDim]
+        pattern = self._patterns[dim]
+        assert pattern is not None
+        fields = [np.asarray(f) for f in fields]
+        for f in fields:
+            print(
+                f"{self._log_id}: communicating field of dim = {dim} : shape = {f.shape}"
+            )
+        domain_descriptor = self._domain_descriptors[dim]
+        print(f"{self._log_id}:  applying pattern to field_descriptor of field f={f.shape} with domain descriptor {self._domain_descriptor_info(domain_descriptor)} ")
 
         patterns_of_field = [
-            pattern(ghex.field_descriptor(self._domain_descriptors[dim], f))
+            pattern(ghex.field_descriptor(domain_descriptor, f))
             for f in fields
         ]
-        return self._comms[dim].exchange(patterns_of_field)
+
+        return self._comm.exchange(patterns_of_field)

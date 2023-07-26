@@ -23,7 +23,7 @@ from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.decomposition.parallel_setup import (
     DecompositionInfo,
     Exchange,
-    get_processor_properties, finalize_mpi,
+    get_processor_properties, finalize_mpi, DomainDescriptorIdGenerator,
 )
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.driver.io_utils import (
@@ -137,6 +137,24 @@ def test_processor_properties_from_comm_world(mpi, caplog):
     assert props.comm_name == mpi.COMM_WORLD.Get_name()
 
 
+
+@pytest.mark.mpi
+def test_domain_descriptor_id():
+    props = get_processor_properties()
+    size = props.comm_size
+    context = ghex.context(ghex.mpi_comm(props.comm), True)
+    id_gen = DomainDescriptorIdGenerator(context)
+    id1 = id_gen()
+    assert id1 == props.comm_size * props.rank
+    assert id1 < props.comm_size * (props.rank + 1)
+    for i in range(1, 2*size):
+        id = id_gen()
+        assert id == id1 + i
+        assert id >= 4 * props.rank
+        assert id < 4 * (
+            props.rank + 1)
+
+
 @pytest.mark.mpi
 @pytest.mark.parametrize("datapath", [2], indirect=True)
 def test_decomposition_info_matches_gridsize(datapath, caplog):
@@ -167,7 +185,7 @@ def test_decomposition_info_matches_gridsize(datapath, caplog):
     )
 
 
-#@pytest.mark.mpi
+@pytest.mark.mpi
 @pytest.mark.parametrize("datapath", [2], indirect=True)
 def test_parallel_diffusion(
     datapath, r04b09_diffusion_config, step_date_init, ndyn_substeps,caplog
@@ -248,5 +266,6 @@ def test_parallel_diffusion(
     print(
         f"rank={props.rank}/{props.comm_size}:  running diffusion step - using {props.comm_name} with {props.comm_size} nodes - DONE"
     )
+    del context
 
 
