@@ -20,18 +20,17 @@ from gt4py.next.ffront.fbuiltins import (
     neighbor_sum,
 )
 
-from icon4py.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import C2E, C2CE, CEDim, C2EDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_01b(
-    geofac_div: Field[[CellDim, C2EDim], float],
+    geofac_div: Field[[CEDim], float],
     p_rhodz_now: Field[[CellDim, KDim], float],
     p_rhodz_new: Field[[CellDim, KDim], float],
     z_mflx_low: Field[[EdgeDim, KDim], float],
     z_anti: Field[[EdgeDim, KDim], float],
     p_cc: Field[[CellDim, KDim], float],
-    z_fluxdiv_c: Field[[CellDim, KDim], float],
     p_dtime: float,
 ) -> tuple[
     Field[[CellDim, KDim], float],
@@ -40,12 +39,24 @@ def _hflx_limiter_mo_stencil_01b(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
+    zero = broadcast(0.0, (CellDim, KDim))
 
-    z_mflx_anti = broadcast(p_rhodz_new, (CellDim, C2EDim, KDim))
+    z_mflx_anti_1 = ( p_dtime * geofac_div(C2CE[0]) / p_rhodz_new
+                    * z_anti(C2E[0]) )
+    z_mflx_anti_2 = ( p_dtime * geofac_div(C2CE[1]) / p_rhodz_new
+                    * z_anti(C2E[1]) )
+    z_mflx_anti_3 = ( p_dtime * geofac_div(C2CE[2]) / p_rhodz_new
+                    * z_anti(C2E[2]) )
 
-    z_mflx_anti_in = -1.0 * neighbor_sum(p_rhodz_now(C2E) * z_mflx_anti, axis=C2EDim)
-    z_mflx_anti_out = neighbor_sum(p_rhodz_now(C2E) * z_mflx_anti, axis=C2EDim)
-    z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div, axis=C2EDim)
+    z_mflx_anti_in = -1.0 * ( minimum(zero, z_mflx_anti_1)
+                            + minimum(zero, z_mflx_anti_2)
+                            + minimum(zero, z_mflx_anti_3) )
+
+    z_mflx_anti_out =  ( maximum(zero, z_mflx_anti_1)
+                       + maximum(zero, z_mflx_anti_2)
+                       + maximum(zero, z_mflx_anti_3) )
+
+    z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div(C2CE), axis=C2EDim)
 
     z_tracer_new_low = (p_cc * p_rhodz_now - p_dtime * z_fluxdiv_c) / p_rhodz_new
     z_tracer_max = maximum(p_cc, z_tracer_new_low)
@@ -62,13 +73,12 @@ def _hflx_limiter_mo_stencil_01b(
 
 @program
 def hflx_limiter_mo_stencil_01b(
-    geofac_div: Field[[CellDim, C2EDim], float],
+    geofac_div: Field[[CEDim], float],
     p_rhodz_now: Field[[CellDim, KDim], float],
     p_rhodz_new: Field[[CellDim, KDim], float],
     z_mflx_low: Field[[EdgeDim, KDim], float],
     z_anti: Field[[EdgeDim, KDim], float],
     p_cc: Field[[CellDim, KDim], float],
-    z_fluxdiv_c: Field[[CellDim, KDim], float],
     p_dtime: float,
     z_mflx_anti_in: Field[[CellDim, KDim], float],
     z_mflx_anti_out: Field[[CellDim, KDim], float],
@@ -83,7 +93,6 @@ def hflx_limiter_mo_stencil_01b(
         z_mflx_low,
         z_anti,
         p_cc,
-        z_fluxdiv_c,
         p_dtime,
         out=(
             z_mflx_anti_in,

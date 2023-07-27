@@ -20,7 +20,6 @@ from icon4py.common.dimension import EdgeDim, KDim
 
 @field_operator
 def _upwind_hflux_miura_cycl_stencil_03b(
-    p_ncycl: int32,
     z_tracer_mflx_1_dsl: Field[[EdgeDim, KDim], float],
     z_tracer_mflx_2_dsl: Field[[EdgeDim, KDim], float],
     z_tracer_mflx_3_dsl: Field[[EdgeDim, KDim], float],
@@ -33,14 +32,12 @@ def _upwind_hflux_miura_cycl_stencil_03b(
 
 @program
 def upwind_hflux_miura_cycl_stencil_03b(
-    p_ncycl: int32,
     z_tracer_mflx_1_dsl: Field[[EdgeDim, KDim], float],
     z_tracer_mflx_2_dsl: Field[[EdgeDim, KDim], float],
     z_tracer_mflx_3_dsl: Field[[EdgeDim, KDim], float],
     p_out_e: Field[[EdgeDim, KDim], float],
 ):
     _upwind_hflux_miura_cycl_stencil_03b(
-        p_ncycl,
         z_tracer_mflx_1_dsl,
         z_tracer_mflx_2_dsl,
         z_tracer_mflx_3_dsl,

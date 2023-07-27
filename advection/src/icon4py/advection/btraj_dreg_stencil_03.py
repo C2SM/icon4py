@@ -50,9 +50,6 @@ def _btraj_dreg_stencil_03(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-    # this is comented out:   lvn_sys_pos = where(lvn_sys_pos_int == int32(1), broadcast(True, (EdgeDim, KDim)), broadcast(False, (EdgeDim, KDim)))
-    # this is comented out:   lvn_sys_pos = where(lvn_sys_pos_int == int32(1), True, False)
-
     lvn_pos = where(p_vn >= 0.0, True, False)
 
     p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))

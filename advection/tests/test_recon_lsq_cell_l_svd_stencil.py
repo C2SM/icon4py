@@ -14,8 +14,8 @@
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.advection.upwind_hflux_miura_stencil_02 import (
-    upwind_hflux_miura_stencil_02,
+from icon4py.advection.recon_lsq_cell_l_svd_stencil import (
+    recon_lsq_cell_l_svd_stencil,
 )
 from icon4py.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 
@@ -23,7 +23,7 @@ from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh
 
 
-def upwind_hflux_miura_stencil_02_numpy(
+def recon_lsq_cell_l_svd_stencil_numpy(
     c2e2c: np.ndarray,
     p_cc: np.ndarray,
     lsq_pseudoinv_1: np.ndarray,
@@ -39,7 +39,7 @@ def upwind_hflux_miura_stencil_02_numpy(
     return p_coeff_1, p_coeff_2, p_coeff_3
 
 
-def test_upwind_hflux_miura_stencil_02():
+def test_recon_lsq_cell_l_svd_stencil():
     mesh = SimpleMesh()
     p_cc = random_field(mesh, CellDim, KDim)
     lsq_pseudoinv_1 = random_field(mesh, CellDim, C2E2CDim)
@@ -51,14 +51,14 @@ def test_upwind_hflux_miura_stencil_02():
     p_coeff_2 = zero_field(mesh, CellDim, KDim)
     p_coeff_3 = zero_field(mesh, CellDim, KDim)
 
-    ref_1, ref_2, ref_3 = upwind_hflux_miura_stencil_02_numpy(
+    ref_1, ref_2, ref_3 = recon_lsq_cell_l_svd_stencil_numpy(
         mesh.c2e2c,
         np.asarray(p_cc),
         np.asarray(lsq_pseudoinv_1),
         np.asarray(lsq_pseudoinv_2),
     )
 
-    upwind_hflux_miura_stencil_02(
+    recon_lsq_cell_l_svd_stencil(
         p_cc,
         lsq_pseudoinv_1_field,
         lsq_pseudoinv_2_field,
