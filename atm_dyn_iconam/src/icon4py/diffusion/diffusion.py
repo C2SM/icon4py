@@ -13,7 +13,6 @@
 import functools
 import logging
 import math
-import pdb
 import sys
 from collections import namedtuple
 from dataclasses import InitVar, dataclass, field
@@ -59,7 +58,7 @@ from icon4py.common.constants import (
     GAS_CONSTANT_DRY_AIR,
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.decomposition.parallel_setup import Exchange
+from icon4py.decomposition.decomposed import ExchangeRuntime, SingleNode
 from icon4py.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
@@ -345,9 +344,11 @@ def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def __init__(self, exchange: Optional[Exchange] = None):
+    def __init__(self, exchange: ExchangeRuntime = SingleNode()):
         self._exchange = exchange
-        self._log_id = f"rank={exchange.my_rank()}/{exchange.get_size()}" if exchange else ""
+        self._log_id = (
+            f"rank={exchange.my_rank()}/{exchange.get_size()}" if exchange else ""
+        )
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
         self.thresh_tdiff: float = (
@@ -544,7 +545,7 @@ class Diffusion:
             smag_limit=self.smag_limit,
             smag_offset=self.smag_offset,
         )
-        if not self.config.lhdiff_rcf :
+        if not self.config.lhdiff_rcf:
             self._sync_cell_fields(prognostic_state)
 
     def _sync_cell_fields(self, prognostic_state):
@@ -555,15 +556,18 @@ class Diffusion:
         IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         """
         print(
-            f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - start")
-        #w_f, pattern_w = self._exchange.prepare_field(CellDim, prognostic_state.w)
-        #theta_f, pattern_theta = self._exchange.prepare_field(CellDim, prognostic_state.theta_v)
-        #exner_f, pattern_exner = self._exchange.prepare_field(CellDim,prognostic_state.exner_pressure)
-        #patterns_cell = [pattern_theta, pattern_exner, pattern_w]
-        #handle_cell_comm = self._exchange.sync_patterns(patterns_cell)
-        handle_cell_comm, field_refs = self._exchange.exchange(CellDim, prognostic_state.w, prognostic_state.theta_v, prognostic_state.exner_pressure)
+            f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - start"
+        )
+        handle_cell_comm = self._exchange.exchange(
+            CellDim,
+            prognostic_state.w,
+            prognostic_state.theta_v,
+            prognostic_state.exner_pressure,
+        )
         handle_cell_comm.wait()
-        print(f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - end")
+        print(
+            f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - end"
+        )
 
     def _do_diffusion_step(
         self,
@@ -648,7 +652,7 @@ class Diffusion:
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         print(f"{self._log_id} communication rbf extrapolation of vn - start")
-        h, rbf_patterns = self._exchange.exchange(VertexDim, self.u_vert, self.v_vert)
+        h = self._exchange.exchange(VertexDim, self.u_vert, self.v_vert)
         h.wait()
         print(f"{self._log_id} communication rbf extrapolation of vn - end")
 
@@ -713,7 +717,7 @@ class Diffusion:
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
 
         if self.config.type_vn_diffu > 1:
-            h_z, p = self._exchange.exchange(EdgeDim, self.z_nabla2_e)
+            h_z = self._exchange.exchange(EdgeDim, self.z_nabla2_e)
             h_z.wait()
 
         log.debug(f"{self._log_id} 2nd rbf interpolation: start")
@@ -733,7 +737,7 @@ class Diffusion:
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - start")
-        h, rbf_patterns = self._exchange.exchange(VertexDim, self.u_vert, self.v_vert)
+        h = self._exchange.exchange(VertexDim, self.u_vert, self.v_vert)
         h.wait()
         print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - end")
 
@@ -771,7 +775,7 @@ class Diffusion:
             f"{self._log_id} running stencils 04 05 06 (apply_diffusion_to_vn): end"
         )
         print(f"{self._log_id}: communication of vn - start")
-        handle_edge_comm, vn_f_ref = self._exchange.exchange(EdgeDim, prognostic_state.vn)
+        handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
         log.debug(
             f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
@@ -895,6 +899,5 @@ class Diffusion:
             offset_provider={},
         )
         log.debug(f"{self._log_id} running stencil 16 (update_theta_and_exner): end")
-        handle_edge_comm.wait() # need to do this here, since we currently only use 1 communication object.
+        handle_edge_comm.wait()  # need to do this here, since we currently only use 1 communication object.
         print(f"{self._log_id}: communication of vn - end")
-

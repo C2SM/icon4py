@@ -11,7 +11,19 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from dataclasses import dataclass
+from enum import Enum
+from typing import Protocol
+
+import mpi4py
 import mpi4py.MPI
+import numpy as np
+import numpy.ma as ma
+from ghex import unstructured as ghex
+from gt4py.next import Dimension
+
+from icon4py.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
+from icon4py.diffusion.diffusion_utils import builder
 
 
 class ProcessProperties:
@@ -40,3 +52,220 @@ class ProcessProperties:
     @classmethod
     def from_mpi_comm(cls, comm: mpi4py.MPI.Comm):
         return ProcessProperties(comm)
+
+
+class DomainDescriptorIdGenerator:
+    _counter = 0
+    _roundtrips = 0
+
+    def __init__(self, context):
+        self._comm_size = context.size()
+        self._roundtrips = context.rank()
+        self._base = self._roundtrips * self._comm_size
+
+    def __call__(self):
+        next_id = self._base + self._counter
+        if self._counter + 1 >= self._comm_size:
+            self._roundtrips = self._roundtrips + self._comm_size
+            self._base = self._roundtrips * self._comm_size
+            self._counter = 0
+        else:
+            self._counter = self._counter + 1
+        return next_id
+
+
+class DecompositionInfo:
+    class EntryType(int, Enum):
+        ALL = (0,)
+        OWNED = (1,)
+        HALO = 2
+
+    @builder
+    def with_dimension(
+        self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray
+    ):
+        masked_global_index = ma.array(global_index, mask=owner_mask)
+        self._global_index[dim] = masked_global_index
+
+    def __init__(self, klevels: int):
+        self._global_index = {}
+        self._klevels = klevels
+
+    @property
+    def klevels(self):
+        return self._klevels
+
+    def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+        match (entry_type):
+            case DecompositionInfo.EntryType.ALL:
+                return self._to_local_index(dim)
+            case DecompositionInfo.EntryType.HALO:
+                index = self._to_local_index(dim)
+                mask = self._global_index[dim].mask
+                return index[~mask]
+            case DecompositionInfo.EntryType.OWNED:
+                index = self._to_local_index(dim)
+                mask = self._global_index[dim].mask
+                return index[mask]
+
+    def _to_local_index(self, dim):
+        data = ma.getdata(self._global_index[dim], subok=False)
+        assert data.ndim == 1
+        return np.arange(data.shape[0])
+
+    def owner_mask(self, dim: Dimension) -> np.ndarray:
+        return self._global_index[dim].mask
+
+    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+        match (entry_type):
+            case DecompositionInfo.EntryType.ALL:
+                return ma.getdata(self._global_index[dim], subok=False)
+            case DecompositionInfo.EntryType.OWNED:
+                global_index = self._global_index[dim]
+                return ma.getdata(global_index[global_index.mask])
+            case DecompositionInfo.EntryType.HALO:
+                global_index = self._global_index[dim]
+                return ma.getdata(global_index[~global_index.mask])
+            case _:
+                raise NotImplementedError()
+
+
+class ExchangeResult(Protocol):
+    def wait(self):
+        ...
+
+    def is_ready(self) -> bool:
+        ...
+
+
+class ExchangeRuntime(Protocol):
+    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+        ...
+
+    def get_size(self):
+        ...
+
+    def my_rank(self):
+        ...
+
+    def wait(self):
+        pass
+
+    def is_ready(self) -> bool:
+        return True
+
+
+@dataclass
+class SingleNode:
+    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+        return SingleNodeResult()
+
+    def my_rank(self):
+        return 0
+
+    def get_size(self):
+        return 1
+
+
+class SingleNodeResult:
+    def wait(self):
+        pass
+
+    def is_ready(self) -> bool:
+        return True
+
+
+class MultiNode:
+    def __init__(self, context, domain_decomposition: DecompositionInfo):
+        self._context = context
+        self._domain_id_gen = DomainDescriptorIdGenerator(context)
+        self._decomposition_info = domain_decomposition
+        self._log_id = f"rank={self._context.rank()}/{self._context.size()}>>>"
+        self._domain_descriptors = {
+            CellDim: self._create_domain_descriptor(
+                CellDim,
+            ),
+            VertexDim: self._create_domain_descriptor(
+                VertexDim,
+            ),
+            EdgeDim: self._create_domain_descriptor(EdgeDim),
+        }
+        print(f"{self._log_id}: domain descriptors initialized")
+
+        self._patterns = {
+            CellDim: self._create_pattern(CellDim),
+            VertexDim: self._create_pattern(VertexDim),
+            EdgeDim: self._create_pattern(EdgeDim),
+        }
+        print(f"{self._log_id}: patterns initialized ")
+        self._comm = ghex.make_co(context)
+        print(f"{self._log_id}: exchange initialized")
+
+    def _domain_descriptor_info(self, descr):
+        return f" id={descr.domain_id()}, size={descr.size()}, inner_size={descr.inner_size()} (halo size = {descr.size() - descr.inner_size()})"
+
+    def get_size(self):
+        return self._context.size()
+
+    def my_rank(self):
+        return self._context.rank()
+
+    def _create_domain_descriptor(self, dim: Dimension):
+        all_global = self._decomposition_info.global_index(
+            dim, DecompositionInfo.EntryType.ALL
+        )
+        local_halo = self._decomposition_info.local_index(
+            dim, DecompositionInfo.EntryType.HALO
+        )
+        # first arg is the domain ID which builds up an MPI Tag.
+        # if those ids are not different for all domain descriptors the system might deadlock
+        # if two parallel exchanges with the same domain id are done
+        domain_desc = ghex.domain_descriptor(
+            self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
+        )
+        print(
+            f"{self._log_id}: domain descriptor for dim {dim} with properties {self._domain_descriptor_info(domain_desc)}"
+        )
+        return domain_desc
+
+    def _create_pattern(self, horizontal_dim: Dimension):
+        assert horizontal_dim.kind == DimensionKind.HORIZONTAL
+
+        global_halo_idx = self._decomposition_info.global_index(
+            horizontal_dim, DecompositionInfo.EntryType.HALO
+        )
+        halo_generator = ghex.halo_generator_with_gids(global_halo_idx)
+        print(f"{self._log_id}: halo generator for dim={horizontal_dim} created")
+        pattern = ghex.make_pattern(
+            self._context, halo_generator, [self._domain_descriptors[horizontal_dim]]
+        )
+        print(
+            f"{self._log_id}: pattern for dim={horizontal_dim} and {self._domain_descriptors[horizontal_dim]} created"
+        )
+        return pattern
+
+    def exchange(self, dim: Dimension, *fields: tuple):
+        assert dim in [CellDim, EdgeDim, VertexDim]
+        pattern = self._patterns[dim]
+        assert pattern is not None
+        domain_descriptor = self._domain_descriptors[dim]
+        assert domain_descriptor is not None
+        applied_patterns = [
+            pattern(ghex.field_descriptor(domain_descriptor, np.asarray(f)))
+            for f in fields
+        ]
+        handle = self._comm.exchange(applied_patterns)
+        return MultiNodeResult(handle, applied_patterns)
+
+
+@dataclass
+class MultiNodeResult:
+    handle: ...
+    pattern_refs: ...
+
+    def wait(self):
+        self.handle.wait()
+        del self.pattern_refs
+
+    def is_ready(self) -> bool:
+        return self.handle.is_ready()

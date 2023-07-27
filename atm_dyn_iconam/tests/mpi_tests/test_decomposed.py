@@ -13,18 +13,18 @@
 import logging
 
 import ghex
-import mpi4py.MPI
 import numpy as np
 import pytest
 
 from atm_dyn_iconam.tests.test_diffusion import _verify_diffusion_fields
 from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.decomposition.parallel_setup import (
+from icon4py.decomposition.decomposed import (
     DecompositionInfo,
-    Exchange,
-    get_processor_properties, finalize_mpi, DomainDescriptorIdGenerator,
+    DomainDescriptorIdGenerator,
+    MultiNode,
 )
+from icon4py.decomposition.parallel_setup import get_processor_properties
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.driver.io_utils import (
     SerializationType,
@@ -137,9 +137,8 @@ def test_processor_properties_from_comm_world(mpi, caplog):
     assert props.comm_name == mpi.COMM_WORLD.Get_name()
 
 
-
 @pytest.mark.mpi
-@pytest.mark.parametrize("num", [1, 2, 3 ])
+@pytest.mark.parametrize("num", [1, 2, 3])
 def test_domain_descriptor_id_are_globally_unique(num):
     props = get_processor_properties()
     size = props.comm_size
@@ -150,16 +149,15 @@ def test_domain_descriptor_id_are_globally_unique(num):
     assert id1 < props.comm_size * (props.rank + 1)
     ids = []
     ids.append(id1)
-    for i in range(1, num * size):
-        id = id_gen()
-        assert id > id1
-        ids.append(id)
+    for _ in range(1, num * size):
+        next_id = id_gen()
+        assert next_id > id1
+        ids.append(next_id)
     all_ids = props.comm.gather(ids, root=0)
     if props.rank == 0:
         all_ids = np.asarray(all_ids).flatten()
         assert len(all_ids) == size * size * num
         assert len(all_ids) == len(set(all_ids))
-
 
 
 @pytest.mark.mpi
@@ -221,7 +219,7 @@ def test_parallel_diffusion(
     print(
         f"rank={props.rank}/{props.comm_size}:  GHEX context setup: from {props.comm_name} with {props.comm_size} nodes"
     )
-    # assert context.size() == 2
+    assert context.size() == 2
 
     icon_grid = read_icon_grid(path, rank=props.rank)
     print(
@@ -241,7 +239,7 @@ def test_parallel_diffusion(
     print(
         f"rank={props.rank}/{props.comm_size}:  setup: using {props.comm_name} with {props.comm_size} nodes"
     )
-    exchange = Exchange(context, decomp_info)
+    exchange = MultiNode(context, decomp_info)
 
     diffusion = Diffusion(exchange)
 
@@ -259,7 +257,11 @@ def test_parallel_diffusion(
     diagnostic_state = diffusion_initial_data.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_initial_data.construct_prognostics()
     if linit:
-        diffusion.initial_run(diagnostic_state=diagnostic_state, prognostic_state=prognostic_state, dtime=dtime)
+        diffusion.initial_run(
+            diagnostic_state=diagnostic_state,
+            prognostic_state=prognostic_state,
+            dtime=dtime,
+        )
     else:
         diffusion.run(
             diagnostic_state=diagnostic_state,
@@ -272,11 +274,11 @@ def test_parallel_diffusion(
         "icon_pydycore", str(path), True, mpi_rank=props.rank
     ).from_savepoint_diffusion_exit(linit=linit, date=step_date_init)
     _verify_diffusion_fields(
-        diagnostic_state=diagnostic_state, prognostic_state=prognostic_state, diffusion_savepoint=diffusion_savepoint_exit
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        diffusion_savepoint=diffusion_savepoint_exit,
     )
     print(
         f"rank={props.rank}/{props.comm_size}:  running diffusion step - using {props.comm_name} with {props.comm_size} nodes - DONE"
     )
     del context
-
-

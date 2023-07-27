@@ -31,4 +31,3 @@ wget >= 3.2
 netcdf4>=1.6.0
 mpi4py<=3.1.4
 pytest-mpi>=0.6
-netcdf4>=1.6.0

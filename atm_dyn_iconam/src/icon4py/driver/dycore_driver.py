@@ -20,7 +20,6 @@ import pytz
 from devtools import Timer
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
-from icon4py.decomposition.parallel_setup import get_processor_properties
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
 from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
@@ -29,7 +28,6 @@ from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,
     configure_logging,
     import_testutils,
-    read_decomp_info,
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
@@ -178,12 +176,6 @@ def initialize(n_time_steps, file_path: Path):
     experiment_name = "mch_ch_r04b09_dsl"
     log.info(f"reading configuration: experiment {experiment_name}")
     config = read_config(experiment_name, n_time_steps=n_time_steps)
-
-    parallel_props = get_processor_properties()
-    decomp_info = read_decomp_info(
-        f"/home/magdalena/data/exclaim/dycore/{experiment_name}/mpitasks2/{experiment_name}/ser_data",
-        parallel_props,
-    )
 
     log.info("initializing the grid")
     icon_grid = read_icon_grid(file_path)

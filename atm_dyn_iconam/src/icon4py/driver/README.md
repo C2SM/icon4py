@@ -10,7 +10,7 @@ The code is meant to be changed and enlarged as we port new parts of the model.
 
 ```
 cd atm_dyn_iconam/src/icon4py
-python driver/dycore_driver.py ../../tests/ser_icondata/mch_ch_r04b09_dsl/ser_data --n_steps=2 --run_path=/home/magdalena/temp/icon
+python driver/dycore_driver.py ../../../testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data --n_steps=2 --run_path=/home/magdalena/temp/icon
 ```
 
 #### remarks

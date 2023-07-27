@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pdb
 
 import numpy as np
 import pytest
@@ -19,8 +18,6 @@ from atm_dyn_iconam.tests.test_utils.serialbox_utils import (
     IconDiffusionExitSavepoint,
     IconDiffusionInitSavepoint,
 )
-from icon4py.common.dimension import EdgeDim, CellDim
-from icon4py.decomposition.parallel_setup import DecompositionInfo
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import scale_k
 from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
@@ -361,12 +358,6 @@ def _verify_diffusion_fields(
     val_exner = np.asarray(prognostic_state.exner_pressure)
     assert np.allclose(ref_theta_v, val_theta_v)
     assert np.allclose(ref_exner, val_exner)
-    #print(f" cell halo indices: shape = {halo_cells.shape}{halo_cells}")
-    #print_diff_info(ref_exner[halo_cells, :], val_exner[halo_cells, :])
-    #print_diff_info(ref_w[halo_cells, :], val_w[halo_cells, :])
-    #print_diff_info(ref_theta_v[halo_cells, :], val_theta_v[halo_cells, :])
-
-
 
 
 def print_diff_info(ref, value):

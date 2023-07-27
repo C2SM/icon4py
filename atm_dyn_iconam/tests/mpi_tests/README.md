@@ -5,7 +5,7 @@
 The parallelized code uses [GHEX](https://github.com/ghex-org/GHEX) with MPI for halo exchanges. GHEX has a CMake build but no setup script for pip, so it needs to be installed manually:
 
 1. You need a running MPI installation in the system.
-2. clone GHEX
+2. You need to have boost (headers) installed in the system 3clone GHEX
 
 ```bash
 cd {icon4py}/_external_src

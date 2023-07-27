@@ -35,7 +35,7 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.decomposition.parallel_setup import DecompositionInfo
+from icon4py.decomposition.decomposed import DecompositionInfo
 from icon4py.diffusion.diffusion import VectorTuple
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
@@ -236,7 +236,7 @@ class IconGridSavePoint(IconSavepoint):
 
     def _get_decomp_fields(self, dim: Dimension):
         global_index = self.global_index(dim)
-        mask = self.owner_mask(dim)[0:self.num(dim)]
+        mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
     def construct_icon_grid(self) -> IconGrid:

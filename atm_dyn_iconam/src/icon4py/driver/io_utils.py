@@ -17,8 +17,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from icon4py.decomposition.decomposed import ProcessProperties
-from icon4py.decomposition.parallel_setup import DecompositionInfo
+from icon4py.decomposition.decomposed import DecompositionInfo, ProcessProperties
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
     InterpolationState,
