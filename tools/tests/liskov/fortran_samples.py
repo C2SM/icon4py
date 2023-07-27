@@ -390,6 +390,8 @@ FUSED_STENCILS = """\
         !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); vn_abs_tol=1e-14_wp; vertical_lower=1; &
         !$DSL       vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
 
+        !$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)
+
     !$DSL END FUSED STENCIL(name=apply_diffusion_to_vn)
 
 
