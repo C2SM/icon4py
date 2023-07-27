@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+from dataclasses import dataclass
 from enum import Enum
 from typing import Union
 
@@ -20,6 +21,7 @@ import numpy.ma as ma
 from ghex import unstructured as ghex
 from gt4py.next.common import Dimension, DimensionKind
 from mpi4py.MPI import Comm
+from typing_extensions import deprecated
 
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.decomposition.decomposed import ProcessProperties
@@ -219,37 +221,16 @@ class Exchange:
         )
         return pattern
 
-    def prepare_field(self, dim:Dimension, field):
+
+    def exchange(self, dim:Dimension, *fields:tuple):
         assert dim in [CellDim, EdgeDim, VertexDim]
         pattern = self._patterns[dim]
         assert pattern is not None
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None
-        descriptor = ghex.field_descriptor(domain_descriptor, np.asarray(field))
-        return field, pattern(descriptor)
-
-
-    def sync_patterns(self, patterns:list):
-        return self._comm.exchange(patterns)
-
-
-    def exchange(self, dim: Dimension, *fields):
-        assert dim in [CellDim, EdgeDim, VertexDim]
-        pattern = self._patterns[dim]
-        assert pattern is not None
-        fields = [np.asarray(f) for f in fields]
-        for f in fields:
-            print(
-                f"{self._log_id}: communicating field of dim = {dim} : shape = {f.shape}"
-            )
-        domain_descriptor = self._domain_descriptors[dim]
-        print(f"{self._log_id}:  applying pattern to field_descriptor of field f={f.shape} with domain descriptor {self._domain_descriptor_info(domain_descriptor)} ")
-
-        patterns_of_field = [
-            pattern(ghex.field_descriptor(domain_descriptor, f))
-            for f in fields
-        ]
-
-        return self._comm.exchange(patterns_of_field)
+        applied_patterns = [pattern(ghex.field_descriptor(domain_descriptor, np.asarray(f))) for f in
+                  fields]
+        handle = self._comm.exchange(applied_patterns)
+        return handle, applied_patterns
 
 
