@@ -16,6 +16,8 @@ from inspect import getmembers
 from typing import Any
 
 from gt4py.next.ffront.decorator import Program
+
+from icon4pytools.common import ICON4PY_MODEL_QUALIFIED_NAME
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.icon4pygen.metadata import get_stencil_info
 from icon4pytools.liskov.codegen.integration.interface import IntegrationCodeInterface
@@ -27,7 +29,7 @@ logger = setup_logger(__name__)
 
 
 class UpdateFieldsWithGt4PyStencils(Step):
-    _STENCIL_PACKAGES = ["atm_dyn_iconam", "advection"]
+    _STENCIL_PACKAGES = ["atmosphere.dycore"]
 
     def __init__(self, parsed: IntegrationCodeInterface):
         self.parsed = parsed
@@ -44,7 +46,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
                     field_info = gt4py_fields[f.variable]
                 except KeyError:
                     raise IncompatibleFieldError(
-                        f"Used field variable name that is incompatible with the expected field names defined in {s.name} in icon4pytools."
+                        f"Used field variable name that is incompatible with the expected field names defined in {s.name} in icon4py."
                     )
                 f.out = field_info.out
                 f.inp = field_info.inp
@@ -55,21 +57,20 @@ class UpdateFieldsWithGt4PyStencils(Step):
         err_counter = 0
         for pkg in self._STENCIL_PACKAGES:
             try:
-                module_name = f"icon4py.{pkg}.{stencil_name}"
+                module_name = f"{ICON4PY_MODEL_QUALIFIED_NAME}.{pkg}.{stencil_name}"
                 module = importlib.import_module(module_name)
             except ModuleNotFoundError:
                 err_counter += 1
 
         if err_counter == len(self._STENCIL_PACKAGES):
-            error_msg = f"Did not find module: {stencil_name} in icon4pytools."
-            raise UnknownStencilError(error_msg)
+            raise UnknownStencilError(f"Did not find module: {stencil_name}")
 
         module_members = getmembers(module)
         found_stencil = [elt for elt in module_members if elt[0] == stencil_name]
 
         if len(found_stencil) == 0:
             raise UnknownStencilError(
-                f"Did not find module member: {stencil_name} in module: {module.__name__} in icon4pytools."
+                f"Did not find module member: {stencil_name} in module: {module.__name__}"
             )
 
         return found_stencil[0][1]

@@ -1,5 +1,5 @@
 -r ../base-requirements-dev.txt
--e ../common
--e ../advection
--e ../atm_dyn_iconam
+-e ../model/atmosphere/dycore
+-e ../model/atmosphere/advection
+-e ../model/common
 -e .

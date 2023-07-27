@@ -1,9 +1,9 @@
 -r base-requirements.txt
 
-# Concretized dependencies in local repo
-./common
-./atm_dyn_iconam
-./advection
+# icon4py model
+./model/atmosphere/dycore
+./model/atmosphere/advection
+./model/common
 
 # icon4pytools
 ./tools

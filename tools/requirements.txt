@@ -1,5 +1,5 @@
 -r ../base-requirements.txt
-../common
-../advection
-../atm_dyn_iconam
+../model/atmosphere/dycore
+../model/atmosphere/advection
+../model/common
 .

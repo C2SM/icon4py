@@ -58,3 +58,16 @@ def test_granule_parsing_no_intent(samples_path):
     parser = GranuleParser(samples_path / "subroutine_example.f90", [])
     with pytest.raises(ParsingError):
         parser()
+
+
+def test_multiline_declaration_parsing(samples_path):
+    parser = GranuleParser(samples_path / "multiline_example.f90", [])
+    parsed_granule = parser()
+    subroutines = parsed_granule.subroutines
+    assert list(subroutines) == ["graupel_init", "graupel_run"]
+    assert subroutines["graupel_init"]["in"]["codegen_ctx"] == CodegenContext(
+        first_declaration_ln=121, last_declaration_ln=145, end_subroutine_ln=231
+    )
+    assert subroutines["graupel_run"]["in"]["codegen_ctx"] == CodegenContext(
+        first_declaration_ln=254, last_declaration_ln=301, end_subroutine_ln=419
+    )
