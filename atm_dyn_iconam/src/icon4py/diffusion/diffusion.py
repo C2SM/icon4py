@@ -346,14 +346,11 @@ class Diffusion:
 
     def __init__(self, exchange: ExchangeRuntime = SingleNode()):
         self._exchange = exchange
-        self._log_id = (
-            f"rank={exchange.my_rank()}/{exchange.get_size()}" if exchange else ""
-        )
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
         self.thresh_tdiff: float = (
             -5.0
-        )  # threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        )  #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
         self.grid: Optional[IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
@@ -555,8 +552,8 @@ class Diffusion:
         communication only done in original code if the following condition applies:
         IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         """
-        print(
-            f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - start"
+        log.debug(
+            f"communication of prognostic cell fields: theta, w, exner - start"
         )
         handle_cell_comm = self._exchange.exchange(
             CellDim,
@@ -565,8 +562,8 @@ class Diffusion:
             prognostic_state.exner_pressure,
         )
         handle_cell_comm.wait()
-        print(
-            f"{self._log_id}: communication of prognostic cell fields: theta, w, exner - end"
+        log.debug(
+            f"communication of prognostic cell fields: theta, w, exner - done"
         )
 
     def _do_diffusion_step(
@@ -635,7 +632,7 @@ class Diffusion:
             self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
         )
 
-        log.debug(f"{self._log_id} rbf interpolation 1: start")
+        log.debug(f"rbf interpolation 1: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -648,16 +645,16 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity()},
         )
-        log.debug(f"{self._log_id} rbf interpolation 1: end")
+        log.debug(f"rbf interpolation 1: end")
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
-        print(f"{self._log_id} communication rbf extrapolation of vn - start")
+        log.debug(f"communication rbf extrapolation of vn - start")
         h = self._exchange.exchange(VertexDim, self.u_vert, self.v_vert)
         h.wait()
-        print(f"{self._log_id} communication rbf extrapolation of vn - end")
+        log.debug(f"communication rbf extrapolation of vn - end")
 
         log.debug(
-            f"{self._log_id} running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start"
+            f"running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start"
         )
         calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)(
             diff_multfac_smag=self.diff_multfac_smag,
@@ -686,10 +683,10 @@ class Diffusion:
             },
         )
         log.debug(
-            f"{self._log_id} running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end"
+            f"running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end"
         )
         log.debug(
-            f"{self._log_id} running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
+            f"running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
         )
         calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
             kh_smag_ec=self.kh_smag_ec,
@@ -711,16 +708,18 @@ class Diffusion:
             },
         )
         log.debug(
-            f"{self._log_id} running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
+            f"running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
         )
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
 
         if self.config.type_vn_diffu > 1:
+            log.debug(f"communication rbf extrapolation of z_nable2_e - start")
             h_z = self._exchange.exchange(EdgeDim, self.z_nabla2_e)
             h_z.wait()
+            log.debug(f"communication rbf extrapolation of z_nable2_e - end")
 
-        log.debug(f"{self._log_id} 2nd rbf interpolation: start")
+        log.debug(f"2nd rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -733,16 +732,16 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={"V2E": self.grid.get_v2e_connectivity()},
         )
-        log.debug(f"{self._log_id} 2nd rbf interpolation: end")
+        log.debug(f"2nd rbf interpolation: end")
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
-        print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - start")
+        log.debug(f"communication rbf extrapolation of z_nable2_e - start")
         h = self._exchange.exchange(VertexDim, self.u_vert, self.v_vert)
         h.wait()
-        print(f"{self._log_id} communication rbf extrapolation of z_nable2_e - end")
+        log.debug(f"communication rbf extrapolation of z_nable2_e - end")
 
         log.debug(
-            f"{self._log_id} running stencils 04 05 06 (apply_diffusion_to_vn): start"
+            f"running stencils 04 05 06 (apply_diffusion_to_vn): start"
         )
         apply_diffusion_to_vn.with_backend(backend)(
             u_vert=self.u_vert,
@@ -772,13 +771,13 @@ class Diffusion:
             },
         )
         log.debug(
-            f"{self._log_id} running stencils 04 05 06 (apply_diffusion_to_vn): end"
+            f"running stencils 04 05 06 (apply_diffusion_to_vn): end"
         )
-        print(f"{self._log_id}: communication of vn - start")
+        log.debug(f"communication of prognistic.vn : start")
         handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
         log.debug(
-            f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
+            f"running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
         )
         copy_field.with_backend(backend)(
             prognostic_state.w, self.w_tmp, offset_provider={}
@@ -812,11 +811,11 @@ class Diffusion:
             },
         )
         log.debug(
-            f"{self._log_id} running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
+            f"running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
         )
 
         log.debug(
-            f"{self._log_id} running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
+            f"running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
         calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
             backend
@@ -835,7 +834,7 @@ class Diffusion:
             },
         )
         log.debug(
-            f"{self._log_id} running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
+            f"running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
         )
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
         calculate_nabla2_for_theta.with_backend(backend)(
@@ -855,10 +854,10 @@ class Diffusion:
             },
         )
         log.debug(
-            f"{self._log_id} running stencils 13_14 (calculate_nabla2_for_theta): end"
+            f"running stencils 13_14 (calculate_nabla2_for_theta): end"
         )
         log.debug(
-            f"{self._log_id} running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
+            f"running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
         truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(
             backend
@@ -883,9 +882,9 @@ class Diffusion:
         )
 
         log.debug(
-            f"{self._log_id} running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+            f"running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
         )
-        log.debug(f"{self._log_id} running stencil 16 (update_theta_and_exner): start")
+        log.debug(f"running stencil 16 (update_theta_and_exner): start")
         update_theta_and_exner.with_backend(backend)(
             z_temp=self.z_temp,
             area=self.cell_params.area,
@@ -898,6 +897,6 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider={},
         )
-        log.debug(f"{self._log_id} running stencil 16 (update_theta_and_exner): end")
+        log.debug(f"running stencil 16 (update_theta_and_exner): end")
         handle_edge_comm.wait()  # need to do this here, since we currently only use 1 communication object.
-        print(f"{self._log_id}: communication of vn - end")
+        log.debug(f"communication of prognogistic.vn - end")

@@ -17,7 +17,8 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from icon4py.decomposition.decomposed import DecompositionInfo, ProcessProperties
+from icon4py.decomposition.decomposed import DecompositionInfo
+from icon4py.decomposition.parallel_setup import ProcessProperties, ParallelLogger
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
     InterpolationState,
@@ -192,7 +193,7 @@ def read_static_fields(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def configure_logging(run_path: str, start_time) -> None:
+def configure_logging(run_path: str, start_time, processor_procs = None) -> None:
     """
     Configure logging.
 
@@ -218,9 +219,10 @@ def configure_logging(run_path: str, start_time) -> None:
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
+    console_handler.addFilter(ParallelLogger(processor_procs))
     formatter = logging.Formatter(
-        "%(asctime)s %(filename)-20s : %(funcName)-20s:  %(levelname)-8s %(message)s"
+        "%(rank)-20s %(asctime)s %(filename)-20s : %(funcName)-20s:  %(levelname)-8s %(message)s"
     )
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.DEBUG)
     logging.getLogger("").addHandler(console_handler)

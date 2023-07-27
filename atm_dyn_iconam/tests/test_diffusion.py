@@ -360,14 +360,6 @@ def _verify_diffusion_fields(
     assert np.allclose(ref_exner, val_exner)
 
 
-def print_diff_info(ref, value):
-    difference = np.abs(ref - value)
-    print("differences ----- ")
-    print(f" max diff vn {np.max(difference)}")
-    d = 0.000001
-    print(f"number of diffs > {d}: {np.count_nonzero(difference > d)}")
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 @pytest.mark.parametrize("datapath", [1], indirect=True)

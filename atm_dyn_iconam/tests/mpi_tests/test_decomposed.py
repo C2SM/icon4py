@@ -195,10 +195,9 @@ def test_decomposition_info_matches_gridsize(datapath, caplog):
 @pytest.mark.parametrize("ndyn_substeps", [5])
 @pytest.mark.parametrize("linit", [True, False])
 def test_parallel_diffusion(
-    datapath, r04b09_diffusion_config, step_date_init, linit, caplog, ndyn_substeps
+    datapath, r04b09_diffusion_config, step_date_init, linit, ndyn_substeps
 ):
 
-    caplog.set_level(logging.WARN)
     props = get_processor_properties()
 
     print(
@@ -219,7 +218,7 @@ def test_parallel_diffusion(
     print(
         f"rank={props.rank}/{props.comm_size}:  GHEX context setup: from {props.comm_name} with {props.comm_size} nodes"
     )
-    assert context.size() == 2
+    assert context.size() == 2, "unexpected context sise"
 
     icon_grid = read_icon_grid(path, rank=props.rank)
     print(

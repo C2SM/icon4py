@@ -16,7 +16,6 @@ from typing import Union
 import mpi4py
 from mpi4py.MPI import Comm
 
-from icon4py.decomposition.decomposed import ProcessProperties
 
 
 mpi4py.rc.initialize = False
@@ -55,3 +54,42 @@ def finalize_mpi():
     if not MPI.Is_finalized():
         log.info("finalizing MPI")
         MPI.Finalize()
+
+
+class ProcessProperties:
+    def __init__(self, comm: mpi4py.MPI.Comm):
+        self._communicator_name: str = comm.Get_name()
+        self._rank: int = comm.Get_rank()
+        self._comm_size = comm.Get_size()
+        self._comm = comm
+
+    @property
+    def rank(self):
+        return self._rank
+
+    @property
+    def comm_name(self):
+        return self._communicator_name
+
+    @property
+    def comm_size(self):
+        return self._comm_size
+
+    @property
+    def comm(self):
+        return self._comm
+
+    @classmethod
+    def from_mpi_comm(cls, comm: mpi4py.MPI.Comm):
+        return ProcessProperties(comm)
+
+class ParallelLogger(logging.Filter):
+    def __init__(self, processProperties: ProcessProperties = None):
+        super().__init__()
+        self._rank_info = ""
+        if processProperties and processProperties.comm_size > 1:
+            self._rank_info = f"rank={processProperties.rank}/{processProperties.comm_size} [{processProperties.comm_name}] >>>"
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.rank = self._rank_info
+        return True

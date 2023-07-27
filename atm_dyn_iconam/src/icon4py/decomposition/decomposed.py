@@ -10,13 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol
 
-import mpi4py
-import mpi4py.MPI
 import numpy as np
 import numpy.ma as ma
 from ghex import unstructured as ghex
@@ -26,32 +24,12 @@ from icon4py.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
 from icon4py.diffusion.diffusion_utils import builder
 
 
-class ProcessProperties:
-    def __init__(self, comm: mpi4py.MPI.Comm):
-        self._communicator_name: str = comm.Get_name()
-        self._rank: int = comm.Get_rank()
-        self._comm_size = comm.Get_size()
-        self._comm = comm
 
-    @property
-    def rank(self):
-        return self._rank
 
-    @property
-    def comm_name(self):
-        return self._communicator_name
+log = logging.getLogger(__name__)
 
-    @property
-    def comm_size(self):
-        return self._comm_size
 
-    @property
-    def comm(self):
-        return self._comm
 
-    @classmethod
-    def from_mpi_comm(cls, comm: mpi4py.MPI.Comm):
-        return ProcessProperties(comm)
 
 
 class DomainDescriptorIdGenerator:
@@ -180,7 +158,6 @@ class MultiNode:
         self._context = context
         self._domain_id_gen = DomainDescriptorIdGenerator(context)
         self._decomposition_info = domain_decomposition
-        self._log_id = f"rank={self._context.rank()}/{self._context.size()}>>>"
         self._domain_descriptors = {
             CellDim: self._create_domain_descriptor(
                 CellDim,
@@ -190,19 +167,19 @@ class MultiNode:
             ),
             EdgeDim: self._create_domain_descriptor(EdgeDim),
         }
-        print(f"{self._log_id}: domain descriptors initialized")
+        log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
 
         self._patterns = {
             CellDim: self._create_pattern(CellDim),
             VertexDim: self._create_pattern(VertexDim),
             EdgeDim: self._create_pattern(EdgeDim),
         }
-        print(f"{self._log_id}: patterns initialized ")
+        log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = ghex.make_co(context)
-        print(f"{self._log_id}: exchange initialized")
+        log.info(f"communication object initialized")
 
     def _domain_descriptor_info(self, descr):
-        return f" id={descr.domain_id()}, size={descr.size()}, inner_size={descr.inner_size()} (halo size = {descr.size() - descr.inner_size()})"
+        return f" domain_descriptor=[id='{descr.domain_id()}', size='{descr.size()}', inner_size='{descr.inner_size()}' (halo size='{descr.size() - descr.inner_size()}')"
 
     def get_size(self):
         return self._context.size()
@@ -223,8 +200,8 @@ class MultiNode:
         domain_desc = ghex.domain_descriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
-        print(
-            f"{self._log_id}: domain descriptor for dim {dim} with properties {self._domain_descriptor_info(domain_desc)}"
+        log.debug(
+            f"domain descriptor for dim='{dim.value}' with properties {self._domain_descriptor_info(domain_desc)} created"
         )
         return domain_desc
 
@@ -235,26 +212,27 @@ class MultiNode:
             horizontal_dim, DecompositionInfo.EntryType.HALO
         )
         halo_generator = ghex.halo_generator_with_gids(global_halo_idx)
-        print(f"{self._log_id}: halo generator for dim={horizontal_dim} created")
+        log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
         pattern = ghex.make_pattern(
             self._context, halo_generator, [self._domain_descriptors[horizontal_dim]]
         )
-        print(
-            f"{self._log_id}: pattern for dim={horizontal_dim} and {self._domain_descriptors[horizontal_dim]} created"
+        log.debug(
+            f"pattern for dim='{horizontal_dim.value}' and {self._domain_descriptor_info(self._domain_descriptors[horizontal_dim])} created"
         )
         return pattern
 
     def exchange(self, dim: Dimension, *fields: tuple):
         assert dim in [CellDim, EdgeDim, VertexDim]
         pattern = self._patterns[dim]
-        assert pattern is not None
+        assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
-        assert domain_descriptor is not None
+        assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
             pattern(ghex.field_descriptor(domain_descriptor, np.asarray(f)))
             for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
+        log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
 

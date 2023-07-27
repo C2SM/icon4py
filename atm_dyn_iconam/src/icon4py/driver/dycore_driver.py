@@ -20,6 +20,7 @@ import pytz
 from devtools import Timer
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
+from icon4py.decomposition.parallel_setup import get_processor_properties
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
 from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
@@ -37,11 +38,6 @@ from icon4py.driver.io_utils import (
 
 helpers = import_testutils()
 from helpers import serialbox_utils as sb_utils  # noqa
-
-
-helpers = import_testutils()
-from helpers import serialbox_utils as sb_utils  # noqa
-
 
 log = logging.getLogger(__name__)
 
@@ -241,7 +237,8 @@ def run(
 
     """
     start_time = datetime.now().astimezone(pytz.UTC)
-    configure_logging(run_path, start_time)
+    parallel_props = get_processor_properties()
+    configure_logging(run_path, start_time, parallel_props)
     log.info(f"Starting ICON dycore run: {datetime.isoformat(start_time)}")
     log.info(f"input args: input_path={input_path}, n_time_steps={n_steps}")
     timeloop, diagnostic_state, prognostic_state = initialize(n_steps, Path(input_path))
