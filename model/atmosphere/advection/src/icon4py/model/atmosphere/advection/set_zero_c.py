@@ -15,7 +15,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast
 
-from icon4py.common.dimension import CellDim
+from icon4py.model.common.dimension import CellDim
 
 
 @field_operator

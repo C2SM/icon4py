@@ -15,7 +15,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.common.dimension import EdgeDim, KDim
+from icon4py.model.common.dimension import EdgeDim, KDim
 
 
 @field_operator

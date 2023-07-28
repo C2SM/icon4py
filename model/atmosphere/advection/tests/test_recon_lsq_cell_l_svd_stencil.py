@@ -14,13 +14,13 @@
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.advection.recon_lsq_cell_l_svd_stencil import (
+from icon4py.model.atmosphere.advection.recon_lsq_cell_l_svd_stencil import (
     recon_lsq_cell_l_svd_stencil,
 )
-from icon4py.common.dimension import C2E2CDim, CECDim, CellDim, KDim
+from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 
-from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def recon_lsq_cell_l_svd_stencil_numpy(

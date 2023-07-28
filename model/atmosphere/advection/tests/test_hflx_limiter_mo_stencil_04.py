@@ -13,13 +13,13 @@
 
 import numpy as np
 
-from icon4py.advection.hflx_limiter_mo_stencil_04 import (
+from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_04 import (
     hflx_limiter_mo_stencil_04,
 )
-from icon4py.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
-from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflx_limiter_mo_stencil_04_numpy(

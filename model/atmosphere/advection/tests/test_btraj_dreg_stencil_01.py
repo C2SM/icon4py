@@ -15,11 +15,11 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 
-from icon4py.advection.btraj_dreg_stencil_01 import btraj_dreg_stencil_01
-from icon4py.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.atmosphere.advection.btraj_dreg_stencil_01 import btraj_dreg_stencil_01
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
-from .test_utils.helpers import _shape, random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def btraj_dreg_stencil_01_numpy(

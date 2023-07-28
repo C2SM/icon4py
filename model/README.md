@@ -5,6 +5,7 @@ This folder contains Python implementations for multiple ICON components.
 It includes the following packages:
 
 - `atmosphere/dycore`: Contains implementations of the dynamical core of the ICON model
+- `atmosphere/advection`: Contains implementations of the advection component of the ICON model
 - `common`: Contains shared functionality that is required by multiple components.
 
 ## Installation Instructions
@@ -16,6 +17,7 @@ In the following example it is assumed that you have already created and activat
 ```bash
 # changing into the corresponding directory
 cd model/atmosphere/dycore
+cd model/atmosphere/advection
 
 # installing a development version
 pip install -r requirements-dev.txt

@@ -20,7 +20,7 @@ from gt4py.next.ffront.fbuiltins import (
     neighbor_sum,
 )
 
-from icon4py.common.dimension import C2E, C2CE, CEDim, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2E, C2CE, CEDim, C2EDim, CellDim, EdgeDim, KDim
 
 
 @field_operator

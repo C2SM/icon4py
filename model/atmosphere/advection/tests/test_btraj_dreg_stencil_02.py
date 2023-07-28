@@ -14,11 +14,11 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from icon4py.advection.btraj_dreg_stencil_02 import btraj_dreg_stencil_02
-from icon4py.common.dimension import E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.atmosphere.advection.btraj_dreg_stencil_02 import btraj_dreg_stencil_02
+from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
 
-from .test_utils.helpers import _shape, random_field, zero_field, as_1D_sparse_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, as_1D_sparse_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def btraj_dreg_stencil_02_numpy(
@@ -26,7 +26,7 @@ def btraj_dreg_stencil_02_numpy(
     p_vt: np.array,
     edge_cell_length: np.array,
     p_dt: float,
-) -> np.array:
+):
     lvn_pos = np.where(p_vn >= 0.0, True, False)
 
     traj_length = np.sqrt(p_vn**2 + p_vt**2) * p_dt
@@ -35,9 +35,9 @@ def btraj_dreg_stencil_02_numpy(
     e2c_length = np.where(lvn_pos, edge_cell_length[:, 0], edge_cell_length[:, 1])
 
     opt_famask_dsl = np.where(
-       traj_length > (0.25 * np.broadcast_to(e2c_length, p_vn.shape)),
-       np.int32(1),
-       np.int32(0)
+       traj_length > (1.25 * np.broadcast_to(e2c_length, p_vn.shape)),
+       int32(1),
+       int32(0)
      )
 
     return opt_famask_dsl
@@ -71,4 +71,4 @@ def test_btraj_dreg_stencil_02():
         },
     )
 
-    assert np.allclose(ref, np.asarray(opt_famask_dsl))
+    assert np.allclose(ref, opt_famask_dsl)

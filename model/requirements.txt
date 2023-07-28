@@ -1,3 +1,4 @@
 -r ../base-requirements.txt
 ./atmosphere/dycore
+./atmosphere/advection
 ./common

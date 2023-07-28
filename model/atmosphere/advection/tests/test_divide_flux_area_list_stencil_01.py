@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.advection.divide_flux_area_list_stencil_01 import (
+from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_01 import (
     divide_flux_area_list_stencil_01,
 )
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 from gt4py.next.ffront.fbuiltins import int32
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, E2CDim, ECDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim, ECDim
 
-from .test_utils.helpers import random_field, zero_field, random_mask, as_1D_sparse_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import random_field, zero_field, random_mask, as_1D_sparse_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 # FUNCTIONS
 # Checking turn when travelling along three points, used to check whether lines inters.
@@ -44,7 +44,7 @@ def ccw(
     dy1dx2 = dy1 * dx2
 
     lccw = np.where(dx1dy2 > dy1dx2, True, False)
-    ccw_out = np.where(lccw, 1, -1)  # 1: clockwise, -1: counterclockwise
+    ccw_out = np.where(lccw, int32(1), int32(-1))  # 1: clockwise, -1: counterclockwise
     return ccw_out
 
 # Checks whether two lines intersect

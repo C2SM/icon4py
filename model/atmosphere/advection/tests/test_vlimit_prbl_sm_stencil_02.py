@@ -14,13 +14,13 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.advection.v_limit_prbl_sm_stencil_02 import (
+from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_02 import (
     v_limit_prbl_sm_stencil_02,
 )
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim
 
-from .test_utils.helpers import random_field, random_mask, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import random_field, random_mask, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def v_limit_prbl_sm_stencil_02_numpy(

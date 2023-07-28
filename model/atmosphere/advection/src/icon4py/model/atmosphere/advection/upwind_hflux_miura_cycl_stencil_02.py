@@ -14,7 +14,7 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, where, neighbor_sum, int32, broadcast
 
-from icon4py.common.dimension import CellDim, KDim, C2EDim, EdgeDim, C2E
+from icon4py.model.common.dimension import CellDim, KDim, C2EDim, EdgeDim, C2E
 
 
 @field_operator

@@ -14,7 +14,7 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.common.dimension import (
+from icon4py.model.common.dimension import (
     C2CE,
     C2E,
     C2EDim,

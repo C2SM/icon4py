@@ -10,3 +10,24 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import pytest
+from gt4py.next.program_processors.runners.roundtrip import executor
+
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+
+
+BACKENDS = {"embedded": executor}
+MESHES = {"simple_mesh": SimpleMesh()}
+
+
+@pytest.fixture(
+    ids=MESHES.keys(),
+    params=MESHES.values(),
+)
+def mesh(request):
+    return request.param
+
+
+@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
+def backend(request):
+    return request.param

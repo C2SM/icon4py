@@ -15,7 +15,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import max_over, maximum, min_over, minimum
 
-from icon4py.common.dimension import C2E2C, C2E2CDim, CellDim, KDim
+from icon4py.model.common.dimension import C2E2C, C2E2CDim, CellDim, KDim
 
 
 @field_operator

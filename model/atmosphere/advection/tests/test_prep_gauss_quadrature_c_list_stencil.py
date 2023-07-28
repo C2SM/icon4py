@@ -15,13 +15,13 @@ import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.advection.prep_gauss_quadrature_c_list_stencil import (
+from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_list_stencil import (
     prep_gauss_quadrature_c_list_stencil,
 )
-from icon4py.common.dimension import EdgeDim, CellDim, KDim
+from icon4py.model.common.dimension import EdgeDim, CellDim, KDim
 
-from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field, constant_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field, constant_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def prep_gauss_quadrature_c_list_stencil_numpy(
@@ -261,16 +261,16 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
         + wgt_t_detjac_4 * z_gauss_pts_4_y
     )
     p_quad_vector_sum_4 = (
-        wgt_t_detjac_1 * z_gauss_pts_1_x**2
-        + wgt_t_detjac_2 * z_gauss_pts_2_x**2
-        + wgt_t_detjac_3 * z_gauss_pts_3_x**2
-        + wgt_t_detjac_4 * z_gauss_pts_4_x**2
+        wgt_t_detjac_1 * z_gauss_pts_1_x * z_gauss_pts_1_x
+        + wgt_t_detjac_2 * z_gauss_pts_2_x * z_gauss_pts_2_x
+        + wgt_t_detjac_3 * z_gauss_pts_3_x * z_gauss_pts_3_x
+        + wgt_t_detjac_4 * z_gauss_pts_4_x * z_gauss_pts_4_x
     )
     p_quad_vector_sum_5 = (
-        wgt_t_detjac_1 * z_gauss_pts_1_y**2
-        + wgt_t_detjac_2 * z_gauss_pts_2_y**2
-        + wgt_t_detjac_3 * z_gauss_pts_3_y**2
-        + wgt_t_detjac_4 * z_gauss_pts_4_y**2
+        wgt_t_detjac_1 * z_gauss_pts_1_y * z_gauss_pts_1_y
+        + wgt_t_detjac_2 * z_gauss_pts_2_y * z_gauss_pts_2_y
+        + wgt_t_detjac_3 * z_gauss_pts_3_y * z_gauss_pts_3_y
+        + wgt_t_detjac_4 * z_gauss_pts_4_y * z_gauss_pts_4_y
     )
     p_quad_vector_sum_6 = (
         wgt_t_detjac_1 * z_gauss_pts_1_x * z_gauss_pts_1_y
@@ -279,10 +279,10 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
         + wgt_t_detjac_4 * z_gauss_pts_4_x * z_gauss_pts_4_y
     )
     p_quad_vector_sum_7 = (
-        wgt_t_detjac_1 * z_gauss_pts_1_x**3
-        + wgt_t_detjac_2 * z_gauss_pts_2_x**3
-        + wgt_t_detjac_3 * z_gauss_pts_3_x**3
-        + wgt_t_detjac_4 * z_gauss_pts_4_x**3
+        wgt_t_detjac_1 * z_gauss_pts_1_x * z_gauss_pts_1_x * z_gauss_pts_1_x
+        + wgt_t_detjac_2 * z_gauss_pts_2_x * z_gauss_pts_2_x * z_gauss_pts_2_x
+        + wgt_t_detjac_3 * z_gauss_pts_3_x * z_gauss_pts_3_x * z_gauss_pts_3_x
+        + wgt_t_detjac_4 * z_gauss_pts_4_x * z_gauss_pts_4_x * z_gauss_pts_4_x
     )
     p_quad_vector_sum_8 = (
         wgt_t_detjac_1 * z_gauss_pts_1_y * z_gauss_pts_1_y * z_gauss_pts_1_y
@@ -291,16 +291,16 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
         + wgt_t_detjac_4 * z_gauss_pts_4_y * z_gauss_pts_4_y * z_gauss_pts_4_y
     )
     p_quad_vector_sum_9 = (
-        wgt_t_detjac_1 * z_gauss_pts_1_x**2 * z_gauss_pts_1_y
-        + wgt_t_detjac_2 * z_gauss_pts_2_x**2 * z_gauss_pts_2_y
-        + wgt_t_detjac_3 * z_gauss_pts_3_x**2 * z_gauss_pts_3_y
-        + wgt_t_detjac_4 * z_gauss_pts_4_x**2 * z_gauss_pts_4_y
+        wgt_t_detjac_1 * z_gauss_pts_1_x * z_gauss_pts_1_x * z_gauss_pts_1_y
+        + wgt_t_detjac_2 * z_gauss_pts_2_x * z_gauss_pts_2_x * z_gauss_pts_2_y
+        + wgt_t_detjac_3 * z_gauss_pts_3_x * z_gauss_pts_3_x * z_gauss_pts_3_y
+        + wgt_t_detjac_4 * z_gauss_pts_4_x * z_gauss_pts_4_x * z_gauss_pts_4_y
     )
     p_quad_vector_sum_10 = (
-        wgt_t_detjac_1 * z_gauss_pts_1_x * z_gauss_pts_1_y**2
-        + wgt_t_detjac_2 * z_gauss_pts_2_x * z_gauss_pts_2_y**2
-        + wgt_t_detjac_3 * z_gauss_pts_3_x * z_gauss_pts_3_y**2
-        + wgt_t_detjac_4 * z_gauss_pts_4_x * z_gauss_pts_4_y**2
+        wgt_t_detjac_1 * z_gauss_pts_1_x * z_gauss_pts_1_y * z_gauss_pts_1_y
+        + wgt_t_detjac_2 * z_gauss_pts_2_x * z_gauss_pts_2_y * z_gauss_pts_2_y
+        + wgt_t_detjac_3 * z_gauss_pts_3_x * z_gauss_pts_3_y * z_gauss_pts_3_y
+        + wgt_t_detjac_4 * z_gauss_pts_4_x * z_gauss_pts_4_y * z_gauss_pts_4_y
     )
 
     p_dreg_area = p_dreg_area_in + p_quad_vector_sum_1

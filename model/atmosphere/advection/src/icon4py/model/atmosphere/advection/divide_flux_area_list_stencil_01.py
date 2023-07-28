@@ -16,7 +16,7 @@ import sys
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
-from icon4py.common.dimension import E2EC, ECDim, EdgeDim, KDim
+from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
 
 sys.setrecursionlimit(5500)
@@ -32,7 +32,7 @@ def ccw(
     p1_lat: Field[[EdgeDim, KDim], float],
     p2_lon: Field[[EdgeDim, KDim], float],
     p2_lat: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], int]:
+) -> Field[[EdgeDim, KDim], int32]:
 
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat

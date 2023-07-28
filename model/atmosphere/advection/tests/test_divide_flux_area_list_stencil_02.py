@@ -13,15 +13,15 @@
 
 import numpy as np
 
-from icon4py.advection.divide_flux_area_list_stencil_02 import (
+from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_02 import (
     divide_flux_area_list_stencil_02,
 )
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 from gt4py.next.ffront.fbuiltins import int32
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, E2CDim, ECDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim, ECDim
 
-from .test_utils.helpers import random_field, zero_field, random_mask, as_1D_sparse_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import random_field, zero_field, random_mask, as_1D_sparse_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def divide_flux_area_list_stencil_02_numpy(

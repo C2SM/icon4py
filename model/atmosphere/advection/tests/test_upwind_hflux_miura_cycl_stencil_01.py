@@ -14,11 +14,11 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.advection.upwind_hflux_miura_cycl_stencil_01 import upwind_hflux_miura_cycl_stencil_01
-from icon4py.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_01 import upwind_hflux_miura_cycl_stencil_01
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
-from .test_utils.helpers import _shape, random_field, zero_field, random_mask
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, random_mask
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def upwind_hflux_miura_cycl_stencil_01_numpy(

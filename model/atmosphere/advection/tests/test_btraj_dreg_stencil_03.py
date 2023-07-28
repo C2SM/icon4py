@@ -16,11 +16,11 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.advection.btraj_dreg_stencil_03 import btraj_dreg_stencil_03
-from icon4py.common.dimension import KDim, E2CDim, ECDim, EdgeDim, CellDim
+from icon4py.model.atmosphere.advection.btraj_dreg_stencil_03 import btraj_dreg_stencil_03
+from icon4py.model.common.dimension import KDim, E2CDim, ECDim, EdgeDim, CellDim
 
-from .test_utils.helpers import _shape, random_field, zero_field, as_1D_sparse_field, constant_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, as_1D_sparse_field, constant_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def btraj_dreg_stencil_03_numpy(

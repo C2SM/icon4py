@@ -15,11 +15,11 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 
-from icon4py.advection.hflx_limiter_mo_stencil_01a import hflx_limiter_mo_stencil_01a
-from icon4py.common.dimension import KDim, EdgeDim, CellDim
+from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01a import hflx_limiter_mo_stencil_01a
+from icon4py.model.common.dimension import KDim, EdgeDim, CellDim
 
-from .test_utils.helpers import _shape, random_field, zero_field, constant_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, constant_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflx_limiter_mo_stencil_01a_numpy(
