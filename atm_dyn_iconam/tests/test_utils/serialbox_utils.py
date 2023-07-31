@@ -664,6 +664,15 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def exner_new(self):
         return self._get_field("exner_new", CellDim, KDim)
 
+    def exner_now(self):
+        return self._get_field("exner_now", CellDim, KDim)
+
+    def theta_v_now(self):
+        return self._get_field("theta_v_now", CellDim, KDim)
+
+    def rho_now(self):
+        return self._get_field("rho_now", CellDim, KDim)
+
     def exner_pr(self):
         return self._get_field("exner_pr", CellDim, KDim)
 
@@ -854,6 +863,15 @@ class IconExitSavepoint(IconSavepoint):
     def exner_now(self):
         return self._get_field("x_exner_now", CellDim, KDim)
 
+    def z_exner_ex_pr(self):
+        return self._get_field("x_z_exner_ex_pr", CellDim, KDim)
+
+    def z_exner_ic(self):
+        return self._get_field("x_z_exner_ic", CellDim, KDim)
+
+    def exner_pr(self):
+        return self._get_field("x_exner_pr", CellDim, KDim)
+
     def mass_fl_e(self):
         return self._get_field("x_mass_fl_e", EdgeDim, KDim)
 
@@ -884,6 +902,29 @@ class IconExitSavepoint(IconSavepoint):
     def w_new(self):
         return self._get_field("x_w_new", CellDim, KDim)
 
+    def z_dexner_dz_c(self, ntnd):
+        buffer = np.squeeze(
+            self.serializer.read("x_z_dexner_dz_c", self.savepoint).astype(float)
+        )
+        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd-1])
+
+    def z_th_ddz_exner_c(self, ntnd):
+        buffer = np.squeeze(
+            self.serializer.read("x_z_th_ddz_exner_c", self.savepoint).astype(float)
+        )
+        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd-1])
+
+    def z_gradh_exner(self):
+        return self._get_field("x_z_gradh_exner", EdgeDim, KDim)
+
+    def z_hydro_corr(self):
+        return self._get_field("x_z_hydro_corr", EdgeDim, KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("x_z_kin_hor_e", EdgeDim, KDim)
+
+    def z_theta_v_fl_e(self):
+        return self._get_field("x_z_theta_v_fl_e", EdgeDim, KDim)
 
 
 class IconSerialDataProvider:
