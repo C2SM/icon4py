@@ -138,12 +138,19 @@ def _predictor_stencils_2_3(
     exner: Field[[CellDim, KDim], float],
     exner_ref_mc: Field[[CellDim, KDim], float],
     exner_pr: Field[[CellDim, KDim], float],
+    z_exner_ex_pr: Field[[CellDim, KDim], float],
+    k_field: Field[[KDim], int32],
+    nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
 
-    (z_exner_ex_pr, exner_pr) = _mo_solve_nonhydro_stencil_02(
-        exner_exfac, exner, exner_ref_mc, exner_pr
+    (z_exner_ex_pr, exner_pr) = where(
+        (k_field >= int32(0)) & (k_field < nlev),
+        _mo_solve_nonhydro_stencil_02(
+        exner_exfac, exner, exner_ref_mc, exner_pr),
+        (z_exner_ex_pr, exner_pr)
     )
-    z_exner_ex_pr = _set_zero_c_k()
+    z_exner_ex_pr = where(
+        k_field == nlev,_set_zero_c_k(), z_exner_ex_pr)
 
     return z_exner_ex_pr, exner_pr
 
@@ -155,6 +162,8 @@ def predictor_stencils_2_3(
     exner_ref_mc: Field[[CellDim, KDim], float],
     exner_pr: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
+    k_field: Field[[KDim], int32],
+    nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -165,6 +174,9 @@ def predictor_stencils_2_3(
         exner,
         exner_ref_mc,
         exner_pr,
+        z_exner_ex_pr,
+        k_field,
+        nlev,
         out=(z_exner_ex_pr, exner_pr),
         domain={
             CellDim: (horizontal_start, horizontal_end),
