@@ -685,6 +685,18 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def grf_tend_vn(self):
         return self._get_field("grf_tend_vn", EdgeDim, KDim)
 
+    def ddt_vn_adv_ntl(self, ntl):
+        buffer = np.squeeze(
+            self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float)
+        )
+        return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntl-1])
+
+    def ddt_w_adv_ntl(self,ntl):
+        buffer = np.squeeze(
+            self.serializer.read("ddt_w_adv_ntl", self.savepoint).astype(float)
+        )
+        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntl-1])
+
     def grf_tend_w(self):
         return self._get_field("grf_tend_w", CellDim, KDim)
 
@@ -908,11 +920,14 @@ class IconExitSavepoint(IconSavepoint):
         )
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd-1])
 
-    def z_th_ddz_exner_c(self, ntnd):
+    def z_rth_pr(self, ind):
         buffer = np.squeeze(
-            self.serializer.read("x_z_th_ddz_exner_c", self.savepoint).astype(float)
+            self.serializer.read("x_z_rth_pr", self.savepoint).astype(float)
         )
-        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd-1])
+        return np_as_located_field(CellDim, KDim)(buffer[:, :, ind-1])
+
+    def z_th_ddz_exner_c(self):
+        return self._get_field("x_z_th_ddz_exner_c", CellDim, KDim)
 
     def z_gradh_exner(self):
         return self._get_field("x_z_gradh_exner", EdgeDim, KDim)
@@ -925,6 +940,15 @@ class IconExitSavepoint(IconSavepoint):
 
     def z_theta_v_fl_e(self):
         return self._get_field("x_z_theta_v_fl_e", EdgeDim, KDim)
+
+    def z_theta_v_pr_ic(self):
+        return self._get_field("x_z_theta_v_pr_ic", CellDim, KDim)
+
+    def z_rho_e(self):
+        return self._get_field("x_z_rho_e", EdgeDim, KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("x_z_theta_v_e", EdgeDim, KDim)
 
 
 class IconSerialDataProvider:

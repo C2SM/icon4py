@@ -72,8 +72,10 @@ class DiagnosticStateNonHydro:
     mass_fl_e: Field[[EdgeDim, KDim], float]
     ddt_vn_phy: Field[[EdgeDim, KDim], float]
     grf_tend_vn: Field[[EdgeDim, KDim], float]
-    # ddt_vn_adv: Field[[EdgeDim, KDim], float]
-    # ddt_w_adv: Field[[CellDim, KDim], float]
+    ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float]
+    ddt_vn_adv_ntl2: Field[[EdgeDim, KDim], float]
+    ddt_w_adv_ntl1: Field[[CellDim, KDim], float]
+    ddt_w_adv_ntl2: Field[[CellDim, KDim], float]
     ntl1: float
     ntl2: float
     # Analysis increments
@@ -85,10 +87,10 @@ class DiagnosticStateNonHydro:
     def ddt_vn_adv_ntl(
         self,
     ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
-        return (self.ddt_vn_adv, self.ddt_vn_adv)
+        return (self.ddt_vn_adv_ntl1, self.ddt_vn_adv_ntl2)
 
     @property
     def ddt_w_adv_ntl(
         self,
     ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-        return (self.ddt_w_adv, self.ddt_w_adv)
+        return (self.ddt_w_adv_ntl1, self.ddt_w_adv_ntl2)

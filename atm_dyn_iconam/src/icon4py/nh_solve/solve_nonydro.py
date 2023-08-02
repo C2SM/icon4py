@@ -360,8 +360,8 @@ class SolveNonhydro:
     def _allocate_local_fields(self):
         self.z_exner_ex_pr = _allocate(CellDim, KDim, is_halfdim=True, mesh=self.grid)
         self.z_exner_ic = _allocate(CellDim, KDim, is_halfdim=True, mesh=self.grid)
-        self.z_dexner_dz_c_1 = _allocate(CellDim, KDim, is_halfdim=True, mesh=self.grid)
-        self.z_theta_v_pr_ic = _allocate(CellDim, KDim, mesh=self.grid)
+        self.z_dexner_dz_c_1 = _allocate(CellDim, KDim, mesh=self.grid)
+        self.z_theta_v_pr_ic = _allocate(CellDim, KDim, is_halfdim=True, mesh=self.grid)
         self.z_th_ddz_exner_c = _allocate(CellDim, KDim, mesh=self.grid)
         self.z_rth_pr = _allocate(CellDim, KDim, mesh=self.grid)
         self.z_rth_pr_1 = self.z_rth_pr
@@ -1095,21 +1095,21 @@ class SolveNonhydro:
             )
 
         # TODO @nfarabullini: ddt_vn_adv and ddt_w_adv missing from serialzed data, comment back in structure
-        mo_solve_nonhydro_stencil_24.with_backend(run_gtfn)(
-            vn_nnow=prognostic_state[nnow].vn,
-            ddt_vn_adv_ntl1=diagnostic_state_nonhydro.ddt_vn_adv_ntl[ntl1],
-            ddt_vn_phy=diagnostic_state_nonhydro.ddt_vn_phy,
-            z_theta_v_e=self.z_theta_v_e,
-            z_gradh_exner=self.z_gradh_exner,
-            vn_nnew=prognostic_state[nnew].vn,
-            dtime=dtime,
-            cpd=constants.CPD,
-            horizontal_start=indices_5_1,
-            horizontal_end=indices_5_2,
-            vertical_start=0,
-            vertical_end=self.grid.n_lev(),
-            offset_provider={},
-        )
+        # mo_solve_nonhydro_stencil_24.with_backend(run_gtfn)(
+        #     vn_nnow=prognostic_state[nnow].vn,
+        #     ddt_vn_adv_ntl1=diagnostic_state_nonhydro.ddt_vn_adv_ntl[ntl1],
+        #     ddt_vn_phy=diagnostic_state_nonhydro.ddt_vn_phy,
+        #     z_theta_v_e=self.z_theta_v_e,
+        #     z_gradh_exner=self.z_gradh_exner,
+        #     vn_nnew=prognostic_state[nnew].vn,
+        #     dtime=dtime,
+        #     cpd=constants.CPD,
+        #     horizontal_start=indices_5_1,
+        #     horizontal_end=indices_5_2,
+        #     vertical_start=0,
+        #     vertical_end=self.grid.n_lev(),
+        #     offset_provider={},
+        # )
 
         # if config.is_iau_active:
         #     mo_solve_nonhydro_stencil_28(
@@ -1623,25 +1623,25 @@ class SolveNonhydro:
         )
 
         # TODO @nfarabullini: ddt_vn_adv and ddt_w_adv missing from serialzed data, implement also in structure again
-        # if config.itime_scheme == 4:
-        #     mo_solve_nonhydro_stencil_23.with_backend(run_gtfn)(
-        #         prognostic_state[nnow].vn,
-        #         diagnostic_state_nonhydro.ddt_vn_adv_ntl[ntl1],
-        #         diagnostic_state_nonhydro.ddt_vn_adv_ntl[ntl2],
-        #         diagnostic_state_nonhydro.ddt_vn_phy,
-        #         self.z_theta_v_e,
-        #         self.z_gradh_exner,
-        #         prognostic_state[nnew].vn,
-        #         dtime,
-        #         self.wgt_nnow_vel,
-        #         self.wgt_nnew_vel,
-        #         constants.CPD,
-        #         horizontal_start=indices_1_1,
-        #         horizontal_end=indices_1_2,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={},
-        #     )
+        if config.itime_scheme == 4:
+            mo_solve_nonhydro_stencil_23.with_backend(run_gtfn)(
+                prognostic_state[nnow].vn,
+                diagnostic_state_nonhydro.ddt_vn_adv_ntl[ntl1],
+                diagnostic_state_nonhydro.ddt_vn_adv_ntl[ntl2],
+                diagnostic_state_nonhydro.ddt_vn_phy,
+                self.z_theta_v_e,
+                self.z_gradh_exner,
+                prognostic_state[nnew].vn,
+                dtime,
+                self.wgt_nnow_vel,
+                self.wgt_nnew_vel,
+                constants.CPD,
+                horizontal_start=indices_1_1,
+                horizontal_end=indices_1_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={},
+            )
 
         if config.lhdiff_rcf and config.divdamp_order == 24:
             mo_solve_nonhydro_stencil_25.with_backend(run_gtfn)(
