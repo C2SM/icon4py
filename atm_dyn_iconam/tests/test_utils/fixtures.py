@@ -23,7 +23,8 @@ mch_ch_r04b09_dsl_grid_uri = (
     "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 )
 r02b04_global_grid_uri = "https://polybox.ethz.ch/index.php/s/0EM8O8U53GKGsst/download"
-data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
+# data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
+data_uri = "https://polybox.ethz.ch/index.php/s/vcsCYmCFA9Qe26p/download"
 base_path = Path(__file__).parent.parent.parent.parent.joinpath("testdata")
 
 data_path = base_path.joinpath("ser_icondata")

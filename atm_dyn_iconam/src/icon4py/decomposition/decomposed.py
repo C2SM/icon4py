@@ -15,12 +15,14 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol
 
+import ghex
+import ghex.unstructured as unstructured
 import numpy as np
 import numpy.ma as ma
-from ghex import unstructured as ghex
 from gt4py.next import Dimension
 
 from icon4py.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
+from icon4py.decomposition.parallel_setup import ProcessProperties
 from icon4py.diffusion.diffusion_utils import builder
 
 
@@ -128,6 +130,21 @@ class ExchangeRuntime(Protocol):
         return True
 
 
+def create_exchange(
+    props: ProcessProperties, decomp_info: DecompositionInfo
+) -> ExchangeRuntime:
+    """
+    Create an Exchange depending on the runtime size.
+
+    Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
+    """
+    if props.comm_size > 1:
+        context = ghex.context(ghex.mpi_comm(props.comm), True)
+        return MultiNode(context, decomp_info)
+    else:
+        return SingleNode()
+
+
 @dataclass
 class SingleNode:
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
@@ -172,7 +189,7 @@ class MultiNode:
             EdgeDim: self._create_pattern(EdgeDim),
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
-        self._comm = ghex.make_co(context)
+        self._comm = unstructured.make_co(context)
         log.info("communication object initialized")
 
     def _domain_descriptor_info(self, descr):
@@ -194,7 +211,7 @@ class MultiNode:
         # first arg is the domain ID which builds up an MPI Tag.
         # if those ids are not different for all domain descriptors the system might deadlock
         # if two parallel exchanges with the same domain id are done
-        domain_desc = ghex.domain_descriptor(
+        domain_desc = unstructured.domain_descriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
         log.debug(
@@ -208,9 +225,9 @@ class MultiNode:
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, DecompositionInfo.EntryType.HALO
         )
-        halo_generator = ghex.halo_generator_with_gids(global_halo_idx)
+        halo_generator = unstructured.halo_generator_with_gids(global_halo_idx)
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
-        pattern = ghex.make_pattern(
+        pattern = unstructured.make_pattern(
             self._context, halo_generator, [self._domain_descriptors[horizontal_dim]]
         )
         log.debug(
@@ -227,7 +244,7 @@ class MultiNode:
             domain_descriptor is not None
         ), f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(ghex.field_descriptor(domain_descriptor, np.asarray(f)))
+            pattern(unstructured.field_descriptor(domain_descriptor, np.asarray(f)))
             for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)

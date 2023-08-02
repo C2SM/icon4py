@@ -20,7 +20,11 @@ from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.decomposition.decomposed import (
     DecompositionInfo,
     DomainDescriptorIdGenerator,
+    MultiNode,
+    SingleNode,
+    create_exchange,
 )
+from icon4py.decomposition.parallel_setup import ProcessProperties
 from icon4py.driver.io_utils import (
     SerializationType,
     read_decomp_info,
@@ -165,3 +169,21 @@ def test_decomposition_info_matches_gridsize(caplog):
         ]
         == icon_grid.num_edges()
     )
+
+
+@pytest.mark.mpi
+def test_create_multinode():
+    decomp_info = read_decomp_info(path, props)
+    exchange = create_exchange(props, decomp_info)
+    if props.comm_size > 1:
+        assert isinstance(exchange, MultiNode)
+    else:
+        assert isinstance(exchange, SingleNode)
+
+
+def test_create_single_node_without_mpi():
+    props = ProcessProperties.from_single_node()
+    decomp_info = read_decomp_info(path, props)
+    exchange = create_exchange(props, decomp_info)
+
+    assert isinstance(exchange, SingleNode)

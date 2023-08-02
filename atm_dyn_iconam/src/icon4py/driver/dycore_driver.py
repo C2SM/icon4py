@@ -20,7 +20,11 @@ import pytz
 from devtools import Timer
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
-from icon4py.decomposition.parallel_setup import get_processor_properties
+from icon4py.decomposition.decomposed import create_exchange
+from icon4py.decomposition.parallel_setup import (
+    ProcessProperties,
+    get_processor_properties,
+)
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
 from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
@@ -29,6 +33,7 @@ from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,
     configure_logging,
     import_testutils,
+    read_decomp_info,
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
@@ -153,7 +158,7 @@ class Timeloop:
         timer.summary(True)
 
 
-def initialize(n_time_steps, file_path: Path):
+def initialize(n_time_steps, file_path: Path, props: ProcessProperties):
     """
     Inititalize the driver run.
 
@@ -174,15 +179,20 @@ def initialize(n_time_steps, file_path: Path):
     log.info(f"reading configuration: experiment {experiment_name}")
     config = read_config(experiment_name, n_time_steps=n_time_steps)
 
-    log.info("initializing the grid")
-    icon_grid = read_icon_grid(file_path)
-    log.info("reading input fields")
-    (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(file_path)
+    decomp_info = read_decomp_info(file_path, props)
+
+    log.info(f"initializing the grid from '{file_path}'")
+    icon_grid = read_icon_grid(file_path, rank=props.rank)
+    log.info(f"reading input fields from '{file_path}'")
+    (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(
+        file_path, rank=props.rank
+    )
     (metric_state, interpolation_state) = read_static_fields(file_path)
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
-    diffusion = Diffusion()
+    exchange = create_exchange(props, decomp_info)
+    diffusion = Diffusion(exchange)
     diffusion.init(
         icon_grid,
         config.diffusion_config,
@@ -194,7 +204,9 @@ def initialize(n_time_steps, file_path: Path):
         cell_geometry,
     )
 
-    data_provider, diagnostic_state, prognostic_state = read_initial_state(file_path)
+    data_provider, diagnostic_state, prognostic_state = read_initial_state(
+        file_path, rank=props.rank
+    )
 
     atmo_non_hydro = DummyAtmoNonHydro(data_provider)
     atmo_non_hydro.init(config=config.dycore_config)
@@ -213,11 +225,8 @@ def initialize(n_time_steps, file_path: Path):
 @click.option(
     "--n_steps", default=5, help="number of time steps to run, max 5 is supported"
 )
-def run(
-    input_path,
-    run_path,
-    n_steps,
-):
+@click.option("--mpi", default=False, help="whether or not you are running with mpi")
+def run(input_path, run_path, n_steps, mpi):
     """
     Run the driver.
 
@@ -238,11 +247,13 @@ def run(
 
     """
     start_time = datetime.now().astimezone(pytz.UTC)
-    parallel_props = get_processor_properties()
+    parallel_props = get_processor_properties(with_mpi=mpi)
     configure_logging(run_path, start_time, parallel_props)
     log.info(f"Starting ICON dycore run: {datetime.isoformat(start_time)}")
     log.info(f"input args: input_path={input_path}, n_time_steps={n_steps}")
-    timeloop, diagnostic_state, prognostic_state = initialize(n_steps, Path(input_path))
+    timeloop, diagnostic_state, prognostic_state = initialize(
+        n_steps, Path(input_path), parallel_props
+    )
     log.info("dycore configuring: DONE")
     log.info("timeloop: START")
 

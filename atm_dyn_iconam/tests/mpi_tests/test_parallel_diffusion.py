@@ -12,14 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-import ghex
 import pytest
 
 from atm_dyn_iconam.tests.mpi_tests.common import path, props
 from atm_dyn_iconam.tests.test_diffusion import _verify_diffusion_fields
 from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.decomposition.decomposed import DecompositionInfo, MultiNode
+from icon4py.decomposition.decomposed import DecompositionInfo, create_exchange
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.driver.io_utils import (
     read_decomp_info,
@@ -53,7 +52,6 @@ def test_parallel_diffusion(
         f"local edges = {decomp_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomp_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape}"
     )
-    context = ghex.context(ghex.mpi_comm(props.comm), True)
     print(
         f"rank={props.rank}/{props.comm_size}:  GHEX context setup: from {props.comm_name} with {props.comm_size} nodes"
     )
@@ -76,7 +74,7 @@ def test_parallel_diffusion(
     print(
         f"rank={props.rank}/{props.comm_size}:  setup: using {props.comm_name} with {props.comm_size} nodes"
     )
-    exchange = MultiNode(context, decomp_info)
+    exchange = create_exchange(props, decomp_info)
 
     diffusion = Diffusion(exchange)
 
@@ -118,4 +116,4 @@ def test_parallel_diffusion(
     print(
         f"rank={props.rank}/{props.comm_size}:  running diffusion step - using {props.comm_name} with {props.comm_size} nodes - DONE"
     )
-    del context
+

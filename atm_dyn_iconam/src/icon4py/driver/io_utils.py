@@ -99,7 +99,7 @@ def read_initial_state(
 
     """
     data_provider = sb.IconSerialDataProvider(
-        "icon_pydycore", str(gridfile_path), False
+        "icon_pydycore", str(gridfile_path), False, mpi_rank=rank
     )
     init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
@@ -110,7 +110,7 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    path: Path, ser_type: SerializationType = SerializationType.SB, rank=0
+    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams]:
     """
     Read fields containing grid properties.
@@ -150,28 +150,15 @@ def read_decomp_info(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def read_grid(
-    path: Path,
-    procs_props: ProcessProperties,
-    ser_type=SerializationType.SB,
-) -> IconGrid:
-    if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider(
-            "icon_grid", str(path.absolute()), True, procs_props.rank
-        )
-        return sp.from_savepoint_grid().construct_icon_grid()
-    else:
-        raise NotImplementedError(SB_ONLY_MSG)
-
-
 def read_static_fields(
-    path: Path, ser_type: SerializationType = SerializationType.SB, rank=0
+    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[MetricState, InterpolationState]:
     """
     Read fields for metric and interpolation state.
 
      Args:
         path: path to the serialized input data
+        rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
     Returns:
@@ -192,7 +179,9 @@ def read_static_fields(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def configure_logging(run_path: str, start_time, processor_procs=None) -> None:
+def configure_logging(
+    run_path: str, start_time, processor_procs: ProcessProperties = None
+) -> None:
     """
     Configure logging.
 
@@ -219,9 +208,11 @@ def configure_logging(run_path: str, start_time, processor_procs=None) -> None:
     )
     console_handler = logging.StreamHandler()
     console_handler.addFilter(ParallelLogger(processor_procs))
-    formatter = logging.Formatter(
-        "%(rank)-20s %(asctime)s %(filename)-20s : %(funcName)-20s:  %(levelname)-8s %(message)s"
+
+    log_format = (
+        "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     )
+    formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.DEBUG)
     logging.getLogger("").addHandler(console_handler)
