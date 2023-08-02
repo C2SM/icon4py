@@ -14,7 +14,7 @@
 
 import pytest
 
-from atm_dyn_iconam.tests.mpi_tests.common import path, props
+from atm_dyn_iconam.tests.mpi_tests.common import path, props, download_data
 from atm_dyn_iconam.tests.test_diffusion import _verify_diffusion_fields
 from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
@@ -36,7 +36,7 @@ from icon4py.driver.io_utils import (
     reason="input files only available for 1 or 2 nodes",
 )
 def test_parallel_diffusion(
-    r04b09_diffusion_config, step_date_init, linit, ndyn_substeps
+    r04b09_diffusion_config, step_date_init, linit, ndyn_substeps, download_data
 ):
 
     print(

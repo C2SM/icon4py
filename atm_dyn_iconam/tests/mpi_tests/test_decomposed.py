@@ -15,7 +15,7 @@ import ghex
 import numpy as np
 import pytest
 
-from atm_dyn_iconam.tests.mpi_tests.common import path, props
+from atm_dyn_iconam.tests.mpi_tests.common import path, props, download_data
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.decomposition.decomposed import (
     DecompositionInfo,
@@ -53,7 +53,7 @@ mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
         (VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
-def test_decomposition_info_masked(dim, owned, total, caplog):
+def test_decomposition_info_masked(dim, owned, total, caplog, download_data):
     my_rank = props.rank
     decomposition_info = read_decomp_info(path, props, SerializationType.SB)
     all_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.ALL)
@@ -82,7 +82,7 @@ def test_decomposition_info_masked(dim, owned, total, caplog):
         (VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
-def test_decomposition_info_local_index(dim, owned, total, caplog):
+def test_decomposition_info_local_index(dim, owned, total, caplog, download_data):
 
     my_rank = props.rank
     decomposition_info = read_decomp_info(path, props, SerializationType.SB)
@@ -144,7 +144,7 @@ def test_domain_descriptor_id_are_globally_unique(num):
     props.comm_size not in (1, 2, 4),
     reason="input files only available for 1 or 2 nodes",
 )
-def test_decomposition_info_matches_gridsize(caplog):
+def test_decomposition_info_matches_gridsize(caplog, download_data):
     decomposition_info = read_decomp_info(
         path,
         props,
@@ -172,7 +172,7 @@ def test_decomposition_info_matches_gridsize(caplog):
 
 
 @pytest.mark.mpi
-def test_create_multinode():
+def test_create_multinode(download_data):
     decomp_info = read_decomp_info(path, props)
     exchange = create_exchange(props, decomp_info)
     if props.comm_size > 1:

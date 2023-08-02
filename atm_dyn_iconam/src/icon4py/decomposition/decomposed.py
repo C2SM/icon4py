@@ -33,7 +33,7 @@ class DomainDescriptorIdGenerator:
     _counter = 0
     _roundtrips = 0
 
-    def __init__(self, context):
+    def __init__(self, context:ProcessProperties):
         self._comm_size = context.size()
         self._roundtrips = context.rank()
         self._base = self._roundtrips * self._comm_size
