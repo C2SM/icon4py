@@ -22,11 +22,13 @@ from icon4pytools.liskov.codegen.integration.deserialise import (
     EndIfDataFactory,
     EndProfileDataFactory,
     EndStencilDataFactory,
+    EndDeleteDataFactory,
     ImportsDataFactory,
     InsertDataFactory,
     StartCreateDataFactory,
     StartProfileDataFactory,
     StartStencilDataFactory,
+    StartFusedStencilDataFactory,
 )
 from icon4pytools.liskov.codegen.integration.interface import (
     BoundsData,
@@ -35,6 +37,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     EndIfData,
     EndProfileData,
     EndStencilData,
+    EndDeleteData,
     FieldAssociationData,
     ImportsData,
     InsertData,
@@ -82,6 +85,14 @@ from icon4pytools.liskov.parsing.exceptions import (
             5,
             5,
             EndProfileData,
+        ),
+        (
+            EndDeleteDataFactory,
+            ts.EndDelete,
+            "END DELETE",
+            6,
+            6,
+            EndDeleteData,
         ),
     ],
 )
