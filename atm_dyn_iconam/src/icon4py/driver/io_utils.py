@@ -18,7 +18,7 @@ from enum import Enum
 from pathlib import Path
 
 from icon4py.decomposition.decomposed import DecompositionInfo
-from icon4py.decomposition.parallel_setup import ProcessProperties, ParallelLogger
+from icon4py.decomposition.parallel_setup import ParallelLogger, ProcessProperties
 from icon4py.diffusion.state_utils import (
     DiagnosticState,
     InterpolationState,
@@ -136,7 +136,6 @@ def read_geometry_fields(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-# /home/magdalena/data/exclaim/dycore/mch_ch_r04b09_dsl/node2/mch_ch_r04b09_dsl/icon_grid
 def read_decomp_info(
     path: Path,
     procs_props: ProcessProperties,
@@ -193,7 +192,7 @@ def read_static_fields(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def configure_logging(run_path: str, start_time, processor_procs = None) -> None:
+def configure_logging(run_path: str, start_time, processor_procs=None) -> None:
     """
     Configure logging.
 

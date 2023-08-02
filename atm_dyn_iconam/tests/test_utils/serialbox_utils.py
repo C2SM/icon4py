@@ -360,25 +360,32 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
     def zd_intcoef(self):
-        ser_input = np.moveaxis(
-            (np.squeeze(self.serializer.read("vcoef", self.savepoint))), 1, -1
-        )[: self.sizes[CellDim], :, :]
-        return self._linearize_first_2dims(ser_input, sparse_size=3)
+        return self._read_and_reorder_sparse_field("vcoef", CellDim)
 
-    def _linearize_first_2dims(self, data: np.ndarray, sparse_size):
+    def _read_and_reorder_sparse_field(
+        self, name: str, horizontal_dim: Dimension, sparse_size=3
+    ):
+        ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[
+            : self.sizes[horizontal_dim], :, :
+        ]
+        if ser_input.shape[1] != sparse_size:
+            ser_input = np.moveaxis((ser_input), 1, -1)
+
+        return self._linearize_first_2dims(
+            ser_input, sparse_size=sparse_size, target_dims=(CECDim, KDim)
+        )
+
+    def _linearize_first_2dims(
+        self, data: np.ndarray, sparse_size: int, target_dims: tuple[Dimension, ...]
+    ):
         old_shape = data.shape
         assert old_shape[1] == sparse_size
-        return np_as_located_field(CECDim, KDim)(
+        return np_as_located_field(*target_dims)(
             data.reshape(old_shape[0] * old_shape[1], old_shape[2])
         )
 
     def zd_vertoffset(self):
-        ser_input = np.squeeze(self.serializer.read("zd_vertoffset", self.savepoint))
-        ser_input = np.moveaxis(ser_input, 1, -1)
-
-        return self._linearize_first_2dims(
-            ser_input[: self.sizes[CellDim], :, :], sparse_size=3
-        )
+        return self._read_and_reorder_sparse_field("zd_vertoffset", CellDim)
 
     def zd_vertidx(self):
         return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))

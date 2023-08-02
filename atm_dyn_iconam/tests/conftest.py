@@ -11,12 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import mpi4py
+
 import pytest
 from gt4py.next.program_processors.runners.roundtrip import executor
 
 from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
-from icon4py.diffusion.diffusion import DiffusionConfig
+from icon4py.diffusion.diffusion import DiffusionConfig, DiffusionType
 
 from .test_utils.fixtures import (  # noqa F401
     damping_height,
@@ -28,14 +28,6 @@ from .test_utils.fixtures import (  # noqa F401
     r04b09_dsl_gridfile,
     setup_icon_data,
 )
-
-
-@pytest.fixture
-def mpi():
-    from mpi4py import MPI
-
-    mpi4py.rc.initialize = False
-    return MPI
 
 
 @pytest.fixture
@@ -125,7 +117,7 @@ def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:
     from the default.
     """
     return DiffusionConfig(
-        diffusion_type=5,
+        diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         type_t_diffu=2,

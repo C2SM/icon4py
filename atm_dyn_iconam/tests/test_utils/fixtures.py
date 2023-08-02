@@ -41,8 +41,8 @@ r02b04_global_data_file = r02b04_global_grid_path.joinpath(
 
 
 @pytest.fixture
-def datapath(setup_icon_data, request):
-    local_path = f"mpitask{request.param}/mch_ch_r04b09_dsl/ser_data"
+def datapath(setup_icon_data):
+    local_path = "mpitask1/mch_ch_r04b09_dsl/ser_data"
     return data_path.joinpath(local_path)
 
 

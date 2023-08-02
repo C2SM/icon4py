@@ -4,8 +4,20 @@
 
 The parallelized code uses [GHEX](https://github.com/ghex-org/GHEX) with MPI for halo exchanges. GHEX has a CMake build but no setup script for pip, so it needs to be installed manually:
 
-1. You need a running MPI installation in the system.
-2. You need to have boost (headers) installed in the system 3clone GHEX
+1. You need a running MPI installation in the system. On linux (apt base system) do
+
+```bash
+sudo apt-get install libopenmpi-dev
+```
+
+on MacOs
+
+```bash
+brew install mpich
+```
+
+2. You need to have boost (headers) installed in the system
+3. clone GHEX:
 
 ```bash
 cd {icon4py}/_external_src
@@ -63,7 +75,7 @@ make test ## will now run the python tests
 
 #### use GHEX bindings from icon4py
 
-simply create a sym link the the installation above:
+simply create a sym link the installation above:
 
 ```
 cd {icon4py}/.venv/lib/python3.10/site-packages

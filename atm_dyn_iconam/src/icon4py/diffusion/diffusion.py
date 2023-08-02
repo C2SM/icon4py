@@ -552,9 +552,7 @@ class Diffusion:
         communication only done in original code if the following condition applies:
         IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         """
-        log.debug(
-            f"communication of prognostic cell fields: theta, w, exner - start"
-        )
+        log.debug(f"communication of prognostic cell fields: theta, w, exner - start")
         handle_cell_comm = self._exchange.exchange(
             CellDim,
             prognostic_state.w,
@@ -562,9 +560,7 @@ class Diffusion:
             prognostic_state.exner_pressure,
         )
         handle_cell_comm.wait()
-        log.debug(
-            f"communication of prognostic cell fields: theta, w, exner - done"
-        )
+        log.debug(f"communication of prognostic cell fields: theta, w, exner - done")
 
     def _do_diffusion_step(
         self,
@@ -740,9 +736,7 @@ class Diffusion:
         h.wait()
         log.debug(f"communication rbf extrapolation of z_nable2_e - end")
 
-        log.debug(
-            f"running stencils 04 05 06 (apply_diffusion_to_vn): start"
-        )
+        log.debug(f"running stencils 04 05 06 (apply_diffusion_to_vn): start")
         apply_diffusion_to_vn.with_backend(backend)(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
@@ -770,9 +764,7 @@ class Diffusion:
                 "E2ECV": self.grid.get_e2ecv_connectivity(),
             },
         )
-        log.debug(
-            f"running stencils 04 05 06 (apply_diffusion_to_vn): end"
-        )
+        log.debug(f"running stencils 04 05 06 (apply_diffusion_to_vn): end")
         log.debug(f"communication of prognistic.vn : start")
         handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
@@ -853,9 +845,7 @@ class Diffusion:
                 "C2CE": self.grid.get_c2ce_connectivity(),
             },
         )
-        log.debug(
-            f"running stencils 13_14 (calculate_nabla2_for_theta): end"
-        )
+        log.debug(f"running stencils 13_14 (calculate_nabla2_for_theta): end")
         log.debug(
             f"running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )

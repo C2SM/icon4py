@@ -93,7 +93,6 @@ def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_diffusion_init(
     diffusion_savepoint_init,
     interpolation_savepoint,
@@ -108,9 +107,8 @@ def test_diffusion_init(
     additional_parameters = DiffusionParams(config)
     vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
 
-    meta = diffusion_savepoint_init.get_metadata("nlev", "linit", "date")
+    meta = diffusion_savepoint_init.get_metadata("linit", "date")
 
-    assert meta["nlev"] == 65
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
 
@@ -193,7 +191,6 @@ def _verify_init_values_against_savepoint(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_verify_diffusion_init_against_first_regular_savepoint(
     diffusion_savepoint_init,
     interpolation_savepoint,
@@ -230,7 +227,6 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:50.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
     r04b09_diffusion_config,
@@ -267,8 +263,39 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
+def _verify_diffusion_fields(
+    diagnostic_state: DiagnosticState,
+    prognostic_state: PrognosticState,
+    diffusion_savepoint: IconDiffusionExitSavepoint,
+):
+    ref_div_ic = np.asarray(diffusion_savepoint.div_ic())
+    val_div_ic = np.asarray(diagnostic_state.div_ic)
+    ref_hdef_ic = np.asarray(diffusion_savepoint.hdef_ic())
+    val_hdef_ic = np.asarray(diagnostic_state.hdef_ic)
+    assert np.allclose(ref_div_ic, val_div_ic)
+    assert np.allclose(ref_hdef_ic, val_hdef_ic)
+    ref_w = np.asarray(diffusion_savepoint.w())
+    val_w = np.asarray(prognostic_state.w)
+    ref_dwdx = np.asarray(diffusion_savepoint.dwdx())
+    val_dwdx = np.asarray(diagnostic_state.dwdx)
+    ref_dwdy = np.asarray(diffusion_savepoint.dwdy())
+    val_dwdy = np.asarray(diagnostic_state.dwdy)
+    assert np.allclose(ref_dwdx, val_dwdx)
+    assert np.allclose(ref_dwdy, val_dwdy)
+
+    ref_vn = np.asarray(diffusion_savepoint.vn())
+    val_vn = np.asarray(prognostic_state.vn)
+    assert np.allclose(ref_vn, val_vn)
+    assert np.allclose(ref_w, val_w)
+    ref_exner = np.asarray(diffusion_savepoint.exner())
+    ref_theta_v = np.asarray(diffusion_savepoint.theta_v())
+    val_theta_v = np.asarray(prognostic_state.theta_v)
+    val_exner = np.asarray(prognostic_state.exner_pressure)
+    assert np.allclose(ref_theta_v, val_theta_v)
+    assert np.allclose(ref_exner, val_exner)
+
+
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize(
     "step_date_init, step_date_exit",
     [
@@ -328,41 +355,8 @@ def test_run_diffusion_single_step(
     )
 
 
-def _verify_diffusion_fields(
-    diagnostic_state: DiagnosticState,
-    prognostic_state: PrognosticState,
-    diffusion_savepoint: IconDiffusionExitSavepoint,
-):
-    ref_div_ic = np.asarray(diffusion_savepoint.div_ic())
-    val_div_ic = np.asarray(diagnostic_state.div_ic)
-    ref_hdef_ic = np.asarray(diffusion_savepoint.hdef_ic())
-    val_hdef_ic = np.asarray(diagnostic_state.hdef_ic)
-    assert np.allclose(ref_div_ic, val_div_ic)
-    assert np.allclose(ref_hdef_ic, val_hdef_ic)
-    ref_w = np.asarray(diffusion_savepoint.w())
-    val_w = np.asarray(prognostic_state.w)
-    ref_dwdx = np.asarray(diffusion_savepoint.dwdx())
-    val_dwdx = np.asarray(diagnostic_state.dwdx)
-    ref_dwdy = np.asarray(diffusion_savepoint.dwdy())
-    val_dwdy = np.asarray(diagnostic_state.dwdy)
-    assert np.allclose(ref_dwdx, val_dwdx)
-    assert np.allclose(ref_dwdy, val_dwdy)
-
-    ref_vn = np.asarray(diffusion_savepoint.vn())
-    val_vn = np.asarray(prognostic_state.vn)
-    assert np.allclose(ref_vn, val_vn)
-    assert np.allclose(ref_w, val_w)
-    ref_exner = np.asarray(diffusion_savepoint.exner())
-    ref_theta_v = np.asarray(diffusion_savepoint.theta_v())
-    val_theta_v = np.asarray(prognostic_state.theta_v)
-    val_exner = np.asarray(prognostic_state.exner_pressure)
-    assert np.allclose(ref_theta_v, val_theta_v)
-    assert np.allclose(ref_exner, val_exner)
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_run_diffusion_initial_step(
     diffusion_savepoint_init,
     diffusion_savepoint_exit,

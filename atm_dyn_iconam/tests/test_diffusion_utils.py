@@ -151,7 +151,6 @@ def test_set_zero_vertex_k():
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     diffusion_savepoint_init, r04b09_diffusion_config, icon_grid, ndyn_substeps
 ):

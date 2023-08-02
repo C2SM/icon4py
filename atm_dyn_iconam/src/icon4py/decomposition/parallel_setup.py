@@ -11,11 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from typing import Union
+from typing import Optional, Union
 
 import mpi4py
 from mpi4py.MPI import Comm
-
 
 
 mpi4py.rc.initialize = False
@@ -24,9 +23,7 @@ CommId = Union[int, Comm, None]
 log = logging.getLogger(__name__)
 
 
-def get_processor_properties(comm_id: CommId = None):
-    init_mpi()
-
+def get_processor_properties(with_mpi=False, comm_id: CommId = None):
     def _get_current_comm_or_comm_world(comm_id: CommId) -> Comm:
         if isinstance(comm_id, int):
             comm = Comm.f2py(comm_id)
@@ -36,8 +33,12 @@ def get_processor_properties(comm_id: CommId = None):
             comm = mpi4py.MPI.COMM_WORLD
         return comm
 
-    current_comm = _get_current_comm_or_comm_world(comm_id)
-    return ProcessProperties.from_mpi_comm(current_comm)
+    if with_mpi:
+        init_mpi()
+        current_comm = _get_current_comm_or_comm_world(comm_id)
+        return ProcessProperties.from_mpi_comm(current_comm)
+    else:
+        return ProcessProperties.from_single_node()
 
 
 def init_mpi():
@@ -57,10 +58,10 @@ def finalize_mpi():
 
 
 class ProcessProperties:
-    def __init__(self, comm: mpi4py.MPI.Comm):
-        self._communicator_name: str = comm.Get_name()
-        self._rank: int = comm.Get_rank()
-        self._comm_size = comm.Get_size()
+    def __init__(self, comm: Optional[mpi4py.MPI.Comm]):
+        self._communicator_name: str = comm.Get_name() if comm else ""
+        self._rank: int = comm.Get_rank() if comm else 0
+        self._comm_size = comm.Get_size() if comm else 1
         self._comm = comm
 
     @property
@@ -82,6 +83,11 @@ class ProcessProperties:
     @classmethod
     def from_mpi_comm(cls, comm: mpi4py.MPI.Comm):
         return ProcessProperties(comm)
+
+    @classmethod
+    def from_single_node(cls):
+        return ProcessProperties(None)
+
 
 class ParallelLogger(logging.Filter):
     def __init__(self, processProperties: ProcessProperties = None):

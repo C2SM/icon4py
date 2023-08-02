@@ -221,7 +221,6 @@ def test_gridparser_dimension(simple_mesh_data):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfile):
     data = Dataset(r04b09_dsl_gridfile, "r")
     grid_file = GridFile(data)
@@ -254,7 +253,6 @@ def test_grid_parser_index_fields(simple_mesh_data, caplog):
 
 # v2e: exists in serial, simple, grid
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -270,7 +268,6 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 # v2c: exists in serial, simple, grid
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -315,7 +312,6 @@ def reset_invalid_index(index_array: np.ndarray):
 
 # e2v: exists in serial, simple, grid
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -334,7 +330,6 @@ def has_invalid_index(ar: np.ndarray):
 
 # e2c : exists in serial, simple, grid
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -349,7 +344,6 @@ def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 # c2e: serial, simple, grid
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -364,8 +358,18 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 
 # e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
+@pytest.mark.datatest
+def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
+    caplog.set_level(logging.DEBUG)
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    assert np.allclose(
+        grid.get_c2e2c_connectivity().table,
+        grid_savepoint.c2e2c()[0 : grid.num_cells(), :],
+    )
+
+
+# c2e2c: exists in  serial, simple_mesh, grid
 @pytest.mark.skip("does not directly exist in the grid file, needs to be constructed")
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 # TODO (Magdalena) construct from adjacent_cell_of_edge and then edge_of_cell
 @pytest.mark.datatest
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
@@ -378,20 +382,7 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert np.allclose(grid.get_e2c2e_connectivity().table, serialized_e2c2e)
 
 
-# c2e2c: exists in  serial, simple_mesh, grid
-@pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
-def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
-    caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    assert np.allclose(
-        grid.get_c2e2c_connectivity().table,
-        grid_savepoint.c2e2c()[0 : grid.num_cells(), :],
-    )
-
-
 @pytest.mark.xfail
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.datatest
 def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
@@ -405,7 +396,6 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -462,7 +452,6 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize(
     "dim, marker, index",
     [
@@ -509,7 +498,6 @@ def test_get_start_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize(
     "dim, marker, index",
     [
