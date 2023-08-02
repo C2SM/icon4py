@@ -153,7 +153,6 @@ class StartCreateDataFactory(DataFactoryBase):
     dtype: Type[StartCreateData] = StartCreateData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartCreateData]:
-
         deserialised = []
         extracted = extract_directive(parsed["directives"], self.directive_cls)
 
@@ -161,7 +160,6 @@ class StartCreateDataFactory(DataFactoryBase):
             return UnusedDirective
 
         for i, directive in enumerate(extracted):
-
             named_args = parsed["content"]["StartCreate"][i]
 
             extra_fields = None
