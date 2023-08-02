@@ -96,6 +96,8 @@ class ParallelLogger(logging.Filter):
         if processProperties and processProperties.comm_size > 1:
             self._rank_info = f"rank={processProperties.rank}/{processProperties.comm_size} [{processProperties.comm_name}] >>>"
 
-    def filter(self, record: logging.LogRecord) -> bool:
+    def filter(
+        self, record: logging.LogRecord
+    ) -> bool:
         record.rank = self._rank_info
         return True
