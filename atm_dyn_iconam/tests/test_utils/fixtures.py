@@ -19,13 +19,18 @@ from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 
 
+base_path = Path(__file__).parent.parent.parent.parent.joinpath("testdata")
+
+data_uris = {
+    1: "https://polybox.ethz.ch/index.php/s/vcsCYmCFA9Qe26p/download",
+    2: "https://polybox.ethz.ch/index.php/s/NUQjmJcMEoQxFiK/download",
+    4: "https://polybox.ethz.ch/index.php/s/QC7xt7xLT5xeVN5/download",
+}
 mch_ch_r04b09_dsl_grid_uri = (
     "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 )
 r02b04_global_grid_uri = "https://polybox.ethz.ch/index.php/s/0EM8O8U53GKGsst/download"
-data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
-data_uri = "https://polybox.ethz.ch/index.php/s/vcsCYmCFA9Qe26p/download"
-base_path = Path(__file__).parent.parent.parent.parent.joinpath("testdata")
+
 
 data_path = base_path.joinpath("ser_icondata")
 data_file = data_path.joinpath("mch_ch_r04b09_dsl.tar.gz").name
@@ -54,7 +59,7 @@ def setup_icon_data():
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
-    download_and_extract(data_uri, data_path, data_file)
+    download_and_extract(data_uris[1], data_path, data_file)
 
 
 @pytest.fixture
