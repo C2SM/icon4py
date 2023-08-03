@@ -48,4 +48,3 @@ def test_single_node_properties():
     assert props.comm_size == 1
     assert props.rank == 0
     assert props.comm_name == ""
-

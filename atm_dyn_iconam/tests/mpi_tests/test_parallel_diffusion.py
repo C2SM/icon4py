@@ -14,7 +14,11 @@
 
 import pytest
 
-from atm_dyn_iconam.tests.mpi_tests.common import path, props, download_data
+from atm_dyn_iconam.tests.mpi_tests.common import (  # noqa F401
+    data_path,
+    download_data,
+    props,
+)
 from atm_dyn_iconam.tests.test_diffusion import _verify_diffusion_fields
 from atm_dyn_iconam.tests.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
@@ -36,14 +40,18 @@ from icon4py.driver.io_utils import (
     reason="input files only available for 1 or 2 nodes",
 )
 def test_parallel_diffusion(
-    r04b09_diffusion_config, step_date_init, linit, ndyn_substeps, download_data
+    r04b09_diffusion_config,
+    step_date_init,
+    linit,
+    ndyn_substeps,
+    download_data,  # noqa: F811
 ):
 
     print(
         f"rank={props.rank}/{props.comm_size}: inializing diffusion for experiment 'mch_ch_r04_b09_dsl"
     )
     decomp_info = read_decomp_info(
-        path,
+        data_path,
         props,
     )
     print(
@@ -56,19 +64,19 @@ def test_parallel_diffusion(
         f"rank={props.rank}/{props.comm_size}:  GHEX context setup: from {props.comm_name} with {props.comm_size} nodes"
     )
 
-    icon_grid = read_icon_grid(path, rank=props.rank)
+    icon_grid = read_icon_grid(data_path, rank=props.rank)
     print(
         f"rank={props.rank}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
     )
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
 
     diffusion_initial_data = IconSerialDataProvider(
-        "icon_pydycore", str(path), True, mpi_rank=props.rank
+        "icon_pydycore", str(data_path), True, mpi_rank=props.rank
     ).from_savepoint_diffusion_init(linit=linit, date=step_date_init)
     (edge_geometry, cell_geometry, vertical_geometry) = read_geometry_fields(
-        path, rank=props.rank
+        data_path, rank=props.rank
     )
-    (metric_state, interpolation_state) = read_static_fields(path, rank=props.rank)
+    (metric_state, interpolation_state) = read_static_fields(data_path, rank=props.rank)
 
     dtime = diffusion_initial_data.get_metadata("dtime").get("dtime")
     print(
@@ -106,7 +114,7 @@ def test_parallel_diffusion(
     print(f"rank={props.rank}/{props.comm_size}: diffusion run ")
 
     diffusion_savepoint_exit = IconSerialDataProvider(
-        "icon_pydycore", str(path), True, mpi_rank=props.rank
+        "icon_pydycore", str(data_path), True, mpi_rank=props.rank
     ).from_savepoint_diffusion_exit(linit=linit, date=step_date_init)
     _verify_diffusion_fields(
         diagnostic_state=diagnostic_state,
@@ -116,4 +124,3 @@ def test_parallel_diffusion(
     print(
         f"rank={props.rank}/{props.comm_size}:  running diffusion step - using {props.comm_name} with {props.comm_size} nodes - DONE"
     )
-

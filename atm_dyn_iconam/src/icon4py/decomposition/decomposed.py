@@ -33,9 +33,9 @@ class DomainDescriptorIdGenerator:
     _counter = 0
     _roundtrips = 0
 
-    def __init__(self, context:ProcessProperties):
-        self._comm_size = context.size()
-        self._roundtrips = context.rank()
+    def __init__(self, parallel_props: ProcessProperties):
+        self._comm_size = parallel_props.comm_size
+        self._roundtrips = parallel_props.rank
         self._base = self._roundtrips * self._comm_size
 
     def __call__(self):
@@ -139,8 +139,7 @@ def create_exchange(
     Depending on the number of processor a SingleNode version is returned or a GHEX context created and a Multinode returned.
     """
     if props.comm_size > 1:
-        context = ghex.context(ghex.mpi_comm(props.comm), True)
-        return MultiNode(context, decomp_info)
+        return GHexMultiNode(props, decomp_info)
     else:
         return SingleNode()
 
@@ -165,10 +164,10 @@ class SingleNodeResult:
         return True
 
 
-class MultiNode:
-    def __init__(self, context, domain_decomposition: DecompositionInfo):
-        self._context = context
-        self._domain_id_gen = DomainDescriptorIdGenerator(context)
+class GHexMultiNode:
+    def __init__(self, props, domain_decomposition: DecompositionInfo):
+        self._context = ghex.context(ghex.mpi_comm(props.comm), True)
+        self._domain_id_gen = DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
             CellDim: self._create_domain_descriptor(
@@ -189,7 +188,7 @@ class MultiNode:
             EdgeDim: self._create_pattern(EdgeDim),
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
-        self._comm = unstructured.make_co(context)
+        self._comm = unstructured.make_co(self._context)
         log.info("communication object initialized")
 
     def _domain_descriptor_info(self, descr):

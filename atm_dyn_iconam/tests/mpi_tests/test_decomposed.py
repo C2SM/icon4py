@@ -11,16 +11,19 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import ghex
 import numpy as np
 import pytest
 
-from atm_dyn_iconam.tests.mpi_tests.common import path, props, download_data
+from atm_dyn_iconam.tests.mpi_tests.common import (  # noqa F401
+    data_path,
+    download_data,
+    props,
+)
 from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.decomposition.decomposed import (
     DecompositionInfo,
     DomainDescriptorIdGenerator,
-    MultiNode,
+    GHexMultiNode,
     SingleNode,
     create_exchange,
 )
@@ -53,9 +56,11 @@ mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
         (VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
-def test_decomposition_info_masked(dim, owned, total, caplog, download_data):
+def test_decomposition_info_masked(
+    dim, owned, total, caplog, download_data  # noqa F811
+):
     my_rank = props.rank
-    decomposition_info = read_decomp_info(path, props, SerializationType.SB)
+    decomposition_info = read_decomp_info(data_path, props, SerializationType.SB)
     all_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
@@ -82,10 +87,11 @@ def test_decomposition_info_masked(dim, owned, total, caplog, download_data):
         (VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
-def test_decomposition_info_local_index(dim, owned, total, caplog, download_data):
-
+def test_decomposition_info_local_index(
+    dim, owned, total, caplog, download_data  # noqa F811
+):
     my_rank = props.rank
-    decomposition_info = read_decomp_info(path, props, SerializationType.SB)
+    decomposition_info = read_decomp_info(data_path, props, SerializationType.SB)
     all_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
@@ -121,8 +127,7 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 def test_domain_descriptor_id_are_globally_unique(num):
 
     size = props.comm_size
-    context = ghex.context(ghex.mpi_comm(props.comm), True)
-    id_gen = DomainDescriptorIdGenerator(context)
+    id_gen = DomainDescriptorIdGenerator(parallel_props=props)
     id1 = id_gen()
     assert id1 == props.comm_size * props.rank
     assert id1 < props.comm_size * (props.rank + 1)
@@ -144,13 +149,13 @@ def test_domain_descriptor_id_are_globally_unique(num):
     props.comm_size not in (1, 2, 4),
     reason="input files only available for 1 or 2 nodes",
 )
-def test_decomposition_info_matches_gridsize(caplog, download_data):
+def test_decomposition_info_matches_gridsize(caplog, download_data):  # noqa F811
     decomposition_info = read_decomp_info(
-        path,
+        data_path,
         props,
         SerializationType.SB,
     )
-    icon_grid = read_icon_grid(path, props.rank)
+    icon_grid = read_icon_grid(data_path, props.rank)
     assert (
         decomposition_info.global_index(
             dim=CellDim, entry_type=DecompositionInfo.EntryType.ALL
@@ -172,18 +177,18 @@ def test_decomposition_info_matches_gridsize(caplog, download_data):
 
 
 @pytest.mark.mpi
-def test_create_multinode(download_data):
-    decomp_info = read_decomp_info(path, props)
+def test_create_multi_pytenode_runtime_with_mpi(download_data):  # noqa F811
+    decomp_info = read_decomp_info(data_path, props)
     exchange = create_exchange(props, decomp_info)
     if props.comm_size > 1:
-        assert isinstance(exchange, MultiNode)
+        assert isinstance(exchange, GHexMultiNode)
     else:
         assert isinstance(exchange, SingleNode)
 
 
-def test_create_single_node_without_mpi():
+def test_create_single_node_runtime_without_mpi():
     props = ProcessProperties.from_single_node()
-    decomp_info = read_decomp_info(path, props)
+    decomp_info = read_decomp_info(data_path, props)
     exchange = create_exchange(props, decomp_info)
 
     assert isinstance(exchange, SingleNode)
