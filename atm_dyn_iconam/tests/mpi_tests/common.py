@@ -20,7 +20,7 @@ from icon4py.decomposition.parallel_setup import get_processor_properties
 
 
 props = get_processor_properties(with_mpi=True)
-path = base_path.joinpath("mpitask{props.comm_size}")
+path = base_path.joinpath(f"mpitask{props.comm_size}")
 data_path = path.joinpath("mch_ch_r04b09_dsl/ser_data")
 
 

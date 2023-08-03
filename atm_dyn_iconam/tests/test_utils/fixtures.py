@@ -55,7 +55,7 @@ def datapath(setup_icon_data):
 @pytest.fixture(scope="session")
 def setup_icon_data():
     """
-    Get the binary ICON data from a remote server.
+    Get the binary ICON data for single node run from a remote server.
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
