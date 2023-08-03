@@ -25,7 +25,6 @@ from icon4py.grid.vertical import VerticalModelParams
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize(
     "read_fun", (read_geometry_fields, read_static_fields, read_icon_grid)
 )
@@ -48,14 +47,12 @@ def assert_grid_size_and_connectivities(grid):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_read_icon_grid_for_type_sb(datapath):
     grid = read_icon_grid(datapath, ser_type=SerializationType.SB)
     assert_grid_size_and_connectivities(grid)
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_read_static_fields_for_type_sb(datapath):
     metric_state, interpolation_state = read_static_fields(
         datapath, ser_type=SerializationType.SB
@@ -65,7 +62,6 @@ def test_read_static_fields_for_type_sb(datapath):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_read_geometry_fields_for_type_sb(datapath):
     edge_geometry, cell_geometry, vertical_geometry = read_geometry_fields(
         datapath, ser_type=SerializationType.SB

@@ -359,19 +359,8 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 # e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
 @pytest.mark.datatest
-def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
-    caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    assert np.allclose(
-        grid.get_c2e2c_connectivity().table,
-        grid_savepoint.c2e2c()[0 : grid.num_cells(), :],
-    )
-
-
-# c2e2c: exists in  serial, simple_mesh, grid
 @pytest.mark.skip("does not directly exist in the grid file, needs to be constructed")
 # TODO (Magdalena) construct from adjacent_cell_of_edge and then edge_of_cell
-@pytest.mark.datatest
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     gm, num_cells, num_edges, num_vertex = init_grid_manager(r04b09_dsl_gridfile)
@@ -380,6 +369,17 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     grid = gm.get_grid()
     assert has_invalid_index(grid.get_e2c2e_connectivity().table)
     assert np.allclose(grid.get_e2c2e_connectivity().table, serialized_e2c2e)
+
+
+# c2e2c: exists in  serial, simple_mesh, grid
+@pytest.mark.datatest
+def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
+    caplog.set_level(logging.DEBUG)
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    assert np.allclose(
+        grid.get_c2e2c_connectivity().table,
+        grid_savepoint.c2e2c()[0 : grid.num_cells(), :],
+    )
 
 
 @pytest.mark.xfail

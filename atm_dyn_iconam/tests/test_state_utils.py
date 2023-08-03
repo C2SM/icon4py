@@ -16,7 +16,6 @@ import pytest
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_verify_geofac_n2s_field_manipulation(interpolation_savepoint, icon_grid):
     geofac_n2s = np.asarray(interpolation_savepoint.geofac_n2s())
     int_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()

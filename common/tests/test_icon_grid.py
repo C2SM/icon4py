@@ -17,7 +17,6 @@ from icon4py.grid.horizontal import HorizontalMarkerIndex
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 # TODO(Magdalena) HorizontalMarkerIndex.local(dim) does not yield equvalent results form grid file
 #  and serialized data, why?. Serialized data has those strange -1 values
 @pytest.mark.parametrize(
@@ -66,7 +65,6 @@ def test_horizontal_end_index(icon_grid, dim, marker, index):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize(
     "dim, marker, index",
     [
@@ -112,7 +110,6 @@ def test_horizontal_start_index(icon_grid, dim, marker, index):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize(
     "start_marker, end_marker, expected_bounds",
     [
@@ -189,7 +186,6 @@ def test_horizontal_cell_markers(icon_grid, start_marker, end_marker, expected_b
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize(
     "start_marker, end_marker, expected_bounds",
     [
@@ -286,7 +282,6 @@ def test_horizontal_edge_markers(icon_grid, start_marker, end_marker, expected_b
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 @pytest.mark.parametrize(
     "start_marker, end_marker, expected_bounds",
     [
@@ -357,7 +352,6 @@ def test_horizontal_vertex_markers(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_cross_check_marker_equivalences(icon_grid):
     """Check actual equivalences of calculated markers."""
     # TODO(Magdalena): This should go away once we refactor these markers in a good way, such that no calculation need to be done with them anymore.
@@ -401,7 +395,6 @@ def test_cross_check_marker_equivalences(icon_grid):
     )
 
 
-@pytest.mark.parametrize("datapath", [1], indirect=True)
 def test_grid_size(grid_savepoint):
     assert 10663 == grid_savepoint.num(VertexDim)
     assert 20896 == grid_savepoint.num(CellDim)
