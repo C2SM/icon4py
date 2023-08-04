@@ -125,6 +125,9 @@ class IconGridSavePoint(IconSavepoint):
     def inv_dual_edge_length(self):
         return self._get_field("inv_dual_edge_length", EdgeDim)
 
+    def edge_cell_length(self):
+        return self._get_field("edge_cell_length", EdgeDim, 2)
+
     def cells_start_index(self):
         return self._read_int32_shift1("c_start_index")
 
@@ -144,6 +147,12 @@ class IconGridSavePoint(IconSavepoint):
         # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
         # one off accounts for being exclusive [from:to)
         return self.serializer.read("e_end_index", self.savepoint)
+
+    def c_owner_mask(self):
+        return self._get_field("c_owner_mask", CellDim, dtype=bool)
+
+    def e_owner_mask(self):
+        return self._get_field("e_owner_mask", CellDim, dtype=bool)
 
     def print_connectivity_info(self, name: str, ar: np.ndarray):
         self.log.debug(f" connectivity {name} {ar.shape}")
@@ -311,6 +320,9 @@ class InterpolationSavepoint(IconSavepoint):
             geofac_grg_y=grg[1],
             nudgecoeff_e=self.nudgecoeff_e(),
         )
+
+    def c_lin_e(self):
+        return self._get_field("c_lin_e", EdgeDim, E2CDim)
 
 
 class MetricSavepoint(IconSavepoint):
