@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from atm_dyn_iconam.tests.test_utils.helpers import as_1D_sparse_field
+from atm_dyn_iconam.tests.test_utils.helpers import as_1D_sparse_field, dallclose
 from icon4py.common.dimension import CEDim
 from icon4py.state_utils.diagnostic_state import DiagnosticState
 from icon4py.state_utils.horizontal import CellParams, EdgeParams
@@ -50,10 +50,10 @@ def test_velocity_init(
         vertical_params=vertical_params,
     )
 
-    assert np.allclose(0.0, np.asarray(velocity_advection.cfl_clipping))
-    assert np.allclose(0.0, np.asarray(velocity_advection.pre_levelmask))
-    assert np.allclose(False, np.asarray(velocity_advection.levelmask))
-    assert np.allclose(0.0, np.asarray(velocity_advection.vcfl))
+    assert dallclose(0.0, np.asarray(velocity_advection.cfl_clipping))
+    assert dallclose(0.0, np.asarray(velocity_advection.pre_levelmask))
+    assert dallclose(False, np.asarray(velocity_advection.levelmask))
+    assert dallclose(0.0, np.asarray(velocity_advection.vcfl))
 
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
@@ -183,7 +183,9 @@ def test_velocity_predictor_step(
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
 
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,
+        nflatlev=int(grid_savepoint.nflatlev()), nflat_gradp=int(grid_savepoint.nflat_gradp()),
+        nrdmax=int(grid_savepoint.nrdmax())
     )
 
     velocity_advection = VelocityAdvection(
@@ -225,49 +227,55 @@ def test_velocity_predictor_step(
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w()
     icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
     icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
-    #   assert np.allclose(np.asarray(icon_result_z_v_grad_w), np.asarray(diagnostic_state.z_v_grad_w))
+    #   assert dallclose(np.asarray(icon_result_z_v_grad_w), np.asarray(diagnostic_state.z_v_grad_w))
 
     # stencil 01
-    assert np.allclose(np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt))
+    assert dallclose(np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt), atol=1.0e-14)
     # stencil 02,05
-    assert np.allclose(
-        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
+    assert dallclose(
+        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie), atol=1.0e-14
     )
     # stencil 02
-    #assert np.allclose(np.asarray(icon_result_z_kin_hor_e)[2538:31558, :],
+    #assert dallclose(np.asarray(icon_result_z_kin_hor_e)[2538:31558, :],
     #            np.asarray(velocity_advection.z_kin_hor_e)[2538:31558, :])
     # stencil 03,05,06
-    #assert np.allclose(np.asarray(icon_result_z_vt_ie), np.asarray(velocity_advection.z_vt_ie))
+    #assert dallclose(np.asarray(icon_result_z_vt_ie), np.asarray(velocity_advection.z_vt_ie))
     # stencil 04
-    #assert np.allclose(
+    #assert dallclose(
     #    np.asarray(icon_result_z_w_concorr_me)[:,vertical_params.nflatlev:icon_grid.n_lev()], np.asarray(velocity_advection.z_w_concorr_me)[:,vertical_params.nflatlev:icon_grid.n_lev()]
     #)
     # stencil 07
-    assert np.allclose(np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
-                       np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :])
+    assert dallclose(np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
+                       np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :], atol=1.0e-16)
     # stencil 08
-    assert np.allclose(np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],
+    assert dallclose(np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],
                 np.asarray(velocity_advection.z_ekinh)[3316:20896, :])
     # stencil 09
-    assert np.allclose(
-        np.asarray(icon_result_z_w_concorr_mc)[3316:20896,vertical_params.nflatlev:icon_grid.n_lev()], np.asarray(velocity_advection.z_w_concorr_mc)[3316:20896,vertical_params.nflatlev:icon_grid.n_lev()]
+    assert dallclose(
+        np.asarray(icon_result_z_w_concorr_mc)[3316:20896,vertical_params.nflatlev:icon_grid.n_lev()], np.asarray(velocity_advection.z_w_concorr_mc)[3316:20896,vertical_params.nflatlev:icon_grid.n_lev()],
+        atol=1.0e-15
     )
     # stencil 10
-    assert np.allclose(
+    assert dallclose(
         np.asarray(icon_result_w_concorr_c)[3316:20896, vertical_params.nflatlev + 1:icon_grid.n_lev()],
-        np.asarray(diagnostic_state.w_concorr_c)[3316:20896, vertical_params.nflatlev + 1:icon_grid.n_lev()]
+        np.asarray(diagnostic_state.w_concorr_c)[3316:20896, vertical_params.nflatlev + 1:icon_grid.n_lev()],
+        atol=1.0e-15
     )
     # stencil 11,12,13,14
-    assert np.allclose(np.asarray(savepoint_velocity_exit.z_w_con_c())[3316:20896,:], np.asarray(velocity_advection.z_w_con_c)[3316:20896,:])
+    assert dallclose(np.asarray(savepoint_velocity_exit.z_w_con_c())[3316:20896,:],
+                     np.asarray(velocity_advection.z_w_con_c)[3316:20896,:],
+                     atol=1.0e-15)
     #stencil 16
-    assert np.allclose(
+    assert dallclose(
         np.asarray(icon_result_ddt_w_adv_pc)[3316:20896,:],
         np.asarray(diagnostic_state.ddt_w_adv_pc)[3316:20896,:],
+        atol=1.0e-16, rtol=1.0e-10
     )
     # stencil 19 level 0 not verifying
-    assert np.allclose(
+    assert dallclose(
         np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558,0:65],
         np.asarray(diagnostic_state.ddt_vn_apc_pc)[5387:31558,0:65],
+        atol=1.0e-15,
     )
 
 
@@ -359,7 +367,9 @@ def test_velocity_corrector_step(
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
 
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,
+        nflatlev = int(grid_savepoint.nflatlev()), nflat_gradp = int(grid_savepoint.nflat_gradp()),
+        nrdmax = int(grid_savepoint.nrdmax())
     )
 
     velocity_advection = VelocityAdvection(
@@ -398,26 +408,29 @@ def test_velocity_corrector_step(
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w()
     icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
     icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
-    #   assert np.allclose(np.asarray(icon_result_z_v_grad_w), np.asarray(diagnostic_state.z_v_grad_w))
+    #   assert dallclose(np.asarray(icon_result_z_v_grad_w), np.asarray(diagnostic_state.z_v_grad_w))
 
     # stencil 07
-    assert np.allclose(np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
-                       np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :])
+    assert dallclose(np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
+                    np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :],
+                     atol=1e-16)
     # stencil 08
-    assert np.allclose(np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],
+    assert dallclose(np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],
                        np.asarray(velocity_advection.z_ekinh)[3316:20896, :])
 
     # stencil 11,12,13,14
-    assert np.allclose(np.asarray(savepoint_velocity_exit.z_w_con_c())[3316:20896, :],
+    assert dallclose(np.asarray(savepoint_velocity_exit.z_w_con_c())[3316:20896, :],
                        np.asarray(velocity_advection.z_w_con_c)[3316:20896, :])
     # stencil 16
-    assert np.allclose(
+    assert dallclose(
         np.asarray(icon_result_ddt_w_adv_pc)[3316:20896, :],
         np.asarray(diagnostic_state.ddt_w_adv_pc)[3316:20896, :],
+        atol=5.0e-16
     )
     # stencil 19 level 0 not verifying
-    assert np.allclose(
+    assert dallclose(
         np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558, 0:65],
         np.asarray(diagnostic_state.ddt_vn_apc_pc)[5387:31558, 0:65],
+        atol=5.0e-16
     )
 

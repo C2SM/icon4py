@@ -104,3 +104,10 @@ def flatten_first_two_dims(
     new_shape = flattened_shape + old_shape[2:]
     newarray = np.asarray(field).reshape(new_shape)
     return it_embedded.np_as_located_field(*dims)(newarray)
+
+
+def dallclose(
+    a, b, rtol=1.e-12, atol=0.0, equal_nan=False
+):
+    #return np.allclose(a, b)
+    return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)

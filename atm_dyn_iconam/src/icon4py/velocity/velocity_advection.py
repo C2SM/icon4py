@@ -55,7 +55,7 @@ from icon4py.state_utils.diagnostic_state import DiagnosticState
 from icon4py.state_utils.horizontal import HorizontalMarkerIndex
 from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
-from icon4py.state_utils.metric_state import MetricState
+from icon4py.state_utils.metric_state import MetricStateNonHydro
 from icon4py.state_utils.prognostic_state import PrognosticState
 from icon4py.state_utils.utils import _allocate, _allocate_indices
 
@@ -64,7 +64,7 @@ class VelocityAdvection:
     def __init__(
         self,
         grid: IconGrid,
-        metric_state: MetricState,
+        metric_state: MetricStateNonHydro,
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
         run_program=True,
@@ -72,7 +72,7 @@ class VelocityAdvection:
         self._initialized = False
         self._run_program = run_program
         self.grid: IconGrid = grid
-        self.metric_state: MetricState = metric_state
+        self.metric_state: MetricStateNonHydro = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
         self.vertical_params = vertical_params
 
@@ -85,12 +85,12 @@ class VelocityAdvection:
     def init(
         self,
         grid: IconGrid,
-        metric_state: MetricState,
+        metric_state: MetricStateNonHydro,
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
     ):
         self.grid = grid
-        self.metric_state: MetricState = metric_state
+        self.metric_state: MetricStateNonHydro = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
         self.vertical_params = vertical_params
 

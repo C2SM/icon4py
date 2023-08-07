@@ -52,7 +52,7 @@ from icon4py.state_utils.horizontal import (
 )
 from icon4py.state_utils.icon_grid import IconGrid, MeshConfig, VerticalMeshConfig
 from icon4py.state_utils.interpolation_state import InterpolationState
-from icon4py.state_utils.metric_state import MetricState
+from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
 from icon4py.state_utils.prognostic_state import PrognosticState
 
 from .helpers import as_1D_sparse_field
@@ -227,6 +227,12 @@ class IconGridSavePoint(IconSavepoint):
 
     def nrdmax(self):
         return self._get_connectiviy_array("nrdmax")
+
+    def nflat_gradp(self):
+        return self._read_int32("nflat_gradp")
+
+    def nflatlev(self):
+        return self._read_int32("nflatlev")
 
     def construct_icon_grid(self) -> IconGrid:
         sp_meta = self.get_metadata(
@@ -469,6 +475,37 @@ class MetricSavepoint(IconSavepoint):
     def zd_indlist(self):
         return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
+    def wgtfac_c(self):
+        return self._get_field("wgtfac_c", CellDim, KDim)
+
+    def wgtfac_e(self):
+        return self._get_field("wgtfac_e", EdgeDim, KDim)
+
+    def theta_ref_mc(self):
+        return self._get_field("theta_ref_mc", CellDim, KDim)
+
+    def coeff1_dwdz(self):
+        return self._get_field("coeff1_dwdz", CellDim, KDim)
+
+    def coeff2_dwdz(self):
+        return self._get_field("coeff2_dwdz", CellDim, KDim)
+
+    def coeff_gradekin(self):
+        field = self._get_field("coeff_gradekin", EdgeDim, E2CDim)
+        return as_1D_sparse_field(field, ECDim)
+
+    def ddqz_z_full_e(self):
+        return self._get_field("ddqz_z_full_e", EdgeDim, KDim)
+
+    def ddqz_z_half(self):
+        return self._get_field("ddqz_z_half", CellDim, KDim)
+
+    def ddxn_z_full(self):
+        return self._get_field("ddxn_z_full", EdgeDim, KDim)
+
+    def ddxt_z_full(self):
+        return self._get_field("ddxt_z_full", EdgeDim, KDim)
+
     def construct_metric_state(self) -> MetricState:
         return MetricState(
             coeff1_dwdz=self.coeff1_dwdz(),
@@ -492,7 +529,7 @@ class MetricSavepoint(IconSavepoint):
         )
 
 
-class MetricStateNonHydro(IconSavepoint):
+class MetricSavepointNonHydro(IconSavepoint):
     def bdy_halo_c(self):
         return self._get_field("bdy_halo_c", CellDim, dtype=bool)
 
@@ -562,6 +599,81 @@ class MetricStateNonHydro(IconSavepoint):
     def zdiff_gradp(self):
         field = self._get_field("zdiff_gradp_dsl", EdgeDim, E2CDim, KDim)
         return flatten_first_two_dims(ECDim, KDim, field=field)
+
+    def wgtfac_c(self):
+        return self._get_field("wgtfac_c", CellDim, KDim)
+
+    def wgtfac_e(self):
+        return self._get_field("wgtfac_e", EdgeDim, KDim)
+
+    def theta_ref_mc(self):
+        return self._get_field("theta_ref_mc", CellDim, KDim)
+
+    def coeff1_dwdz(self):
+        return self._get_field("coeff1_dwdz", CellDim, KDim)
+
+    def coeff2_dwdz(self):
+        return self._get_field("coeff2_dwdz", CellDim, KDim)
+
+    def coeff_gradekin(self):
+        field = self._get_field("coeff_gradekin", EdgeDim, E2CDim)
+        return as_1D_sparse_field(field, ECDim)
+
+    def ddqz_z_full_e(self):
+        return self._get_field("ddqz_z_full_e", EdgeDim, KDim)
+
+    def ddqz_z_half(self):
+        return self._get_field("ddqz_z_half", CellDim, KDim)
+
+    def ddxn_z_full(self):
+        return self._get_field("ddxn_z_full", EdgeDim, KDim)
+
+    def ddxt_z_full(self):
+        return self._get_field("ddxt_z_full", EdgeDim, KDim)
+
+    def wgtfacq_e_dsl(
+        self, k_level
+    ):  # TODO: @abishekg7 Simplify this after serialized data is fixed
+        ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
+        k = k_level - 3
+        ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
+        return self._get_field_from_ndarray(ar, EdgeDim, KDim)
+
+    def construct_nh_metric_state(self) -> MetricStateNonHydro:
+        return MetricStateNonHydro(
+            bdy_halo_c=self.bdy_halo_c(),
+            mask_prog_halo_c=self.mask_prog_halo_c(),
+            rayleigh_w=self.rayleigh_w(),
+            exner_exfac=self.exner_exfac(),
+            exner_ref_mc=self.exner_ref_mc(),
+            wgtfac_c=self.wgtfac_c(),
+            wgtfacq_c_dsl=self.wgtfacq_c_dsl(),
+            inv_ddqz_z_full=self.inv_ddqz_z_full(),
+            rho_ref_mc=self.rho_ref_mc(),
+            theta_ref_mc=self.theta_ref_mc(),
+            vwind_expl_wgt=self.vwind_expl_wgt(),
+            d_exner_dz_ref_ic=self.d_exner_dz_ref_ic(),
+            ddqz_z_half=self.ddqz_z_half(),
+            theta_ref_ic=self.theta_ref_ic(),
+            d2dexdz2_fac1_mc=self.d2dexdz2_fac1_mc(),
+            d2dexdz2_fac2_mc=self.d2dexdz2_fac2_mc(),
+            rho_ref_me=self.rho_ref_me(),
+            theta_ref_me=self.theta_ref_me(),
+            ddxn_z_full=self.ddxn_z_full(),
+            zdiff_gradp=self.zdiff_gradp(),
+            ipeidx_dsl=self.ipeidx_dsl(),
+            pg_exdist=self.pg_exdist(),
+            ddqz_z_full_e=self.ddqz_z_full_e(),
+            ddxt_z_full=self.ddxt_z_full(),
+            wgtfac_e=self.wgtfac_e(),
+            wgtfacq_e_dsl=self.wgtfacq_e_dsl(10),
+            vwind_impl_wgt=self.vwind_impl_wgt(),
+            hmask_dd3d=self.hmask_dd3d(),
+            scalfac_dd3d=self.scalfac_dd3d(),
+            coeff1_dwdz=self.coeff1_dwdz(),
+            coeff2_dwdz=self.coeff2_dwdz(),
+            coeff_gradekin=self.coeff_gradekin(),
+        )
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
@@ -950,6 +1062,12 @@ class IconExitSavepoint(IconSavepoint):
     def z_theta_v_e(self):
         return self._get_field("x_z_theta_v_e", EdgeDim, KDim)
 
+    def z_grad_rth(self, ind):
+        buffer = np.squeeze(
+            self.serializer.read("x_z_grad_rth", self.savepoint).astype(float)
+        )
+        return np_as_located_field(CellDim, KDim)(buffer[:, :, ind - 1])
+
 
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False):
@@ -1021,9 +1139,9 @@ class IconSerialDataProvider:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
         return MetricSavepoint(savepoint, self.serializer)
 
-    def from_metrics_nonhydro_savepoint(self) -> MetricStateNonHydro:
+    def from_metrics_nonhydro_savepoint(self) -> MetricSavepointNonHydro:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
-        return MetricStateNonHydro(savepoint, self.serializer)
+        return MetricSavepointNonHydro(savepoint, self.serializer)
 
     def from_savepoint_diffusion_exit(
         self, linit: bool, date: str
