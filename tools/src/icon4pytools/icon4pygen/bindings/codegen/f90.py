@@ -110,10 +110,12 @@ class F90Generator(TemplatedGenerator):
         integer(c_int) :: vertical_end
         integer(c_int) :: horizontal_start
         integer(c_int) :: horizontal_end
+        {{k_sizes}}
         vertical_start = vertical_lower-1
         vertical_end = vertical_upper
         horizontal_start = horizontal_lower-1
         horizontal_end = horizontal_upper
+        {{k_sizes_assignments}}
         {{conditionals}}
         !$ACC host_data use_device( &
         {{openacc}}
@@ -178,6 +180,10 @@ class F90Generator(TemplatedGenerator):
       end if"""
     )
 
+    F90Assignment = as_jinja(
+        """{{left_side}} = {{right_side}}"""
+    )
+
 
 class F90Field(eve.Node):
     name: str
@@ -198,6 +204,11 @@ class F90Conditional(eve.Node):
     predicate: str
     if_branch: str
     else_branch: str
+
+
+class F90Assignment(eve.Node):
+    left_side: str
+    right_side: str
 
 
 class F90EntityList(eve.Node):
@@ -341,6 +352,8 @@ class F90WrapRunFun(Node):
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
     conditionals: F90EntityList = eve.datamodels.field(init=False)
+    k_sizes: F90EntityList = eve.datamodels.field(init=False)
+    k_sizes_assignments: F90EntityList = eve.datamodels.field(init=False)
     openacc: F90EntityList = eve.datamodels.field(init=False)
     tol_decls: F90EntityList = eve.datamodels.field(init=False)
     run_ver_params: F90EntityList = eve.datamodels.field(init=False)
@@ -379,6 +392,18 @@ class F90WrapRunFun(Node):
             F90TypedField(name=field.name, suffix=s, dtype="real(c_double)")
             for s in ["rel_err_tol", "abs_err_tol"]
             for field in self.tol_fields
+        ]
+        k_sizes_fields = [
+            F90TypedField(name=field.name, suffix=s, dtype="integer")
+            for s in ["k_size"]
+            for field in self.out_fields
+        ]
+        k_sizes_assignment_fields = [
+            F90Assignment(
+                left_side=f"{field.name}_k_size",
+                right_side=f"SIZE({field.name}, 2)",
+            )
+            for field in self.out_fields
         ]
         cond_fields = [
             F90Conditional(
@@ -439,6 +464,8 @@ class F90WrapRunFun(Node):
         self.binds = F90EntityList(fields=bind_fields)
         self.tol_decls = F90EntityList(fields=tol_fields)
         self.conditionals = F90EntityList(fields=cond_fields)
+        self.k_sizes = F90EntityList(fields=k_sizes_fields)
+        self.k_sizes_assignments = F90EntityList(fields=k_sizes_assignment_fields)
         self.openacc = F90EntityList(fields=open_acc_fields, line_end=", &", line_end_last=" &")
         self.run_ver_params = F90EntityList(
             fields=run_ver_param_fields, line_end=", &", line_end_last=" &"
