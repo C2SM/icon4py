@@ -44,10 +44,8 @@ def compute_c_lin_e(
     Returns: c_lin_e: numpy array  representing Field[[EdgeDim, E2CDim], float]
 
     """
-
-    c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length[:]
-    c_lin_e = np.transpose([c_lin_e_, (1.0 - c_lin_e_)])
+    c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
+    c_lin_e = np.transpose(np.vstack((c_lin_e_, (1.0 - c_lin_e_))))
     c_lin_e[0:second_boundary_layer_start_index, :] = 0.0
-    c_lin_e[:, 0] = np.where(owner_mask, c_lin_e[:, 0], 0.0)
-    c_lin_e[:, 1] = np.where(owner_mask, c_lin_e[:, 1], 0.0)
-    return c_lin_e
+    mask = np.transpose(np.tile(owner_mask, (2, 1)))
+    return np.where(mask, c_lin_e, 0.0)
