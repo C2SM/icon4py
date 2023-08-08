@@ -18,11 +18,13 @@ from typing import Callable
 import click
 import pytz
 from devtools import Timer
+from gt4py.next import program, Field
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
+from icon4py.common.dimension import CellDim, KDim, EdgeDim
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
 from icon4py.diffusion.diffusion_states import DiffusionDiagnosticState, PrognosticState
+from icon4py.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
 from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,
@@ -41,6 +43,34 @@ from helpers import serialbox_utils as sb_utils  # noqa
 
 log = logging.getLogger(__name__)
 
+# TODO (magdalena) to be removed once there is a proper time stepping
+@program
+def _copy_diagnostic_and_prognostics(
+    hdef_ic_new: Field[[CellDim, KDim], float],
+    hdef_ic: Field[[CellDim, KDim], float],
+    div_ic_new: Field[[CellDim, KDim], float],
+    div_ic: Field[[CellDim, KDim], float],
+    dwdx_new: Field[[CellDim, KDim], float],
+    dwdx: Field[[CellDim, KDim], float],
+    dwdy_new: Field[[CellDim, KDim], float],
+    dwdy: Field[[CellDim, KDim], float],
+    vn_new: Field[[EdgeDim, KDim], float],
+    vn: Field[[EdgeDim, KDim], float],
+    w_new: Field[[CellDim, KDim], float],
+    w: Field[[CellDim, KDim], float],
+    exner_new: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], float],
+    theta_v_new: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+):
+    _identity_c_k(hdef_ic_new, out=hdef_ic)
+    _identity_c_k(div_ic_new, out=div_ic)
+    _identity_c_k(dwdx_new, out=dwdx)
+    _identity_c_k(dwdy_new, out=dwdy)
+    _identity_e_k(vn_new, out=vn)
+    _identity_c_k(w_new, out=w)
+    _identity_c_k(exner_new, out=exner)
+    _identity_c_k(theta_v_new, out=theta_v)
 
 class DummyAtmoNonHydro:
     def __init__(self, data_provider: sb_utils.IconSerialDataProvider):
@@ -72,7 +102,7 @@ class DummyAtmoNonHydro:
         )
         new_p = sp.construct_prognostics()
         new_d = sp.construct_diagnostics_for_diffusion()
-        copy_diagnostic_and_prognostics.with_backend(run_gtfn)(
+        _copy_diagnostic_and_prognostics.with_backend(run_gtfn)(
             new_d.hdef_ic,
             diagnostic_state.hdef_ic,
             new_d.div_ic,
