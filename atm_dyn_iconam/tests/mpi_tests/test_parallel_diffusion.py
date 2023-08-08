@@ -66,7 +66,7 @@ def test_parallel_diffusion(
 
     icon_grid = read_icon_grid(data_path, rank=props.rank)
     print(
-        f"rank={props.rank}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
+        f"rank={props.rank}/{props.comm_size}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
     )
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
 
