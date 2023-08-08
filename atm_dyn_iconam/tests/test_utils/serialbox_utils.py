@@ -15,11 +15,10 @@ from typing import Optional
 
 import numpy as np
 import serialbox as ser
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from icon4py.common import dimension
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -128,7 +127,7 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_field("inv_dual_edge_length", EdgeDim)
 
     def edge_cell_length(self):
-        return self._get_field("edge_cell_length", EdgeDim, 2)
+        return self._get_field("edge_cell_length", EdgeDim, E2CDim)
 
     def cells_start_index(self):
         return self._read_int32_shift1("c_start_index")
@@ -343,12 +342,8 @@ class MetricSavepoint(IconSavepoint):
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
-    def _read_and_reorder_sparse_field(
-        self, name: str, sparse_size=3
-    ):
-        ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[
-            :, :, :
-        ]
+    def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
+        ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
         if ser_input.shape[1] != sparse_size:
             ser_input = np.moveaxis((ser_input), 1, -1)
 

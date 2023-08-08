@@ -30,16 +30,15 @@ from icon4py.field_management.interpolation_fields import compute_c_lin_e
 from icon4py.grid.horizontal import HorizontalMarkerIndex
 
 
-def test_mo_icon_interpolation_fields_initalization(data_provider, icon_grid):
-    icon_grid_save_point = data_provider.from_savepoint_grid()
-    interpolation_savepoint = data_provider.from_interpolation_savepoint()
-    inv_dual_edge_length = icon_grid_save_point.inv_dual_edge_length()
-    edge_cell_length = icon_grid_save_point.edge_cell_length()
-    owner_mask = icon_grid_save_point.e_owner_mask()
+def test_mo_icon_interpolation_fields_initalization(
+    grid_savepoint, interpolation_savepoint, icon_grid
+):
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    edge_cell_length = grid_savepoint.edge_cell_length()
+    owner_mask = grid_savepoint.e_owner_mask()
     c_lin_e_ref = interpolation_savepoint.c_lin_e()
-    lateral_boundary, _ = icon_grid.get_indices_from_to(
+    lateral_boundary = icon_grid.get_start_index(
         EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
     )
     c_lin_e = compute_c_lin_e(
