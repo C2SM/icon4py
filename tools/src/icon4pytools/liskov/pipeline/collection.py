@@ -21,7 +21,7 @@ from icon4pytools.liskov.codegen.shared.write import CodegenWriter
 from icon4pytools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4pytools.liskov.parsing.parse import DirectivesParser
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
-from icon4pytools.liskov.parsing.transform import TransformFuseStencils
+from icon4pytools.liskov.parsing.transform import StencilTransformer
 from icon4pytools.liskov.pipeline.definition import Step, linear_pipeline
 
 
@@ -70,16 +70,20 @@ def parse_fortran_file(
 
 @linear_pipeline
 def process_stencils(parsed: IntegrationCodeInterface, fused: bool) -> list[Step]:
-    """Execute a pipeline to transform stencils to fused or unfused execution, and a pipeline.
+    """Execute a linear pipeline to transform stencils and produce either fused or unfused execution.
+
+    This function takes an input `parsed` object of type `IntegrationCodeInterface` and a `fused` boolean flag.
+    It then executes a linear pipeline, consisting of two steps: transformation of stencils for fusion or unfusion,
+    and updating fields with information from GT4Py stencils.
 
     Args:
-        parsed: The input IntegrationCodeInterface object.
-        fused: The input mode if fused or unfused
+        parsed (IntegrationCodeInterface): The input object containing parsed integration code.
+        fused (bool): A boolean flag indicating whether to produce fused (True) or unfused (False) execution.
 
     Returns:
         The updated and transformed object with fields containing information from GT4Py stencils.
     """
-    return [TransformFuseStencils(parsed, fused), UpdateFieldsWithGt4PyStencils(parsed)]
+    return [StencilTransformer(parsed, fused), UpdateFieldsWithGt4PyStencils(parsed)]
 
 
 @linear_pipeline

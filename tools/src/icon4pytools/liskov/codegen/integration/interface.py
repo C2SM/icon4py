@@ -121,15 +121,15 @@ class StartDeleteData(CodeGenInput):
 
 @dataclass
 class EndDeleteData(CodeGenInput):
-    def __init__(self, endStencil: EndStencilData=None, startln:int=None):
-      if endStencil is None and startln is None:
-        self.startln = 0
-      elif endStencil is not None and startln is not None:
-        raise Exception()
-      elif endStencil is not None:
-        self.startln = endStencil.startln
-      elif startln is not None:
-        self.startln = startln
+    def __init__(self, endStencil: EndStencilData = None, startln: int = None):
+        if endStencil is None and startln is None:
+            self.startln = 0
+        elif endStencil is not None and startln is not None:
+            raise Exception()
+        elif endStencil is not None:
+            self.startln = endStencil.startln
+        elif startln is not None:
+            self.startln = startln
 
 
 @dataclass

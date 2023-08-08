@@ -25,8 +25,8 @@ from .fortran_samples import (
     NO_DIRECTIVES_STENCIL,
     SINGLE_STENCIL,
     SINGLE_STENCIL_WITH_COMMENTS,
-    FUSED_STENCIL,
-    FUSED_STENCILS,
+    SINGLE_FUSED,
+    MULTIPLE_FUSED,
 )
 
 
@@ -44,8 +44,8 @@ files = [
     ("CONSECUTIVE", CONSECUTIVE_STENCIL),
     ("FREE_FORM", FREE_FORM_STENCIL),
     ("MULTIPLE", MULTIPLE_STENCILS),
-    ("FUSED", FUSED_STENCIL),
-    ("FUSEDS", FUSED_STENCILS),
+    ("SINGLE_FUSED", SINGLE_FUSED),
+    ("MULTIPLE_FUSED", MULTIPLE_FUSED),
 ]
 
 flags = {"serialise": ["--multinode"], "integrate": ["-p", "-m", "-f", "-u"]}

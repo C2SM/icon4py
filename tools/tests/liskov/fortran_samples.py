@@ -261,7 +261,7 @@ CONSECUTIVE_STENCIL = """\
 """
 
 
-FUSED_STENCIL = """\
+SINGLE_FUSED = """\
     !$DSL IMPORTS()
 
     !$DSL INSERT(INTEGER :: start_interior_idx_c, end_interior_idx_c, start_nudging_idx_c, end_halo_1_idx_c)
@@ -310,7 +310,7 @@ FUSED_STENCIL = """\
     """
 
 
-FUSED_STENCILS = """\
+MULTIPLE_FUSED = """\
     !$DSL IMPORTS()
 
     !$DSL INSERT(INTEGER :: start_interior_idx_c, end_interior_idx_c, start_nudging_idx_c, end_halo_1_idx_c)

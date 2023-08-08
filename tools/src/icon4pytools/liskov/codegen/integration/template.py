@@ -83,7 +83,6 @@ def get_array_dims(association: str) -> str:
     return "".join(list(dims))
 
 
-
 class MetadataStatement(eve.Node):
     metadata: CodeMetadata
 
@@ -101,6 +100,7 @@ class MetadataStatementGenerator(TemplatedGenerator):
     !+-+-+-+-+-+-+-+-+-+ +-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+
     """
     )
+
 
 class EndBasicStencilStatement(eve.Node):
     name: str = eve.datamodels.field(init=False)
@@ -292,6 +292,7 @@ class CopyDeclaration(Declaration):
     lh_index: str
     rh_index: str
 
+
 def _make_copy_declaration(f: Field) -> CopyDeclaration:
     if f.dims is None:
         raise UndeclaredFieldError(f"{f.variable} was not declared!")
@@ -319,6 +320,7 @@ def _make_copy_declaration(f: Field) -> CopyDeclaration:
         lh_index=lh_idx,
         rh_index=rh_idx,
     )
+
 
 class DeclareStatement(eve.Node):
     declare_data: DeclareData
@@ -351,6 +353,7 @@ class StartStencilStatement(eve.Node):
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
+
 
 class StartFusedStencilStatement(eve.Node):
     stencil_data: StartFusedStencilData
