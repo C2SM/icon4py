@@ -153,7 +153,7 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_field("c_owner_mask", CellDim, dtype=bool)
 
     def e_owner_mask(self):
-        return self._get_field("e_owner_mask", CellDim, dtype=bool)
+        return self._get_field("e_owner_mask", EdgeDim, dtype=bool)
 
     def print_connectivity_info(self, name: str, ar: np.ndarray):
         self.log.debug(f" connectivity {name} {ar.shape}")
