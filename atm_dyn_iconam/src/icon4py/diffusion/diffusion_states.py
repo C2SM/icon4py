@@ -31,7 +31,7 @@ from icon4py.common.dimension import (
 
 
 @dataclass(frozen=True)
-class DiagnosticState:
+class DiffusionDiagnosticState:
     """Represents the diagnostic fields needed in diffusion."""
 
     # fields for 3D elements in turbdiff
@@ -51,7 +51,7 @@ class DiagnosticState:
 
 
 @dataclass(frozen=True)
-class MetricState:
+class DiffusionMetricState:
     """Represents the metric state fields needed in diffusion."""
 
     theta_ref_mc: Field[[CellDim, KDim], float]
@@ -65,7 +65,7 @@ class MetricState:
 
 
 @dataclass(frozen=True)
-class InterpolationState:
+class DiffusionInterpolationState:
     """Represents the ICON interpolation state needed in diffusion."""
 
     e_bln_c_s: Field[

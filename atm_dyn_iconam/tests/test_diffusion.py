@@ -20,7 +20,7 @@ from atm_dyn_iconam.tests.test_utils.serialbox_utils import (
 )
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import scale_k
-from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
+from icon4py.diffusion.diffusion_states import DiffusionDiagnosticState, PrognosticState
 from icon4py.grid.horizontal import CellParams, EdgeParams
 from icon4py.grid.vertical import VerticalModelParams
 
@@ -115,7 +115,7 @@ def test_diffusion_init(
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
@@ -209,7 +209,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
 
     diffusion = Diffusion()
     diffusion.init(
@@ -244,7 +244,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
@@ -288,7 +288,7 @@ def test_run_diffusion_single_step(
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
@@ -324,7 +324,7 @@ def test_run_diffusion_single_step(
 
 
 def _verify_diffusion_fields(
-    diagnostic_state: DiagnosticState,
+    diagnostic_state: DiffusionDiagnosticState,
     prognostic_state: PrognosticState,
     diffusion_savepoint: IconDiffusionExitSavepoint,
 ):
@@ -373,7 +373,7 @@ def test_run_diffusion_initial_step(
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()

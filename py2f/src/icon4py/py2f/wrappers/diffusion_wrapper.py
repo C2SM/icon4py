@@ -30,10 +30,10 @@ from icon4py.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
 )
-from icon4py.diffusion.state_utils import (
-    DiagnosticState,
-    InterpolationState,
-    MetricState,
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
     PrognosticState,
 )
 from icon4py.grid.horizontal import CellParams, EdgeParams
@@ -99,10 +99,10 @@ def diffusion_init(
     vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=nrdmax)
     config: DiffusionConfig = DiffusionConfig(grid, vertical_params)
     derived_diffusion_params = DiffusionParams(config)
-    metric_state = MetricState(
+    metric_state = DiffusionMetricState(
         theta_ref_mc, wgtfac_c, mask_hdiff, zd_vertidx, zd_diffcoef, zd_intcoef
     )
-    interpolation_state = InterpolationState(
+    interpolation_state = DiffusionInterpolationState(
         e_bln_c_s,
         rbf_coeff_1,
         rbf_coeff_2,
@@ -138,7 +138,7 @@ def diffusion_run(
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
 ):
-    diagnostic_state = DiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
+    diagnostic_state = DiffusionDiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
     prognostic_state = PrognosticState(
         w=w,
         vn=vn,

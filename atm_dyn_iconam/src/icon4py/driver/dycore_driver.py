@@ -22,7 +22,7 @@ from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
-from icon4py.diffusion.state_utils import DiagnosticState, PrognosticState
+from icon4py.diffusion.diffusion_states import DiffusionDiagnosticState, PrognosticState
 from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,
@@ -62,7 +62,7 @@ class DummyAtmoNonHydro:
     def do_dynamics_substepping(
         self,
         dtime,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
     ):
         for _ in range(self.config.n_substeps):
@@ -113,7 +113,7 @@ class Timeloop:
 
     def _timestep(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
     ):
 
@@ -128,7 +128,7 @@ class Timeloop:
 
     def __call__(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
     ):
         log.info(

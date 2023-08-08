@@ -17,10 +17,10 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from icon4py.diffusion.state_utils import (
-    DiagnosticState,
-    InterpolationState,
-    MetricState,
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
     PrognosticState,
 )
 from icon4py.grid.horizontal import CellParams, EdgeParams
@@ -82,7 +82,7 @@ def read_icon_grid(
 
 def read_initial_state(
     gridfile_path: Path,
-) -> tuple[sb.IconSerialDataProvider, DiagnosticState, PrognosticState]:
+) -> tuple[sb.IconSerialDataProvider, DiffusionDiagnosticState, PrognosticState]:
     """
     Read prognostic and diagnostic state from serialized data.
 
@@ -134,7 +134,7 @@ def read_geometry_fields(
 
 def read_static_fields(
     path: Path, ser_type: SerializationType = SerializationType.SB
-) -> tuple[MetricState, InterpolationState]:
+) -> tuple[DiffusionMetricState, DiffusionInterpolationState]:
     """
     Read fields for metric and interpolation state.
 
@@ -154,7 +154,7 @@ def read_static_fields(
         interpolation_state = (
             dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
         )
-        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state()
+        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
         return metric_state, interpolation_state
     else:
         raise NotImplementedError(SB_ONLY_MSG)
