@@ -24,13 +24,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.common.dimension import EdgeDim
 from icon4py.field_management.interpolation_fields import compute_c_lin_e
 from icon4py.grid.horizontal import HorizontalMarkerIndex
 
-
-def test_mo_icon_interpolation_fields_initalization(
+@pytest.mark.datatest
+def test_compute_c_lin_e(
     grid_savepoint, interpolation_savepoint, icon_grid
 ):
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
