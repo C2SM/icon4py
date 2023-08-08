@@ -25,6 +25,7 @@
 
 import numpy as np
 
+
 def compute_c_lin_e(
     edge_cell_length: np.array,
     inv_dual_edge_length: np.array,

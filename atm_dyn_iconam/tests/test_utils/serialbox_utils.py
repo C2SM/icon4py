@@ -15,10 +15,11 @@ from typing import Optional
 
 import numpy as np
 import serialbox as ser
-from gt4py.next.common import Dimension
+from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
+from icon4py.common import dimension
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -68,27 +69,28 @@ class IconSavepoint:
 
     def _read_int32_shift1(self, name: str):
         """
-        Read a index field and shift it by -1.
+        Read a start indices field.
 
-        use for start indeces: the shift accounts for the zero based python
+        use for start indices: the shift accounts for the zero based python
         values are converted to int32
         """
-        return (self.serializer.read(name, self.savepoint) - 1).astype(int32)
+        return self._read_int32(name, offset=1)
 
-    def _read_int32(self, name: str):
+    def _read_int32(self, name: str, offset=0):
         """
-        Read a int field by name.
+        Read an end indices field.
 
         use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
         this accounts for being exclusive python exclusive bounds: [from:to)
         field values are convert to int32
         """
-        return self.serializer.read(name, self.savepoint).astype(int32)
+        return self._read(name, offset, dtype=int32)
 
-    def read_int(self, name: str):
-        buffer = self.serializer.read(name, self.savepoint).astype(int)
-        self.log.debug(f"{name} {buffer.shape}")
-        return buffer
+    def _read_bool(self, name: str):
+        return self._read(name, offset=0, dtype=bool)
+
+    def _read(self, name: str, offset=0, dtype=int):
+        return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
 
 
 class IconGridSavePoint(IconSavepoint):
@@ -216,22 +218,21 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_connectivity_array("nrdmax")
 
     def construct_icon_grid(self) -> IconGrid:
-        sp_meta = self.get_metadata(
-            "nproma", "nlev", "num_vert", "num_cells", "num_edges"
-        )
+
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
         vertex_ends = self.vertex_end_index()
         edge_starts = self.edge_start_index()
         edge_ends = self.edge_end_index()
+        nproma = self.get_metadata("nproma")["nproma"]
         config = GridConfig(
             horizontal_config=HorizontalGridSize(
-                num_vertices=sp_meta["nproma"],  # or rather "num_vert"
-                num_cells=sp_meta["nproma"],  # or rather "num_cells"
-                num_edges=sp_meta["nproma"],  # or rather "num_edges"
+                num_vertices=nproma,  # or rather "num_vert"
+                num_cells=nproma,  # or rather "num_cells"
+                num_edges=nproma,  # or rather "num_edges"
             ),
-            vertical_config=VerticalGridSize(num_lev=sp_meta["nlev"]),
+            vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
         )
         c2e2c = self.c2e2c()
         c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
@@ -340,22 +341,32 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
     def zd_intcoef(self):
-        ser_input = np.moveaxis(
-            (np.squeeze(self.serializer.read("vcoef", self.savepoint))), 1, -1
-        )
-        return self._linearize_first_2dims(ser_input, sparse_size=3)
+        return self._read_and_reorder_sparse_field("vcoef")
 
-    def _linearize_first_2dims(self, data: np.ndarray, sparse_size):
+    def _read_and_reorder_sparse_field(
+        self, name: str, sparse_size=3
+    ):
+        ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[
+            :, :, :
+        ]
+        if ser_input.shape[1] != sparse_size:
+            ser_input = np.moveaxis((ser_input), 1, -1)
+
+        return self._linearize_first_2dims(
+            ser_input, sparse_size=sparse_size, target_dims=(CECDim, KDim)
+        )
+
+    def _linearize_first_2dims(
+        self, data: np.ndarray, sparse_size: int, target_dims: tuple[Dimension, ...]
+    ):
         old_shape = data.shape
         assert old_shape[1] == sparse_size
-        return np_as_located_field(CECDim, KDim)(
+        return np_as_located_field(*target_dims)(
             data.reshape(old_shape[0] * old_shape[1], old_shape[2])
         )
 
     def zd_vertoffset(self):
-        ser_input = np.squeeze(self.serializer.read("zd_vertoffset", self.savepoint))
-        ser_input = np.moveaxis(ser_input, 1, -1)
-        return self._linearize_first_2dims(ser_input, sparse_size=3)
+        return self._read_and_reorder_sparse_field("zd_vertoffset")
 
     def zd_vertidx(self):
         return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))

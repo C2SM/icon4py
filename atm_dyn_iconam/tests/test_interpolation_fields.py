@@ -25,12 +25,9 @@
 
 import numpy as np
 
-from icon4py.grid.horizontal import HorizontalMarkerIndex
-from icon4py.field_management.interpolation_fields import (
-    compute_c_lin_e,
-)
 from icon4py.common.dimension import EdgeDim
-from .test_utils.serialbox_utils import IconGridSavePoint, InterpolationSavepoint
+from icon4py.field_management.interpolation_fields import compute_c_lin_e
+from icon4py.grid.horizontal import HorizontalMarkerIndex
 
 
 def test_mo_icon_interpolation_fields_initalization(data_provider, icon_grid):

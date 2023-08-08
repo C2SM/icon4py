@@ -206,11 +206,12 @@ class ToGt4PyTransformation(IndexTransformation):
 
 class GridManager:
     """
-    Read ICON grid file and set up  IconGrid
+    Read ICON grid file and set up  IconGrid.
 
     Reads an ICON grid file and extracts connectivity arrays and start-, end-indices for horizontal
     domain boundaries. Provides an IconGrid instance for further usage.
     """
+
     def __init__(
         self,
         transformation: IndexTransformation,
