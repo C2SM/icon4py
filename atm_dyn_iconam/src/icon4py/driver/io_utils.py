@@ -50,7 +50,7 @@ def import_testutils():
 
 helpers = import_testutils()
 
-from helpers import serialbox_utils as sb   # noqa F401
+from helpers import serialbox_utils as sb  # noqa F401
 
 
 class SerializationType(str, Enum):
