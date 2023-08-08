@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.diffusion.diffusion_utils import copy_diagnostic_and_prognostics
+from icon4py.driver.dycore_driver import _copy_diagnostic_and_prognostics
 
 from .test_utils.helpers import random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh
@@ -39,7 +39,7 @@ def test_copy_diagnostic_and_prognostics():
     f8_in = random_field(mesh, CellDim, KDim)
     f8_out = zero_field(mesh, CellDim, KDim)
 
-    copy_diagnostic_and_prognostics(
+    _copy_diagnostic_and_prognostics(
         f1_in,
         f1_out,
         f2_in,

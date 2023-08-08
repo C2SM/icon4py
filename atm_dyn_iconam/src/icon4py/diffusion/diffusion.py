@@ -67,10 +67,10 @@ from icon4py.diffusion.diffusion_utils import (
     setup_fields_for_initial_step,
     zero_field,
 )
-from icon4py.diffusion.state_utils import (
-    DiagnosticState,
-    InterpolationState,
-    MetricState,
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
     PrognosticState,
 )
 from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
@@ -355,8 +355,8 @@ class Diffusion:
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
         self.vertical_params: Optional[VerticalModelParams] = None
-        self.interpolation_state: InterpolationState = None
-        self.metric_state: MetricState = None
+        self.interpolation_state: DiffusionInterpolationState = None
+        self.metric_state: DiffusionMetricState = None
         self.diff_multfac_w: Optional[float] = None
         self.diff_multfac_n2w: Field[[KDim], float] = None
         self.smag_offset: Optional[float] = None
@@ -373,8 +373,8 @@ class Diffusion:
         config: DiffusionConfig,
         params: DiffusionParams,
         vertical_params: VerticalModelParams,
-        metric_state: MetricState,
-        interpolation_state: InterpolationState,
+        metric_state: DiffusionMetricState,
+        interpolation_state: DiffusionInterpolationState,
         edge_params: EdgeParams,
         cell_params: CellParams,
     ):
@@ -397,8 +397,8 @@ class Diffusion:
         self.params: DiffusionParams = params
         self.grid = grid
         self.vertical_params = vertical_params
-        self.metric_state: MetricState = metric_state
-        self.interpolation_state: InterpolationState = interpolation_state
+        self.metric_state: DiffusionMetricState = metric_state
+        self.interpolation_state: DiffusionInterpolationState = interpolation_state
         self.edge_params = edge_params
         self.cell_params = cell_params
 
@@ -487,7 +487,7 @@ class Diffusion:
 
     def initial_run(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
     ):
@@ -524,7 +524,7 @@ class Diffusion:
 
     def run(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
     ):
@@ -564,7 +564,7 @@ class Diffusion:
 
     def _do_diffusion_step(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
         diff_multfac_vn: Field[[KDim], float],

@@ -17,14 +17,14 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    PrognosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState)
 from icon4py.decomposition.decomposed import DecompositionInfo
 from icon4py.decomposition.parallel_setup import ParallelLogger, ProcessProperties
-from icon4py.diffusion.state_utils import (
-    DiagnosticState,
-    InterpolationState,
-    MetricState,
-    PrognosticState,
-)
+
 from icon4py.grid.horizontal import CellParams, EdgeParams
 from icon4py.grid.icon_grid import IconGrid
 from icon4py.grid.vertical import VerticalModelParams
@@ -86,7 +86,7 @@ def read_icon_grid(
 
 def read_initial_state(
     gridfile_path: Path, rank=0
-) -> tuple[sb.IconSerialDataProvider, DiagnosticState, PrognosticState]:
+) -> tuple[sb.IconSerialDataProvider, DiffusionDiagnosticState, PrognosticState]:
     """
     Read prognostic and diagnostic state from serialized data.
 
@@ -152,7 +152,7 @@ def read_decomp_info(
 
 def read_static_fields(
     path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
-) -> tuple[MetricState, InterpolationState]:
+) -> tuple[DiffusionMetricState, DiffusionInterpolationState]:
     """
     Read fields for metric and interpolation state.
 
@@ -173,7 +173,7 @@ def read_static_fields(
         interpolation_state = (
             dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
         )
-        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state()
+        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
         return metric_state, interpolation_state
     else:
         raise NotImplementedError(SB_ONLY_MSG)

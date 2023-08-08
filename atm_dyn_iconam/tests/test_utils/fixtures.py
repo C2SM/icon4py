@@ -27,7 +27,7 @@ data_uris = {
     4: "https://polybox.ethz.ch/index.php/s/QC7xt7xLT5xeVN5/download",
 }
 mch_ch_r04b09_dsl_grid_uri = (
-    "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
+    "https://polybox.ethz.ch/index.php/s/vcsCYmCFA9Qe26p/download"
 )
 r02b04_global_grid_uri = "https://polybox.ethz.ch/index.php/s/0EM8O8U53GKGsst/download"
 

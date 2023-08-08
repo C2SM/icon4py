@@ -48,35 +48,6 @@ def _identity_e_k(
     return field
 
 
-@program
-def copy_diagnostic_and_prognostics(
-    hdef_ic_new: Field[[CellDim, KDim], float],
-    hdef_ic: Field[[CellDim, KDim], float],
-    div_ic_new: Field[[CellDim, KDim], float],
-    div_ic: Field[[CellDim, KDim], float],
-    dwdx_new: Field[[CellDim, KDim], float],
-    dwdx: Field[[CellDim, KDim], float],
-    dwdy_new: Field[[CellDim, KDim], float],
-    dwdy: Field[[CellDim, KDim], float],
-    vn_new: Field[[EdgeDim, KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    exner_new: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    theta_v_new: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-):
-    _identity_c_k(hdef_ic_new, out=hdef_ic)
-    _identity_c_k(div_ic_new, out=div_ic)
-    _identity_c_k(dwdx_new, out=dwdx)
-    _identity_c_k(dwdy_new, out=dwdy)
-    _identity_e_k(vn_new, out=vn)
-    _identity_c_k(w_new, out=w)
-    _identity_c_k(exner_new, out=exner)
-    _identity_c_k(theta_v_new, out=theta_v)
-
-
 @field_operator
 def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]:
     return field * factor
