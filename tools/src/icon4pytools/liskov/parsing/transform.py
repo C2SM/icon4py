@@ -15,16 +15,17 @@ from typing import Any
 import icon4pytools.liskov.parsing.types as ts
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.liskov.codegen.integration.interface import (
+    EndDeleteData,
+    EndFusedStencilData,
+    EndStencilData,
     IntegrationCodeInterface,
+    StartDeleteData,
+    StartFusedStencilData,
     StartStencilData,
     UnusedDirective,
-    EndStencilData,
-    StartFusedStencilData,
-    EndFusedStencilData,
-    StartDeleteData,
-    EndDeleteData,
 )
 from icon4pytools.liskov.pipeline.definition import Step
+
 
 logger = setup_logger(__name__)
 

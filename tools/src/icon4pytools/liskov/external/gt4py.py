@@ -21,8 +21,8 @@ from icon4pytools.common import ICON4PY_MODEL_QUALIFIED_NAME
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.icon4pygen.metadata import get_stencil_info
 from icon4pytools.liskov.codegen.integration.interface import (
-    IntegrationCodeInterface,
     BaseStartStencilData,
+    IntegrationCodeInterface,
 )
 from icon4pytools.liskov.external.exceptions import IncompatibleFieldError, UnknownStencilError
 from icon4pytools.liskov.pipeline.definition import Step

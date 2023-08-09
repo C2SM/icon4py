@@ -21,12 +21,12 @@ from icon4pytools.liskov.external.exceptions import MissingCommandError
 from .fortran_samples import (
     CONSECUTIVE_STENCIL,
     FREE_FORM_STENCIL,
+    MULTIPLE_FUSED,
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
+    SINGLE_FUSED,
     SINGLE_STENCIL,
     SINGLE_STENCIL_WITH_COMMENTS,
-    SINGLE_FUSED,
-    MULTIPLE_FUSED,
 )
 
 

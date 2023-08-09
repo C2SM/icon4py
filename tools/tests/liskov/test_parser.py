@@ -14,19 +14,20 @@
 
 from collections import defaultdict
 
-import icon4pytools.liskov.parsing.parse as ts
 import pytest
+from pytest import mark
+
+import icon4pytools.liskov.parsing.parse as ts
 from icon4pytools.liskov.parsing.exceptions import UnsupportedDirectiveError
 from icon4pytools.liskov.parsing.parse import DirectivesParser
-from pytest import mark
 
 from .conftest import insert_new_lines, scan_for_directives
 from .fortran_samples import (
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
+    SINGLE_FUSED,
     SINGLE_STENCIL,
     SINGLE_STENCIL_WITH_COMMENTS,
-    SINGLE_FUSED,
 )
 
 

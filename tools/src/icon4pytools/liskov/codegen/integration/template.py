@@ -21,8 +21,8 @@ from gt4py.eve.codegen import TemplatedGenerator
 
 from icon4pytools.liskov.codegen.integration.exceptions import UndeclaredFieldError
 from icon4pytools.liskov.codegen.integration.interface import (
-    DeclareData,
     BaseStartStencilData,
+    DeclareData,
     StartFusedStencilData,
     StartStencilData,
 )
