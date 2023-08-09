@@ -261,6 +261,18 @@ class EndFusedStencilDataFactory(DataFactoryBase):
 
 
 class StartStencilDataFactoryBase(DataFactoryBase):
+    directive_cls: Type[ts.ParsedDirective] = None
+    dtype: Type[StartFusedStencilData] = None
+
+    def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
+        field_dimensions = flatten_list_of_dicts(
+            [DeclareDataFactory.get_field_dimensions(dim) for dim in parsed["content"]["Declare"]]
+        )
+        directives = extract_directive(parsed["directives"], self.directive_cls)
+        return self.create_stencil_data(
+            parsed, field_dimensions, directives, self.directive_cls, self.dtype
+        )
+
     def create_stencil_data(
         self,
         parsed: ts.ParsedDict,
@@ -394,28 +406,10 @@ class StartFusedStencilDataFactory(StartStencilDataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartFusedStencil
     dtype: Type[StartFusedStencilData] = StartFusedStencilData
 
-    def __call__(self, parsed: ts.ParsedDict) -> list[StartFusedStencilData]:
-        field_dimensions = flatten_list_of_dicts(
-            [DeclareDataFactory.get_field_dimensions(dim) for dim in parsed["content"]["Declare"]]
-        )
-        directives = extract_directive(parsed["directives"], self.directive_cls)
-        return self.create_stencil_data(
-            parsed, field_dimensions, directives, self.directive_cls, self.dtype
-        )
-
 
 class StartStencilDataFactory(StartStencilDataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartStencil
     dtype: Type[StartStencilData] = StartStencilData
-
-    def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
-        field_dimensions = flatten_list_of_dicts(
-            [DeclareDataFactory.get_field_dimensions(dim) for dim in parsed["content"]["Declare"]]
-        )
-        directives = extract_directive(parsed["directives"], self.directive_cls)
-        return self.create_stencil_data(
-            parsed, field_dimensions, directives, self.directive_cls, self.dtype
-        )
 
 
 class InsertDataFactory(DataFactoryBase):
