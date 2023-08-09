@@ -71,6 +71,7 @@ class MetricStateNonHydro:
     ddxt_z_full: Field[[EdgeDim, KDim], float]
     inv_ddqz_z_full: Field[[CellDim, KDim], float]
 
+    vertoffset_gradp: Field[[ECDim, KDim], float]
     zdiff_gradp: Field[[ECDim, KDim], float]
     ipeidx_dsl: Field[[EdgeDim, KDim], bool]
     pg_exdist: Field[[EdgeDim, KDim], float]

@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.common.dimension import EdgeDim, KDim
 
@@ -44,10 +44,10 @@ def mo_solve_nonhydro_stencil_24(
     vn_nnew: Field[[EdgeDim, KDim], float],
     dtime: float,
     cpd: float,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_24(
         vn_nnow,
