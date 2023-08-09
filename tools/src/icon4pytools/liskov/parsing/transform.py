@@ -20,7 +20,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     UnusedDirective,
     EndStencilData,
     StartFusedStencilData,
-    EndFusedStencilData,
+    EndFusedStencilData, StartDeleteData, EndDeleteData,
 )
 from icon4pytools.liskov.pipeline.definition import Step
 
@@ -64,7 +64,7 @@ class StencilTransformer(Step):
                 self.parsed.StartStencil, self.parsed.EndStencil, strict=True
             ):
                 if self._stencil_is_removable(start_fused, end_fused, start_single, end_single):
-                    self._add_to_delete_directives(start_single, end_single)
+                    self._create_delete_directives(start_single, end_single)
                     stencils_to_remove += [start_single, end_single]
 
         self._remove_stencils(stencils_to_remove)
@@ -83,14 +83,20 @@ class StencilTransformer(Step):
             and end_single.startln < end_fused.startln
         )
 
-    def _add_to_delete_directives(
+    def _create_delete_directives(
         self, start_single: StartStencilData, end_single: EndStencilData
     ) -> None:
         for attr, param in zip(["StartDelete", "EndDelete"], [start_single, end_single]):
             directive = getattr(self.parsed, attr)
             if directive == UnusedDirective:
                 directive = []
-            directive.append(param)
+
+            if attr == "StartDelete":
+                cls = StartDeleteData
+            elif attr == "EndDelete":
+                cls = EndDeleteData
+
+            directive.append(cls(startln=param.startln))
             setattr(self.parsed, attr, directive)
 
     def _remove_stencils(self, stencils_to_remove: list[StartStencilData | EndStencilData]) -> None:

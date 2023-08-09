@@ -22,7 +22,7 @@ from gt4py.eve.codegen import TemplatedGenerator
 from icon4pytools.liskov.codegen.integration.exceptions import UndeclaredFieldError
 from icon4pytools.liskov.codegen.integration.interface import (
     DeclareData,
-    StartBasicStencilData,
+    BaseStartStencilData,
     StartFusedStencilData,
     StartStencilData,
 )
@@ -447,7 +447,7 @@ class StartFusedStencilStatementGenerator(TemplatedGenerator):
 
 
 class ImportsStatement(eve.Node):
-    stencils: list[StartBasicStencilData]
+    stencils: list[BaseStartStencilData]
     stencil_names: list[str] = eve.datamodels.field(init=False)
 
     def __post_init__(self) -> None:  # type: ignore

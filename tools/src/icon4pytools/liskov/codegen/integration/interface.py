@@ -78,7 +78,7 @@ class EndProfileData(CodeGenInput):
 
 
 @dataclass
-class StartBasicStencilData(CodeGenInput):
+class BaseStartStencilData(CodeGenInput):
     name: str
     fields: list[FieldAssociationData]
     acc_present: Optional[bool]
@@ -86,50 +86,41 @@ class StartBasicStencilData(CodeGenInput):
 
 
 @dataclass
-class StartStencilData(StartBasicStencilData):
+class StartStencilData(BaseStartStencilData):
     mergecopy: Optional[bool]
     copies: Optional[bool]
 
 
 @dataclass
-class StartFusedStencilData(StartBasicStencilData):
+class StartFusedStencilData(BaseStartStencilData):
     ...
 
 
 @dataclass
-class EndStencilBaseData(CodeGenInput):
+class BaseEndStencilData(CodeGenInput):
     name: str
 
 
 @dataclass
-class EndStencilData(EndStencilBaseData):
+class EndStencilData(BaseEndStencilData):
     noendif: Optional[bool]
     noprofile: Optional[bool]
     noaccenddata: Optional[bool]
 
 
 @dataclass
-class EndFusedStencilData(EndStencilBaseData):
+class EndFusedStencilData(BaseEndStencilData):
     ...
 
 
 @dataclass
 class StartDeleteData(CodeGenInput):
-    def __init__(self, startStencil: StartStencilData):
-        self.startln = startStencil.startln
+    startln: int
 
 
 @dataclass
-class EndDeleteData(CodeGenInput):
-    def __init__(self, endStencil: EndStencilData = None, startln: int = None):
-        if endStencil is None and startln is None:
-            self.startln = 0
-        elif endStencil is not None and startln is not None:
-            raise Exception()
-        elif endStencil is not None:
-            self.startln = endStencil.startln
-        elif startln is not None:
-            self.startln = startln
+class EndDeleteData(StartDeleteData):
+    ...
 
 
 @dataclass

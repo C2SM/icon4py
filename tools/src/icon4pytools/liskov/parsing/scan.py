@@ -36,7 +36,9 @@ class DirectivesScanner(Step):
         A directive must start with !$DSL <DIRECTIVE_NAME>( with the
         directive arguments delimited by a ;. The directive if on multiple
         lines must include a & at the end of the line. The directive
-        must always be closed by a closing bracket ).
+        must always be closed by a closing bracket ). A directive can be
+        commented out by using a ! before the directive,
+        for example, !!$DSL means the directive is disabled.
 
         Example:
             !$DSL IMPORTS()

@@ -312,7 +312,8 @@ SINGLE_FUSED = """\
 
 MULTIPLE_FUSED = """\
     !$DSL IMPORTS()
-
+    !$DSL START DELETE()
+    !$DSL END DELETE()
     !$DSL INSERT(INTEGER :: start_interior_idx_c, end_interior_idx_c, start_nudging_idx_c, end_halo_1_idx_c)
 
     !$DSL DECLARE(kh_smag_e=nproma,p_patch%nlev,p_patch%nblks_e; &

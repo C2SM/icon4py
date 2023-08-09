@@ -22,7 +22,7 @@ from icon4pytools.common.logger import setup_logger
 from icon4pytools.icon4pygen.metadata import get_stencil_info
 from icon4pytools.liskov.codegen.integration.interface import (
     IntegrationCodeInterface,
-    StartBasicStencilData,
+    BaseStartStencilData,
 )
 from icon4pytools.liskov.external.exceptions import IncompatibleFieldError, UnknownStencilError
 from icon4pytools.liskov.pipeline.definition import Step
@@ -45,7 +45,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
 
         return self.parsed
 
-    def _set_in_out_field(self, startStencil: Sequence[StartBasicStencilData]) -> None:
+    def _set_in_out_field(self, startStencil: Sequence[BaseStartStencilData]) -> None:
         for s in startStencil:
             gt4py_program = self._collect_icon4py_stencil(s.name)
             gt4py_stencil_info = get_stencil_info(gt4py_program)
@@ -54,7 +54,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
                 try:
                     field_info = gt4py_fields[f.variable]
                 except KeyError:
-                    error_msg = f"Used field variable name ({f.variable}) that is incompatible with the expected field names defined in {s.name} in icon4pytools."
+                    error_msg = f"Used field variable name ({f.variable}) that is incompatible with the expected field names defined in {s.name} in icon4py."
                     raise IncompatibleFieldError(error_msg)
                 f.out = field_info.out
                 f.inp = field_info.inp
