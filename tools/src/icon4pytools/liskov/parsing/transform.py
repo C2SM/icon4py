@@ -20,7 +20,9 @@ from icon4pytools.liskov.codegen.integration.interface import (
     UnusedDirective,
     EndStencilData,
     StartFusedStencilData,
-    EndFusedStencilData, StartDeleteData, EndDeleteData,
+    EndFusedStencilData,
+    StartDeleteData,
+    EndDeleteData,
 )
 from icon4pytools.liskov.pipeline.definition import Step
 

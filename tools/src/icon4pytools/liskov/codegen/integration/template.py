@@ -128,23 +128,7 @@ class EndStencilStatement(EndBasicStencilStatement):
         )
 
 
-class EndFusedStencilStatementGenerator(TemplatedGenerator):
-    EndFusedStencilStatement = as_jinja(
-        """
-        call wrap_run_{{ name }}( &
-            {{ input_fields }}
-            {{ output_fields }}
-            {{ tolerance_fields }}
-            {{ bounds_fields }}
-
-        !$ACC EXIT DATA DELETE( &
-        {%- for d in _this_node.copy_declarations %}
-        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
-        {%- endfor %}
-        !$ACC      IF ( i_am_accel_node )
-        """
-    )
-
+class BaseEndStencilStatementGenerator(TemplatedGenerator):
     InputFields = as_jinja(
         """
         {%- for field in _this_node.fields %}
@@ -205,7 +189,7 @@ class EndFusedStencilStatementGenerator(TemplatedGenerator):
     )
 
 
-class EndStencilStatementGenerator(TemplatedGenerator):
+class EndStencilStatementGenerator(BaseEndStencilStatementGenerator):
     EndStencilStatement = as_jinja(
         """
         {%- if _this_node.profile %}
@@ -224,62 +208,21 @@ class EndStencilStatementGenerator(TemplatedGenerator):
         """
     )
 
-    InputFields = as_jinja(
-        """
-        {%- for field in _this_node.fields %}
-            {%- if field.out %}
 
-            {%- else %}
-            {{ field.variable }}={{ field.association }},&
-            {%- endif -%}
+class EndFusedStencilStatementGenerator(BaseEndStencilStatementGenerator):
+    EndFusedStencilStatement = as_jinja(
+        """
+        call wrap_run_{{ name }}( &
+            {{ input_fields }}
+            {{ output_fields }}
+            {{ tolerance_fields }}
+            {{ bounds_fields }}
+
+        !$ACC EXIT DATA DELETE( &
+        {%- for d in _this_node.copy_declarations %}
+        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
         {%- endfor %}
-        """
-    )
-
-    OutputFields = as_jinja(
-        """
-        {%- for field in _this_node.fields %}
-            {{ field.variable }}={{ field.association }},&
-            {{ field.variable }}_before={{ field.variable }}_before{{ field.rh_index }},&
-        {%- endfor %}
-        """
-    )
-
-    def visit_OutputFields(self, out: OutputFields) -> OutputFields:  # type: ignore
-        for f in out.fields:  # type: ignore
-            idx = render_index(f.dims)
-            split_idx = idx.split(",")
-
-            if len(split_idx) >= 3:
-                split_idx[-1] = "1"
-
-            f.rh_index = enclose_in_parentheses(",".join(split_idx))
-        return self.generic_visit(out)
-
-    ToleranceFields = as_jinja(
-        """
-        {%- if _this_node.fields|length < 1 -%}
-
-        {%- else -%}
-
-            {%- for f in _this_node.fields -%}
-                {% if f.rel_tol %}
-                {{ f.variable }}_rel_tol={{ f.rel_tol }}, &
-                {%- endif -%}
-                {% if f.abs_tol %}
-                {{ f.variable }}_abs_tol={{ f.abs_tol }}, &
-                {% endif %}
-            {%- endfor -%}
-
-        {%- endif -%}
-        """
-    )
-
-    BoundsFields = as_jinja(
-        """vertical_lower={{ vlower }}, &
-           vertical_upper={{ vupper }}, &
-           horizontal_lower={{ hlower }}, &
-           horizontal_upper={{ hupper }})
+        !$ACC      IF ( i_am_accel_node )
         """
     )
 
