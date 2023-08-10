@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
     mo_velocity_advection_stencil_18,
@@ -95,4 +96,8 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

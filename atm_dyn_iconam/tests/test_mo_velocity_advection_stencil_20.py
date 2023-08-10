@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
@@ -138,6 +139,10 @@ def test_mo_velocity_advection_stencil_20():
         cfl_w_limit,
         scalfac_exdiff,
         dtime,
+        horizontal_start=int32(0),
+        horizontal_end=int32(mesh.n_edges),
+        vertical_start=int32(0),
+        vertical_end=int32(mesh.k_level - 1),
         offset_provider={
             "Koff": KDim,
             "E2C": mesh.get_e2c_offset_provider(),

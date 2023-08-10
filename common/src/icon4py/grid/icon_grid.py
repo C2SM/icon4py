@@ -10,13 +10,14 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+from dataclasses import dataclass
 from typing import Dict
 
 import numpy as np
-from gt4py.next.common import Dimension, DimensionKind, Field
-from gt4py.next.ffront.fbuiltins import int32, int64
+from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
+from typing_extensions import deprecated
 
 from icon4py.common.dimension import (
     CECDim,
@@ -28,53 +29,34 @@ from icon4py.common.dimension import (
     KDim,
     VertexDim,
 )
-from icon4py.state_utils.horizontal import HorizontalMeshSize
+from icon4py.grid.horizontal import HorizontalGridSize
+from icon4py.grid.vertical import VerticalGridSize
 
 
-class VerticalMeshConfig:
-    def __init__(self, num_lev: int):
-        self._num_lev = num_lev
-
-    @property
-    def num_lev(self) -> int:
-        return self._num_lev
-
-
-class MeshConfig:
-    def __init__(
-        self,
-        horizontal_config: HorizontalMeshSize,
-        vertical_config: VerticalMeshConfig,
-        limited_area=True,
-    ):
-        self._vertical = vertical_config
-        self._n_shift_total = 0
-        self._limited_area = limited_area
-        self._horizontal = horizontal_config
-
-    @property
-    def limited_area(self):
-        return self._limited_area
+@dataclass(
+    frozen=True,
+)
+class GridConfig:
+    horizontal_config: HorizontalGridSize
+    vertical_config: VerticalGridSize
+    limited_area: bool = True
+    n_shift_total: int = 0
 
     @property
     def num_k_levels(self):
-        return self._vertical.num_lev
-
-    @property
-    def n_shift_total(self):
-        return self._n_shift_total
+        return self.vertical_config.num_lev
 
     @property
     def num_vertices(self):
-        return self._horizontal.num_vertices
+        return self.horizontal_config.num_vertices
 
     @property
     def num_edges(self):
-        return self._horizontal.num_edges
+        return self.horizontal_config.num_edges
 
     @property
     def num_cells(self):
-        return self._horizontal.num_cells
+        return self.horizontal_config.num_cells
 
 
 def builder(func):
@@ -87,20 +69,21 @@ def builder(func):
 
 class IconGrid:
     def __init__(self):
-        self.config: MeshConfig = None
+        self.config: GridConfig = None
+
         self.start_indices = {}
         self.end_indices = {}
         self.connectivities: Dict[str, np.ndarray] = {}
         self.size: Dict[Dimension, int] = {}
 
-    def _update_size(self, config: MeshConfig):
+    def _update_size(self, config: GridConfig):
         self.size[VertexDim] = config.num_vertices
         self.size[CellDim] = config.num_cells
         self.size[EdgeDim] = config.num_edges
         self.size[KDim] = config.num_k_levels
 
     @builder
-    def with_config(self, config: MeshConfig):
+    def with_config(self, config: GridConfig):
         self.config = config
         self._update_size(config)
 
@@ -119,7 +102,7 @@ class IconGrid:
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     def limited_area(self):
-        # TODO defined in mo_grid_nml.f90
+        # defined in mo_grid_nml.f90
         return self.config.limited_area
 
     def n_shift(self):
@@ -145,6 +128,9 @@ class IconGrid:
     def lvert_nest(self):
         return True if self.config else False
 
+    @deprecated(
+        "use get_start_index and get_end_index instead, - should be removed after merge of solve_nonhydro"
+    )
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int
     ) -> tuple[int32, int32]:
@@ -162,6 +148,24 @@ class IconGrid:
                 "only defined for {} dimension kind ", DimensionKind.HORIZONTAL
             )
         return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
+
+    def get_start_index(self, dim: Dimension, marker: int) -> int32:
+        """
+        Use to specify lower end of domains of a field for field_operators.
+
+        For a given dimension, returns the start index of the
+        horizontal region in a field given by the marker.
+        """
+        return self.start_indices[dim][marker]
+
+    def get_end_index(self, dim: Dimension, marker: int) -> int32:
+        """
+        Use to specify upper end of domains of a field for field_operators.
+
+        For a given dimension, returns the end index of the
+        horizontal region in a field given by the marker.
+        """
+        return self.end_indices[dim][marker]
 
     def get_c2e_connectivity(self):
         table = self.connectivities["c2e"]
@@ -202,6 +206,10 @@ class IconGrid:
         table = self.connectivities["v2c"]
         return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
 
+    def get_c2v_connectivity(self):
+        table = self.connectivities["c2v"]
+        return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
+
     def get_e2ecv_connectivity(self):
         return self._neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities["e2c2v"].shape, EdgeDim, ECVDim
@@ -235,48 +243,3 @@ class IconGrid:
     def get_e2c2eo_connectivity(self):
         table = self.connectivities["e2c2eo"]
         return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
-
-
-class VerticalModelParams:
-    def __init__(self, vct_a: Field[[KDim], float], nflatlev: int, nflat_gradp:int, nrdmax: int, rayleigh_damping_height: float):
-        """
-        Contains vertical physical parameters defined on the grid.
-
-        Args:
-            vct_a:  field containing the physical heights of the k level
-            rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
-        """
-        self._rayleigh_damping_height = rayleigh_damping_height
-        self._vct_a = vct_a
-        self._index_of_damping_height = int64(
-            np.argmax(
-                np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height)
-            )
-        )
-        self._nflatlev = nflatlev - 1  # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
-        self._nflat_gradp = nflat_gradp - 1
-        self._nrdmax = nrdmax - 1
-
-    @property
-    def index_of_damping_layer(self):
-        return self._index_of_damping_height
-
-    @property
-    def physical_heights(self) -> Field[[KDim], float]:
-        return self._vct_a
-
-    @property
-    def rayleigh_damping_height(self):
-        return self._rayleigh_damping_height
-
-    @property
-    def nflatlev(self) -> int32:
-        return self._nflatlev
-
-    @property
-    def nflat_gradp(self) -> int32:
-        return self._nflat_gradp
-
-    @property
-    def nrdmax(self) -> int32:
-        return self._nrdmax

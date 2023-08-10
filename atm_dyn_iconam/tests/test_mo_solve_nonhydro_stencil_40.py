@@ -16,9 +16,9 @@ import numpy as np
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_40 import (
     mo_solve_nonhydro_stencil_40,
 )
-from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 
-from .test_utils.helpers import random_field, zero_field
+from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh
 
 
@@ -60,11 +60,15 @@ def test_mo_solve_nonhydro_stencil_40():
     )
 
     mo_solve_nonhydro_stencil_40(
-        e_bln_c_s,
+        as_1D_sparse_field(e_bln_c_s, CEDim),
         z_w_concorr_me,
         wgtfacq_c,
         w_concorr_c,
-        offset_provider={"Koff": KDim, "C2E": mesh.get_c2e_offset_provider()},
+        offset_provider={
+            "Koff": KDim,
+            "C2E": mesh.get_c2e_offset_provider(),
+            "C2CE": mesh.get_c2ce_offset_provider(),
+        },
     )
 
     assert np.allclose(w_concorr_c[:, 3:], w_concorr_c_ref[:, 3:])

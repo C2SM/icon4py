@@ -11,54 +11,34 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import tarfile
-from pathlib import Path
 
 import pytest
-import wget
 from gt4py.next.program_processors.runners.roundtrip import executor
 
 from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
 from icon4py.diffusion.diffusion import DiffusionConfig
 
-from .test_utils.serialbox_utils import IconSerialDataProvider
-
-
-data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
-data_path = Path(__file__).parent.joinpath("ser_icondata")
-extracted_path = data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
-data_file = data_path.joinpath("mch_ch_r04b09_dsl_v2.tar.gz").name
-
-
-@pytest.fixture
-def get_data_path(setup_icon_data):
-    return extracted_path
-
-
-@pytest.fixture(scope="session")
-def setup_icon_data():
-    """
-    Get the binary ICON data from a remote server.
-
-    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
-    """
-    data_path.mkdir(parents=True, exist_ok=True)
-    if not any(data_path.iterdir()):
-        print(
-            f"directory {data_path} is empty: downloading data from {data_uri} and extracting"
-        )
-        wget.download(data_uri, out=data_file)
-        # extract downloaded file
-        if not tarfile.is_tarfile(data_file):
-            raise NotImplementedError(f"{data_file} needs to be a valid tar file")
-        with tarfile.open(data_file, mode="r:*") as tf:
-            tf.extractall(path=data_path)
-        Path(data_file).unlink(missing_ok=True)
+from .test_utils.fixtures import (  # noqa F401
+    damping_height,
+    data_provider,
+    get_data_path,
+    get_grid_files,
+    grid_savepoint,
+    icon_grid,
+    r04b09_dsl_gridfile,
+    setup_icon_data,
+)
 
 
 @pytest.fixture
-def data_provider(setup_icon_data) -> IconSerialDataProvider:
-    return IconSerialDataProvider("icon_pydycore", str(extracted_path), True)
+def ndyn_substeps():
+    """
+    Return number of dynamical substeps.
+
+    Serialized data uses a reduced number (2 instead of the default 5) in order to reduce the amount
+    of data generated.
+    """
+    return 2
 
 
 @pytest.fixture
@@ -92,7 +72,7 @@ def step_date_exit():
 
 
 @pytest.fixture
-def diffusion_savepoint_init(data_provider, linit, step_date_init):
+def diffusion_savepoint_init(data_provider, linit, step_date_init):  # noqa F811
     """
     Load data from ICON savepoint at start of diffusion module.
 
@@ -105,7 +85,9 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, step_date_init, istep, vn_only, jstep):
+def savepoint_velocity_init(
+    data_provider, step_date_init, istep, vn_only, jstep  # noqa F811
+):
     """
     Load data from ICON savepoint at start of velocity_advection module.
 
@@ -118,7 +100,7 @@ def savepoint_velocity_init(data_provider, step_date_init, istep, vn_only, jstep
 
 
 @pytest.fixture
-def savepoint_nonhydro_init(data_provider, step_date_init, istep, jstep):
+def savepoint_nonhydro_init(data_provider, step_date_init, istep, jstep):  # noqa F811
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
@@ -131,8 +113,7 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep, jstep):
 
 
 @pytest.fixture
-def diffusion_savepoint_exit(data_provider, linit, step_date_exit):
-
+def diffusion_savepoint_exit(data_provider, linit, step_date_exit):  # noqa F811
     """
     Load data from ICON savepoint at exist of diffusion module.
 
@@ -144,7 +125,9 @@ def diffusion_savepoint_exit(data_provider, linit, step_date_exit):
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only, jstep):
+def savepoint_velocity_exit(
+    data_provider, step_date_exit, istep, vn_only, jstep  # noqa F811
+):
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
@@ -157,7 +140,7 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only, jstep
 
 
 @pytest.fixture
-def savepoint_nonhydro_exit(data_provider, step_date_exit, istep, jstep):
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep, jstep):  # noqa F811
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
@@ -170,40 +153,25 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep, jstep):
 
 
 @pytest.fixture
-def interpolation_savepoint(data_provider):
+def interpolation_savepoint(data_provider):  # noqa F811
     """Load data from ICON interplation state savepoint."""
     return data_provider.from_interpolation_savepoint()
 
 
 @pytest.fixture
-def metrics_savepoint(data_provider):
+def metrics_savepoint(data_provider):  # noqa F811
     """Load data from ICON mestric state savepoint."""
     return data_provider.from_metrics_savepoint()
 
 
 @pytest.fixture
-def metrics_nonhydro_savepoint(data_provider):
+def metrics_nonhydro_savepoint(data_provider):  # noqa F811
     """Load data from ICON mestric state nonhydro savepoint."""
     return data_provider.from_metrics_nonhydro_savepoint()
 
 
 @pytest.fixture
-def icon_grid(grid_savepoint):
-    """
-    Load the icon grid from an ICON savepoint.
-
-    Uses the special grid_savepoint that contains data from p_patch
-    """
-    return grid_savepoint.construct_icon_grid()
-
-
-@pytest.fixture
-def grid_savepoint(data_provider):
-    return data_provider.from_savepoint_grid()
-
-
-@pytest.fixture
-def r04b09_diffusion_config() -> DiffusionConfig:
+def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
@@ -222,12 +190,8 @@ def r04b09_diffusion_config() -> DiffusionConfig:
         zdiffu_t=True,
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coeff=0.075,
+        n_substeps=ndyn_substeps,
     )
-
-
-@pytest.fixture
-def damping_height():
-    return 12500
 
 
 @pytest.fixture

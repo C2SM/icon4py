@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
@@ -31,7 +32,9 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
     def reference(mesh, p_cell_in: np.array, c_intp: np.array, **kwargs) -> np.array:
         c_intp = np.expand_dims(c_intp, axis=-1)
         p_vert_out = np.sum(p_cell_in[mesh.v2c] * c_intp, axis=1)
-        return dict(p_vert_out=p_vert_out)
+        return dict(
+            p_vert_out=p_vert_out,
+        )
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -43,4 +46,8 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
             p_cell_in=p_cell_in,
             c_intp=c_intp,
             p_vert_out=p_vert_out,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_vertices),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

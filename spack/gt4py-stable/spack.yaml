@@ -1,7 +1,7 @@
 spack:
     specs:
         - py-icon4py@main%gcc@9.3.0
-        - py-gt4py@1.1.1%gcc@9.3.0
+        - py-gt4py@1.1.2%gcc@9.3.0
     view: false
     concretizer:
         unify: true

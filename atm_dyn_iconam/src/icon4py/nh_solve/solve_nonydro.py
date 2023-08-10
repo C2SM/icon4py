@@ -135,12 +135,13 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
 from icon4py.common.dimension import CellDim, ECDim, EdgeDim, KDim, VertexDim
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 from icon4py.state_utils.diagnostic_state import (
     DiagnosticState,
     DiagnosticStateNonHydro,
 )
-from icon4py.state_utils.horizontal import HorizontalMarkerIndex
-from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
+from icon4py.grid.horizontal import HorizontalMarkerIndex
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
 from icon4py.state_utils.prep_adv_state import PrepAdvection
@@ -770,7 +771,7 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.n_lev(),
             vertical_start=0,
-            vertical_end=self.grid.n_lev()+1,
+            vertical_end=self.grid.n_lev() + 1,
             offset_provider={},
         )
         # TODO: @abishekg7 check size and ordering of wgtfac_c
@@ -1014,7 +1015,7 @@ class SolveNonhydro:
             horizontal_start=indices_5_1,
             horizontal_end=indices_5_2,
             vertical_start=0,
-            vertical_end=self.vertical_params.nflatlev - 1,
+            vertical_end=int32(self.vertical_params.nflatlev - 1),
             offset_provider={
                 "E2C": self.grid.get_e2c_connectivity(),
             },
@@ -1050,7 +1051,7 @@ class SolveNonhydro:
                 z_gradh_exner=self.z_gradh_exner,
                 horizontal_start=indices_5_1,
                 horizontal_end=indices_5_2,
-                vertical_start=self.vertical_params.nflatlev + 1,
+                vertical_start=int32(self.vertical_params.nflatlev + 1),
                 vertical_end=self.grid.n_lev(),
                 offset_provider={
                     "E2C": self.grid.get_e2c_connectivity(),
@@ -1081,11 +1082,12 @@ class SolveNonhydro:
                 },
             )
 
+        _z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(self.z_hydro_corr[:, self.grid.n_lev()-1])
         if config.igradp_method == 3:
             mo_solve_nonhydro_stencil_22.with_backend(run_gtfn)(
                 ipeidx_dsl=self.metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
-                z_hydro_corr=self.z_hydro_corr,
+                z_hydro_corr=_z_hydro_corr_horizontal,
                 z_gradh_exner=self.z_gradh_exner,
                 horizontal_start=indices_5_1,
                 horizontal_end=indices_5_2,
@@ -1215,7 +1217,7 @@ class SolveNonhydro:
             wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
             w_concorr_c=diagnostic_state.w_concorr_c,
             k_field=self.k_field,
-            nflatlev_startindex_plus1=self.vertical_params.nflatlev + 1,
+            nflatlev_startindex_plus1=int32(self.vertical_params.nflatlev + 1),
             nlev=self.grid.n_lev(),
             horizontal_start=indices_9_1,
             horizontal_end=indices_9_2,
@@ -1306,7 +1308,7 @@ class SolveNonhydro:
             cell_startindex_nudging_plus1=indices_10_1,
             cell_endindex_interior=indices_10_2,
             nlev=self.grid.n_lev(),
-            nlev_k=self.grid.n_lev() + 1,
+            nlev_k=int32(self.grid.n_lev() + 1),
             offset_provider={
                 "Koff": KDim,
             },

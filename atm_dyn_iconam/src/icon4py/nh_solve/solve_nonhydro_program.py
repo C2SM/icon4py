@@ -145,12 +145,10 @@ def _predictor_stencils_2_3(
 
     (z_exner_ex_pr, exner_pr) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_02(
-        exner_exfac, exner, exner_ref_mc, exner_pr),
-        (z_exner_ex_pr, exner_pr)
+        _mo_solve_nonhydro_stencil_02(exner_exfac, exner, exner_ref_mc, exner_pr),
+        (z_exner_ex_pr, exner_pr),
     )
-    z_exner_ex_pr = where(
-        k_field == nlev,_set_zero_c_k(), z_exner_ex_pr)
+    z_exner_ex_pr = where(k_field == nlev, _set_zero_c_k(), z_exner_ex_pr)
 
     return z_exner_ex_pr, exner_pr
 

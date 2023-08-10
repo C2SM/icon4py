@@ -16,7 +16,7 @@ import math
 import numpy as np
 import pytest
 
-from icon4py.state_utils.icon_grid import VerticalModelParams
+from icon4py.grid.vertical import VerticalModelParams
 
 
 @pytest.mark.parametrize(
@@ -26,7 +26,9 @@ from icon4py.state_utils.icon_grid import VerticalModelParams
 def test_nrdmax_calculation(max_h, damping, delta):
     vct_a = np.arange(0, max_h, delta)
     vct_a = vct_a[::-1]
-    vertical_params = VerticalModelParams(rayleigh_damping_height=damping, vct_a=vct_a)
+    vertical_params = VerticalModelParams(
+        rayleigh_damping_height=damping, vct_a=vct_a, nflat_gradp=0, nflatlev=0
+    )
     assert (
         vertical_params.index_of_damping_layer
         == vct_a.shape[0] - math.ceil(damping / delta) - 1
@@ -34,11 +36,11 @@ def test_nrdmax_calculation(max_h, damping, delta):
 
 
 @pytest.mark.datatest
-def test_nrdmax_calculation_from_icon_input(icon_grid, grid_savepoint, damping_height):
+def test_nrdmax_calculation_from_icon_input(grid_savepoint, damping_height):
     a = grid_savepoint.vct_a()
     nrdmax = grid_savepoint.nrdmax()
     vertical_params = VerticalModelParams(
-        rayleigh_damping_height=damping_height, vct_a=a
+        rayleigh_damping_height=damping_height, vct_a=a, nflatlev=0, nflat_gradp=0
     )
     assert nrdmax == vertical_params.index_of_damping_layer
     a_array = np.asarray(a)

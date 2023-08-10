@@ -17,18 +17,26 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from icon4py.diffusion.diagnostic_state import DiagnosticState
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
-from icon4py.diffusion.interpolation_state import InterpolationState
-from icon4py.diffusion.metric_state import MetricState
-from icon4py.diffusion.prognostic_state import PrognosticState
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
+    PrognosticState,
+)
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 
+
+SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
 
 
+# TODO(Magdalena): for preliminary version of the driver we need serialbox data which is in
+#  testutils, since that is no proper package we need to import it by hand here.
+#  remove once there is the testutils package again.
 def import_testutils():
     testutils = (
         Path(__file__).parent.__str__() + "/../../../tests/test_utils/__init__.py"
@@ -42,7 +50,7 @@ def import_testutils():
 
 helpers = import_testutils()
 
-from helpers import serialbox_utils as sb  # noqa
+from helpers import serialbox_utils as sb  # noqa F401
 
 
 class SerializationType(str, Enum):
@@ -50,15 +58,17 @@ class SerializationType(str, Enum):
     NC = "netcdf"
 
 
-def read_icon_grid(path: Path, ser_type=SerializationType.SB) -> IconGrid:
+def read_icon_grid(
+    path: Path, ser_type: SerializationType = SerializationType.SB
+) -> IconGrid:
     """
-    Return IconGrid parsed from a given input type.
-
-    Factory method that returns an icon grid dependeing on the ser_type.
+    Read icon grid.
 
     Args:
-        path: str - path where to find the input data
-        ser_type: str - type of input data. Currently only 'sb (serialbox)' is supported. It reads from ppser serialized test data
+        path: path where to find the input data
+        ser_type: type of input data. Currently only 'sb (serialbox)' is supported. It reads
+        from ppser serialized test data
+    Returns:  IconGrid parsed from a given input type.
     """
     if ser_type == SerializationType.SB:
         return (
@@ -67,21 +77,21 @@ def read_icon_grid(path: Path, ser_type=SerializationType.SB) -> IconGrid:
             .construct_icon_grid()
         )
     else:
-        raise NotImplementedError("Only ser_type='sb' is implemented so far.")
+        raise NotImplementedError(SB_ONLY_MSG)
 
 
 def read_initial_state(
     gridfile_path: Path,
-) -> tuple[sb.IconSerialDataProvider, DiagnosticState, PrognosticState]:
+) -> tuple[sb.IconSerialDataProvider, DiffusionDiagnosticState, PrognosticState]:
     """
     Read prognostic and diagnostic state from serialized data.
 
     Args:
-        gridfile_path: path the the serialized input data
+        gridfile_path: path the serialized input data
 
     Returns: a tuple containing the data_provider, the initial diagnostic and prognostic state.
-    The data_provider is returned such that further timesteps of diagnostics and prognostics can be
-    read from within the dummy timeloop
+        The data_provider is returned such that further timesteps of diagnostics and prognostics
+        can be read from within the dummy timeloop
 
     """
     data_provider = sb.IconSerialDataProvider(
@@ -91,19 +101,19 @@ def read_initial_state(
         linit=True, date=SIMULATION_START_DATE
     )
     prognostic_state = init_savepoint.construct_prognostics()
-    diagnostic_state = init_savepoint.construct_diagnostics()
+    diagnostic_state = init_savepoint.construct_diagnostics_for_diffusion()
     return data_provider, diagnostic_state, prognostic_state
 
 
 def read_geometry_fields(
-    path: Path, ser_type=SerializationType.SB
+    path: Path, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams]:
     """
     Read fields containing grid properties.
 
     Args:
         path: path to the serialized input data
-        ser_type: (optional) defualt so SB=serialbox, type of input data to be read
+        ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
     Returns: a tuple containing fields describing edges, cells, vertical properties of the model
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
@@ -115,25 +125,26 @@ def read_geometry_fields(
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
-            vct_a=sp.vct_a(), rayleigh_damping_height=12500
+            vct_a=sp.vct_a(), rayleigh_damping_height=12500, nflatlev=0, nflat_gradp=0
         )
         return edge_geometry, cell_geometry, vertical_geometry
     else:
-        raise NotImplementedError("Only ser_type='sb' is implemented so far.")
+        raise NotImplementedError(SB_ONLY_MSG)
 
 
 def read_static_fields(
-    path: Path, ser_type=SerializationType.SB
-) -> tuple[MetricState, InterpolationState]:
+    path: Path, ser_type: SerializationType = SerializationType.SB
+) -> tuple[DiffusionMetricState, DiffusionInterpolationState]:
     """
     Read fields for metric and interpolation state.
 
      Args:
         path: path to the serialized input data
-        ser_type: (optional) defualt so SB=serialbox, type of input data to be read
+        ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
-    Returns: a tuple containing the metric_state and interpolation state,
-    the fields are precalculated in the icon setup.
+    Returns:
+        a tuple containing the metric_state and interpolation state,
+        the fields are precalculated in the icon setup.
 
     """
     if ser_type == SerializationType.SB:
@@ -141,15 +152,17 @@ def read_static_fields(
             "icon_pydycore", str(path.absolute()), False
         )
         interpolation_state = (
-            dataprovider.from_interpolation_savepoint().construct_interpolation_state()
+            dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
         )
-        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state()
+        metric_state = (
+            dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        )
         return metric_state, interpolation_state
     else:
-        raise NotImplementedError("Only ser_type='sb' is implemented so far.")
+        raise NotImplementedError(SB_ONLY_MSG)
 
 
-def configure_logging(run_path: str, start_time):
+def configure_logging(run_path: str, start_time) -> None:
     """
     Configure logging.
 

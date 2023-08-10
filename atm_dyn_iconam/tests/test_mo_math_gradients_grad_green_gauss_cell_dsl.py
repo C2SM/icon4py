@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
@@ -72,4 +73,8 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
             p_ccpr2=p_ccpr2,
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

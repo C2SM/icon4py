@@ -17,9 +17,9 @@ import pytest
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_09 import (
     mo_velocity_advection_stencil_09,
 )
-from icon4py.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 
-from .test_utils.helpers import random_field, zero_field
+from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from .test_utils.stencil_test import StencilTest
 
 
@@ -32,7 +32,10 @@ class TestMoVelocityAdvectionStencil09(StencilTest):
         mesh, z_w_concorr_me: np.array, e_bln_c_s: np.array, **kwargs
     ) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-        z_w_concorr_mc = np.sum(z_w_concorr_me[mesh.c2e] * e_bln_c_s, axis=1)
+        z_w_concorr_mc = np.sum(
+            z_w_concorr_me[mesh.c2e] * e_bln_c_s[mesh.get_c2ce_offset_provider().table],
+            axis=1,
+        )
         return dict(z_w_concorr_mc=z_w_concorr_mc)
 
     @pytest.fixture
@@ -43,6 +46,6 @@ class TestMoVelocityAdvectionStencil09(StencilTest):
 
         return dict(
             z_w_concorr_me=z_w_concorr_me,
-            e_bln_c_s=e_bln_c_s,
+            e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
             z_w_concorr_mc=z_w_concorr_mc,
         )

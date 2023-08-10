@@ -59,6 +59,29 @@ from icon4py.common.dimension import (
 
 @dataclass
 class SimpleMeshData:
+    c2v_table = np.asarray(
+        [
+            [0, 1, 4],
+            [1, 2, 5],
+            [2, 0, 3],
+            [0, 3, 4],
+            [1, 4, 5],
+            [2, 5, 3],
+            [3, 4, 7],
+            [4, 5, 8],
+            [5, 3, 6],
+            [3, 6, 7],
+            [4, 7, 8],
+            [5, 8, 6],
+            [6, 7, 1],
+            [7, 8, 2],
+            [8, 6, 0],
+            [6, 0, 1],
+            [7, 1, 2],
+            [8, 2, 0],
+        ]
+    )
+
     e2c2v_table = np.asarray(
         [
             [0, 1, 4, 6],  # 0
@@ -354,6 +377,7 @@ class SimpleMesh:
 
     def __init__(self, k_level: int = _DEFAULT_K_LEVEL):
         self.diamond_arr = SimpleMeshData.diamond_table
+        self.c2v = SimpleMeshData.c2v_table
         self.e2c = SimpleMeshData.e2c_table
         self.e2v = SimpleMeshData.e2v_table
         self.c2e = SimpleMeshData.c2e_table
@@ -373,6 +397,7 @@ class SimpleMesh:
         self.n_e2c2e = self.e2c2e.shape[1]
         self.n_e2c2v = self.e2c2v.shape[1]
         self.n_v2c = self.v2c.shape[1]
+        self.n_c2v = self.c2v.shape[1]
         self.n_v2e = self.v2e.shape[1]
         self.n_cells = self.c2e.shape[0]
         self.n_edges = 27
@@ -397,6 +422,9 @@ class SimpleMesh:
             E2C2VDim: self.n_e2c2v,
             ECVDim: self.n_edges * self.n_e2c2v,
         }
+
+    def get_c2v_offset_provider(self) -> NeighborTableOffsetProvider:
+        return NeighborTableOffsetProvider(self.c2v, VertexDim, CellDim, self.n_c2v)
 
     def get_c2e_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.c2e, CellDim, EdgeDim, self.n_c2e)

@@ -14,6 +14,8 @@ import numpy as np
 import pytest
 
 from icon4py.common.dimension import KDim
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.vertical import VerticalModelParams
 from icon4py.nh_solve.solve_nonydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
@@ -23,8 +25,6 @@ from icon4py.state_utils.diagnostic_state import (
     DiagnosticState,
     DiagnosticStateNonHydro,
 )
-from icon4py.state_utils.horizontal import CellParams, EdgeParams
-from icon4py.state_utils.icon_grid import VerticalModelParams
 from icon4py.state_utils.metric_state import MetricStateNonHydro
 from icon4py.state_utils.prep_adv_state import PrepAdvection
 from icon4py.state_utils.prognostic_state import PrognosticState
@@ -96,7 +96,7 @@ def test_nonhydro_predictor_step(
     sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height, nflat_gradp=grid_savepoint.nflat_gradp(), nflatlev=grid_savepoint.nflatlev()
     )
     sp_met_nh = metrics_nonhydro_savepoint
     sp_d = data_provider.from_savepoint_grid()
@@ -168,7 +168,6 @@ def test_nonhydro_predictor_step(
     metric_state_nonhydro = MetricStateNonHydro(
         exner_exfac=sp_met_nh.exner_exfac(),
         exner_ref_mc=sp_met_nh.exner_ref_mc(),
-        wgtfacq_c=sp_met_nh.wgtfacq_c(),
         inv_ddqz_z_full=sp_met_nh.inv_ddqz_z_full(),
         rho_ref_mc=sp_met_nh.rho_ref_mc(),
         vwind_expl_wgt=sp_met_nh.vwind_expl_wgt(),
@@ -188,6 +187,7 @@ def test_nonhydro_predictor_step(
         pg_exdist=sp_met_nh.pg_exdist(),
         wgtfacq_c_dsl=sp_met_nh.wgtfacq_c_dsl(),
         zdiff_gradp=sp_met_nh.zdiff_gradp(),
+
     )
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
@@ -225,7 +225,7 @@ def test_nonhydro_predictor_step(
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.owner_mask(),
+        owner_mask=sp_d.c_owner_mask(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
         dtime=dtime,
@@ -251,49 +251,68 @@ def test_nonhydro_predictor_step(
     icon_result_prep_adv_vn_traj = sp_exit.prep_adv_vn_traj()
 
     # stencils 2, 3
-    assert np.allclose(np.asarray(sp_exit.exner_pr())[1688:20896, :],
-                       np.asarray(diagnostic_state_nonhydro.exner_pr)[1688:20896, :])
-    assert np.allclose(np.asarray(sp_exit.z_exner_ex_pr())[1688:20896,:], np.asarray(solve_nonhydro.z_exner_ex_pr)[1688:20896,:])
+    assert np.allclose(
+        np.asarray(sp_exit.exner_pr())[1688:20896, :],
+        np.asarray(diagnostic_state_nonhydro.exner_pr)[1688:20896, :],
+    )
+    assert np.allclose(
+        np.asarray(sp_exit.z_exner_ex_pr())[1688:20896, :],
+        np.asarray(solve_nonhydro.z_exner_ex_pr)[1688:20896, :],
+    )
 
     # stencils 4,5,6
-    assert np.allclose(np.asarray(sp_exit.z_exner_ic())[1688:20896, :],
-                       np.asarray(solve_nonhydro.z_exner_ic)[1688:20896, :])
-    assert np.allclose(np.asarray(sp_exit.z_dexner_dz_c(1))[1688:20896, :],
-                       np.asarray(solve_nonhydro.z_dexner_dz_c_1)[1688:20896, :])
+    assert np.allclose(
+        np.asarray(sp_exit.z_exner_ic())[1688:20896, :],
+        np.asarray(solve_nonhydro.z_exner_ic)[1688:20896, :],
+    )
+    assert np.allclose(
+        np.asarray(sp_exit.z_dexner_dz_c(1))[1688:20896, :],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_1)[1688:20896, :],
+    )
 
     # stencils 7,8,9
     assert np.allclose(
-        np.asarray(icon_result_rho_ic)[1688:20896, :], np.asarray(diagnostic_state_nonhydro.rho_ic)[1688:20896, :]
+        np.asarray(icon_result_rho_ic)[1688:20896, :],
+        np.asarray(diagnostic_state_nonhydro.rho_ic)[1688:20896, :],
     )
     assert np.allclose(
-        np.asarray(sp_exit.z_th_ddz_exner_c())[1688:20896, 1:], np.asarray(solve_nonhydro.z_th_ddz_exner_c)[1688:20896, 1:]
+        np.asarray(sp_exit.z_th_ddz_exner_c())[1688:20896, 1:],
+        np.asarray(solve_nonhydro.z_th_ddz_exner_c)[1688:20896, 1:],
     )
 
     # stencils 7,8,9, 11
     assert np.allclose(
-        np.asarray(sp_exit.z_theta_v_pr_ic())[1688:20896, :], np.asarray(solve_nonhydro.z_theta_v_pr_ic)[1688:20896, :]
+        np.asarray(sp_exit.z_theta_v_pr_ic())[1688:20896, :],
+        np.asarray(solve_nonhydro.z_theta_v_pr_ic)[1688:20896, :],
     )
     assert np.allclose(
-        np.asarray(sp_exit.theta_v_ic())[1688:20896, :], np.asarray(diagnostic_state_nonhydro.theta_v_ic)[1688:20896, :]
+        np.asarray(sp_exit.theta_v_ic())[1688:20896, :],
+        np.asarray(diagnostic_state_nonhydro.theta_v_ic)[1688:20896, :],
     )
     # stencils 7,8,9, 13
     assert np.allclose(  ## wrong
-        np.asarray(sp_exit.z_rth_pr(1))[1688:20896, :], np.asarray(solve_nonhydro.z_rth_pr_1)[1688:20896, :]
+        np.asarray(sp_exit.z_rth_pr(1))[1688:20896, :],
+        np.asarray(solve_nonhydro.z_rth_pr_1)[1688:20896, :],
     )
     assert np.allclose(
-        np.asarray(sp_exit.z_rth_pr(2))[1688:20896, :], np.asarray(solve_nonhydro.z_rth_pr_2)[1688:20896, :]
+        np.asarray(sp_exit.z_rth_pr(2))[1688:20896, :],
+        np.asarray(solve_nonhydro.z_rth_pr_2)[1688:20896, :],
     )
 
     # stencils 12
-    assert np.allclose(np.asarray(sp_exit.z_dexner_dz_c(2))[1688:20896, :],
-                       np.asarray(solve_nonhydro.z_dexner_dz_c_2)[1688:20896, :])
+    assert np.allclose(
+        np.asarray(sp_exit.z_dexner_dz_c(2))[1688:20896, :],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_2)[1688:20896, :],
+    )
 
     # mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
     assert np.allclose(
-        np.asarray(sp_exit.z_rho_e())[3777:31558,:], np.asarray(solve_nonhydro.z_rho_e)[3777:31558,:]
+        np.asarray(sp_exit.z_rho_e())[3777:31558, :],
+        np.asarray(solve_nonhydro.z_rho_e)[3777:31558, :],
     )
     assert np.allclose(
-        np.asarray(sp_exit.z_theta_v_e())[3777:31558,:], np.asarray(solve_nonhydro.z_theta_v_e)[3777:31558,:]
+        np.asarray(sp_exit.z_theta_v_e())[3777:31558, :],
+        np.asarray(solve_nonhydro.z_theta_v_e)[3777:31558, :],
     )
 
     # stencils 18,19, 20, 22
@@ -302,7 +321,8 @@ def test_nonhydro_predictor_step(
     )
     # stencil 21
     assert np.allclose(
-        np.asarray(sp_exit.z_hydro_corr())[5387:31558,:], np.asarray(solve_nonhydro.z_hydro_corr)[5387:31558,:]
+        np.asarray(sp_exit.z_hydro_corr())[5387:31558, :],
+        np.asarray(solve_nonhydro.z_hydro_corr)[5387:31558, :],
     )
     # stencils 24, 29,
     assert np.allclose(np.asarray(icon_result_vn_new), np.asarray(prognostic_state.vn))
@@ -316,9 +336,7 @@ def test_nonhydro_predictor_step(
         np.asarray(sp_exit.z_graddiv_vn()), np.asarray(solve_nonhydro.z_graddiv_vn)
     )
     # stencil 30
-    assert np.allclose(
-        np.asarray(sp_exit.vt()), np.asarray(diagnostic_state.vt)
-    )
+    assert np.allclose(np.asarray(sp_exit.vt()), np.asarray(diagnostic_state.vt))
 
     # stencil 32
     assert np.allclose(
@@ -344,7 +362,6 @@ def test_nonhydro_predictor_step(
         np.asarray(sp_exit.z_kin_hor_e()), np.asarray(solve_nonhydro.z_w_concorr_me)
     )
 
-
     # stencil 35,36, 37,38
     assert np.allclose(
         np.asarray(sp_exit.z_w_concorr_me()), np.asarray(solve_nonhydro.z_kin_hor_e)
@@ -362,13 +379,10 @@ def test_nonhydro_predictor_step(
         np.asarray(icon_result_theta_v_new), np.asarray(prognostic_state.theta_v)
     )
 
-
-
     assert np.allclose(
         np.asarray(icon_result_theta_v_ic),
         np.asarray(diagnostic_state_nonhydro.theta_v_ic),
     )
-
 
     assert np.allclose(
         np.asarray(icon_result_prep_adv_mass_flx_me), np.asarray(prep_adv.mass_flx_me)
@@ -405,7 +419,7 @@ def test_nonhydro_corrector_step(
     sp_met_nh = metrics_nonhydro_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height, nflatlev=grid_savepoint.nflatlev(), nflat_gradp=grid_savepoint.nflat_gradp()
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
@@ -450,6 +464,10 @@ def test_nonhydro_corrector_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
+        ddt_w_adv_ntl1=sp.ddt_w_adv_ntl(1),
+        ddt_w_adv_ntl2=sp.ddt_w_adv_ntl(2),
+        ddt_vn_adv_ntl1=sp.ddt_vn_adv_ntl(1),
+        ddt_vn_adv_ntl2=sp.ddt_vn_adv_ntl(2),
         ntl1=ntl1,
         ntl2=ntl2,
         rho_incr=None,  # TODO @nfarabullini: change back to this sp.rho_incr()
@@ -472,7 +490,6 @@ def test_nonhydro_corrector_step(
     metric_state_nonhydro = MetricStateNonHydro(
         exner_exfac=sp_met_nh.exner_exfac(),
         exner_ref_mc=sp_met_nh.exner_ref_mc(),
-        wgtfacq_c=sp_met_nh.wgtfacq_c(),
         inv_ddqz_z_full=sp_met_nh.inv_ddqz_z_full(),
         rho_ref_mc=sp_met_nh.rho_ref_mc(),
         vwind_expl_wgt=sp_met_nh.vwind_expl_wgt(),
@@ -531,7 +548,7 @@ def test_nonhydro_corrector_step(
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.owner_mask(),
+        owner_mask=sp_d.c_owner_mask(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
         lclean_mflx=clean_mflx,
@@ -584,7 +601,7 @@ def test_run_solve_nonhydro_multi_step(
     sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,nflat_gradp=grid_savepoint.nflat_gradp(), nflatlev=grid_savepoint.nflatlev()
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
@@ -633,6 +650,10 @@ def test_run_solve_nonhydro_multi_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
+        ddt_w_adv_ntl1=sp.ddt_w_adv_ntl(1),
+        ddt_w_adv_ntl2=sp.ddt_w_adv_ntl(2),
+        ddt_vn_adv_ntl1=sp.ddt_vn_adv_ntl(1),
+        ddt_vn_adv_ntl2=sp.ddt_vn_adv_ntl(2),
         ntl1=ntl1,
         ntl2=ntl2,
         rho_incr=None,  # TODO @nfarabullini: change back to this sp.rho_incr()
@@ -655,7 +676,6 @@ def test_run_solve_nonhydro_multi_step(
     metric_state_nonhydro = MetricStateNonHydro(
         exner_exfac=sp_met_nh.exner_exfac(),
         exner_ref_mc=sp_met_nh.exner_ref_mc(),
-        wgtfacq_c=sp_met_nh.wgtfacq_c(),
         inv_ddqz_z_full=sp_met_nh.inv_ddqz_z_full(),
         rho_ref_mc=sp_met_nh.rho_ref_mc(),
         vwind_expl_wgt=sp_met_nh.vwind_expl_wgt(),
@@ -714,7 +734,7 @@ def test_run_solve_nonhydro_multi_step(
             cfl_w_limit=sp_v.cfl_w_limit(),
             scalfac_exdiff=sp_v.scalfac_exdiff(),
             cell_areas=cell_geometry.area,
-            owner_mask=sp_d.owner_mask(),
+            owner_mask=sp_d.c_owner_mask(),
             f_e=sp_d.f_e(),
             area_edge=sp_d.edge_areas(),
             bdy_divdamp=sp.bdy_divdamp(),

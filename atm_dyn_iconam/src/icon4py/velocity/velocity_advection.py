@@ -51,9 +51,10 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.grid.horizontal import HorizontalMarkerIndex
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 from icon4py.state_utils.diagnostic_state import DiagnosticState
-from icon4py.state_utils.horizontal import HorizontalMarkerIndex
-from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricStateNonHydro
 from icon4py.state_utils.prognostic_state import PrognosticState
@@ -179,7 +180,6 @@ class VelocityAdvection:
             HorizontalMarkerIndex.local(EdgeDim),
         )
 
-
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
                 run_gtfn
@@ -264,7 +264,7 @@ class VelocityAdvection:
             nlev=self.grid.n_lev(),
             horizontal_start=indices_1_1,
             horizontal_end=indices_1_2,
-            vertical_start=0,
+            vertical_start=int32(0),
             vertical_end=self.grid.n_lev() + 1,
             offset_provider={
                 "Koff": KDim,

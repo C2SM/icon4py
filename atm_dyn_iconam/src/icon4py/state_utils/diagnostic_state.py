@@ -16,7 +16,7 @@ import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.iterator.embedded import LocatedFieldImpl, np_as_located_field
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, KHalfDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim
 
 
 @dataclass
@@ -49,15 +49,11 @@ class DiagnosticState:
 
     @property
     def ddt_w_adv_pc(self) -> LocatedFieldImpl:
-        return np_as_located_field(CellDim, KDim)(
-            np.asarray(self.ddt_w_adv_pc_before)
-        )
+        return np_as_located_field(CellDim, KDim)(np.asarray(self.ddt_w_adv_pc_before))
 
     @property
     def ddt_vn_apc_pc(self) -> LocatedFieldImpl:
-        return np_as_located_field(EdgeDim, KDim)(
-            np.asarray(self.ddt_vn_apc_pc_before)
-        )
+        return np_as_located_field(EdgeDim, KDim)(np.asarray(self.ddt_vn_apc_pc_before))
 
 
 @dataclass
