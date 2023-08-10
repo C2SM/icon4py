@@ -69,7 +69,8 @@ class InterpolationState:
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float]
     c_intp: Field[[VertexDim, V2CDim], float]
     geofac_rot: Field[[VertexDim, V2EDim], float]
-    pos_on_tplane_e: Field[[ECDim], float]
+    pos_on_tplane_e_1: Field[[ECDim], float]
+    pos_on_tplane_e_2: Field[[ECDim], float]
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float]
 
     # @property
@@ -93,14 +94,14 @@ class InterpolationState:
             )
         )
 
-    @property
-    def pos_on_tplane_e_1(self) -> Field[[ECDim], float]:
-        return np_as_located_field(ECDim)(
-            np.asarray(self.pos_on_tplane_e)
-        )  # TODO: @nfarabullini: check that this should not be self.pos_on_tplane_e[0]
-
-    @property
-    def pos_on_tplane_e_2(self) -> Field[[ECDim], float]:
-        return np_as_located_field(ECDim)(
-            np.asarray(self.pos_on_tplane_e)
-        )  # TODO: @nfarabullini: check that this should not be self.pos_on_tplane_e[1]
+    # @property
+    # def pos_on_tplane_e_1(self) -> Field[[ECDim], float]:
+    #     return np_as_located_field(ECDim)(
+    #         np.asarray(self.pos_on_tplane_e)
+    #     )  # TODO: @nfarabullini: check that this should not be self.pos_on_tplane_e[0]
+    #
+    # @property
+    # def pos_on_tplane_e_2(self) -> Field[[ECDim], float]:
+    #     return np_as_located_field(ECDim)(
+    #         np.asarray(self.pos_on_tplane_e)
+    #     )  # TODO: @nfarabullini: check that this should not be self.pos_on_tplane_e[1]

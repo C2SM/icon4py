@@ -50,7 +50,7 @@ class MetricStateNonHydro:
     rayleigh_w: Field[[KDim], float]
 
     wgtfacq_c_dsl: Field[[CellDim, KDim], float]
-
+    wgtfac_e: Field[[EdgeDim, KDim], float]
     exner_exfac: Field[[CellDim, KDim], float]
     exner_ref_mc: Field[[CellDim, KDim], float]
     rho_ref_mc: Field[[CellDim, KDim], float]
@@ -63,6 +63,7 @@ class MetricStateNonHydro:
     d2dexdz2_fac2_mc: Field[[CellDim, KDim], float]
     inv_ddqz_z_full: Field[[CellDim, KDim], float]
 
+    vertoffset_gradp: Field[[ECDim, KDim], float]
     zdiff_gradp: Field[[ECDim, KDim], float]
     ipeidx_dsl: Field[[EdgeDim, KDim], bool]
     pg_exdist: Field[[EdgeDim, KDim], float]

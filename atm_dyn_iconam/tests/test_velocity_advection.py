@@ -156,7 +156,8 @@ def test_velocity_predictor_step(
         rbf_vec_coeff_e=sp_int.rbf_vec_coeff_e(),
         c_intp=sp_int.c_intp(),
         geofac_rot=sp_int.geofac_rot(),
-        pos_on_tplane_e=None,
+        pos_on_tplane_e_1=None,
+        pos_on_tplane_e_2=None,
         e_flx_avg=None,
     )
 
@@ -360,7 +361,8 @@ def test_velocity_corrector_step(
         rbf_vec_coeff_e=sp_int.rbf_vec_coeff_e(),
         c_intp=sp_int.c_intp(),
         geofac_rot=sp_int.geofac_rot(),
-        pos_on_tplane_e=None,
+        pos_on_tplane_e_1=None,
+        pos_on_tplane_e_2=None,
         e_flx_avg=None,
     )
 
