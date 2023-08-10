@@ -50,8 +50,8 @@ def _calculate_nabla4(
         + v_vert(E2C2V[3]) * primal_normal_vert_v2(E2ECV[3])
     )
     z_nabla4_e2 = 4.0 * (
-        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2
-        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2
+        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2.0
+        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2.0
     )
     return z_nabla4_e2
 
