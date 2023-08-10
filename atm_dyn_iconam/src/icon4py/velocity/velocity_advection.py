@@ -54,7 +54,7 @@ from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.grid.horizontal import HorizontalMarkerIndex
 from icon4py.grid.icon_grid import IconGrid
 from icon4py.grid.vertical import VerticalModelParams
-from icon4py.state_utils.diagnostic_state import DiagnosticState
+from icon4py.state_utils.diagnostic_state import DiagnosticState, DiagnosticStateNonHydro
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricStateNonHydro
 from icon4py.state_utils.prognostic_state import PrognosticState
@@ -122,7 +122,7 @@ class VelocityAdvection:
     def run_predictor_step(
         self,
         vn_only: bool,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state: PrognosticState,
         z_w_concorr_me: Field[[EdgeDim, KDim], float],
         z_kin_hor_e: Field[[EdgeDim, KDim], float],
@@ -179,6 +179,7 @@ class VelocityAdvection:
             HorizontalMarkerIndex.nudging(EdgeDim) + 1,
             HorizontalMarkerIndex.local(EdgeDim),
         )
+
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
@@ -264,7 +265,7 @@ class VelocityAdvection:
             nlev=self.grid.n_lev(),
             horizontal_start=indices_1_1,
             horizontal_end=indices_1_2,
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=self.grid.n_lev() + 1,
             offset_provider={
                 "Koff": KDim,
@@ -350,7 +351,7 @@ class VelocityAdvection:
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
             vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2)
+                max(3, self.vertical_params.index_of_damping_layer - 2)-1
             ),
             vertical_end=int32(self.grid.n_lev() - 3),
             offset_provider={},
@@ -385,29 +386,29 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
-            levelmask=self.levelmask,
-            cfl_clipping=self.cfl_clipping,
-            owner_mask=owner_mask,
-            z_w_con_c=self.z_w_con_c,
-            ddqz_z_half=self.metric_state.ddqz_z_half,
-            area=cell_areas,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            w=prognostic_state.w,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
-            scalfac_exdiff=scalfac_exdiff,
-            cfl_w_limit=cfl_w_limit,
-            dtime=dtime,
-            horizontal_start=indices_4_1,
-            horizontal_end=indices_4_2,
-            vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2)
-            ),
-            vertical_end=int32(self.grid.n_lev() - 4),
-            offset_provider={
-                "C2E2CO": self.grid.get_c2e2co_connectivity(),
-            },
-        )
+        # mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
+        #     levelmask=self.levelmask,
+        #     cfl_clipping=self.cfl_clipping,
+        #     owner_mask=owner_mask,
+        #     z_w_con_c=self.z_w_con_c,
+        #     ddqz_z_half=self.metric_state.ddqz_z_half,
+        #     area=cell_areas,
+        #     geofac_n2s=self.interpolation_state.geofac_n2s,
+        #     w=prognostic_state.w,
+        #     ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
+        #     scalfac_exdiff=scalfac_exdiff,
+        #     cfl_w_limit=cfl_w_limit,
+        #     dtime=dtime,
+        #     horizontal_start=indices_4_1,
+        #     horizontal_end=indices_4_2,
+        #     vertical_start=int32(
+        #         max(3, self.vertical_params.index_of_damping_layer - 2)-1
+        #     ),
+        #     vertical_end=int32(self.grid.n_lev() - 3),
+        #     offset_provider={
+        #         "C2E2CO": self.grid.get_c2e2co_connectivity(),
+        #     },
+        # )
 
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
             z_kin_hor_e=z_kin_hor_e,
@@ -433,39 +434,39 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_20.with_backend(run_gtfn)(
-            levelmask=self.levelmask,
-            c_lin_e=self.interpolation_state.c_lin_e,
-            z_w_con_c_full=self.z_w_con_c_full,
-            ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            area_edge=area_edge,
-            tangent_orientation=tangent_orientation,
-            inv_primal_edge_length=inv_primal_edge_length,
-            zeta=self.zeta,
-            geofac_grdiv=self.interpolation_state.geofac_grdiv,
-            vn=prognostic_state.vn,
-            ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
-            cfl_w_limit=cfl_w_limit,
-            scalfac_exdiff=scalfac_exdiff,
-            dtime=dtime,
-            horizontal_start=indices_5_1,
-            horizontal_end=indices_5_2,
-            vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2)
-            ),
-            vertical_end=int32(self.grid.n_lev() - 4),
-            offset_provider={
-                "E2C": self.grid.get_e2c_connectivity(),
-                "E2V": self.grid.get_e2v_connectivity(),
-                "E2C2EO": self.grid.get_e2c2eo_connectivity(),
-                "Koff": KDim,
-            },
-        )
+        # mo_velocity_advection_stencil_20.with_backend(run_gtfn)(
+        #     levelmask=self.levelmask,
+        #     c_lin_e=self.interpolation_state.c_lin_e,
+        #     z_w_con_c_full=self.z_w_con_c_full,
+        #     ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
+        #     area_edge=area_edge,
+        #     tangent_orientation=tangent_orientation,
+        #     inv_primal_edge_length=inv_primal_edge_length,
+        #     zeta=self.zeta,
+        #     geofac_grdiv=self.interpolation_state.geofac_grdiv,
+        #     vn=prognostic_state.vn,
+        #     ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
+        #     cfl_w_limit=cfl_w_limit,
+        #     scalfac_exdiff=scalfac_exdiff,
+        #     dtime=dtime,
+        #     horizontal_start=indices_5_1,
+        #     horizontal_end=indices_5_2,
+        #     vertical_start=int32(
+        #         max(3, self.vertical_params.index_of_damping_layer - 2)-1
+        #     ),
+        #     vertical_end=int32(self.grid.n_lev() - 4),
+        #     offset_provider={
+        #         "E2C": self.grid.get_e2c_connectivity(),
+        #         "E2V": self.grid.get_e2v_connectivity(),
+        #         "E2C2EO": self.grid.get_e2c2eo_connectivity(),
+        #         "Koff": KDim,
+        #     },
+        # )
 
     def run_corrector_step(
         self,
         vn_only: bool,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state: PrognosticState,
         z_kin_hor_e: Field[[EdgeDim, KDim], float],
         z_vt_ie: Field[[EdgeDim, KDim], float],

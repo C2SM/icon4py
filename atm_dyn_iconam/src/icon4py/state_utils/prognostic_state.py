@@ -39,4 +39,4 @@ class PrognosticState:
 
     @property
     def w_1(self) -> Field[[CellDim], float]:
-        return np_as_located_field(CellDim)(np.asarray(self.w)[0])
+        return np_as_located_field(CellDim)(np.asarray(self.w)[:,0])

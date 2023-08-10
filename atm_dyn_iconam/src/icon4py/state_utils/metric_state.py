@@ -49,18 +49,26 @@ class MetricStateNonHydro:
     mask_prog_halo_c: Field[[CellDim, KDim], bool]
     rayleigh_w: Field[[KDim], float]
 
+    wgtfac_c: Field[[CellDim, KDim], float]
     wgtfacq_c_dsl: Field[[CellDim, KDim], float]
     wgtfac_e: Field[[EdgeDim, KDim], float]
+    wgtfacq_e_dsl: Field[[EdgeDim, KDim], float]
+
     exner_exfac: Field[[CellDim, KDim], float]
     exner_ref_mc: Field[[CellDim, KDim], float]
     rho_ref_mc: Field[[CellDim, KDim], float]
+    theta_ref_mc: Field[[CellDim, KDim], float]
     rho_ref_me: Field[[EdgeDim, KDim], float]
     theta_ref_me: Field[[EdgeDim, KDim], float]
     theta_ref_ic: Field[[CellDim, KDim], float]
 
     d_exner_dz_ref_ic: Field[[CellDim, KDim], float]
+    ddqz_z_half: Field[[CellDim, KDim], float]  # half KDim ?
     d2dexdz2_fac1_mc: Field[[CellDim, KDim], float]
     d2dexdz2_fac2_mc: Field[[CellDim, KDim], float]
+    ddxn_z_full: Field[[EdgeDim, KDim], float]
+    ddqz_z_full_e: Field[[EdgeDim, KDim], float]
+    ddxt_z_full: Field[[EdgeDim, KDim], float]
     inv_ddqz_z_full: Field[[CellDim, KDim], float]
 
     vertoffset_gradp: Field[[ECDim, KDim], float]
@@ -73,3 +81,8 @@ class MetricStateNonHydro:
 
     hmask_dd3d: Field[[EdgeDim], float]
     scalfac_dd3d: Field[[KDim], float]
+
+    coeff1_dwdz: Field[[CellDim, KDim], float]
+    coeff2_dwdz: Field[[CellDim, KDim], float]
+    coeff_gradekin: Field[[ECDim], float]
+

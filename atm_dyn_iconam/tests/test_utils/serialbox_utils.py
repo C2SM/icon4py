@@ -388,6 +388,12 @@ class InterpolationSavepoint(IconSavepoint):
         field = self._get_field("pos_on_tplane_e_y", EdgeDim, E2CDim)
         return as_1D_sparse_field(field, ECDim)
 
+    # def pos_on_tplane_e(self, ind):
+    #     buffer = np.squeeze(self.serializer.read("pos_on_tplane_e", self.savepoint))
+    #     field = np_as_located_field(EdgeDim, E2CDim)(buffer[:, :, ind-1])
+    #
+    #     return as_1D_sparse_field(field, ECDim)
+
     def rbf_vec_coeff_e(self):
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
@@ -512,6 +518,8 @@ class MetricSavepoint(IconSavepoint):
 
     def zd_indlist(self):
         return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
+
+
 
     def construct_metric_state(self) -> MetricState:
         return MetricState(
@@ -661,31 +669,41 @@ class MetricSavepointNonHydro(IconSavepoint):
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, EdgeDim, KDim)
 
-    def construct_nh_metric_state(self) -> MetricStateNonHydro:
+    def construct_nh_metric_state(self, num_k_lev) -> MetricStateNonHydro:
         return MetricStateNonHydro(
             bdy_halo_c=self.bdy_halo_c(),
             mask_prog_halo_c=self.mask_prog_halo_c(),
             rayleigh_w=self.rayleigh_w(),
             exner_exfac=self.exner_exfac(),
             exner_ref_mc=self.exner_ref_mc(),
-            wgtfac_e=self.wgtfac_e(),
+            wgtfac_c=self.wgtfac_c(),
             wgtfacq_c_dsl=self.wgtfacq_c_dsl(),
             inv_ddqz_z_full=self.inv_ddqz_z_full(),
             rho_ref_mc=self.rho_ref_mc(),
+            theta_ref_mc=self.theta_ref_mc(),
             vwind_expl_wgt=self.vwind_expl_wgt(),
             d_exner_dz_ref_ic=self.d_exner_dz_ref_ic(),
+            ddqz_z_half=self.ddqz_z_half(),
             theta_ref_ic=self.theta_ref_ic(),
             d2dexdz2_fac1_mc=self.d2dexdz2_fac1_mc(),
             d2dexdz2_fac2_mc=self.d2dexdz2_fac2_mc(),
             rho_ref_me=self.rho_ref_me(),
             theta_ref_me=self.theta_ref_me(),
+            ddxn_z_full=self.ddxn_z_full(),
             zdiff_gradp=self.zdiff_gradp(),
             vertoffset_gradp=self.vertoffset_gradp(),
             ipeidx_dsl=self.ipeidx_dsl(),
             pg_exdist=self.pg_exdist(),
+            ddqz_z_full_e=self.ddqz_z_full_e(),
+            ddxt_z_full=self.ddxt_z_full(),
+            wgtfac_e=self.wgtfac_e(),
+            wgtfacq_e_dsl=self.wgtfacq_e_dsl(num_k_lev),
             vwind_impl_wgt=self.vwind_impl_wgt(),
             hmask_dd3d=self.hmask_dd3d(),
             scalfac_dd3d=self.scalfac_dd3d(),
+            coeff1_dwdz=self.coeff1_dwdz(),
+            coeff2_dwdz=self.coeff2_dwdz(),
+            coeff_gradekin=self.coeff_gradekin(),
         )
 
 
@@ -965,12 +983,31 @@ class IconExitSavepoint(IconSavepoint):
         )
         return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
 
+    def ddt_vn_apc_pc_19(self, ntnd):
+        #return self._get_field("x_ddt_vn_apc_pc", EdgeDim, KDim)
+        buffer = np.squeeze(
+            self.serializer.read("x_ddt_vn_apc_pc_19", self.savepoint).astype(float)
+        )
+        return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
+
     def ddt_w_adv_pc(self, ntnd):
         buffer = np.squeeze(
             self.serializer.read("x_ddt_w_adv_pc", self.savepoint).astype(float)
         )
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
         # return self._get_field("ddt_w_adv_pc", CellDim, KDim)
+
+    def ddt_w_adv_pc_16(self, ntnd):
+        buffer = np.squeeze(
+            self.serializer.read("x_ddt_w_adv_pc_16", self.savepoint).astype(float)
+        )
+        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
+
+    def ddt_w_adv_pc_17(self, ntnd):
+        buffer = np.squeeze(
+            self.serializer.read("x_ddt_w_adv_pc_17", self.savepoint).astype(float)
+        )
+        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
 
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
@@ -1047,6 +1084,9 @@ class IconExitSavepoint(IconSavepoint):
     def theta_v_new(self):
         return self._get_field("x_theta_v_new", CellDim, KDim)
 
+    def vn_ie(self):
+        return self._get_field("x_vn_ie", EdgeDim, KDim)
+
     def vn_new(self):
         return self._get_field("x_vn_new", EdgeDim, KDim)
 
@@ -1077,6 +1117,9 @@ class IconExitSavepoint(IconSavepoint):
 
     def z_hydro_corr(self):
         return self._get_field("x_z_hydro_corr", EdgeDim, KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("x_z_kin_hor_e", EdgeDim, KDim)
 
     def z_theta_v_fl_e(self):
         return self._get_field("x_z_theta_v_fl_e", EdgeDim, KDim)

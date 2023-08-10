@@ -26,13 +26,12 @@ CPD: Final[float] = 1004.64
 CVD: Final[float] = CPD - RD
 CVD_O_RD: Final[float] = CVD / RD
 
-
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[float] = 461.51
 RV: Final[float] = GAS_CONSTANT_WATER_VAPOR
 
 #: Av. gravitational acceleration [m/s^2]
-GRAVITATIONAL_ACCELERATION: Final[float] = 9.8066
+GRAVITATIONAL_ACCELERATION: Final[float] = 9.80665
 GRAV: Final[float] = GRAVITATIONAL_ACCELERATION
 
 #: reference pressure for Exner function [Pa]
