@@ -13,18 +13,21 @@
 
 import numpy as np
 import pytest
+
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_09 import (
     mo_solve_nonhydro_stencil_09,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
 
 class TestMoSolveNonhydroStencil09(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_09
-    OUTPUTS = ('z_theta_v_pr_ic', 'theta_v_ic', 'z_th_ddz_exner_c')
+    OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 
     @staticmethod
     def reference(
@@ -36,7 +39,7 @@ class TestMoSolveNonhydroStencil09(StencilTest):
         exner_pr: np.array,
         d_exner_dz_ref_ic: np.array,
         ddqz_z_half: np.array,
-        **kwargs
+        **kwargs,
     ) -> tuple[np.array, np.array, np.array]:
         z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
         theta_v_offset = np.roll(theta_v, axis=1, shift=1)
@@ -49,7 +52,11 @@ class TestMoSolveNonhydroStencil09(StencilTest):
             vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
             + z_theta_v_pr_ic * d_exner_dz_ref_ic
         )
-        return dict(z_theta_v_pr_ic=z_theta_v_pr_ic, theta_v_ic=theta_v_ic, z_th_ddz_exner_c=z_th_ddz_exner_c)
+        return dict(
+            z_theta_v_pr_ic=z_theta_v_pr_ic,
+            theta_v_ic=theta_v_ic,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
+        )
 
     @pytest.fixture
     def input_data(self, mesh):

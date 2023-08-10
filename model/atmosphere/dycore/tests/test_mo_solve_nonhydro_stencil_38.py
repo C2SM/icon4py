@@ -18,23 +18,19 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_38 import (
     mo_solve_nonhydro_stencil_38,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
-
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
 
 class TestMoSolveNonhydroStencil38(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_38
-    OUTPUTS = ('vn_ie',)
+    OUTPUTS = ("vn_ie",)
 
     @staticmethod
-    def reference(
-        mesh,
-        vn: np.array,
-        wgtfacq_e: np.array,
-        **kwargs
-    ) -> np.array:
+    def reference(mesh, vn: np.array, wgtfacq_e: np.array, **kwargs) -> np.array:
         vn_ie = (
             np.roll(wgtfacq_e, shift=1, axis=1) * np.roll(vn, shift=1, axis=1)
             + np.roll(wgtfacq_e, shift=2, axis=1) * np.roll(vn, shift=2, axis=1)

@@ -13,18 +13,21 @@
 
 import numpy as np
 import pytest
+
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
     mo_solve_nonhydro_stencil_08,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
 
 class TestMoSolveNonhydroStencil08(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_08
-    OUTPUTS = ('rho_ic', 'z_rth_pr_1', 'z_rth_pr_2')
+    OUTPUTS = ("rho_ic", "z_rth_pr_1", "z_rth_pr_2")
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -56,7 +59,7 @@ class TestMoSolveNonhydroStencil08(StencilTest):
         rho_ref_mc: np.array,
         theta_v: np.array,
         theta_ref_mc: np.array,
-        **kwargs
+        **kwargs,
     ) -> tuple[np.array, np.array, np.array]:
         rho_offset_1 = np.roll(rho, shift=1, axis=1)
         rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1

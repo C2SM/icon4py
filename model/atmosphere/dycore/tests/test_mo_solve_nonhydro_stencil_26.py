@@ -18,8 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_26 import (
     mo_solve_nonhydro_stencil_26,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 class TestMoSolveNonhydroStencil26(StencilTest):

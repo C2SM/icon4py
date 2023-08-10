@@ -16,8 +16,7 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 class TestMoApplyNabla2ToW(StencilTest):

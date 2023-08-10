@@ -13,21 +13,21 @@
 
 import numpy as np
 import pytest
+
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
     as_1D_sparse_field,
     random_field,
 )
 
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
-
 
 class TestComputeBtraj(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
-    OUTPUTS = ('z_rho_e', 'z_theta_v_e')
+    OUTPUTS = ("z_rho_e", "z_theta_v_e")
 
     @staticmethod
     def compute_btraj_numpy(
@@ -41,7 +41,7 @@ class TestComputeBtraj(StencilTest):
         primal_normal_cell_2: np.array,
         dual_normal_cell_2: np.array,
         p_dthalf: float,
-        **kwargs
+        **kwargs,
     ) -> np.array:
         lvn_pos = np.where(p_vn > 0.0, True, False)
         pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
@@ -60,14 +60,18 @@ class TestComputeBtraj(StencilTest):
 
         p_distv_bary_1 = np.where(
             lvn_pos,
-            z_ntdistv_bary_1 * primal_normal_cell_1[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
-            z_ntdistv_bary_1 * primal_normal_cell_1[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
+            z_ntdistv_bary_1 * primal_normal_cell_1[:, 0]
+            + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
+            z_ntdistv_bary_1 * primal_normal_cell_1[:, 1]
+            + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
         )
 
         p_distv_bary_2 = np.where(
             lvn_pos,
-            z_ntdistv_bary_1 * primal_normal_cell_2[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
-            z_ntdistv_bary_1 * primal_normal_cell_2[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
+            z_ntdistv_bary_1 * primal_normal_cell_2[:, 0]
+            + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
+            z_ntdistv_bary_1 * primal_normal_cell_2[:, 1]
+            + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
         )
 
         return p_distv_bary_1, p_distv_bary_2
@@ -86,7 +90,7 @@ class TestComputeBtraj(StencilTest):
         z_grad_rth_4: np.array,
         z_rth_pr_1: np.array,
         z_rth_pr_2: np.array,
-        **kwargs
+        **kwargs,
     ) -> np.array:
         z_rth_pr_1_e2c = z_rth_pr_1[mesh.e2c]
         z_rth_pr_2_e2c = z_rth_pr_2[mesh.e2c]
@@ -119,7 +123,7 @@ class TestComputeBtraj(StencilTest):
             + p_distv_bary_2 * z_grad_rth_4_e2c[:, 1],
         )
 
-        return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)
+        return z_rho_e, z_theta_v_e
 
     @classmethod
     def reference(
@@ -142,7 +146,7 @@ class TestComputeBtraj(StencilTest):
         z_grad_rth_4: np.array,
         z_rth_pr_1: np.array,
         z_rth_pr_2: np.array,
-        **kwargs
+        **kwargs,
     ):
         pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(mesh.e2c.shape)
         pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(mesh.e2c.shape)
@@ -150,7 +154,6 @@ class TestComputeBtraj(StencilTest):
         dual_normal_cell_1 = dual_normal_cell_1.reshape(mesh.e2c.shape)
         primal_normal_cell_2 = primal_normal_cell_2.reshape(mesh.e2c.shape)
         dual_normal_cell_2 = dual_normal_cell_2.reshape(mesh.e2c.shape)
-
 
         p_distv_bary_1, p_distv_bary_2 = cls.compute_btraj_numpy(
             mesh,
@@ -180,7 +183,7 @@ class TestComputeBtraj(StencilTest):
             z_rth_pr_2,
         )
 
-        return z_rho_e, z_theta_v_e
+        return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)
 
     @pytest.fixture
     def input_data(self, mesh):

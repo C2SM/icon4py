@@ -13,7 +13,6 @@
 
 import numpy as np
 import pytest
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.dycore.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common.dimension import (
@@ -24,17 +23,16 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
     as_1D_sparse_field,
     random_field,
     zero_field,
 )
 
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
-
 
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
-    OUTPUTS = ('z_nabla4_e2',)
+    OUTPUTS = ("z_nabla4_e2",)
 
     @staticmethod
     def reference(
@@ -46,7 +44,7 @@ class TestCalculateNabla4(StencilTest):
         z_nabla2_e: np.array,
         inv_vert_vert_length: np.array,
         inv_primal_edge_length: np.array,
-        **kwargs
+        **kwargs,
     ) -> np.array:
         u_vert_e2c2v = u_vert[mesh.e2c2v]
         v_vert_e2c2v = v_vert[mesh.e2c2v]
@@ -60,22 +58,22 @@ class TestCalculateNabla4(StencilTest):
         inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
 
         nabv_tang = (
-                        u_vert_e2c2v[:, 0] * primal_normal_vert_v1[:, 0]
-                        + v_vert_e2c2v[:, 0] * primal_normal_vert_v2[:, 0]
-                    ) + (
-                        u_vert_e2c2v[:, 1] * primal_normal_vert_v1[:, 1]
-                        + v_vert_e2c2v[:, 1] * primal_normal_vert_v2[:, 1]
-                    )
+            u_vert_e2c2v[:, 0] * primal_normal_vert_v1[:, 0]
+            + v_vert_e2c2v[:, 0] * primal_normal_vert_v2[:, 0]
+        ) + (
+            u_vert_e2c2v[:, 1] * primal_normal_vert_v1[:, 1]
+            + v_vert_e2c2v[:, 1] * primal_normal_vert_v2[:, 1]
+        )
         nabv_norm = (
-                        u_vert_e2c2v[:, 2] * primal_normal_vert_v1[:, 2]
-                        + v_vert_e2c2v[:, 2] * primal_normal_vert_v2[:, 2]
-                    ) + (
-                        u_vert_e2c2v[:, 3] * primal_normal_vert_v1[:, 3]
-                        + v_vert_e2c2v[:, 3] * primal_normal_vert_v2[:, 3]
-                    )
+            u_vert_e2c2v[:, 2] * primal_normal_vert_v1[:, 2]
+            + v_vert_e2c2v[:, 2] * primal_normal_vert_v2[:, 2]
+        ) + (
+            u_vert_e2c2v[:, 3] * primal_normal_vert_v1[:, 3]
+            + v_vert_e2c2v[:, 3] * primal_normal_vert_v2[:, 3]
+        )
         z_nabla4_e2 = 4.0 * (
-            (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length ** 2
-            + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length ** 2
+            (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2
+            + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2
         )
         return dict(z_nabla4_e2=z_nabla4_e2)
 

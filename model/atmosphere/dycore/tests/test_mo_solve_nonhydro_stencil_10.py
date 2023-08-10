@@ -13,18 +13,17 @@
 
 import numpy as np
 import pytest
+
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field
-
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 class TestMoSolveNonhydroStencil10(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_10
-    OUTPUTS = ('rho_ic','z_theta_v_pr_ic','theta_v_ic','z_th_ddz_exner_c')
+    OUTPUTS = ("rho_ic", "z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 
     @staticmethod
     def reference(
@@ -44,7 +43,7 @@ class TestMoSolveNonhydroStencil10(StencilTest):
         dtime,
         wgt_nnow_rth,
         wgt_nnew_rth,
-        **kwargs
+        **kwargs,
     ) -> tuple[np.array, np.array, np.array, np.array]:
         vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
         rho_now_offset = np.roll(rho_now, shift=1, axis=1)
@@ -81,7 +80,7 @@ class TestMoSolveNonhydroStencil10(StencilTest):
             z_theta_v_pr_ic=z_theta_v_pr_ic,
             theta_v_ic=theta_v_ic,
             z_th_ddz_exner_c=z_th_ddz_exner_c,
-            )
+        )
 
     @pytest.fixture
     def input_data(self, mesh):

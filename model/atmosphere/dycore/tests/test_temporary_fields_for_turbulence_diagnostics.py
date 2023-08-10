@@ -18,8 +18,11 @@ from icon4py.model.atmosphere.dycore.temporary_fields_for_turbulence_diagnostics
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
 
 class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):

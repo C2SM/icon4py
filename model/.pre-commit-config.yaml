@@ -5,7 +5,7 @@ default_language_version:
     # Remove frozen version once we migrated away from tsa
     node: 17.9.1
 minimum_pre_commit_version: 2.20.0
-exclude: "tools/.*|model/atmosphere/.*"
+exclude: "tools/.*|model/common/.*"
 
 repos:
     - repo: meta
@@ -55,7 +55,7 @@ repos:
                     --comment-style,
                     "|#|",
                     --license-filepath,
-                    model/common/.license_header.txt,
+                    model/.license_header.txt,
                     --fuzzy-match-generates-todo,
                 ]
 
@@ -116,14 +116,19 @@ repos:
                 - flake8-eradicate
                 - flake8-mutable
                 - pygments
-            args: [--config=model/common/.flake8, model/common/src/icon4py/]
+            args:
+                [
+                    --config=model/.flake8,
+                    model/atmosphere/dycore/src/icon4py/,
+                    model/common/src/icon4py/,
+                ]
 
     - repo: local
       hooks:
           - id: mypy
             name: mypy static type checker
             entry: bash -c 'echo mypy disabled'
-            #entry: bash -c 'cd model/common; mypy src/' --
+            #entry: bash -c 'cd model/atmosphere/dycore; mypy src/' --
             language: system
             types_or: [python, pyi]
             always_run: true

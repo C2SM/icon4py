@@ -93,6 +93,10 @@ def integration_code_interface():
     return IntegrationCodeInterface(
         StartStencil=[start_stencil_data],
         EndStencil=[end_stencil_data],
+        StartFusedStencil=[],
+        EndFusedStencil=[],
+        StartDelete=[],
+        EndDelete=[],
         Declare=[declare_data],
         Imports=imports_data,
         StartCreate=[start_create_data],

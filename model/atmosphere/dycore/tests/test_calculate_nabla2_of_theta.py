@@ -13,28 +13,25 @@
 
 import numpy as np
 import pytest
+
 from icon4py.model.atmosphere.dycore.calculate_nabla2_of_theta import (
     calculate_nabla2_of_theta,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
     as_1D_sparse_field,
     random_field,
     zero_field,
 )
 
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
-
 
 class TestCalculateNabla2OfTheta(StencilTest):
     PROGRAM = calculate_nabla2_of_theta
-    OUTPUTS = ('z_temp',)
+    OUTPUTS = ("z_temp",)
 
     @staticmethod
-    def reference(
-        mesh,
-        z_nabla2_e: np.array, geofac_div: np.array, **kwargs
-    ) -> np.array:
+    def reference(mesh, z_nabla2_e: np.array, geofac_div: np.array, **kwargs) -> np.array:
         geofac_div = geofac_div.reshape(18, 3)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         z_temp = np.sum(z_nabla2_e[mesh.c2e] * geofac_div, axis=1)  # sum along edge dimension
@@ -48,8 +45,4 @@ class TestCalculateNabla2OfTheta(StencilTest):
 
         z_temp = zero_field(mesh, CellDim, KDim)
 
-        return dict(
-            z_nabla2_e=z_nabla2_e,
-            geofac_div=geofac_div_new,
-            z_temp=z_temp
-        )
+        return dict(z_nabla2_e=z_nabla2_e, geofac_div=geofac_div_new, z_temp=z_temp)

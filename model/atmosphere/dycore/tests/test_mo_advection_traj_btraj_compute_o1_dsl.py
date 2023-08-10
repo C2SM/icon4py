@@ -14,22 +14,22 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
+
 from icon4py.model.atmosphere.dycore.mo_advection_traj_btraj_compute_o1_dsl import (
     mo_advection_traj_btraj_compute_o1_dsl,
 )
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
     as_1D_sparse_field,
     constant_field,
     random_field,
 )
 
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
-
 
 class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
     PROGRAM = mo_advection_traj_btraj_compute_o1_dsl
-    OUTPUTS = ('p_cell_idx', 'p_cell_blk', 'p_distv_bary_1', 'p_distv_bary_2')
+    OUTPUTS = ("p_cell_idx", "p_cell_blk", "p_distv_bary_1", "p_distv_bary_2")
 
     @staticmethod
     def reference(
@@ -45,7 +45,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         primal_normal_cell_2: np.array,
         dual_normal_cell_2: np.array,
         p_dthalf: float,
-        **kwargs
+        **kwargs,
     ) -> np.array:
         cell_idx = cell_idx.reshape(mesh.e2c.shape)
         cell_blk = cell_blk.reshape(mesh.e2c.shape)
@@ -78,18 +78,26 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
 
         p_distv_bary_1 = np.where(
             lvn_pos,
-            z_ntdistv_bary_1 * primal_normal_cell_1[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
-            z_ntdistv_bary_1 * primal_normal_cell_1[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
+            z_ntdistv_bary_1 * primal_normal_cell_1[:, 0]
+            + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
+            z_ntdistv_bary_1 * primal_normal_cell_1[:, 1]
+            + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
         )
 
         p_distv_bary_2 = np.where(
             lvn_pos,
-            z_ntdistv_bary_1 * primal_normal_cell_2[:, 0] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
-            z_ntdistv_bary_1 * primal_normal_cell_2[:, 1] + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
+            z_ntdistv_bary_1 * primal_normal_cell_2[:, 0]
+            + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],
+            z_ntdistv_bary_1 * primal_normal_cell_2[:, 1]
+            + z_ntdistv_bary_2 * dual_normal_cell_2[:, 1],
         )
 
-        return dict(p_cell_idx=p_cell_idx, p_cell_blk=p_cell_blk, p_distv_bary_1=p_distv_bary_1,
-                    p_distv_bary_2=p_distv_bary_2)
+        return dict(
+            p_cell_idx=p_cell_idx,
+            p_cell_blk=p_cell_blk,
+            p_distv_bary_1=p_distv_bary_1,
+            p_distv_bary_2=p_distv_bary_2,
+        )
 
     @pytest.fixture
     def input_data(self, mesh):

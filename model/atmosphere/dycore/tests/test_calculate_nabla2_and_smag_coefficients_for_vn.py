@@ -13,7 +13,6 @@
 
 import numpy as np
 import pytest
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.dycore.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
@@ -26,17 +25,16 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
     as_1D_sparse_field,
     random_field,
     zero_field,
 )
 
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
-
 
 class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
     PROGRAM = calculate_nabla2_and_smag_coefficients_for_vn
-    OUTPUTS = ('kh_smag_e', 'kh_smag_ec', 'z_nabla2_e')
+    OUTPUTS = ("kh_smag_e", "kh_smag_ec", "z_nabla2_e")
 
     @staticmethod
     def reference(
@@ -54,7 +52,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         vn: np.array,
         smag_limit: np.array,
         smag_offset,
-        **kwargs
+        **kwargs,
     ) -> tuple[np.array]:
         primal_normal_vert_x = primal_normal_vert_x.reshape(27, 4)
         primal_normal_vert_y = primal_normal_vert_y.reshape(27, 4)
@@ -72,34 +70,34 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
         dvt_tang = (
-                       -(
-                           u_vert_e2c2v[:, 0] * dual_normal_vert_x[:, 0]
-                           + v_vert_e2c2v[:, 0] * dual_normal_vert_y[:, 0]
-                       )
-                   ) + (
-                       u_vert_e2c2v[:, 1] * dual_normal_vert_x[:, 1]
-                       + v_vert_e2c2v[:, 1] * dual_normal_vert_y[:, 1]
-                   )
+            -(
+                u_vert_e2c2v[:, 0] * dual_normal_vert_x[:, 0]
+                + v_vert_e2c2v[:, 0] * dual_normal_vert_y[:, 0]
+            )
+        ) + (
+            u_vert_e2c2v[:, 1] * dual_normal_vert_x[:, 1]
+            + v_vert_e2c2v[:, 1] * dual_normal_vert_y[:, 1]
+        )
 
         dvt_norm = (
-                       -(
-                           u_vert_e2c2v[:, 2] * dual_normal_vert_x[:, 2]
-                           + v_vert_e2c2v[:, 2] * dual_normal_vert_y[:, 2]
-                       )
-                   ) + (
-                       u_vert_e2c2v[:, 3] * dual_normal_vert_x[:, 3]
-                       + v_vert_e2c2v[:, 3] * dual_normal_vert_y[:, 3]
-                   )
+            -(
+                u_vert_e2c2v[:, 2] * dual_normal_vert_x[:, 2]
+                + v_vert_e2c2v[:, 2] * dual_normal_vert_y[:, 2]
+            )
+        ) + (
+            u_vert_e2c2v[:, 3] * dual_normal_vert_x[:, 3]
+            + v_vert_e2c2v[:, 3] * dual_normal_vert_y[:, 3]
+        )
 
         kh_smag_1 = (
-                        -(
-                            u_vert_e2c2v[:, 0] * primal_normal_vert_x[:, 0]
-                            + v_vert_e2c2v[:, 0] * primal_normal_vert_y[:, 0]
-                        )
-                    ) + (
-                        u_vert_e2c2v[:, 1] * primal_normal_vert_x[:, 1]
-                        + v_vert_e2c2v[:, 1] * primal_normal_vert_y[:, 1]
-                    )
+            -(
+                u_vert_e2c2v[:, 0] * primal_normal_vert_x[:, 0]
+                + v_vert_e2c2v[:, 0] * primal_normal_vert_y[:, 0]
+            )
+        ) + (
+            u_vert_e2c2v[:, 1] * primal_normal_vert_x[:, 1]
+            + v_vert_e2c2v[:, 1] * primal_normal_vert_y[:, 1]
+        )
 
         dvt_tang = dvt_tang * tangent_orientation
 
@@ -110,14 +108,14 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         kh_smag_1 = kh_smag_1 * kh_smag_1
 
         kh_smag_2 = (
-                        -(
-                            u_vert_e2c2v[:, 2] * primal_normal_vert_x[:, 2]
-                            + v_vert_e2c2v[:, 2] * primal_normal_vert_y[:, 2]
-                        )
-                    ) + (
-                        u_vert_e2c2v[:, 3] * primal_normal_vert_x[:, 3]
-                        + v_vert_e2c2v[:, 3] * primal_normal_vert_y[:, 3]
-                    )
+            -(
+                u_vert_e2c2v[:, 2] * primal_normal_vert_x[:, 2]
+                + v_vert_e2c2v[:, 2] * primal_normal_vert_y[:, 2]
+            )
+        ) + (
+            u_vert_e2c2v[:, 3] * primal_normal_vert_x[:, 3]
+            + v_vert_e2c2v[:, 3] * primal_normal_vert_y[:, 3]
+        )
 
         kh_smag_2 = (kh_smag_2 * inv_vert_vert_length) - (dvt_tang * inv_primal_edge_length)
 
@@ -126,18 +124,18 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         kh_smag_e = diff_multfac_smag * np.sqrt(kh_smag_2 + kh_smag_1)
 
         z_nabla2_e = (
-                         (
-                             (
-                                 u_vert_e2c2v[:, 0] * primal_normal_vert_x[:, 0]
-                                 + v_vert_e2c2v[:, 0] * primal_normal_vert_y[:, 0]
-                             )
-                             + (
-                                 u_vert_e2c2v[:, 1] * primal_normal_vert_x[:, 1]
-                                 + v_vert_e2c2v[:, 1] * primal_normal_vert_y[:, 1]
-                             )
-                         )
-                         - 2.0 * vn
-                     ) * (inv_primal_edge_length ** 2)
+            (
+                (
+                    u_vert_e2c2v[:, 0] * primal_normal_vert_x[:, 0]
+                    + v_vert_e2c2v[:, 0] * primal_normal_vert_y[:, 0]
+                )
+                + (
+                    u_vert_e2c2v[:, 1] * primal_normal_vert_x[:, 1]
+                    + v_vert_e2c2v[:, 1] * primal_normal_vert_y[:, 1]
+                )
+            )
+            - 2.0 * vn
+        ) * (inv_primal_edge_length**2)
 
         z_nabla2_e = z_nabla2_e + (
             (
@@ -151,7 +149,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
                 )
             )
             - 2.0 * vn
-        ) * (inv_vert_vert_length ** 2)
+        ) * (inv_vert_vert_length**2)
 
         z_nabla2_e = 4.0 * z_nabla2_e
 

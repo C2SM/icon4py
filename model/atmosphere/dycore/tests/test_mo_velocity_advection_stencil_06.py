@@ -13,15 +13,16 @@
 
 import numpy as np
 import pytest
-from model.common.src.icon4py.model.common.test_utils.stencil_test import (
-    StencilTest,
-)
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
     mo_velocity_advection_stencil_06,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
 
 class TestMoVelocityAdvectionStencil06(StencilTest):

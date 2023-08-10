@@ -13,18 +13,21 @@
 
 import numpy as np
 import pytest
+
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
     mo_solve_nonhydro_stencil_11_upper,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-
-from model.common.src.icon4py.model.common.test_utils.stencil_test import StencilTest
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
 
 class TestMoSolveNonhydroStencil11Upper(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_11_upper
-    OUTPUTS = ('z_theta_v_pr_ic', 'theta_v_ic')
+    OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic")
 
     @staticmethod
     def reference(
@@ -33,7 +36,7 @@ class TestMoSolveNonhydroStencil11Upper(StencilTest):
         z_rth_pr: np.array,
         theta_ref_ic: np.array,
         z_theta_v_pr_ic: np.array,
-        **kwargs
+        **kwargs,
     ) -> tuple[np.array, np.array]:
         z_theta_v_pr_ic = (
             np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_rth_pr, shift=1, axis=1)
