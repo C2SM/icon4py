@@ -30,7 +30,7 @@ CVD: Annotated[float, "[J/K/kg] specific heat at constant volume"] = CPD - RD
 CVD_O_RD = CVD / RD
 
 RV: Annotated[float, "gas constant for water vapor [J/K/kg], rv in Icon"] = 461.51
-GRAV: Annotated[float, "av. gravitational acceleration [m/s^2]"] = 9.8066
+GRAV: Annotated[float, "av. gravitational acceleration [m/s^2]"] = 9.80665
 
 P0REF: Annotated[float, "[Pa]  reference pressure for Exner function"] = 100000.0
 

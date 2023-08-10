@@ -225,9 +225,6 @@ class IconGridSavePoint(IconSavepoint):
     def e2c2e(self):
         return self._get_connectiviy_array("e2c2e")
 
-    def nrdmax(self):
-        return self._get_connectiviy_array("nrdmax")
-
     def nflat_gradp(self):
         return self._read_int32("nflat_gradp")
 
@@ -654,7 +651,7 @@ class MetricSavepointNonHydro(IconSavepoint):
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, EdgeDim, KDim)
 
-    def construct_nh_metric_state(self) -> MetricStateNonHydro:
+    def construct_nh_metric_state(self, num_k_lev) -> MetricStateNonHydro:
         return MetricStateNonHydro(
             bdy_halo_c=self.bdy_halo_c(),
             mask_prog_halo_c=self.mask_prog_halo_c(),
@@ -682,7 +679,7 @@ class MetricSavepointNonHydro(IconSavepoint):
             ddqz_z_full_e=self.ddqz_z_full_e(),
             ddxt_z_full=self.ddxt_z_full(),
             wgtfac_e=self.wgtfac_e(),
-            wgtfacq_e_dsl=self.wgtfacq_e_dsl(10),
+            wgtfacq_e_dsl=self.wgtfacq_e_dsl(num_k_lev),
             vwind_impl_wgt=self.vwind_impl_wgt(),
             hmask_dd3d=self.hmask_dd3d(),
             scalfac_dd3d=self.scalfac_dd3d(),
@@ -960,12 +957,31 @@ class IconExitSavepoint(IconSavepoint):
         )
         return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
 
+    def ddt_vn_apc_pc_19(self, ntnd):
+        #return self._get_field("x_ddt_vn_apc_pc", EdgeDim, KDim)
+        buffer = np.squeeze(
+            self.serializer.read("x_ddt_vn_apc_pc_19", self.savepoint).astype(float)
+        )
+        return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
+
     def ddt_w_adv_pc(self, ntnd):
         buffer = np.squeeze(
             self.serializer.read("x_ddt_w_adv_pc", self.savepoint).astype(float)
         )
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
         # return self._get_field("ddt_w_adv_pc", CellDim, KDim)
+
+    def ddt_w_adv_pc_16(self, ntnd):
+        buffer = np.squeeze(
+            self.serializer.read("x_ddt_w_adv_pc_16", self.savepoint).astype(float)
+        )
+        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
+
+    def ddt_w_adv_pc_17(self, ntnd):
+        buffer = np.squeeze(
+            self.serializer.read("x_ddt_w_adv_pc_17", self.savepoint).astype(float)
+        )
+        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
 
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]

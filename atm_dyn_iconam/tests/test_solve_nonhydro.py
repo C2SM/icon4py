@@ -19,10 +19,8 @@ from icon4py.nh_solve.solve_nonydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.state_utils.diagnostic_state import (
-    DiagnosticState,
-    DiagnosticStateNonHydro,
-)
+from icon4py.state_utils.diagnostic_state import DiagnosticStateNonHydro
+
 from icon4py.state_utils.horizontal import CellParams, EdgeParams
 from icon4py.state_utils.icon_grid import VerticalModelParams
 from icon4py.state_utils.metric_state import MetricStateNonHydro
@@ -84,6 +82,7 @@ def test_nonhydro_predictor_step(
     grid_savepoint,
     savepoint_velocity_init,
     diffusion_savepoint_init,
+    savepoint_velocity_exit,
     metrics_savepoint,
     metrics_nonhydro_savepoint,
     interpolation_savepoint,
@@ -92,13 +91,13 @@ def test_nonhydro_predictor_step(
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
+    sp_v_exit = savepoint_velocity_exit
     sp_dif = diffusion_savepoint_init
     sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,
-        nflatlev=int(grid_savepoint.nflatlev()), nflat_gradp=int(grid_savepoint.nflat_gradp()),
-        nrdmax=int(grid_savepoint.nrdmax())
+        nflatlev=int(grid_savepoint.nflatlev()), nflat_gradp=int(grid_savepoint.nflat_gradp())
     )
     sp_met_nh = metrics_nonhydro_savepoint
     sp_d = data_provider.from_savepoint_grid()
@@ -120,20 +119,7 @@ def test_nonhydro_predictor_step(
     nnow = 0
     nnew = 1
 
-    diagnostic_state = DiagnosticState(
-        hdef_ic=None,
-        div_ic=None,
-        dwdx=None,
-        dwdy=None,
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(ntnd),
-        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(ntnd),
-        ntnd=ntnd,
-    )
-
-    diagnostic_state_nonhydro = DiagnosticStateNonHydro(
+    diagnostic_state_nh = DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -150,6 +136,12 @@ def test_nonhydro_predictor_step(
         ddt_w_adv_ntl2=sp.ddt_w_adv_ntl(2),
         ntl1=ntl1,
         ntl2=ntl2,
+        vt=sp_v.vt(),
+        vn_ie=sp_v.vn_ie(),
+        w_concorr_c=sp_v.w_concorr_c(),
+        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(ntnd),
+        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(ntnd),
+        ntnd=ntnd,
         rho_incr=None, #sp.rho_incr(),
         vn_incr=None, #sp.vn_incr(),
         exner_incr=None, #sp.exner_incr(),
@@ -166,7 +158,7 @@ def test_nonhydro_predictor_step(
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     #metric_state = metrics_savepoint.construct_metric_state()
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state()
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -189,8 +181,7 @@ def test_nonhydro_predictor_step(
     )
 
     solve_nonhydro.run_predictor_step(
-        diagnostic_state=diagnostic_state,
-        diagnostic_state_nonhydro=diagnostic_state_nonhydro,
+        diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
         config=config,
         params=nonhydro_params,
@@ -206,6 +197,8 @@ def test_nonhydro_predictor_step(
         owner_mask=sp_d.owner_mask(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
+        z_theta_v_e2=sp_exit.z_theta_v_e_01(),
+        vn_tmp=sp_v_exit.vn(),
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
@@ -230,7 +223,7 @@ def test_nonhydro_predictor_step(
 
     # stencils 2, 3
     assert dallclose(np.asarray(sp_exit.exner_pr())[1688:20896, :],
-                       np.asarray(diagnostic_state_nonhydro.exner_pr)[1688:20896, :])
+                       np.asarray(diagnostic_state_nh.exner_pr)[1688:20896, :])
     assert dallclose(np.asarray(sp_exit.z_exner_ex_pr())[1688:20896,:], np.asarray(solve_nonhydro.z_exner_ex_pr)[1688:20896,:])
 
     # stencils 4,5
@@ -244,7 +237,7 @@ def test_nonhydro_predictor_step(
 
     # stencils 7,8,9
     assert dallclose(
-        np.asarray(icon_result_rho_ic)[1688:20896, :], np.asarray(diagnostic_state_nonhydro.rho_ic)[1688:20896, :]
+        np.asarray(icon_result_rho_ic)[1688:20896, :], np.asarray(diagnostic_state_nh.rho_ic)[1688:20896, :]
     )
     assert dallclose(
         np.asarray(sp_exit.z_th_ddz_exner_c())[1688:20896, 1:], np.asarray(solve_nonhydro.z_th_ddz_exner_c)[1688:20896, 1:]
@@ -255,7 +248,7 @@ def test_nonhydro_predictor_step(
         np.asarray(sp_exit.z_theta_v_pr_ic())[1688:20896, :], np.asarray(solve_nonhydro.z_theta_v_pr_ic)[1688:20896, :]
     )
     assert dallclose(
-        np.asarray(sp_exit.theta_v_ic())[1688:20896, :], np.asarray(diagnostic_state_nonhydro.theta_v_ic)[1688:20896, :]
+        np.asarray(sp_exit.theta_v_ic())[1688:20896, :], np.asarray(diagnostic_state_nh.theta_v_ic)[1688:20896, :]
     )
     # stencils 7,8,9, 13
     assert dallclose(
@@ -300,14 +293,14 @@ def test_nonhydro_predictor_step(
         np.asarray(sp_exit.z_theta_v_e_01())[3777:31558,:], np.asarray(solve_nonhydro.z_theta_v_e)[3777:31558,:]
     )
 
-        # stencils 18,19, 20, 22
-        assert dallclose(
-            np.asarray(sp_exit.z_gradh_exner_19())[5387:31558,:], np.asarray(solve_nonhydro.z_gradh_exner)[5387:31558,:]
-        )
-        # stencil 21
-        assert dallclose(
-            np.asarray(sp_exit.z_hydro_corr())[5387:31558,64], np.asarray(solve_nonhydro.z_hydro_corr)[5387:31558,64]
-        )
+    # stencils 18,19, 20, 22
+    assert dallclose(
+        np.asarray(sp_exit.z_gradh_exner())[5387:31558,:], np.asarray(solve_nonhydro.z_gradh_exner)[5387:31558,:],atol=1e-20
+    )
+    # stencil 21
+    assert dallclose(
+        np.asarray(sp_exit.z_hydro_corr())[5387:31558,64], np.asarray(solve_nonhydro.z_hydro_corr)[5387:31558,64],atol=1e-20
+    )
     # stencils 24, 29,
     assert dallclose(np.asarray(icon_result_vn_new), np.asarray(prognostic_state.vn))
 
@@ -321,13 +314,13 @@ def test_nonhydro_predictor_step(
     )
     # stencil 30
     assert dallclose(
-        np.asarray(sp_exit.vt()), np.asarray(diagnostic_state.vt)
+        np.asarray(sp_exit.vt()), np.asarray(diagnostic_state_nh.vt)
     )
 
     # stencil 32
     assert dallclose(
         np.asarray(icon_result_mass_fl_e),
-        np.asarray(diagnostic_state_nonhydro.mass_fl_e),
+        np.asarray(diagnostic_state_nh.mass_fl_e),
     )
     # stencil 32
     assert dallclose(
@@ -336,7 +329,7 @@ def test_nonhydro_predictor_step(
 
     # stencil 35,36, 37,38
     assert dallclose(
-        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
+        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state_nh.vn_ie)
     )
 
     # stencil 35,36, 37,38
@@ -355,7 +348,7 @@ def test_nonhydro_predictor_step(
     )
     # stencils 39,40
     assert dallclose(
-        np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c)
+        np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state_nh.w_concorr_c)
     )
 
     assert dallclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state.w))
@@ -370,7 +363,7 @@ def test_nonhydro_predictor_step(
 
     assert dallclose(
         np.asarray(icon_result_theta_v_ic),
-        np.asarray(diagnostic_state_nonhydro.theta_v_ic),
+        np.asarray(diagnostic_state_nh.theta_v_ic),
     )
 
 
@@ -430,20 +423,7 @@ def test_nonhydro_corrector_step(
     nnow = 0
     nnew = 1
 
-    diagnostic_state = DiagnosticState(
-        hdef_ic=None,
-        div_ic=None,
-        dwdx=None,
-        dwdy=None,
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(ntnd),
-        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(ntnd),
-        ntnd=ntnd,
-    )
-
-    diagnostic_state_nonhydro = DiagnosticStateNonHydro(
+    diagnostic_state_nh = DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -520,8 +500,7 @@ def test_nonhydro_corrector_step(
     )
 
     solve_nonhydro.run_corrector_step(
-        diagnostic_state=diagnostic_state,
-        diagnostic_state_nonhydro=diagnostic_state_nonhydro,
+        diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
         config=config,
         params=nonhydro_params,
@@ -614,20 +593,8 @@ def test_run_solve_nonhydro_multi_step(
     linit = sp_v.get_metadata("linit").get("linit")
     dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
 
-    diagnostic_state = DiagnosticState(
-        hdef_ic=None,
-        div_ic=None,
-        dwdx=None,
-        dwdy=None,
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(ntnd),
-        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(ntnd),
-        ntnd=ntnd,
-    )
 
-    diagnostic_state_nonhydro = DiagnosticStateNonHydro(
+    diagnostic_state_nh = DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -705,8 +672,7 @@ def test_run_solve_nonhydro_multi_step(
 
     for _ in range(4):
         solve_nonhydro.time_step(
-            diagnostic_state=diagnostic_state,
-            diagnostic_state_nonhydro=diagnostic_state_nonhydro,
+            diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state=prognostic_state_ls,
             prep_adv=prep_adv,
             config=config,
@@ -757,30 +723,30 @@ def test_run_solve_nonhydro_multi_step(
     )
     assert dallclose(
         np.asarray(icon_result_mass_fl_e),
-        np.asarray(diagnostic_state_nonhydro.mass_fl_e),
+        np.asarray(diagnostic_state_nh.mass_fl_e),
     )
     assert dallclose(
         np.asarray(icon_result_prep_adv_vn_traj), np.asarray(prep_adv.vn_traj)
     )
     assert dallclose(
-        np.asarray(icon_result_rho_ic), np.asarray(diagnostic_state_nonhydro.rho_ic)
+        np.asarray(icon_result_rho_ic), np.asarray(diagnostic_state_nh.rho_ic)
     )
     assert dallclose(
         np.asarray(icon_result_theta_v_ic),
-        np.asarray(diagnostic_state_nonhydro.theta_v_ic),
+        np.asarray(diagnostic_state_nh.theta_v_ic),
     )
     assert dallclose(
         np.asarray(icon_result_theta_v_new),
         np.asarray(prognostic_state_ls[nnew].theta_v),
     )
     assert dallclose(
-        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie)
+        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state_nh.vn_ie)
     )
     assert dallclose(
         np.asarray(icon_result_vn_new), np.asarray(prognostic_state_ls[nnew].vn)
     )
     assert dallclose(
-        np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state.w_concorr_c)
+        np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state_nh.w_concorr_c)
     )
     assert dallclose(
         np.asarray(icon_result_w_new), np.asarray(prognostic_state_ls[nnew].w)

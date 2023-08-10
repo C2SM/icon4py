@@ -238,7 +238,7 @@ class IconGrid:
 
 
 class VerticalModelParams:
-    def __init__(self, vct_a: Field[[KDim], float], nflatlev: int, nflat_gradp:int, nrdmax: int, rayleigh_damping_height: float):
+    def __init__(self, vct_a: Field[[KDim], float], nflatlev: int32, nflat_gradp:int32, rayleigh_damping_height: float):
         """
         Contains vertical physical parameters defined on the grid.
 
@@ -248,14 +248,13 @@ class VerticalModelParams:
         """
         self._rayleigh_damping_height = rayleigh_damping_height
         self._vct_a = vct_a
-        self._index_of_damping_height = int64(
+        self._index_of_damping_height = int32(
             np.argmax(
                 np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height)
             )
         )
         self._nflatlev = nflatlev - 1  # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
         self._nflat_gradp = nflat_gradp - 1
-        self._nrdmax = nrdmax - 1
 
     @property
     def index_of_damping_layer(self):
@@ -277,6 +276,3 @@ class VerticalModelParams:
     def nflat_gradp(self) -> int32:
         return self._nflat_gradp
 
-    @property
-    def nrdmax(self) -> int32:
-        return self._nrdmax
