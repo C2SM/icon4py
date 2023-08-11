@@ -54,10 +54,10 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         smag_offset,
         **kwargs,
     ) -> tuple[np.array]:
-        primal_normal_vert_x = primal_normal_vert_x.reshape(27, 4)
-        primal_normal_vert_y = primal_normal_vert_y.reshape(27, 4)
-        dual_normal_vert_x = dual_normal_vert_x.reshape(27, 4)
-        dual_normal_vert_y = dual_normal_vert_y.reshape(27, 4)
+        primal_normal_vert_x = primal_normal_vert_x.reshape(mesh.e2c2v.shape)
+        primal_normal_vert_y = primal_normal_vert_y.reshape(mesh.e2c2v.shape)
+        dual_normal_vert_x = dual_normal_vert_x.reshape(mesh.e2c2v.shape)
+        dual_normal_vert_y = dual_normal_vert_y.reshape(mesh.e2c2v.shape)
 
         u_vert_e2c2v = u_vert[mesh.e2c2v]
         v_vert_e2c2v = v_vert[mesh.e2c2v]

@@ -49,8 +49,8 @@ class TestCalculateNabla4(StencilTest):
         u_vert_e2c2v = u_vert[mesh.e2c2v]
         v_vert_e2c2v = v_vert[mesh.e2c2v]
 
-        primal_normal_vert_v1 = primal_normal_vert_v1.reshape(27, 4)
-        primal_normal_vert_v2 = primal_normal_vert_v2.reshape(27, 4)
+        primal_normal_vert_v1 = primal_normal_vert_v1.reshape(mesh.e2c2v.shape)
+        primal_normal_vert_v2 = primal_normal_vert_v2.reshape(mesh.e2c2v.shape)
 
         primal_normal_vert_v1 = np.expand_dims(primal_normal_vert_v1, axis=-1)
         primal_normal_vert_v2 = np.expand_dims(primal_normal_vert_v2, axis=-1)
