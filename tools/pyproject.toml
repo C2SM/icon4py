@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-    "icon4py_atm_dyn_iconam",
+    "icon4py-atmosphere-dycore",
     "gt4py>=1.0.1",
     "icon4py_common",
     "tabulate>=0.8.9",

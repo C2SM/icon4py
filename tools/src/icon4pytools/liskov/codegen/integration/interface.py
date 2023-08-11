@@ -78,21 +78,49 @@ class EndProfileData(CodeGenInput):
 
 
 @dataclass
-class StartStencilData(CodeGenInput):
+class BaseStartStencilData(CodeGenInput):
     name: str
     fields: list[FieldAssociationData]
-    bounds: BoundsData
     acc_present: Optional[bool]
+    bounds: BoundsData
+
+
+@dataclass
+class StartStencilData(BaseStartStencilData):
     mergecopy: Optional[bool]
     copies: Optional[bool]
 
 
 @dataclass
-class EndStencilData(CodeGenInput):
+class StartFusedStencilData(BaseStartStencilData):
+    ...
+
+
+@dataclass
+class BaseEndStencilData(CodeGenInput):
     name: str
+
+
+@dataclass
+class EndStencilData(BaseEndStencilData):
     noendif: Optional[bool]
     noprofile: Optional[bool]
     noaccenddata: Optional[bool]
+
+
+@dataclass
+class EndFusedStencilData(BaseEndStencilData):
+    ...
+
+
+@dataclass
+class StartDeleteData(CodeGenInput):
+    startln: int
+
+
+@dataclass
+class EndDeleteData(StartDeleteData):
+    ...
 
 
 @dataclass
@@ -104,6 +132,10 @@ class InsertData(CodeGenInput):
 class IntegrationCodeInterface:
     StartStencil: Sequence[StartStencilData]
     EndStencil: Sequence[EndStencilData]
+    StartFusedStencil: Sequence[StartFusedStencilData]
+    EndFusedStencil: Sequence[EndFusedStencilData]
+    StartDelete: Sequence[StartDeleteData] | UnusedDirective
+    EndDelete: Sequence[EndDeleteData] | UnusedDirective
     Declare: Sequence[DeclareData]
     Imports: ImportsData
     StartCreate: Sequence[StartCreateData] | UnusedDirective

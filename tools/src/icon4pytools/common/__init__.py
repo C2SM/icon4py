@@ -10,3 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+ICON4PY_MODEL_QUALIFIED_NAME = "icon4py.model"
+
+__all__ = ["ICON4PY_MODEL_QUALIFIED_NAME"]
