@@ -12,7 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Optional
 
+import numpy as np
 from gt4py.next.common import Field
+from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.iterator.builtins import int32
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
@@ -115,7 +117,7 @@ class VelocityAdvection:
         self.cfl_clipping = _allocate(CellDim, KDim, mesh=self.grid, dtype=bool)
         self.pre_levelmask = _allocate(CellDim, KDim, mesh=self.grid, dtype=bool)
         self.levelmask = _allocate(KDim, mesh=self.grid, dtype=bool)
-        self.vcfl = _allocate(CellDim, KDim, mesh=self.grid)
+        self.vcfl_dsl = _allocate(CellDim, KDim, mesh=self.grid)
         self.k_field = _allocate_indices(KDim, mesh=self.grid, is_halfdim=True)
 
     def run_predictor_step(
@@ -344,7 +346,7 @@ class VelocityAdvection:
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
             local_pre_levelmask=self.pre_levelmask,
-            local_vcfl=self.vcfl,
+            local_vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             horizontal_start=indices_3_1,
@@ -355,6 +357,11 @@ class VelocityAdvection:
             vertical_end=int32(self.grid.n_lev() - 3),
             offset_provider={},
         )
+
+        #TODO :@abishekg7 Check if these need bounds
+        self.levelmask = np_as_located_field(KDim)(np.any(self.pre_levelmask,0))
+        maxvcfl_dsl = np.max(np.abs(np.where(self.cfl_clipping, self.vcfl_dsl, 0.0)))
+
 
         mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
             z_w_con_c=self.z_w_con_c,
@@ -385,29 +392,31 @@ class VelocityAdvection:
             },
         )
 
-        # mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
-        #     levelmask=self.levelmask,
-        #     cfl_clipping=self.cfl_clipping,
-        #     owner_mask=owner_mask,
-        #     z_w_con_c=self.z_w_con_c,
-        #     ddqz_z_half=self.metric_state.ddqz_z_half,
-        #     area=cell_areas,
-        #     geofac_n2s=self.interpolation_state.geofac_n2s,
-        #     w=prognostic_state.w,
-        #     ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
-        #     scalfac_exdiff=scalfac_exdiff,
-        #     cfl_w_limit=cfl_w_limit,
-        #     dtime=dtime,
-        #     horizontal_start=indices_4_1,
-        #     horizontal_end=indices_4_2,
-        #     vertical_start=int32(
-        #         max(3, self.vertical_params.index_of_damping_layer - 2)-1
-        #     ),
-        #     vertical_end=int32(self.grid.n_lev() - 3),
-        #     offset_provider={
-        #         "C2E2CO": self.grid.get_c2e2co_connectivity(),
-        #     },
-        # )
+        mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
+            levelmask=self.levelmask,
+            cfl_clipping=self.cfl_clipping,
+            owner_mask=owner_mask,
+            z_w_con_c=self.z_w_con_c,
+            ddqz_z_half=self.metric_state.ddqz_z_half,
+            area=cell_areas,
+            geofac_n2s=self.interpolation_state.geofac_n2s,
+            w=prognostic_state.w,
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+            horizontal_start=indices_4_1,
+            horizontal_end=indices_4_2,
+            vertical_start=int32(
+                max(3, self.vertical_params.index_of_damping_layer - 2)-1
+            ),
+            vertical_end=int32(self.grid.n_lev() - 3),
+            offset_provider={
+                "C2E2CO": self.grid.get_c2e2co_connectivity(),
+            },
+        )
+
+        #self.levelmask = np_as_located_field(KDim)(np.any(self.pre_levelmask, 0))
 
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
             z_kin_hor_e=z_kin_hor_e,
@@ -433,34 +442,34 @@ class VelocityAdvection:
             },
         )
 
-        # mo_velocity_advection_stencil_20.with_backend(run_gtfn)(
-        #     levelmask=self.levelmask,
-        #     c_lin_e=self.interpolation_state.c_lin_e,
-        #     z_w_con_c_full=self.z_w_con_c_full,
-        #     ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-        #     area_edge=area_edge,
-        #     tangent_orientation=tangent_orientation,
-        #     inv_primal_edge_length=inv_primal_edge_length,
-        #     zeta=self.zeta,
-        #     geofac_grdiv=self.interpolation_state.geofac_grdiv,
-        #     vn=prognostic_state.vn,
-        #     ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
-        #     cfl_w_limit=cfl_w_limit,
-        #     scalfac_exdiff=scalfac_exdiff,
-        #     dtime=dtime,
-        #     horizontal_start=indices_5_1,
-        #     horizontal_end=indices_5_2,
-        #     vertical_start=int32(
-        #         max(3, self.vertical_params.index_of_damping_layer - 2)-1
-        #     ),
-        #     vertical_end=int32(self.grid.n_lev() - 4),
-        #     offset_provider={
-        #         "E2C": self.grid.get_e2c_connectivity(),
-        #         "E2V": self.grid.get_e2v_connectivity(),
-        #         "E2C2EO": self.grid.get_e2c2eo_connectivity(),
-        #         "Koff": KDim,
-        #     },
-        # )
+        mo_velocity_advection_stencil_20.with_backend(run_gtfn)(
+            levelmask=self.levelmask,
+            c_lin_e=self.interpolation_state.c_lin_e,
+            z_w_con_c_full=self.z_w_con_c_full,
+            ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
+            area_edge=area_edge,
+            tangent_orientation=tangent_orientation,
+            inv_primal_edge_length=inv_primal_edge_length,
+            zeta=self.zeta,
+            geofac_grdiv=self.interpolation_state.geofac_grdiv,
+            vn=prognostic_state.vn,
+            ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
+            cfl_w_limit=cfl_w_limit,
+            scalfac_exdiff=scalfac_exdiff,
+            dtime=dtime,
+            horizontal_start=indices_5_1,
+            horizontal_end=indices_5_2,
+            vertical_start=int32(
+                max(3, self.vertical_params.index_of_damping_layer - 2)-1
+            ),
+            vertical_end=int32(self.grid.n_lev() - 4),
+            offset_provider={
+                "E2C": self.grid.get_e2c_connectivity(),
+                "E2V": self.grid.get_e2v_connectivity(),
+                "E2C2EO": self.grid.get_e2c2eo_connectivity(),
+                "Koff": KDim,
+            },
+        )
 
     def run_corrector_step(
         self,
@@ -605,7 +614,7 @@ class VelocityAdvection:
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
             local_pre_levelmask=self.pre_levelmask,
-            local_vcfl=self.vcfl,
+            local_vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             horizontal_start=indices_3_1,

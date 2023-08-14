@@ -51,10 +51,15 @@ class MeshConfig:
         self._n_shift_total = 0
         self._limited_area = limited_area
         self._horizontal = horizontal_config
+        self._lvertnest = False
 
     @property
     def limited_area(self):
         return self._limited_area
+
+    @property
+    def lvertnest(self):
+        return self._lvertnest
 
     @property
     def num_k_levels(self):
@@ -143,7 +148,7 @@ class IconGrid:
         return self.config.num_edges
 
     def lvert_nest(self):
-        return True if self.config else False
+        return True if self.config.lvertnest else False
 
     def get_indices_from_to(
         self, dim: Dimension, start_marker: int, end_marker: int

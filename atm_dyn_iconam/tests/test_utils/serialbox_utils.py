@@ -1043,6 +1043,9 @@ class IconExitSavepoint(IconSavepoint):
     def mass_fl_e(self):
         return self._get_field("x_mass_fl_e", EdgeDim, KDim)
 
+    def z_theta_v_fl_e(self):
+        return self._get_field("x_z_theta_v_fl_e", EdgeDim, KDim)
+
     def prep_adv_mass_flx_me(self):
         return self._get_field("x_prep_adv_mass_flx_me", EdgeDim, KDim)
 
@@ -1095,9 +1098,6 @@ class IconExitSavepoint(IconSavepoint):
     def z_kin_hor_e(self):
         return self._get_field("x_z_kin_hor_e", EdgeDim, KDim)
 
-    def z_theta_v_fl_e(self):
-        return self._get_field("x_z_theta_v_fl_e", EdgeDim, KDim)
-
     def z_theta_v_pr_ic(self):
         return self._get_field("x_z_theta_v_pr_ic", CellDim, KDim)
 
@@ -1107,6 +1107,11 @@ class IconExitSavepoint(IconSavepoint):
     def z_theta_v_e(self):
         return self._get_field("x_z_theta_v_e", EdgeDim, KDim)
 
+    def z_vn_avg(self):
+        return self._get_field("x_z_vn_avg", EdgeDim, KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("x_z_graddiv_vn", EdgeDim, KDim)
 
     def z_grad_rth(self, ind):
         buffer = np.squeeze(
