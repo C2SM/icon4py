@@ -63,3 +63,4 @@ class VerticalModelParams:
     @property
     def physical_heights(self) -> Field[[KDim], float]:
         return self.vct_a
+

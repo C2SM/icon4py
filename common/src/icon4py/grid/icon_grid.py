@@ -49,14 +49,7 @@ class GridConfig:
     vertical_config: VerticalGridSize
     limited_area: bool = True
     n_shift_total: int = 0
-
-    @property
-    def limited_area(self):
-        return self._limited_area
-
-    @property
-    def lvertnest(self):
-        return self._lvertnest
+    lvertnest: bool = False
 
     @property
     def num_k_levels(self):
@@ -259,44 +252,3 @@ class IconGrid:
     def get_e2c2eo_connectivity(self):
         table = self.connectivities["e2c2eo"]
         return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
-
-
-class VerticalModelParams:
-    def __init__(self, vct_a: Field[[KDim], float], nflatlev: int32, nflat_gradp:int32, rayleigh_damping_height: float):
-        """
-        Contains vertical physical parameters defined on the grid.
-
-        Args:
-            vct_a:  field containing the physical heights of the k level
-            rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
-        """
-        self._rayleigh_damping_height = rayleigh_damping_height
-        self._vct_a = vct_a
-        self._index_of_damping_height = int32(
-            np.argmax(
-                np.where(np.asarray(self._vct_a) >= self._rayleigh_damping_height)
-            )
-        )
-        self._nflatlev = nflatlev - 1  # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
-        self._nflat_gradp = nflat_gradp - 1
-
-    @property
-    def index_of_damping_layer(self):
-        return self._index_of_damping_height
-
-    @property
-    def physical_heights(self) -> Field[[KDim], float]:
-        return self._vct_a
-
-    @property
-    def rayleigh_damping_height(self):
-        return self._rayleigh_damping_height
-
-    @property
-    def nflatlev(self) -> int32:
-        return self._nflatlev
-
-    @property
-    def nflat_gradp(self) -> int32:
-        return self._nflat_gradp
-
