@@ -12,58 +12,53 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
     mo_velocity_advection_stencil_02,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
 
-def mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e: np.array, vn: np.array) -> np.array:
-    vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
-    vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
-    return vn_ie
+class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
+    PROGRAM = mo_velocity_advection_stencil_02
+    OUTPUTS = ("vn_ie", "z_kin_hor_e")
 
+    @staticmethod
+    def mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e: np.array, vn: np.array) -> np.array:
+        vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
+        vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
+        return vn_ie
 
-def mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn: np.array, vt: np.array) -> np.array:
-    z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
-    return z_kin_hor_e
+    @staticmethod
+    def mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn: np.array, vt: np.array) -> np.array:
+        z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
+        return z_kin_hor_e
 
+    @classmethod
+    def reference(cls, mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> dict:
+        vn_ie = cls.mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
+        z_kin_hor_e = cls.mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
+        return dict(vn_ie=vn_ie, z_kin_hor_e=z_kin_hor_e)
 
-def mo_velocity_advection_stencil_02_numpy(
-    wgtfac_e: np.array, vn: np.array, vt: np.array
-) -> tuple[np.array]:
-    vn_ie = mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
-    z_kin_hor_e = mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
+    @pytest.fixture
+    def input_data(self, mesh):
+        wgtfac_e = random_field(mesh, EdgeDim, KDim)
+        vn = random_field(mesh, EdgeDim, KDim)
+        vt = random_field(mesh, EdgeDim, KDim)
 
-    return vn_ie, z_kin_hor_e
+        vn_ie = zero_field(mesh, EdgeDim, KDim)
+        z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
 
-
-def test_mo_velocity_advection_stencil_02():
-    mesh = SimpleMesh()
-
-    wgtfac_e = random_field(mesh, EdgeDim, KDim)
-    vn = random_field(mesh, EdgeDim, KDim)
-    vt = random_field(mesh, EdgeDim, KDim)
-
-    vn_ie = zero_field(mesh, EdgeDim, KDim)
-    z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
-
-    vn_ie_ref, z_kin_hor_e_ref = mo_velocity_advection_stencil_02_numpy(
-        np.asarray(wgtfac_e),
-        np.asarray(vn),
-        np.asarray(vt),
-    )
-    mo_velocity_advection_stencil_02(
-        wgtfac_e,
-        vn,
-        vt,
-        vn_ie,
-        z_kin_hor_e,
-        offset_provider={"Koff": KDim},
-    )
-
-    assert np.allclose(vn_ie, vn_ie_ref)
-    assert np.allclose(z_kin_hor_e, z_kin_hor_e_ref)
+        return dict(
+            wgtfac_e=wgtfac_e,
+            vn=vn,
+            vt=vt,
+            vn_ie=vn_ie,
+            z_kin_hor_e=z_kin_hor_e,
+        )

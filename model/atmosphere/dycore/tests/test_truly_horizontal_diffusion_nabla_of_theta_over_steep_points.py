@@ -28,7 +28,7 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
-def mo_nh_diffusion_stencil_15_numpy(
+def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     c2e2c: np.array,
     mask: np.array,
     zd_vertoffset: np.array,
@@ -64,7 +64,7 @@ def mo_nh_diffusion_stencil_15_numpy(
     return np.where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over), z_temp)
 
 
-def test_mo_nh_diffusion_stencil_15():
+def test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points():
     mesh = SimpleMesh()
 
     mask = random_mask(mesh, CellDim, KDim)
@@ -90,7 +90,7 @@ def test_mo_nh_diffusion_stencil_15():
     zd_vertoffset_new = flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset)
     geofac_n2s_nbh_new = flatten_first_two_dims(CECDim, field=geofac_n2s_nbh)
 
-    ref = mo_nh_diffusion_stencil_15_numpy(
+    ref = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
         mesh.c2e2c,
         np.asarray(mask),
         np.asarray(zd_vertoffset),
