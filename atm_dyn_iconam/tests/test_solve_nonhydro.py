@@ -14,15 +14,14 @@ import numpy as np
 import pytest
 
 from icon4py.common.dimension import KDim
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.vertical import VerticalModelParams
 from icon4py.nh_solve.solve_nonydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro,
 )
 from icon4py.state_utils.diagnostic_state import DiagnosticStateNonHydro
-
-from icon4py.state_utils.horizontal import CellParams, EdgeParams
-from icon4py.state_utils.icon_grid import VerticalModelParams
 from icon4py.state_utils.metric_state import MetricStateNonHydro
 from icon4py.state_utils.prep_adv_state import PrepAdvection
 from icon4py.state_utils.prognostic_state import PrognosticState
@@ -96,8 +95,7 @@ def test_nonhydro_predictor_step(
     sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,
-        nflatlev=int(grid_savepoint.nflatlev()), nflat_gradp=int(grid_savepoint.nflat_gradp())
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height, nflat_gradp=grid_savepoint.nflat_gradp(), nflatlev=grid_savepoint.nflatlev()
     )
     sp_met_nh = metrics_nonhydro_savepoint
     sp_d = data_provider.from_savepoint_grid()
@@ -194,7 +192,7 @@ def test_nonhydro_predictor_step(
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.owner_mask(),
+        owner_mask=sp_d.c_owner_mask(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
         z_rho_e2=sp_exit.z_rho_e_01(),
@@ -404,7 +402,7 @@ def test_nonhydro_corrector_step(
     sp_met_nh = metrics_nonhydro_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height, nflatlev=grid_savepoint.nflatlev(), nflat_gradp=grid_savepoint.nflat_gradp()
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
@@ -517,7 +515,7 @@ def test_nonhydro_corrector_step(
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.owner_mask(),
+        owner_mask=sp_d.c_owner_mask(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
         lclean_mflx=clean_mflx,
@@ -570,7 +568,7 @@ def test_run_solve_nonhydro_multi_step(
     sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,nflat_gradp=grid_savepoint.nflat_gradp(), nflatlev=grid_savepoint.nflatlev()
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
@@ -687,7 +685,7 @@ def test_run_solve_nonhydro_multi_step(
             cfl_w_limit=sp_v.cfl_w_limit(),
             scalfac_exdiff=sp_v.scalfac_exdiff(),
             cell_areas=cell_geometry.area,
-            owner_mask=sp_d.owner_mask(),
+            owner_mask=sp_d.c_owner_mask(),
             f_e=sp_d.f_e(),
             area_edge=sp_d.edge_areas(),
             bdy_divdamp=sp.bdy_divdamp(),

@@ -47,7 +47,6 @@ def _apply_diffusion_to_vn(
     start_2nd_nudge_line_idx_e: int32,
     limited_area: bool,
 ) -> Field[[EdgeDim, KDim], float]:
-
     z_nabla4_e2 = _calculate_nabla4(
         u_vert,
         v_vert,
@@ -112,6 +111,10 @@ def apply_diffusion_to_vn(
     nudgezone_diff: float,
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
     limited_area: bool,
 ):
     _apply_diffusion_to_vn(
@@ -133,4 +136,8 @@ def apply_diffusion_to_vn(
         start_2nd_nudge_line_idx_e,
         limited_area,
         out=vn,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

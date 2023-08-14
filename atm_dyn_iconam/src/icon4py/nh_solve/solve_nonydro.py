@@ -14,7 +14,6 @@ from typing import Final, Optional
 
 import numpy as np
 from gt4py.next.common import Field
-from icon4py.state_utils.horizontal import CellParams, EdgeParams
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
@@ -136,10 +135,13 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
 from icon4py.common.dimension import CellDim, ECDim, EdgeDim, KDim, VertexDim
-from icon4py.state_utils.diagnostic_state import DiagnosticStateNonHydro
-
-from icon4py.state_utils.horizontal import HorizontalMarkerIndex
-from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
+from icon4py.state_utils.diagnostic_state import (
+    DiagnosticState,
+    DiagnosticStateNonHydro,
+)
+from icon4py.grid.horizontal import HorizontalMarkerIndex, EdgeParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
 from icon4py.state_utils.prep_adv_state import PrepAdvection
@@ -752,7 +754,7 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.n_lev(),
             vertical_start=0,
-            vertical_end=self.grid.n_lev()+1,
+            vertical_end=self.grid.n_lev() + 1,
             offset_provider={},
         )
 
@@ -1017,7 +1019,7 @@ class SolveNonhydro:
                 horizontal_start=indices_5_1,
                 horizontal_end=indices_5_2,
                 vertical_start=self.vertical_params.nflatlev,
-                vertical_end=self.vertical_params.nflat_gradp + 1,
+                vertical_end=int32(self.vertical_params.nflat_gradp + 1),
                 offset_provider={
                     "E2C": self.grid.get_e2c_connectivity(),
                 },
@@ -1033,7 +1035,7 @@ class SolveNonhydro:
                 z_gradh_exner=self.z_gradh_exner,
                 horizontal_start=indices_5_1,
                 horizontal_end=indices_5_2,
-                vertical_start=self.vertical_params.nflat_gradp + 1,
+                vertical_start=int32(self.vertical_params.nflat_gradp + 1),
                 vertical_end=self.grid.n_lev(),
                 offset_provider={
                     "E2C": self.grid.get_e2c_connectivity(),
@@ -1200,7 +1202,7 @@ class SolveNonhydro:
             wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             k_field=self.k_field,
-            nflatlev_startindex_plus1=self.vertical_params.nflatlev + 1,
+            nflatlev_startindex_plus1=int32(self.vertical_params.nflatlev + 1),
             nlev=self.grid.n_lev(),
             horizontal_start=indices_9_1,
             horizontal_end=indices_9_2,

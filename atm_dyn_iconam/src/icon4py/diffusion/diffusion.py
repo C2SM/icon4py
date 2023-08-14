@@ -10,11 +10,14 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import functools
 import logging
 import math
 import sys
 from collections import namedtuple
-from typing import Final, Optional, Tuple
+from dataclasses import InitVar, dataclass, field
+from enum import Enum
+from typing import Final, Optional
 
 import numpy as np
 from gt4py.next.common import Dimension
@@ -25,6 +28,7 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn_cached,
 )
 
+from icon4py.atm_dyn_iconam.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
 )
@@ -40,9 +44,6 @@ from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import
 from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import (
     calculate_nabla2_for_theta,
 )
-from icon4py.atm_dyn_iconam.fused_mo_nh_diffusion_stencil_04_05_06 import (
-    fused_mo_nh_diffusion_stencil_04_05_06,
-)
 from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
@@ -55,26 +56,24 @@ from icon4py.common.constants import (
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
 )
-from icon4py.common.dimension import CellDim, ECVDim, EdgeDim, KDim, VertexDim
-from icon4py.state_utils.diagnostic_state import DiagnosticState
-from icon4py.state_utils.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalMarkerIndex,
+from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
+    PrognosticState,
 )
-from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
-from icon4py.state_utils.interpolation_state import InterpolationState
-from icon4py.state_utils.metric_state import MetricState
-from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import (
+from icon4py.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
     scale_k,
-    set_zero_v_k,
     setup_fields_for_initial_step,
     zero_field,
 )
+from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 
 
 # flake8: noqa
@@ -84,7 +83,23 @@ VectorTuple = namedtuple("VectorTuple", "x y")
 
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
-backend = compiled_backend  #
+backend = compiled_backend
+
+
+class DiffusionType(int, Enum):
+    """
+    Order of nabla operator for diffusion.
+    Note: Called `hdiff_order` in `mo_diffusion_nml.f90`.
+    Note: We currently only support type 5.
+    """
+
+    NO_DIFFUSION = -1  #: no diffusion
+    LINEAR_2ND_ORDER = 2  #: 2nd order linear diffusion on all vertical levels
+    SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
+    LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
+    SMAGORINSKY_4TH_ORDER = (
+        5  #: Smagorinsky diffusion with fourth-order background diffusion
+    )
 
 
 class DiffusionConfig:
@@ -94,13 +109,14 @@ class DiffusionConfig:
     Encapsulates namelist parameters and derived parameters.
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
-    TODO: @magdalena to be read from config
-    TODO: @magdalena handle dependencies on other namelists (see below...)
     """
+
+    # TODO(Magdalena): to be read from config
+    # TODO(Magdalena):  handle dependencies on other namelists (see below...)
 
     def __init__(
         self,
-        diffusion_type: int = 5,
+        diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         hdiff_temp=True,
@@ -119,150 +135,87 @@ class DiffusionConfig:
         nudging_decay_rate: float = 2.0,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
-
         # parameters from namelist diffusion_nml
+
         self.diffusion_type: int = diffusion_type
-        """
-        Order of nabla operator for diffusion.
 
-        Called `hdiff_order` in mo_diffusion_nml.f90.
-        Possible values are:
-        - -1: no diffusion
-        - 2: 2nd order linear diffusion on all vertical levels
-        - 3: Smagorinsky diffusion without background diffusion
-        - 4: 4th order linear diffusion on all vertical levels
-        - 5: Smagorinsky diffusion with fourth-order background diffusion
-
-        We only support type 5.
-        TODO: [ml] use enum
-        """
-
+        #: If True, apply diffusion on the vertical wind field
+        #: Called `lhdiff_w` in mo_diffusion_nml.f90
         self.apply_to_vertical_wind: bool = hdiff_w
-        """
-        If True, apply diffusion on the vertical wind field
 
-        Called `lhdiff_w` in in mo_diffusion_nml.f90
-        """
-
+        #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
+        #: Called `lhdiff_vn` in mo_diffusion_nml.f90
         self.apply_to_horizontal_wind = hdiff_vn
-        """
-        If True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
 
-        Called `lhdiff_vn` in in mo_diffusion_nml.f90
-        """
-
+        #:  If True, apply horizontal diffusion to temperature field
+        #: Called `lhdiff_temp` in mo_diffusion_nml.f90
         self.apply_to_temperature: bool = hdiff_temp
-        """
-        If True, apply horizontal diffusion to temperature field
 
-        Called `lhdiff_temp` in in mo_diffusion_nml.f90
-        """
-
+        #: If True, compute 3D Smagorinsky diffusion coefficient
+        #: Called `lsmag_3d` in mo_diffusion_nml.f90
         self.compute_3d_smag_coeff: bool = smag_3d
-        """
-        If True, compute 3D Smagorinsky diffusion coefficient.
 
-        Called `lsmag_3d` in in mo_diffusion_nml.f90
-        """
-
+        #: Options for discretizing the Smagorinsky momentum diffusion
+        #: Called `itype_vn_diffu` in mo_diffusion_nml.f90
         self.type_vn_diffu: int = type_vn_diffu
-        """
-        Options for discretizing the Smagorinsky momentum diffusion.
 
-        Called `itype_vn_diffu` in in mo_diffusion_nml.f90
-        """
-
+        #: Options for discretizing the Smagorinsky temperature diffusion
+        #: Called `itype_t_diffu` inmo_diffusion_nml.f90
         self.type_t_diffu = type_t_diffu
-        """
-        Options for discretizing the Smagorinsky temperature diffusion.
 
-        Called `itype_t_diffu` in in mo_diffusion_nml.f90
-        """
-
+        #: Ratio of e-folding time to (2*)time step
+        #: Called `hdiff_efdt_ratio` inmo_diffusion_nml.f90
         self.hdiff_efdt_ratio: float = hdiff_efdt_ratio
-        """
-        Ratio of e-folding time to (2*)time step.
 
-        Called `hdiff_efdt_ratio` in in mo_diffusion_nml.f90.
-        """
-
+        #: Ratio of e-folding time to time step for w diffusion (NH only)
+        #: Called `hdiff_w_efdt_ratio` inmo_diffusion_nml.f90.
         self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
-        """
-        Ratio of e-folding time to time step for w diffusion (NH only).
 
-        Called `hdiff_w_efdt_ratio` in in mo_diffusion_nml.f90.
-        """
-
+        #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
+        #: Called `hdiff_smag_fac` inmo_diffusion_nml.f90
         self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
-        """
-        Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below.
 
-        Called `hdiff_smag_fac` in in mo_diffusion_nml.f90.
-        """
-
+        #: If True, apply truly horizontal temperature diffusion over steep slopes
+        #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
-        """
-        If True, apply truly horizontal temperature diffusion over steep slopes.
 
-        From parent namelist mo_nonhydrostatic_nml.f90, but is only used in diffusion,
-        and in mo_vertical_grid.f90>prepare_zdiffu.
-        Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90.
-        """
-
-        # from other namelists
-
+        # from other namelists:
         # from parent namelist mo_nonhydrostatic_nml
+
+        #: Number of dynamics substeps per fast-physics step
+        #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
         self.ndyn_substeps: int = n_substeps
-        """
-        Number of dynamics substeps per fast-physics step.
 
-        Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90.
-        """
-
+        #: If True, compute horizontal diffusion only at the large time step
+        #: Called 'lhdiff_rcf' in mo_nonhydrostatic_nml.f90
         self.lhdiff_rcf: bool = hdiff_rcf
-        """
-        If True, compute horizontal diffusion only at the large time step.
-
-        Called 'lhdiff_rcf' in mo_nonhydrostatic_nml.f90.
-        """
 
         # namelist mo_gridref_nml.f90
+
+        #: Denominator for temperature boundary diffusion
+        #: Called 'denom_diffu_t' in mo_gridref_nml.f90
         self.temperature_boundary_diffusion_denominator: float = (
             temperature_boundary_diffusion_denom
         )
-        """
-        Denominator for temperature boundary diffusion.
 
-        Called 'denom_diffu_t' in mo_gridref_nml.f90.
-        """
-
+        #: Denominator for velocity boundary diffusion
+        #: Called 'denom_diffu_v' in mo_gridref_nml.f90
         self.velocity_boundary_diffusion_denominator: float = (
             velocity_boundary_diffusion_denom
         )
-        """
-        Denominator for velocity boundary diffusion.
-
-        Called 'denom_diffu_v' in mo_gridref_nml.f90.
-        """
 
         # parameters from namelist: mo_interpol_nml.f90
+
+        #: Parameter describing the lateral boundary nudging in limited area mode.
+        #:
+        #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
+        #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
+        #: Called `nudge_max_coeff` in mo_interpol_nml.f90
         self.nudge_max_coeff: float = max_nudging_coeff
-        """
-        Parameter describing the lateral boundary nudging in limited area mode.
 
-        Maximal value of the nudging coefficients used cell row bordering the boundary
-        interpolation zone, from there nudging coefficients decay exponentially with
-        `nudge_efold_width` in units of cell rows.
-
-        Called `nudge_max_coeff` in mo_interpol_nml.f90
-        """
-
+        #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
+        #: Called `nudge_efold_width` in mo_interpol_nml.f90
         self.nudge_efold_width: float = nudging_decay_rate
-        """
-        Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients.
-
-        Called `nudge_efold_width` in mo_interpol_nml.f90
-        """
 
         self._validate()
 
@@ -287,39 +240,60 @@ class DiffusionConfig:
                 "zdiffu_t = False is not implemented (leaves out stencil_15)"
             )
 
+    @functools.cached_property
     def substep_as_float(self):
         return float(self.ndyn_substeps)
 
 
+@dataclass(frozen=True)
 class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
 
-    def __init__(self, config: DiffusionConfig):
+    config: InitVar[DiffusionConfig]
+    K2: Final[float] = field(init=False)
+    K4: Final[float] = field(init=False)
+    K6: Final[float] = field(init=False)
+    K4W: Final[float] = field(init=False)
+    smagorinski_factor: Final[float] = field(init=False)
+    smagorinski_height: Final[float] = field(init=False)
+    scaled_nudge_max_coeff: Final[float] = field(init=False)
 
-        self.K2: Final[float] = (
-            1.0 / (config.hdiff_efdt_ratio * 8.0)
-            if config.hdiff_efdt_ratio > 0.0
-            else 0.0
+    def __post_init__(self, config):
+        object.__setattr__(
+            self,
+            "K2",
+            (
+                1.0 / (config.hdiff_efdt_ratio * 8.0)
+                if config.hdiff_efdt_ratio > 0.0
+                else 0.0
+            ),
         )
-        self.K4: Final[float] = self.K2 / 8.0
-        self.K6: Final[float] = self.K2 / 64.0
-
-        self.K4W: Final[float] = (
-            1.0 / (config.hdiff_w_efdt_ratio * 36.0)
-            if config.hdiff_w_efdt_ratio > 0
-            else 0.0
+        object.__setattr__(self, "K4", self.K2 / 8.0)
+        object.__setattr__(self, "K6", self.K2 / 64.0)
+        object.__setattr__(
+            self,
+            "K4W",
+            (
+                1.0 / (config.hdiff_w_efdt_ratio * 36.0)
+                if config.hdiff_w_efdt_ratio > 0
+                else 0.0
+            ),
         )
 
         (
-            self.smagorinski_factor,
-            self.smagorinski_height,
-        ) = self.determine_smagorinski_factor(config)
+            smagorinski_factor,
+            smagorinski_height,
+        ) = self._determine_smagorinski_factor(config)
+        object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
+        object.__setattr__(self, "smagorinski_height", smagorinski_height)
         # see mo_interpol_nml.f90:
-        self.scaled_nudge_max_coeff = (
-            config.nudge_max_coeff * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+        object.__setattr__(
+            self,
+            "scaled_nudge_max_coeff",
+            config.nudge_max_coeff * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         )
 
-    def determine_smagorinski_factor(self, config: DiffusionConfig):
+    def _determine_smagorinski_factor(self, config: DiffusionConfig):
         """Enhanced Smagorinsky diffusion factor.
 
         Smagorinsky diffusion factor is defined as a profile in height
@@ -332,7 +306,7 @@ class DiffusionParams:
                 (
                     smagorinski_factor,
                     smagorinski_height,
-                ) = self._diffusion_type_5_smagorinski_factor(config)
+                ) = diffusion_type_5_smagorinski_factor(config)
             case 4:
                 # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
                 # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
@@ -349,19 +323,19 @@ class DiffusionParams:
                 pass
         return smagorinski_factor, smagorinski_height
 
-    @staticmethod
-    def _diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
-        """
-        Initialize Smagorinski factors used in diffusion type 5.
 
-        The calculation and magic numbers are taken from mo_diffusion_nml.f90
-        """
-        magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
-        magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
-        magic_z2 = 1600.0 + 50000.0 + magic_sqrt
-        factor = (config.smagorinski_scaling_factor, magic_fac2_value, 0.0, 1.0)
-        heights = (32500.0, magic_z2, 50000.0, 90000.0)
-        return factor, heights
+def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
+    """
+    Initialize Smagorinski factors used in diffusion type 5.
+
+    The calculation and magic numbers are taken from mo_diffusion_nml.f90
+    """
+    magic_sqrt = math.sqrt(1600.0 * (1600 + 50000.0))
+    magic_fac2_value = 2e-6 * (1600.0 + 25000.0 + magic_sqrt)
+    magic_z2 = 1600.0 + 50000.0 + magic_sqrt
+    factor = (config.smagorinski_scaling_factor, magic_fac2_value, 0.0, 1.0)
+    heights = (32500.0, magic_z2, 50000.0, 90000.0)
+    return factor, heights
 
 
 class Diffusion:
@@ -378,8 +352,8 @@ class Diffusion:
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
         self.vertical_params: Optional[VerticalModelParams] = None
-        self.interpolation_state: InterpolationState = None
-        self.metric_state: MetricState = None
+        self.interpolation_state: DiffusionInterpolationState = None
+        self.metric_state: DiffusionMetricState = None
         self.diff_multfac_w: Optional[float] = None
         self.diff_multfac_n2w: Field[[KDim], float] = None
         self.smag_offset: Optional[float] = None
@@ -388,6 +362,7 @@ class Diffusion:
         self.nudgezone_diff: Optional[float] = None
         self.edge_params: Optional[EdgeParams] = None
         self.cell_params: Optional[CellParams] = None
+        self._horizontal_start_index_w_diffusion: int32 = 0
 
     def init(
         self,
@@ -395,8 +370,8 @@ class Diffusion:
         config: DiffusionConfig,
         params: DiffusionParams,
         vertical_params: VerticalModelParams,
-        metric_state: MetricState,
-        interpolation_state: InterpolationState,
+        metric_state: DiffusionMetricState,
+        interpolation_state: DiffusionInterpolationState,
         edge_params: EdgeParams,
         cell_params: CellParams,
     ):
@@ -419,12 +394,23 @@ class Diffusion:
         self.params: DiffusionParams = params
         self.grid = grid
         self.vertical_params = vertical_params
-        self.metric_state: MetricState = metric_state
-        self.interpolation_state: InterpolationState = interpolation_state
+        self.metric_state: DiffusionMetricState = metric_state
+        self.interpolation_state: DiffusionInterpolationState = interpolation_state
         self.edge_params = edge_params
         self.cell_params = cell_params
 
-        self._allocate_local_fields()
+        self._allocate_temporary_fields()
+
+        def _get_start_index_for_w_diffusion() -> int32:
+            marker = (
+                HorizontalMarkerIndex.nudging(CellDim)
+                if self.grid.limited_area()
+                else HorizontalMarkerIndex.interior(CellDim)
+            )
+
+            return self.grid.get_indices_from_to(
+                CellDim, marker, HorizontalMarkerIndex.interior(CellDim)
+            )[0]
 
         self.nudgezone_diff: float = 0.04 / (
             params.scaled_nudge_max_coeff + sys.float_info.epsilon
@@ -433,20 +419,20 @@ class Diffusion:
             params.scaled_nudge_max_coeff + sys.float_info.epsilon
         )
         self.fac_bdydiff_v: float = (
-            math.sqrt(config.substep_as_float())
+            math.sqrt(config.substep_as_float)
             / config.velocity_boundary_diffusion_denominator
             if config.lhdiff_rcf
             else 1.0 / config.velocity_boundary_diffusion_denominator
         )
 
-        self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float()
+        self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(
-            1.0 / 48.0, params.K4W * config.substep_as_float()
+            1.0 / 48.0, params.K4W * config.substep_as_float
         )
 
         init_diffusion_local_fields_for_regular_timestep.with_backend(backend)(
             params.K4,
-            config.substep_as_float(),
+            config.substep_as_float,
             *params.smagorinski_factor,
             *params.smagorinski_height,
             self.vertical_params.physical_heights,
@@ -462,13 +448,14 @@ class Diffusion:
             physical_heights=np.asarray(self.vertical_params.physical_heights),
             nrdmax=self.vertical_params.index_of_damping_layer,
         )
+        self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
         self._initialized = True
 
     @property
     def initialized(self):
         return self._initialized
 
-    def _allocate_local_fields(self):
+    def _allocate_temporary_fields(self):
         def _allocate(*dims: Dimension):
             return zero_field(self.grid, *dims)
 
@@ -487,7 +474,8 @@ class Diffusion:
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
-        # TODO @magdalena this is KHalfDim
+        self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
+        # TODO(Magdalena): this is KHalfDim
         self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
@@ -497,7 +485,7 @@ class Diffusion:
 
     def initial_run(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
     ):
@@ -533,7 +521,7 @@ class Diffusion:
 
     def run(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
     ):
@@ -554,7 +542,7 @@ class Diffusion:
 
     def _do_diffusion_step(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
         diff_multfac_vn: Field[[KDim], float],
@@ -574,60 +562,43 @@ class Diffusion:
 
         """
         klevels = self.grid.n_lev()
-        cell_start_interior, cell_end_local = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.interior(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
+        cell_start_interior = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.interior(CellDim)
+        )
+        cell_start_nudging = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.nudging(CellDim)
+        )
+        cell_end_local = self.grid.get_end_index(
+            CellDim, HorizontalMarkerIndex.local(CellDim)
+        )
+        cell_end_halo = self.grid.get_end_index(
+            CellDim, HorizontalMarkerIndex.halo(CellDim)
         )
 
-        cell_start_nudging, cell_end_halo = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.halo(CellDim),
+        edge_start_nudging_plus_one = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+        )
+        edge_start_nudging = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim)
+        )
+        edge_start_lb_plus4 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+        )
+        edge_end_local = self.grid.get_end_index(
+            EdgeDim, HorizontalMarkerIndex.local(EdgeDim)
+        )
+        edge_end_local_minus2 = self.grid.get_end_index(
+            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
+        )
+        edge_end_halo = self.grid.get_end_index(
+            EdgeDim, HorizontalMarkerIndex.halo(EdgeDim)
         )
 
-        edge_start_nudging_plus_one, edge_end_local = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
+        vertex_start_lb_plus1 = self.grid.get_start_index(
+            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
         )
-
-        edge_start_nudging, edge_end_halo = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim),
-            HorizontalMarkerIndex.halo(EdgeDim),
-        )
-
-        edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-        )
-
-        (
-            edge_start_nudging_minus1,
-            edge_end_local_minus2,
-        ) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) - 1,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
-        )
-
-        (
-            vertex_start_local_boundary_plus3,
-            vertex_end_local,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
-            HorizontalMarkerIndex.local(VertexDim),
-        )
-        (
-            vertex_start_lb_plus1,
-            vertex_end_local_minus1,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
-            HorizontalMarkerIndex.local(VertexDim) - 1,
+        vertex_end_local = self.grid.get_end_index(
+            VertexDim, HorizontalMarkerIndex.local(VertexDim)
         )
 
         # dtime dependent: enh_smag_factor,
@@ -635,8 +606,6 @@ class Diffusion:
             self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
         )
 
-        set_zero_v_k.with_backend(backend)(self.u_vert, offset_provider={})
-        set_zero_v_k.with_backend(backend)(self.v_vert, offset_provider={})
         log.debug("rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
             p_e_in=prognostic_state.vn,
@@ -731,8 +700,8 @@ class Diffusion:
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult
 
-        log.debug("running stencil 04 05 06: start")
-        fused_mo_nh_diffusion_stencil_04_05_06.with_backend(backend)(
+        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
+        apply_diffusion_to_vn.with_backend(backend)(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
@@ -749,6 +718,7 @@ class Diffusion:
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
+            limited_area=self.grid.limited_area(),
             horizontal_start=edge_start_lb_plus4,
             horizontal_end=edge_end_local,
             vertical_start=0,
@@ -758,7 +728,7 @@ class Diffusion:
                 "E2ECV": self.grid.get_e2ecv_connectivity(),
             },
         )
-        log.debug("runningstencils 04 05 06: end")
+        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
@@ -786,7 +756,7 @@ class Diffusion:
             ),  # +1 since Fortran includes boundaries
             interior_idx=int32(cell_start_interior),
             halo_idx=int32(cell_end_local),
-            horizontal_start=cell_start_nudging,
+            horizontal_start=self._horizontal_start_index_w_diffusion,
             horizontal_end=cell_end_halo,
             vertical_start=0,
             vertical_end=klevels,

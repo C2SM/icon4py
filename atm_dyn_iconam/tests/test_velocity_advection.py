@@ -13,12 +13,13 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from atm_dyn_iconam.tests.test_utils.helpers import as_1D_sparse_field, dallclose
 from icon4py.common.dimension import CEDim
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.vertical import VerticalModelParams
 from icon4py.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.state_utils.horizontal import CellParams, EdgeParams
-from icon4py.state_utils.icon_grid import VerticalModelParams
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricStateNonHydro
 from icon4py.state_utils.prognostic_state import PrognosticState
@@ -40,7 +41,7 @@ def test_velocity_init(
     metric_state = metrics_savepoint.construct_metric_state()
 
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height, nflat_gradp=0, nflatlev=0
     )
 
     velocity_advection = VelocityAdvection(
@@ -74,7 +75,7 @@ def test_verify_velocity_init_against_regular_savepoint(
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height, nflatlev=0, nflat_gradp=0
     )
 
     velocity_advection = VelocityAdvection(
@@ -199,9 +200,11 @@ def test_velocity_predictor_step(
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
 
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,
-        nflatlev=int(grid_savepoint.nflatlev()), nflat_gradp=int(grid_savepoint.nflat_gradp()))
-
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflatlev=int32(grid_savepoint.nflatlev()),
+        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
+    )
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
@@ -224,7 +227,7 @@ def test_velocity_predictor_step(
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=scalfac_exdiff,
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.owner_mask(),
+        owner_mask=sp_d.c_owner_mask(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
     )
@@ -294,7 +297,6 @@ def test_velocity_predictor_step(
     )
 
 
-
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep, step_date_init, step_date_exit",
@@ -309,6 +311,7 @@ def test_velocity_corrector_step(
     savepoint_velocity_exit,
     interpolation_savepoint,
     metrics_savepoint,
+    metrics_nonhydro_savepoint
 ):
     sp_v = savepoint_velocity_init
     sp_d = data_provider.from_savepoint_grid()
@@ -321,16 +324,31 @@ def test_velocity_corrector_step(
     scalfac_exdiff = sp_v.scalfac_exdiff()
 
     diagnostic_state = DiagnosticStateNonHydro(
-        hdef_ic=None,
-        div_ic=None,
-        dwdx=None,
-        dwdy=None,
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc_before=sp_v.ddt_w_adv_pc_before(ntnd),
-        ddt_vn_apc_pc_before=sp_v.ddt_vn_apc_pc_before(ntnd),
+        ddt_w_adv_pc=sp_v.ddt_w_adv_pc_before(ntnd),
+        ddt_vn_apc_pc=sp_v.ddt_vn_apc_pc_before(ntnd),
         ntnd=ntnd,
+        ntl1=None,
+        ntl2=None,
+        theta_v_ic=None,
+        exner_pr=None,
+        rho_ic=None,
+        ddt_exner_phy=None,
+        grf_tend_rho=None,
+        grf_tend_thv=None,
+        grf_tend_w=None,
+        mass_fl_e=None,
+        ddt_vn_phy=None,
+        grf_tend_vn=None,
+        ddt_vn_adv_ntl1=None,
+        ddt_vn_adv_ntl2=None,
+        ddt_w_adv_ntl1=None,
+        ddt_w_adv_ntl2=None,
+        rho_incr=None,  # sp.rho_incr(),
+        vn_incr=None,  # sp.vn_incr(),
+        exner_incr=None,  # sp.exner_incr(),
     )
     prognostic_state = PrognosticState(
         w=sp_v.w(),
@@ -355,36 +373,23 @@ def test_velocity_corrector_step(
         rbf_vec_coeff_e=sp_int.rbf_vec_coeff_e(),
         c_intp=sp_int.c_intp(),
         geofac_rot=sp_int.geofac_rot(),
-        pos_on_tplane_e=None,
+        pos_on_tplane_e_1=None,
+        pos_on_tplane_e_2=None,
         e_flx_avg=None,
     )
 
-    metric_state = MetricStateNonHydro(
-        mask_hdiff=None,
-        theta_ref_mc=None,
-        wgtfac_c=sp_met.wgtfac_c(),
-        zd_intcoef=None,
-        zd_vertidx=None,
-        zd_diffcoef=None,
-        zd_vertoffset=sp_met.zd_vertoffset(),
-        coeff_gradekin=sp_met.coeff_gradekin(),
-        ddqz_z_full_e=sp_met.ddqz_z_full_e(),
-        wgtfac_e=sp_met.wgtfac_e(),
-        wgtfacq_e_dsl=sp_met.wgtfacq_e_dsl(icon_grid.n_lev()),
-        ddxn_z_full=sp_met.ddxn_z_full(),
-        ddxt_z_full=sp_met.ddxt_z_full(),
-        ddqz_z_half=sp_met.ddqz_z_half(),
-        coeff1_dwdz=sp_met.coeff1_dwdz(),
-        coeff2_dwdz=sp_met.coeff2_dwdz(),
-    )
+    #interpolation_state = interpolation_savepoint.construct_interpolation_state()
+
+    metric_state = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
 
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,
-        nflatlev = int(grid_savepoint.nflatlev()), nflat_gradp = int(grid_savepoint.nflat_gradp()),
-        nrdmax = int(grid_savepoint.nrdmax())
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflatlev= int32(grid_savepoint.nflatlev()),
+        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
     )
 
     velocity_advection = VelocityAdvection(
@@ -407,7 +412,7 @@ def test_velocity_corrector_step(
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=scalfac_exdiff,
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.owner_mask(),
+        owner_mask=sp_d.c_owner_mask(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
     )
@@ -426,12 +431,16 @@ def test_velocity_corrector_step(
     #   assert dallclose(np.asarray(icon_result_z_v_grad_w), np.asarray(diagnostic_state.z_v_grad_w))
 
     # stencil 07
-    assert dallclose(np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
-                    np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :],
-                     atol=1e-16)
+    assert dallclose(
+        np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
+        np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :],
+        atol=1e-16,
+    )
     # stencil 08
-    assert dallclose(np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],
-                       np.asarray(velocity_advection.z_ekinh)[3316:20896, :])
+    assert dallclose(
+        np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],
+        np.asarray(velocity_advection.z_ekinh)[3316:20896, :],
+    )
 
     # stencil 11,12,13,14
     assert dallclose(np.asarray(savepoint_velocity_exit.z_w_con_c())[3316:20896, :],

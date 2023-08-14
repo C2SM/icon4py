@@ -30,13 +30,16 @@ from icon4py.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
 )
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
+    PrognosticState,
+)
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 from icon4py.py2f.cffi_utils import CffiMethod
-from icon4py.state_utils.diagnostic_state import DiagnosticState
-from icon4py.state_utils.horizontal import CellParams, EdgeParams
-from icon4py.state_utils.icon_grid import IconGrid, VerticalModelParams
-from icon4py.state_utils.interpolation_state import InterpolationState
-from icon4py.state_utils.metric_state import MetricState
-from icon4py.state_utils.prognostic_state import PrognosticState
 
 
 diffusion: Diffusion()
@@ -80,7 +83,7 @@ def diffusion_init(
     Fortran ICON Diffusion component (aka Diffusion granule)
 
     """
-    grid = IconGrid()  # TODO where to get this from
+    grid = IconGrid()  # TODO(Magdalena) where to get this from
     edge_params = EdgeParams(
         tangent_orientation=tangent_orientation,
         primal_edge_lengths=primal_edge_lengths,
@@ -96,10 +99,10 @@ def diffusion_init(
     vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=nrdmax)
     config: DiffusionConfig = DiffusionConfig(grid, vertical_params)
     derived_diffusion_params = DiffusionParams(config)
-    metric_state = MetricState(
+    metric_state = DiffusionMetricState(
         theta_ref_mc, wgtfac_c, mask_hdiff, zd_vertidx, zd_diffcoef, zd_intcoef
     )
-    interpolation_state = InterpolationState(
+    interpolation_state = DiffusionInterpolationState(
         e_bln_c_s,
         rbf_coeff_1,
         rbf_coeff_2,
@@ -135,7 +138,7 @@ def diffusion_run(
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
 ):
-    diagnostic_state = DiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
+    diagnostic_state = DiffusionDiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
     prognostic_state = PrognosticState(
         w=w,
         vn=vn,

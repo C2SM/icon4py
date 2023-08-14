@@ -86,9 +86,3 @@ class MetricStateNonHydro:
     coeff2_dwdz: Field[[CellDim, KDim], float]
     coeff_gradekin: Field[[ECDim], float]
 
-
-
-
-
-
-

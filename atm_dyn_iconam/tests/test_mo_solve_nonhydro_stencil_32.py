@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_32 import (
     mo_solve_nonhydro_stencil_32,
@@ -56,4 +57,8 @@ class TestMoSolveNonhydroStencil32(StencilTest):
             z_theta_v_e=z_theta_v_e,
             mass_fl_e=mass_fl_e,
             z_theta_v_fl_e=z_theta_v_fl_e,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

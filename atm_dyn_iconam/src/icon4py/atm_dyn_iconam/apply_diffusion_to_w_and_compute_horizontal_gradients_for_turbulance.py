@@ -46,7 +46,6 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     dwdx, dwdy = where(

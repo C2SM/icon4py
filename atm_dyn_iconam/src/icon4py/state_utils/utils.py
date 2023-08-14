@@ -15,14 +15,7 @@ from typing import Tuple
 import numpy as np
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import (
-    abs,
-    broadcast,
-    int32,
-    maximum,
-    minimum,
-    power,
-)
+from gt4py.next.ffront.fbuiltins import abs, broadcast, int32, maximum, minimum
 from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
@@ -31,7 +24,7 @@ from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 # TODO [@Magdalena] fix duplication: duplicated from test testutils/utils.py
 def zero_field(mesh, *dims: Dimension, is_halfdim=False, dtype=float):
     shapex = tuple(map(lambda x: mesh.size[x], dims))
-    shapex = tuple({shapex[0],shapex[1]+1}) if is_halfdim else shapex
+    shapex = tuple({shapex[0], shapex[1] + 1}) if is_halfdim else shapex
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
 

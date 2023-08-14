@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
     mo_velocity_advection_stencil_01,
@@ -43,4 +44,8 @@ class TestMoVelocityAdvectionStencil01(StencilTest):
             vn=vn,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             vt=vt,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )
