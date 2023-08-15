@@ -24,7 +24,7 @@ from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_f
 
 class TestApplyDiffusionToVn(StencilTest):
     PROGRAM = apply_diffusion_to_vn
-    OUTPUTS = ("vn")
+    OUTPUTS = ("vn",)
 
     @staticmethod
     def reference(
