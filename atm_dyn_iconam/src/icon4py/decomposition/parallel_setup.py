@@ -10,7 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import functools
 import logging
+from dataclasses import dataclass
 from typing import Optional, Union
 
 import mpi4py
@@ -56,29 +58,24 @@ def finalize_mpi():
         log.info("finalizing MPI")
         MPI.Finalize()
 
-
+@dataclass(frozen=True)
 class ProcessProperties:
-    def __init__(self, comm: Optional[mpi4py.MPI.Comm]):
-        self._communicator_name: str = comm.Get_name() if comm else ""
-        self._rank: int = comm.Get_rank() if comm else 0
-        self._comm_size = comm.Get_size() if comm else 1
-        self._comm = comm
+    comm: Optional[mpi4py.MPI.Comm] = None
 
-    @property
+
+    @functools.cached_property
     def rank(self):
-        return self._rank
+        return self.comm.Get_rank() if self.comm else 0
 
-    @property
+
+    @functools.cached_property
     def comm_name(self):
-        return self._communicator_name
+        return self.comm.Get_name() if self.comm else ""
 
-    @property
+    @functools.cached_property
     def comm_size(self):
-        return self._comm_size
+        return self.comm.Get_size() if self.comm else 1
 
-    @property
-    def comm(self):
-        return self._comm
 
     @classmethod
     def from_mpi_comm(cls, comm: mpi4py.MPI.Comm):
@@ -86,7 +83,7 @@ class ProcessProperties:
 
     @classmethod
     def from_single_node(cls):
-        return ProcessProperties(None)
+        return ProcessProperties()
 
 
 class ParallelLogger(logging.Filter):
