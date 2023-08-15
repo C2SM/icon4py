@@ -14,19 +14,19 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, broadcast, where, maximum
 
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_15 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     _mo_velocity_advection_stencil_15,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_16 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
     _mo_velocity_advection_stencil_16,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_17 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
     _mo_velocity_advection_stencil_18,
 )
-from icon4py.common.dimension import C2EDim, C2E2CODim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2EDim, C2E2CODim, CellDim, EdgeDim, KDim
 
 @field_operator
 def _fused_velocity_advection_stencil_16_to_18(

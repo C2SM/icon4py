@@ -14,35 +14,35 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where, broadcast
 
-from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_01 import (
     _mo_velocity_advection_stencil_01,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_02 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
     _mo_velocity_advection_stencil_02,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_03 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
     _mo_velocity_advection_stencil_03,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_04 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_04 import (
     _mo_velocity_advection_stencil_04,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_05 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
     _mo_velocity_advection_stencil_05,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_06 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
     _mo_velocity_advection_stencil_06,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_07 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     _mo_velocity_advection_stencil_07,
 )
-from icon4py.common.dimension import E2C2EDim, V2CDim, CellDim, EdgeDim, VertexDim, KDim
+from icon4py.model.common.dimension import E2C2EDim, V2CDim, CellDim, EdgeDim, VertexDim, KDim
 
 
 @field_operator
-def _fused_velocity_advection_stencil_1_to_7(
+def _fused_velocity_advection_stencil_1_to_6(
     vn: Field[[EdgeDim, KDim], float],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
     wgtfac_e: Field[[EdgeDim, KDim], float],
@@ -142,7 +142,7 @@ def _fused_velocity_advection_stencil_1_to_7(
     Field[[EdgeDim, KDim], float],
 ]:
     vt, vn_ie, z_kin_hor_e, z_w_concorr_me = (
-        _fused_velocity_advection_stencil_1_to_7(
+        _fused_velocity_advection_stencil_1_to_6(
             vn,
             rbf_vec_coeff_e,
             wgtfac_e,
