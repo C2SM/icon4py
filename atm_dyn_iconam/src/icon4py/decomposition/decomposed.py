@@ -166,8 +166,9 @@ class SingleNodeResult:
 
 class GHexMultiNode:
     def __init__(self, props:ProcessProperties, domain_decomposition: DecompositionInfo):
-        self._context = ghex.context(ghex.mpi_comm(props.comm), True)
-        #self._context = ghex.context(ghex.mpi_comm(), True)
+        #TODO (magdalena) fix python build of ghex: cmake find_python_module(mpi4py) does not work
+        #self._context = ghex.context(ghex.mpi_comm(props.comm), True)
+        self._context = ghex.context(ghex.mpi_comm(), True)
         self._domain_id_gen = DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
