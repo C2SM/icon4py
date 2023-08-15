@@ -57,6 +57,12 @@ from icon4py.common.constants import (
     GAS_CONSTANT_DRY_AIR,
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
+    PrognosticState,
+)
 from icon4py.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
@@ -65,18 +71,9 @@ from icon4py.diffusion.diffusion_utils import (
     setup_fields_for_initial_step,
     zero_field,
 )
-from icon4py.diffusion.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalMarkerIndex,
-)
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
-from icon4py.diffusion.state_utils import (
-    DiagnosticState,
-    InterpolationState,
-    MetricState,
-    PrognosticState,
-)
+from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+from icon4py.grid.icon_grid import IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 
 
 # flake8: noqa
@@ -355,8 +352,8 @@ class Diffusion:
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
         self.vertical_params: Optional[VerticalModelParams] = None
-        self.interpolation_state: InterpolationState = None
-        self.metric_state: MetricState = None
+        self.interpolation_state: DiffusionInterpolationState = None
+        self.metric_state: DiffusionMetricState = None
         self.diff_multfac_w: Optional[float] = None
         self.diff_multfac_n2w: Field[[KDim], float] = None
         self.smag_offset: Optional[float] = None
@@ -373,8 +370,8 @@ class Diffusion:
         config: DiffusionConfig,
         params: DiffusionParams,
         vertical_params: VerticalModelParams,
-        metric_state: MetricState,
-        interpolation_state: InterpolationState,
+        metric_state: DiffusionMetricState,
+        interpolation_state: DiffusionInterpolationState,
         edge_params: EdgeParams,
         cell_params: CellParams,
     ):
@@ -397,8 +394,8 @@ class Diffusion:
         self.params: DiffusionParams = params
         self.grid = grid
         self.vertical_params = vertical_params
-        self.metric_state: MetricState = metric_state
-        self.interpolation_state: InterpolationState = interpolation_state
+        self.metric_state: DiffusionMetricState = metric_state
+        self.interpolation_state: DiffusionInterpolationState = interpolation_state
         self.edge_params = edge_params
         self.cell_params = cell_params
 
@@ -488,7 +485,7 @@ class Diffusion:
 
     def initial_run(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
     ):
@@ -524,7 +521,7 @@ class Diffusion:
 
     def run(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
     ):
@@ -545,7 +542,7 @@ class Diffusion:
 
     def _do_diffusion_step(
         self,
-        diagnostic_state: DiagnosticState,
+        diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
         diff_multfac_vn: Field[[KDim], float],
@@ -565,60 +562,43 @@ class Diffusion:
 
         """
         klevels = self.grid.n_lev()
-        cell_start_interior, cell_end_local = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.interior(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
+        cell_start_interior = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.interior(CellDim)
+        )
+        cell_start_nudging = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.nudging(CellDim)
+        )
+        cell_end_local = self.grid.get_end_index(
+            CellDim, HorizontalMarkerIndex.local(CellDim)
+        )
+        cell_end_halo = self.grid.get_end_index(
+            CellDim, HorizontalMarkerIndex.halo(CellDim)
         )
 
-        cell_start_nudging, cell_end_halo = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.halo(CellDim),
+        edge_start_nudging_plus_one = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+        )
+        edge_start_nudging = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim)
+        )
+        edge_start_lb_plus4 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+        )
+        edge_end_local = self.grid.get_end_index(
+            EdgeDim, HorizontalMarkerIndex.local(EdgeDim)
+        )
+        edge_end_local_minus2 = self.grid.get_end_index(
+            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
+        )
+        edge_end_halo = self.grid.get_end_index(
+            EdgeDim, HorizontalMarkerIndex.halo(EdgeDim)
         )
 
-        edge_start_nudging_plus_one, edge_end_local = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
+        vertex_start_lb_plus1 = self.grid.get_start_index(
+            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
         )
-
-        edge_start_nudging, edge_end_halo = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim),
-            HorizontalMarkerIndex.halo(EdgeDim),
-        )
-
-        edge_start_lb_plus4, _ = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-        )
-
-        (
-            edge_start_nudging_minus1,
-            edge_end_local_minus2,
-        ) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) - 1,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
-        )
-
-        (
-            vertex_start_local_boundary_plus3,
-            vertex_end_local,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
-            HorizontalMarkerIndex.local(VertexDim),
-        )
-        (
-            vertex_start_lb_plus1,
-            vertex_end_local_minus1,
-        ) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
-            HorizontalMarkerIndex.local(VertexDim) - 1,
+        vertex_end_local = self.grid.get_end_index(
+            VertexDim, HorizontalMarkerIndex.local(VertexDim)
         )
 
         # dtime dependent: enh_smag_factor,

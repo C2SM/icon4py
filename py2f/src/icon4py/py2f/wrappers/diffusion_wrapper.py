@@ -33,14 +33,15 @@ from icon4py.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
 )
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import IconGrid, VerticalModelParams
-from icon4py.diffusion.state_utils import (
-    DiagnosticState,
-    InterpolationState,
-    MetricState,
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
     PrognosticState,
 )
+from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
+from icon4py.grid.icon_grid import GridConfig, IconGrid
+from icon4py.grid.vertical import VerticalModelParams
 from icon4py.py2f.cffi_utils import CffiMethod, to_fields
 
 
@@ -48,6 +49,10 @@ diffusion: Diffusion()
 
 nproma = 50000
 field_sizes = {EdgeDim: nproma, CellDim: nproma, VertexDim: nproma}
+
+
+class VerticalGridConfig:
+    pass
 
 
 @to_fields(dim_sizes=field_sizes)
@@ -190,13 +195,13 @@ def diffusion_init(
         n_substeps=n_dyn_substeps,
         smag_3d=lsmag_3d,
     )
-    horizontal_size = HorizontalMeshSize(
+    horizontal_size = HorizontalGridSize(
         num_cells=nproma, num_vertices=nproma, num_edges=nproma
     )
-    vertical_size = VerticalMeshConfig(
+    vertical_size = VerticalGridConfig(
         num_lev=nlev, nshift=n_shift, nshift_total=n_shift_total
     )
-    mesh_config = MeshConfig(
+    mesh_config = GridConfig(
         horizontal_config=horizontal_size,
         vertical_config=vertical_size,
         limited_area=l_limited_area,
@@ -222,22 +227,12 @@ def diffusion_init(
         primal_normal_vert=(edges_primal_normal_vert_1, edges_primal_normal_vert_2),
         edge_areas=edges_area_edge,
     )
-    edge_params = EdgeParams(
-        tangent_orientation=tangent_orientation,
-        primal_edge_lengths=primal_edge_lengths,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        dual_normal_vert=(dual_normal_vert_1, dual_normal_vert_2),
-        dual_edge_lengths=dual_edge_lengths,
-        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
-        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
-        primal_normal_vert=(primal_normal_vert_1, primal_normal_vert_2),
-        edge_areas=edge_areas,
-    )
+
     cell_params = CellParams(cells_area)
     vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=nrdmax)
     config: DiffusionConfig = DiffusionConfig(grid, vertical_params)
     derived_diffusion_params = DiffusionParams(config)
-    metric_state = MetricState(
+    metric_state = DiffusionMetricState(
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         mask_hdiff=mask_hdiff,
@@ -247,7 +242,7 @@ def diffusion_init(
         zd_indlist=zd_indlist,
         zd_listdim=zd_listdim,
     )
-    interpolation_state = InterpolationState(
+    interpolation_state = DiffusionInterpolationState(
         e_bln_c_s,
         rbf_coeff_1,
         rbf_coeff_2,
@@ -257,6 +252,7 @@ def diffusion_init(
         geofac_grg_y,
         nudgecoeff_e,
     )
+
     diffusion.init(
         grid=grid,
         config=config,
@@ -289,7 +285,7 @@ def diffusion_run(
     ddt_vn_dyn: Field[[EdgeDim, KDim], float],  # unused -> optional
     ddt_vn_hdf: Field[[EdgeDim, KDim], float],  # unused -> optional
 ):
-    diagnostic_state = DiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
+    diagnostic_state = DiffusionDiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
     prognostic_state = PrognosticState(
         w=w,
         vn=vn,

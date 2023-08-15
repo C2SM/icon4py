@@ -15,12 +15,17 @@ import numpy as np
 import pytest
 
 from atm_dyn_iconam.tests.test_utils.serialbox_utils import (
+    IconDiffusionExitSavepoint,
     IconDiffusionInitSavepoint,
 )
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    PrognosticState,
+)
 from icon4py.diffusion.diffusion_utils import scale_k
-from icon4py.diffusion.horizontal import CellParams, EdgeParams
-from icon4py.diffusion.icon_grid import VerticalModelParams
+from icon4py.grid.horizontal import CellParams, EdgeParams
+from icon4py.grid.vertical import VerticalModelParams
 
 from .test_diffusion_utils import (
     diff_multfac_vn_numpy,
@@ -105,16 +110,15 @@ def test_diffusion_init(
     additional_parameters = DiffusionParams(config)
     vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
 
-    meta = diffusion_savepoint_init.get_metadata("nlev", "linit", "date")
+    meta = diffusion_savepoint_init.get_metadata("linit", "date")
 
-    assert meta["nlev"] == 65
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
 
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
@@ -208,7 +212,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
 
     diffusion = Diffusion()
     diffusion.init(
@@ -243,7 +247,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
@@ -287,7 +291,7 @@ def test_run_diffusion_single_step(
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
@@ -323,30 +327,31 @@ def test_run_diffusion_single_step(
 
 
 def _verify_diffusion_fields(
-    diagnostic_state,
-    prognostic_state,
-    diffusion_savepoint_exit,
+    diagnostic_state: DiffusionDiagnosticState,
+    prognostic_state: PrognosticState,
+    diffusion_savepoint: IconDiffusionExitSavepoint,
 ):
-    ref_div_ic = np.asarray(diffusion_savepoint_exit.div_ic())
+    ref_div_ic = np.asarray(diffusion_savepoint.div_ic())
     val_div_ic = np.asarray(diagnostic_state.div_ic)
-    ref_hdef_ic = np.asarray(diffusion_savepoint_exit.hdef_ic())
+    ref_hdef_ic = np.asarray(diffusion_savepoint.hdef_ic())
     val_hdef_ic = np.asarray(diagnostic_state.hdef_ic)
     assert np.allclose(ref_div_ic, val_div_ic)
     assert np.allclose(ref_hdef_ic, val_hdef_ic)
-    ref_w = np.asarray(diffusion_savepoint_exit.w())
+    ref_w = np.asarray(diffusion_savepoint.w())
     val_w = np.asarray(prognostic_state.w)
-    ref_dwdx = np.asarray(diffusion_savepoint_exit.dwdx())
+    ref_dwdx = np.asarray(diffusion_savepoint.dwdx())
     val_dwdx = np.asarray(diagnostic_state.dwdx)
-    ref_dwdy = np.asarray(diffusion_savepoint_exit.dwdy())
+    ref_dwdy = np.asarray(diffusion_savepoint.dwdy())
     val_dwdy = np.asarray(diagnostic_state.dwdy)
-    ref_vn = np.asarray(diffusion_savepoint_exit.vn())
-    val_vn = np.asarray(prognostic_state.vn)
-    assert np.allclose(ref_vn, val_vn)
     assert np.allclose(ref_dwdx, val_dwdx)
     assert np.allclose(ref_dwdy, val_dwdy)
+
+    ref_vn = np.asarray(diffusion_savepoint.vn())
+    val_vn = np.asarray(prognostic_state.vn)
+    assert np.allclose(ref_vn, val_vn)
     assert np.allclose(ref_w, val_w)
-    ref_exner = np.asarray(diffusion_savepoint_exit.exner())
-    ref_theta_v = np.asarray(diffusion_savepoint_exit.theta_v())
+    ref_exner = np.asarray(diffusion_savepoint.exner())
+    ref_theta_v = np.asarray(diffusion_savepoint.theta_v())
     val_theta_v = np.asarray(prognostic_state.theta_v)
     val_exner = np.asarray(prognostic_state.exner_pressure)
     assert np.allclose(ref_theta_v, val_theta_v)
@@ -371,7 +376,7 @@ def test_run_diffusion_initial_step(
     interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
-    metric_state = metrics_savepoint.construct_metric_state()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
@@ -403,5 +408,5 @@ def test_run_diffusion_initial_step(
     _verify_diffusion_fields(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        diffusion_savepoint_exit=diffusion_savepoint_exit,
+        diffusion_savepoint=diffusion_savepoint_exit,
     )
