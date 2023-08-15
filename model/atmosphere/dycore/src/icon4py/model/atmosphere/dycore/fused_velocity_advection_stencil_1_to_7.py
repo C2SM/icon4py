@@ -42,7 +42,7 @@ from icon4py.common.dimension import E2C2EDim, V2CDim, CellDim, EdgeDim, VertexD
 
 
 @field_operator
-def _fused_velocity_advection_stencil_1_to_6(
+def _fused_velocity_advection_stencil_1_to_7(
     vn: Field[[EdgeDim, KDim], float],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
     wgtfac_e: Field[[EdgeDim, KDim], float],
@@ -142,7 +142,7 @@ def _fused_velocity_advection_stencil_1_to_7(
     Field[[EdgeDim, KDim], float],
 ]:
     vt, vn_ie, z_kin_hor_e, z_w_concorr_me = (
-        _fused_velocity_advection_stencil_1_to_6(
+        _fused_velocity_advection_stencil_1_to_7(
             vn,
             rbf_vec_coeff_e,
             wgtfac_e,
