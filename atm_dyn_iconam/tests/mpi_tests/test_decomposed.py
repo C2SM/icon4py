@@ -177,7 +177,7 @@ def test_decomposition_info_matches_gridsize(caplog, download_data):  # noqa F81
 
 
 @pytest.mark.mpi
-def test_create_multi_pytenode_runtime_with_mpi(download_data):  # noqa F811
+def test_create_multi_node_runtime_with_mpi(download_data):  # noqa F811
     decomp_info = read_decomp_info(data_path, props)
     exchange = create_exchange(props, decomp_info)
     if props.comm_size > 1:
