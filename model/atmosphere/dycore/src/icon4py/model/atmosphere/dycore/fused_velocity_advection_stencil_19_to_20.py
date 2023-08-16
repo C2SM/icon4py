@@ -45,7 +45,6 @@ def _fused_velocity_advection_stencil_19_to_20(
     tangent_orientation: Field[[EdgeDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    ddt_vn_adv: Field[[EdgeDim, KDim], float],
     vert_idx: Field[[KDim], int32],
     cfl_w_limit: float,
     scalfac_exdiff: float,
@@ -57,7 +56,7 @@ def _fused_velocity_advection_stencil_19_to_20(
 
     zeta = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
 
-    dt_vn_adv = _mo_velocity_advection_stencil_19(
+    ddt_vn_adv = _mo_velocity_advection_stencil_19(
         z_kin_hor_e,
         coeff_gradekin,
         z_ekinh,
@@ -70,31 +69,31 @@ def _fused_velocity_advection_stencil_19_to_20(
         ddqz_z_full_e,
     )
 
-    dt_vn_adv = (
+    ddt_vn_adv = (
         where(maximum(3, nrdmax - 2) < vert_idx < nlev - 4,
-              _mo_velocity_advection_stencil_20(
-                  levelmask,
-                  c_lin_e,
-                  z_w_con_c_full,
-                  ddqz_z_full_e,
-                  area_edge,
-                  tangent_orientation,
-                  inv_primal_edge_length,
-                  zeta,
-                  geofac_grdiv,
-                  vn,
-                  ddt_vn_adv,
-                  cfl_w_limit,
-                  scalfac_exdiff,
-                  d_time,
-              ),
-              ddt_vn_adv,
+            _mo_velocity_advection_stencil_20(
+                levelmask,
+                c_lin_e,
+                z_w_con_c_full,
+                ddqz_z_full_e,
+                area_edge,
+                tangent_orientation,
+                inv_primal_edge_length,
+                zeta,
+                geofac_grdiv,
+                vn,
+                ddt_vn_adv,
+                cfl_w_limit,
+                scalfac_exdiff,
+                d_time,
+            ),
+            ddt_vn_adv,
         )
         if extra_diffu
-        else dt_vn_adv
+        else ddt_vn_adv
     )
 
-    return dt_vn_adv
+    return ddt_vn_adv
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -145,7 +144,6 @@ def fused_velocity_advection_stencil_19_to_20(
         tangent_orientation,
         inv_primal_edge_length,
         geofac_grdiv,
-        ddt_vn_adv,
         vert_idx,
         cfl_w_limit,
         scalfac_exdiff,
