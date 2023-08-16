@@ -23,12 +23,10 @@ def _mo_velocity_advection_stencil_14(
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
     cfl_clipping: Field[[CellDim, KDim], bool],
-    pre_levelmask: Field[[CellDim, KDim], bool],
     vcfl: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
     dtime: float,
 ) -> tuple[
-    Field[[CellDim, KDim], bool],
     Field[[CellDim, KDim], bool],
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -39,15 +37,13 @@ def _mo_velocity_advection_stencil_14(
         False,
     )
 
-    pre_levelmask = where(cfl_clipping, broadcast(True, (CellDim, KDim)), False)
-
     vcfl = where(cfl_clipping, z_w_con_c * dtime / ddqz_z_half, 0.0)
 
     z_w_con_c = where((cfl_clipping) & (vcfl < -0.85), -0.85 * ddqz_z_half / dtime, z_w_con_c)
 
     z_w_con_c = where((cfl_clipping) & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c)
 
-    return cfl_clipping, pre_levelmask, vcfl, z_w_con_c
+    return cfl_clipping, vcfl, z_w_con_c
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -55,7 +51,6 @@ def mo_velocity_advection_stencil_14(
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
     cfl_clipping: Field[[CellDim, KDim], bool],
-    pre_levelmask: Field[[CellDim, KDim], bool],
     vcfl: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
     dtime: float,
@@ -64,9 +59,8 @@ def mo_velocity_advection_stencil_14(
         ddqz_z_half,
         z_w_con_c,
         cfl_clipping,
-        pre_levelmask,
         vcfl,
         cfl_w_limit,
         dtime,
-        out=(cfl_clipping, pre_levelmask, vcfl, z_w_con_c),
+        out=(cfl_clipping, vcfl, z_w_con_c),
     )
