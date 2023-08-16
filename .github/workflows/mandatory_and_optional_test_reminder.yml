@@ -20,7 +20,8 @@ jobs:
             * launch jenkins spack
 
             **Optional Tests**
-            In case your change might affect downstream icon-exclaim, please consider running
+            
+            In case your change might affect downstream [icon-exclaim](https://github.com/C2SM/icon-exclaim), please consider running
 
             * launch jenkins icon
 
