@@ -19,7 +19,7 @@ jobs:
             
             * launch jenkins spack
 
-            ** Optional Tests**
+            **Optional Tests**
             In case your change might affect downstream icon-exclaim, please consider running
 
             * launch jenkins icon
