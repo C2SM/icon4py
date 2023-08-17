@@ -13,13 +13,12 @@
 
 from dataclasses import dataclass
 
-from gt4py.next.common import Field
-
-from icon4py.common.dimension import CellDim, EdgeDim, KDim
-
 
 @dataclass
-class PrepAdvection:
-    vn_traj: Field[[EdgeDim, KDim], float]
-    mass_flx_me: Field[[EdgeDim, KDim], float]
-    mass_flx_ic: Field[[CellDim, KDim], float]
+class NHConstants:
+    wgt_nnow_rth: float
+    wgt_nnew_rth: float
+    wgt_nnow_vel: float
+    wgt_nnew_vel: float
+    scal_divdamp: float
+    scal_divdamp_o2: float
