@@ -33,4 +33,7 @@ Run the tests with
 mpirun -np 2 pytest -v -s --with-mpi tests/mpi_tests/
 ```
 
-Test using serialized test data can be run with either 1, 2 or 4 nodes.
+Test using serialized test data can be run with either 1, 2 or 4 nodes. 
+
+When you run the tests for the first time
+the serialized test data will be downloaded from an online storage. That make some time...
