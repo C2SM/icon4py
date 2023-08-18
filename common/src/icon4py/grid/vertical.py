@@ -22,7 +22,8 @@ from icon4py.common.dimension import KDim
 
 @dataclass(frozen=True)
 class VerticalGridSize:
-    num_lev: int
+    num_lev: int  #: number of vertical levels in the model
+
 
 
 @dataclass(frozen=True)
@@ -31,12 +32,16 @@ class VerticalModelParams:
     Contains vertical physical parameters defined on the grid.
 
     vct_a:  field containing the physical heights of the k level
-    rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
     """
 
     vct_a: Field[[KDim], float]
+    #: field containing the physical heights of the k level [m]
+
     rayleigh_damping_height: Final[float]
+    #:rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
+
     index_of_damping_layer: Final[int32] = field(init=False)
+    #: index (into K levels) of the damping height
 
     def __post_init__(self):
         object.__setattr__(

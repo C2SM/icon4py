@@ -16,7 +16,7 @@ import pytest
 from gt4py.next.program_processors.runners.roundtrip import executor
 
 from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
-from icon4py.diffusion.diffusion import DiffusionConfig
+from icon4py.diffusion.diffusion import DiffusionConfig, DiffusionType
 
 from .test_utils.fixtures import (  # noqa F401
     damping_height,
@@ -117,7 +117,7 @@ def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:
     from the default.
     """
     return DiffusionConfig(
-        diffusion_type=5,
+        diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         type_t_diffu=2,
@@ -129,6 +129,8 @@ def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coeff=0.075,
         n_substeps=ndyn_substeps,
+        tkeshs=True,
+        type_sher=2
     )
 
 

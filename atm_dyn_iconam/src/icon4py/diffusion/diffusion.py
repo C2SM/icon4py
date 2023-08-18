@@ -133,6 +133,10 @@ class DiffusionConfig:
         temperature_boundary_diffusion_denom: float = 135.0,
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
+        # parameters for turbulent diffusion (turbdiff_nml)
+        type_sher: int = 0,
+        tkeshs: bool = False,
+
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
@@ -216,6 +220,14 @@ class DiffusionConfig:
         #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
         #: Called `nudge_efold_width` in mo_interpol_nml.f90
         self.nudge_efold_width: float = nudging_decay_rate
+
+        #:type of shear forcing used in turbulence
+        #: called itype_sher in turbdiff_nml.nml
+        self.type_sher: int = type_sher
+
+        #: include correction term for coarse grids in hor. shear production term
+        #: called ltkeshs in turbdiff_nml.nml
+        self.tkeshs: bool = tkeshs
 
         self._validate()
 

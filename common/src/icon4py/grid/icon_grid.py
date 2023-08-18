@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Final
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
@@ -38,8 +38,15 @@ from icon4py.grid.vertical import VerticalGridSize
 class GridConfig:
     horizontal_config: HorizontalGridSize
     vertical_config: VerticalGridSize
-    limited_area: bool = True
-    n_shift_total: int = 0
+
+    limited_area: Final[bool] = True
+    #: whether the domain is global
+
+    n_shift_total: Final[int]  = 0
+    #: total shift of model top with respect to global domain, this is always zero if
+    # there is no (vertical) nesting
+    #: is calculated in mo_model_dominp_patches.f90
+
 
     @property
     def num_k_levels(self):
