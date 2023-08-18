@@ -340,7 +340,9 @@ class InterpolationSavepoint(IconSavepoint):
     def nudgecoeff_e(self):
         return self._get_field("nudgecoeff_e", EdgeDim)
 
-    def construct_interpolation_state_for_diffusion(self) -> DiffusionInterpolationState:
+    def construct_interpolation_state_for_diffusion(
+        self,
+    ) -> DiffusionInterpolationState:
         grg = self.geofac_grg()
         return DiffusionInterpolationState(
             e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),

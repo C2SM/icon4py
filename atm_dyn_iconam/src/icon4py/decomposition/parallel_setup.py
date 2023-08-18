@@ -58,15 +58,14 @@ def finalize_mpi():
         log.info("finalizing MPI")
         MPI.Finalize()
 
+
 @dataclass(frozen=True)
 class ProcessProperties:
     comm: Optional[mpi4py.MPI.Comm] = None
 
-
     @functools.cached_property
     def rank(self):
         return self.comm.Get_rank() if self.comm else 0
-
 
     @functools.cached_property
     def comm_name(self):
@@ -75,7 +74,6 @@ class ProcessProperties:
     @functools.cached_property
     def comm_size(self):
         return self.comm.Get_size() if self.comm else 1
-
 
     @classmethod
     def from_mpi_comm(cls, comm: mpi4py.MPI.Comm):
