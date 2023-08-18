@@ -136,7 +136,6 @@ class DiffusionConfig:
         # parameters for turbulent diffusion (turbdiff_nml)
         type_sher: int = 0,
         tkeshs: bool = False,
-
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml

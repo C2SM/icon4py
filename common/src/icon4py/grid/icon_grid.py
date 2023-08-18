@@ -42,11 +42,10 @@ class GridConfig:
     limited_area: Final[bool] = True
     #: whether the domain is global
 
-    n_shift_total: Final[int]  = 0
+    n_shift_total: Final[int] = 0
     #: total shift of model top with respect to global domain, this is always zero if
     # there is no (vertical) nesting
     #: is calculated in mo_model_dominp_patches.f90
-
 
     @property
     def num_k_levels(self):

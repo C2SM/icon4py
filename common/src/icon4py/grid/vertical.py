@@ -25,7 +25,6 @@ class VerticalGridSize:
     num_lev: int  #: number of vertical levels in the model
 
 
-
 @dataclass(frozen=True)
 class VerticalModelParams:
     """
@@ -38,7 +37,7 @@ class VerticalModelParams:
     #: field containing the physical heights of the k level [m]
 
     rayleigh_damping_height: Final[float]
-    #:rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
+    #: rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
 
     index_of_damping_layer: Final[int32] = field(init=False)
     #: index (into K levels) of the damping height

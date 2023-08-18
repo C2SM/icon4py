@@ -130,7 +130,7 @@ def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:
         max_nudging_coeff=0.075,
         n_substeps=ndyn_substeps,
         tkeshs=True,
-        type_sher=2
+        type_sher=2,
     )
 
 
