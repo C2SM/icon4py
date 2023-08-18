@@ -25,12 +25,12 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.diffusion import (
+from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
 )
-from icon4py.diffusion.diffusion_states import (
+from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,

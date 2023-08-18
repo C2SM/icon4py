@@ -27,12 +27,12 @@ from icon4py.model.common.decomposition.parallel_setup import (
     ProcessProperties,
     get_processor_properties,
 )
-from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.diffusion.diffusion_states import (
+from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import Diffusion, DiffusionParams
+from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import (
     DiffusionDiagnosticState,
     PrognosticState,
 )
-from icon4py.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
+from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import _identity_c_k, _identity_e_k
 from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,

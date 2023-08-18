@@ -30,6 +30,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
 from icon4py.model.common.grid.vertical import VerticalGridSize
+from icon4py.model.common.utils import builder
 
 
 @dataclass(
@@ -57,13 +58,6 @@ class GridConfig:
     def num_cells(self):
         return self.horizontal_config.num_cells
 
-
-def builder(func):
-    def wrapper(self, *args, **kwargs):
-        func(self, *args, **kwargs)
-        return self
-
-    return wrapper
 
 
 class IconGrid:

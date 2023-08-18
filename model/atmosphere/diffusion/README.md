@@ -1,8 +1,8 @@
-# icon4py-atmosphere-dycore
+# icon4py-atmosphere-diffusion
 
 ## Description
 
-Contains code ported from ICON `src/atm_dyn_iconam`, which is the dynamical core of the ICON model.
+Python port of ICON diffusion module.
 
 ## Installation instructions
 

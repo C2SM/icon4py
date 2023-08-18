@@ -14,7 +14,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from icon4py.diffusion.diffusion import DiffusionConfig
+from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import DiffusionConfig
 
 
 n_substeps_reduced = 2

@@ -19,7 +19,7 @@ from pathlib import Path
 
 from icon4py.model.common.decomposition.decomposed import DecompositionInfo
 from icon4py.model.common.decomposition.parallel_setup import ParallelLogger, ProcessProperties
-from icon4py.diffusion.diffusion_states import (
+from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,

@@ -35,8 +35,8 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.decomposition.decomposed import DecompositionInfo
-from icon4py.diffusion.diffusion import VectorTuple
-from icon4py.diffusion.diffusion_states import (
+from icon4py.model.atmosphere.diffusion.diffusion import VectorTuple
+from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
@@ -45,7 +45,7 @@ from icon4py.diffusion.diffusion_states import (
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
 from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
 
-from .helpers import as_1D_sparse_field
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 
 
 class IconSavepoint:

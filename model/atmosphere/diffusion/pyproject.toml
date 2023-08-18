@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "icon4py-atmosphere-dycore"
-description = "ICON dynamical core."
+name = "icon4py-atmosphere-diffusion"
+description = "ICON diffusion."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
@@ -73,7 +73,7 @@ ignore_errors = true
 [tool.coverage.run]
 parallel = true
 branch = true
-source_pkgs = ['dycore']
+source_pkgs = ['diffusion']
 
 [tool.isort]
 lexicographical = true
@@ -110,9 +110,10 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 testpaths = 'tests'
+markers = 'datatest: this test uses binary data'
 
 [tool.setuptools.dynamic]
-version = {attr = 'icon4py.model.atmosphere.dycore.__init__.__version__'}
+version = {attr = 'icon4py.model.atmosphere.diffusion.__init__.__version__'}
 
 [tool.setuptools.package-data]
-'icon4py.model.atmosphere.dycore' = ['py.typed']
+'icon4py.model.atmosphere.diffusion' = ['py.typed']

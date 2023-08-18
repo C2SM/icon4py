@@ -23,7 +23,7 @@ from gt4py.next import Dimension
 
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
 from icon4py.model.common.decomposition.parallel_setup import ProcessProperties
-from icon4py.diffusion.diffusion_utils import builder
+from icon4py.model.common.utils import builder
 
 
 log = logging.getLogger(__name__)

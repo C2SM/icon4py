@@ -14,9 +14,13 @@
 from pathlib import Path
 
 import pytest
+from gt4py.next.program_processors.runners.roundtrip import executor
 
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
+from .simple_mesh import SimpleMesh
+
+
 
 test_utils = Path(__file__).parent
 model = test_utils.parent.parent
@@ -90,6 +94,48 @@ def damping_height():
     return 12500
 
 
+
+@pytest.fixture
+def ndyn_substeps():
+    """
+    Return number of dynamical substeps.
+
+    Serialized data uses a reduced number (2 instead of the default 5) in order to reduce the amount
+    of data generated.
+    """
+    return 2
+
+
+@pytest.fixture
+def linit():
+    """
+    Set the 'linit' flag for the ICON diffusion data savepoint.
+
+    Defaults to False
+    """
+    return False
+
+
+@pytest.fixture
+def step_date_init():
+    """
+    Set the step date for the loaded ICON time stamp at start of module.
+
+    Defaults to 2021-06-20T12:00:10.000'
+    """
+    return "2021-06-20T12:00:10.000"
+
+
+@pytest.fixture
+def step_date_exit():
+    """
+    Set the step date for the loaded ICON time stamp at the end of module.
+
+    Defaults to 2021-06-20T12:00:10.000'
+    """
+    return "2021-06-20T12:00:10.000"
+
+
 @pytest.fixture(scope="session")
 def get_grid_files():
     """
@@ -105,6 +151,35 @@ def get_grid_files():
     )
 
 
+@pytest.fixture
+def interpolation_savepoint(data_provider):  # noqa F811
+    """Load data from ICON interplation state savepoint."""
+    return data_provider.from_interpolation_savepoint()
+
+
+@pytest.fixture
+def metrics_savepoint(data_provider):  # noqa F811
+    """Load data from ICON mestric state savepoint."""
+    return data_provider.from_metrics_savepoint()
+
+
+
 @pytest.fixture()
 def r04b09_dsl_gridfile(get_grid_files):
     return r04b09_dsl_grid_path.joinpath("grid.nc")
+
+BACKENDS = {"embedded": executor}
+MESHES = {"simple_mesh": SimpleMesh()}
+
+
+@pytest.fixture(
+    ids=MESHES.keys(),
+    params=MESHES.values(),
+)
+def mesh(request):
+    return request.param
+
+
+@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
+def backend(request):
+    return request.param

@@ -2,6 +2,7 @@
 
 # icon4py model
 ./model/atmosphere/dycore
+./model/atmosphere/diffusion
 ./model/common
 ./py2f
 # icon4pytools
