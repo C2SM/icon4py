@@ -872,7 +872,7 @@ class Diffusion:
         )
 
         log.debug(
-            "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+            "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
         )
         log.debug("running stencil 16 (update_theta_and_exner): start")
         update_theta_and_exner.with_backend(backend)(

@@ -18,7 +18,7 @@ from typing import Callable
 import click
 import pytz
 from devtools import Timer
-from gt4py.next import Field, program
+from gt4py.next import program, Field
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
