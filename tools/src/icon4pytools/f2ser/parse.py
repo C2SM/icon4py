@@ -17,8 +17,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Optional
 
-from icon4pytools.f2ser.exceptions import MissingDerivedTypeError, ParsingError
 from numpy.f2py.crackfortran import crackfortran
+
+from icon4pytools.f2ser.exceptions import MissingDerivedTypeError, ParsingError
 
 
 def crack(path: Path) -> dict:

@@ -14,6 +14,3 @@
 
 class UndeclaredFieldError(Exception):
     pass
-
-class UnmergedCopyError(Exception):
-    pass

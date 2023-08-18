@@ -24,6 +24,10 @@ from icon4pytools.liskov.codegen.integration.template import (
     DeclareStatementGenerator,
     EndCreateStatement,
     EndCreateStatementGenerator,
+    EndDeleteStatement,
+    EndDeleteStatementGenerator,
+    EndFusedStencilStatement,
+    EndFusedStencilStatementGenerator,
     EndIfStatement,
     EndIfStatementGenerator,
     EndProfileStatement,
@@ -38,6 +42,10 @@ from icon4pytools.liskov.codegen.integration.template import (
     MetadataStatementGenerator,
     StartCreateStatement,
     StartCreateStatementGenerator,
+    StartDeleteStatement,
+    StartDeleteStatementGenerator,
+    StartFusedStencilStatement,
+    StartFusedStencilStatementGenerator,
     StartProfileStatement,
     StartProfileStatementGenerator,
     StartStencilStatement,
@@ -46,8 +54,6 @@ from icon4pytools.liskov.codegen.integration.template import (
 from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
 from icon4pytools.liskov.external.metadata import CodeMetadata
-from icon4pytools.liskov.codegen.integration.exceptions import UnmergedCopyError
-
 
 
 logger = setup_logger(__name__)
@@ -77,6 +83,9 @@ class IntegrationCodeGenerator(CodeGenerator):
         self._generate_declare()
         self._generate_start_stencil()
         self._generate_end_stencil()
+        self._generate_start_fused_stencil()
+        self._generate_end_fused_stencil()
+        self._generate_delete()
         self._generate_endif()
         self._generate_profile()
         self._generate_insert()
@@ -116,48 +125,30 @@ class IntegrationCodeGenerator(CodeGenerator):
             stencil = self.interface.StartStencil[i]
             logger.info(f"Generating START statement for {stencil.name}")
 
-            if stencil.mergecopy:
+            try:
+                next_stencil = self.interface.StartStencil[i + 1]
+            except IndexError:
+                pass
 
-              merged_name=stencil.name 
-              merged_fields=stencil.fields.copy()
-              j = 1
-              try:
-                  next_stencil = self.interface.StartStencil[i + j]
-              except IndexError:
-                  pass
+            if stencil.mergecopy and next_stencil.mergecopy:
+                stencil = StartStencilData(
+                    startln=stencil.startln,
+                    name=stencil.name + "_" + next_stencil.name,
+                    fields=stencil.fields + next_stencil.fields,
+                    bounds=stencil.bounds,
+                    acc_present=stencil.acc_present,
+                    mergecopy=stencil.mergecopy,
+                    copies=stencil.copies,
+                )
+                i += 2
 
-              while( next_stencil.mergecopy ):
-                merged_name += " " + next_stencil.name
-                merged_fields += next_stencil.fields
-                j += 1
-                try:
-                    next_stencil = self.interface.StartStencil[i + j]
-                except IndexError:
-                    pass
-              
-              stencil = StartStencilData(
-                  startln=stencil.startln,
-                  name=merged_name,
-                  fields=merged_fields,
-                  bounds=stencil.bounds,
-                  acc_present=stencil.acc_present,
-                  mergecopy=stencil.mergecopy,
-                  copies=stencil.copies,
-              )
-
-              self._generate(
-                  StartStencilStatement,
-                  StartStencilStatementGenerator,
-                  stencil.startln,
-                  stencil_data=stencil,
-                  profile=self.profile,
-              )
-
-              if j==1:
-                error_msg = f"{merged_name} cannot be merged with other stencil."
-                raise UnmergedCopyError(error_msg)
-              i += j
-
+                self._generate(
+                    StartStencilStatement,
+                    StartStencilStatementGenerator,
+                    stencil.startln,
+                    stencil_data=stencil,
+                    profile=self.profile,
+                )
             else:
                 self._generate(
                     StartStencilStatement,
@@ -187,6 +178,48 @@ class IntegrationCodeGenerator(CodeGenerator):
                 noaccenddata=self.interface.EndStencil[i].noaccenddata,
             )
 
+    def _generate_start_fused_stencil(self) -> None:
+        """Generate f90 integration code surrounding a fused stencil."""
+        if self.interface.StartFusedStencil != UnusedDirective:
+            for stencil in self.interface.StartFusedStencil:
+                logger.info(f"Generating START FUSED statement for {stencil.name}")
+                self._generate(
+                    StartFusedStencilStatement,
+                    StartFusedStencilStatementGenerator,
+                    stencil.startln,
+                    stencil_data=stencil,
+                )
+
+    def _generate_end_fused_stencil(self) -> None:
+        """Generate f90 integration code surrounding a fused stencil."""
+        if self.interface.EndFusedStencil != UnusedDirective:
+            for i, stencil in enumerate(self.interface.StartFusedStencil):
+                logger.info(f"Generating END Fused statement for {stencil.name}")
+                self._generate(
+                    EndFusedStencilStatement,
+                    EndFusedStencilStatementGenerator,
+                    self.interface.EndFusedStencil[i].startln,
+                    stencil_data=stencil,
+                )
+
+    def _generate_delete(self) -> None:
+        """Generate f90 integration code for delete section."""
+        if self.interface.StartDelete != UnusedDirective:
+            logger.info("Generating DELETE statement.")
+            for start, end in zip(
+                self.interface.StartDelete, self.interface.EndDelete, strict=True
+            ):
+                self._generate(
+                    StartDeleteStatement,
+                    StartDeleteStatementGenerator,
+                    start.startln,
+                )
+                self._generate(
+                    EndDeleteStatement,
+                    EndDeleteStatementGenerator,
+                    end.startln,
+                )
+
     def _generate_imports(self) -> None:
         """Generate f90 code for import statements."""
         logger.info("Generating IMPORT statement.")
@@ -194,7 +227,7 @@ class IntegrationCodeGenerator(CodeGenerator):
             ImportsStatement,
             ImportsStatementGenerator,
             self.interface.Imports.startln,
-            stencils=self.interface.StartStencil,
+            stencils=self.interface.StartStencil + self.interface.StartFusedStencil,
         )
 
     def _generate_create(self) -> None:

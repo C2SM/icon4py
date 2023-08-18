@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
+
 from icon4pytools.liskov.codegen.integration.generate import IntegrationCodeGenerator
 from icon4pytools.liskov.codegen.integration.interface import (
     BoundsData,
@@ -92,6 +93,10 @@ def integration_code_interface():
     return IntegrationCodeInterface(
         StartStencil=[start_stencil_data],
         EndStencil=[end_stencil_data],
+        StartFusedStencil=[],
+        EndFusedStencil=[],
+        StartDelete=[],
+        EndDelete=[],
         Declare=[declare_data],
         Imports=imports_data,
         StartCreate=[start_create_data],

@@ -12,8 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from copy import deepcopy
 
-import icon4pytools.liskov.parsing.parse as ts
 import pytest
+
+import icon4pytools.liskov.parsing.parse as ts
 from icon4pytools.liskov.parsing.utils import (
     extract_directive,
     print_parsed_directive,

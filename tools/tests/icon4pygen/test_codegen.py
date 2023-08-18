@@ -16,12 +16,10 @@ import pkgutil
 import re
 
 import icon4py.model.atmosphere.dycore as dycore
-import icon4py.model.atmosphere.advection as advection
 import pytest
 from click.testing import CliRunner
-from icon4pytools.icon4pygen.cli import main
 
-import icon4py.atm_dyn_iconam
+from icon4pytools.icon4pygen.cli import main
 
 from .helpers import get_stencil_module_path
 
@@ -43,11 +41,6 @@ def dycore_fencils() -> list[tuple[str, str]]:
     fencils = [(DYCORE_PKG, stencil) for stencil in stencils]
     return fencils
 
-def advection_fencils() -> list[tuple[str, str]]:
-    pkgpath = os.path.dirname(advection.__file__)
-    stencils = [name for _, name, _ in pkgutil.iter_modules([pkgpath])]
-    fencils = [(DYCORE_PKG, stencil) for stencil in stencils]
-    return fencils
 
 def check_cpp_codegen(fname: str) -> None:
     stencil_name = fname.replace(".cpp", "")
@@ -120,14 +113,6 @@ def check_code_was_generated(stencil_name: str) -> None:
 
 @pytest.mark.parametrize(("stencil_module", "stencil_name"), dycore_fencils())
 def test_codegen_dycore(cli, stencil_module, stencil_name) -> None:
-    module_path = get_stencil_module_path(stencil_module, stencil_name)
-    with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
-        assert result.exit_code == 0
-        check_code_was_generated(stencil_name)
-
-@pytest.mark.parametrize(("stencil_module", "stencil_name"), advection_fencils())
-def test_codegen_advection(cli, stencil_module, stencil_name) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
         result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])

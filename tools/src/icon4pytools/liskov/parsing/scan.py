@@ -36,7 +36,9 @@ class DirectivesScanner(Step):
         A directive must start with !$DSL <DIRECTIVE_NAME>( with the
         directive arguments delimited by a ;. The directive if on multiple
         lines must include a & at the end of the line. The directive
-        must always be closed by a closing bracket ).
+        must always be closed by a closing bracket ). A directive can be
+        commented out by using a ! before the directive,
+        for example, !!$DSL means the directive is disabled.
 
         Example:
             !$DSL IMPORTS()
@@ -61,11 +63,11 @@ class DirectivesScanner(Step):
         with self.input_filepath.open() as f:
             scanned_directives = []
             lines = f.readlines()
-            for lnumber, string in enumerate(lines):
-                if ts.DIRECTIVE_IDENT in string:
-                    stripped = string.strip()
+            for lnumber, line in enumerate(lines):
+                stripped = line.strip()
+                if stripped.startswith(ts.DIRECTIVE_IDENT):
                     eol = stripped[-1]
-                    scanned = Scanned(string, lnumber)
+                    scanned = Scanned(line, lnumber)
                     scanned_directives.append(scanned)
 
                     match eol:
@@ -77,12 +79,12 @@ class DirectivesScanner(Step):
                             if ts.DIRECTIVE_IDENT not in next_line:
                                 raise DirectiveSyntaxError(
                                     f"Error in directive on line number: {lnumber + 1}\n Invalid use of & in single line "
-                                    f"directive. "
+                                    f"directive in file {self.input_filepath} ."
                                 )
                             continue
                         case _:
                             raise DirectiveSyntaxError(
-                                f"Error in directive on line number: {lnumber + 1}\n Used invalid end of line character."
+                                f"Error in directive on line number: {lnumber + 1}\n Used invalid end of line characterat in file {self.input_filepath} ."
                             )
         logger.info(f"Scanning for directives at {self.input_filepath}")
         return directives

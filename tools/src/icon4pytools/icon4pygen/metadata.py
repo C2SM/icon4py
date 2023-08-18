@@ -34,7 +34,6 @@ from icon4pytools.icon4pygen.exceptions import (
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
 
 
-
 @dataclass(frozen=True)
 class StencilInfo:
     itir: itir.FencilDefinition

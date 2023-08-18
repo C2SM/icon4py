@@ -14,15 +14,19 @@
 import itertools
 
 import pytest
+
 from icon4pytools.liskov.cli import main
 from icon4pytools.liskov.external.exceptions import MissingCommandError
 
 from .fortran_samples import (
     CONSECUTIVE_STENCIL,
     FREE_FORM_STENCIL,
+    MULTIPLE_FUSED,
     MULTIPLE_STENCILS,
     NO_DIRECTIVES_STENCIL,
+    SINGLE_FUSED,
     SINGLE_STENCIL,
+    SINGLE_STENCIL_WITH_COMMENTS,
 )
 
 
@@ -36,12 +40,15 @@ test_cases = []
 files = [
     ("NO_DIRECTIVES", NO_DIRECTIVES_STENCIL),
     ("SINGLE", SINGLE_STENCIL),
+    ("COMMENTS", SINGLE_STENCIL_WITH_COMMENTS),
     ("CONSECUTIVE", CONSECUTIVE_STENCIL),
     ("FREE_FORM", FREE_FORM_STENCIL),
     ("MULTIPLE", MULTIPLE_STENCILS),
+    ("SINGLE_FUSED", SINGLE_FUSED),
+    ("MULTIPLE_FUSED", MULTIPLE_FUSED),
 ]
 
-flags = {"serialise": ["--multinode"], "integrate": ["-p", "-m"]}
+flags = {"serialise": ["--multinode"], "integrate": ["-p", "-m", "-f", "-u"]}
 
 for file_name, file_content in files:
     for cmd in flags.keys():

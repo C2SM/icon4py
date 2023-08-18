@@ -12,6 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
+from pytest import mark
+
 from icon4pytools.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     RepeatedDirectiveError,
@@ -20,10 +22,9 @@ from icon4pytools.liskov.parsing.exceptions import (
 )
 from icon4pytools.liskov.parsing.parse import Declare, DirectivesParser, Imports, StartStencil
 from icon4pytools.liskov.parsing.validation import DirectiveSyntaxValidator
-from pytest import mark
 
 from .conftest import insert_new_lines, scan_for_directives
-from .fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL
+from .fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL_WITH_COMMENTS
 
 
 @mark.parametrize(
@@ -72,7 +73,7 @@ def test_directive_syntax_validator(directive):
     ],
 )
 def test_directive_semantics_validation_repeated_directives(make_f90_tmpfile, directive):
-    fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
+    fpath = make_f90_tmpfile(content=SINGLE_STENCIL_WITH_COMMENTS)
     opath = fpath.with_suffix(".gen")
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
@@ -92,7 +93,7 @@ def test_directive_semantics_validation_repeated_directives(make_f90_tmpfile, di
     ],
 )
 def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, directive):
-    fpath = make_f90_tmpfile(content=SINGLE_STENCIL)
+    fpath = make_f90_tmpfile(content=SINGLE_STENCIL_WITH_COMMENTS)
     opath = fpath.with_suffix(".gen")
     insert_new_lines(fpath, [directive])
     directives = scan_for_directives(fpath)
@@ -108,7 +109,7 @@ def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, direc
     ],
 )
 def test_directive_semantics_validation_required_directives(make_f90_tmpfile, directive):
-    new = SINGLE_STENCIL.replace(directive, "")
+    new = SINGLE_STENCIL_WITH_COMMENTS.replace(directive, "")
     fpath = make_f90_tmpfile(content=new)
     opath = fpath.with_suffix(".gen")
     directives = scan_for_directives(fpath)

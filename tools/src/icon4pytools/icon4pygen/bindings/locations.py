@@ -20,7 +20,6 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4pytools.icon4pygen.bindings.codegen.render.location import LocationRenderer
 
 
-
 class BasicLocation:
     renderer = LocationRenderer
 

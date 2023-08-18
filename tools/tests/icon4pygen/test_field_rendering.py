@@ -19,7 +19,6 @@ from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
 from icon4pytools.icon4pygen.metadata import get_stencil_info
 
 
-
 def test_horizontal_field_sid_rendering():
     @field_operator
     def identity(field: Field[[EdgeDim], float]) -> Field[[EdgeDim], float]:
