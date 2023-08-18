@@ -17,17 +17,17 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from icon4py.decomposition.decomposed import DecompositionInfo
-from icon4py.decomposition.parallel_setup import ParallelLogger, ProcessProperties
+from icon4py.model.common.decomposition.decomposed import DecompositionInfo
+from icon4py.model.common.decomposition.parallel_setup import ParallelLogger, ProcessProperties
 from icon4py.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
     PrognosticState,
 )
-from icon4py.grid.horizontal import CellParams, EdgeParams
-from icon4py.grid.icon_grid import IconGrid
-from icon4py.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.icon_grid import IconGrid
+from icon4py.model.common.grid.vertical import VerticalModelParams
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."

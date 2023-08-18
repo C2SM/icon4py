@@ -22,8 +22,8 @@ from gt4py.next import program, Field
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.decomposition.decomposed import create_exchange
-from icon4py.decomposition.parallel_setup import (
+from icon4py.model.common.decomposition.decomposed import create_exchange
+from icon4py.model.common.decomposition.parallel_setup import (
     ProcessProperties,
     get_processor_properties,
 )

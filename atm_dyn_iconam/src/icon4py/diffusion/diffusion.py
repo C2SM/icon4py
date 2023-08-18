@@ -29,36 +29,36 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn_imperative,
 )
 
-from icon4py.atm_dyn_iconam.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.atm_dyn_iconam.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
+from icon4py.model.atmosphere.dycore.apply_diffusion_to_vn import apply_diffusion_to_vn
+from icon4py.model.atmosphere.dycore.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
 )
-from icon4py.atm_dyn_iconam.calculate_diagnostic_quantities_for_turbulence import (
+from icon4py.model.atmosphere.dycore.calculate_diagnostic_quantities_for_turbulence import (
     calculate_diagnostic_quantities_for_turbulence,
 )
-from icon4py.atm_dyn_iconam.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
+from icon4py.model.atmosphere.dycore.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
 )
-from icon4py.atm_dyn_iconam.calculate_nabla2_and_smag_coefficients_for_vn import (
+from icon4py.model.atmosphere.dycore.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.atm_dyn_iconam.calculate_nabla2_for_theta import (
+from icon4py.model.atmosphere.dycore.calculate_nabla2_for_theta import (
     calculate_nabla2_for_theta,
 )
-from icon4py.atm_dyn_iconam.mo_intp_rbf_rbf_vec_interpol_vertex import (
+from icon4py.model.atmosphere.dycore.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.atm_dyn_iconam.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
+from icon4py.model.atmosphere.dycore.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
-from icon4py.atm_dyn_iconam.update_theta_and_exner import update_theta_and_exner
-from icon4py.common.constants import (
+from icon4py.model.atmosphere.dycore.update_theta_and_exner import update_theta_and_exner
+from icon4py.model.common.constants import (
     CPD,
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
 )
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.decomposition.decomposed import ExchangeRuntime, SingleNode
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.decomposition.decomposed import ExchangeRuntime, SingleNode
 from icon4py.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
@@ -73,9 +73,9 @@ from icon4py.diffusion.diffusion_utils import (
     setup_fields_for_initial_step,
     zero_field,
 )
-from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
-from icon4py.grid.icon_grid import IconGrid
-from icon4py.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+from icon4py.model.common.grid.icon_grid import IconGrid
+from icon4py.model.common.grid.vertical import VerticalModelParams
 
 
 # flake8: noqa

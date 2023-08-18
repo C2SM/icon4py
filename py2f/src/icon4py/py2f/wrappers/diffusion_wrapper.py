@@ -36,9 +36,9 @@ from icon4py.diffusion.diffusion_states import (
     DiffusionMetricState,
     PrognosticState,
 )
-from icon4py.grid.horizontal import CellParams, EdgeParams
-from icon4py.grid.icon_grid import IconGrid
-from icon4py.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.icon_grid import IconGrid
+from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.py2f.cffi_utils import CffiMethod
 
 

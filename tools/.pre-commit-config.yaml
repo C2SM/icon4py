@@ -5,7 +5,7 @@ default_language_version:
     # Remove frozen version once we migrated away from tsa
     node: 17.9.1
 minimum_pre_commit_version: 2.20.0
-exclude: "atm_dyn_iconam/.*|common/.*|py2f/.*"
+exclude: "model/.*"
 
 repos:
     - repo: meta
@@ -52,7 +52,7 @@ repos:
                     --comment-style,
                     "|#|",
                     --license-filepath,
-                    .license_header.txt,
+                    tools/.license_header.txt,
                     --fuzzy-match-generates-todo,
                 ]
 
@@ -110,6 +110,7 @@ repos:
                 - flake8-eradicate
                 - flake8-mutable
                 - pygments
+            args: [--config=tools/.flake8, tools/src/icon4pytools]
 
     - repo: local
       hooks:

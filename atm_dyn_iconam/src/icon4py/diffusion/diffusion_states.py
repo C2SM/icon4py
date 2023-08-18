@@ -18,7 +18,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from icon4py.common.dimension import (
+from icon4py.model.common.dimension import (
     C2E2CODim,
     CECDim,
     CEDim,

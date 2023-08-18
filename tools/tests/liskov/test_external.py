@@ -40,7 +40,7 @@ def test_stencil_collector_invalid_module():
 
 
 def test_stencil_collector_invalid_member():
-    from icon4py.atm_dyn_iconam import apply_nabla2_to_w
+    from icon4py.model.atmosphere.dycore import apply_nabla2_to_w
 
     module_path = Path(apply_nabla2_to_w.__file__)
     parents = module_path.parents[0]
@@ -82,6 +82,10 @@ mock_deserialised_directives = IntegrationCodeInterface(
     Imports=None,
     Declare=None,
     EndStencil=None,
+    StartFusedStencil=None,
+    EndFusedStencil=None,
+    StartDelete=None,
+    EndDelete=None,
     StartCreate=None,
     EndCreate=None,
     EndIf=None,
