@@ -154,7 +154,9 @@ def read_static_fields(
         interpolation_state = (
             dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
         )
-        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        metric_state = (
+            dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        )
         return metric_state, interpolation_state
     else:
         raise NotImplementedError(SB_ONLY_MSG)

@@ -57,6 +57,12 @@ from icon4py.common.constants import (
     GAS_CONSTANT_DRY_AIR,
 )
 from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
+    PrognosticState,
+)
 from icon4py.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
@@ -64,12 +70,6 @@ from icon4py.diffusion.diffusion_utils import (
     scale_k,
     setup_fields_for_initial_step,
     zero_field,
-)
-from icon4py.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-    DiffusionInterpolationState,
-    DiffusionMetricState,
-    PrognosticState,
 )
 from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.grid.icon_grid import IconGrid

@@ -18,12 +18,15 @@ from typing import Callable
 import click
 import pytz
 from devtools import Timer
-from gt4py.next import program, Field
+from gt4py.next import Field, program
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
-from icon4py.common.dimension import CellDim, KDim, EdgeDim
+from icon4py.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.diffusion.diffusion_states import DiffusionDiagnosticState, PrognosticState
+from icon4py.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    PrognosticState,
+)
 from icon4py.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
 from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
@@ -42,6 +45,7 @@ from helpers import serialbox_utils as sb_utils  # noqa
 
 
 log = logging.getLogger(__name__)
+
 
 # TODO (magdalena) to be removed once there is a proper time stepping
 @program
@@ -71,6 +75,7 @@ def _copy_diagnostic_and_prognostics(
     _identity_c_k(w_new, out=w)
     _identity_c_k(exner_new, out=exner)
     _identity_c_k(theta_v_new, out=theta_v)
+
 
 class DummyAtmoNonHydro:
     def __init__(self, data_provider: sb_utils.IconSerialDataProvider):
