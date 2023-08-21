@@ -16,10 +16,17 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01b import hflx_limiter_mo_stencil_01b
-from icon4py.model.common.dimension import C2EDim, CEDim, KDim, EdgeDim, CellDim
-
-from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, constant_field, as_1D_sparse_field
+from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01b import (
+    hflx_limiter_mo_stencil_01b,
+)
+from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    _shape,
+    as_1D_sparse_field,
+    constant_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -38,20 +45,21 @@ def hflx_limiter_mo_stencil_01b_numpy(
 
     zero_array = np.zeros(p_rhodz_now.shape)
 
-    z_mflx_anti_1 = ( p_dtime * geofac_div[:, 0] / p_rhodz_new
-                    * z_anti_c2e[:, 0] )
-    z_mflx_anti_2 = ( p_dtime * geofac_div[:, 1] / p_rhodz_new
-                    * z_anti_c2e[:, 1] )
-    z_mflx_anti_3 = ( p_dtime * geofac_div[:, 2] / p_rhodz_new
-                    * z_anti_c2e[:, 2] )
+    z_mflx_anti_1 = p_dtime * geofac_div[:, 0] / p_rhodz_new * z_anti_c2e[:, 0]
+    z_mflx_anti_2 = p_dtime * geofac_div[:, 1] / p_rhodz_new * z_anti_c2e[:, 1]
+    z_mflx_anti_3 = p_dtime * geofac_div[:, 2] / p_rhodz_new * z_anti_c2e[:, 2]
 
-    z_mflx_anti_in = -1.0 * ( np.minimum(zero_array, z_mflx_anti_1)
-                            + np.minimum(zero_array, z_mflx_anti_2)
-                            + np.minimum(zero_array, z_mflx_anti_3) )
+    z_mflx_anti_in = -1.0 * (
+        np.minimum(zero_array, z_mflx_anti_1)
+        + np.minimum(zero_array, z_mflx_anti_2)
+        + np.minimum(zero_array, z_mflx_anti_3)
+    )
 
-    z_mflx_anti_out =  ( np.maximum(zero_array, z_mflx_anti_1)
-                       + np.maximum(zero_array, z_mflx_anti_2)
-                       + np.maximum(zero_array, z_mflx_anti_3) )
+    z_mflx_anti_out = (
+        np.maximum(zero_array, z_mflx_anti_1)
+        + np.maximum(zero_array, z_mflx_anti_2)
+        + np.maximum(zero_array, z_mflx_anti_3)
+    )
 
     z_fluxdiv_c = np.sum(z_mflx_low[c2e] * geofac_div, axis=1)
 
@@ -66,6 +74,7 @@ def hflx_limiter_mo_stencil_01b_numpy(
         z_tracer_max,
         z_tracer_min,
     )
+
 
 def test_hflx_limiter_mo_stencil_01b():
     mesh = SimpleMesh()
@@ -92,7 +101,7 @@ def test_hflx_limiter_mo_stencil_01b():
         np.asarray(z_mflx_low),
         np.asarray(z_anti),
         np.asarray(p_cc),
-        np.asarray(p_dtime)
+        np.asarray(p_dtime),
     )
 
     hflx_limiter_mo_stencil_01b(
@@ -114,8 +123,8 @@ def test_hflx_limiter_mo_stencil_01b():
         },
     )
 
-    assert np.allclose(z_mflx_anti_in, ref_1) 
-    assert np.allclose(z_mflx_anti_out, ref_2) 
+    assert np.allclose(z_mflx_anti_in, ref_1)
+    assert np.allclose(z_mflx_anti_out, ref_2)
     assert np.allclose(z_tracer_new_low, ref_3)
-    assert np.allclose(z_tracer_max, ref_4) 
-    assert np.allclose(z_tracer_min, ref_5) 
+    assert np.allclose(z_tracer_max, ref_4)
+    assert np.allclose(z_tracer_min, ref_5)

@@ -12,14 +12,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.upwind_hflux_miura3_stencil_01 import (
     upwind_hflux_miura3_stencil_01,
 )
-from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-
-from icon4py.model.common.test_utils.helpers import random_field, zero_field, random_mask
+from icon4py.model.common.test_utils.helpers import (
+    random_field,
+    random_mask,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -62,17 +65,71 @@ def upwind_hflux_miura3_stencil_01_numpy(
     z_lsq_coeff_10_e2c = z_lsq_coeff_10[e2c]
 
     p_out_e_miura3 = (
-           np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0]) * z_quad_vector_sum_1
-         + np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0]) * z_quad_vector_sum_2 
-         + np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0]) * z_quad_vector_sum_3
-         + np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_4_e2c[:, 1], z_lsq_coeff_4_e2c[:, 0]) * z_quad_vector_sum_4
-         + np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_5_e2c[:, 1], z_lsq_coeff_5_e2c[:, 0]) * z_quad_vector_sum_5
-         + np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_6_e2c[:, 1], z_lsq_coeff_6_e2c[:, 0]) * z_quad_vector_sum_6
-         + np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_7_e2c[:, 1], z_lsq_coeff_7_e2c[:, 0]) * z_quad_vector_sum_7
-         + np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_8_e2c[:, 1], z_lsq_coeff_8_e2c[:, 0]) * z_quad_vector_sum_8
-         + np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_9_e2c[:, 1], z_lsq_coeff_9_e2c[:, 0]) * z_quad_vector_sum_9
-         + np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_10_e2c[:, 1], z_lsq_coeff_10_e2c[:, 0]) * z_quad_vector_sum_10
-    ) / z_dreg_area * p_mass_flx_e
+        (
+            np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_1_e2c[:, 1],
+                z_lsq_coeff_1_e2c[:, 0],
+            )
+            * z_quad_vector_sum_1
+            + np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_2_e2c[:, 1],
+                z_lsq_coeff_2_e2c[:, 0],
+            )
+            * z_quad_vector_sum_2
+            + np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_3_e2c[:, 1],
+                z_lsq_coeff_3_e2c[:, 0],
+            )
+            * z_quad_vector_sum_3
+            + np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_4_e2c[:, 1],
+                z_lsq_coeff_4_e2c[:, 0],
+            )
+            * z_quad_vector_sum_4
+            + np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_5_e2c[:, 1],
+                z_lsq_coeff_5_e2c[:, 0],
+            )
+            * z_quad_vector_sum_5
+            + np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_6_e2c[:, 1],
+                z_lsq_coeff_6_e2c[:, 0],
+            )
+            * z_quad_vector_sum_6
+            + np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_7_e2c[:, 1],
+                z_lsq_coeff_7_e2c[:, 0],
+            )
+            * z_quad_vector_sum_7
+            + np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_8_e2c[:, 1],
+                z_lsq_coeff_8_e2c[:, 0],
+            )
+            * z_quad_vector_sum_8
+            + np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_9_e2c[:, 1],
+                z_lsq_coeff_9_e2c[:, 0],
+            )
+            * z_quad_vector_sum_9
+            + np.where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_10_e2c[:, 1],
+                z_lsq_coeff_10_e2c[:, 0],
+            )
+            * z_quad_vector_sum_10
+        )
+        / z_dreg_area
+        * p_mass_flx_e
+    )
 
     return p_out_e_miura3
 
@@ -102,7 +159,7 @@ def test_upwind_hflux_miura3_stencil_01():
     z_quad_vector_sum_10 = random_field(mesh, EdgeDim, KDim)
     p_mass_flx_e = random_field(mesh, EdgeDim, KDim)
     z_dreg_area = random_field(mesh, EdgeDim, KDim)
-#    cell_rel_idx_dsl = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
+    #    cell_rel_idx_dsl = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
     cell_rel_idx_dsl = random_mask(mesh, EdgeDim, KDim, dtype=int32)
     p_out_e_miura3 = zero_field(mesh, EdgeDim, KDim)
 

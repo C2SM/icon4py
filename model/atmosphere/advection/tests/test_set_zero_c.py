@@ -15,7 +15,6 @@ import numpy as np
 
 from icon4py.model.atmosphere.advection.set_zero_c import set_zero_c
 from icon4py.model.common.dimension import CellDim
-
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 

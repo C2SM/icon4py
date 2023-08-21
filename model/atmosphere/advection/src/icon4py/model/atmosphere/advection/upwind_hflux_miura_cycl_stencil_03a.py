@@ -13,7 +13,7 @@
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, float64
+from gt4py.next.ffront.fbuiltins import float64, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 
@@ -23,7 +23,7 @@ def _upwind_hflux_miura_cycl_stencil_03a(
     z_tracer_mflx_1_dsl: Field[[EdgeDim, KDim], float],
     z_tracer_mflx_2_dsl: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl)/float64(2)
+    p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl) / float64(2)
     return p_out_e
 
 
@@ -34,7 +34,5 @@ def upwind_hflux_miura_cycl_stencil_03a(
     p_out_e: Field[[EdgeDim, KDim], float],
 ):
     _upwind_hflux_miura_cycl_stencil_03a(
-        z_tracer_mflx_1_dsl,
-        z_tracer_mflx_2_dsl,
-        out=(p_out_e)
+        z_tracer_mflx_1_dsl, z_tracer_mflx_2_dsl, out=(p_out_e)
     )

@@ -43,7 +43,9 @@ def test_calculate_nabla2_of_theta():
 
     out = zero_field(mesh, CellDim, KDim)
 
-    ref = calculate_nabla2_of_theta_numpy(mesh.c2e, np.asarray(z_nabla2_e), np.asarray(geofac_div))
+    ref = calculate_nabla2_of_theta_numpy(
+        mesh.c2e, np.asarray(z_nabla2_e), np.asarray(geofac_div)
+    )
     calculate_nabla2_of_theta(
         z_nabla2_e,
         geofac_div_new,

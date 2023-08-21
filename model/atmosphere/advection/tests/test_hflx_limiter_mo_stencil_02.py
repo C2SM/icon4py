@@ -18,8 +18,11 @@ from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import (
     hflx_limiter_mo_stencil_02,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
-from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    constant_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 

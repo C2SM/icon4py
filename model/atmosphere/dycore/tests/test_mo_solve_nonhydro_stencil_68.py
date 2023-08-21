@@ -46,7 +46,10 @@ class TestMoSolveNonhydroStencil68(StencilTest):
 
         theta_v_new = np.where(
             mask_prog_halo_c,
-            rho_now * theta_v_now * ((exner_new / exner_now - 1) * cvd_o_rd + 1.0) / rho_new,
+            rho_now
+            * theta_v_now
+            * ((exner_new / exner_now - 1) * cvd_o_rd + 1.0)
+            / rho_new,
             theta_v_new,
         )
         return dict(theta_v_new=theta_v_new)

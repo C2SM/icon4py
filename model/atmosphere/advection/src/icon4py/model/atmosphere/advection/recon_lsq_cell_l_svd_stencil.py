@@ -51,5 +51,8 @@ def recon_lsq_cell_l_svd_stencil(
     p_coeff_3_dsl: Field[[CellDim, KDim], float],
 ):
     _recon_lsq_cell_l_svd_stencil(
-        p_cc, lsq_pseudoinv_1, lsq_pseudoinv_2, out=(p_coeff_1_dsl, p_coeff_2_dsl, p_coeff_3_dsl)
+        p_cc,
+        lsq_pseudoinv_1,
+        lsq_pseudoinv_2,
+        out=(p_coeff_1_dsl, p_coeff_2_dsl, p_coeff_3_dsl),
     )

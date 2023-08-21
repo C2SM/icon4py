@@ -15,7 +15,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.common.dimension import CellDim, KDim, EdgeDim, E2C
+from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -43,20 +43,71 @@ def _hflux_ffsl_hybrid_stencil_01a(
     patch0_cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
 ) -> Field[[EdgeDim, KDim], float]:
 
-	p_out_e_hybrid_1a = (
-               where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_1(E2C[1]), z_lsq_coeff_1(E2C[0])) * z_quad_vector_sum0_1
-             + where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_2(E2C[1]), z_lsq_coeff_2(E2C[0])) * z_quad_vector_sum0_2
-             + where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_3(E2C[1]), z_lsq_coeff_3(E2C[0])) * z_quad_vector_sum0_3
-             + where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_4(E2C[1]), z_lsq_coeff_4(E2C[0])) * z_quad_vector_sum0_4
-             + where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_5(E2C[1]), z_lsq_coeff_5(E2C[0])) * z_quad_vector_sum0_5
-             + where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_6(E2C[1]), z_lsq_coeff_6(E2C[0])) * z_quad_vector_sum0_6
-             + where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_7(E2C[1]), z_lsq_coeff_7(E2C[0])) * z_quad_vector_sum0_7
-             + where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_8(E2C[1]), z_lsq_coeff_8(E2C[0])) * z_quad_vector_sum0_8
-             + where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_9(E2C[1]), z_lsq_coeff_9(E2C[0])) * z_quad_vector_sum0_9
-             + where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_10(E2C[1]), z_lsq_coeff_10(E2C[0])) * z_quad_vector_sum0_10
-             )
+    p_out_e_hybrid_1a = (
+        where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_1(E2C[1]),
+            z_lsq_coeff_1(E2C[0]),
+        )
+        * z_quad_vector_sum0_1
+        + where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_2(E2C[1]),
+            z_lsq_coeff_2(E2C[0]),
+        )
+        * z_quad_vector_sum0_2
+        + where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_3(E2C[1]),
+            z_lsq_coeff_3(E2C[0]),
+        )
+        * z_quad_vector_sum0_3
+        + where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_4(E2C[1]),
+            z_lsq_coeff_4(E2C[0]),
+        )
+        * z_quad_vector_sum0_4
+        + where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_5(E2C[1]),
+            z_lsq_coeff_5(E2C[0]),
+        )
+        * z_quad_vector_sum0_5
+        + where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_6(E2C[1]),
+            z_lsq_coeff_6(E2C[0]),
+        )
+        * z_quad_vector_sum0_6
+        + where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_7(E2C[1]),
+            z_lsq_coeff_7(E2C[0]),
+        )
+        * z_quad_vector_sum0_7
+        + where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_8(E2C[1]),
+            z_lsq_coeff_8(E2C[0]),
+        )
+        * z_quad_vector_sum0_8
+        + where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_9(E2C[1]),
+            z_lsq_coeff_9(E2C[0]),
+        )
+        * z_quad_vector_sum0_9
+        + where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_10(E2C[1]),
+            z_lsq_coeff_10(E2C[0]),
+        )
+        * z_quad_vector_sum0_10
+    )
 
-	return p_out_e_hybrid_1a
+    return p_out_e_hybrid_1a
+
 
 @program
 def hflux_ffsl_hybrid_stencil_01a(
@@ -105,5 +156,5 @@ def hflux_ffsl_hybrid_stencil_01a(
         z_quad_vector_sum0_9,
         z_quad_vector_sum0_10,
         patch0_cell_rel_idx_dsl,
-        out=(p_out_e_hybrid_1a)
+        out=(p_out_e_hybrid_1a),
     )

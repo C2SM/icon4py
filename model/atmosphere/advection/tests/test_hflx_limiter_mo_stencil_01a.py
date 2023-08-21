@@ -15,10 +15,16 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 
-from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01a import hflx_limiter_mo_stencil_01a
-from icon4py.model.common.dimension import KDim, EdgeDim, CellDim
-
-from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, constant_field
+from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01a import (
+    hflx_limiter_mo_stencil_01a,
+)
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    _shape,
+    constant_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -47,7 +53,6 @@ def test_hflx_limiter_mo_stencil_01a():
     p_cc = random_field(mesh, CellDim, KDim)
     z_mflx_low = zero_field(mesh, EdgeDim, KDim)
     z_anti = zero_field(mesh, EdgeDim, KDim)
-
 
     ref_1, ref_2 = hflx_limiter_mo_stencil_01a_numpy(
         mesh.e2c,

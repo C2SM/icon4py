@@ -12,16 +12,21 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_01 import (
     divide_flux_area_list_stencil_01,
 )
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from gt4py.next.ffront.fbuiltins import int32
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim, ECDim
-
-from icon4py.model.common.test_utils.helpers import random_field, zero_field, random_mask, as_1D_sparse_field
+from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    random_field,
+    random_mask,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+
 
 # FUNCTIONS
 # Checking turn when travelling along three points, used to check whether lines inters.
@@ -46,6 +51,7 @@ def ccw(
     lccw = np.where(dx1dy2 > dy1dx2, True, False)
     ccw_out = np.where(lccw, int32(1), int32(-1))  # 1: clockwise, -1: counterclockwise
     return ccw_out
+
 
 # Checks whether two lines intersect
 def lintersect(
@@ -92,6 +98,7 @@ def lintersect(
     lintersect_out = np.where((intersect1 + intersect2) == -2, True, False)
 
     return lintersect_out
+
 
 # Compute intersection point of two lines in 2D
 def line_intersect(
@@ -207,11 +214,15 @@ def divide_flux_area_list_stencil_01_numpy(
     )
 
     lvn_sys_pos = np.where(
-        (p_vn * np.broadcast_to(tangent_orientation_dsl, p_vn.shape)) >= 0.0, True, False
+        (p_vn * np.broadcast_to(tangent_orientation_dsl, p_vn.shape)) >= 0.0,
+        True,
+        False,
     )
     famask_bool = np.where(famask_int == int32(1), True, False)
     # ------------------------------------------------- Case 1
-    mask_case1 = np.logical_and.reduce([lintersect_line1, lintersect_line2, famask_bool])
+    mask_case1 = np.logical_and.reduce(
+        [lintersect_line1, lintersect_line2, famask_bool]
+    )
     ps1_x, ps1_y = line_intersect(
         fl_line_p1_lon,
         fl_line_p1_lat,
@@ -234,76 +245,138 @@ def divide_flux_area_list_stencil_01_numpy(
     )
 
     # Case 1 - patch 0
-    dreg_patch0_1_lon_dsl = np.where(mask_case1, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = np.where(mask_case1, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
+    dreg_patch0_1_lon_dsl = np.where(
+        mask_case1, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = np.where(
+        mask_case1, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = np.where(
-        mask_case1, np.where(lvn_sys_pos, arrival_pts_2_lon_dsl, ps1_x), dreg_patch0_2_lon_dsl
+        mask_case1,
+        np.where(lvn_sys_pos, arrival_pts_2_lon_dsl, ps1_x),
+        dreg_patch0_2_lon_dsl,
     )
     dreg_patch0_2_lat_dsl = np.where(
-        mask_case1, np.where(lvn_sys_pos, arrival_pts_2_lat_dsl, ps1_y), dreg_patch0_2_lat_dsl
+        mask_case1,
+        np.where(lvn_sys_pos, arrival_pts_2_lat_dsl, ps1_y),
+        dreg_patch0_2_lat_dsl,
     )
     dreg_patch0_3_lon_dsl = np.where(mask_case1, ps2_x, dreg_patch0_3_lon_dsl)
     dreg_patch0_3_lat_dsl = np.where(mask_case1, ps2_y, dreg_patch0_3_lat_dsl)
     dreg_patch0_4_lon_dsl = np.where(
-        mask_case1, np.where(lvn_sys_pos, ps1_x, arrival_pts_2_lon_dsl), dreg_patch0_4_lon_dsl
+        mask_case1,
+        np.where(lvn_sys_pos, ps1_x, arrival_pts_2_lon_dsl),
+        dreg_patch0_4_lon_dsl,
     )
     dreg_patch0_4_lat_dsl = np.where(
-        mask_case1, np.where(lvn_sys_pos, ps1_y, arrival_pts_2_lat_dsl), dreg_patch0_4_lat_dsl
+        mask_case1,
+        np.where(lvn_sys_pos, ps1_y, arrival_pts_2_lat_dsl),
+        dreg_patch0_4_lat_dsl,
     )
     # Case 1 - patch 1
     dreg_patch1_1_lon_vmask = np.where(mask_case1, arrival_pts_1_lon_dsl, 0.0)
     dreg_patch1_1_lat_vmask = np.where(mask_case1, arrival_pts_1_lat_dsl, 0.0)
     dreg_patch1_4_lon_vmask = np.where(mask_case1, arrival_pts_1_lon_dsl, 0.0)
     dreg_patch1_4_lat_vmask = np.where(mask_case1, arrival_pts_1_lat_dsl, 0.0)
-    dreg_patch1_2_lon_vmask = np.where(mask_case1, np.where(lvn_sys_pos, ps1_x, depart_pts_1_lon_dsl), 0.0)
-    dreg_patch1_2_lat_vmask = np.where(mask_case1, np.where(lvn_sys_pos, ps1_y, depart_pts_1_lat_dsl), 0.0)
-    dreg_patch1_3_lon_vmask = np.where(mask_case1, np.where(lvn_sys_pos, depart_pts_1_lon_dsl, ps1_x), 0.0)
-    dreg_patch1_3_lat_vmask = np.where(mask_case1, np.where(lvn_sys_pos, depart_pts_1_lat_dsl, ps1_y), 0.0)
+    dreg_patch1_2_lon_vmask = np.where(
+        mask_case1, np.where(lvn_sys_pos, ps1_x, depart_pts_1_lon_dsl), 0.0
+    )
+    dreg_patch1_2_lat_vmask = np.where(
+        mask_case1, np.where(lvn_sys_pos, ps1_y, depart_pts_1_lat_dsl), 0.0
+    )
+    dreg_patch1_3_lon_vmask = np.where(
+        mask_case1, np.where(lvn_sys_pos, depart_pts_1_lon_dsl, ps1_x), 0.0
+    )
+    dreg_patch1_3_lat_vmask = np.where(
+        mask_case1, np.where(lvn_sys_pos, depart_pts_1_lat_dsl, ps1_y), 0.0
+    )
     # Case 1 - patch 2
     dreg_patch2_1_lon_vmask = np.where(mask_case1, arrival_pts_2_lon_dsl, 0.0)
     dreg_patch2_1_lat_vmask = np.where(mask_case1, arrival_pts_2_lat_dsl, 0.0)
     dreg_patch2_4_lon_vmask = np.where(mask_case1, arrival_pts_2_lon_dsl, 0.0)
     dreg_patch2_4_lat_vmask = np.where(mask_case1, arrival_pts_2_lat_dsl, 0.0)
-    dreg_patch2_2_lon_vmask = np.where(mask_case1, np.where(lvn_sys_pos, depart_pts_2_lon_dsl, ps2_x), 0.0)
-    dreg_patch2_2_lat_vmask = np.where(mask_case1, np.where(lvn_sys_pos, depart_pts_2_lat_dsl, ps2_y), 0.0)
-    dreg_patch2_3_lon_vmask = np.where(mask_case1, np.where(lvn_sys_pos, ps2_x, depart_pts_2_lon_dsl), 0.0)
-    dreg_patch2_3_lat_vmask = np.where(mask_case1, np.where(lvn_sys_pos, ps2_y, depart_pts_2_lat_dsl), 0.0)
+    dreg_patch2_2_lon_vmask = np.where(
+        mask_case1, np.where(lvn_sys_pos, depart_pts_2_lon_dsl, ps2_x), 0.0
+    )
+    dreg_patch2_2_lat_vmask = np.where(
+        mask_case1, np.where(lvn_sys_pos, depart_pts_2_lat_dsl, ps2_y), 0.0
+    )
+    dreg_patch2_3_lon_vmask = np.where(
+        mask_case1, np.where(lvn_sys_pos, ps2_x, depart_pts_2_lon_dsl), 0.0
+    )
+    dreg_patch2_3_lat_vmask = np.where(
+        mask_case1, np.where(lvn_sys_pos, ps2_y, depart_pts_2_lat_dsl), 0.0
+    )
 
     # ------------------------------------------------- Case 2a
-    mask_case2a = np.logical_and.reduce([lintersect_line1, np.logical_not(lintersect_line2), famask_bool])
+    mask_case2a = np.logical_and.reduce(
+        [lintersect_line1, np.logical_not(lintersect_line2), famask_bool]
+    )
     # Case 2a - patch 0
-    dreg_patch0_1_lon_dsl = np.where(mask_case2a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = np.where(mask_case2a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
+    dreg_patch0_1_lon_dsl = np.where(
+        mask_case2a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = np.where(
+        mask_case2a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = np.where(
-        mask_case2a, np.where(lvn_sys_pos, arrival_pts_2_lon_dsl, ps1_x), dreg_patch0_2_lon_dsl
+        mask_case2a,
+        np.where(lvn_sys_pos, arrival_pts_2_lon_dsl, ps1_x),
+        dreg_patch0_2_lon_dsl,
     )
     dreg_patch0_2_lat_dsl = np.where(
-        mask_case2a, np.where(lvn_sys_pos, arrival_pts_2_lat_dsl, ps1_y), dreg_patch0_2_lat_dsl
+        mask_case2a,
+        np.where(lvn_sys_pos, arrival_pts_2_lat_dsl, ps1_y),
+        dreg_patch0_2_lat_dsl,
     )
-    dreg_patch0_3_lon_dsl = np.where(mask_case2a, depart_pts_2_lon_dsl, dreg_patch0_3_lon_dsl)
-    dreg_patch0_3_lat_dsl = np.where(mask_case2a, depart_pts_2_lat_dsl, dreg_patch0_3_lat_dsl)
+    dreg_patch0_3_lon_dsl = np.where(
+        mask_case2a, depart_pts_2_lon_dsl, dreg_patch0_3_lon_dsl
+    )
+    dreg_patch0_3_lat_dsl = np.where(
+        mask_case2a, depart_pts_2_lat_dsl, dreg_patch0_3_lat_dsl
+    )
     dreg_patch0_4_lon_dsl = np.where(
-        mask_case2a, np.where(lvn_sys_pos, ps1_x, arrival_pts_2_lon_dsl), dreg_patch0_4_lon_dsl
+        mask_case2a,
+        np.where(lvn_sys_pos, ps1_x, arrival_pts_2_lon_dsl),
+        dreg_patch0_4_lon_dsl,
     )
     dreg_patch0_4_lat_dsl = np.where(
-        mask_case2a, np.where(lvn_sys_pos, ps1_y, arrival_pts_2_lat_dsl), dreg_patch0_4_lat_dsl
+        mask_case2a,
+        np.where(lvn_sys_pos, ps1_y, arrival_pts_2_lat_dsl),
+        dreg_patch0_4_lat_dsl,
     )
     # Case 2a - patch 1
-    dreg_patch1_1_lon_vmask = np.where(mask_case2a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask)
-    dreg_patch1_1_lat_vmask = np.where(mask_case2a, arrival_pts_1_lat_dsl, dreg_patch1_1_lat_vmask)
-    dreg_patch1_4_lon_vmask = np.where(mask_case2a, arrival_pts_1_lon_dsl, dreg_patch1_4_lon_vmask)
-    dreg_patch1_4_lat_vmask = np.where(mask_case2a, arrival_pts_1_lat_dsl, dreg_patch1_4_lat_vmask)
+    dreg_patch1_1_lon_vmask = np.where(
+        mask_case2a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask
+    )
+    dreg_patch1_1_lat_vmask = np.where(
+        mask_case2a, arrival_pts_1_lat_dsl, dreg_patch1_1_lat_vmask
+    )
+    dreg_patch1_4_lon_vmask = np.where(
+        mask_case2a, arrival_pts_1_lon_dsl, dreg_patch1_4_lon_vmask
+    )
+    dreg_patch1_4_lat_vmask = np.where(
+        mask_case2a, arrival_pts_1_lat_dsl, dreg_patch1_4_lat_vmask
+    )
     dreg_patch1_2_lon_vmask = np.where(
-        mask_case2a, np.where(lvn_sys_pos, ps1_x, depart_pts_1_lon_dsl), dreg_patch1_2_lon_vmask
+        mask_case2a,
+        np.where(lvn_sys_pos, ps1_x, depart_pts_1_lon_dsl),
+        dreg_patch1_2_lon_vmask,
     )
     dreg_patch1_2_lat_vmask = np.where(
-        mask_case2a, np.where(lvn_sys_pos, ps1_y, depart_pts_1_lat_dsl), dreg_patch1_2_lat_vmask
+        mask_case2a,
+        np.where(lvn_sys_pos, ps1_y, depart_pts_1_lat_dsl),
+        dreg_patch1_2_lat_vmask,
     )
     dreg_patch1_3_lon_vmask = np.where(
-        mask_case2a, np.where(lvn_sys_pos, depart_pts_1_lon_dsl, ps1_x), dreg_patch1_3_lon_vmask
+        mask_case2a,
+        np.where(lvn_sys_pos, depart_pts_1_lon_dsl, ps1_x),
+        dreg_patch1_3_lon_vmask,
     )
     dreg_patch1_3_lat_vmask = np.where(
-        mask_case2a, np.where(lvn_sys_pos, depart_pts_1_lat_dsl, ps1_y), dreg_patch1_3_lat_vmask
+        mask_case2a,
+        np.where(lvn_sys_pos, depart_pts_1_lat_dsl, ps1_y),
+        dreg_patch1_3_lat_vmask,
     )
     # Case 2a - patch 2
     dreg_patch2_1_lon_vmask = np.where(mask_case2a, 0.0, dreg_patch2_1_lon_vmask)
@@ -316,10 +389,16 @@ def divide_flux_area_list_stencil_01_numpy(
     dreg_patch2_4_lat_vmask = np.where(mask_case2a, 0.0, dreg_patch2_4_lat_vmask)
 
     # -------------------------------------------------- Case 2b
-    mask_case2b = np.logical_and.reduce([lintersect_line2, np.logical_not(lintersect_line1), famask_bool])
+    mask_case2b = np.logical_and.reduce(
+        [lintersect_line2, np.logical_not(lintersect_line1), famask_bool]
+    )
     # Case 2b - patch 0
-    dreg_patch0_1_lon_dsl = np.where(mask_case2b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = np.where(mask_case2b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
+    dreg_patch0_1_lon_dsl = np.where(
+        mask_case2b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = np.where(
+        mask_case2b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = np.where(
         mask_case2b,
         np.where(lvn_sys_pos, arrival_pts_2_lon_dsl, depart_pts_1_lon_dsl),
@@ -352,21 +431,37 @@ def divide_flux_area_list_stencil_01_numpy(
     dreg_patch1_4_lon_vmask = np.where(mask_case2b, 0.0, dreg_patch1_4_lon_vmask)
     dreg_patch1_4_lat_vmask = np.where(mask_case2b, 0.0, dreg_patch1_4_lat_vmask)
     # Case 2b - patch 2
-    dreg_patch2_1_lon_vmask = np.where(mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask)
-    dreg_patch2_1_lat_vmask = np.where(mask_case2b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask)
-    dreg_patch2_4_lon_vmask = np.where(mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_4_lon_vmask)
-    dreg_patch2_4_lat_vmask = np.where(mask_case2b, arrival_pts_2_lat_dsl, dreg_patch2_4_lat_vmask)
+    dreg_patch2_1_lon_vmask = np.where(
+        mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask
+    )
+    dreg_patch2_1_lat_vmask = np.where(
+        mask_case2b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask
+    )
+    dreg_patch2_4_lon_vmask = np.where(
+        mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_4_lon_vmask
+    )
+    dreg_patch2_4_lat_vmask = np.where(
+        mask_case2b, arrival_pts_2_lat_dsl, dreg_patch2_4_lat_vmask
+    )
     dreg_patch2_2_lon_vmask = np.where(
-        mask_case2b, np.where(lvn_sys_pos, depart_pts_2_lon_dsl, ps2_x), dreg_patch2_2_lon_vmask
+        mask_case2b,
+        np.where(lvn_sys_pos, depart_pts_2_lon_dsl, ps2_x),
+        dreg_patch2_2_lon_vmask,
     )
     dreg_patch2_2_lat_vmask = np.where(
-        mask_case2b, np.where(lvn_sys_pos, depart_pts_2_lat_dsl, ps2_y), dreg_patch2_2_lat_vmask
+        mask_case2b,
+        np.where(lvn_sys_pos, depart_pts_2_lat_dsl, ps2_y),
+        dreg_patch2_2_lat_vmask,
     )
     dreg_patch2_3_lon_vmask = np.where(
-        mask_case2b, np.where(lvn_sys_pos, ps2_x, depart_pts_2_lon_dsl), dreg_patch2_3_lon_vmask
+        mask_case2b,
+        np.where(lvn_sys_pos, ps2_x, depart_pts_2_lon_dsl),
+        dreg_patch2_3_lon_vmask,
     )
     dreg_patch2_3_lat_vmask = np.where(
-        mask_case2b, np.where(lvn_sys_pos, ps2_y, depart_pts_2_lat_dsl), dreg_patch2_3_lat_vmask
+        mask_case2b,
+        np.where(lvn_sys_pos, ps2_y, depart_pts_2_lat_dsl),
+        dreg_patch2_3_lat_vmask,
     )
 
     # flux area edge 1 and 2
@@ -403,8 +498,12 @@ def divide_flux_area_list_stencil_01_numpy(
         tri_line1_p2_lat,
     )
     # Case 3a - patch 0
-    dreg_patch0_1_lon_dsl = np.where(mask_case3a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = np.where(mask_case3a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
+    dreg_patch0_1_lon_dsl = np.where(
+        mask_case3a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = np.where(
+        mask_case3a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = np.where(
         mask_case3a,
         np.where(lvn_sys_pos, arrival_pts_2_lon_dsl, depart_pts_1_lon_dsl),
@@ -428,21 +527,37 @@ def divide_flux_area_list_stencil_01_numpy(
         dreg_patch0_4_lat_dsl,
     )
     # Case 3a - patch 1
-    dreg_patch1_1_lon_vmask = np.where(mask_case3a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask)
-    dreg_patch1_1_lat_vmask = np.where(mask_case3a, arrival_pts_1_lat_dsl, dreg_patch1_1_lat_vmask)
+    dreg_patch1_1_lon_vmask = np.where(
+        mask_case3a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask
+    )
+    dreg_patch1_1_lat_vmask = np.where(
+        mask_case3a, arrival_pts_1_lat_dsl, dreg_patch1_1_lat_vmask
+    )
     dreg_patch1_2_lon_vmask = np.where(
-        mask_case3a, np.where(lvn_sys_pos, pi1_x, depart_pts_2_lon_dsl), dreg_patch1_2_lon_vmask
+        mask_case3a,
+        np.where(lvn_sys_pos, pi1_x, depart_pts_2_lon_dsl),
+        dreg_patch1_2_lon_vmask,
     )
     dreg_patch1_2_lat_vmask = np.where(
-        mask_case3a, np.where(lvn_sys_pos, pi1_y, depart_pts_2_lat_dsl), dreg_patch1_2_lat_vmask
+        mask_case3a,
+        np.where(lvn_sys_pos, pi1_y, depart_pts_2_lat_dsl),
+        dreg_patch1_2_lat_vmask,
     )
-    dreg_patch1_3_lon_vmask = np.where(mask_case3a, depart_pts_1_lon_dsl, dreg_patch1_3_lon_vmask)
-    dreg_patch1_3_lat_vmask = np.where(mask_case3a, depart_pts_1_lat_dsl, dreg_patch1_3_lat_vmask)
+    dreg_patch1_3_lon_vmask = np.where(
+        mask_case3a, depart_pts_1_lon_dsl, dreg_patch1_3_lon_vmask
+    )
+    dreg_patch1_3_lat_vmask = np.where(
+        mask_case3a, depart_pts_1_lat_dsl, dreg_patch1_3_lat_vmask
+    )
     dreg_patch1_4_lon_vmask = np.where(
-        mask_case3a, np.where(lvn_sys_pos, depart_pts_1_lon_dsl, pi1_x), dreg_patch1_4_lon_vmask
+        mask_case3a,
+        np.where(lvn_sys_pos, depart_pts_1_lon_dsl, pi1_x),
+        dreg_patch1_4_lon_vmask,
     )
     dreg_patch1_4_lat_vmask = np.where(
-        mask_case3a, np.where(lvn_sys_pos, depart_pts_1_lat_dsl, pi1_y), dreg_patch1_4_lat_vmask
+        mask_case3a,
+        np.where(lvn_sys_pos, depart_pts_1_lat_dsl, pi1_y),
+        dreg_patch1_4_lat_vmask,
     )
     # Case 3a - patch 2
     dreg_patch2_1_lon_vmask = np.where(mask_case3a, 0.0, dreg_patch2_1_lon_vmask)
@@ -478,21 +593,37 @@ def divide_flux_area_list_stencil_01_numpy(
         tri_line2_p2_lat,
     )
     # Case 3b - patch 0
-    dreg_patch0_1_lon_dsl = np.where(mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = np.where(mask_case3b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
-    dreg_patch0_4_lon_dsl = np.where(mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_4_lon_dsl)
-    dreg_patch0_4_lat_dsl = np.where(mask_case3b, arrival_pts_1_lat_dsl, dreg_patch0_4_lat_dsl)
+    dreg_patch0_1_lon_dsl = np.where(
+        mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = np.where(
+        mask_case3b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
+    dreg_patch0_4_lon_dsl = np.where(
+        mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_4_lon_dsl
+    )
+    dreg_patch0_4_lat_dsl = np.where(
+        mask_case3b, arrival_pts_1_lat_dsl, dreg_patch0_4_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = np.where(
-        mask_case3b, np.where(lvn_sys_pos, arrival_pts_2_lon_dsl, pi2_x), dreg_patch0_2_lon_dsl
+        mask_case3b,
+        np.where(lvn_sys_pos, arrival_pts_2_lon_dsl, pi2_x),
+        dreg_patch0_2_lon_dsl,
     )
     dreg_patch0_2_lat_dsl = np.where(
-        mask_case3b, np.where(lvn_sys_pos, arrival_pts_2_lat_dsl, pi2_y), dreg_patch0_2_lat_dsl
+        mask_case3b,
+        np.where(lvn_sys_pos, arrival_pts_2_lat_dsl, pi2_y),
+        dreg_patch0_2_lat_dsl,
     )
     dreg_patch0_3_lon_dsl = np.where(
-        mask_case3b, np.where(lvn_sys_pos, pi2_x, arrival_pts_2_lon_dsl), dreg_patch0_3_lon_dsl
+        mask_case3b,
+        np.where(lvn_sys_pos, pi2_x, arrival_pts_2_lon_dsl),
+        dreg_patch0_3_lon_dsl,
     )
     dreg_patch0_3_lat_dsl = np.where(
-        mask_case3b, np.where(lvn_sys_pos, pi2_y, arrival_pts_2_lat_dsl), dreg_patch0_3_lat_dsl
+        mask_case3b,
+        np.where(lvn_sys_pos, pi2_y, arrival_pts_2_lat_dsl),
+        dreg_patch0_3_lat_dsl,
     )
     # Case 3b - patch 1
     dreg_patch1_1_lon_vmask = np.where(mask_case3b, 0.0, dreg_patch1_1_lon_vmask)
@@ -504,31 +635,49 @@ def divide_flux_area_list_stencil_01_numpy(
     dreg_patch1_4_lon_vmask = np.where(mask_case3b, 0.0, dreg_patch1_4_lon_vmask)
     dreg_patch1_4_lat_vmask = np.where(mask_case3b, 0.0, dreg_patch1_4_lat_vmask)
     # Case 3b - patch 2
-    dreg_patch2_1_lon_vmask = np.where(mask_case3b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask)
-    dreg_patch2_1_lat_vmask = np.where(mask_case3b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask)
+    dreg_patch2_1_lon_vmask = np.where(
+        mask_case3b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask
+    )
+    dreg_patch2_1_lat_vmask = np.where(
+        mask_case3b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask
+    )
     dreg_patch2_2_lon_vmask = np.where(
-        mask_case3b, np.where(lvn_sys_pos, depart_pts_2_lon_dsl, pi2_x), dreg_patch2_2_lon_vmask
+        mask_case3b,
+        np.where(lvn_sys_pos, depart_pts_2_lon_dsl, pi2_x),
+        dreg_patch2_2_lon_vmask,
     )
     dreg_patch2_2_lat_vmask = np.where(
-        mask_case3b, np.where(lvn_sys_pos, depart_pts_2_lat_dsl, pi2_y), dreg_patch2_2_lat_vmask
+        mask_case3b,
+        np.where(lvn_sys_pos, depart_pts_2_lat_dsl, pi2_y),
+        dreg_patch2_2_lat_vmask,
     )
-    dreg_patch2_3_lon_vmask = np.where(mask_case3b, depart_pts_1_lon_dsl, dreg_patch2_3_lon_vmask)
-    dreg_patch2_3_lat_vmask = np.where(mask_case3b, depart_pts_1_lat_dsl, dreg_patch2_3_lat_vmask)
+    dreg_patch2_3_lon_vmask = np.where(
+        mask_case3b, depart_pts_1_lon_dsl, dreg_patch2_3_lon_vmask
+    )
+    dreg_patch2_3_lat_vmask = np.where(
+        mask_case3b, depart_pts_1_lat_dsl, dreg_patch2_3_lat_vmask
+    )
     dreg_patch2_4_lon_vmask = np.where(
-        mask_case3b, np.where(lvn_sys_pos, pi2_x, depart_pts_2_lon_dsl), dreg_patch2_4_lon_vmask
+        mask_case3b,
+        np.where(lvn_sys_pos, pi2_x, depart_pts_2_lon_dsl),
+        dreg_patch2_4_lon_vmask,
     )
     dreg_patch2_4_lat_vmask = np.where(
-        mask_case3b, np.where(lvn_sys_pos, pi2_y, depart_pts_2_lat_dsl), dreg_patch2_4_lat_vmask
+        mask_case3b,
+        np.where(lvn_sys_pos, pi2_y, depart_pts_2_lat_dsl),
+        dreg_patch2_4_lat_vmask,
     )
 
     # --------------------------------------------- Case 4
     # NB: Next line acts as the "ELSE IF", indices that already previously matched one of the above conditions
     # can't be overwritten by this new condition.
-    indices_previously_matched = (
-        np.logical_or.reduce([mask_case3b, mask_case3a, mask_case2b, mask_case2a, mask_case1])
+    indices_previously_matched = np.logical_or.reduce(
+        [mask_case3b, mask_case3a, mask_case2b, mask_case2a, mask_case1]
     )
     #    mask_case4 = (abs(p_vn) < 0.1) & famask_bool & (not indices_previously_matched) we insert also the error indices
-    mask_case4 = np.logical_and.reduce([famask_bool, np.logical_not(indices_previously_matched)])
+    mask_case4 = np.logical_and.reduce(
+        [famask_bool, np.logical_not(indices_previously_matched)]
+    )
     # Case 4 - patch 0 - no change
     # Case 4 - patch 1
     dreg_patch1_1_lon_vmask = np.where(mask_case4, 0.0, dreg_patch1_1_lon_vmask)
@@ -547,7 +696,6 @@ def divide_flux_area_list_stencil_01_numpy(
     dreg_patch2_3_lon_vmask = np.where(mask_case4, 0.0, dreg_patch2_3_lon_vmask)
     dreg_patch2_3_lat_vmask = np.where(mask_case4, 0.0, dreg_patch2_3_lat_vmask)
     dreg_patch2_4_lon_vmask = np.where(mask_case4, 0.0, dreg_patch2_4_lon_vmask)
-
 
     return (
         dreg_patch0_1_lon_dsl,
@@ -575,6 +723,7 @@ def divide_flux_area_list_stencil_01_numpy(
         dreg_patch2_4_lon_vmask,
         dreg_patch2_4_lat_vmask,
     )
+
 
 def test_divide_flux_area_list_stencil_01():
     mesh = SimpleMesh()
@@ -611,30 +760,32 @@ def test_divide_flux_area_list_stencil_01():
     dreg_patch2_4_lon_vmask = zero_field(mesh, EdgeDim, KDim)
     dreg_patch2_4_lat_vmask = zero_field(mesh, EdgeDim, KDim)
 
-    (ref_1,
-     ref_2,
-     ref_3,
-     ref_4,
-     ref_5,
-     ref_6,
-     ref_7,
-     ref_8,
-     ref_9,
-     ref_10,
-     ref_11,
-     ref_12,
-     ref_13,
-     ref_14,
-     ref_15,
-     ref_16,
-     ref_17,
-     ref_18,
-     ref_19,
-     ref_20,
-     ref_21,
-     ref_22,
-     ref_23,
-     ref_24) = divide_flux_area_list_stencil_01_numpy(
+    (
+        ref_1,
+        ref_2,
+        ref_3,
+        ref_4,
+        ref_5,
+        ref_6,
+        ref_7,
+        ref_8,
+        ref_9,
+        ref_10,
+        ref_11,
+        ref_12,
+        ref_13,
+        ref_14,
+        ref_15,
+        ref_16,
+        ref_17,
+        ref_18,
+        ref_19,
+        ref_20,
+        ref_21,
+        ref_22,
+        ref_23,
+        ref_24,
+    ) = divide_flux_area_list_stencil_01_numpy(
         mesh.e2c,
         np.asarray(famask_int),
         np.asarray(p_vn),

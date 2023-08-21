@@ -16,10 +16,17 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atmosphere.advection.btraj_dreg_stencil_03 import btraj_dreg_stencil_03
-from icon4py.model.common.dimension import KDim, E2CDim, ECDim, EdgeDim, CellDim
-
-from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, as_1D_sparse_field, constant_field
+from icon4py.model.atmosphere.advection.btraj_dreg_stencil_03 import (
+    btraj_dreg_stencil_03,
+)
+from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    _shape,
+    as_1D_sparse_field,
+    constant_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -38,8 +45,8 @@ def btraj_dreg_stencil_03_numpy(
     pos_on_tplane_e_2_y: np.array,
     primal_normal_cell_x: np.array,
     primal_normal_cell_y: np.array,
-    dual_normal_cell_x: np.array, 
-    dual_normal_cell_y: np.array, 
+    dual_normal_cell_x: np.array,
+    dual_normal_cell_y: np.array,
     lvn_sys_pos: np.array,
     p_dt: float,
 ) -> tuple[np.array]:
@@ -163,7 +170,7 @@ def test_btraj_dreg_stencil_03():
     primal_normal_cell_y_new = as_1D_sparse_field(primal_normal_cell_y, ECDim)
     dual_normal_cell_y = random_field(mesh, EdgeDim, E2CDim)
     dual_normal_cell_y_new = as_1D_sparse_field(dual_normal_cell_y, ECDim)
-    lvn_sys_pos = constant_field(mesh, True,  EdgeDim, KDim, dtype=bool)
+    lvn_sys_pos = constant_field(mesh, True, EdgeDim, KDim, dtype=bool)
     p_dt = 2.0
     p_cell_idx = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
     p_cell_rel_idx_dsl = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
@@ -189,7 +196,6 @@ def test_btraj_dreg_stencil_03():
         p_coords_dreg_v_2_lat_dsl_ref,
         p_coords_dreg_v_3_lat_dsl_ref,
         p_coords_dreg_v_4_lat_dsl_ref,
-
     ) = btraj_dreg_stencil_03_numpy(
         np.asarray(p_vn),
         np.asarray(p_vt),
@@ -210,7 +216,6 @@ def test_btraj_dreg_stencil_03():
         np.asarray(lvn_sys_pos),
         p_dt,
     )
-
 
     btraj_dreg_stencil_03(
         p_vn,

@@ -61,7 +61,9 @@ def mo_solve_nonhydro_stencil_21_numpy(
         full_shape, theta_v_ic, e2c, ikoffset
     )
 
-    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(full_shape, inv_ddqz_z_full, e2c, ikoffset)
+    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(
+        full_shape, inv_ddqz_z_full, e2c, ikoffset
+    )
 
     z_theta1 = (
         theta_v_at_kidx[:, 0, :]

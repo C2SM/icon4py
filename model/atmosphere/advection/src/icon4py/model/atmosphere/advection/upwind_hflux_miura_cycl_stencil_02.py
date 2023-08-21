@@ -12,9 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, where, neighbor_sum, int32, broadcast
+from gt4py.next.ffront.fbuiltins import (
+    Field,
+    broadcast,
+    int32,
+    neighbor_sum,
+    where,
+)
 
-from icon4py.model.common.dimension import CellDim, KDim, C2EDim, EdgeDim, C2E
+from icon4py.model.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -27,19 +33,26 @@ def _upwind_hflux_miura_cycl_stencil_02(
     z_rho_now: Field[[CellDim, KDim], float],
     z_tracer_now: Field[[CellDim, KDim], float],
     z_dtsub: float,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
 
-    z_rhofluxdiv_c_out = neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=C2EDim) if nsub == int32(1) else z_rhofluxdiv_c
-    
+    z_rhofluxdiv_c_out = (
+        neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=C2EDim)
+        if nsub == int32(1)
+        else z_rhofluxdiv_c
+    )
+
     z_fluxdiv_c_dsl = neighbor_sum(z_tracer_mflx(C2E) * geofac_div, axis=C2EDim)
-    
-    z_rho_new_dsl = ( z_rho_now 
-                   - z_dtsub * z_rhofluxdiv_c_out )
 
-    z_tracer_new_dsl =  (( z_tracer_now 
-                       * z_rho_now 
-                       - z_dtsub * z_fluxdiv_c_dsl )
-                       / z_rho_new_dsl)
+    z_rho_new_dsl = z_rho_now - z_dtsub * z_rhofluxdiv_c_out
+
+    z_tracer_new_dsl = (
+        z_tracer_now * z_rho_now - z_dtsub * z_fluxdiv_c_dsl
+    ) / z_rho_new_dsl
 
     return (z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl)
 

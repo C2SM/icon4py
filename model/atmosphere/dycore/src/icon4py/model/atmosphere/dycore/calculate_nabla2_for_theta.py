@@ -43,4 +43,6 @@ def calculate_nabla2_for_theta(
     geofac_div: Field[[CEDim], float],
     z_temp: Field[[CellDim, KDim], float],
 ):
-    _calculate_nabla2_for_theta(kh_smag_e, inv_dual_edge_length, theta_v, geofac_div, out=z_temp)
+    _calculate_nabla2_for_theta(
+        kh_smag_e, inv_dual_edge_length, theta_v, geofac_div, out=z_temp
+    )

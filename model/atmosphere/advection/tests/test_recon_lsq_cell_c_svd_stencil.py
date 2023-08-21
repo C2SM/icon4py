@@ -18,13 +18,17 @@ from icon4py.model.atmosphere.advection.recon_lsq_cell_c_svd_stencil import (
     recon_lsq_cell_c_svd_stencil,
 )
 from icon4py.model.common.dimension import C2E2C2E2CDim, CECECDim, CellDim, KDim
-
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+
 
 def recon_lsq_cell_c_svd_stencil_numpy(
     c2e2c2e2c: np.ndarray,
-    p_cc:  np.ndarray,
+    p_cc: np.ndarray,
     lsq_pseudoinv_1: np.ndarray,
     lsq_pseudoinv_2: np.ndarray,
     lsq_pseudoinv_3: np.ndarray,
@@ -42,7 +46,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     lsq_moments_6: np.ndarray,
     lsq_moments_7: np.ndarray,
     lsq_moments_8: np.ndarray,
-    lsq_moments_9: np.ndarray
+    lsq_moments_9: np.ndarray,
 ) -> tuple[np.ndarray]:
 
     p_cc_e = np.expand_dims(p_cc, axis=-1)
@@ -75,20 +79,19 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     lsq_pseudoinv_1 = np.expand_dims(lsq_pseudoinv_1, axis=-1)
 
     p_coeff_10_dsl = (
-          lsq_pseudoinv_9[:, 0]  * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
-        + lsq_pseudoinv_9[:, 1]  * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
-        + lsq_pseudoinv_9[:, 2]  * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
-        + lsq_pseudoinv_9[:, 3]  * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
-        + lsq_pseudoinv_9[:, 4]  * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
-        + lsq_pseudoinv_9[:, 5]  * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
-        + lsq_pseudoinv_9[:, 6]  * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
-        + lsq_pseudoinv_9[:, 7]  * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
-        + lsq_pseudoinv_9[:, 8]  * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
+        lsq_pseudoinv_9[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_pseudoinv_9[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_pseudoinv_9[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_pseudoinv_9[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_pseudoinv_9[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_pseudoinv_9[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_pseudoinv_9[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_pseudoinv_9[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_pseudoinv_9[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
     )
 
-
     p_coeff_9_dsl = (
-          lsq_pseudoinv_8[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        lsq_pseudoinv_8[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
         + lsq_pseudoinv_8[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
         + lsq_pseudoinv_8[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
         + lsq_pseudoinv_8[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
@@ -97,10 +100,10 @@ def recon_lsq_cell_c_svd_stencil_numpy(
         + lsq_pseudoinv_8[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
         + lsq_pseudoinv_8[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
         + lsq_pseudoinv_8[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
-                )
+    )
 
     p_coeff_8_dsl = (
-          lsq_pseudoinv_7[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        lsq_pseudoinv_7[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
         + lsq_pseudoinv_7[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
         + lsq_pseudoinv_7[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
         + lsq_pseudoinv_7[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
@@ -109,10 +112,10 @@ def recon_lsq_cell_c_svd_stencil_numpy(
         + lsq_pseudoinv_7[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
         + lsq_pseudoinv_7[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
         + lsq_pseudoinv_7[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
-                )
+    )
 
     p_coeff_7_dsl = (
-          lsq_pseudoinv_6[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        lsq_pseudoinv_6[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
         + lsq_pseudoinv_6[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
         + lsq_pseudoinv_6[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
         + lsq_pseudoinv_6[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
@@ -124,7 +127,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     )
 
     p_coeff_6_dsl = (
-          lsq_pseudoinv_5[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        lsq_pseudoinv_5[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
         + lsq_pseudoinv_5[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
         + lsq_pseudoinv_5[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
         + lsq_pseudoinv_5[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
@@ -136,7 +139,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     )
 
     p_coeff_5_dsl = (
-          lsq_pseudoinv_4[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        lsq_pseudoinv_4[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
         + lsq_pseudoinv_4[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
         + lsq_pseudoinv_4[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
         + lsq_pseudoinv_4[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
@@ -148,7 +151,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     )
 
     p_coeff_4_dsl = (
-          lsq_pseudoinv_3[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        lsq_pseudoinv_3[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
         + lsq_pseudoinv_3[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
         + lsq_pseudoinv_3[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
         + lsq_pseudoinv_3[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
@@ -160,7 +163,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     )
 
     p_coeff_3_dsl = (
-          lsq_pseudoinv_2[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        lsq_pseudoinv_2[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
         + lsq_pseudoinv_2[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
         + lsq_pseudoinv_2[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
         + lsq_pseudoinv_2[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
@@ -172,7 +175,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     )
 
     p_coeff_2_dsl = (
-          lsq_pseudoinv_1[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        lsq_pseudoinv_1[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
         + lsq_pseudoinv_1[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
         + lsq_pseudoinv_1[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
         + lsq_pseudoinv_1[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
@@ -206,6 +209,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
         p_coeff_9_dsl,
         p_coeff_10_dsl,
     )
+
 
 def test_recon_lsq_cell_c_svd_stencil():
     mesh = SimpleMesh()
@@ -248,16 +252,18 @@ def test_recon_lsq_cell_c_svd_stencil():
     p_coeff_9_dsl = zero_field(mesh, CellDim, KDim)
     p_coeff_10_dsl = zero_field(mesh, CellDim, KDim)
 
-    (ref_1, 
-     ref_2,
-     ref_3,
-     ref_4,
-     ref_5,
-     ref_6,
-     ref_7,
-     ref_8,
-     ref_9,
-     ref_10) = recon_lsq_cell_c_svd_stencil_numpy(
+    (
+        ref_1,
+        ref_2,
+        ref_3,
+        ref_4,
+        ref_5,
+        ref_6,
+        ref_7,
+        ref_8,
+        ref_9,
+        ref_10,
+    ) = recon_lsq_cell_c_svd_stencil_numpy(
         mesh.c2e2c2e2c,
         np.asarray(p_cc),
         np.asarray(lsq_pseudoinv_1),
@@ -277,7 +283,7 @@ def test_recon_lsq_cell_c_svd_stencil():
         np.asarray(lsq_moments_6),
         np.asarray(lsq_moments_7),
         np.asarray(lsq_moments_8),
-        np.asarray(lsq_moments_9)
+        np.asarray(lsq_moments_9),
     )
 
     recon_lsq_cell_c_svd_stencil(
@@ -300,7 +306,7 @@ def test_recon_lsq_cell_c_svd_stencil():
         lsq_moments_7,
         lsq_moments_8,
         lsq_moments_9,
-        p_coeff_1_dsl, 
+        p_coeff_1_dsl,
         p_coeff_2_dsl,
         p_coeff_3_dsl,
         p_coeff_4_dsl,
@@ -312,10 +318,12 @@ def test_recon_lsq_cell_c_svd_stencil():
         p_coeff_10_dsl,
         offset_provider={
             "C2E2C2E2C": mesh.get_c2e2c2e2c_offset_provider(),
-            "C2CECEC": StridedNeighborOffsetProvider(CellDim, CECECDim, mesh.n_c2e2c2e2c),
+            "C2CECEC": StridedNeighborOffsetProvider(
+                CellDim, CECECDim, mesh.n_c2e2c2e2c
+            ),
         },
     )
-#    co1 = np.asarray(p_coeff_1_dsl)
+    #    co1 = np.asarray(p_coeff_1_dsl)
     co2 = np.asarray(p_coeff_2_dsl)
     co3 = np.asarray(p_coeff_3_dsl)
     co4 = np.asarray(p_coeff_4_dsl)
@@ -325,7 +333,7 @@ def test_recon_lsq_cell_c_svd_stencil():
     co8 = np.asarray(p_coeff_8_dsl)
     co9 = np.asarray(p_coeff_9_dsl)
     co10 = np.asarray(p_coeff_10_dsl)
-#    assert np.allclose(ref_1, co1)
+    #    assert np.allclose(ref_1, co1)
     assert np.allclose(ref_10, co10)
     assert np.allclose(ref_2, co2)
     assert np.allclose(ref_3, co3)

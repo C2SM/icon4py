@@ -13,9 +13,10 @@
 
 import numpy as np
 
-from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_03b import upwind_hflux_miura_cycl_stencil_03b
+from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_03b import (
+    upwind_hflux_miura_cycl_stencil_03b,
+)
 from icon4py.model.common.dimension import EdgeDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -25,10 +26,11 @@ def upwind_hflux_miura_cycl_stencil_03b_numpy(
     z_tracer_mflx_2_dsl: np.array,
     z_tracer_mflx_3_dsl: np.array,
 ):
-    p_out_e = (z_tracer_mflx_1_dsl
-             + z_tracer_mflx_2_dsl
-             + z_tracer_mflx_3_dsl)/float(3)
+    p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / float(
+        3
+    )
     return p_out_e
+
 
 def test_upwind_hflux_miura_cycl_stencil_03b():
     mesh = SimpleMesh()

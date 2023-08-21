@@ -52,7 +52,9 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
 
     dwdx, dwdy = where(
         int32(0) < vert_idx,
-        _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
+        _calculate_horizontal_gradients_for_turbulence(
+            w_old, geofac_grg_x, geofac_grg_y
+        ),
         (dwdx, dwdy),
     )
 
@@ -69,7 +71,9 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
         & (vert_idx < nrdmax)
         & (interior_idx <= horz_idx)
         & (horz_idx < halo_idx),
-        _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
+        _apply_nabla2_to_w_in_upper_damping_layer(
+            w, diff_multfac_n2w, area, z_nabla2_c
+        ),
         w,
     )
 

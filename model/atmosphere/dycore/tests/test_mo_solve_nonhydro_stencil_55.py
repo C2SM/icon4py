@@ -62,7 +62,10 @@ class TestMoSolveNonhydroStencil55(StencilTest):
             - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
         )
         theta_v_new = (
-            rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new
+            rho_now
+            * theta_v_now
+            * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0)
+            / rho_new
         )
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 

@@ -15,7 +15,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.common.dimension import CellDim, KDim, EdgeDim, E2C
+from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -29,12 +29,28 @@ def _upwind_hflux_miura_cycl_stencil_01(
     cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
 ) -> Field[[EdgeDim, KDim], float]:
 
-	z_tracer_mflx_dsl = ( where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_1_dsl(E2C[1]), z_lsq_coeff_1_dsl(E2C[0])) 
-             + distv_bary_1 * where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_2_dsl(E2C[1]), z_lsq_coeff_2_dsl(E2C[0]))
-             + distv_bary_2 * where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_3_dsl(E2C[1]), z_lsq_coeff_3_dsl(E2C[0]))
-             ) * p_mass_flx_e
+    z_tracer_mflx_dsl = (
+        where(
+            cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_1_dsl(E2C[1]),
+            z_lsq_coeff_1_dsl(E2C[0]),
+        )
+        + distv_bary_1
+        * where(
+            cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_2_dsl(E2C[1]),
+            z_lsq_coeff_2_dsl(E2C[0]),
+        )
+        + distv_bary_2
+        * where(
+            cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_3_dsl(E2C[1]),
+            z_lsq_coeff_3_dsl(E2C[0]),
+        )
+    ) * p_mass_flx_e
 
-	return z_tracer_mflx_dsl
+    return z_tracer_mflx_dsl
+
 
 @program
 def upwind_hflux_miura_cycl_stencil_01(
@@ -55,5 +71,5 @@ def upwind_hflux_miura_cycl_stencil_01(
         distv_bary_2,
         p_mass_flx_e,
         cell_rel_idx_dsl,
-        out=(z_tracer_mflx_dsl)
+        out=(z_tracer_mflx_dsl),
     )

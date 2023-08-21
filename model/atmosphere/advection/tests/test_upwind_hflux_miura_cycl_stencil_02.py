@@ -15,10 +15,16 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_02 import upwind_hflux_miura_cycl_stencil_02
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, CEDim, C2EDim
-
-from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, as_1D_sparse_field
+from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_02 import (
+    upwind_hflux_miura_cycl_stencil_02,
+)
+from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    _shape,
+    as_1D_sparse_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -37,18 +43,21 @@ def upwind_hflux_miura_cycl_stencil_02_numpy(
     geofac_div = np.expand_dims(geofac_div, axis=-1)
     z_tracer_mflx_c2e = z_tracer_mflx[c2e]
 
-    z_rhofluxdiv_c_out = np.sum(p_mass_flx_e_c2e * geofac_div, axis=1) if nsub == int32(1) else z_rhofluxdiv_c
+    z_rhofluxdiv_c_out = (
+        np.sum(p_mass_flx_e_c2e * geofac_div, axis=1)
+        if nsub == int32(1)
+        else z_rhofluxdiv_c
+    )
     z_fluxdiv_c_dsl = np.sum(z_tracer_mflx_c2e * geofac_div, axis=1)
 
-    z_rho_new_dsl = ( z_rho_now
-                   - z_dtsub * z_rhofluxdiv_c_out )
+    z_rho_new_dsl = z_rho_now - z_dtsub * z_rhofluxdiv_c_out
 
-    z_tracer_new_dsl =  (( z_tracer_now
-                       * z_rho_now
-                       - z_dtsub * z_fluxdiv_c_dsl )
-                       / z_rho_new_dsl)
+    z_tracer_new_dsl = (
+        z_tracer_now * z_rho_now - z_dtsub * z_fluxdiv_c_dsl
+    ) / z_rho_new_dsl
 
     return (z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl)
+
 
 def test_upwind_hflux_miura_cycl_stencil_02():
     mesh = SimpleMesh()

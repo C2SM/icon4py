@@ -12,15 +12,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_list_stencil import (
     prep_gauss_quadrature_c_list_stencil,
 )
-from icon4py.model.common.dimension import EdgeDim, CellDim, KDim
-
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field, constant_field
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    constant_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -99,7 +103,7 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
     p_coords_dreg_v_3_y = np.where(famask_bool, p_coords_dreg_v_3_y, 0.0)
     p_coords_dreg_v_4_y = np.where(famask_bool, p_coords_dreg_v_4_y, 0.0)
 
-    wgt_t_detjac_1 =np.where(
+    wgt_t_detjac_1 = np.where(
         famask_bool,
         dbl_eps
         + z_wgt_1
@@ -123,7 +127,7 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
         ),
         0.0,
     )
-    wgt_t_detjac_2 =np.where(
+    wgt_t_detjac_2 = np.where(
         famask_bool,
         dbl_eps
         + z_wgt_2
@@ -147,7 +151,7 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
         ),
         0.0,
     )
-    wgt_t_detjac_3 =np.where(
+    wgt_t_detjac_3 = np.where(
         famask_bool,
         dbl_eps
         + z_wgt_3
@@ -170,8 +174,8 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
             )
         ),
         0.0,
-   )
-    wgt_t_detjac_4 =np.where(
+    )
+    wgt_t_detjac_4 = np.where(
         famask_bool,
         dbl_eps
         + z_wgt_4
@@ -318,11 +322,12 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
         p_dreg_area,
     )
 
+
 def test_prep_gauss_quadrature_c_list_stencil():
     mesh = SimpleMesh()
 
-    famask_int = constant_field(mesh, 1, EdgeDim, KDim, dtype=int32) 
-    p_coords_dreg_v_1_x = random_field(mesh, EdgeDim, KDim) 
+    famask_int = constant_field(mesh, 1, EdgeDim, KDim, dtype=int32)
+    p_coords_dreg_v_1_x = random_field(mesh, EdgeDim, KDim)
     p_coords_dreg_v_2_x = random_field(mesh, EdgeDim, KDim)
     p_coords_dreg_v_3_x = random_field(mesh, EdgeDim, KDim)
     p_coords_dreg_v_4_x = random_field(mesh, EdgeDim, KDim)
@@ -330,7 +335,7 @@ def test_prep_gauss_quadrature_c_list_stencil():
     p_coords_dreg_v_2_y = random_field(mesh, EdgeDim, KDim)
     p_coords_dreg_v_3_y = random_field(mesh, EdgeDim, KDim)
     p_coords_dreg_v_4_y = random_field(mesh, EdgeDim, KDim)
-    shape_func_1_1 = 0.001 
+    shape_func_1_1 = 0.001
     shape_func_2_1 = 0.001
     shape_func_3_1 = 0.001
     shape_func_4_1 = 0.001
@@ -346,11 +351,11 @@ def test_prep_gauss_quadrature_c_list_stencil():
     shape_func_2_4 = 0.001
     shape_func_3_4 = 0.001
     shape_func_4_4 = 0.001
-    zeta_1 = 0.002 
+    zeta_1 = 0.002
     zeta_2 = 0.002
     zeta_3 = 0.002
     zeta_4 = 0.002
-    eta_1 = 0.5 
+    eta_1 = 0.5
     eta_2 = 0.5
     eta_3 = 0.5
     eta_4 = 0.5
@@ -361,7 +366,7 @@ def test_prep_gauss_quadrature_c_list_stencil():
     dbl_eps = np.float64(0.1)
     eps = 0.1
     p_dreg_area_in = random_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_1 = zero_field(mesh, EdgeDim, KDim) 
+    p_quad_vector_sum_1 = zero_field(mesh, EdgeDim, KDim)
     p_quad_vector_sum_2 = zero_field(mesh, EdgeDim, KDim)
     p_quad_vector_sum_3 = zero_field(mesh, EdgeDim, KDim)
     p_quad_vector_sum_4 = zero_field(mesh, EdgeDim, KDim)
@@ -373,57 +378,59 @@ def test_prep_gauss_quadrature_c_list_stencil():
     p_quad_vector_sum_10 = zero_field(mesh, EdgeDim, KDim)
     p_dreg_area = zero_field(mesh, EdgeDim, KDim)
 
-    (ref_1,
-     ref_2,
-     ref_3,
-     ref_4,
-     ref_5,
-     ref_6,
-     ref_7,
-     ref_8,
-     ref_9,
-     ref_10,
-     ref_11) = prep_gauss_quadrature_c_list_stencil_numpy(
-                 np.asarray(famask_int),
-                 np.asarray(p_coords_dreg_v_1_x),
-                 np.asarray(p_coords_dreg_v_2_x),
-                 np.asarray(p_coords_dreg_v_3_x),
-                 np.asarray(p_coords_dreg_v_4_x),
-                 np.asarray(p_coords_dreg_v_1_y),
-                 np.asarray(p_coords_dreg_v_2_y),
-                 np.asarray(p_coords_dreg_v_3_y),
-                 np.asarray(p_coords_dreg_v_4_y),
-                 shape_func_1_1,
-                 shape_func_2_1,
-                 shape_func_3_1,
-                 shape_func_4_1,
-                 shape_func_1_2,
-                 shape_func_2_2,
-                 shape_func_3_2,
-                 shape_func_4_2,
-                 shape_func_1_3,
-                 shape_func_2_3,
-                 shape_func_3_3,
-                 shape_func_4_3,
-                 shape_func_1_4,
-                 shape_func_2_4,
-                 shape_func_3_4,
-                 shape_func_4_4,
-                 zeta_1,
-                 zeta_2,
-                 zeta_3,
-                 zeta_4,
-                 eta_1,
-                 eta_2,
-                 eta_3,
-                 eta_4,
-                 wgt_zeta_1,
-                 wgt_zeta_2,
-                 wgt_eta_1,
-                 wgt_eta_2,
-                 dbl_eps,
-                 eps,
-                 np.asarray(p_dreg_area_in),
+    (
+        ref_1,
+        ref_2,
+        ref_3,
+        ref_4,
+        ref_5,
+        ref_6,
+        ref_7,
+        ref_8,
+        ref_9,
+        ref_10,
+        ref_11,
+    ) = prep_gauss_quadrature_c_list_stencil_numpy(
+        np.asarray(famask_int),
+        np.asarray(p_coords_dreg_v_1_x),
+        np.asarray(p_coords_dreg_v_2_x),
+        np.asarray(p_coords_dreg_v_3_x),
+        np.asarray(p_coords_dreg_v_4_x),
+        np.asarray(p_coords_dreg_v_1_y),
+        np.asarray(p_coords_dreg_v_2_y),
+        np.asarray(p_coords_dreg_v_3_y),
+        np.asarray(p_coords_dreg_v_4_y),
+        shape_func_1_1,
+        shape_func_2_1,
+        shape_func_3_1,
+        shape_func_4_1,
+        shape_func_1_2,
+        shape_func_2_2,
+        shape_func_3_2,
+        shape_func_4_2,
+        shape_func_1_3,
+        shape_func_2_3,
+        shape_func_3_3,
+        shape_func_4_3,
+        shape_func_1_4,
+        shape_func_2_4,
+        shape_func_3_4,
+        shape_func_4_4,
+        zeta_1,
+        zeta_2,
+        zeta_3,
+        zeta_4,
+        eta_1,
+        eta_2,
+        eta_3,
+        eta_4,
+        wgt_zeta_1,
+        wgt_zeta_2,
+        wgt_eta_1,
+        wgt_eta_2,
+        dbl_eps,
+        eps,
+        np.asarray(p_dreg_area_in),
     )
 
     prep_gauss_quadrature_c_list_stencil(

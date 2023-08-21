@@ -35,9 +35,15 @@ def _mo_solve_nonhydro_stencil_40(
     z_w_concorr_me_offset_2 = z_w_concorr_me(Koff[-2])
     z_w_concorr_me_offset_3 = z_w_concorr_me(Koff[-3])
 
-    z_w_concorr_mc_m1 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_1(C2E), axis=C2EDim)
-    z_w_concorr_mc_m2 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_2(C2E), axis=C2EDim)
-    z_w_concorr_mc_m3 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_3(C2E), axis=C2EDim)
+    z_w_concorr_mc_m1 = neighbor_sum(
+        e_bln_c_s * z_w_concorr_me_offset_1(C2E), axis=C2EDim
+    )
+    z_w_concorr_mc_m2 = neighbor_sum(
+        e_bln_c_s * z_w_concorr_me_offset_2(C2E), axis=C2EDim
+    )
+    z_w_concorr_mc_m3 = neighbor_sum(
+        e_bln_c_s * z_w_concorr_me_offset_3(C2E), axis=C2EDim
+    )
 
     return (
         wgtfacq_c(Koff[-1]) * z_w_concorr_mc_m1

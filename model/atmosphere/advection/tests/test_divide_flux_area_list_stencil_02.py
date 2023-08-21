@@ -12,15 +12,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_02 import (
     divide_flux_area_list_stencil_02,
 )
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from gt4py.next.ffront.fbuiltins import int32
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim, ECDim
-
-from icon4py.model.common.test_utils.helpers import random_field, zero_field, random_mask, as_1D_sparse_field
+from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    random_field,
+    random_mask,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -105,32 +109,31 @@ def divide_flux_area_list_stencil_02_numpy(
     dreg_patch2_4_lon_vmask = dreg_patch2_4_lon_vmask - bf_cc_patch2_lon
     dreg_patch2_4_lat_vmask = dreg_patch2_4_lat_vmask - bf_cc_patch2_lat
 
-
     # Store global index of the underlying grid cell
     # Adapt dimensions to fit ofr multiple levels
     butterfly_idx_patch1_vnpos_3d = np.broadcast_to(
-        np.expand_dims(butterfly_idx_patch1_vnpos, axis=-1), p_vn.shape 
+        np.expand_dims(butterfly_idx_patch1_vnpos, axis=-1), p_vn.shape
     )
     butterfly_idx_patch1_vnneg_3d = np.broadcast_to(
-        np.expand_dims(butterfly_idx_patch1_vnneg, axis=-1), p_vn.shape 
+        np.expand_dims(butterfly_idx_patch1_vnneg, axis=-1), p_vn.shape
     )
     butterfly_idx_patch2_vnpos_3d = np.broadcast_to(
-        np.expand_dims(butterfly_idx_patch2_vnpos, axis=-1), p_vn.shape 
+        np.expand_dims(butterfly_idx_patch2_vnpos, axis=-1), p_vn.shape
     )
     butterfly_idx_patch2_vnneg_3d = np.broadcast_to(
-        np.expand_dims(butterfly_idx_patch2_vnneg, axis=-1), p_vn.shape 
+        np.expand_dims(butterfly_idx_patch2_vnneg, axis=-1), p_vn.shape
     )
     butterfly_blk_patch1_vnpos_3d = np.broadcast_to(
-        np.expand_dims(butterfly_blk_patch1_vnpos, axis=-1), p_vn.shape 
+        np.expand_dims(butterfly_blk_patch1_vnpos, axis=-1), p_vn.shape
     )
     butterfly_blk_patch1_vnneg_3d = np.broadcast_to(
-        np.expand_dims(butterfly_blk_patch1_vnneg, axis=-1), p_vn.shape 
+        np.expand_dims(butterfly_blk_patch1_vnneg, axis=-1), p_vn.shape
     )
     butterfly_blk_patch2_vnpos_3d = np.broadcast_to(
-        np.expand_dims(butterfly_blk_patch2_vnpos, axis=-1), p_vn.shape 
+        np.expand_dims(butterfly_blk_patch2_vnpos, axis=-1), p_vn.shape
     )
     butterfly_blk_patch2_vnneg_3d = np.broadcast_to(
-        np.expand_dims(butterfly_blk_patch2_vnneg, axis=-1), p_vn.shape 
+        np.expand_dims(butterfly_blk_patch2_vnneg, axis=-1), p_vn.shape
     )
     patch1_cell_idx_vmask = np.where(
         famask_bool,
@@ -189,7 +192,7 @@ def test_divide_flux_area_list_stencil_02():
     bf_cc_patch2_lon_field = as_1D_sparse_field(bf_cc_patch2_lon, ECDim)
     bf_cc_patch2_lat = random_field(mesh, EdgeDim, E2CDim)
     bf_cc_patch2_lat_field = as_1D_sparse_field(bf_cc_patch2_lat, ECDim)
-    butterfly_idx_patch1_vnpos = random_mask(mesh, EdgeDim, dtype=int32) 
+    butterfly_idx_patch1_vnpos = random_mask(mesh, EdgeDim, dtype=int32)
     butterfly_idx_patch1_vnneg = random_mask(mesh, EdgeDim, dtype=int32)
     butterfly_blk_patch1_vnpos = random_mask(mesh, EdgeDim, dtype=int32)
     butterfly_blk_patch1_vnneg = random_mask(mesh, EdgeDim, dtype=int32)
@@ -218,26 +221,28 @@ def test_divide_flux_area_list_stencil_02():
     patch2_cell_idx_vmask = random_mask(mesh, EdgeDim, KDim, dtype=int32)
     patch2_cell_blk_vmask = random_mask(mesh, EdgeDim, KDim, dtype=int32)
 
-    (ref_1,
-     ref_2,
-     ref_3,
-     ref_4,
-     ref_5,
-     ref_6,
-     ref_7,
-     ref_8,
-     ref_9,
-     ref_10,
-     ref_11,
-     ref_12,
-     ref_13,
-     ref_14,
-     ref_15,
-     ref_16,
-     ref_17,
-     ref_18,
-     ref_19,
-     ref_20) = divide_flux_area_list_stencil_02_numpy(
+    (
+        ref_1,
+        ref_2,
+        ref_3,
+        ref_4,
+        ref_5,
+        ref_6,
+        ref_7,
+        ref_8,
+        ref_9,
+        ref_10,
+        ref_11,
+        ref_12,
+        ref_13,
+        ref_14,
+        ref_15,
+        ref_16,
+        ref_17,
+        ref_18,
+        ref_19,
+        ref_20,
+    ) = divide_flux_area_list_stencil_02_numpy(
         mesh.e2c,
         np.asarray(famask_int),
         np.asarray(p_vn),
@@ -327,7 +332,7 @@ def test_divide_flux_area_list_stencil_02():
     assert np.allclose(dreg_patch2_3_lat_vmask, ref_14)
     assert np.allclose(dreg_patch2_4_lon_vmask, ref_15)
     assert np.allclose(dreg_patch2_4_lat_vmask, ref_16)
-    assert np.allclose(patch1_cell_idx_vmask,   ref_17)
-    assert np.allclose(patch1_cell_blk_vmask,   ref_18)
-    assert np.allclose(patch2_cell_idx_vmask,   ref_19)
-    assert np.allclose(patch2_cell_blk_vmask,   ref_20)
+    assert np.allclose(patch1_cell_idx_vmask, ref_17)
+    assert np.allclose(patch1_cell_blk_vmask, ref_18)
+    assert np.allclose(patch2_cell_idx_vmask, ref_19)
+    assert np.allclose(patch2_cell_blk_vmask, ref_20)

@@ -18,7 +18,6 @@ from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_01 import (
     v_limit_prbl_sm_stencil_01,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 

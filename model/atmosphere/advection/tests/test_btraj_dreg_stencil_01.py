@@ -15,10 +15,15 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 
-from icon4py.model.atmosphere.advection.btraj_dreg_stencil_01 import btraj_dreg_stencil_01
+from icon4py.model.atmosphere.advection.btraj_dreg_stencil_01 import (
+    btraj_dreg_stencil_01,
+)
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-
-from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    _shape,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -31,9 +36,9 @@ def btraj_dreg_stencil_01_numpy(
 
     tangent_orientation = np.broadcast_to(tangent_orientation, p_vn.shape)
 
-    lvn_sys_pos_true = np.where( tangent_orientation * p_vn >= 0.0, True, False)
+    lvn_sys_pos_true = np.where(tangent_orientation * p_vn >= 0.0, True, False)
 
-    mask_lcounterclock =  np.broadcast_to(lcounterclock, p_vn.shape)
+    mask_lcounterclock = np.broadcast_to(lcounterclock, p_vn.shape)
 
     lvn_sys_pos = np.where(mask_lcounterclock, lvn_sys_pos_true, False)
 
@@ -61,7 +66,6 @@ def test_btraj_dreg_stencil_01():
         tangent_orientation,
         lvn_sys_pos,
         offset_provider={},
-
     )
 
     assert np.allclose(ref, lvn_sys_pos)

@@ -71,7 +71,9 @@ def _apply_diffusion_to_vn(
                 vn,
                 nudgezone_diff,
             ),
-            _apply_nabla2_to_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v),
+            _apply_nabla2_to_vn_in_lateral_boundary(
+                z_nabla2_e, area_edge, vn, fac_bdydiff_v
+            ),
         )
         if limited_area
         else where(

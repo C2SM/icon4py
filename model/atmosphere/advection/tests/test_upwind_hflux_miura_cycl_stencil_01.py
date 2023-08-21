@@ -14,10 +14,16 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_01 import upwind_hflux_miura_cycl_stencil_01
+from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_01 import (
+    upwind_hflux_miura_cycl_stencil_01,
+)
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-
-from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, random_mask
+from icon4py.model.common.test_utils.helpers import (
+    _shape,
+    random_field,
+    random_mask,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -35,10 +41,25 @@ def upwind_hflux_miura_cycl_stencil_01_numpy(
     z_lsq_coeff_2_dsl_e2c = z_lsq_coeff_2_dsl[e2c]
     z_lsq_coeff_3_dsl_e2c = z_lsq_coeff_3_dsl[e2c]
 
-    z_tracer_mflx_dsl = ( np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_1_dsl_e2c[:, 1], z_lsq_coeff_1_dsl_e2c[:, 0])
-         + distv_bary_1 * np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_2_dsl_e2c[:, 1], z_lsq_coeff_2_dsl_e2c[:, 0])
-         + distv_bary_2 * np.where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_3_dsl_e2c[:, 1], z_lsq_coeff_3_dsl_e2c[:, 0])
-         ) * p_mass_flx_e
+    z_tracer_mflx_dsl = (
+        np.where(
+            cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_1_dsl_e2c[:, 1],
+            z_lsq_coeff_1_dsl_e2c[:, 0],
+        )
+        + distv_bary_1
+        * np.where(
+            cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_2_dsl_e2c[:, 1],
+            z_lsq_coeff_2_dsl_e2c[:, 0],
+        )
+        + distv_bary_2
+        * np.where(
+            cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_3_dsl_e2c[:, 1],
+            z_lsq_coeff_3_dsl_e2c[:, 0],
+        )
+    ) * p_mass_flx_e
 
     return z_tracer_mflx_dsl
 

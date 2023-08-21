@@ -15,7 +15,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.common.dimension import CellDim, KDim, EdgeDim, E2C
+from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -45,20 +45,75 @@ def _upwind_hflux_miura3_stencil_01(
     cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
 ) -> Field[[EdgeDim, KDim], float]:
 
-	p_out_e_miura3 = (
-               where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_1(E2C[1]), z_lsq_coeff_1(E2C[0])) * z_quad_vector_sum_1
-             + where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_2(E2C[1]), z_lsq_coeff_2(E2C[0])) * z_quad_vector_sum_2
-             + where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_3(E2C[1]), z_lsq_coeff_3(E2C[0])) * z_quad_vector_sum_3
-             + where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_4(E2C[1]), z_lsq_coeff_4(E2C[0])) * z_quad_vector_sum_4
-             + where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_5(E2C[1]), z_lsq_coeff_5(E2C[0])) * z_quad_vector_sum_5
-             + where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_6(E2C[1]), z_lsq_coeff_6(E2C[0])) * z_quad_vector_sum_6
-             + where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_7(E2C[1]), z_lsq_coeff_7(E2C[0])) * z_quad_vector_sum_7
-             + where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_8(E2C[1]), z_lsq_coeff_8(E2C[0])) * z_quad_vector_sum_8
-             + where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_9(E2C[1]), z_lsq_coeff_9(E2C[0])) * z_quad_vector_sum_9
-             + where(cell_rel_idx_dsl == int32(1), z_lsq_coeff_10(E2C[1]), z_lsq_coeff_10(E2C[0])) * z_quad_vector_sum_10
-             ) / z_dreg_area * p_mass_flx_e
+    p_out_e_miura3 = (
+        (
+            where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_1(E2C[1]),
+                z_lsq_coeff_1(E2C[0]),
+            )
+            * z_quad_vector_sum_1
+            + where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_2(E2C[1]),
+                z_lsq_coeff_2(E2C[0]),
+            )
+            * z_quad_vector_sum_2
+            + where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_3(E2C[1]),
+                z_lsq_coeff_3(E2C[0]),
+            )
+            * z_quad_vector_sum_3
+            + where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_4(E2C[1]),
+                z_lsq_coeff_4(E2C[0]),
+            )
+            * z_quad_vector_sum_4
+            + where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_5(E2C[1]),
+                z_lsq_coeff_5(E2C[0]),
+            )
+            * z_quad_vector_sum_5
+            + where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_6(E2C[1]),
+                z_lsq_coeff_6(E2C[0]),
+            )
+            * z_quad_vector_sum_6
+            + where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_7(E2C[1]),
+                z_lsq_coeff_7(E2C[0]),
+            )
+            * z_quad_vector_sum_7
+            + where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_8(E2C[1]),
+                z_lsq_coeff_8(E2C[0]),
+            )
+            * z_quad_vector_sum_8
+            + where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_9(E2C[1]),
+                z_lsq_coeff_9(E2C[0]),
+            )
+            * z_quad_vector_sum_9
+            + where(
+                cell_rel_idx_dsl == int32(1),
+                z_lsq_coeff_10(E2C[1]),
+                z_lsq_coeff_10(E2C[0]),
+            )
+            * z_quad_vector_sum_10
+        )
+        / z_dreg_area
+        * p_mass_flx_e
+    )
 
-	return p_out_e_miura3
+    return p_out_e_miura3
+
 
 @program
 def upwind_hflux_miura3_stencil_01(
@@ -111,5 +166,5 @@ def upwind_hflux_miura3_stencil_01(
         z_dreg_area,
         p_mass_flx_e,
         cell_rel_idx_dsl,
-        out=(p_out_e_miura3)
+        out=(p_out_e_miura3),
     )

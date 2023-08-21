@@ -13,9 +13,10 @@
 
 import numpy as np
 
-from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import vert_adv_stencil_01
+from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import (
+    vert_adv_stencil_01,
+)
 from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 

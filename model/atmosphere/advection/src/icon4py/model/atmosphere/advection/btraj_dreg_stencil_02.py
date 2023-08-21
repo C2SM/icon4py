@@ -26,7 +26,7 @@ def _btraj_dreg_stencil_02(
 ) -> Field[[EdgeDim, KDim], int32]:
 
     lvn_pos = where(p_vn >= 0.0, True, False)
-    traj_length = sqrt(p_vn*p_vn + p_vt*p_vt) * p_dt
+    traj_length = sqrt(p_vn * p_vn + p_vt * p_vt) * p_dt
     e2c_length = where(lvn_pos, edge_cell_length(E2EC[0]), edge_cell_length(E2EC[1]))
     opt_famask_dsl = where(
         traj_length > 1.25 * broadcast(e2c_length, (EdgeDim, KDim)), int32(1), int32(0)

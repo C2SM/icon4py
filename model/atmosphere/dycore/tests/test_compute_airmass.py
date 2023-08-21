@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-
 from icon4py.atm_dyn_iconam.compute_airmass import compute_airmass
 from icon4py.common.dimension import CellDim, KDim
 

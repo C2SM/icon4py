@@ -15,10 +15,16 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 
-from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import hflux_ffsl_hybrid_stencil_01a
-from icon4py.model.common.dimension import CellDim, KDim, EdgeDim
-
-from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field, constant_field
+from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
+    hflux_ffsl_hybrid_stencil_01a,
+)
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    _shape,
+    constant_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -47,29 +53,79 @@ def hflux_ffsl_hybrid_stencil_01a_numpy(
     patch0_cell_rel_idx_dsl: np.ndarray,
 ):
 
-    z_lsq_coeff_1_e2c  = z_lsq_coeff_1[e2c]
-    z_lsq_coeff_2_e2c  = z_lsq_coeff_2[e2c]
-    z_lsq_coeff_3_e2c  = z_lsq_coeff_3[e2c]
-    z_lsq_coeff_4_e2c  = z_lsq_coeff_4[e2c]
-    z_lsq_coeff_5_e2c  = z_lsq_coeff_5[e2c]
-    z_lsq_coeff_6_e2c  = z_lsq_coeff_6[e2c]
-    z_lsq_coeff_7_e2c  = z_lsq_coeff_7[e2c]
-    z_lsq_coeff_8_e2c  = z_lsq_coeff_8[e2c]
-    z_lsq_coeff_9_e2c  = z_lsq_coeff_9[e2c]
+    z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
+    z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
+    z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
+    z_lsq_coeff_4_e2c = z_lsq_coeff_4[e2c]
+    z_lsq_coeff_5_e2c = z_lsq_coeff_5[e2c]
+    z_lsq_coeff_6_e2c = z_lsq_coeff_6[e2c]
+    z_lsq_coeff_7_e2c = z_lsq_coeff_7[e2c]
+    z_lsq_coeff_8_e2c = z_lsq_coeff_8[e2c]
+    z_lsq_coeff_9_e2c = z_lsq_coeff_9[e2c]
     z_lsq_coeff_10_e2c = z_lsq_coeff_10[e2c]
 
     p_out_e_hybrid_1a = (
-           np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0]) * z_quad_vector_sum0_1
-         + np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0]) * z_quad_vector_sum0_2
-         + np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0]) * z_quad_vector_sum0_3
-         + np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_4_e2c[:, 1], z_lsq_coeff_4_e2c[:, 0]) * z_quad_vector_sum0_4
-         + np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_5_e2c[:, 1], z_lsq_coeff_5_e2c[:, 0]) * z_quad_vector_sum0_5
-         + np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_6_e2c[:, 1], z_lsq_coeff_6_e2c[:, 0]) * z_quad_vector_sum0_6
-         + np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_7_e2c[:, 1], z_lsq_coeff_7_e2c[:, 0]) * z_quad_vector_sum0_7
-         + np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_8_e2c[:, 1], z_lsq_coeff_8_e2c[:, 0]) * z_quad_vector_sum0_8
-         + np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_9_e2c[:, 1], z_lsq_coeff_9_e2c[:, 0]) * z_quad_vector_sum0_9
-         + np.where(patch0_cell_rel_idx_dsl == int32(1), z_lsq_coeff_10_e2c[:, 1], z_lsq_coeff_10_e2c[:, 0]) * z_quad_vector_sum0_10
-         )
+        np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_1_e2c[:, 1],
+            z_lsq_coeff_1_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_1
+        + np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_2_e2c[:, 1],
+            z_lsq_coeff_2_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_2
+        + np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_3_e2c[:, 1],
+            z_lsq_coeff_3_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_3
+        + np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_4_e2c[:, 1],
+            z_lsq_coeff_4_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_4
+        + np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_5_e2c[:, 1],
+            z_lsq_coeff_5_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_5
+        + np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_6_e2c[:, 1],
+            z_lsq_coeff_6_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_6
+        + np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_7_e2c[:, 1],
+            z_lsq_coeff_7_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_7
+        + np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_8_e2c[:, 1],
+            z_lsq_coeff_8_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_8
+        + np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_9_e2c[:, 1],
+            z_lsq_coeff_9_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_9
+        + np.where(
+            patch0_cell_rel_idx_dsl == int32(1),
+            z_lsq_coeff_10_e2c[:, 1],
+            z_lsq_coeff_10_e2c[:, 0],
+        )
+        * z_quad_vector_sum0_10
+    )
 
     return p_out_e_hybrid_1a
 
@@ -150,7 +206,6 @@ def test_hflux_ffsl_hybrid_stencil_01a():
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
         },
-
     )
 
     assert np.allclose(p_out_e_hybrid_1a, ref)

@@ -14,7 +14,14 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum
 
-from icon4py.model.common.dimension import C2CE, C2E, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import (
+    C2CE,
+    C2E,
+    CEDim,
+    CellDim,
+    EdgeDim,
+    KDim,
+)
 
 
 @field_operator
