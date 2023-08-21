@@ -1,5 +1,6 @@
 # VCS
 -e git+https://github.com/nfarabullini/gt4py.git@temp_patch_tuple_fields_scan#egg=gt4py
++git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
 
 # PyPI
 flake8>=3.8

@@ -23,7 +23,7 @@ the extra precision is necessary or useful.
 
 from typing import Final
 
-from eve.utils import FrozenNamespace
+from gt4py.eve.utils import FrozenNamespace
 
 
 class MathConstants(FrozenNamespace):

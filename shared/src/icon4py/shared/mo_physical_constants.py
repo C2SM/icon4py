@@ -25,7 +25,7 @@ mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
 
 from typing import Final
 
-from eve.utils import FrozenNamespace
+from gt4py.eve.utils import FrozenNamespace
 
 
 class PhysicalConstants(FrozenNamespace):
