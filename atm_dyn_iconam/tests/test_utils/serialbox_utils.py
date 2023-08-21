@@ -541,7 +541,6 @@ class MetricSavepoint(IconSavepoint):
             zd_vertoffset=self.zd_vertoffset(),
         )
 
-
     def construct_metric_state_for_diffusion(self) -> DiffusionMetricState:
         return DiffusionMetricState(
             mask_hdiff=self.mask_hdiff(),
@@ -1156,9 +1155,6 @@ class IconExitSavepoint(IconSavepoint):
     def theta_v_new(self):
         return self._get_field("x_theta_v_new", CellDim, KDim)
 
-    def vn_ie(self):
-        return self._get_field("x_vn_ie", EdgeDim, KDim)
-
     def vn_new(self):
         return self._get_field("x_vn_new", EdgeDim, KDim)
 
@@ -1189,11 +1185,35 @@ class IconExitSavepoint(IconSavepoint):
     def z_hydro_corr(self):
         return self._get_field("x_z_hydro_corr", EdgeDim, KDim)
 
-    def z_kin_hor_e(self):
-        return self._get_field("x_z_kin_hor_e", EdgeDim, KDim)
-
     def z_theta_v_fl_e(self):
         return self._get_field("x_z_theta_v_fl_e", EdgeDim, KDim)
+
+    def z_flxdiv_mass(self):
+        return self._get_field("x_z_flxdiv_mass", CellDim, KDim)
+
+    def z_flxdiv_theta(self):
+        return self._get_field("x_z_flxdiv_theta", CellDim, KDim)
+
+    def z_contr_w_fl_l(self):
+        return self._get_field("x_z_contr_w_fl", CellDim, KDim)
+
+    def z_w_expl(self):
+        return self._get_field("x_z_w_expl", CellDim, KDim)
+
+    def z_alpha(self):
+        return self._get_field("x_z_alpha", CellDim, KDim)
+
+    def z_beta(self):
+        return self._get_field("x_z_beta", CellDim, KDim)
+
+    def z_q(self):
+        return self._get_field("x_z_q", CellDim, KDim)
+
+    def z_rho_expl(self):
+        return self._get_field("x_z_rho_expl", CellDim, KDim)
+
+    def z_exner_expl(self):
+        return self._get_field("x_z_exner_expl", CellDim, KDim)
 
     def z_theta_v_pr_ic(self):
         return self._get_field("x_z_theta_v_pr_ic", CellDim, KDim)
@@ -1260,6 +1280,21 @@ class IconExitSavepoint(IconSavepoint):
 
     def z_theta_v_e_00(self):
         return self._get_field("x_z_theta_v_e_00", EdgeDim, KDim)
+
+    def w_new_52(self):
+        return self._get_field("x_w_new_52", CellDim, KDim)
+
+    def w_new_53(self):
+        return self._get_field("x_w_new_53", CellDim, KDim)
+
+    def exner_new_55(self):
+        return self._get_field("x_exner_new_55", CellDim, KDim)
+
+    def theta_v_new_55(self):
+        return self._get_field("x_theta_v_new_55", CellDim, KDim)
+
+    def rho_new_55(self):
+        return self._get_field("x_rho_new_55", CellDim, KDim)
 
     ### Nikki serialization
 

@@ -965,25 +965,9 @@ def _stencils_47_48_49(
         _mo_solve_nonhydro_stencil_47(w_concorr_c),
         (w_nnew, z_contr_w_fl_l),
     )
+    # 48 and 49 are identical except for bounds
     (z_rho_expl, z_exner_expl) = where(
-        k_field == int32(0),
-        _mo_solve_nonhydro_stencil_48(
-            rho_nnow,
-            inv_ddqz_z_full,
-            z_flxdiv_mass,
-            z_contr_w_fl_l,
-            exner_pr,
-            z_beta,
-            z_flxdiv_theta,
-            theta_v_ic,
-            ddt_exner_phy,
-            dtime,
-        ),
-        (z_rho_expl, z_exner_expl),
-    )
-    (z_rho_expl, z_exner_expl) = where(
-        # (k_field >= 0) & (k_field < nlev),
-        k_field >= int32(0),
+        (k_field >= int32(0)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_49(
             rho_nnow,
             inv_ddqz_z_full,
