@@ -150,8 +150,9 @@ def test_set_zero_vertex_k():
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    diffusion_savepoint_init, r04b09_diffusion_config, icon_grid
+    diffusion_savepoint_init, r04b09_diffusion_config, icon_grid, linit
 ):
     savepoint = diffusion_savepoint_init
     config = r04b09_diffusion_config

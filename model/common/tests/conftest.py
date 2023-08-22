@@ -10,9 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import importlib
-import sys
-from pathlib import Path
+
 
 from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     damping_height,
@@ -23,4 +21,7 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     icon_grid,
     r04b09_dsl_gridfile,
     setup_icon_data,
+
+
 )
+from icon4py.model.common.test_utils.parallel_fixtures import (processor_props, ranked_data_path, get_decomposition_info, get_icon_grid, download_data)  # noqa F401

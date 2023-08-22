@@ -109,6 +109,7 @@ show_error_codes = true
 
 [tool.pytest.ini_options]
 testpaths = 'tests'
+markers = 'datatest: this test uses binary data'
 
 [tool.setuptools.dynamic]
 version = {attr = 'icon4py.model.common.__init__.__version__'}

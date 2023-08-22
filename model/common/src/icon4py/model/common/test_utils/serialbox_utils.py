@@ -18,6 +18,7 @@ from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
+from icon4py.model.common import dimension
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -208,7 +209,7 @@ class IconGridSavePoint(IconSavepoint):
     def num(self, dim: Dimension):
         return self.sizes[dim]
 
-    def _read_field_for_dim(self, field_name, read_func, dim):
+    def _read_field_for_dim(self, field_name, read_func, dim:Dimension):
         match (dim):
             case dimension.CellDim:
                 return read_func(f"c_{field_name}")
