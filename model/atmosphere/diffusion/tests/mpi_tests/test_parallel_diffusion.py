@@ -14,24 +14,25 @@
 
 import pytest
 
-from .common import (  # noqa F401
+from icon4py.model.common.decomposition.parallel_setup import get_processor_properties
+from icon4py.model.common.test_utils.parallel_fixtures import (  # noqa F401
     data_path,
     download_data,
     props,
 )
-from icon4py.model.diffusion.test_diffusion import _verify_diffusion_fields
+from icon4py.model.atmosphere.diffusion.tests.test_diffusion import  _verify_diffusion_fields
 from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.decomposition.decomposed import DecompositionInfo, create_exchange
-from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.driver.io_utils import (
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
+from model.driver.src.icon4py.model.driver.io_utils import (
     read_decomp_info,
     read_geometry_fields,
     read_icon_grid,
     read_static_fields,
 )
 
-
+props = get_processor_properties(with_mpi=True)
 @pytest.mark.mpi
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])

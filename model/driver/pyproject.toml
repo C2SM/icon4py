@@ -3,8 +3,8 @@ requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "icon4py-atmosphere-dycore"
-description = "ICON dynamical core."
+name = "icon4py-driver"
+description = "ICON model driver."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
@@ -29,6 +29,8 @@ classifiers = [
 dependencies = [
     "gt4py>=1.0.1",
     "icon4py-common>=0.0.5",
+    "icon4py-atmosphere-dycore>=0.0.5",
+    "icon4py-atmosphere-diffusion>=0.0.5",
 ]
 dynamic = ['version']
 
@@ -73,7 +75,7 @@ ignore_errors = true
 [tool.coverage.run]
 parallel = true
 branch = true
-source_pkgs = ['dycore']
+source_pkgs = ['driver']
 
 [tool.isort]
 lexicographical = true
@@ -113,7 +115,7 @@ testpaths = 'tests'
 markers = 'datatest: this test uses binary data'
 
 [tool.setuptools.dynamic]
-version = {attr = 'icon4py.model.atmosphere.dycore.__init__.__version__'}
+version = {attr = 'icon4py.model.driver.__init__.__version__'}
 
 [tool.setuptools.package-data]
-'icon4py.model.atmosphere.dycore' = ['py.typed']
+'icon4py.model.driver' = ['py.typed']

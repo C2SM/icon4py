@@ -13,11 +13,11 @@
 
 import numpy as np
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.driver.dycore_driver import _copy_diagnostic_and_prognostics
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.driver.dycore_driver import _copy_diagnostic_and_prognostics
 
-from .test_utils.helpers import random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def test_copy_diagnostic_and_prognostics():

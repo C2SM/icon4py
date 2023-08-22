@@ -14,14 +14,9 @@
 
 import pytest
 
-from icon4py.driver.io_utils import (
-    SerializationType,
-    read_geometry_fields,
-    read_icon_grid,
-    read_static_fields,
-)
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.driver.io_utils import read_geometry_fields, read_static_fields, read_icon_grid, SerializationType
 
 
 @pytest.mark.datatest

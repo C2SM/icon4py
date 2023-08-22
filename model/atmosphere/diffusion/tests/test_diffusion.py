@@ -181,7 +181,7 @@ def _verify_init_values_against_savepoint(
     assert savepoint.diff_multfac_w() == diffusion.diff_multfac_w
 
     # this is done in diffusion.run(...) because it depends on the dtime
-    scale_k.with_backend(diffusion.compiled_backend)(
+    scale_k(
         diffusion.enh_smag_fac, dtime, diffusion.diff_multfac_smag, offset_provider={}
     )
     assert np.allclose(savepoint.diff_multfac_smag(), diffusion.diff_multfac_smag)

@@ -21,34 +21,29 @@ from devtools import Timer
 from gt4py.next import program, Field
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.decomposition.decomposed import create_exchange
 from icon4py.model.common.decomposition.parallel_setup import (
     ProcessProperties,
     get_processor_properties,
 )
-from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import Diffusion, DiffusionParams
-from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import (
+from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
+from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     PrognosticState,
 )
-from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import _identity_c_k, _identity_e_k
-from icon4py.driver.icon_configuration import IconRunConfig, read_config
-from icon4py.driver.io_utils import (
+from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
+from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
+from icon4py.model.driver.io_utils import (
     SIMULATION_START_DATE,
     configure_logging,
-    import_testutils,
     read_decomp_info,
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
     read_static_fields,
 )
-
-
-helpers = import_testutils()
-from helpers import serialbox_utils as sb_utils  # noqa
-
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +79,7 @@ def _copy_diagnostic_and_prognostics(
 
 
 class DummyAtmoNonHydro:
-    def __init__(self, data_provider: sb_utils.IconSerialDataProvider):
+    def __init__(self, data_provider: sb.IconSerialDataProvider):
         self.config = None
         self.data_provider = data_provider
         self.simulation_date = datetime.fromisoformat(SIMULATION_START_DATE)

@@ -4,8 +4,8 @@
 -e ./model/atmosphere/dycore
 -e ./model/common
 -e ./model/atmosphere/diffusion
+-e ./model/driver
 
 # icon4pytools
 -e ./tools
-# TODO (magdalena) remove after merge
--e ./py2f
+-e ./py2f #TODO (magdalena) move to tools and remove

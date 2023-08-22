@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from .common import (
+from icon4py.model.common.test_utils.parallel_fixtures import (
     data_path,
     download_data,
     props,
@@ -28,8 +28,7 @@ from icon4py.model.common.decomposition.decomposed import (
     create_exchange,
 )
 from icon4py.model.common.decomposition.parallel_setup import ProcessProperties
-from icon4py.driver.io_utils import (
-    SerializationType,
+from model.driver.src.icon4py.model.driver.io_utils import (
     read_decomp_info,
     read_icon_grid,
 )
@@ -57,10 +56,9 @@ mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
     ),
 )
 def test_decomposition_info_masked(
-    dim, owned, total, caplog, download_data  # noqa F811
+    dim, owned, total, caplog, download_data, decomposition_info  # noqa F811
 ):
     my_rank = props.rank
-    decomposition_info = read_decomp_info(data_path, props, SerializationType.SB)
     all_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
@@ -88,10 +86,9 @@ def test_decomposition_info_masked(
     ),
 )
 def test_decomposition_info_local_index(
-    dim, owned, total, caplog, download_data  # noqa F811
+    dim, owned, total, caplog, download_data, decomposition_info  # noqa F811
 ):
     my_rank = props.rank
-    decomposition_info = read_decomp_info(data_path, props, SerializationType.SB)
     all_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
@@ -149,12 +146,8 @@ def test_domain_descriptor_id_are_globally_unique(num):
     props.comm_size not in (1, 2, 4),
     reason="input files only available for 1 or 2 nodes",
 )
-def test_decomposition_info_matches_gridsize(caplog, download_data):  # noqa F811
-    decomposition_info = read_decomp_info(
-        data_path,
-        props,
-        SerializationType.SB,
-    )
+def test_decomposition_info_matches_gridsize(caplog, download_data, decomposition_info):  # noqa F811
+
     icon_grid = read_icon_grid(data_path, props.rank)
     assert (
         decomposition_info.global_index(
