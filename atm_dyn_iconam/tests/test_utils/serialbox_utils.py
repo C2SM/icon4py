@@ -382,11 +382,11 @@ class InterpolationSavepoint(IconSavepoint):
 
     def pos_on_tplane_e_x(self):
         field = self._get_field("pos_on_tplane_e_x", EdgeDim, E2CDim)
-        return as_1D_sparse_field(field, ECDim)
+        return as_1D_sparse_field(field[:,0:2], ECDim)
 
     def pos_on_tplane_e_y(self):
         field = self._get_field("pos_on_tplane_e_y", EdgeDim, E2CDim)
-        return as_1D_sparse_field(field, ECDim)
+        return as_1D_sparse_field(field[:,0:2], ECDim)
 
     # def pos_on_tplane_e(self, ind):
     #     buffer = np.squeeze(self.serializer.read("pos_on_tplane_e", self.savepoint))
@@ -1038,6 +1038,9 @@ class IconExitSavepoint(IconSavepoint):
     def exner(self):
         return self._get_field("x_exner", CellDim, KDim)
 
+    def rho(self):
+        return self._get_field("x_rho_new", CellDim, KDim)
+
     # def ddt_vn_apc_pc(self):
     #     return self._get_field("x_ddt_vn_apc_pc", EdgeDim, KDim)
     #
@@ -1236,11 +1239,11 @@ class IconExitSavepoint(IconSavepoint):
         )
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ind - 1])
 
-    def p_distv_bary(self, ind):
-        buffer = np.squeeze(
-            self.serializer.read("x_p_distv_bary", self.savepoint).astype(float)
-        )
-        return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ind - 1])
+    # def p_distv_bary_1(self):
+    #     return self._get_field("x_p_distv_bary_1", EdgeDim, KDim)
+    #
+    # def p_distv_bary_2(self):
+    #     return self._get_field("x_p_distv_bary_2", EdgeDim, KDim)
 
     def z_gradh_exner_18(self):
         return self._get_field("x_z_gradh_exner_18", EdgeDim, KDim)
@@ -1315,6 +1318,9 @@ class IconExitSavepoint(IconSavepoint):
 
     def vn_26_start(self):
         return self._get_field("vn_26_start", EdgeDim, KDim)
+
+    def z_dwdz_dd(self):
+        return self._get_field("x_z_dwdz_dd", CellDim, KDim)
 
 
 class IconSerialDataProvider:

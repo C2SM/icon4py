@@ -119,8 +119,8 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_55 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_56_63 import (
     mo_solve_nonhydro_stencil_56_63,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_58 import (
-    mo_solve_nonhydro_stencil_58,
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_59 import (
+    mo_solve_nonhydro_stencil_59,
 )
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
@@ -332,6 +332,10 @@ class SolveNonhydro:
 
         if self.grid.lvert_nest():
             self.l_vert_nested = True
+            self.jk_start = 1
+        else:
+            self.jk_start = 0
+
 
         out = enh_smag_fac
         _en_smag_fac_for_zero_nshift(
@@ -382,6 +386,8 @@ class SolveNonhydro:
         self.z_kin_hor_e = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_vt_ie = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_theta_v_e2 = _allocate(EdgeDim, KDim, mesh=self.grid)
+        #self.p_distv_bary_1 = _allocate(EdgeDim, KDim, mesh=self.grid)
+        #self.p_distv_bary_2 = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_hydro_corr_horizontal = _allocate(EdgeDim, mesh=self.grid)
         self.z_raylfac = _allocate(KDim, mesh=self.grid)
 
@@ -658,8 +664,8 @@ class SolveNonhydro:
         )
 
         (indices_11_1, indices_11_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim),
+            CellDim,
+            HorizontalMarkerIndex.lateral_boundary(CellDim),
             HorizontalMarkerIndex.nudging(CellDim) - 1,
         )
 
@@ -962,6 +968,8 @@ class SolveNonhydro:
                     z_rth_pr_2=self.z_rth_pr_2,
                     z_rho_e=z_fields.z_rho_e,
                     z_theta_v_e=z_fields.z_theta_v_e,
+                    #p_distv_bary_1=self.p_distv_bary_1,
+                    #p_distv_bary_2=self.p_distv_bary_2,
                     horizontal_start=indices_12_1,
                     horizontal_end=indices_12_2,
                     vertical_start=0,
@@ -1197,7 +1205,6 @@ class SolveNonhydro:
             },
         )
 
-        self.jk_start = 0 # =1 if l_vert_nested is true
 
         if config.idiv_method == 1:
             mo_solve_nonhydro_stencil_41.with_backend(run_gtfn)(
@@ -1360,7 +1367,7 @@ class SolveNonhydro:
             cvd_o_rd=constants.CVD_O_RD,
             horizontal_start=indices_10_1,
             horizontal_end=indices_10_2,
-            vertical_start=0,
+            vertical_start=int32(self.jk_start),
             vertical_end=self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
@@ -1380,13 +1387,9 @@ class SolveNonhydro:
             )
 
         if idyn_timestep == 1:
-            nhsolve_prog.predictor_stencils_59_60.with_backend(run_gtfn)(
-                exner_nnow=prognostic_state[nnow].exner,
-                exner_nnew=prognostic_state[nnew].exner,
+            mo_solve_nonhydro_stencil_59.with_backend(run_gtfn)(
+                exner=prognostic_state[nnow].exner,
                 exner_dyn_incr=self.exner_dyn_incr,
-                ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
-                ndyn_substeps_var=config.ndyn_substeps_var,
-                dtime=dtime,
                 cell_startindex_nudging_plus1=indices_10_1,
                 cell_endindex_interior=indices_10_2,
                 kstart_moist=params.kstart_moist,

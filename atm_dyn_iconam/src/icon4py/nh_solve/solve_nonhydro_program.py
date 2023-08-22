@@ -1095,7 +1095,7 @@ def _stencils_61_62(
 ]:
     (rho_new, exner_new, w_new) = where(
         # (k_field >= 0) & (k_field < nlev),
-        k_field >= int32(0),
+        (k_field >= int32(0)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_61(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
