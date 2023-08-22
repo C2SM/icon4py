@@ -140,8 +140,10 @@ def test_nonhydro_predictor_step(
         ddt_w_adv_ntl2=sp_v_exit.ddt_w_adv_pc(2), # TODO: @abishekg7 change later
         ntl1=ntl1,
         ntl2=ntl2,
-        vt=sp_v_exit.vt(), #sp_v.vt(), #TODO: @abishekg7 change back to sp_v
-        vn_ie=sp_v_exit.vn_ie(),
+        vt=sp_v.vt(),
+        vn_ie=sp_v.vn_ie(),
+        #vt=sp_v_exit.vt(), #sp_v.vt(), #TODO: @abishekg7 change back to sp_v
+        #vn_ie=sp_v_exit.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
         ddt_w_adv_pc=sp_v.ddt_w_adv_pc_before(ntnd),
         ddt_vn_apc_pc=sp_v.ddt_vn_apc_pc_before(ntnd),
@@ -152,10 +154,10 @@ def test_nonhydro_predictor_step(
     )
 
     prognostic_state_nnow = PrognosticState(
-        #w=sp.w_now(),
-        #vn=sp.vn_now(),
-        w=sp_v_exit.w(),  # sp_v.w(), #TODO: @abishekg7 change back
-        vn=sp_v_exit.vn(),  # sp_v.vn(),
+        w=sp.w_now(),
+        vn=sp.vn_now(),
+        #w=sp_v_exit.w(),  # sp_v.w(), #TODO: @abishekg7 change back
+        #vn=sp_v_exit.vn(),  # sp_v.vn(),
         exner_pressure=None,
         theta_v=sp.theta_v_now(),
         rho=sp.rho_now(),
@@ -184,15 +186,6 @@ def test_nonhydro_predictor_step(
         z_graddiv_vn = _allocate(EdgeDim, KDim, mesh=icon_grid),
         z_rho_expl = _allocate(CellDim, KDim, mesh=icon_grid),
         z_dwdz_dd = _allocate(CellDim, KDim, mesh=icon_grid),
-    )
-
-    nh_constants = NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
-        scal_divdamp=sp.scal_divdamp(),
-        scal_divdamp_o2=sp.scal_divdamp_o2(),
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
@@ -226,16 +219,12 @@ def test_nonhydro_predictor_step(
         params=nonhydro_params,
         edge_geometry=edge_geometry,
         z_fields=z_fields,
-        nh_constants=nh_constants,
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
         owner_mask=sp_d.c_owner_mask(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
-        z_rho_e2=sp_exit.z_rho_e_01(),
-        z_theta_v_e2=sp_exit.z_theta_v_e_01(),
-        vn_tmp=sp_v_exit.vn(),
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
@@ -349,13 +338,6 @@ def test_nonhydro_predictor_step(
     # )
 
     # mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
-    # fields not available due to fusion
-    # assert dallclose(
-    #     np.asarray(sp_v.p_distv_bary(1))[3777:31558, :], np.asarray(solve_nonhydro.p_distv_bary_1)[3777:31558, :]
-    # )
-    # assert dallclose(
-    #     np.asarray(sp_v.p_distv_bary(2))[3777:31558, :], np.asarray(solve_nonhydro.p_distv_bary_2)[3777:31558, :]
-    # )
     # assert dallclose(
     #     np.asarray(sp_exit.z_rho_e_01())[3777:31558, :],
     #     np.asarray(z_fields.z_rho_e)[3777:31558, :],

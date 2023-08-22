@@ -385,7 +385,7 @@ class SolveNonhydro:
         self.z_w_concorr_me = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_kin_hor_e = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_vt_ie = _allocate(EdgeDim, KDim, mesh=self.grid)
-        self.z_theta_v_e2 = _allocate(EdgeDim, KDim, mesh=self.grid)
+        #self.z_theta_v_e2 = _allocate(EdgeDim, KDim, mesh=self.grid)
         #self.p_distv_bary_1 = _allocate(EdgeDim, KDim, mesh=self.grid)
         #self.p_distv_bary_2 = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_hydro_corr_horizontal = _allocate(EdgeDim, mesh=self.grid)
@@ -578,16 +578,12 @@ class SolveNonhydro:
         params: NonHydrostaticParams,
         edge_geometry: EdgeParams,
         z_fields: ZFields,
-        nh_constants: NHConstants,
         cfl_w_limit: float,
         scalfac_exdiff: float,
         cell_areas: Field[[CellDim], float],
         owner_mask: Field[[CellDim], bool],
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
-        z_rho_e2: Field[[EdgeDim, KDim], float],
-        z_theta_v_e2: Field[[EdgeDim, KDim], float],
-        vn_tmp: Field[[EdgeDim, KDim], float],
         dtime: float,
         idyn_timestep: float,
         l_recompute: bool,
@@ -610,26 +606,26 @@ class SolveNonhydro:
             ntl2 = 1
 
 
-        # velocity_advection.VelocityAdvection(
-        #     self.grid, self.metric_state_nonhydro, self.interpolation_state, self.vertical_params
-        # ).run_predictor_step(
-        #     vn_only=lvn_only,
-        #     diagnostic_state=diagnostic_state_nh,
-        #     prognostic_state=prognostic_state[nnow],
-        #     z_w_concorr_me=self.z_w_concorr_me,
-        #     z_kin_hor_e=self.z_kin_hor_e,
-        #     z_vt_ie=self.z_vt_ie,
-        #     inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-        #     inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
-        #     dtime=dtime,
-        #     tangent_orientation=edge_geometry.tangent_orientation,
-        #     cfl_w_limit=cfl_w_limit,
-        #     scalfac_exdiff=scalfac_exdiff,
-        #     cell_areas=cell_areas,
-        #     owner_mask=owner_mask,
-        #     f_e=f_e,
-        #     area_edge=area_edge,
-        # )
+        velocity_advection.VelocityAdvection(
+            self.grid, self.metric_state_nonhydro, self.interpolation_state, self.vertical_params
+        ).run_predictor_step(
+            vn_only=lvn_only,
+            diagnostic_state=diagnostic_state_nh,
+            prognostic_state=prognostic_state[nnow],
+            z_w_concorr_me=self.z_w_concorr_me,
+            z_kin_hor_e=self.z_kin_hor_e,
+            z_vt_ie=self.z_vt_ie,
+            inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+            inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
+            dtime=dtime,
+            tangent_orientation=edge_geometry.tangent_orientation,
+            cfl_w_limit=cfl_w_limit,
+            scalfac_exdiff=scalfac_exdiff,
+            cell_areas=cell_areas,
+            owner_mask=owner_mask,
+            f_e=f_e,
+            area_edge=area_edge,
+        )
 
         p_dthalf = 0.5 * dtime
 
@@ -1076,7 +1072,7 @@ class SolveNonhydro:
             vn_nnow=prognostic_state[nnow].vn,
             ddt_vn_adv_ntl1=diagnostic_state_nh.ddt_vn_adv_ntl[ntl1],
             ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
-            z_theta_v_e=z_theta_v_e2,
+            z_theta_v_e=z_fields.z_theta_v_e,
             z_gradh_exner=z_fields.z_gradh_exner,
             vn_nnew=prognostic_state[nnew].vn,
             dtime=dtime,
@@ -1135,10 +1131,10 @@ class SolveNonhydro:
 
         if config.idiv_method == 1:
             mo_solve_nonhydro_stencil_32.with_backend(run_gtfn)(
-                z_rho_e=z_rho_e2,
+                z_rho_e=z_fields.z_rho_e,
                 z_vn_avg=self.z_vn_avg,
                 ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
-                z_theta_v_e=z_theta_v_e2,
+                z_theta_v_e=z_fields.z_theta_v_e,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
                 z_theta_v_fl_e=self.z_theta_v_fl_e,
                 horizontal_start=indices_7_1,
