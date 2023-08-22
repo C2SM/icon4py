@@ -41,7 +41,6 @@ def mo_intp_rbf_rbf_vec_interpol_vertex(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_intp_rbf_rbf_vec_interpol_vertex(p_e_in, ptr_coeff_1, ptr_coeff_2, out=(p_u_out, p_v_out))
     _mo_intp_rbf_rbf_vec_interpol_vertex(
         p_e_in,
         ptr_coeff_1,
