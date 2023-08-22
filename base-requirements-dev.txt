@@ -1,5 +1,5 @@
 # VCS
--e git+https://github.com/nfarabullini/gt4py.git@temp_patch_tuple_fields_scan#egg=gt4py
+-e git+https://github.com/tehrengruber/gt4py.git@test_scan_vertical_bcs#egg=gt4py
 +git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
 
 # PyPI
