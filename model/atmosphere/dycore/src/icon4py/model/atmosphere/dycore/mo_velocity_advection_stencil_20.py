@@ -30,7 +30,6 @@ from icon4py.model.common.dimension import (
     CellDim,
     E2C2EODim,
     E2CDim,
-    E2VDim,
     EdgeDim,
     KDim,
     Koff,
@@ -74,7 +73,13 @@ def _mo_velocity_advection_stencil_20(
     )
     ddt_vn_adv = where(
         (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
-        ddt_vn_adv + difcoef * area_edge * (neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim) + tangent_orientation * inv_primal_edge_length * (zeta(E2V[1]) - zeta(E2V[0]))),
+        ddt_vn_adv
+        + difcoef
+        * area_edge
+        * (
+            neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
+            + tangent_orientation * inv_primal_edge_length * (zeta(E2V[1]) - zeta(E2V[0]))
+        ),
         ddt_vn_adv,
     )
     return ddt_vn_adv

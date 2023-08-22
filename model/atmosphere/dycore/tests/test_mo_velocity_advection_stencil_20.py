@@ -77,8 +77,13 @@ def mo_velocity_advection_stencil_20_numpy(
     ddt_vn_adv = np.where(
         ((levelmask_offset_0 == 1) | (levelmask_offset_1 == 1))
         & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
-        ddt_vn_adv + difcoef * area_edge *
-        (np.sum(geofac_grdiv * vn[e2c2eO], axis=1) + tangent_orientation * inv_primal_edge_length * (zeta[e2v][:, 1] - zeta[e2v][:, 0])),
+        ddt_vn_adv
+        + difcoef
+        * area_edge
+        * (
+            np.sum(geofac_grdiv * vn[e2c2eO], axis=1)
+            + tangent_orientation * inv_primal_edge_length * (zeta[e2v][:, 1] - zeta[e2v][:, 0])
+        ),
         ddt_vn_adv,
     )
     return ddt_vn_adv
@@ -145,4 +150,4 @@ def test_mo_velocity_advection_stencil_20():
         },
     )
 
-    assert np.allclose(ddt_vn_adv[:, :-1], ddt_vn_adv_ref[:, :-1])
+    assert np.allclose(ddt_vn_adv, ddt_vn_adv_ref)
