@@ -31,24 +31,9 @@ data_uris = {
     2: "https://polybox.ethz.ch/index.php/s/NUQjmJcMEoQxFiK/download",
     4: "https://polybox.ethz.ch/index.php/s/QC7xt7xLT5xeVN5/download",
 }
-mch_ch_r04b09_dsl_grid_uri = (
-    "https://polybox.ethz.ch/index.php/s/vcsCYmCFA9Qe26p/download"
-)
-r02b04_global_grid_uri = "https://polybox.ethz.ch/index.php/s/0EM8O8U53GKGsst/download"
 
+ser_data_basepath = base_path.joinpath("ser_icondata")
 
-data_path = base_path.joinpath("ser_icondata")
-data_file = data_path.joinpath("mch_ch_r04b09_dsl.tar.gz").name
-
-grids_path = base_path.joinpath("grids")
-r04b09_dsl_grid_path = grids_path.joinpath("mch_ch_r04b09_dsl")
-r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath(
-    "mch_ch_r04b09_dsl_grids_v1.tar.gz"
-).name
-r02b04_global_grid_path = grids_path.joinpath("r02b04_global")
-r02b04_global_data_file = r02b04_global_grid_path.joinpath(
-    "icon_grid_0013_R02B04_G.tar.gz"
-).name
 
 
 @pytest.fixture(params=[False], scope="session")
@@ -59,25 +44,40 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-     return data_path.absolute().joinpath(f"mpitask{processor_props.comm_size}")
+     return ser_data_basepath.absolute().joinpath(f"mpitask{processor_props.comm_size}")
 
 @pytest.fixture(scope="session")
-def datapath(setup_icon_data, ranked_data_path):
+def datapath(ranked_data_path):
     return ranked_data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 
 
 @pytest.fixture(scope="session")
-def setup_icon_data():
+def download_ser_data(request, processor_props, ranked_data_path):
     """
-    Get the binary ICON data for single node run from a remote server.
+    Get the binary ICON data from a remote server.
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
-    download_and_extract(data_uris[1], data_path, data_file)
+    try:
+        uri = data_uris[processor_props.comm_size]
 
-# TODO (magdalena) dependency on setup_icon_data or download_data
+        data_file = ranked_data_path.joinpath(
+            f"mch_ch_r04b09_dsl_mpitask{processor_props.comm_size}.tar.gz"
+        ).name
+        if processor_props.rank == 0:
+            download_and_extract(uri, ranked_data_path, data_file)
+        if processor_props.comm:
+            processor_props.comm.barrier()
+    except KeyError:
+        raise AssertionError(
+            f"no data for communicator of size {processor_props.comm_size} exists, use 1, 2 or 4"
+        )
+
+
+
+
 @pytest.fixture(scope="session")
-def data_provider(setup_icon_data, datapath, processor_props) -> IconSerialDataProvider:
+def data_provider(download_ser_data, datapath, processor_props) -> IconSerialDataProvider:
     return IconSerialDataProvider(fname_prefix="icon_pydycore", path=str(datapath), mpi_rank=processor_props.rank, do_print=True)
 
 
@@ -147,20 +147,6 @@ def step_date_exit():
     return "2021-06-20T12:00:10.000"
 
 
-@pytest.fixture(scope="session")
-def get_grid_files():
-    """
-    Get the grid files used for testing.
-
-    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
-    """
-    download_and_extract(
-        mch_ch_r04b09_dsl_grid_uri, r04b09_dsl_grid_path, r04b09_dsl_data_file
-    )
-    download_and_extract(
-        r02b04_global_grid_uri, r02b04_global_grid_path, r02b04_global_data_file
-    )
-
 
 @pytest.fixture
 def interpolation_savepoint(data_provider):  # noqa F811
@@ -175,9 +161,6 @@ def metrics_savepoint(data_provider):  # noqa F811
 
 
 
-@pytest.fixture()
-def r04b09_dsl_gridfile(get_grid_files):
-    return r04b09_dsl_grid_path.joinpath("grid.nc")
 
 BACKENDS = {"embedded": executor}
 MESHES = {"simple_mesh": SimpleMesh()}

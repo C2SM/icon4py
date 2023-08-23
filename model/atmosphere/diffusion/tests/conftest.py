@@ -10,7 +10,7 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     grid_savepoint,
     icon_grid,
     decomposition_info,
-    setup_icon_data,
+    download_ser_data,
     ranked_data_path,
     processor_props,
     linit,

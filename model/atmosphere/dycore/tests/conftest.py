@@ -10,19 +10,16 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pytest
 
 
 from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     damping_height,
     data_provider,
     datapath,
-    get_grid_files,
     grid_savepoint,
     icon_grid,
-    r04b09_dsl_gridfile,
-    setup_icon_data,
-    linit,step_date_exit, step_date_init,mesh, backend
+    download_ser_data,
+    linit, step_date_exit, step_date_init, mesh, backend
 )
 
 
