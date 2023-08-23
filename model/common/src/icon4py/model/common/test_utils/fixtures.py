@@ -19,8 +19,7 @@ from gt4py.next.program_processors.runners.roundtrip import executor
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 from .simple_mesh import SimpleMesh
-
-
+from ..decomposition.parallel_setup import get_processor_properties
 
 test_utils = Path(__file__).parent
 model = test_utils.parent.parent
@@ -52,10 +51,19 @@ r02b04_global_data_file = r02b04_global_grid_path.joinpath(
 ).name
 
 
-@pytest.fixture
-def datapath(setup_icon_data):
-    local_path = "mpitask1/mch_ch_r04b09_dsl/ser_data"
-    return data_path.joinpath(local_path)
+@pytest.fixture(params=[False], scope="session")
+def processor_props(request):
+    with_mpi = request.param
+    return get_processor_properties(with_mpi=with_mpi)
+
+
+@pytest.fixture(scope="session")
+def ranked_data_path(processor_props):
+     return data_path.absolute().joinpath(f"mpitask{processor_props.comm_size}")
+
+@pytest.fixture(scope="session")
+def datapath(setup_icon_data, ranked_data_path):
+    return ranked_data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 
 
 @pytest.fixture(scope="session")
@@ -67,11 +75,10 @@ def setup_icon_data():
     """
     download_and_extract(data_uris[1], data_path, data_file)
 
-
-@pytest.fixture
-def data_provider(setup_icon_data, datapath) -> IconSerialDataProvider:
-    path = str(datapath)
-    return IconSerialDataProvider("icon_pydycore", path, True)
+# TODO (magdalena) dependency on setup_icon_data or download_data
+@pytest.fixture(scope="session")
+def data_provider(setup_icon_data, datapath, processor_props) -> IconSerialDataProvider:
+    return IconSerialDataProvider(fname_prefix="icon_pydycore", path=str(datapath), mpi_rank=processor_props.rank, do_print=True)
 
 
 @pytest.fixture
@@ -88,6 +95,10 @@ def icon_grid(grid_savepoint):
     """
     return grid_savepoint.construct_icon_grid()
 
+
+@pytest.fixture
+def decomposition_info(data_provider):
+    return data_provider.from_savepoint_grid().construct_decomposition_info()
 
 @pytest.fixture
 def damping_height():

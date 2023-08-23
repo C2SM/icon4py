@@ -14,24 +14,12 @@
 
 import pytest
 
-from icon4py.model.common.decomposition.parallel_setup import get_processor_properties, \
-    ProcessProperties
+from icon4py.model.common.decomposition.parallel_setup import ProcessProperties
 from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.fixtures import data_path, data_uris
-from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
 
 
 
-
-@pytest.fixture(params=[False], scope="session")
-def processor_props(request):
-    with_mpi = request.param
-    return get_processor_properties(with_mpi=with_mpi)
-
-@pytest.fixture(scope="session")
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-def ranked_data_path(processor_props):
-     return data_path.absolute().joinpath(f"mpitask{processor_props.comm_size}")
 
 @pytest.fixture(scope="session")
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
@@ -56,23 +44,8 @@ def download_data(request, processor_props, ranked_data_path):
             f"no data for communicator of size {processor_props.comm_size} exists, use 1, 2 or 4"
         )
 
-@pytest.fixture
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-def get_decomposition_info(processor_props, ranked_data_path):
-    local_path = ranked_data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
-    sp = IconSerialDataProvider(
-        "icon_pydycore", str(local_path.absolute()), True, processor_props.rank
-    )
-    return sp.from_savepoint_grid().construct_decomposition_info()
 
 
-@pytest.fixture
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
-def get_icon_grid(processor_props, ranked_data_path):
-    local_path = ranked_data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
-    return IconSerialDataProvider(
-        "icon_pydycore", str(local_path.absolute()), False, mpi_rank=processor_props.rank
-    ).from_savepoint_grid().construct_icon_grid()
 
 
 def check_comm_size(props:ProcessProperties, sizes=[1,2,4]):

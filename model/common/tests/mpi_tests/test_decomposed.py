@@ -23,7 +23,7 @@ from icon4py.model.common.decomposition.decomposed import (
     SingleNode,
     create_exchange,
 )
-from icon4py.model.common.test_utils.parallel_fixtures import check_comm_size
+from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
 
 """
 running tests with mpi:
@@ -49,11 +49,10 @@ def test_props(processor_props):
     ),
 )
 def test_decomposition_info_masked(
-    dim, owned, total, caplog, download_data, get_decomposition_info, processor_props,  # noqa F811
+    dim, owned, total, caplog, download_data, decomposition_info, processor_props,  # noqa F811
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
-    decomposition_info = get_decomposition_info
     all_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
@@ -93,11 +92,10 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 )
 @pytest.mark.mpi(min_size=2)
 def test_decomposition_info_local_index(
-    dim, owned, total, caplog, download_data, get_decomposition_info, processor_props  # noqa F811
+    dim, owned, total, caplog, download_data, decomposition_info, processor_props  # noqa F811
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
-    decomposition_info = get_decomposition_info
     all_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.ALL)
     my_total = total[my_rank]
     my_owned = owned[my_rank]
@@ -142,16 +140,11 @@ def test_domain_descriptor_id_are_globally_unique(num, processor_props):
 
 
 @pytest.mark.mpi
-#@pytest.mark.skipif(
-#    props.comm_size not in (1, 2, 4),
-#    reason="input files only available for 1 or 2 4nodes",
-#)
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_decomposition_info_matches_gridsize(caplog, download_data, get_decomposition_info, get_icon_grid, processor_props,
+def test_decomposition_info_matches_gridsize(caplog, download_data, decomposition_info, icon_grid, processor_props,
                         ):  # noqa F811
-    decomposition_info = get_decomposition_info
+
     check_comm_size(processor_props)
-    icon_grid = get_icon_grid
     assert (
         decomposition_info.global_index(
             dim=CellDim, entry_type=DecompositionInfo.EntryType.ALL
@@ -174,17 +167,17 @@ def test_decomposition_info_matches_gridsize(caplog, download_data, get_decompos
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-def test_create_multi_node_runtime_with_mpi(download_data, get_decomposition_info, processor_props):  # noqa F811
+def test_create_multi_node_runtime_with_mpi(download_data, decomposition_info, processor_props):  # noqa F811
     props = processor_props
-    exchange = create_exchange(props, get_decomposition_info)
+    exchange = create_exchange(props, decomposition_info)
     if props.comm_size > 1:
         assert isinstance(exchange, GHexMultiNode)
     else:
         assert isinstance(exchange, SingleNode)
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
-def test_create_single_node_runtime_without_mpi(processor_props, get_decomposition_info, ranked_data_path):
+def test_create_single_node_runtime_without_mpi(processor_props, decomposition_info):
     props = processor_props
-    exchange = create_exchange(props, get_decomposition_info)
+    exchange = create_exchange(props, decomposition_info)
 
     assert isinstance(exchange, SingleNode)

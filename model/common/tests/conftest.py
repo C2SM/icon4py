@@ -21,7 +21,9 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     icon_grid,
     r04b09_dsl_gridfile,
     setup_icon_data,
-
+    processor_props,
+interpolation_savepoint,
+ranked_data_path,decomposition_info
 
 )
-from icon4py.model.common.test_utils.parallel_fixtures import (processor_props, ranked_data_path, get_decomposition_info, get_icon_grid, download_data)  # noqa F401
+from icon4py.model.common.test_utils.parallel_helpers import (download_data)  # noqa F401
