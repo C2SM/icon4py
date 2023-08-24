@@ -12,11 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from icon4py.atm_dyn_iconam.compute_airmass import compute_airmass
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.model.atmosphere.dycore.compute_airmass import compute_airmass
+from icon4py.model.common.dimension import EdgeDim, KDim, CellDim
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
-from .test_utils.helpers import random_field
-from .test_utils.simple_mesh import SimpleMesh
 
 
 def compute_airmass_numpy(
