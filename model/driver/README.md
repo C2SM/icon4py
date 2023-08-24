@@ -14,19 +14,20 @@ The code is meant to be changed and enlarged as we port new parts of the model.
 It runs single node or parallel versions. For parallel runs the domain has to be decomposed previousely
 through a full ICON run that generates the necessary serialized data. Test data for runs with 1, 2, 4 nodes 
 are available. 
+## Installation
+See the general instructions in the [README.md](../../README.md) in the base folder of the repository.
 
 ## Usage
 
 ```bash
 export ICON4PY_ROOT=<path to the icon4py clone>
-python driver/dycore_driver.py $ICON4PY_ROOT/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data --n_steps=2 --run_path=/home/magdalena/temp/icon
+dycore_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data --n_steps=2 --run_path=/home/magdalena/temp/icon
 ```
 
 or if running in parallel
 
 ```bash
-mpirun -np 2 python driver/dycore_driver.py $ICON4PY_ROOT/testdata/ser_icondata/mpitask2/mch_ch_r04b09_dsl/ser_data --mpi=True --n_steps=2 --run_path=/home/magdalena/temp/icon
-
+mpirun -np 2 dycore_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask2/mch_ch_r04b09_dsl/ser_data --mpi=True --n_steps=2 --run_path=/home/magdalena/temp/icon
 ```
 
 #### remarks
