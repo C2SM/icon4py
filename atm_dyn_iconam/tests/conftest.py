@@ -151,6 +151,18 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep, jstep):  # noq
         istep=istep, date=step_date_exit, jstep=jstep
     )
 
+@pytest.fixture
+def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep):  # noqa F811
+    """
+    Load data from ICON savepoint at final exit (after predictor and corrector, and 3 final stencils) of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_nonhydro_step_exit(
+         date=step_date_exit, jstep=jstep
+    )
+
 
 @pytest.fixture
 def interpolation_savepoint(data_provider):  # noqa F811

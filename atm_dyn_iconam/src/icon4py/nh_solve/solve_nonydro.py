@@ -258,7 +258,8 @@ class NonHydrostaticParams:
     """Calculates derived quantities depending on the NonHydrostaticConfig."""
 
     def __init__(self, config: NonHydrostaticConfig):
-        self.rd_o_cvd: Final[float] = constants.RD / constants.CPD
+        self.rd_o_cvd: Final[float] = constants.RD / constants.CVD
+        self.cvd_o_rd: Final[float] = constants.CVD / constants.RD
         self.rd_o_p0ref: Final[float] = constants.RD / constants.P0REF
         self.grav_o_cpd: Final[float] = constants.GRAV / constants.CPD
 
@@ -385,28 +386,23 @@ class SolveNonhydro:
         self.z_w_concorr_me = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_kin_hor_e = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_vt_ie = _allocate(EdgeDim, KDim, mesh=self.grid)
-        #self.z_theta_v_e2 = _allocate(EdgeDim, KDim, mesh=self.grid)
-        #self.p_distv_bary_1 = _allocate(EdgeDim, KDim, mesh=self.grid)
-        #self.p_distv_bary_2 = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_hydro_corr_horizontal = _allocate(EdgeDim, mesh=self.grid)
         self.z_raylfac = _allocate(KDim, mesh=self.grid)
 
     def time_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
-        prognostic_state: list[PrognosticState],
+        prognostic_state_ls: list[PrognosticState],
         prep_adv: PrepAdvection,
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
-        inv_dual_edge_length: Field[[EdgeDim], float],
-        primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]],
-        dual_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]],
-        inv_primal_edge_length: Field[[EdgeDim], float],
-        tangent_orientation: Field[[EdgeDim], float],
+        edge_geometry: EdgeParams,
+        z_fields: ZFields,
+        nh_constants: NHConstants,
         cfl_w_limit: float,
         scalfac_exdiff: float,
         cell_areas: Field[[CellDim], float],
-        owner_mask: Field[[CellDim], bool],
+        c_owner_mask: Field[[CellDim], bool],
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
         bdy_divdamp: Field[[KDim], float],
@@ -419,10 +415,7 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-        primal_normal_cell_1 = primal_normal_cell[0]
-        primal_normal_cell_2 = primal_normal_cell[1]
-        dual_normal_cell_1 = dual_normal_cell[0]
-        dual_normal_cell_2 = dual_normal_cell[1]
+
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / config.ndyn_substeps_var
 
@@ -466,53 +459,49 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        self.run_predictor_step(
-            diagnostic_state_nh,
-            prognostic_state,
-            config,
-            params,
-            inv_dual_edge_length,
-            primal_normal_cell,
-            dual_normal_cell,
-            inv_primal_edge_length,
-            tangent_orientation,
-            cfl_w_limit,
-            scalfac_exdiff,
-            cell_areas,
-            owner_mask,
-            f_e,
-            area_edge,
-            dtime,
-            idyn_timestep,
-            l_recompute,
-            l_init,
-            nnow,
-            nnew,
-        )
+        # self.run_predictor_step(
+        #     diagnostic_state_nh=diagnostic_state_nh,
+        #     prognostic_state=prognostic_state_ls,
+        #     config=config,
+        #     params=params,
+        #     edge_geometry=edge_geometry,
+        #     z_fields=z_fields,
+        #     cfl_w_limit=cfl_w_limit,
+        #     scalfac_exdiff=scalfac_exdiff,
+        #     cell_areas=cell_areas,
+        #     owner_mask=c_owner_mask,
+        #     f_e=f_e,
+        #     area_edge=area_edge,
+        #     dtime=dtime,
+        #     idyn_timestep=idyn_timestep,
+        #     l_recompute=l_recompute,
+        #     l_init=l_init,
+        #     nnow=nnow,
+        #     nnew=nnew,
+        # )
 
-        self.run_corrector_step(
-            diagnostic_state_nh,
-            prognostic_state,
-            config,
-            params,
-            inv_dual_edge_length,
-            inv_primal_edge_length,
-            tangent_orientation,
-            prep_adv,
-            dtime,
-            nnew,
-            nnow,
-            cfl_w_limit,
-            scalfac_exdiff,
-            cell_areas,
-            owner_mask,
-            f_e,
-            area_edge,
-            lclean_mflx,
-            scal_divdamp_o2,
-            bdy_divdamp,
-            lprep_adv,
-        )
+        # self.run_corrector_step(
+        #     diagnostic_state_nh=diagnostic_state_nh,
+        #     prognostic_state=prognostic_state_ls,
+        #     config=config,
+        #     params=params,
+        #     edge_geometry=edge_geometry,
+        #     z_fields=z_fields,
+        #     prep_adv=prep_adv,
+        #     dtime=dtime,
+        #     nnew=nnew,
+        #     nnow=nnow,
+        #     cfl_w_limit=cfl_w_limit,
+        #     scalfac_exdiff=scalfac_exdiff,
+        #     cell_areas=cell_areas,
+        #     owner_mask=c_owner_mask,
+        #     f_e=f_e,
+        #     area_edge=area_edge,
+        #     lclean_mflx=lclean_mflx,
+        #     nh_constants=nh_constants,
+        #     bdy_divdamp=bdy_divdamp,
+        #     lprep_adv=lprep_adv,
+        # )
 
         (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
             CellDim,
@@ -529,9 +518,9 @@ class SolveNonhydro:
         if self.grid.limited_area():
             mo_solve_nonhydro_stencil_66.with_backend(run_gtfn)(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
-                rho=prognostic_state[nnew].rho,
-                theta_v=prognostic_state[nnew].theta_v,
-                exner=prognostic_state[nnew].exner,
+                rho=prognostic_state_ls[nnew].rho,
+                theta_v=prognostic_state_ls[nnew].theta_v,
+                exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=params.rd_o_cvd,
                 rd_o_p0ref=params.rd_o_p0ref,
                 horizontal_start=indices_0_1,
@@ -541,10 +530,12 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+
+
             mo_solve_nonhydro_stencil_67.with_backend(run_gtfn)(
-                rho=prognostic_state[nnew].rho,
-                theta_v=prognostic_state[nnew].theta_v,
-                exner=prognostic_state[nnew].exner,
+                rho=prognostic_state_ls[nnew].rho,
+                theta_v=prognostic_state_ls[nnew].theta_v,
+                exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=params.rd_o_cvd,
                 rd_o_p0ref=params.rd_o_p0ref,
                 horizontal_start=indices_1_1,
@@ -554,15 +545,16 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+
         mo_solve_nonhydro_stencil_68.with_backend(run_gtfn)(
             mask_prog_halo_c=self.metric_state_nonhydro.mask_prog_halo_c,
-            rho_now=prognostic_state[nnow].rho,
-            theta_v_now=prognostic_state[nnow].theta_v,
-            exner_new=prognostic_state[nnew].exner,
-            exner_now=prognostic_state[nnow].exner,
-            rho_new=prognostic_state[nnew].rho,
-            theta_v_new=prognostic_state[nnew].theta_v,
-            cvd_o_rd=constants.CVD_O_RD,
+            rho_now=prognostic_state_ls[nnow].rho,
+            theta_v_now=prognostic_state_ls[nnow].theta_v,
+            exner_new=prognostic_state_ls[nnew].exner,
+            exner_now=prognostic_state_ls[nnow].exner,
+            rho_new=prognostic_state_ls[nnew].rho,
+            theta_v_new=prognostic_state_ls[nnew].theta_v,
+            cvd_o_rd=params.cvd_o_rd,
             horizontal_start=indices_0_1,
             horizontal_end=indices_0_2,
             vertical_start=0,

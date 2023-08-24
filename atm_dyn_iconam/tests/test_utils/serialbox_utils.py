@@ -1041,6 +1041,15 @@ class IconExitSavepoint(IconSavepoint):
     def rho(self):
         return self._get_field("x_rho_new", CellDim, KDim)
 
+    def rho_now(self):
+        return self._get_field("x_rho_now", CellDim, KDim)
+
+    def exner_now(self):
+        return self._get_field("x_exner_now", CellDim, KDim)
+
+    def theta_v_now(self):
+        return self._get_field("x_theta_v_now", CellDim, KDim)
+
     # def ddt_vn_apc_pc(self):
     #     return self._get_field("x_ddt_vn_apc_pc", EdgeDim, KDim)
     #
@@ -1323,6 +1332,24 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_z_dwdz_dd", CellDim, KDim)
 
 
+class IconNHFinalExitSavepoint(IconSavepoint):
+    def theta_v_new_66(self):
+        return self._get_field("x_theta_v_66", CellDim, KDim)
+
+    def exner_new_66(self):
+        return self._get_field("x_exner_66", CellDim, KDim)
+
+    def theta_v_new_67(self):
+        return self._get_field("x_theta_v_67", CellDim, KDim)
+
+    def exner_new_67(self):
+        return self._get_field("x_exner_67", CellDim, KDim)
+
+    def theta_v_new(self):
+        return self._get_field("x_theta_v", CellDim, KDim)
+
+
+
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False):
         self.rank = 0
@@ -1432,3 +1459,14 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconExitSavepoint(savepoint, self.serializer)
+
+    def from_savepoint_nonhydro_step_exit(
+        self, date: str, jstep: int
+    ) -> IconNHFinalExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["solve_nonhydro_step"]
+            .date[date]
+            .jstep[jstep]
+            .as_savepoint()
+        )
+        return IconNHFinalExitSavepoint(savepoint, self.serializer)
