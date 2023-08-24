@@ -29,6 +29,9 @@ run_func_declaration = as_jinja(
     {%- for field in _this_node.fields -%}
     {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
     {%- endfor -%}
+    {%- for field in _this_node.out_fields -%}
+    const int {{ field.name }}_{{ k_size_suffix }},
+    {%- endfor -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd)
     """
 )
@@ -40,7 +43,10 @@ run_verify_func_declaration = as_jinja(
     {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
     {%- endfor -%}
     {%- for field in _this_node.out_fields -%}
-    {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
+    {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ before_suffix }},
+    {%- endfor -%}
+    {%- for field in _this_node.out_fields -%}
+    const int {{ field.name }}_{{ k_size_suffix }},
     {%- endfor -%}
     {%- if _this_node.tol_fields -%}
     const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd,
@@ -82,8 +88,11 @@ class CppHeaderGenerator(TemplatedGenerator):
         """\
         bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ before_suffix }},
         const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
+        {%- endfor -%}
+        {%- for field in _this_node.out_fields -%}
+        const int {{ field.name }}_{{ k_size_suffix }},
         {%- endfor -%}
         {%- for field in _this_node.tol_fields -%}
         const double {{ field.name }}_rel_tol,
@@ -98,7 +107,7 @@ class CppHeaderGenerator(TemplatedGenerator):
         void setup_{{funcname}}(
         GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record, verify *verify,
         {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_{{ suffix }}
+        const int {{ field.name }}_{{ k_size_suffix }}
         {%- if not loop.last -%}
         ,
         {%- endif -%}
@@ -121,14 +130,18 @@ class CppFreeFunc(CppFunc):
     ...
 
 
-class CppRunFuncDeclaration(CppFunc):
+class CppSizeFunc(CppFunc):
+    out_fields: Sequence[Field]
+    k_size_suffix: str
+
+
+class CppRunFuncDeclaration(CppSizeFunc):
     fields: Sequence[Field]
 
 
-class CppVerifyFuncDeclaration(CppFunc):
-    out_fields: Sequence[Field]
+class CppVerifyFuncDeclaration(CppSizeFunc):
     tol_fields: Sequence[Field]
-    suffix: str
+    before_suffix: str
 
 
 class CppSetupFuncDeclaration(CppVerifyFuncDeclaration):
@@ -156,13 +169,16 @@ class CppHeaderFile(Node):
         self.runFunc = CppRunFuncDeclaration(
             funcname=self.stencil_name,
             fields=self.fields,
+            out_fields=output_fields,
+            k_size_suffix="k_size",
         )
 
         self.verifyFunc = CppVerifyFuncDeclaration(
             funcname=self.stencil_name,
             out_fields=output_fields,
             tol_fields=tolerance_fields,
-            suffix="dsl",
+            before_suffix="dsl",
+            k_size_suffix="k_size",
         )
 
         self.runAndVerifyFunc = CppRunAndVerifyFuncDeclaration(
@@ -170,14 +186,16 @@ class CppHeaderFile(Node):
             fields=self.fields,
             out_fields=output_fields,
             tol_fields=tolerance_fields,
-            suffix="before",
+            before_suffix="before",
+            k_size_suffix="k_size",
         )
 
         self.setupFunc = CppSetupFuncDeclaration(
             funcname=self.stencil_name,
             out_fields=output_fields,
             tol_fields=tolerance_fields,
-            suffix="k_size",
+            before_suffix="before",
+            k_size_suffix="k_size",
         )
 
         self.freeFunc = CppFreeFunc(funcname=self.stencil_name)
