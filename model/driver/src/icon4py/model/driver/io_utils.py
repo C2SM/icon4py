@@ -12,28 +12,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from icon4py.model.common.decomposition.decomposed import DecompositionInfo
-from icon4py.model.common.decomposition.parallel_setup import ParallelLogger, ProcessProperties
-from icon4py.model.atmosphere.diffusion.diffusion_states import (DiffusionDiagnosticState,
+from icon4py.model.atmosphere.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
-    PrognosticState)
-
+    PrognosticState,
+)
+from icon4py.model.common.decomposition.decomposed import DecompositionInfo
+from icon4py.model.common.decomposition.parallel_setup import (
+    ParallelLogger,
+    ProcessProperties,
+)
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-
 from icon4py.model.common.test_utils import serialbox_utils as sb
+
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
-
 
 
 class SerializationType(str, Enum):

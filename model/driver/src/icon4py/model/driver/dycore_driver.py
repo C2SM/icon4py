@@ -18,22 +18,28 @@ from typing import Callable
 import click
 import pytz
 from devtools import Timer
-from gt4py.next import program, Field
+from gt4py.next import Field, program
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.atmosphere.diffusion.diffusion import (
+    Diffusion,
+    DiffusionParams,
+)
+from icon4py.model.atmosphere.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    PrognosticState,
+)
+from icon4py.model.atmosphere.diffusion.diffusion_utils import (
+    _identity_c_k,
+    _identity_e_k,
+)
 from icon4py.model.common.decomposition.decomposed import create_exchange
 from icon4py.model.common.decomposition.parallel_setup import (
     ProcessProperties,
     get_processor_properties,
 )
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils import serialbox_utils as sb
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-    PrognosticState,
-)
-from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.io_utils import (
     SIMULATION_START_DATE,
@@ -44,6 +50,7 @@ from icon4py.model.driver.io_utils import (
     read_initial_state,
     read_static_fields,
 )
+
 
 log = logging.getLogger(__name__)
 

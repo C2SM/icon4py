@@ -36,7 +36,9 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
         kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
         div_offset_1 = np.roll(div, shift=1, axis=1)
         div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
-        hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[:, 1:]
+        hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[
+            :, 1:
+        ]
         return dict(div_ic=div_ic, hdef_ic=hdef_ic)
 
     @pytest.fixture
@@ -46,4 +48,6 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
         kh_c = random_field(mesh, CellDim, KDim)
         div_ic = zero_field(mesh, CellDim, KDim)
         hdef_ic = zero_field(mesh, CellDim, KDim)
-        return dict(wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic)
+        return dict(
+            wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic
+        )

@@ -30,7 +30,9 @@ class TestMoSolveNonhydroStencil06(StencilTest):
     OUTPUTS = ("z_dexner_dz_c_1",)
 
     @staticmethod
-    def reference(mesh, z_exner_ic: np.array, inv_ddqz_z_full: np.array, **kwargs) -> np.array:
+    def reference(
+        mesh, z_exner_ic: np.array, inv_ddqz_z_full: np.array, **kwargs
+    ) -> np.array:
         z_dexner_dz_c_1 = (z_exner_ic[:, :-1] - z_exner_ic[:, 1:]) * inv_ddqz_z_full
         return dict(z_dexner_dz_c_1=z_dexner_dz_c_1)
 

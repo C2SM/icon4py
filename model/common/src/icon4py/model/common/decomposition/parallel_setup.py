@@ -85,12 +85,12 @@ class ProcessProperties:
 
 
 class ParallelLogger(logging.Filter):
-    def __init__(self, processProperties: ProcessProperties = None):
+    def __init__(self, process_properties: ProcessProperties = None):
         super().__init__()
         self._rank_info = ""
-        if processProperties and processProperties.comm_size > 1:
-            self._rank_info = f"rank={processProperties.rank}/{processProperties.comm_size} [{processProperties.comm_name}] "
+        if process_properties and process_properties.comm_size > 1:
+            self._rank_info = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
 
-    def filter(self, record: logging.LogRecord) -> bool:
+    def filter(self, record: logging.LogRecord) -> bool:  # noqa: A003
         record.rank = self._rank_info
         return True

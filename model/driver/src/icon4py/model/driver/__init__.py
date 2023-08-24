@@ -13,6 +13,8 @@
 from typing import Final
 
 from packaging import version as pkg_version
+
+
 __all__ = [
     "__author__",
     "__copyright__",

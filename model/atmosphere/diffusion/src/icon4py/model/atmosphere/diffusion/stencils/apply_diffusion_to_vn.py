@@ -23,7 +23,9 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn i
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_boundary import (
     _apply_nabla2_to_vn_in_lateral_boundary,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import _calculate_nabla4
+from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import (
+    _calculate_nabla4,
+)
 from icon4py.model.common.dimension import ECVDim, EdgeDim, KDim, VertexDim
 
 
@@ -71,7 +73,9 @@ def _apply_diffusion_to_vn(
                 vn,
                 nudgezone_diff,
             ),
-            _apply_nabla2_to_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v),
+            _apply_nabla2_to_vn_in_lateral_boundary(
+                z_nabla2_e, area_edge, vn, fac_bdydiff_v
+            ),
         )
         if limited_area
         else where(

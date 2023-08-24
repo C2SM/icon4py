@@ -14,17 +14,20 @@ import pytest
 
 from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.fixtures import (  # noqa F401
+    base_path,
     damping_height,
     data_provider,
     datapath,
+    decomposition_info,
+    download_ser_data,
     grid_savepoint,
     icon_grid,
-    download_ser_data,
-    processor_props,
     interpolation_savepoint,
-    ranked_data_path, decomposition_info, base_path
-
+    processor_props,
+    ranked_data_path,
 )
+
+
 grids_path = base_path.joinpath("grids")
 r04b09_dsl_grid_path = grids_path.joinpath("mch_ch_r04b09_dsl")
 r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath(
@@ -41,9 +44,11 @@ mch_ch_r04b09_dsl_grid_uri = (
 )
 r02b04_global_grid_uri = "https://polybox.ethz.ch/index.php/s/0EM8O8U53GKGsst/download"
 
+
 @pytest.fixture()
 def r04b09_dsl_gridfile(get_grid_files):
     return r04b09_dsl_grid_path.joinpath("grid.nc")
+
 
 @pytest.fixture(scope="session")
 def get_grid_files():

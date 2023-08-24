@@ -39,4 +39,6 @@ def mo_solve_nonhydro_stencil_67(
     rd_o_cvd: float,
     rd_o_p0ref: float,
 ):
-    _mo_solve_nonhydro_stencil_67(rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner))
+    _mo_solve_nonhydro_stencil_67(
+        rho, theta_v, exner, rd_o_cvd, rd_o_p0ref, out=(theta_v, exner)
+    )

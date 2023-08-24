@@ -242,5 +242,3 @@ def init_nabla2_factor_in_upper_damping_zone(
         ** 4
     )
     return np_as_located_field(KDim)(buffer)
-
-

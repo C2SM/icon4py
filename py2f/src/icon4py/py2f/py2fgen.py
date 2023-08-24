@@ -14,7 +14,6 @@
 import pathlib
 
 import click
-
 from icon4py.f2py.cffi_utils import generate_and_compile_cffi_plugin
 from icon4py.f2py.codegen import (
     generate_and_write_f90_interface,

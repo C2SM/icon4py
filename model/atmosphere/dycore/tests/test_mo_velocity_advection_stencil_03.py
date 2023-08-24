@@ -21,7 +21,9 @@ from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
-def mo_velocity_advection_stencil_03_numpy(wgtfac_e: np.array, vt: np.array) -> np.array:
+def mo_velocity_advection_stencil_03_numpy(
+    wgtfac_e: np.array, vt: np.array
+) -> np.array:
     vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
     z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
 
@@ -36,7 +38,9 @@ def test_mo_velocity_advection_stencil_03():
 
     z_vt_ie = zero_field(mesh, EdgeDim, KDim)
 
-    z_vt_ie_ref = mo_velocity_advection_stencil_03_numpy(np.asarray(wgtfac_e), np.asarray(vt))
+    z_vt_ie_ref = mo_velocity_advection_stencil_03_numpy(
+        np.asarray(wgtfac_e), np.asarray(vt)
+    )
     mo_velocity_advection_stencil_03(
         wgtfac_e,
         vt,

@@ -59,7 +59,6 @@ class GridConfig:
         return self.horizontal_config.num_cells
 
 
-
 class IconGrid:
     def __init__(self):
         self.config: GridConfig = None

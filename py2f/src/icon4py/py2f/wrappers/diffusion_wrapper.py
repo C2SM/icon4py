@@ -13,7 +13,6 @@
 
 # flake8: noqa
 from gt4py.next.common import Field
-
 from icon4py.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -25,22 +24,20 @@ from icon4py.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import (
-    Diffusion,
-    DiffusionConfig,
-    DiffusionParams,
-)
-from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import (
-    DiffusionDiagnosticState,
-    DiffusionInterpolationState,
-    DiffusionMetricState,
-    PrognosticState,
-)
+
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.py2f.cffi_utils import CffiMethod
-
+from model.atmosphere.diffusion.src.icon4py.model.atmosphere.diffusion import (
+    Diffusion,
+    DiffusionConfig,
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
+    DiffusionParams,
+    PrognosticState,
+)
 
 diffusion: Diffusion()
 

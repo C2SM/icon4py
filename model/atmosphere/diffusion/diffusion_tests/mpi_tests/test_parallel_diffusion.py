@@ -14,13 +14,19 @@
 
 import pytest
 
+from icon4py.model.atmosphere.diffusion.diffusion import (
+    Diffusion,
+    DiffusionParams,
+)
+from icon4py.model.common.decomposition.decomposed import (
+    DecompositionInfo,
+    create_exchange,
+)
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
-from ..test_diffusion import  _verify_diffusion_fields
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.decomposition.decomposed import DecompositionInfo, create_exchange
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 
+from ..test_diffusion import _verify_diffusion_fields
 
 
 @pytest.mark.mpi
@@ -40,8 +46,7 @@ def test_parallel_diffusion(
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
-    damping_height
-
+    damping_height,
 ):
     check_comm_size(processor_props)
     print(
@@ -60,10 +65,12 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
     )
-    metric_state= metrics_savepoint.construct_metric_state_for_diffusion()
+    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    interpolation_state = (
+        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    )
 
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
@@ -84,7 +91,9 @@ def test_parallel_diffusion(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
     )
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized "
+    )
     diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     if linit:

@@ -16,10 +16,11 @@ from pathlib import Path
 import pytest
 from gt4py.next.program_processors.runners.roundtrip import executor
 
+from ..decomposition.parallel_setup import get_processor_properties
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 from .simple_mesh import SimpleMesh
-from ..decomposition.parallel_setup import get_processor_properties
+
 
 test_utils = Path(__file__).parent
 model = test_utils.parent.parent
@@ -35,7 +36,6 @@ data_uris = {
 ser_data_basepath = base_path.joinpath("ser_icondata")
 
 
-
 @pytest.fixture(params=[False], scope="session")
 def processor_props(request):
     with_mpi = request.param
@@ -44,7 +44,8 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-     return ser_data_basepath.absolute().joinpath(f"mpitask{processor_props.comm_size}")
+    return ser_data_basepath.absolute().joinpath(f"mpitask{processor_props.comm_size}")
+
 
 @pytest.fixture(scope="session")
 def datapath(ranked_data_path):
@@ -74,11 +75,16 @@ def download_ser_data(request, processor_props, ranked_data_path):
         )
 
 
-
-
 @pytest.fixture(scope="session")
-def data_provider(download_ser_data, datapath, processor_props) -> IconSerialDataProvider:
-    return IconSerialDataProvider(fname_prefix="icon_pydycore", path=str(datapath), mpi_rank=processor_props.rank, do_print=True)
+def data_provider(
+    download_ser_data, datapath, processor_props
+) -> IconSerialDataProvider:
+    return IconSerialDataProvider(
+        fname_prefix="icon_pydycore",
+        path=str(datapath),
+        mpi_rank=processor_props.rank,
+        do_print=True,
+    )
 
 
 @pytest.fixture
@@ -100,10 +106,10 @@ def icon_grid(grid_savepoint):
 def decomposition_info(data_provider):
     return data_provider.from_savepoint_grid().construct_decomposition_info()
 
+
 @pytest.fixture
 def damping_height():
     return 12500
-
 
 
 @pytest.fixture
@@ -147,19 +153,16 @@ def step_date_exit():
     return "2021-06-20T12:00:10.000"
 
 
-
 @pytest.fixture
-def interpolation_savepoint(data_provider):  # noqa F811
+def interpolation_savepoint(data_provider):  # F811
     """Load data from ICON interplation state savepoint."""
     return data_provider.from_interpolation_savepoint()
 
 
 @pytest.fixture
-def metrics_savepoint(data_provider):  # noqa F811
+def metrics_savepoint(data_provider):  # F811
     """Load data from ICON mestric state savepoint."""
     return data_provider.from_metrics_savepoint()
-
-
 
 
 BACKENDS = {"embedded": executor}

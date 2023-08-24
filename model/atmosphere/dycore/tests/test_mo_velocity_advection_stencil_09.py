@@ -30,7 +30,9 @@ class TestMoVelocityAdvectionStencil09(StencilTest):
     OUTPUTS = ("z_w_concorr_mc",)
 
     @staticmethod
-    def reference(mesh, z_w_concorr_me: np.array, e_bln_c_s: np.array, **kwargs) -> np.array:
+    def reference(
+        mesh, z_w_concorr_me: np.array, e_bln_c_s: np.array, **kwargs
+    ) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_w_concorr_mc = np.sum(z_w_concorr_me[mesh.c2e] * e_bln_c_s, axis=1)
         return dict(z_w_concorr_mc=z_w_concorr_mc)

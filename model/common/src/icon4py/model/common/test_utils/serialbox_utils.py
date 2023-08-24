@@ -18,7 +18,15 @@ from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
+from icon4py.model.atmosphere.diffusion.diffusion import VectorTuple
+from icon4py.model.atmosphere.diffusion.diffusion_states import (
+    DiffusionDiagnosticState,
+    DiffusionInterpolationState,
+    DiffusionMetricState,
+    PrognosticState,
+)
 from icon4py.model.common import dimension
+from icon4py.model.common.decomposition.decomposed import DecompositionInfo
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -35,17 +43,16 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.decomposition.decomposed import DecompositionInfo
-from icon4py.model.atmosphere.diffusion.diffusion import VectorTuple
-from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-    DiffusionInterpolationState,
-    DiffusionMetricState,
-    PrognosticState,
+from icon4py.model.common.grid.horizontal import (
+    CellParams,
+    EdgeParams,
+    HorizontalGridSize,
 )
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
-
+from icon4py.model.common.grid.icon_grid import (
+    GridConfig,
+    IconGrid,
+    VerticalGridSize,
+)
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 
 
@@ -209,7 +216,7 @@ class IconGridSavePoint(IconSavepoint):
     def num(self, dim: Dimension):
         return self.sizes[dim]
 
-    def _read_field_for_dim(self, field_name, read_func, dim:Dimension):
+    def _read_field_for_dim(self, field_name, read_func, dim: Dimension):
         match (dim):
             case dimension.CellDim:
                 return read_func(f"c_{field_name}")

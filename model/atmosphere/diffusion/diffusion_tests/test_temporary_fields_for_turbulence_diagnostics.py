@@ -17,13 +17,12 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence_diagnostics import (
     temporary_fields_for_turbulence_diagnostics,
 )
-from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim, CEDim
+from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
+    as_1D_sparse_field,
     random_field,
     zero_field,
-    as_1D_sparse_field
-
 )
 
 

@@ -1,27 +1,45 @@
-import pytest
-from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
 
+import pytest
+
+from icon4py.model.atmosphere.diffusion.diffusion import (
+    DiffusionConfig,
+    DiffusionType,
+)
 from icon4py.model.common.test_utils.fixtures import (  # noqa F401
-    interpolation_savepoint,
-    metrics_savepoint,
+    backend,
     damping_height,
     data_provider,
     datapath,
-    grid_savepoint,
-    icon_grid,
     decomposition_info,
     download_ser_data,
-    ranked_data_path,
-    processor_props,
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
     linit,
+    mesh,
+    metrics_savepoint,
     ndyn_substeps,
+    processor_props,
+    ranked_data_path,
     step_date_exit,
     step_date_init,
-    mesh,
-    backend
 )
+
+
 @pytest.fixture
-def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:
+def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:  # noqa F811
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 

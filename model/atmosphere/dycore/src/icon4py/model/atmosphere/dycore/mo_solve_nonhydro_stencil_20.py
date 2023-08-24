@@ -49,12 +49,18 @@ def _mo_solve_nonhydro_stencil_20(
         (
             z_exner_ex_pr_1(E2C[1])
             + zdiff_gradp(E2EC[1])
-            * (z_dexner_dz_c1_1(E2C[1]) + zdiff_gradp(E2EC[1]) * z_dexner_dz_c2_1(E2C[1]))
+            * (
+                z_dexner_dz_c1_1(E2C[1])
+                + zdiff_gradp(E2EC[1]) * z_dexner_dz_c2_1(E2C[1])
+            )
         )
         - (
             z_exner_ex_pr_0(E2C[0])
             + zdiff_gradp(E2EC[0])
-            * (z_dexner_dz_c1_0(E2C[0]) + zdiff_gradp(E2EC[0]) * z_dexner_dz_c2_0(E2C[0]))
+            * (
+                z_dexner_dz_c1_0(E2C[0])
+                + zdiff_gradp(E2EC[0]) * z_dexner_dz_c2_0(E2C[0])
+            )
         )
     )
 

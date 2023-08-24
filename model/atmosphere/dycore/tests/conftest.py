@@ -13,17 +13,15 @@
 
 
 from icon4py.model.common.test_utils.fixtures import (  # noqa F401
+    backend,
     damping_height,
     data_provider,
     datapath,
+    download_ser_data,
     grid_savepoint,
     icon_grid,
-    download_ser_data,
-    linit, step_date_exit, step_date_init, mesh, backend
+    linit,
+    mesh,
+    step_date_exit,
+    step_date_init,
 )
-
-
-
-
-
-

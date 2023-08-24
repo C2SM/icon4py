@@ -41,7 +41,9 @@ class TestMoSolveNonhydroStencil65(StencilTest):
         vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
         vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
         mass_flx_ic = mass_flx_ic + (
-            r_nsubsteps * rho_ic * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c)
+            r_nsubsteps
+            * rho_ic
+            * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c)
         )
         return dict(mass_flx_ic=mass_flx_ic)
 

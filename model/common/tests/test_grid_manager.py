@@ -14,7 +14,6 @@ import logging
 from pathlib import Path
 from uuid import uuid4
 
-import conftest
 import numpy as np
 import pytest
 from netCDF4 import Dataset
@@ -30,6 +29,7 @@ from icon4py.model.common.grid.grid_manager import (
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import VerticalGridSize
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+
 
 SIMPLE_MESH_NC = "./simple_mesh_grid.nc"
 

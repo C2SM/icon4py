@@ -46,11 +46,20 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
 
     sum_over_neighbors = (
         geofac_n2s_nbh(C2CEC[0])
-        * (vcoef(C2CEC[0]) * theta_v_0(C2E2C[0]) + (1.0 - vcoef(C2CEC[0])) * theta_v_0_m1(C2E2C[0]))
+        * (
+            vcoef(C2CEC[0]) * theta_v_0(C2E2C[0])
+            + (1.0 - vcoef(C2CEC[0])) * theta_v_0_m1(C2E2C[0])
+        )
         + geofac_n2s_nbh(C2CEC[1])
-        * (vcoef(C2CEC[1]) * theta_v_1(C2E2C[1]) + (1.0 - vcoef(C2CEC[1])) * theta_v_1_m1(C2E2C[1]))
+        * (
+            vcoef(C2CEC[1]) * theta_v_1(C2E2C[1])
+            + (1.0 - vcoef(C2CEC[1])) * theta_v_1_m1(C2E2C[1])
+        )
         + geofac_n2s_nbh(C2CEC[2])
-        * (vcoef(C2CEC[2]) * theta_v_2(C2E2C[2]) + (1.0 - vcoef(C2CEC[2])) * theta_v_2_m1(C2E2C[2]))
+        * (
+            vcoef(C2CEC[2]) * theta_v_2(C2E2C[2])
+            + (1.0 - vcoef(C2CEC[2])) * theta_v_2_m1(C2E2C[2])
+        )
     )
 
     z_temp = where(

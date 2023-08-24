@@ -14,9 +14,6 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
-from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     _en_smag_fac_for_zero_nshift,
@@ -26,6 +23,9 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     set_zero_v_k,
     setup_fields_for_initial_step,
 )
+from icon4py.model.common.dimension import KDim, VertexDim
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def diff_multfac_vn_numpy(shape, k4, substeps):

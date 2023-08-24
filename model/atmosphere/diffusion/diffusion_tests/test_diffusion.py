@@ -14,11 +14,10 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.test_utils.serialbox_utils import (
-    IconDiffusionExitSavepoint,
-    IconDiffusionInitSavepoint,
+from icon4py.model.atmosphere.diffusion.diffusion import (
+    Diffusion,
+    DiffusionParams,
 )
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     PrognosticState,
@@ -26,6 +25,10 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.test_utils.serialbox_utils import (
+    IconDiffusionExitSavepoint,
+    IconDiffusionInitSavepoint,
+)
 
 from .test_diffusion_utils import (
     diff_multfac_vn_numpy,

@@ -21,8 +21,13 @@ import numpy as np
 import numpy.ma as ma
 from gt4py.next import Dimension
 
-from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
 from icon4py.model.common.decomposition.parallel_setup import ProcessProperties
+from icon4py.model.common.dimension import (
+    CellDim,
+    DimensionKind,
+    EdgeDim,
+    VertexDim,
+)
 from icon4py.model.common.utils import builder
 
 
