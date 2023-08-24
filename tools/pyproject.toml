@@ -27,11 +27,13 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
+    "icon4py-atmosphere-diffusion",
     "icon4py-atmosphere-dycore",
     "gt4py>=1.0.1",
-    "icon4py_common",
+    "icon4py-common",
     "tabulate>=0.8.9",
-    "fprettify>=0.3.7"
+    "fprettify>=0.3.7",
+    "cffi>=1.5"
 ]
 dynamic = ['version']
 

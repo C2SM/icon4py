@@ -31,18 +31,14 @@ from icon4py.model.common.grid.icon_grid import VerticalGridSize
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
-SIMPLE_MESH_NC = "./simple_mesh_grid.nc"
+SIMPLE_MESH_NC = "simple_mesh_grid.nc"
 
 
 @pytest.fixture
-def simple_mesh_path(simple_mesh_data):
-    return Path(SIMPLE_MESH_NC).absolute()
-
-
-@pytest.fixture(scope="session")
-def simple_mesh_data():
+def simple_mesh_gridfile(tmp_path):
+    path = tmp_path.joinpath(SIMPLE_MESH_NC).absolute()
     mesh = SimpleMesh()
-    dataset = Dataset(SIMPLE_MESH_NC, "w", format="NETCDF4")
+    dataset = Dataset(path, "w", format="NETCDF4")
     dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
     dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=mesh.n_vertices)
 
@@ -194,6 +190,8 @@ def simple_mesh_data():
         (GridFile.DimensionName.MAX_CHILD_DOMAINS, GridFile.DimensionName.VERTEX_GRF),
     )
     dataset.close()
+    yield path
+    path.unlink()
 
 
 def _add_to_dataset(
@@ -206,9 +204,8 @@ def _add_to_dataset(
     var[:] = np.transpose(data)[:]
 
 
-def test_gridparser_dimension(simple_mesh_data):
-
-    data = Dataset(SIMPLE_MESH_NC, "r")
+def test_gridparser_dimension(simple_mesh_gridfile):
+    data = Dataset(simple_mesh_gridfile, "r")
     grid_parser = GridFile(data)
     mesh = SimpleMesh()
     assert grid_parser.dimension(GridFile.DimensionName.CELL_NAME) == mesh.n_cells
@@ -232,9 +229,9 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfil
     ) == grid_savepoint.num(VertexDim)
 
 
-def test_grid_parser_index_fields(simple_mesh_data, caplog):
+def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
     caplog.set_level(logging.DEBUG)
-    data = Dataset(SIMPLE_MESH_NC, "r")
+    data = Dataset(simple_mesh_gridfile, "r")
     mesh = SimpleMesh()
     grid_parser = GridFile(data)
 
@@ -406,20 +403,20 @@ def init_grid_manager(fname):
 
 
 @pytest.mark.parametrize("dim, size", [(CellDim, 18), (EdgeDim, 27), (VertexDim, 9)])
-def test_grid_manager_getsize(simple_mesh_data, simple_mesh_path, dim, size, caplog):
+def test_grid_manager_getsize(simple_mesh_gridfile, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
     gm = GridManager(
-        IndexTransformation(), simple_mesh_path, VerticalGridSize(num_lev=80)
+        IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80)
     )
     gm()
     assert size == gm.get_size(dim)
 
 
-def test_grid_manager_diamond_offset(simple_mesh_path):
+def test_grid_manager_diamond_offset(simple_mesh_gridfile):
     mesh = SimpleMesh()
     gm = GridManager(
         IndexTransformation(),
-        simple_mesh_path,
+        simple_mesh_gridfile,
         VerticalGridSize(num_lev=mesh.k_level),
     )
     gm()

@@ -28,6 +28,9 @@ classifiers = [
 ]
 dependencies = [
     "gt4py>=1.0.1",
+    "mpi4py<=3.1.4",
+    "pyghex>=0.3.0",
+    "netcdf4>=1.6.0"
 ]
 dynamic = ['version']
 

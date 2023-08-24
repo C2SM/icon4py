@@ -28,7 +28,9 @@ classifiers = [
 ]
 dependencies = [
     "gt4py>=1.0.1",
-    "icon4py_common>=0.0.5",
+    "icon4py-common>=0.0.5",
+    "mpi4py<=3.1.4",
+    "pyghex>=0.3.0",
 ]
 dynamic = ['version']
 
@@ -56,7 +58,7 @@ target-version = ['py310']
 [tool.coverage]
 
 [tool.coverage.html]
-directory = 'tests/_reports/coverage_html'
+directory = 'diffusion_tests/_reports/coverage_html'
 
 [tool.coverage.paths]
 source = ['src/icon4py/model/']
@@ -109,7 +111,7 @@ show_error_codes = true
 [tool.pytest]
 
 [tool.pytest.ini_options]
-testpaths = 'tests'
+testpaths = 'diffusion_tests'
 markers = 'datatest: this test uses binary data'
 
 [tool.setuptools.dynamic]
