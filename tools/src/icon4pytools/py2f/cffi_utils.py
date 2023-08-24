@@ -99,15 +99,14 @@ class UnknownDimensionException(Exception):
     pass
 
 
-def to_fields(
-    dim_sizes: dict[Dimension, int]
-):
+def to_fields(dim_sizes: dict[Dimension, int]):
     """
     Pack/Unpack Fortran 2d arrays to numpy arrays with using CFFI frombuffer.
-    #TODO (magdalena)  handle in a better way?
+
     Args:
         dim_sizes: dictionary containing the sizes of the dimension.
 
+    #TODO (magdalena)  handle dimension sizes in a better way?
     """
     ffi = cffi.FFI()
     dim_sizes = dim_sizes

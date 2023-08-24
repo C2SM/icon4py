@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float32, float64, int32, int64
-
 from icon4py.model.common.dimension import E2CDim, EdgeDim, KDim, VertexDim
+
 from icon4pytools.py2f.cffi_utils import UnknownDimensionException, to_fields
 
 
@@ -42,9 +42,7 @@ def test_unpack_from_buffer_to_field(pointer_type: str):
     ffi = cffi.FFI()
     input_array = random(n_vertices, levels)
     input_factor = 0.5
-    res_factor, result_field = identity(
-        ffi.from_buffer(pointer_type, input_array), input_factor
-    )
+    res_factor, result_field = identity(ffi.from_buffer(pointer_type, input_array), input_factor)
     assert res_factor == input_factor
     assert np.allclose(np.asarray(result_field), input_array)
 
@@ -67,9 +65,7 @@ def test_unpack_local_field(field_type):
     def local_field(f1: Field[[EdgeDim, E2CDim], field_type]):
         return f1
 
-    input_field = np.arange(n_edges * e2c_sparse_size).reshape(
-        (n_edges, e2c_sparse_size)
-    )
+    input_field = np.arange(n_edges * e2c_sparse_size).reshape((n_edges, e2c_sparse_size))
     res_field = local_field(ffi.from_buffer("int*", input_field))
     assert np.all(res_field == input_field)
 

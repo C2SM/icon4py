@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from pathlib import Path
 from uuid import uuid4
 
 import numpy as np

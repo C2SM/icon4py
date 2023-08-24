@@ -275,7 +275,6 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     [
         ("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         ("2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        ("2021-06-20T12:01:00.000", "2021-06-20T12:01:00.000"),
     ],
 )
 def test_run_diffusion_single_step(

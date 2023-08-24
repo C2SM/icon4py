@@ -44,6 +44,8 @@ from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelParams
 
 from icon4pytools.py2f.cffi_utils import CffiMethod, to_fields
+
+
 """
 Wrapper module for diffusion granule.
 
@@ -61,6 +63,7 @@ diffusion: Diffusion()
 
 nproma = 50000
 field_sizes = {EdgeDim: nproma, CellDim: nproma, VertexDim: nproma}
+
 
 @to_fields(dim_sizes=field_sizes)
 @CffiMethod.register
@@ -115,7 +118,9 @@ def diffusion_init(
     cells_area: Field[[CellDim], float],
     # dsl specific additional args
     mask_hdiff: Field[[CellDim, KDim], bool],
-    zd_vertoffset: Field[[CECDim], int32], # vertical offsets used in DSL for absolute indices zd_vertidx in mo_vertical_grid.f90
+    zd_vertoffset: Field[
+        [CECDim], int32
+    ],  # vertical offsets used in DSL for absolute indices zd_vertidx in mo_vertical_grid.f90
     rbf_coeff_1: Field[[VertexDim, V2EDim], float],  # -> used in rbf_vec_interpol_vertex
     rbf_coeff_2: Field[[VertexDim, V2EDim], float],  # -> used in rbf_vec_interpol_vertex
     verts_edge_idx: Field[[VertexDim, V2EDim], int32],  # -> mo_intp_rbf_rbf_vec_interpol_vertex

@@ -32,6 +32,7 @@ from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils import serialbox_utils as sb
 
+
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
