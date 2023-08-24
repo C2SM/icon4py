@@ -12,45 +12,40 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_38 import (
     mo_solve_nonhydro_stencil_38,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
 
-def mo_solve_nonhydro_stencil_38_numpy(
-    vn: np.array,
-    wgtfacq_e: np.array,
-) -> np.array:
-    vn_ie = (
-        np.roll(wgtfacq_e, shift=1, axis=1) * np.roll(vn, shift=1, axis=1)
-        + np.roll(wgtfacq_e, shift=2, axis=1) * np.roll(vn, shift=2, axis=1)
-        + np.roll(wgtfacq_e, shift=3, axis=1) * np.roll(vn, shift=3, axis=1)
-    )
-    return vn_ie
+class TestMoSolveNonhydroStencil38(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_38
+    OUTPUTS = ("vn_ie",)
 
+    @staticmethod
+    def reference(mesh, vn: np.array, wgtfacq_e: np.array, **kwargs) -> np.array:
+        vn_ie = (
+            np.roll(wgtfacq_e, shift=1, axis=1) * np.roll(vn, shift=1, axis=1)
+            + np.roll(wgtfacq_e, shift=2, axis=1) * np.roll(vn, shift=2, axis=1)
+            + np.roll(wgtfacq_e, shift=3, axis=1) * np.roll(vn, shift=3, axis=1)
+        )
+        return dict(vn_ie=vn_ie)
 
-def test_mo_solve_nonhydro_stencil_38():
-    mesh = SimpleMesh()
+    @pytest.fixture
+    def input_data(self, mesh):
+        wgtfacq_e = zero_field(mesh, EdgeDim, KDim)
+        vn = random_field(mesh, EdgeDim, KDim)
+        vn_ie = zero_field(mesh, EdgeDim, KDim)
 
-    wgtfacq_e = zero_field(mesh, EdgeDim, KDim)
-    vn = random_field(mesh, EdgeDim, KDim)
-
-    vn_ie = zero_field(mesh, EdgeDim, KDim)
-
-    vn_ie_ref = mo_solve_nonhydro_stencil_38_numpy(
-        np.asarray(vn),
-        np.asarray(wgtfacq_e),
-    )
-
-    mo_solve_nonhydro_stencil_38(
-        vn,
-        wgtfacq_e,
-        vn_ie,
-        offset_provider={"Koff": KDim},
-    )
-
-    assert np.allclose(vn_ie[:, 3:], vn_ie_ref[:, 3:])
+        return dict(
+            vn=vn,
+            wgtfacq_e=wgtfacq_e,
+            vn_ie=vn_ie,
+        )
