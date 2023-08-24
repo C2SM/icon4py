@@ -8,4 +8,3 @@
 
 # icon4pytools
 -e ./tools
--e ./py2f #TODO (magdalena) move to tools and remove

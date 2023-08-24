@@ -33,7 +33,7 @@ dependencies = [
     "icon4py-common",
     "tabulate>=0.8.9",
     "fprettify>=0.3.7",
-    "cffi>=1.5"
+    "cffi>=1.5",
 ]
 dynamic = ['version']
 
@@ -41,6 +41,7 @@ dynamic = ['version']
 icon_liskov = "icon4pytools.liskov.cli:main"
 icon4pygen = "icon4pytools.icon4pygen.cli:main"
 f2ser = "icon4pytools.f2ser.cli:main"
+py2fgen = "icon4pytools.py2f.py2fgen:main"
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
@@ -106,6 +107,7 @@ exclude = [
     '^tests/f2ser/*.py',
     '^tests/icon4pygen/*.py',
     '^tests/liskov/*.py',
+    '^tests/py2f/*.py',
 ]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
@@ -127,3 +129,4 @@ version = {attr = 'icon4pytools.__init__.__version__'}
 
 [tool.setuptools.package-data]
 'icon4pytools' = ['py.typed']
+

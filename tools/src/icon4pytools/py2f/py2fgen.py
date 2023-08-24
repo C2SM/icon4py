@@ -14,16 +14,14 @@
 import pathlib
 
 import click
-from icon4py.f2py.cffi_utils import generate_and_compile_cffi_plugin
-from icon4py.f2py.codegen import (
-    generate_and_write_f90_interface,
-    generate_c_header,
-)
-from icon4py.f2py.parsing import parse_functions_from_module
+
+from icon4pytools.py2f.cffi_utils import generate_and_compile_cffi_plugin
+from icon4pytools.py2f.codegen import generate_and_write_f90_interface, generate_c_header
+from icon4pytools.py2f.parsing import parse_functions_from_module
 
 
 @click.command(
-    "py2f90gen",
+    "py2fgen",
 )
 @click.argument("module", type=str)
 @click.argument(
@@ -37,7 +35,7 @@ def main(module: str, build_path: pathlib.Path) -> None:
 
       Args:
           - module: name of the python module containing the methods to be embedded. Those
-          methods have to be decoratoed with CffiMethod.register
+          methods have to be decorated with CffiMethod.register
 
           - build_path: directory where the generated code and compiled libraries are to be found.
     """
@@ -45,10 +43,8 @@ def main(module: str, build_path: pathlib.Path) -> None:
     build_path.mkdir(exist_ok=True, parents=True)
     plugin = parse_functions_from_module(module_name)
     c_header = generate_c_header(plugin)
-    generate_and_compile_cffi_plugin(
-        plugin.name, c_header, module_name, str(build_path)
-    )
-    generate_and_write_f90_interface(plugin)
+    generate_and_compile_cffi_plugin(plugin.name, c_header, module_name, str(build_path))
+    generate_and_write_f90_interface(build_path, plugin)
 
 
 if __name__ == "__main__":

@@ -10,12 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from icon4py.py2f.cffi_utils import CffiMethod
-from icon4py.py2f.parsing import parse_functions_from_module
+from icon4pytools.py2f.cffi_utils import CffiMethod
+from icon4pytools.py2f.parsing import parse_functions_from_module
 
 
 def test_parse_functions():
-    path = "icon4py.py2f.wrappers.diffusion_wrapper"
+    path = "icon4pytools.py2f.wrappers.diffusion_wrapper"
     plugin = parse_functions_from_module(path)
 
     assert plugin.name == "diffusion_wrapper"

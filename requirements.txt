@@ -5,6 +5,5 @@
 ./model/atmosphere/diffusion
 ./model/common
 ./model/driver
-./py2f #TODO (magdalena) move to tools and remove
 # icon4pytools
 ./tools

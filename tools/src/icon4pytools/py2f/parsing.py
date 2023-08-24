@@ -14,10 +14,9 @@
 import importlib
 from inspect import signature, unwrap
 
-from gt4py.next.type_system.type_specifications import ScalarType
-from gt4py.next.type_system.type_translation import from_type_hint
-from icon4py.py2f.cffi_utils import CffiMethod
-from icon4py.py2f.codegen import CffiPlugin, DimensionType, Func, FuncParameter
+from icon4pytools.py2f.cffi_utils import CffiMethod
+from icon4pytools.py2f.codegen import CffiPlugin, DimensionType, Func, FuncParameter
+from icon4pytools.py2f.typing_utils import parse_annotation
 
 
 def parse_functions_from_module(module_name: str) -> CffiPlugin:
@@ -38,11 +37,7 @@ def _parse_function(module, s):
 
 
 def _parse_params(params, s):
-    type_spec = from_type_hint(params[s].annotation)
-    if isinstance(type_spec, ScalarType):
-        dtype = type_spec.kind
-        dims = []
-    else:
-        dtype = type_spec.dtype.kind
-        dims = [DimensionType(name=d.value, length=10) for d in type_spec.dims]
-    return FuncParameter(name=s, d_type=dtype, dimensions=dims)
+    annotation = params[s].annotation
+    dims, dtype = parse_annotation(annotation)
+    dim_types = [DimensionType(name=d.value, length=10) for d in dims]
+    return FuncParameter(name=s, d_type=dtype, dimensions=dim_types)

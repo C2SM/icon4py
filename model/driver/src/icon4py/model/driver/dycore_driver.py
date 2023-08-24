@@ -263,7 +263,7 @@ def initialize(n_time_steps, file_path: Path, props: ProcessProperties):
     "--n_steps", default=5, help="number of time steps to run, max 5 is supported"
 )
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
-def run(input_path, run_path, n_steps, mpi):
+def main(input_path, run_path, n_steps, mpi):
     """
     Run the driver.
 
@@ -300,4 +300,4 @@ def run(input_path, run_path, n_steps, mpi):
 
 
 if __name__ == "__main__":
-    run()
+    main()
