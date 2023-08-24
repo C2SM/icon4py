@@ -14,7 +14,7 @@
 from dataclasses import dataclass
 
 import numpy as np
-from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
+from gt4py.next.iterator.embedded import NeighborTableOffsetProvider, StridedNeighborOffsetProvider
 
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -33,6 +33,7 @@ from icon4py.model.common.dimension import (
     V2CDim,
     V2EDim,
     VertexDim,
+    ECDim
 )
 
 
@@ -439,4 +440,7 @@ class SimpleMesh:
             "E2V": self.get_e2v_offset_provider(),
             "E2C2V": self.get_e2c2v_offset_provider(),
             "Koff": KDim,
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, self.n_c2e),
+            "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, self.n_e2c2v),
+            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, self.n_e2c),
         }
