@@ -22,8 +22,6 @@ from icon4py.model.common.dimension import CellDim, KDim
 def _mo_velocity_advection_stencil_14(
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    vcfl: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
     dtime: float,
 ) -> tuple[
@@ -60,8 +58,6 @@ def mo_velocity_advection_stencil_14(
     _mo_velocity_advection_stencil_14(
         ddqz_z_half,
         z_w_con_c,
-        cfl_clipping,
-        vcfl,
         cfl_w_limit,
         dtime,
         out=(cfl_clipping, vcfl, z_w_con_c),
