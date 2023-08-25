@@ -73,7 +73,7 @@ def _mo_solve_nonhydro_stencil_10(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program
 def mo_solve_nonhydro_stencil_10(
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],

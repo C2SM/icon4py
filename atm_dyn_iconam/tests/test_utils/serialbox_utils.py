@@ -382,11 +382,11 @@ class InterpolationSavepoint(IconSavepoint):
 
     def pos_on_tplane_e_x(self):
         field = self._get_field("pos_on_tplane_e_x", EdgeDim, E2CDim)
-        return as_1D_sparse_field(field[:,0:2], ECDim)
+        return as_1D_sparse_field(field[:, 0:2], ECDim)
 
     def pos_on_tplane_e_y(self):
         field = self._get_field("pos_on_tplane_e_y", EdgeDim, E2CDim)
-        return as_1D_sparse_field(field[:,0:2], ECDim)
+        return as_1D_sparse_field(field[:, 0:2], ECDim)
 
     # def pos_on_tplane_e(self, ind):
     #     buffer = np.squeeze(self.serializer.read("pos_on_tplane_e", self.savepoint))
@@ -1298,30 +1298,6 @@ class IconExitSavepoint(IconSavepoint):
 
     def rho_new_55(self):
         return self._get_field("x_rho_new_55", CellDim, KDim)
-
-    ### Nikki serialization
-
-    def w_10_start(self):
-        return self._get_field("w_10_start", CellDim, KDim)
-
-    def z_graddiv_vn_26_start(self):
-        return self._get_field("z_graddiv_vn_26_start", EdgeDim, KDim)
-
-    def z_graddiv2_vn_27_start(self):
-        return self._get_field("z_graddiv2_vn_27_start", EdgeDim, KDim)
-
-    def x_vn_new_26_end(self):
-        return self._get_field("x_vn_new_26_end", EdgeDim, KDim)
-
-    def x_vn_new_27_end(self):
-        return self._get_field("x_vn_new_27_end", EdgeDim, KDim)
-
-    def vn_26_start(self):
-        return self._get_field("vn_26_start", EdgeDim, KDim)
-
-    def z_dwdz_dd(self):
-        return self._get_field("x_z_dwdz_dd", CellDim, KDim)
-
 
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False):

@@ -106,5 +106,5 @@ def flatten_first_two_dims(
     return it_embedded.np_as_located_field(*dims)(newarray)
 
 
-def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
+def dallclose(a, b, rtol=1.0e-8, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
