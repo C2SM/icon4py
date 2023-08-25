@@ -14,6 +14,7 @@ import pytest
 
 from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.fixtures import (  # noqa F401
+    backend,
     base_path,
     damping_height,
     data_provider,
@@ -23,6 +24,7 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
+    mesh,
     processor_props,
     ranked_data_path,
 )

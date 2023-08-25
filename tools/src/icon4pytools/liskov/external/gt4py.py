@@ -32,7 +32,11 @@ logger = setup_logger(__name__)
 
 
 class UpdateFieldsWithGt4PyStencils(Step):
-    _STENCIL_PACKAGES = ["atmosphere.dycore", "atmosphere.diffusion.stencils"]
+    _STENCIL_PACKAGES = [
+        "atmosphere.dycore",
+        "atmosphere.diffusion.stencils",
+        "common.interpolation",
+    ]
 
     def __init__(self, parsed: IntegrationCodeInterface):
         self.parsed = parsed

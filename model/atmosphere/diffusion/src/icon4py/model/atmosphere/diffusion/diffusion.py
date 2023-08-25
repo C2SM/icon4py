@@ -67,11 +67,6 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner,
 )
-
-# TODO (magdalena) should go to common.math
-from icon4py.model.atmosphere.dycore.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    mo_intp_rbf_rbf_vec_interpol_vertex,
-)
 from icon4py.model.common.constants import (
     CPD,
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
@@ -89,6 +84,9 @@ from icon4py.model.common.grid.horizontal import (
 )
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
+    mo_intp_rbf_rbf_vec_interpol_vertex,
+)
 
 
 # flake8: noqa
