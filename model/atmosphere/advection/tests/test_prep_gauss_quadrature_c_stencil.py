@@ -12,17 +12,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_stencil import (
     prep_gauss_quadrature_c_stencil,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 

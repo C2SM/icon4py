@@ -12,8 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator import embedded as it_embedded
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01b import (
@@ -21,11 +19,8 @@ from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01b import (
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
-    _shape,
     as_1D_sparse_field,
-    constant_field,
     random_field,
-    zero_field,
 )
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 

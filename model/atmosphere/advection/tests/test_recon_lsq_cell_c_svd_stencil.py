@@ -49,7 +49,6 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     lsq_moments_9: np.ndarray,
 ) -> tuple[np.ndarray]:
 
-    p_cc_e = np.expand_dims(p_cc, axis=-1)
     lsq_moments_1 = np.expand_dims(lsq_moments_1, axis=-1)
     lsq_moments_2 = np.expand_dims(lsq_moments_2, axis=-1)
     lsq_moments_3 = np.expand_dims(lsq_moments_3, axis=-1)
@@ -323,7 +322,7 @@ def test_recon_lsq_cell_c_svd_stencil():
             ),
         },
     )
-    #    co1 = np.asarray(p_coeff_1_dsl)
+    co1 = np.asarray(p_coeff_1_dsl)
     co2 = np.asarray(p_coeff_2_dsl)
     co3 = np.asarray(p_coeff_3_dsl)
     co4 = np.asarray(p_coeff_4_dsl)
@@ -333,8 +332,7 @@ def test_recon_lsq_cell_c_svd_stencil():
     co8 = np.asarray(p_coeff_8_dsl)
     co9 = np.asarray(p_coeff_9_dsl)
     co10 = np.asarray(p_coeff_10_dsl)
-    #    assert np.allclose(ref_1, co1)
-    assert np.allclose(ref_10, co10)
+    assert np.allclose(ref_1, co1)
     assert np.allclose(ref_2, co2)
     assert np.allclose(ref_3, co3)
     assert np.allclose(ref_4, co4)
@@ -343,3 +341,4 @@ def test_recon_lsq_cell_c_svd_stencil():
     assert np.allclose(ref_7, co7)
     assert np.allclose(ref_8, co8)
     assert np.allclose(ref_9, co9)
+    assert np.allclose(ref_10, co10)

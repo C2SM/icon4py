@@ -12,19 +12,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator import embedded as it_embedded
 
 from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_02 import (
     hflux_ffsl_hybrid_stencil_02,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    _shape,
-    constant_field,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 

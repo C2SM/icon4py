@@ -13,14 +13,12 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_list_stencil import (
     prep_gauss_quadrature_c_list_stencil,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
     constant_field,
     random_field,
     zero_field,

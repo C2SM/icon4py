@@ -13,14 +13,12 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator import embedded as it_embedded
 
 from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
     hflux_ffsl_hybrid_stencil_01a,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
-    _shape,
     constant_field,
     random_field,
     zero_field,

@@ -159,7 +159,6 @@ def test_upwind_hflux_miura3_stencil_01():
     z_quad_vector_sum_10 = random_field(mesh, EdgeDim, KDim)
     p_mass_flx_e = random_field(mesh, EdgeDim, KDim)
     z_dreg_area = random_field(mesh, EdgeDim, KDim)
-    #    cell_rel_idx_dsl = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
     cell_rel_idx_dsl = random_mask(mesh, EdgeDim, KDim, dtype=int32)
     p_out_e_miura3 = zero_field(mesh, EdgeDim, KDim)
 
