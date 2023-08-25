@@ -76,7 +76,7 @@ repos:
             types_or: [json, yaml, markdown]
 
     - repo: https://github.com/asottile/yesqa
-      rev: v1.5.0
+      rev: v1.3.0
       hooks:
           - id: yesqa
             exclude: model/common/decomposition/parallel_setup.py

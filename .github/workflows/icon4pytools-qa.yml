@@ -31,10 +31,6 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
-            - name: Install boost
-              run: |
-                  sudo apt-get update
-                  sudo apt-get install libboost-all-dev
             - name: Set up Python
               uses: actions/setup-python@v3
               with:
