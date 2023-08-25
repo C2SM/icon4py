@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import sys  # Increase recusion depth, otherwise it doesn't compile
+
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
@@ -24,6 +26,9 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+
+
+sys.setrecursionlimit(6000)
 
 
 def recon_lsq_cell_c_stencil_numpy(
@@ -93,27 +98,6 @@ def recon_lsq_cell_c_stencil_numpy(
     lsq_moments_8: np.ndarray,
     lsq_moments_9: np.ndarray,
 ) -> tuple[np.ndarray]:
-    p_cc_e = np.expand_dims(p_cc, axis=-1)
-    #    n_diff = p_cc[c2e2c] - p_cc_e
-
-    lsq_rmat_rdiag_c_1 = np.expand_dims(lsq_rmat_rdiag_c_1, axis=-1)
-    lsq_rmat_rdiag_c_2 = np.expand_dims(lsq_rmat_rdiag_c_2, axis=-1)
-    lsq_rmat_rdiag_c_3 = np.expand_dims(lsq_rmat_rdiag_c_3, axis=-1)
-    lsq_rmat_rdiag_c_4 = np.expand_dims(lsq_rmat_rdiag_c_4, axis=-1)
-    lsq_rmat_rdiag_c_5 = np.expand_dims(lsq_rmat_rdiag_c_5, axis=-1)
-    lsq_rmat_rdiag_c_6 = np.expand_dims(lsq_rmat_rdiag_c_6, axis=-1)
-    lsq_rmat_rdiag_c_7 = np.expand_dims(lsq_rmat_rdiag_c_7, axis=-1)
-    lsq_rmat_rdiag_c_8 = np.expand_dims(lsq_rmat_rdiag_c_8, axis=-1)
-    lsq_rmat_rdiag_c_9 = np.expand_dims(lsq_rmat_rdiag_c_9, axis=-1)
-    #    lsq_rmat_rdiag_c_1 = np.broadcast_to(lsq_rmat_rdiag_c_1, p_cc.shape)
-    #    lsq_rmat_rdiag_c_2 = np.broadcast_to(lsq_rmat_rdiag_c_2, p_cc.shape)
-    #    lsq_rmat_rdiag_c_3 = np.broadcast_to(lsq_rmat_rdiag_c_3, p_cc.shape)
-    #    lsq_rmat_rdiag_c_4 = np.broadcast_to(lsq_rmat_rdiag_c_4, p_cc.shape)
-    #    lsq_rmat_rdiag_c_5 = np.broadcast_to(lsq_rmat_rdiag_c_5, p_cc.shape)
-    #    lsq_rmat_rdiag_c_6 = np.broadcast_to(lsq_rmat_rdiag_c_6, p_cc.shape)
-    #    lsq_rmat_rdiag_c_7 = np.broadcast_to(lsq_rmat_rdiag_c_7, p_cc.shape)
-    #    lsq_rmat_rdiag_c_8 = np.broadcast_to(lsq_rmat_rdiag_c_8, p_cc.shape)
-    #    lsq_rmat_rdiag_c_9 = np.broadcast_to(lsq_rmat_rdiag_c_9, p_cc.shape)
     lsq_moments_1 = np.expand_dims(lsq_moments_1, axis=-1)
     lsq_moments_2 = np.expand_dims(lsq_moments_2, axis=-1)
     lsq_moments_3 = np.expand_dims(lsq_moments_3, axis=-1)
@@ -132,6 +116,24 @@ def recon_lsq_cell_c_stencil_numpy(
     lsq_moments_7 = np.broadcast_to(lsq_moments_7, p_cc.shape)
     lsq_moments_8 = np.broadcast_to(lsq_moments_8, p_cc.shape)
     lsq_moments_9 = np.broadcast_to(lsq_moments_9, p_cc.shape)
+    lsq_rmat_rdiag_c_1 = np.expand_dims(lsq_rmat_rdiag_c_1, axis=-1)
+    lsq_rmat_rdiag_c_2 = np.expand_dims(lsq_rmat_rdiag_c_2, axis=-1)
+    lsq_rmat_rdiag_c_3 = np.expand_dims(lsq_rmat_rdiag_c_3, axis=-1)
+    lsq_rmat_rdiag_c_4 = np.expand_dims(lsq_rmat_rdiag_c_4, axis=-1)
+    lsq_rmat_rdiag_c_5 = np.expand_dims(lsq_rmat_rdiag_c_5, axis=-1)
+    lsq_rmat_rdiag_c_6 = np.expand_dims(lsq_rmat_rdiag_c_6, axis=-1)
+    lsq_rmat_rdiag_c_7 = np.expand_dims(lsq_rmat_rdiag_c_7, axis=-1)
+    lsq_rmat_rdiag_c_8 = np.expand_dims(lsq_rmat_rdiag_c_8, axis=-1)
+    lsq_rmat_rdiag_c_9 = np.expand_dims(lsq_rmat_rdiag_c_9, axis=-1)
+    lsq_rmat_rdiag_c_1 = np.broadcast_to(lsq_rmat_rdiag_c_1, p_cc.shape)
+    lsq_rmat_rdiag_c_2 = np.broadcast_to(lsq_rmat_rdiag_c_2, p_cc.shape)
+    lsq_rmat_rdiag_c_3 = np.broadcast_to(lsq_rmat_rdiag_c_3, p_cc.shape)
+    lsq_rmat_rdiag_c_4 = np.broadcast_to(lsq_rmat_rdiag_c_4, p_cc.shape)
+    lsq_rmat_rdiag_c_5 = np.broadcast_to(lsq_rmat_rdiag_c_5, p_cc.shape)
+    lsq_rmat_rdiag_c_6 = np.broadcast_to(lsq_rmat_rdiag_c_6, p_cc.shape)
+    lsq_rmat_rdiag_c_7 = np.broadcast_to(lsq_rmat_rdiag_c_7, p_cc.shape)
+    lsq_rmat_rdiag_c_8 = np.broadcast_to(lsq_rmat_rdiag_c_8, p_cc.shape)
+    lsq_rmat_rdiag_c_9 = np.broadcast_to(lsq_rmat_rdiag_c_9, p_cc.shape)
     lsq_rmat_utri_c_1 = np.expand_dims(lsq_rmat_utri_c_1, axis=-1)
     lsq_rmat_utri_c_2 = np.expand_dims(lsq_rmat_utri_c_2, axis=-1)
     lsq_rmat_utri_c_3 = np.expand_dims(lsq_rmat_utri_c_3, axis=-1)
@@ -204,91 +206,64 @@ def recon_lsq_cell_c_stencil_numpy(
     lsq_rmat_utri_c_34 = np.broadcast_to(lsq_rmat_utri_c_34, p_cc.shape)
     lsq_rmat_utri_c_35 = np.broadcast_to(lsq_rmat_utri_c_35, p_cc.shape)
     lsq_rmat_utri_c_36 = np.broadcast_to(lsq_rmat_utri_c_36, p_cc.shape)
-    #   lsq_rmat_utri_c_9 lsq_qtmat_c_1 = nplsq_rmat_utri_c_9.broadcast_to(lsq_qtmat_c_1, (CECECDim, KDim))
-    #    lsq_qtmat_c_2 = np.broadcast_to(lsq_qtmat_c_2, (CECECDim, KDim))
-    #    lsq_qtmat_c_3 = np.broadcast_to(lsq_qtmat_c_3, (CECECDim, KDim))
-    #    lsq_qtmat_c_4 = np.broadcast_to(lsq_qtmat_c_4, (CECECDim, KDim))
-    #    lsq_qtmat_c_5 = np.broadcast_to(lsq_qtmat_c_5, (CECECDim, KDim))
-    #    lsq_qtmat_c_6 = np.broadcast_to(lsq_qtmat_c_6, (CECECDim, KDim))
-    #    lsq_qtmat_c_7 = np.broadcast_to(lsq_qtmat_c_7, (CECECDim, KDim))
-    #    lsq_qtmat_c_8 = np.broadcast_to(lsq_qtmat_c_8, (CECECDim, KDim))
-    #    lsq_qtmat_c_9 = np.broadcast_to(lsq_qtmat_c_9, (CECECDim, KDim))
-    #    lsq_qtmat_c_1 = np.broadcast_to(lsq_qtmat_c_1, p_cc.shape)
-    #    lsq_qtmat_c_2 = np.broadcast_to(lsq_qtmat_c_2, p_cc.shape)
-    #    lsq_qtmat_c_3 = np.broadcast_to(lsq_qtmat_c_3, p_cc.shape)
-    #    lsq_qtmat_c_4 = np.broadcast_to(lsq_qtmat_c_4, p_cc.shape)
-    #    lsq_qtmat_c_5 = np.broadcast_to(lsq_qtmat_c_5, p_cc.shape)
-    #    lsq_qtmat_c_6 = np.broadcast_to(lsq_qtmat_c_6, p_cc.shape)
-    #    lsq_qtmat_c_7 = np.broadcast_to(lsq_qtmat_c_7, p_cc.shape)
-    #    lsq_qtmat_c_8 = np.broadcast_to(lsq_qtmat_c_8, p_cc.shape)
-    #    lsq_qtmat_c_9 = np.broadcast_to(lsq_qtmat_c_9, p_cc.shape)
-    #    lsq_qtmat_c_1 = np.repeat(lsq_qtmat_c_1[:, np.newaxis], p_cc.shape[1], axis=1)
-    #    lsq_qtmat_c_2 = np.repeat(lsq_qtmat_c_2[:, np.newaxis], p_cc.shape[1], axis=1)
-    #    lsq_qtmat_c_3 = np.repeat(lsq_qtmat_c_3[:, np.newaxis], p_cc.shape[1], axis=1)
-    #    lsq_qtmat_c_4 = np.repeat(lsq_qtmat_c_4[:, np.newaxis], p_cc.shape[1], axis=1)
-    #    lsq_qtmat_c_5 = np.repeat(lsq_qtmat_c_5[:, np.newaxis], p_cc.shape[1], axis=1)
-    #    lsq_qtmat_c_6 = np.repeat(lsq_qtmat_c_6[:, np.newaxis], p_cc.shape[1], axis=1)
-    #    lsq_qtmat_c_7 = np.repeat(lsq_qtmat_c_7[:, np.newaxis], p_cc.shape[1], axis=1)
-    #    lsq_qtmat_c_8 = np.repeat(lsq_qtmat_c_8[:, np.newaxis], p_cc.shape[1], axis=1)
-    #    lsq_qtmat_c_9 = np.repeat(lsq_qtmat_c_9[:, np.newaxis], p_cc.shape[1], axis=1)
-    lsq_qtmat_c_9 = np.expand_dims(lsq_qtmat_c_9, axis=-1)
-    lsq_qtmat_c_8 = np.expand_dims(lsq_qtmat_c_8, axis=-1)
-    lsq_qtmat_c_7 = np.expand_dims(lsq_qtmat_c_7, axis=-1)
-    lsq_qtmat_c_6 = np.expand_dims(lsq_qtmat_c_6, axis=-1)
-    lsq_qtmat_c_5 = np.expand_dims(lsq_qtmat_c_5, axis=-1)
-    lsq_qtmat_c_4 = np.expand_dims(lsq_qtmat_c_4, axis=-1)
-    lsq_qtmat_c_3 = np.expand_dims(lsq_qtmat_c_3, axis=-1)
-    lsq_qtmat_c_2 = np.expand_dims(lsq_qtmat_c_2, axis=-1)
     lsq_qtmat_c_1 = np.expand_dims(lsq_qtmat_c_1, axis=-1)
+    lsq_qtmat_c_2 = np.expand_dims(lsq_qtmat_c_2, axis=-1)
+    lsq_qtmat_c_3 = np.expand_dims(lsq_qtmat_c_3, axis=-1)
+    lsq_qtmat_c_4 = np.expand_dims(lsq_qtmat_c_4, axis=-1)
+    lsq_qtmat_c_5 = np.expand_dims(lsq_qtmat_c_5, axis=-1)
+    lsq_qtmat_c_6 = np.expand_dims(lsq_qtmat_c_6, axis=-1)
+    lsq_qtmat_c_7 = np.expand_dims(lsq_qtmat_c_7, axis=-1)
+    lsq_qtmat_c_8 = np.expand_dims(lsq_qtmat_c_8, axis=-1)
+    lsq_qtmat_c_9 = np.expand_dims(lsq_qtmat_c_9, axis=-1)
 
     p_coeff_10 = lsq_rmat_rdiag_c_9 * (
-        lsq_qtmat_c_9[:, 0] * (p_cc_e[:, 0] - p_cc)
-        + lsq_qtmat_c_9[:, 1] * (p_cc_e[:, 1] - p_cc)
-        + lsq_qtmat_c_9[:, 2] * (p_cc_e[:, 2] - p_cc)
-        + lsq_qtmat_c_9[:, 3] * (p_cc_e[:, 3] - p_cc)
-        + lsq_qtmat_c_9[:, 4] * (p_cc_e[:, 4] - p_cc)
-        + lsq_qtmat_c_9[:, 5] * (p_cc_e[:, 5] - p_cc)
-        + lsq_qtmat_c_9[:, 6] * (p_cc_e[:, 6] - p_cc)
-        + lsq_qtmat_c_9[:, 7] * (p_cc_e[:, 7] - p_cc)
-        + lsq_qtmat_c_9[:, 8] * (p_cc_e[:, 8] - p_cc)
+        lsq_qtmat_c_9[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_qtmat_c_9[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_qtmat_c_9[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_qtmat_c_9[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_qtmat_c_9[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_qtmat_c_9[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_qtmat_c_9[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_qtmat_c_9[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_qtmat_c_9[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
     )
 
     p_coeff_9 = lsq_rmat_rdiag_c_8 * (
-        lsq_qtmat_c_8[:, 0] * (p_cc_e[:, 0] - p_cc)
-        + lsq_qtmat_c_8[:, 1] * (p_cc_e[:, 1] - p_cc)
-        + lsq_qtmat_c_8[:, 2] * (p_cc_e[:, 2] - p_cc)
-        + lsq_qtmat_c_8[:, 3] * (p_cc_e[:, 3] - p_cc)
-        + lsq_qtmat_c_8[:, 4] * (p_cc_e[:, 4] - p_cc)
-        + lsq_qtmat_c_8[:, 5] * (p_cc_e[:, 5] - p_cc)
-        + lsq_qtmat_c_8[:, 6] * (p_cc_e[:, 6] - p_cc)
-        + lsq_qtmat_c_8[:, 7] * (p_cc_e[:, 7] - p_cc)
-        + lsq_qtmat_c_8[:, 8] * (p_cc_e[:, 8] - p_cc)
+        lsq_qtmat_c_8[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_qtmat_c_8[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_qtmat_c_8[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_qtmat_c_8[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_qtmat_c_8[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_qtmat_c_8[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_qtmat_c_8[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_qtmat_c_8[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_qtmat_c_8[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
         - lsq_rmat_utri_c_1 * p_coeff_10
     )
 
-    p_coeff_8 = lsq_rmat_rdiag_c_8 * (
-        lsq_qtmat_c_7[:, 0] * (p_cc_e[:, 0] - p_cc)
-        + lsq_qtmat_c_7[:, 1] * (p_cc_e[:, 1] - p_cc)
-        + lsq_qtmat_c_7[:, 2] * (p_cc_e[:, 2] - p_cc)
-        + lsq_qtmat_c_7[:, 3] * (p_cc_e[:, 3] - p_cc)
-        + lsq_qtmat_c_7[:, 4] * (p_cc_e[:, 4] - p_cc)
-        + lsq_qtmat_c_7[:, 5] * (p_cc_e[:, 5] - p_cc)
-        + lsq_qtmat_c_7[:, 6] * (p_cc_e[:, 6] - p_cc)
-        + lsq_qtmat_c_7[:, 7] * (p_cc_e[:, 7] - p_cc)
-        + lsq_qtmat_c_7[:, 8] * (p_cc_e[:, 8] - p_cc)
+    p_coeff_8 = lsq_rmat_rdiag_c_7 * (
+        lsq_qtmat_c_7[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_qtmat_c_7[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_qtmat_c_7[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_qtmat_c_7[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_qtmat_c_7[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_qtmat_c_7[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_qtmat_c_7[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_qtmat_c_7[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_qtmat_c_7[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
         - (lsq_rmat_utri_c_2 * p_coeff_9 + lsq_rmat_utri_c_3 * p_coeff_10)
     )
 
     p_coeff_7 = lsq_rmat_rdiag_c_6 * (
-        lsq_qtmat_c_6[:, 0] * (p_cc_e[:, 0] - p_cc)
-        + lsq_qtmat_c_6[:, 1] * (p_cc_e[:, 1] - p_cc)
-        + lsq_qtmat_c_6[:, 2] * (p_cc_e[:, 2] - p_cc)
-        + lsq_qtmat_c_6[:, 3] * (p_cc_e[:, 3] - p_cc)
-        + lsq_qtmat_c_6[:, 4] * (p_cc_e[:, 4] - p_cc)
-        + lsq_qtmat_c_6[:, 5] * (p_cc_e[:, 5] - p_cc)
-        + lsq_qtmat_c_6[:, 6] * (p_cc_e[:, 6] - p_cc)
-        + lsq_qtmat_c_6[:, 7] * (p_cc_e[:, 7] - p_cc)
-        + lsq_qtmat_c_6[:, 8] * (p_cc_e[:, 8] - p_cc)
+        lsq_qtmat_c_6[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_qtmat_c_6[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_qtmat_c_6[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_qtmat_c_6[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_qtmat_c_6[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_qtmat_c_6[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_qtmat_c_6[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_qtmat_c_6[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_qtmat_c_6[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
         - (
             lsq_rmat_utri_c_4 * p_coeff_8
             + lsq_rmat_utri_c_5 * p_coeff_9
@@ -297,15 +272,15 @@ def recon_lsq_cell_c_stencil_numpy(
     )
 
     p_coeff_6 = lsq_rmat_rdiag_c_5 * (
-        lsq_qtmat_c_5[:, 0] * (p_cc_e[:, 0] - p_cc)
-        + lsq_qtmat_c_5[:, 1] * (p_cc_e[:, 1] - p_cc)
-        + lsq_qtmat_c_5[:, 2] * (p_cc_e[:, 2] - p_cc)
-        + lsq_qtmat_c_5[:, 3] * (p_cc_e[:, 3] - p_cc)
-        + lsq_qtmat_c_5[:, 4] * (p_cc_e[:, 4] - p_cc)
-        + lsq_qtmat_c_5[:, 5] * (p_cc_e[:, 5] - p_cc)
-        + lsq_qtmat_c_5[:, 6] * (p_cc_e[:, 6] - p_cc)
-        + lsq_qtmat_c_5[:, 7] * (p_cc_e[:, 7] - p_cc)
-        + lsq_qtmat_c_5[:, 8] * (p_cc_e[:, 8] - p_cc)
+        lsq_qtmat_c_5[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_qtmat_c_5[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_qtmat_c_5[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_qtmat_c_5[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_qtmat_c_5[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_qtmat_c_5[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_qtmat_c_5[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_qtmat_c_5[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_qtmat_c_5[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
         - (
             lsq_rmat_utri_c_7 * p_coeff_7
             + lsq_rmat_utri_c_8 * p_coeff_8
@@ -315,15 +290,15 @@ def recon_lsq_cell_c_stencil_numpy(
     )
 
     p_coeff_5 = lsq_rmat_rdiag_c_4 * (
-        lsq_qtmat_c_4[:, 0] * (p_cc_e[:, 0] - p_cc)
-        + lsq_qtmat_c_4[:, 1] * (p_cc_e[:, 1] - p_cc)
-        + lsq_qtmat_c_4[:, 2] * (p_cc_e[:, 2] - p_cc)
-        + lsq_qtmat_c_4[:, 3] * (p_cc_e[:, 3] - p_cc)
-        + lsq_qtmat_c_4[:, 4] * (p_cc_e[:, 4] - p_cc)
-        + lsq_qtmat_c_4[:, 5] * (p_cc_e[:, 5] - p_cc)
-        + lsq_qtmat_c_4[:, 6] * (p_cc_e[:, 6] - p_cc)
-        + lsq_qtmat_c_4[:, 7] * (p_cc_e[:, 7] - p_cc)
-        + lsq_qtmat_c_4[:, 8] * (p_cc_e[:, 8] - p_cc)
+        lsq_qtmat_c_4[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_qtmat_c_4[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_qtmat_c_4[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_qtmat_c_4[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_qtmat_c_4[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_qtmat_c_4[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_qtmat_c_4[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_qtmat_c_4[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_qtmat_c_4[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
         - (
             lsq_rmat_utri_c_11 * p_coeff_6
             + lsq_rmat_utri_c_12 * p_coeff_7
@@ -334,15 +309,15 @@ def recon_lsq_cell_c_stencil_numpy(
     )
 
     p_coeff_4 = lsq_rmat_rdiag_c_3 * (
-        lsq_qtmat_c_3[:, 0] * (p_cc_e[:, 0] - p_cc)
-        + lsq_qtmat_c_3[:, 1] * (p_cc_e[:, 1] - p_cc)
-        + lsq_qtmat_c_3[:, 2] * (p_cc_e[:, 2] - p_cc)
-        + lsq_qtmat_c_3[:, 3] * (p_cc_e[:, 3] - p_cc)
-        + lsq_qtmat_c_3[:, 4] * (p_cc_e[:, 4] - p_cc)
-        + lsq_qtmat_c_3[:, 5] * (p_cc_e[:, 5] - p_cc)
-        + lsq_qtmat_c_3[:, 6] * (p_cc_e[:, 6] - p_cc)
-        + lsq_qtmat_c_3[:, 7] * (p_cc_e[:, 7] - p_cc)
-        + lsq_qtmat_c_3[:, 8] * (p_cc_e[:, 8] - p_cc)
+        lsq_qtmat_c_3[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_qtmat_c_3[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_qtmat_c_3[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_qtmat_c_3[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_qtmat_c_3[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_qtmat_c_3[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_qtmat_c_3[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_qtmat_c_3[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_qtmat_c_3[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
         - (
             lsq_rmat_utri_c_16 * p_coeff_5
             + lsq_rmat_utri_c_17 * p_coeff_6
@@ -354,15 +329,15 @@ def recon_lsq_cell_c_stencil_numpy(
     )
 
     p_coeff_3 = lsq_rmat_rdiag_c_2 * (
-        lsq_qtmat_c_2[:, 0] * (p_cc_e[:, 0] - p_cc)
-        + lsq_qtmat_c_2[:, 1] * (p_cc_e[:, 1] - p_cc)
-        + lsq_qtmat_c_2[:, 2] * (p_cc_e[:, 2] - p_cc)
-        + lsq_qtmat_c_2[:, 3] * (p_cc_e[:, 3] - p_cc)
-        + lsq_qtmat_c_2[:, 4] * (p_cc_e[:, 4] - p_cc)
-        + lsq_qtmat_c_2[:, 5] * (p_cc_e[:, 5] - p_cc)
-        + lsq_qtmat_c_2[:, 6] * (p_cc_e[:, 6] - p_cc)
-        + lsq_qtmat_c_2[:, 7] * (p_cc_e[:, 7] - p_cc)
-        + lsq_qtmat_c_2[:, 8] * (p_cc_e[:, 8] - p_cc)
+        lsq_qtmat_c_2[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_qtmat_c_2[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_qtmat_c_2[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_qtmat_c_2[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_qtmat_c_2[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_qtmat_c_2[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_qtmat_c_2[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_qtmat_c_2[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_qtmat_c_2[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
         - (
             lsq_rmat_utri_c_22 * p_coeff_4
             + lsq_rmat_utri_c_23 * p_coeff_5
@@ -375,15 +350,15 @@ def recon_lsq_cell_c_stencil_numpy(
     )
 
     p_coeff_2 = lsq_rmat_rdiag_c_1 * (
-        lsq_qtmat_c_1[:, 0] * (p_cc_e[:, 0] - p_cc)
-        + lsq_qtmat_c_1[:, 1] * (p_cc_e[:, 1] - p_cc)
-        + lsq_qtmat_c_1[:, 2] * (p_cc_e[:, 2] - p_cc)
-        + lsq_qtmat_c_1[:, 3] * (p_cc_e[:, 3] - p_cc)
-        + lsq_qtmat_c_1[:, 4] * (p_cc_e[:, 4] - p_cc)
-        + lsq_qtmat_c_1[:, 5] * (p_cc_e[:, 5] - p_cc)
-        + lsq_qtmat_c_1[:, 6] * (p_cc_e[:, 6] - p_cc)
-        + lsq_qtmat_c_1[:, 7] * (p_cc_e[:, 7] - p_cc)
-        + lsq_qtmat_c_1[:, 8] * (p_cc_e[:, 8] - p_cc)
+        lsq_qtmat_c_1[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
+        + lsq_qtmat_c_1[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
+        + lsq_qtmat_c_1[:, 2] * (p_cc[c2e2c2e2c[:, 2]] - p_cc)
+        + lsq_qtmat_c_1[:, 3] * (p_cc[c2e2c2e2c[:, 3]] - p_cc)
+        + lsq_qtmat_c_1[:, 4] * (p_cc[c2e2c2e2c[:, 4]] - p_cc)
+        + lsq_qtmat_c_1[:, 5] * (p_cc[c2e2c2e2c[:, 5]] - p_cc)
+        + lsq_qtmat_c_1[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
+        + lsq_qtmat_c_1[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
+        + lsq_qtmat_c_1[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
         - (
             lsq_rmat_utri_c_29 * p_coeff_3
             + lsq_rmat_utri_c_30 * p_coeff_4
@@ -662,7 +637,7 @@ def test_recon_lsq_cell_c_stencil():
         p_coeff_9,
         p_coeff_10,
         offset_provider={
-            "C2E2C2E2C": mesh.get_c2e2c_offset_provider(),
+            "C2E2C2E2C": mesh.get_c2e2c2e2c_offset_provider(),
             "C2CECEC": StridedNeighborOffsetProvider(
                 CellDim, CECECDim, mesh.n_c2e2c2e2c
             ),

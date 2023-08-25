@@ -107,24 +107,6 @@ def _recon_lsq_cell_c_stencil(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-    lsq_rmat_rdiag_c_1 = broadcast(lsq_rmat_rdiag_c_1, (CellDim, KDim))
-    lsq_rmat_rdiag_c_2 = broadcast(lsq_rmat_rdiag_c_2, (CellDim, KDim))
-    lsq_rmat_rdiag_c_3 = broadcast(lsq_rmat_rdiag_c_3, (CellDim, KDim))
-    lsq_rmat_rdiag_c_4 = broadcast(lsq_rmat_rdiag_c_4, (CellDim, KDim))
-    lsq_rmat_rdiag_c_5 = broadcast(lsq_rmat_rdiag_c_5, (CellDim, KDim))
-    lsq_rmat_rdiag_c_6 = broadcast(lsq_rmat_rdiag_c_6, (CellDim, KDim))
-    lsq_rmat_rdiag_c_7 = broadcast(lsq_rmat_rdiag_c_7, (CellDim, KDim))
-    lsq_rmat_rdiag_c_8 = broadcast(lsq_rmat_rdiag_c_8, (CellDim, KDim))
-    lsq_rmat_rdiag_c_9 = broadcast(lsq_rmat_rdiag_c_9, (CellDim, KDim))
-    lsq_qtmat_c_1 = broadcast(lsq_qtmat_c_1, (CECECDim, KDim))
-    lsq_qtmat_c_2 = broadcast(lsq_qtmat_c_2, (CECECDim, KDim))
-    lsq_qtmat_c_3 = broadcast(lsq_qtmat_c_3, (CECECDim, KDim))
-    lsq_qtmat_c_4 = broadcast(lsq_qtmat_c_4, (CECECDim, KDim))
-    lsq_qtmat_c_5 = broadcast(lsq_qtmat_c_5, (CECECDim, KDim))
-    lsq_qtmat_c_6 = broadcast(lsq_qtmat_c_6, (CECECDim, KDim))
-    lsq_qtmat_c_7 = broadcast(lsq_qtmat_c_7, (CECECDim, KDim))
-    lsq_qtmat_c_8 = broadcast(lsq_qtmat_c_8, (CECECDim, KDim))
-    lsq_qtmat_c_9 = broadcast(lsq_qtmat_c_9, (CECECDim, KDim))
 
     p_coeff_10 = lsq_rmat_rdiag_c_9 * (
         lsq_qtmat_c_9(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
