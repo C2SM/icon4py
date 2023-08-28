@@ -31,15 +31,25 @@ class TestMoSolveNonhydroStencil40(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, e_bln_c_s: np.array, z_w_concorr_me: np.array, wgtfacq_c: np.array, **kwargs
+        mesh,
+        e_bln_c_s: np.array,
+        z_w_concorr_me: np.array,
+        wgtfacq_c: np.array,
+        **kwargs,
     ) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_w_concorr_me_offset_1 = np.roll(z_w_concorr_me, shift=1, axis=1)
         z_w_concorr_me_offset_2 = np.roll(z_w_concorr_me, shift=2, axis=1)
         z_w_concorr_me_offset_3 = np.roll(z_w_concorr_me, shift=3, axis=1)
-        z_w_concorr_mc_m1 = np.sum(e_bln_c_s * z_w_concorr_me_offset_1[mesh.c2e], axis=1)
-        z_w_concorr_mc_m2 = np.sum(e_bln_c_s * z_w_concorr_me_offset_2[mesh.c2e], axis=1)
-        z_w_concorr_mc_m3 = np.sum(e_bln_c_s * z_w_concorr_me_offset_3[mesh.c2e], axis=1)
+        z_w_concorr_mc_m1 = np.sum(
+            e_bln_c_s * z_w_concorr_me_offset_1[mesh.c2e], axis=1
+        )
+        z_w_concorr_mc_m2 = np.sum(
+            e_bln_c_s * z_w_concorr_me_offset_2[mesh.c2e], axis=1
+        )
+        z_w_concorr_mc_m3 = np.sum(
+            e_bln_c_s * z_w_concorr_me_offset_3[mesh.c2e], axis=1
+        )
         w_concorr_c = (
             np.roll(wgtfacq_c, shift=1, axis=1) * z_w_concorr_mc_m1
             + np.roll(wgtfacq_c, shift=2, axis=1) * z_w_concorr_mc_m2
