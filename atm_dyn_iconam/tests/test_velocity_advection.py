@@ -118,14 +118,14 @@ def test_velocity_predictor_step(
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
+    ntl1 = sp_v.get_metadata("ntl1").get("ntl1")
+    ntl2 = sp_v.get_metadata("ntl2").get("ntl2")
     scalfac_exdiff = sp_v.scalfac_exdiff()
 
     diagnostic_state = DiagnosticStateNonHydro(
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc=sp_v.ddt_w_adv_pc_before(ntnd),
-        ddt_vn_apc_pc=sp_v.ddt_vn_apc_pc_before(ntnd),
         ntnd=ntnd,
         ntl1=None,
         ntl2=None,
@@ -139,10 +139,10 @@ def test_velocity_predictor_step(
         mass_fl_e=None,
         ddt_vn_phy=None,
         grf_tend_vn=None,
-        ddt_vn_adv_ntl1=None,
-        ddt_vn_adv_ntl2=None,
-        ddt_w_adv_ntl1=None,
-        ddt_w_adv_ntl2=None,
+        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -223,6 +223,7 @@ def test_velocity_predictor_step(
         inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
         inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
         dtime=dtime,
+        ntnd=ntnd,
         tangent_orientation=edge_geometry.tangent_orientation,
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=scalfac_exdiff,
@@ -286,13 +287,13 @@ def test_velocity_predictor_step(
     #stencil 16
     assert dallclose(
         np.asarray(icon_result_ddt_w_adv_pc)[3316:20896,:],
-        np.asarray(diagnostic_state.ddt_w_adv_pc)[3316:20896,:],
+        np.asarray(diagnostic_state.ddt_w_adv_pc[ntnd])[3316:20896,:],
         atol=5.0e-16, rtol=1.0e-10
     )
     # stencil 19 level 0 not verifying
     assert dallclose(
         np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558,0:65],
-        np.asarray(diagnostic_state.ddt_vn_apc_pc)[5387:31558,0:65],
+        np.asarray(diagnostic_state.ddt_vn_apc_pc[ntnd])[5387:31558,0:65],
         atol=1.0e-15,
     )
 

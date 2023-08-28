@@ -252,26 +252,19 @@ def _fused_stencil_14(
     cfl_w_limit: float,
     dtime: float,
 ):
-    local_cfl_clipping = _set_bool_c_k()
-    local_pre_levelmask = _set_bool_c_k()
-    local_vcfl = _set_zero_c_k()
 
     (
         local_cfl_clipping,
-        local_pre_levelmask,
         local_vcfl,
         local_z_w_con_c,
     ) = _mo_velocity_advection_stencil_14(
         ddqz_z_half,
         local_z_w_con_c,
-        local_cfl_clipping,
-        local_pre_levelmask,
-        local_vcfl,
         cfl_w_limit,
         dtime,
     )
 
-    return local_cfl_clipping, local_pre_levelmask, local_vcfl, local_z_w_con_c
+    return local_cfl_clipping, local_vcfl, local_z_w_con_c
 
 
 @program
@@ -279,7 +272,6 @@ def fused_stencil_14(
     local_z_w_con_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     local_cfl_clipping: Field[[CellDim, KDim], bool],
-    local_pre_levelmask: Field[[CellDim, KDim], bool],
     local_vcfl: Field[[CellDim, KDim], float],
     cfl_w_limit: float,
     dtime: float,
@@ -293,7 +285,7 @@ def fused_stencil_14(
         ddqz_z_half,
         cfl_w_limit,
         dtime,
-        out=(local_cfl_clipping, local_pre_levelmask, local_vcfl, local_z_w_con_c),
+        out=(local_cfl_clipping, local_vcfl, local_z_w_con_c),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

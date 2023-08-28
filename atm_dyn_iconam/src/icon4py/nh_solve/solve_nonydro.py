@@ -610,6 +610,7 @@ class SolveNonhydro:
             inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
             inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
             dtime=dtime,
+            ntnd=ntl1,
             tangent_orientation=edge_geometry.tangent_orientation,
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
@@ -1062,7 +1063,7 @@ class SolveNonhydro:
 
         mo_solve_nonhydro_stencil_24.with_backend(run_gtfn)(
             vn_nnow=prognostic_state[nnow].vn,
-            ddt_vn_adv_ntl1=diagnostic_state_nh.ddt_vn_adv_ntl[ntl1],
+            ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[ntl1],
             ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
             z_theta_v_e=z_fields.z_theta_v_e,
             z_gradh_exner=z_fields.z_gradh_exner,
@@ -1215,7 +1216,7 @@ class SolveNonhydro:
         nhsolve_prog.stencils_43_44_45_45b.with_backend(run_gtfn)(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_state[nnow].w,
-            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_ntl[ntl1],
+            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[ntl1],
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,

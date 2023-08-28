@@ -116,8 +116,7 @@ class VelocityAdvection:
         self.zeta = _allocate(VertexDim, KDim, mesh=self.grid)
         self.z_w_con_c_full = _allocate(CellDim, KDim, mesh=self.grid)
         self.cfl_clipping = _allocate(CellDim, KDim, mesh=self.grid, dtype=bool)
-        self.pre_levelmask = _allocate(CellDim, KDim, mesh=self.grid, dtype=bool)
-        self.levelmask = _allocate(KDim, mesh=self.grid, dtype=bool)
+        self.levmask = _allocate(KDim, mesh=self.grid, dtype=bool)
         self.vcfl_dsl = _allocate(CellDim, KDim, mesh=self.grid)
         self.k_field = _allocate_indices(KDim, mesh=self.grid, is_halfdim=True)
 
@@ -132,6 +131,7 @@ class VelocityAdvection:
         inv_dual_edge_length: Field[[EdgeDim], float],
         inv_primal_edge_length: Field[[EdgeDim], float],
         dtime: float,
+        ntnd: int,
         tangent_orientation: Field[[EdgeDim], float],
         cfl_w_limit: float,
         scalfac_exdiff: float,
@@ -346,7 +346,6 @@ class VelocityAdvection:
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
-            local_pre_levelmask=self.pre_levelmask,
             local_vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
@@ -359,8 +358,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        #TODO :@abishekg7 Check if these need bounds
-        self.levelmask = np_as_located_field(KDim)(np.any(self.pre_levelmask,0))
+        self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping,0))
         maxvcfl_dsl = np.max(np.abs(np.where(self.cfl_clipping, self.vcfl_dsl, 0.0)))
 
 
@@ -381,7 +379,7 @@ class VelocityAdvection:
             local_z_w_con_c=self.z_w_con_c,
             coeff1_dwdz=self.metric_state.coeff1_dwdz,
             coeff2_dwdz=self.metric_state.coeff2_dwdz,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
             horizontal_start=indices_4_1,
             horizontal_end=indices_4_2,
             vertical_start=1,
@@ -394,7 +392,7 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
-            levelmask=self.levelmask,
+            levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=owner_mask,
             z_w_con_c=self.z_w_con_c,
@@ -402,7 +400,7 @@ class VelocityAdvection:
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             w=prognostic_state.w,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
@@ -417,7 +415,8 @@ class VelocityAdvection:
             },
         )
 
-        #self.levelmask = np_as_located_field(KDim)(np.any(self.pre_levelmask, 0))
+        # This behaviour needs to change for multiple blocks
+        self.levelmask = self.levmask
 
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
             z_kin_hor_e=z_kin_hor_e,
@@ -430,7 +429,7 @@ class VelocityAdvection:
             z_w_con_c_full=self.z_w_con_c_full,
             vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
+            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
             horizontal_start=indices_5_1,
             horizontal_end=indices_5_2,
             vertical_start=0,
@@ -454,7 +453,7 @@ class VelocityAdvection:
             zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
             vn=prognostic_state.vn,
-            ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
+            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,
@@ -482,6 +481,7 @@ class VelocityAdvection:
         inv_dual_edge_length: Field[[EdgeDim], float],
         inv_primal_edge_length: Field[[EdgeDim], float],
         dtime: float,
+        ntnd: int,
         tangent_orientation: Field[[EdgeDim], float],
         cfl_w_limit: float,
         scalfac_exdiff: float,
@@ -614,7 +614,6 @@ class VelocityAdvection:
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
-            local_pre_levelmask=self.pre_levelmask,
             local_vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
@@ -626,6 +625,9 @@ class VelocityAdvection:
             vertical_end=int32(self.grid.n_lev() - 3),
             offset_provider={},
         )
+
+        self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping,0))
+        maxvcfl_dsl = np.max(np.abs(np.where(self.cfl_clipping, self.vcfl_dsl, 0.0)))
 
         mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
             z_w_con_c=self.z_w_con_c,
@@ -644,7 +646,7 @@ class VelocityAdvection:
             local_z_w_con_c=self.z_w_con_c,
             coeff1_dwdz=self.metric_state.coeff1_dwdz,
             coeff2_dwdz=self.metric_state.coeff2_dwdz,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
             horizontal_start=indices_4_1,
             horizontal_end=indices_4_2,
             vertical_start=1,
@@ -657,7 +659,7 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
-            levelmask=self.levelmask,
+            levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=owner_mask,
             z_w_con_c=self.z_w_con_c,
@@ -665,7 +667,7 @@ class VelocityAdvection:
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             w=prognostic_state.w,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc,
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
@@ -680,6 +682,9 @@ class VelocityAdvection:
             },
         )
 
+        # This behaviour needs to change for multiple blocks
+        self.levelmask = self.levmask
+
         mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
@@ -691,7 +696,7 @@ class VelocityAdvection:
             z_w_con_c_full=self.z_w_con_c_full,
             vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
+            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
             horizontal_start=indices_5_1,
             horizontal_end=indices_5_2,
             vertical_start=0,
@@ -715,7 +720,7 @@ class VelocityAdvection:
             zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
             vn=prognostic_state.vn,
-            ddt_vn_adv=diagnostic_state.ddt_vn_apc_pc,
+            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,

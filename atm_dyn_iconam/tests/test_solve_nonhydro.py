@@ -134,19 +134,15 @@ def test_nonhydro_predictor_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_adv_ntl1=sp_v_exit.ddt_vn_apc_pc(1),
-        ddt_vn_adv_ntl2=sp_v_exit.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v_exit.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v_exit.ddt_w_adv_pc(2), # TODO: @abishekg7 change later
+        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2), # TODO: @abishekg7 change later
         ntl1=ntl1,
         ntl2=ntl2,
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
-        #vt=sp_v_exit.vt(), #sp_v.vt(), #TODO: @abishekg7 change back to sp_v
-        #vn_ie=sp_v_exit.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc=sp_v.ddt_w_adv_pc_before(ntnd),
-        ddt_vn_apc_pc=sp_v.ddt_vn_apc_pc_before(ntnd),
         ntnd=ntnd,
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
@@ -156,8 +152,6 @@ def test_nonhydro_predictor_step(
     prognostic_state_nnow = PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),
-        #w=sp_v_exit.w(),  # sp_v.w(), #TODO: @abishekg7 change back
-        #vn=sp_v_exit.vn(),  # sp_v.vn(),
         exner_pressure=None,
         theta_v=sp.theta_v_now(),
         rho=sp.rho_now(),
@@ -330,22 +324,13 @@ def test_nonhydro_predictor_step(
         rtol=1e-5,
     )
 
-    # assert dallclose(
-    #     np.asarray(sp_exit.z_rho_e())[3777:31558, :], np.asarray(solve_nonhydro.z_rho_e)[3777:31558, :]
-    # )
-    # assert dallclose(
-    #     np.asarray(sp_exit.z_theta_v_e())[3777:31558, :], np.asarray(solve_nonhydro.z_theta_v_e)[3777:31558, :]
-    # )
-
     # mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
-    # assert dallclose(
-    #     np.asarray(sp_exit.z_rho_e_01())[3777:31558, :],
-    #     np.asarray(z_fields.z_rho_e)[3777:31558, :],
-    # )
-    # assert dallclose(
-    #     np.asarray(sp_exit.z_theta_v_e_01())[3777:31558, :],
-    #     np.asarray(z_fields.z_theta_v_e)[3777:31558, :],
-    # )
+    assert dallclose(
+        np.asarray(sp_exit.z_rho_e())[3777:31558, :], np.asarray(z_fields.z_rho_e)[3777:31558, :]
+    )
+    assert dallclose(
+        np.asarray(sp_exit.z_theta_v_e())[3777:31558, :], np.asarray(z_fields.z_theta_v_e)[3777:31558, :]
+    )
 
     # stencils 18,19, 20, 22
     assert dallclose(

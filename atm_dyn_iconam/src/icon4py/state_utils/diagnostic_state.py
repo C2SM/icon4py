@@ -71,8 +71,6 @@ class DiagnosticStateNonHydro:
     w_concorr_c: Field[
         [CellDim, KDim], float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    ddt_w_adv_pc: Field[[CellDim, KDim], float]
-    ddt_vn_apc_pc: Field[[EdgeDim, KDim], float]
     theta_v_ic: Field[[CellDim, KDim], float]
     exner_pr: Field[[CellDim, KDim], float]
     rho_ic: Field[[CellDim, KDim], float]
@@ -83,8 +81,8 @@ class DiagnosticStateNonHydro:
     mass_fl_e: Field[[EdgeDim, KDim], float]
     ddt_vn_phy: Field[[EdgeDim, KDim], float]
     grf_tend_vn: Field[[EdgeDim, KDim], float]
-    ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float]
-    ddt_vn_adv_ntl2: Field[[EdgeDim, KDim], float]
+    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float]
+    ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], float]
     ddt_w_adv_ntl1: Field[[CellDim, KDim], float]
     ddt_w_adv_ntl2: Field[[CellDim, KDim], float]
     ntl1: float
@@ -96,25 +94,14 @@ class DiagnosticStateNonHydro:
     exner_incr: Field[[EdgeDim, KDim], float]  # exner increment [- ]
 
     @property
-    def ddt_vn_adv_ntl(
+    def ddt_vn_apc_pc(
         self,
     ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
-        return (self.ddt_vn_adv_ntl1, self.ddt_vn_adv_ntl2)
+        return (self.ddt_vn_apc_ntl1, self.ddt_vn_apc_ntl2)
 
     @property
-    def ddt_w_adv_ntl(
+    def ddt_w_adv_pc(
         self,
     ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
         return (self.ddt_w_adv_ntl1, self.ddt_w_adv_ntl2)
 
-    # @property
-    # def ddt_w_adv_pc(self) -> LocatedFieldImpl:
-    #     return np_as_located_field(CellDim, KDim)(
-    #         np.asarray(self.ddt_w_adv_pc_before)
-    #     )
-    #
-    # @property
-    # def ddt_vn_apc_pc(self) -> LocatedFieldImpl:
-    #     return np_as_located_field(EdgeDim, KDim)(
-    #         np.asarray(self.ddt_vn_apc_pc_before)
-    #     )

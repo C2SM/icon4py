@@ -954,14 +954,14 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def cfl_w_limit(self) -> float:
         return self.serializer.read("cfl_w_limit", self.savepoint)[0]
 
-    def ddt_vn_apc_pc_before(self, ntnd):
+    def ddt_vn_apc_pc(self, ntnd):
         # return self._get_field("ddt_vn_apc_pc", EdgeDim, KDim)
         buffer = np.squeeze(
             self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float)
         )
         return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
 
-    def ddt_w_adv_pc_before(self, ntnd):
+    def ddt_w_adv_pc(self, ntnd):
         buffer = np.squeeze(
             self.serializer.read("ddt_w_adv_pc", self.savepoint).astype(float)
         )
