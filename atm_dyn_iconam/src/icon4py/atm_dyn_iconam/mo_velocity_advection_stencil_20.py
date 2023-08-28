@@ -30,7 +30,6 @@ from icon4py.common.dimension import (
     CellDim,
     E2C2EODim,
     E2CDim,
-    E2VDim,
     EdgeDim,
     KDim,
     Koff,
@@ -50,7 +49,7 @@ def _mo_velocity_advection_stencil_20(
     zeta: Field[[VertexDim, KDim], float],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
     vn: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv: Field[[EdgeDim, KDim], float],
+    ddt_vn_apc: Field[[EdgeDim, KDim], float],
     cfl_w_limit: float,
     scalfac_exdiff: float,
     dtime: float,
@@ -72,16 +71,16 @@ def _mo_velocity_advection_stencil_20(
         ),
         difcoef,
     )
-    ddt_vn_adv = where(
+    ddt_vn_apc = where(
         (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
-        ddt_vn_adv
-        + difcoef * area_edge * neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
+        ddt_vn_apc
+        + difcoef * area_edge * (neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
         + tangent_orientation
         * inv_primal_edge_length
-        * neighbor_sum(zeta(E2V), axis=E2VDim),
-        ddt_vn_adv,
+        * (zeta(E2V[1]) - zeta(E2V[0]))),
+        ddt_vn_apc,
     )
-    return ddt_vn_adv
+    return ddt_vn_apc
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -96,7 +95,7 @@ def mo_velocity_advection_stencil_20(
     zeta: Field[[VertexDim, KDim], float],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
     vn: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv: Field[[EdgeDim, KDim], float],
+    ddt_vn_apc: Field[[EdgeDim, KDim], float],
     cfl_w_limit: float,
     scalfac_exdiff: float,
     dtime: float,
@@ -116,11 +115,11 @@ def mo_velocity_advection_stencil_20(
         zeta,
         geofac_grdiv,
         vn,
-        ddt_vn_adv,
+        ddt_vn_apc,
         cfl_w_limit,
         scalfac_exdiff,
         dtime,
-        out=ddt_vn_adv,
+        out=ddt_vn_apc,
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
