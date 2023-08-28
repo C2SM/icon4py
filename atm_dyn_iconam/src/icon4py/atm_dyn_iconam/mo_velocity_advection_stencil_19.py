@@ -43,7 +43,7 @@ def _mo_velocity_advection_stencil_19(
     vn_ie: Field[[EdgeDim, KDim], float],
     ddqz_z_full_e: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    ddt_vn_adv = -(
+    ddt_vn_apc = -(
         (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1])) * z_kin_hor_e
         + (
             -coeff_gradekin(E2EC[0]) * z_ekinh(E2C[0])
@@ -54,7 +54,7 @@ def _mo_velocity_advection_stencil_19(
         * (vn_ie - vn_ie(Koff[1]))
         / ddqz_z_full_e
     )
-    return ddt_vn_adv
+    return ddt_vn_apc
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -69,7 +69,7 @@ def mo_velocity_advection_stencil_19(
     z_w_con_c_full: Field[[CellDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
     ddqz_z_full_e: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv: Field[[EdgeDim, KDim], float],
+    ddt_vn_apc: Field[[EdgeDim, KDim], float],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -86,7 +86,7 @@ def mo_velocity_advection_stencil_19(
         z_w_con_c_full,
         vn_ie,
         ddqz_z_full_e,
-        out=ddt_vn_adv,
+        out=ddt_vn_apc,
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
