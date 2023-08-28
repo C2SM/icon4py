@@ -767,10 +767,11 @@ def stencils_42_44_45_45b(
     cpd: float,
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
-    cell_startindex_nudging_plus1: int32,
-    cell_endindex_interior: int32,
     nlev: int32,
-    nlev_k: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _stencils_42_44_45_45b(
         z_w_expl,
@@ -801,8 +802,8 @@ def stencils_42_44_45_45b(
         nlev,
         out=(z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
         domain={
-            CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
-            KDim: (0, nlev_k),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -899,10 +900,11 @@ def stencils_43_44_45_45b(
     cvd: float,
     dtime: float,
     cpd: float,
-    cell_startindex_nudging_plus1: int32,
-    cell_endindex_interior: int32,
     nlev: int32,
-    nlev_k: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _stencils_43_44_45_45b(
         z_w_expl,
@@ -930,8 +932,8 @@ def stencils_43_44_45_45b(
         nlev,
         out=(z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
         domain={
-            CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
-            KDim: (0, nlev_k),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 

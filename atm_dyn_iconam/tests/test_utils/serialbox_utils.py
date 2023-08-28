@@ -382,11 +382,11 @@ class InterpolationSavepoint(IconSavepoint):
 
     def pos_on_tplane_e_x(self):
         field = self._get_field("pos_on_tplane_e_x", EdgeDim, E2CDim)
-        return as_1D_sparse_field(field[:,0:2], ECDim)
+        return as_1D_sparse_field(field[:, 0:2], ECDim)
 
     def pos_on_tplane_e_y(self):
         field = self._get_field("pos_on_tplane_e_y", EdgeDim, E2CDim)
-        return as_1D_sparse_field(field[:,0:2], ECDim)
+        return as_1D_sparse_field(field[:, 0:2], ECDim)
 
     # def pos_on_tplane_e(self, ind):
     #     buffer = np.squeeze(self.serializer.read("pos_on_tplane_e", self.savepoint))
@@ -1347,7 +1347,6 @@ class IconNHFinalExitSavepoint(IconSavepoint):
 
     def theta_v_new(self):
         return self._get_field("x_theta_v", CellDim, KDim)
-
 
 
 class IconSerialDataProvider:

@@ -119,6 +119,9 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_55 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_56_63 import (
     mo_solve_nonhydro_stencil_56_63,
 )
+from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_58 import (
+    mo_solve_nonhydro_stencil_58,
+)
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_59 import (
     mo_solve_nonhydro_stencil_59,
 )
@@ -172,7 +175,7 @@ class NonHydrostaticConfig:
         itime_scheme: int = 4,
         iadv_rhotheta: int = 2,
         igradp_method: int = 3,
-        ndyn_substeps_var: float = 5.0,
+        ndyn_substeps_var: float = 2.0,
         rayleigh_type: int = 2,
         divdamp_order: int = 24,
         idiv_method: int = 1,
@@ -184,8 +187,8 @@ class NonHydrostaticConfig:
         l_open_ubc: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
-        divdamp_fac: float = 0.0025,
-        divdamp_fac_o2: float = 2.0,
+        divdamp_fac: float = 0.004,  # checked for corrector after serialization
+        divdamp_fac_o2: float = 0.032,  # checked for corrector after serialization
         max_nudging_coeff: float = 0.075,
         divdamp_fac2: float = 0.004,
         divdamp_fac3: float = 0.004,
@@ -264,7 +267,7 @@ class NonHydrostaticParams:
         self.grav_o_cpd: Final[float] = constants.GRAV / constants.CPD
 
         # start level for 3D divergence damping terms
-        self.kstart_dd3d: int = 1
+        self.kstart_dd3d: int = 0
 
         # start level for moist physics processes (specified by htop_moist_proc)
         self.kstart_moist: int = 1
@@ -336,7 +339,6 @@ class SolveNonhydro:
             self.jk_start = 1
         else:
             self.jk_start = 0
-
 
         out = enh_smag_fac
         _en_smag_fac_for_zero_nshift(
@@ -597,9 +599,11 @@ class SolveNonhydro:
             ntl1 = 1
             ntl2 = 1
 
-
         velocity_advection.VelocityAdvection(
-            self.grid, self.metric_state_nonhydro, self.interpolation_state, self.vertical_params
+            self.grid,
+            self.metric_state_nonhydro,
+            self.interpolation_state,
+            self.vertical_params,
         ).run_predictor_step(
             vn_only=lvn_only,
             diagnostic_state=diagnostic_state_nh,
@@ -957,8 +961,8 @@ class SolveNonhydro:
                     z_rth_pr_2=self.z_rth_pr_2,
                     z_rho_e=z_fields.z_rho_e,
                     z_theta_v_e=z_fields.z_theta_v_e,
-                    #p_distv_bary_1=self.p_distv_bary_1,
-                    #p_distv_bary_2=self.p_distv_bary_2,
+                    # p_distv_bary_1=self.p_distv_bary_1,
+                    # p_distv_bary_2=self.p_distv_bary_2,
                     horizontal_start=indices_12_1,
                     horizontal_end=indices_12_2,
                     vertical_start=0,
@@ -1193,7 +1197,6 @@ class SolveNonhydro:
                 "Koff": KDim,
             },
         )
-
 
         if config.idiv_method == 1:
             mo_solve_nonhydro_stencil_41.with_backend(run_gtfn)(
@@ -1431,9 +1434,6 @@ class SolveNonhydro:
         edge_geometry: EdgeParams,
         z_fields: ZFields,
         nh_constants: NHConstants,
-        # inv_dual_edge_length: Field[[EdgeDim], float],
-        # inv_primal_edge_length: Field[[EdgeDim], float],
-        # tangent_orientation: Field[[EdgeDim], float],
         prep_adv: PrepAdvection,
         dtime: float,
         nnew: int,
@@ -1466,7 +1466,7 @@ class SolveNonhydro:
             HorizontalMarkerIndex.local(CellDim),
         )
 
-        (indices_0_2, indices_0_3) = self.grid.get_indices_from_to(
+        (indices_0_3, indices_0_4) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
             HorizontalMarkerIndex.local(EdgeDim) - 2,
@@ -1493,7 +1493,7 @@ class SolveNonhydro:
         (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
             CellDim,
             HorizontalMarkerIndex.lateral_boundary(CellDim),
-            HorizontalMarkerIndex.nudging(CellDim) - 1,
+            HorizontalMarkerIndex.nudging(CellDim),
         )
 
         (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
@@ -1532,8 +1532,7 @@ class SolveNonhydro:
             self.z_raylfac,
             offset_provider={},
         )
-        z_raylfac = self.z_raylfac
-        #
+
         mo_solve_nonhydro_stencil_10.with_backend(run_gtfn)(
             w=prognostic_state[nnew].w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1560,19 +1559,18 @@ class SolveNonhydro:
             vertical_end=self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
-        #
-        # if config.l_open_ubc and not self.l_vert_nested:
-        #     raise NotImplementedError("l_open_ubc not implemented")
-        #
-        # stencil 17 verified up to e-9
+
+        if config.l_open_ubc and not self.l_vert_nested:
+            raise NotImplementedError("l_open_ubc not implemented")
+        # verified for e-9
         mo_solve_nonhydro_stencil_17.with_backend(run_gtfn)(
             hmask_dd3d=self.metric_state_nonhydro.hmask_dd3d,
             scalfac_dd3d=self.metric_state_nonhydro.scalfac_dd3d,
             inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
             z_dwdz_dd=z_fields.z_dwdz_dd,
             z_graddiv_vn=z_fields.z_graddiv_vn,
-            horizontal_start=indices_0_2,
-            horizontal_end=indices_0_3,
+            horizontal_start=indices_0_3,
+            horizontal_end=indices_0_4,
             vertical_start=params.kstart_dd3d,
             vertical_end=self.grid.n_lev(),
             offset_provider={
@@ -1580,28 +1578,30 @@ class SolveNonhydro:
             },
         )
 
-        # if config.itime_scheme == 4:
-        #     mo_solve_nonhydro_stencil_23.with_backend(run_gtfn)(
-        #         prognostic_state[nnow].vn,
-        #         diagnostic_state_nh.ddt_vn_adv_ntl[ntl1],
-        #         diagnostic_state_nh.ddt_vn_adv_ntl[ntl2],
-        #         diagnostic_state_nh.ddt_vn_phy,
-        #         self.z_theta_v_e,
-        #         z_fields.z_gradh_exner,
-        #         prognostic_state[nnew].vn,
-        #         dtime,
-        #         self.wgt_nnow_vel,
-        #         self.wgt_nnew_vel,
-        #         constants.CPD,
-        #         horizontal_start=indices_1_1,
-        #         horizontal_end=indices_1_2,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={},
-        #     )
-        #
-        if config.lhdiff_rcf and config.divdamp_order == 24:
-            # stencil 25 verified up to e-9
+        if config.itime_scheme == 4:
+            mo_solve_nonhydro_stencil_23.with_backend(run_gtfn)(
+                vn_nnow=prognostic_state[nnow].vn,
+                ddt_vn_adv_ntl1=diagnostic_state_nh.ddt_vn_adv_ntl[ntl1],
+                ddt_vn_adv_ntl2=diagnostic_state_nh.ddt_vn_adv_ntl[ntl2],
+                ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
+                z_theta_v_e=z_fields.z_theta_v_e,
+                z_gradh_exner=z_fields.z_gradh_exner,
+                vn_nnew=prognostic_state[nnew].vn,
+                dtime=dtime,
+                wgt_nnow_vel=nh_constants.wgt_nnow_vel,
+                wgt_nnew_vel=nh_constants.wgt_nnew_vel,
+                cpd=constants.CPD,
+                horizontal_start=indices_1_1,
+                horizontal_end=indices_1_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={},
+            )
+
+        if config.lhdiff_rcf and (
+            config.divdamp_order == 24 or config.divdamp_order == 4
+        ):
+            # verified for e-10
             mo_solve_nonhydro_stencil_25.with_backend(run_gtfn)(
                 geofac_grdiv=self.interpolation_state.geofac_grdiv,
                 z_graddiv_vn=z_fields.z_graddiv_vn,
@@ -1617,7 +1617,6 @@ class SolveNonhydro:
 
         if config.lhdiff_rcf:
             if config.divdamp_order == 24 and nh_constants.scal_divdamp_o2 > 1.0e-6:
-                # stencil 26 verified but not with prognostic_state[nnew].vn
                 mo_solve_nonhydro_stencil_26.with_backend(run_gtfn)(
                     z_graddiv_vn=z_fields.z_graddiv_vn,
                     vn=prognostic_state[nnew].vn,
@@ -1628,354 +1627,359 @@ class SolveNonhydro:
                     vertical_end=self.grid.n_lev(),
                     offset_provider={},
                 )
-        # TODO: this first if statement does not pass in ICON, verify behavior here later
-        #     if (
-        #         config.divdamp_order == 24
-        #         and config.divdamp_fac_o2 <= 4 * config.divdamp_fac
-        #     ):
-        #         if self.grid.limited_area():
-        #             mo_solve_nonhydro_stencil_27.with_backend(run_gtfn)(
-        #                 scal_divdamp=self.scal_divdamp,
-        #                 bdy_divdamp=bdy_divdamp,
-        #                 nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
-        #                 z_graddiv2_vn=self.z_graddiv2_vn,
-        #                 vn=prognostic_state[nnew].vn,
-        #                 horizontal_start=indices_1_1,
-        #                 horizontal_end=indices_1_2,
-        #                 vertical_start=0,
-        #                 vertical_end=self.grid.n_lev(),
-        #                 offset_provider={},
-        #             )
-        #         else:
-        #             mo_solve_nonhydro_4th_order_divdamp.with_backend(run_gtfn)(
-        #                 scal_divdamp=self.scal_divdamp,
-        #                 z_graddiv2_vn=self.z_graddiv2_vn,
-        #                 vn=prognostic_state[nnew].vn,
-        #                 horizontal_start=indices_1_1,
-        #                 horizontal_end=indices_1_2,
-        #                 vertical_start=0,
-        #                 vertical_end=self.grid.n_lev(),
-        #                 offset_provider={},
-        #             )
-        #
-        # # keep commented out for now
-        # # if config.is_iau_active:
-        # #     mo_solve_nonhydro_stencil_28(
-        # #         diagnostic_state_nh.vn_incr,
-        # #         prognostic_state[nnew].vn,
-        # #         config.iau_wgt_dyn,
-        # #         horizontal_start=edge_startindex_nudging + 1,
-        # #         horizontal_end=edge_endindex_interior,
-        # #         vertical_start=0,
-        # #         vertical_end=self.grid.n_lev(),
-        # #         offset_provider={},
-        # #     )
-        #
-        # mo_solve_nonhydro_stencil_31.with_backend(run_gtfn)(
-        #     e_flx_avg=self.interpolation_state.e_flx_avg,
-        #     vn=prognostic_state[nnew].vn,
-        #     z_vn_avg=self.z_vn_avg,
-        #     horizontal_start=indices_2_1,
-        #     horizontal_end=indices_2_2,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={
-        #         "E2C2EO": self.grid.get_e2c2eo_connectivity(),
-        #     },
-        # )
-        #
-        # ##### COMMUNICATION PHASE
-        #
-        # if config.idiv_method == 1:
-        #     mo_solve_nonhydro_stencil_32.with_backend(run_gtfn)(
-        #         z_rho_e=self.z_rho_e,
-        #         z_vn_avg=self.z_vn_avg,
-        #         ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
-        #         z_theta_v_e=self.z_theta_v_e,
-        #         mass_fl_e=diagnostic_state_nh.mass_fl_e,
-        #         z_theta_v_fl_e=self.z_theta_v_fl_e,
-        #         horizontal_start=indices_2_1,
-        #         horizontal_end=indices_2_2,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={},
-        #     )
-        #
-        #     if lprep_adv:  # Preparations for tracer advection
-        #         if lclean_mflx:
-        #             mo_solve_nonhydro_stencil_33.with_backend(run_gtfn)(
-        #                 vn_traj=prep_adv.vn_traj,
-        #                 mass_flx_me=prep_adv.mass_flx_me,
-        #                 horizontal_start=indices_3_1,
-        #                 horizontal_end=indices_3_2,
-        #                 vertical_start=0,
-        #                 vertical_end=self.grid.n_lev(),
-        #                 offset_provider={},
-        #             )
-        #         mo_solve_nonhydro_stencil_34.with_backend(run_gtfn)(
-        #             z_vn_avg=self.z_vn_avg,
-        #             mass_fl_e=diagnostic_state_nh.mass_fl_e,
-        #             vn_traj=prep_adv.vn_traj,
-        #             mass_flx_me=prep_adv.mass_flx_me,
-        #             r_nsubsteps=r_nsubsteps,
-        #             horizontal_start=indices_2_1,
-        #             horizontal_end=indices_2_2,
-        #             vertical_start=0,
-        #             vertical_end=self.grid.n_lev(),
-        #             offset_provider={},
-        #         )
-        #
-        # if config.idiv_method == 1:
-        #     mo_solve_nonhydro_stencil_41.with_backend(run_gtfn)(
-        #         geofac_div=self.interpolation_state.geofac_div,
-        #         mass_fl_e=diagnostic_state_nh.mass_fl_e,
-        #         z_theta_v_fl_e=self.z_theta_v_fl_e,
-        #         z_flxdiv_mass=self.z_flxdiv_mass,
-        #         z_flxdiv_theta=self.z_flxdiv_theta,
-        #         horizontal_start=indices_5_1,
-        #         horizontal_end=indices_5_2,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={
-        #             "C2E": self.grid.get_c2e_connectivity(),
-        #             "C2CE": self.grid.get_c2ce_connectivity(),
-        #         },
-        #     )
-        #
-        # # if config.itime_scheme == 4:
-        # #     nhsolve_prog.stencils_42_44_45_45b.with_backend(run_gtfn)(
-        # #         self.z_w_expl,
-        # #         prognostic_state[nnow].w,
-        # #         diagnostic_state_nh.ddt_w_adv_ntl[ntl1],
-        # #         diagnostic_state_nh.ddt_w_adv_ntl[ntl2],
-        # #         self.z_th_ddz_exner_c,
-        # #         self.z_contr_w_fl_l,
-        # #         diagnostic_state_nh.rho_ic,
-        # #         diagnostic_state_nh.w_concorr_c,
-        # #         self.metric_state_nonhydro.vwind_expl_wgt,
-        # #         self.z_beta,
-        # #         prognostic_state[nnow].exner,
-        # #         prognostic_state[nnow].rho,
-        # #         prognostic_state[nnow].theta_v,
-        # #         self.metric_state_nonhydro.inv_ddqz_z_full,
-        # #         z_fields.z_alpha,
-        # #         self.metric_state_nonhydro.vwind_impl_wgt,
-        # #         diagnostic_state_nh.theta_v_ic,
-        # #         self.z_q,
-        # #         self.k_field,
-        # #         constants.RD,
-        # #         constants.CVD,
-        # #         dtime,
-        # #         constants.CPD,
-        # #         self.wgt_nnow_vel,
-        # #         self.wgt_nnew_vel,
-        # #         indices_1_1,
-        # #         indices_1_2,
-        # #         self.grid.n_lev(),
-        # #         self.grid.n_lev() + 1,
-        # #         offset_provider={},
-        # #     )
-        # # else:
-        # #     nhsolve_prog.stencils_43_44_45_45b.with_backend(run_gtfn)(
-        # #         self.z_w_expl,
-        # #         prognostic_state[nnow].w,
-        # #         diagnostic_state_nh.ddt_w_adv_ntl[ntl1],
-        # #         self.z_th_ddz_exner_c,
-        # #         self.z_contr_w_fl_l,
-        # #         diagnostic_state_nh.rho_ic,
-        # #         diagnostic_state_nh.w_concorr_c,
-        # #         self.metric_state_nonhydro.vwind_expl_wgt,
-        # #         self.z_beta,
-        # #         prognostic_state[nnow].exner,
-        # #         prognostic_state[nnow].rho,
-        # #         prognostic_state[nnow].theta_v,
-        # #         self.metric_state_nonhydro.inv_ddqz_z_full,
-        # #         z_fields.z_alpha,
-        # #         self.metric_state_nonhydro.vwind_impl_wgt,
-        # #         diagnostic_state_nh.theta_v_ic,
-        # #         self.z_q,
-        # #         self.k_field,
-        # #         constants.RD,
-        # #         constants.CVD,
-        # #         dtime,
-        # #         constants.CPD,
-        # #         indices_5_1,
-        # #         indices_5_2,
-        # #         self.grid.n_lev(),
-        # #         self.grid.n_lev() + 1,
-        # #         offset_provider={},
-        # #     )
-        #
-        # if not config.l_open_ubc and not self.l_vert_nested:
-        #     mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
-        #         w_nnew=prognostic_state[nnew].w,
-        #         z_contr_w_fl_l=self.z_contr_w_fl_l,
-        #         horizontal_start=indices_1_1,
-        #         horizontal_end=indices_1_2,
-        #         vertical_start=0,
-        #         vertical_end=0,
-        #         offset_provider={},
-        #     )
-        #
-        # nhsolve_prog.stencils_47_48_49.with_backend(run_gtfn)(
-        #     w_nnew=prognostic_state[nnew].w,
-        #     z_contr_w_fl_l=self.z_contr_w_fl_l,
-        #     w_concorr_c=diagnostic_state_nh.w_concorr_c,
-        #     z_rho_expl=self.z_rho_expl,
-        #     z_exner_expl=self.z_exner_expl,
-        #     rho_nnow=prognostic_state[nnow].rho,
-        #     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-        #     z_flxdiv_mass=self.z_flxdiv_mass,
-        #     exner_pr=diagnostic_state_nh.exner_pr,
-        #     z_beta=self.z_beta,
-        #     z_flxdiv_theta=self.z_flxdiv_theta,
-        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
-        #     ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
-        #     k_field=self.k_field,
-        #     dtime=dtime,
-        #     cell_startindex_nudging_plus1=indices_1_1,
-        #     cell_endindex_interior=indices_1_2,
-        #     nlev=self.grid.n_lev(),
-        #     nlev_k=self.grid.n_lev() + 1,
-        #     offset_provider={
-        #         "Koff": KDim,
-        #     },
-        # )
-        #
-        # # keep commented out for now
-        # if config.is_iau_active:
-        #     mo_solve_nonhydro_stencil_50(
-        #         self.z_rho_expl,
-        #         self.z_exner_expl,
-        #         diagnostic_state_nh.rho_incr,
-        #         diagnostic_state_nh.exner_incr,
-        #         config.iau_wgt_dyn,
-        #         horizontal_start=cell_startindex_nudging + 1,
-        #         horizontal_end=cell_endindex_interior,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={},
-        #     )
-        #
-        # mo_solve_nonhydro_stencil_52.with_backend(run_gtfn)(
-        #     vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
-        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
-        #     ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
-        #     z_alpha=z_fields.z_alpha,
-        #     z_beta=self.z_beta,
-        #     z_w_expl=self.z_w_expl,
-        #     z_exner_expl=self.z_exner_expl,
-        #     z_q=self.z_q,
-        #     w=prognostic_state[nnew].w,
-        #     dtime=dtime,
-        #     cpd=constants.CPD,
-        #     horizontal_start=indices_1_1,
-        #     horizontal_end=indices_1_2,
-        #     vertical_start=1,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={"Koff": KDim},
-        # )
-        #
-        # mo_solve_nonhydro_stencil_53.with_backend(run_gtfn)(
-        #     z_q=self.z_q,
-        #     w=prognostic_state[nnew].w,
-        #     horizontal_start=indices_1_1,
-        #     horizontal_end=indices_1_2,
-        #     vertical_start=1,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={},
-        # )
-        #
-        # if config.rayleigh_type == constants.RAYLEIGH_KLEMP:
-        #     ## ACC w_1 -> p_nh%w
-        #     mo_solve_nonhydro_stencil_54.with_backend(run_gtfn)(
-        #         z_raylfac=z_raylfac,
-        #         w_1=prognostic_state[nnew].w_1,
-        #         w=prognostic_state[nnew].w,
-        #         horizontal_start=indices_1_1,
-        #         horizontal_end=indices_1_2,
-        #         vertical_start=1,
-        #         vertical_end=int32(
-        #             self.vertical_params.index_of_damping_layer
-        #         ),  # nrdmax
-        #         offset_provider={},
-        #     )
-        #
-        # mo_solve_nonhydro_stencil_55.with_backend(run_gtfn)(
-        #     z_rho_expl=self.z_rho_expl,
-        #     vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
-        #     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-        #     rho_ic=diagnostic_state_nh.rho_ic,
-        #     w=prognostic_state[nnew].w,
-        #     z_exner_expl=self.z_exner_expl,
-        #     exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
-        #     z_alpha=z_fields.z_alpha,
-        #     z_beta=self.z_beta,
-        #     rho_now=prognostic_state[nnow].rho,
-        #     theta_v_now=prognostic_state[nnow].theta_v,
-        #     exner_now=prognostic_state[nnow].exner,
-        #     rho_new=prognostic_state[nnew].rho,
-        #     exner_new=prognostic_state[nnew].exner,
-        #     theta_v_new=prognostic_state[nnew].theta_v,
-        #     dtime=dtime,
-        #     cvd_o_rd=constants.CVD_O_RD,
-        #     horizontal_start=indices_1_1,
-        #     horizontal_end=indices_1_2,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={"Koff": KDim},
-        # )
-        #
-        # if lprep_adv:
-        #     if lclean_mflx:
-        #         set_zero_c_k.with_backend(run_gtfn)(
-        #             field=self.mass_flx_ic,
-        #             horizontal_start=indices_1_1,
-        #             horizontal_end=indices_1_2,
-        #             vertical_start=0,
-        #             vertical_end=self.grid.n_lev(),
-        #             offset_provider={},
-        #         )
-        #
-        # mo_solve_nonhydro_stencil_58.with_backend(run_gtfn)(
-        #     z_contr_w_fl_l=self.z_contr_w_fl_l,
-        #     rho_ic=diagnostic_state_nh.rho_ic,
-        #     vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
-        #     w=prognostic_state[nnew].w,
-        #     mass_flx_ic=self.mass_flx_ic,
-        #     r_nsubsteps=r_nsubsteps,
-        #     horizontal_start=indices_1_1,
-        #     horizontal_end=indices_1_2,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.n_lev(),
-        #     offset_provider={},
-        # )
-        #
-        # if lprep_adv:
-        #     if lclean_mflx:
-        #         set_zero_c_k.with_backend(run_gtfn)(
-        #             field=self.mass_flx_ic,
-        #             horizontal_start=indices_4_1,
-        #             horizontal_end=indices_4_2,
-        #             vertical_start=0,
-        #             vertical_end=self.grid.n_lev() + 1,
-        #             offset_provider={},
-        #         )
-        #
-        #     mo_solve_nonhydro_stencil_65.with_backend(run_gtfn)(
-        #         rho_ic=diagnostic_state_nh.rho_ic,
-        #         vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
-        #         vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
-        #         w_now=prognostic_state[nnow].w,
-        #         w_new=prognostic_state[nnew].w,
-        #         w_concorr_c=diagnostic_state_nh.w_concorr_c,
-        #         mass_flx_ic=self.mass_flx_ic,
-        #         r_nsubsteps=r_nsubsteps,
-        #         horizontal_start=indices_4_1,
-        #         horizontal_end=indices_4_2,
-        #         vertical_start=0,
-        #         vertical_end=self.grid.n_lev(),
-        #         offset_provider={},
-        #     )
+
+            # TODO: this does not get accessed in FORTRAN
+            if (
+                config.divdamp_order == 24
+                and config.divdamp_fac_o2 <= 4 * config.divdamp_fac
+            ):
+                if self.grid.limited_area():
+                    mo_solve_nonhydro_stencil_27.with_backend(run_gtfn)(
+                        scal_divdamp=self.scal_divdamp,
+                        bdy_divdamp=bdy_divdamp,
+                        nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+                        z_graddiv2_vn=self.z_graddiv2_vn,
+                        vn=prognostic_state[nnew].vn,
+                        horizontal_start=indices_1_1,
+                        horizontal_end=indices_1_2,
+                        vertical_start=0,
+                        vertical_end=self.grid.n_lev(),
+                        offset_provider={},
+                    )
+                else:
+                    mo_solve_nonhydro_4th_order_divdamp.with_backend(run_gtfn)(
+                        scal_divdamp=self.scal_divdamp,
+                        z_graddiv2_vn=self.z_graddiv2_vn,
+                        vn=prognostic_state[nnew].vn,
+                        horizontal_start=indices_1_1,
+                        horizontal_end=indices_1_2,
+                        vertical_start=0,
+                        vertical_end=self.grid.n_lev(),
+                        offset_provider={},
+                    )
+
+        # TODO: this does not get accessed in FORTRAN
+        if config.is_iau_active:
+            mo_solve_nonhydro_stencil_28(
+                diagnostic_state_nh.vn_incr,
+                prognostic_state[nnew].vn,
+                config.iau_wgt_dyn,
+                horizontal_start=indices_1_1,
+                horizontal_end=indices_1_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={},
+            )
+
+        mo_solve_nonhydro_stencil_31.with_backend(run_gtfn)(
+            e_flx_avg=self.interpolation_state.e_flx_avg,
+            vn=prognostic_state[nnew].vn,
+            z_vn_avg=self.z_vn_avg,
+            horizontal_start=indices_2_1,
+            horizontal_end=indices_2_2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={
+                "E2C2EO": self.grid.get_e2c2eo_connectivity(),
+            },
+        )
+
+        ##### COMMUNICATION PHASE
+
+        if config.idiv_method == 1:
+            mo_solve_nonhydro_stencil_32.with_backend(run_gtfn)(
+                z_rho_e=z_fields.z_rho_e,
+                z_vn_avg=self.z_vn_avg,
+                ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
+                z_theta_v_e=z_fields.z_theta_v_e,
+                mass_fl_e=diagnostic_state_nh.mass_fl_e,
+                z_theta_v_fl_e=self.z_theta_v_fl_e,
+                horizontal_start=indices_2_1,
+                horizontal_end=indices_2_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={},
+            )
+
+            if lprep_adv:  # Preparations for tracer advection
+                if lclean_mflx:
+                    mo_solve_nonhydro_stencil_33.with_backend(run_gtfn)(
+                        vn_traj=prep_adv.vn_traj,
+                        mass_flx_me=prep_adv.mass_flx_me,
+                        horizontal_start=indices_3_1,
+                        horizontal_end=indices_3_2,
+                        vertical_start=0,
+                        vertical_end=self.grid.n_lev(),
+                        offset_provider={},
+                    )
+
+                mo_solve_nonhydro_stencil_34.with_backend(run_gtfn)(
+                    z_vn_avg=self.z_vn_avg,
+                    mass_fl_e=diagnostic_state_nh.mass_fl_e,
+                    vn_traj=prep_adv.vn_traj,
+                    mass_flx_me=prep_adv.mass_flx_me,
+                    r_nsubsteps=r_nsubsteps,
+                    horizontal_start=indices_2_1,
+                    horizontal_end=indices_2_2,
+                    vertical_start=0,
+                    vertical_end=self.grid.n_lev(),
+                    offset_provider={},
+                )
+
+        if config.idiv_method == 1:
+            # verified for e-9
+            mo_solve_nonhydro_stencil_41.with_backend(run_gtfn)(
+                geofac_div=self.interpolation_state.geofac_div,
+                mass_fl_e=diagnostic_state_nh.mass_fl_e,
+                z_theta_v_fl_e=self.z_theta_v_fl_e,
+                z_flxdiv_mass=self.z_flxdiv_mass,
+                z_flxdiv_theta=self.z_flxdiv_theta,
+                horizontal_start=indices_5_1,
+                horizontal_end=indices_5_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={
+                    "C2E": self.grid.get_c2e_connectivity(),
+                    "C2CE": self.grid.get_c2ce_connectivity(),
+                },
+            )
+
+        if config.itime_scheme == 4:
+            nhsolve_prog.stencils_42_44_45_45b.with_backend(run_gtfn)(
+                z_w_expl=z_fields.z_w_expl,
+                w_nnow=prognostic_state[nnow].w,
+                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_ntl[ntl1],
+                ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_ntl[ntl2],
+                z_th_ddz_exner_c=self.z_th_ddz_exner_c,
+                z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+                rho_ic=diagnostic_state_nh.rho_ic,
+                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
+                z_beta=z_fields.z_beta,
+                exner_nnow=prognostic_state[nnow].exner,
+                rho_nnow=prognostic_state[nnow].rho,
+                theta_v_nnow=prognostic_state[nnow].theta_v,
+                inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                z_alpha=z_fields.z_alpha,
+                vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
+                theta_v_ic=diagnostic_state_nh.theta_v_ic,
+                z_q=z_fields.z_q,
+                k_field=self.k_field,
+                rd=constants.RD,
+                cvd=constants.CVD,
+                dtime=dtime,
+                cpd=constants.CPD,
+                wgt_nnow_vel=nh_constants.wgt_nnow_vel,
+                wgt_nnew_vel=nh_constants.wgt_nnew_vel,
+                nlev=self.grid.n_lev(),
+                horizontal_start=indices_5_1,
+                horizontal_end=indices_5_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev() + 1,
+                offset_provider={},
+            )
+        else:
+            nhsolve_prog.stencils_43_44_45_45b.with_backend(run_gtfn)(
+                z_w_expl=z_fields.z_w_expl,
+                w_nnow=prognostic_state[nnow].w,
+                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_ntl[ntl1],
+                z_th_ddz_exner_c=self.z_th_ddz_exner_c,
+                z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+                rho_ic=diagnostic_state_nh.rho_ic,
+                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
+                z_beta=z_fields.z_beta,
+                exner_nnow=prognostic_state[nnow].exner,
+                rho_nnow=prognostic_state[nnow].rho,
+                theta_v_nnow=prognostic_state[nnow].theta_v,
+                inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                z_alpha=z_fields.z_alpha,
+                vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
+                theta_v_ic=diagnostic_state_nh.theta_v_ic,
+                z_q=z_fields.z_q,
+                k_field=self.k_field,
+                rd=constants.RD,
+                cvd=constants.CVD,
+                dtime=dtime,
+                cpd=constants.CPD,
+                nlev=self.grid.n_lev(),
+                horizontal_start=indices_5_1,
+                horizontal_end=indices_5_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev() + 1,
+                offset_provider={},
+            )
+
+        if not config.l_open_ubc and not self.l_vert_nested:
+            mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
+                w_nnew=prognostic_state[nnew].w,
+                z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+                horizontal_start=indices_5_1,
+                horizontal_end=indices_5_2,
+                vertical_start=0,
+                vertical_end=0,
+                offset_provider={},
+            )
+
+        nhsolve_prog.stencils_47_48_49.with_backend(run_gtfn)(
+            w_nnew=prognostic_state[nnew].w,
+            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+            z_rho_expl=z_fields.z_rho_expl,
+            z_exner_expl=z_fields.z_exner_expl,
+            rho_nnow=prognostic_state[nnow].rho,
+            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+            z_flxdiv_mass=self.z_flxdiv_mass,
+            exner_pr=diagnostic_state_nh.exner_pr,
+            z_beta=z_fields.z_beta,
+            z_flxdiv_theta=self.z_flxdiv_theta,
+            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
+            k_field=self.k_field,
+            dtime=dtime,
+            cell_startindex_nudging_plus1=indices_5_1,
+            cell_endindex_interior=indices_5_2,
+            nlev=self.grid.n_lev(),
+            nlev_k=self.grid.n_lev() + 1,
+            offset_provider={
+                "Koff": KDim,
+            },
+        )
+
+        # TODO: this does not get accessed in FORTRAN
+        if config.is_iau_active:
+            mo_solve_nonhydro_stencil_50(
+                z_rho_expl=z_fields.z_rho_expl,
+                z_exner_expl=z_fields.z_exner_expl,
+                rho_incr=diagnostic_state_nh.rho_incr,
+                exner_incr=diagnostic_state_nh.exner_incr,
+                iau_wgt_dyn=config.iau_wgt_dyn,
+                horizontal_start=indices_5_1,
+                horizontal_end=indices_5_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={},
+            )
+
+        mo_solve_nonhydro_stencil_52.with_backend(run_gtfn)(
+            vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
+            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+            z_alpha=z_fields.z_alpha,
+            z_beta=z_fields.z_beta,
+            z_w_expl=z_fields.z_w_expl,
+            z_exner_expl=z_fields.z_exner_expl,
+            z_q=z_fields.z_q,
+            w=prognostic_state[nnew].w,
+            dtime=dtime,
+            cpd=constants.CPD,
+            horizontal_start=indices_5_1,
+            horizontal_end=indices_5_2,
+            vertical_start=1,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={"Koff": KDim},
+        )
+
+        mo_solve_nonhydro_stencil_53.with_backend(run_gtfn)(
+            z_q=z_fields.z_q,
+            w=prognostic_state[nnew].w,
+            horizontal_start=indices_5_1,
+            horizontal_end=indices_5_2,
+            vertical_start=1,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={},
+        )
+
+        if config.rayleigh_type == constants.RAYLEIGH_KLEMP:
+            ## ACC w_1 -> p_nh%w
+            mo_solve_nonhydro_stencil_54.with_backend(run_gtfn)(
+                z_raylfac=self.z_raylfac,
+                w_1=prognostic_state[nnew].w_1,
+                w=prognostic_state[nnew].w,
+                horizontal_start=indices_5_1,
+                horizontal_end=indices_5_2,
+                vertical_start=1,
+                vertical_end=int32(
+                    self.vertical_params.index_of_damping_layer + 1
+                ),  # +1 since Fortran includes boundaries
+                offset_provider={},
+            )
+
+        mo_solve_nonhydro_stencil_55.with_backend(run_gtfn)(
+            z_rho_expl=z_fields.z_rho_expl,
+            vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
+            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+            rho_ic=diagnostic_state_nh.rho_ic,
+            w=prognostic_state[nnew].w,
+            z_exner_expl=z_fields.z_exner_expl,
+            exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
+            z_alpha=z_fields.z_alpha,
+            z_beta=z_fields.z_beta,
+            rho_now=prognostic_state[nnow].rho,
+            theta_v_now=prognostic_state[nnow].theta_v,
+            exner_now=prognostic_state[nnow].exner,
+            rho_new=prognostic_state[nnew].rho,
+            exner_new=prognostic_state[nnew].exner,
+            theta_v_new=prognostic_state[nnew].theta_v,
+            dtime=dtime,
+            cvd_o_rd=constants.CVD_O_RD,
+            horizontal_start=indices_5_1,
+            horizontal_end=indices_5_2,
+            vertical_start=int32(self.jk_start),
+            vertical_end=self.grid.n_lev(),
+            offset_provider={"Koff": KDim},
+        )
+
+        if lprep_adv:
+            if lclean_mflx:
+                set_zero_c_k.with_backend(run_gtfn)(
+                    field=self.mass_flx_ic,
+                    horizontal_start=indices_5_1,
+                    horizontal_end=indices_5_2,
+                    vertical_start=0,
+                    vertical_end=self.grid.n_lev(),
+                    offset_provider={},
+                )
+
+        mo_solve_nonhydro_stencil_58.with_backend(run_gtfn)(
+            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+            rho_ic=diagnostic_state_nh.rho_ic,
+            vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
+            w=prognostic_state[nnew].w,
+            mass_flx_ic=self.mass_flx_ic,
+            r_nsubsteps=r_nsubsteps,
+            horizontal_start=indices_5_1,
+            horizontal_end=indices_5_2,
+            vertical_start=0,
+            vertical_end=self.grid.n_lev(),
+            offset_provider={},
+        )
+
+        if lprep_adv:
+            if lclean_mflx:
+                set_zero_c_k.with_backend(run_gtfn)(
+                    field=self.mass_flx_ic,
+                    horizontal_start=indices_4_1,
+                    horizontal_end=indices_4_2,
+                    vertical_start=0,
+                    vertical_end=self.grid.n_lev() + 1,
+                    offset_provider={},
+                )
+
+            mo_solve_nonhydro_stencil_65.with_backend(run_gtfn)(
+                rho_ic=diagnostic_state_nh.rho_ic,
+                vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
+                vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
+                w_now=prognostic_state[nnow].w,
+                w_new=prognostic_state[nnew].w,
+                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                mass_flx_ic=self.mass_flx_ic,
+                r_nsubsteps=r_nsubsteps,
+                horizontal_start=indices_4_1,
+                horizontal_end=indices_4_2,
+                vertical_start=0,
+                vertical_end=self.grid.n_lev(),
+                offset_provider={},
+            )
 
         ##### COMMUNICATION PHASE
