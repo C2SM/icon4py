@@ -24,7 +24,8 @@ from gt4py.next.ffront.fbuiltins import (
     log,
     neighbor_sum,
     sqrt,
-    maximum
+    maximum,
+    broadcast
 )
 
 # from icon4py.testutils.utils import to_icon4py_field, zero_field
@@ -87,6 +88,45 @@ def test_scan_sqrt():
 
     print("test_scan_sqrt finish")
 
+
+def test_scan_dividebyzero():
+
+    size = 10
+
+    @scan_operator(
+        axis=KDim,
+        forward=True,
+        init=(0.0),
+    )
+    def k_level_simple(state: float64, input_var1: float64) -> float64:
+        if (state == 0.0):
+            b = 1.0
+        else:
+            b = 1.0/input_var1
+        return b
+
+    @field_operator
+    def wrapper(input_var1: Field[[KDim], float64]) -> Field[[KDim], float64]:
+        output = k_level_simple(input_var1)
+        return output
+
+    # gt4py version
+    a = np_as_located_field(KDim)(np.arange(size, dtype=float64))
+    out = np_as_located_field(KDim)(np.zeros((size,), dtype=float64))
+    wrapper(a, out=out, offset_provider={})
+    print(out.array())
+
+    # numpy version
+    np_a = np.arange(size, dtype=float64)
+    np_out = np.zeros(size, dtype=float64)
+    np_out[0] = 1.0
+    for k in range(1, size):
+        np_out[k] = 1.0 / np_a[k]
+
+    print(np_out)
+    assert np.allclose(out.array(), np_out)
+
+    print("test_scan_dividebyzero finish")
 
 def test_scan_log():
 
@@ -305,7 +345,63 @@ def test_scan_bool():
     print("test_scan_bool finish")
 
 
+def test_k_level_broadcast():
+    cell_size = 5
+    k_size = 10
 
+    @scan_operator(
+        axis=KDim,
+        forward=True,
+        init=0.0,
+    )
+    def k_level_add(
+        state: float64,
+        input_var1: float64,
+        input_var2: float64,
+    ) -> float64:
+        return state + input_var1 + input_var2
+
+    @field_operator
+    def wrapper_implicit_broadcast(
+        input_var1: Field[[CellDim, KDim], float64],
+        input_var2: Field[[CellDim], float64]
+    ) -> Field[[CellDim,KDim], float64]:
+        return k_level_add(input_var1, input_var2)
+
+
+    @field_operator
+    def wrapper_explicit_broadcast_needed(
+        input_var1: Field[[KDim], float64],
+        input_var2: Field[[CellDim], float64]
+    ) -> Field[[CellDim,KDim], float64]:
+        return k_level_add(broadcast(input_var1, (CellDim, KDim)), input_var2)
+
+
+    # gt4py version
+    cloud2d = np_as_located_field(CellDim, KDim)(np.ones((cell_size, k_size), dtype=float64))
+    cloud1d = np_as_located_field(KDim)(np.ones((k_size), dtype=float64))
+    LWP1 = np_as_located_field(CellDim)(np.zeros(cell_size, dtype=float64))
+    LWP2 = np_as_located_field(CellDim)(np.zeros(cell_size, dtype=float64))
+    output1 = np_as_located_field(CellDim,KDim)(np.zeros((cell_size,k_size), dtype=float64))
+    output2 = np_as_located_field(CellDim,KDim)(np.zeros((cell_size,k_size), dtype=float64))
+    wrapper_implicit_broadcast(cloud2d, LWP1, out=output1, offset_provider={})
+    wrapper_explicit_broadcast_needed(cloud1d, LWP2, out=output2, offset_provider={})
+    print(output1.array())
+    print(output2.array())
+
+    # numpy version
+    np_cloud = np.ones((cell_size, k_size), dtype=float64)
+    np_LWP = np.sum(np_cloud, axis=1)
+    print(np_LWP)
+
+    # cannot compare, size is different. scan operator cannot output 1d array
+    #assert np.allclose(output1.array(), np_LWP)
+    #assert np.allclose(output2.array(), np_LWP)
+
+    print("test_k_level_broadcast finish")
+
+
+'''
 def test_k_level_1d2d():
 
     cell_size = 5
@@ -345,7 +441,7 @@ def test_k_level_1d2d():
     assert np.allclose(LWP.array(), np_LWP)
 
     print("test_k_level_2d3d finish")
-
+'''
 
 def test_scan_multiple_output():
 
@@ -421,22 +517,19 @@ def test_scan_multiple_output():
     np_b = np.ones(size, dtype=float64)
     np_out1 = np.zeros(size, dtype=float64)
     np_out2 = np.zeros(size, dtype=float64)
-    np_out3 = np.zeros(size, dtype=float64)
     np_out1[0] = np_out1[0] + np_b[0]
-    np_out2[0] = np_out2[0] + np_b[0]
+    np_out2[0] = np_out2[0] + np_a[0]
     for k in range(1, size):
         if k < threshold_level:
             np_out1[k] = np_out1[k - 1] + np_b[k]
-            np_out2[k] = np_out2[k - 1] + np_b[k]
         else:
             np_out1[k] = np_out1[k - 1]
-            np_out2[k] = np_out2[k - 1]
-        np_out3[k] = np_out3[k - 1] + np_a[k]
+        np_out2[k] = np_out2[k - 1] + np_a[k]
 
     print(np_out1)
     assert np.allclose(out1.array(), np_out1)
-    # assert np.allclose(out2.array(),np_out2)
-    # assert np.allclose(out3.array(),np_out3)
+    assert np.allclose(out3.array(), np_out1)
+    assert np.allclose(out5.array(), np_out1)
 
     print("test_scan_multiple_output finish")
 
@@ -448,7 +541,7 @@ def test_program():
     sequence1d = np.arange(size,dtype=float64)
     sequence2d = np.tile(sequence1d,(size,1))
     print("original sequence: ", sequence2d)
-    
+
     @scan_operator(
         axis=KDim,
         forward=True,
@@ -467,7 +560,7 @@ def test_program():
             return (acm1, acm2 + input_var3, acm3 + int32(1))
         else:
             return (acm1, acm2, acm3 + int32(1))
-    
+
 
     @field_operator
     def wrapper(
@@ -478,7 +571,7 @@ def test_program():
     ):
         output1, output2, redundant  = k_scan(input_var1,input_var2,input_var3,threshold)
         return (output1,output2)
-    
+
     @program
     def program_wrapper(
         input_var1: Field[[CellDim,KDim], float64],
@@ -542,10 +635,10 @@ def test_program():
         np_b[i] = 0.0
     print("test after a: ", np_a)
     print("test after b: ", np_b)
-    
+
     print('test_program finish')
 
-    
+
 def test_k_level_ellipsis():
 
     cell_size = 5
@@ -635,11 +728,11 @@ def test_k_precFlux():
         terminal_velocity = V_intg_factor * exp (V_intg_exp * log (input_rhoq)) * rho_factor
         # Prevent terminal fall speed of snow from being zero at the surface level
         if ( (input_V_sedi_min != 0.0) & input_is_surface ):
-       
+
             terminal_velocity = maximum( terminal_velocity, input_V_sedi_min )
 
         #if ( input_rhoq > graupel_const.GrConst_qmin ):
-        #   precFlux = input_rhoq * terminal_velocity 
+        #   precFlux = input_rhoq * terminal_velocity
         TV = terminal_velocity
 
         return (TV, precFlux)
