@@ -54,6 +54,7 @@ class StencilTransformer(Step):
         else:
             logger.info("Removing fused stencils.")
             self._remove_fused_stencils()
+            self._remove_delete()
 
         return self.parsed
 
@@ -113,3 +114,7 @@ class StencilTransformer(Step):
     def _remove_fused_stencils(self) -> None:
         self.parsed.StartFusedStencil = []
         self.parsed.EndFusedStencil = []
+
+    def _remove_delete(self) -> None:
+        self.parsed.StartDelete = []
+        self.parsed.EndDelete = []
