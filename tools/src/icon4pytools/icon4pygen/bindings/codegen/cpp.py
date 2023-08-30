@@ -465,6 +465,9 @@ class CppDefGenerator(TemplatedGenerator):
         {{ field.name }},
         {%- endif -%}
         {%- endfor -%}
+        {%- for field in _this_node.out_fields -%}
+        {{ field.name }}_{{ k_size_suffix }},
+        {%- endfor -%}
         verticalStart, verticalEnd, horizontalStart, horizontalEnd) ;
         """
     )
