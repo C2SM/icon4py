@@ -18,20 +18,20 @@ from icon4pytools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     EndCreateData,
+    EndDeleteData,
+    EndFusedStencilData,
     EndIfData,
     EndProfileData,
     EndStencilData,
-    EndFusedStencilData,
     FieldAssociationData,
     ImportsData,
     InsertData,
     IntegrationCodeInterface,
     StartCreateData,
+    StartDeleteData,
+    StartFusedStencilData,
     StartProfileData,
     StartStencilData,
-    StartDeleteData,
-    EndDeleteData,
-    StartFusedStencilData,
 )
 
 # TODO: fix tests to adapt to new custom output fields
@@ -93,7 +93,10 @@ def integration_code_interface():
     start_profile_data = StartProfileData(startln=13, name="test_stencil")
     end_profile_data = EndProfileData(startln=14)
     insert_data = InsertData(startln=15, content="print *, 'Hello, World!'")
-    start_fused_stencil_data = StartFusedStencilData(startln=16,name="fused_stencil",acc_present=False,
+    start_fused_stencil_data = StartFusedStencilData(
+        startln=16,
+        name="fused_stencil",
+        acc_present=False,
         fields=[
             FieldAssociationData("scalar1", "scalar1", inp=True, out=False, dims=None),
             FieldAssociationData("inp1", "inp1(:,:,1)", inp=True, out=False, dims=2),
@@ -117,7 +120,7 @@ def integration_code_interface():
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
     )
-    end_fused_stencil_data = EndFusedStencilData(startln=17,name="fused_stencil1")
+    end_fused_stencil_data = EndFusedStencilData(startln=17, name="fused_stencil1")
     start_delete_data = StartDeleteData(startln=18)
     end_delete_data = EndDeleteData(startln=19)
 
@@ -158,7 +161,6 @@ def expected_imports_source():
     return """\
   USE fused_stencil, ONLY: wrap_run_fused_stencil
   USE stencil1, ONLY: wrap_run_stencil1"""
-    # return "  USE fused_stencil, ONLY: wrap_run_fused_stencil\n  USE stencil1, ONLY: wrap_run_stencil1"
 
 
 @pytest.fixture
@@ -285,9 +287,11 @@ def expected_end_fused_stencil_source():
 def expected_start_delete_source():
     return "#ifdef __DSL_VERIFY"
 
+
 @pytest.fixture
 def expected_end_delete_source():
     return "#endif"
+
 
 @pytest.fixture
 def expected_endif_source():
@@ -349,8 +353,11 @@ def test_integration_code_generation(
     assert generated[12].source == expected_end_profile_source
     assert generated[13].source == expected_insert_source
 
-'\n        call wrap_run_fused_stencil( &\n           scalar1=scalar1, &\n           inp1=inp1(:, :, 1), &\n           out1=out1(:, :, 1), &\n           out1_before=out1_before(:, :), &\n           out2=p_nh%prog(nnew)%out2(:, :, 1), &\n           out2_before=out2_before(:, :, 1), &\n           out3=p_nh%prog(nnew)%w(:, :, jb), &\n           out3_before=out3_before(:, :), &\n           out4=p_nh%prog(nnew)%w(:, :, 1, 2), &\n           out4_before=out4_before(:, :, 1), &\n           out5=p_nh%prog(nnew)%w(:, :, :, ntnd), &\n           out5_before=out5_before(:, :, 1), &\n           out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &\n           out6_before=out6_before(:, :, 1), &\n           out1_abs_tol=0.5, &\n           out2_abs_tol=0.2, &\n           vertical_lower=-1, &\n           vertical_upper=-10, &\n           horizontal_lower=1, &\n           horizontal_upper=10)\n\n           !$ACC EXIT DATA DELETE( &\n           !$ACC   out1_before, &\n           !$ACC   out2_before, &\n           !$ACC   out3_before, &\n           !$ACC   out4_before, &\n           !$ACC   out5_before, &\n           !$ACC   out6_before ) &\n           !$ACC      IF ( i_am_accel_node )'# "'\n        call wrap_run_fused_stencil( &\n           scalar1=scalar1, &\n           inp1=inp1(:, :, 1), &\n           out1=out1(:, :, 1), &\n           out1_before=out1_before(:, :), &\n           out2=p_nh%prog(nnew)%out2(:, :, 1), &\n           out2_before=out2_before(:, :, 1), &\n           out3=p_nh%prog(nnew)%w(:, :, jb), &\n           out3_before=out3_before(:, :), &\n           out4=p_nh%prog(nnew)%w(:, :, 1, 2), &\n           out4_before=out4_before(:, :, 1), &\n           out5=p_nh%prog(nnew)%w(:, :, :, ntnd), &\n           out5_before=out5_before(:, :, 1), &\n           out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &\n           out6_before=out6_before(:, :, 1), &\n           out1_abs_tol=0.5, &\n           out2_abs_tol=0.2, &\n           vertical_lower=-1, &\n           vertical_upper=-10, &\n           horizontal_lower=1, &\n           horizontal_upper=10)\n\n           !$ACC EXIT DATA DELETE( &\n           !$ACC   out1_before, &\n           !$ACC   out2_before, &\n           !$ACC   out3_before, &\n           !$ACC   out4_before, &\n           !$ACC   out5_before, &\n           !$ACC   out6_before ) &\n           !$ACC      IF ( i_am_accel_node )"
-'\n        call wrap_run_fused_stencil( &\n           scalar1=scalar1, &\n           inp1=inp1(:, :, 1), &\n           out1=out1(:, :, 1), &\n           out1_before=out1_before(:, :), &\n           out2=p_nh%prog(nnew)%out2(:, :, 1), &\n           out2_before=out2_before(:, :, 1), &\n           out3=p_nh%prog(nnew)%w(:, :, jb), &\n           out3_before=out3_before(:, :), &\n           out4=p_nh%prog(nnew)%w(:, :, 1, 2), &\n           out4_before=out4_before(:, :, 1), &\n           out5=p_nh%prog(nnew)%w(:, :, :, ntnd), &\n           out5_before=out5_before(:, :, 1), &\n           out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &\n           out6_before=out6_before(:, :, 1), &\n           out1_abs_tol=0.5, &\n           out2_abs_tol=0.2, &\n           vertical_lower=-1, &\n           vertical_upper=-10, &\n           horizontal_lower=1, &\n           horizontal_upper=10)\n\n        !$ACC EXIT DATA DELETE( &\n        !$ACC   out1_before, &\n        !$ACC   out2_before, &\n        !$ACC   out3_before, &\n        !$ACC   out4_before, &\n        !$ACC   out5_before, &\n        !$ACC   out6_before ) &\n        !$ACC      IF ( i_am_accel_node )'
+
+"\n        call wrap_run_fused_stencil( &\n           scalar1=scalar1, &\n           inp1=inp1(:, :, 1), &\n           out1=out1(:, :, 1), &\n           out1_before=out1_before(:, :), &\n           out2=p_nh%prog(nnew)%out2(:, :, 1), &\n           out2_before=out2_before(:, :, 1), &\n           out3=p_nh%prog(nnew)%w(:, :, jb), &\n           out3_before=out3_before(:, :), &\n           out4=p_nh%prog(nnew)%w(:, :, 1, 2), &\n           out4_before=out4_before(:, :, 1), &\n           out5=p_nh%prog(nnew)%w(:, :, :, ntnd), &\n           out5_before=out5_before(:, :, 1), &\n           out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &\n           out6_before=out6_before(:, :, 1), &\n           out1_abs_tol=0.5, &\n           out2_abs_tol=0.2, &\n           vertical_lower=-1, &\n           vertical_upper=-10, &\n           horizontal_lower=1, &\n           horizontal_upper=10)\n\n           !$ACC EXIT DATA DELETE( &\n           !$ACC   out1_before, &\n           !$ACC   out2_before, &\n           !$ACC   out3_before, &\n           !$ACC   out4_before, &\n           !$ACC   out5_before, &\n           !$ACC   out6_before ) &\n           !$ACC      IF ( i_am_accel_node )"  # "'\n        call wrap_run_fused_stencil( &\n           scalar1=scalar1, &\n           inp1=inp1(:, :, 1), &\n           out1=out1(:, :, 1), &\n           out1_before=out1_before(:, :), &\n           out2=p_nh%prog(nnew)%out2(:, :, 1), &\n           out2_before=out2_before(:, :, 1), &\n           out3=p_nh%prog(nnew)%w(:, :, jb), &\n           out3_before=out3_before(:, :), &\n           out4=p_nh%prog(nnew)%w(:, :, 1, 2), &\n           out4_before=out4_before(:, :, 1), &\n           out5=p_nh%prog(nnew)%w(:, :, :, ntnd), &\n           out5_before=out5_before(:, :, 1), &\n           out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &\n           out6_before=out6_before(:, :, 1), &\n           out1_abs_tol=0.5, &\n           out2_abs_tol=0.2, &\n           vertical_lower=-1, &\n           vertical_upper=-10, &\n           horizontal_lower=1, &\n           horizontal_upper=10)\n\n           !$ACC EXIT DATA DELETE( &\n           !$ACC   out1_before, &\n           !$ACC   out2_before, &\n           !$ACC   out3_before, &\n           !$ACC   out4_before, &\n           !$ACC   out5_before, &\n           !$ACC   out6_before ) &\n           !$ACC      IF ( i_am_accel_node )"
+"\n        call wrap_run_fused_stencil( &\n           scalar1=scalar1, &\n           inp1=inp1(:, :, 1), &\n           out1=out1(:, :, 1), &\n           out1_before=out1_before(:, :), &\n           out2=p_nh%prog(nnew)%out2(:, :, 1), &\n           out2_before=out2_before(:, :, 1), &\n           out3=p_nh%prog(nnew)%w(:, :, jb), &\n           out3_before=out3_before(:, :), &\n           out4=p_nh%prog(nnew)%w(:, :, 1, 2), &\n           out4_before=out4_before(:, :, 1), &\n           out5=p_nh%prog(nnew)%w(:, :, :, ntnd), &\n           out5_before=out5_before(:, :, 1), &\n           out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &\n           out6_before=out6_before(:, :, 1), &\n           out1_abs_tol=0.5, &\n           out2_abs_tol=0.2, &\n           vertical_lower=-1, &\n           vertical_upper=-10, &\n           horizontal_lower=1, &\n           horizontal_upper=10)\n\n        !$ACC EXIT DATA DELETE( &\n        !$ACC   out1_before, &\n        !$ACC   out2_before, &\n        !$ACC   out3_before, &\n        !$ACC   out4_before, &\n        !$ACC   out5_before, &\n        !$ACC   out6_before ) &\n        !$ACC      IF ( i_am_accel_node )"
+
+
 @pytest.fixture
 def serialisation_code_interface():
     interface = {

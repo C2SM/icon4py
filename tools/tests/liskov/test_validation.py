@@ -24,7 +24,12 @@ from icon4pytools.liskov.parsing.parse import Declare, DirectivesParser, Imports
 from icon4pytools.liskov.parsing.validation import DirectiveSyntaxValidator
 
 from .conftest import insert_new_lines, scan_for_directives
-from .fortran_samples import MULTIPLE_STENCILS, SINGLE_STENCIL_WITH_COMMENTS, MULTIPLE_FUSED, SINGLE_FUSED
+from .fortran_samples import (
+    MULTIPLE_FUSED,
+    MULTIPLE_STENCILS,
+    SINGLE_FUSED,
+    SINGLE_STENCIL_WITH_COMMENTS,
+)
 
 
 @mark.parametrize(
@@ -99,8 +104,14 @@ def test_directive_semantics_validation_repeated_directives(make_f90_tmpfile, di
 @mark.parametrize(
     "stencil, directive",
     [
-        (SINGLE_STENCIL_WITH_COMMENTS,"!$DSL START STENCIL(name=mo_nh_diffusion_stencil_06)\n!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)"),
-        (SINGLE_FUSED,"!$DSL START FUSED STENCIL(name=mo_nh_diffusion_stencil_06)\n!$DSL END FUSED STENCIL(name=mo_nh_diffusion_stencil_06)"),
+        (
+            SINGLE_STENCIL_WITH_COMMENTS,
+            "!$DSL START STENCIL(name=mo_nh_diffusion_stencil_06)\n!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)",
+        ),
+        (
+            SINGLE_FUSED,
+            "!$DSL START FUSED STENCIL(name=mo_nh_diffusion_stencil_06)\n!$DSL END FUSED STENCIL(name=mo_nh_diffusion_stencil_06)",
+        ),
     ],
 )
 def test_directive_semantics_validation_repeated_stencil(make_f90_tmpfile, stencil, directive):
