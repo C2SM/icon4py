@@ -495,13 +495,13 @@ def _predictor_stencils_35_36(
 ]:
     z_w_concorr_me = where(
         # (k_field >= nflatlev_startindex) & (k_field < nlev),
-        k_field >= nflatlev_startindex,
+        k_field >= nflatlev_startindex, #TODO: @abishekg7 does this need to change
         _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         # (k_field >= 1) & (k_field < nlev),
-        k_field >= int32(1),
+        k_field >= int32(1), #TODO: @abishekg7 does this need to change
         _mo_solve_nonhydro_stencil_36(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -619,7 +619,7 @@ def _stencils_39_40(
 ) -> Field[[CellDim, KDim], float]:
     w_concorr_c = where(
         # (k_field >= nflatlev_startindex_plus1) & (k_field < nlev),
-        k_field >= nflatlev_startindex_plus1,
+        k_field >= nflatlev_startindex_plus1, #TODO: @abishekg7 does this need to change
         _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         w_concorr_c,
     )

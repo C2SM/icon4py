@@ -113,9 +113,6 @@ def test_nonhydro_predictor_step(
     recompute = sp_v.get_metadata("recompute").get("recompute")
     dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     linit = sp_v.get_metadata("linit").get("linit")
-    prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
-    )
 
     enh_smag_fac = zero_field(mesh, KDim)
     a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
@@ -139,13 +136,10 @@ def test_nonhydro_predictor_step(
         ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
         ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
         ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2), # TODO: @abishekg7 change later
-        ntl1=ntl1,
-        ntl2=ntl2,
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ntnd=ntnd,
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -208,6 +202,7 @@ def test_nonhydro_predictor_step(
     )
 
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    solve_nonhydro.set_timelevels(nnow, nnew)
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
@@ -240,6 +235,7 @@ def test_nonhydro_predictor_step(
     icon_result_w_concorr_c = sp_exit.w_concorr_c()
     icon_result_mass_fl_e = sp_exit.mass_fl_e()
 
+    # TODO: @abishekg7 remove bounds from asserts?
     # stencils 2, 3
     assert dallclose(
         np.asarray(sp_exit.exner_pr())[1688:20896, :],
@@ -515,7 +511,6 @@ def test_nonhydro_corrector_step(
 ):
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
-    sp_v_exit = savepoint_velocity_exit
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -525,8 +520,6 @@ def test_nonhydro_corrector_step(
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
-    ntl1 = sp.get_metadata("ntl1").get("ntl1")
-    ntl2 = sp.get_metadata("ntl2").get("ntl2")
     mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
@@ -539,8 +532,7 @@ def test_nonhydro_corrector_step(
     a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
-    ntnd = sp_v.get_metadata("ntnd").get("ntnd")
-    nnow = 0
+    nnow = 0  #TODO: @abishekg7 read from serialized data?
     nnew = 1
 
     diagnostic_state_nh = DiagnosticStateNonHydro(
@@ -554,18 +546,13 @@ def test_nonhydro_corrector_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_adv_ntl1=sp_v_exit.ddt_vn_apc_pc(1),
-        ddt_vn_adv_ntl2=sp_v_exit.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v_exit.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v_exit.ddt_w_adv_pc(2),  # TODO: @abishekg7 change later
-        ntl1=ntl1,
-        ntl2=ntl2,
-        vt=sp_v_exit.vt(),  # sp_v.vt(), #TODO: @abishekg7 change back to sp_v
-        vn_ie=sp_v_exit.vn_ie(),
+        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        vt=sp_v.vt(),  # sp_v.vt(), #TODO: @abishekg7 change back to sp_v
+        vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc=sp_v.ddt_w_adv_pc_before(ntnd),
-        ddt_vn_apc_pc=sp_v.ddt_vn_apc_pc_before(ntnd),
-        ntnd=ntnd,
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -637,7 +624,7 @@ def test_nonhydro_corrector_step(
     )
 
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
-
+    solve_nonhydro.set_timelevels(nnow, nnew)
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
@@ -645,20 +632,32 @@ def test_nonhydro_corrector_step(
         params=nonhydro_params,
         edge_geometry=edge_geometry,
         z_fields=z_fields,
-        prep_adv=prep_adv,
-        dtime=dtime,
-        nnew=nnew,
-        nnow=nnow,
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
         owner_mask=sp_d.c_owner_mask(),
+        z_kin_hor_e=sp_v.z_kin_hor_e(),
+        z_vt_ie=sp_v.z_vt_ie(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
+        prep_adv=prep_adv,
+        dtime=dtime,
+        nnew=nnew,
+        nnow=nnow,
         lclean_mflx=clean_mflx,
         nh_constants=nh_constants,
         bdy_divdamp=sp.bdy_divdamp(),
         lprep_adv=lprep_adv,
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.rho_ic()),
+        np.asarray(diagnostic_state_nh.rho_ic),
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.theta_v_ic()),
+        np.asarray(diagnostic_state_nh.theta_v_ic),
     )
 
     assert dallclose(
@@ -677,12 +676,13 @@ def test_nonhydro_corrector_step(
 
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.w_new()),
-        np.asarray(np.asarray(prognostic_state_ls[nnew].w)),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].w)), atol=8e-14
     )
 
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.vn_new()),
         np.asarray(np.asarray(prognostic_state_ls[nnew].vn)),
+        rtol=1e-10
     )
 
     assert dallclose(
@@ -690,12 +690,17 @@ def test_nonhydro_corrector_step(
         np.asarray(np.asarray(prognostic_state_ls[nnew].theta_v)),
     )
 
+    assert dallclose(np.asarray(savepoint_nonhydro_exit.mass_fl_e()),
+                     np.asarray(diagnostic_state_nh.mass_fl_e),
+                     rtol=1e-10)
+
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.mass_flx_me()),
-        np.asarray(prep_adv.mass_flx_me),
+        np.asarray(prep_adv.mass_flx_me), rtol=1e-10
     )
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.vn_traj()), np.asarray(prep_adv.vn_traj)
+        np.asarray(savepoint_nonhydro_exit.vn_traj()), np.asarray(prep_adv.vn_traj),
+        rtol=1e-10
     )
 
 
@@ -769,10 +774,10 @@ def test_run_solve_nonhydro_single_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_adv_ntl1=sp_v_exit.ddt_vn_apc_pc(1),
-        ddt_vn_adv_ntl2=sp_v_exit.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v_exit.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v_exit.ddt_w_adv_pc(2),  # TODO: @abishekg7 change later
+        ddt_vn_adv_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_adv_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),  # TODO: @abishekg7 change later
         ntl1=ntl1,
         ntl2=ntl2,
         vt=sp_v.vt(),
