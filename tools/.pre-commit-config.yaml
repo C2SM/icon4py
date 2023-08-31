@@ -5,7 +5,6 @@
 default_stages: [commit, push]
 default_language_version:
   python: python3.10
-  node: 18.14.2
 minimum_pre_commit_version: 2.20.0
 files: "tools/.*"
 
@@ -70,7 +69,7 @@ repos:
   hooks:
   - id: black
     name: black Python formatter
-    args: [--target-version, py310, --config, tools/pyproject.toml]
+    args: [--config, tools/pyproject.toml]
 
 - repo: https://github.com/asottile/blacken-docs
   rev: v1.12.1
