@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.dycore.calculate_horizontal_gradients_for_turbulen
     calculate_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestCalculateHorizontalGradientsForTurbulence(StencilTest):

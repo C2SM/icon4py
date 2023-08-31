@@ -17,13 +17,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.common.dimension import (
-    E2C2VDim,
-    ECVDim,
-    EdgeDim,
-    KDim,
-    VertexDim,
-)
+from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,

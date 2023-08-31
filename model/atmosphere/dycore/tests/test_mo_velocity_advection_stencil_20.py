@@ -16,14 +16,7 @@ import numpy as np
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
-from icon4py.model.common.dimension import (
-    CellDim,
-    E2C2EODim,
-    E2CDim,
-    EdgeDim,
-    KDim,
-    VertexDim,
-)
+from icon4py.model.common.dimension import CellDim, E2C2EODim, E2CDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import random_field, random_mask
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 

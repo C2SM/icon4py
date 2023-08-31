@@ -14,9 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.calculate_nabla2_of_theta import (
-    calculate_nabla2_of_theta,
-)
+from icon4py.model.atmosphere.dycore.calculate_nabla2_of_theta import calculate_nabla2_of_theta
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
