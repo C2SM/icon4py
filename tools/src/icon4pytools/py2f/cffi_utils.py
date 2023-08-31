@@ -35,10 +35,7 @@ class CffiMethod:
 
     @classmethod
     def register(cls, func):
-        try:
-            cls._registry[func.__module__].append(func.__name__)
-        except KeyError:
-            cls._registry[func.__module__] = [func.__name__]
+        cls._registry.setdefault(func.__module__, []).append(func.__name__)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
