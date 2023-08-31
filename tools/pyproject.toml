@@ -88,6 +88,7 @@ known_third_party = [
   'gt4py',
   'icon4py'
 ]
+#known_tests = ['tests_utils']
 lexicographical = true
 line_length = 100  # It should be the same as in `tool.black.line-length` above
 lines_after_imports = 2
