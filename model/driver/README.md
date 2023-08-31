@@ -1,6 +1,6 @@
 # Dummy driver for Python ICON port
 
-`dycore_driver.py` contains a simple python program to run the experimental ICON python port. So far code mostly draws on serialized ICON data until we increasingly can initialize and run the model by independently.
+`dycore_driver.py` contains a simple python program to run the experimental ICON python port. So far code mostly draws on serialized ICON data until we increasingly can initialize and run the model independently.
 
 It initializes the grid from serialized data from a `mch_ch_r04b09_dsl` run and configures a timeloop functionality based on that configuration.
 
