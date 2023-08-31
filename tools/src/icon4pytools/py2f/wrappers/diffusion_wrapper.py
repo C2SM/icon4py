@@ -11,6 +11,16 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # flake8: noqa
+"""
+Wrapper module for diffusion granule.
+
+Module contains a diffusion_init and diffusion_run function that follow the architecture of
+Fortran granule interfaces:
+- all arguments needed from external sources are passed.
+- passing of scalar types or fields of simple types
+
+
+"""
 import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
@@ -46,16 +56,7 @@ from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelPa
 from icon4pytools.py2f.cffi_utils import CffiMethod, to_fields
 
 
-"""
-Wrapper module for diffusion granule.
 
-Module contains a diffusion_init and diffusion_run function that follow the architecture of
-Fortran granule interfaces:
-- all arguments needed from external sources are passed.
-- passing of scalar types or fields of simple types
-
-
-"""
 # TODO (magdalena) Revise interface architecture with Fortran granules:
 # The module variable to match the Fortran interface: where only fields are passed.
 # We should rather instantiate the object init and return it.
