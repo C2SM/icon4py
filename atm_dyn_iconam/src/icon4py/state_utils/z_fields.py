@@ -35,6 +35,8 @@ class ZFields:
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     z_rho_e: Field[[EdgeDim, KDim], float]
     z_theta_v_e: Field[[EdgeDim, KDim], float]
+    z_kin_hor_e: Field[[EdgeDim, KDim], float]
+    z_vt_ie: Field[[EdgeDim, KDim], float]
     z_graddiv_vn: Field[[EdgeDim, KDim], float]
     z_rho_expl: Field[[CellDim, KDim], float]
     z_dwdz_dd: Field[[CellDim, KDim], float]

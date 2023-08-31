@@ -1333,20 +1333,12 @@ class IconExitSavepoint(IconSavepoint):
 
 
 class IconNHFinalExitSavepoint(IconSavepoint):
-    def theta_v_new_66(self):
-        return self._get_field("x_theta_v_66", CellDim, KDim)
-
-    def exner_new_66(self):
-        return self._get_field("x_exner_66", CellDim, KDim)
-
-    def theta_v_new_67(self):
-        return self._get_field("x_theta_v_67", CellDim, KDim)
-
-    def exner_new_67(self):
-        return self._get_field("x_exner_67", CellDim, KDim)
 
     def theta_v_new(self):
         return self._get_field("x_theta_v", CellDim, KDim)
+
+    def exner_new(self):
+        return self._get_field("x_exner", CellDim, KDim)
 
 
 class IconSerialDataProvider:

@@ -93,9 +93,6 @@ def test_nonhydro_predictor_step(
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
-    sp_v_exit = savepoint_velocity_exit
-    sp_dif = diffusion_savepoint_init
-    sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -103,11 +100,8 @@ def test_nonhydro_predictor_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
         nflatlev=grid_savepoint.nflatlev(),
     )
-    sp_met_nh = metrics_nonhydro_savepoint
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
-    ntl1 = sp.get_metadata("ntl1").get("ntl1")
-    ntl2 = sp.get_metadata("ntl2").get("ntl2")
     mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     recompute = sp_v.get_metadata("recompute").get("recompute")
@@ -176,6 +170,8 @@ def test_nonhydro_predictor_step(
         z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
         z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
         z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
@@ -391,12 +387,12 @@ def test_nonhydro_predictor_step(
 
     # stencil 35,36, 37,38
     assert dallclose(
-        np.asarray(sp_exit.z_vt_ie()), np.asarray(solve_nonhydro.z_vt_ie), atol=2e-14
+        np.asarray(sp_exit.z_vt_ie()), np.asarray(z_fields.z_vt_ie), atol=2e-14
     )
     # stencil 35,36
     assert dallclose(
         np.asarray(sp_exit.z_kin_hor_e())[2538:31558, :],
-        np.asarray(solve_nonhydro.z_kin_hor_e)[2538:31558, :],
+        np.asarray(z_fields.z_kin_hor_e)[2538:31558, :],
         atol=10e-13,
     )
 
@@ -589,6 +585,8 @@ def test_nonhydro_corrector_step(
         z_graddiv_vn=sp.z_graddiv_vn(),
         z_rho_expl=sp.z_rho_expl(),
         z_dwdz_dd=sp.z_dwdz_dd(),
+        z_kin_hor_e=sp_v.z_kin_hor_e(),
+        z_vt_ie=sp_v.z_vt_ie(),
     )
 
     nh_constants = NHConstants(
@@ -636,8 +634,6 @@ def test_nonhydro_corrector_step(
         scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
         owner_mask=sp_d.c_owner_mask(),
-        z_kin_hor_e=sp_v.z_kin_hor_e(),
-        z_vt_ie=sp_v.z_vt_ie(),
         f_e=sp_d.f_e(),
         area_edge=edge_geometry.edge_areas,
         prep_adv=prep_adv,
@@ -707,7 +703,7 @@ def test_nonhydro_corrector_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep, step_date_init, step_date_exit",
-    [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_run_solve_nonhydro_single_step(
     icon_grid,
@@ -727,12 +723,7 @@ def test_run_solve_nonhydro_single_step(
 ):
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
-    sp_exit = savepoint_nonhydro_exit
     sp_step_exit = savepoint_nonhydro_step_exit
-    sp_v_exit = savepoint_velocity_exit
-    sp_dif = diffusion_savepoint_init
-    sp_int = interpolation_savepoint
-    sp_met = metrics_savepoint
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,
@@ -741,11 +732,7 @@ def test_run_solve_nonhydro_single_step(
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
-    ntl1 = sp.get_metadata("ntl1").get("ntl1")
-    ntl2 = sp.get_metadata("ntl2").get("ntl2")
-    ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     mesh = SimpleMesh()
-    sp_met_nh = metrics_nonhydro_savepoint
     dtime = sp_v.get_metadata("dtime").get("dtime")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     r_nsubsteps = sp_d.get_metadata("nsteps").get("nsteps")
@@ -774,20 +761,13 @@ def test_run_solve_nonhydro_single_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_adv_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_adv_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
         ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),  # TODO: @abishekg7 change later
-        ntl1=ntl1,
-        ntl2=ntl2,
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
-        # vt=sp_v_exit.vt(), #sp_v.vt(), #TODO: @abishekg7 change back to sp_v
-        # vn_ie=sp_v_exit.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
-        ddt_w_adv_pc=sp_v.ddt_w_adv_pc_before(ntnd),
-        ddt_vn_apc_pc=sp_v.ddt_vn_apc_pc_before(ntnd),
-        ntnd=ntnd,
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -796,21 +776,19 @@ def test_run_solve_nonhydro_single_step(
     prognostic_state_nnow = PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),
-        # w=sp_v_exit.w(),  # sp_v.w(), #TODO: @abishekg7 change back
-        # vn=sp_v_exit.vn(),  # sp_v.vn(),
         exner_pressure=None,
-        theta_v=sp_exit.theta_v_now(),
-        rho=sp_exit.rho_now(),
-        exner=sp_exit.exner_now(),
+        theta_v=sp.theta_v_now(),
+        rho=sp.rho_now(),
+        exner=sp.exner_now(),
     )
 
     prognostic_state_nnew = PrognosticState(
-        w=sp_exit.w_new(),
-        vn=sp_exit.vn_new(),
+        w=sp.w_new(),
+        vn=sp.vn_new(),
         exner_pressure=None,
-        theta_v=sp_exit.theta_v_new(),
-        rho=sp_exit.rho(),
-        exner=sp_exit.exner_new(),
+        theta_v=sp.theta_v_new(),
+        rho=sp.rho_new(),
+        exner=sp.exner_new(),
     )
 
     z_fields = ZFields(
@@ -826,6 +804,8 @@ def test_run_solve_nonhydro_single_step(
         z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
         z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
         z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
     )
 
     nh_constants = NHConstants(
@@ -891,16 +871,10 @@ def test_run_solve_nonhydro_single_step(
     )
 
     assert dallclose(
-        np.asarray(sp_step_exit.theta_v_new_66()), np.asarray(prognostic_state_nnew.theta_v))
+        np.asarray(sp_step_exit.theta_v_new()), np.asarray(prognostic_state_nnew.theta_v))
 
     assert dallclose(
-        np.asarray(sp_step_exit.exner_new_66()), np.asarray(prognostic_state_nnew.exner))
-
-    assert dallclose(
-        np.asarray(sp_step_exit.theta_v_new_67())[0:3316,:], np.asarray(prognostic_state_nnew.theta_v)[0:3316,:])
-
-    assert dallclose(
-        np.asarray(sp_step_exit.exner_new_67())[0:3316,:], np.asarray(prognostic_state_nnew.exner)[0:3316,:])
+        np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner))
 
 
 @pytest.mark.datatest
