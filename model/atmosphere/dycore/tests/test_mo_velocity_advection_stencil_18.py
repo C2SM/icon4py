@@ -32,7 +32,7 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
     @staticmethod
     def reference(
         mesh,
-        levelmask: np.array,
+        levmask: np.array,
         cfl_clipping: np.array,
         owner_mask: np.array,
         z_w_con_c: np.array,
@@ -46,13 +46,13 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         dtime: float,
         **kwargs,
     ):
-        levelmask = np.expand_dims(levelmask, axis=0)
+        levmask = np.expand_dims(levmask, axis=0)
         owner_mask = np.expand_dims(owner_mask, axis=-1)
         area = np.expand_dims(area, axis=-1)
         geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
 
         difcoef = np.where(
-            (levelmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+            (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
             scalfac_exdiff
             * np.minimum(
                 0.85 - cfl_w_limit * dtime,
@@ -62,7 +62,7 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         )
 
         ddt_w_adv = np.where(
-            (levelmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+            (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
             ddt_w_adv + difcoef * area * np.sum(w[mesh.c2e2cO] * geofac_n2s, axis=1),
             ddt_w_adv,
         )
@@ -71,7 +71,7 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        levelmask = random_mask(mesh, KDim)
+        levmask = random_mask(mesh, KDim)
         cfl_clipping = random_mask(mesh, CellDim, KDim)
         owner_mask = random_mask(mesh, CellDim)
         z_w_con_c = random_field(mesh, CellDim, KDim)
@@ -85,7 +85,7 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         dtime = 2.0
 
         return dict(
-            levelmask=levelmask,
+            levmask=levmask,
             cfl_clipping=cfl_clipping,
             owner_mask=owner_mask,
             z_w_con_c=z_w_con_c,
