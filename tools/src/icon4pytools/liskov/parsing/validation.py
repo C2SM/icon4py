@@ -180,6 +180,30 @@ class DirectiveSemanticsValidator:
                 f"Error in {self.filepath}. Each unique stencil must have a corresponding START STENCIL and END STENCIL directive."
                 f" Errors found in the following stencils: {', '.join(unbalanced_stencils)}"
             )
+        fused_stencil_directives = [
+            d
+            for d in directives
+            if isinstance(
+                d,
+                (
+                    icon4pytools.liskov.parsing.parse.StartFusedStencil,
+                    icon4pytools.liskov.parsing.parse.EndFusedStencil,
+                ),
+            )
+        ]
+        fused_stencil_counts: dict = {}
+        for directive in fused_stencil_directives:
+            fused_stencil_name = self.extract_arg_from_directive(directive.string, "name")
+            fused_stencil_counts[fused_stencil_name] = fused_stencil_counts.get(fused_stencil_name, 0) + (
+                1 if isinstance(directive, icon4pytools.liskov.parsing.parse.StartFusedStencil) else -1
+            )
+
+        unbalanced_fused_stencils = [stencil for stencil, count in fused_stencil_counts.items() if count != 0]
+        if unbalanced_fused_stencils:
+            raise UnbalancedStencilDirectiveError(
+                f"Error in {self.filepath}. Each unique stencil must have a corresponding START STENCIL and END STENCIL directive."
+                f" Errors found in the following stencils: {', '.join(unbalanced_fused_stencils)}"
+            )
 
 
 VALIDATORS: list = [
