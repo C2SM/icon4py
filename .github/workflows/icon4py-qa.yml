@@ -36,7 +36,6 @@ jobs:
                     **/base-requirements-dev.txt
                     **/requirements.txt
                     **/requirements-dev.txt
-
             - name: Install icon4py-common
               working-directory: model/common
               run: |
