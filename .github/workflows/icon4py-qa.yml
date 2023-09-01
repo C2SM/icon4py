@@ -24,7 +24,7 @@ jobs:
     pre-commit-icon4py-model-common:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Set up Python
               uses: actions/setup-python@v4
               with:
@@ -49,7 +49,7 @@ jobs:
     pre-commit-icon4py-model-atmosphere-dycore:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Set up Python
               uses: actions/setup-python@v4
               with:
