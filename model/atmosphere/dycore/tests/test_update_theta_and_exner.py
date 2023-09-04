@@ -14,9 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.update_theta_and_exner import (
-    update_theta_and_exner,
-)
+from icon4py.model.atmosphere.dycore.update_theta_and_exner import update_theta_and_exner
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
