@@ -14,15 +14,9 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.calculate_nabla2_for_w import (
-    calculate_nabla2_for_w,
-)
+from icon4py.model.atmosphere.dycore.calculate_nabla2_for_w import calculate_nabla2_for_w
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestCalculateNabla2ForW(StencilTest):

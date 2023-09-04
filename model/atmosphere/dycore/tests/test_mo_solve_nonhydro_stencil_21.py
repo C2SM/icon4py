@@ -19,11 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_21 import (
     mo_solve_nonhydro_stencil_21,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    flatten_first_two_dims,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import flatten_first_two_dims, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
