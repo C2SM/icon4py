@@ -20,12 +20,14 @@ from icon4pytools.liskov.codegen.integration.deserialise import (
     DeclareDataFactory,
     EndCreateDataFactory,
     EndDeleteDataFactory,
+    EndFusedStencilDataFactory,
     EndIfDataFactory,
     EndProfileDataFactory,
     EndStencilDataFactory,
     ImportsDataFactory,
     InsertDataFactory,
     StartCreateDataFactory,
+    StartDeleteDataFactory,
     StartProfileDataFactory,
     StartStencilDataFactory,
 )
@@ -34,6 +36,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     DeclareData,
     EndCreateData,
     EndDeleteData,
+    EndFusedStencilData,
     EndIfData,
     EndProfileData,
     EndStencilData,
@@ -41,6 +44,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     ImportsData,
     InsertData,
     StartCreateData,
+    StartDeleteData,
     StartProfileData,
 )
 from icon4pytools.liskov.parsing.exceptions import (
@@ -86,11 +90,19 @@ from icon4pytools.liskov.parsing.exceptions import (
             EndProfileData,
         ),
         (
+            StartDeleteDataFactory,
+            ts.StartDelete,
+            "START DELETE",
+            6,
+            6,
+            StartDeleteData,
+        ),
+        (
             EndDeleteDataFactory,
             ts.EndDelete,
             "END DELETE",
-            6,
-            6,
+            7,
+            7,
             EndDeleteData,
         ),
     ],
@@ -135,6 +147,22 @@ def test_data_factories_no_args(factory_class, directive_type, string, startln, 
             {
                 "directives": [ts.EndStencil("END STENCIL(name=foo; noprofile=true)", 5, 5)],
                 "content": {"EndStencil": [{"name": "foo"}]},
+            },
+        ),
+        (
+            EndFusedStencilDataFactory,
+            EndFusedStencilData,
+            {
+                "directives": [
+                    ts.EndFusedStencil("END FUSED STENCIL(name=foo)", 5, 5),
+                    ts.EndFusedStencil("END FUSED STENCIL(name=bar)", 20, 20),
+                ],
+                "content": {
+                    "EndFusedStencil": [
+                        {"name": "foo"},
+                        {"name": "bar"},
+                    ]
+                },
             },
         ),
         (
