@@ -35,7 +35,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
     _STENCIL_PACKAGES = [
         "atmosphere.dycore",
         "atmosphere.diffusion.stencils",
-        "common.interpolation",
+        "common.interpolation.stencils",
     ]
 
     def __init__(self, parsed: IntegrationCodeInterface):
