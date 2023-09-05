@@ -20,9 +20,7 @@ import wget
 def download_and_extract(uri: str, local_path: Path, data_file: str):
     local_path.mkdir(parents=True, exist_ok=True)
     if not any(local_path.iterdir()):
-        print(
-            f"directory {local_path} is empty: downloading data from {uri} and extracting"
-        )
+        print(f"directory {local_path} is empty: downloading data from {uri} and extracting")
         wget.download(uri, out=data_file)
         # extract downloaded file
         if not tarfile.is_tarfile(data_file):

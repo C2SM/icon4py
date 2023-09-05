@@ -28,9 +28,7 @@ import pytest
 
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.interpolation.interpolation_fields import (
-    compute_c_lin_e,
-)
+from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
 
 
 @pytest.mark.datatest

@@ -76,9 +76,7 @@ def download_ser_data(request, processor_props, ranked_data_path):
 
 
 @pytest.fixture(scope="session")
-def data_provider(
-    download_ser_data, datapath, processor_props
-) -> IconSerialDataProvider:
+def data_provider(download_ser_data, datapath, processor_props) -> IconSerialDataProvider:
     return IconSerialDataProvider(
         fname_prefix="icon_pydycore",
         path=str(datapath),

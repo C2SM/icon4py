@@ -1,38 +1,38 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 
 [project]
-name = "icon4py-common"
-description = "Shared code for the icon4py model."
-readme = "README.md"
-requires-python = ">=3.10"
-license = {file = "LICENSE"}
 authors = [
-    {email = "gridtools@cscs.ch"},
-    {name = "ETH Zurich"}
+  {email = "gridtools@cscs.ch"},
+  {name = "ETH Zurich"}
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
-    "Operating System :: POSIX",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Topic :: Scientific/Engineering :: Atmospheric Science",
-    "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Scientific/Engineering :: Physics"
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Operating System :: POSIX",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering :: Atmospheric Science",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-    "gt4py>=1.0.1",
-    "mpi4py<=3.1.4",
-    "pyghex>=0.3.0",
-    "netcdf4>=1.6.0"
+  "gt4py>=1.0.1",
+  "mpi4py<=3.1.4",
+  "pyghex>=0.3.0",
+  "netcdf4>=1.6.0"
 ]
+description = "Shared code for the icon4py model."
 dynamic = ['version']
+license = {file = "LICENSE"}
+name = "icon4py-common"
+readme = "README.md"
+requires-python = ">=3.10"
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
@@ -73,46 +73,46 @@ exclude_lines = [
 ignore_errors = true
 
 [tool.coverage.run]
-parallel = true
 branch = true
+parallel = true
 source_pkgs = ['common']
 
 [tool.isort]
+force_grid_wrap = 0
+include_trailing_comma = true
+known_first_party = ['icon4py.model']
+known_third_party = ['gt4py']
 lexicographical = true
 line_length = 100  # It should be the same as in `tool.black.line-length` above
 lines_after_imports = 2
+multi_line_output = 3
 profile = 'black'
 sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'TESTS', 'LOCALFOLDER']
 skip_gitignore = true
 skip_glob = ['*.venv/**', '_local/**']
-known_first_party = ['icon4py.model']
-known_third_party = ['gt4py']
-multi_line_output = 3
 use_parentheses = true
-include_trailing_comma = true
-force_grid_wrap = 0
 
 [tool.mypy]
-install_types = true
-non_interactive = true
-exclude = [
-    '^tests/*.py',
-]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
+exclude = [
+  '^tests/*.py'
+]
 ignore_missing_imports = false
 implicit_reexport = true
-warn_unused_configs = true
-warn_unused_ignores = true
-warn_redundant_casts = true
+install_types = true
+non_interactive = true
 show_column_numbers = true
 show_error_codes = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
 
 [tool.pytest]
 
 [tool.pytest.ini_options]
-testpaths = 'tests'
 markers = 'datatest: this test uses binary data'
+testpaths = 'tests'
 
 [tool.setuptools.dynamic]
 version = {attr = 'icon4py.model.common.__init__.__version__'}

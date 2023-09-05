@@ -56,7 +56,6 @@ from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelPa
 from icon4pytools.py2f.cffi_utils import CffiMethod, to_fields
 
 
-
 # TODO (magdalena) Revise interface architecture with Fortran granules:
 # The module variable to match the Fortran interface: where only fields are passed.
 # We should rather instantiate the object init and return it.

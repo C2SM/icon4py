@@ -338,9 +338,7 @@ def test_horizontal_edge_markers(icon_grid, start_marker, end_marker, expected_b
         ),
     ],
 )
-def test_horizontal_vertex_markers(
-    icon_grid, start_marker, end_marker, expected_bounds
-):
+def test_horizontal_vertex_markers(icon_grid, start_marker, end_marker, expected_bounds):
     assert (
         icon_grid.get_indices_from_to(
             VertexDim,

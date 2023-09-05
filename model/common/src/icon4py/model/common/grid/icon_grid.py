@@ -19,15 +19,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 from typing_extensions import deprecated
 
-from icon4py.model.common.dimension import (
-    CECDim,
-    CEDim,
-    CellDim,
-    ECVDim,
-    EdgeDim,
-    KDim,
-    VertexDim,
-)
+from icon4py.model.common.dimension import CECDim, CEDim, CellDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
@@ -125,9 +117,7 @@ class IconGrid:
         start_marker to the end of the region given by the end_marker
         """
         if dim.kind != DimensionKind.HORIZONTAL:
-            raise ValueError(
-                "only defined for {} dimension kind ", DimensionKind.HORIZONTAL
-            )
+            raise ValueError("only defined for {} dimension kind ", DimensionKind.HORIZONTAL)
         return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
 
     def get_start_index(self, dim: Dimension, marker: int) -> int32:
@@ -196,9 +186,7 @@ class IconGrid:
         neighbor_axis: Dimension,
     ):
         table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(
-            table, origin_axis, neighbor_axis, table.shape[1]
-        )
+        return NeighborTableOffsetProvider(table, origin_axis, neighbor_axis, table.shape[1])
 
     def get_c2cec_connectivity(self):
         return self._neighbortable_offset_provider_for_1d_sparse_fields(

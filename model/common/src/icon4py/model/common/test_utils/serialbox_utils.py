@@ -43,16 +43,8 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalGridSize,
-)
-from icon4py.model.common.grid.icon_grid import (
-    GridConfig,
-    IconGrid,
-    VerticalGridSize,
-)
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
+from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 
 
@@ -287,9 +279,7 @@ class IconGridSavePoint(IconSavepoint):
                     C2E2CODim: c2e2c0,
                 }
             )
-            .with_connectivities(
-                {E2VDim: self.e2v(), V2EDim: self.v2e(), E2C2VDim: self.e2c2v()}
-            )
+            .with_connectivities({E2VDim: self.e2v(), V2EDim: self.v2e(), E2C2VDim: self.e2c2v()})
         )
         return grid
 
@@ -322,9 +312,9 @@ class InterpolationSavepoint(IconSavepoint):
     def geofac_grg(self):
         grg = np.squeeze(self.serializer.read("geofac_grg", self.savepoint))
         num_cells = self.sizes[CellDim]
-        return np_as_located_field(CellDim, C2E2CODim)(
-            grg[:num_cells, :, 0]
-        ), np_as_located_field(CellDim, C2E2CODim)(grg[:num_cells, :, 1])
+        return np_as_located_field(CellDim, C2E2CODim)(grg[:num_cells, :, 0]), np_as_located_field(
+            CellDim, C2E2CODim
+        )(grg[:num_cells, :, 1])
 
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
@@ -383,9 +373,7 @@ class MetricSavepoint(IconSavepoint):
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef", CellDim)
 
-    def _read_and_reorder_sparse_field(
-        self, name: str, horizontal_dim: Dimension, sparse_size=3
-    ):
+    def _read_and_reorder_sparse_field(self, name: str, horizontal_dim: Dimension, sparse_size=3):
         ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[
             : self.sizes[horizontal_dim], :, :
         ]
@@ -538,9 +526,7 @@ class IconSerialDataProvider:
     def _init_serializer(self, do_print: bool):
         if not self.fname:
             self.log.warning(" WARNING: no filename! closing serializer")
-        self.serializer = ser.Serializer(
-            ser.OpenModeKind.Read, self.file_path, self.fname
-        )
+        self.serializer = ser.Serializer(ser.OpenModeKind.Read, self.file_path, self.fname)
         if do_print:
             self.print_info()
 
@@ -572,14 +558,9 @@ class IconSerialDataProvider:
         date: str,
     ) -> IconDiffusionInitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-diffusion-init"]
-            .linit[linit]
-            .date[date]
-            .as_savepoint()
+            self.serializer.savepoint["call-diffusion-init"].linit[linit].date[date].as_savepoint()
         )
-        return IconDiffusionInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size
-        )
+        return IconDiffusionInitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
         savepoint = self.serializer.savepoint["interpolation_state"].as_savepoint()
@@ -589,15 +570,8 @@ class IconSerialDataProvider:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
         return MetricSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_diffusion_exit(
-        self, linit: bool, date: str
-    ) -> IconDiffusionExitSavepoint:
+    def from_savepoint_diffusion_exit(self, linit: bool, date: str) -> IconDiffusionExitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-diffusion-exit"]
-            .linit[linit]
-            .date[date]
-            .as_savepoint()
+            self.serializer.savepoint["call-diffusion-exit"].linit[linit].date[date].as_savepoint()
         )
-        return IconDiffusionExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size
-        )
+        return IconDiffusionExitSavepoint(savepoint, self.serializer, size=self.grid_size)

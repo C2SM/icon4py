@@ -67,14 +67,10 @@ def test_decomposition_info_masked(
     my_owned = owned[my_rank]
     assert all_indices.shape[0] == my_total
 
-    owned_indices = decomposition_info.global_index(
-        dim, DecompositionInfo.EntryType.OWNED
-    )
+    owned_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.OWNED)
     assert owned_indices.shape[0] == my_owned
 
-    halo_indices = decomposition_info.global_index(
-        dim, DecompositionInfo.EntryType.HALO
-    )
+    halo_indices = decomposition_info.global_index(dim, DecompositionInfo.EntryType.HALO)
     assert halo_indices.shape[0] == my_total - my_owned
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
 
@@ -122,9 +118,7 @@ def test_decomposition_info_local_index(
     assert halo_indices.shape[0] < all_indices.shape[0]
     assert np.alltrue(halo_indices <= np.max(all_indices))
 
-    owned_indices = decomposition_info.local_index(
-        dim, DecompositionInfo.EntryType.OWNED
-    )
+    owned_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.OWNED)
     assert owned_indices.shape[0] == my_owned
     assert owned_indices.shape[0] <= all_indices.shape[0]
     assert np.alltrue(owned_indices <= np.max(all_indices))
@@ -172,15 +166,11 @@ def test_decomposition_info_matches_gridsize(
         == icon_grid.num_cells()
     )
     assert (
-        decomposition_info.global_index(
-            VertexDim, DecompositionInfo.EntryType.ALL
-        ).shape[0]
+        decomposition_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape[0]
         == icon_grid.num_vertices()
     )
     assert (
-        decomposition_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape[
-            0
-        ]
+        decomposition_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape[0]
         == icon_grid.num_edges()
     )
 
