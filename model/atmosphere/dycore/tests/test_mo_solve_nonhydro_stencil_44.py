@@ -40,9 +40,7 @@ class TestMoSolveNonhydroStencil44(StencilTest):
         cvd,
         **kwargs,
     ) -> dict:
-        z_beta = (
-            dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
-        )
+        z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
 
         vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
         z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic

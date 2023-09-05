@@ -26,9 +26,7 @@ class TestMoSolveNonhydroStencil25(StencilTest):
     OUTPUTS = ("z_graddiv2_vn",)
 
     @staticmethod
-    def reference(
-        mesh, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs
-    ) -> np.array:
+    def reference(mesh, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> np.array:
         geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
         z_graddiv2_vn = np.sum(z_graddiv_vn[mesh.e2c2eO] * geofac_grdiv, axis=1)
         return dict(z_graddiv2_vn=z_graddiv2_vn)

@@ -42,9 +42,7 @@ class TestMoSolveNonhydroStencil42(StencilTest):
         **kwargs,
     ) -> tuple[np.array]:
         z_w_expl = w_nnow + dtime * (
-            wgt_nnow_vel * ddt_w_adv_ntl1
-            + wgt_nnew_vel * ddt_w_adv_ntl2
-            - cpd * z_th_ddz_exner_c
+            wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
         )
         vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
         z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)

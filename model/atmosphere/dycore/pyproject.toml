@@ -22,8 +22,8 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-    "gt4py>=1.0.1",
-    "icon4py-common>=0.0.5",
+  "gt4py>=1.0.1",
+  "icon4py-common>=0.0.5"
 ]
 description = "ICON dynamical core."
 dynamic = ['version']
@@ -110,8 +110,8 @@ warn_unused_ignores = true
 [tool.pytest]
 
 [tool.pytest.ini_options]
-testpaths = 'tests'
 markers = 'datatest: this test uses binary data'
+testpaths = 'tests'
 
 [tool.setuptools.dynamic]
 version = {attr = 'icon4py.model.atmosphere.dycore.__init__.__version__'}
