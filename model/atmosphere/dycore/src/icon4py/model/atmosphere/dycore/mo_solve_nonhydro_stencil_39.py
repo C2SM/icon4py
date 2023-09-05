@@ -15,14 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.model.common.dimension import (
-    C2E,
-    C2EDim,
-    CellDim,
-    EdgeDim,
-    KDim,
-    Koff,
-)
+from icon4py.model.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim, Koff
 
 
 @field_operator

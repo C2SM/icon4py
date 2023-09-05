@@ -1,30 +1,22 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel>=0.40.0"]
-build-backend = "setuptools.build_meta"
+build-backend = 'setuptools.build_meta'
+requires = ['setuptools>=61.0', 'wheel>=0.40.0']
 
 [project]
-name = "icon4pytools"
-description = "Tools and utilities for integrating icon4py code into the ICON model."
-readme = "README.md"
-requires-python = ">=3.10"
-license = {file = "LICENSE"}
-authors = [
-    {email = "gridtools@cscs.ch"},
-    {name = "ETH Zurich"}
-]
+authors = [{email = 'gridtools@cscs.ch'}, {name = 'ETH Zurich'}]
 classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
-    "Operating System :: POSIX",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Topic :: Scientific/Engineering :: Atmospheric Science",
-    "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Scientific/Engineering :: Physics"
+  'Development Status :: 3 - Alpha',
+  'Intended Audience :: Science/Research',
+  'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+  'Operating System :: POSIX',
+  'Programming Language :: Python',
+  'Programming Language :: Python :: 3',
+  'Programming Language :: Python :: 3 :: Only',
+  'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: Implementation :: CPython',
+  'Topic :: Scientific/Engineering :: Atmospheric Science',
+  'Topic :: Scientific/Engineering :: Mathematics',
+  'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
     "icon4py-atmosphere-diffusion",
@@ -35,7 +27,12 @@ dependencies = [
     "fprettify>=0.3.7",
     "cffi>=1.5",
 ]
+description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 dynamic = ['version']
+license = {file = 'LICENSE'}
+name = 'icon4pytools'
+readme = 'README.md'
+requires-python = '>=3.10'
 
 [project.scripts]
 icon_liskov = "icon4pytools.liskov.cli:main"
@@ -44,7 +41,7 @@ f2ser = "icon4pytools.f2ser.cli:main"
 py2fgen = "icon4pytools.py2f.py2fgen:main"
 
 [project.urls]
-repository = "https://github.com/C2SM/icon4py"
+repository = 'https://github.com/C2SM/icon4py'
 
 [tool.black]
 exclude = '''
@@ -82,23 +79,34 @@ exclude_lines = [
 ignore_errors = true
 
 [tool.coverage.run]
-parallel = true
 branch = true
+parallel = true
 source_pkgs = ['icon4pytools']
 
 [tool.isort]
+force_grid_wrap = 0
+include_trailing_comma = true
+known_first_party = ['icon4pytools']
+known_third_party = [
+  'gt4py',
+  'icon4py'
+]
+# known_tests = ['tests_utils']
 lexicographical = true
 line_length = 100  # It should be the same as in `tool.black.line-length` above
 lines_after_imports = 2
+multi_line_output = 3
 profile = 'black'
-sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'TESTS', 'LOCALFOLDER']
+sections = [
+  'FUTURE',
+  'STDLIB',
+  'THIRDPARTY',
+  'FIRSTPARTY',
+  'LOCALFOLDER'
+]
 skip_gitignore = true
 skip_glob = ['*.venv/**', '_local/**']
-known_third_party = ['gt4py']
-multi_line_output = 3
 use_parentheses = true
-include_trailing_comma = true
-force_grid_wrap = 0
 
 [tool.mypy]
 install_types = true
@@ -111,13 +119,16 @@ exclude = [
 ]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
+exclude = ['^tests/f2ser/*.py', '^tests/icon4pygen/*.py', '^tests/liskov/*.py']
 ignore_missing_imports = false
 implicit_reexport = true
-warn_unused_configs = true
-warn_unused_ignores = true
-warn_redundant_casts = true
+install_types = true
+non_interactive = true
 show_column_numbers = true
 show_error_codes = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
 
 [tool.pytest]
 
@@ -129,4 +140,3 @@ version = {attr = 'icon4pytools.__init__.__version__'}
 
 [tool.setuptools.package-data]
 'icon4pytools' = ['py.typed']
-

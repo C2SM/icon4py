@@ -80,14 +80,15 @@ source_pkgs = ['common']
 [tool.isort]
 force_grid_wrap = 0
 include_trailing_comma = true
-known_first_party = ['icon4py.model']
+known_first_party = ['icon4py']
 known_third_party = ['gt4py']
+# known_tests = ['tests_utils']
 lexicographical = true
 line_length = 100  # It should be the same as in `tool.black.line-length` above
 lines_after_imports = 2
 multi_line_output = 3
 profile = 'black'
-sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'TESTS', 'LOCALFOLDER']
+sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
 skip_gitignore = true
 skip_glob = ['*.venv/**', '_local/**']
 use_parentheses = true
