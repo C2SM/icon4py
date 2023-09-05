@@ -58,7 +58,7 @@ def test_graupel_Ong_serialized_data():
     initial_date = "2008-09-01T00:00:00.000"
     dates = ("2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000")
     Nblocks = 50 # 121
-    rank = mpi_ranks[5]
+    rank = mpi_ranks[7]
     blocks = tuple(i+1 for i in range(Nblocks))
     print(dates)
     print(blocks)
