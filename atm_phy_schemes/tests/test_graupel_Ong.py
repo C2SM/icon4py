@@ -49,7 +49,7 @@ def test_graupel_Ong_serialized_data():
 
     lpres_pri = True  # TODO: may need to be read from serialized data, default is True. We now manually set to True for debugging
     ldass_lhn = True  # TODO: may need to be read from serialized data, default is False. We now manually set to True for debugging
-    tendency_serialization = False
+    tendency_serialization = True
 
     debug = False
     data_output = False # do you want to output formatted data for further analysis?
@@ -58,7 +58,7 @@ def test_graupel_Ong_serialized_data():
     initial_date = "2008-09-01T00:00:00.000"
     dates = ("2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000")
     Nblocks = 50 # 121
-    rank = mpi_ranks[7]
+    rank = mpi_ranks[5]
     blocks = tuple(i+1 for i in range(Nblocks))
     print(dates)
     print(blocks)
@@ -372,6 +372,8 @@ def test_graupel_Ong_serialized_data():
     print("qc0                    : ", const_data["ser_graupel_qc0"], check_graupel_funcConst.GrFuncConst_qc0)
     print("qi0                    : ", const_data["ser_graupel_qi0"], check_graupel_funcConst.GrFuncConst_qi0)
     print("qnc                    : ", ser_data["ser_graupel_qnc"][0])
+    print("istart                 : ", const_data["ser_graupel_istart"])
+    print("iend                   : ", const_data["ser_graupel_iend"])
     print("kstart_moist           : ", const_data["ser_graupel_kstart_moist"])
     print("kend                   : ", const_data["ser_graupel_kend"])
     print("l_cv                   : ", const_data["ser_graupel_l_cv"])
@@ -419,6 +421,7 @@ def test_graupel_Ong_serialized_data():
 
     print("------------------------------------------------------")
     print()
+
 
     # check whether the tuning parameters are the same. If not, exit the program
     if (const_data["ser_graupel_qc0"] != check_graupel_funcConst.GrFuncConst_qc0):
@@ -704,6 +707,20 @@ def test_graupel_Ong_serialized_data():
                 for k in range(k_size):
                     f.write( "{0:7d} {1:7d}".format(i,k))
                     f.write(" {0:.20e} ".format(ser_field["ser_graupel_dz"].array()[i,k]))
+                    f.write("\n")
+
+        with open(base_dir+'analysis_ser_rho_rank'+str(rank)+'.dat','w') as f:
+            for i in range(cell_size):
+                for k in range(k_size):
+                    f.write( "{0:7d} {1:7d}".format(i,k))
+                    f.write(" {0:.20e} ".format(ser_data["ser_graupel_rho"][i,k]))
+                    f.write("\n")
+
+        with open(base_dir+'analysis_ref_rho_rank'+str(rank)+'.dat','w') as f:
+            for i in range(cell_size):
+                for k in range(k_size):
+                    f.write( "{0:7d} {1:7d}".format(i,k))
+                    f.write(" {0:.20e} ".format(ref_data["ser_graupel_rho"][i,k]))
                     f.write("\n")
 
         with open(base_dir+'analysis_predict_rank'+str(rank)+'.dat','w') as f:

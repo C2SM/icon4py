@@ -803,7 +803,6 @@ def _graupel_scan(
     else:
         rhoqsV = 0.0
 
-    #Vnew_s = Vnew_s_kup
     if ( is_top ):
         Vnew_s = 0.0
     else:
@@ -832,7 +831,6 @@ def _graupel_scan(
     else:
         rhoqrV = 0.0
 
-    #Vnew_r = Vnew_r_kup
     if ( is_top ):
         Vnew_r = 0.0
     else:
@@ -840,12 +838,10 @@ def _graupel_scan(
             Vnew_r = 0.0
         else:
             Vnew_r = graupel_const.GrConst_vz0r * exp(graupel_const.GrConst_vzxp * log((qr_kup + qr) * 0.5 * rho_kup)) * Crho1o2_kup
-            #Vnew_r = 0.0
 
     if ( (Vnew_r == 0.0) & llqr ):
         # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
         Vnew_r = terminal_velocity * graupel_const.GrConst_vzxp_ln1o2
-        #Vnew_r = 0.0
 
     # Prevent terminal fall speeds of precip hydrometeors from being zero at the surface level
     if (is_surface): Vnew_r = maximum( Vnew_r, graupel_const.GrConst_v_sedi_rain_min )
@@ -863,7 +859,6 @@ def _graupel_scan(
     else:
         rhoqgV = 0.0
 
-    #Vnew_g = Vnew_g_kup
     if ( is_top ):
         Vnew_g = 0.0
     else:
@@ -882,6 +877,7 @@ def _graupel_scan(
     #-------------------------------------------------------------------------
     # qi_sedi:
     #-------------------------------------------------------------------------
+
     terminal_velocity = graupel_const.GrConst_vz0i * exp (graupel_const.GrConst_bvi * log (rhoqi)) * Crhofac_qi
 
     if (llqi):
@@ -890,7 +886,6 @@ def _graupel_scan(
         rhoqiV = 0.0
 
     # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
-    #Vnew_i = Vnew_i_kup
     if ( is_top ):
         Vnew_i = 0.0
     else:
@@ -1112,8 +1107,8 @@ def _graupel_scan(
     # Description:
     #   This subroutine computes the rate of autoconversion and accretion by rain.
     #
-    #   Method 1: iautocon = 1, Kessler (1969)
-    #   Method 2: iautocon = 2, Seifert and beheng (2001)
+    #   Method 1: iautocon = 0, Kessler (1969)
+    #   Method 2: iautocon = 1, Seifert and beheng (2001)
     #
     #------------------------------------------------------------------------------
 
