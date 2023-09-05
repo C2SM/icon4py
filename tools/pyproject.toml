@@ -19,13 +19,13 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
-    "icon4py-atmosphere-diffusion",
-    "icon4py-atmosphere-dycore",
-    "gt4py>=1.0.1",
-    "icon4py-common",
-    "tabulate>=0.8.9",
-    "fprettify>=0.3.7",
-    "cffi>=1.5",
+  "icon4py-atmosphere-diffusion",
+  "icon4py-atmosphere-dycore",
+  "gt4py>=1.0.1",
+  "icon4py-common",
+  "tabulate>=0.8.9",
+  "fprettify>=0.3.7",
+  "cffi>=1.5"
 ]
 description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 dynamic = ['version']
@@ -35,9 +35,9 @@ readme = 'README.md'
 requires-python = '>=3.10'
 
 [project.scripts]
-icon_liskov = "icon4pytools.liskov.cli:main"
-icon4pygen = "icon4pytools.icon4pygen.cli:main"
 f2ser = "icon4pytools.f2ser.cli:main"
+icon4pygen = "icon4pytools.icon4pygen.cli:main"
+icon_liskov = "icon4pytools.liskov.cli:main"
 py2fgen = "icon4pytools.py2f.py2fgen:main"
 
 [project.urls]
@@ -109,17 +109,14 @@ skip_glob = ['*.venv/**', '_local/**']
 use_parentheses = true
 
 [tool.mypy]
-install_types = true
-non_interactive = true
-exclude = [
-    '^tests/f2ser/*.py',
-    '^tests/icon4pygen/*.py',
-    '^tests/liskov/*.py',
-    '^tests/py2f/*.py',
-]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
-exclude = ['^tests/f2ser/*.py', '^tests/icon4pygen/*.py', '^tests/liskov/*.py']
+exclude = [
+  '^tests/f2ser/*.py',
+  '^tests/icon4pygen/*.py',
+  '^tests/liskov/*.py',
+  '^tests/py2f/*.py'
+]
 ignore_missing_imports = false
 implicit_reexport = true
 install_types = true
