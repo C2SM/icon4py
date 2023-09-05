@@ -28,6 +28,7 @@ from icon4pytools.liskov.codegen.integration.deserialise import (
     InsertDataFactory,
     StartCreateDataFactory,
     StartDeleteDataFactory,
+    StartFusedStencilDataFactory,
     StartProfileDataFactory,
     StartStencilDataFactory,
 )
@@ -370,3 +371,12 @@ class TestStartStencilFactory(unittest.TestCase):
         # Test that fields are not updated if named_args does not contain any tolerances.
         named_args = {}
         assert self.factory._update_tolerances(named_args, self.mock_fields) == self.mock_fields
+
+
+class TestStartFusedStencilFactory(TestStartStencilFactory):
+    def setUp(self):
+        self.factory = StartFusedStencilDataFactory()
+        self.mock_fields = [
+            FieldAssociationData("x", "i", 3),
+            FieldAssociationData("y", "i", 3),
+        ]
