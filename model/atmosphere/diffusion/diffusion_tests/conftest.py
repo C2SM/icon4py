@@ -13,10 +13,7 @@
 
 import pytest
 
-from icon4py.model.atmosphere.diffusion.diffusion import (
-    DiffusionConfig,
-    DiffusionType,
-)
+from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     backend,
     damping_height,

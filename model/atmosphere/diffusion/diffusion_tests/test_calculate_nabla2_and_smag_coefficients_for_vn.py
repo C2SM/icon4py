@@ -17,13 +17,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.common.dimension import (
-    E2C2VDim,
-    ECVDim,
-    EdgeDim,
-    KDim,
-    VertexDim,
-)
+from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -117,9 +111,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
             + v_vert_e2c2v[:, 3] * primal_normal_vert_y[:, 3]
         )
 
-        kh_smag_2 = (kh_smag_2 * inv_vert_vert_length) - (
-            dvt_tang * inv_primal_edge_length
-        )
+        kh_smag_2 = (kh_smag_2 * inv_vert_vert_length) - (dvt_tang * inv_primal_edge_length)
 
         kh_smag_2 = kh_smag_2 * kh_smag_2
 

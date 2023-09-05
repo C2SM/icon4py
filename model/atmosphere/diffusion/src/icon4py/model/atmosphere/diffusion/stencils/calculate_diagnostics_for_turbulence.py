@@ -38,6 +38,4 @@ def calculate_diagnostics_for_turbulence(
     div_ic: Field[[CellDim, KDim], float],
     hdef_ic: Field[[CellDim, KDim], float],
 ):
-    _calculate_diagnostics_for_turbulence(
-        div, kh_c, wgtfac_c, out=(div_ic[:, 1:], hdef_ic[:, 1:])
-    )
+    _calculate_diagnostics_for_turbulence(div, kh_c, wgtfac_c, out=(div_ic[:, 1:], hdef_ic[:, 1:]))
