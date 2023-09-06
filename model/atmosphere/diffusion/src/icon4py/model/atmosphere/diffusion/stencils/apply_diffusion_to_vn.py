@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 
@@ -91,7 +91,7 @@ def _apply_diffusion_to_vn(
     return vn
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_diffusion_to_vn(
     u_vert: Field[[VertexDim, KDim], float],
     v_vert: Field[[VertexDim, KDim], float],
@@ -109,11 +109,11 @@ def apply_diffusion_to_vn(
     nudgezone_diff: float,
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
+    limited_area: bool,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
-    limited_area: bool,
 ):
     _apply_diffusion_to_vn(
         u_vert,
