@@ -1,4 +1,5 @@
 -r ../../base-requirements-dev.txt
 -e ../common
--e ../atmosphere
+-e ../atmosphere/diffusion
+-e ../atmosphere/dycore
 -e .
