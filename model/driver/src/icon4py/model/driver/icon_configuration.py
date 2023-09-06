@@ -14,7 +14,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig
+from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 
 
 n_substeps_reduced = 2
@@ -46,7 +46,7 @@ def read_config(experiment: Optional[str], n_time_steps: int) -> IconConfig:
 
     def mch_ch_r04b09_diffusion_config():
         return DiffusionConfig(
-            diffusion_type=5,
+            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             n_substeps=n_substeps_reduced,
             hdiff_vn=True,
