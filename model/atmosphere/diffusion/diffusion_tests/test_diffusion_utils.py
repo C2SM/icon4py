@@ -27,18 +27,11 @@ from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
-
-def diff_multfac_vn_numpy(shape, k4, substeps):
-    factor = min(1.0 / 128.0, k4 * substeps / 3.0)
-    return factor * np.ones(shape)
+from .utils import diff_multfac_vn_numpy, enhanced_smagorinski_factor_numpy, smag_limit_numpy
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
     return k4 * hdiff_efdt_ratio / 3.0 * np.ones(shape)
-
-
-def smag_limit_numpy(func, *args):
-    return 0.125 - 4.0 * func(*args)
 
 
 def test_scale_k():
@@ -105,22 +98,6 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps():
 
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
     assert np.allclose(expected_smag_limit, smag_limit)
-
-
-def enhanced_smagorinski_factor_numpy(factor_in, heigths_in, a_vec):
-    alin = (factor_in[1] - factor_in[0]) / (heigths_in[1] - heigths_in[0])
-    df32 = factor_in[2] - factor_in[1]
-    df42 = factor_in[3] - factor_in[1]
-    dz32 = heigths_in[2] - heigths_in[1]
-    dz42 = heigths_in[3] - heigths_in[1]
-    bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
-    aqdr = df32 / dz32 - bqdr * dz32
-    zf = 0.5 * (a_vec[:-1] + a_vec[1:])
-    max0 = np.maximum(0.0, zf - heigths_in[0])
-    dzlin = np.minimum(heigths_in[1] - heigths_in[0], max0)
-    max1 = np.maximum(0.0, zf - heigths_in[1])
-    dzqdr = np.minimum(heigths_in[3] - heigths_in[1], max1)
-    return factor_in[0] + dzlin * alin + dzqdr * (aqdr + dzqdr * bqdr)
 
 
 def test_init_enh_smag_fac():

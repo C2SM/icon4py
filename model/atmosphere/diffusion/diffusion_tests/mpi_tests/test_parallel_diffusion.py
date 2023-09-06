@@ -20,7 +20,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
 
-from ..test_diffusion import _verify_diffusion_fields
+from ..utils import verify_diffusion_fields
 
 
 @pytest.mark.mpi
@@ -100,7 +100,7 @@ def test_parallel_diffusion(
         )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
 
-    _verify_diffusion_fields(
+    verify_diffusion_fields(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         diffusion_savepoint=diffusion_savepoint_exit,

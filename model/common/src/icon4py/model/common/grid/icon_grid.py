@@ -25,9 +25,7 @@ from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
 
 
-@dataclass(
-    frozen=True,
-)
+@dataclass(frozen=True)
 class GridConfig:
     horizontal_config: HorizontalGridSize
     vertical_config: VerticalGridSize

@@ -14,7 +14,7 @@
 import pytest
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
-from icon4py.model.common.test_utils.fixtures import (  # noqa F401
+from icon4py.model.common.test_utils.fixtures import (  # noqa: F401  # import fixtures from test_utils package
     backend,
     damping_height,
     data_provider,
@@ -36,7 +36,9 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa F401
 
 
 @pytest.fixture
-def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:  # noqa F811
+def r04b09_diffusion_config(
+    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fxiture
+) -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
@@ -60,7 +62,11 @@ def r04b09_diffusion_config(ndyn_substeps) -> DiffusionConfig:  # noqa F811
 
 
 @pytest.fixture
-def diffusion_savepoint_init(data_provider, linit, step_date_init):  # noqa F811
+def diffusion_savepoint_init(
+    data_provider,  # noqa: F811 # imported fixtures data_provider
+    linit,  # noqa: F811 # imported fixtures linit
+    step_date_init,  # noqa: F811 # imported fixtures data_provider
+):
     """
     Load data from ICON savepoint at start of diffusion module.
 
@@ -73,7 +79,11 @@ def diffusion_savepoint_init(data_provider, linit, step_date_init):  # noqa F811
 
 
 @pytest.fixture
-def diffusion_savepoint_exit(data_provider, linit, step_date_exit):  # noqa F811
+def diffusion_savepoint_exit(
+    data_provider,  # noqa: F811 # imported fixtures data_provider`
+    linit,  # noqa: F811 # imported fixtures linit`
+    step_date_exit,  # noqa: F811 # imported fixtures step_date_exit`
+):
     """
     Load data from ICON savepoint at exist of diffusion module.
 

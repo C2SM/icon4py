@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import Dimension, FieldOffset
 KDim = Dimension("K", kind=DimensionKind.VERTICAL)
 KHalfDim = Dimension("KHalf", kind=DimensionKind.VERTICAL)
 EdgeDim = Dimension("Edge")
-CellDim: Dimension = Dimension("Cell")
+CellDim = Dimension("Cell")
 VertexDim = Dimension("Vertex")
 CEDim = Dimension("CE")
 CECDim = Dimension("CEC")

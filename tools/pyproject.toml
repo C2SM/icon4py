@@ -19,13 +19,13 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
-  "icon4py-atmosphere-diffusion",
-  "icon4py-atmosphere-dycore",
-  "gt4py>=1.0.1",
-  "icon4py-common",
-  "tabulate>=0.8.9",
-  "fprettify>=0.3.7",
-  "cffi>=1.5"
+  'icon4py-atmosphere-diffusion',
+  'icon4py-atmosphere-dycore',
+  'gt4py>=1.0.1',
+  'icon4py-common',
+  'tabulate>=0.8.9',
+  'fprettify>=0.3.7',
+  'cffi>=1.5'
 ]
 description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 dynamic = ['version']
@@ -35,10 +35,10 @@ readme = 'README.md'
 requires-python = '>=3.10'
 
 [project.scripts]
-f2ser = "icon4pytools.f2ser.cli:main"
-icon4pygen = "icon4pytools.icon4pygen.cli:main"
-icon_liskov = "icon4pytools.liskov.cli:main"
-py2fgen = "icon4pytools.py2f.py2fgen:main"
+f2ser = 'icon4pytools.f2ser.cli:main'
+icon4pygen = 'icon4pytools.icon4pygen.cli:main'
+icon_liskov = 'icon4pytools.liskov.cli:main'
+py2fgen = 'icon4pytools.py2f.py2fgen:main'
 
 [project.urls]
 repository = 'https://github.com/C2SM/icon4py'
