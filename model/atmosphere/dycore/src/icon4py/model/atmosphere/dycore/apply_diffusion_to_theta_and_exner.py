@@ -14,18 +14,12 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.atmosphere.dycore.calculate_nabla2_for_z import (
-    _calculate_nabla2_for_z,
-)
-from icon4py.model.atmosphere.dycore.calculate_nabla2_of_theta import (
-    _calculate_nabla2_of_theta,
-)
+from icon4py.model.atmosphere.dycore.calculate_nabla2_for_z import _calculate_nabla2_for_z
+from icon4py.model.atmosphere.dycore.calculate_nabla2_of_theta import _calculate_nabla2_of_theta
 from icon4py.model.atmosphere.dycore.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     _truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
-from icon4py.model.atmosphere.dycore.update_theta_and_exner import (
-    _update_theta_and_exner,
-)
+from icon4py.model.atmosphere.dycore.update_theta_and_exner import _update_theta_and_exner
 from icon4py.model.common.dimension import CECDim, CEDim, CellDim, EdgeDim, KDim
 
 

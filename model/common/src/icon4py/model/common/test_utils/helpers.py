@@ -11,8 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import ClassVar
-from typing import Optional
+from typing import ClassVar, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -20,6 +19,7 @@ import pytest
 from gt4py.next import common as gt_common
 from gt4py.next.ffront.decorator import Program
 from gt4py.next.iterator import embedded as it_embedded
+
 
 try:
     import pytest_benchmark
