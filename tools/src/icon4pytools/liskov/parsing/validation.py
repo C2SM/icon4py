@@ -13,12 +13,13 @@
 
 import re
 from abc import abstractmethod
-from pathlib import Path
-from typing import Match, Optional, Protocol, Sequence, Type
 from collections import defaultdict
+from pathlib import Path
+from typing import Match, Optional, Protocol, Sequence
 
 import icon4pytools.liskov.parsing.types as ts
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.liskov.parsing import parse
 from icon4pytools.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     RepeatedDirectiveError,
@@ -26,7 +27,6 @@ from icon4pytools.liskov.parsing.exceptions import (
     UnbalancedStencilDirectiveError,
 )
 from icon4pytools.liskov.parsing.utils import print_parsed_directive, remove_directive_types
-from icon4pytools.liskov.parsing import parse
 
 
 logger = setup_logger(__name__)
@@ -157,12 +157,17 @@ class DirectiveSemanticsValidator:
         Args:
             directives (list[ts.ParsedDirective]): List of stencil directives to validate.
         """
-        def _identify_unbalanced_directives(directives: Sequence[ts.ParsedDirective], directive_types: Sequence[ts.ParsedDirective]):
+
+        def _identify_unbalanced_directives(
+            directives: Sequence[ts.ParsedDirective], directive_types: Sequence[ts.ParsedDirective]
+        ):
             directive_counts = defaultdict(int)
             for directive in directives:
                 if isinstance(directive, directive_types):
                     directive_name = _extract_arg_from_directive(directive.string, "name")
-                    directive_counts[directive_name] += 1 if isinstance(directive, directive_types[0]) else -1
+                    directive_counts[directive_name] += (
+                        1 if isinstance(directive, directive_types[0]) else -1
+                    )
 
             unbalanced_directives = [name for name, count in directive_counts.items() if count != 0]
             if unbalanced_directives:
@@ -175,7 +180,7 @@ class DirectiveSemanticsValidator:
 
         directive_pairs = [
             (parse.StartStencil, parse.EndStencil),
-            (parse.StartFusedStencil, parse.EndFusedStencil)
+            (parse.StartFusedStencil, parse.EndFusedStencil),
         ]
 
         for directive_type in directive_pairs:
