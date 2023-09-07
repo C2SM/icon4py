@@ -4,6 +4,8 @@ MODULE no_deps_example_subroutines
     PUBLIC :: no_deps_init, no_deps_run
     PRIVATE
 
+    USE foo
+
     CONTAINS
 
     SUBROUTINE no_deps_init(a, b, c)

@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Union
 
 from icon4pytools.f2ser.parse import CodegenContext, ParsedGranule
 from icon4pytools.liskov.codegen.serialisation.interface import (
@@ -19,6 +20,7 @@ from icon4pytools.liskov.codegen.serialisation.interface import (
     SavepointData,
     SerialisationCodeInterface,
 )
+from icon4pytools.liskov.codegen.shared.types import CodeGenInput
 
 
 class ParsedGranuleDeserialiser:
@@ -31,7 +33,6 @@ class ParsedGranuleDeserialiser:
         self.parsed = parsed
         self.directory = directory
         self.prefix = prefix
-        self.data = {"Savepoint": [], "Init": ..., "Import": ...}
 
     def __call__(self) -> SerialisationCodeInterface:
         """Deserialise the parsed granule and returns a serialisation interface.
@@ -40,22 +41,26 @@ class ParsedGranuleDeserialiser:
             A `SerialisationInterface` object representing the deserialised data.
         """
         self._merge_out_inout_fields()
-        self._make_savepoints()
-        self._make_init_data()
-        self._make_imports()
-        return SerialisationCodeInterface(**self.data)
+        savepoints = self._make_savepoints()
+        init_data = self._make_init_data()
+        import_data = self._make_imports()
+        return SerialisationCodeInterface(Import=import_data, Init=init_data, Savepoint=savepoints)
 
-    def _make_savepoints(self) -> None:
+    def _make_savepoints(self) -> list[SavepointData]:
         """Create savepoints for each subroutine and intent in the parsed granule.
 
         Returns:
             None.
         """
+        savepoints: list[SavepointData] = []
+
         for subroutine_name, intent_dict in self.parsed.subroutines.items():
             for intent, var_dict in intent_dict.items():
-                self._create_savepoint(subroutine_name, intent, var_dict)
+                savepoints.append(self._create_savepoint(subroutine_name, intent, var_dict))
 
-    def _create_savepoint(self, subroutine_name: str, intent: str, var_dict: dict) -> None:
+        return savepoints
+
+    def _create_savepoint(self, subroutine_name: str, intent: str, var_dict: dict) -> SavepointData:
         """Create a savepoint for the given variables.
 
         Args:
@@ -80,15 +85,13 @@ class ParsedGranuleDeserialiser:
             for var_name, var_data in field_vals.items()
         ]
 
-        self.data["Savepoint"].append(
-            SavepointData(
+        return SavepointData(
                 subroutine=subroutine_name,
                 intent=intent,
                 startln=self._get_codegen_line(var_dict["codegen_ctx"], intent),
                 fields=fields,
                 metadata=None,
             )
-        )
 
     @staticmethod
     def get_slice_expression(var_name: str, dimension: str) -> str:
@@ -123,7 +126,7 @@ class ParsedGranuleDeserialiser:
             )
         return var_name
 
-    def _make_init_data(self) -> None:
+    def _make_init_data(self) -> InitData:
         """Create an `InitData` object and sets it to the `Init` key in the `data` dictionary.
 
         Returns:
@@ -135,14 +138,16 @@ class ParsedGranuleDeserialiser:
             for intent, var_dict in intent_dict.items()
             if intent == "in"
         ][0]
+
         startln = self._get_codegen_line(first_intent_in_subroutine["codegen_ctx"], "init")
-        self.data["Init"] = InitData(
+
+        return InitData(
             startln=startln,
             directory=self.directory,
             prefix=self.prefix,
         )
 
-    def _merge_out_inout_fields(self):
+    def _merge_out_inout_fields(self) -> None:
         """Merge the `inout` fields into the `in` and `out` fields in the `parsed` dictionary.
 
         Returns:
@@ -155,7 +160,7 @@ class ParsedGranuleDeserialiser:
                 del intent_dict["inout"]
 
     @staticmethod
-    def _get_codegen_line(ctx: CodegenContext, intent: str):
+    def _get_codegen_line(ctx: CodegenContext, intent: str) -> int:
         if intent == "in":
             return ctx.last_declaration_ln
         elif intent == "out":
@@ -165,5 +170,5 @@ class ParsedGranuleDeserialiser:
         else:
             raise ValueError(f"Unrecognized intent: {intent}")
 
-    def _make_imports(self):
-        self.data["Import"] = ImportData(startln=self.parsed.last_import_ln)
+    def _make_imports(self) -> ImportData:
+        return ImportData(startln=self.parsed.last_import_ln)

@@ -38,7 +38,7 @@ class CodegenContext:
     end_subroutine_ln: int
 
 
-ParsedSubroutines = dict[str, dict[str, dict[str, any] | CodegenContext]]
+ParsedSubroutines = dict[str, dict[str, dict[str, Any | CodegenContext]]]
 
 
 @dataclass
@@ -69,7 +69,7 @@ class GranuleParser:
         last_import_ln = self._find_last_fortran_use_statement()
         return ParsedGranule(subroutines=subroutines, last_import_ln=last_import_ln)
 
-    def _find_last_fortran_use_statement(self) -> Optional[int]:
+    def _find_last_fortran_use_statement(self) -> int:
         """Find the line number of the last Fortran USE statement in the code.
 
         Returns:
@@ -81,16 +81,15 @@ class GranuleParser:
         code_lines.reverse()
 
         # Look for the last USE statement
-        use_ln = None
         for i, line in enumerate(code_lines):
             if line.strip().lower().startswith("use"):
                 use_ln = len(code_lines) - i
                 if i > 0 and code_lines[i - 1].strip().lower() == "#endif":
                     # If the USE statement is preceded by an #endif statement, return the line number after the #endif statement
                     return use_ln + 1
-                else:
-                    return use_ln
-        return None
+                return use_ln
+        raise ParsingError("Could not find any USE statements.")
+
 
     def _read_code_from_file(self) -> str:
         """Read the content of the granule and returns it as a string."""
@@ -98,7 +97,7 @@ class GranuleParser:
             code = f.read()
         return code
 
-    def parse_subroutines(self):
+    def parse_subroutines(self) -> dict:
         subroutines = self._extract_subroutines(crack(self.granule_path))
         variables_grouped_by_intent = {
             name: self._extract_intent_vars(routine) for name, routine in subroutines.items()
@@ -312,7 +311,7 @@ class GranuleParser:
         return CodegenContext(first_declaration_ln, last_declaration_ln, pre_end_subroutine_ln)
 
     @staticmethod
-    def _find_subroutine_lines(code: str, subroutine_name: str) -> tuple[int]:
+    def _find_subroutine_lines(code: str, subroutine_name: str) -> tuple[int, int]:
         """Find line numbers of a subroutine within a code block.
 
         Args:
@@ -327,7 +326,7 @@ class GranuleParser:
         start_match = re.search(start_subroutine_pattern, code)
         end_match = re.search(end_subroutine_pattern, code)
         if start_match is None or end_match is None:
-            return None
+            raise ParsingError(f"Could not find {start_match} or {end_match}")
         start_subroutine_ln = code[: start_match.start()].count("\n") + 1
         end_subroutine_ln = code[: end_match.start()].count("\n") + 1
         return start_subroutine_ln, end_subroutine_ln
@@ -335,7 +334,7 @@ class GranuleParser:
     @staticmethod
     def _find_variable_declarations(
         code: str, start_subroutine_ln: int, end_subroutine_ln: int
-    ) -> list:
+    ) -> list[int]:
         """Find line numbers of variable declarations within a code block.
 
         Args:
@@ -371,8 +370,8 @@ class GranuleParser:
 
     @staticmethod
     def _get_variable_declaration_bounds(
-        declaration_pattern_lines: list, start_subroutine_ln: int
-    ) -> tuple:
+        declaration_pattern_lines: list[int], start_subroutine_ln: int
+    ) -> tuple[int, int]:
         """Return the line numbers of the bounds for a variable declaration block.
 
         Args:
