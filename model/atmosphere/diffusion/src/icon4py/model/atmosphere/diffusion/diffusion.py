@@ -736,6 +736,7 @@ class Diffusion:
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
         )
+        # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
         copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
         apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance.with_backend(backend)(
             area=self.cell_params.area,
