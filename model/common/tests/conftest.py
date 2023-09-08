@@ -47,11 +47,13 @@ def r04b09_dsl_gridfile(get_grid_files):
 
 
 @pytest.fixture(scope="session")
-def get_grid_files():
+def get_grid_files(pytestconfig):
     """
     Get the grid files used for testing.
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
+    if "not datatest" in pytestconfig.option.markexpr:
+        pytest.skip("not running datatest marked tests")
     download_and_extract(mch_ch_r04b09_dsl_grid_uri, r04b09_dsl_grid_path, r04b09_dsl_data_file)
     download_and_extract(r02b04_global_grid_uri, r02b04_global_grid_path, r02b04_global_data_file)

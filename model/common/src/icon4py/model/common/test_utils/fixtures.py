@@ -51,14 +51,16 @@ def ranked_data_path(processor_props):
 def datapath(ranked_data_path):
     return ranked_data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
 
-
 @pytest.fixture(scope="session")
-def download_ser_data(request, processor_props, ranked_data_path):
+def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
     """
     Get the binary ICON data from a remote server.
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
+    if 'not datatest' in pytestconfig.option.markexpr:
+        pytest.skip('not running datatest marked tests')
+
     try:
         uri = data_uris[processor_props.comm_size]
 
