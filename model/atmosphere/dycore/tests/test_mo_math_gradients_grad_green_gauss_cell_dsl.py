@@ -39,14 +39,14 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         **kwargs,
     ) -> tuple[np.array]:
         geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-        p_grad_1_u = np.sum(geofac_grg_x * p_ccpr1[mesh.c2e2cO], axis=1)
+        p_grad_1_u = np.sum(np.where((mesh.c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr1[mesh.c2e2cO], 0), axis=1)
 
         geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-        p_grad_1_v = np.sum(geofac_grg_y * p_ccpr1[mesh.c2e2cO], axis=1)
+        p_grad_1_v = np.sum(np.where((mesh.c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * p_ccpr1[mesh.c2e2cO], 0), axis=1)
 
-        p_grad_2_u = np.sum(geofac_grg_x * p_ccpr2[mesh.c2e2cO], axis=1)
+        p_grad_2_u = np.sum(np.where((mesh.c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr2[mesh.c2e2cO], 0), axis=1)
 
-        p_grad_2_v = np.sum(geofac_grg_y * p_ccpr2[mesh.c2e2cO], axis=1)
+        p_grad_2_v = np.sum(np.where((mesh.c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * p_ccpr2[mesh.c2e2cO], 0), axis=1)
         return dict(
             p_grad_1_u=p_grad_1_u,
             p_grad_1_v=p_grad_1_v,

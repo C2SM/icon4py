@@ -22,6 +22,7 @@ from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     random_field,
     zero_field,
+    constant_field
 )
 
 
@@ -32,13 +33,15 @@ class TestCalculateNabla2ForW(StencilTest):
     @staticmethod
     def reference(mesh, w: np.array, geofac_n2s: np.array, **kwargs) -> np.array:
         geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
-        z_nabla2_c = np.sum(w[mesh.c2e2cO] * geofac_n2s, axis=1)
+        z_nabla2_c = np.sum(np.where((mesh.c2e2cO != -1)[:, :, np.newaxis], w[mesh.c2e2cO] * geofac_n2s, 0), axis=1)
         return dict(z_nabla2_c=z_nabla2_c)
 
     @pytest.fixture
     def input_data(self, mesh):
-        w = random_field(mesh, CellDim, KDim)
-        geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
+        w = constant_field(mesh, 1., CellDim, KDim)
+        geofac_n2s = constant_field(mesh, 2., CellDim, C2E2CODim)
+        # w = random_field(mesh, CellDim, KDim)
+        # geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
         z_nabla2_c = zero_field(mesh, CellDim, KDim)
 
         return dict(

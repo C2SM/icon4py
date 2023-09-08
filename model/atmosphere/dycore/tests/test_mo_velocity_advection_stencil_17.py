@@ -30,7 +30,7 @@ class TestMoVelocityAdvectionStencil17(StencilTest):
         mesh, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
     ) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-        ddt_w_adv = ddt_w_adv + np.sum(z_v_grad_w[mesh.c2e] * e_bln_c_s, axis=1)
+        ddt_w_adv = ddt_w_adv + np.sum(np.where((mesh.c2e != -1)[:, :, np.newaxis], z_v_grad_w[mesh.c2e] * e_bln_c_s, 0), axis=1)
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture

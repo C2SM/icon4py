@@ -49,6 +49,9 @@ class TestMoSolveNonhydroStencil17(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
+        if np.any(mesh.e2c == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
         hmask_dd3d = random_field(mesh, EdgeDim)
         scalfac_dd3d = random_field(mesh, KDim)
         inv_dual_edge_length = random_field(mesh, EdgeDim)

@@ -34,10 +34,10 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         mesh, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array, **kwargs
     ) -> tuple[np.array]:
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
-        p_u_out = np.sum(p_e_in[mesh.v2e] * ptr_coeff_1, axis=1)
+        p_u_out = np.sum(np.where((mesh.v2e != -1)[:, :, np.newaxis], p_e_in[mesh.v2e], 0) * ptr_coeff_1, axis=1)
 
         ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
-        p_v_out = np.sum(p_e_in[mesh.v2e] * ptr_coeff_2, axis=1)
+        p_v_out = np.sum(np.where((mesh.v2e != -1)[:, :, np.newaxis], p_e_in[mesh.v2e], 0) * ptr_coeff_2, axis=1)
 
         return dict(p_v_out=p_v_out, p_u_out=p_u_out)
 

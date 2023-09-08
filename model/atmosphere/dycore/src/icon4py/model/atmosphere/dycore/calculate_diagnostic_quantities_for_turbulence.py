@@ -57,5 +57,5 @@ def calculate_diagnostic_quantities_for_turbulence(
         geofac_div,
         diff_multfac_smag,
         wgtfac_c,
-        out=(div_ic, hdef_ic),
+        out=(div_ic[:, 1:], hdef_ic[:, 1:]),
     )

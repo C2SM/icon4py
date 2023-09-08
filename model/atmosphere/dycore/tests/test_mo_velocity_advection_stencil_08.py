@@ -32,7 +32,7 @@ class TestMoVelocityAdvectionStencil08(StencilTest):
     @staticmethod
     def reference(mesh, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-        z_ekinh = np.sum(z_kin_hor_e[mesh.c2e] * e_bln_c_s, axis=1)
+        z_ekinh = np.sum(np.where((mesh.c2e != -1)[:, :, np.newaxis], z_kin_hor_e[mesh.c2e] * e_bln_c_s, 0), axis=1)
         return dict(z_ekinh=z_ekinh)
 
     @pytest.fixture

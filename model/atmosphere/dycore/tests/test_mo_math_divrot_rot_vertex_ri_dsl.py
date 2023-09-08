@@ -32,7 +32,7 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
     @staticmethod
     def reference(mesh, vec_e: np.array, geofac_rot: np.array, **kwargs) -> np.array:
         geofac_rot = np.expand_dims(geofac_rot, axis=-1)
-        rot_vec = np.sum(vec_e[mesh.v2e] * geofac_rot, axis=1)
+        rot_vec = np.sum(np.where((mesh.v2e != -1)[:, :, np.newaxis], vec_e[mesh.v2e] * geofac_rot, 0), axis=1)
         return dict(rot_vec=rot_vec)
 
     @pytest.fixture

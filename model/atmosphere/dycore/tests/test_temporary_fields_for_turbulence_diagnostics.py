@@ -41,12 +41,12 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
     ) -> dict:
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         vn_geofac = vn[mesh.c2e] * geofac_div
-        div = np.sum(vn_geofac, axis=1)
+        div = np.sum(np.where((mesh.c2e != -1)[:, :, np.newaxis], vn_geofac, 0), axis=1)
 
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         diff_multfac_smag = np.expand_dims(diff_multfac_smag, axis=0)
         mul = kh_smag_ec[mesh.c2e] * e_bln_c_s
-        summed = np.sum(mul, axis=1)
+        summed = np.sum(np.where((mesh.c2e != -1)[:, :, np.newaxis], mul, 0), axis=1)
         kh_c = summed / diff_multfac_smag
 
         return dict(div=div, kh_c=kh_c)

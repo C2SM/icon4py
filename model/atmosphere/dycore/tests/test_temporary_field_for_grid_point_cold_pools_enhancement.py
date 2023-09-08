@@ -33,8 +33,8 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
     def reference(
         mesh, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff, **kwargs
     ) -> np.array:
-        tdiff = theta_v - np.sum(theta_v[mesh.c2e2c], axis=1) / 3
-        trefdiff = theta_ref_mc - np.sum(theta_ref_mc[mesh.c2e2c], axis=1) / 3
+        tdiff = theta_v - np.sum(np.where((mesh.c2e2c != -1)[:, :, np.newaxis], theta_v[mesh.c2e2c], 0), axis=1) / 3
+        trefdiff = theta_ref_mc - np.sum(np.where((mesh.c2e2c != -1)[:, :, np.newaxis], theta_ref_mc[mesh.c2e2c], 0), axis=1) / 3
 
         enh_diffu_3d = np.where(
             ((tdiff - trefdiff) < thresh_tdiff) & (trefdiff < 0),

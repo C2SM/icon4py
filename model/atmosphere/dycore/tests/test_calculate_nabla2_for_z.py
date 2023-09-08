@@ -14,6 +14,7 @@
 import numpy as np
 import pytest
 
+from gt4py.next.program_processors.runners import gtfn_cpu
 from icon4py.model.atmosphere.dycore.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
 )
@@ -42,7 +43,9 @@ class TestCalculateNabla2ForZ(StencilTest):
         return dict(z_nabla2_e=z_nabla2_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, mesh, backend):
+        if backend.name.startswith("run_gtfn"):
+            pytest.skip("Execution domain needs to be restricted or boundary taken into account in stencil.")
         kh_smag_e = random_field(mesh, EdgeDim, KDim)
         inv_dual_edge_length = random_field(mesh, EdgeDim)
         theta_v = random_field(mesh, CellDim, KDim)

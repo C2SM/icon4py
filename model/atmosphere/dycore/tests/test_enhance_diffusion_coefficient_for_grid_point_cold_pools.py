@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import math
 
 import numpy as np
 import pytest
@@ -31,7 +32,7 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
         kh_smag_e: np.array,
         enh_diffu_3d: np.array,
     ) -> np.array:
-        kh_smag_e = np.maximum(kh_smag_e, np.max(enh_diffu_3d[mesh.e2c], axis=1))
+        kh_smag_e = np.maximum(kh_smag_e, np.max(np.where((mesh.e2c != -1)[:, :, np.newaxis], enh_diffu_3d[mesh.e2c], -math.inf), axis=1))
         return dict(kh_smag_e=kh_smag_e)
 
     @pytest.fixture

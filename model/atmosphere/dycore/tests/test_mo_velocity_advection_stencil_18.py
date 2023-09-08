@@ -63,7 +63,7 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
 
         ddt_w_adv = np.where(
             (levelmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
-            ddt_w_adv + difcoef * area * np.sum(w[mesh.c2e2cO] * geofac_n2s, axis=1),
+            ddt_w_adv + difcoef * area * np.sum(np.where((mesh.c2e2cO != -1)[:, :, np.newaxis], w[mesh.c2e2cO] * geofac_n2s, 0), axis=1),
             ddt_w_adv,
         )
 

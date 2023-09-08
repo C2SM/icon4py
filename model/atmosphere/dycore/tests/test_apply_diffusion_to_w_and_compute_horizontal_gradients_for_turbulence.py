@@ -58,11 +58,11 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
     def input_data(self, mesh):
 
         vert_idx = zero_field(mesh, KDim, dtype=int32)
-        for k in range(mesh.k_level):
+        for k in range(mesh.n_lev()):
             vert_idx[k] = k
 
         horz_idx = zero_field(mesh, CellDim, dtype=int32)
-        for cell in range(mesh.n_cells):
+        for cell in range(mesh.num_cells()):
             horz_idx[cell] = cell
 
         nrdmax = 13

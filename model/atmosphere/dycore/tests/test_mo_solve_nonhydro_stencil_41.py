@@ -38,8 +38,8 @@ class TestMoSolveNonhydroStencil41(StencilTest):
         **kwargs,
     ) -> tuple[np.array]:
         geofac_div = np.expand_dims(geofac_div, axis=-1)
-        z_flxdiv_mass = np.sum(geofac_div * mass_fl_e[mesh.c2e], axis=1)
-        z_flxdiv_theta = np.sum(geofac_div * z_theta_v_fl_e[mesh.c2e], axis=1)
+        z_flxdiv_mass = np.sum(np.where((mesh.c2e != -1)[:, :, np.newaxis], geofac_div * mass_fl_e[mesh.c2e], 0), axis=1)
+        z_flxdiv_theta = np.sum(np.where((mesh.c2e != -1)[:, :, np.newaxis], geofac_div * z_theta_v_fl_e[mesh.c2e], 0), axis=1)
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
 
     @pytest.fixture
