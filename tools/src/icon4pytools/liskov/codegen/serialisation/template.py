@@ -35,11 +35,11 @@ class StandardFields(eve.Node):
     fields: list[Field]
 
 
-class DecomposedFields(StandardFields):
+class DecomposedFieldsNode(StandardFields):
     ...
 
 
-class DecomposedFieldDeclarations(DecomposedFields):
+class DecomposedFieldDeclarations(DecomposedFieldsNode):
     ...
 
 
@@ -48,14 +48,14 @@ class SavepointStatement(eve.Node):
     init: Optional[InitData] = eve.datamodels.field(default=None)
     multinode: bool
     standard_fields: StandardFields = eve.datamodels.field(init=False)
-    decomposed_fields: DecomposedFields = eve.datamodels.field(init=False)
+    decomposed_fields: DecomposedFieldsNode = eve.datamodels.field(init=False)
     decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(init=False)
 
     def __post_init__(self):
         self.standard_fields = StandardFields(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if not f.decomposed]
         )
-        self.decomposed_fields = DecomposedFields(
+        self.decomposed_fields = DecomposedFieldsNode(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if f.decomposed]
         )
         self.decomposed_field_declarations = DecomposedFieldDeclarations(
@@ -116,16 +116,19 @@ class SavepointStatementGenerator(TemplatedGenerator):
     """
     )
 
-    def visit_DecomposedFields(self, node: DecomposedFields):
-        def generate_size_strings(colon_list, var_name):
+    def visit_DecomposedFields(self, node: DecomposedFieldsNode):
+        def generate_size_strings(dim_list: list[str], var_name: str) -> list[str]:
             size_strings = []
-            for i in range(len(colon_list)):
+            for i in range(len(dim_list)):
                 size_strings.append(f"size({var_name}, {i + 1})")
             return size_strings
 
         for f in node.fields:
+            if f.dimension is None:
+                raise Exception("No dimension found in `DecomposedField` {node}")
+
             f.variable = f.variable.replace(f"_{f.ptr_var}", "")
-            f.alloc_dims = ",".join(generate_size_strings(f.dimension, f.variable))
+            setattr(f, "alloc_dims", ",".join(generate_size_strings(f.dimension, f.variable)))
 
         return self.generic_visit(node)
 

@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
+from typing import Any
 
 from icon4pytools.liskov.codegen.integration.deserialise import IntegrationCodeDeserialiser
 from icon4pytools.liskov.codegen.integration.generate import IntegrationCodeGenerator
@@ -23,7 +24,6 @@ from icon4pytools.liskov.parsing.parse import DirectivesParser
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
 from icon4pytools.liskov.parsing.transform import StencilTransformer
 from icon4pytools.liskov.pipeline.definition import Step, linear_pipeline
-
 
 DESERIALISERS = {
     "integration": IntegrationCodeDeserialiser,
@@ -41,7 +41,7 @@ def parse_fortran_file(
     input_filepath: Path,
     output_filepath: Path,
     deserialiser_type: str,
-    **kwargs,
+    **kwargs: Any,
 ) -> list[Step]:
     """Execute a pipeline to parse and deserialize directives from a file.
 
@@ -91,8 +91,8 @@ def run_code_generation(
     input_filepath: Path,
     output_filepath: Path,
     codegen_type: str,
-    *args,
-    **kwargs,
+    *args: Any,
+    **kwargs: Any,
 ) -> list[Step]:
     """Execute a pipeline to generate and write code.
 
