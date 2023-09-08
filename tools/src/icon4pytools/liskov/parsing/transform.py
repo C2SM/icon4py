@@ -24,6 +24,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     StartStencilData,
     UnusedDirective,
 )
+from icon4pytools.liskov.codegen.shared.types import CodeGenInput
 from icon4pytools.liskov.pipeline.definition import Step
 
 
@@ -35,7 +36,7 @@ class StencilTransformer(Step):
         self.parsed = parsed
         self.fused = fused
 
-    def __call__(self, data: Any = None) -> ts.ParsedDict:
+    def __call__(self, data: Any = None) -> IntegrationCodeInterface:
         """Transform stencils in the parse tree based on the 'fused' flag, transforming or removing as necessary.
 
         This method processes stencils present in the 'parsed' object according to the 'fused'
@@ -102,7 +103,7 @@ class StencilTransformer(Step):
             directive.append(cls(startln=param.startln))
             setattr(self.parsed, attr, directive)
 
-    def _remove_stencils(self, stencils_to_remove: list[StartStencilData | EndStencilData]) -> None:
+    def _remove_stencils(self, stencils_to_remove: list[CodeGenInput]) -> None:
         attributes_to_modify = ["StartStencil", "EndStencil"]
 
         for attr_name in attributes_to_modify:

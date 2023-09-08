@@ -190,8 +190,8 @@ class SavepointDataFactory:
 
         return timestep_variables
 
-    def _find_repeated_stencils(self, content):
-        stencil_names = {}
+    def _find_repeated_stencils(self, content: dict) -> set[str]:
+        stencil_names: dict[str, str] = {}
         repeated_names = []
         for stencil in content["StartStencil"]:
             name = stencil["name"]

@@ -31,7 +31,7 @@ class CodeMetadata:
         try:
             ctx = click.get_current_context()
             params = ctx.params.copy()
-            params.update(ctx.parent.params)
+            params.update(ctx.parent.params)    # type: ignore
             return params
         except Exception as e:
             raise MissingClickContextError(

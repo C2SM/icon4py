@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import asdict
-from typing import Optional
+from typing import Optional, Collection
 
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
@@ -51,7 +51,7 @@ class SavepointStatement(eve.Node):
     decomposed_fields: DecomposedFieldsNode = eve.datamodels.field(init=False)
     decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:    # type: ignore
         self.standard_fields = StandardFields(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if not f.decomposed]
         )
@@ -116,7 +116,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
     """
     )
 
-    def visit_DecomposedFields(self, node: DecomposedFieldsNode):
+    def visit_DecomposedFields(self, node: DecomposedFieldsNode) -> str | Collection[str]:
         def generate_size_strings(dim_list: list[str], var_name: str) -> list[str]:
             size_strings = []
             for i in range(len(dim_list)):
