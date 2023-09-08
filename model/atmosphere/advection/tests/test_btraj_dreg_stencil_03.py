@@ -15,15 +15,9 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atmosphere.advection.btraj_dreg_stencil_03 import (
-    btraj_dreg_stencil_03,
-)
+from icon4py.model.atmosphere.advection.btraj_dreg_stencil_03 import btraj_dreg_stencil_03
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    constant_field,
-    random_field,
-)
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, constant_field, random_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -77,54 +71,26 @@ def btraj_dreg_stencil_03_numpy(
 
     pos_dreg_vert_c_1_x = edge_verts_1_x - pos_on_tplane_e_x
     pos_dreg_vert_c_1_y = edge_verts_1_y - pos_on_tplane_e_y
-    pos_dreg_vert_c_2_x = (
-        np.where(lvn_sys_pos, depart_pts_1_x, edge_verts_2_x) - pos_on_tplane_e_x
-    )
-    pos_dreg_vert_c_2_y = (
-        np.where(lvn_sys_pos, depart_pts_1_y, edge_verts_2_y) - pos_on_tplane_e_y
-    )
+    pos_dreg_vert_c_2_x = np.where(lvn_sys_pos, depart_pts_1_x, edge_verts_2_x) - pos_on_tplane_e_x
+    pos_dreg_vert_c_2_y = np.where(lvn_sys_pos, depart_pts_1_y, edge_verts_2_y) - pos_on_tplane_e_y
     pos_dreg_vert_c_3_x = depart_pts_2_x - pos_on_tplane_e_x
     pos_dreg_vert_c_3_y = depart_pts_2_y - pos_on_tplane_e_y
-    pos_dreg_vert_c_4_x = (
-        np.where(lvn_sys_pos, edge_verts_2_x, depart_pts_1_x) - pos_on_tplane_e_x
-    )
-    pos_dreg_vert_c_4_y = (
-        np.where(lvn_sys_pos, edge_verts_2_y, depart_pts_1_y) - pos_on_tplane_e_y
-    )
+    pos_dreg_vert_c_4_x = np.where(lvn_sys_pos, edge_verts_2_x, depart_pts_1_x) - pos_on_tplane_e_x
+    pos_dreg_vert_c_4_y = np.where(lvn_sys_pos, edge_verts_2_y, depart_pts_1_y) - pos_on_tplane_e_y
 
-    pn_cell_1 = np.where(
-        lvn_pos, primal_normal_cell_x[:, 0], primal_normal_cell_x[:, 1]
-    )
-    pn_cell_2 = np.where(
-        lvn_pos, primal_normal_cell_y[:, 0], primal_normal_cell_y[:, 1]
-    )
+    pn_cell_1 = np.where(lvn_pos, primal_normal_cell_x[:, 0], primal_normal_cell_x[:, 1])
+    pn_cell_2 = np.where(lvn_pos, primal_normal_cell_y[:, 0], primal_normal_cell_y[:, 1])
     dn_cell_1 = np.where(lvn_pos, dual_normal_cell_x[:, 0], dual_normal_cell_x[:, 1])
     dn_cell_2 = np.where(lvn_pos, dual_normal_cell_y[:, 0], dual_normal_cell_y[:, 1])
 
-    p_coords_dreg_v_1_lon_dsl = (
-        pos_dreg_vert_c_1_x * pn_cell_1 + pos_dreg_vert_c_1_y * dn_cell_1
-    )
-    p_coords_dreg_v_2_lon_dsl = (
-        pos_dreg_vert_c_2_x * pn_cell_1 + pos_dreg_vert_c_2_y * dn_cell_1
-    )
-    p_coords_dreg_v_3_lon_dsl = (
-        pos_dreg_vert_c_3_x * pn_cell_1 + pos_dreg_vert_c_3_y * dn_cell_1
-    )
-    p_coords_dreg_v_4_lon_dsl = (
-        pos_dreg_vert_c_4_x * pn_cell_1 + pos_dreg_vert_c_4_y * dn_cell_1
-    )
-    p_coords_dreg_v_1_lat_dsl = (
-        pos_dreg_vert_c_1_x * pn_cell_2 + pos_dreg_vert_c_1_y * dn_cell_2
-    )
-    p_coords_dreg_v_2_lat_dsl = (
-        pos_dreg_vert_c_2_x * pn_cell_2 + pos_dreg_vert_c_2_y * dn_cell_2
-    )
-    p_coords_dreg_v_3_lat_dsl = (
-        pos_dreg_vert_c_3_x * pn_cell_2 + pos_dreg_vert_c_3_y * dn_cell_2
-    )
-    p_coords_dreg_v_4_lat_dsl = (
-        pos_dreg_vert_c_4_x * pn_cell_2 + pos_dreg_vert_c_4_y * dn_cell_2
-    )
+    p_coords_dreg_v_1_lon_dsl = pos_dreg_vert_c_1_x * pn_cell_1 + pos_dreg_vert_c_1_y * dn_cell_1
+    p_coords_dreg_v_2_lon_dsl = pos_dreg_vert_c_2_x * pn_cell_1 + pos_dreg_vert_c_2_y * dn_cell_1
+    p_coords_dreg_v_3_lon_dsl = pos_dreg_vert_c_3_x * pn_cell_1 + pos_dreg_vert_c_3_y * dn_cell_1
+    p_coords_dreg_v_4_lon_dsl = pos_dreg_vert_c_4_x * pn_cell_1 + pos_dreg_vert_c_4_y * dn_cell_1
+    p_coords_dreg_v_1_lat_dsl = pos_dreg_vert_c_1_x * pn_cell_2 + pos_dreg_vert_c_1_y * dn_cell_2
+    p_coords_dreg_v_2_lat_dsl = pos_dreg_vert_c_2_x * pn_cell_2 + pos_dreg_vert_c_2_y * dn_cell_2
+    p_coords_dreg_v_3_lat_dsl = pos_dreg_vert_c_3_x * pn_cell_2 + pos_dreg_vert_c_3_y * dn_cell_2
+    p_coords_dreg_v_4_lat_dsl = pos_dreg_vert_c_4_x * pn_cell_2 + pos_dreg_vert_c_4_y * dn_cell_2
 
     return (
         p_cell_idx,

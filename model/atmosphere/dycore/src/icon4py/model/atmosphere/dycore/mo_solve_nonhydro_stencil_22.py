@@ -25,9 +25,7 @@ def _mo_solve_nonhydro_stencil_22(
     z_hydro_corr: Field[[EdgeDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    z_gradh_exner = where(
-        ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner
-    )
+    z_gradh_exner = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
     return z_gradh_exner
 
 

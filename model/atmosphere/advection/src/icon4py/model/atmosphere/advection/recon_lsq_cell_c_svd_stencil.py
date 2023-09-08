@@ -14,13 +14,7 @@
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.model.common.dimension import (
-    C2CECEC,
-    C2E2C2E2C,
-    CECECDim,
-    CellDim,
-    KDim,
-)
+from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C, CECECDim, CellDim, KDim
 
 
 @field_operator

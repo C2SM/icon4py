@@ -39,17 +39,13 @@ def upwind_hflux_miura_cycl_stencil_02_numpy(
     z_tracer_mflx_c2e = z_tracer_mflx[c2e]
 
     z_rhofluxdiv_c_out = (
-        np.sum(p_mass_flx_e_c2e * geofac_div, axis=1)
-        if nsub == int32(1)
-        else z_rhofluxdiv_c
+        np.sum(p_mass_flx_e_c2e * geofac_div, axis=1) if nsub == int32(1) else z_rhofluxdiv_c
     )
     z_fluxdiv_c_dsl = np.sum(z_tracer_mflx_c2e * geofac_div, axis=1)
 
     z_rho_new_dsl = z_rho_now - z_dtsub * z_rhofluxdiv_c_out
 
-    z_tracer_new_dsl = (
-        z_tracer_now * z_rho_now - z_dtsub * z_fluxdiv_c_dsl
-    ) / z_rho_new_dsl
+    z_tracer_new_dsl = (z_tracer_now * z_rho_now - z_dtsub * z_fluxdiv_c_dsl) / z_rho_new_dsl
 
     return (z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl)
 

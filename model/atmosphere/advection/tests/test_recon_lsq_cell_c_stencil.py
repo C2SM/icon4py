@@ -16,15 +16,9 @@ import sys  # Increase recusion depth, otherwise it doesn't compile
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
-from icon4py.model.atmosphere.advection.recon_lsq_cell_c_stencil import (
-    recon_lsq_cell_c_stencil,
-)
+from icon4py.model.atmosphere.advection.recon_lsq_cell_c_stencil import recon_lsq_cell_c_stencil
 from icon4py.model.common.dimension import C2E2C2E2CDim, CECECDim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -638,9 +632,7 @@ def test_recon_lsq_cell_c_stencil():
         p_coeff_10,
         offset_provider={
             "C2E2C2E2C": mesh.get_c2e2c2e2c_offset_provider(),
-            "C2CECEC": StridedNeighborOffsetProvider(
-                CellDim, CECECDim, mesh.n_c2e2c2e2c
-            ),
+            "C2CECEC": StridedNeighborOffsetProvider(CellDim, CECECDim, mesh.n_c2e2c2e2c),
         },
     )
     co1 = np.asarray(p_coeff_1)

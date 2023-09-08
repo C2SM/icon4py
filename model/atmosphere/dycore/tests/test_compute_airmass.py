@@ -36,7 +36,5 @@ def test_compute_airmass():
     ref = compute_airmass_numpy(
         np.asarray(rho_in), np.asarray(ddqz_z_full_in), np.asarray(deepatmo_t1mc_in)
     )
-    compute_airmass(
-        rho_in, ddqz_z_full_in, deepatmo_t1mc_in, airmass_out, offset_provider={}
-    )
+    compute_airmass(rho_in, ddqz_z_full_in, deepatmo_t1mc_in, airmass_out, offset_provider={})
     assert np.allclose(airmass_out, ref)

@@ -31,10 +31,7 @@ def _mo_solve_nonhydro_stencil_68(
 ) -> Field[[CellDim, KDim], float]:
     theta_v_new = where(
         mask_prog_halo_c,
-        rho_now
-        * theta_v_now
-        * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0)
-        / rho_new,
+        rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new,
         theta_v_new,
     )
     return theta_v_new

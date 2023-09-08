@@ -14,14 +14,7 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum
 
-from icon4py.model.common.dimension import (
-    C2CE,
-    C2E,
-    CEDim,
-    CellDim,
-    EdgeDim,
-    KDim,
-)
+from icon4py.model.common.dimension import C2CE, C2E, CEDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -39,9 +32,7 @@ def _hflx_limiter_pd_stencil_01(
     pm_1 = maximum(zero, p_mflx_tracer_h(C2E[1]) * geofac_div(C2CE[1]) * p_dtime)
     pm_2 = maximum(zero, p_mflx_tracer_h(C2E[2]) * geofac_div(C2CE[2]) * p_dtime)
     p_m = pm_0 + pm_1 + pm_2
-    r_m = minimum(
-        broadcast(1.0, (CellDim, KDim)), (p_cc * p_rhodz_now) / (p_m + dbl_eps)
-    )
+    r_m = minimum(broadcast(1.0, (CellDim, KDim)), (p_cc * p_rhodz_now) / (p_m + dbl_eps))
 
     return r_m
 

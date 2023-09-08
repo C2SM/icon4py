@@ -14,15 +14,9 @@
 import numpy as np
 from numpy import int32
 
-from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import (
-    hflx_limiter_mo_stencil_02,
-)
+from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import hflx_limiter_mo_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    constant_field,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -45,12 +39,8 @@ def hflx_limiter_mo_stencil_02_numpy(
         np.minimum(1.1 * p_cc, np.maximum(0.9 * p_cc, z_tracer_new_low)),
         z_tracer_new_low,
     )
-    z_tracer_max_out = np.where(
-        condition, np.maximum(p_cc, z_tracer_new_out), z_tracer_max
-    )
-    z_tracer_min_out = np.where(
-        condition, np.minimum(p_cc, z_tracer_new_out), z_tracer_min
-    )
+    z_tracer_max_out = np.where(condition, np.maximum(p_cc, z_tracer_new_out), z_tracer_max)
+    z_tracer_min_out = np.where(condition, np.minimum(p_cc, z_tracer_new_out), z_tracer_min)
     return z_tracer_new_out, z_tracer_max_out, z_tracer_min_out
 
 

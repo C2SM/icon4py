@@ -13,9 +13,7 @@
 
 import numpy as np
 
-from icon4py.model.atmosphere.advection.step_advection_stencil_02 import (
-    step_advection_stencil_02,
-)
+from icon4py.model.atmosphere.advection.step_advection_stencil_02 import step_advection_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
@@ -29,10 +27,7 @@ def step_advection_stencil_02_numpy(
     pd_time: float,
 ) -> np.ndarray:
 
-    tmp = (
-        p_mflx_contra_v[:, 1:] * deepatmo_divzl
-        - p_mflx_contra_v[:, :-1] * deepatmo_divzu
-    )
+    tmp = p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
     return np.maximum(0.1 * rhodz_new, rhodz_new) - pd_time * tmp
 
 

@@ -34,9 +34,7 @@ class TestMoApplyNabla2ToW(StencilTest):
     ) -> np.array:
         geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
         area = np.expand_dims(area, axis=-1)
-        w = w - diff_multfac_w * area * area * np.sum(
-            z_nabla2_c[mesh.c2e2cO] * geofac_n2s, axis=1
-        )
+        w = w - diff_multfac_w * area * area * np.sum(z_nabla2_c[mesh.c2e2cO] * geofac_n2s, axis=1)
         return dict(w=w)
 
     @pytest.fixture
