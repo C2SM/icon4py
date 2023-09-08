@@ -21,9 +21,7 @@ from icon4py.model.atmosphere.dycore.apply_nabla2_to_w_in_upper_damping_layer im
 from icon4py.model.atmosphere.dycore.calculate_horizontal_gradients_for_turbulence import (
     _calculate_horizontal_gradients_for_turbulence,
 )
-from icon4py.model.atmosphere.dycore.calculate_nabla2_for_w import (
-    _calculate_nabla2_for_w,
-)
+from icon4py.model.atmosphere.dycore.calculate_nabla2_for_w import _calculate_nabla2_for_w
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 
 

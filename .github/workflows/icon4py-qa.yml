@@ -21,26 +21,51 @@ on:
         types: [submitted]
 
 jobs:
-    pre-commit:
+    pre-commit-icon4py-model-common:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Set up Python
-              uses: actions/setup-python@v3
+              uses: actions/setup-python@v4
               with:
                   python-version: "3.10"
-            - name: Install icon4py-atmosphere-dycore
-              working-directory: model/atmosphere/dycore
-              run: |
-                  python -m pip install --upgrade pip setuptools wheel
-                  python -m pip install -r ./requirements-dev.txt
-
+                  cache: 'pip'
+                  cache-dependency-path: |
+                    **/pyproject.toml
+                    **/base-requirements.txt
+                    **/base-requirements-dev.txt
+                    **/requirements.txt
+                    **/requirements-dev.txt
             - name: Install icon4py-common
               working-directory: model/common
               run: |
                   python -m pip install --upgrade pip setuptools wheel
                   python -m pip install -r ./requirements-dev.txt
-            - name: Run checks icon4py-model
-              run: |
                   python -m pip list
-                  pre-commit run --config model/.pre-commit-config.yaml --all-files
+            - name: Run checks icon4py-model-common
+              run: |
+                  pre-commit run --config model/common/.pre-commit-config.yaml --all-files
+
+    pre-commit-icon4py-model-atmosphere-dycore:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Set up Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: "3.10"
+                  cache: 'pip'
+                  cache-dependency-path: |
+                    **/pyproject.toml
+                    **/base-requirements.txt
+                    **/base-requirements-dev.txt
+                    **/requirements.txt
+                    **/requirements-dev.txt
+            - name: Install icon4py-model-atmosphere-dycore
+              working-directory: model/atmosphere/dycore
+              run: |
+                  python -m pip install --upgrade pip setuptools wheel
+                  python -m pip install -r ./requirements-dev.txt
+            - name: Run checks icon4py-model-atmosphere-dycore
+              run: |
+                  pre-commit run --config model/atmosphere/dycore/.pre-commit-config.yaml --all-files
