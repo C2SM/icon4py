@@ -41,6 +41,7 @@ def test_nrdmax_calculation_from_icon_input(grid_savepoint, damping_height):
     assert a_array[nrdmax] > damping_height
     assert a_array[nrdmax + 1] < damping_height
 
+
 @pytest.mark.datatest
 def test_grid_size(grid_savepoint):
     assert 65 == grid_savepoint.num(KDim)

@@ -111,8 +111,7 @@ warn_unused_ignores = true
 [tool.pytest]
 
 [tool.pytest.ini_options]
-markers = 'datatest: this test uses binary data'
-testpaths = 'diffusion_tests'
+testpaths = ['tests', 'diffusion_tests']
 
 [tool.setuptools.dynamic]
 version = {attr = 'icon4py.model.atmosphere.diffusion.__init__.__version__'}

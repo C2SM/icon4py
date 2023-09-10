@@ -11,20 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+"""
+Initialize pytest.
 
-from icon4py.model.common.test_utils.fixtures import (  # noqa F401
-    backend,
-    damping_height,
-    data_provider,
-    datapath,
-    download_ser_data,
-    grid_savepoint,
-    icon_grid,
-    linit,
-    mesh,
-    step_date_exit,
-    step_date_init,
-)
+Workaround for pytest not discovering those configuration function, when they are added to the
+diffusion_test/conftest.py folder
+"""
 from icon4py.model.common.test_utils.pytest_config import (  # noqa: F401
     pytest_addoption,
     pytest_configure,

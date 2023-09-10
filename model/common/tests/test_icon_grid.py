@@ -392,6 +392,7 @@ def test_cross_check_marker_equivalences(icon_grid):
         HorizontalMarkerIndex.nudging(EdgeDim),
     )
 
+
 @pytest.mark.datatest
 def test_grid_size(grid_savepoint):
     assert 10663 == grid_savepoint.num(VertexDim)

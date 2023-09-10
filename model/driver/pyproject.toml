@@ -117,7 +117,6 @@ warn_unused_ignores = true
 [tool.pytest]
 
 [tool.pytest.ini_options]
-markers = 'datatest: this test uses binary data'
 testpaths = 'tests'
 
 [tool.setuptools.dynamic]

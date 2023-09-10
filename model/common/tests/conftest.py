@@ -13,7 +13,7 @@
 import pytest
 
 from icon4py.model.common.test_utils.data_handling import download_and_extract
-from icon4py.model.common.test_utils.fixtures import (  # noqa F401
+from icon4py.model.common.test_utils.fixtures import (  # noqa: F401
     backend,
     base_path,
     damping_height,
@@ -27,6 +27,11 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     mesh,
     processor_props,
     ranked_data_path,
+)
+from icon4py.model.common.test_utils.pytest_config import (  # noqa: F401
+    pytest_addoption,
+    pytest_configure,
+    pytest_runtest_setup,
 )
 
 
@@ -53,7 +58,7 @@ def get_grid_files(pytestconfig):
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
-    if "not datatest" in pytestconfig.option.markexpr:
+    if not pytestconfig.getoption("datatest"):
         pytest.skip("not running datatest marked tests")
     download_and_extract(mch_ch_r04b09_dsl_grid_uri, r04b09_dsl_grid_path, r04b09_dsl_data_file)
     download_and_extract(r02b04_global_grid_uri, r02b04_global_grid_path, r02b04_global_data_file)
