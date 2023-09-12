@@ -1,5 +1,6 @@
 def spack_fork = "C2SM"
 def spack_branch = "main"
+String[] triggerPhrase = env.ghprbCommentBody.split(" ")
 
 def parseTriggerPhrase(it) {
     fork = it.split("=")[1].split("/")[0]
