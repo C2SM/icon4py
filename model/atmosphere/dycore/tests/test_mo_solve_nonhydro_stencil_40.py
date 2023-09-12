@@ -27,7 +27,11 @@ class TestMoSolveNonhydroStencil40(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, e_bln_c_s: np.array, z_w_concorr_me: np.array, wgtfacq_c: np.array, **kwargs
+        mesh,
+        e_bln_c_s: np.array,
+        z_w_concorr_me: np.array,
+        wgtfacq_c: np.array,
+        **kwargs,
     ) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_w_concorr_me_offset_1 = np.roll(z_w_concorr_me, shift=1, axis=1)
