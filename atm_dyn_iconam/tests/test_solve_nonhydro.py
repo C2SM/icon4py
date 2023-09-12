@@ -890,34 +890,31 @@ def test_run_solve_nonhydro_multi_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
+    savepoint_velocity_exit,
     diffusion_savepoint_init,
     metrics_savepoint,
     metrics_nonhydro_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
+    savepoint_nonhydro_step_exit,
 ):
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
-    sp_exit = savepoint_nonhydro_exit
-    sp_dif = diffusion_savepoint_init
-    sp_int = interpolation_savepoint
-    sp_met = metrics_savepoint
+    sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height
+        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflatlev=grid_savepoint.nflatlev(),
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
-    ntl1 = sp.get_metadata("ntl1").get("ntl1")
-    ntl2 = sp.get_metadata("ntl2").get("ntl2")
-    ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     mesh = SimpleMesh()
-    sp_met_nh = metrics_nonhydro_savepoint
     dtime = sp_v.get_metadata("dtime").get("dtime")
-    clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     r_nsubsteps = sp_d.get_metadata("nsteps").get("nsteps")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = PrepAdvection(vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me())
+    clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
+    prep_adv = PrepAdvection(vn_traj=diffusion_savepoint_init.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic())
 
     enh_smag_fac = zero_field(mesh, KDim)
     a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
@@ -940,61 +937,75 @@ def test_run_solve_nonhydro_multi_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ntl1=ntl1,
-        ntl2=ntl2,
-        rho_incr=None,  # TODO @nfarabullini: change back to this sp.rho_incr()
-        vn_incr=None,  # TODO @nfarabullini: change back to this sp.vn_incr()
-        exner_incr=None,  # TODO @nfarabullini: change back to this sp.exner_incr()
+        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        vt=sp_v.vt(),
+        vn_ie=sp_v.vn_ie(),
+        w_concorr_c=sp_v.w_concorr_c(),
+        rho_incr=None,  # sp.rho_incr(),
+        vn_incr=None,  # sp.vn_incr(),
+        exner_incr=None,  # sp.exner_incr(),
     )
 
-    prognostic_state = PrognosticState(
-        w=sp_v.w(),
-        vn=sp_v.vn(),
+    prognostic_state_nnow = PrognosticState(
+        w=sp.w_now(),
+        vn=sp.vn_now(),
         exner_pressure=None,
-        theta_v=sp_dif.theta_v(),
-        rho=sp_dif.rho(),
-        exner=sp_dif.exner(),
+        theta_v=sp.theta_v_now(),
+        rho=sp.rho_now(),
+        exner=sp.exner_now(),
+    )
+
+    prognostic_state_nnew = PrognosticState(
+        w=sp.w_new(),
+        vn=sp.vn_new(),
+        exner_pressure=None,
+        theta_v=sp.theta_v_new(),
+        rho=sp.rho_new(),
+        exner=sp.exner_new(),
+    )
+
+    z_fields = ZFields(
+        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+    )
+
+    nh_constants = NHConstants(
+        wgt_nnow_rth=sp.wgt_nnow_rth(),
+        wgt_nnew_rth=sp.wgt_nnew_rth(),
+        wgt_nnow_vel=sp.wgt_nnow_vel(),
+        wgt_nnew_vel=sp.wgt_nnew_vel(),
+        scal_divdamp=sp.scal_divdamp(),
+        scal_divdamp_o2=sp.scal_divdamp_o2(),
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
-    metric_state = metrics_savepoint.construct_metric_state()
-
-    metric_state_nonhydro = MetricStateNonHydro(
-        exner_exfac=sp_met_nh.exner_exfac(),
-        exner_ref_mc=sp_met_nh.exner_ref_mc(),
-        wgtfacq_c=sp_met_nh.wgtfacq_c(),
-        inv_ddqz_z_full=sp_met_nh.inv_ddqz_z_full(),
-        rho_ref_mc=sp_met_nh.rho_ref_mc(),
-        vwind_expl_wgt=sp_met_nh.vwind_expl_wgt(),
-        d_exner_dz_ref_ic=sp_met_nh.d_exner_dz_ref_ic(),
-        theta_ref_ic=sp_met_nh.theta_ref_ic(),
-        d2dexdz2_fac1_mc=sp_met_nh.d2dexdz2_fac1_mc(),
-        d2dexdz2_fac2_mc=sp_met_nh.d2dexdz2_fac2_mc(),
-        vwind_impl_wgt=sp_met_nh.vwind_impl_wgt(),
-        bdy_halo_c=sp_met_nh.bdy_halo_c(),
-        ipeidx_dsl=sp_met_nh.ipeidx_dsl(),
-        hmask_dd3d=sp_met_nh.hmask_dd3d(),
-        scalfac_dd3d=sp_met_nh.scalfac_dd3d(),
-        rayleigh_w=sp_met_nh.rayleigh_w(),
-        rho_ref_me=sp_met_nh.rho_ref_me(),
-        theta_ref_me=sp_met_nh.theta_ref_me(),
-        mask_prog_halo_c=sp_met_nh.mask_prog_halo_c(),
-        pg_exdist=sp_met_nh.pg_exdist(),
-        wgtfacq_c_dsl=sp_met_nh.wgtfacq_c_dsl(),
-        zdiff_gradp=sp_met_nh.zdiff_gradp(),
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
+        icon_grid.n_lev()
     )
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
-
-    prognostic_state_ls = [prognostic_state, prognostic_state]
 
     solve_nonhydro = SolveNonhydro()
     solve_nonhydro.init(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
-        metric_state=metric_state,
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
@@ -1005,22 +1016,22 @@ def test_run_solve_nonhydro_multi_step(
         z=z,
     )
 
-    for _ in range(4):
+    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+
+    for _ in range(r_nsubsteps):
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
-            prognostic_state=prognostic_state_ls,
+            prognostic_state_ls=prognostic_state_ls,
             prep_adv=prep_adv,
             config=config,
             params=nonhydro_params,
-            inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-            primal_normal_cell=edge_geometry.primal_normal_cell,
-            dual_normal_cell=edge_geometry.dual_normal_cell,
-            inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
-            tangent_orientation=edge_geometry.tangent_orientation,
+            edge_geometry=edge_geometry,
+            z_fields=z_fields,
+            nh_constants=nh_constants,
             cfl_w_limit=sp_v.cfl_w_limit(),
             scalfac_exdiff=sp_v.scalfac_exdiff(),
             cell_areas=cell_geometry.area,
-            owner_mask=sp_d.c_owner_mask(),
+            c_owner_mask=sp_d.c_owner_mask(),
             f_e=sp_d.f_e(),
             area_edge=sp_d.edge_areas(),
             bdy_divdamp=sp.bdy_divdamp(),
@@ -1034,55 +1045,61 @@ def test_run_solve_nonhydro_multi_step(
             lprep_adv=lprep_adv,
         )
 
-    icon_result_exner_new = sp_exit.exner_new()
-    icon_result_exner_now = sp_exit.exner_now()
-    icon_result_mass_fl_e = sp_exit.mass_fl_e()
-    icon_result_prep_adv_mass_flx_me = sp_exit.prep_adv_mass_flx_me()
-    icon_result_prep_adv_vn_traj = sp_exit.prep_adv_vn_traj()
-    icon_result_rho_ic = sp_exit.rho_ic()
-    icon_result_theta_v_ic = sp_exit.theta_v_ic()
-    icon_result_theta_v_new = sp_exit.theta_v_new()
-    icon_result_vn_ie = sp_exit.vn_ie()
-    icon_result_vn_new = sp_exit.vn_new()
-    icon_result_w_concorr_c = sp_exit.w_concorr_c()
-    icon_result_w_new = sp_exit.w_new()
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.rho_ic()),
+        np.asarray(diagnostic_state_nh.rho_ic),
+    )
 
     assert dallclose(
-        np.asarray(icon_result_exner_new), np.asarray(prognostic_state_ls[nnew].exner)
-    )
-    assert dallclose(
-        np.asarray(icon_result_exner_now), np.asarray(prognostic_state_ls[nnow].exner)
-    )
-    assert dallclose(
-        np.asarray(icon_result_prep_adv_mass_flx_me), np.asarray(prep_adv.mass_flx_me)
-    )
-    assert dallclose(
-        np.asarray(icon_result_mass_fl_e),
-        np.asarray(diagnostic_state_nh.mass_fl_e),
-    )
-    assert dallclose(
-        np.asarray(icon_result_prep_adv_vn_traj), np.asarray(prep_adv.vn_traj)
-    )
-    assert dallclose(
-        np.asarray(icon_result_rho_ic), np.asarray(diagnostic_state_nh.rho_ic)
-    )
-    assert dallclose(
-        np.asarray(icon_result_theta_v_ic),
+        np.asarray(savepoint_nonhydro_exit.theta_v_ic()),
         np.asarray(diagnostic_state_nh.theta_v_ic),
     )
+
     assert dallclose(
-        np.asarray(icon_result_theta_v_new),
-        np.asarray(prognostic_state_ls[nnew].theta_v),
+        np.asarray(savepoint_nonhydro_exit.z_graddiv_vn()),
+        np.asarray(z_fields.z_graddiv_vn),
     )
     assert dallclose(
-        np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state_nh.vn_ie)
+        np.asarray(savepoint_nonhydro_exit.exner_new()),
+        np.asarray(prognostic_state_ls[nnew].exner),
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.rho()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].rho)),
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.w_new()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].w)), atol=8e-14
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.vn_new()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].vn)),
+        rtol=1e-10
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.theta_v_new()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].theta_v)),
+    )
+
+    assert dallclose(np.asarray(savepoint_nonhydro_exit.mass_fl_e()),
+                     np.asarray(diagnostic_state_nh.mass_fl_e),
+                     rtol=1e-10)
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.mass_flx_me()),
+        np.asarray(prep_adv.mass_flx_me), rtol=1e-10
     )
     assert dallclose(
-        np.asarray(icon_result_vn_new), np.asarray(prognostic_state_ls[nnew].vn)
+        np.asarray(savepoint_nonhydro_exit.vn_traj()), np.asarray(prep_adv.vn_traj),
+        rtol=1e-10
     )
+
     assert dallclose(
-        np.asarray(icon_result_w_concorr_c), np.asarray(diagnostic_state_nh.w_concorr_c)
-    )
+        np.asarray(sp_step_exit.theta_v_new()), np.asarray(prognostic_state_nnew.theta_v))
+
     assert dallclose(
-        np.asarray(icon_result_w_new), np.asarray(prognostic_state_ls[nnew].w)
-    )
+        np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner))
