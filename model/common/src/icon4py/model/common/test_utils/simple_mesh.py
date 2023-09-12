@@ -28,6 +28,7 @@ from icon4py.model.common.dimension import (
     E2C2VDim,
     E2CDim,
     E2VDim,
+    ECDim,
     ECVDim,
     EdgeDim,
     KDim,
