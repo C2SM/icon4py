@@ -4,6 +4,8 @@
 -e ./model/atmosphere/dycore
 -e ./model/atmosphere/advection
 -e ./model/common
+-e ./model/atmosphere/diffusion
+-e ./model/driver
 
 # icon4pytools
 -e ./tools
