@@ -21,10 +21,14 @@ on:
         types: [submitted]
 
 jobs:
-    pre-commit-icon4py-model-common:
+    pre-commit-icon4py-model:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
+            -   name: Install system dependencies
+                run: |
+                    sudo apt-get update
+                    sudo apt-get install libboost-all-dev
             - name: Set up Python
               uses: actions/setup-python@v4
               with:
@@ -36,8 +40,8 @@ jobs:
                     **/base-requirements-dev.txt
                     **/requirements.txt
                     **/requirements-dev.txt
-            - name: Install icon4py-common
-              working-directory: model/common
+            - name: Install icon4py-model packages
+              working-directory: model
               run: |
                   python -m pip install --upgrade pip setuptools wheel
                   python -m pip install -r ./requirements-dev.txt
@@ -45,27 +49,13 @@ jobs:
             - name: Run checks icon4py-model-common
               run: |
                   pre-commit run --config model/common/.pre-commit-config.yaml --all-files
-
-    pre-commit-icon4py-model-atmosphere-dycore:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v3
-            - name: Set up Python
-              uses: actions/setup-python@v4
-              with:
-                  python-version: "3.10"
-                  cache: 'pip'
-                  cache-dependency-path: |
-                    **/pyproject.toml
-                    **/base-requirements.txt
-                    **/base-requirements-dev.txt
-                    **/requirements.txt
-                    **/requirements-dev.txt
-            - name: Install icon4py-model-atmosphere-dycore
-              working-directory: model/atmosphere/dycore
+            - name: Run checks icon4py-model-driver
               run: |
-                  python -m pip install --upgrade pip setuptools wheel
-                  python -m pip install -r ./requirements-dev.txt
+                  pre-commit run --config model/driver/.pre-commit-config.yaml --all-files
             - name: Run checks icon4py-model-atmosphere-dycore
               run: |
                   pre-commit run --config model/atmosphere/dycore/.pre-commit-config.yaml --all-files
+            - name: Run checks icon4py-model-atmosphere-diffusion
+              run: |
+                  pre-commit run --config model/atmosphere/diffusion/.pre-commit-config.yaml --all-files
+
