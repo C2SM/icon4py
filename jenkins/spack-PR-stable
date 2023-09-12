@@ -1,3 +1,4 @@
+def repo_identifier = "Project"
 def spack_fork = "C2SM"
 def spack_branch = "main"
 String[] triggerPhrase = env.ghprbCommentBody.split(" ")
