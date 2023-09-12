@@ -1,3 +1,16 @@
+def spack_fork = "C2SM"
+def spack_branch = "main"
+
+def parseTriggerPhrase(it) {
+    fork = it.split("=")[1].split("/")[0]
+    branch = it.split("=")[1].split("/")[1]
+    return [fork, branch]
+}
+triggerPhrase.each {
+    if(it.contains("spack${repo_identifier}")) {
+        (spack_fork, spack_branch) = parseTriggerPhrase(it)
+    }
+}
 pipeline {
     agent none
     stages {
@@ -20,7 +33,7 @@ pipeline {
                     stage('Clone Repos') {
                         steps {
                             sh """
-                            git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/C2SM/spack-c2sm.git
+                            git clone --depth 1 --recurse-submodules --shallow-submodules -b '${spack_branch}' https://github.com/${spack_fork}/spack-c2sm.git
                             git clone . local_copy
                             """
                         }
