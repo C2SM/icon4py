@@ -511,7 +511,7 @@ def test_graupel_Ong_serialized_data():
 
     # run graupel
 
-    _graupel_scan.with_backend(backend)(
+    _graupel_scan(
         const_data["ser_graupel_kstart_moist"],
         const_data["ser_graupel_kend"],
         const_data["ser_graupel_dt"],
@@ -576,9 +576,12 @@ def test_graupel_Ong_serialized_data():
         offset_provider={}
     )
 
+    '''
+
+    '''
 
     if (const_data["ser_graupel_ldiag_ttend"]):
-        _graupel_t_tendency.with_backend(backend)(
+        _graupel_t_tendency(
             const_data["ser_graupel_dt"],
             predict_field["ser_graupel_temperature"],
             ser_field["ser_graupel_temperature"],
@@ -589,7 +592,7 @@ def test_graupel_Ong_serialized_data():
         )
 
     if (const_data["ser_graupel_ldiag_qtend"]):
-        _graupel_q_tendency.with_backend(backend)(
+        _graupel_q_tendency(
             const_data["ser_graupel_dt"],
             predict_field["ser_graupel_qv"],
             predict_field["ser_graupel_qc"],
@@ -612,7 +615,7 @@ def test_graupel_Ong_serialized_data():
         )
 
 
-    _graupel_flux_scan.with_backend(backend)(
+    _graupel_flux_scan(
         const_data["ser_graupel_kstart_moist"],
         const_data["ser_graupel_kend"],
         ser_field["ser_graupel_rho"],
