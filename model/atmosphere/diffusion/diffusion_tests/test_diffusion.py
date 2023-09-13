@@ -27,10 +27,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 
-from .test_diffusion_utils import (
+from .utils import (
     diff_multfac_vn_numpy,
     enhanced_smagorinski_factor_numpy,
     smag_limit_numpy,
+    verify_diffusion_fields,
 )
 
 
@@ -217,7 +218,6 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
 
     diffusion = Diffusion()
-    # TODO (magdalena) fix nflatlev and nflat_gradp args to VerticalModelParams
     diffusion.init(
         grid=icon_grid,
         config=config,
@@ -231,7 +231,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         cell_params=cell_geometry,
     )
 
-    _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
+    verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
 @pytest.mark.datatest
@@ -319,51 +319,14 @@ def test_run_diffusion_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
     )
-    _verify_diffusion_fields(
-        diagnostic_state, prognostic_state, diffusion_savepoint_init
-    )
+    verify_diffusion_fields(diagnostic_state, prognostic_state, diffusion_savepoint_exit)
     assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
     diffusion.run(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
     )
-    _verify_diffusion_fields(
-        diagnostic_state, prognostic_state, diffusion_savepoint_exit
-    )
-
-
-def _verify_diffusion_fields(
-    diagnostic_state: DiffusionDiagnosticState,
-    prognostic_state: PrognosticState,
-    diffusion_savepoint: IconDiffusionExitSavepoint,
-):
-    ref_div_ic = np.asarray(diffusion_savepoint.div_ic())
-    val_div_ic = np.asarray(diagnostic_state.div_ic)
-    ref_hdef_ic = np.asarray(diffusion_savepoint.hdef_ic())
-    val_hdef_ic = np.asarray(diagnostic_state.hdef_ic)
-    assert np.allclose(ref_div_ic, val_div_ic)
-    assert np.allclose(ref_hdef_ic, val_hdef_ic)
-    ref_w = np.asarray(diffusion_savepoint.w())
-    val_w = np.asarray(prognostic_state.w)
-    ref_dwdx = np.asarray(diffusion_savepoint.dwdx())
-    val_dwdx = np.asarray(diagnostic_state.dwdx)
-    ref_dwdy = np.asarray(diffusion_savepoint.dwdy())
-    val_dwdy = np.asarray(diagnostic_state.dwdy)
-    assert np.allclose(ref_dwdx, val_dwdx)
-    assert np.allclose(ref_dwdy, val_dwdy)
-
-    ref_vn = np.asarray(diffusion_savepoint.vn())
-    val_vn = np.asarray(prognostic_state.vn)
-    assert np.allclose(ref_vn, val_vn)
-    assert np.allclose(ref_w, val_w)
-    ref_exner = np.asarray(diffusion_savepoint.exner())
-    ref_theta_v = np.asarray(diffusion_savepoint.theta_v())
-    val_theta_v = np.asarray(prognostic_state.theta_v)
-    val_exner = np.asarray(prognostic_state.exner_pressure)
-    assert np.allclose(ref_theta_v, val_theta_v)
-    assert np.allclose(ref_exner, val_exner)
-
+    verify_diffusion_fields(diagnostic_state, prognostic_state, diffusion_savepoint_exit)
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
