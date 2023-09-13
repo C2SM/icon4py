@@ -50,8 +50,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
     PrognosticState,
 )
-from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
+from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
 from icon4py.state_utils.diagnostic_state import DiagnosticState
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro

@@ -20,15 +20,15 @@ import pytest
 from netCDF4 import Dataset
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.grid.grid_manager import (
+from icon4py.model.common.grid.grid_manager import (
     GridFile,
     GridFileName,
     GridManager,
     IndexTransformation,
     ToGt4PyTransformation,
 )
-from icon4py.grid.horizontal import HorizontalMarkerIndex
-from icon4py.grid.icon_grid import VerticalGridSize
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.grid.icon_grid import VerticalGridSize
 
 
 helpers = conftest.import_testutils()

@@ -20,8 +20,8 @@ from icon4py.driver.io_utils import (
     read_icon_grid,
     read_static_fields,
 )
-from icon4py.grid.horizontal import CellParams, EdgeParams
-from icon4py.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.vertical import VerticalModelParams
 
 
 @pytest.mark.parametrize(

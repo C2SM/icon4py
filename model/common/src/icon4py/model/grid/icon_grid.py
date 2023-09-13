@@ -29,8 +29,8 @@ from icon4py.model.common.dimension import (
     KDim,
     VertexDim,
 )
-from icon4py.grid.horizontal import HorizontalGridSize
-from icon4py.grid.vertical import VerticalGridSize
+from icon4py.model.common.grid.horizontal import HorizontalGridSize
+from icon4py.model.common.grid.vertical import VerticalGridSize
 
 class VerticalMeshConfig:
     def __init__(self, num_lev: int):

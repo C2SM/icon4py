@@ -71,9 +71,9 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     setup_fields_for_initial_step,
     zero_field,
 )
-from icon4py.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
-from icon4py.grid.icon_grid import IconGrid
-from icon4py.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+from icon4py.model.common.grid.icon_grid import IconGrid
+from icon4py.model.common.grid.vertical import VerticalModelParams
 
 
 # flake8: noqa

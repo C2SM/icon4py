@@ -28,7 +28,7 @@ import pytest
 
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.field_management.interpolation_fields import compute_c_lin_e
-from icon4py.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.horizontal import HorizontalMarkerIndex
 
 # TODO (magdalena) not all fields present in the implement_nhsolve
 @pytest.mark.xfail
