@@ -1,8 +1,10 @@
 -r base-requirements.txt
 
-# Concretized dependencies in local repo
-./common
-./atm_dyn_iconam
+# icon4py model
+./model/atmosphere/dycore
+./model/atmosphere/diffusion
+./model/common
+./model/driver
 ./py2f
 # icon4pytools
 ./tools

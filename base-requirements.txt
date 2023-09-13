@@ -1,3 +1,4 @@
 # VCS
 gt4py @ git+https://github.com/GridTools/gt4py.git@main
+pyghex @ git+https://github.com/boeschf/GHEX.git@pipify#subdirectory=bindings/python
 netcdf4 >=1.6.0

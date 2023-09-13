@@ -15,7 +15,9 @@ import os
 import pkgutil
 import re
 
-import icon4py.atm_dyn_iconam
+import icon4py.model.atmosphere.diffusion.stencils as diffusion
+import icon4py.model.atmosphere.dycore as dycore
+import icon4py.model.common.interpolation.stencils as intp
 import pytest
 from click.testing import CliRunner
 
@@ -23,6 +25,10 @@ from icon4pytools.icon4pygen.cli import main
 
 from .helpers import get_stencil_module_path
 
+
+DYCORE_PKG = "atmosphere.dycore"
+INTERPOLATION_PKG = "common.interpolation.stencils"
+DIFFUSION_PKG = "atmosphere.diffusion.stencils"
 
 LEVELS_PER_THREAD = "1"
 BLOCK_SIZE = "128"
@@ -38,6 +44,24 @@ def atm_dyn_iconam_fencils() -> list[tuple[str, str]]:
     pkgpath = os.path.dirname(icon4py.atm_dyn_iconam.__file__)
     stencils = [name for _, name, _ in pkgutil.iter_modules([pkgpath])]
     fencils = [("atm_dyn_iconam", stencil) for stencil in stencils]
+    return fencils
+
+def dycore_fencils() -> list[tuple[str, str]]:
+    return _fencils(dycore.__file__, DYCORE_PKG)
+
+
+def interpolation_fencils() -> list[tuple[str, str]]:
+    return _fencils(intp.__file__, INTERPOLATION_PKG)
+
+
+def diffusion_fencils() -> list[tuple[str, str]]:
+    return _fencils(diffusion.__file__, DIFFUSION_PKG)
+
+
+def _fencils(module_name, package_name) -> list[tuple[str, str]]:
+    pkgpath = os.path.dirname(module_name)
+    stencils = [name for _, name, _ in pkgutil.iter_modules([pkgpath])]
+    fencils = [(package_name, stencil) for stencil in stencils]
     return fencils
 
 
@@ -110,9 +134,11 @@ def check_code_was_generated(stencil_name: str) -> None:
     check_cpp_codegen(f"{stencil_name}.cpp")
 
 
-@pytest.mark.skip("raises exception due to dims in offset provider")
-@pytest.mark.parametrize(("stencil_module", "stencil_name"), atm_dyn_iconam_fencils())
-def test_codegen_atm_dyn_iconam(cli, stencil_module, stencil_name) -> None:
+@pytest.mark.parametrize(
+    ("stencil_module", "stencil_name"),
+    dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
+)
+def test_codegen_dycore(cli, stencil_module, stencil_name) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
         result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
@@ -125,13 +151,3 @@ def test_invalid_module_path(cli) -> None:
     result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
     assert result.exit_code == 1
     assert isinstance(result.exception, ModuleNotFoundError)
-
-
-@pytest.mark.skip("raises exception due to dims in offset provider")
-def test_codegen_mo_nh_diffusion_stencil_14(cli) -> None:
-    stencil_name = "mo_nh_diffusion_stencil_14"
-    module_path = get_stencil_module_path("atm_dyn_iconam", stencil_name)
-    with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
-        assert result.exit_code == 0
-        check_code_was_generated(stencil_name)

@@ -24,6 +24,10 @@ from icon4pytools.liskov.codegen.integration.template import (
     DeclareStatementGenerator,
     EndCreateStatement,
     EndCreateStatementGenerator,
+    EndDeleteStatement,
+    EndDeleteStatementGenerator,
+    EndFusedStencilStatement,
+    EndFusedStencilStatementGenerator,
     EndIfStatement,
     EndIfStatementGenerator,
     EndProfileStatement,
@@ -38,6 +42,10 @@ from icon4pytools.liskov.codegen.integration.template import (
     MetadataStatementGenerator,
     StartCreateStatement,
     StartCreateStatementGenerator,
+    StartDeleteStatement,
+    StartDeleteStatementGenerator,
+    StartFusedStencilStatement,
+    StartFusedStencilStatementGenerator,
     StartProfileStatement,
     StartProfileStatementGenerator,
     StartStencilStatement,
@@ -75,6 +83,9 @@ class IntegrationCodeGenerator(CodeGenerator):
         self._generate_declare()
         self._generate_start_stencil()
         self._generate_end_stencil()
+        self._generate_start_fused_stencil()
+        self._generate_end_fused_stencil()
+        self._generate_delete()
         self._generate_endif()
         self._generate_profile()
         self._generate_insert()
@@ -167,6 +178,48 @@ class IntegrationCodeGenerator(CodeGenerator):
                 noaccenddata=self.interface.EndStencil[i].noaccenddata,
             )
 
+    def _generate_start_fused_stencil(self) -> None:
+        """Generate f90 integration code surrounding a fused stencil."""
+        if self.interface.StartFusedStencil != UnusedDirective:
+            for stencil in self.interface.StartFusedStencil:
+                logger.info(f"Generating START FUSED statement for {stencil.name}")
+                self._generate(
+                    StartFusedStencilStatement,
+                    StartFusedStencilStatementGenerator,
+                    stencil.startln,
+                    stencil_data=stencil,
+                )
+
+    def _generate_end_fused_stencil(self) -> None:
+        """Generate f90 integration code surrounding a fused stencil."""
+        if self.interface.EndFusedStencil != UnusedDirective:
+            for i, stencil in enumerate(self.interface.StartFusedStencil):
+                logger.info(f"Generating END Fused statement for {stencil.name}")
+                self._generate(
+                    EndFusedStencilStatement,
+                    EndFusedStencilStatementGenerator,
+                    self.interface.EndFusedStencil[i].startln,
+                    stencil_data=stencil,
+                )
+
+    def _generate_delete(self) -> None:
+        """Generate f90 integration code for delete section."""
+        if self.interface.StartDelete != UnusedDirective:
+            logger.info("Generating DELETE statement.")
+            for start, end in zip(
+                self.interface.StartDelete, self.interface.EndDelete, strict=True
+            ):
+                self._generate(
+                    StartDeleteStatement,
+                    StartDeleteStatementGenerator,
+                    start.startln,
+                )
+                self._generate(
+                    EndDeleteStatement,
+                    EndDeleteStatementGenerator,
+                    end.startln,
+                )
+
     def _generate_imports(self) -> None:
         """Generate f90 code for import statements."""
         logger.info("Generating IMPORT statement.")
@@ -174,7 +227,7 @@ class IntegrationCodeGenerator(CodeGenerator):
             ImportsStatement,
             ImportsStatementGenerator,
             self.interface.Imports.startln,
-            stencils=self.interface.StartStencil,
+            stencils=self.interface.StartStencil + self.interface.StartFusedStencil,
         )
 
     def _generate_create(self) -> None:

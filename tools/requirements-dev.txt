@@ -1,4 +1,5 @@
 -r ../base-requirements-dev.txt
--e ../common
--e ../atm_dyn_iconam
+-e ../model/atmosphere/dycore
+-e ../model/atmosphere/diffusion
+-e ../model/common
 -e .

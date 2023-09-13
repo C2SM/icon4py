@@ -13,13 +13,17 @@
 
 import importlib
 from inspect import getmembers
-from typing import Any
+from typing import Any, Sequence
 
 from gt4py.next.ffront.decorator import Program
 
+from icon4pytools.common import ICON4PY_MODEL_QUALIFIED_NAME
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.icon4pygen.metadata import get_stencil_info
-from icon4pytools.liskov.codegen.integration.interface import IntegrationCodeInterface
+from icon4pytools.liskov.codegen.integration.interface import (
+    BaseStartStencilData,
+    IntegrationCodeInterface,
+)
 from icon4pytools.liskov.external.exceptions import IncompatibleFieldError, UnknownStencilError
 from icon4pytools.liskov.pipeline.definition import Step
 
@@ -28,7 +32,11 @@ logger = setup_logger(__name__)
 
 
 class UpdateFieldsWithGt4PyStencils(Step):
-    _STENCIL_PACKAGES = ["atm_dyn_iconam", "advection"]
+    _STENCIL_PACKAGES = [
+        "atmosphere.dycore",
+        "atmosphere.diffusion.stencils",
+        "common.interpolation.stencils",
+    ]
 
     def __init__(self, parsed: IntegrationCodeInterface):
         self.parsed = parsed
@@ -36,7 +44,13 @@ class UpdateFieldsWithGt4PyStencils(Step):
     def __call__(self, data: Any = None) -> IntegrationCodeInterface:
         logger.info("Updating parsed fields with data from icon4py stencils...")
 
-        for s in self.parsed.StartStencil:
+        self._set_in_out_field(self.parsed.StartStencil)
+        self._set_in_out_field(self.parsed.StartFusedStencil)
+
+        return self.parsed
+
+    def _set_in_out_field(self, startStencil: Sequence[BaseStartStencilData]) -> None:
+        for s in startStencil:
             gt4py_program = self._collect_icon4py_stencil(s.name)
             gt4py_stencil_info = get_stencil_info(gt4py_program)
             gt4py_fields = gt4py_stencil_info.fields
@@ -44,32 +58,30 @@ class UpdateFieldsWithGt4PyStencils(Step):
                 try:
                     field_info = gt4py_fields[f.variable]
                 except KeyError:
-                    raise IncompatibleFieldError(
-                        f"Used field variable name that is incompatible with the expected field names defined in {s.name} in icon4pytools."
-                    )
+                    error_msg = f"Used field variable name ({f.variable}) that is incompatible with the expected field names defined in {s.name} in icon4py."
+                    raise IncompatibleFieldError(error_msg)
                 f.out = field_info.out
                 f.inp = field_info.inp
-        return self.parsed
 
     def _collect_icon4py_stencil(self, stencil_name: str) -> Program:
         """Collect and return the ICON4PY stencil program with the given name."""
         err_counter = 0
         for pkg in self._STENCIL_PACKAGES:
             try:
-                module_name = f"icon4py.{pkg}.{stencil_name}"
+                module_name = f"{ICON4PY_MODEL_QUALIFIED_NAME}.{pkg}.{stencil_name}"
                 module = importlib.import_module(module_name)
             except ModuleNotFoundError:
                 err_counter += 1
 
         if err_counter == len(self._STENCIL_PACKAGES):
-            raise UnknownStencilError(f"Did not find module: {stencil_name} in icon4pytools.")
+            raise UnknownStencilError(f"Did not find module: {stencil_name}")
 
         module_members = getmembers(module)
         found_stencil = [elt for elt in module_members if elt[0] == stencil_name]
 
         if len(found_stencil) == 0:
             raise UnknownStencilError(
-                f"Did not find module member: {stencil_name} in module: {module.__name__} in icon4pytools."
+                f"Did not find module member: {stencil_name} in module: {module.__name__}"
             )
 
         return found_stencil[0][1]

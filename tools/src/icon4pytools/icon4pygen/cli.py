@@ -21,10 +21,11 @@ import click
 
 
 class ModuleType(click.ParamType):
+    dycore_import_path = "icon4py.model.atmosphere.dycore"
     names = [
-        "icon4pytools.atm_dyn_iconam.mo_nh_diffusion_stencil_",
-        "icon4pytools.atm_dyn_iconam.mo_solve_nonhydro_stencil_",
-        "icon4pytools.atm_dyn_iconam.mo_velocity_advection_stencil_",
+        f"{dycore_import_path}.mo_nh_diffusion_stencil_",
+        f"{dycore_import_path}.mo_solve_nonhydro_stencil_",
+        f"{dycore_import_path}.mo_velocity_advection_stencil_",
     ]
 
     def shell_complete(self, ctx, param, incomplete):
