@@ -23,7 +23,7 @@ from atm_dyn_iconam.tests.test_utils.helpers import (
     as_1D_sparse_field,
     flatten_first_two_dims,
 )
-from icon4py.common.dimension import (
+from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,

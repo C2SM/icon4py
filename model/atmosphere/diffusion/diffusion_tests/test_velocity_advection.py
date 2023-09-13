@@ -16,7 +16,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from atm_dyn_iconam.tests.test_utils.helpers import as_1D_sparse_field, dallclose
-from icon4py.common.dimension import CEDim
+from icon4py.model.common.dimension import CEDim
 from icon4py.grid.horizontal import CellParams, EdgeParams
 from icon4py.grid.vertical import VerticalModelParams
 from icon4py.state_utils.diagnostic_state import DiagnosticStateNonHydro

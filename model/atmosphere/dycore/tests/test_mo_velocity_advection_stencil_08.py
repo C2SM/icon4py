@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_08 import (
     mo_velocity_advection_stencil_08,
 )
-from icon4py.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 
 from .test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from .test_utils.stencil_test import StencilTest

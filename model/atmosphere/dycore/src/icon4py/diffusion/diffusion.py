@@ -56,7 +56,7 @@ from icon4py.common.constants import (
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
 )
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,

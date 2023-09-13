@@ -16,7 +16,7 @@ from dataclasses import dataclass
 import numpy as np
 from gt4py.next import Field, int32, np_as_located_field
 
-from icon4py.common.dimension import (
+from icon4py.model.common.dimension import (
     C2E2CODim,
     CECDim,
     CEDim,

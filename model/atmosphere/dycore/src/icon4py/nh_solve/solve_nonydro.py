@@ -137,7 +137,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_67 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
-from icon4py.common.dimension import CellDim, ECDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, ECDim, EdgeDim, KDim, VertexDim
 from icon4py.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.grid.icon_grid import IconGrid
 from icon4py.grid.vertical import VerticalModelParams

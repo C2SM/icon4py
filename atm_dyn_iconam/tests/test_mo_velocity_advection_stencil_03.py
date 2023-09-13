@@ -17,7 +17,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_03 import (
     mo_velocity_advection_stencil_03,
 )
-from icon4py.common.dimension import EdgeDim, KDim
+from icon4py.model.common.dimension import EdgeDim, KDim
 
 from .test_utils.helpers import random_field, zero_field
 from .test_utils.simple_mesh import SimpleMesh

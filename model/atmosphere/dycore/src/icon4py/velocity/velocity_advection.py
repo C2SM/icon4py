@@ -52,7 +52,7 @@ from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_19 import (
 from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.grid.horizontal import HorizontalMarkerIndex
 from icon4py.grid.icon_grid import IconGrid
 from icon4py.grid.vertical import VerticalModelParams

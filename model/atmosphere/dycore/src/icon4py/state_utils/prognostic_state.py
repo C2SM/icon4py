@@ -17,7 +17,7 @@ import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
 
 @dataclass

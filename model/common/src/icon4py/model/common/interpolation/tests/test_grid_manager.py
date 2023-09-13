@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from netCDF4 import Dataset
 
-from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.grid.grid_manager import (
     GridFile,
     GridFileName,

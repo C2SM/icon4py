@@ -13,7 +13,7 @@
 import numpy as np
 import pytest
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.grid.horizontal import CellParams, EdgeParams
 from icon4py.grid.vertical import VerticalModelParams
 from icon4py.nh_solve.solve_nonydro import (

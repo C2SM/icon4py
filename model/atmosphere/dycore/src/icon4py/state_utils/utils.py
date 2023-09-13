@@ -18,7 +18,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import abs, broadcast, int32, maximum, minimum
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from icon4py.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
 
 # TODO [@Magdalena] fix duplication: duplicated from test testutils/utils.py

@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import pytest
 
-from icon4py.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.grid.horizontal import HorizontalMarkerIndex
 
 

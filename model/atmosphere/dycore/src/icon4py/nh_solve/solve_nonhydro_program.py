@@ -98,7 +98,7 @@ from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_61 import (
 from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_62 import (
     _mo_solve_nonhydro_stencil_62,
 )
-from icon4py.common.dimension import C2EDim, CEDim, CellDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, ECDim, EdgeDim, KDim
 from icon4py.state_utils.utils import _set_zero_c_k, _set_zero_e_k
 
 

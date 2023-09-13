@@ -19,7 +19,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 from typing_extensions import deprecated
 
-from icon4py.common.dimension import (
+from icon4py.model.common.dimension import (
     CECDim,
     CEDim,
     CellDim,

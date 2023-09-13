@@ -22,7 +22,7 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
-from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 
 @field_operator

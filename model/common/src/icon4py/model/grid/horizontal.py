@@ -15,8 +15,8 @@ from typing import Final
 
 from gt4py.next.common import Dimension, Field
 
-from icon4py.common import dimension
-from icon4py.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
+from icon4py.model.common import dimension
+from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
 
 
 class HorizontalMarkerIndex:

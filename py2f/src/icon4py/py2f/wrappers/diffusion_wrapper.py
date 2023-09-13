@@ -14,7 +14,7 @@
 # flake8: noqa
 from gt4py.next.common import Field
 
-from icon4py.common.dimension import (
+from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
