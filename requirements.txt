@@ -1,11 +1,15 @@
 -r base-requirements.txt
 
-# Concretized dependencies in local repo
-./common
-./shared
-./pyutils
-./testutils
-./atm_dyn_iconam
-./atm_phy_schemes
-./liskov
 
+# icon4py model
+./model/atmosphere/dycore
+./model/atmosphere/diffusion
+./model/common
+./model/driver
+
+# icon4pytools
+./tools
+
+# for microphysics graupel
+./shared
+./atm_phy_schemes

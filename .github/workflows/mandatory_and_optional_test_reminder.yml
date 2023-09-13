@@ -1,0 +1,28 @@
+on:
+    pull_request:
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        permissions:
+            pull-requests: write
+        steps:
+            - uses: mshick/add-pr-comment@v2
+              with:
+                  refresh-message-position: true
+                  message: |
+
+                      **Mandatory Tests**
+
+                      Please make sure you run these tests via comment before you merge!
+
+
+                      * `launch jenkins spack`
+
+                      **Optional Tests**
+
+                      In case your change might affect downstream [icon-exclaim](https://github.com/C2SM/icon-exclaim), please consider running
+
+                      * `launch jenkins icon`
+
+                      For more detailed information please look at [CI in the EXCLAIM universe](https://github.com/C2SM/icon-exclaim/wiki).
