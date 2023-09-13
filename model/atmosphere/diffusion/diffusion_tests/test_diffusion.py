@@ -24,8 +24,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     PrognosticState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
-from icon4py.model.common.horizontal import CellParams, EdgeParams
-from icon4py.model.common.vertical import VerticalModelParams
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.vertical import VerticalModelParams
 
 from .test_diffusion_utils import (
     diff_multfac_vn_numpy,
