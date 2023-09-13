@@ -39,13 +39,6 @@ OUTPATH = "."
 def cli():
     return CliRunner()
 
-
-def atm_dyn_iconam_fencils() -> list[tuple[str, str]]:
-    pkgpath = os.path.dirname(icon4py.atm_dyn_iconam.__file__)
-    stencils = [name for _, name, _ in pkgutil.iter_modules([pkgpath])]
-    fencils = [("atm_dyn_iconam", stencil) for stencil in stencils]
-    return fencils
-
 def dycore_fencils() -> list[tuple[str, str]]:
     return _fencils(dycore.__file__, DYCORE_PKG)
 
