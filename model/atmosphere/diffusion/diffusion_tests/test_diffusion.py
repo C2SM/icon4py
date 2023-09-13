@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from atm_dyn_iconam.tests.test_utils.serialbox_utils import (
+from icon4py.model.common.test_utils.serialbox_utils import (
     IconDiffusionExitSavepoint,
     IconDiffusionInitSavepoint,
 )

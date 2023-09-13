@@ -19,7 +19,7 @@ from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from atm_dyn_iconam.tests.test_utils.helpers import (
+from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     flatten_first_two_dims,
 )

@@ -15,7 +15,7 @@
 import pytest
 from gt4py.next.program_processors.runners.roundtrip import executor
 
-from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig
 
 from .test_utils.fixtures import (  # noqa F401

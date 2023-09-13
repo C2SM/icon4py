@@ -14,8 +14,8 @@
 import numpy as np
 import pytest
 
-from atm_dyn_iconam.tests.test_utils.helpers import random_field, zero_field
-from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
