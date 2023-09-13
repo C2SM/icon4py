@@ -18,7 +18,7 @@ from gt4py.next.program_processors.runners.roundtrip import executor
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig
 
-from .test_utils.fixtures import (  # noqa F401
+from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     damping_height,
     data_provider,
     get_data_path,

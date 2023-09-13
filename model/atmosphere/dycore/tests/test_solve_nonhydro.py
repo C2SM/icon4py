@@ -29,8 +29,8 @@ from icon4py.state_utils.prognostic_state import PrognosticState
 from icon4py.state_utils.utils import _allocate
 from icon4py.state_utils.z_fields import ZFields
 
-from .test_utils.helpers import dallclose, random_field, zero_field
-from .test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 @pytest.mark.datatest
