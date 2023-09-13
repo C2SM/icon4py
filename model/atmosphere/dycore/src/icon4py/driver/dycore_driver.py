@@ -22,12 +22,12 @@ from gt4py.next import Field, program
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.diffusion.diffusion_states import (
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
+from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     PrognosticState,
 )
-from icon4py.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
+from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
 from icon4py.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.driver.io_utils import (
     SIMULATION_START_DATE,

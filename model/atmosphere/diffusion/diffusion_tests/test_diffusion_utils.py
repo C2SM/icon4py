@@ -17,8 +17,8 @@ import pytest
 from atm_dyn_iconam.tests.test_utils.helpers import random_field, zero_field
 from atm_dyn_iconam.tests.test_utils.simple_mesh import SimpleMesh
 from icon4py.model.common.dimension import KDim, VertexDim
-from icon4py.diffusion.diffusion import DiffusionParams
-from icon4py.diffusion.diffusion_utils import (
+from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
+from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     _en_smag_fac_for_zero_nshift,
     _setup_runtime_diff_multfac_vn,
     _setup_smag_limit,

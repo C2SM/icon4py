@@ -57,13 +57,13 @@ from icon4py.common.constants import (
     GAS_CONSTANT_DRY_AIR,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.diffusion.diffusion_states import (
+from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
     PrognosticState,
 )
-from icon4py.diffusion.diffusion_utils import (
+from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,

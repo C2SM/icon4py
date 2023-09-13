@@ -43,8 +43,8 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.diffusion.diffusion import VectorTuple
-from icon4py.diffusion.diffusion_states import (
+from icon4py.model.atmosphere.diffusion.diffusion import VectorTuple
+from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
