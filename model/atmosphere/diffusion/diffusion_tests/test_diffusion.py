@@ -313,7 +313,7 @@ def test_run_diffusion_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
     )
-    verify_diffusion_fields(diagnostic_state, prognostic_state, diffusion_savepoint_exit)
+    verify_diffusion_fields(diagnostic_state, prognostic_state, diffusion_savepoint_init)
     assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
     diffusion.run(
         diagnostic_state=diagnostic_state,
