@@ -20,121 +20,121 @@ from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 import icon4py.common.constants as constants
 import icon4py.nh_solve.solve_nonhydro_program as nhsolve_prog
-from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.atm_dyn_iconam.mo_math_gradients_grad_green_gauss_cell_dsl import (
+from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_4th_order_divdamp import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_01 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_01 import (
     mo_solve_nonhydro_stencil_01,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_10 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_12 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_12 import (
     mo_solve_nonhydro_stencil_12,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_13 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_13 import (
     mo_solve_nonhydro_stencil_13,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_17 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_17 import (
     mo_solve_nonhydro_stencil_17,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_18 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_18 import (
     mo_solve_nonhydro_stencil_18,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_19 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_19 import (
     mo_solve_nonhydro_stencil_19,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_20 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_20 import (
     mo_solve_nonhydro_stencil_20,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_21 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_21 import (
     mo_solve_nonhydro_stencil_21,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_22 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_22 import (
     mo_solve_nonhydro_stencil_22,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_23 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_23 import (
     mo_solve_nonhydro_stencil_23,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_24 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_24 import (
     mo_solve_nonhydro_stencil_24,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_25 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_25 import (
     mo_solve_nonhydro_stencil_25,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_26 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_26 import (
     mo_solve_nonhydro_stencil_26,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_27 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_27 import (
     mo_solve_nonhydro_stencil_27,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_28 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_28 import (
     mo_solve_nonhydro_stencil_28,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_29 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_29 import (
     mo_solve_nonhydro_stencil_29,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_30 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_30 import (
     mo_solve_nonhydro_stencil_30,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_31 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_31 import (
     mo_solve_nonhydro_stencil_31,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_32 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_32 import (
     mo_solve_nonhydro_stencil_32,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_33 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_33 import (
     mo_solve_nonhydro_stencil_33,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_34 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_34 import (
     mo_solve_nonhydro_stencil_34,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_41 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_46 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_46 import (
     mo_solve_nonhydro_stencil_46,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_50 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
     mo_solve_nonhydro_stencil_50,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_52 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
     mo_solve_nonhydro_stencil_52,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_53 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_53 import (
     mo_solve_nonhydro_stencil_53,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_54 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
     mo_solve_nonhydro_stencil_54,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_55 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_55 import (
     mo_solve_nonhydro_stencil_55,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_56_63 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
     mo_solve_nonhydro_stencil_56_63,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_58 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
     mo_solve_nonhydro_stencil_58,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_59 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
     mo_solve_nonhydro_stencil_59,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_65 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_66 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_66 import (
     mo_solve_nonhydro_stencil_66,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_67 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
     mo_solve_nonhydro_stencil_67,
 )
-from icon4py.atm_dyn_iconam.mo_solve_nonhydro_stencil_68 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
 from icon4py.model.common.dimension import CellDim, ECDim, EdgeDim, KDim, VertexDim

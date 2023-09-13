@@ -14,37 +14,37 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_04 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_04 import (
     _mo_velocity_advection_stencil_04,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_05 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
     _mo_velocity_advection_stencil_05,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_06 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
     _mo_velocity_advection_stencil_06,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_09 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_09 import (
     _mo_velocity_advection_stencil_09,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_10 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_11 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_11 import (
     _mo_velocity_advection_stencil_11,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_12 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_12 import (
     _mo_velocity_advection_stencil_12,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_13 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     _mo_velocity_advection_stencil_13,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_14 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
     _mo_velocity_advection_stencil_14,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_16 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
     _mo_velocity_advection_stencil_16,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_17 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim

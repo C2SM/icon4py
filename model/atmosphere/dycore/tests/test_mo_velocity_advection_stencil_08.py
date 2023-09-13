@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_08 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
     mo_velocity_advection_stencil_08,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim

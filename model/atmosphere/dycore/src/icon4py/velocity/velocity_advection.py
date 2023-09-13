@@ -19,37 +19,37 @@ from gt4py.next.iterator.builtins import int32
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 import icon4py.velocity.velocity_advection_program as velocity_prog
-from icon4py.atm_dyn_iconam.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.atm_dyn_iconam.mo_math_divrot_rot_vertex_ri_dsl import (
+from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_01 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_01 import (
     mo_velocity_advection_stencil_01,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_02 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
     mo_velocity_advection_stencil_02,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_03 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
     mo_velocity_advection_stencil_03,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_07 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_08 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
     mo_velocity_advection_stencil_08,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_15 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     mo_velocity_advection_stencil_15,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_18 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
     mo_velocity_advection_stencil_18,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_19 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
     mo_velocity_advection_stencil_19,
 )
-from icon4py.atm_dyn_iconam.mo_velocity_advection_stencil_20 import (
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
