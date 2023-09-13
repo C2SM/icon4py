@@ -231,7 +231,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         cell_params=cell_geometry,
     )
 
-    verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
+    _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
 @pytest.mark.datatest
@@ -375,7 +375,7 @@ def test_run_diffusion_initial_step(
         dtime=dtime,
     )
 
-    _verify_diffusion_fields(
+    verify_diffusion_fields(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         diffusion_savepoint=diffusion_savepoint_exit,
