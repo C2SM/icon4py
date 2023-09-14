@@ -10,27 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import importlib
-import sys
-from pathlib import Path
-
-
-# TODO(Magdalena) remove once test utils is a proper package
-def import_testutils():
-    testutils = (
-        Path(__file__).parent.__str__()
-        + "/../../atm_dyn_iconam/tests/test_utils/__init__.py"
-    )
-    spec = importlib.util.spec_from_file_location("helpers", testutils)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-helpers = import_testutils()
-
-from helpers.fixtures import (  # noqa F401
+from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     damping_height,
     data_provider,
     get_grid_files,
