@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestMoSolveNonhydroStencil10(StencilTest):
@@ -63,18 +63,22 @@ class TestMoSolveNonhydroStencil10(StencilTest):
             + (1 - wgtfac_c) * z_rho_tavg_m1
             + z_w_backtraj * (z_rho_tavg_m1 - z_rho_tavg)
         )
+        rho_ic[:, 0] = 0
         z_theta_v_pr_mc_m1 = z_theta_tavg_m1 - theta_ref_mc_offset
         z_theta_v_pr_mc = z_theta_tavg - theta_ref_mc
         z_theta_v_pr_ic = wgtfac_c * z_theta_v_pr_mc + (1 - wgtfac_c) * z_theta_v_pr_mc_m1
+        z_theta_v_pr_ic[:, 0] = 0
         theta_v_ic = (
             wgtfac_c * z_theta_tavg
             + (1 - wgtfac_c) * z_theta_tavg_m1
             + z_w_backtraj * (z_theta_tavg_m1 - z_theta_tavg)
         )
+        theta_v_ic[:, 0] = 0
         z_th_ddz_exner_c = (
             vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
             + z_theta_v_pr_ic * d_exner_dz_ref_ic
         )
+        z_th_ddz_exner_c[:, 0] = 0
         return dict(
             rho_ic=rho_ic,
             z_theta_v_pr_ic=z_theta_v_pr_ic,
@@ -99,10 +103,10 @@ class TestMoSolveNonhydroStencil10(StencilTest):
         vwind_expl_wgt = random_field(mesh, CellDim)
         exner_pr = random_field(mesh, CellDim, KDim)
         d_exner_dz_ref_ic = random_field(mesh, CellDim, KDim)
-        rho_ic = random_field(mesh, CellDim, KDim)
-        z_theta_v_pr_ic = random_field(mesh, CellDim, KDim)
-        theta_v_ic = random_field(mesh, CellDim, KDim)
-        z_th_ddz_exner_c = random_field(mesh, CellDim, KDim)
+        rho_ic = zero_field(mesh, CellDim, KDim)
+        z_theta_v_pr_ic = zero_field(mesh, CellDim, KDim)
+        theta_v_ic = zero_field(mesh, CellDim, KDim)
+        z_th_ddz_exner_c = zero_field(mesh, CellDim, KDim)
 
         return dict(
             w=w,
