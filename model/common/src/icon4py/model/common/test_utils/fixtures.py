@@ -181,3 +181,38 @@ def mesh(request):
 @pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
 def backend(request):
     return request.param
+
+
+@pytest.fixture(scope="session")
+def setup_icon_data():
+    """
+    Get the binary ICON data from a remote server.
+
+    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
+    """
+    download_and_extract(data_uri, data_path, data_file)
+
+
+@pytest.fixture(scope="session")
+def get_grid_files():
+    """
+    Get the grid files used for testing.
+
+    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
+    """
+    download_and_extract(
+        mch_ch_r04b09_dsl_grid_uri, r04b09_dsl_grid_path, r04b09_dsl_data_file
+    )
+    download_and_extract(
+        r02b04_global_grid_uri, r02b04_global_grid_path, r02b04_global_data_file
+    )
+
+
+@pytest.fixture()
+def r04b09_dsl_gridfile(get_grid_files):
+    return r04b09_dsl_grid_path.joinpath("grid.nc")
+
+
+@pytest.fixture()
+def get_data_path():
+    return extracted_path

@@ -10,9 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import importlib
 import logging
-import sys
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -23,34 +21,16 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
     PrognosticState,
 )
+
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-
+from icon4py.model.common.test_utils import serialbox_utils as sb
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
-
-
-# TODO(Magdalena): for preliminary version of the driver we need serialbox data which is in
-#  testutils, since that is no proper package we need to import it by hand here.
-#  remove once there is the testutils package again.
-def import_testutils():
-    testutils = (
-        Path(__file__).parent.__str__() + "/../../../tests/test_utils/__init__.py"
-    )
-    spec = importlib.util.spec_from_file_location("helpers", testutils)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-helpers = import_testutils()
-
-from helpers import serialbox_utils as sb  # noqa F401
 
 
 class SerializationType(str, Enum):

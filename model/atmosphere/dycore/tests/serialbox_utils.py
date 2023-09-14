@@ -57,7 +57,7 @@ from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
 from icon4py.state_utils.prognostic_state import PrognosticState
 
-from .helpers import as_1D_sparse_field, flatten_first_two_dims
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 
 class IconSavepoint:
