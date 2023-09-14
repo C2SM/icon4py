@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_40 import (
     mo_solve_nonhydro_stencil_40,
 )
 from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestMoSolveNonhydroStencil40(StencilTest):
@@ -31,7 +27,11 @@ class TestMoSolveNonhydroStencil40(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, e_bln_c_s: np.array, z_w_concorr_me: np.array, wgtfacq_c: np.array, **kwargs
+        mesh,
+        e_bln_c_s: np.array,
+        z_w_concorr_me: np.array,
+        wgtfacq_c: np.array,
+        **kwargs,
     ) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_w_concorr_me_offset_1 = np.roll(z_w_concorr_me, shift=1, axis=1)

@@ -15,14 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.model.common.dimension import (
-    E2C,
-    E2V,
-    CellDim,
-    EdgeDim,
-    KDim,
-    VertexDim,
-)
+from icon4py.model.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, VertexDim
 
 
 @field_operator

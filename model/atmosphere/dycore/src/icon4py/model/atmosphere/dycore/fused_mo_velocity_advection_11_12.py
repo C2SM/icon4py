@@ -44,5 +44,5 @@ def fused_mo_velocity_advection_stencil_11_12(
     horizontal_lower: int,
     horizontal_upper: int,
 ):
-    _fused_mo_velocity_advection_stencil_11_12(w, out=z_w_con_c, domain={KDim: (0, vertical_upper)})
-    _fused_mo_velocity_advection_stencil_11_12(w, out=z_w_con_c, domain={KDim: (vertical_upper, vertical_upper)})
+    _fused_mo_velocity_advection_stencil_11_12(w, out=z_w_con_c, domain={KDim: (0, vertical_upper - 1)})
+    _fused_mo_velocity_advection_stencil_11_12(w, out=z_w_con_c, domain={KDim: (vertical_upper - 1, vertical_upper)})

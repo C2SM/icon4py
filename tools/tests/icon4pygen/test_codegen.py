@@ -15,7 +15,9 @@ import os
 import pkgutil
 import re
 
+import icon4py.model.atmosphere.diffusion.stencils as diffusion
 import icon4py.model.atmosphere.dycore as dycore
+import icon4py.model.common.interpolation.stencils as intp
 import pytest
 from click.testing import CliRunner
 
@@ -25,6 +27,9 @@ from .helpers import get_stencil_module_path
 
 
 DYCORE_PKG = "atmosphere.dycore"
+INTERPOLATION_PKG = "common.interpolation.stencils"
+DIFFUSION_PKG = "atmosphere.diffusion.stencils"
+
 LEVELS_PER_THREAD = "1"
 BLOCK_SIZE = "128"
 OUTPATH = "."
@@ -36,9 +41,21 @@ def cli():
 
 
 def dycore_fencils() -> list[tuple[str, str]]:
-    pkgpath = os.path.dirname(dycore.__file__)
+    return _fencils(dycore.__file__, DYCORE_PKG)
+
+
+def interpolation_fencils() -> list[tuple[str, str]]:
+    return _fencils(intp.__file__, INTERPOLATION_PKG)
+
+
+def diffusion_fencils() -> list[tuple[str, str]]:
+    return _fencils(diffusion.__file__, DIFFUSION_PKG)
+
+
+def _fencils(module_name, package_name) -> list[tuple[str, str]]:
+    pkgpath = os.path.dirname(module_name)
     stencils = [name for _, name, _ in pkgutil.iter_modules([pkgpath])]
-    fencils = [(DYCORE_PKG, stencil) for stencil in stencils]
+    fencils = [(package_name, stencil) for stencil in stencils]
     return fencils
 
 
@@ -111,7 +128,10 @@ def check_code_was_generated(stencil_name: str) -> None:
     check_cpp_codegen(f"{stencil_name}.cpp")
 
 
-@pytest.mark.parametrize(("stencil_module", "stencil_name"), dycore_fencils())
+@pytest.mark.parametrize(
+    ("stencil_module", "stencil_name"),
+    dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
+)
 def test_codegen_dycore(cli, stencil_module, stencil_name) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
