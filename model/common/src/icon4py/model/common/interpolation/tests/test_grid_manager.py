@@ -29,10 +29,7 @@ from icon4py.model.common.grid.grid_manager import (
 )
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import VerticalGridSize
-
-
-helpers = conftest.import_testutils()
-from helpers.simple_mesh import SimpleMesh  # noqa E402
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 SIMPLE_MESH_NC = "./simple_mesh_grid.nc"
