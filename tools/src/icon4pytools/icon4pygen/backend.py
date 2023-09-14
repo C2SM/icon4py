@@ -38,9 +38,14 @@ class GTHeader:
 
     def __call__(self, outpath: Path, imperative: bool) -> None:
         """Generate C++ code using the GTFN backend and write it to a file."""
-        gtheader = self._generate_cpp_code(
-            self._adapt_domain(self.stencil_info.itir), imperative=imperative
-        )
+        if H_START and H_END and V_START and V_END in self.stencil_info.fields.keys():
+            gtheader = self._generate_cpp_code(self.stencil_info.itir, imperative=imperative)
+        else:
+            # raise warning of missing arguments
+            gtheader = self._generate_cpp_code(
+                self._adapt_domain(self.stencil_info.itir), imperative=imperative
+            )
+
         write_string(gtheader, outpath, f"{self.stencil_info.itir.id}.hpp")
 
     def _generate_cpp_code(self, fencil: itir.FencilDefinition, **kwargs: Any) -> str:
