@@ -114,10 +114,6 @@ def apply_diffusion_to_vn(
     vertical_start: int32,
     vertical_end: int32,
     limited_area: bool,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
 ):
     _apply_diffusion_to_vn(
         u_vert,
