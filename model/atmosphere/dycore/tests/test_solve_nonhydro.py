@@ -76,10 +76,12 @@ def test_nonhydro_params():
     [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_nonhydro_predictor_step(
+    istep,
+    step_date_init,
+    step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
     data_provider,
-    step_date_init,
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
@@ -491,10 +493,12 @@ def test_nonhydro_predictor_step(
     [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_nonhydro_corrector_step(
+    istep,
+    step_date_init,
+    step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
     data_provider,
-    step_date_init,
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
@@ -706,10 +710,12 @@ def test_nonhydro_corrector_step(
     [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_run_solve_nonhydro_single_step(
+    istep,
+    step_date_init,
+    step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
     data_provider,
-    step_date_init,
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
@@ -883,10 +889,12 @@ def test_run_solve_nonhydro_single_step(
     [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_run_solve_nonhydro_multi_step(
+    istep,
+    step_date_init,
+    step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
     data_provider,
-    step_date_init,
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,

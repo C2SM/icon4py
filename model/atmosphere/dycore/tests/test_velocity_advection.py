@@ -103,6 +103,9 @@ def test_verify_velocity_init_against_regular_savepoint(
     [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_velocity_predictor_step(
+    istep,
+    step_date_init,
+    step_date_exit,
     damping_height,
     icon_grid,
     grid_savepoint,
@@ -262,6 +265,9 @@ def test_velocity_predictor_step(
     [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_velocity_corrector_step(
+    istep,
+    step_date_init,
+    step_date_exit,
     damping_height,
     icon_grid,
     grid_savepoint,
