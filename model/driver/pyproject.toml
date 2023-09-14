@@ -28,7 +28,6 @@ dependencies = [
   "icon4py-atmosphere-dycore>=0.0.5",
   "icon4py-atmosphere-diffusion>=0.0.5"
 ]
-
 description = "ICON model driver."
 dynamic = ['version']
 license = {file = "LICENSE"}
