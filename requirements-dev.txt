@@ -5,6 +5,5 @@
 -e ./model/common
 -e ./model/atmosphere/diffusion
 -e ./model/driver
--e ./py2f
 # icon4pytools
 -e ./tools
