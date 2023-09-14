@@ -78,14 +78,15 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     assert is_list_of_names(
         fvprog.past_node.body[0].args
     ), "Found unsupported expression in input arguments."
-    input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
+    input_arg_ids = set(arg.id for body in fvprog.past_node.body for arg in body.args)
 
-    out_arg = fvprog.past_node.body[0].kwargs["out"]
-    output_fields = (
-        [_ignore_subscript(f) for f in out_arg.elts]
-        if isinstance(out_arg, past.TupleExpr)
-        else [_ignore_subscript(out_arg)]
-    )
+    out_args = (body.kwargs["out"] for body in fvprog.past_node.body)
+    output_fields = []
+    for out_arg in out_args:
+        if isinstance(out_arg, past.TupleExpr):
+            output_fields.extend([_ignore_subscript(f) for f in out_arg.elts])
+        else:
+            output_fields.extend([_ignore_subscript(out_arg)])
     assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)  # type: ignore
 
@@ -135,9 +136,6 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
             fvprog = fencil_def
         case _:
             fvprog = program(fencil_def)
-
-    if len(fvprog.past_node.body) > 1:
-        raise MultipleFieldOperatorException()
 
     return fvprog
 
