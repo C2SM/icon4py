@@ -1,4 +1,0 @@
--r ../base-requirements.txt
-../model/atmosphere/dycore
-../model/common
-.

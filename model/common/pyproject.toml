@@ -3,10 +3,7 @@ build-backend = "setuptools.build_meta"
 requires = ["setuptools>=61.0", "wheel>=0.40.0"]
 
 [project]
-authors = [
-  {email = "gridtools@cscs.ch"},
-  {name = "ETH Zurich"}
-]
+authors = [{ email = "gridtools@cscs.ch" }, { name = "ETH Zurich" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
@@ -19,20 +16,21 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Topic :: Scientific/Engineering :: Atmospheric Science",
   "Topic :: Scientific/Engineering :: Mathematics",
-  "Topic :: Scientific/Engineering :: Physics"
+  "Topic :: Scientific/Engineering :: Physics",
 ]
-dependencies = [
-  "gt4py>=1.0.1",
-  "mpi4py<=3.1.4",
-  "pyghex>=0.3.0",
-  "netcdf4>=1.6.0"
-]
+dependencies = ["gt4py>=1.0.1"]
+
 description = "Shared code for the icon4py model."
 dynamic = ['version']
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 name = "icon4py-common"
 readme = "README.md"
 requires-python = ">=3.10"
+
+[project.optional-dependencies]
+distributed = ["pyghex>=0.3.0"]
+grid-manager = ["netcdf4>=1.6.0"]
+all = ["icon4py-common[distributed,grid-manager]"]
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
@@ -65,10 +63,10 @@ source = ['src/icon4py/model/']
 
 [tool.coverage.report]
 exclude_lines = [
-  'raise AssertionError',  # Don't complain if tests don't hit defensive assertion code
+  'raise AssertionError',       # Don't complain if tests don't hit defensive assertion code
   'raise NotImplementedError',  # Don't complain if tests don't hit defensive assertion code
-  'if 0:',  # Don't complain if non-runnable code isn't run
-  'if __name__ == .__main__.:'  # Don't complain if non-runnable code isn't run
+  'if 0:',                      # Don't complain if non-runnable code isn't run
+  'if __name__ == .__main__.:', # Don't complain if non-runnable code isn't run
 ]
 ignore_errors = true
 
@@ -84,7 +82,7 @@ known_first_party = ['icon4py']
 known_third_party = ['gt4py']
 # known_tests = ['tests_utils']
 lexicographical = true
-line_length = 100  # It should be the same as in `tool.black.line-length` above
+line_length = 100                                                          # It should be the same as in `tool.black.line-length` above
 lines_after_imports = 2
 multi_line_output = 3
 profile = 'black'
@@ -96,9 +94,7 @@ use_parentheses = true
 [tool.mypy]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
-exclude = [
-  '^tests/*.py'
-]
+exclude = ['^tests/*.py']
 ignore_missing_imports = false
 implicit_reexport = true
 install_types = true
@@ -115,7 +111,7 @@ warn_unused_ignores = true
 testpaths = 'tests'
 
 [tool.setuptools.dynamic]
-version = {attr = 'icon4py.model.common.__init__.__version__'}
+version = { attr = 'icon4py.model.common.__init__.__version__' }
 
 [tool.setuptools.package-data]
 'icon4py.model.common' = ['py.typed']

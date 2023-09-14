@@ -1,5 +1,0 @@
--r ../base-requirements.txt
-./atmosphere/dycore
-./atmosphere/diffusion
-./common
-./driver

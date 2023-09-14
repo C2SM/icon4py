@@ -1,10 +1,10 @@
--r base-requirements.txt
+-c constraints.txt
 
 # icon4py model
-./model/atmosphere/dycore
-./model/atmosphere/diffusion
-./model/common
-./model/driver
+icon4py-common
+icon4py-atmosphere-diffusion
+icon4py-atmosphere-dycore
+icon4py-driver
 
-# icon4pytools
-./tools
+# icon4py tools
+icon4pytools

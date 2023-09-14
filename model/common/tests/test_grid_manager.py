@@ -15,7 +15,8 @@ from uuid import uuid4
 
 import numpy as np
 import pytest
-from netCDF4 import Dataset
+
+netCDF4 = pytest.importorskip("netCDF4")
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.grid_manager import (
@@ -37,13 +38,15 @@ SIMPLE_MESH_NC = "simple_mesh_grid.nc"
 def simple_mesh_gridfile(tmp_path):
     path = tmp_path.joinpath(SIMPLE_MESH_NC).absolute()
     mesh = SimpleMesh()
-    dataset = Dataset(path, "w", format="NETCDF4")
+    dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
     dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
     dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=mesh.n_vertices)
 
     dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=mesh.n_edges)
     dataset.createDimension(GridFile.DimensionName.CELL_NAME, size=mesh.n_cells)
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=mesh.n_e2v)
+    dataset.createDimension(
+        GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=mesh.n_e2v
+    )
     dataset.createDimension(GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=mesh.n_e2c2e)
     dataset.createDimension(GridFile.DimensionName.MAX_CHILD_DOMAINS, size=1)
     # add dummy values for the grf dimensions
@@ -70,8 +73,12 @@ def simple_mesh_gridfile(tmp_path):
         (GridFile.DimensionName.VERTEX_NAME,),
     )
 
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=mesh.n_c2e)
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=mesh.n_v2c)
+    dataset.createDimension(
+        GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=mesh.n_c2e
+    )
+    dataset.createDimension(
+        GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=mesh.n_v2c
+    )
 
     _add_to_dataset(
         dataset,
@@ -188,7 +195,7 @@ def simple_mesh_gridfile(tmp_path):
 
 
 def _add_to_dataset(
-    dataset: Dataset,
+    dataset: netCDF4.Dataset,
     data: np.ndarray,
     var_name: str,
     dims: tuple[GridFileName, GridFileName],
@@ -198,7 +205,7 @@ def _add_to_dataset(
 
 
 def test_gridparser_dimension(simple_mesh_gridfile):
-    data = Dataset(simple_mesh_gridfile, "r")
+    data = netCDF4.Dataset(simple_mesh_gridfile, "r")
     grid_parser = GridFile(data)
     mesh = SimpleMesh()
     assert grid_parser.dimension(GridFile.DimensionName.CELL_NAME) == mesh.n_cells
@@ -208,17 +215,23 @@ def test_gridparser_dimension(simple_mesh_gridfile):
 
 @pytest.mark.datatest
 def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfile):
-    data = Dataset(r04b09_dsl_gridfile, "r")
+    data = netCDF4.Dataset(r04b09_dsl_gridfile, "r")
     grid_file = GridFile(data)
 
-    assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(CellDim)
-    assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(EdgeDim)
-    assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(VertexDim)
+    assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(
+        CellDim
+    )
+    assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(
+        EdgeDim
+    )
+    assert grid_file.dimension(
+        GridFile.DimensionName.VERTEX_NAME
+    ) == grid_savepoint.num(VertexDim)
 
 
 def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
     caplog.set_level(logging.DEBUG)
-    data = Dataset(simple_mesh_gridfile, "r")
+    data = netCDF4.Dataset(simple_mesh_gridfile, "r")
     mesh = SimpleMesh()
     grid_parser = GridFile(data)
 
@@ -230,6 +243,7 @@ def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
 # v2e2v: grid,???
+
 
 # v2e: exists in serial, simple, grid
 @pytest.mark.datatest
@@ -392,7 +406,9 @@ def init_grid_manager(fname):
 @pytest.mark.parametrize("dim, size", [(CellDim, 18), (EdgeDim, 27), (VertexDim, 9)])
 def test_grid_manager_getsize(simple_mesh_gridfile, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
-    gm = GridManager(IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80))
+    gm = GridManager(
+        IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80)
+    )
     gm()
     assert size == gm.get_size(dim)
 
@@ -470,7 +486,9 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
 def test_get_start_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
     grid_from_manager = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     assert grid_from_manager.get_start_index(dim, marker) == index
-    assert grid_from_manager.get_start_index(dim, marker) == icon_grid.get_start_index(dim, marker)
+    assert grid_from_manager.get_start_index(dim, marker) == icon_grid.get_start_index(
+        dim, marker
+    )
 
 
 @pytest.mark.datatest
@@ -518,4 +536,6 @@ def test_get_start_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
 def test_get_end_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
     grid_from_manager = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     assert grid_from_manager.get_end_index(dim, marker) == index
-    assert grid_from_manager.get_end_index(dim, marker) == icon_grid.get_end_index(dim, marker)
+    assert grid_from_manager.get_end_index(dim, marker) == icon_grid.get_end_index(
+        dim, marker
+    )

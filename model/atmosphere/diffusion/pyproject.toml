@@ -24,8 +24,6 @@ classifiers = [
 dependencies = [
   "gt4py>=1.0.1",
   "icon4py-common>=0.0.5",
-  "mpi4py<=3.1.4",
-  "pyghex>=0.3.0"
 ]
 description = "ICON diffusion."
 dynamic = ['version']

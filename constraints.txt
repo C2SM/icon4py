@@ -1,0 +1,11 @@
+# Local folders
+icon4py-atmosphere-diffusion @ file://${PWD}/model/atmosphere/diffusion
+icon4py-atmosphere-dycore @ file://${PWD}/model/atmosphere/dycore
+icon4py-common @ file://${PWD}/model/common/
+icon4py-driver @ file://${PWD}/model/driver
+
+icon4pytools @ file://${PWD}/tools
+
+# External repos
+gt4py @ git+https://github.com/GridTools/gt4py.git@main
+pyghex @ git+https://github.com/ghex-org/GHEX.git#subdirectory=bindings/python
