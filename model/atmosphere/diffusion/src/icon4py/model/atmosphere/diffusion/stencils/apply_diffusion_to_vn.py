@@ -109,11 +109,11 @@ def apply_diffusion_to_vn(
     nudgezone_diff: float,
     fac_bdydiff_v: float,
     start_2nd_nudge_line_idx_e: int32,
+    limited_area: bool,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
-    limited_area: bool,
 ):
     _apply_diffusion_to_vn(
         u_vert,
