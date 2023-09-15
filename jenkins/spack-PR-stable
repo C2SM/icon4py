@@ -13,9 +13,11 @@ triggerPhrase.each {
         (spack_fork, spack_branch) = parseTriggerPhrase(it)
     }
 }
+
 def map_srun = [
-    daint: 'srun -n 1 -A g110 -p debug -C gpu'
+    daint: 'srun -t 03:00:00 -C gpu -A g110 -c 12 -n 1'
     ]
+
 pipeline {
     agent none
     stages {
