@@ -15,7 +15,7 @@ triggerPhrase.each {
 }
 
 def map_srun = [
-    daint: 'srun -n 1 -A g110 -p debug -C gpu -A g110'
+    daint: 'srun -n 1 -A g110 -p debug -C gpu'
     ]
 pipeline {
     agent none
