@@ -139,7 +139,7 @@ def test_mo_velocity_advection_stencil_20():
         horizontal_start=int32(0),
         horizontal_end=int32(mesh.n_edges),
         vertical_start=int32(0),
-        vertical_end=int32(mesh.k_level - 1),
+        vertical_end=int32(mesh.k_level),
         offset_provider={
             "Koff": KDim,
             "E2C": mesh.get_e2c_offset_provider(),

@@ -41,6 +41,6 @@ class TestMoSolveNonhydroStencil59(StencilTest):
             exner_dyn_incr=exner_dyn_incr,
             cell_startindex_nudging_plus1=int32(0),
             cell_endindex_interior=int32(mesh.n_cells),
-            kstart_moist=int32(1),
+            kstart_moist=int32(0),
             nlev=int32(mesh.k_level),
         )
