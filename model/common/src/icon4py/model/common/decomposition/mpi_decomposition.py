@@ -16,7 +16,7 @@ from __future__ import annotations
 import functools
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 import ghex
 import ghex.unstructured as unstructured
@@ -26,7 +26,6 @@ from gt4py.next import Dimension
 
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
-from icon4py.model.common.utils import builder
 
 
 if TYPE_CHECKING:

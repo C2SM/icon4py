@@ -19,17 +19,17 @@ import pytest
 
 netCDF4 = pytest.importorskip("netCDF4")
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.grid.grid_manager import (
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim  # noqa: E402
+from icon4py.model.common.grid.grid_manager import (  # noqa: E402
     GridFile,
     GridFileName,
     GridManager,
     IndexTransformation,
     ToGt4PyTransformation,
 )
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.grid.icon_grid import VerticalGridSize
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex  # noqa: E402
+from icon4py.model.common.grid.icon_grid import VerticalGridSize  # noqa: E402
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh  # noqa: E402
 
 
 SIMPLE_MESH_NC = "simple_mesh_grid.nc"

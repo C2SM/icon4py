@@ -17,18 +17,12 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Optional, Protocol
+from typing import Any, Protocol
 
 import numpy as np
 import numpy.ma as ma
 from gt4py.next import Dimension
 
-
-if TYPE_CHECKING:
-    import mpi4py.MPI
-    from icon4py.model.common.decomposition.mpi_decomposition import ProcessProperties
-
-from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
 from icon4py.model.common.utils import builder
 
 
