@@ -39,6 +39,7 @@ OUTPATH = "."
 def cli():
     return CliRunner()
 
+
 def dycore_fencils() -> list[tuple[str, str]]:
     return _fencils(dycore.__file__, DYCORE_PKG)
 
