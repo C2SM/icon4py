@@ -17,12 +17,12 @@ import pytest
 
 decomposed = pytest.importorskip("icon4py.model.common.decomposition.decomposed")
 
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams  # noqa: E402
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim  # noqa: E402
+from icon4py.model.common.grid.vertical import VerticalModelParams  # noqa: E402
+from icon4py.model.common.test_utils.parallel_helpers import check_comm_size  # noqa: E402
 
-from ..utils import verify_diffusion_fields
+from ..utils import verify_diffusion_fields  # noqa: E402
 
 
 @pytest.mark.mpi
