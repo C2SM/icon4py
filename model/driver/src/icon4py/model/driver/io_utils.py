@@ -22,10 +22,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
     PrognosticState,
 )
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    ProcessProperties,
-)
+from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon_grid import IconGrid
@@ -58,9 +55,7 @@ def read_icon_grid(
     """
     if ser_type == SerializationType.SB:
         return (
-            sb.IconSerialDataProvider(
-                "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-            )
+            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
             .construct_icon_grid()
         )
@@ -112,9 +107,7 @@ def read_geometry_fields(
         ).from_savepoint_grid()
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
-        vertical_geometry = VerticalModelParams(
-            vct_a=sp.vct_a(), rayleigh_damping_height=12500
-        )
+        vertical_geometry = VerticalModelParams(vct_a=sp.vct_a(), rayleigh_damping_height=12500)
         return edge_geometry, cell_geometry, vertical_geometry
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -157,17 +150,13 @@ def read_static_fields(
         interpolation_state = (
             dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
         )
-        metric_state = (
-            dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
-        )
+        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
         return metric_state, interpolation_state
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def configure_logging(
-    run_path: str, start_time, processor_procs: ProcessProperties = None
-) -> None:
+def configure_logging(run_path: str, start_time, processor_procs: ProcessProperties = None) -> None:
     """
     Configure logging.
 
@@ -178,13 +167,9 @@ def configure_logging(
         start_time: start time of the model run
 
     """
-    run_dir = (
-        Path(run_path).absolute() if run_path else Path(__file__).absolute().parent
-    )
+    run_dir = Path(run_path).absolute() if run_path else Path(__file__).absolute().parent
     run_dir.mkdir(exist_ok=True)
-    logfile = run_dir.joinpath(
-        f"dummy_dycore_driver_{datetime.isoformat(start_time)}.log"
-    )
+    logfile = run_dir.joinpath(f"dummy_dycore_driver_{datetime.isoformat(start_time)}.log")
     logfile.touch(exist_ok=True)
     logging.basicConfig(
         level=logging.DEBUG,
@@ -195,9 +180,7 @@ def configure_logging(
     console_handler = logging.StreamHandler()
     console_handler.addFilter(ParallelLogger(processor_procs))
 
-    log_format = (
-        "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
-    )
+    log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.DEBUG)

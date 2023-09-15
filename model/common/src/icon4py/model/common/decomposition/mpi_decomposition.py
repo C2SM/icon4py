@@ -16,14 +16,12 @@ from __future__ import annotations
 import functools
 import logging
 from dataclasses import dataclass
-from typing import Optional, Union, TYPE_CHECKING
-
+from typing import TYPE_CHECKING, Optional, Union
 
 import ghex
 import ghex.unstructured as unstructured
 import mpi4py
 import numpy as np
-
 from gt4py.next import Dimension
 
 from icon4py.model.common.decomposition import definitions
@@ -123,9 +121,7 @@ class GHexMultiNode:
             ),
             EdgeDim: self._create_domain_descriptor(EdgeDim),
         }
-        log.info(
-            f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized"
-        )
+        log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
 
         self._patterns = {
             CellDim: self._create_pattern(CellDim),
@@ -186,17 +182,12 @@ class GHexMultiNode:
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
-        assert (
-            domain_descriptor is not None
-        ), f"domain descriptor for {dim.value} not found"
+        assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(unstructured.field_descriptor(domain_descriptor, np.asarray(f)))
-            for f in fields
+            pattern(unstructured.field_descriptor(domain_descriptor, np.asarray(f))) for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
-        log.info(
-            f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated."
-        )
+        log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
 

@@ -13,15 +13,16 @@
 
 from __future__ import annotations
 
-import logging
 import functools
+import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Optional, Protocol, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional, Protocol
 
 import numpy as np
 import numpy.ma as ma
 from gt4py.next import Dimension
+
 
 if TYPE_CHECKING:
     import mpi4py.MPI
@@ -77,9 +78,7 @@ class DecompositionInfo:
         HALO = 2
 
     @builder
-    def with_dimension(
-        self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray
-    ):
+    def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
         masked_global_index = ma.array(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index
 
@@ -172,9 +171,7 @@ class SingleNodeResult:
 
 
 @functools.singledispatch
-def create_exchange(
-    props: ProcessProperties, decomp_info: DecompositionInfo
-) -> ExchangeRuntime:
+def create_exchange(props: ProcessProperties, decomp_info: DecompositionInfo) -> ExchangeRuntime:
     """
     Create an Exchange depending on the runtime size.
 
