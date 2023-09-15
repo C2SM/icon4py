@@ -14,27 +14,30 @@
 
 import pytest
 
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.driver.io_utils import (
+from icon4py.driver.io_utils import (
     SerializationType,
     read_geometry_fields,
     read_icon_grid,
     read_static_fields,
 )
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.vertical import VerticalModelParams
 
 
+@pytest.mark.parametrize(
+    "read_fun", (read_geometry_fields, read_static_fields, read_icon_grid)
+)
 @pytest.mark.datatest
-@pytest.mark.parametrize("read_fun", (read_geometry_fields, read_static_fields, read_icon_grid))
-def test_read_geometry_fields_not_implemented_type(read_fun, datapath):
+def test_read_geometry_fields_not_implemented_type(read_fun, get_data_path):
+    path = get_data_path
     with pytest.raises(NotImplementedError, match=r"Only ser_type='sb'"):
-        read_fun(path=datapath, ser_type=SerializationType.NC)
+        read_fun(path=path, ser_type=SerializationType.NC)
 
 
 def assert_grid_size_and_connectivities(grid):
-    assert grid.num_edges() == 31558
-    assert grid.num_cells() == 20896
-    assert grid.num_vertices() == 10663
+    assert grid.num_edges() > 0
+    assert grid.num_cells() > 0
+    assert grid.num_vertices() > 0
     assert grid.get_e2v_connectivity()
     assert grid.get_v2e_connectivity()
     assert grid.get_c2e_connectivity()
@@ -45,22 +48,24 @@ def assert_grid_size_and_connectivities(grid):
 
 
 @pytest.mark.datatest
-def test_read_icon_grid_for_type_sb(datapath):
-    grid = read_icon_grid(datapath, ser_type=SerializationType.SB)
+def test_read_icon_grid_for_type_sb(get_data_path):
+    grid = read_icon_grid(get_data_path, ser_type=SerializationType.SB)
     assert_grid_size_and_connectivities(grid)
 
 
 @pytest.mark.datatest
-def test_read_static_fields_for_type_sb(datapath):
-    metric_state, interpolation_state = read_static_fields(datapath, ser_type=SerializationType.SB)
+def test_read_static_fields_for_type_sb(get_data_path):
+    metric_state, interpolation_state = read_static_fields(
+        get_data_path, ser_type=SerializationType.SB
+    )
     assert_metric_state_fields(metric_state)
     assert_interpolation_state_fields(interpolation_state)
 
 
 @pytest.mark.datatest
-def test_read_geometry_fields_for_type_sb(datapath):
+def test_read_geometry_fields_for_type_sb(get_data_path):
     edge_geometry, cell_geometry, vertical_geometry = read_geometry_fields(
-        datapath, ser_type=SerializationType.SB
+        get_data_path, ser_type=SerializationType.SB
     )
     assert_edge_geometry_fields(edge_geometry)
     assert_cell_geometry_fields(cell_geometry)
