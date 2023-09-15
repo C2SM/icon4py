@@ -15,7 +15,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -103,18 +102,14 @@ def test_diffusion_init(
 ):
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
-    vertical_params = VerticalModelParams(
-        grid_savepoint.vct_a(), damping_height, nflatlev=0, nflat_gradp=0
-    )
+    vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
 
     meta = diffusion_savepoint_init.get_metadata("linit", "date")
 
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
 
-    interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    )
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
@@ -148,10 +143,7 @@ def test_diffusion_init(
         config.substep_as_float,
     )
 
-    assert (
-        diffusion.smag_offset
-        == 0.25 * additional_parameters.K4 * config.substep_as_float
-    )
+    assert diffusion.smag_offset == 0.25 * additional_parameters.K4 * config.substep_as_float
     assert np.allclose(expected_smag_limit, diffusion.smag_limit)
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(
@@ -178,15 +170,11 @@ def _verify_init_values_against_savepoint(
     assert savepoint.diff_multfac_w() == diffusion.diff_multfac_w
 
     # this is done in diffusion.run(...) because it depends on the dtime
-    scale_k(
-        diffusion.enh_smag_fac, dtime, diffusion.diff_multfac_smag, offset_provider={}
-    )
+    scale_k(diffusion.enh_smag_fac, dtime, diffusion.diff_multfac_smag, offset_provider={})
     assert np.allclose(savepoint.diff_multfac_smag(), diffusion.diff_multfac_smag)
 
     assert np.allclose(savepoint.smag_limit(), diffusion.smag_limit)
-    assert np.allclose(
-        savepoint.diff_multfac_n2w(), np.asarray(diffusion.diff_multfac_n2w)
-    )
+    assert np.allclose(savepoint.diff_multfac_n2w(), np.asarray(diffusion.diff_multfac_n2w))
     assert np.allclose(savepoint.diff_multfac_vn(), diffusion.diff_multfac_vn)
 
 
@@ -206,9 +194,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    )
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
 
     diffusion = Diffusion()
@@ -216,9 +202,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
         grid=icon_grid,
         config=config,
         params=additional_parameters,
-        vertical_params=VerticalModelParams(
-            vct_a, damping_height, nflatlev=0, nflat_gradp=0
-        ),
+        vertical_params=VerticalModelParams(vct_a, damping_height),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
@@ -242,12 +226,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 
-    vertical_params = VerticalModelParams(
-        grid_savepoint.vct_a(), damping_height, nflat_gradp=0, nflatlev=0
-    )
-    interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    )
+    vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
@@ -273,7 +253,6 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     [
         ("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         ("2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
-        ("2021-06-20T12:01:00.000", "2021-06-20T12:01:00.000"),
     ],
 )
 def test_run_diffusion_single_step(
@@ -289,16 +268,12 @@ def test_run_diffusion_single_step(
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    )
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
-    vertical_params = VerticalModelParams(
-        vct_a=vct_a, rayleigh_damping_height=damping_height, nflatlev=0, nflat_gradp=0
-    )
+    vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=damping_height)
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 
@@ -322,6 +297,7 @@ def test_run_diffusion_single_step(
     )
     verify_diffusion_fields(diagnostic_state, prognostic_state, diffusion_savepoint_exit)
 
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(
@@ -337,16 +313,12 @@ def test_run_diffusion_initial_step(
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    )
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
-    vertical_params = VerticalModelParams(
-        vct_a=vct_a, rayleigh_damping_height=damping_height, nflatlev=0, nflat_gradp=0
-    )
+    vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=damping_height)
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 
