@@ -90,7 +90,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)  # type: ignore
 
-    domain_arg_ids = _get_domain_arg_ids(fvprog)
+    #domain_arg_ids = _get_domain_arg_ids(fvprog)
 
     fields: dict[str, FieldInfo] = {
         field_node.id: FieldInfo(
@@ -99,7 +99,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
             out=(field_node.id in output_arg_ids),
         )
         for field_node in fvprog.past_node.params
-        if field_node.id not in domain_arg_ids
+        #if field_node.id not in domain_arg_ids
     }
 
     return fields

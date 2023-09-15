@@ -46,10 +46,10 @@ def fused_mo_velocity_advection_11_12(
     z_w_con_c: Field[[CellDim, KDim], float],
     k: Field[[KDim], int32],
     nlev: int32,
-    vertical_lower: int32,
-    vertical_upper: int32,
-    horizontal_lower: int32,
-    horizontal_upper: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
 ):
     _fused_mo_velocity_advection_11_12(
         w,
@@ -57,8 +57,8 @@ def fused_mo_velocity_advection_11_12(
         nlev,
         out=z_w_con_c,
         domain={
-            CellDim: (horizontal_lower, horizontal_upper),
-            KDim: (vertical_lower, vertical_upper),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end - 1),
         },
     )
     _fused_mo_velocity_advection_11_12(
@@ -67,7 +67,7 @@ def fused_mo_velocity_advection_11_12(
         nlev,
         out=z_w_con_c,
         domain={
-            CellDim: (horizontal_lower, horizontal_upper),
-            KDim: (vertical_upper, vertical_upper),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
         },
     )
