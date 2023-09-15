@@ -37,18 +37,10 @@ def mo_velocity_advection_stencil_02(
     vt: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
 ):
     _mo_velocity_advection_stencil_02(
         wgtfac_e,
         vn,
         vt,
-        out=(vn_ie, z_kin_hor_e),
-        domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
+        out=(vn_ie[:, 1:], z_kin_hor_e[:, 1:]),
     )

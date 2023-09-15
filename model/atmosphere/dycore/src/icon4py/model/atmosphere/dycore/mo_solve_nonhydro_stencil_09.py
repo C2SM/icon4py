@@ -62,5 +62,5 @@ def mo_solve_nonhydro_stencil_09(
         exner_pr,
         d_exner_dz_ref_ic,
         ddqz_z_half,
-        out=(z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
+        out=(z_theta_v_pr_ic[:, 1:], theta_v_ic[:, 1:], z_th_ddz_exner_c[:, 1:]),
     )
