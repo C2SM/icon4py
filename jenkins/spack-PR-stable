@@ -32,6 +32,7 @@ pipeline {
                 }
                 post {
                     always {
+                        archiveArtifacts artifacts: 'local_copy/spack*.txt', allowEmptyArchive: true
                         echo 'Cleaning up workspace'
                         deleteDir()
                     }
