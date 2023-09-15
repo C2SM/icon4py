@@ -14,6 +14,8 @@
 import numpy as np
 import pytest
 
+from gt4py.next.ffront.fbuiltins import int32
+
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
     mo_solve_nonhydro_stencil_59,
 )
@@ -37,4 +39,8 @@ class TestMoSolveNonhydroStencil59(StencilTest):
         return dict(
             exner=exner,
             exner_dyn_incr=exner_dyn_incr,
+            cell_startindex_nudging_plus1=int32(0),
+            cell_endindex_interior=int32(mesh.n_cells),
+            kstart_moist=int32(1),
+            nlev=int32(mesh.k_level),
         )
