@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import logging
 from datetime import datetime
 from enum import Enum
@@ -22,13 +21,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
     PrognosticState,
 )
-from icon4py.model.common.decomposition.decomposed import DecompositionInfo
-from icon4py.model.common.decomposition.parallel_setup import ParallelLogger, ProcessProperties
+
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils import serialbox_utils as sb
-
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
@@ -42,7 +39,7 @@ class SerializationType(str, Enum):
 
 
 def read_icon_grid(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path, ser_type: SerializationType = SerializationType.SB
 ) -> IconGrid:
     """
     Read icon grid.
@@ -55,7 +52,7 @@ def read_icon_grid(
     """
     if ser_type == SerializationType.SB:
         return (
-            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False)
             .from_savepoint_grid()
             .construct_icon_grid()
         )
@@ -64,7 +61,7 @@ def read_icon_grid(
 
 
 def read_initial_state(
-    gridfile_path: Path, rank=0
+    gridfile_path: Path,
 ) -> tuple[sb.IconSerialDataProvider, DiffusionDiagnosticState, PrognosticState]:
     """
     Read prognostic and diagnostic state from serialized data.
@@ -78,7 +75,7 @@ def read_initial_state(
 
     """
     data_provider = sb.IconSerialDataProvider(
-        "icon_pydycore", str(gridfile_path), False, mpi_rank=rank
+        "icon_pydycore", str(gridfile_path), False
     )
     init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
@@ -89,7 +86,7 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams]:
     """
     Read fields containing grid properties.
@@ -103,39 +100,26 @@ def read_geometry_fields(
     """
     if ser_type == SerializationType.SB:
         sp = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+            "icon_pydycore", str(path.absolute()), False
         ).from_savepoint_grid()
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
-        vertical_geometry = VerticalModelParams(vct_a=sp.vct_a(), rayleigh_damping_height=12500)
+        vertical_geometry = VerticalModelParams(
+            vct_a=sp.vct_a(), rayleigh_damping_height=12500, nflatlev=0, nflat_gradp=0
+        )
         return edge_geometry, cell_geometry, vertical_geometry
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def read_decomp_info(
-    path: Path,
-    procs_props: ProcessProperties,
-    ser_type=SerializationType.SB,
-) -> DecompositionInfo:
-    if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), True, procs_props.rank
-        )
-        return sp.from_savepoint_grid().construct_decomposition_info()
-    else:
-        raise NotImplementedError(SB_ONLY_MSG)
-
-
 def read_static_fields(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[DiffusionMetricState, DiffusionInterpolationState]:
     """
     Read fields for metric and interpolation state.
 
      Args:
         path: path to the serialized input data
-        rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
     Returns:
@@ -145,18 +129,20 @@ def read_static_fields(
     """
     if ser_type == SerializationType.SB:
         dataprovider = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+            "icon_pydycore", str(path.absolute()), False
         )
         interpolation_state = (
             dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
         )
-        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        metric_state = (
+            dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        )
         return metric_state, interpolation_state
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def configure_logging(run_path: str, start_time, processor_procs: ProcessProperties = None) -> None:
+def configure_logging(run_path: str, start_time) -> None:
     """
     Configure logging.
 
@@ -167,9 +153,13 @@ def configure_logging(run_path: str, start_time, processor_procs: ProcessPropert
         start_time: start time of the model run
 
     """
-    run_dir = Path(run_path).absolute() if run_path else Path(__file__).absolute().parent
+    run_dir = (
+        Path(run_path).absolute() if run_path else Path(__file__).absolute().parent
+    )
     run_dir.mkdir(exist_ok=True)
-    logfile = run_dir.joinpath(f"dummy_dycore_driver_{datetime.isoformat(start_time)}.log")
+    logfile = run_dir.joinpath(
+        f"dummy_dycore_driver_{datetime.isoformat(start_time)}.log"
+    )
     logfile.touch(exist_ok=True)
     logging.basicConfig(
         level=logging.DEBUG,
@@ -178,10 +168,9 @@ def configure_logging(run_path: str, start_time, processor_procs: ProcessPropert
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
-    console_handler.addFilter(ParallelLogger(processor_procs))
-
-    log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
-    formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
+    formatter = logging.Formatter(
+        "%(asctime)s %(filename)-20s : %(funcName)-20s:  %(levelname)-8s %(message)s"
+    )
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.INFO)
     logging.getLogger("").addHandler(console_handler)
