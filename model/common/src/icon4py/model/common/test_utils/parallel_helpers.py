@@ -14,7 +14,7 @@
 
 import pytest
 
-from icon4py.model.common.decomposition.parallel_setup import ProcessProperties
+from icon4py.model.common.decomposition.definitions import ProcessProperties
 
 
 def check_comm_size(props: ProcessProperties, sizes=(1, 2, 4)):

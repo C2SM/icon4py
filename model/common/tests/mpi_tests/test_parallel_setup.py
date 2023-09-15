@@ -15,7 +15,7 @@
 import pytest
 from mpi4py import MPI
 
-from icon4py.model.common.decomposition.parallel_setup import get_processor_properties, init_mpi
+from icon4py.model.common.decomposition.mpi_decomposition import get_processor_properties, init_mpi
 
 
 @pytest.mark.mpi

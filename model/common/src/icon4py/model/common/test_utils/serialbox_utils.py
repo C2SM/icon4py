@@ -26,7 +26,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     PrognosticState,
 )
 from icon4py.model.common import dimension
-from icon4py.model.common.decomposition.decomposed import DecompositionInfo
+from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,

@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 from gt4py.next.program_processors.runners.roundtrip import executor
 
-from ..decomposition.parallel_setup import get_processor_properties
+from ..decomposition.mpi_decomposition import get_processor_properties
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 from .simple_mesh import SimpleMesh

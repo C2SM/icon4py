@@ -70,7 +70,7 @@ from icon4py.model.common.constants import (
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
 )
-from icon4py.model.common.decomposition.decomposed import ExchangeRuntime, SingleNode
+from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNode
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid

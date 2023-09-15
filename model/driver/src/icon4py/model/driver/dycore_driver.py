@@ -28,7 +28,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
 from icon4py.model.common.decomposition.decomposed import create_exchange
-from icon4py.model.common.decomposition.parallel_setup import (
+from icon4py.model.common.decomposition.mpi_decomposition import (
     ProcessProperties,
     get_processor_properties,
 )
