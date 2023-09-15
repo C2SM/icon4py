@@ -15,7 +15,7 @@ triggerPhrase.each {
 }
 
 def map_srun = [
-    daint: 'srun -t 03:00:00 -u -C gpu -A g110 -c 12 -n 1'
+    daint: 'srun -t 03:00:00 -C gpu -A g110 -c 12 -n 1'
     ]
 
 pipeline {
@@ -32,7 +32,7 @@ pipeline {
                 }
                 post {
                     always {
-                        archiveArtifacts artifacts: 'local_copy/*.txt', allowEmptyArchive: true
+                        archiveArtifacts artifacts: 'local_copy/spack*.txt', allowEmptyArchive: true
                         echo 'Cleaning up workspace'
                         deleteDir()
                     }
