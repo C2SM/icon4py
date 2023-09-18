@@ -232,3 +232,39 @@ OUTPUT_FILEPATH   A path to the output Fortran source file to be generated.
 ```
 
 **Note:** The output of f2ser still has to be preprocessed using `pp_ser.py`, which then yields a compilable unit. The serialised files will have `f2ser` as their prefix in the default folder location of the experiment.
+
+## `py2f`
+
+Python utility for generating a C library and Fortran interface to call Python icon4py modules. The library [embeds python via CFFI ](https://cffi.readthedocs.io/en/latest/embedding.)
+
+This is **highly experimental** and has not been tested from within Fortran code!
+
+### usage
+
+`py2fgen`: Generates a C header file and a Fortran interface and compiles python functions into a C library embedding python. The functions need to be decorated with `CffiMethod.register` and have a signature with scalar arguments or `GT4Py` fields, for example:
+
+```
+@CffiMethod.register
+def foo(i:int, param:float, field1: Field[[VertexDim, KDim], float], field2: Field[CellDim, KDim], float])
+```
+
+see `src/icon4pytools/py2f/wrappers` for examples.
+
+```bash
+py2fgen icon4pytools.py2f.wrappers.diffusion_wrapper  py2f_build
+```
+
+where the first argument is the python module to parse and the second a build directory. The call above will generate the following in `py2f_build`:
+
+```bash
+ ls py2f_build/
+total 204K
+drwxrwxr-x 2 magdalena magdalena 4.0K Aug 24 17:01 .
+drwxrwxr-x 9 magdalena magdalena 4.0K Aug 24 17:01 ..
+-rw-rw-r-- 1 magdalena magdalena  74K Aug 24 16:58 diffusion_wrapper.c
+-rw-rw-r-- 1 magdalena magdalena 3.5K Aug 24 17:01 diffusion_wrapper.f90
+-rw-rw-r-- 1 magdalena magdalena  955 Aug 24 17:01 diffusion_wrapper.h
+-rw-rw-r-- 1 magdalena magdalena  58K Aug 24 17:01 diffusion_wrapper.o
+-rwxrwxr-x 1 magdalena magdalena  49K Aug 24 17:01 libdiffusion_wrapper.so
+
+```
