@@ -33,6 +33,12 @@ from icon4pytools.icon4pygen.exceptions import (
 )
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
 
+H_START = "horizontal_start"
+H_END = "horizontal_end"
+V_START = "vertical_start"
+V_END = "vertical_end"
+
+SPECIAL_DOMAIN_MARKERS = [H_START, H_END, V_START, V_END]
 
 @dataclass(frozen=True)
 class StencilInfo:
@@ -99,7 +105,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
             out=(field_node.id in output_arg_ids),
         )
         for field_node in fvprog.past_node.params
-        #if field_node.id not in domain_arg_ids
+        if field_node.id not in SPECIAL_DOMAIN_MARKERS
     }
 
     return fields

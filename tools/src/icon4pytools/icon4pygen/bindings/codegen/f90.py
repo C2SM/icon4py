@@ -239,7 +239,7 @@ class F90RunFun(eve.Node):
                 for field in self.all_fields
             ]
             + [
-                F90TypedField(name=field.name, suffix="k_size", dtype="integer(c_int)")
+                F90TypedField(name=field.name, suffix="k_size", dtype="integer(c_int)", dims="value")
                 for field in self.out_fields
             ]
             + [
@@ -287,7 +287,7 @@ class F90RunAndVerifyFun(eve.Node):
                 for field in self.out_fields
             ]
             + [
-                F90TypedField(name=field.name, suffix="k_size", dtype="integer(c_int)")
+                F90TypedField(name=field.name, suffix="k_size", dtype="integer(c_int)", dims="value")
                 for field in self.out_fields
             ]
             + [
