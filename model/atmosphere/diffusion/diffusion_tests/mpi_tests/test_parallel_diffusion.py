@@ -15,13 +15,11 @@
 import pytest
 
 
-decomposed = pytest.importorskip("icon4py.model.common.decomposition.decomposed")
-
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams  # noqa: E402
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim  # noqa: E402
 from icon4py.model.common.grid.vertical import VerticalModelParams  # noqa: E402
 from icon4py.model.common.test_utils.parallel_helpers import check_comm_size  # noqa: E402
-
+from icon4py.model.common.decomposition import definitions
 from ..utils import verify_diffusion_fields  # noqa: E402
 
 
@@ -50,9 +48,9 @@ def test_parallel_diffusion(
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
-        f"local cells = {decomposition_info.global_index(CellDim, decomposed.DecompositionInfo.EntryType.ALL).shape} "
-        f"local edges = {decomposition_info.global_index(EdgeDim, decomposed.DecompositionInfo.EntryType.ALL).shape} "
-        f"local vertices = {decomposition_info.global_index(VertexDim, decomposed.DecompositionInfo.EntryType.ALL).shape}"
+        f"local cells = {decomposition_info.global_index(CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local edges = {decomposition_info.global_index(EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local vertices = {decomposition_info.global_index(VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
@@ -71,7 +69,7 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
-    exchange = decomposed.create_exchange(processor_props, decomposition_info)
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     diffusion = Diffusion(exchange)
 

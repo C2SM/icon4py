@@ -1,4 +1,12 @@
-# PyPI
+## This file contains required tools for the development of icon4py.
+
+# Related development packages (choose editable or non-editable install)
+#-e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
+-e git+https://github.com/GridTools/gt4py.git@icon4py_20230817#egg=gt4py
+serialbox @ git+https://github.com/GridTools/serialbox#subdirectory=src/serialbox-python
+# -e git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
+
+# PyPI packages
 bump2version>=1.0.1
 coverage[toml]>=5.0
 flake8>=3.8
@@ -23,9 +31,3 @@ setuptools>=40.8.0
 wheel>=0.37.1
 tox >= 3.25
 wget>=3.2
-
-# VCS
--e git+https://github.com/GridTools/gt4py.git@icon4py_20230817#egg=gt4py
-#-e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
-serialbox @ git+https://github.com/GridTools/serialbox#subdirectory=src/serialbox-python
-# -e git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python

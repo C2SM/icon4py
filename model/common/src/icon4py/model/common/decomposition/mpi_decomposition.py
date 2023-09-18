@@ -203,9 +203,9 @@ class MultiNodeResult:
         return self.handle.is_ready()
 
 
-@definitions.create_exchange.register
+@definitions.create_exchange.register(MPICommProcessProperties)
 def create_single_node_exchange(
-    props: definitions.ProcessProperties, decomp_info: definitions.DecompositionInfo
+    props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
 ) -> definitions.ExchangeRuntime:
     assert props.comm_size > 1
     return GHexMultiNode(props, decomp_info)

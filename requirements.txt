@@ -1,10 +1,14 @@
--c constraints.txt
+## This file contains the core user requirements of icon4py.
+## The ICON4PY_ROOT environment variable must be contain the path to the root of the repo.
 
 # icon4py model
-icon4py-common
-icon4py-atmosphere-diffusion
-icon4py-atmosphere-dycore
-icon4py-driver
+${ICON4PY_ROOT}/model/atmosphere/dycore
+${ICON4PY_ROOT}/model/atmosphere/diffusion
+${ICON4PY_ROOT}/model/common
+${ICON4PY_ROOT}/model/driver
 
 # icon4py tools
-icon4pytools
+${ICON4PY_ROOT}/tools
+
+# gt4py
+gt4py @ git+https://github.com/GridTools/gt4py.git@icon4py_20230817

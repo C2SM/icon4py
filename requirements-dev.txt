@@ -1,2 +1,5 @@
--r requirements-dev-tools.txt
+## This file contains the core development requirements of icon4py.
+## The ICON4PY_ROOT environment variable must be contain the path to the root of the repo.
+
 -r requirements-dev-local.txt
+-r requirements-dev-tools.txt

@@ -174,8 +174,8 @@ def create_exchange(props: ProcessProperties, decomp_info: DecompositionInfo) ->
     raise NotImplementedError(f"Unknown ProcessorProperties type ({type(props)})")
 
 
-@create_exchange.register
+@create_exchange.register(SingleNodeProcessProperties)
 def create_single_node_exchange(
-    props: ProcessProperties, decomp_info: DecompositionInfo
+    props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
 ) -> ExchangeRuntime:
     return SingleNode()

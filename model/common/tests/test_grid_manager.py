@@ -10,14 +10,22 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from __future__ import annotations
+
 import logging
+import typing
 from uuid import uuid4
 
 import numpy as np
 import pytest
 
+if typing.TYPE_CHECKING:
+    import netCDF4
 
-netCDF4 = pytest.importorskip("netCDF4")
+try:
+    import netCDF4    
+except ImportError:
+    netCDF4 = None
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim  # noqa: E402
 from icon4py.model.common.grid.grid_manager import (  # noqa: E402
@@ -199,6 +207,8 @@ def _add_to_dataset(
     var[:] = np.transpose(data)[:]
 
 
+@pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridparser_dimension(simple_mesh_gridfile):
     data = netCDF4.Dataset(simple_mesh_gridfile, "r")
     grid_parser = GridFile(data)
@@ -209,6 +219,7 @@ def test_gridparser_dimension(simple_mesh_gridfile):
 
 
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfile):
     data = netCDF4.Dataset(r04b09_dsl_gridfile, "r")
     grid_file = GridFile(data)
@@ -218,6 +229,7 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfil
     assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(VertexDim)
 
 
+@pytest.mark.requires_netcdf
 def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
     caplog.set_level(logging.DEBUG)
     data = netCDF4.Dataset(simple_mesh_gridfile, "r")
@@ -236,6 +248,7 @@ def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
 
 # v2e: exists in serial, simple, grid
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -251,6 +264,7 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 # v2c: exists in serial, simple, grid
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -295,6 +309,7 @@ def reset_invalid_index(index_array: np.ndarray):
 
 # e2v: exists in serial, simple, grid
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -313,6 +328,7 @@ def has_invalid_index(ar: np.ndarray):
 
 # e2c : exists in serial, simple, grid
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -327,6 +343,7 @@ def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 # c2e: serial, simple, grid
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -342,6 +359,7 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 # e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 @pytest.mark.skip("does not directly exist in the grid file, needs to be constructed")
 # TODO (Magdalena) construct from adjacent_cell_of_edge and then edge_of_cell
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
@@ -356,6 +374,7 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 # c2e2c: exists in  serial, simple_mesh, grid
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -367,6 +386,7 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 @pytest.mark.xfail
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -379,6 +399,7 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
@@ -393,6 +414,7 @@ def init_grid_manager(fname):
 
 
 @pytest.mark.parametrize("dim, size", [(CellDim, 18), (EdgeDim, 27), (VertexDim, 9)])
+@pytest.mark.requires_netcdf
 def test_grid_manager_getsize(simple_mesh_gridfile, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
     gm = GridManager(IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80))
@@ -400,6 +422,7 @@ def test_grid_manager_getsize(simple_mesh_gridfile, dim, size, caplog):
     assert size == gm.get_size(dim)
 
 
+@pytest.mark.requires_netcdf
 def test_grid_manager_diamond_offset(simple_mesh_gridfile):
     mesh = SimpleMesh()
     gm = GridManager(
@@ -414,6 +437,7 @@ def test_grid_manager_diamond_offset(simple_mesh_gridfile):
     )
 
 
+@pytest.mark.requires_netcdf
 def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(SystemExit) as error:
@@ -424,6 +448,7 @@ def test_gridmanager_given_file_not_found_then_abort():
 
 
 @pytest.mark.parametrize("size", [100, 1500, 20000])
+@pytest.mark.requires_netcdf
 def test_gt4py_transform_offset_by_1_where_valid(size):
     trafo = ToGt4PyTransformation()
     input_field = np.random.randint(-1, size, (size,))
@@ -433,6 +458,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
 
 
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 @pytest.mark.parametrize(
     "dim, marker, index",
     [
@@ -477,6 +503,7 @@ def test_get_start_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
 
 
 @pytest.mark.datatest
+@pytest.mark.requires_netcdf
 @pytest.mark.parametrize(
     "dim, marker, index",
     [

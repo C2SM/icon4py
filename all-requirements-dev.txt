@@ -1,0 +1,9 @@
+## This file contains the development requirements with all the extras.
+## The ICON4PY_ROOT environment variable must be contain the path to the root of the repo.
+
+-r requirements-dev.txt
+-e ${ICON4PY_ROOT}/model/common'[all]'
+
+# Extra VCS packages for a full development environment
+pyghex @ git+https://github.com/ghex-org/GHEX.git#subdirectory=bindings/python
+#-e git+https://github.com/ghex-org/GHEX.git#egg=pyghex&subdirectory=bindings/python
