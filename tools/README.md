@@ -206,7 +206,6 @@ This directive denotes the start of a fused stencil. Required arguments are `nam
         !$DSL  vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
 ```
 
-
 #### `!$DSL END FUSED STENCIL()`
 
 This directive denotes the end of a fused stencil. The required argument is `name`, which must match the name of the preceding `START STENCIL` directive.
