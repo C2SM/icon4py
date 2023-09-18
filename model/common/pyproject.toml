@@ -18,7 +18,10 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Mathematics",
   "Topic :: Scientific/Engineering :: Physics"
 ]
-dependencies = ["gt4py>=1.0.1"]
+dependencies = [
+  "gt4py>=1.0.1",
+  "mpi4py<=3.1.4" 
+]
 description = "Shared code for the icon4py model."
 dynamic = ['version']
 license = {file = "LICENSE"}
@@ -27,8 +30,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
-all = ["icon4py-common[distributed,netcdf]"]
-distributed = ["mpi4py<=3.1.4", "pyghex>=0.3.0"]
+all = ["icon4py-common[ghex,netcdf]"]
+ghex = ["pyghex>=0.3.0"]
 netcdf = ["netcdf4>=1.6.0"]
 
 [project.urls]
