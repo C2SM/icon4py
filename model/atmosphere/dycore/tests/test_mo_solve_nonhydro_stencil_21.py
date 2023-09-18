@@ -19,7 +19,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_21 import (
     mo_solve_nonhydro_stencil_21,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import flatten_first_two_dims, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    flatten_first_two_dims,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -57,7 +61,9 @@ def mo_solve_nonhydro_stencil_21_numpy(
         full_shape, theta_v_ic, e2c, ikoffset
     )
 
-    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(full_shape, inv_ddqz_z_full, e2c, ikoffset)
+    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(
+        full_shape, inv_ddqz_z_full, e2c, ikoffset
+    )
 
     z_theta1 = (
         theta_v_at_kidx[:, 0, :]

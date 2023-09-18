@@ -27,7 +27,9 @@ class TestMoSolveNonhydroStencil26(StencilTest):
     OUTPUTS = ("vn",)
 
     @staticmethod
-    def reference(mesh, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2, **kwargs) -> dict:
+    def reference(
+        mesh, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2, **kwargs
+    ) -> dict:
         vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
         return dict(vn=vn)
 

@@ -27,28 +27,6 @@ model = test_utils.parent.parent
 common = model.parent.parent.parent.parent
 base_path = common.parent.joinpath("testdata")
 
-mch_ch_r04b09_dsl_grid_uri = (
-    "https://polybox.ethz.ch/index.php/s/vcsCYmCFA9Qe26p/download"
-)
-r02b04_global_grid_uri = "https://polybox.ethz.ch/index.php/s/0EM8O8U53GKGsst/download"
-data_uri = "https://polybox.ethz.ch/index.php/s/LcAbscZqnsx4WCf/download"
-data_path_old = Path(__file__).parent.joinpath("ser_icondata")
-base_path = Path(__file__).parent.parent.parent.parent.joinpath("testdata")
-
-data_path = base_path.joinpath("ser_icondata")
-extracted_path = data_path.joinpath("mpitask1/mch_ch_r04b09_dsl/ser_data")
-data_file = data_path.joinpath("mch_ch_r04b09_dsl.tar.gz").name
-
-grids_path = base_path.joinpath("grids")
-r04b09_dsl_grid_path = grids_path.joinpath("mch_ch_r04b09_dsl")
-r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath(
-    "mch_ch_r04b09_dsl_grids_v1.tar.gz"
-).name
-r02b04_global_grid_path = grids_path.joinpath("r02b04_global")
-r02b04_global_data_file = r02b04_global_grid_path.joinpath(
-    "icon_grid_0013_R02B04_G.tar.gz"
-).name
-
 data_uris = {
     1: "https://polybox.ethz.ch/index.php/s/vcsCYmCFA9Qe26p/download",
     2: "https://polybox.ethz.ch/index.php/s/NUQjmJcMEoQxFiK/download",
@@ -101,7 +79,9 @@ def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
 
 
 @pytest.fixture(scope="session")
-def data_provider(download_ser_data, datapath, processor_props) -> IconSerialDataProvider:
+def data_provider(
+    download_ser_data, datapath, processor_props
+) -> IconSerialDataProvider:
     return IconSerialDataProvider(
         fname_prefix="icon_pydycore",
         path=str(datapath),
@@ -205,36 +185,96 @@ def backend(request):
     return request.param
 
 
-@pytest.fixture(scope="session")
-def setup_icon_data():
+@pytest.fixture
+def savepoint_velocity_init(
+    data_provider, step_date_init, istep, vn_only, jstep  # noqa F811
+):
     """
-    Get the binary ICON data from a remote server.
+    Load data from ICON savepoint at start of velocity_advection module.
 
-    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
     """
-    download_and_extract(data_uri, data_path, data_file)
-
-
-@pytest.fixture(scope="session")
-def get_grid_files():
-    """
-    Get the grid files used for testing.
-
-    Session scoped fixture which is a prerequisite of all the other fixtures in this file.
-    """
-    download_and_extract(
-        mch_ch_r04b09_dsl_grid_uri, r04b09_dsl_grid_path, r04b09_dsl_data_file
-    )
-    download_and_extract(
-        r02b04_global_grid_uri, r02b04_global_grid_path, r02b04_global_data_file
+    return data_provider.from_savepoint_velocity_init(
+        istep=istep, vn_only=vn_only, date=step_date_init, jstep=jstep
     )
 
 
-@pytest.fixture()
-def r04b09_dsl_gridfile(get_grid_files):
-    return r04b09_dsl_grid_path.joinpath("grid.nc")
+@pytest.fixture
+def savepoint_nonhydro_init(data_provider, step_date_init, istep, jstep):  # noqa F811
+    """
+    Load data from ICON savepoint at exist of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_nonhydro_init(
+        istep=istep, date=step_date_init, jstep=jstep
+    )
 
 
-@pytest.fixture()
-def get_data_path():
-    return extracted_path
+@pytest.fixture
+def savepoint_velocity_exit(
+    data_provider, step_date_exit, istep, vn_only, jstep  # noqa F811
+):
+    """
+    Load data from ICON savepoint at exist of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_velocity_exit(
+        istep=istep, vn_only=vn_only, date=step_date_exit, jstep=jstep
+    )
+
+
+@pytest.fixture
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep, jstep):  # noqa F811
+    """
+    Load data from ICON savepoint at exist of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_nonhydro_exit(
+        istep=istep, date=step_date_exit, jstep=jstep
+    )
+
+
+@pytest.fixture
+def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep):  # noqa F811
+    """
+    Load data from ICON savepoint at final exit (after predictor and corrector, and 3 final stencils) of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_nonhydro_step_exit(
+        date=step_date_exit, jstep=jstep
+    )
+
+
+@pytest.fixture
+def metrics_nonhydro_savepoint(data_provider):  # noqa F811
+    """Load data from ICON metric state nonhydro savepoint."""
+    return data_provider.from_metrics_nonhydro_savepoint()
+
+
+@pytest.fixture
+def istep():
+    return 1
+
+
+@pytest.fixture
+def jstep():
+    return 0
+
+
+@pytest.fixture
+def ntnd(savepoint_velocity_init):
+    return savepoint_velocity_init.get_metadata("ntnd").get("ntnd")
+
+
+@pytest.fixture
+def vn_only():
+    return False

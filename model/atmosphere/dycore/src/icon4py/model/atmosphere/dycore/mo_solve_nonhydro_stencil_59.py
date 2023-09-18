@@ -35,10 +35,11 @@ def mo_solve_nonhydro_stencil_59(
     kstart_moist: int32,
     nlev: int32,
 ):
-    _mo_solve_nonhydro_stencil_59(exner,
-                                  out=exner_dyn_incr,
-                                  domain={
-                                    CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
-                                    KDim: (kstart_moist, nlev),
-                                    },
-                                  )
+    _mo_solve_nonhydro_stencil_59(
+        exner,
+        out=exner_dyn_incr,
+        domain={
+            CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
+            KDim: (kstart_moist, nlev),
+        },
+    )

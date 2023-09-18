@@ -36,12 +36,14 @@ def test_velocity_init(
     step_date_init,
     damping_height,
 ):
-
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
 
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height, nflat_gradp=0, nflatlev=0
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflat_gradp=0,
+        nflatlev=0,
     )
 
     velocity_advection = VelocityAdvection(
@@ -75,7 +77,10 @@ def test_verify_velocity_init_against_regular_savepoint(
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
     metric_state = metrics_savepoint.construct_metric_state()
     vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(), rayleigh_damping_height=damping_height, nflatlev=0, nflat_gradp=0
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflatlev=0,
+        nflat_gradp=0,
     )
 
     velocity_advection = VelocityAdvection(
@@ -155,7 +160,9 @@ def test_velocity_predictor_step(
     )
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
 
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
+        icon_grid.n_lev()
+    )
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -210,51 +217,70 @@ def test_velocity_predictor_step(
     #   assert dallclose(np.asarray(icon_result_z_v_grad_w), np.asarray(diagnostic_state.z_v_grad_w))
 
     # stencil 01
-    assert dallclose(np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt), atol=1.0e-14)
+    assert dallclose(
+        np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt), atol=1.0e-14
+    )
     # stencil 02,05
     assert dallclose(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie), atol=1.0e-14
     )
     # stencil 02
-    #assert dallclose(np.asarray(icon_result_z_kin_hor_e)[2538:31558, :],
+    # assert dallclose(np.asarray(icon_result_z_kin_hor_e)[2538:31558, :],
     #            np.asarray(velocity_advection.z_kin_hor_e)[2538:31558, :])
     # stencil 03,05,06
-    #assert dallclose(np.asarray(icon_result_z_vt_ie), np.asarray(velocity_advection.z_vt_ie))
+    # assert dallclose(np.asarray(icon_result_z_vt_ie), np.asarray(velocity_advection.z_vt_ie))
     # stencil 04
-    #assert dallclose(
+    # assert dallclose(
     #    np.asarray(icon_result_z_w_concorr_me)[:,vertical_params.nflatlev:icon_grid.n_lev()], np.asarray(velocity_advection.z_w_concorr_me)[:,vertical_params.nflatlev:icon_grid.n_lev()]
-    #)
+    # )
     # stencil 07
-    assert dallclose(np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
-                       np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :], atol=1.0e-16)
+    assert dallclose(
+        np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
+        np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :],
+        atol=1.0e-16,
+    )
     # stencil 08
-    assert dallclose(np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],
-                np.asarray(velocity_advection.z_ekinh)[3316:20896, :])
+    assert dallclose(
+        np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],
+        np.asarray(velocity_advection.z_ekinh)[3316:20896, :],
+    )
     # stencil 09
     assert dallclose(
-        np.asarray(icon_result_z_w_concorr_mc)[3316:20896,vertical_params.nflatlev:icon_grid.n_lev()], np.asarray(velocity_advection.z_w_concorr_mc)[3316:20896,vertical_params.nflatlev:icon_grid.n_lev()],
-        atol=1.0e-15
+        np.asarray(icon_result_z_w_concorr_mc)[
+            3316:20896, vertical_params.nflatlev : icon_grid.n_lev()
+        ],
+        np.asarray(velocity_advection.z_w_concorr_mc)[
+            3316:20896, vertical_params.nflatlev : icon_grid.n_lev()
+        ],
+        atol=1.0e-15,
     )
     # stencil 10
     assert dallclose(
-        np.asarray(icon_result_w_concorr_c)[3316:20896, vertical_params.nflatlev + 1:icon_grid.n_lev()],
-        np.asarray(diagnostic_state.w_concorr_c)[3316:20896, vertical_params.nflatlev + 1:icon_grid.n_lev()],
-        atol=1.0e-15
+        np.asarray(icon_result_w_concorr_c)[
+            3316:20896, vertical_params.nflatlev + 1 : icon_grid.n_lev()
+        ],
+        np.asarray(diagnostic_state.w_concorr_c)[
+            3316:20896, vertical_params.nflatlev + 1 : icon_grid.n_lev()
+        ],
+        atol=1.0e-15,
     )
     # stencil 11,12,13,14
-    assert dallclose(np.asarray(savepoint_velocity_exit.z_w_con_c())[3316:20896,:],
-                     np.asarray(velocity_advection.z_w_con_c)[3316:20896,:],
-                     atol=1.0e-15)
-    #stencil 16
     assert dallclose(
-        np.asarray(icon_result_ddt_w_adv_pc)[3316:20896,:],
-        np.asarray(diagnostic_state.ddt_w_adv_pc[ntnd-1])[3316:20896,:],
-        atol=5.0e-16, rtol=1.0e-10
+        np.asarray(savepoint_velocity_exit.z_w_con_c())[3316:20896, :],
+        np.asarray(velocity_advection.z_w_con_c)[3316:20896, :],
+        atol=1.0e-15,
+    )
+    # stencil 16
+    assert dallclose(
+        np.asarray(icon_result_ddt_w_adv_pc)[3316:20896, :],
+        np.asarray(diagnostic_state.ddt_w_adv_pc[ntnd - 1])[3316:20896, :],
+        atol=5.0e-16,
+        rtol=1.0e-10,
     )
     # stencil 19 level 0 not verifying
     assert dallclose(
-        np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558,0:65],
-        np.asarray(diagnostic_state.ddt_vn_apc_pc[ntnd-1])[5387:31558,0:65],
+        np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558, 0:65],
+        np.asarray(diagnostic_state.ddt_vn_apc_pc[ntnd - 1])[5387:31558, 0:65],
         atol=1.0e-15,
     )
 
@@ -276,7 +302,7 @@ def test_velocity_corrector_step(
     savepoint_velocity_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    metrics_nonhydro_savepoint
+    metrics_nonhydro_savepoint,
 ):
     sp_v = savepoint_velocity_init
     sp_d = data_provider.from_savepoint_grid()
@@ -321,8 +347,9 @@ def test_velocity_corrector_step(
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
 
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
-
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
+        icon_grid.n_lev()
+    )
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -330,7 +357,7 @@ def test_velocity_corrector_step(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflatlev= int32(grid_savepoint.nflatlev()),
+        nflatlev=int32(grid_savepoint.nflatlev()),
         nflat_gradp=int32(grid_savepoint.nflat_gradp()),
     )
 
@@ -386,18 +413,19 @@ def test_velocity_corrector_step(
     )
 
     # stencil 11,12,13,14
-    assert dallclose(np.asarray(savepoint_velocity_exit.z_w_con_c())[3316:20896, :],
-                       np.asarray(velocity_advection.z_w_con_c)[3316:20896, :])
+    assert dallclose(
+        np.asarray(savepoint_velocity_exit.z_w_con_c())[3316:20896, :],
+        np.asarray(velocity_advection.z_w_con_c)[3316:20896, :],
+    )
     # stencil 16
     assert dallclose(
         np.asarray(icon_result_ddt_w_adv_pc)[3316:20896, :],
-        np.asarray(diagnostic_state.ddt_w_adv_pc[ntnd-1])[3316:20896, :],
-        atol=5.0e-16
+        np.asarray(diagnostic_state.ddt_w_adv_pc[ntnd - 1])[3316:20896, :],
+        atol=5.0e-16,
     )
     # stencil 19 level 0 not verifying
     assert dallclose(
         np.asarray(icon_result_ddt_vn_apc_pc)[5387:31558, 0:65],
-        np.asarray(diagnostic_state.ddt_vn_apc_pc[ntnd-1])[5387:31558, 0:65],
-        atol=5.0e-16
+        np.asarray(diagnostic_state.ddt_vn_apc_pc[ntnd - 1])[5387:31558, 0:65],
+        atol=5.0e-16,
     )
-

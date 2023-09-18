@@ -111,7 +111,9 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
             + v_vert_e2c2v[:, 3] * primal_normal_vert_y[:, 3]
         )
 
-        kh_smag_2 = (kh_smag_2 * inv_vert_vert_length) - (dvt_tang * inv_primal_edge_length)
+        kh_smag_2 = (kh_smag_2 * inv_vert_vert_length) - (
+            dvt_tang * inv_primal_edge_length
+        )
 
         kh_smag_2 = kh_smag_2 * kh_smag_2
 

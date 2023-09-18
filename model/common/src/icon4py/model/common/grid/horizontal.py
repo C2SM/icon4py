@@ -172,7 +172,6 @@ class EdgeParams:
         dual_normal_cell_y=None,
         edge_areas=None,
     ):
-
         self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
         r"""
         Orientation of vector product of the edge and the adjacent cell centers

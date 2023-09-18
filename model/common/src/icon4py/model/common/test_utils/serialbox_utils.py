@@ -19,10 +19,7 @@ from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    flatten_first_two_dims,
-)
+import icon4py.model.common.test_utils.fixtures
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -50,14 +47,21 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
     PrognosticState,
 )
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
+from icon4py.model.common.grid.horizontal import (
+    CellParams,
+    EdgeParams,
+    HorizontalGridSize,
+)
 from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
 from icon4py.state_utils.diagnostic_state import DiagnosticState
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricState, MetricStateNonHydro
 from icon4py.state_utils.prognostic_state import PrognosticState
 
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    flatten_first_two_dims,
+)
 
 
 class IconSavepoint:
@@ -256,7 +260,6 @@ class IconGridSavePoint(IconSavepoint):
         return self._read_int32_shift1("nflat_gradp")[0]
 
     def construct_icon_grid(self) -> IconGrid:
-
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -1333,7 +1336,6 @@ class IconExitSavepoint(IconSavepoint):
 
 
 class IconNHFinalExitSavepoint(IconSavepoint):
-
     def theta_v_new(self):
         return self._get_field("x_theta_v", CellDim, KDim)
 
@@ -1381,26 +1383,15 @@ class IconSerialDataProvider:
     def from_savepoint_velocity_init(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconVelocityInitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["call-velocity-tendencies"]
-            .istep[istep]
-            .vn_only[vn_only]
-            .date[date]
-            .jstep[jstep]
-            .as_savepoint()
-        )
+        savepoint = icon4py.model.common.test_utils.fixtures.fixtures.jstep[
+            jstep
+        ].as_savepoint()
         return IconVelocityInitSavepoint(savepoint, self.serializer)
 
     def from_savepoint_nonhydro_init(
         self, istep: int, date: str, jstep: int
     ) -> IconNonHydroInitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["solve_nonhydro"]
-            .istep[istep]
-            .date[date]
-            .jstep[jstep]
-            .as_savepoint()
-        )
+        savepoint = icon4py.model.common.test_utils.fixtures.jstep[jstep].as_savepoint()
         return IconNonHydroInitSavepoint(savepoint, self.serializer)
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
@@ -1429,35 +1420,19 @@ class IconSerialDataProvider:
     def from_savepoint_velocity_exit(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["call-velocity-tendencies"]
-            .istep[istep]
-            .vn_only[vn_only]
-            .date[date]
-            .jstep[jstep]
-            .as_savepoint()
-        )
+        savepoint = icon4py.model.common.test_utils.fixtures.fixtures.jstep[
+            jstep
+        ].as_savepoint()
         return IconExitSavepoint(savepoint, self.serializer)
 
     def from_savepoint_nonhydro_exit(
         self, istep: int, date: str, jstep: int
     ) -> IconExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["solve_nonhydro"]
-            .istep[istep]
-            .date[date]
-            .jstep[jstep]
-            .as_savepoint()
-        )
+        savepoint = icon4py.model.common.test_utils.fixtures.jstep[jstep].as_savepoint()
         return IconExitSavepoint(savepoint, self.serializer)
 
     def from_savepoint_nonhydro_step_exit(
         self, date: str, jstep: int
     ) -> IconNHFinalExitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["solve_nonhydro_step"]
-            .date[date]
-            .jstep[jstep]
-            .as_savepoint()
-        )
+        savepoint = icon4py.model.common.test_utils.fixtures.jstep[jstep].as_savepoint()
         return IconNHFinalExitSavepoint(savepoint, self.serializer)

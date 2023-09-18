@@ -16,7 +16,15 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim, Koff
+from icon4py.model.common.dimension import (
+    E2C,
+    E2EC,
+    CellDim,
+    ECDim,
+    EdgeDim,
+    KDim,
+    Koff,
+)
 
 
 @field_operator
@@ -29,7 +37,6 @@ def _mo_solve_nonhydro_stencil_21(
     inv_dual_edge_length: Field[[EdgeDim], float],
     grav_o_cpd: float,
 ) -> Field[[EdgeDim, KDim], float]:
-
     theta_v_0 = theta_v(as_offset(Koff, ikoffset(E2EC[0])))
     theta_v_1 = theta_v(as_offset(Koff, ikoffset(E2EC[1])))
 

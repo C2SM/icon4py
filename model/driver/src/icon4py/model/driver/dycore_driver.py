@@ -26,7 +26,10 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     PrognosticState,
 )
-from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
+from icon4py.model.atmosphere.diffusion.diffusion_utils import (
+    _identity_c_k,
+    _identity_e_k,
+)
 from icon4py.model.common.decomposition.decomposed import create_exchange
 from icon4py.model.common.decomposition.parallel_setup import (
     ProcessProperties,
@@ -153,7 +156,6 @@ class Timeloop:
         diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
     ):
-
         self.atmo_non_hydro.do_dynamics_substepping(
             self.config.dtime, diagnostic_state, prognostic_state
         )
@@ -253,7 +255,9 @@ def initialize(n_time_steps, file_path: Path, props: ProcessProperties):
 @click.command()
 @click.argument("input_path")
 @click.option("--run_path", default="", help="folder for output")
-@click.option("--n_steps", default=5, help="number of time steps to run, max 5 is supported")
+@click.option(
+    "--n_steps", default=5, help="number of time steps to run, max 5 is supported"
+)
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
 def main(input_path, run_path, n_steps, mpi):
     """

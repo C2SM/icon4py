@@ -35,7 +35,9 @@ class TestMoSolveNonhydroStencil60(StencilTest):
         dtime: float,
         **kwargs,
     ) -> np.array:
-        exner_dyn_incr = exner - (exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy)
+        exner_dyn_incr = exner - (
+            exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy
+        )
         return dict(exner_dyn_incr=exner_dyn_incr)
 
     @pytest.fixture

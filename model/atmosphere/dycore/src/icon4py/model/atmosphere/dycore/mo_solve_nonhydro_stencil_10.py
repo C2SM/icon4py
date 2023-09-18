@@ -43,7 +43,9 @@ def _mo_solve_nonhydro_stencil_10(
 ]:
     z_w_backtraj = -(w - w_concorr_c) * dtime * 0.5 / ddqz_z_half
     z_rho_tavg_m1 = wgt_nnow_rth * rho_now(Koff[-1]) + wgt_nnew_rth * rho_var(Koff[-1])
-    z_theta_tavg_m1 = wgt_nnow_rth * theta_now(Koff[-1]) + wgt_nnew_rth * theta_var(Koff[-1])
+    z_theta_tavg_m1 = wgt_nnow_rth * theta_now(Koff[-1]) + wgt_nnew_rth * theta_var(
+        Koff[-1]
+    )
     z_rho_tavg = wgt_nnow_rth * rho_now + wgt_nnew_rth * rho_var
     z_theta_tavg = wgt_nnow_rth * theta_now + wgt_nnew_rth * theta_var
     rho_ic = (
@@ -109,5 +111,10 @@ def mo_solve_nonhydro_stencil_10(
         dtime,
         wgt_nnow_rth,
         wgt_nnew_rth,
-        out=(rho_ic[:, 1:], z_theta_v_pr_ic[:, 1:], theta_v_ic[:, 1:], z_th_ddz_exner_c[:, 1:]),
+        out=(
+            rho_ic[:, 1:],
+            z_theta_v_pr_ic[:, 1:],
+            theta_v_ic[:, 1:],
+            z_th_ddz_exner_c[:, 1:],
+        ),
     )

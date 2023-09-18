@@ -198,7 +198,6 @@ class NonHydrostaticConfig:
         divdamp_z3: float = 60000,
         divdamp_z4: float = 80000,
     ):
-
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
         self.iadv_rhotheta: int = iadv_rhotheta
@@ -425,7 +424,6 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / config.ndyn_substeps_var
 
@@ -542,8 +540,6 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-
-
             mo_solve_nonhydro_stencil_67.with_backend(run_gtfn)(
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,
@@ -556,7 +552,6 @@ class SolveNonhydro:
                 vertical_end=self.grid.n_lev(),
                 offset_provider={},
             )
-
 
         mo_solve_nonhydro_stencil_68.with_backend(run_gtfn)(
             mask_prog_halo_c=self.metric_state_nonhydro.mask_prog_halo_c,
@@ -600,7 +595,6 @@ class SolveNonhydro:
                 lvn_only = True  # Recompute only vn tendency
             else:
                 lvn_only = False
-
 
         velocity_advection.VelocityAdvection(
             self.grid,
@@ -1451,8 +1445,6 @@ class SolveNonhydro:
         bdy_divdamp: Field[[KDim], float],
         lprep_adv: bool,
     ):
-
-
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / config.ndyn_substeps_var
 
@@ -1503,7 +1495,7 @@ class SolveNonhydro:
             self.grid,
             self.metric_state_nonhydro,
             self.interpolation_state,
-            self.vertical_params
+            self.vertical_params,
         ).run_corrector_step(
             vn_only=lvn_only,
             diagnostic_state=diagnostic_state_nh,

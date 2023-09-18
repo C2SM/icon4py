@@ -142,7 +142,6 @@ def _predictor_stencils_2_3(
     k_field: Field[[KDim], int32],
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-
     (z_exner_ex_pr, exner_pr) = where(
         (k_field >= int32(0)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_02(exner_exfac, exner, exner_ref_mc, exner_pr),
@@ -495,13 +494,13 @@ def _predictor_stencils_35_36(
 ]:
     z_w_concorr_me = where(
         # (k_field >= nflatlev_startindex) & (k_field < nlev),
-        k_field >= nflatlev_startindex, #TODO: @abishekg7 does this need to change
+        k_field >= nflatlev_startindex,  # TODO: @abishekg7 does this need to change
         _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         # (k_field >= 1) & (k_field < nlev),
-        k_field >= int32(1), #TODO: @abishekg7 does this need to change
+        k_field >= int32(1),  # TODO: @abishekg7 does this need to change
         _mo_solve_nonhydro_stencil_36(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -619,7 +618,8 @@ def _stencils_39_40(
 ) -> Field[[CellDim, KDim], float]:
     w_concorr_c = where(
         # (k_field >= nflatlev_startindex_plus1) & (k_field < nlev),
-        k_field >= nflatlev_startindex_plus1, #TODO: @abishekg7 does this need to change
+        k_field
+        >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
         _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         w_concorr_c,
     )

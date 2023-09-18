@@ -34,9 +34,7 @@ class VerticalModelParams:
     rayleigh_damping_height: height of rayleigh damping in [m] mo_nonhydro_nml
     """
 
-    vct_a: Field[
-        [KDim], float
-    ]
+    vct_a: Field[[KDim], float]
     rayleigh_damping_height: Final[float]
     index_of_damping_layer: Final[int32] = field(init=False)
     # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
@@ -63,4 +61,3 @@ class VerticalModelParams:
     @property
     def physical_heights(self) -> Field[[KDim], float]:
         return self.vct_a
-

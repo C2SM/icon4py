@@ -18,7 +18,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_tr
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    as_1D_sparse_field,
+    random_field,
+)
 
 
 class TestComputeBtraj(StencilTest):
@@ -48,10 +52,12 @@ class TestComputeBtraj(StencilTest):
         dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
         z_ntdistv_bary_1 = -(
-            p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
+            p_vn * p_dthalf
+            + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
         )
         z_ntdistv_bary_2 = -(
-            p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
+            p_vt * p_dthalf
+            + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
         )
 
         p_distv_bary_1 = np.where(

@@ -71,7 +71,6 @@ def _fused_stencils_4_5_6(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-
     z_w_concorr_me = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
         _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt),
@@ -198,7 +197,6 @@ def _fused_stencils_11_to_13(
     nflatlev_startindex: int32,
     nlev: int32,
 ):
-
     local_z_w_con_c = where(
         (k_field >= int32(0)) & (k_field < nlev),
         _mo_velocity_advection_stencil_11(w),
@@ -252,7 +250,6 @@ def _fused_stencil_14(
     cfl_w_limit: float,
     dtime: float,
 ):
-
     (
         local_cfl_clipping,
         local_vcfl,
@@ -302,7 +299,6 @@ def _fused_stencils_16_to_17(
     coeff1_dwdz: Field[[CellDim, KDim], float],
     coeff2_dwdz: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-
     ddt_w_adv = _mo_velocity_advection_stencil_16(
         local_z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
     )

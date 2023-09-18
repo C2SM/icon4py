@@ -56,7 +56,10 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.state_utils.diagnostic_state import DiagnosticState, DiagnosticStateNonHydro
+from icon4py.state_utils.diagnostic_state import (
+    DiagnosticState,
+    DiagnosticStateNonHydro,
+)
 from icon4py.state_utils.interpolation_state import InterpolationState
 from icon4py.state_utils.metric_state import MetricStateNonHydro
 from icon4py.state_utils.prognostic_state import PrognosticState
@@ -140,7 +143,6 @@ class VelocityAdvection:
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
     ):
-
         self.cfl_w_limit = self.cfl_w_limit / dtime
         self.scalfac_exdiff = self.scalfac_exdiff / (
             dtime * (0.85 - self.cfl_w_limit * dtime)
@@ -181,7 +183,6 @@ class VelocityAdvection:
             HorizontalMarkerIndex.nudging(EdgeDim) + 1,
             HorizontalMarkerIndex.local(EdgeDim),
         )
-
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
@@ -352,15 +353,14 @@ class VelocityAdvection:
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
             vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2)-1
+                max(3, self.vertical_params.index_of_damping_layer - 2) - 1
             ),
             vertical_end=int32(self.grid.n_lev() - 3),
             offset_provider={},
         )
 
-        self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping,0))
+        self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping, 0))
         maxvcfl_dsl = np.max(np.abs(np.where(self.cfl_clipping, self.vcfl_dsl, 0.0)))
-
 
         mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
             z_w_con_c=self.z_w_con_c,
@@ -407,7 +407,7 @@ class VelocityAdvection:
             horizontal_start=indices_4_1,
             horizontal_end=indices_4_2,
             vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2)-1
+                max(3, self.vertical_params.index_of_damping_layer - 2) - 1
             ),
             vertical_end=int32(self.grid.n_lev() - 3),
             offset_provider={
@@ -460,7 +460,7 @@ class VelocityAdvection:
             horizontal_start=indices_5_1,
             horizontal_end=indices_5_2,
             vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2)-1
+                max(3, self.vertical_params.index_of_damping_layer - 2) - 1
             ),
             vertical_end=int32(self.grid.n_lev() - 4),
             offset_provider={
@@ -490,7 +490,6 @@ class VelocityAdvection:
         f_e: Field[[EdgeDim], float],
         area_edge: Field[[EdgeDim], float],
     ):
-
         self.cfl_w_limit = self.cfl_w_limit / dtime
         self.scalfac_exdiff = self.scalfac_exdiff / (
             dtime * (0.85 - self.cfl_w_limit * dtime)
@@ -581,7 +580,6 @@ class VelocityAdvection:
                 },
             )
 
-
         mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -626,7 +624,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping,0))
+        self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping, 0))
         maxvcfl_dsl = np.max(np.abs(np.where(self.cfl_clipping, self.vcfl_dsl, 0.0)))
 
         mo_velocity_advection_stencil_15.with_backend(run_gtfn)(

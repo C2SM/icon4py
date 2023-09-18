@@ -61,4 +61,6 @@ def mo_solve_nonhydro_stencil_40(
     wgtfacq_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c, out=w_concorr_c[:, -1:])
+    _mo_solve_nonhydro_stencil_40(
+        e_bln_c_s, z_w_concorr_me, wgtfacq_c, out=w_concorr_c[:, -1:]
+    )

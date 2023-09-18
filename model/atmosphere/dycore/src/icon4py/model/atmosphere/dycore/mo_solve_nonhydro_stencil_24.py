@@ -28,7 +28,9 @@ def _mo_solve_nonhydro_stencil_24(
     dtime: float,
     cpd: float,
 ) -> Field[[EdgeDim, KDim], float]:
-    vn_nnew = vn_nnow + dtime * (ddt_vn_adv_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner)
+    vn_nnew = vn_nnow + dtime * (
+        ddt_vn_adv_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner
+    )
     return vn_nnew
 
 

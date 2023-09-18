@@ -43,8 +43,8 @@ class DiagnosticState:
     w_concorr_c: Field[
         [CellDim, KDim], float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    #ddt_w_adv_pc_before: Field[[CellDim, KDim], float]
-    #ddt_vn_apc_pc_before: Field[[EdgeDim, KDim], float]
+    # ddt_w_adv_pc_before: Field[[CellDim, KDim], float]
+    # ddt_vn_apc_pc_before: Field[[EdgeDim, KDim], float]
     ddt_w_adv_pc: Field[[CellDim, KDim], float]
     ddt_vn_apc_pc: Field[[EdgeDim, KDim], float]
     ntnd: float
@@ -102,4 +102,3 @@ class DiagnosticStateNonHydro:
         self,
     ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
         return (self.ddt_w_adv_ntl1, self.ddt_w_adv_ntl2)
-
