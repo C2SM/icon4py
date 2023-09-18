@@ -12,32 +12,28 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-
 import pytest
 
-from icon4pytools.liskov.parsing.transform import StencilTransformer
 from icon4pytools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     EndCreateData,
+    EndDeleteData,
+    EndFusedStencilData,
     EndIfData,
     EndProfileData,
     EndStencilData,
-    EndDeleteData,
-    EndFusedStencilData,
     FieldAssociationData,
     ImportsData,
     InsertData,
     IntegrationCodeInterface,
     StartCreateData,
     StartDeleteData,
+    StartFusedStencilData,
     StartProfileData,
     StartStencilData,
-    StartFusedStencilData,
 )
-
-import pytest
-
+from icon4pytools.liskov.parsing.transform import StencilTransformer
 
 
 @pytest.fixture
@@ -67,11 +63,9 @@ def integration_code_interface():
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
         startln=1,
-        acc_present=False
+        acc_present=False,
     )
-    end_fused_stencil_data = EndFusedStencilData(
-        name="stencil1", startln=4
-    )
+    end_fused_stencil_data = EndFusedStencilData(name="stencil1", startln=4)
     start_stencil_data1 = StartStencilData(
         name="stencil1",
         fields=[
@@ -174,9 +168,11 @@ def integration_code_interface():
 def stencil_transform_fused(integration_code_interface):
     return StencilTransformer(integration_code_interface, fused=True)
 
+
 @pytest.fixture
 def stencil_transform_unfused(integration_code_interface):
     return StencilTransformer(integration_code_interface, fused=False)
+
 
 def test_transform_fused(
     stencil_transform_fused,
@@ -189,6 +185,7 @@ def test_transform_fused(
     assert len(transformed.EndStencil) == 1
     assert len(transformed.StartDelete) == 2
     assert len(transformed.EndDelete) == 2
+
 
 def test_transform_unfused(
     stencil_transform_unfused,
