@@ -38,8 +38,8 @@ class VerticalModelParams:
     rayleigh_damping_height: Final[float]
     index_of_damping_layer: Final[int32] = field(init=False)
     # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
-    nflatlev: Final[int32]
-    nflat_gradp: Final[int32]
+    nflatlev: Final[int32] = None
+    nflat_gradp: Final[int32] = None
 
     def __post_init__(self):
         object.__setattr__(
