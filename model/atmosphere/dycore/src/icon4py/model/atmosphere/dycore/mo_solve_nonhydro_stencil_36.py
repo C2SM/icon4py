@@ -44,4 +44,6 @@ def mo_solve_nonhydro_stencil_36(
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_36(wgtfac_e, vn, vt, out=(vn_ie, z_vt_ie, z_kin_hor_e))
+    _mo_solve_nonhydro_stencil_36(
+        wgtfac_e, vn, vt, out=(vn_ie[:, 1:], z_vt_ie[:, 1:], z_kin_hor_e[:, 1:])
+    )
