@@ -38,7 +38,7 @@ class CodegenContext:
     end_subroutine_ln: int
 
 
-ParsedSubroutines = dict[str, dict[str, dict[str, Any | CodegenContext]]]
+ParsedSubroutines = dict[str, dict[str, dict[str, Any]]]
 
 
 @dataclass
@@ -86,7 +86,7 @@ class GranuleParser:
                 use_ln = len(code_lines) - i
                 if i > 0 and code_lines[i - 1].strip().lower() == "#endif":
                     # If the USE statement is preceded by an #endif statement, return the line number after the #endif statement
-                    return use_ln + 1
+                    use_ln += 1
                 return use_ln
         raise ParsingError("Could not find any USE statements.")
 
