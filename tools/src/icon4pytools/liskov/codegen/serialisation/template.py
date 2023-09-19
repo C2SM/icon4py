@@ -35,11 +35,11 @@ class StandardFields(eve.Node):
     fields: list[Field]
 
 
-class DecomposedFieldsAlloc(StandardFields):
+class DecomposedFieldsAllocNode(StandardFields):
     ...
 
 
-class DecomposedFieldDeclarations(DecomposedFieldsAlloc):
+class DecomposedFieldDeclarations(DecomposedFieldsAllocNode):
     ...
 
 
@@ -48,14 +48,14 @@ class SavepointStatement(eve.Node):
     init: Optional[InitData] = eve.datamodels.field(default=None)
     multinode: bool
     standard_fields: StandardFields = eve.datamodels.field(init=False)
-    decomposed_fields: DecomposedFieldsAlloc = eve.datamodels.field(init=False)
+    decomposed_fields: DecomposedFieldsAllocNode = eve.datamodels.field(init=False)
     decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(init=False)
 
     def __post_init__(self) -> None:    # type: ignore
         self.standard_fields = StandardFields(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if not f.decomposed]
         )
-        self.decomposed_fields = DecomposedFieldsAlloc(
+        self.decomposed_fields = DecomposedFieldsAllocNode(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if f.decomposed]
         )
         self.decomposed_field_declarations = DecomposedFieldDeclarations(
@@ -105,18 +105,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
         """
     )
 
-    DecomposedFieldsAlloc = as_jinja(
-        """
-    {% for f in _this_node.fields %}
-    !$ser verbatim allocate({{ f.variable }}_{{ f.ptr_var}}({{ f.alloc_dims }}))
-    !$ser verbatim {{ f.variable }}_{{ f.ptr_var}} = {{ f.variable }}%{{ f.ptr_var}}
-    !$ser {% if f.device == 'gpu' %}accdata {% else %}data {% endif %}{{ f.variable }}_{{ f.ptr_var}}={{ f.variable }}_{{ f.ptr_var}}
-    !$ser verbatim deallocate({{ f.variable }}_{{ f.ptr_var}})
-    {% endfor %}
-    """
-    )
-
-    def visit_DecomposedFieldsAlloc(self, node: DecomposedFieldsAlloc) -> str | Collection[str]:
+    def visit_DecomposedFieldsAllocNode(self, node: DecomposedFieldsAllocNode) -> str | Collection[str]:
         def generate_size_strings(dim_list: list[str], var_name: str) -> list[str]:
             size_strings = []
             for i in range(len(dim_list)):
@@ -131,6 +120,20 @@ class SavepointStatementGenerator(TemplatedGenerator):
             setattr(f, "alloc_dims", ",".join(generate_size_strings(f.dimension, f.variable)))
 
         return self.generic_visit(node)
+
+
+    DecomposedFieldsAllocNode = as_jinja(
+        """
+    {% for f in _this_node.fields %}
+    !$ser verbatim allocate({{ f.variable }}_{{ f.ptr_var}}({{ f.alloc_dims }}))
+    !$ser verbatim {{ f.variable }}_{{ f.ptr_var}} = {{ f.variable }}%{{ f.ptr_var}}
+    !$ser {% if f.device == 'gpu' %}accdata {% else %}data {% endif %}{{ f.variable }}_{{ f.ptr_var}}={{ f.variable }}_{{ f.ptr_var}}
+    !$ser verbatim deallocate({{ f.variable }}_{{ f.ptr_var}})
+    {% endfor %}
+    """
+    )
+
+
 
 
 class ImportStatement(eve.Node):
