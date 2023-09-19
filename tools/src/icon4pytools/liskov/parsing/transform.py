@@ -47,7 +47,7 @@ class StencilTransformer(Step):
             data (Any): Optional data to be passed. Default is None.
 
         Returns:
-            ts.ParsedDict: The parsed directives along with any modifications applied.
+            IntegrationCodeInterface: The interface object along with any transformations applied.
         """
         if self.fused:
             logger.info("Transforming stencils for deletion.")

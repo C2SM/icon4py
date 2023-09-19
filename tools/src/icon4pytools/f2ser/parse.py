@@ -73,7 +73,7 @@ class GranuleParser:
         """Find the line number of the last Fortran USE statement in the code.
 
         Returns:
-            int: the line number of the last USE statement, or None if no USE statement is found.
+            int: the line number of the last USE statement.
         """
         # Reverse the order of the lines so we can search from the end
         code = self._read_code_from_file()
@@ -262,7 +262,7 @@ class GranuleParser:
                 combined[subroutine_name][intent].update(new_vars)
         return combined
 
-    def _update_with_codegen_lines(self, parsed_types: dict) -> dict:
+    def _update_with_codegen_lines(self, parsed_types: dict[str, Any]) -> dict[str, Any]:
         """Update the parsed_types dictionary with the line numbers for codegen.
 
         Args:

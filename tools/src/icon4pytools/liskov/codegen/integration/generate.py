@@ -11,14 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Any, Sequence
+from typing import Any, Sequence, Union, TypeGuard
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.liskov.codegen.integration.interface import (
     IntegrationCodeInterface,
     StartStencilData,
-    UnusedDirective, StartDeleteData, EndDeleteData,
-)
+    UnusedDirective, )
 from icon4pytools.liskov.codegen.integration.template import (
     DeclareStatement,
     DeclareStatementGenerator,
@@ -55,8 +54,11 @@ from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
 from icon4pytools.liskov.external.metadata import CodeMetadata
 
-
 logger = setup_logger(__name__)
+
+
+def _is_sequence(value: Union[Sequence[Any], UnusedDirective]) -> TypeGuard[Sequence[Any]]:
+    return isinstance(value, Sequence)
 
 
 class IntegrationCodeGenerator(CodeGenerator):
@@ -235,8 +237,8 @@ class IntegrationCodeGenerator(CodeGenerator):
 
     def _generate_create(self) -> None:
         """Generate f90 code for OpenACC DATA CREATE statements."""
-        if self.interface.StartCreate != UnusedDirective:
-            for startcreate in self.interface.StartCreate:  # type: ignore
+        if _is_sequence(self.interface.StartCreate):
+            for startcreate in self.interface.StartCreate:
                 logger.info("Generating DATA CREATE statement.")
                 self._generate(
                     StartCreateStatement,
@@ -245,8 +247,8 @@ class IntegrationCodeGenerator(CodeGenerator):
                     extra_fields=startcreate.extra_fields,
                 )
 
-        if self.interface.EndCreate != UnusedDirective:
-            for endcreate in self.interface.EndCreate:  # type: ignore
+        if _is_sequence(self.interface.EndCreate):
+            for endcreate in self.interface.EndCreate:
                 self._generate(
                     EndCreateStatement,
                     EndCreateStatementGenerator,
@@ -255,16 +257,16 @@ class IntegrationCodeGenerator(CodeGenerator):
 
     def _generate_endif(self) -> None:
         """Generate f90 code for endif statements."""
-        if self.interface.EndIf != UnusedDirective:
-            for endif in self.interface.EndIf:  # type: ignore
+        if _is_sequence(self.interface.EndIf):
+            for endif in self.interface.EndIf:
                 logger.info("Generating ENDIF statement.")
                 self._generate(EndIfStatement, EndIfStatementGenerator, endif.startln)
 
     def _generate_profile(self) -> None:
         """Generate additional nvtx profiling statements."""
         if self.profile:
-            if self.interface.StartProfile != UnusedDirective:
-                for start in self.interface.StartProfile:  # type: ignore
+            if _is_sequence(self.interface.StartProfile):
+                for start in self.interface.StartProfile:
                     logger.info("Generating nvtx start statement.")
                     self._generate(
                         StartProfileStatement,
@@ -273,8 +275,8 @@ class IntegrationCodeGenerator(CodeGenerator):
                         name=start.name,
                     )
 
-            if self.interface.EndProfile != UnusedDirective:
-                for end in self.interface.EndProfile:  # type: ignore
+            if _is_sequence(self.interface.EndProfile):
+                for end in self.interface.EndProfile:
                     logger.info("Generating nvtx end statement.")
                     self._generate(
                         EndProfileStatement,
@@ -284,8 +286,8 @@ class IntegrationCodeGenerator(CodeGenerator):
 
     def _generate_insert(self) -> None:
         """Generate free form statement from insert directive."""
-        if self.interface.Insert != UnusedDirective:
-            for insert in self.interface.Insert:  # type: ignore
+        if _is_sequence(self.interface.Insert):
+            for insert in self.interface.Insert:
                 logger.info("Generating free form statement.")
                 self._generate(
                     InsertStatement,

@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Union
+from typing import Union, cast
 
 from gt4py.eve import Node
 from gt4py.next.ffront import program_ast as past
@@ -130,17 +130,18 @@ class Field(Node, FieldEntity):
         return rank
 
     def get_num_neighbors(self) -> int:
-        if not (self.is_sparse() or self.is_compound()):
+        if not (self.is_sparse() or self.is_compound()) or self.location is None:
             raise BindingsTypeConsistencyException(
                 "num nbh only defined for sparse or compound fields"
             )
-        return calc_num_neighbors(self.location.to_dim_list(), self.includes_center)  # type: ignore
+        location = cast(Union[ChainedLocation, CompoundLocation], self.location)
+        return calc_num_neighbors(location.to_dim_list(), self.includes_center)
 
     @staticmethod
     def _extract_field_type(field: past.DataSymbol) -> ts.ScalarKind:
         """Handle extraction of field types for different fields e.g. Scalar."""
         if not isinstance(field.type, ts.FieldType):
-            return field.type.kind  # type: ignore
+            return field.type.kind  # type: ignore[union-attr]
         return field.type.dtype.kind
 
     @staticmethod

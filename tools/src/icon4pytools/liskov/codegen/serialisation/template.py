@@ -51,7 +51,7 @@ class SavepointStatement(eve.Node):
     decomposed_fields: DecomposedFieldsAllocNode = eve.datamodels.field(init=False)
     decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:    # type: ignore
+    def __post_init__(self, *args, **kwargs) -> None:
         self.standard_fields = StandardFields(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if not f.decomposed]
         )

@@ -38,7 +38,7 @@ class ParsedGranuleDeserialiser:
         """Deserialise the parsed granule and returns a serialisation interface.
 
         Returns:
-            A `SerialisationInterface` object representing the deserialised data.
+            A `SerialisationCodeInterface` object representing the deserialised data.
         """
         self._merge_out_inout_fields()
         savepoints = self._make_savepoints()
@@ -50,7 +50,7 @@ class ParsedGranuleDeserialiser:
         """Create savepoints for each subroutine and intent in the parsed granule.
 
         Returns:
-            None.
+            A `list[SavepointData]` containing all savepoints.
         """
         savepoints: list[SavepointData] = []
 
@@ -69,7 +69,7 @@ class ParsedGranuleDeserialiser:
             var_dict: A dictionary representing the variables to be saved.
 
         Returns:
-            None.
+            A `SavepointData` object containing information for one savepoint.
         """
         field_vals = {k: v for k, v in var_dict.items() if isinstance(v, dict)}
         fields = [
@@ -127,11 +127,7 @@ class ParsedGranuleDeserialiser:
         return var_name
 
     def _make_init_data(self) -> InitData:
-        """Create an `InitData` object and sets it to the `Init` key in the `data` dictionary.
-
-        Returns:
-            None.
-        """
+        """Create an `InitData` object and sets it to the `Init` key in the `data` dictionary."""
         first_intent_in_subroutine = [
             var_dict
             for intent_dict in self.parsed.subroutines.values()
@@ -148,11 +144,7 @@ class ParsedGranuleDeserialiser:
         )
 
     def _merge_out_inout_fields(self) -> None:
-        """Merge the `inout` fields into the `in` and `out` fields in the `parsed` dictionary.
-
-        Returns:
-            None.
-        """
+        """Merge the `inout` fields into the `in` and `out` fields in the `parsed` dictionary."""
         for _, intent_dict in self.parsed.subroutines.items():
             if "inout" in intent_dict:
                 intent_dict["in"].update(intent_dict["inout"])

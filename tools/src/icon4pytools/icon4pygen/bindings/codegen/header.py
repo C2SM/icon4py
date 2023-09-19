@@ -149,7 +149,7 @@ class CppHeaderFile(Node):
     setupFunc: CppSetupFuncDeclaration = eve.datamodels.field(init=False)
     freeFunc: CppFreeFunc = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args, **kwargs) -> None:
         output_fields = [field for field in self.fields if field.intent.out]
         tolerance_fields = [field for field in output_fields if not field.is_integral()]
 

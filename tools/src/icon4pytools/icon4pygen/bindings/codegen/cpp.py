@@ -678,7 +678,7 @@ class CppDefTemplate(Node):
         )
         return fields, offsets
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args, **kwargs) -> None:
         fields, offsets = self._get_field_data()
         offset_renderer = GpuTriMeshOffsetRenderer(self.offsets)
 

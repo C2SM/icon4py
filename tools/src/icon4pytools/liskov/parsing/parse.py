@@ -72,7 +72,7 @@ class DirectivesParser(Step):
             found = False
             for directive in SUPPORTED_DIRECTIVES:
                 if directive.pattern in raw.string:
-                    typed.append(directive(raw.string, raw.startln, raw.endln))  # type: ignore
+                    typed.append(directive(raw.string, raw.startln, raw.endln))
                     found = True
                     break
             if not found:
@@ -84,7 +84,7 @@ class DirectivesParser(Step):
     def _preprocess(self, directives: Sequence[ts.ParsedDirective]) -> Sequence[ts.ParsedDirective]:
         """Preprocess the directives by removing unnecessary characters and formatting the directive strings."""
         return [
-            d.__class__(self._clean_string(d.string), d.startln, d.endln)  # type: ignore
+            d.__class__(self._clean_string(d.string), d.startln, d.endln)
             for d in directives
         ]
 
