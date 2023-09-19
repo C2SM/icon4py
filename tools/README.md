@@ -266,12 +266,12 @@ This directive allows generating an nvtx end profile statement.
 
 #### `!$DSL START DELETE
 
-This directive allows to disable code in the fused and substition mode.
+This directive allows to disable code. The code is only disabled if both the fused mode and the substition mode are enabled.
 The `START DELETE` indicates the starting line from which on code is deleted.
 
 #### `!$DSL END DELETE`
 
-This directive allows to disable code in the fused and substition mode.
+This directive allows to disable code. The code is only disabled if both the fused mode and the substition mode are enabled.
 The `END DELETE` indicates the ending line from which on code is deleted.
 
 #### `!$DSL ENDIF()`
