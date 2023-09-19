@@ -210,7 +210,7 @@ This directive denotes the start of a fused stencil. Required arguments are `nam
 
 This directive denotes the end of a fused stencil. The required argument is `name`, which must match the name of the preceding `START STENCIL` directive.
 
-Note that for `START STENCIL` and `END STENCIL` will be transformed into `DELTE` section, when using the `--fused` mode.
+Note that each `START STENCIL` and `END STENCIL` will be transformed into a `DELETE` section, when using the `--fused` mode.
 Together, the `START FUSED STENCIL` and `END FUSED STENCIL` directives result in the following generated code at the start and end of a stencil respectively.
 
 ```fortran
