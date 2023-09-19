@@ -35,11 +35,11 @@ class StandardFields(eve.Node):
     fields: list[Field]
 
 
-class DecomposedFieldsNode(StandardFields):
+class DecomposedFieldsAlloc(StandardFields):
     ...
 
 
-class DecomposedFieldDeclarations(DecomposedFieldsNode):
+class DecomposedFieldDeclarations(DecomposedFieldsAlloc):
     ...
 
 
@@ -48,14 +48,14 @@ class SavepointStatement(eve.Node):
     init: Optional[InitData] = eve.datamodels.field(default=None)
     multinode: bool
     standard_fields: StandardFields = eve.datamodels.field(init=False)
-    decomposed_fields: DecomposedFieldsNode = eve.datamodels.field(init=False)
+    decomposed_fields: DecomposedFieldsAlloc = eve.datamodels.field(init=False)
     decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(init=False)
 
     def __post_init__(self) -> None:    # type: ignore
         self.standard_fields = StandardFields(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if not f.decomposed]
         )
-        self.decomposed_fields = DecomposedFieldsNode(
+        self.decomposed_fields = DecomposedFieldsAlloc(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if f.decomposed]
         )
         self.decomposed_field_declarations = DecomposedFieldDeclarations(
@@ -105,7 +105,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
         """
     )
 
-    DecomposedFields = as_jinja(
+    DecomposedFieldsAlloc = as_jinja(
         """
     {% for f in _this_node.fields %}
     !$ser verbatim allocate({{ f.variable }}_{{ f.ptr_var}}({{ f.alloc_dims }}))
@@ -116,7 +116,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
     """
     )
 
-    def visit_DecomposedFields(self, node: DecomposedFieldsNode) -> str | Collection[str]:
+    def visit_DecomposedFieldsAlloc(self, node: DecomposedFieldsAlloc) -> str | Collection[str]:
         def generate_size_strings(dim_list: list[str], var_name: str) -> list[str]:
             size_strings = []
             for i in range(len(dim_list)):
