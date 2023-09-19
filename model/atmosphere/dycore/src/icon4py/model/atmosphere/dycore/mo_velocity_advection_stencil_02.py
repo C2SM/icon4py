@@ -38,4 +38,4 @@ def mo_velocity_advection_stencil_02(
     vn_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
 ):
-    _mo_velocity_advection_stencil_02(wgtfac_e, vn, vt, out=(vn_ie, z_kin_hor_e))
+    _mo_velocity_advection_stencil_02(wgtfac_e, vn, vt, out=(vn_ie[:, 1:], z_kin_hor_e[:, 1:]))
