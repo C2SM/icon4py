@@ -40,11 +40,12 @@ class TestMoSolveNonhydroStencil40(StencilTest):
         z_w_concorr_mc_m1 = np.sum(e_bln_c_s * z_w_concorr_me_offset_1[mesh.c2e], axis=1)
         z_w_concorr_mc_m2 = np.sum(e_bln_c_s * z_w_concorr_me_offset_2[mesh.c2e], axis=1)
         z_w_concorr_mc_m3 = np.sum(e_bln_c_s * z_w_concorr_me_offset_3[mesh.c2e], axis=1)
-        w_concorr_c = (
+        w_concorr_c = np.zeros_like(wgtfacq_c)
+        w_concorr_c[:, -1] = (
             np.roll(wgtfacq_c, shift=1, axis=1) * z_w_concorr_mc_m1
             + np.roll(wgtfacq_c, shift=2, axis=1) * z_w_concorr_mc_m2
             + np.roll(wgtfacq_c, shift=3, axis=1) * z_w_concorr_mc_m3
-        )
+        )[:, -1]
         return dict(w_concorr_c=w_concorr_c)
 
     @pytest.fixture
