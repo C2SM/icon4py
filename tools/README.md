@@ -272,7 +272,7 @@ The `START DELTE` indicates the starting line from which on code is deleted.
 #### `!$DSL END DELETE`
 
 This directive allows to disable code in the fused and substition mode.
-The `END DELTE` indicates the ending line from which on code is deleted.
+The `END DELETE` indicates the ending line from which on code is deleted.
 
 #### `!$DSL ENDIF()`
 
