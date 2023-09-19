@@ -29,6 +29,7 @@ class TestMoVelocityAdvectionStencil10(StencilTest):
     def reference(mesh, wgtfac_c: np.array, z_w_concorr_mc: np.array, **kwargs) -> np.array:
         z_w_concorr_mc_k_minus_1 = np.roll(z_w_concorr_mc, shift=1, axis=1)
         w_concorr_c = wgtfac_c * z_w_concorr_mc + (1.0 - wgtfac_c) * z_w_concorr_mc_k_minus_1
+        w_concorr_c[:, 0] = 0
         return dict(w_concorr_c=w_concorr_c)
 
     @pytest.fixture

@@ -10,24 +10,23 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pytest
-from gt4py.next.program_processors.runners.roundtrip import executor
-
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
-BACKENDS = {"embedded": executor}
-MESHES = {"simple_mesh": SimpleMesh()}
-
-
-@pytest.fixture(
-    ids=MESHES.keys(),
-    params=MESHES.values(),
+from icon4py.model.common.test_utils.fixtures import (  # noqa F401
+    backend,
+    damping_height,
+    data_provider,
+    datapath,
+    download_ser_data,
+    grid_savepoint,
+    icon_grid,
+    linit,
+    mesh,
+    step_date_exit,
+    step_date_init,
 )
-def mesh(request):
-    return request.param
-
-
-@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
-def backend(request):
-    return request.param
+from icon4py.model.common.test_utils.pytest_config import (  # noqa: F401
+    pytest_addoption,
+    pytest_configure,
+    pytest_runtest_setup,
+)

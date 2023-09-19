@@ -1,5 +1,7 @@
 # VCS
 -e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
+git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
+git+https://github.com/ghex-org/GHEX.git#subdirectory=bindings/python
 
 # PyPI
 bump2version>=1.0.1
@@ -13,6 +15,7 @@ flake8-eradicate>=1.3.0
 flake8-mutable>=1.2.0
 isort~=5.10
 mypy>=0.942
+typing-extensions==4.5.0
 pre-commit~=2.15
 pytest>=6.1
 pytest-benchmark>=4.0.0
@@ -20,6 +23,8 @@ pytest-cache>=1.0
 pytest-cov>=2.8
 pytest-factoryboy>=2.0
 pytest-xdist[psutil]>=2.2
+pytest-mpi>=0.6
 setuptools>=40.8.0
 wheel>=0.37.1
 tox >= 3.25
+wget>=3.2
