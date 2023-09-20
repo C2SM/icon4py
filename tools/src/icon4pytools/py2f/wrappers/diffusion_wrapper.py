@@ -14,7 +14,7 @@
 # flake8: noqa
 
 # We use gt4py type annotations and thus need to ignore this in MyPy
-# type: ignore[valid-type]
+# mypy: disable-error-code="valid-type"
 
 """
 Wrapper module for diffusion granule.

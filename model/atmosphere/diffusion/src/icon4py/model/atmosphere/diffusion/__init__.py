@@ -30,5 +30,5 @@ __copyright__: Final = "Copyright (c) 2014-2022 ETH Zurich"
 __license__: Final = "GPL-3.0-or-later"
 
 
-__version__: Final = "0.0.6"
+__version__: Final = "0.1.0"
 __version_info__: Final = pkg_version.parse(__version__)

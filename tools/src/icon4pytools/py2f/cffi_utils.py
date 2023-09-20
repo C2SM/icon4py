@@ -31,7 +31,7 @@ CFFI_GEN_DECORATOR = "@CffiMethod.register"
 
 
 class CffiMethod:
-    _registry = {}
+    _registry: dict[str, list[str]] = {}
 
     @classmethod
     def register(cls, func):
@@ -108,7 +108,7 @@ def to_fields(dim_sizes: dict[Dimension, int]):
     ffi = cffi.FFI()
     dim_sizes = dim_sizes
 
-    def _dim_sizes(dims: list[Dimension]) -> tuple[int, int]:
+    def _dim_sizes(dims: list[Dimension]) -> tuple[int | None, int | None]:
         """Extract the size of dimension from a dictionary."""
         v_size = None
         h_size = None
@@ -140,7 +140,7 @@ def to_fields(dim_sizes: dict[Dimension, int]):
         # TODO (magdalena) fix dtype handling use SCALARTYPE?
         mem_size = ffi.sizeof(c_type)
         mem_size = np.dtype(c_type).itemsize
-        ar = np.frombuffer(
+        ar = np.frombuffer(     # type: ignore[call-overload]
             ffi.buffer(ptr, length * mem_size),
             dtype=np.dtype(c_type),
             count=-1,
