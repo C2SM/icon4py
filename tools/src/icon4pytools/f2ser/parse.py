@@ -284,9 +284,6 @@ class GranuleParser:
 
         Args:
             subroutine_name (str): Name of the subroutine to look for in the code.
-
-        Returns:
-            CodegenContext: Object containing the line number of the last declaration statement and the line number of the last line of the code before the end of the given subroutine.
         """
         code = self._read_code_from_file()
 

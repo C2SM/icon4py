@@ -128,8 +128,7 @@ def _get_domain_arg_ids(fvprog: Program) -> set[Optional[eve.concepts.SymbolRef]
             for arg_elt in arg.elts:
                 if isinstance(arg_elt, past.Name):
                     domain_arg_ids.append(arg_elt.id)
-        return set(domain_arg_ids)
-    return set()
+    return set(domain_arg_ids)
 
 
 def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:

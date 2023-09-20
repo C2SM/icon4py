@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Union, cast
+from typing import cast
 
 from gt4py.eve import Node
 from gt4py.next.ffront import program_ast as past
@@ -63,7 +63,7 @@ class Offset(Node, OffsetEntity):
         return False
 
     @staticmethod
-    def _handle_source(chain: str) -> Union[BasicLocation, CompoundLocation]:
+    def _handle_source(chain: str) -> BasicLocation | CompoundLocation:
         if chain.endswith("O"):
             chain = chain[:-1]
 
@@ -78,7 +78,7 @@ class Offset(Node, OffsetEntity):
 
     @staticmethod
     def _make_target(
-        chain: str, source: Union[BasicLocation, CompoundLocation]
+        chain: str, source: BasicLocation | CompoundLocation
     ) -> tuple[BasicLocation, ChainedLocation]:
         if chain.endswith("O"):
             chain = chain[:-1]
@@ -134,7 +134,7 @@ class Field(Node, FieldEntity):
             raise BindingsTypeConsistencyException(
                 "num nbh only defined for sparse or compound fields"
             )
-        location = cast(Union[ChainedLocation, CompoundLocation], self.location)
+        location = cast(ChainedLocation | CompoundLocation, self.location)
         return calc_num_neighbors(location.to_dim_list(), self.includes_center)
 
     @staticmethod

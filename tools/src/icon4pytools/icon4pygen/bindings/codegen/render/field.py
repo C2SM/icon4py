@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
-from typing import cast, Union
+from typing import cast
 
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
@@ -87,7 +87,7 @@ class FieldRenderer:
         if self.entity.is_dense():
             return _strides[str(self.entity.location)]
         elif self.entity.is_sparse() or self.entity.is_compound():
-            location = cast(Union[ChainedLocation, CompoundLocation], self.entity.location)
+            location = cast(ChainedLocation | CompoundLocation, self.entity.location)
             return _strides[str(location[0])]
         else:
             raise BindingsRenderingException("stride type called on scalar")

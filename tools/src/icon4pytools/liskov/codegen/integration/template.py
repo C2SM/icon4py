@@ -13,7 +13,7 @@
 
 import re
 from dataclasses import asdict
-from typing import Optional, Collection
+from typing import Optional, Collection, Any
 
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
@@ -272,7 +272,7 @@ class DeclareStatement(eve.Node):
     declare_data: DeclareData
     declarations: list[Declaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self, *args, **kwargs) -> None:
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.declarations = [
             Declaration(variable=k, association=v)
             for k, v in self.declare_data.declarations.items()
@@ -295,7 +295,7 @@ class StartStencilStatement(eve.Node):
     profile: bool
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self, *args, **kwargs) -> None:
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
@@ -305,7 +305,7 @@ class StartFusedStencilStatement(eve.Node):
     stencil_data: StartFusedStencilData
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self, *args, **kwargs) -> None:
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
@@ -315,7 +315,7 @@ class EndFusedStencilStatement(EndBasicStencilStatement):
     stencil_data: StartFusedStencilData
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self, *args, **kwargs) -> None:
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
@@ -396,7 +396,7 @@ class ImportsStatement(eve.Node):
     stencils: list[BaseStartStencilData]
     stencil_names: list[str] = eve.datamodels.field(init=False)
 
-    def __post_init__(self, *args, **kwargs) -> None:
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.stencil_names = sorted(set([stencil.name for stencil in self.stencils]))
 
 

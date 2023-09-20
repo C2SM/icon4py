@@ -35,11 +35,7 @@ class ParsedGranuleDeserialiser:
         self.prefix = prefix
 
     def __call__(self) -> SerialisationCodeInterface:
-        """Deserialise the parsed granule and returns a serialisation interface.
-
-        Returns:
-            A `SerialisationCodeInterface` object representing the deserialised data.
-        """
+        """Deserialise the parsed granule and returns a serialisation interface."""
         self._merge_out_inout_fields()
         savepoints = self._make_savepoints()
         init_data = self._make_init_data()
@@ -47,11 +43,7 @@ class ParsedGranuleDeserialiser:
         return SerialisationCodeInterface(Import=import_data, Init=init_data, Savepoint=savepoints)
 
     def _make_savepoints(self) -> list[SavepointData]:
-        """Create savepoints for each subroutine and intent in the parsed granule.
-
-        Returns:
-            A `list[SavepointData]` containing all savepoints.
-        """
+        """Create savepoints for each subroutine and intent in the parsed granule."""
         savepoints: list[SavepointData] = []
 
         for subroutine_name, intent_dict in self.parsed.subroutines.items():
@@ -67,9 +59,6 @@ class ParsedGranuleDeserialiser:
             subroutine_name: The name of the subroutine.
             intent: The intent of the fields to be serialised.
             var_dict: A dictionary representing the variables to be saved.
-
-        Returns:
-            A `SavepointData` object containing information for one savepoint.
         """
         field_vals = {k: v for k, v in var_dict.items() if isinstance(v, dict)}
         fields = [
