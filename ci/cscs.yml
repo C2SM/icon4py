@@ -16,7 +16,7 @@ build_job:
 
 test_job:
   stage: test
-  extends: .container-runner-daint-gpu
+  extends: .container-runner-hohgant-a100
   image: $PERSIST_IMAGE_NAME
   script:
     - echo "hello world"
