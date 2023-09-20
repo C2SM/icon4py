@@ -6,7 +6,7 @@ stages:
   - test
 
 variables:
-  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/helloworld:$CI_COMMIT_SHORT_SHA
+  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
 
 build_job:
   stage: build
@@ -19,7 +19,7 @@ test_job:
   extends: .container-runner-daint-gpu
   image: $PERSIST_IMAGE_NAME
   script:
-    - /opt/helloworld/bin/hello
+    - echo "hello world"
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_PARTITION: normal

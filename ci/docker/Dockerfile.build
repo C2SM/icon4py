@@ -1,14 +1,1 @@
 FROM ubuntu:22.04 as builder
-
-COPY . /helloworld/src
-
-RUN apt-get update \
-  && env DEBIAN_FRONTEND=noninteractive TZ=Europe/Zurich apt-get -yqq install --no-install-recommends build-essential cmake \
-  && mkdir /helloworld/build \
-  && cd /helloworld/build \
-  && cmake -DCMAKE_INSTALL_PREFIX=/opt/hello ../src \
-  && make -j$(cat /proc/cpuinfo | grep '^processor' | wc -l) install \
-  && make install
-
-FROM ubuntu:22.04
-COPY --from=builder /opt/hello /opt/helloworld
