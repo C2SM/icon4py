@@ -16,8 +16,7 @@ build_job:
 
 test_job:
   stage: test
-  extends: .container-runner-hohgant-a100
-  tags: [clariden-container-runner]
+  extends: .container-runner-daint-gpu
   image: $PERSIST_IMAGE_NAME
   script:
     - /opt/helloworld/bin/hello
