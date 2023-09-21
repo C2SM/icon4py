@@ -22,5 +22,5 @@ test_job:
     - echo "hello world"
   variables:
     SLURM_JOB_NUM_NODES: 2
-    SLURM_PARTITION: normal
+#    SLURM_PARTITION: normal
     SLURM_NTASKS: 2
