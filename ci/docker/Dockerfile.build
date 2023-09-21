@@ -1,10 +1,18 @@
 FROM ubuntu:22.04 as builder
 
+COPY . /icon4py
+
 # Update and install necessary utilities and libraries
 RUN apt-get update && \
     apt-get install -y \
     software-properties-common \
-    libboost-all-dev
+    build-essential \
+    cmake \
+    git \
+    libboost-all-dev \
+    pkg-config \
+    curl \
+    gdb
 
 # Install Python 3.10
 RUN add-apt-repository -y ppa:deadsnakes/ppa && \
