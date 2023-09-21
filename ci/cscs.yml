@@ -30,9 +30,3 @@ test_job:
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_NTASKS: 2
-  only:
-    refs:
-      - main
-      - merge_requests
-    changes:
-      - "!tools/**"
