@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
     mo_solve_nonhydro_stencil_08,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestMoSolveNonhydroStencil08(StencilTest):
@@ -63,6 +59,10 @@ class TestMoSolveNonhydroStencil08(StencilTest):
     ) -> tuple[np.array, np.array, np.array]:
         rho_offset_1 = np.roll(rho, shift=1, axis=1)
         rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1
+        rho_ic[:, 0] = 0
         z_rth_pr_1 = rho - rho_ref_mc
+        z_rth_pr_1[:, 0] = 0
         z_rth_pr_2 = theta_v - theta_ref_mc
+        z_rth_pr_2[:, 0] = 0
+
         return dict(rho_ic=rho_ic, z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)

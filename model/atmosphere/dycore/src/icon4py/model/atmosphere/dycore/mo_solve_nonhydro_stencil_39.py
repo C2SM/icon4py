@@ -15,14 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.model.common.dimension import (
-    C2E,
-    C2EDim,
-    CellDim,
-    EdgeDim,
-    KDim,
-    Koff,
-)
+from icon4py.model.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim, Koff
 
 
 @field_operator
@@ -45,4 +38,4 @@ def mo_solve_nonhydro_stencil_39(
     wgtfac_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c, out=w_concorr_c)
+    _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c, out=w_concorr_c[:, 1:])

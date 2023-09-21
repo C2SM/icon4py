@@ -28,7 +28,7 @@ from icon4py.model.common.test_utils.helpers import (
 
 class TestMoVelocityAdvectionStencil14(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_14
-    OUTPUTS = ("cfl_clipping", "pre_levelmask", "vcfl", "z_w_con_c")
+    OUTPUTS = ("cfl_clipping", "vcfl", "z_w_con_c")
 
     @staticmethod
     def reference(
@@ -41,11 +41,6 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
             np.zeros_like(z_w_con_c),
         )
         num_rows, num_cols = cfl_clipping.shape
-        pre_levelmask = np.where(
-            cfl_clipping == 1.0,
-            np.ones([num_rows, num_cols]),
-            np.zeros_like(cfl_clipping),
-        )
         vcfl = np.where(cfl_clipping == 1.0, z_w_con_c * dtime / ddqz_z_half, 0.0)
         z_w_con_c = np.where(
             (cfl_clipping == 1.0) & (vcfl < -0.85),
@@ -58,7 +53,6 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
 
         return dict(
             cfl_clipping=cfl_clipping,
-            pre_levelmask=pre_levelmask,
             vcfl=vcfl,
             z_w_con_c=z_w_con_c,
         )
@@ -68,9 +62,6 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
         ddqz_z_half = random_field(mesh, CellDim, KDim)
         z_w_con_c = random_field(mesh, CellDim, KDim)
         cfl_clipping = random_mask(mesh, CellDim, KDim, dtype=bool)
-        pre_levelmask = random_mask(
-            mesh, CellDim, KDim, dtype=bool
-        )  # TODO should be just a K field
         vcfl = zero_field(mesh, CellDim, KDim)
         cfl_w_limit = 5.0
         dtime = 9.0
@@ -79,7 +70,6 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
             ddqz_z_half=ddqz_z_half,
             z_w_con_c=z_w_con_c,
             cfl_clipping=cfl_clipping,
-            pre_levelmask=pre_levelmask,
             vcfl=vcfl,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,

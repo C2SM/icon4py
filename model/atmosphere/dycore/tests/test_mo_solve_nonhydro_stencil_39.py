@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
     mo_solve_nonhydro_stencil_39,
 )
 from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestMoSolveNonhydroStencil39(StencilTest):
@@ -31,13 +27,18 @@ class TestMoSolveNonhydroStencil39(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, e_bln_c_s: np.array, z_w_concorr_me: np.array, wgtfac_c: np.array, **kwargs
+        mesh,
+        e_bln_c_s: np.array,
+        z_w_concorr_me: np.array,
+        wgtfac_c: np.array,
+        **kwargs,
     ) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_w_concorr_me_offset_1 = np.roll(z_w_concorr_me, shift=1, axis=1)
         z_w_concorr_mc_m0 = np.sum(e_bln_c_s * z_w_concorr_me[mesh.c2e], axis=1)
         z_w_concorr_mc_m1 = np.sum(e_bln_c_s * z_w_concorr_me_offset_1[mesh.c2e], axis=1)
         w_concorr_c = wgtfac_c * z_w_concorr_mc_m0 + (1.0 - wgtfac_c) * z_w_concorr_mc_m1
+        w_concorr_c[:, 0] = 0
         return dict(w_concorr_c=w_concorr_c)
 
     @pytest.fixture

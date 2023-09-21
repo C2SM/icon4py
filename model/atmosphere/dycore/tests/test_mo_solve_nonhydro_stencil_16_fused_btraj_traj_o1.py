@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_tr
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    as_1D_sparse_field,
-    random_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
 
 
 class TestComputeBtraj(StencilTest):

@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
     mo_solve_nonhydro_stencil_11_upper,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestMoSolveNonhydroStencil11Upper(StencilTest):
@@ -38,13 +34,15 @@ class TestMoSolveNonhydroStencil11Upper(StencilTest):
         z_theta_v_pr_ic: np.array,
         **kwargs,
     ) -> tuple[np.array, np.array]:
-        z_theta_v_pr_ic = (
+        z_theta_v_pr_ic_ref = np.copy(z_theta_v_pr_ic)
+        z_theta_v_pr_ic_ref[:, -1] = (
             np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_rth_pr, shift=1, axis=1)
             + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_rth_pr, shift=2, axis=1)
             + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_rth_pr, shift=3, axis=1)
-        )
-        theta_v_ic = theta_ref_ic + z_theta_v_pr_ic
-        return dict(z_theta_v_pr_ic=z_theta_v_pr_ic, theta_v_ic=theta_v_ic)
+        )[:, -1]
+        theta_v_ic = np.zeros_like(z_theta_v_pr_ic)
+        theta_v_ic[:, -1] = (theta_ref_ic + z_theta_v_pr_ic_ref)[:, -1]
+        return dict(z_theta_v_pr_ic=z_theta_v_pr_ic_ref, theta_v_ic=theta_v_ic)
 
     @pytest.fixture
     def input_data(self, mesh):

@@ -1,0 +1,5 @@
+-r ../../base-requirements.txt
+../common
+../atmosphere/dycore
+../atmosphere/diffusion
+.
