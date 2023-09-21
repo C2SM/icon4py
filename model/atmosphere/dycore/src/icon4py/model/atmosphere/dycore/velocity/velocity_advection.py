@@ -16,9 +16,14 @@ import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.iterator.builtins import int32
-from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
+from gt4py.next.program_processors.runners.gtfn_cpu import (
+    run_gtfn,
+    run_gtfn_cached,
+    run_gtfn_imperative,
+)
 
-import icon4py.velocity.velocity_advection_program as velocity_prog
+
+import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -56,14 +61,21 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.state_utils.diagnostic_state import (
+from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import (
     DiagnosticState,
     DiagnosticStateNonHydro,
 )
-from icon4py.state_utils.interpolation_state import InterpolationState
-from icon4py.state_utils.metric_state import MetricStateNonHydro
-from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import _allocate, _allocate_indices
+from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
+from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
+
+
+cached_backend = run_gtfn_cached
+compiled_backend = run_gtfn
+imperative_backend = run_gtfn_imperative
+backend = run_gtfn_cached
+#
 
 
 class VelocityAdvection:
@@ -186,7 +198,7 @@ class VelocityAdvection:
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
-                run_gtfn
+                backend
             )(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,

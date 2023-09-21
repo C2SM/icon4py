@@ -167,6 +167,12 @@ def metrics_savepoint(data_provider):  # F811
     """Load data from ICON mestric state savepoint."""
     return data_provider.from_metrics_savepoint()
 
+@pytest.fixture
+def metrics_nonhydro_savepoint(data_provider):  # noqa F811
+    """Load data from ICON metric state nonhydro savepoint."""
+    return data_provider.from_metrics_nonhydro_savepoint()
+
+
 
 BACKENDS = {"embedded": executor}
 MESHES = {"simple_mesh": SimpleMesh()}
@@ -253,11 +259,6 @@ def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep):  # noqa 
         date=step_date_exit, jstep=jstep
     )
 
-
-@pytest.fixture
-def metrics_nonhydro_savepoint(data_provider):  # noqa F811
-    """Load data from ICON metric state nonhydro savepoint."""
-    return data_provider.from_metrics_nonhydro_savepoint()
 
 
 @pytest.fixture

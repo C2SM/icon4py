@@ -19,11 +19,11 @@ from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclos
 from icon4py.model.common.dimension import CEDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.state_utils.interpolation_state import InterpolationState
-from icon4py.state_utils.metric_state import MetricStateNonHydro
-from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.velocity.velocity_advection import VelocityAdvection
+from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
+from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
+from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 
 
 @pytest.mark.datatest
@@ -158,7 +158,7 @@ def test_velocity_predictor_step(
         rho=None,
         exner=None,
     )
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
 
     metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
         icon_grid.n_lev()

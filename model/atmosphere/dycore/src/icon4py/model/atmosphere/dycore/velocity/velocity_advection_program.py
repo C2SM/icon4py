@@ -48,7 +48,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
-from icon4py.state_utils.utils import _set_bool_c_k, _set_zero_c_k
+from icon4py.model.atmosphere.dycore.state_utils.utils import _set_bool_c_k, _set_zero_c_k
 
 
 @field_operator
