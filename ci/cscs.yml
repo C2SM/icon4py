@@ -25,6 +25,9 @@ test_job:
   script:
     - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
+    - pwd   # temporary check (to remove later)
+    - ls    # temporary check (to remove later)
+    - ls icon4py    # temporary check (to remove later)
     - tox -r -e py${pyversion_no_dot} -c icon4py/model/ --verbose
   variables:
     SLURM_JOB_NUM_NODES: 2
