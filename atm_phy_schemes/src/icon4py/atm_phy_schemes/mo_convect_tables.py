@@ -15,7 +15,7 @@
 
 from typing import Final
 
-from eve.utils import FrozenNamespace
+from gt4py.eve.utils import FrozenNamespace
 
 from icon4py.shared.mo_physical_constants import phy_const
 

@@ -29,7 +29,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, abs, exp, maximum, where
 
 from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.shared.mo_physical_constants import phy_const
 
 
@@ -134,6 +134,28 @@ def _newtonian_iteration_temp(
     # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
     # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
     return tWork
+
+@field_operator
+def _newtonian_iteration_temp_Ong(
+    t: Field[[CellDim, KDim], float],
+    qv: Field[[CellDim, KDim], float],
+    rho: Field[[CellDim, KDim], float],
+) -> Field[[CellDim, KDim], float]:
+
+    tol = 1e-3  # tolerance for iteration
+
+    # Remains const. during iteration
+    lwdocvd = _latent_heat_vaporization(t) / phy_const.cvd
+
+    fT = lwdocvd * ( conv_table.c1es * exp( conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les) ) / (rho * phy_const.rv * t) - qv )
+    dfT = 1.0 + lwdocvd * conv_table.c5les / (t - conv_table.c4les) ** 2 - 1.0 / t * conv_table.c1es * exp( conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les) ) / (rho * phy_const.rv * t)
+
+    tWork = t - fT / dfT
+
+    fT2 = tWork - t + lwdocvd * ( conv_table.c1es * exp( conv_table.c3les * (tWork - phy_const.tmelt) / (tWork - conv_table.c4les) ) / (rho * phy_const.rv * tWork)  - qv )
+    dfT2 = 1.0 + lwdocvd * conv_table.c5les / (tWork - conv_table.c4les) ** 2 - 1.0 / tWork * conv_table.c1es * exp( conv_table.c3les * (tWork - phy_const.tmelt) / (tWork - conv_table.c4les) ) / (rho * phy_const.rv * tWork)
+
+    return where(abs(tWork - t) > tol, tWork - fT2 / dfT2, tWork)
 
 
 @field_operator

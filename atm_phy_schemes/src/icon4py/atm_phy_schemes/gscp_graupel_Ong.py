@@ -35,7 +35,7 @@ from gt4py.next.ffront.fbuiltins import (
 #from gt4py.next.iterator.embedded import np_as_located_field
 #from gt4py.next.program_processors.runners import roundtrip
 
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.shared.mo_math_utilities import gamma_fct
 from icon4py.shared.mo_math_constants import math_const
 #from icon4py.atm_phy_schemes.mo_convect_tables import conv_table

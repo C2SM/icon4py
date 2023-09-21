@@ -35,7 +35,7 @@ from numpy import exp as numpy_exp
 from numpy import log as numpy_log
 from numpy import sqrt as numpy_sqrt
 
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.shared.mo_math_utilities import gamma_fct
 from icon4py.shared.mo_physical_constants import phy_const
 

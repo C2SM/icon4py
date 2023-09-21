@@ -33,10 +33,10 @@ from .simple_mesh import SimpleMesh
 
 
 def objShape(
-    obj: Union[tuple, np.ndarray, simple_mesh.SimpleMesh], *dims: gt_common.Dimension
+    obj: Union[tuple, np.ndarray, SimpleMesh], *dims: gt_common.Dimension
 ):
 
-    if isinstance(obj, simple_mesh.SimpleMesh):
+    if isinstance(obj, SimpleMesh):
         return tuple(map(lambda x: obj.size[x], dims))
     if isinstance(obj, tuple):
         return obj
@@ -74,7 +74,7 @@ def random_mask(
 
 
 def to_icon4py_field(
-    field: Union[tuple, np.ndarray, simple_mesh.SimpleMesh],
+    field: Union[tuple, np.ndarray, SimpleMesh],
     *dims: gt_common.Dimension,
     dtype=float,
 ) -> it_embedded.MutableLocatedField:
@@ -114,7 +114,7 @@ def constant_field(
 
 
 def random_field_strategy(
-    mesh: Union[tuple, np.ndarray, simple_mesh.SimpleMesh],
+    mesh: Union[tuple, np.ndarray, SimpleMesh],
     *dims,
     min_value=None,
     max_value=None,
@@ -131,6 +131,13 @@ def random_field_strategy(
             allow_infinity=False,
         ),
     ).map(it_embedded.np_as_located_field(*dims))
+
+
+def maximizeTendency(fld, refFld, varname):
+    """Make hypothesis maximize mean and std of tendency."""
+    tendency = np.asarray(fld) - refFld
+    target(np.mean(np.abs(tendency)), label=f"{varname} mean tendency")
+    target(np.std(tendency), label=f"{varname} stdev. tendency")
 
 
 def as_1D_sparse_field(
