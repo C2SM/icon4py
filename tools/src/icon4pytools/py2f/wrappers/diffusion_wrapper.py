@@ -11,6 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # flake8: noqa
+
+# We use gt4py type annotations and thus need to ignore this in MyPy
+# mypy: disable-error-code="valid-type"
+
 """
 Wrapper module for diffusion granule.
 
@@ -18,9 +22,8 @@ Module contains a diffusion_init and diffusion_run function that follow the arch
 Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
-
-
 """
+
 import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32

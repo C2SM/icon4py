@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Any, Optional, Protocol, Type
+from typing import Any, Optional, Protocol, Sequence, Type, cast
 
 import icon4pytools.liskov.parsing.parse
 import icon4pytools.liskov.parsing.types as ts
@@ -82,7 +82,7 @@ def _extract_boolean_kwarg(
     return False
 
 
-def pop_item_from_dict(dictionary: dict, key: str, default_value: str) -> str:
+def pop_item_from_dict(dictionary: dict, key: str, default_value: Optional[str]) -> str:
     return dictionary.pop(key, default_value)
 
 
@@ -152,7 +152,7 @@ class StartCreateDataFactory(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartCreate
     dtype: Type[StartCreateData] = StartCreateData
 
-    def __call__(self, parsed: ts.ParsedDict) -> list[StartCreateData]:
+    def __call__(self, parsed: ts.ParsedDict) -> list[StartCreateData] | Type[UnusedDirective]:
         deserialised = []
         extracted = extract_directive(parsed["directives"], self.directive_cls)
 
@@ -261,10 +261,10 @@ class EndFusedStencilDataFactory(DataFactoryBase):
 
 
 class StartStencilDataFactoryBase(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = None
-    dtype: Type[StartFusedStencilData] = None
+    directive_cls: Type[ts.ParsedDirective]
+    dtype: Type[StartStencilData | StartFusedStencilData]
 
-    def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData]:
+    def __call__(self, parsed: ts.ParsedDict) -> list[StartStencilData | StartFusedStencilData]:
         field_dimensions = flatten_list_of_dicts(
             [DeclareDataFactory.get_field_dimensions(dim) for dim in parsed["content"]["Declare"]]
         )
@@ -276,8 +276,8 @@ class StartStencilDataFactoryBase(DataFactoryBase):
     def create_stencil_data(
         self,
         parsed: ts.ParsedDict,
-        field_dimensions: list[dict[str, Any]],
-        directives: list[ts.ParsedDirective],
+        field_dimensions: dict[str, Any],
+        directives: Sequence[ts.ParsedDirective],
         directive_cls: Type[ts.ParsedDirective],
         dtype: Type[StartStencilData | StartFusedStencilData],
     ) -> list[StartStencilData | StartFusedStencilData]:
@@ -420,10 +420,8 @@ class InsertDataFactory(DataFactoryBase):
         deserialised = []
         extracted = extract_directive(parsed["directives"], self.directive_cls)
         for i, directive in enumerate(extracted):
-            content = parsed["content"]["Insert"][i]
-            deserialised.append(
-                self.dtype(startln=directive.startln, content=content)  # type: ignore
-            )
+            content = cast(str, parsed["content"]["Insert"][i])
+            deserialised.append(self.dtype(startln=directive.startln, content=content))
         return deserialised
 
 

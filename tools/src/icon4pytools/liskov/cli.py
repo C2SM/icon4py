@@ -29,7 +29,7 @@ logger = setup_logger(__name__)
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-def main(ctx):
+def main(ctx: click.Context) -> None:
     """Command line interface for interacting with the ICON-Liskov DSL Preprocessor."""
     if ctx.invoked_subcommand is None:
         raise MissingCommandError(
@@ -64,7 +64,13 @@ def main(ctx):
     "output_path",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
-def integrate(input_path, output_path, fused, profile, metadatagen):
+def integrate(
+    input_path: pathlib.Path,
+    output_path: pathlib.Path,
+    fused: bool,
+    profile: bool,
+    metadatagen: bool,
+) -> None:
     mode = "integration"
     iface = parse_fortran_file(input_path, output_path, mode)
     iface_gt4py = process_stencils(iface, fused)
@@ -94,7 +100,7 @@ def integrate(input_path, output_path, fused, profile, metadatagen):
     "output_path",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
-def serialise(input_path, output_path, multinode):
+def serialise(input_path: pathlib.Path, output_path: pathlib.Path, multinode: bool) -> None:
     mode = "serialisation"
     iface = parse_fortran_file(input_path, output_path, mode)
     run_code_generation(input_path, output_path, mode, iface, multinode=multinode)
