@@ -30,8 +30,14 @@ class CodeMetadata:
     def cli_params(self) -> dict[str, Any]:
         try:
             ctx = click.get_current_context()
+            if ctx is None:
+                raise MissingClickContextError("No active Click context found.")
+
             params = ctx.params.copy()
-            params.update(ctx.parent.params)
+
+            if ctx.parent is not None:
+                params.update(ctx.parent.params)
+
             return params
         except Exception as e:
             raise MissingClickContextError(
