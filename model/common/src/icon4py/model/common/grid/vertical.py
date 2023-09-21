@@ -15,8 +15,9 @@ from dataclasses import Field, dataclass, field
 from typing import Final
 
 import numpy as np
-from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next import common
+from gt4py.next.ffront.fbuiltins import int32
+
 from icon4py.model.common.dimension import KDim
 
 
