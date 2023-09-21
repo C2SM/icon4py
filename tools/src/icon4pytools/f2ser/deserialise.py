@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Union
 
 from icon4pytools.f2ser.parse import CodegenContext, ParsedGranule
 from icon4pytools.liskov.codegen.serialisation.interface import (
@@ -20,7 +19,6 @@ from icon4pytools.liskov.codegen.serialisation.interface import (
     SavepointData,
     SerialisationCodeInterface,
 )
-from icon4pytools.liskov.codegen.shared.types import CodeGenInput
 
 
 class ParsedGranuleDeserialiser:
@@ -75,12 +73,12 @@ class ParsedGranuleDeserialiser:
         ]
 
         return SavepointData(
-                subroutine=subroutine_name,
-                intent=intent,
-                startln=self._get_codegen_line(var_dict["codegen_ctx"], intent),
-                fields=fields,
-                metadata=None,
-            )
+            subroutine=subroutine_name,
+            intent=intent,
+            startln=self._get_codegen_line(var_dict["codegen_ctx"], intent),
+            fields=fields,
+            metadata=None,
+        )
 
     @staticmethod
     def get_slice_expression(var_name: str, dimension: str) -> str:

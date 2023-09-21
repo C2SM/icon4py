@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import asdict
-from typing import Optional, Collection, Any
+from typing import Any, Collection, Optional
 
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
@@ -105,7 +105,9 @@ class SavepointStatementGenerator(TemplatedGenerator):
         """
     )
 
-    def visit_DecomposedFieldsAllocNode(self, node: DecomposedFieldsAllocNode) -> str | Collection[str]:
+    def visit_DecomposedFieldsAllocNode(
+        self, node: DecomposedFieldsAllocNode
+    ) -> str | Collection[str]:
         def generate_size_strings(dim_list: list[str], var_name: str) -> list[str]:
             size_strings = []
             for i in range(len(dim_list)):
@@ -121,7 +123,6 @@ class SavepointStatementGenerator(TemplatedGenerator):
 
         return self.generic_visit(node)
 
-
     DecomposedFieldsAllocNode = as_jinja(
         """
     {% for f in _this_node.fields %}
@@ -132,8 +133,6 @@ class SavepointStatementGenerator(TemplatedGenerator):
     {% endfor %}
     """
     )
-
-
 
 
 class ImportStatement(eve.Node):

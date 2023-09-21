@@ -13,7 +13,7 @@
 import abc
 from abc import ABC
 from dataclasses import dataclass
-from typing import Union, Optional
+from typing import Optional, Union
 
 from gt4py.next.type_system import type_specifications as ts
 

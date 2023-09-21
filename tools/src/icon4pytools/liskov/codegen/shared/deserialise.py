@@ -27,7 +27,9 @@ class Deserialiser(Step):
     _FACTORIES: dict[str, Callable] = {}
     _INTERFACE_TYPE: Type[SerialisationCodeInterface | IntegrationCodeInterface]
 
-    def __call__(self, directives: ts.ParsedDict) -> SerialisationCodeInterface | IntegrationCodeInterface:
+    def __call__(
+        self, directives: ts.ParsedDict
+    ) -> SerialisationCodeInterface | IntegrationCodeInterface:
         """Deserialises parsed directives into an Interface object.
 
         Args:

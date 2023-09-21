@@ -13,7 +13,7 @@
 
 import re
 from dataclasses import asdict
-from typing import Optional, Collection, Any
+from typing import Any, Collection, Optional
 
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja

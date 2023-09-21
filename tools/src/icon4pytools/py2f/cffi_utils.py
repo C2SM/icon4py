@@ -140,7 +140,7 @@ def to_fields(dim_sizes: dict[Dimension, int]):
         # TODO (magdalena) fix dtype handling use SCALARTYPE?
         mem_size = ffi.sizeof(c_type)
         mem_size = np.dtype(c_type).itemsize
-        ar = np.frombuffer(     # type: ignore[call-overload]
+        ar = np.frombuffer(  # type: ignore[call-overload]
             ffi.buffer(ptr, length * mem_size),
             dtype=np.dtype(c_type),
             count=-1,

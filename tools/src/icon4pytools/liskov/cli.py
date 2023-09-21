@@ -64,7 +64,13 @@ def main(ctx: click.Context) -> None:
     "output_path",
     type=click.Path(dir_okay=False, resolve_path=True, path_type=pathlib.Path),
 )
-def integrate(input_path: pathlib.Path, output_path: pathlib.Path, fused: bool, profile: bool, metadatagen: bool) -> None:
+def integrate(
+    input_path: pathlib.Path,
+    output_path: pathlib.Path,
+    fused: bool,
+    profile: bool,
+    metadatagen: bool,
+) -> None:
     mode = "integration"
     iface = parse_fortran_file(input_path, output_path, mode)
     iface_gt4py = process_stencils(iface, fused)

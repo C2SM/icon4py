@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Any, Optional, Protocol, Type, Sequence, cast
+from typing import Any, Optional, Protocol, Sequence, Type, cast
 
 import icon4pytools.liskov.parsing.parse
 import icon4pytools.liskov.parsing.types as ts
@@ -421,9 +421,7 @@ class InsertDataFactory(DataFactoryBase):
         extracted = extract_directive(parsed["directives"], self.directive_cls)
         for i, directive in enumerate(extracted):
             content = cast(str, parsed["content"]["Insert"][i])
-            deserialised.append(
-                self.dtype(startln=directive.startln, content=content)
-            )
+            deserialised.append(self.dtype(startln=directive.startln, content=content))
         return deserialised
 
 

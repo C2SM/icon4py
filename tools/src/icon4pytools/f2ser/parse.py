@@ -90,7 +90,6 @@ class GranuleParser:
                 return use_ln
         raise ParsingError("Could not find any USE statements.")
 
-
     def _read_code_from_file(self) -> str:
         """Read the content of the granule and returns it as a string."""
         with open(self.granule_path) as f:

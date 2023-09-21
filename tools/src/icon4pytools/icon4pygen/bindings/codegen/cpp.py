@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from pathlib import Path
-from typing import Sequence, Any
+from typing import Any, Sequence
 
 from gt4py import eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja

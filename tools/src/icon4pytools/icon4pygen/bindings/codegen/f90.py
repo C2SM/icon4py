@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from pathlib import Path
-from typing import Sequence, Union, Any
+from typing import Any, Sequence, Union
 
 from gt4py import eve
 from gt4py.eve import Node

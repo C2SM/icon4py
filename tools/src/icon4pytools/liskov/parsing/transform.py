@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Any
 
-import icon4pytools.liskov.parsing.types as ts
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.liskov.codegen.integration.interface import (
     EndDeleteData,

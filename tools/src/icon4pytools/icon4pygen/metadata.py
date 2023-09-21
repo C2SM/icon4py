@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import importlib
-import inspect
 import types
 from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
@@ -25,7 +24,6 @@ from gt4py.next.ffront.decorator import FieldOperator, Program, program
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
-
 from icon4py.model.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 
 from icon4pytools.icon4pygen.exceptions import (
@@ -228,7 +226,8 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 
 
 def get_stencil_info(
-    fencil_def: Program | FieldOperator | types.FunctionType | FendefDispatcher, is_global: bool = False
+    fencil_def: Program | FieldOperator | types.FunctionType | FendefDispatcher,
+    is_global: bool = False,
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)

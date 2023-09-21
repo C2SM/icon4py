@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.common import Dimension
-from gt4py.next.type_system.type_specifications import ScalarType, FieldType, ScalarKind
+from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType
 from gt4py.next.type_system.type_translation import from_type_hint
 
 
@@ -25,4 +25,3 @@ def parse_annotation(annotation) -> tuple[list[Dimension], ScalarKind]:
         return type_spec.dims, type_spec.dtype.kind
     else:
         raise ValueError(f"Unsupported type specification: {type_spec}")
-

@@ -11,13 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Any, Sequence, Union, TypeGuard
+from typing import Any, Sequence, TypeGuard, Union
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.liskov.codegen.integration.interface import (
     IntegrationCodeInterface,
     StartStencilData,
-    UnusedDirective, )
+    UnusedDirective,
+)
 from icon4pytools.liskov.codegen.integration.template import (
     DeclareStatement,
     DeclareStatementGenerator,
@@ -53,6 +54,7 @@ from icon4pytools.liskov.codegen.integration.template import (
 from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
 from icon4pytools.liskov.external.metadata import CodeMetadata
+
 
 logger = setup_logger(__name__)
 
@@ -206,9 +208,8 @@ class IntegrationCodeGenerator(CodeGenerator):
 
     def _generate_delete(self) -> None:
         """Generate f90 integration code for delete section."""
-        if (
-            isinstance(self.interface.StartDelete, Sequence)
-            and isinstance(self.interface.EndDelete, Sequence)
+        if isinstance(self.interface.StartDelete, Sequence) and isinstance(
+            self.interface.EndDelete, Sequence
         ):
             logger.info("Generating DELETE statement.")
             for start, end in zip(
