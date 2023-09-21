@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from gt4py import eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
@@ -678,7 +678,7 @@ class CppDefTemplate(Node):
         )
         return fields, offsets
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         fields, offsets = self._get_field_data()
         offset_renderer = GpuTriMeshOffsetRenderer(self.offsets)
 
