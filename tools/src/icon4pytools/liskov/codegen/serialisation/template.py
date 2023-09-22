@@ -69,7 +69,20 @@ class SavepointStatementGenerator(TemplatedGenerator):
         {{ decomposed_field_declarations }}
 
         {% if _this_node.init %}
+        !$ser verbatim integer, save :: call_counter = 0
+        !$ser verbatim integer :: serialization_iteration_number = 0
+        !$ser verbatim character(len=32) :: serialization_iteration_number_char
+        !$ser verbatim integer :: length
+        !$ser verbatim integer :: rc
         !$ser init directory="{{_this_node.init.directory}}" prefix="{{ _this_node.init.prefix }}" {% if _this_node.multinode %}mpi_rank=get_my_mpi_work_id(){% endif %}
+        !$ser verbatim call_counter = call_counter + 1
+        !$ser verbatim call get_environment_variable("SERIALIZATION_ITERATION_NUMBER", serialization_iteration_number_char, length, rc)
+        !$ser verbatim read (serialization_iteration_number_char,'(I32)') serialization_iteration_number
+        !$ser verbatim IF (serialization_iteration_number <= 0) THEN
+        !$ser verbatim PRINT*,'WARNING, SERIALIZATION_ITERATION_NUMBER unset or <=0, first iteration will be serialized'
+        !$ser verbatim serialization_iteration_number = 1
+        !$ser verbatim ENDIF
+        !$ser verbatim PRINT*, "Serialbox will serialize the iteration number", serialization_iteration_number
         {% endif %}
 
         !$ser savepoint {{ _this_node.savepoint.subroutine }}_{{ _this_node.savepoint.intent }} {% if _this_node.savepoint.metadata %} {%- for m in _this_node.savepoint.metadata -%} {{ m.key }}={{ m.value }} {% endfor -%} {% endif %}
@@ -85,13 +98,17 @@ class SavepointStatementGenerator(TemplatedGenerator):
     {% for f in _this_node.fields %}
     PRINT *, 'Serializing {{ f.variable }}={{ f.association }}'
     {% if f.dimension %}
+    !$ser verbatim IF (call_counter == serialization_iteration_number) THEN
     IF (SIZE({{ f.variable }}) > 0) THEN
     !$ser {% if f.device == 'gpu' %}accdata {% else %}data {% endif %}{{ f.variable }}={{ f.association }}
+    !$ser verbatim ENDIF
     ELSE
     PRINT *, 'Warning: Array {{ f.variable }} has size 0. Not serializing array.'
     ENDIF
     {% else %}
+    !$ser verbatim IF (call_counter == serialization_iteration_number) THEN
     !$ser {% if f.device == 'gpu' %}accdata {% else %}data {% endif %}{{ f.variable }}={{ f.association }}
+    !$ser verbatim ENDIF
     {% endif %}
     {% endfor %}
     """
