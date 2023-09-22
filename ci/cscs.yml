@@ -9,19 +9,18 @@ variables:
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
   PYTHON_VERSION: "3.10"
 
-.build_template: &build_template
+.build_template:
   stage: build
   extends: .container-builder
   variables:
     DOCKERFILE: ci/docker/Dockerfile.build
 
-.test_template: &test_template
+.test_template:
   extends: .container-runner-hohgant-a100
   image: $PERSIST_IMAGE_NAME
   before_script:
     - apt-get update
     - python3 -m pip install --upgrade pip setuptools wheel
-  script:
     - cd /icon4py
     - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
@@ -30,18 +29,16 @@ variables:
     SLURM_NTASKS: 2
 
 build_job:
-  <<: *build_template
+  extends: .build_template
 
 test_model_job:
-  <<: *test_template
-  stage: test_model
+  extends: .test_template
+  stage: tox_model
   script:
-    - <<: *test_template.script
     - tox -r -e py${pyversion_no_dot} -c model/ --verbose
 
 test_tools_job:
-  <<: *test_template
-  stage: test_tools
+  extends: .test_template
+  stage: tox_tools
   script:
-    - <<: *test_template.script
     - tox -r -e py${pyversion_no_dot} -c tools/ --verbose
