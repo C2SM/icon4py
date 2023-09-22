@@ -104,11 +104,9 @@ repos:
   hooks:
   - id: mypy
     name: mypy static type checker
-    entry: bash -c 'echo mypy temporarily disabled'
-    #entry:bash -c 'cd tools; mypy src/' --
+    entry: bash -c 'mypy tools/src'
     language: system
     types_or: [python, pyi]
-    #always_run: true
     pass_filenames: false
     require_serial: true
     stages: [commit]
