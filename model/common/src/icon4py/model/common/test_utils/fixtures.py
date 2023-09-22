@@ -28,7 +28,7 @@ common = model.parent.parent.parent.parent
 base_path = common.parent.joinpath("testdata")
 
 data_uris = {
-    1: "https://polybox.ethz.ch/index.php/s/v3gtjsVbTiyAidJ/download",
+    1: "https://polybox.ethz.ch/index.php/s/psBNNhng0h9KrB4/download",
     2: "https://polybox.ethz.ch/index.php/s/NUQjmJcMEoQxFiK/download",
     4: "https://polybox.ethz.ch/index.php/s/QC7xt7xLT5xeVN5/download",
 }
