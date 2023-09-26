@@ -141,13 +141,13 @@ from icon4py.model.common.dimension import CellDim, ECDim, EdgeDim, KDim, Vertex
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.state_utils.interpolation_state import InterpolationState
-from icon4py.state_utils.metric_state import MetricStateNonHydro
-from icon4py.state_utils.nh_constants import NHConstants
-from icon4py.state_utils.prep_adv_state import PrepAdvection
-from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import (
+from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
+from icon4py.model.atmosphere.dycore.metric_state import MetricStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
+from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
+from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
+from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
     _calculate_bdy_divdamp,
@@ -157,8 +157,8 @@ from icon4py.state_utils.utils import (
     set_zero_c_k,
     set_zero_e_k,
 )
-from icon4py.state_utils.z_fields import ZFields
-from icon4py.velocity import velocity_advection
+from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
+from icon4py.model.atmosphere.dycore.velocity import velocity_advection
 
 
 class NonHydrostaticConfig:

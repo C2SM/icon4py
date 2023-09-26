@@ -99,7 +99,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
     _mo_solve_nonhydro_stencil_62,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, ECDim, EdgeDim, KDim
-from icon4py.state_utils.utils import _set_zero_c_k, _set_zero_e_k
+from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
 
 
 @program

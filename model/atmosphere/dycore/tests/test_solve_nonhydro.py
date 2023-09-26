@@ -18,17 +18,17 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
-from icon4py.nh_solve.solve_nonydro import (
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.state_utils.nh_constants import NHConstants
-from icon4py.state_utils.prep_adv_state import PrepAdvection
-from icon4py.state_utils.prognostic_state import PrognosticState
-from icon4py.state_utils.utils import _allocate
-from icon4py.state_utils.z_fields import ZFields
+from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
+from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
+from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 
 
 @pytest.mark.datatest
