@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_stencil import (
     prep_gauss_quadrature_c_stencil,
@@ -283,6 +284,7 @@ def prep_gauss_quadrature_c_stencil_numpy(
     )
 
 
+@pytest.mark.slow_tests
 def test_prep_gauss_quadrature_c_stencil():
     mesh = SimpleMesh()
 

@@ -12,6 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
+
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
@@ -658,7 +660,7 @@ def divide_flux_area_list_stencil_01_numpy(
         dreg_patch2_4_lat_vmask,
     )
 
-
+@pytest.mark.slow_tests
 def test_divide_flux_area_list_stencil_01():
     mesh = SimpleMesh()
 
