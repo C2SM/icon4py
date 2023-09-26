@@ -83,7 +83,6 @@ def test_nonhydro_predictor_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    diffusion_savepoint_init,
     savepoint_velocity_exit,
     metrics_savepoint,
     metrics_nonhydro_savepoint,
@@ -502,7 +501,6 @@ def test_nonhydro_corrector_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    diffusion_savepoint_init,
     metrics_savepoint,
     metrics_nonhydro_savepoint,
     interpolation_savepoint,
@@ -725,7 +723,6 @@ def test_run_solve_nonhydro_single_step(
     grid_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    diffusion_savepoint_init,
     metrics_savepoint,
     metrics_nonhydro_savepoint,
     interpolation_savepoint,
@@ -908,7 +905,6 @@ def test_run_solve_nonhydro_multi_step(
     grid_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    diffusion_savepoint_init,
     metrics_savepoint,
     metrics_nonhydro_savepoint,
     interpolation_savepoint,
@@ -933,9 +929,7 @@ def test_run_solve_nonhydro_multi_step(
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
-        vn_traj=diffusion_savepoint_init.vn_traj(),
-        mass_flx_me=sp.mass_flx_me(),
-        mass_flx_ic=sp.mass_flx_ic(),
+        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
     enh_smag_fac = zero_field(mesh, KDim)
