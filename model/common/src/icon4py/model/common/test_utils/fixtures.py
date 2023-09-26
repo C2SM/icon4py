@@ -14,13 +14,11 @@
 from pathlib import Path
 
 import pytest
-from gt4py.next.program_processors.runners.roundtrip import executor
 
-from ..decomposition.parallel_setup import get_processor_properties
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 from .simple_mesh import SimpleMesh
-
+from ..decomposition.parallel_setup import get_processor_properties
 
 test_utils = Path(__file__).parent
 model = test_utils.parent.parent
@@ -166,7 +164,6 @@ def metrics_savepoint(data_provider):  # F811
     return data_provider.from_metrics_savepoint()
 
 
-BACKENDS = {"embedded": executor}
 MESHES = {"simple_mesh": SimpleMesh()}
 
 
@@ -178,6 +175,6 @@ def mesh(request):
     return request.param
 
 
-@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
+@pytest.fixture
 def backend(request):
     return request.param

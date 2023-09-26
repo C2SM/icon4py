@@ -14,8 +14,8 @@
 import pytest
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
+
 from icon4py.model.common.test_utils.fixtures import (  # noqa: F401  # import fixtures from test_utils package
-    backend,
     damping_height,
     data_provider,
     datapath,
@@ -25,15 +25,22 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa: F401  # import f
     icon_grid,
     interpolation_savepoint,
     linit,
-    mesh,
     metrics_savepoint,
     ndyn_substeps,
     processor_props,
     ranked_data_path,
     step_date_exit,
     step_date_init,
+    mesh,
+    backend
 )
 
+from icon4py.model.common.test_utils.pytest_config import (  # noqa: F401
+    pytest_addoption,
+    pytest_configure,
+    pytest_runtest_setup,
+    pytest_generate_tests
+)
 
 @pytest.fixture
 def r04b09_diffusion_config(
