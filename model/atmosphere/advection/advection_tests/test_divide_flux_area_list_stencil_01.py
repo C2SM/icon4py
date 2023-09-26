@@ -659,7 +659,10 @@ def divide_flux_area_list_stencil_01_numpy(
         dreg_patch2_4_lat_vmask,
     )
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 168f9fa... Add custom marker slow_tests to skip 4 slow stencils for testing
 @pytest.mark.slow_tests
 def test_divide_flux_area_list_stencil_01():
     mesh = SimpleMesh()
