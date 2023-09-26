@@ -110,8 +110,8 @@ warn_unused_ignores = true
 [tool.pytest]
 
 [tool.pytest.ini_options]
-testpaths = ['tests', 'advection_tests']
 markers = 'slow_tests: marks tests as slow'
+testpaths = ['tests', 'advection_tests']
 
 [tool.setuptools.dynamic]
 version = {attr = 'icon4py.model.atmosphere.advection.__init__.__version__'}
