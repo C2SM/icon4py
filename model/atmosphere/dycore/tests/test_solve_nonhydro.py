@@ -172,7 +172,7 @@ def test_nonhydro_predictor_step(
         z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
     )
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
         icon_grid.n_lev()
     )
@@ -598,7 +598,7 @@ def test_nonhydro_corrector_step(
         scal_divdamp_o2=sp.scal_divdamp_o2(),
     )
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
         icon_grid.n_lev()
     )
@@ -825,7 +825,7 @@ def test_run_solve_nonhydro_single_step(
         scal_divdamp_o2=sp.scal_divdamp_o2(),
     )
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
         icon_grid.n_lev()
     )
@@ -1005,7 +1005,7 @@ def test_run_solve_nonhydro_multi_step(
         scal_divdamp_o2=sp.scal_divdamp_o2(),
     )
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
         icon_grid.n_lev()
     )
