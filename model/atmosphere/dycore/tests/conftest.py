@@ -23,6 +23,7 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     istep,
     jstep,
     savepoint_nonhydro_init,
+    savepoint_nonhydro_exit,
     savepoint_velocity_init,
     savepoint_velocity_exit,
     metrics_nonhydro_savepoint,
