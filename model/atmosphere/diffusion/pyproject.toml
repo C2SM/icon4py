@@ -112,7 +112,8 @@ warn_unused_ignores = true
 [tool.pytest]
 
 [tool.pytest.ini_options]
-testpaths = ['tests', 'diffusion_tests']
+testpaths = ['tests']
+markers =  ['datatest: test that use serialized data']
 
 [tool.setuptools.dynamic]
 version = {attr = 'icon4py.model.atmosphere.diffusion.__init__.__version__'}
