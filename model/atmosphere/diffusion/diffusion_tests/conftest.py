@@ -11,10 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import pytest
-
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
-from icon4py.model.common.test_utils.parallel_helpers import processor_props
 from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401  # import fixtures from test_utils package
     damping_height,
     data_provider,
@@ -31,11 +28,14 @@ from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401  # 
     step_date_exit,
     step_date_init,
 )
+from icon4py.model.common.test_utils.parallel_helpers import processor_props  # noqa: F401 # fixture
+
+import pytest
 
 
 @pytest.fixture
 def r04b09_diffusion_config(
-    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fxiture
+    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
 ) -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.

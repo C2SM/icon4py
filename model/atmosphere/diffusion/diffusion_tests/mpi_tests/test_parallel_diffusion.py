@@ -12,13 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-import pytest
-
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.common.decomposition.decomposed import DecompositionInfo, create_exchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
+
+import pytest
 
 from ..utils import verify_diffusion_fields
 

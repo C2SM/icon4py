@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence_diagnostics import (
     temporary_fields_for_turbulence_diagnostics,
@@ -24,6 +23,8 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+
+import pytest
 
 
 class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):

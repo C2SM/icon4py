@@ -16,9 +16,8 @@ from pathlib import Path
 import pytest
 
 from .data_handling import download_and_extract
-from .parallel_helpers import processor_props
+from .parallel_helpers import processor_props  # noqa: F401
 from .serialbox_utils import IconSerialDataProvider
-
 
 
 test_utils = Path(__file__).parent
@@ -34,8 +33,9 @@ data_uris = {
 
 ser_data_basepath = base_path.joinpath("ser_icondata")
 
+
 @pytest.fixture(scope="session")
-def ranked_data_path(processor_props):
+def ranked_data_path(processor_props):  # noqa: F811 # fixtures
     return ser_data_basepath.absolute().joinpath(f"mpitask{processor_props.comm_size}")
 
 
@@ -45,7 +45,7 @@ def datapath(ranked_data_path):
 
 
 @pytest.fixture(scope="session")
-def download_ser_data(request, processor_props, ranked_data_path):
+def download_ser_data(request, processor_props, ranked_data_path):  # noqa: F811 # fixtures
     """
     Get the binary ICON data from a remote server.
 
@@ -75,7 +75,9 @@ def download_ser_data(request, processor_props, ranked_data_path):
 
 
 @pytest.fixture(scope="session")
-def data_provider(download_ser_data, datapath, processor_props) -> IconSerialDataProvider:
+def data_provider(
+    download_ser_data, datapath, processor_props  # noqa: F811 # fixtures
+) -> IconSerialDataProvider:
     return IconSerialDataProvider(
         fname_prefix="icon_pydycore",
         path=str(datapath),
@@ -151,13 +153,12 @@ def step_date_exit():
 
 
 @pytest.fixture
-def interpolation_savepoint(data_provider):  # F811
+def interpolation_savepoint(data_provider):  # fixtures
     """Load data from ICON interplation state savepoint."""
     return data_provider.from_interpolation_savepoint()
 
 
 @pytest.fixture
-def metrics_savepoint(data_provider):  # F811
+def metrics_savepoint(data_provider):  # fixtures
     """Load data from ICON mestric state savepoint."""
     return data_provider.from_metrics_savepoint()
-
