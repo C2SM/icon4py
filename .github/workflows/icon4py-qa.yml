@@ -9,10 +9,10 @@ on:
             - "tools/**"
     pull_request:
         branches:
-            - main
+            - '*'
         paths-ignore:
             - "tools/**"
-        types: [opened, reopened, assigned, ready_for_review]
+        types: [opened, reopened, synchronize]
     pull_request_review:
         branches:
             - main
@@ -58,4 +58,3 @@ jobs:
             - name: Run checks icon4py-model-atmosphere-diffusion
               run: |
                   pre-commit run --config model/atmosphere/diffusion/.pre-commit-config.yaml --all-files
-
