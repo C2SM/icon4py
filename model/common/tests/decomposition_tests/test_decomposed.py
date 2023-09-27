@@ -22,7 +22,8 @@ from icon4py.model.common.decomposition.decomposed import (
     create_exchange,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
+from icon4py.model.common.test_utils.datatest_helpers import decomposition_info, download_ser_data, grid_savepoint, icon_grid,  data_provider, ranked_data_path, datapath
+from icon4py.model.common.test_utils.parallel_helpers import check_comm_size,processor_props
 
 
 """
@@ -58,7 +59,7 @@ def test_decomposition_info_masked(
     caplog,
     download_ser_data,
     decomposition_info,
-    processor_props,  # F811
+    processor_props,
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
@@ -75,7 +76,6 @@ def test_decomposition_info_masked(
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
 
 
-# @pytest.mark.skipif(props.comm_size != 2, reason="runs on 2 nodes only")
 def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
     owned_list = owned_indices.tolist()
     halos_list = halo_indices.tolist()
@@ -103,7 +103,7 @@ def test_decomposition_info_local_index(
     caplog,
     download_ser_data,
     decomposition_info,
-    processor_props,  # F811
+    processor_props,
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
