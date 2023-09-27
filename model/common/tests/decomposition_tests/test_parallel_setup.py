@@ -12,11 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-import pytest
 import mpi4py
-mpi4py.rc.initialize = False
-from mpi4py import MPI
+import pytest
+
 from icon4py.model.common.decomposition.parallel_setup import get_processor_properties, init_mpi
+
+
+mpi4py.rc.initialize = False
+from mpi4py import MPI  # noqa : E402 # module level need to set mpi4py config before import
 
 
 @pytest.mark.mpi
