@@ -27,6 +27,23 @@ except ModuleNotFoundError:
     pytest_benchmark = None
 
 from .simple_mesh import SimpleMesh
+from gt4py.next.program_processors.runners.roundtrip import executor
+
+
+BACKENDS = {"embedded": executor}
+MESHES = {"simple_mesh": SimpleMesh()}
+
+@pytest.fixture(
+    ids=MESHES.keys(),
+    params=MESHES.values(),
+)
+def mesh(request):
+    return request.param
+
+
+@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
+def backend(request):
+    return request.param
 
 
 def _shape(
