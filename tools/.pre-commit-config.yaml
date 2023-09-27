@@ -104,7 +104,7 @@ repos:
   hooks:
   - id: mypy
     name: mypy static type checker
-    entry: bash -c 'mypy tools/src'
+    entry: bash -c 'mypy tools/src/icon4pytools'
     language: system
     types_or: [python, pyi]
     pass_filenames: false
