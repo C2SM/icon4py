@@ -41,8 +41,12 @@ def pytest_addoption(parser):
         pass
 
     try:
-        parser.addoption("--backend", action="store", default=None,
-                     help="Comma separated list of backends: cpu, gpu")
+        parser.addoption(
+            "--backend",
+            action="store",
+            default=None,
+            help="Comma separated list of backends: cpu, gpu",
+        )
     except ValueError:
         pass
 
@@ -55,7 +59,7 @@ def pytest_runtest_setup(item):
 
 def pytest_generate_tests(metafunc):
     # parametrise backends
-    if 'backend' in metafunc.fixturenames:
+    if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
 
         params = [executor]  # default

@@ -15,10 +15,11 @@ from pathlib import Path
 
 import pytest
 
+from ..decomposition.parallel_setup import get_processor_properties
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 from .simple_mesh import SimpleMesh
-from ..decomposition.parallel_setup import get_processor_properties
+
 
 test_utils = Path(__file__).parent
 model = test_utils.parent.parent
