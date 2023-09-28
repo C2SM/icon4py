@@ -76,7 +76,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
         savePoints = serializer.savepoint_list()
     except ser.SerialboxError as e:
         print(f"serializer: error: {e}")
-        print("Data download link: https://polybox.ethz.ch/index.php/s/LEh6pZ9etDvNO0c")
+        print("Data download link: https://polybox.ethz.ch/index.php/s/8qWeEg5JNAiNeGk")
         sys.exit(1)
 
 
