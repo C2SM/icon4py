@@ -30,6 +30,11 @@ import os
 import sys
 import serialbox as ser
 from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.program_processors.runners.gtfn_cpu import (
+    run_gtfn,
+    run_gtfn_cached,
+    run_gtfn_imperative,
+)
 
 cp_v = 1850.0
 ci = 2108.0
@@ -136,7 +141,7 @@ def satad_numpy_Ong(qv, qc, t, rho):
             qc[cell, k] = 0.0
             t[cell, k] = Ttest
         else:
-            t[cell, k], ctr_array[cell, k], diff_array[cell, k] = newtonian_iteration_temp(
+            t[cell, k], ctr_array[cell, k], diff_array[cell, k] = newtonian_iteration_temp_Ong(
                 t[cell, k], t[cell, k], t[cell, k] + 10.0, qv[cell, k], rho[cell, k]
             )
 
@@ -315,9 +320,8 @@ def test_serialize_mo_satad():
     q = 0
     for i in range(cell_size):
         for k in range(k_size):
-            if (abs(ser_field['temperature'][i,k] - tRef[i,k]) > 1.e-10):
+            if (abs(ser_field['temperature'].array()[i,k] - tRef[i,k]) > 1.e-10):
                 q = q + 1
-                print (ser_field['temperature'][i,k] - tRef[i,k], ser_field['temperature'][i,k], tRef[i,k])
+                print (ser_field['temperature'].array()[i,k] - tRef[i,k], ser_field['temperature'].array()[i,k], tRef[i,k])
 
     print("total error number: ", q)
-

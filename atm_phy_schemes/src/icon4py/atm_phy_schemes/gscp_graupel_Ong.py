@@ -1612,7 +1612,6 @@ def _graupel_scan(
     )
 
 
-'''
 @field_operator
 def _graupel(
    kstart_moist: int32,
@@ -1646,11 +1645,9 @@ def _graupel(
     Field[[CellDim, KDim], float64],
     Field[[CellDim, KDim], float64],
     Field[[CellDim, KDim], float64],
-    Field[[CellDim, KDim], float64],
     Field[[CellDim, KDim], float64]
 ]:
     (
-        dist_cldtop,
         temperature_,
         qv_,
         qc_,
@@ -1666,12 +1663,33 @@ def _graupel(
         Vnew_s,
         Vnew_g,
         Vnew_i,
+        dist_cldtop,
         rho_kup,
         Crho1o2_kup,
         Crhofac_qi_kup,
         Cvz0s_kup,
         qvsw_kup,
-        k_lev
+        k_lev,
+        Szdep_v2i,
+        Szsub_v2i,
+        Snucl_v2i,
+        Scfrz_c2i,
+        Simlt_i2c,
+        Sicri_i2g,
+        Sidep_v2i,
+        Sdaut_i2s,
+        Saggs_i2s,
+        Saggg_i2g,
+        Siaut_i2s,
+        Ssmlt_s2r,
+        Srims_c2s,
+        Ssdep_v2s,
+        Scosg_s2g,
+        Sgmlt_g2r,
+        Srcri_r2g,
+        Sgdep_v2g,
+        Srfrz_r2g,
+        Srimg_c2g
     ) = _graupel_scan(
         kstart_moist,
         kend,
@@ -1706,10 +1724,9 @@ def _graupel(
         Vnew_r,
         Vnew_s,
         Vnew_g,
-        Vnew_i,
-        dist_cldtop
+        Vnew_i
     )
-'''
+
 
 
 
@@ -1867,66 +1884,6 @@ def _graupel_flux_scan(
         qrsflux,
         k_lev
     )
-
-
-'''
-@field_operator
-def _graupel_flux(
-   # grid indices
-   kstart_moist: int32,
-   kend: int32,
-   rho: Field[[CellDim, KDim], float64],
-   qr: Field[[CellDim, KDim], float64],
-   qs: Field[[CellDim, KDim], float64],
-   qi: Field[[CellDim, KDim], float64],
-   qg: Field[[CellDim, KDim], float64],
-   Vnew_r: Field[[CellDim, KDim], float64],
-   Vnew_s: Field[[CellDim, KDim], float64],
-   Vnew_i: Field[[CellDim, KDim], float64],
-   Vnew_g: Field[[CellDim, KDim], float64],
-   rhoqrV_old_kup: Field[[CellDim, KDim], float64],
-   rhoqsV_old_kup: Field[[CellDim, KDim], float64],
-   rhoqiV_old_kup: Field[[CellDim, KDim], float64],
-   rhoqgV_old_kup: Field[[CellDim, KDim], float64],
-   lpres_pri: bool,
-   ldass_lhn: bool
-):
-    (
-        prr_gsp,
-        prs_gsp,
-        pri_gsp,
-        prg_gsp,
-        qrsflux,
-        k_lev
-    ) = _graupel_flux_scan(
-        kstart_moist,
-        kend,
-        rho,
-        qr,
-        qs,
-        qi,
-        qg,
-        Vnew_r,
-        Vnew_s,
-        Vnew_i,
-        Vnew_g,
-        rhoqrV_old_kup,
-        rhoqsV_old_kup,
-        rhoqiV_old_kup,
-        rhoqgV_old_kup,
-        lpres_pri,
-        ldass_lhn
-    )
-
-    return(
-        prr_gsp,
-        prs_gsp,
-        pri_gsp,
-        prg_gsp,
-        qrsflux
-    )
-'''
-
 
 '''
 def graupel_wrapper(
@@ -2128,5 +2085,68 @@ def graupel_wrapper(
         qrsflux
     )
 '''
+
+@program
+def graupel(
+    kstart_moist: int32,
+    kend: int32,
+    dt: float64,  # time step
+    dz: Field[[CellDim, KDim], float64],
+    temperature: Field[[CellDim, KDim], float64],
+    pres: Field[[CellDim, KDim], float64],
+    rho: Field[[CellDim, KDim], float64],
+    qv: Field[[CellDim, KDim], float64],
+    qc: Field[[CellDim, KDim], float64],
+    qi: Field[[CellDim, KDim], float64],
+    qr: Field[[CellDim, KDim], float64],
+    qs: Field[[CellDim, KDim], float64],
+    qg: Field[[CellDim, KDim], float64],
+    qnc: Field[[CellDim, KDim], float64],  # originally 2D Field, now 3D Field
+    l_cv: bool,
+    ithermo_water: int32,
+    rhoqrV_old_kup: Field[[CellDim, KDim], float64],
+    rhoqsV_old_kup: Field[[CellDim, KDim], float64],
+    rhoqgV_old_kup: Field[[CellDim, KDim], float64],
+    rhoqiV_old_kup: Field[[CellDim, KDim], float64],
+    Vnew_r: Field[[CellDim, KDim], float64],
+    Vnew_s: Field[[CellDim, KDim], float64],
+    Vnew_g: Field[[CellDim, KDim], float64],
+    Vnew_i: Field[[CellDim, KDim], float64]
+):
+    _graupel(
+        kstart_moist,
+        kend,
+        dt,
+        dz,
+        temperature,
+        pres,
+        rho,
+        qv,
+        qc,
+        qi,
+        qr,
+        qs,
+        qg,
+        qnc,
+        l_cv,
+        ithermo_water,
+        out = (
+            temperature,
+            qv,
+            qc,
+            qi,
+            qr,
+            qs,
+            qg,
+            rhoqrV_old_kup,
+            rhoqsV_old_kup,
+            rhoqgV_old_kup,
+            rhoqiV_old_kup,
+            Vnew_r,
+            Vnew_s,
+            Vnew_g,
+            Vnew_i
+        )
+    )
 
 #(backend=roundtrip.executor)

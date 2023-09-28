@@ -24,6 +24,9 @@ import os
 import numpy as np
 import os
 import sys
+
+import pytest
+
 from gt4py.next.ffront.fbuiltins import (
     float64,
     int32
@@ -32,7 +35,7 @@ from gt4py.next.ffront.fbuiltins import (
 from icon4py.atm_phy_schemes.gscp_graupel_Ong import _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
 from icon4py.atm_phy_schemes.gscp_graupel_Ong import GraupelGlobalConstants, GraupelFunctionConstants
 from typing import Final
-from icon4py.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn,
@@ -43,7 +46,8 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
 import serialbox as ser
 
 
-def test_graupel_Ong_serialized_data():
+@pytest.mark.parametrize("date_no,Nblocks,rank,debug,data_output", [(date_i,120,rank_j,False,False) for date_i in range(1) for rank_j in range(1)])
+def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
 
     backend = run_gtfn
 
@@ -51,20 +55,20 @@ def test_graupel_Ong_serialized_data():
     ldass_lhn = True  # TODO: may need to be read from serialized data, default is False. We now manually set to True for debugging
     tendency_serialization = True
 
-    debug = False
-    data_output = False # do you want to output formatted data for further analysis?
 
-    mpi_ranks = np.arange(0, 10, dtype=int)
+    #mpi_ranks = np.arange(0, 10, dtype=int)
     initial_date = "2008-09-01T00:00:00.000"
     dates = ("2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000")
-    Nblocks = 50 # 121
-    rank = mpi_ranks[7]
     blocks = tuple(i+1 for i in range(Nblocks))
-    print(dates)
-    print(blocks)
+    print()
+    print("date no: ", date_no)
+    print("rank: ", rank)
+    print("Nblocks; ", Nblocks)
+    print("debug, output: ", debug, data_output)
 
     # please put the data in the serialbox directory
-    script_dir = os.path.dirname(__file__)
+    #script_dir = os.path.dirname(__file__)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = script_dir+'/serialbox/data_dir/'
     #base_dir = "/home/ong/Data/nh_wk_rerun_complete/data_dir/"
     try:
@@ -284,9 +288,6 @@ def test_graupel_Ong_serialized_data():
         "float64"
     )
 
-    # set date
-    date_index = 0
-
     # construct constant data dictionary
     const_data = {}
     for item in ser_const_name:
@@ -316,10 +317,10 @@ def test_graupel_Ong_serialized_data():
 
     # read constants
     for item_no, item in enumerate(ser_const_name):
-        entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[0]]["date"][dates[date_index]]
+        entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[0]]["date"][dates[date_no]]
         const_data[item] = serializer.read(item, entrance_savePoint)[0]
         for i in range(Nblocks - 1):
-            entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[i + 1]]["date"][dates[date_index]]
+            entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[i + 1]]["date"][dates[date_no]]
             if (item != "ser_graupel_istart" and item != "ser_graupel_iend" and item != "ser_graupel_nvec"):
                 if (const_data[item] != serializer.read(item, entrance_savePoint)[0]):
                     print(const_data[item], serializer.read(item, entrance_savePoint)[0], ser_const_type[item_no])
@@ -335,23 +336,23 @@ def test_graupel_Ong_serialized_data():
 
     # read serialized input and reference data
     for item in ser_field_name:
-        entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[0]]["date"][dates[date_index]]
-        exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[0]]["date"][dates[date_index]]
+        entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[0]]["date"][dates[date_no]]
+        exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[0]]["date"][dates[date_no]]
         ser_data[item] = serializer.read(item, entrance_savePoint)
         ref_data[item] = serializer.read(item, exit_savePoint)
         for i in range(Nblocks-1):
-            entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[i+1]]["date"][dates[date_index]]
-            exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[i + 1]]["date"][dates[date_index]]
+            entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[i+1]]["date"][dates[date_no]]
+            exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[i+1]]["date"][dates[date_no]]
             ser_data[item] = np.concatenate((ser_data[item],serializer.read(item, entrance_savePoint)),axis=0)
             ref_data[item] = np.concatenate((ref_data[item], serializer.read(item, exit_savePoint)), axis=0)
 
     # read serialized rendency data
     if ( tendency_serialization ):
         for item in ser_tend_name:
-            exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[0]]["date"][dates[date_index]]
+            exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[0]]["date"][dates[date_no]]
             tend_data[item] = serializer.read(item, exit_savePoint)
             for i in range(Nblocks-1):
-                exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[i + 1]]["date"][dates[date_index]]
+                exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[i + 1]]["date"][dates[date_no]]
                 tend_data[item] = np.concatenate((tend_data[item], serializer.read(item, exit_savePoint)), axis=0)
 
     (cell_size, k_size) = ser_data["ser_graupel_temperature"].shape
@@ -424,43 +425,27 @@ def test_graupel_Ong_serialized_data():
 
 
     # check whether the tuning parameters are the same. If not, exit the program
-    if (const_data["ser_graupel_qc0"] != check_graupel_funcConst.GrFuncConst_qc0):
-        print("qc0 is NOT equal. Please check.")
-        sys.exit()
-    if (const_data["ser_graupel_qi0"] != check_graupel_funcConst.GrFuncConst_qi0):
-        print("qi0 is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_tune_zceff_min"] != check_graupel_const.GrConst_ceff_min):
-        print("tune_zceff_min is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_tune_v0snow"] != check_graupel_const.GrConst_v0snow):
-        print("tune_v0snow is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_tune_zvz0i"] != check_graupel_const.GrConst_vz0i):
-        print("tune_zvz0i is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_tune_icesedi_exp"] != check_graupel_const.GrConst_icesedi_exp):
-        print("tune_icesedi_exp is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_tune_mu_rain"] != check_graupel_const.GrConst_mu_rain):
-        print("tune_mu_rain is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_tune_rain_n0_factor"] != check_graupel_const.GrConst_rain_n0_factor):
-        print("tune_rain_n0_factor is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_iautocon"] != check_graupel_const.GrConst_iautocon):
-        print("iautocon is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_isnow_n0temp"] != check_graupel_const.GrConst_isnow_n0temp):
-        print("isnow_n0temp is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_zqmin"] != check_graupel_const.GrConst_qmin):
-        print("zqmin is NOT equal. Please check.")
-        sys.exit()
-    if (tune_data["ser_init_graupel_zeps"] != check_graupel_const.GrConst_eps):
-        print("zeps is NOT equal. Please check.")
-        sys.exit()
-
+    def comparison(description: str, a):
+        if (description in ser_const_name):
+            if (const_data[description] != a):
+                print(description, " is NOT equal. Pleas check.")
+                sys.exit()
+        elif (description in ser_tune_name):
+            if (tune_data[description] != a):
+                print(description, " is NOT equal. Pleas check.")
+                sys.exit()
+    comparison("ser_graupel_qc0", check_graupel_funcConst.GrFuncConst_qc0)
+    comparison("ser_graupel_qi0", check_graupel_funcConst.GrFuncConst_qi0)
+    comparison("ser_init_graupel_tune_zceff_min", check_graupel_const.GrConst_ceff_min)
+    comparison("ser_init_graupel_tune_v0snow", check_graupel_const.GrConst_v0snow)
+    comparison("ser_init_graupel_tune_zvz0i", check_graupel_const.GrConst_vz0i)
+    comparison("ser_init_graupel_tune_icesedi_exp", check_graupel_const.GrConst_icesedi_exp)
+    comparison("ser_init_graupel_tune_mu_rain", check_graupel_const.GrConst_mu_rain)
+    comparison("ser_init_graupel_tune_rain_n0_factor", check_graupel_const.GrConst_rain_n0_factor)
+    comparison("ser_init_graupel_iautocon", check_graupel_const.GrConst_iautocon)
+    comparison("ser_init_graupel_isnow_n0temp", check_graupel_const.GrConst_isnow_n0temp)
+    comparison("ser_init_graupel_zqmin", check_graupel_const.GrConst_qmin)
+    comparison("ser_init_graupel_zeps", check_graupel_const.GrConst_eps)
 
     # if ldass_lhn is not turned on, the serialized qrsflux has only dimension (1)
     if (not ldass_lhn):
@@ -790,3 +775,4 @@ def test_graupel_Ong_serialized_data():
         # _graupel_q_tendency does not pass rtol=1.e-12 even though rtol=1.e-12 can be satisfied
         # for the main graupel scan, why?
         assert(np.allclose(predict_field[item].array(),ref_data[item], rtol=1e-10, atol=1e-16))
+

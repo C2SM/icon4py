@@ -32,6 +32,11 @@ from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.shared.mo_physical_constants import phy_const
 
+from gt4py.next.program_processors.runners.gtfn_cpu import (
+    run_gtfn,
+    run_gtfn_cached,
+    run_gtfn_imperative,
+)
 
 @field_operator
 def _latent_heat_vaporization(
@@ -42,11 +47,11 @@ def _latent_heat_vaporization(
     Computed as internal energy and taking into account Kirchoff's relations
     """
     # specific heat of water vapor at constant pressure (Landolt-Bornstein)
-    cp_v = 1850.0
+    #cp_v = 1850.0
 
     return (
         phy_const.alv
-        + (cp_v - phy_const.clw) * (t - phy_const.tmelt)
+        + (1850.0 - phy_const.clw) * (t - phy_const.tmelt)
         - phy_const.rv * t
     )
 
@@ -211,7 +216,7 @@ def _satad(
 
     return t, qv, qc
 
-
+#backend=run_gtfn
 @program()
 def satad(
     qv: Field[[CellDim, KDim], float],
