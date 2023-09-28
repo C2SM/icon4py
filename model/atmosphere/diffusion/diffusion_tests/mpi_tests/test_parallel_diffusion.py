@@ -78,11 +78,18 @@ def test_parallel_diffusion(
 
     diffusion = Diffusion(exchange)
 
+    vertical_params = VerticalModelParams(
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflatlev=grid_savepoint.nflatlev(),
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+    )
+
     diffusion.init(
         grid=icon_grid,
         config=r04b09_diffusion_config,
         params=diffusion_params,
-        vertical_params=VerticalModelParams(grid_savepoint.vct_a(), damping_height),
+        vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,

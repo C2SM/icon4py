@@ -113,7 +113,7 @@ def read_geometry_fields(
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
-            vct_a=sp.vct_a(), rayleigh_damping_height=12500
+            vct_a=sp.vct_a(), rayleigh_damping_height=12500, nflatlev=0, nflat_gradp=0
         )
         return edge_geometry, cell_geometry, vertical_geometry
     else:
