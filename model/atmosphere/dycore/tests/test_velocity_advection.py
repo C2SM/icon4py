@@ -42,8 +42,8 @@ def test_velocity_init(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflat_gradp=0,
-        nflatlev=0,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflatlev=grid_savepoint.nflatlev(),
     )
 
     velocity_advection = VelocityAdvection(
@@ -79,8 +79,8 @@ def test_verify_velocity_init_against_regular_savepoint(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflatlev=0,
         nflat_gradp=0,
+        nflatlev=0,
     )
 
     velocity_advection = VelocityAdvection(
