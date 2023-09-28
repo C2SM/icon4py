@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_for_turbulence import (
@@ -19,8 +20,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
-
-import pytest
 
 
 class TestCalculateHorizontalGradientsForTurbulence(StencilTest):

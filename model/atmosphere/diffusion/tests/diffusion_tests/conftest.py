@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import pytest
+
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401  # import fixtures from test_utils package
     damping_height,
@@ -29,8 +31,6 @@ from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401  # 
     step_date_init,
 )
 from icon4py.model.common.test_utils.parallel_helpers import processor_props  # noqa: F401 # fixture
-
-import pytest
 
 
 @pytest.fixture

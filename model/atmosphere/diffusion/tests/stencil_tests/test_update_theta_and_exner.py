@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
@@ -19,8 +20,6 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
-
-import pytest
 
 
 class TestUpdateThetaAndExner(StencilTest):

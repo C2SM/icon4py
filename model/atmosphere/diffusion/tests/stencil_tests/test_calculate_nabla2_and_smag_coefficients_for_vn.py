@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
@@ -23,8 +24,6 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
-
-import pytest
 
 
 class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
