@@ -235,7 +235,18 @@ OUTPUT_FILEPATH   A path to the output Fortran source file to be generated.
 
 ## `py2f`
 
-Python utility for generating a C library and Fortran interface to call Python icon4py modules. The library [embeds python via CFFI ](https://cffi.readthedocs.io/en/latest/embedding.)
+Python utility for generating a C library and Fortran interface to call Python icon4py modules.
+The library [embeds python via CFFI ](https://cffi.readthedocs.io/en/latest/embedding.).
+
+### build
+
+In order to use `py2f` you need to install the optional `py2f` extension of `icon4pytools` :
+
+```bash
+cd tools
+pip install -r requirements-dev.txt
+pip install .[py2f]
+```
 
 This is **highly experimental** and has not been tested from within Fortran code!
 

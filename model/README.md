@@ -45,7 +45,11 @@ pytest -v --datatest model/atmosphere/diffusion
 
 #### Testing parallel code
 
-Tests for parallel codes using MPI are collected in specific subpackages of the model components test folders (e.g. `diffusion_tests/mpi_tests`). All parallel tests are marked with `@pytest.mark.mpi` and are skipped if the `--with-mpi` is not passed option is not passed to `pytest` In order to run them, you need a MPI installation on your system: On Debian-Linux do
+Tests for parallel codes using MPI are collected in specific subpackages of the model components 
+test folders (e. g. `diffusion_tests/mpi_tests`). All parallel tests are marked 
+with `@pytest.mark.mpi` and are skipped if the `--with-mpi` option is not passed to `pytest`. 
+
+In order to run them, you need a MPI installation on your system: On Debian-Linux do
 
 ```bash
 sudo apt-get install libopenmpi-dev
@@ -66,5 +70,6 @@ brew install mpich
 Then you can run the tests with
 
 ```bash
-mpirun -np 2 pytest -v -s --with-mpi path/to/test/folder/mpi_tests
+mpirun -np 2 pytest -v -s --with-mpi --datatest model/atmosphere/diffusion/tests/diffusion_tests/mpi_tests/
+mpirun -np 2 pytest -v -s --with-mmpi --datatest model/common/tests/decomposition_tests
 ```
