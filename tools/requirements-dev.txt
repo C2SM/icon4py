@@ -2,4 +2,4 @@
 -e ../model/atmosphere/dycore
 -e ../model/atmosphere/diffusion
 -e ../model/common
--e .
+-e .[all]
