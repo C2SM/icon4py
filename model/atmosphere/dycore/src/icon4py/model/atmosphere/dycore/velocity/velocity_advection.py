@@ -198,7 +198,7 @@ class VelocityAdvection:
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
-                backend
+                run_gtfn
             )(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
