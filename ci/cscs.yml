@@ -36,7 +36,7 @@ test_model_job:
   extends: .test_template
   stage: test_model
   script:   # TODO: once gtfn backends work parametrise with backend
-    - ENABLE_BENCHMARKS= tox -r -e py${pyversion_no_dot} -c model/ --verbose
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --enable-benchmarks
 
 test_tools_job:
   extends: .test_template

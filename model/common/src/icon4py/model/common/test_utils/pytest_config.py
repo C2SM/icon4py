@@ -21,20 +21,12 @@ def pytest_configure(config):
 
 
 def pytest_addoption(parser):
-    """Add custom commandline options for pytest.
-
-    This function adds two options:
-        1. --datatest: A flag indicating if tests that use serialized data are being run.
-           Such tests might be slower since data might be downloaded from online storage.
-        2. --backends: An option to specify a comma-separated list of backends, such as cpu or gpu.
-
-        Makes sure the options are set only once even when running tests of several model packages in one session.
-    """
+    """Add custom commandline options for pytest."""
     try:
         parser.addoption(
             "--datatest",
             action="store_true",
-            help="running tests that use serialized data, can be slow since data might be downloaded from online storage",
+            help="Run tests that use serialized data, can be slow since data might be downloaded from online storage.",
             default=False,
         )
     except ValueError:
@@ -45,7 +37,7 @@ def pytest_addoption(parser):
             "--backend",
             action="store",
             default=None,
-            help="Comma separated list of backends: cpu, gpu",
+            help="GT4Py backend to use when executing stencils. Defaults to 'executor' embedded backend. Currently the other option is 'run_gtfn' which is the GTFN CPU backend.",
         )
     except ValueError:
         pass
@@ -63,9 +55,8 @@ def pytest_generate_tests(metafunc):
         backend_option = metafunc.config.getoption("backend")
 
         params = [executor]  # default
-        if backend_option == "cpu":
+        if backend_option == "run_gtfn":
             params.append(run_gtfn)
-        elif backend_option == "gpu":
-            raise NotImplementedError("GPU support is not implemented in gt4py yet.")
+        # TODO: add gpu support
 
         metafunc.parametrize("backend", params)
