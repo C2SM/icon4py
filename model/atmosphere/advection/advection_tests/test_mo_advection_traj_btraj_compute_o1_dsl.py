@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_advection_traj_btraj_compute_o1_dsl import (
+from icon4py.model.atmosphere.advection.mo_advection_traj_btraj_compute_o1_dsl import (
     mo_advection_traj_btraj_compute_o1_dsl,
 )
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
@@ -67,6 +67,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
         p_cell_idx = np.where(lvn_pos, cell_idx[:, 0], cell_idx[:, 1])
+        p_cell_rel_idx_dsl = np.where(lvn_pos, np.int32(0), np.int32(1))
         p_cell_blk = np.where(lvn_pos, cell_blk[:, 0], cell_blk[:, 1])
 
         z_ntdistv_bary_1 = -(
@@ -94,6 +95,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
 
         return dict(
             p_cell_idx=p_cell_idx,
+            p_cell_rel_idx_dsl=p_cell_rel_idx_dsl,
             p_cell_blk=p_cell_blk,
             p_distv_bary_1=p_distv_bary_1,
             p_distv_bary_2=p_distv_bary_2,
@@ -120,6 +122,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         dual_normal_cell_2 = random_field(mesh, EdgeDim, E2CDim)
         dual_normal_cell_2_new = as_1D_sparse_field(dual_normal_cell_2, ECDim)
         p_cell_idx = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
+        p_cell_rel_idx_dsl = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
         p_cell_blk = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
         p_distv_bary_1 = random_field(mesh, EdgeDim, KDim)
         p_distv_bary_2 = random_field(mesh, EdgeDim, KDim)
@@ -137,6 +140,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
             primal_normal_cell_2=primal_normal_cell_2_new,
             dual_normal_cell_2=dual_normal_cell_2_new,
             p_cell_idx=p_cell_idx,
+            p_cell_rel_idx_dsl=p_cell_rel_idx_dsl,
             p_cell_blk=p_cell_blk,
             p_distv_bary_1=p_distv_bary_1,
             p_distv_bary_2=p_distv_bary_2,
