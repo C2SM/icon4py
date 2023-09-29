@@ -1,0 +1,2 @@
+-r ../../base-requirements-dev.txt
+-e .

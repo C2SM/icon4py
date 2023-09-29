@@ -1,5 +1,10 @@
-## This file contains the core development requirements of icon4py.
-## The ICON4PY_ROOT environment variable must be contain the path to the root of the repo.
+-r base-requirements-dev.txt
 
--r requirements-dev-local.txt
--r requirements-dev-tools.txt
+# icon4py model
+-e ./model/atmosphere/dycore
+-e ./model/common
+-e ./model/atmosphere/diffusion
+-e ./model/driver
+
+# icon4pytools
+-e ./tools

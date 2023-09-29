@@ -1,9 +1,0 @@
-## This file contains the local development requirements of icon4py.
-## The ICON4PY_ROOT environment variable must be contain the path to the root of the repo.
-
-# Local packages installed in editable mode
--e ${ICON4PY_ROOT}/model/atmosphere/dycore
--e ${ICON4PY_ROOT}/model/atmosphere/diffusion
--e ${ICON4PY_ROOT}/model/common
--e ${ICON4PY_ROOT}/model/driver
--e ${ICON4PY_ROOT}/tools
