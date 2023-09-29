@@ -26,6 +26,7 @@ try:
     import ghex
     import ghex.unstructured as unstructured
     import mpi4py
+    mpi4py.rc.initialize = False
 except ImportError:
     mpi4py = None
     ghex = None
@@ -35,7 +36,7 @@ from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
 
 
-mpi4py.rc.initialize = False
+
 
 if TYPE_CHECKING:
     import mpi4py.MPI
