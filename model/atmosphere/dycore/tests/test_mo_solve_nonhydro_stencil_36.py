@@ -33,8 +33,11 @@ class TestMoSolveNonhydroStencil36(StencilTest):
         vt_offset_1 = np.roll(vt, shift=1, axis=1)
 
         vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_offset_1
+        vn_ie[:, 0] = 0
         z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_offset_1
+        z_vt_ie[:, 0] = 0
         z_kin_hor_e = 0.5 * (vn**2 + vt**2)
+        z_kin_hor_e[:, 0] = 0
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
     @pytest.fixture

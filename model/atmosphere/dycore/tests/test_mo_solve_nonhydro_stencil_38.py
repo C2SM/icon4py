@@ -27,11 +27,12 @@ class TestMoSolveNonhydroStencil38(StencilTest):
 
     @staticmethod
     def reference(mesh, vn: np.array, wgtfacq_e: np.array, **kwargs) -> np.array:
-        vn_ie = (
+        vn_ie = np.zeros_like(vn)
+        vn_ie[:, -1] = (
             np.roll(wgtfacq_e, shift=1, axis=1) * np.roll(vn, shift=1, axis=1)
             + np.roll(wgtfacq_e, shift=2, axis=1) * np.roll(vn, shift=2, axis=1)
             + np.roll(wgtfacq_e, shift=3, axis=1) * np.roll(vn, shift=3, axis=1)
-        )
+        )[:, -1]
         return dict(vn_ie=vn_ie)
 
     @pytest.fixture

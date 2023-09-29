@@ -58,4 +58,6 @@ jobs:
             - name: Run checks icon4py-model-atmosphere-diffusion
               run: |
                   pre-commit run --config model/atmosphere/diffusion/.pre-commit-config.yaml --all-files
-
+            - name: Run checks icon4py-model-atmosphere-advection
+              run: |
+                  pre-commit run --config model/atmosphere/advection/.pre-commit-config.yaml --all-files

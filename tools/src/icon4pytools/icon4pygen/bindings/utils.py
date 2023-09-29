@@ -48,7 +48,7 @@ def format_fortran_code(source: str) -> str:
 
     if fprettify_path is None:
         bin_path = Path(PYTHON_PATH).parent
-        fprettify_path = bin_path / "fprettify"
+        fprettify_path = str(bin_path / "fprettify")
     args = [str(fprettify_path)]
     p1 = subprocess.Popen(args, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     return p1.communicate(source.encode("UTF-8"))[0].decode("UTF-8").rstrip()
