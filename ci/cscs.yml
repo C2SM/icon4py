@@ -36,7 +36,13 @@ test_model_job:
   extends: .test_template
   stage: test_model
   script:   # TODO: once gtfn backends work parametrise with backend
-    - tox -r -e py${pyversion_no_dot} -c model/ --verbose
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
+
+benchmark_model_job:
+  extends: .test_template
+  stage: test_model
+  script:   # TODO: once gtfn backends work parametrise with backend
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only
 
 test_tools_job:
   extends: .test_template

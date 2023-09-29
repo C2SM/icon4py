@@ -172,4 +172,4 @@ class StencilTest:
         # inheritance.
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
-        setattr(cls, f"test_bench_{cls.__name__}", _test_execution_benchmark)
+        setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
