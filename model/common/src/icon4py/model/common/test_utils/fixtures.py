@@ -36,8 +36,8 @@ data_uris = {
 ser_data_basepath = base_path.joinpath("ser_icondata")
 
 
-@pytest.fixture(scope="session")
-def processor_props():
+@pytest.fixture(params=[False], scope="session")
+def processor_props(request):
     return get_processor_properties(SingleNodeRun())
 
 

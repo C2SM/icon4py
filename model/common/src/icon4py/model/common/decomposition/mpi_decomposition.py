@@ -21,11 +21,13 @@ from typing import TYPE_CHECKING, Union
 import numpy as np
 from gt4py.next import Dimension
 
+from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 
 try:
     import ghex
     import ghex.unstructured as unstructured
     import mpi4py
+
     mpi4py.rc.initialize = False
 except ImportError:
     mpi4py = None
@@ -34,8 +36,6 @@ except ImportError:
 
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
-
-
 
 
 if TYPE_CHECKING:
@@ -219,5 +219,7 @@ class MultiNodeResult:
 def create_multinode_node_exchange(
     props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
 ) -> definitions.ExchangeRuntime:
-    assert props.comm_size > 1
-    return GHexMultiNodeExchange(props, decomp_info)
+    if props.comm_size > 1:
+        return GHexMultiNodeExchange(props, decomp_info)
+    else:
+        return SingleNodeExchange()

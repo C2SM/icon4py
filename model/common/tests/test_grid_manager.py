@@ -29,16 +29,17 @@ except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.grid.grid_manager import (
+    GridFile,
+    GridFileName,
+    GridManager,
+    IndexTransformation,
+    ToGt4PyTransformation,
+)
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import VerticalGridSize
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
-from icon4py.model.common.grid.grid_manager import (
-    GridFile,
-    IndexTransformation,
-    GridManager,
-    ToGt4PyTransformation,
-    GridFileName,
-)
+
 
 SIMPLE_MESH_NC = "simple_mesh_grid.nc"
 
@@ -207,7 +208,6 @@ def _add_to_dataset(
     var[:] = np.transpose(data)[:]
 
 
-
 @pytest.mark.with_netcdf
 def test_gridparser_dimension(simple_mesh_gridfile):
     data = netCDF4.Dataset(simple_mesh_gridfile, "r")
@@ -226,9 +226,7 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfil
 
     assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(CellDim)
     assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(EdgeDim)
-    assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(
-        VertexDim
-    )
+    assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(VertexDim)
 
 
 @pytest.mark.with_netcdf
@@ -419,9 +417,7 @@ def init_grid_manager(fname):
 @pytest.mark.with_netcdf
 def test_grid_manager_getsize(simple_mesh_gridfile, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
-    gm = GridManager(
-        IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80)
-    )
+    gm = GridManager(IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80))
     gm()
     assert size == gm.get_size(dim)
 
