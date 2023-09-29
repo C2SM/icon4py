@@ -17,13 +17,15 @@ import functools
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Union
+
 import numpy as np
 from gt4py.next import Dimension
 
+
 try:
-    import mpi4py
     import ghex
     import ghex.unstructured as unstructured
+    import mpi4py
 except ImportError:
     mpi4py = None
     ghex = None
@@ -33,10 +35,11 @@ from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
 
 
+mpi4py.rc.initialize = False
+
 if TYPE_CHECKING:
     import mpi4py.MPI
 
-mpi4py.rc.initialize = False
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -56,7 +59,6 @@ def finalize_mpi():
     if not MPI.Is_finalized():
         log.info("finalizing MPI")
         MPI.Finalize()
-
 
 
 def _get_processor_properties(with_mpi=False, comm_id: CommId = None):
@@ -93,6 +95,7 @@ class ParallelLogger(logging.Filter):
 def get_multinode_properties(s: definitions.MultiNodeRun) -> definitions.ProcessProperties:
     return _get_processor_properties(with_mpi=True)
 
+
 @dataclass(frozen=True)
 class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
@@ -128,9 +131,7 @@ class GHexMultiNodeExchange:
             ),
             EdgeDim: self._create_domain_descriptor(EdgeDim),
         }
-        log.info(
-            f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized"
-        )
+        log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
 
         self._patterns = {
             CellDim: self._create_pattern(CellDim),
@@ -191,17 +192,12 @@ class GHexMultiNodeExchange:
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
-        assert (
-            domain_descriptor is not None
-        ), f"domain descriptor for {dim.value} not found"
+        assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(unstructured.field_descriptor(domain_descriptor, np.asarray(f)))
-            for f in fields
+            pattern(unstructured.field_descriptor(domain_descriptor, np.asarray(f))) for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
-        log.info(
-            f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated."
-        )
+        log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
 

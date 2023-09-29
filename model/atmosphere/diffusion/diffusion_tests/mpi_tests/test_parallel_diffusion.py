@@ -14,13 +14,16 @@
 
 import pytest
 
-
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams  # noqa: E402
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim  # noqa: E402
-from icon4py.model.common.grid.vertical import VerticalModelParams  # noqa: E402
-from icon4py.model.common.test_utils.parallel_helpers import check_comm_size, processor_props  # noqa: E402
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.common.decomposition import definitions
-from ..utils import verify_diffusion_fields  # noqa: E402
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
+    check_comm_size,
+    processor_props,
+)
+
+from ..utils import verify_diffusion_fields
 
 
 @pytest.mark.mpi
@@ -32,7 +35,7 @@ def test_parallel_diffusion(
     step_date_init,
     linit,
     ndyn_substeps,
-    processor_props,
+    processor_props,  # noqa: F811  # fixture
     decomposition_info,
     icon_grid,
     diffusion_savepoint_init,
