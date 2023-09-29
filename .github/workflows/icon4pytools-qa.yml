@@ -11,20 +11,12 @@ on:
             - ".github/workflows/icon4pytools*"
     pull_request:
         branches:
-            - '*'
-        paths:
-            - "tools/**"
-            - "base-requirements*"
-            - ".github/workflows/icon4pytools*"
-        types: [opened, reopened, synchronize]
-    pull_request_review:
-        branches:
             - main
         paths:
             - "tools/**"
             - "base-requirements*"
             - ".github/workflows/icon4pytools*"
-        types: [submitted]
+        types: [opened, reopened, synchronize]
 
 jobs:
     pre-commit-icon4pytools:
