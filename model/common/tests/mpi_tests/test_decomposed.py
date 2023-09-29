@@ -14,15 +14,21 @@
 import numpy as np
 import pytest
 
+
+try:
+    import mpi4py  # noqa: F401 # test for optional dependency
+except ImportError:
+    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
 from icon4py.model.common.decomposition.definitions import (
     DecompositionInfo,
     DomainDescriptorIdGenerator,
-    SingleNode,
+    SingleNodeExchange,
     create_exchange,
 )
-from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNode
+from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
+from icon4py.model.common.test_utils.parallel_helpers import check_comm_size, processor_props
 
 
 """
@@ -51,6 +57,7 @@ def test_props(processor_props):
         (VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
+@pytest.mark.datatest
 def test_decomposition_info_masked(
     dim,
     owned,
@@ -95,6 +102,7 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
         (VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
+@pytest.mark.datatest
 @pytest.mark.mpi(min_size=2)
 def test_decomposition_info_local_index(
     dim,
@@ -149,6 +157,7 @@ def test_domain_descriptor_id_are_globally_unique(num, processor_props):
 
 
 @pytest.mark.mpi
+@pytest.mark.datatest
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
     caplog,
@@ -182,9 +191,9 @@ def test_create_multi_node_runtime_with_mpi(
     props = processor_props
     exchange = create_exchange(props, decomposition_info)
     if props.comm_size > 1:
-        assert isinstance(exchange, GHexMultiNode)
+        assert isinstance(exchange, GHexMultiNodeExchange)
     else:
-        assert isinstance(exchange, SingleNode)
+        assert isinstance(exchange, SingleNodeExchange)
 
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
@@ -192,4 +201,4 @@ def test_create_single_node_runtime_without_mpi(processor_props, decomposition_i
     props = processor_props
     exchange = create_exchange(props, decomposition_info)
 
-    assert isinstance(exchange, SingleNode)
+    assert isinstance(exchange, SingleNodeExchange)

@@ -19,24 +19,26 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
+
 if typing.TYPE_CHECKING:
     import netCDF4
 
 try:
-    import netCDF4    
+    import netCDF4
 except ImportError:
-    netCDF4 = None
+    pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim  # noqa: E402
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex  # noqa: E402
-from icon4py.model.common.grid.icon_grid import VerticalGridSize  # noqa: E402
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh  # noqa: E402
-
-try:
-    import icon4py.model.common.grid.grid_manager as gm
-except ImportError:
-    gm = None
-
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.grid.icon_grid import VerticalGridSize
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.grid_manager import (
+    GridFile,
+    IndexTransformation,
+    GridManager,
+    ToGt4PyTransformation,
+    GridFileName,
+)
 
 SIMPLE_MESH_NC = "simple_mesh_grid.nc"
 
@@ -46,149 +48,149 @@ def simple_mesh_gridfile(tmp_path):
     path = tmp_path.joinpath(SIMPLE_MESH_NC).absolute()
     mesh = SimpleMesh()
     dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
-    dataset.setncattr(gm.GridFile.PropertyName.GRID_ID, str(uuid4()))
-    dataset.createDimension(gm.GridFile.DimensionName.VERTEX_NAME, size=mesh.n_vertices)
+    dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
+    dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=mesh.n_vertices)
 
-    dataset.createDimension(gm.GridFile.DimensionName.EDGE_NAME, size=mesh.n_edges)
-    dataset.createDimension(gm.GridFile.DimensionName.CELL_NAME, size=mesh.n_cells)
-    dataset.createDimension(gm.GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=mesh.n_e2v)
-    dataset.createDimension(gm.GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=mesh.n_e2c2e)
-    dataset.createDimension(gm.GridFile.DimensionName.MAX_CHILD_DOMAINS, size=1)
+    dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=mesh.n_edges)
+    dataset.createDimension(GridFile.DimensionName.CELL_NAME, size=mesh.n_cells)
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=mesh.n_e2v)
+    dataset.createDimension(GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=mesh.n_e2c2e)
+    dataset.createDimension(GridFile.DimensionName.MAX_CHILD_DOMAINS, size=1)
     # add dummy values for the grf dimensions
-    dataset.createDimension(gm.GridFile.DimensionName.CELL_GRF, size=14)
-    dataset.createDimension(gm.GridFile.DimensionName.EDGE_GRF, size=24)
-    dataset.createDimension(gm.GridFile.DimensionName.VERTEX_GRF, size=13)
+    dataset.createDimension(GridFile.DimensionName.CELL_GRF, size=14)
+    dataset.createDimension(GridFile.DimensionName.EDGE_GRF, size=24)
+    dataset.createDimension(GridFile.DimensionName.VERTEX_GRF, size=13)
     _add_to_dataset(
         dataset,
         np.zeros(mesh.n_edges),
-        gm.GridFile.GridRefinementName.CONTROL_EDGES,
-        (gm.GridFile.DimensionName.EDGE_NAME,),
+        GridFile.GridRefinementName.CONTROL_EDGES,
+        (GridFile.DimensionName.EDGE_NAME,),
     )
 
     _add_to_dataset(
         dataset,
         np.zeros(mesh.n_cells),
-        gm.GridFile.GridRefinementName.CONTROL_CELLS,
-        (gm.GridFile.DimensionName.CELL_NAME,),
+        GridFile.GridRefinementName.CONTROL_CELLS,
+        (GridFile.DimensionName.CELL_NAME,),
     )
     _add_to_dataset(
         dataset,
         np.zeros(mesh.n_vertices),
-        gm.GridFile.GridRefinementName.CONTROL_VERTICES,
-        (gm.GridFile.DimensionName.VERTEX_NAME,),
+        GridFile.GridRefinementName.CONTROL_VERTICES,
+        (GridFile.DimensionName.VERTEX_NAME,),
     )
 
-    dataset.createDimension(gm.GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=mesh.n_c2e)
-    dataset.createDimension(gm.GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=mesh.n_v2c)
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=mesh.n_c2e)
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=mesh.n_v2c)
 
     _add_to_dataset(
         dataset,
         mesh.c2e,
-        gm.GridFile.OffsetName.C2E,
+        GridFile.OffsetName.C2E,
         (
-            gm.GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
-            gm.GridFile.DimensionName.CELL_NAME,
+            GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
+            GridFile.DimensionName.CELL_NAME,
         ),
     )
 
     _add_to_dataset(
         dataset,
         mesh.e2c,
-        gm.GridFile.OffsetName.E2C,
+        GridFile.OffsetName.E2C,
         (
-            gm.GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
-            gm.GridFile.DimensionName.EDGE_NAME,
+            GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
+            GridFile.DimensionName.EDGE_NAME,
         ),
     )
     _add_to_dataset(
         dataset,
         mesh.e2v,
-        gm.GridFile.OffsetName.E2V,
+        GridFile.OffsetName.E2V,
         (
-            gm.GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
-            gm.GridFile.DimensionName.EDGE_NAME,
+            GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
+            GridFile.DimensionName.EDGE_NAME,
         ),
     )
 
     _add_to_dataset(
         dataset,
         mesh.v2c,
-        gm.GridFile.OffsetName.V2C,
+        GridFile.OffsetName.V2C,
         (
-            gm.GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
-            gm.GridFile.DimensionName.VERTEX_NAME,
+            GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
+            GridFile.DimensionName.VERTEX_NAME,
         ),
     )
 
     _add_to_dataset(
         dataset,
         mesh.c2v,
-        gm.GridFile.OffsetName.C2V,
+        GridFile.OffsetName.C2V,
         (
-            gm.GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
-            gm.GridFile.DimensionName.CELL_NAME,
+            GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
+            GridFile.DimensionName.CELL_NAME,
         ),
     )
     _add_to_dataset(
         dataset,
         np.zeros((mesh.n_vertices, 4), dtype=np.int32),
-        gm.GridFile.OffsetName.V2E2V,
-        (gm.GridFile.DimensionName.DIAMOND_EDGE_SIZE, gm.GridFile.DimensionName.VERTEX_NAME),
+        GridFile.OffsetName.V2E2V,
+        (GridFile.DimensionName.DIAMOND_EDGE_SIZE, GridFile.DimensionName.VERTEX_NAME),
     )
     _add_to_dataset(
         dataset,
         mesh.v2e,
-        gm.GridFile.OffsetName.V2E,
+        GridFile.OffsetName.V2E,
         (
-            gm.GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
-            gm.GridFile.DimensionName.VERTEX_NAME,
+            GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
+            GridFile.DimensionName.VERTEX_NAME,
         ),
     )
     _add_to_dataset(
         dataset,
         mesh.c2e2c,
-        gm.GridFile.OffsetName.C2E2C,
+        GridFile.OffsetName.C2E2C,
         (
-            gm.GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
-            gm.GridFile.DimensionName.CELL_NAME,
+            GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
+            GridFile.DimensionName.CELL_NAME,
         ),
     )
 
     _add_to_dataset(
         dataset,
         np.ones((1, 24), dtype=np.int32),
-        gm.GridFile.GridRefinementName.START_INDEX_EDGES,
-        (gm.GridFile.DimensionName.MAX_CHILD_DOMAINS, gm.GridFile.DimensionName.EDGE_GRF),
+        GridFile.GridRefinementName.START_INDEX_EDGES,
+        (GridFile.DimensionName.MAX_CHILD_DOMAINS, GridFile.DimensionName.EDGE_GRF),
     )
     _add_to_dataset(
         dataset,
         np.ones((1, 14), dtype=np.int32),
-        gm.GridFile.GridRefinementName.START_INDEX_CELLS,
-        (gm.GridFile.DimensionName.MAX_CHILD_DOMAINS, gm.GridFile.DimensionName.CELL_GRF),
+        GridFile.GridRefinementName.START_INDEX_CELLS,
+        (GridFile.DimensionName.MAX_CHILD_DOMAINS, GridFile.DimensionName.CELL_GRF),
     )
     _add_to_dataset(
         dataset,
         np.ones((1, 13), dtype=np.int32),
-        gm.GridFile.GridRefinementName.START_INDEX_VERTICES,
-        (gm.GridFile.DimensionName.MAX_CHILD_DOMAINS, gm.GridFile.DimensionName.VERTEX_GRF),
+        GridFile.GridRefinementName.START_INDEX_VERTICES,
+        (GridFile.DimensionName.MAX_CHILD_DOMAINS, GridFile.DimensionName.VERTEX_GRF),
     )
     _add_to_dataset(
         dataset,
         np.ones((1, 24), dtype=np.int32),
-        gm.GridFile.GridRefinementName.END_INDEX_EDGES,
-        (gm.GridFile.DimensionName.MAX_CHILD_DOMAINS, gm.GridFile.DimensionName.EDGE_GRF),
+        GridFile.GridRefinementName.END_INDEX_EDGES,
+        (GridFile.DimensionName.MAX_CHILD_DOMAINS, GridFile.DimensionName.EDGE_GRF),
     )
     _add_to_dataset(
         dataset,
         np.ones((1, 14), dtype=np.int32),
-        gm.GridFile.GridRefinementName.END_INDEX_CELLS,
-        (gm.GridFile.DimensionName.MAX_CHILD_DOMAINS, gm.GridFile.DimensionName.CELL_GRF),
+        GridFile.GridRefinementName.END_INDEX_CELLS,
+        (GridFile.DimensionName.MAX_CHILD_DOMAINS, GridFile.DimensionName.CELL_GRF),
     )
     _add_to_dataset(
         dataset,
         np.ones((1, 13), dtype=np.int32),
-        gm.GridFile.GridRefinementName.END_INDEX_VERTICES,
-        (gm.GridFile.DimensionName.MAX_CHILD_DOMAINS, gm.GridFile.DimensionName.VERTEX_GRF),
+        GridFile.GridRefinementName.END_INDEX_VERTICES,
+        (GridFile.DimensionName.MAX_CHILD_DOMAINS, GridFile.DimensionName.VERTEX_GRF),
     )
     dataset.close()
     yield path
@@ -199,32 +201,34 @@ def _add_to_dataset(
     dataset: netCDF4.Dataset,
     data: np.ndarray,
     var_name: str,
-    dims: tuple[gm.GridFileName, gm.GridFileName],
+    dims: tuple[GridFileName, GridFileName],
 ):
     var = dataset.createVariable(var_name, np.int32, dims)
     var[:] = np.transpose(data)[:]
 
 
-@pytest.mark.datatest
+
 @pytest.mark.with_netcdf
 def test_gridparser_dimension(simple_mesh_gridfile):
     data = netCDF4.Dataset(simple_mesh_gridfile, "r")
-    grid_parser = gm.GridFile(data)
+    grid_parser = GridFile(data)
     mesh = SimpleMesh()
-    assert grid_parser.dimension(gm.GridFile.DimensionName.CELL_NAME) == mesh.n_cells
-    assert grid_parser.dimension(gm.GridFile.DimensionName.VERTEX_NAME) == mesh.n_vertices
-    assert grid_parser.dimension(gm.GridFile.DimensionName.EDGE_NAME) == mesh.n_edges
+    assert grid_parser.dimension(GridFile.DimensionName.CELL_NAME) == mesh.n_cells
+    assert grid_parser.dimension(GridFile.DimensionName.VERTEX_NAME) == mesh.n_vertices
+    assert grid_parser.dimension(GridFile.DimensionName.EDGE_NAME) == mesh.n_edges
 
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfile):
     data = netCDF4.Dataset(r04b09_dsl_gridfile, "r")
-    grid_file = gm.GridFile(data)
+    grid_file = GridFile(data)
 
-    assert grid_file.dimension(gm.GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(CellDim)
-    assert grid_file.dimension(gm.GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(EdgeDim)
-    assert grid_file.dimension(gm.GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(VertexDim)
+    assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(CellDim)
+    assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(EdgeDim)
+    assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(
+        VertexDim
+    )
 
 
 @pytest.mark.with_netcdf
@@ -232,12 +236,12 @@ def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
     caplog.set_level(logging.DEBUG)
     data = netCDF4.Dataset(simple_mesh_gridfile, "r")
     mesh = SimpleMesh()
-    grid_parser = gm.GridFile(data)
+    grid_parser = GridFile(data)
 
-    assert np.allclose(grid_parser.int_field(gm.GridFile.OffsetName.C2E), mesh.c2e)
-    assert np.allclose(grid_parser.int_field(gm.GridFile.OffsetName.E2C), mesh.e2c)
-    assert np.allclose(grid_parser.int_field(gm.GridFile.OffsetName.V2E), mesh.v2e)
-    assert np.allclose(grid_parser.int_field(gm.GridFile.OffsetName.V2C), mesh.v2c)
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.C2E), mesh.c2e)
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.E2C), mesh.e2c)
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2E), mesh.v2e)
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2C), mesh.v2c)
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -293,16 +297,16 @@ def reset_invalid_index(index_array: np.ndarray):
     it is up to the user then to ensure that any coefficients in neighbor some multiplied with
     these values are zero in order to "remove" them again from the sum.
 
-    For testing we resubstitute those to the gm.GridFile.INVALID_INDEX
+    For testing we resubstitute those to the GridFile.INVALID_INDEX
     Args:
         index_array: the array where values the invalid values have to be reset
 
-    Returns: an array where the spurious "last valid index" are replaced by gm.GridFile.INVALID_INDEX
+    Returns: an array where the spurious "last valid index" are replaced by GridFile.INVALID_INDEX
 
     """
     for i in range(0, index_array.shape[0]):
         uq, index = np.unique(index_array[i, :], return_index=True)
-        index_array[i, max(index) + 1 :] = gm.GridFile.INVALID_INDEX
+        index_array[i, max(index) + 1 :] = GridFile.INVALID_INDEX
 
 
 # e2v: exists in serial, simple, grid
@@ -321,7 +325,7 @@ def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 
 def has_invalid_index(ar: np.ndarray):
-    return np.any(np.where(ar == gm.GridFile.INVALID_INDEX))
+    return np.any(np.where(ar == GridFile.INVALID_INDEX))
 
 
 # e2c : exists in serial, simple, grid
@@ -406,16 +410,18 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 
 def init_grid_manager(fname):
-    gm = gm.GridManager(gm.ToGt4PyTransformation(), fname, VerticalGridSize(65))
-    gm()
-    return gm
+    grid_manager = GridManager(ToGt4PyTransformation(), fname, VerticalGridSize(65))
+    grid_manager()
+    return grid_manager
 
 
 @pytest.mark.parametrize("dim, size", [(CellDim, 18), (EdgeDim, 27), (VertexDim, 9)])
 @pytest.mark.with_netcdf
 def test_grid_manager_getsize(simple_mesh_gridfile, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
-    gm = gm.GridManager(gm.IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80))
+    gm = GridManager(
+        IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80)
+    )
     gm()
     assert size == gm.get_size(dim)
 
@@ -423,8 +429,8 @@ def test_grid_manager_getsize(simple_mesh_gridfile, dim, size, caplog):
 @pytest.mark.with_netcdf
 def test_grid_manager_diamond_offset(simple_mesh_gridfile):
     mesh = SimpleMesh()
-    gm = gm.GridManager(
-        gm.IndexTransformation(),
+    gm = GridManager(
+        IndexTransformation(),
         simple_mesh_gridfile,
         VerticalGridSize(num_lev=mesh.k_level),
     )
@@ -439,7 +445,7 @@ def test_grid_manager_diamond_offset(simple_mesh_gridfile):
 def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(SystemExit) as error:
-        gm = gm.GridManager(gm.IndexTransformation(), fname, VerticalGridSize(num_lev=80))
+        gm = GridManager(IndexTransformation(), fname, VerticalGridSize(num_lev=80))
         gm()
         assert error.type == SystemExit
         assert error.value == 1
@@ -448,7 +454,7 @@ def test_gridmanager_given_file_not_found_then_abort():
 @pytest.mark.parametrize("size", [100, 1500, 20000])
 @pytest.mark.with_netcdf
 def test_gt4py_transform_offset_by_1_where_valid(size):
-    trafo = gm.ToGt4PyTransformation()
+    trafo = ToGt4PyTransformation()
     input_field = np.random.randint(-1, size, (size,))
     offset = trafo.get_offset_for_index_field(input_field)
     expected = np.where(input_field >= 0, -1, 0)
