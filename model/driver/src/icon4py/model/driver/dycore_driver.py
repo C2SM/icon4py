@@ -27,12 +27,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     PrognosticState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
-
 from icon4py.model.common.decomposition.definitions import (
-    create_exchange,
     ProcessProperties,
+    create_exchange,
     get_processor_properties,
-    get_runtype
+    get_runtype,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils import serialbox_utils as sb
