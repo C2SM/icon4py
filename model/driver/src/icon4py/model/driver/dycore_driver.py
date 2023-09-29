@@ -27,10 +27,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     PrognosticState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
-from icon4py.model.common.decomposition.decomposed import create_exchange
-from icon4py.model.common.decomposition.mpi_decomposition import (
+
+from icon4py.model.common.decomposition.definitions import (
+    create_exchange,
     ProcessProperties,
     get_processor_properties,
+    get_runtype
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils import serialbox_utils as sb
@@ -276,7 +278,7 @@ def main(input_path, run_path, n_steps, mpi):
 
     """
     start_time = datetime.now().astimezone(pytz.UTC)
-    parallel_props = get_processor_properties(with_mpi=mpi)
+    parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
     configure_logging(run_path, start_time, parallel_props)
     log.info(f"Starting ICON dycore run: {datetime.isoformat(start_time)}")
     log.info(f"input args: input_path={input_path}, n_time_steps={n_steps}")

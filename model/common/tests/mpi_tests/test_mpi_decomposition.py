@@ -185,7 +185,7 @@ def test_decomposition_info_matches_gridsize(
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_create_multi_node_runtime_with_mpi(
     download_ser_data, decomposition_info, processor_props
-):  # F811
+):
     props = processor_props
     exchange = create_exchange(props, decomposition_info)
     if props.comm_size > 1:
