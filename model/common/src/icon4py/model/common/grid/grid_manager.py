@@ -23,6 +23,7 @@ from netCDF4 import Dataset
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
+    E2C2EDim,
     C2EDim,
     C2VDim,
     CellDim,
@@ -95,6 +96,8 @@ class GridFile:
 
         #: name of C2E connectivity in grid file: dims(nv=3, cell)
         C2E = "edge_of_cell"
+
+        E2C2E = "edge_to_cell_to_edge"
 
     class DimensionName(GridFileName):
         """Dimension values (sizes) used in grid file."""
@@ -359,6 +362,7 @@ class GridManager:
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
         v2e2v = self._get_index_field(reader, GridFile.OffsetName.V2E2V)
         c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C)
+        e2c2e = self._get_index_field(reader, GridFile.OffsetName.E2C2E)
         c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
         (
             start_indices,
@@ -378,6 +382,7 @@ class GridManager:
                 {
                     C2EDim: c2e,
                     E2CDim: e2c,
+                    E2C2EDim: e2c2e,
                     E2VDim: e2v,
                     V2EDim: v2e,
                     V2CDim: v2c,

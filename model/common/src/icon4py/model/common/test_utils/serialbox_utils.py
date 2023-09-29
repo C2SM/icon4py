@@ -218,6 +218,9 @@ class IconGridSavePoint(IconSavepoint):
     def c2e2c(self):
         return self._get_connectivity_array("c2e2c", CellDim)
 
+    def e2c2e(self):
+        return self._get_connectivity_array("e2c2e", EdgeDim)
+
     def e2c(self):
         return self._get_connectivity_array("e2c", EdgeDim)
 
@@ -312,6 +315,7 @@ class IconGridSavePoint(IconSavepoint):
             vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
         )
         c2e2c = self.c2e2c()
+        e2c2e = self.e2c2e()
         c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
         grid = (
             IconGrid()
@@ -325,6 +329,7 @@ class IconGridSavePoint(IconSavepoint):
                     E2CDim: self.e2c(),
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
+                    E2C2EDim: e2c2e
                 }
             )
             .with_connectivities(
