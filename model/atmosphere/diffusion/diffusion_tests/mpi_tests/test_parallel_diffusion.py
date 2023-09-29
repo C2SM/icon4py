@@ -18,7 +18,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams  # noqa: E402
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim  # noqa: E402
 from icon4py.model.common.grid.vertical import VerticalModelParams  # noqa: E402
-from icon4py.model.common.test_utils.parallel_helpers import check_comm_size  # noqa: E402
+from icon4py.model.common.test_utils.parallel_helpers import check_comm_size, processor_props  # noqa: E402
 from icon4py.model.common.decomposition import definitions
 from ..utils import verify_diffusion_fields  # noqa: E402
 

@@ -14,6 +14,7 @@
 import pytest
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
+from icon4py.model.common.test_utils.pytest_config import pytest_configure, pytest_addoption, pytest_runtest_setup
 from icon4py.model.common.test_utils.fixtures import (  # noqa: F401  # import fixtures from test_utils package
     backend,
     damping_height,

@@ -145,7 +145,7 @@ class ExchangeRuntime(Protocol):
 
 
 @dataclass
-class SingleNode:
+class SingleNodeExchange:
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
 
@@ -163,6 +163,45 @@ class SingleNodeResult:
     def is_ready(self) -> bool:
         return True
 
+class RunType:
+    """Base type for marker types used to initialize the parallel or single node properites"""
+    pass
+
+class MultiNodeRun(RunType):
+    """
+    Mark mulinode run.
+
+    Dummy marker type used to initialize a multinode run and initialize
+    construction multinode ProcessProperties.
+    """
+    pass
+class SingleNodeRun(RunType):
+    """
+        Mark single node run.
+
+        Dummy marker type used to initialize a single node run and initialize
+        construction SingleNodeProcessProperties.
+        """
+    pass
+
+def get_runtype(with_mpi=False)->RunType:
+    if with_mpi:
+        return MultiNodeRun()
+    else:
+        return SingleNodeRun()
+
+
+
+@functools.singledispatch
+def get_processor_properties(runtime)-> ProcessProperties:
+    raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
+
+@get_processor_properties.register(SingleNodeRun)
+def get_single_node_properties(s:SingleNodeRun) -> ProcessProperties:
+    return SingleNodeProcessProperties()
+
+
+
 
 @functools.singledispatch
 def create_exchange(props: ProcessProperties, decomp_info: DecompositionInfo) -> ExchangeRuntime:
@@ -178,4 +217,4 @@ def create_exchange(props: ProcessProperties, decomp_info: DecompositionInfo) ->
 def create_single_node_exchange(
     props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
 ) -> ExchangeRuntime:
-    return SingleNode()
+    return SingleNodeExchange()

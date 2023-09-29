@@ -17,15 +17,15 @@ import functools
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Union
-
-import mpi4py
 import numpy as np
 from gt4py.next import Dimension
 
 try:
+    import mpi4py
     import ghex
     import ghex.unstructured as unstructured
 except ImportError:
+    mpi4py = None
     ghex = None
     unstructured = None
 
@@ -58,7 +58,8 @@ def finalize_mpi():
         MPI.Finalize()
 
 
-def get_processor_properties(with_mpi=False, comm_id: CommId = None):
+
+def _get_processor_properties(with_mpi=False, comm_id: CommId = None):
     def _get_current_comm_or_comm_world(comm_id: CommId) -> mpi4py.MPI.Comm:
         if isinstance(comm_id, int):
             comm = mpi4py.MPI.Comm.f2py(comm_id)
@@ -72,8 +73,6 @@ def get_processor_properties(with_mpi=False, comm_id: CommId = None):
         init_mpi()
         current_comm = _get_current_comm_or_comm_world(comm_id)
         return MPICommProcessProperties(current_comm)
-    else:
-        return definitions.SingleNodeProcessProperties()
 
 
 class ParallelLogger(logging.Filter):
@@ -89,6 +88,10 @@ class ParallelLogger(logging.Filter):
         record.rank = self._rank_info
         return True
 
+
+@definitions.get_processor_properties.register(definitions.MultiNodeRun)
+def get_multinode_properties(s: definitions.MultiNodeRun) -> definitions.ProcessProperties:
+    return _get_processor_properties(with_mpi=True)
 
 @dataclass(frozen=True)
 class MPICommProcessProperties(definitions.ProcessProperties):
@@ -107,13 +110,13 @@ class MPICommProcessProperties(definitions.ProcessProperties):
         return self.comm.Get_size()
 
 
-class GHexMultiNode:
+class GHexMultiNodeExchange:
     def __init__(
         self,
         props: definitions.ProcessProperties,
         domain_decomposition: definitions.DecompositionInfo,
     ):
-        self._context = ghex.context(ghex.mpi_comm(props.comm), True)
+        self._context = ghex.context(ghex.mpi_comm(props.comm), False)
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
@@ -216,8 +219,8 @@ class MultiNodeResult:
 
 
 @definitions.create_exchange.register(MPICommProcessProperties)
-def create_single_node_exchange(
+def create_multinode_node_exchange(
     props: MPICommProcessProperties, decomp_info: definitions.DecompositionInfo
 ) -> definitions.ExchangeRuntime:
     assert props.comm_size > 1
-    return GHexMultiNode(props, decomp_info)
+    return GHexMultiNodeExchange(props, decomp_info)

@@ -16,11 +16,10 @@ from pathlib import Path
 import pytest
 from gt4py.next.program_processors.runners.roundtrip import executor
 
-from ..decomposition.mpi_decomposition import get_processor_properties
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 from .simple_mesh import SimpleMesh
-
+from ..decomposition.definitions import get_processor_properties, SingleNodeRun
 
 test_utils = Path(__file__).parent
 model = test_utils.parent.parent
@@ -36,11 +35,10 @@ data_uris = {
 ser_data_basepath = base_path.joinpath("ser_icondata")
 
 
-@pytest.fixture(params=[False], scope="session")
-def processor_props(request):
-    with_mpi = request.param
-    return get_processor_properties(with_mpi=with_mpi)
 
+@pytest.fixture(scope="session")
+def processor_props():
+    return get_processor_properties(SingleNodeRun())
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
