@@ -16,29 +16,175 @@ import pytest
 
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_15_to_18 import (fused_velocity_advection_stencil_15_to_18)
+from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_15_to_18 import (
+    fused_velocity_advection_stencil_15_to_18,
+)
 from icon4py.model.common.dimension import CellDim, EdgeDim, C2EDim, C2E2CODim, KDim
 
-from icon4py.model.common.test_utils.helpers import random_field, random_mask, zero_field, StencilTest
+from icon4py.model.common.test_utils.helpers import (
+    random_field,
+    random_mask,
+    zero_field,
+    StencilTest,
+)
+from .test_mo_velocity_advection_stencil_15 import TestMoVelocityAdvectionStencil15
+from .test_mo_velocity_advection_stencil_16 import (
+    mo_velocity_advection_stencil_16_numpy,
+)
+from .test_mo_velocity_advection_stencil_17 import TestMoVelocityAdvectionStencil17
+from .test_mo_velocity_advection_stencil_18 import TestMoVelocityAdvectionStencil18
 
 
-class TestFusedVelocityAdvectionStencil19To20(StencilTest):
+_mo_velocity_advection_stencil_15 = TestMoVelocityAdvectionStencil15.reference
+_mo_velocity_advection_stencil_16 = mo_velocity_advection_stencil_16_numpy
+_mo_velocity_advection_stencil_17 = TestMoVelocityAdvectionStencil17.reference
+_mo_velocity_advection_stencil_18 = TestMoVelocityAdvectionStencil18.reference
+
+
+class TestFusedVelocityAdvectionStencil15To18(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_15_to_18
-    OUTPUTS = ("z_w_con_c_full", "ddt_w_adv",)
+    OUTPUTS = (
+        "z_w_con_c_full",
+        "ddt_w_adv",
+    )
 
     @staticmethod
-    def reference(
+    def _fused_velocity_advection_stencil_16_to_18(
         mesh,
-        **kwargs,
-    ) -> tuple[np.array]:
-        z_w_con_c_full = 0.
-        ddt_w_adv = 0.
+        z_w_con_c,
+        w,
+        coeff1_dwdz,
+        coeff2_dwdz,
+        ddt_w_adv,
+        e_bln_c_s,
+        z_v_grad_w,
+        levelmask,
+        cfl_clipping,
+        owner_mask,
+        ddqz_z_half,
+        area,
+        geofac_n2s,
+        horz_idx,
+        vert_idx,
+        scalfac_exdiff,
+        cfl_w_limit,
+        dtime,
+        horz_lower_bound,
+        horz_upper_bound,
+        nlev,
+        nrdmax,
+        extra_diffu,
+    ):
+        horz_idx = horz_idx[:, np.newaxis]
+        vert_idx = vert_idx[np.newaxis, :]
+        condition1 = (horz_lower_bound < horz_idx) & (horz_idx < horz_upper_bound) & (vert_idx > 0)
+
+        ddt_w_adv = np.where(
+            condition1,
+            _mo_velocity_advection_stencil_16(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
+            ddt_w_adv,
+        )
+
+        ddt_w_adv = np.where(
+            condition1,
+            _mo_velocity_advection_stencil_17(mesh, e_bln_c_s, z_v_grad_w, ddt_w_adv),
+            ddt_w_adv,
+        )
+
+        condition2 = (
+            (horz_lower_bound < horz_idx) &
+            (horz_idx < horz_upper_bound) &
+            (np.maximum(3, nrdmax - 2) < vert_idx) &
+            (vert_idx < nlev - 4)
+        )
+
+        if extra_diffu:
+            ddt_w_adv = np.where(
+                condition2,
+                _mo_velocity_advection_stencil_18(
+                    mesh,
+                    levelmask,
+                    cfl_clipping,
+                    owner_mask,
+                    z_w_con_c,
+                    ddqz_z_half,
+                    area,
+                    geofac_n2s,
+                    w,
+                    ddt_w_adv,
+                    scalfac_exdiff,
+                    cfl_w_limit,
+                    dtime,
+                ),
+                ddt_w_adv,
+            )
+        return ddt_w_adv
+
+    @classmethod
+    def reference(
+        cls,
+        mesh,
+        z_w_con_c,
+        w,
+        coeff1_dwdz,
+        coeff2_dwdz,
+        ddt_w_adv,
+        e_bln_c_s,
+        z_v_grad_w,
+        levelmask,
+        cfl_clipping,
+        owner_mask,
+        ddqz_z_half,
+        area,
+        geofac_n2s,
+        horz_idx,
+        vert_idx,
+        scalfac_exdiff,
+        cfl_w_limit,
+        dtime,
+        horz_lower_bound,
+        horz_upper_bound,
+        nlev,
+        nrdmax,
+        lvn_only,
+        extra_diffu,
+        **kwargs
+    ) -> dict:
+        z_w_con_c_full = _mo_velocity_advection_stencil_15(mesh, z_w_con_c)
+
+        if not lvn_only:
+            ddt_w_adv = cls._fused_velocity_advection_stencil_16_to_18(
+                mesh,
+                z_w_con_c,
+                w,
+                coeff1_dwdz,
+                coeff2_dwdz,
+                ddt_w_adv,
+                e_bln_c_s,
+                z_v_grad_w,
+                levelmask,
+                cfl_clipping,
+                owner_mask,
+                ddqz_z_half,
+                area,
+                geofac_n2s,
+                horz_idx,
+                vert_idx,
+                scalfac_exdiff,
+                cfl_w_limit,
+                dtime,
+                horz_lower_bound,
+                horz_upper_bound,
+                nlev,
+                nrdmax,
+                extra_diffu,
+            )
+
         return dict(z_w_con_c_full=z_w_con_c_full, ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture
     def input_data(self, mesh):
-
-        z_w_con_c = random_field(mesh, CellDim, KDim, extend={KDim: 1})
+        z_w_con_c = random_field(mesh, CellDim, KDim)
         w = random_field(mesh, CellDim, KDim, extend={KDim: 1})
         coeff1_dwdz = random_field(mesh, CellDim, KDim)
         coeff2_dwdz = random_field(mesh, CellDim, KDim)
@@ -46,7 +192,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         z_v_grad_w = random_field(mesh, EdgeDim, KDim)
         e_bln_c_s = random_field(mesh, CellDim, C2EDim)
 
-        levelmask = random_mask(mesh, KDim, extend={KDim: 1})
+        levelmask = random_mask(mesh, KDim)
         cfl_clipping = random_mask(mesh, CellDim, KDim)
         owner_mask = random_mask(mesh, CellDim)
         ddqz_z_half = random_field(mesh, CellDim, KDim)
@@ -72,8 +218,8 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         nrdmax = 5
         extra_diffu = True
 
-        horz_lower_bound=2
-        horz_upper_bound=4
+        horz_lower_bound = 2
+        horz_upper_bound = 4
 
         lvn_only = False
 
