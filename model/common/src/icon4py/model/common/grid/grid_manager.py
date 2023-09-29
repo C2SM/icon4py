@@ -18,7 +18,13 @@ from uuid import UUID
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
-from netCDF4 import Dataset
+try:
+    from netCDF4 import Dataset
+except ImportError:
+    class Dataset:
+        """Dummy class to make import run when netcdf is not installed."""
+
+
 
 from icon4py.model.common.dimension import (
     C2E2CDim,
