@@ -268,6 +268,12 @@ class IconGridSavePoint(IconSavepoint):
         mask = self._read_field_for_dim(field_name, self._read_bool, dim)
         return np.squeeze(mask)
 
+    def nflatlev(self):
+        return self._read_int32_shift1("nflatlev")[0]
+
+    def nflat_gradp(self):
+        return self._read_int32_shift1("nflat_gradp")[0]
+
     def global_index(self, dim: Dimension):
         field_name = "glb_index"
         return self._read_field_for_dim(field_name, self._read_int32_shift1, dim)
@@ -400,12 +406,6 @@ class InterpolationSavepoint(IconSavepoint):
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
 
-    def e_bln_c_s(self):
-        return self._get_field("e_bln_c_s", CellDim, C2EDim)
-
-    def geofac_div(self):
-        return self._get_field("geofac_div", CellDim, C2EDim)
-
     def geofac_n2s(self):
         return self._get_field("geofac_n2s", CellDim, C2E2CODim)
 
@@ -440,9 +440,6 @@ class InterpolationSavepoint(IconSavepoint):
 
     def rbf_vec_coeff_v2(self):
         return self._get_field("rbf_vec_coeff_v2", VertexDim, V2EDim)
-
-    def nudgecoeff_e(self):
-        return self._get_field("nudgecoeff_e", EdgeDim)
 
     def construct_interpolation_state_for_diffusion(
         self,

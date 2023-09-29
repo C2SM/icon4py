@@ -376,7 +376,7 @@ class SimpleMeshData:
 
 
 class SimpleMesh:
-    _DEFAULT_K_LEVEL = 10
+    _DEFAULT_K_LEVEL = 65
 
     def __init__(self, k_level: int = _DEFAULT_K_LEVEL):
         self.diamond_arr = SimpleMeshData.diamond_table
@@ -421,6 +421,7 @@ class SimpleMesh:
             VertexDim: self.n_vertices,
             V2EDim: self.n_v2e,
             CEDim: self.n_cells * self.n_c2e,
+            ECDim: self.n_edges * self.n_e2c,
             E2C2VDim: self.n_e2c2v,
             ECVDim: self.n_edges * self.n_e2c2v,
         }
