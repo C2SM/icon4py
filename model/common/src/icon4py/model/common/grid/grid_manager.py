@@ -22,8 +22,9 @@ try:
     from netCDF4 import Dataset
 except ImportError:
     class Dataset:
-        """Dummy class to make import run when netcdf is not installed."""
-
+        """Dummy class to make import run when (optional) netcdf dependency is not installed."""
+        def __init__(self, *args, **kwargs):
+            raise ModuleNotFoundError("NetCDF4 is not installed.")
 
 
 from icon4py.model.common.dimension import (
