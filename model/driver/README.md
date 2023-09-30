@@ -21,7 +21,16 @@ export ICON4PY_ROOT=<path to the icon4py clone>
 dycore_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data --n_steps=2 --run_path=/home/magdalena/temp/icon
 ```
 
-or if running in parallel
+The driver cod runs in parallel, in order to do this you need to install the optional communication libraries
+with
+
+```bash
+cd ICON4PY_ROOT
+pip install -r requirements-dev-opt.txt
+
+```
+
+then run
 
 ```bash
 mpirun -np 2 dycore_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask2/mch_ch_r04b09_dsl/ser_data --mpi=True --n_steps=2 --run_path=/home/magdalena/temp/icon
