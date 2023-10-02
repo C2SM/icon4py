@@ -19,7 +19,7 @@ from icon4py.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
 @field_operator
 def _mo_velocity_advection_stencil_18(
-    levelmask: Field[[KDim], bool],
+    levmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: Field[[CellDim], bool],
     z_w_con_c: Field[[CellDim, KDim], float],
@@ -33,7 +33,7 @@ def _mo_velocity_advection_stencil_18(
     dtime: float,
 ) -> Field[[CellDim, KDim], float]:
     difcoef = where(
-        levelmask & cfl_clipping & owner_mask,
+        levmask & cfl_clipping & owner_mask,
         scalfac_exdiff
         * minimum(
             0.85 - cfl_w_limit * dtime,
@@ -43,7 +43,7 @@ def _mo_velocity_advection_stencil_18(
     )
 
     ddt_w_adv = where(
-        levelmask & cfl_clipping & owner_mask,
+        levmask & cfl_clipping & owner_mask,
         ddt_w_adv
         + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
         ddt_w_adv,
@@ -54,7 +54,7 @@ def _mo_velocity_advection_stencil_18(
 
 @program
 def mo_velocity_advection_stencil_18(
-    levelmask: Field[[KDim], bool],
+    levmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: Field[[CellDim], bool],
     z_w_con_c: Field[[CellDim, KDim], float],
@@ -68,7 +68,7 @@ def mo_velocity_advection_stencil_18(
     dtime: float,
 ):
     _mo_velocity_advection_stencil_18(
-        levelmask,
+        levmask,
         cfl_clipping,
         owner_mask,
         z_w_con_c,
