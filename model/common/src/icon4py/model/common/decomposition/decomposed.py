@@ -56,9 +56,7 @@ class DecompositionInfo:
         HALO = 2
 
     @builder
-    def with_dimension(
-        self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray
-    ):
+    def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
         masked_global_index = ma.array(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index
 
@@ -130,9 +128,7 @@ class ExchangeRuntime(Protocol):
         return True
 
 
-def create_exchange(
-    props: ProcessProperties, decomp_info: DecompositionInfo
-) -> ExchangeRuntime:
+def create_exchange(props: ProcessProperties, decomp_info: DecompositionInfo) -> ExchangeRuntime:
     """
     Create an Exchange depending on the runtime size.
 
@@ -165,9 +161,7 @@ class SingleNodeResult:
 
 
 class GHexMultiNode:
-    def __init__(
-        self, props: ProcessProperties, domain_decomposition: DecompositionInfo
-    ):
+    def __init__(self, props: ProcessProperties, domain_decomposition: DecompositionInfo):
         self._context = ghex.context(ghex.mpi_comm(props.comm), True)
         self._domain_id_gen = DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
@@ -180,9 +174,7 @@ class GHexMultiNode:
             ),
             EdgeDim: self._create_domain_descriptor(EdgeDim),
         }
-        log.info(
-            f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized"
-        )
+        log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
 
         self._patterns = {
             CellDim: self._create_pattern(CellDim),
@@ -203,12 +195,8 @@ class GHexMultiNode:
         return self._context.rank()
 
     def _create_domain_descriptor(self, dim: Dimension):
-        all_global = self._decomposition_info.global_index(
-            dim, DecompositionInfo.EntryType.ALL
-        )
-        local_halo = self._decomposition_info.local_index(
-            dim, DecompositionInfo.EntryType.HALO
-        )
+        all_global = self._decomposition_info.global_index(dim, DecompositionInfo.EntryType.ALL)
+        local_halo = self._decomposition_info.local_index(dim, DecompositionInfo.EntryType.HALO)
         # first arg is the domain ID which builds up an MPI Tag.
         # if those ids are not different for all domain descriptors the system might deadlock
         # if two parallel exchanges with the same domain id are done
@@ -241,17 +229,12 @@ class GHexMultiNode:
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
-        assert (
-            domain_descriptor is not None
-        ), f"domain descriptor for {dim.value} not found"
+        assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(unstructured.field_descriptor(domain_descriptor, np.asarray(f)))
-            for f in fields
+            pattern(unstructured.field_descriptor(domain_descriptor, np.asarray(f))) for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
-        log.info(
-            f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated."
-        )
+        log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
 

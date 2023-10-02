@@ -68,9 +68,7 @@ class DiffusionMetricState:
 class DiffusionInterpolationState:
     """Represents the ICON interpolation state needed in diffusion."""
 
-    e_bln_c_s: Field[
-        [CEDim], float
-    ]  # coefficent for bilinear interpolation from edge to cell ()
+    e_bln_c_s: Field[[CEDim], float]  # coefficent for bilinear interpolation from edge to cell ()
     rbf_coeff_1: Field[
         [VertexDim, V2EDim], float
     ]  # rbf_vec_coeff_v_1(nproma, rbf_vec_dim_v, nblks_v)
@@ -78,9 +76,7 @@ class DiffusionInterpolationState:
         [VertexDim, V2EDim], float
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
-    geofac_div: Field[
-        [CEDim], float
-    ]  # factor for divergence (nproma,cell_type,nblks_c)
+    geofac_div: Field[[CEDim], float]  # factor for divergence (nproma,cell_type,nblks_c)
 
     geofac_n2s: Field[
         [CellDim, C2E2CODim], float
@@ -113,9 +109,7 @@ class PrognosticState:
     Corresponds to ICON t_nh_prog
     """
 
-    w: Field[
-        [CellDim, KDim], float
-    ]  # vertical_wind field,  w(nproma, nlevp1, nblks_c) [m/s]
+    w: Field[[CellDim, KDim], float]  # vertical_wind field,  w(nproma, nlevp1, nblks_c) [m/s]
     vn: Field[[EdgeDim, KDim], float]  # vn(nproma, nlev, nblks_e)  [m/s]
     exner_pressure: Field[[CellDim, KDim], float]  # exner(nrpoma, nlev, nblks_c)
     theta_v: Field[[CellDim, KDim], float]  # (nproma, nlev, nlbks_c) [K]

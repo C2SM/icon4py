@@ -75,13 +75,9 @@ def read_config(experiment: Optional[str], n_time_steps: int) -> IconConfig:
         )
 
     if experiment == "mch_ch_r04b09_dsl":
-        (model_run_config, diffusion_config, dycore_config) = _mch_ch_r04b09_config(
-            n_time_steps
-        )
+        (model_run_config, diffusion_config, dycore_config) = _mch_ch_r04b09_config(n_time_steps)
     else:
-        (model_run_config, diffusion_config, dycore_config) = _default_config(
-            n_time_steps
-        )
+        (model_run_config, diffusion_config, dycore_config) = _default_config(n_time_steps)
     return IconConfig(
         run_config=model_run_config,
         diffusion_config=diffusion_config,

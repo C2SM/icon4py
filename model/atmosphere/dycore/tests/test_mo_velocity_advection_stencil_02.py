@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
     mo_velocity_advection_stencil_02,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
@@ -30,26 +26,20 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
     OUTPUTS = ("vn_ie", "z_kin_hor_e")
 
     @staticmethod
-    def mo_velocity_advection_stencil_02_vn_ie_numpy(
-        wgtfac_e: np.array, vn: np.array
-    ) -> np.array:
+    def mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e: np.array, vn: np.array) -> np.array:
         vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
         vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
         vn_ie[:, 0] = 0
         return vn_ie
 
     @staticmethod
-    def mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(
-        vn: np.array, vt: np.array
-    ) -> np.array:
+    def mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn: np.array, vt: np.array) -> np.array:
         z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
         z_kin_hor_e[:, 0] = 0
         return z_kin_hor_e
 
     @classmethod
-    def reference(
-        cls, mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
-    ) -> dict:
+    def reference(cls, mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> dict:
         vn_ie = cls.mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
         z_kin_hor_e = cls.mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
         return dict(vn_ie=vn_ie, z_kin_hor_e=z_kin_hor_e)

@@ -13,24 +13,21 @@
 
 import numpy as np
 import pytest
-
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_15_to_18 import (
     fused_velocity_advection_stencil_15_to_18,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, C2EDim, C2E2CODim, KDim
-
+from icon4py.model.common.dimension import C2E2CODim, C2EDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
     random_field,
     random_mask,
     zero_field,
-    StencilTest,
 )
+
 from .test_mo_velocity_advection_stencil_15 import TestMoVelocityAdvectionStencil15
-from .test_mo_velocity_advection_stencil_16 import (
-    mo_velocity_advection_stencil_16_numpy,
-)
+from .test_mo_velocity_advection_stencil_16 import mo_velocity_advection_stencil_16_numpy
 from .test_mo_velocity_advection_stencil_17 import TestMoVelocityAdvectionStencil17
 from .test_mo_velocity_advection_stencil_18 import TestMoVelocityAdvectionStencil18
 
@@ -77,11 +74,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
     ):
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = vert_idx[np.newaxis, :]
-        condition1 = (
-            (horz_lower_bound < horz_idx)
-            & (horz_idx < horz_upper_bound)
-            & (vert_idx > 0)
-        )
+        condition1 = (horz_lower_bound < horz_idx) & (horz_idx < horz_upper_bound) & (vert_idx > 0)
 
         ddt_w_adv = np.where(
             condition1,
@@ -152,7 +145,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         nrdmax,
         lvn_only,
         extra_diffu,
-        **kwargs
+        **kwargs,
     ) -> dict:
         z_w_con_c_full = _mo_velocity_advection_stencil_15(mesh, z_w_con_c)
 

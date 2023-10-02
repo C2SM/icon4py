@@ -15,9 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import (
-    apply_nabla2_to_w,
-)
+from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
@@ -32,9 +30,7 @@ def apply_nabla2_to_w_numpy(
 ):
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     area = np.expand_dims(area, axis=-1)
-    w = w - diff_multfac_w * area * area * np.sum(
-        z_nabla2_c[mesh.c2e2cO] * geofac_n2s, axis=1
-    )
+    w = w - diff_multfac_w * area * area * np.sum(z_nabla2_c[mesh.c2e2cO] * geofac_n2s, axis=1)
     return w
 
 

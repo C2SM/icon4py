@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, broadcast, where, maximum
+from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, where
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     _mo_velocity_advection_stencil_15,
@@ -26,7 +26,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
     _mo_velocity_advection_stencil_18,
 )
-from icon4py.model.common.dimension import C2EDim, C2E2CODim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2E2CODim, C2EDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
@@ -120,7 +120,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     nrdmax: int32,
     lvn_only: bool,
     extra_diffu: bool,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float],]:
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_w_con_c_full = _mo_velocity_advection_stencil_15(z_w_con_c)
     ddt_w_adv = (
         _fused_velocity_advection_stencil_16_to_18(

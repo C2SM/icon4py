@@ -43,9 +43,7 @@ def simple_mesh_gridfile(tmp_path):
 
     dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=mesh.n_edges)
     dataset.createDimension(GridFile.DimensionName.CELL_NAME, size=mesh.n_cells)
-    dataset.createDimension(
-        GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=mesh.n_e2v
-    )
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=mesh.n_e2v)
     dataset.createDimension(GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=mesh.n_e2c2e)
     dataset.createDimension(GridFile.DimensionName.MAX_CHILD_DOMAINS, size=1)
     # add dummy values for the grf dimensions
@@ -72,12 +70,8 @@ def simple_mesh_gridfile(tmp_path):
         (GridFile.DimensionName.VERTEX_NAME,),
     )
 
-    dataset.createDimension(
-        GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=mesh.n_c2e
-    )
-    dataset.createDimension(
-        GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=mesh.n_v2c
-    )
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=mesh.n_c2e)
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=mesh.n_v2c)
 
     _add_to_dataset(
         dataset,
@@ -217,15 +211,9 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfil
     data = Dataset(r04b09_dsl_gridfile, "r")
     grid_file = GridFile(data)
 
-    assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(
-        CellDim
-    )
-    assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(
-        EdgeDim
-    )
-    assert grid_file.dimension(
-        GridFile.DimensionName.VERTEX_NAME
-    ) == grid_savepoint.num(VertexDim)
+    assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(CellDim)
+    assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(EdgeDim)
+    assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(VertexDim)
 
 
 def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
@@ -405,9 +393,7 @@ def init_grid_manager(fname):
 @pytest.mark.parametrize("dim, size", [(CellDim, 18), (EdgeDim, 27), (VertexDim, 9)])
 def test_grid_manager_getsize(simple_mesh_gridfile, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
-    gm = GridManager(
-        IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80)
-    )
+    gm = GridManager(IndexTransformation(), simple_mesh_gridfile, VerticalGridSize(num_lev=80))
     gm()
     assert size == gm.get_size(dim)
 
@@ -485,9 +471,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
 def test_get_start_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
     grid_from_manager = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     assert grid_from_manager.get_start_index(dim, marker) == index
-    assert grid_from_manager.get_start_index(dim, marker) == icon_grid.get_start_index(
-        dim, marker
-    )
+    assert grid_from_manager.get_start_index(dim, marker) == icon_grid.get_start_index(dim, marker)
 
 
 @pytest.mark.datatest
@@ -535,6 +519,4 @@ def test_get_start_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
 def test_get_end_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
     grid_from_manager = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     assert grid_from_manager.get_end_index(dim, marker) == index
-    assert grid_from_manager.get_end_index(dim, marker) == icon_grid.get_end_index(
-        dim, marker
-    )
+    assert grid_from_manager.get_end_index(dim, marker) == icon_grid.get_end_index(dim, marker)

@@ -13,26 +13,13 @@
 
 import numpy as np
 import pytest
-
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 import (
     fused_velocity_advection_stencil_1_to_7,
 )
-from icon4py.model.common.dimension import (
-    CellDim,
-    EdgeDim,
-    VertexDim,
-    E2C2EDim,
-    V2CDim,
-    KDim,
-)
-
-from icon4py.model.common.test_utils.helpers import (
-    random_field,
-    zero_field,
-    StencilTest,
-)
+from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestFusedVelocityAdvectionStencil1To7(StencilTest):

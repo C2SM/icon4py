@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, where, broadcast
+from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
@@ -38,14 +38,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     _mo_velocity_advection_stencil_07,
 )
-from icon4py.model.common.dimension import (
-    E2C2EDim,
-    V2CDim,
-    CellDim,
-    EdgeDim,
-    VertexDim,
-    KDim,
-)
+from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 
 
 @field_operator
@@ -99,9 +92,7 @@ def _fused_velocity_advection_stencil_1_to_6(
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 
-    vn_ie = where(
-        vert_idx == nlevp1, _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn), vn_ie
-    )
+    vn_ie = where(vert_idx == nlevp1, _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn), vn_ie)
 
     z_w_concorr_me = where(
         nflatlev < vert_idx < nlevp1,

@@ -14,18 +14,15 @@
 from dataclasses import dataclass
 
 import numpy as np
-from gt4py.next.iterator.embedded import (
-    NeighborTableOffsetProvider,
-    StridedNeighborOffsetProvider,
-)
+from gt4py.next.iterator.embedded import NeighborTableOffsetProvider, StridedNeighborOffsetProvider
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
-    CEDim,
     CECDim,
+    CEDim,
     CellDim,
     E2C2EDim,
     E2C2EODim,
@@ -39,7 +36,6 @@ from icon4py.model.common.dimension import (
     V2CDim,
     V2EDim,
     VertexDim,
-    ECDim,
 )
 
 
@@ -488,23 +484,17 @@ class SimpleMesh:
         return NeighborTableOffsetProvider(self.e2c2v, EdgeDim, VertexDim, self.n_e2c2v)
 
     def get_c2e2c2e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.c2e2c2e2c, CellDim, CellDim, self.n_c2e2c2e2c
-        )
+        return NeighborTableOffsetProvider(self.c2e2c2e2c, CellDim, CellDim, self.n_c2e2c2e2c)
 
     def get_e2ecv_offset_provider(self):
         old_shape = self.e2c2v.shape
         e2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(
-            e2ecv_table, EdgeDim, ECVDim, e2ecv_table.shape[1]
-        )
+        return NeighborTableOffsetProvider(e2ecv_table, EdgeDim, ECVDim, e2ecv_table.shape[1])
 
     def get_c2ce_offset_provider(self):
         old_shape = self.c2e.shape
         c2ce_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(
-            c2ce_table, CellDim, CEDim, c2ce_table.shape[1]
-        )
+        return NeighborTableOffsetProvider(c2ce_table, CellDim, CEDim, c2ce_table.shape[1])
 
     def get_offset_provider(self):
         return {

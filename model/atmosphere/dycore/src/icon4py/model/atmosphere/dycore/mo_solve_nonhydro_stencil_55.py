@@ -42,17 +42,8 @@ def _mo_solve_nonhydro_stencil_55(
     rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
         rho_ic * w - rho_ic(Koff[1]) * w(Koff[1])
     )
-    exner_new = (
-        z_exner_expl
-        + exner_ref_mc
-        - z_beta * (z_alpha * w - z_alpha(Koff[1]) * w(Koff[1]))
-    )
-    theta_v_new = (
-        rho_now
-        * theta_v_now
-        * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0)
-        / rho_new
-    )
+    exner_new = z_exner_expl + exner_ref_mc - z_beta * (z_alpha * w - z_alpha(Koff[1]) * w(Koff[1]))
+    theta_v_new = rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new
     return rho_new, exner_new, theta_v_new
 
 

@@ -45,8 +45,7 @@ def _mo_velocity_advection_stencil_18(
 
     ddt_w_adv = where(
         levmask & cfl_clipping & owner_mask,
-        ddt_w_adv
-        + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
+        ddt_w_adv + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
         ddt_w_adv,
     )
 

@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbu
     calculate_diagnostics_for_turbulence,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 def calculate_diagnostics_for_turbulence_numpy(
@@ -55,6 +51,4 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
         kh_c = random_field(mesh, CellDim, KDim)
         div_ic = zero_field(mesh, CellDim, KDim)
         hdef_ic = zero_field(mesh, CellDim, KDim)
-        return dict(
-            wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic
-        )
+        return dict(wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic)

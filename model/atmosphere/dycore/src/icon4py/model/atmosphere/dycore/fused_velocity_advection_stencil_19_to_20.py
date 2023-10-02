@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, where, maximum
+from gt4py.next.ffront.fbuiltins import int32, maximum, where
 
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     _mo_math_divrot_rot_vertex_ri_dsl,
@@ -24,14 +24,14 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     _mo_velocity_advection_stencil_20,
 )
 from icon4py.model.common.dimension import (
-    V2EDim,
-    ECDim,
-    E2CDim,
-    E2C2EODim,
     CellDim,
+    E2C2EODim,
+    E2CDim,
+    ECDim,
     EdgeDim,
-    VertexDim,
     KDim,
+    V2EDim,
+    VertexDim,
 )
 
 

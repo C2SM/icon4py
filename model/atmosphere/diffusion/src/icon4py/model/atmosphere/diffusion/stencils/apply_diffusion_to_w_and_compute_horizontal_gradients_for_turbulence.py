@@ -14,9 +14,7 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import (
-    _apply_nabla2_to_w,
-)
+from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import _apply_nabla2_to_w
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
     _apply_nabla2_to_w_in_upper_damping_layer,
 )
@@ -54,9 +52,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 
     dwdx, dwdy = where(
         int32(0) < vert_idx,
-        _calculate_horizontal_gradients_for_turbulence(
-            w_old, geofac_grg_x, geofac_grg_y
-        ),
+        _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
         (dwdx, dwdy),
     )
 
@@ -73,9 +69,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         & (vert_idx < nrdmax)
         & (interior_idx <= horz_idx)
         & (horz_idx < halo_idx),
-        _apply_nabla2_to_w_in_upper_damping_layer(
-            w, diff_multfac_n2w, area, z_nabla2_c
-        ),
+        _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
 

@@ -192,9 +192,7 @@ class EdgeParams:
         defined int ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
         """
 
-        self.inverse_primal_edge_lengths: Field[
-            [EdgeDim], float
-        ] = inverse_primal_edge_lengths
+        self.inverse_primal_edge_lengths: Field[[EdgeDim], float] = inverse_primal_edge_lengths
         """
         Inverse of the triangle edge length: 1.0/primal_edge_length.
 
@@ -208,18 +206,14 @@ class EdgeParams:
         defined int ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
         """
 
-        self.inverse_dual_edge_lengths: Field[
-            [EdgeDim], float
-        ] = inverse_dual_edge_lengths
+        self.inverse_dual_edge_lengths: Field[[EdgeDim], float] = inverse_dual_edge_lengths
         """
         Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
 
         defined int ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
         """
 
-        self.inverse_vertex_vertex_lengths: Field[
-            [EdgeDim], float
-        ] = inverse_vertex_vertex_lengths
+        self.inverse_vertex_vertex_lengths: Field[[EdgeDim], float] = inverse_vertex_vertex_lengths
         r"""
         Inverse distance between outer vertices of adjacent cells.
 
@@ -236,9 +230,7 @@ class EdgeParams:
         defined int ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
         """
 
-        self.primal_normal_vert: tuple[
-            Field[[ECVDim], float], Field[[ECVDim], float]
-        ] = (
+        self.primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
             primal_normal_vert_x,
             primal_normal_vert_y,
         )

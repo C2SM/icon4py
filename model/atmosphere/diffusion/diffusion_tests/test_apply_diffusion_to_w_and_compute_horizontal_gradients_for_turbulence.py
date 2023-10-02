@@ -13,18 +13,22 @@
 
 import numpy as np
 import pytest
-
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import \
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
-from .test_calculate_horizontal_gradients_for_turbulence import calculate_horizontal_gradients_for_turbulence_numpy
-from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
-from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
-from .test_apply_nabla2_to_w_in_upper_damping_layer import apply_nabla2_to_w_in_upper_damping_layer_numpy
+from icon4py.model.atmosphere.dycore.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+)
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
-from icon4py.model.common.test_utils.helpers import random_field, zero_field, StencilTest
+from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
+from .test_apply_nabla2_to_w_in_upper_damping_layer import (
+    apply_nabla2_to_w_in_upper_damping_layer_numpy,
+)
+from .test_calculate_horizontal_gradients_for_turbulence import (
+    calculate_horizontal_gradients_for_turbulence_numpy,
+)
+from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 
 
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
@@ -48,34 +52,39 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         nrdmax,
         interior_idx,
         halo_idx,
-        **kwargs
+        **kwargs,
     ):
         reshaped_vert_idx = vert_idx[np.newaxis, :]
         reshaped_horz_idx = horz_idx[:, np.newaxis]
 
-        dwdx, dwdy = np.where(0 < reshaped_vert_idx, calculate_horizontal_gradients_for_turbulence_numpy(
-            mesh, w_old, geofac_grg_x, geofac_grg_y
-        ), (dwdx, dwdy))
+        dwdx, dwdy = np.where(
+            0 < reshaped_vert_idx,
+            calculate_horizontal_gradients_for_turbulence_numpy(
+                mesh, w_old, geofac_grg_x, geofac_grg_y
+            ),
+            (dwdx, dwdy),
+        )
 
         z_nabla2_c = calculate_nabla2_for_w_numpy(mesh, w_old, geofac_n2s)
 
-        w = np.where((interior_idx <= reshaped_horz_idx) & (reshaped_horz_idx < halo_idx),
-                     apply_nabla2_to_w_numpy(mesh, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
-                     w_old)
+        w = np.where(
+            (interior_idx <= reshaped_horz_idx) & (reshaped_horz_idx < halo_idx),
+            apply_nabla2_to_w_numpy(mesh, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
+            w_old,
+        )
 
         w = np.where(
-            (0 < reshaped_vert_idx) &
-            (reshaped_vert_idx < nrdmax) &
-            (interior_idx <= reshaped_horz_idx) &
-            (reshaped_horz_idx < halo_idx),
+            (0 < reshaped_vert_idx)
+            & (reshaped_vert_idx < nrdmax)
+            & (interior_idx <= reshaped_horz_idx)
+            & (reshaped_horz_idx < halo_idx),
             apply_nabla2_to_w_in_upper_damping_layer_numpy(w, diff_multfac_n2w, area, z_nabla2_c),
-            w
+            w,
         )
         return dict(w=w, dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
     def input_data(self, mesh):
-
         vert_idx = zero_field(mesh, KDim, dtype=int32)
         for k in range(mesh.k_level):
             vert_idx[k] = k
@@ -119,5 +128,5 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             horizontal_start=10,
             horizontal_end=10,
             vertical_start=10,
-            vertical_end=10
+            vertical_end=10,
         )

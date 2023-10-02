@@ -45,10 +45,7 @@ def _mo_velocity_advection_stencil_19(
 ):
     ddt_vn_adv = -(
         (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1])) * z_kin_hor_e
-        + (
-            -coeff_gradekin(E2EC[0]) * z_ekinh(E2C[0])
-            + coeff_gradekin(E2EC[1]) * z_ekinh(E2C[1])
-        )
+        + (-coeff_gradekin(E2EC[0]) * z_ekinh(E2C[0]) + coeff_gradekin(E2EC[1]) * z_ekinh(E2C[1]))
         + vt * (f_e + 0.5 * neighbor_sum(zeta(E2V), axis=E2VDim))
         + neighbor_sum(z_w_con_c_full(E2C) * c_lin_e, axis=E2CDim)
         * (vn_ie - vn_ie(Koff[1]))
