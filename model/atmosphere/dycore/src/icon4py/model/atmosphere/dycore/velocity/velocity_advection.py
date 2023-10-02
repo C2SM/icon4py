@@ -123,7 +123,7 @@ class VelocityAdvection:
         return self._initialized
 
     def _allocate_local_fields(self):
-        self.z_w_v = _allocate(VertexDim, KDim, is_halfdim=True, mesh=self.grid)
+        self.z_w_v = _allocate(VertexDim, KDim, mesh=self.grid)
         self.z_v_grad_w = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_ekinh = _allocate(CellDim, KDim, mesh=self.grid)
         self.z_w_concorr_mc = _allocate(CellDim, KDim, mesh=self.grid)
@@ -507,16 +507,10 @@ class VelocityAdvection:
             dtime * (0.85 - self.cfl_w_limit * dtime)
         )
 
-        (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
+        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
             VertexDim,
             HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
             HorizontalMarkerIndex.local(VertexDim) - 1,
-        )
-
-        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
         )
 
         (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
@@ -550,8 +544,8 @@ class VelocityAdvection:
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
-                horizontal_start=indices_0_1,
-                horizontal_end=indices_0_2,
+                horizontal_start=indices_1_1,
+                horizontal_end=indices_1_2,
                 vertical_start=0,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={
@@ -563,8 +557,8 @@ class VelocityAdvection:
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
             rot_vec=self.zeta,
-            horizontal_start=indices_0_1,
-            horizontal_end=indices_0_2,
+            horizontal_start=indices_1_1,
+            horizontal_end=indices_1_2,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={
