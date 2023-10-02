@@ -94,6 +94,10 @@ def mo_solve_nonhydro_stencil_10(
     dtime: float,
     wgt_nnow_rth: float,
     wgt_nnew_rth: float,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_10(
         w,
@@ -112,9 +116,13 @@ def mo_solve_nonhydro_stencil_10(
         wgt_nnow_rth,
         wgt_nnew_rth,
         out=(
-            rho_ic[:, 1:],
-            z_theta_v_pr_ic[:, 1:],
-            theta_v_ic[:, 1:],
-            z_th_ddz_exner_c[:, 1:],
+            rho_ic,
+            z_theta_v_pr_ic,
+            theta_v_ic,
+            z_th_ddz_exner_c,
         ),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

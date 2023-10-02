@@ -46,5 +46,9 @@ def mo_velocity_advection_stencil_02(
         wgtfac_e,
         vn,
         vt,
-        out=(vn_ie[horizontal_start:horizontal_end, vertical_start:vertical_end], z_kin_hor_e[horizontal_start:horizontal_end, vertical_start:vertical_end]),
+        out=(vn_ie, z_kin_hor_e),
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

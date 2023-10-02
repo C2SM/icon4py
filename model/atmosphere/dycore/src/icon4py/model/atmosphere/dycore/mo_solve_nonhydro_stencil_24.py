@@ -21,7 +21,7 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 @field_operator
 def _mo_solve_nonhydro_stencil_24(
     vn_nnow: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float],
+    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float],
     ddt_vn_phy: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
@@ -29,7 +29,7 @@ def _mo_solve_nonhydro_stencil_24(
     cpd: float,
 ) -> Field[[EdgeDim, KDim], float]:
     vn_nnew = vn_nnow + dtime * (
-        ddt_vn_adv_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner
+        ddt_vn_apc_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner
     )
     return vn_nnew
 
@@ -37,7 +37,7 @@ def _mo_solve_nonhydro_stencil_24(
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_24(
     vn_nnow: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float],
+    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float],
     ddt_vn_phy: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
@@ -51,7 +51,7 @@ def mo_solve_nonhydro_stencil_24(
 ):
     _mo_solve_nonhydro_stencil_24(
         vn_nnow,
-        ddt_vn_adv_ntl1,
+        ddt_vn_apc_ntl1,
         ddt_vn_phy,
         z_theta_v_e,
         z_gradh_exner,
