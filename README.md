@@ -12,6 +12,7 @@ The repository is organized into directories, each containing independent Python
 
 We recommend to use [tox](https://tox.wiki/en/latest/) for the automatic installation of all packages in development mode in a single step:
 
+
 ```bash
 # Clone the repository
 git clone git@github.com:C2SM/icon4py.git
