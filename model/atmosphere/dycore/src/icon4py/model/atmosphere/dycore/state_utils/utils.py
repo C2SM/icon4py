@@ -24,7 +24,9 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexD
 # TODO [@Magdalena] fix duplication: duplicated from test testutils/utils.py
 def zero_field(mesh, *dims: Dimension, is_halfdim=False, dtype=float):
     shapex = tuple(map(lambda x: mesh.size[x], dims))
-    shapex = tuple(shapex[0], shapex[1] + 1) if is_halfdim else shapex
+    if is_halfdim:
+        assert len(shapex) == 2
+        shapex = (shapex[0], shapex[1] + 1)
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
 
