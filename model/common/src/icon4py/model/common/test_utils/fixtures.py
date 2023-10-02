@@ -14,7 +14,6 @@
 from pathlib import Path
 
 import pytest
-from gt4py.next.program_processors.runners.roundtrip import executor
 
 from ..decomposition.parallel_setup import get_processor_properties
 from .data_handling import download_and_extract
@@ -174,7 +173,6 @@ def metrics_nonhydro_savepoint(data_provider):  # noqa F811
 
 
 
-BACKENDS = {"embedded": executor}
 MESHES = {"simple_mesh": SimpleMesh()}
 
 
@@ -186,7 +184,7 @@ def mesh(request):
     return request.param
 
 
-@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
+@pytest.fixture
 def backend(request):
     return request.param
 
