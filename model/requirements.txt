@@ -1,5 +1,6 @@
 -r ../base-requirements.txt
 ./atmosphere/dycore
 ./atmosphere/diffusion
+./atmosphere/advection
 ./common
 ./driver
