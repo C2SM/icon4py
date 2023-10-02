@@ -886,7 +886,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
-@pytest.skip
+@pytest.mark.skip
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep, step_date_init, step_date_exit",
