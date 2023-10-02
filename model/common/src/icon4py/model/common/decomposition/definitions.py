@@ -192,7 +192,7 @@ class SingleNodeRun(RunType):
     pass
 
 
-def get_runtype(with_mpi=False) -> RunType:
+def get_runtype(with_mpi: bool = False) -> RunType:
     if with_mpi:
         return MultiNodeRun()
     else:
