@@ -17,6 +17,7 @@ import numpy as np
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider, StridedNeighborOffsetProvider
 
 from icon4py.model.common.dimension import (
+    C2E2C2E2CDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
@@ -61,6 +62,29 @@ from icon4py.model.common.dimension import (
 
 @dataclass
 class SimpleMeshData:
+    c2v_table = np.asarray(
+        [
+            [0, 1, 4],
+            [1, 2, 5],
+            [2, 0, 3],
+            [0, 3, 4],
+            [1, 4, 5],
+            [2, 5, 3],
+            [3, 4, 7],
+            [4, 5, 8],
+            [5, 3, 6],
+            [3, 6, 7],
+            [4, 7, 8],
+            [5, 8, 6],
+            [6, 7, 1],
+            [7, 8, 2],
+            [8, 6, 0],
+            [6, 0, 1],
+            [7, 1, 2],
+            [8, 2, 0],
+        ]
+    )
+
     e2c2v_table = np.asarray(
         [
             [0, 1, 4, 6],  # 0
@@ -350,12 +374,36 @@ class SimpleMeshData:
         ]
     )
 
+    c2e2c2e2c_table = np.asarray(
+        [
+            [15, 4, 3, 12, 14, 1, 7, 6, 2],  # 1c
+            [16, 5, 4, 12, 13, 2, 8, 7, 0],
+            [17, 3, 5, 13, 14, 0, 6, 8, 1],
+            [0, 6, 2, 17, 5, 9, 10, 15, 4],
+            [1, 7, 0, 15, 3, 16, 5, 10, 11],  # 5c
+            [2, 8, 1, 4, 16, 17, 3, 9, 11],
+            [3, 10, 9, 2, 0, 7, 13, 8, 12],
+            [4, 11, 10, 0, 1, 8, 14, 6, 13],
+            [5, 9, 11, 1, 2, 3, 12, 7, 14],
+            [6, 12, 8, 5, 11, 3, 10, 16, 15],  # 10c
+            [7, 13, 6, 3, 9, 4, 11, 16, 17],
+            [8, 14, 7, 4, 10, 5, 9, 15, 17],
+            [9, 16, 15, 8, 6, 1, 13, 0, 14],
+            [10, 17, 16, 6, 7, 2, 14, 1, 12],
+            [11, 15, 17, 7, 8, 2, 13, 0, 12],  # 15c
+            [12, 0, 14, 11, 17, 9, 16, 3, 4],
+            [13, 1, 12, 9, 15, 10, 17, 4, 5],
+            [14, 2, 13, 10, 16, 5, 3, 11, 15],
+        ]
+    )
+
 
 class SimpleMesh:
     _DEFAULT_K_LEVEL = 10
 
     def __init__(self, k_level: int = _DEFAULT_K_LEVEL):
         self.diamond_arr = SimpleMeshData.diamond_table
+        self.c2v = SimpleMeshData.c2v_table
         self.e2c = SimpleMeshData.e2c_table
         self.e2v = SimpleMeshData.e2v_table
         self.c2e = SimpleMeshData.c2e_table
@@ -366,6 +414,7 @@ class SimpleMesh:
         self.e2c2v = SimpleMeshData.e2c2v_table
         self.v2c = SimpleMeshData.v2c_table
         self.v2e = SimpleMeshData.v2e_table
+        self.c2e2c2e2c = SimpleMeshData.c2e2c2e2c_table
         self.n_e2c = self.e2c.shape[1]
         self.n_e2v = self.e2v.shape[1]
         self.n_c2e = self.c2e.shape[1]
@@ -375,8 +424,10 @@ class SimpleMesh:
         self.n_e2c2e = self.e2c2e.shape[1]
         self.n_e2c2v = self.e2c2v.shape[1]
         self.n_v2c = self.v2c.shape[1]
+        self.n_c2v = self.c2v.shape[1]
         self.n_v2e = self.v2e.shape[1]
         self.n_cells = self.c2e.shape[0]
+        self.n_c2e2c2e2c = self.c2e2c2e2c.shape[1]
         self.n_edges = 27
         self.n_vertices = 9
         self.k_level = k_level
@@ -397,7 +448,11 @@ class SimpleMesh:
             CEDim: self.n_cells * self.n_c2e,
             E2C2VDim: self.n_e2c2v,
             ECVDim: self.n_edges * self.n_e2c2v,
+            C2E2C2E2CDim: self.n_c2e2c2e2c,
         }
+
+    def get_c2v_offset_provider(self) -> NeighborTableOffsetProvider:
+        return NeighborTableOffsetProvider(self.c2v, VertexDim, CellDim, self.n_c2v)
 
     def get_c2e_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.c2e, CellDim, EdgeDim, self.n_c2e)
@@ -429,6 +484,19 @@ class SimpleMesh:
     def get_e2c2v_offset_provider(self) -> NeighborTableOffsetProvider:
         return NeighborTableOffsetProvider(self.e2c2v, EdgeDim, VertexDim, self.n_e2c2v)
 
+    def get_c2e2c2e2c_offset_provider(self) -> NeighborTableOffsetProvider:
+        return NeighborTableOffsetProvider(self.c2e2c2e2c, CellDim, CellDim, self.n_c2e2c2e2c)
+
+    def get_e2ecv_offset_provider(self):
+        old_shape = self.e2c2v.shape
+        e2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return NeighborTableOffsetProvider(e2ecv_table, EdgeDim, ECVDim, e2ecv_table.shape[1])
+
+    def get_c2ce_offset_provider(self):
+        old_shape = self.c2e.shape
+        c2ce_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return NeighborTableOffsetProvider(c2ce_table, CellDim, CEDim, c2ce_table.shape[1])
+
     def get_offset_provider(self):
         return {
             "C2E": self.get_c2e_offset_provider(),
@@ -441,8 +509,9 @@ class SimpleMesh:
             "E2C": self.get_e2c_offset_provider(),
             "E2V": self.get_e2v_offset_provider(),
             "E2C2V": self.get_e2c2v_offset_provider(),
+            "C2CE": self.get_c2ce_offset_provider(),
             "Koff": KDim,
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, self.n_c2e),
+            "C2E2C2E2C": self.get_c2e2c2e2c_offset_provider(),
             "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, self.n_c2e2c),
             "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, self.n_e2c2v),
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, self.n_e2c),

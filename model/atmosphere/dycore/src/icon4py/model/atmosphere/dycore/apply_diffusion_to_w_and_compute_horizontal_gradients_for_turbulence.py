@@ -14,14 +14,16 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
-from icon4py.model.atmosphere.dycore.apply_nabla2_to_w import _apply_nabla2_to_w
-from icon4py.model.atmosphere.dycore.apply_nabla2_to_w_in_upper_damping_layer import (
+from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import _apply_nabla2_to_w
+from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
     _apply_nabla2_to_w_in_upper_damping_layer,
 )
-from icon4py.model.atmosphere.dycore.calculate_horizontal_gradients_for_turbulence import (
+from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_for_turbulence import (
     _calculate_horizontal_gradients_for_turbulence,
 )
-from icon4py.model.atmosphere.dycore.calculate_nabla2_for_w import _calculate_nabla2_for_w
+from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
+    _calculate_nabla2_for_w,
+)
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 
 
@@ -91,6 +93,10 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     nrdmax: int32,
     interior_idx: int32,
     halo_idx: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         area,
@@ -108,4 +114,8 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         interior_idx,
         halo_idx,
         out=(w, dwdx, dwdy),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

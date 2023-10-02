@@ -192,6 +192,66 @@ Additionally, there are the following keyword arguments:
 
 - `noaccenddata`: Takes a boolean string input and controls whether a `!$ACC END DATA` directive is generated or not. Defaults to false.<br><br>
 
+#### `!$DSL FUSED START STENCIL()`
+
+This directive denotes the start of a fused stencil. Required arguments are `name`, `vertical_lower`, `vertical_upper`, `horizontal_lower`, `horizontal_upper`. The value for `name` must correspond to a stencil found in one of the stencil modules inside `icon4py`, and all fields defined in the directive must correspond to the fields defined in the respective icon4py stencil. Optionally, absolute and relative tolerances for the output fields can also be set using the `_tol` or `_abs` suffixes respectively. For each stencil, an ACC ENTER/EXIT DATA statements will be created. This ACC ENTER/EXIT DATA region contains the before fileds of the according stencil. An example call looks like this:
+
+```fortran
+        !$DSL START FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence; &
+        !$DSL  kh_smag_ec=kh_smag_ec(:,:,1); vn=p_nh_prog%vn(:,:,1); e_bln_c_s=p_int%e_bln_c_s(:,:,1); &
+        !$DSL  geofac_div=p_int%geofac_div(:,:,1); diff_multfac_smag=diff_multfac_smag(:); &
+        !$DSL  wgtfac_c=p_nh_metrics%wgtfac_c(:,:,1); div_ic=p_nh_diag%div_ic(:,:,1); &
+        !$DSL  hdef_ic=p_nh_diag%hdef_ic(:,:,1); &
+        !$DSL  div_ic_abs_tol=1e-18_wp; vertical_lower=2; &
+        !$DSL  vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+```
+
+#### `!$DSL END FUSED STENCIL()`
+
+This directive denotes the end of a fused stencil. The required argument is `name`, which must match the name of the preceding `START STENCIL` directive.
+
+Note that each `START STENCIL` and `END STENCIL` will be transformed into a `DELETE` section, when using the `--fused` mode.
+Together, the `START FUSED STENCIL` and `END FUSED STENCIL` directives result in the following generated code at the start and end of a stencil respectively.
+
+```fortran
+        !$ACC DATA CREATE( &
+        !$ACC   kh_smag_e_before, &
+        !$ACC   kh_smag_ec_before, &
+        !$ACC   z_nabla2_e_before ) &
+        !$ACC      IF ( i_am_accel_node )
+
+#ifdef __DSL_VERIFY
+        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1)
+        kh_smag_e_before(:, :, :) = kh_smag_e(:, :, :)
+        kh_smag_ec_before(:, :, :) = kh_smag_ec(:, :, :)
+        z_nabla2_e_before(:, :, :) = z_nabla2_e(:, :, :)
+        !$ACC END KERNELS
+```
+
+```fortran
+call wrap_run_calculate_diagnostic_quantities_for_turbulence( &
+    kh_smag_ec=kh_smag_ec(:, :, 1), &
+    vn=p_nh_prog%vn(:, :, 1), &
+    e_bln_c_s=p_int%e_bln_c_s(:, :, 1), &
+    geofac_div=p_int%geofac_div(:, :, 1), &
+    diff_multfac_smag=diff_multfac_smag(:), &
+    wgtfac_c=p_nh_metrics%wgtfac_c(:, :, 1), &
+    div_ic=p_nh_diag%div_ic(:, :, 1), &
+    div_ic_before=div_ic_before(:, :, 1), &
+    hdef_ic=p_nh_diag%hdef_ic(:, :, 1), &
+    hdef_ic_before=hdef_ic_before(:, :, 1), &
+    div_ic_abs_tol=1e-18_wp, &
+    vertical_lower=2, &
+    vertical_upper=nlev, &
+    horizontal_lower=i_startidx, &
+    horizontal_upper=i_endidx)
+
+!$ACC EXIT DATA DELETE( &
+!$ACC   div_ic_before, &
+!$ACC   hdef_ic_before ) &
+!$ACC      IF ( i_am_accel_node )
+```
+
 #### `!$DSL INSERT()`
 
 This directive allows the user to generate any text that is placed between the parentheses. This is useful for situations where custom code generation is necessary.
@@ -203,6 +263,16 @@ This directive allows generating an nvtx start profile data statement, and takes
 #### `!$DSL END PROFILE()`
 
 This directive allows generating an nvtx end profile statement.
+
+#### `!$DSL START DELETE
+
+This directive allows to disable code. The code is only disabled if both the fused mode and the substition mode are enabled.
+The `START DELETE` indicates the starting line from which on code is deleted.
+
+#### `!$DSL END DELETE`
+
+This directive allows to disable code. The code is only disabled if both the fused mode and the substition mode are enabled.
+The `END DELETE` indicates the ending line from which on code is deleted.
 
 #### `!$DSL ENDIF()`
 
@@ -232,3 +302,39 @@ OUTPUT_FILEPATH   A path to the output Fortran source file to be generated.
 ```
 
 **Note:** The output of f2ser still has to be preprocessed using `pp_ser.py`, which then yields a compilable unit. The serialised files will have `f2ser` as their prefix in the default folder location of the experiment.
+
+## `py2f`
+
+Python utility for generating a C library and Fortran interface to call Python icon4py modules. The library [embeds python via CFFI ](https://cffi.readthedocs.io/en/latest/embedding.)
+
+This is **highly experimental** and has not been tested from within Fortran code!
+
+### usage
+
+`py2fgen`: Generates a C header file and a Fortran interface and compiles python functions into a C library embedding python. The functions need to be decorated with `CffiMethod.register` and have a signature with scalar arguments or `GT4Py` fields, for example:
+
+```
+@CffiMethod.register
+def foo(i:int, param:float, field1: Field[[VertexDim, KDim], float], field2: Field[CellDim, KDim], float])
+```
+
+see `src/icon4pytools/py2f/wrappers` for examples.
+
+```bash
+py2fgen icon4pytools.py2f.wrappers.diffusion_wrapper  py2f_build
+```
+
+where the first argument is the python module to parse and the second a build directory. The call above will generate the following in `py2f_build`:
+
+```bash
+ ls py2f_build/
+total 204K
+drwxrwxr-x 2 magdalena magdalena 4.0K Aug 24 17:01 .
+drwxrwxr-x 9 magdalena magdalena 4.0K Aug 24 17:01 ..
+-rw-rw-r-- 1 magdalena magdalena  74K Aug 24 16:58 diffusion_wrapper.c
+-rw-rw-r-- 1 magdalena magdalena 3.5K Aug 24 17:01 diffusion_wrapper.f90
+-rw-rw-r-- 1 magdalena magdalena  955 Aug 24 17:01 diffusion_wrapper.h
+-rw-rw-r-- 1 magdalena magdalena  58K Aug 24 17:01 diffusion_wrapper.o
+-rwxrwxr-x 1 magdalena magdalena  49K Aug 24 17:01 libdiffusion_wrapper.so
+
+```
