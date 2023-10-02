@@ -15,14 +15,10 @@
 import pytest
 
 from icon4py.model.common.decomposition.definitions import SingleNodeRun, get_processor_properties
-
-
-try:
-    from mpi4py import MPI
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
-
 from icon4py.model.common.decomposition.mpi_decomposition import _get_processor_properties, init_mpi
+
+
+mpi4py = pytest.importorskip("mpi4py")
 
 
 @pytest.mark.mpi
@@ -35,11 +31,11 @@ def test_parallel_properties_from_comm_world():
 @pytest.mark.mpi(min_size=2)
 def test_parallel_properties_from_mpi_comm():
     init_mpi()
-    world = MPI.COMM_WORLD
+    world = mpi4py.MPI.COMM_WORLD
     group = world.Get_group()
     pair = group.Incl([0, 1])
     comm = world.Create(pair)
-    if comm != MPI.COMM_NULL:
+    if comm != mpi4py.MPI.COMM_NULL:
         comm.Set_name("my_comm")
         props = _get_processor_properties(with_mpi=True, comm_id=comm)
         assert props.rank < props.comm_size

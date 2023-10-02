@@ -14,12 +14,6 @@
 import numpy as np
 import pytest
 
-
-try:
-    import mpi4py  # noqa: F401 # test for optional dependency
-except ImportError:
-    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
-
 from icon4py.model.common.decomposition.definitions import (
     DecompositionInfo,
     DomainDescriptorIdGenerator,
@@ -33,6 +27,8 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # 
     processor_props,
 )
 
+
+mpi4py = pytest.importorskip("mpi4py")
 
 """
 running tests with mpi:

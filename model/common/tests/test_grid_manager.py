@@ -19,15 +19,6 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
-
-if typing.TYPE_CHECKING:
-    import netCDF4
-
-try:
-    import netCDF4  # noqa: F811
-except ImportError:
-    pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
-
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.grid_manager import (
     GridFile,
@@ -40,6 +31,11 @@ from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import VerticalGridSize
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
+
+if typing.TYPE_CHECKING:
+    import netCDF4
+
+netCDF4 = pytest.importorskip("netCDF4")  # noqa: F811 # optional dependency
 
 SIMPLE_MESH_NC = "simple_mesh_grid.nc"
 
