@@ -12,6 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
+from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
+from gt4py.next.program_processors.runners.roundtrip import executor
 
 
 def pytest_configure(config):
@@ -19,16 +21,23 @@ def pytest_configure(config):
 
 
 def pytest_addoption(parser):
-    """Add --datatest commandline option for pytest.
-
-    Makes sure the option is set only once even when running tests of several model packages in one session.
-    """
+    """Add custom commandline options for pytest."""
     try:
         parser.addoption(
             "--datatest",
             action="store_true",
-            help="running tests that use serialized data, can be slow since data might be downloaded from online storage",
+            help="Run tests that use serialized data, can be slow since data might be downloaded from online storage.",
             default=False,
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
+            "--backend",
+            action="store",
+            default=None,
+            help="GT4Py backend to use when executing stencils. Defaults to 'executor' embedded backend. Currently the other option is 'run_gtfn' which is the GTFN CPU backend.",
         )
     except ValueError:
         pass
@@ -38,3 +47,16 @@ def pytest_runtest_setup(item):
     for _ in item.iter_markers(name="datatest"):
         if not item.config.getoption("--datatest"):
             pytest.skip("need '--datatest' option to run")
+
+
+def pytest_generate_tests(metafunc):
+    # parametrise backends
+    if "backend" in metafunc.fixturenames:
+        backend_option = metafunc.config.getoption("backend")
+
+        params = [executor]  # default
+        if backend_option == "run_gtfn":
+            params.append(run_gtfn)
+        # TODO: add gpu support
+
+        metafunc.parametrize("backend", params)
