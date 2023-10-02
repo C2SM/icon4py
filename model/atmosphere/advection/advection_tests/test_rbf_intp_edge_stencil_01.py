@@ -13,7 +13,9 @@
 
 import numpy as np
 
-from icon4py.model.atmosphere.advection.rbf_intp_edge_stencil_01 import rbf_intp_edge_stencil_01
+from icon4py.model.atmosphere.advection.rbf_intp_edge_stencil_01 import (
+    rbf_intp_edge_stencil_01,
+)
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
@@ -24,7 +26,6 @@ def rbf_intp_edge_stencil_01_numpy(
     p_vn_in: np.array,
     ptr_coeff: np.array,
 ) -> np.array:
-
     ptr_coeff = np.expand_dims(ptr_coeff, axis=-1)
     p_vt_out = np.sum(p_vn_in[e2c2e] * ptr_coeff, axis=1)
     return p_vt_out

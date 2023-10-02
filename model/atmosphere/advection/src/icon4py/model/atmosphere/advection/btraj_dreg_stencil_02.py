@@ -24,7 +24,6 @@ def _btraj_dreg_stencil_02(
     edge_cell_length: Field[[ECDim], float],
     p_dt: float,
 ) -> Field[[EdgeDim, KDim], int32]:
-
     lvn_pos = where(p_vn >= 0.0, True, False)
     traj_length = sqrt(p_vn * p_vn + p_vt * p_vt) * p_dt
     e2c_length = where(lvn_pos, edge_cell_length(E2EC[0]), edge_cell_length(E2EC[1]))

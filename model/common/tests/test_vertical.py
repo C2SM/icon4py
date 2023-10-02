@@ -28,14 +28,19 @@ def test_nrdmax_calculation(max_h, damping, delta):
     vct_a = np.arange(0, max_h, delta)
     vct_a = vct_a[::-1]
     vertical_params = VerticalModelParams(rayleigh_damping_height=damping, vct_a=vct_a)
-    assert vertical_params.index_of_damping_layer == vct_a.shape[0] - math.ceil(damping / delta) - 1
+    assert (
+        vertical_params.index_of_damping_layer
+        == vct_a.shape[0] - math.ceil(damping / delta) - 1
+    )
 
 
 @pytest.mark.datatest
 def test_nrdmax_calculation_from_icon_input(grid_savepoint, damping_height):
     a = grid_savepoint.vct_a()
     nrdmax = grid_savepoint.nrdmax()
-    vertical_params = VerticalModelParams(rayleigh_damping_height=damping_height, vct_a=a)
+    vertical_params = VerticalModelParams(
+        rayleigh_damping_height=damping_height, vct_a=a
+    )
     assert nrdmax == vertical_params.index_of_damping_layer
     a_array = np.asarray(a)
     assert a_array[nrdmax] > damping_height

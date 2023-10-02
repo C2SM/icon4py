@@ -43,11 +43,13 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     p_cell_blk = where(lvn_pos, cell_blk(E2EC[0]), cell_blk(E2EC[1]))
 
     z_ntdistv_bary_1 = -(
-        p_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1(E2EC[0]), pos_on_tplane_e_1(E2EC[1]))
+        p_vn * p_dthalf
+        + where(lvn_pos, pos_on_tplane_e_1(E2EC[0]), pos_on_tplane_e_1(E2EC[1]))
     )
 
     z_ntdistv_bary_2 = -(
-        p_vt * p_dthalf + where(lvn_pos, pos_on_tplane_e_2(E2EC[0]), pos_on_tplane_e_2(E2EC[1]))
+        p_vt * p_dthalf
+        + where(lvn_pos, pos_on_tplane_e_2(E2EC[0]), pos_on_tplane_e_2(E2EC[1]))
     )
 
     p_distv_bary_1 = where(

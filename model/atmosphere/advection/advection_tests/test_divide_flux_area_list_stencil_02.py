@@ -19,7 +19,11 @@ from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_02 import 
     divide_flux_area_list_stencil_02,
 )
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, random_mask
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    random_field,
+    random_mask,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 

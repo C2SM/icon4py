@@ -22,7 +22,6 @@ def _face_val_ppm_stencil_02a(
     p_cc: Field[[CellDim, KDim], float],
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-
     p_face = p_cc * (1.0 - (p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))) + (
         p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
     ) * ((p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1])) * p_cc + p_cc(Koff[-1]))
@@ -34,7 +33,6 @@ def _face_val_ppm_stencil_02a(
 def _face_val_ppm_stencil_02b(
     p_cc: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-
     p_face = p_cc
     return p_face
 
@@ -43,7 +41,6 @@ def _face_val_ppm_stencil_02b(
 def _face_val_ppm_stencil_02c(
     p_cc: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-
     p_face = p_cc(Koff[-1])
     return p_face
 
@@ -59,7 +56,6 @@ def _face_val_ppm_stencil_02(
     slevp1: int32,
     elevp1: int32,
 ) -> Field[[CellDim, KDim], float]:
-
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     p_face = where(

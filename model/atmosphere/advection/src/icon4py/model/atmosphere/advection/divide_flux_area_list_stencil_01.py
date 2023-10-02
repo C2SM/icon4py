@@ -33,7 +33,6 @@ def ccw(
     p2_lon: Field[[EdgeDim, KDim], float],
     p2_lat: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], int32]:
-
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
 
@@ -60,7 +59,6 @@ def lintersect(
     line2_p2_lon: Field[[EdgeDim, KDim], float],
     line2_p2_lat: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], bool]:
-
     intersect1 = ccw(
         line1_p1_lon,
         line1_p1_lat,
@@ -108,11 +106,12 @@ def line_intersect(
     line2_p2_lon: Field[[EdgeDim, KDim], float],
     line2_p2_lat: Field[[EdgeDim, KDim], float],
 ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
-
     m1 = (line1_p2_lat - line1_p1_lat) / (line1_p2_lon - line1_p1_lon)
     m2 = (line2_p2_lat - line2_p1_lat) / (line2_p2_lon - line2_p1_lon)
 
-    intersect_1 = (line2_p1_lat - line1_p1_lat + m1 * line1_p1_lon - m2 * line2_p1_lon) / (m1 - m2)
+    intersect_1 = (
+        line2_p1_lat - line1_p1_lat + m1 * line1_p1_lon - m2 * line2_p1_lon
+    ) / (m1 - m2)
     intersect_2 = line1_p1_lat + m1 * (intersect_1 - line1_p1_lon)
 
     return intersect_1, intersect_2
@@ -159,7 +158,6 @@ def _divide_flux_area_list_stencil_01(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-
     arrival_pts_1_lon_dsl = dreg_patch0_1_lon_dsl
     arrival_pts_1_lat_dsl = dreg_patch0_1_lat_dsl
     arrival_pts_2_lon_dsl = dreg_patch0_2_lon_dsl
@@ -256,8 +254,12 @@ def _divide_flux_area_list_stencil_01(
     )
 
     # Case 1 - patch 0
-    dreg_patch0_1_lon_dsl = where(mask_case1, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = where(mask_case1, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
+    dreg_patch0_1_lon_dsl = where(
+        mask_case1, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = where(
+        mask_case1, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = where(
         mask_case1,
         where(lvn_sys_pos, arrival_pts_2_lon_dsl, ps1_x),
@@ -318,8 +320,12 @@ def _divide_flux_area_list_stencil_01(
     # ------------------------------------------------- Case 2a
     mask_case2a = lintersect_line1 & (not lintersect_line2) & famask_bool
     # Case 2a - patch 0
-    dreg_patch0_1_lon_dsl = where(mask_case2a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = where(mask_case2a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
+    dreg_patch0_1_lon_dsl = where(
+        mask_case2a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = where(
+        mask_case2a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = where(
         mask_case2a,
         where(lvn_sys_pos, arrival_pts_2_lon_dsl, ps1_x),
@@ -330,8 +336,12 @@ def _divide_flux_area_list_stencil_01(
         where(lvn_sys_pos, arrival_pts_2_lat_dsl, ps1_y),
         dreg_patch0_2_lat_dsl,
     )
-    dreg_patch0_3_lon_dsl = where(mask_case2a, depart_pts_2_lon_dsl, dreg_patch0_3_lon_dsl)
-    dreg_patch0_3_lat_dsl = where(mask_case2a, depart_pts_2_lat_dsl, dreg_patch0_3_lat_dsl)
+    dreg_patch0_3_lon_dsl = where(
+        mask_case2a, depart_pts_2_lon_dsl, dreg_patch0_3_lon_dsl
+    )
+    dreg_patch0_3_lat_dsl = where(
+        mask_case2a, depart_pts_2_lat_dsl, dreg_patch0_3_lat_dsl
+    )
     dreg_patch0_4_lon_dsl = where(
         mask_case2a,
         where(lvn_sys_pos, ps1_x, arrival_pts_2_lon_dsl),
@@ -343,10 +353,18 @@ def _divide_flux_area_list_stencil_01(
         dreg_patch0_4_lat_dsl,
     )
     # Case 2a - patch 1
-    dreg_patch1_1_lon_vmask = where(mask_case2a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask)
-    dreg_patch1_1_lat_vmask = where(mask_case2a, arrival_pts_1_lat_dsl, dreg_patch1_1_lat_vmask)
-    dreg_patch1_4_lon_vmask = where(mask_case2a, arrival_pts_1_lon_dsl, dreg_patch1_4_lon_vmask)
-    dreg_patch1_4_lat_vmask = where(mask_case2a, arrival_pts_1_lat_dsl, dreg_patch1_4_lat_vmask)
+    dreg_patch1_1_lon_vmask = where(
+        mask_case2a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask
+    )
+    dreg_patch1_1_lat_vmask = where(
+        mask_case2a, arrival_pts_1_lat_dsl, dreg_patch1_1_lat_vmask
+    )
+    dreg_patch1_4_lon_vmask = where(
+        mask_case2a, arrival_pts_1_lon_dsl, dreg_patch1_4_lon_vmask
+    )
+    dreg_patch1_4_lat_vmask = where(
+        mask_case2a, arrival_pts_1_lat_dsl, dreg_patch1_4_lat_vmask
+    )
     dreg_patch1_2_lon_vmask = where(
         mask_case2a,
         where(lvn_sys_pos, ps1_x, depart_pts_1_lon_dsl),
@@ -380,8 +398,12 @@ def _divide_flux_area_list_stencil_01(
     # -------------------------------------------------- Case 2b
     mask_case2b = lintersect_line2 & (not lintersect_line1) & famask_bool
     # Case 2b - patch 0
-    dreg_patch0_1_lon_dsl = where(mask_case2b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = where(mask_case2b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
+    dreg_patch0_1_lon_dsl = where(
+        mask_case2b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = where(
+        mask_case2b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = where(
         mask_case2b,
         where(lvn_sys_pos, arrival_pts_2_lon_dsl, depart_pts_1_lon_dsl),
@@ -414,10 +436,18 @@ def _divide_flux_area_list_stencil_01(
     dreg_patch1_4_lon_vmask = where(mask_case2b, 0.0, dreg_patch1_4_lon_vmask)
     dreg_patch1_4_lat_vmask = where(mask_case2b, 0.0, dreg_patch1_4_lat_vmask)
     # Case 2b - patch 2
-    dreg_patch2_1_lon_vmask = where(mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask)
-    dreg_patch2_1_lat_vmask = where(mask_case2b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask)
-    dreg_patch2_4_lon_vmask = where(mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_4_lon_vmask)
-    dreg_patch2_4_lat_vmask = where(mask_case2b, arrival_pts_2_lat_dsl, dreg_patch2_4_lat_vmask)
+    dreg_patch2_1_lon_vmask = where(
+        mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask
+    )
+    dreg_patch2_1_lat_vmask = where(
+        mask_case2b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask
+    )
+    dreg_patch2_4_lon_vmask = where(
+        mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_4_lon_vmask
+    )
+    dreg_patch2_4_lat_vmask = where(
+        mask_case2b, arrival_pts_2_lat_dsl, dreg_patch2_4_lat_vmask
+    )
     dreg_patch2_2_lon_vmask = where(
         mask_case2b,
         where(lvn_sys_pos, depart_pts_2_lon_dsl, ps2_x),
@@ -473,8 +503,12 @@ def _divide_flux_area_list_stencil_01(
         tri_line1_p2_lat,
     )
     # Case 3a - patch 0
-    dreg_patch0_1_lon_dsl = where(mask_case3a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = where(mask_case3a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
+    dreg_patch0_1_lon_dsl = where(
+        mask_case3a, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = where(
+        mask_case3a, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = where(
         mask_case3a,
         where(lvn_sys_pos, arrival_pts_2_lon_dsl, depart_pts_1_lon_dsl),
@@ -498,8 +532,12 @@ def _divide_flux_area_list_stencil_01(
         dreg_patch0_4_lat_dsl,
     )
     # Case 3a - patch 1
-    dreg_patch1_1_lon_vmask = where(mask_case3a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask)
-    dreg_patch1_1_lat_vmask = where(mask_case3a, arrival_pts_1_lat_dsl, dreg_patch1_1_lat_vmask)
+    dreg_patch1_1_lon_vmask = where(
+        mask_case3a, arrival_pts_1_lon_dsl, dreg_patch1_1_lon_vmask
+    )
+    dreg_patch1_1_lat_vmask = where(
+        mask_case3a, arrival_pts_1_lat_dsl, dreg_patch1_1_lat_vmask
+    )
     dreg_patch1_2_lon_vmask = where(
         mask_case3a,
         where(lvn_sys_pos, pi1_x, depart_pts_2_lon_dsl),
@@ -510,8 +548,12 @@ def _divide_flux_area_list_stencil_01(
         where(lvn_sys_pos, pi1_y, depart_pts_2_lat_dsl),
         dreg_patch1_2_lat_vmask,
     )
-    dreg_patch1_3_lon_vmask = where(mask_case3a, depart_pts_1_lon_dsl, dreg_patch1_3_lon_vmask)
-    dreg_patch1_3_lat_vmask = where(mask_case3a, depart_pts_1_lat_dsl, dreg_patch1_3_lat_vmask)
+    dreg_patch1_3_lon_vmask = where(
+        mask_case3a, depart_pts_1_lon_dsl, dreg_patch1_3_lon_vmask
+    )
+    dreg_patch1_3_lat_vmask = where(
+        mask_case3a, depart_pts_1_lat_dsl, dreg_patch1_3_lat_vmask
+    )
     dreg_patch1_4_lon_vmask = where(
         mask_case3a,
         where(lvn_sys_pos, depart_pts_1_lon_dsl, pi1_x),
@@ -556,10 +598,18 @@ def _divide_flux_area_list_stencil_01(
         tri_line2_p2_lat,
     )
     # Case 3b - patch 0
-    dreg_patch0_1_lon_dsl = where(mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl)
-    dreg_patch0_1_lat_dsl = where(mask_case3b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl)
-    dreg_patch0_4_lon_dsl = where(mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_4_lon_dsl)
-    dreg_patch0_4_lat_dsl = where(mask_case3b, arrival_pts_1_lat_dsl, dreg_patch0_4_lat_dsl)
+    dreg_patch0_1_lon_dsl = where(
+        mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_1_lon_dsl
+    )
+    dreg_patch0_1_lat_dsl = where(
+        mask_case3b, arrival_pts_1_lat_dsl, dreg_patch0_1_lat_dsl
+    )
+    dreg_patch0_4_lon_dsl = where(
+        mask_case3b, arrival_pts_1_lon_dsl, dreg_patch0_4_lon_dsl
+    )
+    dreg_patch0_4_lat_dsl = where(
+        mask_case3b, arrival_pts_1_lat_dsl, dreg_patch0_4_lat_dsl
+    )
     dreg_patch0_2_lon_dsl = where(
         mask_case3b,
         where(lvn_sys_pos, arrival_pts_2_lon_dsl, pi2_x),
@@ -590,8 +640,12 @@ def _divide_flux_area_list_stencil_01(
     dreg_patch1_4_lon_vmask = where(mask_case3b, 0.0, dreg_patch1_4_lon_vmask)
     dreg_patch1_4_lat_vmask = where(mask_case3b, 0.0, dreg_patch1_4_lat_vmask)
     # Case 3b - patch 2
-    dreg_patch2_1_lon_vmask = where(mask_case3b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask)
-    dreg_patch2_1_lat_vmask = where(mask_case3b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask)
+    dreg_patch2_1_lon_vmask = where(
+        mask_case3b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask
+    )
+    dreg_patch2_1_lat_vmask = where(
+        mask_case3b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask
+    )
     dreg_patch2_2_lon_vmask = where(
         mask_case3b,
         where(lvn_sys_pos, depart_pts_2_lon_dsl, pi2_x),
@@ -602,8 +656,12 @@ def _divide_flux_area_list_stencil_01(
         where(lvn_sys_pos, depart_pts_2_lat_dsl, pi2_y),
         dreg_patch2_2_lat_vmask,
     )
-    dreg_patch2_3_lon_vmask = where(mask_case3b, depart_pts_1_lon_dsl, dreg_patch2_3_lon_vmask)
-    dreg_patch2_3_lat_vmask = where(mask_case3b, depart_pts_1_lat_dsl, dreg_patch2_3_lat_vmask)
+    dreg_patch2_3_lon_vmask = where(
+        mask_case3b, depart_pts_1_lon_dsl, dreg_patch2_3_lon_vmask
+    )
+    dreg_patch2_3_lat_vmask = where(
+        mask_case3b, depart_pts_1_lat_dsl, dreg_patch2_3_lat_vmask
+    )
     dreg_patch2_4_lon_vmask = where(
         mask_case3b,
         where(lvn_sys_pos, pi2_x, depart_pts_2_lon_dsl),
@@ -618,7 +676,9 @@ def _divide_flux_area_list_stencil_01(
     # --------------------------------------------- Case 4
     # NB: Next line acts as the "ELSE IF", indices that already previously matched one of the above conditions
     # can't be overwritten by this new condition.
-    indices_previously_matched = mask_case3b | mask_case3a | mask_case2b | mask_case2a | mask_case1
+    indices_previously_matched = (
+        mask_case3b | mask_case3a | mask_case2b | mask_case2a | mask_case1
+    )
     #    mask_case4 = (abs(p_vn) < 0.1) & famask_bool & (not indices_previously_matched) we insert also the error indices
     mask_case4 = famask_bool & (not indices_previously_matched)
     # Case 4 - patch 0 - no change

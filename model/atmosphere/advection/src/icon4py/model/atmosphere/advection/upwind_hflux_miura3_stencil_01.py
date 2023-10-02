@@ -44,7 +44,6 @@ def _upwind_hflux_miura3_stencil_01(
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
     cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
 ) -> Field[[EdgeDim, KDim], float]:
-
     p_out_e_miura3 = (
         (
             where(

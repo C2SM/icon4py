@@ -14,7 +14,15 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum, neighbor_sum
 
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import (
+    C2CE,
+    C2E,
+    C2EDim,
+    CEDim,
+    CellDim,
+    EdgeDim,
+    KDim,
+)
 
 
 @field_operator
@@ -40,11 +48,15 @@ def _hflx_limiter_mo_stencil_01b(
     z_mflx_anti_3 = p_dtime * geofac_div(C2CE[2]) / p_rhodz_new * z_anti(C2E[2])
 
     z_mflx_anti_in = -1.0 * (
-        minimum(zero, z_mflx_anti_1) + minimum(zero, z_mflx_anti_2) + minimum(zero, z_mflx_anti_3)
+        minimum(zero, z_mflx_anti_1)
+        + minimum(zero, z_mflx_anti_2)
+        + minimum(zero, z_mflx_anti_3)
     )
 
     z_mflx_anti_out = (
-        maximum(zero, z_mflx_anti_1) + maximum(zero, z_mflx_anti_2) + maximum(zero, z_mflx_anti_3)
+        maximum(zero, z_mflx_anti_1)
+        + maximum(zero, z_mflx_anti_2)
+        + maximum(zero, z_mflx_anti_3)
     )
 
     z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div(C2CE), axis=C2EDim)

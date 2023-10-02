@@ -21,7 +21,6 @@ from icon4py.model.common.dimension import CellDim, KDim
 def _face_val_ppm_stencil_02b(
     p_cc: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-
     p_face = p_cc
     return p_face
 

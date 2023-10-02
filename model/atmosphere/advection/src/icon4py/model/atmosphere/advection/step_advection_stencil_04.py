@@ -34,4 +34,6 @@ def step_advection_stencil_04(
     opt_ddt_tracer_adv: Field[[CellDim, KDim], float],
     p_dtime: float,
 ):
-    _step_advection_stencil_04(p_tracer_now, p_tracer_new, p_dtime, out=opt_ddt_tracer_adv)
+    _step_advection_stencil_04(
+        p_tracer_now, p_tracer_new, p_dtime, out=opt_ddt_tracer_adv
+    )

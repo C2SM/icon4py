@@ -26,7 +26,9 @@ def upwind_hflux_miura_cycl_stencil_03b_numpy(
     z_tracer_mflx_2_dsl: np.array,
     z_tracer_mflx_3_dsl: np.array,
 ):
-    p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / float(3)
+    p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / float(
+        3
+    )
     return p_out_e
 
 

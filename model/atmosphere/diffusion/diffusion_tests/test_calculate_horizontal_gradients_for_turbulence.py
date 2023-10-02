@@ -19,8 +19,18 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
     calculate_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
+def calculate_horizontal_gradients_for_turbulence_numpy(mesh, w, geofac_grg_x, geofac_grg_y):
+    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
+    dwdx = np.sum(geofac_grg_x * w[mesh.c2e2cO], axis=1)
+    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
+    dwdy = np.sum(geofac_grg_y * w[mesh.c2e2cO], axis=1)
+    return dwdx, dwdy
 
 class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = calculate_horizontal_gradients_for_turbulence
@@ -30,11 +40,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
     def reference(
         mesh, w: np.array, geofac_grg_x: np.array, geofac_grg_y: np.array, **kwargs
     ) -> tuple[np.array]:
-        geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-        dwdx = np.sum(geofac_grg_x * w[mesh.c2e2cO], axis=1)
-
-        geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-        dwdy = np.sum(geofac_grg_y * w[mesh.c2e2cO], axis=1)
+        dwdx, dwdy = calculate_horizontal_gradients_for_turbulence_numpy(mesh, w, geofac_grg_x, geofac_grg_y)
         return dict(dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture

@@ -66,26 +66,54 @@ def _btraj_dreg_stencil_03(
 
     pos_dreg_vert_c_1_x = edge_verts_1_x - pos_on_tplane_e_x
     pos_dreg_vert_c_1_y = edge_verts_1_y - pos_on_tplane_e_y
-    pos_dreg_vert_c_2_x = where(lvn_sys_pos, depart_pts_1_x, edge_verts_2_x) - pos_on_tplane_e_x
-    pos_dreg_vert_c_2_y = where(lvn_sys_pos, depart_pts_1_y, edge_verts_2_y) - pos_on_tplane_e_y
+    pos_dreg_vert_c_2_x = (
+        where(lvn_sys_pos, depart_pts_1_x, edge_verts_2_x) - pos_on_tplane_e_x
+    )
+    pos_dreg_vert_c_2_y = (
+        where(lvn_sys_pos, depart_pts_1_y, edge_verts_2_y) - pos_on_tplane_e_y
+    )
     pos_dreg_vert_c_3_x = depart_pts_2_x - pos_on_tplane_e_x
     pos_dreg_vert_c_3_y = depart_pts_2_y - pos_on_tplane_e_y
-    pos_dreg_vert_c_4_x = where(lvn_sys_pos, edge_verts_2_x, depart_pts_1_x) - pos_on_tplane_e_x
-    pos_dreg_vert_c_4_y = where(lvn_sys_pos, edge_verts_2_y, depart_pts_1_y) - pos_on_tplane_e_y
+    pos_dreg_vert_c_4_x = (
+        where(lvn_sys_pos, edge_verts_2_x, depart_pts_1_x) - pos_on_tplane_e_x
+    )
+    pos_dreg_vert_c_4_y = (
+        where(lvn_sys_pos, edge_verts_2_y, depart_pts_1_y) - pos_on_tplane_e_y
+    )
 
-    pn_cell_1 = where(lvn_pos, primal_normal_cell_x(E2EC[0]), primal_normal_cell_x(E2EC[1]))
-    pn_cell_2 = where(lvn_pos, primal_normal_cell_y(E2EC[0]), primal_normal_cell_y(E2EC[1]))
+    pn_cell_1 = where(
+        lvn_pos, primal_normal_cell_x(E2EC[0]), primal_normal_cell_x(E2EC[1])
+    )
+    pn_cell_2 = where(
+        lvn_pos, primal_normal_cell_y(E2EC[0]), primal_normal_cell_y(E2EC[1])
+    )
     dn_cell_1 = where(lvn_pos, dual_normal_cell_x(E2EC[0]), dual_normal_cell_x(E2EC[1]))
     dn_cell_2 = where(lvn_pos, dual_normal_cell_y(E2EC[0]), dual_normal_cell_y(E2EC[1]))
 
-    p_coords_dreg_v_1_lon_dsl = pos_dreg_vert_c_1_x * pn_cell_1 + pos_dreg_vert_c_1_y * dn_cell_1
-    p_coords_dreg_v_2_lon_dsl = pos_dreg_vert_c_2_x * pn_cell_1 + pos_dreg_vert_c_2_y * dn_cell_1
-    p_coords_dreg_v_3_lon_dsl = pos_dreg_vert_c_3_x * pn_cell_1 + pos_dreg_vert_c_3_y * dn_cell_1
-    p_coords_dreg_v_4_lon_dsl = pos_dreg_vert_c_4_x * pn_cell_1 + pos_dreg_vert_c_4_y * dn_cell_1
-    p_coords_dreg_v_1_lat_dsl = pos_dreg_vert_c_1_x * pn_cell_2 + pos_dreg_vert_c_1_y * dn_cell_2
-    p_coords_dreg_v_2_lat_dsl = pos_dreg_vert_c_2_x * pn_cell_2 + pos_dreg_vert_c_2_y * dn_cell_2
-    p_coords_dreg_v_3_lat_dsl = pos_dreg_vert_c_3_x * pn_cell_2 + pos_dreg_vert_c_3_y * dn_cell_2
-    p_coords_dreg_v_4_lat_dsl = pos_dreg_vert_c_4_x * pn_cell_2 + pos_dreg_vert_c_4_y * dn_cell_2
+    p_coords_dreg_v_1_lon_dsl = (
+        pos_dreg_vert_c_1_x * pn_cell_1 + pos_dreg_vert_c_1_y * dn_cell_1
+    )
+    p_coords_dreg_v_2_lon_dsl = (
+        pos_dreg_vert_c_2_x * pn_cell_1 + pos_dreg_vert_c_2_y * dn_cell_1
+    )
+    p_coords_dreg_v_3_lon_dsl = (
+        pos_dreg_vert_c_3_x * pn_cell_1 + pos_dreg_vert_c_3_y * dn_cell_1
+    )
+    p_coords_dreg_v_4_lon_dsl = (
+        pos_dreg_vert_c_4_x * pn_cell_1 + pos_dreg_vert_c_4_y * dn_cell_1
+    )
+    p_coords_dreg_v_1_lat_dsl = (
+        pos_dreg_vert_c_1_x * pn_cell_2 + pos_dreg_vert_c_1_y * dn_cell_2
+    )
+    p_coords_dreg_v_2_lat_dsl = (
+        pos_dreg_vert_c_2_x * pn_cell_2 + pos_dreg_vert_c_2_y * dn_cell_2
+    )
+    p_coords_dreg_v_3_lat_dsl = (
+        pos_dreg_vert_c_3_x * pn_cell_2 + pos_dreg_vert_c_3_y * dn_cell_2
+    )
+    p_coords_dreg_v_4_lat_dsl = (
+        pos_dreg_vert_c_4_x * pn_cell_2 + pos_dreg_vert_c_4_y * dn_cell_2
+    )
 
     return (
         p_cell_idx,

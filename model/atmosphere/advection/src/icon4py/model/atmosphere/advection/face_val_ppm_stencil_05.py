@@ -23,7 +23,6 @@ def _face_val_ppm_stencil_05(
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],
     z_slope: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-
     zgeo1 = p_cellhgt_mc_now(Koff[-1]) / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
     zgeo2 = 1.0 / (
         p_cellhgt_mc_now(Koff[-2])

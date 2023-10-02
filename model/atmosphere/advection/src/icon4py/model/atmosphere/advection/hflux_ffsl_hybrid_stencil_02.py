@@ -23,7 +23,6 @@ def _hflux_ffsl_hybrid_stencil_02(
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
     z_dreg_area: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-
     p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
 
     return p_out_e_hybrid_2

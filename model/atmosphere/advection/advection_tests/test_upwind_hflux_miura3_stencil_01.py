@@ -18,7 +18,11 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura3_stencil_01 import (
     upwind_hflux_miura3_stencil_01,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, random_mask, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    random_field,
+    random_mask,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -48,7 +52,6 @@ def upwind_hflux_miura3_stencil_01_numpy(
     p_mass_flx_e: np.array,
     cell_rel_idx_dsl: np.array,
 ) -> np.array:
-
     z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
     z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
     z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]

@@ -28,11 +28,13 @@ def vert_adv_stencil_01_numpy(
     rhodz_new: np.array,
     p_dtime,
 ) -> np.array:
-
     tracer_new = (
         tracer_now * rhodz_now
         + p_dtime
-        * (p_mflx_tracer_v[:, 1:] * deepatmo_divzl - p_mflx_tracer_v[:, :-1] * deepatmo_divzu)
+        * (
+            p_mflx_tracer_v[:, 1:] * deepatmo_divzl
+            - p_mflx_tracer_v[:, :-1] * deepatmo_divzu
+        )
     ) / rhodz_new
 
     return tracer_new

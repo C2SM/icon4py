@@ -33,7 +33,9 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     enh_diffu_3d = _temporary_field_for_grid_point_cold_pools_enhancement(
         theta_v, theta_ref_mc, thresh_tdiff
     )
-    kh_smag_e = _enhance_diffusion_coefficient_for_grid_point_cold_pools(kh_smag_e, enh_diffu_3d)
+    kh_smag_e = _enhance_diffusion_coefficient_for_grid_point_cold_pools(
+        kh_smag_e, enh_diffu_3d
+    )
     return kh_smag_e
 
 

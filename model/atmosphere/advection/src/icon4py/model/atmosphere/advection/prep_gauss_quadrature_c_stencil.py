@@ -70,7 +70,6 @@ def _prep_gauss_quadrature_c_stencil(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-
     z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
     z_wgt_2 = 0.0625 * wgt_zeta_1 * wgt_eta_2
     z_wgt_3 = 0.0625 * wgt_zeta_2 * wgt_eta_1
@@ -215,7 +214,9 @@ def _prep_gauss_quadrature_c_stencil(
         + shape_func_4_4 * p_coords_dreg_v_4_y
     )
 
-    p_quad_vector_sum_1 = wgt_t_detjac_1 + wgt_t_detjac_2 + wgt_t_detjac_3 + wgt_t_detjac_4
+    p_quad_vector_sum_1 = (
+        wgt_t_detjac_1 + wgt_t_detjac_2 + wgt_t_detjac_3 + wgt_t_detjac_4
+    )
     p_quad_vector_sum_2 = (
         wgt_t_detjac_1 * z_gauss_pts_1_x
         + wgt_t_detjac_2 * z_gauss_pts_2_x
@@ -272,7 +273,9 @@ def _prep_gauss_quadrature_c_stencil(
     )
 
     z_area = p_quad_vector_sum_1
-    p_dreg_area_out = where(z_area >= 0.0, maximum(eps, abs(z_area)), -maximum(eps, abs(z_area)))
+    p_dreg_area_out = where(
+        z_area >= 0.0, maximum(eps, abs(z_area)), -maximum(eps, abs(z_area))
+    )
 
     return (
         p_quad_vector_sum_1,

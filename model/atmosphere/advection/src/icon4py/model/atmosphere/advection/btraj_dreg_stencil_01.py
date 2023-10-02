@@ -23,7 +23,6 @@ def _btraj_dreg_stencil_01(
     p_vn: Field[[EdgeDim, KDim], float],
     tangent_orientation: Field[[EdgeDim], float],
 ) -> Field[[EdgeDim, KDim], bool]:
-
     tangent_orientation = broadcast(tangent_orientation, (EdgeDim, KDim))
     lvn_sys_pos_true = where(p_vn * tangent_orientation >= 0.0, True, False)
     mask_lcounterclock = broadcast(lcounterclock, (EdgeDim, KDim))

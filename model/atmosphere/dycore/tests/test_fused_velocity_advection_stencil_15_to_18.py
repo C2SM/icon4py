@@ -77,7 +77,11 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
     ):
         horz_idx = horz_idx[:, np.newaxis]
         vert_idx = vert_idx[np.newaxis, :]
-        condition1 = (horz_lower_bound < horz_idx) & (horz_idx < horz_upper_bound) & (vert_idx > 0)
+        condition1 = (
+            (horz_lower_bound < horz_idx)
+            & (horz_idx < horz_upper_bound)
+            & (vert_idx > 0)
+        )
 
         ddt_w_adv = np.where(
             condition1,
@@ -92,10 +96,10 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         )
 
         condition2 = (
-            (horz_lower_bound < horz_idx) &
-            (horz_idx < horz_upper_bound) &
-            (np.maximum(3, nrdmax - 2) < vert_idx) &
-            (vert_idx < nlev - 4)
+            (horz_lower_bound < horz_idx)
+            & (horz_idx < horz_upper_bound)
+            & (np.maximum(3, nrdmax - 2) < vert_idx)
+            & (vert_idx < nlev - 4)
         )
 
         if extra_diffu:

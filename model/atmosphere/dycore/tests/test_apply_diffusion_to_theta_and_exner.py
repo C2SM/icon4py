@@ -16,10 +16,25 @@ import pytest
 
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import apply_diffusion_to_theta_and_exner
-from icon4py.model.common.dimension import CellDim, EdgeDim, CEDim, CECDim, C2E2CDim, KDim
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
+    apply_diffusion_to_theta_and_exner,
+)
+from icon4py.model.common.dimension import (
+    CellDim,
+    EdgeDim,
+    CEDim,
+    CECDim,
+    C2E2CDim,
+    KDim,
+)
 
-from icon4py.model.common.test_utils.helpers import flatten_first_two_dims, random_field, random_mask, zero_field, StencilTest
+from icon4py.model.common.test_utils.helpers import (
+    flatten_first_two_dims,
+    random_field,
+    random_mask,
+    zero_field,
+    StencilTest,
+)
 
 
 class TestApplyDiffusionToThetaAndExner(StencilTest):
@@ -31,8 +46,8 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         mesh,
         **kwargs,
     ) -> tuple[np.array]:
-        theta_v = 0.
-        exner = 0.
+        theta_v = 0.0
+        exner = 0.0
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture

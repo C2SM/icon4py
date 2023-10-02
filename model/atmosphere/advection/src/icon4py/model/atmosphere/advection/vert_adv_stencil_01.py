@@ -29,7 +29,8 @@ def _vert_adv_stencil_01(
 ) -> Field[[CellDim, KDim], float]:
     tracer_new = (
         tracer_now * rhodz_now
-        + p_dtime * (p_mflx_tracer_v(Koff[1]) * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
+        + p_dtime
+        * (p_mflx_tracer_v(Koff[1]) * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
     ) / rhodz_new
 
     return tracer_new

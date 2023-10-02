@@ -25,7 +25,6 @@ def _v_limit_prbl_sm_stencil_01(
     p_face: Field[[CellDim, KDim], float],
     p_cc: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], int32]:
-
     z_delta = p_face - p_face(Koff[1])
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face + p_face(Koff[1])))
 

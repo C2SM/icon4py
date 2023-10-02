@@ -13,7 +13,9 @@
 
 import numpy as np
 
-from icon4py.model.atmosphere.advection.step_advection_stencil_03 import step_advection_stencil_03
+from icon4py.model.atmosphere.advection.step_advection_stencil_03 import (
+    step_advection_stencil_03,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
@@ -24,7 +26,6 @@ def step_advection_stencil_03_numpy(
     p_grf_tend_tracer: np.array,
     p_dtime,
 ) -> np.array:
-
     p_tracer_new = p_tracer_now + p_dtime * p_grf_tend_tracer
     p_tracer_new = np.where(p_tracer_new < 0.0, 0.0, p_tracer_new)
 

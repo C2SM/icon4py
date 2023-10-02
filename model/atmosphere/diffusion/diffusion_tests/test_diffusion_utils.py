@@ -27,7 +27,11 @@ from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
-from .utils import diff_multfac_vn_numpy, enhanced_smagorinski_factor_numpy, smag_limit_numpy
+from .utils import (
+    diff_multfac_vn_numpy,
+    enhanced_smagorinski_factor_numpy,
+    smag_limit_numpy,
+)
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
@@ -76,7 +80,9 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value():
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
 
-    _setup_runtime_diff_multfac_vn(k4, efdt_ratio, out=diff_multfac_vn, offset_provider={})
+    _setup_runtime_diff_multfac_vn(
+        k4, efdt_ratio, out=diff_multfac_vn, offset_provider={}
+    )
     _setup_smag_limit(diff_multfac_vn, out=smag_limit, offset_provider={})
 
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
@@ -93,7 +99,9 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps():
     shape = np.asarray(diff_multfac_vn).shape
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
-    _setup_runtime_diff_multfac_vn(k4, substeps, out=diff_multfac_vn, offset_provider={})
+    _setup_runtime_diff_multfac_vn(
+        k4, substeps, out=diff_multfac_vn, offset_provider={}
+    )
     _setup_smag_limit(diff_multfac_vn, out=smag_limit, offset_provider={})
 
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
@@ -109,7 +117,9 @@ def test_init_enh_smag_fac():
 
     enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, np.asarray(a_vec))
 
-    _en_smag_fac_for_zero_nshift(a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim})
+    _en_smag_fac_for_zero_nshift(
+        a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
+    )
     assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac))
 
 

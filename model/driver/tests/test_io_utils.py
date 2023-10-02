@@ -25,7 +25,9 @@ from icon4py.model.driver.io_utils import (
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("read_fun", (read_geometry_fields, read_static_fields, read_icon_grid))
+@pytest.mark.parametrize(
+    "read_fun", (read_geometry_fields, read_static_fields, read_icon_grid)
+)
 def test_read_geometry_fields_not_implemented_type(read_fun, datapath):
     with pytest.raises(NotImplementedError, match=r"Only ser_type='sb'"):
         read_fun(path=datapath, ser_type=SerializationType.NC)
@@ -52,7 +54,9 @@ def test_read_icon_grid_for_type_sb(datapath):
 
 @pytest.mark.datatest
 def test_read_static_fields_for_type_sb(datapath):
-    metric_state, interpolation_state = read_static_fields(datapath, ser_type=SerializationType.SB)
+    metric_state, interpolation_state = read_static_fields(
+        datapath, ser_type=SerializationType.SB
+    )
     assert_metric_state_fields(metric_state)
     assert_interpolation_state_fields(interpolation_state)
 

@@ -18,7 +18,11 @@ from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
     hflux_ffsl_hybrid_stencil_01a,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    constant_field,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -46,7 +50,6 @@ def hflux_ffsl_hybrid_stencil_01a_numpy(
     z_quad_vector_sum0_10: np.ndarray,
     patch0_cell_rel_idx_dsl: np.ndarray,
 ):
-
     z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
     z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
     z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]

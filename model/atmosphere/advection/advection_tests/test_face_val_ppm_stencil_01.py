@@ -15,7 +15,9 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 
-from icon4py.model.atmosphere.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
+from icon4py.model.atmosphere.advection.face_val_ppm_stencil_01 import (
+    face_val_ppm_stencil_01,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
@@ -27,17 +29,22 @@ def face_val_ppm_stencil_01_numpy(
     vert_idx: np.array,
     elev: int32,
 ):
-
     # this is a comment: vert_idx = np.broadcast_to(vert_idx, p_cc.shape)
 
     # 01a
     zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
         p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
     )
-    zfac = (p_cc[:, 2:] - p_cc[:, 1:-1]) / (p_cellhgt_mc_now[:, 2:] + p_cellhgt_mc_now[:, 1:-1])
+    zfac = (p_cc[:, 2:] - p_cc[:, 1:-1]) / (
+        p_cellhgt_mc_now[:, 2:] + p_cellhgt_mc_now[:, 1:-1]
+    )
     z_slope_a = (
         p_cellhgt_mc_now[:, 1:-1]
-        / (p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 2:])
+        / (
+            p_cellhgt_mc_now[:, :-2]
+            + p_cellhgt_mc_now[:, 1:-1]
+            + p_cellhgt_mc_now[:, 2:]
+        )
     ) * (
         (2.0 * p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1]) * zfac
         + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 2:]) * zfac_m1
@@ -47,10 +54,16 @@ def face_val_ppm_stencil_01_numpy(
     zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
         p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
     )
-    zfac = (p_cc[:, 1:-1] - p_cc[:, 1:-1]) / (p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1])
+    zfac = (p_cc[:, 1:-1] - p_cc[:, 1:-1]) / (
+        p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1]
+    )
     z_slope_b = (
         p_cellhgt_mc_now[:, 1:-1]
-        / (p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, 1:-1])
+        / (
+            p_cellhgt_mc_now[:, :-2]
+            + p_cellhgt_mc_now[:, 1:-1]
+            + p_cellhgt_mc_now[:, 1:-1]
+        )
     ) * (
         (2.0 * p_cellhgt_mc_now[:, :-2] + p_cellhgt_mc_now[:, 1:-1]) * zfac
         + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 1:-1]) * zfac_m1

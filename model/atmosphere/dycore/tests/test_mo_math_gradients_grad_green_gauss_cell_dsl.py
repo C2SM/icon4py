@@ -18,7 +18,11 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
 
 
 class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):

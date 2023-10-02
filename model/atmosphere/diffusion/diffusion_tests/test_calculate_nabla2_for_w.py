@@ -19,7 +19,17 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     calculate_nabla2_for_w,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    zero_field,
+)
+
+
+def calculate_nabla2_for_w_numpy(mesh, w: np.array, geofac_n2s: np.array):
+    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+    z_nabla2_c = np.sum(w[mesh.c2e2cO] * geofac_n2s, axis=1)
+    return z_nabla2_c
 
 
 class TestCalculateNabla2ForW(StencilTest):
@@ -28,8 +38,7 @@ class TestCalculateNabla2ForW(StencilTest):
 
     @staticmethod
     def reference(mesh, w: np.array, geofac_n2s: np.array, **kwargs) -> np.array:
-        geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
-        z_nabla2_c = np.sum(w[mesh.c2e2cO] * geofac_n2s, axis=1)
+        z_nabla2_c = calculate_nabla2_for_w_numpy(mesh, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)
 
     @pytest.fixture

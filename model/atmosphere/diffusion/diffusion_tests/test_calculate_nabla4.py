@@ -14,7 +14,9 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
+from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import (
+    calculate_nabla4,
+)
 from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,

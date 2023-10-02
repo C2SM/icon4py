@@ -23,13 +23,22 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     _mo_velocity_advection_stencil_20,
 )
-from icon4py.model.common.dimension import V2EDim, ECDim, E2CDim, E2C2EODim, CellDim, EdgeDim, VertexDim, KDim
+from icon4py.model.common.dimension import (
+    V2EDim,
+    ECDim,
+    E2CDim,
+    E2C2EODim,
+    CellDim,
+    EdgeDim,
+    VertexDim,
+    KDim,
+)
+
 
 @field_operator
 def _fused_velocity_advection_stencil_19_to_20(
     vn: Field[[EdgeDim, KDim], float],
     geofac_rot: Field[[VertexDim, V2EDim], float],
-
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     coeff_gradekin: Field[[ECDim], float],
     z_ekinh: Field[[CellDim, KDim], float],
@@ -39,7 +48,6 @@ def _fused_velocity_advection_stencil_19_to_20(
     z_w_con_c_full: Field[[CellDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
     ddqz_z_full_e: Field[[EdgeDim, KDim], float],
-
     levelmask: Field[[KDim], bool],
     area_edge: Field[[EdgeDim], float],
     tangent_orientation: Field[[EdgeDim], float],
@@ -53,7 +61,6 @@ def _fused_velocity_advection_stencil_19_to_20(
     nlev: int32,
     nrdmax: int32,
 ) -> Field[[EdgeDim, KDim], float]:
-
     zeta = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
 
     ddt_vn_adv = _mo_velocity_advection_stencil_19(
@@ -70,7 +77,8 @@ def _fused_velocity_advection_stencil_19_to_20(
     )
 
     ddt_vn_adv = (
-        where(maximum(3, nrdmax - 2) < vert_idx < nlev - 4,
+        where(
+            maximum(3, nrdmax - 2) < vert_idx < nlev - 4,
             _mo_velocity_advection_stencil_20(
                 levelmask,
                 c_lin_e,
@@ -100,7 +108,6 @@ def _fused_velocity_advection_stencil_19_to_20(
 def fused_velocity_advection_stencil_19_to_20(
     vn: Field[[EdgeDim, KDim], float],
     geofac_rot: Field[[VertexDim, V2EDim], float],
-
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     coeff_gradekin: Field[[ECDim], float],
     z_ekinh: Field[[CellDim, KDim], float],
@@ -110,7 +117,6 @@ def fused_velocity_advection_stencil_19_to_20(
     z_w_con_c_full: Field[[CellDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
     ddqz_z_full_e: Field[[EdgeDim, KDim], float],
-
     levelmask: Field[[KDim], bool],
     area_edge: Field[[EdgeDim], float],
     tangent_orientation: Field[[EdgeDim], float],
@@ -128,7 +134,6 @@ def fused_velocity_advection_stencil_19_to_20(
     _fused_velocity_advection_stencil_19_to_20(
         vn,
         geofac_rot,
-
         z_kin_hor_e,
         coeff_gradekin,
         z_ekinh,
@@ -138,7 +143,6 @@ def fused_velocity_advection_stencil_19_to_20(
         z_w_con_c_full,
         vn_ie,
         ddqz_z_full_e,
-
         levelmask,
         area_edge,
         tangent_orientation,
@@ -151,6 +155,5 @@ def fused_velocity_advection_stencil_19_to_20(
         extra_diffu,
         nlev,
         nrdmax,
-
         out=ddt_vn_adv,
     )

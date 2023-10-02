@@ -22,6 +22,17 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def apply_nabla2_to_w_in_upper_damping_layer_numpy(
+    w: np.array,
+    diff_multfac_n2w: np.array,
+    cell_area: np.array,
+    z_nabla2_c: np.array,
+):
+    cell_area = np.expand_dims(cell_area, axis=-1)
+    w = w + diff_multfac_n2w * cell_area * z_nabla2_c
+    return w
+
+
 class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
     PROGRAM = apply_nabla2_to_w_in_upper_damping_layer
     OUTPUTS = ("w",)
@@ -53,6 +64,7 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
         z_nabla2_c: np.array,
         **kwargs,
     ) -> np.array:
-        cell_area = np.expand_dims(cell_area, axis=-1)
-        w = w + diff_multfac_n2w * cell_area * z_nabla2_c
+        w = apply_nabla2_to_w_in_upper_damping_layer_numpy(
+            w, diff_multfac_n2w, cell_area, z_nabla2_c
+        )
         return dict(w=w)

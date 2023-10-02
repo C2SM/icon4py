@@ -23,7 +23,9 @@ def _upwind_hflux_miura_cycl_stencil_03b(
     z_tracer_mflx_2_dsl: Field[[EdgeDim, KDim], float],
     z_tracer_mflx_3_dsl: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / float(3)
+    p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / float(
+        3
+    )
     return p_out_e
 
 

@@ -26,7 +26,6 @@ def hflux_ffsl_hybrid_stencil_02_numpy(
     p_mass_flx_e: np.ndarray,
     z_dreg_area: np.ndarray,
 ):
-
     p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
 
     return p_out_e_hybrid_2

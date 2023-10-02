@@ -13,7 +13,9 @@
 
 import numpy as np
 
-from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02c import face_val_ppm_stencil_02c
+from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02c import (
+    face_val_ppm_stencil_02c,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
@@ -22,7 +24,6 @@ from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 def face_val_ppm_stencil_02c_numpy(
     p_cc: np.array,
 ):
-
     p_face = p_cc.copy()
 
     p_face[:, 1:] = p_cc[:, :-1]

@@ -19,7 +19,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_20 import (
     mo_solve_nonhydro_stencil_20,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import flatten_first_two_dims, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    flatten_first_two_dims,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -47,8 +51,12 @@ def mo_solve_nonhydro_stencil_20_numpy(
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
     z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, e2c, ikoffset)
-    z_dexner_dz_c_1_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_1, e2c, ikoffset)
-    z_dexner_dz_c_2_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_2, e2c, ikoffset)
+    z_dexner_dz_c_1_at_kidx = _apply_index_field(
+        full_shape, z_dexner_dz_c_1, e2c, ikoffset
+    )
+    z_dexner_dz_c_2_at_kidx = _apply_index_field(
+        full_shape, z_dexner_dz_c_2, e2c, ikoffset
+    )
 
     def at_neighbor(i):
         return z_exner_ex_pr_at_kidx[:, i, :] + zdiff_gradp[:, i, :] * (
