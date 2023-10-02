@@ -12,7 +12,13 @@ on:
             - main
         paths-ignore:
             - "tools/**"
-        types: [opened, reopened, synchronize]
+        types: [opened, reopened, assigned, ready_for_review]
+    pull_request_review:
+        branches:
+            - main
+        paths-ignore:
+            - "tools/**"
+        types: [submitted]
 
 jobs:
     pre-commit-icon4py-model:

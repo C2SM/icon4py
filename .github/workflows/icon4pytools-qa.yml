@@ -16,7 +16,15 @@ on:
             - "tools/**"
             - "base-requirements*"
             - ".github/workflows/icon4pytools*"
-        types: [opened, reopened, synchronize]
+        types: [opened, reopened, assigned, ready_for_review]
+    pull_request_review:
+        branches:
+            - main
+        paths:
+            - "tools/**"
+            - "base-requirements*"
+            - ".github/workflows/icon4pytools*"
+        types: [submitted]
 
 jobs:
     pre-commit-icon4pytools:
