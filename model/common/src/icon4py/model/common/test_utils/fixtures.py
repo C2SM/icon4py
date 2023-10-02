@@ -14,7 +14,6 @@
 from pathlib import Path
 
 import pytest
-from gt4py.next.program_processors.runners.roundtrip import executor
 
 from ..decomposition.definitions import SingleNodeRun, get_processor_properties
 from .data_handling import download_and_extract
@@ -165,7 +164,6 @@ def metrics_savepoint(data_provider):  # F811
     return data_provider.from_metrics_savepoint()
 
 
-BACKENDS = {"embedded": executor}
 MESHES = {"simple_mesh": SimpleMesh()}
 
 
@@ -177,6 +175,6 @@ def mesh(request):
     return request.param
 
 
-@pytest.fixture(ids=BACKENDS.keys(), params=BACKENDS.values())
+@pytest.fixture
 def backend(request):
     return request.param
