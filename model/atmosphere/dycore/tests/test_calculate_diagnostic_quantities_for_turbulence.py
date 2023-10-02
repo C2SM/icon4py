@@ -14,7 +14,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.calculate_diagnostic_quantities_for_turbulence import (
+from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
     calculate_diagnostic_quantities_for_turbulence,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, C2EDim, KDim
