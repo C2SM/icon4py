@@ -103,10 +103,10 @@ def _fused_velocity_advection_stencil_8_to_14(
                       _mo_velocity_advection_stencil_13(z_w_con_c, w_concorr_c),
                       z_w_con_c,
                      )
-    cfl_clipping, pre_levelmask, vcfl, z_w_con_c = where(
+    cfl_clipping, vcfl, z_w_con_c = where(
         maximum(3, nrdmax - 2) < vert_idx < nlev - 3,
         _mo_velocity_advection_stencil_14(ddqz_z_half, z_w_con_c, cfl_w_limit, dtime),
-        (cfl_clipping, pre_levelmask, vcfl, z_w_con_c),
+        (cfl_clipping, vcfl, z_w_con_c),
     )
 
     return z_ekinh, cfl_clipping, pre_levelmask, vcfl, z_w_con_c
