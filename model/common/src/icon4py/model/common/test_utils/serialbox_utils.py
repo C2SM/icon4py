@@ -317,6 +317,7 @@ class IconGridSavePoint(IconSavepoint):
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
         c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
+        e2c2e0 = np.column_stack(((np.asarray(range(e2c2e.shape[0]))), e2c2e))
         grid = (
             IconGrid()
             .with_config(config)
@@ -329,7 +330,8 @@ class IconGridSavePoint(IconSavepoint):
                     E2CDim: self.e2c(),
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
-                    E2C2EDim: e2c2e
+                    E2C2EDim: e2c2e,
+                    E2C2EODim: e2c2e0
                 }
             )
             .with_connectivities(
