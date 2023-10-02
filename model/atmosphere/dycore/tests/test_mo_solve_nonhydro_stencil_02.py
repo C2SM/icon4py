@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
     mo_solve_nonhydro_stencil_02,
@@ -58,4 +59,8 @@ class TestMoSolveNonhydroStencil02(StencilTest):
             exner_ref_mc=exner_ref_mc,
             exner_pr=exner_pr,
             z_exner_ex_pr=z_exner_ex_pr,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(1),
+            vertical_end=int32(mesh.k_level),
         )
