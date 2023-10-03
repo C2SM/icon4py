@@ -659,7 +659,7 @@ def test_nonhydro_corrector_step(
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.z_graddiv_vn()),
         np.asarray(z_fields.z_graddiv_vn),
-        atol = 1e-9
+        atol = 1e-12
     )
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.exner_new()),
