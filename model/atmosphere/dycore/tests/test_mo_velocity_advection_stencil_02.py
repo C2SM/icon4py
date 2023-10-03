@@ -63,7 +63,7 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
             vt=vt,
             vn_ie=vn_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
             z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
-            horizontal_start=int32(0),
+            horizontal_start=int32(1),
             horizontal_end=int32(mesh.n_cells),
             vertical_start=int32(1),
             vertical_end=int32(mesh.k_level),
