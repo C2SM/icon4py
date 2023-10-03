@@ -36,7 +36,7 @@ from icon4py.model.common.dimension import (
 @dataclass
 class InterpolationState:
     """
-    represents the ICON interpolation state.
+    Represents the ICON interpolation state used int SolveNonHydro.
 
     TODO [ml]: keep? does this state make sense at all?
     """
