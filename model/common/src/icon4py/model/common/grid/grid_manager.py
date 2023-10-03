@@ -34,11 +34,11 @@ except ImportError:
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
-    E2C2EDim,
-    E2C2EODim,
     C2EDim,
     C2VDim,
     CellDim,
+    E2C2EDim,
+    E2C2EODim,
     E2C2VDim,
     E2CDim,
     E2VDim,
@@ -180,9 +180,7 @@ class GridFile:
     def dimension(self, name: GridFileName) -> int:
         return self._dataset.dimensions[name].size
 
-    def int_field(
-        self, name: GridFileName, transpose=True, dtype=np.int32
-    ) -> np.ndarray:
+    def int_field(self, name: GridFileName, transpose=True, dtype=np.int32) -> np.ndarray:
         try:
             nc_variable = self._dataset.variables[name]
 
@@ -407,15 +405,9 @@ class GridManager:
                     V2E2VDim: v2e2v,
                 }
             )
-            .with_start_end_indices(
-                CellDim, start_indices[CellDim], end_indices[CellDim]
-            )
-            .with_start_end_indices(
-                EdgeDim, start_indices[EdgeDim], end_indices[EdgeDim]
-            )
-            .with_start_end_indices(
-                VertexDim, start_indices[VertexDim], end_indices[VertexDim]
-            )
+            .with_start_end_indices(CellDim, start_indices[CellDim], end_indices[CellDim])
+            .with_start_end_indices(EdgeDim, start_indices[EdgeDim], end_indices[EdgeDim])
+            .with_start_end_indices(VertexDim, start_indices[VertexDim], end_indices[VertexDim])
         )
 
         return icon_grid

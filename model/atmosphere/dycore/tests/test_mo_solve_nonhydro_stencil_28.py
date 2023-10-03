@@ -27,9 +27,7 @@ class TestMoSolveNonhydroStencil28(StencilTest):
     OUTPUTS = ("vn",)
 
     @staticmethod
-    def reference(
-        mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn, **kwargs
-    ) -> np.array:
+    def reference(mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn, **kwargs) -> np.array:
         vn = vn + (iau_wgt_dyn * vn_incr)
         return dict(vn=vn)
 

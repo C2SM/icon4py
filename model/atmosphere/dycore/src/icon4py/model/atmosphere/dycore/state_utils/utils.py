@@ -31,23 +31,17 @@ def zero_field(mesh, *dims: Dimension, is_halfdim=False, dtype=float):
 
 
 @field_operator
-def _identity_c_k(
-    field: Field[[CellDim, KDim], float]
-) -> Field[[CellDim, KDim], float]:
+def _identity_c_k(field: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
     return field
 
 
 @program
-def copy_field(
-    old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]
-):
+def copy_field(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]):
     _identity_c_k(old_f, out=new_f)
 
 
 @field_operator
-def _identity_e_k(
-    field: Field[[EdgeDim, KDim], float]
-) -> Field[[EdgeDim, KDim], float]:
+def _identity_e_k(field: Field[[EdgeDim, KDim], float]) -> Field[[EdgeDim, KDim], float]:
     return field
 
 
@@ -99,9 +93,7 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
 
 
 @program
-def scale_k(
-    field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]
-):
+def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
 
 
@@ -170,18 +162,14 @@ def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]) -> Field[[KDim], fl
 
 
 @field_operator
-def _setup_runtime_diff_multfac_vn(
-    k4: float, dyn_substeps: float
-) -> Field[[KDim], float]:
+def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> Field[[KDim], float]:
     con = 1.0 / 128.0
     dyn = k4 * dyn_substeps / 3.0
     return broadcast(minimum(con, dyn), (KDim,))
 
 
 @field_operator
-def _setup_initial_diff_multfac_vn(
-    k4: float, hdiff_efdt_ratio: float
-) -> Field[[KDim], float]:
+def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> Field[[KDim], float]:
     return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
 
 
@@ -201,9 +189,7 @@ def setup_fields_for_initial_step(
     diff_multfac_vn: Field[[KDim], float],
     smag_limit: Field[[KDim], float],
 ):
-    _setup_fields_for_initial_step(
-        k4, hdiff_efdt_ratio, out=(diff_multfac_vn, smag_limit)
-    )
+    _setup_fields_for_initial_step(k4, hdiff_efdt_ratio, out=(diff_multfac_vn, smag_limit))
 
 
 @field_operator
@@ -314,9 +300,7 @@ def init_diffusion_local_fields_for_regular_timestep(
 
 
 @field_operator
-def _compute_z_raylfac(
-    rayleigh_w: Field[[KDim], float], dtime: float
-) -> Field[[KDim], float]:
+def _compute_z_raylfac(rayleigh_w: Field[[KDim], float], dtime: float) -> Field[[KDim], float]:
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 

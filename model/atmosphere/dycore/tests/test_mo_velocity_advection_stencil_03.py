@@ -19,11 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
     mo_velocity_advection_stencil_03,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestMoVelocityAdvectionStencil03(StencilTest):
@@ -35,7 +31,7 @@ class TestMoVelocityAdvectionStencil03(StencilTest):
         vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
         z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
         z_vt_ie[:, 0] = 0
-        return dict(z_vt_ie=z_vt_ie[int32(1):int32(mesh.n_cells), int32(1):int32(mesh.k_level)])
+        return dict(z_vt_ie=z_vt_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)])
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -47,7 +43,7 @@ class TestMoVelocityAdvectionStencil03(StencilTest):
         return dict(
             wgtfac_e=wgtfac_e,
             vt=vt,
-            z_vt_ie=z_vt_ie[int32(1):int32(mesh.n_cells), int32(1):int32(mesh.k_level)],
+            z_vt_ie=z_vt_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
             horizontal_start=int32(1),
             horizontal_end=int32(mesh.n_cells),
             vertical_start=int32(1),

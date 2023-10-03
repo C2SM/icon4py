@@ -12,19 +12,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-
 from gt4py.next.ffront.fbuiltins import int32
+
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
-from icon4py.model.common.dimension import (
-    CellDim,
-    E2C2EODim,
-    E2CDim,
-    EdgeDim,
-    KDim,
-    VertexDim,
-)
+from icon4py.model.common.dimension import CellDim, E2C2EODim, E2CDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import random_field, random_mask
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -83,9 +76,7 @@ def mo_velocity_advection_stencil_20_numpy(
         * area_edge
         * (
             np.sum(geofac_grdiv * vn[e2c2eO], axis=1)
-            + tangent_orientation
-            * inv_primal_edge_length
-            * (zeta[e2v][:, 1] - zeta[e2v][:, 0])
+            + tangent_orientation * inv_primal_edge_length * (zeta[e2v][:, 1] - zeta[e2v][:, 0])
         ),
         ddt_vn_adv,
     )

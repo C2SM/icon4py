@@ -41,9 +41,7 @@ class InterpolationState:
     TODO [ml]: keep? does this state make sense at all?
     """
 
-    e_bln_c_s: Field[
-        [CEDim], float
-    ]  # coefficent for bilinear interpolation from edge to cell ()
+    e_bln_c_s: Field[[CEDim], float]  # coefficent for bilinear interpolation from edge to cell ()
     rbf_coeff_1: Field[
         [VertexDim, V2EDim], float
     ]  # rbf_vec_coeff_v_1(nproma, rbf_vec_dim_v, nblks_v)
@@ -51,9 +49,7 @@ class InterpolationState:
         [VertexDim, V2EDim], float
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
-    geofac_div: Field[
-        [CEDim], float
-    ]  # factor for divergence (nproma,cell_type,nblks_c)
+    geofac_div: Field[[CEDim], float]  # factor for divergence (nproma,cell_type,nblks_c)
 
     geofac_n2s: Field[
         [CellDim, C2E2CODim], float
@@ -73,13 +69,6 @@ class InterpolationState:
     pos_on_tplane_e_2: Field[[ECDim], float]
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float]
 
-    # @property
-    # def geofac_div(self):
-    #     old_shape = np.asarray(self.geofac_div).shape
-    #     return np_as_located_field(CEDim)(
-    #         np.asarray(self.geofac_div).reshape((old_shape[0] * old_shape[1],))
-    #     )
-
     @property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
         return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
@@ -93,15 +82,3 @@ class InterpolationState:
                 old_shape[0] * old_shape[1],
             )
         )
-
-    # @property
-    # def pos_on_tplane_e_1(self) -> Field[[ECDim], float]:
-    #     return np_as_located_field(ECDim)(
-    #         np.asarray(self.pos_on_tplane_e)
-    #     )  # TODO: @nfarabullini: check that this should not be self.pos_on_tplane_e[0]
-    #
-    # @property
-    # def pos_on_tplane_e_2(self) -> Field[[ECDim], float]:
-    #     return np_as_located_field(ECDim)(
-    #         np.asarray(self.pos_on_tplane_e)
-    #     )  # TODO: @nfarabullini: check that this should not be self.pos_on_tplane_e[1]

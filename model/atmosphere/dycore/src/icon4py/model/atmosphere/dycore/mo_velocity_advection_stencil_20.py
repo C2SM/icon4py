@@ -13,15 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import (
-    Field,
-    abs,
-    broadcast,
-    int32,
-    minimum,
-    neighbor_sum,
-    where,
-)
+from gt4py.next.ffront.fbuiltins import Field, abs, broadcast, int32, minimum, neighbor_sum, where
 
 from icon4py.model.common.dimension import (
     E2C,
@@ -78,9 +70,7 @@ def _mo_velocity_advection_stencil_20(
         * area_edge
         * (
             neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
-            + tangent_orientation
-            * inv_primal_edge_length
-            * (zeta(E2V[1]) - zeta(E2V[0]))
+            + tangent_orientation * inv_primal_edge_length * (zeta(E2V[1]) - zeta(E2V[0]))
         ),
         ddt_vn_apc,
     )

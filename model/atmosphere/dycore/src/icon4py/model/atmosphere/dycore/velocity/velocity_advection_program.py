@@ -48,7 +48,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.atmosphere.dycore.state_utils.utils import _set_bool_c_k, _set_zero_c_k
 
 
 @field_operator
@@ -83,9 +82,7 @@ def _fused_stencils_4_5_6(
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 
-    vn_ie = where(
-        k_field == nlev, _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn), vn_ie
-    )
+    vn_ie = where(k_field == nlev, _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn), vn_ie)
 
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
 
@@ -203,9 +200,7 @@ def _fused_stencils_11_to_13(
         local_z_w_con_c,
     )
 
-    local_z_w_con_c = where(
-        k_field == nlev, _mo_velocity_advection_stencil_12(), local_z_w_con_c
-    )
+    local_z_w_con_c = where(k_field == nlev, _mo_velocity_advection_stencil_12(), local_z_w_con_c)
 
     local_z_w_con_c = where(
         (k_field >= (nflatlev_startindex + int32(1))) & (k_field < nlev),
@@ -250,11 +245,7 @@ def _fused_stencil_14(
     cfl_w_limit: float,
     dtime: float,
 ):
-    (
-        local_cfl_clipping,
-        local_vcfl,
-        local_z_w_con_c,
-    ) = _mo_velocity_advection_stencil_14(
+    (local_cfl_clipping, local_vcfl, local_z_w_con_c,) = _mo_velocity_advection_stencil_14(
         ddqz_z_half,
         local_z_w_con_c,
         cfl_w_limit,
@@ -299,13 +290,9 @@ def _fused_stencils_16_to_17(
     coeff1_dwdz: Field[[CellDim, KDim], float],
     coeff2_dwdz: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    ddt_w_adv = _mo_velocity_advection_stencil_16(
-        local_z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
-    )
+    ddt_w_adv = _mo_velocity_advection_stencil_16(local_z_w_con_c, w, coeff1_dwdz, coeff2_dwdz)
 
-    ddt_w_adv = _mo_velocity_advection_stencil_17(
-        e_bln_c_s, local_z_v_grad_w, ddt_w_adv
-    )
+    ddt_w_adv = _mo_velocity_advection_stencil_17(e_bln_c_s, local_z_v_grad_w, ddt_w_adv)
     return ddt_w_adv
 
 

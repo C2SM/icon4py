@@ -13,11 +13,6 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
@@ -29,6 +24,11 @@ from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvec
 from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 @pytest.mark.datatest
@@ -39,21 +39,14 @@ def test_nonhydro_params():
     assert nonhydro_params.df32 == pytest.approx(
         config.divdamp_fac3 - config.divdamp_fac2, abs=1e-12
     )
-    assert nonhydro_params.dz32 == pytest.approx(
-        config.divdamp_z3 - config.divdamp_z2, abs=1e-12
-    )
+    assert nonhydro_params.dz32 == pytest.approx(config.divdamp_z3 - config.divdamp_z2, abs=1e-12)
     assert nonhydro_params.df42 == pytest.approx(
         config.divdamp_fac4 - config.divdamp_fac2, abs=1e-12
     )
-    assert nonhydro_params.dz42 == pytest.approx(
-        config.divdamp_z4 - config.divdamp_z2, abs=1e-12
-    )
+    assert nonhydro_params.dz42 == pytest.approx(config.divdamp_z4 - config.divdamp_z2, abs=1e-12)
 
     assert nonhydro_params.bqdr == pytest.approx(
-        (
-            nonhydro_params.df42 * nonhydro_params.dz32
-            - nonhydro_params.df32 * nonhydro_params.dz42
-        )
+        (nonhydro_params.df42 * nonhydro_params.dz32 - nonhydro_params.df32 * nonhydro_params.dz42)
         / (
             nonhydro_params.dz32
             * nonhydro_params.dz42
@@ -62,8 +55,7 @@ def test_nonhydro_params():
         abs=1e-12,
     )
     assert nonhydro_params.aqdr == pytest.approx(
-        nonhydro_params.df32 / nonhydro_params.dz32
-        - nonhydro_params.bqdr * nonhydro_params.dz32,
+        nonhydro_params.df32 / nonhydro_params.dz32 - nonhydro_params.bqdr * nonhydro_params.dz32,
         abs=1e-12,
     )
 
@@ -110,7 +102,6 @@ def test_nonhydro_predictor_step(
     a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
-    ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     nnow = 0
     nnew = 1
 
@@ -173,9 +164,7 @@ def test_nonhydro_predictor_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
-        icon_grid.n_lev()
-    )
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -222,9 +211,7 @@ def test_nonhydro_predictor_step(
     icon_result_vn_ie = sp_exit.vn_ie()
     icon_result_w_new = sp_exit.w_new()
     icon_result_exner_new = sp_exit.exner_new()
-    icon_result_exner_now = sp_exit.exner_now()
     icon_result_theta_v_new = sp_exit.theta_v_new()
-    icon_result_theta_v_ic = sp_exit.theta_v_ic()
     icon_result_rho_ic = sp_exit.rho_ic()
     icon_result_w_concorr_c = sp_exit.w_concorr_c()
     icon_result_mass_fl_e = sp_exit.mass_fl_e()
@@ -360,9 +347,7 @@ def test_nonhydro_predictor_step(
         atol=5e-20,
     )
     # stencil 30
-    assert dallclose(
-        np.asarray(sp_exit.vt()), np.asarray(diagnostic_state_nh.vt), atol=5e-14
-    )
+    assert dallclose(np.asarray(sp_exit.vt()), np.asarray(diagnostic_state_nh.vt), atol=5e-14)
 
     # stencil 32
     assert dallclose(
@@ -373,9 +358,7 @@ def test_nonhydro_predictor_step(
     # stencil 32
     # TODO: @abishekg7 higher tol.
     assert dallclose(
-        np.asarray(sp_exit.z_theta_v_fl_e()),
-        np.asarray(solve_nonhydro.z_theta_v_fl_e),
-        atol = 1e-9
+        np.asarray(sp_exit.z_theta_v_fl_e()), np.asarray(solve_nonhydro.z_theta_v_fl_e), atol=1e-9
     )
 
     # stencil 35,36, 37,38
@@ -386,9 +369,7 @@ def test_nonhydro_predictor_step(
     )
 
     # stencil 35,36, 37,38
-    assert dallclose(
-        np.asarray(sp_exit.z_vt_ie()), np.asarray(z_fields.z_vt_ie), atol=2e-14
-    )
+    assert dallclose(np.asarray(sp_exit.z_vt_ie()), np.asarray(z_fields.z_vt_ie), atol=2e-14)
     # stencil 35,36
     assert dallclose(
         np.asarray(sp_exit.z_kin_hor_e())[2538:31558, :],
@@ -462,27 +443,15 @@ def test_nonhydro_predictor_step(
         np.asarray(z_fields.z_exner_expl)[3316:20896, :],
         atol=2e-15,
     )
-    # stencils 46, 47 (ok). 52, 53, 54
-    # assert dallclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state_nnew.w))
-    # stencil 52
-    # np.max(np.abs(np.asarray(sp_exit.w_new_52())[:, :] - np.asarray(prognostic_state_nnew.w)[:, :]))
-    # stencil 55
-    # np.max(np.abs(np.asarray(sp_exit.rho_new_55())[:, :] - np.asarray(prognostic_state_nnew.rho)[:, :]))
 
     # end
     assert dallclose(np.asarray(sp_exit.rho()), np.asarray(prognostic_state_nnew.rho))
-    assert dallclose(
-        np.asarray(icon_result_w_new), np.asarray(prognostic_state_nnew.w), atol=7e-14
-    )
+    assert dallclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state_nnew.w), atol=7e-14)
 
     # not tested
-    assert dallclose(
-        np.asarray(icon_result_exner_new), np.asarray(prognostic_state_nnew.exner)
-    )
+    assert dallclose(np.asarray(icon_result_exner_new), np.asarray(prognostic_state_nnew.exner))
 
-    assert dallclose(
-        np.asarray(icon_result_theta_v_new), np.asarray(prognostic_state_nnew.theta_v)
-    )
+    assert dallclose(np.asarray(icon_result_theta_v_new), np.asarray(prognostic_state_nnew.theta_v))
 
 
 @pytest.mark.datatest
@@ -599,9 +568,7 @@ def test_nonhydro_corrector_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
-        icon_grid.n_lev()
-    )
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -659,7 +626,7 @@ def test_nonhydro_corrector_step(
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.z_graddiv_vn()),
         np.asarray(z_fields.z_graddiv_vn),
-        atol = 1e-12
+        atol=1e-12,
     )
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.exner_new()),
@@ -741,8 +708,6 @@ def test_run_solve_nonhydro_single_step(
     sp_v = savepoint_velocity_init
     mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
-    clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
-    r_nsubsteps = sp_d.get_metadata("nsteps").get("nsteps")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
@@ -827,9 +792,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
-        icon_grid.n_lev()
-    )
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -882,9 +845,7 @@ def test_run_solve_nonhydro_single_step(
         np.asarray(prognostic_state_nnew.theta_v),
     )
 
-    assert dallclose(
-        np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner)
-    )
+    assert dallclose(np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner))
 
 
 @pytest.mark.skip
@@ -1008,9 +969,7 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
-        icon_grid.n_lev()
-    )
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -1122,6 +1081,4 @@ def test_run_solve_nonhydro_multi_step(
         np.asarray(prognostic_state_nnew.theta_v),
     )
 
-    assert dallclose(
-        np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner)
-    )
+    assert dallclose(np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner))

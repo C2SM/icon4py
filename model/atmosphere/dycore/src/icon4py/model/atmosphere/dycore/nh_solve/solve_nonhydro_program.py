@@ -80,9 +80,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45_b import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
     _mo_solve_nonhydro_stencil_47,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_48 import (
-    _mo_solve_nonhydro_stencil_48,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_49 import (
     _mo_solve_nonhydro_stencil_49,
 )
@@ -98,8 +95,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
     _mo_solve_nonhydro_stencil_62,
 )
-from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, ECDim, EdgeDim, KDim
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
+from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
 
 
 @program
@@ -203,7 +200,6 @@ def _predictor_stencils_4_5_6(
     # WS: moved full z_exner_ic calculation here to avoid OpenACC dependency on jk+1 below
     # possibly GZ will want to consider the cache ramifications of this change for CPU
     z_exner_ic = where(
-        # (k_field >= lower_k_bound) & (k_field < nlev),
         k_field < nlev,
         _mo_solve_nonhydro_stencil_05(wgtfac_c, z_exner_ex_pr),
         z_exner_ic,
@@ -211,7 +207,6 @@ def _predictor_stencils_4_5_6(
 
     # First vertical derivative of perturbation Exner pressure
     z_dexner_dz_c_1 = where(
-        # (k_field >= lower_k_bound) & (k_field < nlev),
         k_field < nlev,
         _mo_solve_nonhydro_stencil_06(z_exner_ic, inv_ddqz_z_full),
         z_dexner_dz_c_1,
@@ -285,14 +280,12 @@ def _predictor_stencils_7_8_9(
     )
 
     (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
-        # (k_field >= 1) & (k_field < nlev),
         k_field >= int32(1),
         _mo_solve_nonhydro_stencil_08(wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
     (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-        # (k_field >= 1) & (k_field < nlev),
         k_field >= int32(1),
         _mo_solve_nonhydro_stencil_09(
             wgtfac_c,
@@ -382,9 +375,7 @@ def _predictor_stencils_11_lower_upper(
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_11_upper(
-            wgtfacq_c_dsl, z_rth_pr, theta_ref_ic, z_theta_v_pr_ic
-        ),
+        _mo_solve_nonhydro_stencil_11_upper(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic, z_theta_v_pr_ic),
         (z_theta_v_pr_ic, theta_v_ic),
     )
     return z_theta_v_pr_ic, theta_v_ic
@@ -493,14 +484,12 @@ def _predictor_stencils_35_36(
     Field[[EdgeDim, KDim], float],
 ]:
     z_w_concorr_me = where(
-        # (k_field >= nflatlev_startindex) & (k_field < nlev),
-        k_field >= nflatlev_startindex,  # TODO: @abishekg7 does this need to change
+        k_field >= nflatlev_startindex,
         _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        # (k_field >= 1) & (k_field < nlev),
-        k_field >= int32(1),  # TODO: @abishekg7 does this need to change
+        k_field >= int32(1),
         _mo_solve_nonhydro_stencil_36(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -567,9 +556,7 @@ def _predictor_stencils_37_38(
         _mo_solve_nonhydro_stencil_37(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
-    vn_ie = where(
-        k_field == nlev, _mo_solve_nonhydro_stencil_38(vn, wgtfacq_e_dsl), vn_ie
-    )
+    vn_ie = where(k_field == nlev, _mo_solve_nonhydro_stencil_38(vn, wgtfacq_e_dsl), vn_ie)
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 
@@ -617,9 +604,7 @@ def _stencils_39_40(
     nlev: int32,
 ) -> Field[[CellDim, KDim], float]:
     w_concorr_c = where(
-        # (k_field >= nflatlev_startindex_plus1) & (k_field < nlev),
-        k_field
-        >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
+        k_field >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
         _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         w_concorr_c,
     )
@@ -1096,7 +1081,6 @@ def _stencils_61_62(
     Field[[CellDim, KDim], float],
 ]:
     (rho_new, exner_new, w_new) = where(
-        # (k_field >= 0) & (k_field < nlev),
         (k_field >= int32(0)) & (k_field < nlev),
         _mo_solve_nonhydro_stencil_61(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime

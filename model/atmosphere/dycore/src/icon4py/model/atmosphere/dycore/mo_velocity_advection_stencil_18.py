@@ -13,14 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import (
-    Field,
-    abs,
-    int32,
-    minimum,
-    neighbor_sum,
-    where,
-)
+from gt4py.next.ffront.fbuiltins import Field, abs, int32, minimum, neighbor_sum, where
 
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 
@@ -52,8 +45,7 @@ def _mo_velocity_advection_stencil_18(
 
     ddt_w_adv = where(
         levmask & cfl_clipping & owner_mask,
-        ddt_w_adv
-        + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
+        ddt_w_adv + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
         ddt_w_adv,
     )
 

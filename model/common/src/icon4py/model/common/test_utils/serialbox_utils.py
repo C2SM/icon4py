@@ -17,18 +17,20 @@ import serialbox as ser
 from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
+
 from icon4py.model.atmosphere.diffusion.diffusion import VectorTuple
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
-    PrognosticState,
 )
-
-
+from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-
-import icon4py
+from icon4py.model.atmosphere.dycore.state_utils.metric_state import (
+    MetricState,
+    MetricStateNonHydro,
+)
+from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.common import dimension
 from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
@@ -51,19 +53,9 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalGridSize,
-)
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
 from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    flatten_first_two_dims,
-)
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricState, MetricStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 
 class IconSavepoint:
@@ -271,12 +263,6 @@ class IconGridSavePoint(IconSavepoint):
         mask = self._read_field_for_dim(field_name, self._read_bool, dim)
         return np.squeeze(mask)
 
-    def nflatlev(self):
-        return self._read_int32_shift1("nflatlev")[0]
-
-    def nflat_gradp(self):
-        return self._read_int32_shift1("nflat_gradp")[0]
-
     def global_index(self, dim: Dimension):
         field_name = "glb_index"
         return self._read_field_for_dim(field_name, self._read_int32_shift1, dim)
@@ -331,7 +317,7 @@ class IconGridSavePoint(IconSavepoint):
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
                     E2C2EDim: e2c2e,
-                    E2C2EODim: e2c2e0
+                    E2C2EODim: e2c2e0,
                 }
             )
             .with_connectivities(
@@ -429,12 +415,6 @@ class InterpolationSavepoint(IconSavepoint):
     def pos_on_tplane_e_y(self):
         field = self._get_field("pos_on_tplane_e_y", EdgeDim, E2CDim)
         return as_1D_sparse_field(field[:, 0:2], ECDim)
-
-    # def pos_on_tplane_e(self, ind):
-    #     buffer = np.squeeze(self.serializer.read("pos_on_tplane_e", self.savepoint))
-    #     field = np_as_located_field(EdgeDim, E2CDim)(buffer[:, :, ind-1])
-    #
-    #     return as_1D_sparse_field(field, ECDim)
 
     def rbf_vec_coeff_e(self):
         buffer = np.squeeze(
@@ -574,9 +554,7 @@ class MetricSavepoint(IconSavepoint):
             theta_ref_mc=self.theta_ref_mc(),
             wgtfac_c=self.wgtfac_c(),
             wgtfac_e=self.wgtfac_e(),
-            wgtfacq_e_dsl=self.wgtfacq_e_dsl(
-                10
-            ),  # TODO @nfarabullini: put icon_grid.n_lev( back
+            wgtfacq_e_dsl=self.wgtfacq_e_dsl(10),  # TODO @nfarabullini: put icon_grid.n_lev( back
             zd_diffcoef=self.zd_diffcoef(),
             zd_intcoef=self.zd_intcoef(),
             zd_vertidx=self.zd_vertidx(),
@@ -666,9 +644,7 @@ class MetricSavepointNonHydro(IconSavepoint):
         return flatten_first_two_dims(ECDim, KDim, field=field)
 
     def vertoffset_gradp(self):
-        field = self._get_field(
-            "vertoffset_gradp_dsl", EdgeDim, E2CDim, KDim, dtype=int32
-        )
+        field = self._get_field("vertoffset_gradp_dsl", EdgeDim, E2CDim, KDim, dtype=int32)
         return flatten_first_two_dims(ECDim, KDim, field=field)
 
     def wgtfac_c(self):
@@ -844,10 +820,7 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("ddt_exner_phy", CellDim, KDim)
 
     def ddt_vn_apc_pc_before(self, ntnd):
-        # return self._get_field("ddt_vn_apc_pc", CellDim, KDim)
-        buffer = np.squeeze(
-            self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float))
         return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
 
     def ddt_vn_phy(self):
@@ -884,15 +857,11 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("grf_tend_vn", EdgeDim, KDim)
 
     def ddt_vn_adv_ntl(self, ntl):
-        buffer = np.squeeze(
-            self.serializer.read("ddt_vn_adv_ntl", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("ddt_vn_adv_ntl", self.savepoint).astype(float))
         return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntl - 1])
 
     def ddt_w_adv_ntl(self, ntl):
-        buffer = np.squeeze(
-            self.serializer.read("ddt_w_adv_ntl", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("ddt_w_adv_ntl", self.savepoint).astype(float))
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntl - 1])
 
     def grf_tend_w(self):
@@ -997,18 +966,12 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self.serializer.read("cfl_w_limit", self.savepoint)[0]
 
     def ddt_vn_apc_pc(self, ntnd):
-        # return self._get_field("ddt_vn_apc_pc", EdgeDim, KDim)
-        buffer = np.squeeze(
-            self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float))
         return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
 
     def ddt_w_adv_pc(self, ntnd):
-        buffer = np.squeeze(
-            self.serializer.read("ddt_w_adv_pc", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("ddt_w_adv_pc", self.savepoint).astype(float))
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
-        # return self._get_field("ddt_w_adv_pc", CellDim, KDim)
 
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
@@ -1092,43 +1055,26 @@ class IconExitSavepoint(IconSavepoint):
     def theta_v_now(self):
         return self._get_field("x_theta_v_now", CellDim, KDim)
 
-    # def ddt_vn_apc_pc(self):
-    #     return self._get_field("x_ddt_vn_apc_pc", EdgeDim, KDim)
-    #
-    # def ddt_w_adv_pc(self):
-    #     return self._get_field("x_ddt_w_adv_pc", CellDim, KDim)
-
     def ddt_vn_apc_pc(self, ntnd):
-        # return self._get_field("x_ddt_vn_apc_pc", EdgeDim, KDim)
-        buffer = np.squeeze(
-            self.serializer.read("x_ddt_vn_apc_pc", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("x_ddt_vn_apc_pc", self.savepoint).astype(float))
         return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
 
     def ddt_vn_apc_pc_19(self, ntnd):
-        # return self._get_field("x_ddt_vn_apc_pc", EdgeDim, KDim)
         buffer = np.squeeze(
             self.serializer.read("x_ddt_vn_apc_pc_19", self.savepoint).astype(float)
         )
         return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
 
     def ddt_w_adv_pc(self, ntnd):
-        buffer = np.squeeze(
-            self.serializer.read("x_ddt_w_adv_pc", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc", self.savepoint).astype(float))
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
-        # return self._get_field("ddt_w_adv_pc", CellDim, KDim)
 
     def ddt_w_adv_pc_16(self, ntnd):
-        buffer = np.squeeze(
-            self.serializer.read("x_ddt_w_adv_pc_16", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc_16", self.savepoint).astype(float))
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
 
     def ddt_w_adv_pc_17(self, ntnd):
-        buffer = np.squeeze(
-            self.serializer.read("x_ddt_w_adv_pc_17", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc_17", self.savepoint).astype(float))
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
 
     def scalfac_exdiff(self) -> float:
@@ -1173,9 +1119,6 @@ class IconExitSavepoint(IconSavepoint):
     def vcfl(self):
         return self._get_field("x_vcfl_dsl", CellDim, KDim)
 
-    def exner_now(self):
-        return self._get_field("x_exner_now", CellDim, KDim)
-
     def exner_new(self):
         return self._get_field("x_exner_new", CellDim, KDim)
 
@@ -1219,15 +1162,11 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_w_new", CellDim, KDim)
 
     def z_dexner_dz_c(self, ntnd):
-        buffer = np.squeeze(
-            self.serializer.read("x_z_dexner_dz_c", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("x_z_dexner_dz_c", self.savepoint).astype(float))
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
 
     def z_rth_pr(self, ind):
-        buffer = np.squeeze(
-            self.serializer.read("x_z_rth_pr", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("x_z_rth_pr", self.savepoint).astype(float))
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ind - 1])
 
     def z_th_ddz_exner_c(self):
@@ -1238,9 +1177,6 @@ class IconExitSavepoint(IconSavepoint):
 
     def z_hydro_corr(self):
         return self._get_field("x_z_hydro_corr", EdgeDim, KDim)
-
-    def z_theta_v_fl_e(self):
-        return self._get_field("x_z_theta_v_fl_e", EdgeDim, KDim)
 
     def z_flxdiv_mass(self):
         return self._get_field("x_z_flxdiv_mass", CellDim, KDim)
@@ -1285,16 +1221,8 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_z_graddiv_vn", EdgeDim, KDim)
 
     def z_grad_rth(self, ind):
-        buffer = np.squeeze(
-            self.serializer.read("x_z_grad_rth", self.savepoint).astype(float)
-        )
+        buffer = np.squeeze(self.serializer.read("x_z_grad_rth", self.savepoint).astype(float))
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ind - 1])
-
-    # def p_distv_bary_1(self):
-    #     return self._get_field("x_p_distv_bary_1", EdgeDim, KDim)
-    #
-    # def p_distv_bary_2(self):
-    #     return self._get_field("x_p_distv_bary_2", EdgeDim, KDim)
 
     def z_gradh_exner_18(self):
         return self._get_field("x_z_gradh_exner_18", EdgeDim, KDim)
@@ -1350,8 +1278,6 @@ class IconExitSavepoint(IconSavepoint):
     def rho_new_55(self):
         return self._get_field("x_rho_new_55", CellDim, KDim)
 
-    ### Nikki serialization
-
     def w_10_start(self):
         return self._get_field("w_10_start", CellDim, KDim)
 
@@ -1380,8 +1306,6 @@ class IconNHFinalExitSavepoint(IconSavepoint):
 
     def exner_new(self):
         return self._get_field("x_exner", CellDim, KDim)
-
-
 
 
 class IconSerialDataProvider:
@@ -1436,13 +1360,26 @@ class IconSerialDataProvider:
     def from_savepoint_velocity_init(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconVelocityInitSavepoint:
-        savepoint = self.serializer.savepoint["call-velocity-tendencies"].istep[istep].vn_only[vn_only].date[date].jstep[jstep].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["call-velocity-tendencies"]
+            .istep[istep]
+            .vn_only[vn_only]
+            .date[date]
+            .jstep[jstep]
+            .as_savepoint()
+        )
         return IconVelocityInitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_nonhydro_init(
         self, istep: int, date: str, jstep: int
     ) -> IconNonHydroInitSavepoint:
-        savepoint = self.serializer.savepoint["solve_nonhydro"].istep[istep].date[date].jstep[jstep].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["solve_nonhydro"]
+            .istep[istep]
+            .date[date]
+            .jstep[jstep]
+            .as_savepoint()
+        )
         return IconNonHydroInitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
@@ -1466,18 +1403,28 @@ class IconSerialDataProvider:
     def from_savepoint_velocity_exit(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconExitSavepoint:
-        savepoint = self.serializer.savepoint["call-velocity-tendencies"].istep[istep].vn_only[vn_only].date[date].jstep[jstep].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["call-velocity-tendencies"]
+            .istep[istep]
+            .vn_only[vn_only]
+            .date[date]
+            .jstep[jstep]
+            .as_savepoint()
+        )
         return IconExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_nonhydro_exit(
-        self, istep: int, date: str, jstep: int
-    ) -> IconExitSavepoint:
-        savepoint = self.serializer.savepoint["solve_nonhydro"].istep[istep].date[date].jstep[jstep].as_savepoint()
+    def from_savepoint_nonhydro_exit(self, istep: int, date: str, jstep: int) -> IconExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["solve_nonhydro"]
+            .istep[istep]
+            .date[date]
+            .jstep[jstep]
+            .as_savepoint()
+        )
         return IconExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_nonhydro_step_exit(
-        self, date: str, jstep: int
-    ) -> IconNHFinalExitSavepoint:
-        savepoint = self.serializer.savepoint["solve_nonhydro_step"].date[date].jstep[jstep].as_savepoint()
+    def from_savepoint_nonhydro_step_exit(self, date: str, jstep: int) -> IconNHFinalExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["solve_nonhydro_step"].date[date].jstep[jstep].as_savepoint()
+        )
         return IconNHFinalExitSavepoint(savepoint, self.serializer, size=self.grid_size)
-

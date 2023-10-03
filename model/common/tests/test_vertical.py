@@ -33,10 +33,7 @@ def test_nrdmax_calculation(max_h, damping, delta, grid_savepoint):
         nflat_gradp=grid_savepoint.nflat_gradp(),
         nflatlev=grid_savepoint.nflatlev(),
     )
-    assert (
-        vertical_params.index_of_damping_layer
-        == vct_a.shape[0] - math.ceil(damping / delta) - 1
-    )
+    assert vertical_params.index_of_damping_layer == vct_a.shape[0] - math.ceil(damping / delta) - 1
 
 
 @pytest.mark.datatest

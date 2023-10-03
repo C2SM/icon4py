@@ -14,14 +14,13 @@ from typing import Optional
 
 import numpy as np
 from gt4py.next.common import Field
-from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.iterator.builtins import int32
+from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn,
     run_gtfn_cached,
     run_gtfn_imperative,
 )
-
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
@@ -57,18 +56,15 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.grid.icon_grid import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import (
-    DiagnosticState,
-    DiagnosticStateNonHydro,
-)
+from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.grid.icon_grid import IconGrid
+from icon4py.model.common.grid.vertical import VerticalModelParams
 
 
 cached_backend = run_gtfn_cached
@@ -156,9 +152,7 @@ class VelocityAdvection:
         area_edge: Field[[EdgeDim], float],
     ):
         self.cfl_w_limit = self.cfl_w_limit / dtime
-        self.scalfac_exdiff = self.scalfac_exdiff / (
-            dtime * (0.85 - self.cfl_w_limit * dtime)
-        )
+        self.scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - self.cfl_w_limit * dtime))
 
         (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
             VertexDim,
@@ -197,9 +191,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
-                run_gtfn
-            )(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
@@ -364,15 +356,12 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
-            vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2) - 1
-            ),
+            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
             vertical_end=int32(self.grid.n_lev() - 3),
             offset_provider={},
         )
 
         self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping, 0))
-        maxvcfl_dsl = np.max(np.abs(np.where(self.cfl_clipping, self.vcfl_dsl, 0.0)))
 
         mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
             z_w_con_c=self.z_w_con_c,
@@ -418,9 +407,7 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=indices_4_1,
             horizontal_end=indices_4_2,
-            vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2) - 1
-            ),
+            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
             vertical_end=int32(self.grid.n_lev() - 3),
             offset_provider={
                 "C2E2CO": self.grid.get_c2e2co_connectivity(),
@@ -471,9 +458,7 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=indices_5_1,
             horizontal_end=indices_5_2,
-            vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2) - 1
-            ),
+            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
             vertical_end=int32(self.grid.n_lev() - 4),
             offset_provider={
                 "E2C": self.grid.get_e2c_connectivity(),
@@ -503,9 +488,7 @@ class VelocityAdvection:
         area_edge: Field[[EdgeDim], float],
     ):
         self.cfl_w_limit = self.cfl_w_limit / dtime
-        self.scalfac_exdiff = self.scalfac_exdiff / (
-            dtime * (0.85 - self.cfl_w_limit * dtime)
-        )
+        self.scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - self.cfl_w_limit * dtime))
 
         (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
             VertexDim,
@@ -538,9 +521,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
-                run_gtfn
-            )(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
@@ -623,15 +604,12 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=indices_3_1,
             horizontal_end=indices_3_2,
-            vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2)
-            ),
+            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
             vertical_end=int32(self.grid.n_lev() - 3),
             offset_provider={},
         )
 
         self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping, 0))
-        maxvcfl_dsl = np.max(np.abs(np.where(self.cfl_clipping, self.vcfl_dsl, 0.0)))
 
         mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
             z_w_con_c=self.z_w_con_c,
@@ -677,9 +655,7 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=indices_4_1,
             horizontal_end=indices_4_2,
-            vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2)
-            ),
+            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
             vertical_end=int32(self.grid.n_lev() - 4),
             offset_provider={
                 "C2E2CO": self.grid.get_c2e2co_connectivity(),
@@ -730,9 +706,7 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=indices_5_1,
             horizontal_end=indices_5_2,
-            vertical_start=int32(
-                max(3, self.vertical_params.index_of_damping_layer - 2)
-            ),
+            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
             vertical_end=int32(self.grid.n_lev() - 4),
             offset_provider={
                 "E2C": self.grid.get_e2c_connectivity(),

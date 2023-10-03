@@ -12,9 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
 
-import numpy as np
 from gt4py.next.common import Field
-from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
@@ -43,23 +41,9 @@ class DiagnosticState:
     w_concorr_c: Field[
         [CellDim, KDim], float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    # ddt_w_adv_pc_before: Field[[CellDim, KDim], float]
-    # ddt_vn_apc_pc_before: Field[[EdgeDim, KDim], float]
     ddt_w_adv_pc: Field[[CellDim, KDim], float]
     ddt_vn_apc_pc: Field[[EdgeDim, KDim], float]
     ntnd: float
-
-    # @property
-    # def ddt_w_adv_pc(self) -> Field:
-    #     return np_as_located_field(CellDim, KDim)(
-    #         np.asarray(self.ddt_w_adv_pc_before)
-    #     )
-    #
-    # @property
-    # def ddt_vn_apc_pc(self) -> Field:
-    #     return np_as_located_field(EdgeDim, KDim)(
-    #         np.asarray(self.ddt_vn_apc_pc_before)
-    #     )
 
 
 @dataclass

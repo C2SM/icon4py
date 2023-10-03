@@ -19,11 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    random_mask,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 
 
 class TestMoSolveNonhydroStencil68(StencilTest):
@@ -47,10 +43,7 @@ class TestMoSolveNonhydroStencil68(StencilTest):
 
         theta_v_new = np.where(
             mask_prog_halo_c,
-            rho_now
-            * theta_v_now
-            * ((exner_new / exner_now - 1) * cvd_o_rd + 1.0)
-            / rho_new,
+            rho_now * theta_v_now * ((exner_new / exner_now - 1) * cvd_o_rd + 1.0) / rho_new,
             theta_v_new,
         )
         return dict(theta_v_new=theta_v_new)

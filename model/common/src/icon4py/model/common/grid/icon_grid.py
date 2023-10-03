@@ -154,9 +154,7 @@ class IconGrid:
         start_marker to the end of the region given by the end_marker
         """
         if dim.kind != DimensionKind.HORIZONTAL:
-            raise ValueError(
-                "only defined for {} dimension kind ", DimensionKind.HORIZONTAL
-            )
+            raise ValueError("only defined for {} dimension kind ", DimensionKind.HORIZONTAL)
         return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
 
     def get_start_index(self, dim: Dimension, marker: int) -> int32:
@@ -196,9 +194,7 @@ class IconGrid:
     def get_e2ec_connectivity(self):
         old_shape = self.connectivities["e2c"].shape
         e2ec_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(
-            e2ec_table, EdgeDim, ECDim, e2ec_table.shape[1]
-        )
+        return NeighborTableOffsetProvider(e2ec_table, EdgeDim, ECDim, e2ec_table.shape[1])
 
     def get_c2e2co_connectivity(self):
         table = self.connectivities["c2e2co"]
@@ -232,9 +228,7 @@ class IconGrid:
         neighbor_axis: Dimension,
     ):
         table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(
-            table, origin_axis, neighbor_axis, table.shape[1]
-        )
+        return NeighborTableOffsetProvider(table, origin_axis, neighbor_axis, table.shape[1])
 
     def get_c2cec_connectivity(self):
         return self._neighbortable_offset_provider_for_1d_sparse_fields(

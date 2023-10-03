@@ -19,12 +19,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
-
 from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
     as_1D_sparse_field,
     random_field,
     zero_field,
-    StencilTest,
 )
 
 
@@ -46,8 +45,7 @@ class TestMoSolveNonhydroStencil41(StencilTest):
             axis=1,
         )
         z_flxdiv_theta = np.sum(
-            geofac_div[mesh.get_c2ce_offset_provider().table]
-            * z_theta_v_fl_e[mesh.c2e],
+            geofac_div[mesh.get_c2ce_offset_provider().table] * z_theta_v_fl_e[mesh.c2e],
             axis=1,
         )
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)

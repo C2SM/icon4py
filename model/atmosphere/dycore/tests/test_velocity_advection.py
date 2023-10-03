@@ -15,15 +15,12 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclose
-from icon4py.model.common.dimension import CEDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
@@ -122,7 +119,6 @@ def test_velocity_predictor_step(
 ):
     sp_v = savepoint_velocity_init
     sp_d = data_provider.from_savepoint_grid()
-    sp_int = interpolation_savepoint
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
@@ -160,9 +156,7 @@ def test_velocity_predictor_step(
     )
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
 
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
-        icon_grid.n_lev()
-    )
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -203,36 +197,18 @@ def test_velocity_predictor_step(
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd)
     icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(ntnd)
-    # icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
     icon_result_vn_ie = savepoint_velocity_exit.vn_ie()
     icon_result_vt = savepoint_velocity_exit.vt()
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c()
     icon_result_z_w_concorr_mc = savepoint_velocity_exit.z_w_concorr_mc()
-    icon_result_z_vt_ie = savepoint_velocity_exit.z_vt_ie()
-
-    icon_result_z_kin_hor_e = savepoint_velocity_exit.z_kin_hor_e()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w()
-    icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
-    icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
-    #   assert dallclose(np.asarray(icon_result_z_v_grad_w), np.asarray(diagnostic_state.z_v_grad_w))
 
     # stencil 01
-    assert dallclose(
-        np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt), atol=1.0e-14
-    )
+    assert dallclose(np.asarray(icon_result_vt), np.asarray(diagnostic_state.vt), atol=1.0e-14)
     # stencil 02,05
     assert dallclose(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie), atol=1.0e-14
     )
-    # stencil 02
-    # assert dallclose(np.asarray(icon_result_z_kin_hor_e)[2538:31558, :],
-    #            np.asarray(velocity_advection.z_kin_hor_e)[2538:31558, :])
-    # stencil 03,05,06
-    # assert dallclose(np.asarray(icon_result_z_vt_ie), np.asarray(velocity_advection.z_vt_ie))
-    # stencil 04
-    # assert dallclose(
-    #    np.asarray(icon_result_z_w_concorr_me)[:,vertical_params.nflatlev:icon_grid.n_lev()], np.asarray(velocity_advection.z_w_concorr_me)[:,vertical_params.nflatlev:icon_grid.n_lev()]
-    # )
     # stencil 07
     assert dallclose(
         np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
@@ -306,12 +282,9 @@ def test_velocity_corrector_step(
 ):
     sp_v = savepoint_velocity_init
     sp_d = data_provider.from_savepoint_grid()
-    sp_int = interpolation_savepoint
-    sp_met = metrics_savepoint
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
-    cfl_w_limit = sp_v.cfl_w_limit()
     scalfac_exdiff = sp_v.scalfac_exdiff()
 
     diagnostic_state = DiagnosticStateNonHydro(
@@ -347,9 +320,7 @@ def test_velocity_corrector_step(
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state()
 
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(
-        icon_grid.n_lev()
-    )
+    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -389,16 +360,7 @@ def test_velocity_corrector_step(
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd)
     icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(ntnd)
-    # icon_result_max_vcfl_dyn = savepoint_velocity_exit.max_vcfl_dyn()
-    icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c()
-    icon_result_z_w_concorr_mc = savepoint_velocity_exit.z_w_concorr_mc()
-    icon_result_z_vt_ie = savepoint_velocity_exit.z_vt_ie()
-
-    icon_result_z_kin_hor_e = savepoint_velocity_exit.z_kin_hor_e()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w()
-    icon_result_z_w_con_c_full = savepoint_velocity_exit.z_w_con_c_full()
-    icon_result_z_w_concorr_me = savepoint_velocity_exit.z_w_concorr_me()
-    #   assert dallclose(np.asarray(icon_result_z_v_grad_w), np.asarray(diagnostic_state.z_v_grad_w))
 
     # stencil 07
     assert dallclose(

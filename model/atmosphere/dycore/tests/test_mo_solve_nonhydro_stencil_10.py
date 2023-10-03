@@ -13,18 +13,13 @@
 
 import numpy as np
 import pytest
-
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestMoSolveNonhydroStencil10(StencilTest):
@@ -61,9 +56,7 @@ class TestMoSolveNonhydroStencil10(StencilTest):
 
         z_w_backtraj = -(w - w_concorr_c) * dtime * 0.5 / ddqz_z_half
         z_rho_tavg_m1 = wgt_nnow_rth * rho_now_offset + wgt_nnew_rth * rho_var_offset
-        z_theta_tavg_m1 = (
-            wgt_nnow_rth * theta_now_offset + wgt_nnew_rth * theta_var_offset
-        )
+        z_theta_tavg_m1 = wgt_nnow_rth * theta_now_offset + wgt_nnew_rth * theta_var_offset
         z_rho_tavg = wgt_nnow_rth * rho_now + wgt_nnew_rth * rho_var
         z_theta_tavg = wgt_nnow_rth * theta_now + wgt_nnew_rth * theta_var
         rho_ic = (
@@ -74,9 +67,7 @@ class TestMoSolveNonhydroStencil10(StencilTest):
         rho_ic[:, 0] = 0
         z_theta_v_pr_mc_m1 = z_theta_tavg_m1 - theta_ref_mc_offset
         z_theta_v_pr_mc = z_theta_tavg - theta_ref_mc
-        z_theta_v_pr_ic = (
-            wgtfac_c * z_theta_v_pr_mc + (1 - wgtfac_c) * z_theta_v_pr_mc_m1
-        )
+        z_theta_v_pr_ic = wgtfac_c * z_theta_v_pr_mc + (1 - wgtfac_c) * z_theta_v_pr_mc_m1
         z_theta_v_pr_ic[:, 0] = 0
         theta_v_ic = (
             wgtfac_c * z_theta_tavg

@@ -18,8 +18,8 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
-import icon4py.model.common.constants as constants
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
+import icon4py.model.common.constants as constants
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -137,10 +137,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
-from icon4py.model.common.dimension import CellDim, ECDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
-from icon4py.model.common.grid.icon_grid import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
@@ -159,6 +155,10 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.atmosphere.dycore.velocity import velocity_advection
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
+from icon4py.model.common.grid.icon_grid import IconGrid
+from icon4py.model.common.grid.vertical import VerticalModelParams
 
 
 class NonHydrostaticConfig:
@@ -424,8 +424,6 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-        # Inverse value of ndyn_substeps for tracer advection precomputations
-        r_nsubsteps = 1.0 / config.ndyn_substeps_var
 
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
         _calculate_bdy_divdamp(
@@ -438,8 +436,6 @@ class SolveNonhydro:
 
         # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
         # delta_x**2 is approximated by the mean cell area
-        cell_areas_avg = np.sum(cell_areas) / float(self.grid.num_cells())
-        scal_divdamp_o2 = config.divdamp_fac_o2 * (cell_areas_avg)
 
         (indices_cells_1, indices_cells_2) = self.grid.get_indices_from_to(
             CellDim,
@@ -569,6 +565,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
+    # flake8: noqa: C901
     def run_predictor_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
@@ -832,9 +829,7 @@ class SolveNonhydro:
 
         # Compute rho and theta at edges for horizontal flux divergence term
         if config.iadv_rhotheta == 1:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
-                run_gtfn
-            )(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
                 p_cell_in=prognostic_state[nnow].rho,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_rho_v,
@@ -846,9 +841,7 @@ class SolveNonhydro:
                     "V2C": self.grid.get_v2c_connectivity(),
                 },
             )
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(
-                run_gtfn
-            )(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
                 p_cell_in=prognostic_state[nnow].theta_v,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_theta_v_v,
@@ -958,8 +951,6 @@ class SolveNonhydro:
                     z_rth_pr_2=self.z_rth_pr_2,
                     z_rho_e=z_fields.z_rho_e,
                     z_theta_v_e=z_fields.z_theta_v_e,
-                    # p_distv_bary_1=self.p_distv_bary_1,
-                    # p_distv_bary_2=self.p_distv_bary_2,
                     horizontal_start=indices_12_1,
                     horizontal_end=indices_12_2,
                     vertical_start=0,
@@ -1103,7 +1094,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        ##### COMMUNICATION PHASE
+        # COMMUNICATION PHASE
 
         mo_solve_nonhydro_stencil_30.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
@@ -1322,7 +1313,6 @@ class SolveNonhydro:
         )
 
         if config.rayleigh_type == constants.RAYLEIGH_KLEMP:
-            ## ACC w_1 -> p_nh%w
             mo_solve_nonhydro_stencil_54.with_backend(run_gtfn)(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -1420,7 +1410,7 @@ class SolveNonhydro:
                 offset_provider={"Koff": KDim},
             )
 
-        ##### COMMUNICATION PHASE
+        # COMMUNICATION PHASE
 
     def run_corrector_step(
         self,
@@ -1590,9 +1580,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if config.lhdiff_rcf and (
-            config.divdamp_order == 24 or config.divdamp_order == 4
-        ):
+        if config.lhdiff_rcf and (config.divdamp_order == 24 or config.divdamp_order == 4):
             # verified for e-10
             mo_solve_nonhydro_stencil_25.with_backend(run_gtfn)(
                 geofac_grdiv=self.interpolation_state.geofac_grdiv,
@@ -1621,10 +1609,7 @@ class SolveNonhydro:
                 )
 
             # TODO: this does not get accessed in FORTRAN
-            if (
-                config.divdamp_order == 24
-                and config.divdamp_fac_o2 <= 4 * config.divdamp_fac
-            ):
+            if config.divdamp_order == 24 and config.divdamp_fac_o2 <= 4 * config.divdamp_fac:
                 if self.grid.limited_area():
                     mo_solve_nonhydro_stencil_27.with_backend(run_gtfn)(
                         scal_divdamp=self.scal_divdamp,
@@ -1663,7 +1648,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        ##### COMMUNICATION PHASE
+        # COMMUNICATION PHASE
 
         mo_solve_nonhydro_stencil_31.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
@@ -1883,7 +1868,6 @@ class SolveNonhydro:
         )
 
         if config.rayleigh_type == constants.RAYLEIGH_KLEMP:
-            ## ACC w_1 -> p_nh%w
             mo_solve_nonhydro_stencil_54.with_backend(run_gtfn)(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -1974,4 +1958,4 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        ##### COMMUNICATION PHASE
+        # COMMUNICATION PHASE
