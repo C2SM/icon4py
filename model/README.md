@@ -46,27 +46,35 @@ pytest -v --datatest model/atmosphere/diffusion
 ```
 
 #### Testing parallel code
+Icon4Py uses GHEX as communication library. It is an optional dependency of the model. In order to install and
+run the parallel version do the following:
 
-Tests for parallel codes using MPI are collected in specific subpackages of the model components test folders (e.g. `diffusion_tests/mpi_tests`). All parallel tests are marked with `@pytest.mark.mpi` and are skipped if the `--with-mpi` is not passed option is not passed to `pytest` In order to run them, you need a MPI installation on your system: On Debian-Linux do
+1. You need to have a MPI installation in your system, so do the following
 
 ```bash
 sudo apt-get install libopenmpi-dev
 ```
-
 or
-
 ```bash
 sudo apt-get install mpich
 ```
-
-on MacOs
-
+On MacOS run 
 ```bash
 brew install mpich
 ```
+2. Install optional python libraries:
+In the main folder of the repository run
+```bash
+pip install -r requirements-dev-opt.txt
+```
+Note that the current Python build for GHEX seems not to run on MacOS.
 
-Then you can run the tests with
+3. Run parallel tests
+In order to run the parallel tests you need to specify specify the `--with-mpi` option to `pytest`
+and _pass the exact folder location of the tests_ to `pytest`.
+
 
 ```bash
-mpirun -np 2 pytest -v -s --with-mpi path/to/test/folder/mpi_tests
+mpirun -np 4 pytest -v -s --with-mpi --datatest model/atmosphere/diffusion/diffusion_tests/mpi_tests/
+mpirun -np 4 pytest -v -s --with-mpi --datatest model/common/tests/mpi_tests/
 ```
