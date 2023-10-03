@@ -125,8 +125,8 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             w=w,
             dwdx=dwdx,
             dwdy=dwdy,
-            horizontal_start=10,
-            horizontal_end=10,
-            vertical_start=10,
-            vertical_end=10,
+            horizontal_start=0,
+            horizontal_end=mesh.n_cells,
+            vertical_start=0,
+            vertical_end=mesh.k_level
         )
