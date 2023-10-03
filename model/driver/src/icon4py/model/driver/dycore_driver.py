@@ -220,7 +220,7 @@ def initialize(n_time_steps, file_path: Path, props: ProcessProperties):
     )
     (metric_state, interpolation_state) = read_static_fields(file_path)
 
-    log.info("initializing dycore")
+    log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
     exchange = create_exchange(props, decomp_info)
     diffusion = Diffusion(exchange)
