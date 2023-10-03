@@ -81,10 +81,8 @@ class VelocityAdvection:
         metric_state: MetricStateNonHydro,
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
-        run_program=True,
     ):
         self._initialized = False
-        self._run_program = run_program
         self.grid: IconGrid = grid
         self.metric_state: MetricStateNonHydro = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
