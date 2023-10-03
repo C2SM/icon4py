@@ -35,11 +35,7 @@ from icon4py.model.common.dimension import (
 
 @dataclass
 class InterpolationState:
-    """
-    Represents the ICON interpolation state used int SolveNonHydro.
-
-    TODO [ml]: keep? does this state make sense at all?
-    """
+    """Represents the ICON interpolation state used int SolveNonHydro."""
 
     e_bln_c_s: Field[[CEDim], float]  # coefficent for bilinear interpolation from edge to cell ()
     rbf_coeff_1: Field[
