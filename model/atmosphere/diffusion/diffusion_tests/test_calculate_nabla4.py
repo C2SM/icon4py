@@ -24,6 +24,48 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
+def calculate_nabla4_numpy(
+    mesh,
+    u_vert: np.array,
+    v_vert: np.array,
+    primal_normal_vert_v1: np.array,
+    primal_normal_vert_v2: np.array,
+    z_nabla2_e: np.array,
+    inv_vert_vert_length: np.array,
+    inv_primal_edge_length: np.array,
+) -> np.array:
+    u_vert_e2c2v = u_vert[mesh.e2c2v]
+    v_vert_e2c2v = v_vert[mesh.e2c2v]
+
+    primal_normal_vert_v1 = primal_normal_vert_v1.reshape(mesh.e2c2v.shape)
+    primal_normal_vert_v2 = primal_normal_vert_v2.reshape(mesh.e2c2v.shape)
+
+    primal_normal_vert_v1 = np.expand_dims(primal_normal_vert_v1, axis=-1)
+    primal_normal_vert_v2 = np.expand_dims(primal_normal_vert_v2, axis=-1)
+    inv_vert_vert_length = np.expand_dims(inv_vert_vert_length, axis=-1)
+    inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
+
+    nabv_tang = (
+        u_vert_e2c2v[:, 0] * primal_normal_vert_v1[:, 0]
+        + v_vert_e2c2v[:, 0] * primal_normal_vert_v2[:, 0]
+    ) + (
+        u_vert_e2c2v[:, 1] * primal_normal_vert_v1[:, 1]
+        + v_vert_e2c2v[:, 1] * primal_normal_vert_v2[:, 1]
+    )
+    nabv_norm = (
+        u_vert_e2c2v[:, 2] * primal_normal_vert_v1[:, 2]
+        + v_vert_e2c2v[:, 2] * primal_normal_vert_v2[:, 2]
+    ) + (
+        u_vert_e2c2v[:, 3] * primal_normal_vert_v1[:, 3]
+        + v_vert_e2c2v[:, 3] * primal_normal_vert_v2[:, 3]
+    )
+    z_nabla4_e2 = 4.0 * (
+        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2
+        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2
+    )
+    return z_nabla4_e2
+
+
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
@@ -40,36 +82,18 @@ class TestCalculateNabla4(StencilTest):
         inv_primal_edge_length: np.array,
         **kwargs,
     ) -> np.array:
-        u_vert_e2c2v = u_vert[mesh.e2c2v]
-        v_vert_e2c2v = v_vert[mesh.e2c2v]
-
-        primal_normal_vert_v1 = primal_normal_vert_v1.reshape(mesh.e2c2v.shape)
-        primal_normal_vert_v2 = primal_normal_vert_v2.reshape(mesh.e2c2v.shape)
-
-        primal_normal_vert_v1 = np.expand_dims(primal_normal_vert_v1, axis=-1)
-        primal_normal_vert_v2 = np.expand_dims(primal_normal_vert_v2, axis=-1)
-        inv_vert_vert_length = np.expand_dims(inv_vert_vert_length, axis=-1)
-        inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
-
-        nabv_tang = (
-            u_vert_e2c2v[:, 0] * primal_normal_vert_v1[:, 0]
-            + v_vert_e2c2v[:, 0] * primal_normal_vert_v2[:, 0]
-        ) + (
-            u_vert_e2c2v[:, 1] * primal_normal_vert_v1[:, 1]
-            + v_vert_e2c2v[:, 1] * primal_normal_vert_v2[:, 1]
-        )
-        nabv_norm = (
-            u_vert_e2c2v[:, 2] * primal_normal_vert_v1[:, 2]
-            + v_vert_e2c2v[:, 2] * primal_normal_vert_v2[:, 2]
-        ) + (
-            u_vert_e2c2v[:, 3] * primal_normal_vert_v1[:, 3]
-            + v_vert_e2c2v[:, 3] * primal_normal_vert_v2[:, 3]
-        )
-        z_nabla4_e2 = 4.0 * (
-            (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2
-            + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2
+        z_nabla4_e2 = calculate_nabla4_numpy(
+            mesh,
+            u_vert,
+            v_vert,
+            primal_normal_vert_v1,
+            primal_normal_vert_v2,
+            z_nabla2_e,
+            inv_vert_vert_length,
+            inv_primal_edge_length,
         )
         return dict(z_nabla4_e2=z_nabla4_e2)
+
 
     @pytest.fixture
     def input_data(self, mesh):

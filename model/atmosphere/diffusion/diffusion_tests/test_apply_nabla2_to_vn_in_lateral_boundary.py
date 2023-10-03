@@ -21,9 +21,26 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def apply_nabla2_to_vn_in_lateral_boundary_numpy(
+    mesh, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
+) -> np.array:
+    area_edge = np.expand_dims(area_edge, axis=-1)
+    vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
+    return vn
+
+
 class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
     PROGRAM = apply_nabla2_to_vn_in_lateral_boundary
     OUTPUTS = ("vn",)
+
+    @staticmethod
+    def reference(
+        mesh, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
+    ) -> np.array:
+        vn = apply_nabla2_to_vn_in_lateral_boundary_numpy(
+            mesh, z_nabla2_e, area_edge, vn, fac_bdydiff_v
+        )
+        return dict(vn=vn)
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -38,10 +55,4 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
             vn=vn,
         )
 
-    @staticmethod
-    def reference(
-        mesh, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
-    ) -> np.array:
-        area_edge = np.expand_dims(area_edge, axis=-1)
-        vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
-        return dict(vn=vn)
+
