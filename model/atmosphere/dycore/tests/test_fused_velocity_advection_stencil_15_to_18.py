@@ -73,7 +73,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
         ddt_w_adv = np.where(
             condition1,
-            mo_velocity_advection_stencil_16_numpy(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
+            mo_velocity_advection_stencil_16_numpy(z_w_con_c[:, :-1], w, coeff1_dwdz, coeff2_dwdz),
             ddt_w_adv,
         )
 
@@ -98,11 +98,11 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
                     levelmask,
                     cfl_clipping,
                     owner_mask,
-                    z_w_con_c,
+                    z_w_con_c[:, :-1],
                     ddqz_z_half,
                     area,
                     geofac_n2s,
-                    w,
+                    w[:, :-1],
                     ddt_w_adv,
                     scalfac_exdiff,
                     cfl_w_limit,
@@ -177,7 +177,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        z_w_con_c = random_field(mesh, CellDim, KDim)
+        z_w_con_c = random_field(mesh, CellDim, KDim, extend={KDim: 1})
         w = random_field(mesh, CellDim, KDim, extend={KDim: 1})
         coeff1_dwdz = random_field(mesh, CellDim, KDim)
         coeff2_dwdz = random_field(mesh, CellDim, KDim)
