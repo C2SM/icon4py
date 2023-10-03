@@ -26,14 +26,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     PrognosticState,
 )
-from icon4py.model.atmosphere.diffusion.diffusion_utils import (
-    _identity_c_k,
-    _identity_e_k,
-)
-from icon4py.model.common.decomposition.decomposed import create_exchange
-from icon4py.model.common.decomposition.parallel_setup import (
+from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
+from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
+    create_exchange,
     get_processor_properties,
+    get_runtype,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils import serialbox_utils as sb
@@ -255,9 +253,7 @@ def initialize(n_time_steps, file_path: Path, props: ProcessProperties):
 @click.command()
 @click.argument("input_path")
 @click.option("--run_path", default="", help="folder for output")
-@click.option(
-    "--n_steps", default=5, help="number of time steps to run, max 5 is supported"
-)
+@click.option("--n_steps", default=5, help="number of time steps to run, max 5 is supported")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
 def main(input_path, run_path, n_steps, mpi):
     """
@@ -280,7 +276,7 @@ def main(input_path, run_path, n_steps, mpi):
 
     """
     start_time = datetime.now().astimezone(pytz.UTC)
-    parallel_props = get_processor_properties(with_mpi=mpi)
+    parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
     configure_logging(run_path, start_time, parallel_props)
     log.info(f"Starting ICON dycore run: {datetime.isoformat(start_time)}")
     log.info(f"input args: input_path={input_path}, n_time_steps={n_steps}")

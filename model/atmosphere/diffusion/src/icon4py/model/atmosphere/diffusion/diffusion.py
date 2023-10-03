@@ -72,7 +72,7 @@ from icon4py.model.common.constants import (
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
 )
-from icon4py.model.common.decomposition.decomposed import ExchangeRuntime, SingleNode
+from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import (
     CellParams,
@@ -352,7 +352,7 @@ def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def __init__(self, exchange: ExchangeRuntime = SingleNode()):
+    def __init__(self, exchange: ExchangeRuntime = SingleNodeExchange()):
         self._exchange = exchange
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)

@@ -15,13 +15,13 @@
 import pytest
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.common.decomposition.decomposed import (
-    DecompositionInfo,
-    create_exchange,
-)
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
+from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
+    check_comm_size,
+    processor_props,
+)
 
 from ..utils import verify_diffusion_fields
 
@@ -35,7 +35,7 @@ def test_parallel_diffusion(
     step_date_init,
     linit,
     ndyn_substeps,
-    processor_props,
+    processor_props,  # noqa: F811  # fixture
     decomposition_info,
     icon_grid,
     diffusion_savepoint_init,
@@ -51,9 +51,9 @@ def test_parallel_diffusion(
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
-        f"local cells = {decomposition_info.global_index(CellDim, DecompositionInfo.EntryType.ALL).shape} "
-        f"local edges = {decomposition_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape} "
-        f"local vertices = {decomposition_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape}"
+        f"local cells = {decomposition_info.global_index(CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local edges = {decomposition_info.global_index(EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local vertices = {decomposition_info.global_index(VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
@@ -65,39 +65,28 @@ def test_parallel_diffusion(
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    )
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
 
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
-    exchange = create_exchange(processor_props, decomposition_info)
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     diffusion = Diffusion(exchange)
-
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
-        rayleigh_damping_height=damping_height,
-        nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp(),
-    )
 
     diffusion.init(
         grid=icon_grid,
         config=r04b09_diffusion_config,
         params=diffusion_params,
-        vertical_params=vertical_params,
+        vertical_params=VerticalModelParams(grid_savepoint.vct_a(), damping_height),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
     )
-    print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized "
-    )
+    print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
     diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     if linit:

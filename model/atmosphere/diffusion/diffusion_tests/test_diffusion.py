@@ -164,7 +164,7 @@ def test_diffusion_init(
     expected_enh_smag_fac = enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
-        grid_savepoint.vct_a(),
+        np.asarray(grid_savepoint.vct_a()),
     )
     assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))
 

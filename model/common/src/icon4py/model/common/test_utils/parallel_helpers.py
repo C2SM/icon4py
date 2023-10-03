@@ -10,22 +10,21 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-
 import pytest
 
-from icon4py.model.common.decomposition.parallel_setup import ProcessProperties
-from icon4py.model.common.test_utils.fixtures import (  # noqa F401
-    damping_height,
-    data_provider,
-    datapath,
-    grid_savepoint,
-    icon_grid,
-)
+from icon4py.model.common.decomposition.definitions import ProcessProperties, get_runtype
+from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
 
 
 def check_comm_size(props: ProcessProperties, sizes=(1, 2, 4)):
     if props.comm_size not in sizes:
-        pytest.xfail(
-            f"wrong comm size: {props.comm_size}: test only works for comm-sizes: {sizes}"
-        )
+        pytest.xfail(f"wrong comm size: {props.comm_size}: test only works for comm-sizes: {sizes}")
+
+
+# TODO (magdalena) do we still need the parametrization?
+@pytest.fixture(params=[False], scope="session")
+def processor_props(request):
+    with_mpi = request.param
+    runtype = get_runtype(with_mpi)
+    yield get_multinode_properties(runtype)
+    # TODO (magdalena) fix inproper mpi cleanup
