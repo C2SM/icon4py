@@ -159,6 +159,16 @@ def simple_mesh_gridfile(tmp_path):
 
     _add_to_dataset(
         dataset,
+        mesh.e2c2e,
+        GridFile.OffsetName.E2C2E,
+        (
+            GridFile.DimensionName.DIAMOND_EDGE_SIZE,
+            GridFile.DimensionName.EDGE_NAME,
+        ),
+    )
+
+    _add_to_dataset(
+        dataset,
         np.ones((1, 24), dtype=np.int32),
         GridFile.GridRefinementName.START_INDEX_EDGES,
         (GridFile.DimensionName.MAX_CHILD_DOMAINS, GridFile.DimensionName.EDGE_GRF),

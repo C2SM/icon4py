@@ -109,7 +109,7 @@ class GridFile:
         #: name of C2E connectivity in grid file: dims(nv=3, cell)
         C2E = "edge_of_cell"
 
-        E2C2E = "edge_to_cell_to_edge"
+        E2C2E = "neighbor_edge_index"
 
     class DimensionName(GridFileName):
         """Dimension values (sizes) used in grid file."""
@@ -126,7 +126,7 @@ class GridFile:
         #: number of edges in a diamond: 4
         DIAMOND_EDGE_SIZE = "no"
 
-        #: number of edges/cells neibhboring one vertex: 6 (for regular, non pentagons)
+        #: number of edges/cells neighboring one vertex: 6 (for regular, non pentagons)
         NEIGHBORS_TO_VERTEX_SIZE = "ne"
 
         #: number of cells edges, vertices and cells neighboring a cell: 3
