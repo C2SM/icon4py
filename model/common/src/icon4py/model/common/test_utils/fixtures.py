@@ -26,6 +26,7 @@ model = test_utils.parent.parent
 common = model.parent.parent.parent.parent
 base_path = common.parent.joinpath("testdata")
 
+# TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
 data_uris = {
     1: "https://polybox.ethz.ch/index.php/s/psBNNhng0h9KrB4/download",
     2: "https://polybox.ethz.ch/index.php/s/NUQjmJcMEoQxFiK/download",
