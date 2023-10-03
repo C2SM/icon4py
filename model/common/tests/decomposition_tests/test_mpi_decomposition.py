@@ -14,14 +14,21 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.decomposition.decomposed import (
+
+try:
+    import mpi4py  # noqa: F401 # test for optional dependency
+except ImportError:
+    pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
+
+from icon4py.model.common.decomposition.definitions import (
     DecompositionInfo,
     DomainDescriptorIdGenerator,
-    GHexMultiNode,
-    SingleNode,
+    SingleNodeExchange,
     create_exchange,
 )
+from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+<<<<<<<< HEAD:model/common/tests/decomposition_tests/test_decomposed.py
 from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
     datapath,
@@ -32,6 +39,9 @@ from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401 # i
     ranked_data_path,
 )
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401 # import fixtures from test_utils
+========
+from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
+>>>>>>>> main:model/common/tests/decomposition_tests/test_mpi_decomposition.py
     check_comm_size,
     processor_props,
 )
@@ -49,7 +59,11 @@ mpirun -np 2 pytest -v --with-mpi tests/mpi_tests/
 
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
+<<<<<<<< HEAD:model/common/tests/decomposition_tests/test_decomposed.py
 def test_props(processor_props):  # noqa: F811 #fixture
+========
+def test_props(processor_props):  # noqa: F811  # fixture
+>>>>>>>> main:model/common/tests/decomposition_tests/test_mpi_decomposition.py
     assert processor_props.comm
 
 
@@ -63,14 +77,21 @@ def test_props(processor_props):  # noqa: F811 #fixture
         (VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
+@pytest.mark.datatest
 def test_decomposition_info_masked(
     dim,
     owned,
     total,
     caplog,
+<<<<<<<< HEAD:model/common/tests/decomposition_tests/test_decomposed.py
     download_ser_data,  # noqa: F811 # fixture
     decomposition_info,  # noqa: F811 # fixture
     processor_props,  # noqa: F811 # fixture
+========
+    download_ser_data,
+    decomposition_info,
+    processor_props,  # noqa: F811  # fixture
+>>>>>>>> main:model/common/tests/decomposition_tests/test_mpi_decomposition.py
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
@@ -106,15 +127,21 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
         (VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
+@pytest.mark.datatest
 @pytest.mark.mpi(min_size=2)
 def test_decomposition_info_local_index(
     dim,
     owned,
     total,
     caplog,
+<<<<<<<< HEAD:model/common/tests/decomposition_tests/test_decomposed.py
     download_ser_data,  # noqa: F811 #fixture
     decomposition_info,  # noqa: F811 #fixture
     processor_props,  # noqa: F811 #fixture
+========
+    decomposition_info,
+    processor_props,  # noqa: F811  # fixture
+>>>>>>>> main:model/common/tests/decomposition_tests/test_mpi_decomposition.py
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
@@ -139,7 +166,11 @@ def test_decomposition_info_local_index(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("num", [1, 2, 3])
+<<<<<<<< HEAD:model/common/tests/decomposition_tests/test_decomposed.py
 def test_domain_descriptor_id_are_globally_unique(num, processor_props):  # noqa: F811 #fixture
+========
+def test_domain_descriptor_id_are_globally_unique(num, processor_props):  # noqa: F811  # fixture
+>>>>>>>> main:model/common/tests/decomposition_tests/test_mpi_decomposition.py
     props = processor_props
     size = props.comm_size
     id_gen = DomainDescriptorIdGenerator(parallel_props=props)
@@ -160,15 +191,23 @@ def test_domain_descriptor_id_are_globally_unique(num, processor_props):  # noqa
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.datatest
 def test_decomposition_info_matches_gridsize(
     caplog,
+<<<<<<<< HEAD:model/common/tests/decomposition_tests/test_decomposed.py
     download_ser_data,  # noqa: F811 #fixture
     decomposition_info,  # noqa: F811 #fixture
     icon_grid,  # noqa: F811 #fixture
     processor_props,  # noqa: F811 #fixture
 ):
 
+========
+    download_ser_data,
+    decomposition_info,
+    icon_grid,
+    processor_props,  # noqa: F811  # fixture
+):
+>>>>>>>> main:model/common/tests/decomposition_tests/test_mpi_decomposition.py
     check_comm_size(processor_props)
     assert (
         decomposition_info.global_index(
@@ -189,13 +228,18 @@ def test_decomposition_info_matches_gridsize(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_create_multi_node_runtime_with_mpi(
+<<<<<<<< HEAD:model/common/tests/decomposition_tests/test_decomposed.py
     download_ser_data, decomposition_info, processor_props  # noqa: F811 # fixture
+========
+    download_ser_data, decomposition_info, processor_props  # noqa: F811  # fixture
+>>>>>>>> main:model/common/tests/decomposition_tests/test_mpi_decomposition.py
 ):
     props = processor_props
     exchange = create_exchange(props, decomposition_info)
     if props.comm_size > 1:
-        assert isinstance(exchange, GHexMultiNode)
+        assert isinstance(exchange, GHexMultiNodeExchange)
     else:
+<<<<<<<< HEAD:model/common/tests/decomposition_tests/test_decomposed.py
         assert isinstance(exchange, SingleNode)
 
 
@@ -207,3 +251,6 @@ def test_create_single_node_runtime_without_mpi(
     exchange = create_exchange(props, decomposition_info)
 
     assert isinstance(exchange, SingleNode)
+========
+        assert isinstance(exchange, SingleNodeExchange)
+>>>>>>>> main:model/common/tests/decomposition_tests/test_mpi_decomposition.py

@@ -27,7 +27,7 @@ on:
         types: [submitted]
 
 jobs:
-    pre-commit:
+    pre-commit-icon4pytools:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3

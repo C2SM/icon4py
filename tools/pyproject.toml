@@ -21,6 +21,7 @@ classifiers = [
 dependencies = [
   'icon4py-atmosphere-diffusion',
   'icon4py-atmosphere-dycore',
+  'icon4py-atmosphere-advection',
   'gt4py>=1.0.1',
   'icon4py-common',
   'tabulate>=0.8.9',

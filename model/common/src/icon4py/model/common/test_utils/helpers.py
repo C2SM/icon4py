@@ -145,7 +145,7 @@ def _test_validation(self, mesh, backend, input_data):
 
 if pytest_benchmark:
 
-    def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
+    def _test_execution_benchmark(self, pytestconfig, mesh, backend, input_data, benchmark):
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.
@@ -159,7 +159,7 @@ if pytest_benchmark:
 
 else:
 
-    def _bench_execution(self, pytestconfig):
+    def _test_execution_benchmark(self, pytestconfig):
         pytest.skip("Test skipped as `pytest-benchmark` is not installed.")
 
 
@@ -191,4 +191,4 @@ class StencilTest:
         # inheritance.
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
-        setattr(cls, f"bench_{cls.__name__}", _bench_execution)
+        setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
