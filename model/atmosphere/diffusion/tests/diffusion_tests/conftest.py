@@ -26,6 +26,7 @@ from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401  # 
     linit,
     metrics_savepoint,
     ndyn_substeps,
+    processor_props,
     ranked_data_path,
     step_date_exit,
     step_date_init,
