@@ -159,16 +159,6 @@ def simple_mesh_gridfile(tmp_path):
 
     _add_to_dataset(
         dataset,
-        mesh.e2c2e,
-        GridFile.OffsetName.E2C2E,
-        (
-            GridFile.DimensionName.DIAMOND_EDGE_SIZE,
-            GridFile.DimensionName.EDGE_NAME,
-        ),
-    )
-
-    _add_to_dataset(
-        dataset,
         np.ones((1, 24), dtype=np.int32),
         GridFile.GridRefinementName.START_INDEX_EDGES,
         (GridFile.DimensionName.MAX_CHILD_DOMAINS, GridFile.DimensionName.EDGE_GRF),
@@ -365,21 +355,6 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert not has_invalid_index(serialized_c2e)
     assert not has_invalid_index(grid.get_c2e_connectivity().table)
     assert np.allclose(grid.get_c2e_connectivity().table, serialized_c2e)
-
-
-# e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
-@pytest.mark.datatest
-@pytest.mark.with_netcdf
-@pytest.mark.skip("does not directly exist in the grid file, needs to be constructed")
-# TODO (Magdalena) construct from adjacent_cell_of_edge and then edge_of_cell
-def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
-    caplog.set_level(logging.DEBUG)
-    gm, num_cells, num_edges, num_vertex = init_grid_manager(r04b09_dsl_gridfile)
-    serialized_e2c2e = grid_savepoint.e2c2e()[0:num_cells, :]
-    assert has_invalid_index(serialized_e2c2e)
-    grid = gm.get_grid()
-    assert has_invalid_index(grid.get_e2c2e_connectivity().table)
-    assert np.allclose(grid.get_e2c2e_connectivity().table, serialized_e2c2e)
 
 
 # c2e2c: exists in  serial, simple_mesh, grid

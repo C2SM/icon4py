@@ -37,8 +37,6 @@ from icon4py.model.common.dimension import (
     C2EDim,
     C2VDim,
     CellDim,
-    E2C2EDim,
-    E2C2EODim,
     E2C2VDim,
     E2CDim,
     E2VDim,
@@ -108,8 +106,6 @@ class GridFile:
 
         #: name of C2E connectivity in grid file: dims(nv=3, cell)
         C2E = "edge_of_cell"
-
-        E2C2E = "neighbor_edge_index"
 
     class DimensionName(GridFileName):
         """Dimension values (sizes) used in grid file."""
@@ -372,8 +368,6 @@ class GridManager:
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
         v2e2v = self._get_index_field(reader, GridFile.OffsetName.V2E2V)
         c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C)
-        e2c2e = self._get_index_field(reader, GridFile.OffsetName.E2C2E)
-        e2c2e0 = np.column_stack((e2c2e, (np.asarray(range(e2c2e.shape[0])))))
         c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
         (
             start_indices,
@@ -393,8 +387,6 @@ class GridManager:
                 {
                     C2EDim: c2e,
                     E2CDim: e2c,
-                    E2C2EDim: e2c2e,
-                    E2C2EODim: e2c2e0,
                     E2VDim: e2v,
                     V2EDim: v2e,
                     V2CDim: v2c,

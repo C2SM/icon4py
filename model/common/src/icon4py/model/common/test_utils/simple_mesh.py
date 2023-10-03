@@ -397,7 +397,7 @@ class SimpleMeshData:
 
 
 class SimpleMesh:
-    _DEFAULT_K_LEVEL = 65
+    _DEFAULT_K_LEVEL = 10
 
     def __init__(self, k_level: int = _DEFAULT_K_LEVEL):
         self.diamond_arr = SimpleMeshData.diamond_table
