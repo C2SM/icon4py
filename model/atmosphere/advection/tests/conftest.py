@@ -10,3 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+from icon4py.model.common.test_utils.helpers import backend, mesh  # noqa F401
+from icon4py.model.common.test_utils.pytest_config import (  # noqa: F401
+    pytest_addoption,
+    pytest_configure,
+    pytest_generate_tests,
+    pytest_runtest_setup,
+)
