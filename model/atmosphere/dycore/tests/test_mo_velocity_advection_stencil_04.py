@@ -21,20 +21,21 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_velocity_advection_stencil_04_numpy(vn: np.array, ddxn_z_full: np.array, ddxt_z_full: np.array, vt: np.array
+) -> np.array:
+    z_w_concorr_me = vn * ddxn_z_full + vt * ddxt_z_full
+    return z_w_concorr_me
+
+
 class TestMoVelocityAdvectionStencil04(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_04
     OUTPUTS = ("z_w_concorr_me",)
 
     @staticmethod
     def reference(
-        mesh,
-        vn: np.array,
-        ddxn_z_full: np.array,
-        ddxt_z_full: np.array,
-        vt: np.array,
-        **kwargs,
+        mesh, vn: np.array, ddxn_z_full: np.array, ddxt_z_full: np.array, vt: np.array, **kwargs
     ) -> np.array:
-        z_w_concorr_me = vn * ddxn_z_full + vt * ddxt_z_full
+        z_w_concorr_me = mo_velocity_advection_stencil_04_numpy(vn, ddxn_z_full, ddxt_z_full, vt)
         return dict(z_w_concorr_me=z_w_concorr_me)
 
     @pytest.fixture

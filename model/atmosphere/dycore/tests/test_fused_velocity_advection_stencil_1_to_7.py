@@ -21,6 +21,15 @@ from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 imp
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
+from .test_mo_velocity_advection_stencil_01 import mo_velocity_advection_stencil_01_numpy
+from .test_mo_velocity_advection_stencil_02 import mo_velocity_advection_stencil_02_numpy
+from .test_mo_velocity_advection_stencil_03 import mo_velocity_advection_stencil_03_numpy
+from .test_mo_velocity_advection_stencil_04 import mo_velocity_advection_stencil_04_numpy
+from .test_mo_velocity_advection_stencil_05 import mo_velocity_advection_stencil_05_numpy
+from .test_mo_velocity_advection_stencil_06 import mo_velocity_advection_stencil_06_numpy
+from .test_mo_velocity_advection_stencil_07 import mo_velocity_advection_stencil_07_numpy
+from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy
+
 
 class TestFusedVelocityAdvectionStencil1To7(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_1_to_7
@@ -33,23 +42,95 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
     )
 
     @staticmethod
-    def reference(
+    def _fused_velocity_advection_stencil_1_to_6_numpy(
         mesh,
-        **kwargs,
-    ) -> tuple[np.array]:
-        vt = 0.0
-        vn_ie = 0.0
-        z_kin_hor_e = 0.0
-        z_w_concorr_me = 0.0
-        z_v_grad_w = 0.0
+        vn,
+        rbf_vec_coeff_e,
+        wgtfac_e,
+        ddxn_z_full,
+        ddxt_z_full,
+        z_w_concorr_me,
+        wgtfacq_e_dsl,
+        nflatlev,
+        z_vt_ie,
+        vt,
+        vn_ie,
+        z_kin_hor_e,
+        vert_idx,
+        nlevp1,
+        lvn_only,
+    ):
 
-        return dict(
-            vt=vt,
-            vn_ie=vn_ie,
-            z_kin_hor_e=z_kin_hor_e,
-            z_w_concorr_me=z_w_concorr_me,
-            z_v_grad_w=z_v_grad_w,
+        vert_idx = vert_idx[np.newaxis, :]
+
+        condition1 = vert_idx < nlevp1
+        vt = np.where(condition1, mo_velocity_advection_stencil_01_numpy(mesh, vn, rbf_vec_coeff_e), vt)
+
+        condition2 = (1 < vert_idx) & (vert_idx < nlevp1)
+        vn_ie, z_kin_hor_e = np.where(
+            condition2,
+            mo_velocity_advection_stencil_02_numpy(wgtfac_e, vn, vt),
+            (vn_ie, z_kin_hor_e)
         )
+
+        if not lvn_only:
+            z_vt_ie = np.where(
+                condition2,
+                mo_velocity_advection_stencil_03_numpy(wgtfac_e, vt),
+                z_vt_ie
+            )
+
+        condition3 = vert_idx == 0
+        vn_ie, z_vt_ie, z_kin_hor_e = np.where(
+            condition3,
+            mo_velocity_advection_stencil_05_numpy(vn, vt),
+            (vn_ie, z_vt_ie, z_kin_hor_e)
+        )
+
+        condition4 = vert_idx == nlevp1
+        vn_ie = np.where(condition4, mo_velocity_advection_stencil_06_numpy(wgtfacq_e_dsl, vn), vn_ie)
+
+        condition5 = (nflatlev < vert_idx) & (vert_idx < nlevp1)
+        z_w_concorr_me = np.where(
+            condition5,
+            mo_velocity_advection_stencil_04_numpy(vn, ddxn_z_full, ddxt_z_full, vt),
+            z_w_concorr_me
+        )
+
+        return vt, vn_ie, z_kin_hor_e, z_w_concorr_me
+
+    @classmethod
+    def reference(
+        cls, mesh, vn, rbf_vec_coeff_e, wgtfac_e, ddxn_z_full, ddxt_z_full, z_w_concorr_me,
+        wgtfacq_e_dsl, nflatlev, c_intp, w, inv_dual_edge_length,
+        inv_primal_edge_length, tangent_orientation, z_vt_ie, vt,
+        vn_ie, z_kin_hor_e, z_v_grad_w, vert_idx, istep, nlevp1, lvn_only,
+        horz_idx, lateral_boundary_7, halo_1, **kwargs
+    ):
+
+        if istep == 1:
+            vt, vn_ie, z_kin_hor_e, z_w_concorr_me = cls._fused_velocity_advection_stencil_1_to_6_numpy(
+                mesh, vn, rbf_vec_coeff_e, wgtfac_e, ddxn_z_full, ddxt_z_full, z_w_concorr_me,
+                wgtfacq_e_dsl, nflatlev, z_vt_ie, vt, vn_ie, z_kin_hor_e, vert_idx, nlevp1, lvn_only
+            )
+
+        horz_idx = horz_idx[:, np.newaxis]
+
+        z_w_v = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(mesh, w, c_intp)
+
+        condition_mask = (lateral_boundary_7 < horz_idx) & (horz_idx < halo_1) & (vert_idx < nlevp1)
+
+        if not lvn_only:
+            z_v_grad_w = np.where(
+                condition_mask,
+                mo_velocity_advection_stencil_07_numpy(
+                    mesh, vn_ie, inv_dual_edge_length, w, z_vt_ie,
+                    inv_primal_edge_length, tangent_orientation, z_w_v
+                ),
+                z_v_grad_w
+            )
+
+        return dict(vt=vt, vn_ie=vn_ie, z_kin_hor_e=z_kin_hor_e, z_w_concorr_me=z_w_concorr_me, z_v_grad_w=z_v_grad_w)
 
     @pytest.fixture
     def input_data(self, mesh):
