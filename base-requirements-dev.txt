@@ -25,9 +25,7 @@ pytest-factoryboy>=2.0
 pytest-xdist[psutil]>=2.2
 pytest-mpi>=0.6
 setuptools>=40.8.0
-typing_extensions<4.6.0
 wheel>=0.37.1
 tox >= 3.25
 wget>=3.2
 types-cffi>=1.15
-netcdf4>=1.6.0
