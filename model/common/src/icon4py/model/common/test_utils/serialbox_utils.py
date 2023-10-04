@@ -26,10 +26,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import (
-    MetricState,
-    MetricStateNonHydro,
-)
+from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.common import dimension
 from icon4py.model.common.decomposition.definitions import DecompositionInfo
@@ -537,8 +534,6 @@ class MetricSavepoint(IconSavepoint):
         field = self._get_field("vertoffset_gradp_dsl", EdgeDim, E2CDim, KDim, dtype=int32)
         return flatten_first_two_dims(ECDim, KDim, field=field)
 
-
-
     def coeff1_dwdz(self):
         return self._get_field("coeff1_dwdz", CellDim, KDim)
 
@@ -651,7 +646,6 @@ class MetricSavepoint(IconSavepoint):
             coeff_gradekin=self.coeff_gradekin(),
         )
 
-
     def construct_metric_state_for_diffusion(self) -> DiffusionMetricState:
         return DiffusionMetricState(
             mask_hdiff=self.mask_hdiff(),
@@ -661,9 +655,6 @@ class MetricSavepoint(IconSavepoint):
             zd_vertoffset=self.zd_vertoffset(),
             zd_diffcoef=self.zd_diffcoef(),
         )
-
-
-
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
