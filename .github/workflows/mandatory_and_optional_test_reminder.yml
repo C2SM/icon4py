@@ -16,7 +16,7 @@ jobs:
 
                       Please make sure you run these tests via comment before you merge!
 
-
+                      * `cscs-ci run`
                       * `launch jenkins spack`
 
                       **Optional Tests**
