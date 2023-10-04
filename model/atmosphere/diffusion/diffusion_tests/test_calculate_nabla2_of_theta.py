@@ -26,15 +26,20 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
+def calculate_nabla2_of_theta_numpy(mesh, z_nabla2_e: np.array, geofac_div: np.array) -> np.array:
+    geofac_div = geofac_div.reshape(mesh.c2e.shape)
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    z_temp = np.sum(z_nabla2_e[mesh.c2e] * geofac_div, axis=1)  # sum along edge dimension
+    return z_temp
+
+
 class TestCalculateNabla2OfTheta(StencilTest):
     PROGRAM = calculate_nabla2_of_theta
     OUTPUTS = ("z_temp",)
 
     @staticmethod
-    def reference(mesh, z_nabla2_e: np.array, geofac_div: np.array, **kwargs) -> np.array:
-        geofac_div = geofac_div.reshape(mesh.c2e.shape)
-        geofac_div = np.expand_dims(geofac_div, axis=-1)
-        z_temp = np.sum(z_nabla2_e[mesh.c2e] * geofac_div, axis=1)  # sum along edge dimension
+    def reference(mesh, z_nabla2_e: np.array, geofac_div: np.array, **kwargs) -> dict:
+        z_temp = calculate_nabla2_of_theta_numpy(mesh, z_nabla2_e, geofac_div)
         return dict(z_temp=z_temp)
 
     @pytest.fixture

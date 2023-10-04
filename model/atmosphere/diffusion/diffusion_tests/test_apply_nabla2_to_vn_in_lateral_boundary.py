@@ -54,5 +54,3 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
             area_edge=area_edge,
             vn=vn,
         )
-
-

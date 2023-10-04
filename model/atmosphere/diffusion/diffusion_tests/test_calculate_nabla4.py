@@ -94,7 +94,6 @@ class TestCalculateNabla4(StencilTest):
         )
         return dict(z_nabla4_e2=z_nabla4_e2)
 
-
     @pytest.fixture
     def input_data(self, mesh):
         u_vert = random_field(mesh, VertexDim, KDim)

@@ -24,8 +24,16 @@ from icon4py.model.common.test_utils.helpers import (
     flatten_first_two_dims,
     random_field,
     random_mask,
+    unflatten_first_two_dims,
     zero_field,
 )
+
+from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
+from .test_calculate_nabla2_of_theta import calculate_nabla2_of_theta_numpy
+from .test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
+    truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy,
+)
+from .test_update_theta_and_exner import update_theta_and_exner_numpy
 
 
 class TestApplyDiffusionToThetaAndExner(StencilTest):
@@ -35,10 +43,42 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
     @staticmethod
     def reference(
         mesh,
+        kh_smag_e,
+        inv_dual_edge_length,
+        theta_v_in,
+        geofac_div,
+        mask,
+        zd_vertoffset,
+        zd_diffcoef,
+        geofac_n2s_c,
+        geofac_n2s_nbh,
+        vcoef,
+        area,
+        exner,
+        rd_o_cvd,
         **kwargs,
-    ) -> tuple[np.array]:
-        theta_v = 0.0
-        exner = 0.0
+    ):
+        z_nabla2_e = calculate_nabla2_for_z_numpy(mesh, kh_smag_e, inv_dual_edge_length, theta_v_in)
+        z_temp = calculate_nabla2_of_theta_numpy(mesh, z_nabla2_e, geofac_div)
+
+        geofac_n2s_nbh = unflatten_first_two_dims(geofac_n2s_nbh)
+        zd_vertoffset = unflatten_first_two_dims(zd_vertoffset)
+        vcoef = unflatten_first_two_dims(vcoef)
+
+        z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
+            mesh,
+            mask,
+            zd_vertoffset,
+            zd_diffcoef,
+            geofac_n2s_c,
+            geofac_n2s_nbh,
+            vcoef,
+            theta_v_in,
+            z_temp,
+        )
+        theta_v, exner = update_theta_and_exner_numpy(
+            mesh, z_temp, area, theta_v_in, exner, rd_o_cvd
+        )
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture

@@ -29,7 +29,7 @@ from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-    c2e2c: np.array,
+    mesh: SimpleMesh,
     mask: np.array,
     zd_vertoffset: np.array,
     zd_diffcoef: np.array,
@@ -49,10 +49,10 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
         for isparse in range(full_shape[1]):
             for ik in range(full_shape[2]):
                 theta_v_at_zd_vertidx[ic, isparse, ik] = theta_v[
-                    c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
+                    mesh.c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
                 ]
                 theta_v_at_zd_vertidx_p1[ic, isparse, ik] = theta_v[
-                    c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik] + 1
+                    mesh.c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik] + 1
                 ]
 
     sum_over = np.sum(
@@ -91,7 +91,7 @@ def test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points():
     geofac_n2s_nbh_new = flatten_first_two_dims(CECDim, field=geofac_n2s_nbh)
 
     ref = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-        mesh.c2e2c,
+        mesh,
         np.asarray(mask),
         np.asarray(zd_vertoffset),
         np.asarray(zd_diffcoef),

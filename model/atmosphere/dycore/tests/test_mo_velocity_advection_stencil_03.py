@@ -37,7 +37,6 @@ class TestMoVelocityAdvectionStencil03(StencilTest):
         z_vt_ie = mo_velocity_advection_stencil_03_numpy(wgtfac_e, vt)
         return dict(z_vt_ie=z_vt_ie)
 
-
     @pytest.fixture
     def input_data(self, mesh):
         wgtfac_e = random_field(mesh, EdgeDim, KDim)

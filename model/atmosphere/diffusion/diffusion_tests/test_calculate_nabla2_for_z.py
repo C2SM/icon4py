@@ -21,6 +21,21 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def calculate_nabla2_for_z_numpy(
+    mesh,
+    kh_smag_e: np.array,
+    inv_dual_edge_length: np.array,
+    theta_v: np.array,
+) -> np.array:
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+
+    theta_v_e2c = theta_v[mesh.e2c]
+    theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
+
+    z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
+    return z_nabla2_e
+
+
 class TestCalculateNabla2ForZ(StencilTest):
     PROGRAM = calculate_nabla2_for_z
     OUTPUTS = ("z_nabla2_e",)
@@ -32,13 +47,8 @@ class TestCalculateNabla2ForZ(StencilTest):
         inv_dual_edge_length: np.array,
         theta_v: np.array,
         **kwargs,
-    ) -> np.array:
-        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
-
-        theta_v_e2c = theta_v[mesh.e2c]
-        theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
-
-        z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
+    ) -> dict:
+        z_nabla2_e = calculate_nabla2_for_z_numpy(mesh, kh_smag_e, inv_dual_edge_length, theta_v)
         return dict(z_nabla2_e=z_nabla2_e)
 
     @pytest.fixture

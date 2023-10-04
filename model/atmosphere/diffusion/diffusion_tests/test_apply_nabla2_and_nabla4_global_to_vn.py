@@ -22,13 +22,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def apply_nabla2_and_nabla4_global_to_vn_numpy(
-    mesh,
-    area_edge,
-    kh_smag_e,
-    z_nabla2_e,
-    z_nabla4_e2,
-    diff_multfac_vn,
-    vn
+    mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
 ):
     area_edge = np.expand_dims(area_edge, axis=-1)
     diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
@@ -43,13 +37,7 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
     @staticmethod
     def reference(mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn):
         vn = apply_nabla2_and_nabla4_global_to_vn_numpy(
-            mesh,
-            area_edge,
-            kh_smag_e,
-            z_nabla2_e,
-            z_nabla4_e2,
-            diff_multfac_vn,
-            vn
+            mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
         )
         return dict(vn=vn)
 
@@ -70,4 +58,3 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
             diff_multfac_vn=diff_multfac_vn,
             vn=vn,
         )
-

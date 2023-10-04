@@ -24,10 +24,12 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
-from .test_calculate_nabla4 import calculate_nabla4_numpy
-from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
-from .test_apply_nabla2_to_vn_in_lateral_boundary import apply_nabla2_to_vn_in_lateral_boundary_numpy
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
+from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
+from .test_apply_nabla2_to_vn_in_lateral_boundary import (
+    apply_nabla2_to_vn_in_lateral_boundary_numpy,
+)
+from .test_calculate_nabla4 import calculate_nabla4_numpy
 
 
 class TestApplyDiffusionToVn(StencilTest):
@@ -54,7 +56,7 @@ class TestApplyDiffusionToVn(StencilTest):
         fac_bdydiff_v,
         start_2nd_nudge_line_idx_e,
         limited_area,
-        **kwargs
+        **kwargs,
     ):
 
         z_nabla4_e2 = calculate_nabla4_numpy(
@@ -65,7 +67,7 @@ class TestApplyDiffusionToVn(StencilTest):
             primal_normal_vert_v2,
             z_nabla2_e,
             inv_vert_vert_length,
-            inv_primal_edge_length
+            inv_primal_edge_length,
         )
 
         condition = start_2nd_nudge_line_idx_e <= horz_idx[:, np.newaxis]
@@ -82,23 +84,19 @@ class TestApplyDiffusionToVn(StencilTest):
                     diff_multfac_vn,
                     nudgecoeff_e,
                     vn,
-                    nudgezone_diff
+                    nudgezone_diff,
                 ),
-                apply_nabla2_to_vn_in_lateral_boundary_numpy(mesh, z_nabla2_e, area_edge, vn, fac_bdydiff_v)
+                apply_nabla2_to_vn_in_lateral_boundary_numpy(
+                    mesh, z_nabla2_e, area_edge, vn, fac_bdydiff_v
+                ),
             )
         else:
             vn = np.where(
                 condition,
                 apply_nabla2_and_nabla4_global_to_vn_numpy(
-                    mesh,
-                    area_edge,
-                    kh_smag_e,
-                    z_nabla2_e,
-                    z_nabla4_e2,
-                    diff_multfac_vn,
-                    vn
+                    mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
                 ),
-                vn
+                vn,
             )
 
         return dict(vn=vn)
@@ -155,5 +153,5 @@ class TestApplyDiffusionToVn(StencilTest):
             horizontal_start=0,
             horizontal_end=mesh.n_edges,
             vertical_start=0,
-            vertical_end=mesh.k_level
+            vertical_end=mesh.k_level,
         )
