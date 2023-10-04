@@ -76,7 +76,7 @@ def test_nonhydro_predictor_step(
     grid_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    metrics_nonhydro_savepoint,
+    metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
 ):
@@ -164,7 +164,7 @@ def test_nonhydro_predictor_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -469,7 +469,7 @@ def test_nonhydro_corrector_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    metrics_nonhydro_savepoint,
+    metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_velocity_exit,
@@ -568,7 +568,7 @@ def test_nonhydro_corrector_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -689,7 +689,7 @@ def test_run_solve_nonhydro_single_step(
     grid_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    metrics_nonhydro_savepoint,
+    metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
@@ -792,7 +792,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -865,7 +865,7 @@ def test_run_solve_nonhydro_multi_step(
     grid_savepoint,
     savepoint_velocity_init,
     savepoint_velocity_exit,
-    metrics_nonhydro_savepoint,
+    metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
@@ -969,7 +969,7 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()

@@ -98,7 +98,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
 
-
+# TODO: abishekg7 move this to tests
 @program
 def init_test_fields(
     z_rho_e: Field[[EdgeDim, KDim], float],

@@ -27,14 +27,14 @@ from icon4py.model.common.test_utils.helpers import dallclose
 def test_velocity_init(
     savepoint_velocity_init,
     interpolation_savepoint,
-    metrics_savepoint,
     grid_savepoint,
     icon_grid,
+    metrics_savepoint,
     step_date_init,
     damping_height,
 ):
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
-    metric_state = metrics_savepoint.construct_metric_state()
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -45,15 +45,14 @@ def test_velocity_init(
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
-        metric_state=metric_state,
+        metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
     )
 
     assert dallclose(0.0, np.asarray(velocity_advection.cfl_clipping))
-    assert dallclose(0.0, np.asarray(velocity_advection.pre_levelmask))
-    assert dallclose(False, np.asarray(velocity_advection.levelmask))
-    assert dallclose(0.0, np.asarray(velocity_advection.vcfl))
+    assert dallclose(False, np.asarray(velocity_advection.levmask))
+    assert dallclose(0.0, np.asarray(velocity_advection.vcfl_dsl))
 
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
@@ -64,15 +63,15 @@ def test_verify_velocity_init_against_regular_savepoint(
     savepoint_velocity_init,
     interpolation_savepoint,
     grid_savepoint,
-    metrics_savepoint,
     icon_grid,
+    metrics_savepoint,
     damping_height,
 ):
     savepoint = savepoint_velocity_init
     dtime = savepoint.get_metadata("dtime").get("dtime")
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
-    metric_state = metrics_savepoint.construct_metric_state()
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
@@ -82,13 +81,13 @@ def test_verify_velocity_init_against_regular_savepoint(
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
-        metric_state=metric_state,
+        metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
     )
     velocity_advection.init(
         grid=icon_grid,
-        metric_state=metric_state,
+        metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
     )
@@ -113,7 +112,7 @@ def test_velocity_predictor_step(
     grid_savepoint,
     savepoint_velocity_init,
     data_provider,
-    metrics_nonhydro_savepoint,
+    metrics_savepoint,
     interpolation_savepoint,
     savepoint_velocity_exit,
 ):
@@ -156,7 +155,7 @@ def test_velocity_predictor_step(
     )
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
 
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -278,7 +277,6 @@ def test_velocity_corrector_step(
     savepoint_velocity_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    metrics_nonhydro_savepoint,
 ):
     sp_v = savepoint_velocity_init
     sp_d = data_provider.from_savepoint_grid()
@@ -318,9 +316,9 @@ def test_velocity_corrector_step(
         exner=None,
     )
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state()
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
 
-    metric_state_nonhydro = metrics_nonhydro_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()

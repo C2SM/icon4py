@@ -448,7 +448,7 @@ class SolveNonhydro:
             HorizontalMarkerIndex.lateral_boundary(EdgeDim),
             HorizontalMarkerIndex.local(EdgeDim),
         )
-
+        # # TODO: abishekg7 move this to tests
         if self.p_test_run:
             nhsolve_prog.init_test_fields.with_backend(run_gtfn)(
                 z_fields.z_rho_e,

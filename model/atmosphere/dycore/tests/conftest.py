@@ -25,7 +25,7 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa F401
     jstep,
     linit,
     mesh,
-    metrics_nonhydro_savepoint,
+    metrics_savepoint,
     processor_props,
     ranked_data_path,
     savepoint_nonhydro_exit,
