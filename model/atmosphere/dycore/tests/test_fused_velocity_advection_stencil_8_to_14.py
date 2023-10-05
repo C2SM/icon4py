@@ -26,6 +26,14 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
+from .test_mo_velocity_advection_stencil_08 import mo_velocity_advection_stencil_08_numpy
+from .test_mo_velocity_advection_stencil_09 import mo_velocity_advection_stencil_09_numpy
+from .test_mo_velocity_advection_stencil_10 import mo_velocity_advection_stencil_10_numpy
+from .test_mo_velocity_advection_stencil_11 import mo_velocity_advection_stencil_11_numpy
+from .test_mo_velocity_advection_stencil_12 import mo_velocity_advection_stencil_12_numpy
+from .test_mo_velocity_advection_stencil_13 import mo_velocity_advection_stencil_13_numpy
+from .test_mo_velocity_advection_stencil_14 import mo_velocity_advection_stencil_14_numpy
+
 
 class TestFusedVelocityAdvectionStencil8To14(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_8_to_14
@@ -40,13 +48,69 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
     @staticmethod
     def reference(
         mesh,
+        z_kin_hor_e,
+        e_bln_c_s,
+        z_w_concorr_me,
+        wgtfac_c,
+        w,
+        ddqz_z_half,
+        cfl_clipping,
+        pre_levelmask,
+        vcfl,
+        z_w_concorr_mc,
+        w_concorr_c,
+        z_ekinh,
+        vert_idx,
+        istep,
+        cfl_w_limit,
+        dtime,
+        nlevp1,
+        nlev,
+        nflatlev,
+        nrdmax,
+        z_w_con_c,
         **kwargs,
-    ) -> tuple[np.array]:
-        z_ekinh = 0.0
-        cfl_clipping = 0.0
-        pre_levelmask = 0.0
-        vcfl = 0.0
-        z_w_con_c = 0.0
+    ):
+
+        z_ekinh = np.where(
+            vert_idx < nlev,
+            mo_velocity_advection_stencil_08_numpy(mesh, z_kin_hor_e, e_bln_c_s),
+            z_ekinh,
+        )
+
+        if istep == 1:
+            z_w_concorr_mc = np.where(
+                (nflatlev < vert_idx) & (vert_idx < nlev),
+                mo_velocity_advection_stencil_09_numpy(mesh, z_w_concorr_me, e_bln_c_s),
+                z_w_concorr_mc,
+            )
+
+            w_concorr_c = np.where(
+                (nflatlev + 1 < vert_idx) & (vert_idx < nlev),
+                mo_velocity_advection_stencil_10_numpy(mesh, z_w_concorr_mc, wgtfac_c),
+                w_concorr_c,
+            )
+
+        z_w_con_c = np.where(
+            vert_idx < nlevp1,
+            mo_velocity_advection_stencil_11_numpy(w),
+            mo_velocity_advection_stencil_12_numpy(z_w_con_c),
+        )
+
+        z_w_con_c = np.where(
+            (nflatlev + 1 < vert_idx) & (vert_idx < nlev),
+            mo_velocity_advection_stencil_13_numpy(z_w_con_c, w_concorr_c),
+            z_w_con_c,
+        )
+
+        condition = (np.maximum(3, nrdmax - 2) < vert_idx) & (vert_idx < nlev - 3)
+        cfl_clipping_new, vcfl_new, z_w_con_c_new = mo_velocity_advection_stencil_14_numpy(
+            mesh, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
+        )
+
+        cfl_clipping = np.where(condition, cfl_clipping_new, cfl_clipping)
+        vcfl = np.where(condition, vcfl_new, vcfl)
+        z_w_con_c = np.where(condition, z_w_con_c_new, z_w_con_c)
 
         return dict(
             z_ekinh=z_ekinh,

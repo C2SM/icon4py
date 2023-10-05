@@ -21,13 +21,18 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def mo_velocity_advection_stencil_13_numpy(w_concorr_c: np.array, z_w_con_c: np.array) -> np.array:
+    z_w_con_c = z_w_con_c - w_concorr_c
+    return z_w_con_c
+
+
 class TestMoVelocityAdvectionStencil13(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_13
     OUTPUTS = ("z_w_con_c",)
 
     @staticmethod
-    def reference(mesh, w_concorr_c: np.array, z_w_con_c: np.array, **kwargs) -> np.array:
-        z_w_con_c = z_w_con_c - w_concorr_c
+    def reference(mesh, w_concorr_c: np.array, z_w_con_c: np.array, **kwargs) -> dict:
+        z_w_con_c = mo_velocity_advection_stencil_13_numpy(w_concorr_c, z_w_con_c)
         return dict(z_w_con_c=z_w_con_c)
 
     @pytest.fixture
