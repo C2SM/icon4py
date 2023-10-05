@@ -112,6 +112,13 @@ def flatten_first_two_dims(
     return it_embedded.np_as_located_field(*dims)(newarray)
 
 
+def unflatten_first_two_dims(field: it_embedded.MutableLocatedField) -> np.array:
+    """Convert a (n-1)-D flattened (Felix-style) sparse field back to a n-D sparse field."""
+    old_shape = np.asarray(field).shape
+    new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
+    return np.asarray(field).reshape(new_shape)
+
+
 def _test_validation(self, mesh, backend, input_data):
     reference_outputs = self.reference(mesh, **{k: np.array(v) for k, v in input_data.items()})
     self.PROGRAM.with_backend(backend)(

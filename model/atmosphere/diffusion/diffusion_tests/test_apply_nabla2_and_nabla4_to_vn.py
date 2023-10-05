@@ -14,9 +14,6 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_to_vn import (
-    apply_nabla2_and_nabla4_global_to_vn,
-)
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn import (
     apply_nabla2_and_nabla4_to_vn,
 )
@@ -24,9 +21,56 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def apply_nabla2_and_nabla4_to_vn_numpy(
+    mesh,
+    area_edge,
+    kh_smag_e,
+    z_nabla2_e,
+    z_nabla4_e2,
+    diff_multfac_vn,
+    nudgecoeff_e,
+    vn,
+    nudgezone_diff,
+):
+    area_edge = np.expand_dims(area_edge, axis=-1)
+    diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
+    nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
+    vn = vn + area_edge * (
+        np.maximum(nudgezone_diff * nudgecoeff_e, kh_smag_e) * z_nabla2_e
+        - diff_multfac_vn * z_nabla4_e2 * area_edge
+    )
+    return vn
+
+
 class TestApplyNabla2AndNabla4ToVn(StencilTest):
     PROGRAM = apply_nabla2_and_nabla4_to_vn
     OUTPUTS = ("vn",)
+
+    @staticmethod
+    def reference(
+        mesh,
+        area_edge,
+        kh_smag_e,
+        z_nabla2_e,
+        z_nabla4_e2,
+        diff_multfac_vn,
+        nudgecoeff_e,
+        vn,
+        nudgezone_diff,
+        **kwargs,
+    ):
+        vn = apply_nabla2_and_nabla4_to_vn_numpy(
+            mesh,
+            area_edge,
+            kh_smag_e,
+            z_nabla2_e,
+            z_nabla4_e2,
+            diff_multfac_vn,
+            nudgecoeff_e,
+            vn,
+            nudgezone_diff,
+        )
+        return dict(vn=vn)
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -49,55 +93,3 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
             vn=vn,
             nudgezone_diff=nudgezone_diff,
         )
-
-    @staticmethod
-    def reference(
-        mesh,
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        nudgecoeff_e,
-        vn,
-        nudgezone_diff,
-    ):
-        area_edge = np.expand_dims(area_edge, axis=-1)
-        diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
-        nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
-        vn = vn + area_edge * (
-            np.maximum(nudgezone_diff * nudgecoeff_e, kh_smag_e) * z_nabla2_e
-            - diff_multfac_vn * z_nabla4_e2 * area_edge
-        )
-        return dict(vn=vn)
-
-
-class TestApplyNabla2AndNabla4ToVnGlobalMode(StencilTest):
-    PROGRAM = apply_nabla2_and_nabla4_global_to_vn
-
-    OUTPUTS = ("vn",)
-
-    @pytest.fixture
-    def input_data(self, mesh):
-        area_edge = random_field(mesh, EdgeDim)
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla4_e2 = random_field(mesh, EdgeDim, KDim)
-        diff_multfac_vn = random_field(mesh, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
-
-        return dict(
-            area_edge=area_edge,
-            kh_smag_e=kh_smag_e,
-            z_nabla2_e=z_nabla2_e,
-            z_nabla4_e2=z_nabla4_e2,
-            diff_multfac_vn=diff_multfac_vn,
-            vn=vn,
-        )
-
-    @staticmethod
-    def reference(mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn):
-        area_edge = np.expand_dims(area_edge, axis=-1)
-        diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
-        vn = vn + area_edge * (kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge)
-        return dict(vn=vn)

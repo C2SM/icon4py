@@ -21,14 +21,23 @@ from icon4py.model.common.dimension import CellDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
+    mesh, p_cell_in: np.array, c_intp: np.array
+) -> np.array:
+    c_intp = np.expand_dims(c_intp, axis=-1)
+    p_vert_out = np.sum(p_cell_in[mesh.v2c] * c_intp, axis=1)
+    return p_vert_out
+
+
 class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
     PROGRAM = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl
     OUTPUTS = ("p_vert_out",)
 
     @staticmethod
-    def reference(mesh, p_cell_in: np.array, c_intp: np.array, **kwargs) -> np.array:
-        c_intp = np.expand_dims(c_intp, axis=-1)
-        p_vert_out = np.sum(p_cell_in[mesh.v2c] * c_intp, axis=1)
+    def reference(mesh, p_cell_in: np.array, c_intp: np.array, **kwargs) -> dict:
+        p_vert_out = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
+            mesh, p_cell_in, c_intp
+        )
         return dict(p_vert_out=p_vert_out)
 
     @pytest.fixture

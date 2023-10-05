@@ -22,6 +22,21 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def update_theta_and_exner_numpy(
+    mesh,
+    z_temp: np.array,
+    area: np.array,
+    theta_v: np.array,
+    exner: np.array,
+    rd_o_cvd,
+) -> tuple[np.array]:
+    area = np.expand_dims(area, axis=0)
+    z_theta = theta_v
+    theta_v = theta_v + (np.expand_dims(area, axis=-1) * z_temp)
+    exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
+    return theta_v, exner
+
+
 class TestUpdateThetaAndExner(StencilTest):
     PROGRAM = update_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
@@ -36,10 +51,7 @@ class TestUpdateThetaAndExner(StencilTest):
         rd_o_cvd,
         **kwargs,
     ) -> tuple[np.array]:
-        area = np.expand_dims(area, axis=0)
-        z_theta = theta_v
-        theta_v = theta_v + (np.expand_dims(area, axis=-1) * z_temp)
-        exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
+        theta_v, exner = update_theta_and_exner_numpy(z_temp, area, theta_v, exner, rd_o_cvd)
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture

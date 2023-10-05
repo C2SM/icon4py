@@ -21,14 +21,19 @@ from icon4py.model.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_math_divrot_rot_vertex_ri_dsl_numpy(mesh, vec_e: np.array, geofac_rot: np.array) -> np.array:
+    geofac_rot = np.expand_dims(geofac_rot, axis=-1)
+    rot_vec = np.sum(vec_e[mesh.v2e] * geofac_rot, axis=1)
+    return rot_vec
+
+
 class TestMoMathDivrotRotVertexRiDsl(StencilTest):
     PROGRAM = mo_math_divrot_rot_vertex_ri_dsl
     OUTPUTS = ("rot_vec",)
 
     @staticmethod
-    def reference(mesh, vec_e: np.array, geofac_rot: np.array, **kwargs) -> np.array:
-        geofac_rot = np.expand_dims(geofac_rot, axis=-1)
-        rot_vec = np.sum(vec_e[mesh.v2e] * geofac_rot, axis=1)
+    def reference(mesh, vec_e: np.array, geofac_rot: np.array, **kwargs) -> dict:
+        rot_vec = mo_math_divrot_rot_vertex_ri_dsl_numpy(mesh, vec_e, geofac_rot)
         return dict(rot_vec=rot_vec)
 
     @pytest.fixture

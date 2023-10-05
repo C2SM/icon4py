@@ -26,6 +26,29 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
+def mo_velocity_advection_stencil_14_numpy(
+    mesh, ddqz_z_half: np.array, z_w_con_c: np.array, cfl_w_limit, dtime
+) -> tuple:
+    num_rows, num_cols = z_w_con_c.shape
+    cfl_clipping = np.where(
+        np.abs(z_w_con_c) > cfl_w_limit * ddqz_z_half,
+        np.ones([num_rows, num_cols]),
+        np.zeros_like(z_w_con_c),
+    )
+    num_rows, num_cols = cfl_clipping.shape
+    vcfl = np.where(cfl_clipping == 1.0, z_w_con_c * dtime / ddqz_z_half, 0.0)
+    z_w_con_c = np.where(
+        (cfl_clipping == 1.0) & (vcfl < -0.85),
+        -0.85 * ddqz_z_half / dtime,
+        z_w_con_c,
+    )
+    z_w_con_c = np.where(
+        (cfl_clipping == 1.0) & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c
+    )
+
+    return cfl_clipping, vcfl, z_w_con_c
+
+
 class TestMoVelocityAdvectionStencil14(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_14
     OUTPUTS = ("cfl_clipping", "vcfl", "z_w_con_c")
@@ -34,21 +57,8 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
     def reference(
         mesh, ddqz_z_half: np.array, z_w_con_c: np.array, cfl_w_limit, dtime, **kwargs
     ) -> dict:
-        num_rows, num_cols = z_w_con_c.shape
-        cfl_clipping = np.where(
-            np.abs(z_w_con_c) > cfl_w_limit * ddqz_z_half,
-            np.ones([num_rows, num_cols]),
-            np.zeros_like(z_w_con_c),
-        )
-        num_rows, num_cols = cfl_clipping.shape
-        vcfl = np.where(cfl_clipping == 1.0, z_w_con_c * dtime / ddqz_z_half, 0.0)
-        z_w_con_c = np.where(
-            (cfl_clipping == 1.0) & (vcfl < -0.85),
-            -0.85 * ddqz_z_half / dtime,
-            z_w_con_c,
-        )
-        z_w_con_c = np.where(
-            (cfl_clipping == 1.0) & (vcfl > 0.85), 0.85 * ddqz_z_half / dtime, z_w_con_c
+        cfl_clipping, vcfl, z_w_con_c = mo_velocity_advection_stencil_14_numpy(
+            mesh, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
         )
 
         return dict(

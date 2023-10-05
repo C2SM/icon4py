@@ -21,14 +21,21 @@ from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_velocity_advection_stencil_08_numpy(
+    mesh, z_kin_hor_e: np.array, e_bln_c_s: np.array
+) -> np.array:
+    e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
+    z_ekinh = np.sum(z_kin_hor_e[mesh.c2e] * e_bln_c_s, axis=1)
+    return z_ekinh
+
+
 class TestMoVelocityAdvectionStencil08(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_08
     OUTPUTS = ("z_ekinh",)
 
     @staticmethod
-    def reference(mesh, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> np.array:
-        e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-        z_ekinh = np.sum(z_kin_hor_e[mesh.c2e] * e_bln_c_s, axis=1)
+    def reference(mesh, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> dict:
+        z_ekinh = mo_velocity_advection_stencil_08_numpy(mesh, z_kin_hor_e, e_bln_c_s)
         return dict(z_ekinh=z_ekinh)
 
     @pytest.fixture

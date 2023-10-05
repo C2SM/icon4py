@@ -21,6 +21,44 @@ from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 
 
+def mo_velocity_advection_stencil_18_numpy(
+    mesh,
+    levmask: np.array,
+    cfl_clipping: np.array,
+    owner_mask: np.array,
+    z_w_con_c: np.array,
+    ddqz_z_half: np.array,
+    area: np.array,
+    geofac_n2s: np.array,
+    w: np.array,
+    ddt_w_adv: np.array,
+    scalfac_exdiff: float,
+    cfl_w_limit: float,
+    dtime: float,
+):
+    levmask = np.expand_dims(levmask, axis=0)
+    owner_mask = np.expand_dims(owner_mask, axis=-1)
+    area = np.expand_dims(area, axis=-1)
+    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+
+    difcoef = np.where(
+        (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+        scalfac_exdiff
+        * np.minimum(
+            0.85 - cfl_w_limit * dtime,
+            np.abs(z_w_con_c) * dtime / ddqz_z_half - cfl_w_limit * dtime,
+        ),
+        0,
+    )
+
+    ddt_w_adv = np.where(
+        (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
+        ddt_w_adv + difcoef * area * np.sum(w[mesh.c2e2cO] * geofac_n2s, axis=1),
+        ddt_w_adv,
+    )
+    return ddt_w_adv
+
+
 class TestMoVelocityAdvectionStencil18(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_18
     OUTPUTS = ("ddt_w_adv",)
@@ -42,27 +80,21 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         dtime: float,
         **kwargs,
     ):
-        levmask = np.expand_dims(levmask, axis=0)
-        owner_mask = np.expand_dims(owner_mask, axis=-1)
-        area = np.expand_dims(area, axis=-1)
-        geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
-
-        difcoef = np.where(
-            (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
-            scalfac_exdiff
-            * np.minimum(
-                0.85 - cfl_w_limit * dtime,
-                np.abs(z_w_con_c) * dtime / ddqz_z_half - cfl_w_limit * dtime,
-            ),
-            0,
-        )
-
-        ddt_w_adv = np.where(
-            (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
-            ddt_w_adv + difcoef * area * np.sum(w[mesh.c2e2cO] * geofac_n2s, axis=1),
+        ddt_w_adv = mo_velocity_advection_stencil_18_numpy(
+            mesh,
+            levmask,
+            cfl_clipping,
+            owner_mask,
+            z_w_con_c,
+            ddqz_z_half,
+            area,
+            geofac_n2s,
+            w,
             ddt_w_adv,
+            scalfac_exdiff,
+            cfl_w_limit,
+            dtime,
         )
-
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture

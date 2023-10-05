@@ -21,6 +21,33 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_velocity_advection_stencil_07_numpy(
+    mesh,
+    vn_ie: np.array,
+    inv_dual_edge_length: np.array,
+    w: np.array,
+    z_vt_ie: np.array,
+    inv_primal_edge_length: np.array,
+    tangent_orientation: np.array,
+    z_w_v: np.array,
+) -> np.array:
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+    inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
+    tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
+
+    w_e2c = w[mesh.e2c]
+    z_w_v_e2v = z_w_v[mesh.e2v]
+
+    red_w = w_e2c[:, 0] - w_e2c[:, 1]
+    red_z_w_v = z_w_v_e2v[:, 0] - z_w_v_e2v[:, 1]
+
+    z_v_grad_w = (
+        vn_ie * inv_dual_edge_length * red_w
+        + z_vt_ie * inv_primal_edge_length * tangent_orientation * red_z_w_v
+    )
+    return z_v_grad_w
+
+
 class TestMoVelocityAdvectionStencil07(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_07
     OUTPUTS = ("z_v_grad_w",)
@@ -36,20 +63,16 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
         tangent_orientation: np.array,
         z_w_v: np.array,
         **kwargs,
-    ) -> np.array:
-        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
-        inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
-        tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
-
-        w_e2c = w[mesh.e2c]
-        z_w_v_e2v = z_w_v[mesh.e2v]
-
-        red_w = w_e2c[:, 0] - w_e2c[:, 1]
-        red_z_w_v = z_w_v_e2v[:, 0] - z_w_v_e2v[:, 1]
-
-        z_v_grad_w = (
-            vn_ie * inv_dual_edge_length * red_w
-            + z_vt_ie * inv_primal_edge_length * tangent_orientation * red_z_w_v
+    ) -> dict:
+        z_v_grad_w = mo_velocity_advection_stencil_07_numpy(
+            mesh,
+            vn_ie,
+            inv_dual_edge_length,
+            w,
+            z_vt_ie,
+            inv_primal_edge_length,
+            tangent_orientation,
+            z_w_v,
         )
         return dict(z_v_grad_w=z_v_grad_w)
 

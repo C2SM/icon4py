@@ -22,9 +22,7 @@ from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def mo_velocity_advection_stencil_20_numpy(
-    e2c: np.array,
-    e2c2eO: np.array,
-    e2v: np.array,
+    mesh,
     levelmask: np.array,
     c_lin_e: np.array,
     z_w_con_c_full: np.array,
@@ -54,7 +52,7 @@ def mo_velocity_advection_stencil_20_numpy(
 
     w_con_e = np.where(
         (levelmask_offset_0) | (levelmask_offset_1),
-        np.sum(c_lin_e * z_w_con_c_full[e2c], axis=1),
+        np.sum(c_lin_e * z_w_con_c_full[mesh.e2c], axis=1),
         w_con_e,
     )
     difcoef = np.where(
@@ -74,8 +72,10 @@ def mo_velocity_advection_stencil_20_numpy(
         + difcoef
         * area_edge
         * (
-            np.sum(geofac_grdiv * vn[e2c2eO], axis=1)
-            + tangent_orientation * inv_primal_edge_length * (zeta[e2v][:, 1] - zeta[e2v][:, 0])
+            np.sum(geofac_grdiv * vn[mesh.e2c2eO], axis=1)
+            + tangent_orientation
+            * inv_primal_edge_length
+            * (zeta[mesh.e2v][:, 1] - zeta[mesh.e2v][:, 0])
         ),
         ddt_vn_adv,
     )
@@ -101,9 +101,7 @@ def test_mo_velocity_advection_stencil_20():
     d_time = 2.0
 
     ddt_vn_adv_ref = mo_velocity_advection_stencil_20_numpy(
-        mesh.e2c,
-        mesh.e2c2eO,
-        mesh.e2v,
+        mesh,
         np.asarray(levelmask),
         np.asarray(c_lin_e),
         np.asarray(z_w_con_c_full),
