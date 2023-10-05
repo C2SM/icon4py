@@ -35,8 +35,7 @@ from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def mo_velocity_advection_stencil_19_numpy(
-    e2v: np.array,
-    e2c: np.array,
+    mesh,
     z_kin_hor_e: np.array,
     coeff_gradekin: np.array,
     z_ekinh: np.array,
@@ -48,7 +47,7 @@ def mo_velocity_advection_stencil_19_numpy(
     vn_ie: np.array,
     ddqz_z_full_e: np.array,
 ) -> np.array:
-    z_ekinh_e2c = z_ekinh[e2c]
+    z_ekinh_e2c = z_ekinh[mesh.e2c]
     coeff_gradekin = np.expand_dims(coeff_gradekin, axis=-1)
     f_e = np.expand_dims(f_e, axis=-1)
     c_lin_e = np.expand_dims(c_lin_e, axis=-1)
@@ -56,8 +55,8 @@ def mo_velocity_advection_stencil_19_numpy(
     ddt_vn_adv = -(
         (coeff_gradekin[:, 0] - coeff_gradekin[:, 1]) * z_kin_hor_e
         + (-coeff_gradekin[:, 0] * z_ekinh_e2c[:, 0] + coeff_gradekin[:, 1] * z_ekinh_e2c[:, 1])
-        + vt * (f_e + 0.5 * np.sum(zeta[e2v], axis=1))
-        + np.sum(z_w_con_c_full[e2c] * c_lin_e, axis=1)
+        + vt * (f_e + 0.5 * np.sum(zeta[mesh.e2v], axis=1))
+        + np.sum(z_w_con_c_full[mesh.e2c] * c_lin_e, axis=1)
         * (vn_ie[:, :-1] - vn_ie[:, 1:])
         / ddqz_z_full_e
     )
@@ -81,8 +80,7 @@ def test_mo_velocity_advection_stencil_19():
     ddt_vn_adv = zero_field(mesh, EdgeDim, KDim)
 
     ddt_vn_adv_ref = mo_velocity_advection_stencil_19_numpy(
-        mesh.e2v,
-        mesh.e2c,
+        mesh,
         np.asarray(z_kin_hor_e),
         np.asarray(coeff_gradekin),
         np.asarray(z_ekinh),

@@ -36,6 +36,10 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
+from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
+from .test_mo_velocity_advection_stencil_19 import mo_velocity_advection_stencil_19_numpy
+from .test_mo_velocity_advection_stencil_20 import mo_velocity_advection_stencil_20_numpy
+
 
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_19_to_20
@@ -44,9 +48,71 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
     @staticmethod
     def reference(
         mesh,
+        vn,
+        geofac_rot,
+        z_kin_hor_e,
+        coeff_gradekin,
+        z_ekinh,
+        vt,
+        f_e,
+        c_lin_e,
+        z_w_con_c_full,
+        vn_ie,
+        ddqz_z_full_e,
+        levelmask,
+        area_edge,
+        tangent_orientation,
+        inv_primal_edge_length,
+        geofac_grdiv,
+        vert_idx,
+        cfl_w_limit,
+        scalfac_exdiff,
+        d_time,
+        extra_diffu,
+        nlev,
+        nrdmax,
         **kwargs,
-    ) -> tuple[np.array]:
-        ddt_vn_adv = 0.0
+    ):
+        zeta = mo_math_divrot_rot_vertex_ri_dsl_numpy(mesh, vn, geofac_rot)
+
+        coeff_gradekin = np.reshape(coeff_gradekin, (mesh.n_edges, 2))
+
+        ddt_vn_adv = mo_velocity_advection_stencil_19_numpy(
+            mesh,
+            z_kin_hor_e,
+            coeff_gradekin,
+            z_ekinh,
+            zeta,
+            vt,
+            f_e,
+            c_lin_e,
+            z_w_con_c_full,
+            vn_ie,
+            ddqz_z_full_e,
+        )
+
+        condition = (np.maximum(3, nrdmax - 2) < vert_idx) & (vert_idx < nlev - 4)
+
+        ddt_vn_adv_extra_diffu = mo_velocity_advection_stencil_20_numpy(
+            mesh,
+            levelmask,
+            c_lin_e,
+            z_w_con_c_full,
+            ddqz_z_full_e,
+            area_edge,
+            tangent_orientation,
+            inv_primal_edge_length,
+            zeta,
+            geofac_grdiv,
+            vn,
+            ddt_vn_adv,
+            cfl_w_limit,
+            scalfac_exdiff,
+            d_time,
+        )
+
+        ddt_vn_adv = np.where(condition & extra_diffu, ddt_vn_adv_extra_diffu, ddt_vn_adv)
+
         return dict(ddt_vn_adv=ddt_vn_adv)
 
     @pytest.fixture
