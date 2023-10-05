@@ -58,19 +58,19 @@ def _fused_velocity_advection_stencil_16_to_18(
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     ddt_w_adv = where(
-        (horz_lower_bound < horz_idx < horz_upper_bound) & (int32(0) < vert_idx),
+        (horz_lower_bound <= horz_idx < horz_upper_bound) & (int32(1) <= vert_idx),
         _mo_velocity_advection_stencil_16(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
         ddt_w_adv,
     )
     ddt_w_adv = where(
-        (horz_lower_bound < horz_idx < horz_upper_bound) & (int32(0) < vert_idx),
+        (horz_lower_bound <= horz_idx < horz_upper_bound) & (int32(1) <= vert_idx),
         _mo_velocity_advection_stencil_17(e_bln_c_s, z_v_grad_w, ddt_w_adv),
         ddt_w_adv,
     )
     ddt_w_adv = (
         where(
-            (horz_lower_bound < horz_idx < horz_upper_bound)
-            & (maximum(3, nrdmax - 2) -2 < vert_idx < nlev - 3),
+            (horz_lower_bound <= horz_idx < horz_upper_bound)
+            & (maximum(2, nrdmax - 2) <= vert_idx < nlev - 3),
             _mo_velocity_advection_stencil_18(
                 levelmask,
                 cfl_clipping,
