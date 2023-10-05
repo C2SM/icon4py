@@ -78,7 +78,7 @@ def _fused_velocity_advection_stencil_19_to_20(
 
     ddt_vn_adv = (
         where(
-            maximum(3, nrdmax - 2) < vert_idx < nlev - 4,
+            maximum(2, nrdmax - 2) <= vert_idx < nlev - 3,
             _mo_velocity_advection_stencil_20(
                 levelmask,
                 c_lin_e,
