@@ -70,7 +70,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     ddt_w_adv = (
         where(
             (horz_lower_bound < horz_idx < horz_upper_bound)
-            & (maximum(3, nrdmax - 2) < vert_idx < nlev - 4),
+            & (maximum(3, nrdmax - 2) -2 < vert_idx < nlev - 3),
             _mo_velocity_advection_stencil_18(
                 levelmask,
                 cfl_clipping,
