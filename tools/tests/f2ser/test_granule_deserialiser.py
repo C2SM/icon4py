@@ -40,7 +40,7 @@ def mock_parsed_granule():
             },
             "diffusion_run": {
                 "out": {
-                    "vert_idx": {
+                    "k": {
                         "typespec": "logical",
                         "kindselector": {"kind": "vp"},
                         "attrspec": [],
@@ -51,7 +51,7 @@ def mock_parsed_granule():
                 },
                 "in": {
                     "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
-                    "vert_idx": {
+                    "k": {
                         "typespec": "logical",
                         "kindselector": {"kind": "vp"},
                         "attrspec": [],
@@ -62,7 +62,7 @@ def mock_parsed_granule():
                 },
                 "inout": {
                     "vn": {"typespec": "integer", "attrspec": [], "intent": ["out"]},
-                    "vert_idx": {
+                    "k": {
                         "typespec": "logical",
                         "kindselector": {"kind": "vp"},
                         "attrspec": [],

@@ -60,7 +60,7 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         z_w_concorr_mc,
         w_concorr_c,
         z_ekinh,
-        vert_idx,
+        k,
         istep,
         cfl_w_limit,
         dtime,
@@ -73,37 +73,37 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
     ):
 
         z_ekinh = np.where(
-            vert_idx < nlev,
+            k < nlev,
             mo_velocity_advection_stencil_08_numpy(mesh, z_kin_hor_e, e_bln_c_s),
             z_ekinh,
         )
 
         if istep == 1:
             z_w_concorr_mc = np.where(
-                (nflatlev < vert_idx) & (vert_idx < nlev),
+                (nflatlev < k) & (k < nlev),
                 mo_velocity_advection_stencil_09_numpy(mesh, z_w_concorr_me, e_bln_c_s),
                 z_w_concorr_mc,
             )
 
             w_concorr_c = np.where(
-                (nflatlev + 1 < vert_idx) & (vert_idx < nlev),
+                (nflatlev + 1 < k) & (k < nlev),
                 mo_velocity_advection_stencil_10_numpy(mesh, z_w_concorr_mc, wgtfac_c),
                 w_concorr_c,
             )
 
         z_w_con_c = np.where(
-            vert_idx < nlevp1,
+            k < nlevp1,
             mo_velocity_advection_stencil_11_numpy(w),
             mo_velocity_advection_stencil_12_numpy(z_w_con_c),
         )
 
         z_w_con_c = np.where(
-            (nflatlev + 1 < vert_idx) & (vert_idx < nlev),
+            (nflatlev + 1 < k) & (k < nlev),
             mo_velocity_advection_stencil_13_numpy(z_w_con_c, w_concorr_c),
             z_w_con_c,
         )
 
-        condition = (np.maximum(3, nrdmax - 2) < vert_idx) & (vert_idx < nlev - 3)
+        condition = (np.maximum(3, nrdmax - 2) < k) & (k < nlev - 3)
         cfl_clipping_new, vcfl_new, z_w_con_c_new = mo_velocity_advection_stencil_14_numpy(
             mesh, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
         )
@@ -141,9 +141,9 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         cfl_w_limit = 5.0
         dtime = 9.0
 
-        vert_idx = zero_field(mesh, KDim, dtype=int32)
+        k = zero_field(mesh, KDim, dtype=int32)
         for level in range(mesh.k_level):
-            vert_idx[level] = level
+            k[level] = level
 
         nlevp1 = mesh.k_level + 1
         nlev = mesh.k_level
@@ -164,7 +164,7 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
             z_w_concorr_mc=z_w_concorr_mc,
             w_concorr_c=w_concorr_c,
             z_ekinh=z_ekinh,
-            vert_idx=vert_idx,
+            k=k,
             istep=istep,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,

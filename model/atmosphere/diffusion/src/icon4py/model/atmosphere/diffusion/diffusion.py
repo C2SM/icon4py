@@ -749,7 +749,7 @@ class Diffusion:
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
-            vert_idx=self.vertical_index,
+            k=self.vertical_index,
             horz_idx=self.horizontal_cell_index,
             nrdmax=int32(
                 self.vertical_params.index_of_damping_layer + 1

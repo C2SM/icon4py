@@ -47,18 +47,18 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         dwdy,
         diff_multfac_w,
         diff_multfac_n2w,
-        vert_idx,
+        k,
         horz_idx,
         nrdmax,
         interior_idx,
         halo_idx,
         **kwargs,
     ):
-        reshaped_vert_idx = vert_idx[np.newaxis, :]
+        reshaped_k = k[np.newaxis, :]
         reshaped_horz_idx = horz_idx[:, np.newaxis]
 
         dwdx, dwdy = np.where(
-            0 < reshaped_vert_idx,
+            0 < reshaped_k,
             calculate_horizontal_gradients_for_turbulence_numpy(
                 mesh, w_old, geofac_grg_x, geofac_grg_y
             ),
@@ -74,8 +74,8 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         )
 
         w = np.where(
-            (0 < reshaped_vert_idx)
-            & (reshaped_vert_idx < nrdmax)
+            (0 < reshaped_k)
+            & (reshaped_k < nrdmax)
             & (interior_idx <= reshaped_horz_idx)
             & (reshaped_horz_idx < halo_idx),
             apply_nabla2_to_w_in_upper_damping_layer_numpy(w, diff_multfac_n2w, area, z_nabla2_c),
@@ -85,9 +85,9 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @pytest.fixture
     def input_data(self, mesh):
-        vert_idx = zero_field(mesh, KDim, dtype=int32)
+        k = zero_field(mesh, KDim, dtype=int32)
         for k in range(mesh.k_level):
-            vert_idx[k] = k
+            k[k] = k
 
         horz_idx = zero_field(mesh, CellDim, dtype=int32)
         for cell in range(mesh.n_cells):
@@ -117,7 +117,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             w_old=w_old,
             diff_multfac_w=diff_multfac_w,
             diff_multfac_n2w=diff_multfac_n2w,
-            vert_idx=vert_idx,
+            k=k,
             horz_idx=horz_idx,
             nrdmax=nrdmax,
             interior_idx=interior_idx,
