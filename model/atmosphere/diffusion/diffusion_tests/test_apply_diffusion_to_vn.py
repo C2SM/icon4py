@@ -51,7 +51,7 @@ class TestApplyDiffusionToVn(StencilTest):
         diff_multfac_vn,
         nudgecoeff_e,
         vn,
-        horz_idx,
+        edge,
         nudgezone_diff,
         fac_bdydiff_v,
         start_2nd_nudge_line_idx_e,
@@ -70,7 +70,7 @@ class TestApplyDiffusionToVn(StencilTest):
             inv_primal_edge_length,
         )
 
-        condition = start_2nd_nudge_line_idx_e <= horz_idx[:, np.newaxis]
+        condition = start_2nd_nudge_line_idx_e <= edge[:, np.newaxis]
 
         if limited_area:
             vn = np.where(
@@ -103,9 +103,9 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        horz_idx = zero_field(mesh, EdgeDim, dtype=int32)
-        for edge in range(mesh.n_edges):
-            horz_idx[edge] = edge
+        edge = zero_field(mesh, EdgeDim, dtype=int32)
+        for e in range(mesh.n_edges):
+            edge[e] = e
 
         u_vert = random_field(mesh, VertexDim, KDim)
         v_vert = random_field(mesh, VertexDim, KDim)
@@ -145,7 +145,7 @@ class TestApplyDiffusionToVn(StencilTest):
             diff_multfac_vn=diff_multfac_vn,
             nudgecoeff_e=nudgecoeff_e,
             vn=vn,
-            horz_idx=horz_idx,
+            edge=edge,
             nudgezone_diff=nudgezone_diff,
             fac_bdydiff_v=fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=start_2nd_nudge_line_idx_e,
