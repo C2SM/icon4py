@@ -207,6 +207,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     )
 
 
+@pytest.mark.stencil_test
 @pytest.mark.slow_tests
 def test_recon_lsq_cell_c_svd_stencil():
     mesh = SimpleMesh()

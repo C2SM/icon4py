@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
@@ -43,6 +44,7 @@ def btraj_dreg_stencil_02_numpy(
     return opt_famask_dsl
 
 
+@pytest.mark.stencil_test
 def test_btraj_dreg_stencil_02():
     mesh = SimpleMesh()
     p_vn = random_field(mesh, EdgeDim, KDim)

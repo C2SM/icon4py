@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.hor_adv_stencil_01 import hor_adv_stencil_01
@@ -40,6 +41,7 @@ def hor_adv_stencil_01_numpy(
     return tracer_new
 
 
+@pytest.mark.stencil_test
 def test_hor_adv_stencil_01():
     mesh = SimpleMesh()
 

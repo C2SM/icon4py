@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_02 import v_limit_prbl_sm_stencil_02
@@ -43,6 +44,7 @@ def v_limit_prbl_sm_stencil_02_numpy(
     return q_face_up, q_face_low
 
 
+@pytest.mark.stencil_test
 def test_v_limit_prbl_sm_stencil_02():
     mesh = SimpleMesh()
     l_limit = random_mask(mesh, CellDim, KDim, dtype=int32)

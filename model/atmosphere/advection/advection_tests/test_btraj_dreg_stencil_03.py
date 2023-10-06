@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
@@ -107,6 +108,7 @@ def btraj_dreg_stencil_03_numpy(
     )
 
 
+@pytest.mark.stencil_test
 def test_btraj_dreg_stencil_03():
     mesh = SimpleMesh()
 

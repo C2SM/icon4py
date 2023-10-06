@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
@@ -64,6 +65,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     return np.where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over), z_temp)
 
 
+@pytest.mark.stencil_test
 def test_truly_horizontal_diffusion_nabla_of_theta_over_steep_points():
     mesh = SimpleMesh()
 

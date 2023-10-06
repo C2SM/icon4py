@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_51 import (
     mo_solve_nonhydro_stencil_51,
@@ -62,6 +63,7 @@ def mo_solve_nonhydro_stencil_51_numpy(
     return z_q, w_nnew
 
 
+@pytest.mark.stencil_test
 def test_mo_solve_nonhydro_stencil_51():
     mesh = SimpleMesh()
     z_q = random_field(mesh, CellDim, KDim)

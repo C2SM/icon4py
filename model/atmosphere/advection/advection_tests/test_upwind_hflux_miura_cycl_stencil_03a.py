@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_03a import (
     upwind_hflux_miura_cycl_stencil_03a,
@@ -21,6 +22,7 @@ from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
+@pytest.mark.stencil_test
 def upwind_hflux_miura_cycl_stencil_03a_numpy(
     z_tracer_mflx_1_dsl: np.array,
     z_tracer_mflx_2_dsl: np.array,

@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_02 import hflx_limiter_pd_stencil_02
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
@@ -40,6 +41,7 @@ def hflx_limiter_pd_stencil_02_numpy(
     return p_mflx_tracer_h_out
 
 
+@pytest.mark.stencil_test
 def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl():
     mesh = SimpleMesh()
     bound = np.int32(7)
@@ -67,6 +69,7 @@ def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl():
     assert np.allclose(p_mflx_tracer_h_in, ref)
 
 
+@pytest.mark.stencil_test
 def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl():
     mesh = SimpleMesh()
     bound = np.int32(7)
@@ -106,6 +109,7 @@ def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl():
     assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)
 
 
+@pytest.mark.stencil_test
 def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl_does_not_change_inout_arg():
     mesh = SimpleMesh()
     bound = np.int32(7)

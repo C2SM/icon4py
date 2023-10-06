@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_03 import (
     hflx_limiter_mo_stencil_03,
@@ -52,6 +53,7 @@ def hflx_limiter_mo_stencil_03_min_max_numpy(
     return z_max, z_min
 
 
+@pytest.mark.stencil_test
 def test_hflx_diffusion_mo_stencil_03_min_max():
     mesh = SimpleMesh()
     z_tracer_max = random_field(mesh, CellDim, KDim)
@@ -80,6 +82,7 @@ def test_hflx_diffusion_mo_stencil_03_min_max():
     assert np.allclose(z_min, z_min_ref)
 
 
+@pytest.mark.stencil_test
 def test_hflx_diffusion_mo_stencil_03():
     mesh = SimpleMesh()
     z_tracer_max = random_field(mesh, CellDim, KDim)

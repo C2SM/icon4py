@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_01 import hflx_limiter_pd_stencil_01
@@ -40,6 +41,7 @@ def hflx_limiter_pd_stencil_01_numpy(
     return r_m
 
 
+@pytest.mark.stencil_test
 def test_hflx_limiter_pd_stencil_01():
     mesh = SimpleMesh()
     geofac_div = random_field(mesh, CellDim, C2EDim)

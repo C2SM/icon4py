@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.dycore.compute_airmass import compute_airmass
 from icon4py.model.common.dimension import CellDim, KDim
@@ -25,6 +26,7 @@ def compute_airmass_numpy(
     return rho_in * ddqz_z_full_in * deepatmo_t1mc_in
 
 
+@pytest.mark.stencil_test
 def test_compute_airmass():
     mesh = SimpleMesh()
 

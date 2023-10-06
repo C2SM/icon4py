@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.rbf_intp_edge_stencil_01 import rbf_intp_edge_stencil_01
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
@@ -30,6 +31,7 @@ def rbf_intp_edge_stencil_01_numpy(
     return p_vt_out
 
 
+@pytest.mark.stencil_test
 def test_rbf_intp_edge_stencil_01():
     mesh = SimpleMesh()
 

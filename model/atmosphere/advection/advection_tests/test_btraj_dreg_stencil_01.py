@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_01 import btraj_dreg_stencil_01
 from icon4py.model.common.dimension import EdgeDim, KDim
@@ -37,6 +38,7 @@ def btraj_dreg_stencil_01_numpy(
     return lvn_sys_pos
 
 
+@pytest.mark.stencil_test
 def test_btraj_dreg_stencil_01():
     mesh = SimpleMesh()
     lcounterclock = True

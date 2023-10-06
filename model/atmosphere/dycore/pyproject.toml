@@ -110,6 +110,7 @@ warn_unused_ignores = true
 [tool.pytest]
 
 [tool.pytest.ini_options]
+markers = ['stencil_test: marks unit tests for stencils']
 testpaths = 'tests'
 
 [tool.setuptools.dynamic]

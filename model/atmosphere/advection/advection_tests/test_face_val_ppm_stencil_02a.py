@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02a import face_val_ppm_stencil_02a
 from icon4py.model.common.dimension import CellDim, KDim
@@ -33,6 +34,7 @@ def face_val_ppm_stencil_02a_numpy(
     return p_face
 
 
+@pytest.mark.stencil_test
 def test_face_val_ppm_stencil_02a():
     mesh = SimpleMesh()
     p_cc = random_field(mesh, CellDim, KDim)

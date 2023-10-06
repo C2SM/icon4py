@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_03 import step_advection_stencil_03
 from icon4py.model.common.dimension import CellDim, KDim
@@ -31,6 +32,7 @@ def step_advection_stencil_03_numpy(
     return p_tracer_new
 
 
+@pytest.mark.stencil_test
 def test_step_advection_stencil_03():
     mesh = SimpleMesh()
 

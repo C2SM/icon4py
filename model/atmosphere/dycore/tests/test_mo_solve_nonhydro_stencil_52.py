@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
@@ -58,6 +59,7 @@ def mo_solve_nonhydro_stencil_52_numpy(
     return z_q, w
 
 
+@pytest.mark.stencil_test
 def test_mo_solve_nonhydro_stencil_52():
     mesh = SimpleMesh()
     vwind_impl_wgt = random_field(mesh, CellDim)

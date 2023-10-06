@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_stencil_01 import (
@@ -60,6 +61,7 @@ def upwind_hflux_miura_stencil_01_numpy(
     return p_out_e
 
 
+@pytest.mark.stencil_test
 def test_upwind_hflux_miura_stencil_01():
     mesh = SimpleMesh()
 

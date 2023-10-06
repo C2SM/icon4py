@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from numpy import int32
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import hflx_limiter_mo_stencil_02
@@ -44,6 +45,7 @@ def hflx_limiter_mo_stencil_02_numpy(
     return z_tracer_new_out, z_tracer_max_out, z_tracer_min_out
 
 
+@pytest.mark.stencil_test
 def test_hflx_limiter_mo_stencil_02_some_matching_condition():
     mesh = SimpleMesh()
 

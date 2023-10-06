@@ -144,6 +144,7 @@ else:
         pytest.skip("Test skipped as `pytest-benchmark` is not installed.")
 
 
+@pytest.mark.stencil_test
 class StencilTest:
     """
     Base class to be used for testing stencils.

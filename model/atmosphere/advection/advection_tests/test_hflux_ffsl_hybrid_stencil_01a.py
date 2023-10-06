@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
@@ -124,6 +125,7 @@ def hflux_ffsl_hybrid_stencil_01a_numpy(
     return p_out_e_hybrid_1a
 
 
+@pytest.mark.stencil_test
 def test_hflux_ffsl_hybrid_stencil_01a():
     mesh = SimpleMesh()
     z_lsq_coeff_1 = random_field(mesh, CellDim, KDim)

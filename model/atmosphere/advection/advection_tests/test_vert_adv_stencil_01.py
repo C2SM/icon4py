@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import vert_adv_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
@@ -38,6 +39,7 @@ def vert_adv_stencil_01_numpy(
     return tracer_new
 
 
+@pytest.mark.stencil_test
 def test_vert_adv_stencil_01():
     mesh = SimpleMesh()
 

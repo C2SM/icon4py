@@ -285,6 +285,7 @@ def prep_gauss_quadrature_c_stencil_numpy(
 
 
 @pytest.mark.slow_tests
+@pytest.mark.stencil_test
 def test_prep_gauss_quadrature_c_stencil():
     mesh = SimpleMesh()
 

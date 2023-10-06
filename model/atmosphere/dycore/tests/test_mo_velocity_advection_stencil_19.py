@@ -24,6 +24,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
@@ -64,6 +65,7 @@ def mo_velocity_advection_stencil_19_numpy(
     return ddt_vn_adv
 
 
+@pytest.mark.stencil_test
 def test_mo_velocity_advection_stencil_19():
     mesh = SimpleMesh()
 

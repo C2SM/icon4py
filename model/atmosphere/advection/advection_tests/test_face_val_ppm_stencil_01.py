@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 
@@ -61,6 +62,7 @@ def face_val_ppm_stencil_01_numpy(
     return z_slope
 
 
+@pytest.mark.stencil_test
 def test_face_val_ppm_stencil_01():
     mesh = SimpleMesh()
     p_cc = random_field(mesh, CellDim, KDim, extend={KDim: 1})

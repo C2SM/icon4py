@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
     mo_velocity_advection_stencil_16,
@@ -36,6 +37,7 @@ def mo_velocity_advection_stencil_16_numpy(
     return ddt_w_adv
 
 
+@pytest.mark.stencil_test
 def test_mo_velocity_advection_stencil_16():
     mesh = SimpleMesh()
 

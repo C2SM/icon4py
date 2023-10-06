@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.recon_lsq_cell_l_svd_stencil import (
@@ -38,6 +39,7 @@ def recon_lsq_cell_l_svd_stencil_numpy(
     return p_coeff_1, p_coeff_2, p_coeff_3
 
 
+@pytest.mark.stencil_test
 def test_recon_lsq_cell_l_svd_stencil():
     mesh = SimpleMesh()
     p_cc = random_field(mesh, CellDim, KDim)

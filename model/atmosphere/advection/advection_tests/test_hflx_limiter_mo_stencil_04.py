@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_04 import hflx_limiter_mo_stencil_04
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
@@ -34,6 +35,7 @@ def hflx_limiter_mo_stencil_04_numpy(
     return z_mflx_low + np.minimum(1.0, r_frac) * z_anti
 
 
+@pytest.mark.stencil_test
 def test_hflx_limiter_mo_stencil_04():
     mesh = SimpleMesh()
     z_anti = random_field(mesh, EdgeDim, KDim, low=-2.0, high=2.0)

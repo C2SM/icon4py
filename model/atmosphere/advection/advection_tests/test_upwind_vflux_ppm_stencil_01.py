@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.upwind_vflux_ppm_stencil_01 import (
     upwind_vflux_ppm_stencil_01,
@@ -29,6 +30,7 @@ def upwind_vflux_ppm_stencil_01_numpy(
     return z_delta_q, z_a1
 
 
+@pytest.mark.stencil_test
 def test_upwind_vflux_ppm_stencil_01():
     mesh = SimpleMesh()
     z_face_up = random_field(mesh, CellDim, KDim)

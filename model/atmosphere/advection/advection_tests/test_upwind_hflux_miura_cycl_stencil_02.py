@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
@@ -50,6 +51,7 @@ def upwind_hflux_miura_cycl_stencil_02_numpy(
     return (z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl)
 
 
+@pytest.mark.stencil_test
 def test_upwind_hflux_miura_cycl_stencil_02():
     mesh = SimpleMesh()
     nsub = int32(1)

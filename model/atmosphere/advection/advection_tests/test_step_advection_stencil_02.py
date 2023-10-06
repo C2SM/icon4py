@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_02 import step_advection_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
@@ -31,6 +32,7 @@ def step_advection_stencil_02_numpy(
     return np.maximum(0.1 * rhodz_new, rhodz_new) - pd_time * tmp
 
 
+@pytest.mark.stencil_test
 def test_step_advection_stencil_02():
     mesh = SimpleMesh()
     rhodz_ast = random_field(mesh, CellDim, KDim)

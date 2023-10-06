@@ -661,6 +661,7 @@ def divide_flux_area_list_stencil_01_numpy(
 
 
 @pytest.mark.slow_tests
+@pytest.mark.stencil_test
 def test_divide_flux_area_list_stencil_01():
     mesh = SimpleMesh()
 
