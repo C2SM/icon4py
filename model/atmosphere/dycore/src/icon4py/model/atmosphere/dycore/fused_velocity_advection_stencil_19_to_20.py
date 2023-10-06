@@ -53,7 +53,7 @@ def _fused_velocity_advection_stencil_19_to_20(
     tangent_orientation: Field[[EdgeDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    k: Field[[KDim], int32],
+    vert_idx: Field[[KDim], int32],
     cfl_w_limit: float,
     scalfac_exdiff: float,
     d_time: float,
@@ -78,7 +78,7 @@ def _fused_velocity_advection_stencil_19_to_20(
 
     ddt_vn_adv = (
         where(
-            maximum(2, nrdmax - 2) <= k < nlev - 3,
+            maximum(2, nrdmax - 2) <= vert_idx < nlev - 3,
             _mo_velocity_advection_stencil_20(
                 levelmask,
                 c_lin_e,
@@ -123,7 +123,7 @@ def fused_velocity_advection_stencil_19_to_20(
     inv_primal_edge_length: Field[[EdgeDim], float],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
     ddt_vn_adv: Field[[EdgeDim, KDim], float],
-    k: Field[[KDim], int32],
+    vert_idx: Field[[KDim], int32],
     cfl_w_limit: float,
     scalfac_exdiff: float,
     d_time: float,
@@ -148,7 +148,7 @@ def fused_velocity_advection_stencil_19_to_20(
         tangent_orientation,
         inv_primal_edge_length,
         geofac_grdiv,
-        k,
+        vert_idx,
         cfl_w_limit,
         scalfac_exdiff,
         d_time,

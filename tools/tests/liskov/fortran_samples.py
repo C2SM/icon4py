@@ -407,7 +407,7 @@ MULTIPLE_FUSED = """\
         !$DSL       area=p_patch%cells%area(:,1); geofac_grg_x=p_int%geofac_grg(:,:,1,1); &
         !$DSL       geofac_grg_y=p_int%geofac_grg(:,:,1,2); geofac_n2s=p_int%geofac_n2s(:,:,1); &
         !$DSL       w_old=w_old(:,:,1); w=p_nh_prog%w(:,:,1); diff_multfac_w=diff_multfac_w; &
-        !$DSL       diff_multfac_n2w=diff_multfac_n2w(:); k=k(:); &
+        !$DSL       diff_multfac_n2w=diff_multfac_n2w(:); vert_idx=vert_idx(:); &
         !$DSL       horz_idx=horz_idx(:); nrdmax=nrdmax(jg); interior_idx=start_interior_idx_c-1; &
         !$DSL       halo_idx=end_interior_idx_c; dwdx=p_nh_diag%dwdx(:,:,1); &
         !$DSL       dwdy=p_nh_diag%dwdy(:,:,1); &

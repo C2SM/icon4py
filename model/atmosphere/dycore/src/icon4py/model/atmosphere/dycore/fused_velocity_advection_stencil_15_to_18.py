@@ -45,7 +45,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     horz_idx: Field[[CellDim], int32],
-    k: Field[[KDim], int32],
+    vert_idx: Field[[KDim], int32],
     scalfac_exdiff: float,
     cfl_w_limit: float,
     dtime: float,
@@ -55,22 +55,22 @@ def _fused_velocity_advection_stencil_16_to_18(
     nrdmax: int32,
     extra_diffu: bool,
 ) -> Field[[CellDim, KDim], float]:
-    k = broadcast(k, (CellDim, KDim))
+    vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     ddt_w_adv = where(
-        (horz_lower_bound <= horz_idx < horz_upper_bound) & (int32(1) <= k),
+        (horz_lower_bound <= horz_idx < horz_upper_bound) & (int32(1) <= vert_idx),
         _mo_velocity_advection_stencil_16(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
         ddt_w_adv,
     )
     ddt_w_adv = where(
-        (horz_lower_bound <= horz_idx < horz_upper_bound) & (int32(1) <= k),
+        (horz_lower_bound <= horz_idx < horz_upper_bound) & (int32(1) <= vert_idx),
         _mo_velocity_advection_stencil_17(e_bln_c_s, z_v_grad_w, ddt_w_adv),
         ddt_w_adv,
     )
     ddt_w_adv = (
         where(
             (horz_lower_bound <= horz_idx < horz_upper_bound)
-            & (maximum(2, nrdmax - 2) <= k < nlev - 3),
+            & (maximum(2, nrdmax - 2) <= vert_idx < nlev - 3),
             _mo_velocity_advection_stencil_18(
                 levelmask,
                 cfl_clipping,
@@ -110,7 +110,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     horz_idx: Field[[CellDim], int32],
-    k: Field[[KDim], int32],
+    vert_idx: Field[[KDim], int32],
     scalfac_exdiff: float,
     cfl_w_limit: float,
     dtime: float,
@@ -138,7 +138,7 @@ def _fused_velocity_advection_stencil_15_to_18(
             area,
             geofac_n2s,
             horz_idx,
-            k,
+            vert_idx,
             scalfac_exdiff,
             cfl_w_limit,
             dtime,
@@ -172,7 +172,7 @@ def fused_velocity_advection_stencil_15_to_18(
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     z_w_con_c_full: Field[[CellDim, KDim], float],
     horz_idx: Field[[CellDim], int32],
-    k: Field[[KDim], int32],
+    vert_idx: Field[[KDim], int32],
     scalfac_exdiff: float,
     cfl_w_limit: float,
     dtime: float,
@@ -198,7 +198,7 @@ def fused_velocity_advection_stencil_15_to_18(
         area,
         geofac_n2s,
         horz_idx,
-        k,
+        vert_idx,
         scalfac_exdiff,
         cfl_w_limit,
         dtime,

@@ -55,7 +55,7 @@ def _fused_velocity_advection_stencil_1_to_6(
     vt: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    k: Field[[KDim], int32],
+    vert_idx: Field[[KDim], int32],
     nlevp1: int32,
     lvn_only: bool,
 ) -> tuple[
@@ -65,20 +65,20 @@ def _fused_velocity_advection_stencil_1_to_6(
     Field[[EdgeDim, KDim], float],
 ]:
     vt = where(
-        k < nlevp1,
+        vert_idx < nlevp1,
         _mo_velocity_advection_stencil_01(vn, rbf_vec_coeff_e),
         vt,
     )
 
     vn_ie, z_kin_hor_e = where(
-        1 < k < nlevp1,
+        1 < vert_idx < nlevp1,
         _mo_velocity_advection_stencil_02(wgtfac_e, vn, vt),
         (vn_ie, z_kin_hor_e),
     )
 
     z_vt_ie = (
         where(
-            1 < k < nlevp1,
+            1 < vert_idx < nlevp1,
             _mo_velocity_advection_stencil_03(wgtfac_e, vt),
             z_vt_ie,
         )
@@ -87,15 +87,15 @@ def _fused_velocity_advection_stencil_1_to_6(
     )
 
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k == int32(0),
+        vert_idx == int32(0),
         _mo_velocity_advection_stencil_05(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 
-    vn_ie = where(k == nlevp1, _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn), vn_ie)
+    vn_ie = where(vert_idx == nlevp1, _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn), vn_ie)
 
     z_w_concorr_me = where(
-        nflatlev < k < nlevp1,
+        nflatlev < vert_idx < nlevp1,
         _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
@@ -123,7 +123,7 @@ def _fused_velocity_advection_stencil_1_to_7(
     vn_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     z_v_grad_w: Field[[EdgeDim, KDim], float],
-    k: Field[[KDim], int32],
+    vert_idx: Field[[KDim], int32],
     istep: int32,
     nlevp1: int32,
     lvn_only: bool,
@@ -151,7 +151,7 @@ def _fused_velocity_advection_stencil_1_to_7(
             vt,
             vn_ie,
             z_kin_hor_e,
-            k,
+            vert_idx,
             nlevp1,
             lvn_only,
         )
@@ -159,13 +159,13 @@ def _fused_velocity_advection_stencil_1_to_7(
         else (vt, vn_ie, z_kin_hor_e, z_w_concorr_me)
     )
 
-    k = broadcast(k, (EdgeDim, KDim))
+    vert_idx = broadcast(vert_idx, (EdgeDim, KDim))
 
     z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
     z_v_grad_w = (
         where(
-            (lateral_boundary_7 < horz_idx < halo_1) & (k < nlevp1),
+            (lateral_boundary_7 < horz_idx < halo_1) & (vert_idx < nlevp1),
             _mo_velocity_advection_stencil_07(
                 vn_ie,
                 inv_dual_edge_length,
@@ -204,7 +204,7 @@ def fused_velocity_advection_stencil_1_to_7(
     vn_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     z_v_grad_w: Field[[EdgeDim, KDim], float],
-    k: Field[[KDim], int32],
+    vert_idx: Field[[KDim], int32],
     istep: int32,
     nlevp1: int32,
     lvn_only: bool,
@@ -231,7 +231,7 @@ def fused_velocity_advection_stencil_1_to_7(
         vn_ie,
         z_kin_hor_e,
         z_v_grad_w,
-        k,
+        vert_idx,
         istep,
         nlevp1,
         lvn_only,
