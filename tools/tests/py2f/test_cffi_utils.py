@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import cffi
 import numpy as np
 import pytest
+cffi = pytest.importorskip("cffi")
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float32, float64, int32, int64
 from icon4py.model.common.dimension import E2CDim, EdgeDim, KDim, VertexDim

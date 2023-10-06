@@ -17,7 +17,15 @@ from importlib.resources import files
 from types import MappingProxyType
 from typing import Any
 
-import cffi
+try:
+    from cffi import FFI
+except ImportError:
+    class FFI:
+        """Dummy class to make import run when (optional) CFFI dependency is not installed."""
+        def __init__(self):
+            raise ModuleNotFoundError("CFFI is not installed, need option CFFI >=1.5 dependency")
+
+
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.iterator.embedded import np_as_located_field
@@ -75,7 +83,7 @@ def generate_and_compile_cffi_plugin(
     with open("/".join([build_path, c_header_file]), "w") as f:
         f.write(c_header)
 
-    builder = cffi.FFI()
+    builder = FFI()
 
     builder.embedding_api(c_header)
     builder.set_source(plugin_name, f'#include "{c_header_file}"')
@@ -105,7 +113,7 @@ def to_fields(dim_sizes: dict[Dimension, int]):
 
     #TODO (magdalena)  handle dimension sizes in a better way?
     """
-    ffi = cffi.FFI()
+    ffi = FFI()
     dim_sizes = dim_sizes
 
     def _dim_sizes(dims: list[Dimension]) -> tuple[int | None, int | None]:

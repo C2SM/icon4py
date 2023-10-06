@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import pytest
+pytest.importorskip("cffi")
 from icon4pytools.py2f.cffi_utils import CffiMethod
 from icon4pytools.py2f.parsing import parse_functions_from_module
 

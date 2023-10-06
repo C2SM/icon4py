@@ -10,11 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import pytest
+pytest.importorskip("cffi")
 from click.testing import CliRunner
 
 from icon4pytools.py2f.py2fgen import main
-
 
 def test_py2fgen():
     cli = CliRunner()
