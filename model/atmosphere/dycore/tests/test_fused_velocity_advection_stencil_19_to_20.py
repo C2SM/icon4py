@@ -64,7 +64,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         tangent_orientation,
         inv_primal_edge_length,
         geofac_grdiv,
-        vert_idx,
+        k,
         cfl_w_limit,
         scalfac_exdiff,
         d_time,
@@ -91,7 +91,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
             ddqz_z_full_e,
         )
 
-        condition = (np.maximum(2, nrdmax - 2) <= vert_idx) & (vert_idx < nlev - 3)
+        condition = (np.maximum(2, nrdmax - 2) <= k) & (k < nlev - 3)
 
         ddt_vn_adv_extra_diffu = mo_velocity_advection_stencil_20_numpy(
             mesh,
@@ -139,9 +139,9 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        vert_idx = zero_field(mesh, KDim, dtype=int32)
+        k = zero_field(mesh, KDim, dtype=int32)
         for level in range(mesh.k_level):
-            vert_idx[level] = level
+            k[level] = level
 
         nlev = mesh.k_level
         nrdmax = 5
@@ -164,7 +164,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
             tangent_orientation=tangent_orientation,
             inv_primal_edge_length=inv_primal_edge_length,
             geofac_grdiv=geofac_grdiv,
-            vert_idx=vert_idx,
+            k=k,
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             d_time=d_time,
