@@ -91,7 +91,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
             ddqz_z_full_e,
         )
 
-        condition = (np.maximum(3, nrdmax - 2) < vert_idx) & (vert_idx < nlev - 4)
+        condition = (np.maximum(2, nrdmax - 2) <= vert_idx) & (vert_idx < nlev - 3)
 
         ddt_vn_adv_extra_diffu = mo_velocity_advection_stencil_20_numpy(
             mesh,
