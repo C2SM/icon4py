@@ -55,20 +55,20 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         ddqz_z_half,
         area,
         geofac_n2s,
-        horz_idx,
-        vert_idx,
+        cell,
+        k,
         scalfac_exdiff,
         cfl_w_limit,
         dtime,
-        horz_lower_bound,
-        horz_upper_bound,
+        cell_lower_bound,
+        cell_upper_bound,
         nlev,
         nrdmax,
         extra_diffu,
     ):
-        horz_idx = horz_idx[:, np.newaxis]
+        cell = cell[:, np.newaxis]
 
-        condition1 = (horz_lower_bound <= horz_idx) & (horz_idx < horz_upper_bound) & (vert_idx >= 1)
+        condition1 = (cell_lower_bound <= cell) & (cell < cell_upper_bound) & (k >= 1)
 
         ddt_w_adv = np.where(
             condition1,
@@ -83,10 +83,10 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         )
 
         condition2 = (
-            (horz_lower_bound <= horz_idx)
-            & (horz_idx < horz_upper_bound)
-            & (np.maximum(2, nrdmax - 2) <= vert_idx)
-            & (vert_idx < nlev - 3)
+            (cell_lower_bound <= cell)
+            & (cell < cell_upper_bound)
+            & (np.maximum(2, nrdmax - 2) <= k)
+            & (k < nlev - 3)
         )
 
         if extra_diffu:
@@ -129,13 +129,13 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         ddqz_z_half,
         area,
         geofac_n2s,
-        horz_idx,
-        vert_idx,
+        cell,
+        k,
         scalfac_exdiff,
         cfl_w_limit,
         dtime,
-        horz_lower_bound,
-        horz_upper_bound,
+        cell_lower_bound,
+        cell_upper_bound,
         nlev,
         nrdmax,
         lvn_only,
@@ -160,13 +160,13 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
                 ddqz_z_half,
                 area,
                 geofac_n2s,
-                horz_idx,
-                vert_idx,
+                cell,
+                k,
                 scalfac_exdiff,
                 cfl_w_limit,
                 dtime,
-                horz_lower_bound,
-                horz_upper_bound,
+                cell_lower_bound,
+                cell_upper_bound,
                 nlev,
                 nrdmax,
                 extra_diffu,
@@ -198,20 +198,20 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         cfl_w_limit = 3.0
         dtime = 2.0
 
-        vert_idx = zero_field(mesh, KDim, dtype=int32)
+        k = zero_field(mesh, KDim, dtype=int32)
         for level in range(mesh.k_level):
-            vert_idx[level] = level
+            k[level] = level
 
-        horz_idx = zero_field(mesh, CellDim, dtype=int32)
-        for cell in range(mesh.n_cells):
-            horz_idx[cell] = cell
+        cell = zero_field(mesh, CellDim, dtype=int32)
+        for c in range(mesh.n_cells):
+            cell[c] = c
 
         nlev = mesh.k_level
         nrdmax = 5
         extra_diffu = True
 
-        horz_lower_bound = 2
-        horz_upper_bound = 4
+        cell_lower_bound = 2
+        cell_upper_bound = 4
 
         lvn_only = False
 
@@ -229,13 +229,13 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
             ddqz_z_half=ddqz_z_half,
             area=area,
             geofac_n2s=geofac_n2s,
-            horz_idx=horz_idx,
-            vert_idx=vert_idx,
+            cell=cell,
+            k=k,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
-            horz_lower_bound=horz_lower_bound,
-            horz_upper_bound=horz_upper_bound,
+            cell_lower_bound=cell_lower_bound,
+            cell_upper_bound=cell_upper_bound,
             nlev=nlev,
             nrdmax=nrdmax,
             lvn_only=lvn_only,
