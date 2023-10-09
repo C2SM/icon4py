@@ -46,10 +46,10 @@ def fused_mo_velocity_advection_11_12(
     z_w_con_c: Field[[CellDim, KDim], float],
     k: Field[[KDim], int32],
     nlev: int32,
-    vertical_start: int32,
-    vertical_end: int32,
     horizontal_start: int32,
     horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _fused_mo_velocity_advection_11_12(
         w,
