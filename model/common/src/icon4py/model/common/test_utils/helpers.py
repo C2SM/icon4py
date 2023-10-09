@@ -112,6 +112,10 @@ def flatten_first_two_dims(
     return it_embedded.np_as_located_field(*dims)(newarray)
 
 
+def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
+    return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+
 def _test_validation(self, mesh, backend, input_data):
     reference_outputs = self.reference(mesh, **{k: np.array(v) for k, v in input_data.items()})
     self.PROGRAM.with_backend(backend)(

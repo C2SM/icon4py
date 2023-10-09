@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common.dimension import E2C2EO, E2C2EODim, EdgeDim, KDim
 
@@ -32,5 +32,17 @@ def mo_solve_nonhydro_stencil_31(
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float],
     vn: Field[[EdgeDim, KDim], float],
     z_vn_avg: Field[[EdgeDim, KDim], float],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_31(e_flx_avg, vn, out=z_vn_avg)
+    _mo_solve_nonhydro_stencil_31(
+        e_flx_avg,
+        vn,
+        out=z_vn_avg,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

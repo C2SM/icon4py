@@ -156,7 +156,6 @@ class Timeloop:
         diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
     ):
-
         self.atmo_non_hydro.do_dynamics_substepping(
             self.config.dtime, diagnostic_state, prognostic_state
         )

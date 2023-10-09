@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
@@ -31,6 +32,7 @@ class TestMoSolveNonhydro4thOrderDivdamp(StencilTest):
         scal_divdamp: np.array,
         z_graddiv2_vn: np.array,
         vn: np.array,
+        **kwargs,
     ) -> np.array:
         scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
         vn = vn + (scal_divdamp * z_graddiv2_vn)
@@ -46,4 +48,8 @@ class TestMoSolveNonhydro4thOrderDivdamp(StencilTest):
             scal_divdamp=scal_divdamp,
             z_graddiv2_vn=z_graddiv2_vn,
             vn=vn,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

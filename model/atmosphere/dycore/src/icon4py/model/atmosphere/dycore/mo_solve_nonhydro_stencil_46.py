@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
 
@@ -31,5 +31,15 @@ def _mo_solve_nonhydro_stencil_46() -> (
 def mo_solve_nonhydro_stencil_46(
     w_nnew: Field[[CellDim, KDim], float],
     z_contr_w_fl_l: Field[[CellDim, KDim], float],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_46(out=(w_nnew, z_contr_w_fl_l))
+    _mo_solve_nonhydro_stencil_46(
+        out=(w_nnew, z_contr_w_fl_l),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

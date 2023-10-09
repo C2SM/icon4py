@@ -15,22 +15,22 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 
-from icon4py.model.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
 def _mo_velocity_advection_stencil_09(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    z_w_concorr_mc = neighbor_sum(z_w_concorr_me(C2E) * e_bln_c_s, axis=C2EDim)
+    z_w_concorr_mc = neighbor_sum(z_w_concorr_me(C2E) * e_bln_c_s(C2CE), axis=C2EDim)
     return z_w_concorr_mc
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_09(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     z_w_concorr_mc: Field[[CellDim, KDim], float],
 ):
     _mo_velocity_advection_stencil_09(z_w_concorr_me, e_bln_c_s, out=z_w_concorr_mc)
