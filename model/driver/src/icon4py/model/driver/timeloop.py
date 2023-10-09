@@ -91,6 +91,7 @@ class DiagnosticClass:
         k_size: int = 1
     ):
         self.airmass: Field[[CellDim, KDim], float] = np_as_located_field(CellDim,KDim)(np.zeros((cell_size, k_size), dtype=float))
+        # and possibly other variables used in dycore: theta, rho
 
 class NHstate:
 
