@@ -58,19 +58,19 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         vt,
         vn_ie,
         z_kin_hor_e,
-        vert_idx,
+        k,
         nlevp1,
         lvn_only,
     ):
 
-        vert_idx = vert_idx[np.newaxis, :]
+        k = k[np.newaxis, :]
 
-        condition1 = vert_idx < nlevp1
+        condition1 = k < nlevp1
         vt = np.where(
             condition1, mo_velocity_advection_stencil_01_numpy(mesh, vn, rbf_vec_coeff_e), vt
         )
 
-        condition2 = (1 < vert_idx) & (vert_idx < nlevp1)
+        condition2 = (1 < k) & (k < nlevp1)
         vn_ie, z_kin_hor_e = np.where(
             condition2,
             mo_velocity_advection_stencil_02_numpy(wgtfac_e, vn, vt),
@@ -82,19 +82,19 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
                 condition2, mo_velocity_advection_stencil_03_numpy(wgtfac_e, vt), z_vt_ie
             )
 
-        condition3 = vert_idx == 0
+        condition3 = k == 0
         vn_ie, z_vt_ie, z_kin_hor_e = np.where(
             condition3,
             mo_velocity_advection_stencil_05_numpy(vn, vt),
             (vn_ie, z_vt_ie, z_kin_hor_e),
         )
 
-        condition4 = vert_idx == nlevp1
+        condition4 = k == nlevp1
         vn_ie = np.where(
             condition4, mo_velocity_advection_stencil_06_numpy(wgtfacq_e_dsl, vn), vn_ie
         )
 
-        condition5 = (nflatlev < vert_idx) & (vert_idx < nlevp1)
+        condition5 = (nflatlev < k) & (k < nlevp1)
         z_w_concorr_me = np.where(
             condition5,
             mo_velocity_advection_stencil_04_numpy(vn, ddxn_z_full, ddxt_z_full, vt),
@@ -125,11 +125,11 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         vn_ie,
         z_kin_hor_e,
         z_v_grad_w,
-        vert_idx,
+        k,
         istep,
         nlevp1,
         lvn_only,
-        horz_idx,
+        edge,
         lateral_boundary_7,
         halo_1,
         **kwargs,
@@ -155,16 +155,16 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
                 vt,
                 vn_ie,
                 z_kin_hor_e,
-                vert_idx,
+                k,
                 nlevp1,
                 lvn_only,
             )
 
-        horz_idx = horz_idx[:, np.newaxis]
+        edge = edge[:, np.newaxis]
 
         z_w_v = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(mesh, w, c_intp)
 
-        condition_mask = (lateral_boundary_7 < horz_idx) & (horz_idx < halo_1) & (vert_idx < nlevp1)
+        condition_mask = (lateral_boundary_7 < edge) & (edge < halo_1) & (k < nlevp1)
 
         if not lvn_only:
             z_v_grad_w = np.where(
@@ -210,13 +210,13 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         z_v_grad_w = zero_field(mesh, EdgeDim, KDim)
         wgtfacq_e = random_field(mesh, EdgeDim, KDim)
 
-        vert_idx = zero_field(mesh, KDim, dtype=int32)
+        k = zero_field(mesh, KDim, dtype=int32)
         for level in range(mesh.k_level):
-            vert_idx[level] = level
+            k[level] = level
 
-        horz_idx = zero_field(mesh, EdgeDim, dtype=int32)
-        for edge in range(mesh.n_edges):
-            horz_idx[edge] = edge
+        edge = zero_field(mesh, EdgeDim, dtype=int32)
+        for e in range(mesh.n_edges):
+            edge[e] = e
 
         nlevp1 = mesh.k_level + 1
         nflatlev = 13
@@ -246,11 +246,11 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
             vn_ie=vn_ie,
             z_kin_hor_e=z_kin_hor_e,
             z_v_grad_w=z_v_grad_w,
-            vert_idx=vert_idx,
+            k=k,
             istep=istep,
             nlevp1=nlevp1,
             lvn_only=lvn_only,
-            horz_idx=horz_idx,
+            edge=edge,
             lateral_boundary_7=lateral_boundary_7,
             halo_1=halo_1,
         )
