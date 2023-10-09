@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-from icon4py.model.common.test_utils.helpers import backend, mesh  # noqa F401
 from icon4py.model.common.test_utils.datatest_helpers import (  # noqa F401
     damping_height,
     data_provider,
