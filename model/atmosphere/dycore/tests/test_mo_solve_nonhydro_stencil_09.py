@@ -43,11 +43,14 @@ class TestMoSolveNonhydroStencil09(StencilTest):
         vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
 
         z_theta_v_pr_ic = wgtfac_c * z_rth_pr_2 + (1.0 - wgtfac_c) * z_rth_pr_2_offset
+        z_theta_v_pr_ic[:, 0] = 0
         theta_v_ic = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
+        theta_v_ic[:, 0] = 0
         z_th_ddz_exner_c = (
             vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
             + z_theta_v_pr_ic * d_exner_dz_ref_ic
         )
+        z_th_ddz_exner_c[:, 0] = 0
         return dict(
             z_theta_v_pr_ic=z_theta_v_pr_ic,
             theta_v_ic=theta_v_ic,

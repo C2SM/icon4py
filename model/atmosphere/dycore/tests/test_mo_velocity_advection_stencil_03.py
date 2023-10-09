@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
     mo_velocity_advection_stencil_03,
@@ -29,7 +30,8 @@ class TestMoVelocityAdvectionStencil03(StencilTest):
     def reference(mesh, wgtfac_e: np.array, vt: np.array, **kwargs) -> np.array:
         vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
         z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
-        return dict(z_vt_ie=z_vt_ie)
+        z_vt_ie[:, 0] = 0
+        return dict(z_vt_ie=z_vt_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)])
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -41,5 +43,9 @@ class TestMoVelocityAdvectionStencil03(StencilTest):
         return dict(
             wgtfac_e=wgtfac_e,
             vt=vt,
-            z_vt_ie=z_vt_ie,
+            z_vt_ie=z_vt_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            horizontal_start=int32(1),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(1),
+            vertical_end=int32(mesh.k_level),
         )

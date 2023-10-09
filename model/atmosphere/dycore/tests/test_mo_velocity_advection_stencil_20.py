@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
@@ -38,7 +39,7 @@ def mo_velocity_advection_stencil_20_numpy(
     ddt_vn_adv: np.array,
     cfl_w_limit,
     scalfac_exdiff,
-    d_time,
+    dtime,
 ):
     w_con_e = np.zeros_like(vn)
     difcoef = np.zeros_like(vn)
@@ -62,8 +63,8 @@ def mo_velocity_advection_stencil_20_numpy(
         & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
         scalfac_exdiff
         * np.minimum(
-            0.85 - cfl_w_limit * d_time,
-            np.abs(w_con_e) * d_time / ddqz_z_full_e - cfl_w_limit * d_time,
+            0.85 - cfl_w_limit * dtime,
+            np.abs(w_con_e) * dtime / ddqz_z_full_e - cfl_w_limit * dtime,
         ),
         difcoef,
     )
@@ -98,7 +99,7 @@ def test_mo_velocity_advection_stencil_20():
     ddt_vn_adv = random_field(mesh, EdgeDim, KDim)
     cfl_w_limit = 4.0
     scalfac_exdiff = 6.0
-    d_time = 2.0
+    dtime = 2.0
 
     ddt_vn_adv_ref = mo_velocity_advection_stencil_20_numpy(
         mesh.e2c,
@@ -117,7 +118,7 @@ def test_mo_velocity_advection_stencil_20():
         np.asarray(ddt_vn_adv),
         cfl_w_limit,
         scalfac_exdiff,
-        d_time,
+        dtime,
     )
 
     mo_velocity_advection_stencil_20(
@@ -134,7 +135,11 @@ def test_mo_velocity_advection_stencil_20():
         ddt_vn_adv,
         cfl_w_limit,
         scalfac_exdiff,
-        d_time,
+        dtime,
+        horizontal_start=int32(0),
+        horizontal_end=int32(mesh.n_edges),
+        vertical_start=int32(0),
+        vertical_end=int32(mesh.k_level),
         offset_provider={
             "Koff": KDim,
             "E2C": mesh.get_e2c_offset_provider(),

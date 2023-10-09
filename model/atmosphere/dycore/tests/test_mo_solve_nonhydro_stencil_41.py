@@ -13,12 +13,18 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
 )
-from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    as_1D_sparse_field,
+    random_field,
+    zero_field,
+)
 
 
 class TestMoSolveNonhydroStencil41(StencilTest):
@@ -34,13 +40,19 @@ class TestMoSolveNonhydroStencil41(StencilTest):
         **kwargs,
     ) -> tuple[np.array]:
         geofac_div = np.expand_dims(geofac_div, axis=-1)
-        z_flxdiv_mass = np.sum(geofac_div * mass_fl_e[mesh.c2e], axis=1)
-        z_flxdiv_theta = np.sum(geofac_div * z_theta_v_fl_e[mesh.c2e], axis=1)
+        z_flxdiv_mass = np.sum(
+            geofac_div[mesh.get_c2ce_offset_provider().table] * mass_fl_e[mesh.c2e],
+            axis=1,
+        )
+        z_flxdiv_theta = np.sum(
+            geofac_div[mesh.get_c2ce_offset_provider().table] * z_theta_v_fl_e[mesh.c2e],
+            axis=1,
+        )
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
 
     @pytest.fixture
     def input_data(self, mesh):
-        geofac_div = random_field(mesh, CellDim, C2EDim)
+        geofac_div = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
         z_theta_v_fl_e = random_field(mesh, EdgeDim, KDim)
         z_flxdiv_theta = zero_field(mesh, CellDim, KDim)
         mass_fl_e = random_field(mesh, EdgeDim, KDim)
@@ -52,4 +64,8 @@ class TestMoSolveNonhydroStencil41(StencilTest):
             z_theta_v_fl_e=z_theta_v_fl_e,
             z_flxdiv_mass=z_flxdiv_mass,
             z_flxdiv_theta=z_flxdiv_theta,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

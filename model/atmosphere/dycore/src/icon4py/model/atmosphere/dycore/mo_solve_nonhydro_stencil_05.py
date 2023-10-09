@@ -33,4 +33,4 @@ def mo_solve_nonhydro_stencil_05(
     z_exner_ex_pr: Field[[CellDim, KDim], float],
     z_exner_ic: Field[[CellDim, KDim], float],
 ):
-    _mo_solve_nonhydro_stencil_05(wgtfac_c, z_exner_ex_pr, out=z_exner_ic)
+    _mo_solve_nonhydro_stencil_05(wgtfac_c, z_exner_ex_pr, out=z_exner_ic[:, 1:])
