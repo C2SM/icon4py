@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common.dimension import V2C, CellDim, KDim, V2CDim, VertexDim
 
@@ -32,5 +32,17 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     p_cell_in: Field[[CellDim, KDim], float],
     c_intp: Field[[VertexDim, V2CDim], float],
     p_vert_out: Field[[VertexDim, KDim], float],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(p_cell_in, c_intp, out=p_vert_out)
+    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+        p_cell_in,
+        c_intp,
+        out=p_vert_out,
+        domain={
+            VertexDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

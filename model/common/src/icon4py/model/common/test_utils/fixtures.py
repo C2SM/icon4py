@@ -26,8 +26,9 @@ model = test_utils.parent.parent
 common = model.parent.parent.parent.parent
 base_path = common.parent.joinpath("testdata")
 
+# TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
 data_uris = {
-    1: "https://polybox.ethz.ch/index.php/s/vcsCYmCFA9Qe26p/download",
+    1: "https://polybox.ethz.ch/index.php/s/psBNNhng0h9KrB4/download",
     2: "https://polybox.ethz.ch/index.php/s/NUQjmJcMEoQxFiK/download",
     4: "https://polybox.ethz.ch/index.php/s/QC7xt7xLT5xeVN5/download",
 }
@@ -164,6 +165,12 @@ def metrics_savepoint(data_provider):  # F811
     return data_provider.from_metrics_savepoint()
 
 
+@pytest.fixture
+def metrics_nonhydro_savepoint(data_provider):  # F811
+    """Load data from ICON metric state nonhydro savepoint."""
+    return data_provider.from_metrics_nonhydro_savepoint()
+
+
 MESHES = {"simple_mesh": SimpleMesh()}
 
 
@@ -178,3 +185,82 @@ def mesh(request):
 @pytest.fixture
 def backend(request):
     return request.param
+
+
+@pytest.fixture
+def savepoint_velocity_init(data_provider, step_date_init, istep, vn_only, jstep):  # F811
+    """
+    Load data from ICON savepoint at start of velocity_advection module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_velocity_init(
+        istep=istep, vn_only=vn_only, date=step_date_init, jstep=jstep
+    )
+
+
+@pytest.fixture
+def savepoint_nonhydro_init(data_provider, step_date_init, istep, jstep):  # noqa F811
+    """
+    Load data from ICON savepoint at exist of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_nonhydro_init(istep=istep, date=step_date_init, jstep=jstep)
+
+
+@pytest.fixture
+def savepoint_velocity_exit(data_provider, step_date_exit, istep, vn_only, jstep):  # F811
+    """
+    Load data from ICON savepoint at exist of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_velocity_exit(
+        istep=istep, vn_only=vn_only, date=step_date_exit, jstep=jstep
+    )
+
+
+@pytest.fixture
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep, jstep):  # noqa F811
+    """
+    Load data from ICON savepoint at exist of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_nonhydro_exit(istep=istep, date=step_date_exit, jstep=jstep)
+
+
+@pytest.fixture
+def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep):  # noqa F811
+    """
+    Load data from ICON savepoint at final exit (after predictor and corrector, and 3 final stencils) of solve_nonhydro module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.from_savepoint_nonhydro_step_exit(date=step_date_exit, jstep=jstep)
+
+
+@pytest.fixture
+def istep():
+    return 1
+
+
+@pytest.fixture
+def jstep():
+    return 0
+
+
+@pytest.fixture
+def ntnd(savepoint_velocity_init):
+    return savepoint_velocity_init.get_metadata("ntnd").get("ntnd")
+
+
+@pytest.fixture
+def vn_only():
+    return False

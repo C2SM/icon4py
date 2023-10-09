@@ -11,15 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""
-Initialize pytest.
+from dataclasses import dataclass
 
-Workaround for pytest not discovering those configuration function, when they are added to the
-diffusion_test/conftest.py folder
-"""
-from icon4py.model.common.test_utils.pytest_config import (  # noqa: F401
-    pytest_addoption,
-    pytest_configure,
-    pytest_generate_tests,
-    pytest_runtest_setup,
-)
+from gt4py.next.common import Field
+
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+
+
+@dataclass
+class PrepAdvection:
+    vn_traj: Field[[EdgeDim, KDim], float]
+    mass_flx_me: Field[[EdgeDim, KDim], float]
+    mass_flx_ic: Field[[CellDim, KDim], float]
