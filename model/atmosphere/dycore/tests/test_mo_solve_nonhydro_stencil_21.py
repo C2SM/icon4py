@@ -121,14 +121,18 @@ def test_mo_solve_nonhydro_stencil_21():
     )
 
     mo_solve_nonhydro_stencil_21(
-        theta_v,
-        ikoffset_new,
-        zdiff_gradp_new,
-        theta_v_ic,
-        inv_ddqz_z_full,
-        inv_dual_edge_length,
-        grav_o_cpd,
-        z_hydro_corr,
+        theta_v=theta_v,
+        ikoffset=ikoffset_new,
+        zdiff_gradp=zdiff_gradp_new,
+        theta_v_ic=theta_v_ic,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        inv_dual_edge_length=inv_dual_edge_length,
+        grav_o_cpd=grav_o_cpd,
+        z_hydro_corr=z_hydro_corr,
+        horizontal_start=int32(0),
+        horizontal_end=int32(mesh.n_edges),
+        vertical_start=int32(0),
+        vertical_end=int32(mesh.k_level),
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),

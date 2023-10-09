@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_23 import (
     mo_solve_nonhydro_stencil_23,
@@ -29,8 +30,8 @@ class TestMoSolveNonhydroStencil23(StencilTest):
     def reference(
         mesh,
         vn_nnow: np.array,
-        ddt_vn_adv_ntl1: np.array,
-        ddt_vn_adv_ntl2: np.array,
+        ddt_vn_apc_ntl1: np.array,
+        ddt_vn_apc_ntl2: np.array,
         ddt_vn_phy: np.array,
         z_theta_v_e: np.array,
         z_gradh_exner: np.array,
@@ -41,8 +42,8 @@ class TestMoSolveNonhydroStencil23(StencilTest):
         **kwargs,
     ) -> np.array:
         vn_nnew = vn_nnow + dtime * (
-            wgt_nnow_vel * ddt_vn_adv_ntl1
-            + wgt_nnew_vel * ddt_vn_adv_ntl2
+            wgt_nnow_vel * ddt_vn_apc_ntl1
+            + wgt_nnew_vel * ddt_vn_apc_ntl2
             + ddt_vn_phy
             - cpd * z_theta_v_e * z_gradh_exner
         )
@@ -51,8 +52,8 @@ class TestMoSolveNonhydroStencil23(StencilTest):
     @pytest.fixture
     def input_data(self, mesh):
         vn_nnow = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_adv_ntl1 = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_adv_ntl2 = random_field(mesh, EdgeDim, KDim)
+        ddt_vn_apc_ntl1 = random_field(mesh, EdgeDim, KDim)
+        ddt_vn_apc_ntl2 = random_field(mesh, EdgeDim, KDim)
         ddt_vn_phy = random_field(mesh, EdgeDim, KDim)
         z_theta_v_e = random_field(mesh, EdgeDim, KDim)
         z_gradh_exner = random_field(mesh, EdgeDim, KDim)
@@ -64,8 +65,8 @@ class TestMoSolveNonhydroStencil23(StencilTest):
 
         return dict(
             vn_nnow=vn_nnow,
-            ddt_vn_adv_ntl1=ddt_vn_adv_ntl1,
-            ddt_vn_adv_ntl2=ddt_vn_adv_ntl2,
+            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
             ddt_vn_phy=ddt_vn_phy,
             z_theta_v_e=z_theta_v_e,
             z_gradh_exner=z_gradh_exner,
@@ -74,4 +75,8 @@ class TestMoSolveNonhydroStencil23(StencilTest):
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
             cpd=cpd,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )

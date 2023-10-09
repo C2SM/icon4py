@@ -102,7 +102,13 @@ def test_diffusion_init(
 ):
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
-    vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
+
+    vertical_params = VerticalModelParams(
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflatlev=grid_savepoint.nflatlev(),
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+    )
 
     meta = diffusion_savepoint_init.get_metadata("linit", "date")
 
@@ -226,7 +232,12 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 
-    vertical_params = VerticalModelParams(grid_savepoint.vct_a(), damping_height)
+    vertical_params = VerticalModelParams(
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflatlev=grid_savepoint.nflatlev(),
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+    )
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     edge_params = grid_savepoint.construct_edge_geometry()
@@ -272,8 +283,12 @@ def test_run_diffusion_single_step(
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
-    vct_a = grid_savepoint.vct_a()
-    vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=damping_height)
+    vertical_params = VerticalModelParams(
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflatlev=grid_savepoint.nflatlev(),
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+    )
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
 

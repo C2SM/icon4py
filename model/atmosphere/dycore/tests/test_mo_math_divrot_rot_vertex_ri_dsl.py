@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
@@ -41,4 +42,8 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
             vec_e=vec_e,
             geofac_rot=geofac_rot,
             rot_vec=rot_vec,
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_vertices),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )
