@@ -174,9 +174,17 @@ class Model_driver:
 
         self._dycore_substepping()
 
+        # call diffusion
+
+        # tracer advection
+
 
     def _dycore_substepping(self):
 
+        # diagnostic calculations
+        # airmass
+
         for i in range(self.time.ndyn_substeps):
+            # call diffusion
             # call solv_nh driver
             pass
