@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
@@ -86,22 +87,29 @@ def test_mo_solve_nonhydro_stencil_52():
         dtime,
         cpd,
     )
-
+    h_start = int32(0)
+    h_end = int32(mesh.n_cells)
+    v_start = int32(1)
+    v_end = int32(mesh.k_level)
     # TODO we run this test with the C++ backend as the `embedded` backend doesn't handle this pattern
     mo_solve_nonhydro_stencil_52.with_backend(run_gtfn)(
-        vwind_impl_wgt,
-        theta_v_ic,
-        ddqz_z_half,
-        z_alpha,
-        z_beta,
-        z_w_expl,
-        z_exner_expl,
-        z_q,
-        w,
-        dtime,
-        cpd,
+        vwind_impl_wgt=vwind_impl_wgt,
+        theta_v_ic=theta_v_ic,
+        ddqz_z_half=ddqz_z_half,
+        z_alpha=z_alpha,
+        z_beta=z_beta,
+        z_w_expl=z_w_expl,
+        z_exner_expl=z_exner_expl,
+        z_q=z_q,
+        w=w,
+        dtime=dtime,
+        cpd=cpd,
+        horizontal_start=h_start,
+        horizontal_end=h_end,
+        vertical_start=v_start,
+        vertical_end=v_end,
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(z_q_ref, z_q)
-    assert np.allclose(w_ref, w)
+    assert np.allclose(z_q_ref[h_start:h_end, v_start:v_end], z_q[h_start:h_end, v_start:v_end])
+    assert np.allclose(w_ref[h_start:h_end, v_start:v_end], w[h_start:h_end, v_start:v_end])
