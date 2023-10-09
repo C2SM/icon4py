@@ -32,7 +32,9 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
-    DiffusionMetricState,
+    DiffusionMetricState
+)
+from icon4py.model.common.prognostics.core_prognostics import (
     PrognosticState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (

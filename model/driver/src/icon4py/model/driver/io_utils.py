@@ -20,6 +20,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
+)
+from icon4py.model.common.prognostics.core_prognostics import (
     PrognosticState,
 )
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties

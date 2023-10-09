@@ -24,6 +24,8 @@ from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
+)
+from icon4py.model.common.prognostics.core_prognostics import (
     PrognosticState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k

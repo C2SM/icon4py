@@ -15,6 +15,8 @@ import numpy as np
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
+)
+from icon4py.model.common.prognostics.core_prognostics import (
     PrognosticState,
 )
 from icon4py.model.common.test_utils.serialbox_utils import IconDiffusionExitSavepoint
