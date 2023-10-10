@@ -244,9 +244,11 @@ def diffusion_run(
     hdef_ic: Field[[CellDim, KDim], float],
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
+    rho: Field[[CellDim, KDim], float],
 ):
     diagnostic_state = DiffusionDiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
     prognostic_state = PrognosticState(
+        rho=rho,
         w=w,
         vn=vn,
         exner=exner,
