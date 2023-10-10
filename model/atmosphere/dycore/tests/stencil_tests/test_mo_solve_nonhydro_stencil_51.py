@@ -12,13 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_51 import (
     mo_solve_nonhydro_stencil_51,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 def mo_solve_nonhydro_stencil_51_z_q_numpy(
@@ -39,69 +39,64 @@ def mo_solve_nonhydro_stencil_51_w_nnew_numpy(
     return w_nnew / z_b
 
 
-def mo_solve_nonhydro_stencil_51_numpy(
-    vwind_impl_wgt: np.array,
-    theta_v_ic: np.array,
-    ddqz_z_half: np.array,
-    z_beta: np.array,
-    z_alpha: np.array,
-    z_w_expl: np.array,
-    z_exner_expl: np.array,
-    dtime: float,
-    cpd: float,
-) -> tuple[np.array]:
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-    z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
-    z_alpha_k_plus_1 = z_alpha[:, 1:]
-    z_beta_k_minus_1 = np.roll(z_beta, shift=1, axis=1)
-    z_c = -z_gamma * z_beta * z_alpha_k_plus_1
-    z_b = 1.0 + z_gamma * z_alpha[:, :-1] * (z_beta_k_minus_1 + z_beta)
-    z_q = mo_solve_nonhydro_stencil_51_z_q_numpy(z_c, z_b)
-    w_nnew = mo_solve_nonhydro_stencil_51_w_nnew_numpy(z_gamma, z_b, z_w_expl, z_exner_expl)
+class TestMoSolveNonHydroStencil51(StencilTest):
+    PROGRAM = mo_solve_nonhydro_stencil_51
+    OUTPUTS = ("z_q", "w_nnew")
 
-    return z_q, w_nnew
+    @staticmethod
+    def reference(
+        mesh,
+        vwind_impl_wgt: np.array,
+        theta_v_ic: np.array,
+        ddqz_z_half: np.array,
+        z_beta: np.array,
+        z_alpha: np.array,
+        z_w_expl: np.array,
+        z_exner_expl: np.array,
+        dtime: float,
+        cpd: float,
+        **kwargs,
+    ) -> dict:
+        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+        z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
+        z_alpha_k_plus_1 = z_alpha[:, 1:]
+        z_beta_k_minus_1 = np.roll(z_beta, shift=1, axis=1)
+        z_c = -z_gamma * z_beta * z_alpha_k_plus_1
+        z_b = 1.0 + z_gamma * z_alpha[:, :-1] * (z_beta_k_minus_1 + z_beta)
+        z_q = np.zeros_like(z_b)
 
+        z_q[:, 1:] = mo_solve_nonhydro_stencil_51_z_q_numpy(z_c, z_b)[:, 1:]
 
-def test_mo_solve_nonhydro_stencil_51():
-    mesh = SimpleMesh()
-    z_q = random_field(mesh, CellDim, KDim)
-    w_nnew = random_field(mesh, CellDim, KDim)
-    vwind_impl_wgt = random_field(mesh, CellDim)
-    theta_v_ic = random_field(mesh, CellDim, KDim)
-    ddqz_z_half = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
-    z_beta = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
-    z_alpha = random_field(mesh, CellDim, KDim, low=0.5, high=1.5, extend={KDim: 1})
-    z_w_expl = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    z_exner_expl = random_field(mesh, CellDim, KDim)
-    dtime = 10.0
-    cpd = 1.0
+        w_nnew = np.zeros_like(z_q)
+        w_nnew[:, 1:] = mo_solve_nonhydro_stencil_51_w_nnew_numpy(
+            z_gamma, z_b, z_w_expl, z_exner_expl
+        )[:, 1:]
 
-    z_q_ref, w_nnew_ref = mo_solve_nonhydro_stencil_51_numpy(
-        np.asarray(vwind_impl_wgt),
-        np.asarray(theta_v_ic),
-        np.asarray(ddqz_z_half),
-        np.asarray(z_beta),
-        np.asarray(z_alpha),
-        np.asarray(z_w_expl),
-        np.asarray(z_exner_expl),
-        dtime,
-        cpd,
-    )
+        return dict(z_q=z_q, w_nnew=w_nnew)
 
-    mo_solve_nonhydro_stencil_51(
-        z_q,
-        w_nnew,
-        vwind_impl_wgt,
-        theta_v_ic,
-        ddqz_z_half,
-        z_beta,
-        z_alpha,
-        z_w_expl,
-        z_exner_expl,
-        dtime,
-        cpd,
-        offset_provider={"Koff": KDim},
-    )  # TODO passing `w` as in and out is not guaranteed to work
-
-    assert np.allclose(z_q_ref[:, 1:], z_q[:, 1:])
-    assert np.allclose(w_nnew_ref[:, 1:], w_nnew[:, 1:])
+    @pytest.fixture
+    def input_data(self, mesh):
+        z_q = zero_field(mesh, CellDim, KDim)
+        w_nnew = zero_field(mesh, CellDim, KDim)
+        vwind_impl_wgt = random_field(mesh, CellDim)
+        theta_v_ic = random_field(mesh, CellDim, KDim)
+        ddqz_z_half = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
+        z_beta = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
+        z_alpha = random_field(mesh, CellDim, KDim, low=0.5, high=1.5, extend={KDim: 1})
+        z_w_expl = random_field(mesh, CellDim, KDim, extend={KDim: 1})
+        z_exner_expl = random_field(mesh, CellDim, KDim)
+        dtime = 10.0
+        cpd = 1.0
+        return dict(
+            z_q=z_q,
+            w_nnew=w_nnew,
+            vwind_impl_wgt=vwind_impl_wgt,
+            theta_v_ic=theta_v_ic,
+            ddqz_z_half=ddqz_z_half,
+            z_beta=z_beta,
+            z_alpha=z_alpha,
+            z_w_expl=z_w_expl,
+            z_exner_expl=z_exner_expl,
+            dtime=dtime,
+            cpd=cpd,
+        )
