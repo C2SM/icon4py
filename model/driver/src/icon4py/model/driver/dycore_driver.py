@@ -22,12 +22,7 @@ from gt4py.next import Field, program
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-)
-from icon4py.model.common.prognostics.core_prognostics import (
-    PrognosticState,
-)
+from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
 from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
 from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
@@ -36,6 +31,7 @@ from icon4py.model.common.decomposition.definitions import (
     get_runtype,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.io_utils import (
@@ -125,8 +121,8 @@ class DummyAtmoNonHydro:
             prognostic_state.vn,
             new_p.w,
             prognostic_state.w,
-            new_p.exner_pressure,
-            prognostic_state.exner_pressure,
+            new_p.exner,
+            prognostic_state.exner,
             new_p.theta_v,
             prognostic_state.theta_v,
             offset_provider={},

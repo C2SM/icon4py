@@ -35,7 +35,6 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     DiffusionMetricState,
     DiffusionParams,
     DiffusionType,
-    PrognosticState,
 )
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -55,6 +54,7 @@ from icon4py.model.common.dimension import (
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
 from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelParams
+from icon4py.model.common.states.prognostic_state import PrognosticState
 
 from icon4pytools.py2f.cffi_utils import CffiMethod, to_fields
 
@@ -249,7 +249,7 @@ def diffusion_run(
     prognostic_state = PrognosticState(
         w=w,
         vn=vn,
-        exner_pressure=exner,
+        exner=exner,
         theta_v=theta_v,
     )
     if linit:

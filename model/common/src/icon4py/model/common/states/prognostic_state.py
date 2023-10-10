@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import numpy as np
 from dataclasses import dataclass
 
-import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.iterator.embedded import np_as_located_field
 
@@ -24,17 +24,16 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 class PrognosticState:
     """Class that contains the prognostic state.
 
-    corresponds to ICON t_nh_prog
+    Corresponds to ICON t_nh_prog
     """
 
-    w: Field[[CellDim, KDim], float]  # vertical_wind field,  w(nproma, nlevp1, nblks_c) [m/s]
-    vn: Field[[EdgeDim, KDim], float]  # vn(nproma, nlev, nblks_e)  [m/s]
-    exner_pressure: Field[[CellDim, KDim], float]  # exner(nrpoma, nlev, nblks_c)
-    theta_v: Field[[CellDim, KDim], float]  # (nproma, nlev, nlbks_c) [K]
-
-    rho: Field[[CellDim, KDim], float]
-    exner: Field[[CellDim, KDim], float]
+    rho: Field[[CellDim, KDim], float] # density, rho(nproma, nlev, nblks_c) [m/s]
+    w: Field[[CellDim, KDim], float]  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
+    vn: Field[[EdgeDim, KDim], float]  # horizontal wind normal to edges, vn(nproma, nlev, nblks_e)  [m/s]
+    exner: Field[[CellDim, KDim], float]  # exner function, exner(nrpoma, nlev, nblks_c)
+    theta_v: Field[[CellDim, KDim], float]  # virtual temperature, (nproma, nlev, nlbks_c) [K]
 
     @property
     def w_1(self) -> Field[[CellDim], float]:
         return np_as_located_field(CellDim)(np.asarray(self.w)[:, 0])
+

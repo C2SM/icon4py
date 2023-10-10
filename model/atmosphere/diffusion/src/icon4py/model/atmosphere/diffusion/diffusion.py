@@ -32,10 +32,7 @@ from gt4py.next.program_processors.runners.gtfn_cpu import (
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
-    DiffusionMetricState
-)
-from icon4py.model.common.prognostics.core_prognostics import (
-    PrognosticState,
+    DiffusionMetricState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
@@ -80,6 +77,7 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
+from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
 # flake8: noqa
@@ -540,7 +538,7 @@ class Diffusion:
             CellDim,
             prognostic_state.w,
             prognostic_state.theta_v,
-            prognostic_state.exner_pressure,
+            prognostic_state.exner,
         )
         handle_cell_comm.wait()
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
@@ -839,7 +837,7 @@ class Diffusion:
             z_temp=self.z_temp,
             area=self.cell_params.area,
             theta_v=prognostic_state.theta_v,
-            exner=prognostic_state.exner_pressure,
+            exner=prognostic_state.exner,
             rd_o_cvd=self.rd_o_cvd,
             horizontal_start=cell_start_nudging,
             horizontal_end=cell_end_local,

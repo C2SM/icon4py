@@ -16,10 +16,10 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
 
 
@@ -148,7 +148,6 @@ def test_velocity_predictor_step(
     prognostic_state = PrognosticState(
         w=sp_v.w(),
         vn=sp_v.vn(),
-        exner_pressure=None,
         theta_v=None,
         rho=None,
         exner=None,
@@ -310,7 +309,6 @@ def test_velocity_corrector_step(
     prognostic_state = PrognosticState(
         w=sp_v.w(),
         vn=sp_v.vn(),
-        exner_pressure=None,
         theta_v=None,
         rho=None,
         exner=None,

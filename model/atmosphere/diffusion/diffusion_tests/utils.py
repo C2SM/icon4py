@@ -13,12 +13,8 @@
 
 import numpy as np
 
-from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-)
-from icon4py.model.common.prognostics.core_prognostics import (
-    PrognosticState,
-)
+from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
+from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.serialbox_utils import IconDiffusionExitSavepoint
 
 
@@ -49,7 +45,7 @@ def verify_diffusion_fields(
     ref_exner = np.asarray(diffusion_savepoint.exner())
     ref_theta_v = np.asarray(diffusion_savepoint.theta_v())
     val_theta_v = np.asarray(prognostic_state.theta_v)
-    val_exner = np.asarray(prognostic_state.exner_pressure)
+    val_exner = np.asarray(prognostic_state.exner)
     assert np.allclose(ref_theta_v, val_theta_v)
     assert np.allclose(ref_exner, val_exner)
 
