@@ -49,3 +49,49 @@ def compute_c_lin_e(
     c_lin_e[0:second_boundary_layer_start_index, :] = 0.0
     mask = np.transpose(np.tile(owner_mask, (2, 1)))
     return np.where(mask, c_lin_e, 0.0)
+
+def compute_geofac_div(
+    primal_edge_length: np.array,
+    edge_orientation: np.array,
+    area: np.array,
+) -> np.array:
+    """
+    Args:
+        primal_edge_length:
+        edge_orientation:
+        area:
+    """
+    geofac_div_ = primal_edge_length*edge_orientation/area
+    return geofac_div_
+
+def compute_geofac_rot(
+    dual_edge_length: np.array,
+    edge_orientation: np.array,
+    area: np.array,
+) -> np.array:
+    geofac_rot_ = dual_edge_length*edge_orientation/dual_area
+    return geofac_rot_
+
+def compute_geofac_n2s(
+    geofac_div: np.array,
+    inv_dual_edge_length: np.array,
+) -> np.array:
+    if ():
+        geofac_n2s_ = geofac_n2s_ - geofac_div / inv_dual_edge_length
+    else:
+        geofac_n2s_ = geofac_n2s_ + geofac_div / inv_dual_edge_length
+    return geofac_n2s_
+
+def compute_geofac_qdiv(
+    geofac_div: np.array,
+    inv_dual_edge_length: np.array,
+) -> np.array:
+    geofac_grdiv_ = geofac_div
+    return geofac_grdiv_
+
+def compute_geofac_grdiv(
+    geofac_div: np.array,
+    inv_dual_edge_length: np.array,
+) -> np.array:
+    geofac_grdiv_ = geofac_div
+    return geofac_grdiv_
