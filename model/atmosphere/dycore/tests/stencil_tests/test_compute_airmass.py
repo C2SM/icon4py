@@ -12,29 +12,33 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.dycore.compute_airmass import compute_airmass
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
-def compute_airmass_numpy(
-    rho_in: np.array, ddqz_z_full_in: np.array, deepatmo_t1mc_in: np.array
-) -> np.array:
-    return rho_in * ddqz_z_full_in * deepatmo_t1mc_in
+class TestComputeAirmass(StencilTest):
+    PROGRAM = compute_airmass
+    OUTPUTS = ("airmass_out",)
 
+    @staticmethod
+    def reference(
+        mesh, rho_in: np.array, ddqz_z_full_in: np.array, deepatmo_t1mc_in: np.array, **kwargs
+    ) -> dict:
+        airmass_out = rho_in * ddqz_z_full_in * deepatmo_t1mc_in
+        return dict(airmass_out=airmass_out)
 
-def test_compute_airmass():
-    mesh = SimpleMesh()
-
-    rho_in = random_field(mesh, CellDim, KDim)
-    ddqz_z_full_in = random_field(mesh, CellDim, KDim)
-    deepatmo_t1mc_in = random_field(mesh, KDim)
-    airmass_out = random_field(mesh, CellDim, KDim)
-
-    ref = compute_airmass_numpy(
-        np.asarray(rho_in), np.asarray(ddqz_z_full_in), np.asarray(deepatmo_t1mc_in)
-    )
-    compute_airmass(rho_in, ddqz_z_full_in, deepatmo_t1mc_in, airmass_out, offset_provider={})
-    assert np.allclose(airmass_out, ref)
+    @pytest.fixture
+    def input_data(self, mesh):
+        rho_in = random_field(mesh, CellDim, KDim)
+        ddqz_z_full_in = random_field(mesh, CellDim, KDim)
+        deepatmo_t1mc_in = random_field(mesh, KDim)
+        airmass_out = random_field(mesh, CellDim, KDim)
+        return dict(
+            rho_in=rho_in,
+            ddqz_z_full_in=ddqz_z_full_in,
+            deepatmo_t1mc_in=deepatmo_t1mc_in,
+            airmass_out=airmass_out,
+        )
