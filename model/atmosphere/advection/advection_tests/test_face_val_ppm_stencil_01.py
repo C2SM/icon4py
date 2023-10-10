@@ -26,10 +26,10 @@ from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 def face_val_ppm_stencil_01_numpy(
     p_cc: np.array,
     p_cellhgt_mc_now: np.array,
-    vert_idx: np.array,
+    k: np.array,
     elev: int32,
 ):
-    # this is a comment: vert_idx = np.broadcast_to(vert_idx, p_cc.shape)
+    # this is a comment: k = np.broadcast_to(k, p_cc.shape)
 
     # 01a
     zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
@@ -69,7 +69,7 @@ def face_val_ppm_stencil_01_numpy(
         + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 1:-1]) * zfac_m1
     )
 
-    z_slope = np.where(vert_idx[1:-1] < elev, z_slope_a, z_slope_b)
+    z_slope = np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
 
     return z_slope
 
@@ -78,26 +78,26 @@ def test_face_val_ppm_stencil_01():
     mesh = SimpleMesh()
     p_cc = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     p_cellhgt_mc_now = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    vert_idx = zero_field(mesh, KDim, dtype=int32, extend={KDim: 1})
+    k = zero_field(mesh, KDim, dtype=int32, extend={KDim: 1})
 
-    vert_idx = it_embedded.np_as_located_field(KDim)(
+    k = it_embedded.np_as_located_field(KDim)(
         np.arange(0, _shape(mesh, KDim, extend={KDim: 1})[0], dtype=int32)
     )
-    elev = vert_idx[-2]
+    elev = k[-2]
 
     z_slope = random_field(mesh, CellDim, KDim)
 
     ref = face_val_ppm_stencil_01_numpy(
         np.asarray(p_cc),
         np.asarray(p_cellhgt_mc_now),
-        np.asarray(vert_idx),
+        np.asarray(k),
         elev,
     )
 
     face_val_ppm_stencil_01(
         p_cc,
         p_cellhgt_mc_now,
-        vert_idx,
+        k,
         elev,
         z_slope,
         offset_provider={"Koff": KDim},

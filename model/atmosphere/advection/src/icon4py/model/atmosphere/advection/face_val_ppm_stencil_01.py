@@ -57,13 +57,13 @@ def _face_val_ppm_stencil_01b(
 def _face_val_ppm_stencil_01(
     p_cc: Field[[CellDim, KDim], float],
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],
-    vert_idx: Field[[KDim], int32],
+    k: Field[[KDim], int32],
     elev: int32,
 ) -> Field[[CellDim, KDim], float]:
-    vert_idx = broadcast(vert_idx, (CellDim, KDim))
+    k = broadcast(k, (CellDim, KDim))
 
     z_slope = where(
-        vert_idx == elev,
+        k == elev,
         _face_val_ppm_stencil_01b(p_cc, p_cellhgt_mc_now),
         _face_val_ppm_stencil_01a(p_cc, p_cellhgt_mc_now),
     )
@@ -75,14 +75,14 @@ def _face_val_ppm_stencil_01(
 def face_val_ppm_stencil_01(
     p_cc: Field[[CellDim, KDim], float],
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],
-    vert_idx: Field[[KDim], int32],
+    k: Field[[KDim], int32],
     elev: int32,
     z_slope: Field[[CellDim, KDim], float],
 ):
     _face_val_ppm_stencil_01(
         p_cc,
         p_cellhgt_mc_now,
-        vert_idx,
+        k,
         elev,
         out=z_slope,
     )
