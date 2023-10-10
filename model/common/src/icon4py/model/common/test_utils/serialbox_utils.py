@@ -27,7 +27,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.common import dimension
 from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
@@ -52,6 +51,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
 from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
+from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 
@@ -716,10 +716,9 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         return PrognosticState(
             w=self.w(),
             vn=self.vn(),
-            exner_pressure=self.exner(),
+            exner=self.exner(),
             theta_v=self.theta_v(),
-            rho=None,
-            exner=None,
+            rho=self.rho(),
         )
 
     def construct_diagnostics_for_diffusion(self) -> DiffusionDiagnosticState:

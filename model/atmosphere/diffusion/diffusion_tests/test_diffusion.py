@@ -219,7 +219,7 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:50.000"])
+@pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:20.000"])
 def test_verify_diffusion_init_against_other_regular_savepoint(
     r04b09_diffusion_config,
     grid_savepoint,
