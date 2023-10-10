@@ -74,24 +74,26 @@ def compute_geofac_rot(
 
 def compute_geofac_n2s(
     geofac_div: np.array,
-    inv_dual_edge_length: np.array,
+     inv_dual_edge_length: np.array,
+    edges_cell_idx: np.array,
 ) -> np.array:
-    if ():
+    if (edges_cell_idx == 1):
         geofac_n2s_ = geofac_n2s_ - geofac_div / inv_dual_edge_length
     else:
         geofac_n2s_ = geofac_n2s_ + geofac_div / inv_dual_edge_length
     return geofac_n2s_
 
 def compute_geofac_qdiv(
-    geofac_div: np.array,
-    inv_dual_edge_length: np.array,
+    primal_edge_length: np.array,
+    quad_orientation: np.array,
+    quad_area: np.array,
 ) -> np.array:
-    geofac_grdiv_ = geofac_div
-    return geofac_grdiv_
+    geofac_qdiv_ = primal_edge_length * quad_orientation / quad_area
+    return geofac_qdiv_
 
 def compute_geofac_grdiv(
     geofac_div: np.array,
     inv_dual_edge_length: np.array,
 ) -> np.array:
-    geofac_grdiv_ = geofac_div
+    geofac_grdiv_ = geofac_grdiv_ - geofac_div * inv_dual_edge_length
     return geofac_grdiv_
