@@ -12,17 +12,33 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.decorator import field_operator, program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+
+
+@scan_operator(axis=KDim, forward=False, init=0.0)
+def _z_hydro_corr_22_scan(state: float, z_hydro_corr: float) -> float:
+    return state + z_hydro_corr
+
+
+@field_operator
+def _z_hydro_corr_22(
+    z_hydro_corr: Field[[EdgeDim, KDim], float],
+    vert_idx: Field[[EdgeDim, KDim], int32],
+) -> Field[[EdgeDim, KDim], float]:
+    z_hydro_corr = where(vert_idx == 64, z_hydro_corr, 0.0)
+    z_hydro_corr_horizontal = _z_hydro_corr_22_scan(z_hydro_corr)
+    return z_hydro_corr_horizontal
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_22(
     ipeidx_dsl: Field[[EdgeDim, KDim], bool],
     pg_exdist: Field[[EdgeDim, KDim], float],
-    z_hydro_corr: Field[[EdgeDim], float],
+    # z_hydro_corr: Field[[EdgeDim], float],
+    z_hydro_corr: Field[[EdgeDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
     z_gradh_exner = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
@@ -33,7 +49,8 @@ def _mo_solve_nonhydro_stencil_22(
 def mo_solve_nonhydro_stencil_22(
     ipeidx_dsl: Field[[EdgeDim, KDim], bool],
     pg_exdist: Field[[EdgeDim, KDim], float],
-    z_hydro_corr: Field[[EdgeDim], float],
+    # z_hydro_corr: Field[[EdgeDim], float],
+    z_hydro_corr: Field[[EdgeDim, KDim], float],
     z_gradh_exner: Field[[EdgeDim, KDim], float],
     horizontal_start: int32,
     horizontal_end: int32,

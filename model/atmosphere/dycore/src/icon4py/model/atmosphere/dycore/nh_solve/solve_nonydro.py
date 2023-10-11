@@ -640,7 +640,7 @@ class SolveNonhydro:
 
         (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,  # TODO: check
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 

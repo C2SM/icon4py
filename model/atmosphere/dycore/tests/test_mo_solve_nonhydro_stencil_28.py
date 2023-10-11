@@ -22,6 +22,11 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def mo_solve_nonhydro_stencil_28_numpy(mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn):
+    vn = vn + (iau_wgt_dyn * vn_incr)
+    return vn
+
+
 class TestMoSolveNonhydroStencil28(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_28
     OUTPUTS = ("vn",)

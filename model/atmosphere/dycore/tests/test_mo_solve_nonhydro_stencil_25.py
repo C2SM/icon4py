@@ -22,6 +22,12 @@ from icon4py.model.common.dimension import E2C2EODim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_solve_nonhydro_stencil_25_numpy(mesh, geofac_grdiv: np.array, z_graddiv_vn: np.array):
+    geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
+    z_graddiv2_vn = np.sum(z_graddiv_vn[mesh.e2c2eO] * geofac_grdiv, axis=1)
+    return z_graddiv2_vn
+
+
 class TestMoSolveNonhydroStencil25(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_25
     OUTPUTS = ("z_graddiv2_vn",)
