@@ -20,6 +20,10 @@ def map_srun = [
 
 pipeline {
     agent none
+    options{
+        timeout(time: 3, unit: 'HOURS')
+        disableConcurrentBuilds() 
+    }
     stages {
         stage('Tests') {
             matrix {

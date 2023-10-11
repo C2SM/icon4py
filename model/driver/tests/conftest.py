@@ -17,8 +17,3 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa: F401
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils.pytest_config import (  # noqa: F401
-    pytest_addoption,
-    pytest_configure,
-    pytest_runtest_setup,
-)

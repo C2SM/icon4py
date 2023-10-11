@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
     mo_velocity_advection_stencil_02,
@@ -42,7 +43,10 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
     def reference(cls, mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> dict:
         vn_ie = cls.mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
         z_kin_hor_e = cls.mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
-        return dict(vn_ie=vn_ie, z_kin_hor_e=z_kin_hor_e)
+        return dict(
+            vn_ie=vn_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+        )
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -57,6 +61,10 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
             wgtfac_e=wgtfac_e,
             vn=vn,
             vt=vt,
-            vn_ie=vn_ie,
-            z_kin_hor_e=z_kin_hor_e,
+            vn_ie=vn_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            horizontal_start=int32(1),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(1),
+            vertical_end=int32(mesh.k_level),
         )

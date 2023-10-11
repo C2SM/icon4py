@@ -33,7 +33,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
-    PrognosticState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
@@ -70,7 +69,7 @@ from icon4py.model.common.constants import (
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
 )
-from icon4py.model.common.decomposition.decomposed import ExchangeRuntime, SingleNode
+from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
@@ -78,6 +77,7 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
+from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
 # flake8: noqa
@@ -332,7 +332,7 @@ def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def __init__(self, exchange: ExchangeRuntime = SingleNode()):
+    def __init__(self, exchange: ExchangeRuntime = SingleNodeExchange()):
         self._exchange = exchange
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
@@ -538,7 +538,7 @@ class Diffusion:
             CellDim,
             prognostic_state.w,
             prognostic_state.theta_v,
-            prognostic_state.exner_pressure,
+            prognostic_state.exner,
         )
         handle_cell_comm.wait()
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
@@ -837,7 +837,7 @@ class Diffusion:
             z_temp=self.z_temp,
             area=self.cell_params.area,
             theta_v=prognostic_state.theta_v,
-            exner=prognostic_state.exner_pressure,
+            exner=prognostic_state.exner,
             rd_o_cvd=self.rd_o_cvd,
             horizontal_start=cell_start_nudging,
             horizontal_end=cell_end_local,

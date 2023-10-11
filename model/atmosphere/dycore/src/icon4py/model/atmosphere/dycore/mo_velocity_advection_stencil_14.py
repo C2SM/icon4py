@@ -35,8 +35,6 @@ def _mo_velocity_advection_stencil_14(
         False,
     )
 
-    # TOOO: As soon as reductions of arbitrar dimensions are possible in gt4py, this stencil
-    # should reduce the vertical cfl to a scalar and the levmask to a per level boolean field (see Fortran dycore).
     vcfl = where(cfl_clipping, z_w_con_c * dtime / ddqz_z_half, 0.0)
 
     z_w_con_c = where((cfl_clipping) & (vcfl < -0.85), -0.85 * ddqz_z_half / dtime, z_w_con_c)

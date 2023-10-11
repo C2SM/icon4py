@@ -18,7 +18,18 @@ from uuid import UUID
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
-from netCDF4 import Dataset
+
+
+try:
+    from netCDF4 import Dataset
+except ImportError:
+
+    class Dataset:
+        """Dummy class to make import run when (optional) netcdf dependency is not installed."""
+
+        def __init__(self, *args, **kwargs):
+            raise ModuleNotFoundError("NetCDF4 is not installed.")
+
 
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -111,7 +122,7 @@ class GridFile:
         #: number of edges in a diamond: 4
         DIAMOND_EDGE_SIZE = "no"
 
-        #: number of edges/cells neibhboring one vertex: 6 (for regular, non pentagons)
+        #: number of edges/cells neighboring one vertex: 6 (for regular, non pentagons)
         NEIGHBORS_TO_VERTEX_SIZE = "ne"
 
         #: number of cells edges, vertices and cells neighboring a cell: 3

@@ -104,6 +104,10 @@ def test_mo_solve_nonhydro_stencil_20():
         z_dexner_dz_c_1,
         z_dexner_dz_c_2,
         z_gradh_exner,
+        horizontal_start=int32(0),
+        horizontal_end=int32(mesh.n_edges),
+        vertical_start=int32(0),
+        vertical_end=int32(mesh.k_level),
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),

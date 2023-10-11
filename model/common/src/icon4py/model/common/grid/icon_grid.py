@@ -19,18 +19,39 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 from typing_extensions import deprecated
 
-from icon4py.model.common.dimension import CECDim, CEDim, CellDim, ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import (
+    CECDim,
+    CEDim,
+    CellDim,
+    ECDim,
+    ECVDim,
+    EdgeDim,
+    KDim,
+    VertexDim,
+)
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
 
 
-@dataclass(frozen=True)
+class VerticalMeshConfig:
+    def __init__(self, num_lev: int):
+        self._num_lev = num_lev
+
+    @property
+    def num_lev(self) -> int:
+        return self._num_lev
+
+
+@dataclass(
+    frozen=True,
+)
 class GridConfig:
     horizontal_config: HorizontalGridSize
     vertical_config: VerticalGridSize
     limited_area: bool = True
     n_shift_total: int = 0
+    lvertnest: bool = False
 
     @property
     def num_k_levels(self):
@@ -87,8 +108,16 @@ class IconGrid:
         # defined in mo_grid_nml.f90
         return self.config.limited_area
 
+    def n_shift(self):
+        return self.config.n_shift_total if self.config else 0
+
     def n_lev(self):
         return self.config.num_k_levels if self.config else 0
+
+    def nflat_gradp(self):
+        return (
+            self.config.num_k_levels if self.config else 0
+        )  # according to line 1168 in mo_vertical_grid.f90
 
     def num_cells(self):
         return self.config.num_cells if self.config else 0
@@ -98,6 +127,9 @@ class IconGrid:
 
     def num_edges(self):
         return self.config.num_edges
+
+    def lvert_nest(self):
+        return True if self.config.lvertnest else False
 
     @deprecated(
         "use get_start_index and get_end_index instead, - should be removed after merge of solve_nonhydro"
@@ -152,6 +184,11 @@ class IconGrid:
         table = self.connectivities["c2e2c"]
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
 
+    def get_e2ec_connectivity(self):
+        old_shape = self.connectivities["e2c"].shape
+        e2ec_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+        return NeighborTableOffsetProvider(e2ec_table, EdgeDim, ECDim, e2ec_table.shape[1])
+
     def get_c2e2co_connectivity(self):
         table = self.connectivities["c2e2co"]
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
@@ -195,3 +232,11 @@ class IconGrid:
         return self._neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities["c2e"].shape, CellDim, CEDim
         )
+
+    def get_e2c2e_connectivity(self):
+        table = self.connectivities["e2c2e"]
+        return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
+
+    def get_e2c2eo_connectivity(self):
+        table = self.connectivities["e2c2eo"]
+        return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])

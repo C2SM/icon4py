@@ -112,6 +112,10 @@ def flatten_first_two_dims(
     return it_embedded.np_as_located_field(*dims)(newarray)
 
 
+def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
+    return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+
 def _test_validation(self, mesh, backend, input_data):
     reference_outputs = self.reference(mesh, **{k: np.array(v) for k, v in input_data.items()})
     self.PROGRAM.with_backend(backend)(
@@ -126,7 +130,7 @@ def _test_validation(self, mesh, backend, input_data):
 
 if pytest_benchmark:
 
-    def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
+    def _test_execution_benchmark(self, pytestconfig, mesh, backend, input_data, benchmark):
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.
@@ -140,7 +144,7 @@ if pytest_benchmark:
 
 else:
 
-    def _bench_execution(self, pytestconfig):
+    def _test_execution_benchmark(self, pytestconfig):
         pytest.skip("Test skipped as `pytest-benchmark` is not installed.")
 
 
@@ -172,4 +176,4 @@ class StencilTest:
         # inheritance.
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
-        setattr(cls, f"bench_{cls.__name__}", _bench_execution)
+        setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
