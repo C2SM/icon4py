@@ -65,10 +65,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     )
 
     w = where(
-        (int32(0) < k)
-        & (k < nrdmax)
-        & (interior_idx <= cell)
-        & (cell < halo_idx),
+        (int32(0) < k) & (k < nrdmax) & (interior_idx <= cell) & (cell < halo_idx),
         _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
