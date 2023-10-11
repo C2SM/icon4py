@@ -142,7 +142,6 @@ from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import Inte
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
@@ -159,6 +158,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
 class NonHydrostaticConfig:
@@ -640,7 +640,7 @@ class SolveNonhydro:
 
         (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
             VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,  # TODO: check
             HorizontalMarkerIndex.local(VertexDim) - 1,
         )
 
