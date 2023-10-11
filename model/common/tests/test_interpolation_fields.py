@@ -49,3 +49,17 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):
     )
 
     assert np.allclose(c_lin_e, c_lin_e_ref)
+
+@pytest.mark.datatest
+def test_compute_geofac_div(primal_edge_length, edge_orientation, area):
+    inv_dual_edge_length = grid_savepoint.primal_edge_length()
+    edge_cell_length = grid_savepoint.edge_orientation()
+    owner_mask = grid_savepoint.area()
+    geofac_div_ref = interpolation_savepoint.geofac_div()
+    geofac_div = compute_geofac_div(
+        np.asarray(primal_edge_length),
+        np.asarray(edge_orientation),
+        np.asarray(area),
+    )
+
+    assert np.allclose(geofac_div, geofac_div_ref)
