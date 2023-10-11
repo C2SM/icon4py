@@ -19,11 +19,7 @@ from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_list_stencil imp
     prep_gauss_quadrature_c_list_stencil,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    constant_field,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -247,9 +243,7 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
         + shape_func_4_4 * p_coords_dreg_v_4_y
     )
 
-    p_quad_vector_sum_1 = (
-        wgt_t_detjac_1 + wgt_t_detjac_2 + wgt_t_detjac_3 + wgt_t_detjac_4
-    )
+    p_quad_vector_sum_1 = wgt_t_detjac_1 + wgt_t_detjac_2 + wgt_t_detjac_3 + wgt_t_detjac_4
     p_quad_vector_sum_2 = (
         wgt_t_detjac_1 * z_gauss_pts_1_x
         + wgt_t_detjac_2 * z_gauss_pts_2_x

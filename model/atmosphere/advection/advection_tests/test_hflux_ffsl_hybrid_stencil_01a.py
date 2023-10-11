@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
     hflux_ffsl_hybrid_stencil_01a,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    constant_field,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 

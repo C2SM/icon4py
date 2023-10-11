@@ -43,8 +43,7 @@ def _face_val_ppm_stencil_01b(
     zfac_m1 = (p_cc - p_cc(Koff[-1])) / (p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1]))
     zfac = (p_cc - p_cc) / (p_cellhgt_mc_now + p_cellhgt_mc_now)
     z_slope = (
-        p_cellhgt_mc_now
-        / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now + p_cellhgt_mc_now)
+        p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now + p_cellhgt_mc_now)
     ) * (
         (2.0 * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now) * zfac
         + (p_cellhgt_mc_now + 2.0 * p_cellhgt_mc_now) * zfac_m1

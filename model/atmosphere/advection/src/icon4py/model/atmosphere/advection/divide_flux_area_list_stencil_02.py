@@ -121,30 +121,14 @@ def _divide_flux_area_list_stencil_02(
 
     # Store global index of the underlying grid cell
     # Adapt dimensions to fit ofr multiple levels
-    butterfly_idx_patch1_vnpos_3d = broadcast(
-        butterfly_idx_patch1_vnpos, (EdgeDim, KDim)
-    )
-    butterfly_idx_patch1_vnneg_3d = broadcast(
-        butterfly_idx_patch1_vnneg, (EdgeDim, KDim)
-    )
-    butterfly_idx_patch2_vnpos_3d = broadcast(
-        butterfly_idx_patch2_vnpos, (EdgeDim, KDim)
-    )
-    butterfly_idx_patch2_vnneg_3d = broadcast(
-        butterfly_idx_patch2_vnneg, (EdgeDim, KDim)
-    )
-    butterfly_blk_patch1_vnpos_3d = broadcast(
-        butterfly_blk_patch1_vnpos, (EdgeDim, KDim)
-    )
-    butterfly_blk_patch1_vnneg_3d = broadcast(
-        butterfly_blk_patch1_vnneg, (EdgeDim, KDim)
-    )
-    butterfly_blk_patch2_vnpos_3d = broadcast(
-        butterfly_blk_patch2_vnpos, (EdgeDim, KDim)
-    )
-    butterfly_blk_patch2_vnneg_3d = broadcast(
-        butterfly_blk_patch2_vnneg, (EdgeDim, KDim)
-    )
+    butterfly_idx_patch1_vnpos_3d = broadcast(butterfly_idx_patch1_vnpos, (EdgeDim, KDim))
+    butterfly_idx_patch1_vnneg_3d = broadcast(butterfly_idx_patch1_vnneg, (EdgeDim, KDim))
+    butterfly_idx_patch2_vnpos_3d = broadcast(butterfly_idx_patch2_vnpos, (EdgeDim, KDim))
+    butterfly_idx_patch2_vnneg_3d = broadcast(butterfly_idx_patch2_vnneg, (EdgeDim, KDim))
+    butterfly_blk_patch1_vnpos_3d = broadcast(butterfly_blk_patch1_vnpos, (EdgeDim, KDim))
+    butterfly_blk_patch1_vnneg_3d = broadcast(butterfly_blk_patch1_vnneg, (EdgeDim, KDim))
+    butterfly_blk_patch2_vnpos_3d = broadcast(butterfly_blk_patch2_vnpos, (EdgeDim, KDim))
+    butterfly_blk_patch2_vnneg_3d = broadcast(butterfly_blk_patch2_vnneg, (EdgeDim, KDim))
     patch1_cell_idx_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_idx_patch1_vnpos_3d, butterfly_idx_patch1_vnneg_3d),

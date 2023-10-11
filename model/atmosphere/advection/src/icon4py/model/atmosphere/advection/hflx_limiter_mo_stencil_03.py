@@ -25,12 +25,8 @@ def _hflx_limiter_mo_stencil_03_min_max(
     beta_fct: float,
     r_beta_fct: float,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_max = beta_fct * maximum(
-        max_over(z_tracer_max(C2E2C), axis=C2E2CDim), z_tracer_max
-    )
-    z_min = r_beta_fct * minimum(
-        min_over(z_tracer_min(C2E2C), axis=C2E2CDim), z_tracer_min
-    )
+    z_max = beta_fct * maximum(max_over(z_tracer_max(C2E2C), axis=C2E2CDim), z_tracer_max)
+    z_min = r_beta_fct * minimum(min_over(z_tracer_min(C2E2C), axis=C2E2CDim), z_tracer_min)
     return z_max, z_min
 
 

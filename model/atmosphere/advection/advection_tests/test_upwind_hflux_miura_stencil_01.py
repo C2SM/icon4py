@@ -18,11 +18,7 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_stencil_01 import (
     upwind_hflux_miura_stencil_01,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    constant_field,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 

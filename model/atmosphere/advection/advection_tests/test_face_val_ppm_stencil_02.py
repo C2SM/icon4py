@@ -15,9 +15,7 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
 
-from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02 import (
-    face_val_ppm_stencil_02,
-)
+from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02 import face_val_ppm_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import _shape, random_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
@@ -35,14 +33,9 @@ def face_val_ppm_stencil_02_numpy(
 ):
     p_face_a = p_face_in
 
-    p_face_a[:, 1:] = p_cc[:, 1:] * (
-        1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
-    ) + (
+    p_face_a[:, 1:] = p_cc[:, 1:] * (1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])) + (
         p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])
-    ) * (
-        (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1]) * p_cc[:, 1:]
-        + p_cc[:, :-1]
-    )
+    ) * ((p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1]) * p_cc[:, 1:] + p_cc[:, :-1])
 
     p_face = np.where((k == slevp1) | (k == elev), p_face_a, p_face_in)
     p_face = np.where((k == slev), p_cc, p_face)
@@ -58,9 +51,7 @@ def test_face_val_ppm_stencil_02():
     p_face_in = random_field(mesh, CellDim, KDim)
     p_face = random_field(mesh, CellDim, KDim)
 
-    k = it_embedded.np_as_located_field(KDim)(
-        np.arange(0, _shape(mesh, KDim)[0], dtype=int32)
-    )
+    k = it_embedded.np_as_located_field(KDim)(np.arange(0, _shape(mesh, KDim)[0], dtype=int32))
 
     slev = int32(1)
     slevp1 = slev + int32(1)
