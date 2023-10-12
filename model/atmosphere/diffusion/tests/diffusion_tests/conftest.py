@@ -14,8 +14,7 @@
 import pytest
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
-from icon4py.model.common.test_utils.fixtures import (  # noqa: F401  # import fixtures from test_utils package
-    backend,
+from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401  # import fixtures from test_utils package
     damping_height,
     data_provider,
     datapath,
@@ -25,7 +24,6 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa: F401  # import f
     icon_grid,
     interpolation_savepoint,
     linit,
-    mesh,
     metrics_savepoint,
     ndyn_substeps,
     processor_props,
@@ -37,7 +35,7 @@ from icon4py.model.common.test_utils.fixtures import (  # noqa: F401  # import f
 
 @pytest.fixture
 def r04b09_diffusion_config(
-    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fxiture
+    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
 ) -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.

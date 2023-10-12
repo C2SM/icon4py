@@ -18,7 +18,6 @@ import pytest
 from ..decomposition.definitions import SingleNodeRun, get_processor_properties
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
-from .simple_mesh import SimpleMesh
 
 
 test_utils = Path(__file__).parent
@@ -58,8 +57,12 @@ def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
-    if not pytestconfig.getoption("datatest"):
-        pytest.skip("not running datatest marked tests")
+    try:
+        has_data_marker = any(map(lambda i: i.iter_markers(name="datatest"), request.node.items))
+        if not has_data_marker or not request.config.getoption("datatest"):
+            pytest.skip("not running datatest marked tests")
+    except ValueError:
+        pass
 
     try:
         uri = data_uris[processor_props.comm_size]
@@ -169,22 +172,6 @@ def metrics_savepoint(data_provider):  # F811
 def metrics_nonhydro_savepoint(data_provider):  # F811
     """Load data from ICON metric state nonhydro savepoint."""
     return data_provider.from_metrics_nonhydro_savepoint()
-
-
-MESHES = {"simple_mesh": SimpleMesh()}
-
-
-@pytest.fixture(
-    ids=MESHES.keys(),
-    params=MESHES.values(),
-)
-def mesh(request):
-    return request.param
-
-
-@pytest.fixture
-def backend(request):
-    return request.param
 
 
 @pytest.fixture
