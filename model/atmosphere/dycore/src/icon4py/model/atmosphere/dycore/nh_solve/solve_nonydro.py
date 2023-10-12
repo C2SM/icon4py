@@ -154,6 +154,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.atmosphere.dycore.velocity import velocity_advection
+from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
@@ -289,7 +290,8 @@ class NonHydrostaticParams:
 
 
 class SolveNonhydro:
-    def __init__(self):
+    def __init__(self, exchange: ExchangeRuntime = SingleNodeExchange()):
+        self._exchange = exchange
         self._initialized = False
         self.grid: Optional[IconGrid] = None
         self.interpolation_state = None
@@ -424,7 +426,6 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
         _calculate_bdy_divdamp(
             self.scal_divdamp,
@@ -587,11 +588,10 @@ class SolveNonhydro:
         nnow: int,
         nnew: int,
     ):
+        lvn_only = False
         if l_init or l_recompute:
             if config.itime_scheme == 4 and not l_init:
                 lvn_only = True  # Recompute only vn tendency
-            else:
-                lvn_only = False
 
         velocity_advection.VelocityAdvection(
             self.grid,
@@ -1035,8 +1035,8 @@ class SolveNonhydro:
                     "Koff": KDim,
                 },
             )
-
-        self.z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(
+        # TODO (magdalena) what is 64 ? replace with constant or k level dependent value
+        z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(
             np.asarray(self.z_hydro_corr)[:, 64]
         )
 
@@ -1044,7 +1044,7 @@ class SolveNonhydro:
             mo_solve_nonhydro_stencil_22.with_backend(run_gtfn)(
                 ipeidx_dsl=self.metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
-                z_hydro_corr=self.z_hydro_corr_horizontal,
+                z_hydro_corr=z_hydro_corr_horizontal,
                 z_gradh_exner=z_fields.z_gradh_exner,
                 horizontal_start=indices_5b_1,
                 horizontal_end=indices_5b_2,
@@ -1094,7 +1094,11 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # COMMUNICATION PHASE
+        handle_edge_comm = self._exchange.exchange(
+            EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e
+        )
+        # vn is needed immediately
+        handle_edge_comm.wait()
 
         mo_solve_nonhydro_stencil_30.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
@@ -1396,7 +1400,7 @@ class SolveNonhydro:
                 vertical_end=int32(self.grid.n_lev() + 1),
                 offset_provider={},
             )
-
+        #TODO (magdalena) remove if condition?
         if config.lhdiff_rcf and config.divdamp_type >= 3:
             mo_solve_nonhydro_stencil_56_63.with_backend(run_gtfn)(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
@@ -1410,8 +1414,11 @@ class SolveNonhydro:
                 offset_provider={"Koff": KDim},
             )
 
-        # COMMUNICATION PHASE
-
+            handle_cell_comm = self._exchange.exchange(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
+            handle_cell_comm.wait()
+        else:
+            handle_cell_comm = self._exchange.exchange(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
+            handle_cell_comm.wait()
     def run_corrector_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
@@ -1648,8 +1655,9 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # COMMUNICATION PHASE
-
+        handle_edge_comm = self._exchange.exchange(EdgeDim, (prognostic_state[nnew].vn))
+        # vn is needed immediately, so add the wait.
+        handle_edge_comm.wait()
         mo_solve_nonhydro_stencil_31.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
@@ -1958,4 +1966,10 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # COMMUNICATION PHASE
+            handle_cell_comm = self._exchange.exchange(
+                CellDim,
+                prognostic_state[nnew].rho,
+                prognostic_state[nnew].exner,
+                prognostic_state[nnew].w,
+            )
+            handle_cell_comm.wait()
