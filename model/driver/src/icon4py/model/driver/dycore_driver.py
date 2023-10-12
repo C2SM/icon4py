@@ -21,9 +21,11 @@ from devtools import Timer
 from gt4py.next import Field, program
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import SolveNonhydro
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
 from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
+from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
     create_exchange,
@@ -33,7 +35,7 @@ from icon4py.model.common.decomposition.definitions import (
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
-from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
+from icon4py.model.driver.icon_configuration import IconRunConfig, AtmoNonHydroConfig, read_config
 from icon4py.model.driver.io_utils import (
     SIMULATION_START_DATE,
     configure_logging,
@@ -78,18 +80,99 @@ def _copy_diagnostic_and_prognostics(
     _identity_c_k(theta_v_new, out=theta_v)
 
 
-class DummyAtmoNonHydro:
+class Model:
     def __init__(self, data_provider: sb.IconSerialDataProvider):
-        self.config = None
+        self.run_config: IconRunConfig = None
+        self.nonhydro_config: AtmoNonHydroConfig = None
         self.data_provider = data_provider
-        self.simulation_date = datetime.fromisoformat(SIMULATION_START_DATE)
 
-    def init(self, config):
-        self.config = config
+    def init(self, run_config: IconRunConfig, nonhydro_config: AtmoNonHydroConfig):
+        self.run_config = run_config
+        self.nonhydro_config = nonhydro_config
+        self.n_time_steps: int = int((self.run_config.end_date - self.run_config.start_date) / timedelta(seconds=self.run_config.dtime))
+
+        # current simulation date
+        #self.simulation_date = datetime.fromisoformat(SIMULATION_START_DATE)
+        self.simulation_date: datetime = self.run_config.start_date
+
+        # initialize simulation domain
+        self._model_initialization()
+
+        self._time_n: int = 0
+        self._time_n_plus_1: int = 1
+
+        # check validity of configurations
+        self._validate()
+
+    # TODO initialization of prognostic variables and topography of Jablonowski Williamson test
+    def _model_initialization(self):
+        prognostic_state_1 = PrognosticState(
+            w=None,
+            vn=None,
+            theta_v=None,
+            rho=None,
+            exner=None,
+        )
+        prognostic_state_2 = PrognosticState(
+            w=None,
+            vn=None,
+            theta_v=None,
+            rho=None,
+            exner=None,
+        )
+        self.prognostic_state_list = [prognostic_state_1, prognostic_state_2]
+
+    def _validate(self):
+        if (self.n_time_steps < 0):
+            raise ValueError("end_date should be larger than start_date. Please check.")
+
+    def _swap_time(self):
+        n = self._time_n_plus_1
+        self._time_n_plus_1 = self._time_n
+        self._time_n = n
+
+    def _next_simulation_date(self):
+        self.simulation_date += timedelta(seconds=self.run_config.dtime)
+
+    def time_integration(self, diffusion_diagnostic_state: DiffusionDiagnosticState, solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro, diffusion: Diffusion, solve_nonhydro: SolveNonhydro):
+        for _ in range(self.n_time_steps):
+            self._integrate_one_time_step(diffusion_diagnostic_state, solve_nonhydro_diagnostic_state, diffusion, solve_nonhydro)
+            self._next_simulation_date()
+
+    def _integrate_one_time_step(self, diffusion_diagnostic_state: DiffusionDiagnosticState, solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro, diffusion: Diffusion, solve_nonhydro: SolveNonhydro):
+        self._do_dyn_substepping(
+            diffusion_diagnostic_state,
+            solve_nonhydro_diagnostic_state,
+            diffusion,
+            solve_nonhydro
+        )
+        if (self.nonhydro_config.apply_horizontal_diff_at_large_dt and diffusion.config.apply_to_horizontal_wind):
+            diffusion.run(
+                diffusion_diagnostic_state,
+                self.prognostic_state_list[self._time_n],
+                self.run_config.dtime
+            )
+
+    def _do_dyn_substepping(self, diffusion_diagnostic_state: DiffusionDiagnosticState, solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro, diffusion: Diffusion, solve_nonhydro: SolveNonhydro):
+        for _ in range(self.nonhydro_config.ndyn_substeps):
+            solve_nonhydro.time_step(
+                solve_nonhydro_diagnostic_state,
+                self.prognostic_state_list,
+                nnew=self._time_n_plus_1,
+                nnow=self._time_n,
+            )
+            if (diffusion.config.apply_to_horizontal_wind and not self.nonhydro_config.apply_horizontal_diff_at_large_dt):
+                diffusion.run(
+                    diffusion_diagnostic_state,
+                    self.prognostic_state_list[self._time_n_plus_1],
+                    self.run_config.dtime
+                )
+            self._swap_time()
 
     def _next_physics_date(self, dtime: float):
-        dynamics_dtime = dtime / self.config.n_substeps
-        self.simulation_date += timedelta(seconds=dynamics_dtime)
+        """Show structure with this dummy fucntion called inside substepping loop."""
+        dynamics_dtime = dtime / self.nonhydro_config.ndyn_substeps
+        self.simulation_date += timedelta(seconds=dtime)
 
     def _dynamics_timestep(self, dtime):
         """Show structure with this dummy fucntion called inside substepping loop."""
@@ -128,7 +211,7 @@ class DummyAtmoNonHydro:
             offset_provider={},
         )
 
-
+'''
 class Timeloop:
     @classmethod
     def name(cls):
@@ -291,3 +374,4 @@ def main(input_path, run_path, n_steps, mpi):
 
 if __name__ == "__main__":
     main()
+'''

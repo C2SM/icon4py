@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Optional
 
@@ -19,16 +20,21 @@ from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, Diffus
 
 n_substeps_reduced = 2
 
-
 @dataclass
 class IconRunConfig:
-    n_time_steps: int = 5
-    dtime: float = 600.0
+
+    dtime: float = 60.0,
+    start_date: datetime = datetime(0, 0, 0, 0, 0),
+    end_date: datetime = datetime(0,0,0,1,0)
 
 
 @dataclass
 class AtmoNonHydroConfig:
-    n_substeps: int = 5
+
+    # TODO ndyn_substeps is not a constant in ICON, it may be modified in restart runs.
+    ndyn_substeps: int = 5
+    apply_horizontal_diff_at_large_dt: bool = True
+    apply_extra_diffusion_for_largeCFL: bool = True
 
 
 @dataclass
@@ -36,6 +42,7 @@ class IconConfig:
     run_config: IconRunConfig
     diffusion_config: DiffusionConfig
     dycore_config: AtmoNonHydroConfig
+
 
 
 def read_config(experiment: Optional[str], n_time_steps: int) -> IconConfig:
