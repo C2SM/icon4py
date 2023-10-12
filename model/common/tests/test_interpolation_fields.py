@@ -28,7 +28,7 @@ import pytest
 
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
+from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div
 
 
 @pytest.mark.datatest
@@ -51,10 +51,10 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):
     assert np.allclose(c_lin_e, c_lin_e_ref)
 
 @pytest.mark.datatest
-def test_compute_geofac_div(primal_edge_length, edge_orientation, area):
-    inv_dual_edge_length = grid_savepoint.primal_edge_length()
-    edge_cell_length = grid_savepoint.edge_orientation()
-    owner_mask = grid_savepoint.area()
+def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid):
+    primal_edge_length = 1e0/grid_savepoint.inverse_primal_edge_lengths()
+    edge_orientation = grid_savepoint.tangent_orientation()
+    area = grid_savepoint.edge_areas()
     geofac_div_ref = interpolation_savepoint.geofac_div()
     geofac_div = compute_geofac_div(
         np.asarray(primal_edge_length),
