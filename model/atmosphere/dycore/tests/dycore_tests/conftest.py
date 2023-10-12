@@ -11,15 +11,27 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    SingleNodeExchange,
-    create_exchange,
+
+from icon4py.model.common.test_utils.datatest_helpers import (  # noqa F401
+    damping_height,
+    data_provider,
+    datapath,
+    download_ser_data,
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
+    istep,
+    jstep,
+    linit,
+    metrics_savepoint,
+    processor_props,
+    ranked_data_path,
+    savepoint_nonhydro_exit,
+    savepoint_nonhydro_init,
+    savepoint_nonhydro_step_exit,
+    savepoint_velocity_exit,
+    savepoint_velocity_init,
+    step_date_exit,
+    step_date_init,
+    vn_only,
 )
-
-
-def test_create_single_node_runtime_without_mpi(processor_props):
-    decomposition_info = DecompositionInfo(klevels=10)
-    exchange = create_exchange(processor_props, decomposition_info)
-
-    assert isinstance(exchange, SingleNodeExchange)

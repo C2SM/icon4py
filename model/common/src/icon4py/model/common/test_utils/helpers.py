@@ -29,6 +29,22 @@ except ModuleNotFoundError:
 from .simple_mesh import SimpleMesh
 
 
+MESHES = {"simple_mesh": SimpleMesh()}
+
+
+@pytest.fixture(
+    ids=MESHES.keys(),
+    params=MESHES.values(),
+)
+def mesh(request):
+    return request.param
+
+
+@pytest.fixture
+def backend(request):
+    return request.param
+
+
 def _shape(
     mesh,
     *dims: gt_common.Dimension,

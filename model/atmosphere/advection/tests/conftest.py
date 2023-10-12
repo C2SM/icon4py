@@ -10,3 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
+    backend,
+    mesh,
+)
