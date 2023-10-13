@@ -505,17 +505,13 @@ class SolveNonhydro:
             lprep_adv=lprep_adv,
         )
 
-        (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.local(CellDim) - 1,
-            HorizontalMarkerIndex.local(CellDim),
-        )
+        indices_0_1 = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
+        indices_0_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
-        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim),
-            HorizontalMarkerIndex.nudging(CellDim) - 1,
+        indices_1_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
+        indices_1_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.nudging(CellDim) - 1)
 
         if self.grid.limited_area():
             mo_solve_nonhydro_stencil_66.with_backend(run_gtfn)(
@@ -615,84 +611,67 @@ class SolveNonhydro:
         )
 
         p_dthalf = 0.5 * dtime
+        indices_0_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
+        )
+        indices_0_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
-        (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
+        indices_1_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+        )
+        indices_1_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
+
+        indices_2_1 = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 2)
+        indices_2_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 2)
+
+        indices_3_1 = self.grid.get_start_index(
+            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+        )  # TODO: check
+        indices_3_2 = self.grid.get_end_index(VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1)
+
+        indices_4_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim)
+        )
+        indices_4_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1)
+
+        indices_11_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
+        )
+        indices_11_2 = self.grid.get_end_index(
             CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim),
-            HorizontalMarkerIndex.end(CellDim),
-        )
-
-        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
-            HorizontalMarkerIndex.local(CellDim) - 1,
-        )
-
-        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.local(CellDim) - 2,
-            HorizontalMarkerIndex.local(CellDim) - 2,
-        )
-
-        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,  # TODO: check
-            HorizontalMarkerIndex.local(VertexDim) - 1,
-        )
-
-        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim),
-            HorizontalMarkerIndex.local(EdgeDim) - 1,
-        )
-
-        (indices_11_1, indices_11_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim),
             HorizontalMarkerIndex.nudging(CellDim) - 1,
         )
 
-        (indices_12_1, indices_12_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
-            HorizontalMarkerIndex.local(EdgeDim) - 1,
+        indices_12_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
+        indices_12_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1)
 
-        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
-        )
+        indices_5_1 = self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1)
+        indices_5_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
 
-        (indices_5b_1, indices_5b_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.end(EdgeDim),
+        indices_5b_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
         )
+        indices_5b_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
 
-        (indices_6_1, indices_6_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim),
-            HorizontalMarkerIndex.nudging(EdgeDim),
+        indices_6_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim)
         )
+        indices_6_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim))
 
-        (indices_7_1, indices_7_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
+        indices_7_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
+        indices_7_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
 
-        (indices_9_1, indices_9_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
-            HorizontalMarkerIndex.local(CellDim) - 1,
+        indices_9_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
         )
+        indices_9_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
 
-        (indices_10_1, indices_10_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
+        indices_10_1 = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
+        indices_10_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
         #  Precompute Rayleigh damping factor
         compute_z_raylfac.with_backend(run_gtfn)(
@@ -870,17 +849,13 @@ class SolveNonhydro:
             )
 
         if config.iadv_rhotheta <= 2:
-            (tmp_0_0, tmp_0_1) = self.grid.get_indices_from_to(
-                EdgeDim,
-                HorizontalMarkerIndex.local(EdgeDim) - 2,
-                HorizontalMarkerIndex.local(EdgeDim) - 3,
-            )
+            tmp_0_0 = self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
+            tmp_0_1 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 3)
             if config.idiv_method == 1:
-                (tmp_0_0, tmp_0_1) = self.grid.get_indices_from_to(
-                    EdgeDim,
-                    HorizontalMarkerIndex.local(EdgeDim) - 2,
-                    HorizontalMarkerIndex.local(EdgeDim) - 2,
+                tmp_0_0 = self.grid.get_start_index(
+                    EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
                 )
+                tmp_0_1 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
 
             set_zero_e_k.with_backend(run_gtfn)(
                 field=z_fields.z_rho_e,
@@ -1438,37 +1413,32 @@ class SolveNonhydro:
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
         )
         indices_0_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-        (indices_0_3, indices_0_4) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
-        )
 
-        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
+        indices_0_3 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
+        indices_0_4 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
 
-        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
-        )
+        indices_1_1 = self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1)
+        indices_1_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
 
-        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim),
-            HorizontalMarkerIndex.end(EdgeDim),
+        indices_2_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
+        indices_2_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
+
+        indices_3_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim)
+        )
+        indices_3_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
 
         indices_4_1 = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
         indices_4_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
 
-        indices_5_1 = self.grid.get_start_index(HorizontalMarkerIndex.nudging(CellDim))
-        indices_5_2 = self.grid.get_end_index(HorizontalMarkerIndex.local(CellDim))
+        indices_5_1 = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
+        indices_5_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
         lvn_only = False
         velocity_advection.VelocityAdvection(

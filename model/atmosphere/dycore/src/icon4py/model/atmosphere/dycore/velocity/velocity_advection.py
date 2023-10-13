@@ -152,41 +152,30 @@ class VelocityAdvection:
         self.cfl_w_limit = self.cfl_w_limit / dtime
         self.scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - self.cfl_w_limit * dtime))
 
-        (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
-            HorizontalMarkerIndex.local(VertexDim) - 1,
+        indices_0_1 = self.grid.get_start_index(
+            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
         )
+        indices_0_2 = self.grid.get_end_index(VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1)
 
-        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
+        indices_1_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
+        indices_1_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
 
-        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
-            HorizontalMarkerIndex.local(EdgeDim) - 1,
+        indices_2_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
+        indices_2_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1)
+        indices_3_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
+        )
+        indices_3_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
 
-        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
-            HorizontalMarkerIndex.local(CellDim) - 1,
-        )
+        indices_4_1 = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
+        indices_4_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
-        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
-
-        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
-        )
+        indices_5_1 = self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1)
+        indices_5_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
@@ -488,35 +477,24 @@ class VelocityAdvection:
         self.cfl_w_limit = self.cfl_w_limit / dtime
         self.scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - self.cfl_w_limit * dtime))
 
-        (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
-            VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
-            HorizontalMarkerIndex.local(VertexDim) - 1,
+        indices_1_1 = self.grid.get_start_index(
+            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
         )
+        indices_1_2 = self.grid.get_end_index(VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1)
 
-        (indices_2_1, indices_2_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
-            HorizontalMarkerIndex.local(EdgeDim) - 1,
+        indices_2_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
+        indices_2_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1)
 
-        (indices_3_1, indices_3_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
-            HorizontalMarkerIndex.local(CellDim) - 1,
+        indices_3_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
         )
-
-        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
-
-        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
-            HorizontalMarkerIndex.local(EdgeDim),
-        )
+        indices_3_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
+        indices_4_1 = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
+        indices_4_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        indices_5_1 = self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1)
+        indices_5_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
