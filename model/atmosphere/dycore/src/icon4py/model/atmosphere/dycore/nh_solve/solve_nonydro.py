@@ -424,7 +424,6 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
         _calculate_bdy_divdamp(
             self.scal_divdamp,
@@ -437,17 +436,14 @@ class SolveNonhydro:
         # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
         # delta_x**2 is approximated by the mean cell area
 
-        (indices_cells_1, indices_cells_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim),
-            HorizontalMarkerIndex.end(CellDim),
+        indices_cells_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
-
-        (indices_edges_1, indices_edges_2) = self.grid.get_indices_from_to(
-            EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim),
-            HorizontalMarkerIndex.local(EdgeDim),
+        indices_cells_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
+        indices_edges_1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim)
         )
+        indices_edges_2 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
         # # TODO: abishekg7 move this to tests
         if self.p_test_run:
             nhsolve_prog.init_test_fields.with_backend(run_gtfn)(
@@ -1438,12 +1434,10 @@ class SolveNonhydro:
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / config.ndyn_substeps_var
 
-        (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
-            HorizontalMarkerIndex.local(CellDim),
+        indices_0_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
         )
-
+        indices_0_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
         (indices_0_3, indices_0_4) = self.grid.get_indices_from_to(
             EdgeDim,
             HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
@@ -1468,17 +1462,13 @@ class SolveNonhydro:
             HorizontalMarkerIndex.end(EdgeDim),
         )
 
-        (indices_4_1, indices_4_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim),
-            HorizontalMarkerIndex.nudging(CellDim),
+        indices_4_1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
+        indices_4_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
 
-        (indices_5_1, indices_5_2) = self.grid.get_indices_from_to(
-            CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
-            HorizontalMarkerIndex.local(CellDim),
-        )
+        indices_5_1 = self.grid.get_start_index(HorizontalMarkerIndex.nudging(CellDim))
+        indices_5_2 = self.grid.get_end_index(HorizontalMarkerIndex.local(CellDim))
 
         lvn_only = False
         velocity_advection.VelocityAdvection(
