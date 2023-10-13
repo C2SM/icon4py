@@ -424,7 +424,6 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
         _calculate_bdy_divdamp(
             self.scal_divdamp,
@@ -1369,10 +1368,10 @@ class SolveNonhydro:
             mo_solve_nonhydro_stencil_59.with_backend(run_gtfn)(
                 exner=prognostic_state[nnow].exner,
                 exner_dyn_incr=self.exner_dyn_incr,
-                cell_startindex_nudging_plus1=indices_10_1,
-                cell_endindex_interior=indices_10_2,
-                kstart_moist=params.kstart_moist,
-                nlev=self.grid.n_lev(),
+                horizontal_start=indices_10_1,
+                horizontal_end=indices_10_2,
+                vertical_start=params.kstart_moist,
+                vertical_end=self.grid.n_lev(),
                 offset_provider={},
             )
 
