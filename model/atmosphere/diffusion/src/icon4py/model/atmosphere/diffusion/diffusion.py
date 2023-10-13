@@ -534,13 +534,12 @@ class Diffusion:
         IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         """
         log.debug("communication of prognostic cell fields: theta, w, exner - start")
-        handle_cell_comm = self._exchange.exchange(
+        self._exchange.exchange_and_wait(
             CellDim,
             prognostic_state.w,
             prognostic_state.theta_v,
             prognostic_state.exner,
         )
-        handle_cell_comm.wait()
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
     def _do_diffusion_step(
@@ -618,8 +617,7 @@ class Diffusion:
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
-        h = self._exchange.exchange(VertexDim, self.u_vert, self.v_vert)
-        h.wait()
+        h = self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -676,8 +674,7 @@ class Diffusion:
 
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
-            h_z = self._exchange.exchange(EdgeDim, self.z_nabla2_e)
-            h_z.wait()
+            self._exchange.exchange_and_wait(EdgeDim, self.z_nabla2_e)
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
@@ -697,8 +694,7 @@ class Diffusion:
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         log.debug("communication rbf extrapolation of z_nable2_e - start")
-        h = self._exchange.exchange(VertexDim, self.u_vert, self.v_vert)
-        h.wait()
+        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")

@@ -1094,11 +1094,10 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        handle_edge_comm = self._exchange.exchange(
+        handle_edge_comm = self._exchange.exchange_and_wait(
             EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e
         )
-        # vn is needed immediately
-        handle_edge_comm.wait()
+
 
         mo_solve_nonhydro_stencil_30.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
@@ -1414,11 +1413,10 @@ class SolveNonhydro:
                 offset_provider={"Koff": KDim},
             )
 
-            handle_cell_comm = self._exchange.exchange(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
-            handle_cell_comm.wait()
+            self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
         else:
-            handle_cell_comm = self._exchange.exchange(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
-            handle_cell_comm.wait()
+            self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
+
     def run_corrector_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
@@ -1655,9 +1653,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        handle_edge_comm = self._exchange.exchange(EdgeDim, (prognostic_state[nnew].vn))
-        # vn is needed immediately, so add the wait.
-        handle_edge_comm.wait()
+        handle_edge_comm = self._exchange.exchange_and_wait(EdgeDim, (prognostic_state[nnew].vn))
         mo_solve_nonhydro_stencil_31.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
@@ -1966,10 +1962,10 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            handle_cell_comm = self._exchange.exchange(
+            self._exchange.exchange_and_wait(
                 CellDim,
                 prognostic_state[nnew].rho,
                 prognostic_state[nnew].exner,
                 prognostic_state[nnew].w,
             )
-            handle_cell_comm.wait()
+
