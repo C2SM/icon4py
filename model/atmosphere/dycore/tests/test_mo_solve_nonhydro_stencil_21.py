@@ -24,7 +24,7 @@ from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def mo_solve_nonhydro_stencil_21_numpy(
-    e2c: np.array,
+    mesh,
     theta_v: np.array,
     ikoffset: np.array,
     zdiff_gradp: np.array,
@@ -51,13 +51,13 @@ def mo_solve_nonhydro_stencil_21_numpy(
     full_shape = zdiff_gradp.shape
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
-    theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikoffset)
+    theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, mesh.e2c, ikoffset)
 
     theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
-        full_shape, theta_v_ic, e2c, ikoffset
+        full_shape, theta_v_ic, mesh.e2c, ikoffset
     )
 
-    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(full_shape, inv_ddqz_z_full, e2c, ikoffset)
+    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(full_shape, inv_ddqz_z_full, mesh.e2c, ikoffset)
 
     z_theta1 = (
         theta_v_at_kidx[:, 0, :]
@@ -110,7 +110,7 @@ def test_mo_solve_nonhydro_stencil_21():
     z_hydro_corr = zero_field(mesh, EdgeDim, KDim)
 
     z_hydro_corr_ref = mo_solve_nonhydro_stencil_21_numpy(
-        mesh.e2c,
+        mesh,
         np.asarray(theta_v),
         np.asarray(ikoffset),
         np.asarray(zdiff_gradp),

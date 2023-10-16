@@ -24,7 +24,7 @@ from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def mo_solve_nonhydro_stencil_20_numpy(
-    e2c: np.array,
+    mesh,
     inv_dual_edge_length: np.array,
     z_exner_ex_pr: np.array,
     zdiff_gradp: np.array,
@@ -46,9 +46,9 @@ def mo_solve_nonhydro_stencil_20_numpy(
     full_shape = zdiff_gradp.shape
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
-    z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, e2c, ikoffset)
-    z_dexner_dz_c_1_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_1, e2c, ikoffset)
-    z_dexner_dz_c_2_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_2, e2c, ikoffset)
+    z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, mesh.e2c, ikoffset)
+    z_dexner_dz_c_1_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_1, mesh.e2c, ikoffset)
+    z_dexner_dz_c_2_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_2, mesh.e2c, ikoffset)
 
     def at_neighbor(i):
         return z_exner_ex_pr_at_kidx[:, i, :] + zdiff_gradp[:, i, :] * (
@@ -87,7 +87,7 @@ def test_mo_solve_nonhydro_stencil_20():
     z_gradh_exner = zero_field(mesh, EdgeDim, KDim)
 
     z_gradh_exner_ref = mo_solve_nonhydro_stencil_20_numpy(
-        mesh.e2c,
+        mesh,
         np.asarray(inv_dual_edge_length),
         np.asarray(z_exner_ex_pr),
         np.asarray(zdiff_gradp),
