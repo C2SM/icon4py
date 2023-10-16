@@ -39,8 +39,8 @@ class TestMoSolveNonhydroStencil59(StencilTest):
         return dict(
             exner=exner,
             exner_dyn_incr=exner_dyn_incr,
-            cell_startindex_nudging_plus1=int32(0),
-            cell_endindex_interior=int32(mesh.n_cells),
-            kstart_moist=int32(0),
-            nlev=int32(mesh.k_level),
+            horizontal_start=int32(0),
+            horizontal_end=int32(mesh.n_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(mesh.k_level),
         )
