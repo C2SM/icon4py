@@ -28,23 +28,18 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
-class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
-    PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
-    OUTPUTS = ("z_temp",)
-
-    @staticmethod
-    def reference(
-        mesh,
-        mask: np.array,
-        zd_vertoffset: np.array,
-        zd_diffcoef: np.array,
-        geofac_n2s_c: np.array,
-        geofac_n2s_nbh: np.array,
-        vcoef: np.array,
-        theta_v: np.array,
-        z_temp: np.array,
-        **kwargs,
-    ) -> np.array:
+def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
+      mesh,
+      mask: np.array,
+      zd_vertoffset: np.array,
+      zd_diffcoef: np.array,
+      geofac_n2s_c: np.array,
+      geofac_n2s_nbh: np.array,
+      vcoef: np.array,
+      theta_v: np.array,
+      z_temp: np.array,
+      **kwargs,
+  ) -> np.array:
         shape = mesh.c2e2c.shape + vcoef.shape[1:]
         vcoef = vcoef.reshape(shape)
         zd_vertoffset = zd_vertoffset.reshape(shape)
@@ -73,7 +68,28 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
         geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add KDim
         z_temp = np.where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over), z_temp)
-        return dict(z_temp=z_temp)
+        return z_temp
+
+class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
+    PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
+    OUTPUTS = ("z_temp",)
+
+    @staticmethod
+    def reference(
+        mesh,
+        mask: np.array,
+        zd_vertoffset: np.array,
+        zd_diffcoef: np.array,
+        geofac_n2s_c: np.array,
+        geofac_n2s_nbh: np.array,
+        vcoef: np.array,
+        theta_v: np.array,
+        z_temp: np.array,
+        **kwargs,
+    ) -> np.array:
+
+      z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy( mesh, mask, zd_vertoffset, zd_diffcoef, geofac_n2s_c, geofac_n2s_nbh, vcoef, theta_v, z_temp)
+      return dict(z_temp=z_temp)
 
     @pytest.fixture
     def input_data(self, mesh):

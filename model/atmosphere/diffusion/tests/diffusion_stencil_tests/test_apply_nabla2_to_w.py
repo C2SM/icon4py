@@ -27,7 +27,7 @@ def apply_nabla2_to_w_numpy(
     geofac_n2s: np.array,
     w: np.array,
     diff_multfac_w: float,
-):
+)-> np.array:
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     area = np.expand_dims(area, axis=-1)
     w = w - diff_multfac_w * area * area * np.sum(z_nabla2_c[mesh.c2e2cO] * geofac_n2s, axis=1)
@@ -47,8 +47,8 @@ class TestMoApplyNabla2ToW(StencilTest):
         w: np.array,
         diff_multfac_w: float,
         **kwargs,
-    ) -> np.array:
-        w = apply_nabla2_to_w(mesh, area, z_nabla2_c, geofac_n2s, w, diff_multfac_w)
+    ) -> dict:
+        w = apply_nabla2_to_w_numpy(mesh, area, z_nabla2_c, geofac_n2s, w, diff_multfac_w)
         return dict(w=w)
 
     @pytest.fixture

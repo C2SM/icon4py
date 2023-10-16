@@ -63,7 +63,6 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
         geofac_n2s_nbh = unflatten_first_two_dims(geofac_n2s_nbh)
         zd_vertoffset = unflatten_first_two_dims(zd_vertoffset)
-        vcoef = unflatten_first_two_dims(vcoef)
 
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
             mesh,
