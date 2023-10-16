@@ -445,6 +445,7 @@ class SimpleMesh:
             VertexDim: self.n_vertices,
             V2EDim: self.n_v2e,
             CEDim: self.n_cells * self.n_c2e,
+            ECDim: self.n_edges * self.n_e2c,
             E2C2VDim: self.n_e2c2v,
             ECVDim: self.n_edges * self.n_e2c2v,
             C2E2C2E2CDim: self.n_c2e2c2e2c,
@@ -514,4 +515,5 @@ class SimpleMesh:
             "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, self.n_c2e2c),
             "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, self.n_e2c2v),
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, self.n_e2c),
+            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, self.n_c2e2c),
         }

@@ -3,4 +3,4 @@
 -e ../model/atmosphere/diffusion
 -e ../model/atmosphere/advection
 -e ../model/common
--e .
+-e .[all]

@@ -35,13 +35,13 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
     _mo_velocity_advection_stencil_14,
 )
-from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim, CEDim
 
 
 @field_operator
 def _fused_velocity_advection_stencil_8_to_14(
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     w: Field[[CellDim, KDim], float],
@@ -116,7 +116,7 @@ def _fused_velocity_advection_stencil_8_to_14(
 @program(grid_type=GridType.UNSTRUCTURED)
 def fused_velocity_advection_stencil_8_to_14(
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     w: Field[[CellDim, KDim], float],

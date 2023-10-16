@@ -29,6 +29,22 @@ except ModuleNotFoundError:
 from .simple_mesh import SimpleMesh
 
 
+MESHES = {"simple_mesh": SimpleMesh()}
+
+
+@pytest.fixture(
+    ids=MESHES.keys(),
+    params=MESHES.values(),
+)
+def mesh(request):
+    return request.param
+
+
+@pytest.fixture
+def backend(request):
+    return request.param
+
+
 def _shape(
     mesh,
     *dims: gt_common.Dimension,
@@ -117,6 +133,10 @@ def unflatten_first_two_dims(field: it_embedded.MutableLocatedField) -> np.array
     old_shape = np.asarray(field).shape
     new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
     return np.asarray(field).reshape(new_shape)
+
+
+def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
+    return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
 def _test_validation(self, mesh, backend, input_data):

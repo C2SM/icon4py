@@ -122,7 +122,7 @@ class GridFile:
         #: number of edges in a diamond: 4
         DIAMOND_EDGE_SIZE = "no"
 
-        #: number of edges/cells neibhboring one vertex: 6 (for regular, non pentagons)
+        #: number of edges/cells neighboring one vertex: 6 (for regular, non pentagons)
         NEIGHBORS_TO_VERTEX_SIZE = "ne"
 
         #: number of cells edges, vertices and cells neighboring a cell: 3
