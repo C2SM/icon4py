@@ -21,6 +21,65 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
 from icon4py.model.common.dimension import CellDim, E2C2EODim, E2CDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 
+def mo_velocity_advection_stencil_20_numpy(
+    mesh,
+    levelmask: np.array,
+    c_lin_e: np.array,
+    z_w_con_c_full: np.array,
+    ddqz_z_full_e: np.array,
+    area_edge: np.array,
+    tangent_orientation: np.array,
+    inv_primal_edge_length: np.array,
+    zeta: np.array,
+    geofac_grdiv: np.array,
+    vn: np.array,
+    ddt_vn_apc: np.array,
+    cfl_w_limit,
+    scalfac_exdiff,
+    dtime
+) -> np.array :
+    w_con_e = np.zeros_like(vn)
+    difcoef = np.zeros_like(vn)
+
+    levelmask_offset_0 = levelmask[:-1]
+    levelmask_offset_1 = levelmask[1:]
+
+    c_lin_e = np.expand_dims(c_lin_e, axis=-1)
+    geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
+    area_edge = np.expand_dims(area_edge, axis=-1)
+    tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
+    inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
+
+    w_con_e = np.where(
+        (levelmask_offset_0) | (levelmask_offset_1),
+        np.sum(c_lin_e * z_w_con_c_full[mesh.e2c], axis=1),
+        w_con_e,
+    )
+    difcoef = np.where(
+        ((levelmask_offset_0) | (levelmask_offset_1))
+        & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
+        scalfac_exdiff
+        * np.minimum(
+            0.85 - cfl_w_limit * dtime,
+            np.abs(w_con_e) * dtime / ddqz_z_full_e - cfl_w_limit * dtime,
+        ),
+        difcoef,
+    )
+    ddt_vn_apc = np.where(
+        ((levelmask_offset_0) | (levelmask_offset_1))
+        & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
+        ddt_vn_apc
+        + difcoef
+        * area_edge
+        * (
+            np.sum(geofac_grdiv * vn[mesh.e2c2eO], axis=1)
+            + tangent_orientation
+            * inv_primal_edge_length
+            * (zeta[mesh.e2v][:, 1] - zeta[mesh.e2v][:, 0])
+        ),
+        ddt_vn_apc,
+    )
+    return ddt_vn_apc
 
 class TestMoVelocityAdvectionStencil20(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_20
@@ -81,46 +140,6 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
         scalfac_exdiff,
         dtime,
         **kwargs,
-    ):
-        w_con_e = np.zeros_like(vn)
-        difcoef = np.zeros_like(vn)
-
-        levelmask_offset_0 = levelmask[:-1]
-        levelmask_offset_1 = levelmask[1:]
-
-        c_lin_e = np.expand_dims(c_lin_e, axis=-1)
-        geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
-        area_edge = np.expand_dims(area_edge, axis=-1)
-        tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
-        inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
-
-        w_con_e = np.where(
-            (levelmask_offset_0) | (levelmask_offset_1),
-            np.sum(c_lin_e * z_w_con_c_full[mesh.e2c], axis=1),
-            w_con_e,
-        )
-        difcoef = np.where(
-            ((levelmask_offset_0) | (levelmask_offset_1))
-            & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
-            scalfac_exdiff
-            * np.minimum(
-                0.85 - cfl_w_limit * dtime,
-                np.abs(w_con_e) * dtime / ddqz_z_full_e - cfl_w_limit * dtime,
-            ),
-            difcoef,
-        )
-        ddt_vn_apc = np.where(
-            ((levelmask_offset_0) | (levelmask_offset_1))
-            & (np.abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
-            ddt_vn_apc
-            + difcoef
-            * area_edge
-            * (
-                np.sum(geofac_grdiv * vn[mesh.e2c2eO], axis=1)
-                + tangent_orientation
-                * inv_primal_edge_length
-                * (zeta[mesh.e2v][:, 1] - zeta[mesh.e2v][:, 0])
-            ),
-            ddt_vn_apc,
-        )
+    ) -> dict :
+        ddt_vn_apc = mo_velocity_advection_stencil_20_numpy( mesh, levelmask, c_lin_e, z_w_con_c_full, ddqz_z_full_e, area_edge, tangent_orientation, inv_primal_edge_length, zeta, geofac_grdiv, vn, ddt_vn_apc, cfl_w_limit, scalfac_exdiff, dtime )
         return dict(ddt_vn_apc=ddt_vn_apc)
