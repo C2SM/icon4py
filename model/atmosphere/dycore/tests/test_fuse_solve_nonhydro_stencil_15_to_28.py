@@ -31,14 +31,18 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
+    flatten_first_two_dims,
     random_field,
     random_mask,
     zero_field,
 )
-from model.common.src.icon4py.model.common.test_utils.helpers import flatten_first_two_dims
 
-from .stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import mo_math_gradients_grad_green_gauss_cell_dsl_numpy
-from .stencil_tests.test_mo_solve_nonhydro_4th_order_divdamp import mo_solve_nonhydro_4th_order_divdamp_numpy
+from .stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
+    mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
+)
+from .stencil_tests.test_mo_solve_nonhydro_4th_order_divdamp import (
+    mo_solve_nonhydro_4th_order_divdamp_numpy,
+)
 from .stencil_tests.test_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy,
 )
@@ -260,7 +264,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 ),
                 z_gradh_exner,
             )
-            print("1")
+
             if igradp_method == 3:
                 # horizontal gradient of Exner pressure, including metric correction
                 # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
@@ -322,7 +326,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(
                 np.asarray(z_hydro_corr)[:, nlev - 1]
             )
-            print("2")
+
             if igradp_method == 3:
                 z_gradh_exner = np.where(
                     (horizontal_lower_3 < horz_idx)
@@ -410,7 +414,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     ),
                     vn,
                 )
-            print("3")
+
             if lhdiff_rcf and (divdamp_order == 24 or divdamp_order == 4):
                 # verified for e-10
                 z_graddiv2_vn = np.where(
@@ -473,7 +477,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                             ),
                             vn,
                         )
-            print("4")
+
             if is_iau_active:
                 vn = np.where(
                     (horizontal_lower < horz_idx)
