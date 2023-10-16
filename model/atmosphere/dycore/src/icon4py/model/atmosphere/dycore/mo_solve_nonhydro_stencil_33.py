@@ -16,21 +16,22 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_33() -> (
-    tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]
+    tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]
 ):
-    vn_traj = broadcast(0.0, (EdgeDim, KDim))
-    mass_flx_me = broadcast(0.0, (EdgeDim, KDim))
-    return vn_traj, mass_flx_me
+    vn_traj_wp = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
+    mass_flx_me_wp = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
+    return vn_traj_wp, mass_flx_me_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_33(
-    vn_traj: Field[[EdgeDim, KDim], float],
-    mass_flx_me: Field[[EdgeDim, KDim], float],
+    vn_traj: Field[[EdgeDim, KDim], wpfloat],
+    mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

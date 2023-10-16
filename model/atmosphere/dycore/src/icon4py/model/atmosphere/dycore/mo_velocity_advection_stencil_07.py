@@ -13,36 +13,42 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_velocity_advection_stencil_07(
-    vn_ie: Field[[EdgeDim, KDim], float],
-    inv_dual_edge_length: Field[[EdgeDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    tangent_orientation: Field[[EdgeDim], float],
-    z_w_v: Field[[VertexDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    return vn_ie * inv_dual_edge_length * (
+    vn_ie: Field[[EdgeDim, KDim], vpfloat],
+    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_vt_ie: Field[[EdgeDim, KDim], vpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    tangent_orientation: Field[[EdgeDim], wpfloat],
+    z_w_v: Field[[VertexDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    z_vt_ie_wp, vn_ie_wp = astype((z_vt_ie, vn_ie), wpfloat)
+
+    z_v_grad_w_wp = vn_ie_wp * inv_dual_edge_length * (
         w(E2C[0]) - w(E2C[1])
-    ) + z_vt_ie * inv_primal_edge_length * tangent_orientation * (z_w_v(E2V[0]) - z_w_v(E2V[1]))
+    ) + z_vt_ie_wp * inv_primal_edge_length * tangent_orientation * astype(
+        z_w_v(E2V[0]) - z_w_v(E2V[1]), wpfloat
+    )
+    return astype(z_v_grad_w_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_07(
-    vn_ie: Field[[EdgeDim, KDim], float],
-    inv_dual_edge_length: Field[[EdgeDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    tangent_orientation: Field[[EdgeDim], float],
-    z_w_v: Field[[VertexDim, KDim], float],
-    z_v_grad_w: Field[[EdgeDim, KDim], float],
+    vn_ie: Field[[EdgeDim, KDim], vpfloat],
+    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_vt_ie: Field[[EdgeDim, KDim], vpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    tangent_orientation: Field[[EdgeDim], wpfloat],
+    z_w_v: Field[[VertexDim, KDim], vpfloat],
+    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

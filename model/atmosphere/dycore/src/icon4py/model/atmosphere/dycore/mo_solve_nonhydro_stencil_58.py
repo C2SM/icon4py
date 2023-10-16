@@ -16,29 +16,30 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_58(
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    w: Field[[CellDim, KDim], float],
-    mass_flx_ic: Field[[CellDim, KDim], float],
-    r_nsubsteps: float,
-) -> Field[[CellDim, KDim], float]:
-    mass_flx_ic = mass_flx_ic + (r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w))
-    return mass_flx_ic
+    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
+    rho_ic: Field[[CellDim, KDim], wpfloat],
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    mass_flx_ic: Field[[CellDim, KDim], wpfloat],
+    r_nsubsteps: wpfloat,
+) -> Field[[CellDim, KDim], wpfloat]:
+    mass_flx_ic_wp = mass_flx_ic + (r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w))
+    return mass_flx_ic_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_58(
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    w: Field[[CellDim, KDim], float],
-    mass_flx_ic: Field[[CellDim, KDim], float],
-    r_nsubsteps: float,
+    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
+    rho_ic: Field[[CellDim, KDim], wpfloat],
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    mass_flx_ic: Field[[CellDim, KDim], wpfloat],
+    r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

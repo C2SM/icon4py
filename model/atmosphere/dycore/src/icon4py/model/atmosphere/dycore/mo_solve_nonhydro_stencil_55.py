@@ -13,59 +13,73 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_55(
-    z_rho_expl: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_exner_expl: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    rho_now: Field[[CellDim, KDim], float],
-    theta_v_now: Field[[CellDim, KDim], float],
-    exner_now: Field[[CellDim, KDim], float],
-    dtime: float,
-    cvd_o_rd: float,
+    z_rho_expl: Field[[CellDim, KDim], wpfloat],
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    rho_ic: Field[[CellDim, KDim], wpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_exner_expl: Field[[CellDim, KDim], wpfloat],
+    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    z_alpha: Field[[CellDim, KDim], vpfloat],
+    z_beta: Field[[CellDim, KDim], vpfloat],
+    rho_now: Field[[CellDim, KDim], wpfloat],
+    theta_v_now: Field[[CellDim, KDim], wpfloat],
+    exner_now: Field[[CellDim, KDim], wpfloat],
+    dtime: wpfloat,
+    cvd_o_rd: wpfloat,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], wpfloat],
+    Field[[CellDim, KDim], wpfloat],
+    Field[[CellDim, KDim], wpfloat],
 ]:
-    rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
+    inv_ddqz_z_full_wp, exner_ref_mc_wp, z_alpha_wp, z_beta_wp = astype(
+        (inv_ddqz_z_full, exner_ref_mc, z_alpha, z_beta), wpfloat
+    )
+
+    rho_new_wp = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full_wp * (
         rho_ic * w - rho_ic(Koff[1]) * w(Koff[1])
     )
-    exner_new = z_exner_expl + exner_ref_mc - z_beta * (z_alpha * w - z_alpha(Koff[1]) * w(Koff[1]))
-    theta_v_new = rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new
-    return rho_new, exner_new, theta_v_new
+    exner_new_wp = (
+        z_exner_expl
+        + exner_ref_mc_wp
+        - z_beta_wp * (z_alpha_wp * w - z_alpha_wp(Koff[1]) * w(Koff[1]))
+    )
+    theta_v_new_wp = (
+        rho_now
+        * theta_v_now
+        * ((exner_new_wp / exner_now - wpfloat("1.0")) * cvd_o_rd + wpfloat("1.0"))
+        / rho_new_wp
+    )
+    return rho_new_wp, exner_new_wp, theta_v_new_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_55(
-    z_rho_expl: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_exner_expl: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    rho_now: Field[[CellDim, KDim], float],
-    theta_v_now: Field[[CellDim, KDim], float],
-    exner_now: Field[[CellDim, KDim], float],
-    rho_new: Field[[CellDim, KDim], float],
-    exner_new: Field[[CellDim, KDim], float],
-    theta_v_new: Field[[CellDim, KDim], float],
-    dtime: float,
-    cvd_o_rd: float,
+    z_rho_expl: Field[[CellDim, KDim], wpfloat],
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    rho_ic: Field[[CellDim, KDim], wpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_exner_expl: Field[[CellDim, KDim], wpfloat],
+    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    z_alpha: Field[[CellDim, KDim], vpfloat],
+    z_beta: Field[[CellDim, KDim], vpfloat],
+    rho_now: Field[[CellDim, KDim], wpfloat],
+    theta_v_now: Field[[CellDim, KDim], wpfloat],
+    exner_now: Field[[CellDim, KDim], wpfloat],
+    rho_new: Field[[CellDim, KDim], wpfloat],
+    exner_new: Field[[CellDim, KDim], wpfloat],
+    theta_v_new: Field[[CellDim, KDim], wpfloat],
+    dtime: wpfloat,
+    cvd_o_rd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

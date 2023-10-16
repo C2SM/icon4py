@@ -13,27 +13,32 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_56_63(
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_dwdz_dd = inv_ddqz_z_full * ((w - w(Koff[1])) - (w_concorr_c - w_concorr_c(Koff[1])))
-    return z_dwdz_dd
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
+
+    z_dwdz_dd_wp = inv_ddqz_z_full_wp * (
+        (w - w(Koff[1])) - astype(w_concorr_c - w_concorr_c(Koff[1]), wpfloat)
+    )
+    return astype(z_dwdz_dd_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_56_63(
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    z_dwdz_dd: Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_dwdz_dd: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -13,30 +13,36 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_velocity_advection_stencil_16(
-    z_w_con_c: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    coeff1_dwdz: Field[[CellDim, KDim], float],
-    coeff2_dwdz: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    ddt_w_adv = -z_w_con_c * (
-        w(Koff[-1]) * coeff1_dwdz - w(Koff[1]) * coeff2_dwdz + w * (coeff2_dwdz - coeff1_dwdz)
+    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
+    coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    z_w_con_c_wp = astype(z_w_con_c, wpfloat)
+    coeff1_dwdz_wp, coeff2_dwdz_wp = astype((coeff1_dwdz, coeff2_dwdz), wpfloat)
+
+    ddt_w_adv_wp = -z_w_con_c_wp * (
+        w(Koff[-1]) * coeff1_dwdz_wp
+        - w(Koff[1]) * coeff2_dwdz_wp
+        + w * astype(coeff2_dwdz - coeff1_dwdz, wpfloat)
     )
-    return ddt_w_adv
+    return astype(ddt_w_adv_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_16(
-    z_w_con_c: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    coeff1_dwdz: Field[[CellDim, KDim], float],
-    coeff2_dwdz: Field[[CellDim, KDim], float],
-    ddt_w_adv: Field[[CellDim, KDim], float],
+    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
+    coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
+    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
 ):
     _mo_velocity_advection_stencil_16(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz, out=ddt_w_adv[:, 1:])

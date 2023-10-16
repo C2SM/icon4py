@@ -13,25 +13,29 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_18(
-    inv_dual_edge_length: Field[[EdgeDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    z_gradh_exner = inv_dual_edge_length * (z_exner_ex_pr(E2C[1]) - z_exner_ex_pr(E2C[0]))
-    return z_gradh_exner
+    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+
+    z_gradh_exner_wp = inv_dual_edge_length * astype(
+        z_exner_ex_pr(E2C[1]) - z_exner_ex_pr(E2C[0]), wpfloat
+    )
+    return astype(z_gradh_exner_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_18(
-    inv_dual_edge_length: Field[[EdgeDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-    z_gradh_exner: Field[[EdgeDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

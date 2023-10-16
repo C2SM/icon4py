@@ -16,21 +16,22 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_05(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_exner_ic = wgtfac_c * z_exner_ex_pr + (1.0 - wgtfac_c) * z_exner_ex_pr(Koff[-1])
-    return z_exner_ic
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    z_exner_ic_vp = wgtfac_c * z_exner_ex_pr + (vpfloat("1.0") - wgtfac_c) * z_exner_ex_pr(Koff[-1])
+    return z_exner_ic_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_05(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-    z_exner_ic: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+    z_exner_ic: Field[[CellDim, KDim], vpfloat],
 ):
     _mo_solve_nonhydro_stencil_05(wgtfac_c, z_exner_ex_pr, out=z_exner_ic[:, 1:])

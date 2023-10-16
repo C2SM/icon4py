@@ -21,34 +21,35 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
     _temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_diagnostic_quantities_for_turbulence(
-    kh_smag_ec: Field[[EdgeDim, KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CEDim], float],
-    geofac_div: Field[[CEDim], float],
-    diff_multfac_smag: Field[[KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    geofac_div: Field[[CEDim], wpfloat],
+    diff_multfac_smag: Field[[KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
     kh_c, div = _temporary_fields_for_turbulence_diagnostics(
         kh_smag_ec, vn, e_bln_c_s, geofac_div, diff_multfac_smag
     )
-    div_ic, hdef_ic = _calculate_diagnostics_for_turbulence(div, kh_c, wgtfac_c)
-    return div_ic, hdef_ic
+    div_ic_vp, hdef_ic_vp = _calculate_diagnostics_for_turbulence(div, kh_c, wgtfac_c)
+    return div_ic_vp, hdef_ic_vp
 
 
 @program
 def calculate_diagnostic_quantities_for_turbulence(
-    kh_smag_ec: Field[[EdgeDim, KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CEDim], float],
-    geofac_div: Field[[CEDim], float],
-    diff_multfac_smag: Field[[KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    div_ic: Field[[CellDim, KDim], float],
-    hdef_ic: Field[[CellDim, KDim], float],
+    kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    geofac_div: Field[[CEDim], wpfloat],
+    diff_multfac_smag: Field[[KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    div_ic: Field[[CellDim, KDim], vpfloat],
+    hdef_ic: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -15,22 +15,23 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_airmass(
-    rho_in: Field[[CellDim, KDim], float],
-    ddqz_z_full_in: Field[[CellDim, KDim], float],
-    deepatmo_t1mc_in: Field[[KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    rho_in: Field[[CellDim, KDim], wpfloat],
+    ddqz_z_full_in: Field[[CellDim, KDim], wpfloat],
+    deepatmo_t1mc_in: Field[[KDim], wpfloat],
+) -> Field[[CellDim, KDim], wpfloat]:
     return rho_in * ddqz_z_full_in * deepatmo_t1mc_in
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_airmass(
-    rho_in: Field[[CellDim, KDim], float],
-    ddqz_z_full_in: Field[[CellDim, KDim], float],
-    deepatmo_t1mc_in: Field[[KDim], float],
-    airmass_out: Field[[CellDim, KDim], float],
+    rho_in: Field[[CellDim, KDim], wpfloat],
+    ddqz_z_full_in: Field[[CellDim, KDim], wpfloat],
+    deepatmo_t1mc_in: Field[[KDim], wpfloat],
+    airmass_out: Field[[CellDim, KDim], wpfloat],
 ):
     _compute_airmass(rho_in, ddqz_z_full_in, deepatmo_t1mc_in, out=airmass_out)

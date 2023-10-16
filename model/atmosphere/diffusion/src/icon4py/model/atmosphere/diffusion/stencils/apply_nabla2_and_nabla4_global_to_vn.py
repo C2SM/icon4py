@@ -13,32 +13,37 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _apply_nabla2_and_nabla4_global_to_vn(
-    area_edge: Field[[EdgeDim], float],
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    z_nabla4_e2: Field[[EdgeDim, KDim], float],
-    diff_multfac_vn: Field[[KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    vn = vn + area_edge * (kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge)
-    return vn
+    area_edge: Field[[EdgeDim], wpfloat],
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
+    diff_multfac_vn: Field[[KDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    kh_smag_e_wp, z_nabla4_e2_wp = astype((kh_smag_e, z_nabla4_e2), wpfloat)
+
+    vn_wp = vn + area_edge * (
+        kh_smag_e_wp * z_nabla2_e - diff_multfac_vn * z_nabla4_e2_wp * area_edge
+    )
+    return vn_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def apply_nabla2_and_nabla4_global_to_vn(
-    area_edge: Field[[EdgeDim], float],
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    z_nabla4_e2: Field[[EdgeDim, KDim], float],
-    diff_multfac_vn: Field[[KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
+    area_edge: Field[[EdgeDim], wpfloat],
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
+    diff_multfac_vn: Field[[KDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
 ):
     _apply_nabla2_and_nabla4_global_to_vn(
         area_edge,

@@ -11,9 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+from typing import TypeAlias
 
 from gt4py.next.ffront.fbuiltins import float32, float64
-from typing import TypeAlias
+
 
 wpfloat: TypeAlias = float64
 
@@ -23,4 +24,4 @@ if precision == "double":
 elif precision == "mixed":
     vpfloat: TypeAlias = float32
 else:
-    raise ValueError("Only 'mixed' and 'double' precision are supported.")
+    raise ValueError("Only 'double' and 'mixed' precision are supported.")

@@ -16,20 +16,21 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
 def _mo_velocity_advection_stencil_13(
-    z_w_con_c: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_w_con_c = z_w_con_c - w_concorr_c
-    return z_w_con_c
+    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    z_w_con_c_vp = z_w_con_c - w_concorr_c
+    return z_w_con_c_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_13(
-    w_concorr_c: Field[[CellDim, KDim], float],
-    z_w_con_c: Field[[CellDim, KDim], float],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: Field[[CellDim, KDim], vpfloat],
 ):
     _mo_velocity_advection_stencil_13(z_w_con_c, w_concorr_c, out=z_w_con_c)

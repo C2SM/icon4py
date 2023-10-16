@@ -16,20 +16,21 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, max_over, maximum
 
 from icon4py.model.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
 def _enhance_diffusion_coefficient_for_grid_point_cold_pools(
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    enh_diffu_3d: Field[[CellDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    kh_smag_e = maximum(kh_smag_e, max_over(enh_diffu_3d(E2C), axis=E2CDim))
-    return kh_smag_e
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    enh_diffu_3d: Field[[CellDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    kh_smag_e_vp = maximum(kh_smag_e, max_over(enh_diffu_3d(E2C), axis=E2CDim))
+    return kh_smag_e_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def enhance_diffusion_coefficient_for_grid_point_cold_pools(
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    enh_diffu_3d: Field[[CellDim, KDim], float],
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    enh_diffu_3d: Field[[CellDim, KDim], vpfloat],
 ):
     _enhance_diffusion_coefficient_for_grid_point_cold_pools(kh_smag_e, enh_diffu_3d, out=kh_smag_e)
