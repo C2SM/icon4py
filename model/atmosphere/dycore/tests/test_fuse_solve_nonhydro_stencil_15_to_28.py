@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next import np_as_located_field
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
 from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_15_to_28 import (
     fused_solve_nonhydro_stencil_15_to_28,
@@ -58,7 +59,7 @@ from .test_mo_solve_nonhydro_stencil_28 import mo_solve_nonhydro_stencil_28_nump
 
 
 class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
-    PROGRAM = fused_solve_nonhydro_stencil_15_to_28
+    PROGRAM = fused_solve_nonhydro_stencil_15_to_28.with_backend(run_gtfn)
     OUTPUTS = ("z_rho_e", "z_theta_v_e", "z_gradh_exner", "vn", "z_graddiv_vn")
 
     @classmethod
@@ -261,7 +262,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 ),
                 z_gradh_exner,
             )
-
+            print("1")
             if igradp_method == 3:
                 # horizontal gradient of Exner pressure, including metric correction
                 # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
@@ -323,7 +324,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(
                 np.asarray(z_hydro_corr)[:, nlev - 1]
             )
-
+            print("2")
             if igradp_method == 3:
                 z_gradh_exner = np.where(
                     (horizontal_lower_3 < horz_idx)
@@ -411,7 +412,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     ),
                     vn,
                 )
-
+            print("3")
             if lhdiff_rcf and (divdamp_order == 24 or divdamp_order == 4):
                 # verified for e-10
                 z_graddiv2_vn = np.where(
@@ -474,7 +475,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                             ),
                             vn,
                         )
-
+            print("4")
             if is_iau_active:
                 vn = np.where(
                     (horizontal_lower < horz_idx)
@@ -577,7 +578,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         scal_divdamp_o2 = 194588.14247428576
         limited_area = True
         itime_scheme = 4
-        istep = 1
+        istep = 2
         horizontal_lower = 5387
         horizontal_upper = 31558
         horizontal_lower_00 = 31558
