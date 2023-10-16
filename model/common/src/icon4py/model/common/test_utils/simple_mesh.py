@@ -21,6 +21,7 @@ from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    CECDim,
     CEDim,
     CECDim,
     CellDim,
@@ -516,4 +517,5 @@ class SimpleMesh:
             "C2E2C2E2C": self.get_c2e2c2e2c_offset_provider(),
             "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, self.n_e2c2v),
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, self.n_e2c),
+            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, self.n_c2e2c),
         }

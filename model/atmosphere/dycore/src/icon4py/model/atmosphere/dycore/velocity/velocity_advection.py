@@ -59,12 +59,12 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
 cached_backend = run_gtfn_cached

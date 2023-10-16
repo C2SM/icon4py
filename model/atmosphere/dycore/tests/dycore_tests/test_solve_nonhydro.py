@@ -21,12 +21,12 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import (
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -131,7 +131,6 @@ def test_nonhydro_predictor_step(
     prognostic_state_nnow = PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),
-        exner_pressure=None,
         theta_v=sp.theta_v_now(),
         rho=sp.rho_now(),
         exner=sp.exner_now(),
@@ -140,7 +139,6 @@ def test_nonhydro_predictor_step(
     prognostic_state_nnew = PrognosticState(
         w=sp.w_new(),
         vn=sp.vn_new(),
-        exner_pressure=None,
         theta_v=sp.theta_v_new(),
         rho=sp.rho_new(),
         exner=sp.exner_new(),
@@ -526,7 +524,6 @@ def test_nonhydro_corrector_step(
     prognostic_state_nnow = PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),
-        exner_pressure=None,
         theta_v=sp.theta_v_now(),
         rho=sp.rho_now(),
         exner=sp.exner_now(),
@@ -535,7 +532,6 @@ def test_nonhydro_corrector_step(
     prognostic_state_nnew = PrognosticState(
         w=sp.w_new(),
         vn=sp.vn_new(),
-        exner_pressure=None,
         theta_v=sp.theta_v_new(),
         rho=sp.rho_new(),
         exner=sp.exner_new(),
@@ -750,7 +746,6 @@ def test_run_solve_nonhydro_single_step(
     prognostic_state_nnow = PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),
-        exner_pressure=None,
         theta_v=sp.theta_v_now(),
         rho=sp.rho_now(),
         exner=sp.exner_now(),
@@ -759,7 +754,6 @@ def test_run_solve_nonhydro_single_step(
     prognostic_state_nnew = PrognosticState(
         w=sp.w_new(),
         vn=sp.vn_new(),
-        exner_pressure=None,
         theta_v=sp.theta_v_new(),
         rho=sp.rho_new(),
         exner=sp.exner_new(),
@@ -927,7 +921,6 @@ def test_run_solve_nonhydro_multi_step(
     prognostic_state_nnow = PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),
-        exner_pressure=None,
         theta_v=sp.theta_v_now(),
         rho=sp.rho_now(),
         exner=sp.exner_now(),
@@ -936,7 +929,6 @@ def test_run_solve_nonhydro_multi_step(
     prognostic_state_nnew = PrognosticState(
         w=sp.w_new(),
         vn=sp.vn_new(),
-        exner_pressure=None,
         theta_v=sp.theta_v_new(),
         rho=sp.rho_new(),
         exner=sp.exner_new(),

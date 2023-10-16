@@ -28,6 +28,15 @@ from icon4py.model.common.decomposition.definitions import (
 )
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401 # import fixtures from test_utils
+    data_provider,
+    datapath,
+    decomposition_info,
+    download_ser_data,
+    grid_savepoint,
+    icon_grid,
+    ranked_data_path,
+)
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
     processor_props,
@@ -66,9 +75,9 @@ def test_decomposition_info_masked(
     owned,
     total,
     caplog,
-    download_ser_data,
-    decomposition_info,
-    processor_props,  # noqa: F811  # fixture
+    download_ser_data,  # noqa: F811 # fixture
+    decomposition_info,  # noqa: F811 # fixture
+    processor_props,  # noqa: F811 # fixture
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
@@ -85,7 +94,6 @@ def test_decomposition_info_masked(
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
 
 
-# @pytest.mark.skipif(props.comm_size != 2, reason="runs on 2 nodes only")
 def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
     owned_list = owned_indices.tolist()
     halos_list = halo_indices.tolist()
@@ -112,8 +120,9 @@ def test_decomposition_info_local_index(
     owned,
     total,
     caplog,
-    decomposition_info,
-    processor_props,  # noqa: F811  # fixture
+    download_ser_data,  # noqa: F811 #fixture
+    decomposition_info,  # noqa: F811 #fixture
+    processor_props,  # noqa: F811 #fixture
 ):
     check_comm_size(processor_props, sizes=[2])
     my_rank = processor_props.rank
@@ -162,10 +171,10 @@ def test_domain_descriptor_id_are_globally_unique(num, processor_props):  # noqa
 @pytest.mark.datatest
 def test_decomposition_info_matches_gridsize(
     caplog,
-    download_ser_data,
-    decomposition_info,
-    icon_grid,
-    processor_props,  # noqa: F811  # fixture
+    download_ser_data,  # noqa: F811 #fixture
+    decomposition_info,  # noqa: F811 #fixture
+    icon_grid,  # noqa: F811 #fixture
+    processor_props,  # noqa: F811 #fixture
 ):
     check_comm_size(processor_props)
     assert (
@@ -195,3 +204,13 @@ def test_create_multi_node_runtime_with_mpi(
         assert isinstance(exchange, GHexMultiNodeExchange)
     else:
         assert isinstance(exchange, SingleNodeExchange)
+
+
+@pytest.mark.parametrize("processor_props", [False], indirect=True)
+def test_create_single_node_runtime_without_mpi(
+    processor_props, decomposition_info  # noqa: F811 # fixture
+):
+    props = processor_props
+    exchange = create_exchange(props, decomposition_info)
+
+    assert isinstance(exchange, SingleNodeExchange)

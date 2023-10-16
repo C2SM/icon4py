@@ -142,7 +142,6 @@ from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import Inte
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.prognostic_state import PrognosticState
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
@@ -159,6 +158,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
 class NonHydrostaticConfig:
@@ -424,7 +424,6 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
         _calculate_bdy_divdamp(
             self.scal_divdamp,
@@ -1369,10 +1368,10 @@ class SolveNonhydro:
             mo_solve_nonhydro_stencil_59.with_backend(run_gtfn)(
                 exner=prognostic_state[nnow].exner,
                 exner_dyn_incr=self.exner_dyn_incr,
-                cell_startindex_nudging_plus1=indices_10_1,
-                cell_endindex_interior=indices_10_2,
-                kstart_moist=params.kstart_moist,
-                nlev=self.grid.n_lev(),
+                horizontal_start=indices_10_1,
+                horizontal_end=indices_10_2,
+                vertical_start=params.kstart_moist,
+                vertical_end=self.grid.n_lev(),
                 offset_provider={},
             )
 
