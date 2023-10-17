@@ -26,7 +26,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
     _mo_velocity_advection_stencil_18,
 )
-from icon4py.model.common.dimension import C2E2CODim, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2E2CODim, C2EDim, CellDim, EdgeDim, KDim, CEDim
 
 
 @field_operator
@@ -36,7 +36,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     coeff1_dwdz: Field[[CellDim, KDim], float],
     coeff2_dwdz: Field[[CellDim, KDim], float],
     ddt_w_adv: Field[[CellDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     z_v_grad_w: Field[[EdgeDim, KDim], float],
     levelmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
@@ -101,7 +101,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     coeff1_dwdz: Field[[CellDim, KDim], float],
     coeff2_dwdz: Field[[CellDim, KDim], float],
     ddt_w_adv: Field[[CellDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     z_v_grad_w: Field[[EdgeDim, KDim], float],
     levelmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
@@ -162,7 +162,7 @@ def fused_velocity_advection_stencil_15_to_18(
     coeff1_dwdz: Field[[CellDim, KDim], float],
     coeff2_dwdz: Field[[CellDim, KDim], float],
     ddt_w_adv: Field[[CellDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
+    e_bln_c_s: Field[[CEDim], float],
     z_v_grad_w: Field[[EdgeDim, KDim], float],
     levelmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],

@@ -21,6 +21,21 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_velocity_advection_stencil_16_numpy(
+    z_w_con_c: np.array,
+    w: np.array,
+    coeff1_dwdz: np.array,
+    coeff2_dwdz: np.array,
+    **kwargs,
+) -> np.array:
+    ddt_w_adv = np.zeros_like(coeff1_dwdz)
+    ddt_w_adv[:, 1:] = -z_w_con_c[:, 1:] * (
+        w[:, :-2] * coeff1_dwdz[:, 1:]
+        - w[:, 2:] * coeff2_dwdz[:, 1:]
+        + w[:, 1:-1] * (coeff2_dwdz[:, 1:] - coeff1_dwdz[:, 1:])
+    )
+    return ddt_w_adv
+
 class TestMoVelocityAdvectionStencil16(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_16
     OUTPUTS = ("ddt_w_adv",)
@@ -34,12 +49,7 @@ class TestMoVelocityAdvectionStencil16(StencilTest):
         coeff2_dwdz: np.array,
         **kwargs,
     ) -> dict:
-        ddt_w_adv = np.zeros_like(coeff1_dwdz)
-        ddt_w_adv[:, 1:] = -z_w_con_c[:, 1:] * (
-            w[:, :-2] * coeff1_dwdz[:, 1:]
-            - w[:, 2:] * coeff2_dwdz[:, 1:]
-            + w[:, 1:-1] * (coeff2_dwdz[:, 1:] - coeff1_dwdz[:, 1:])
-        )
+        ddt_w_adv = mo_velocity_advection_stencil_16_numpy(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz)
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture

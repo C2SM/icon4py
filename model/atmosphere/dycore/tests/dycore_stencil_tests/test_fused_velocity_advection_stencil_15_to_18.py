@@ -18,12 +18,13 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_15_to_18 import (
     fused_velocity_advection_stencil_15_to_18,
 )
-from icon4py.model.common.dimension import C2E2CODim, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2E2CODim, C2EDim, CellDim, EdgeDim, KDim, CEDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     random_field,
     random_mask,
     zero_field,
+    as_1D_sparse_field
 )
 
 from .test_mo_velocity_advection_stencil_15 import mo_velocity_advection_stencil_15_numpy
@@ -182,7 +183,9 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         coeff2_dwdz = random_field(mesh, CellDim, KDim)
 
         z_v_grad_w = random_field(mesh, EdgeDim, KDim)
-        e_bln_c_s = random_field(mesh, CellDim, C2EDim)
+        # e_bln_c_s = random_field(mesh, CEDim)
+        e_bln_c_s = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
+
 
         levelmask = random_mask(mesh, KDim)
         cfl_clipping = random_mask(mesh, CellDim, KDim)
