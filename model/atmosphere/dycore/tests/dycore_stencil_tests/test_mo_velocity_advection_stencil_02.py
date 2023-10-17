@@ -22,33 +22,39 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-def _mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e: np.array, vn: np.array) -> np.array:
+
+def mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e: np.array, vn: np.array) -> np.array:
     vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
     vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
     vn_ie[:, 0] = 0
     return vn_ie
 
 
-def _mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn: np.array, vt: np.array) -> np.array:
+def mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn: np.array, vt: np.array) -> np.array:
     z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
     z_kin_hor_e[:, 0] = 0
     return z_kin_hor_e
 
 
-def mo_velocity_advection_stencil_02_numpy(wgtfac_e: np.array, vn: np.array, vt: np.array):
-    vn_ie = _mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
-    z_kin_hor_e = _mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
-    return vn_ie, z_kin_hor_e
+def mo_velocity_advection_stencil_02_numpy(mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> tuple:
+    vn_ie = mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
+    z_kin_hor_e = mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
+    return ( vn_ie, z_kin_hor_e, )
 
 
 class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_02
     OUTPUTS = ("vn_ie", "z_kin_hor_e")
 
+
+
     @classmethod
     def reference(cls, mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> dict:
-        vn_ie, z_kin_hor_e = mo_velocity_advection_stencil_02_numpy(wgtfac_e, vn, vt)
-        return dict(vn_ie=vn_ie, z_kin_hor_e=z_kin_hor_e)
+        vn_ie, z_kin_hor_e = mo_velocity_advection_stencil_02_numpy(mesh, wgtfac_e, vn, vt)
+        return dict(
+            vn_ie=vn_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+        )
 
     @pytest.fixture
     def input_data(self, mesh):

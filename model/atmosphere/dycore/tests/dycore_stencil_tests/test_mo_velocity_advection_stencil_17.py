@@ -22,10 +22,13 @@ from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_fi
 
 
 def mo_velocity_advection_stencil_17_numpy(
-    mesh, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array
+    mesh, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    ddt_w_adv = ddt_w_adv + np.sum(z_v_grad_w[mesh.c2e] * e_bln_c_s, axis=1)
+    ddt_w_adv = ddt_w_adv + np.sum(
+        z_v_grad_w[mesh.c2e] * e_bln_c_s[mesh.get_c2ce_offset_provider().table],
+        axis=1,
+    )
     return ddt_w_adv
 
 
@@ -36,7 +39,7 @@ class TestMoVelocityAdvectionStencil17(StencilTest):
     @staticmethod
     def reference(
         mesh, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
-    ) -> dict:
+    ) -> np.array:
         ddt_w_adv = mo_velocity_advection_stencil_17_numpy(mesh, e_bln_c_s, z_v_grad_w, ddt_w_adv)
         return dict(ddt_w_adv=ddt_w_adv)
 
