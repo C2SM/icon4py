@@ -48,6 +48,7 @@ def test_velocity_init(
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        edge_params=grid_savepoint.construct_edge_geometry(),
     )
 
     assert dallclose(0.0, np.asarray(velocity_advection.cfl_clipping))
@@ -84,6 +85,7 @@ def test_verify_velocity_init_against_regular_savepoint(
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        edge_params=grid_savepoint.construct_edge_geometry(),
     )
 
     assert savepoint.cfl_w_limit() == velocity_advection.cfl_w_limit / dtime
@@ -113,7 +115,6 @@ def test_velocity_predictor_step(
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
-    scalfac_exdiff = sp_v.scalfac_exdiff()
 
     diagnostic_state = DiagnosticStateNonHydro(
         vt=sp_v.vt(),
@@ -163,6 +164,7 @@ def test_velocity_predictor_step(
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        edge_params=grid_savepoint.construct_edge_geometry(),
     )
 
     velocity_advection.run_predictor_step(
@@ -172,15 +174,10 @@ def test_velocity_predictor_step(
         z_w_concorr_me=sp_v.z_w_concorr_me(),
         z_kin_hor_e=sp_v.z_kin_hor_e(),
         z_vt_ie=sp_v.z_vt_ie(),
-        inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-        inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
         dtime=dtime,
         ntnd=ntnd - 1,
-        tangent_orientation=edge_geometry.tangent_orientation,
         cell_areas=cell_geometry.area,
         owner_mask=grid_savepoint.c_owner_mask(),
-        f_e=grid_savepoint.f_e(),
-        area_edge=edge_geometry.edge_areas,
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd)
@@ -321,6 +318,7 @@ def test_velocity_corrector_step(
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        edge_params=edge_geometry,
     )
 
     velocity_advection.run_corrector_step(
@@ -329,17 +327,10 @@ def test_velocity_corrector_step(
         prognostic_state=prognostic_state,
         z_kin_hor_e=sp_v.z_kin_hor_e(),
         z_vt_ie=sp_v.z_vt_ie(),
-        inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-        inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
         dtime=dtime,
         ntnd=ntnd - 1,
-        tangent_orientation=edge_geometry.tangent_orientation,
-        cfl_w_limit=sp_v.cfl_w_limit(),
-        scalfac_exdiff=scalfac_exdiff,
         cell_areas=cell_geometry.area,
         owner_mask=grid_savepoint.c_owner_mask(),
-        f_e=grid_savepoint.f_e(),
-        area_edge=edge_geometry.edge_areas,
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd)
