@@ -111,13 +111,11 @@ def test_velocity_predictor_step(
     icon_grid,
     grid_savepoint,
     savepoint_velocity_init,
-    data_provider,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_velocity_exit,
 ):
     sp_v = savepoint_velocity_init
-    sp_d = data_provider.from_savepoint_grid()
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
@@ -185,11 +183,9 @@ def test_velocity_predictor_step(
         dtime=dtime,
         ntnd=ntnd - 1,
         tangent_orientation=edge_geometry.tangent_orientation,
-        cfl_w_limit=sp_v.cfl_w_limit(),
-        scalfac_exdiff=scalfac_exdiff,
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.c_owner_mask(),
-        f_e=sp_d.f_e(),
+        owner_mask=grid_savepoint.c_owner_mask(),
+        f_e=grid_savepoint.f_e(),
         area_edge=edge_geometry.edge_areas,
     )
 
@@ -272,13 +268,11 @@ def test_velocity_corrector_step(
     icon_grid,
     grid_savepoint,
     savepoint_velocity_init,
-    data_provider,
     savepoint_velocity_exit,
     interpolation_savepoint,
     metrics_savepoint,
 ):
     sp_v = savepoint_velocity_init
-    sp_d = data_provider.from_savepoint_grid()
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
@@ -349,8 +343,8 @@ def test_velocity_corrector_step(
         cfl_w_limit=sp_v.cfl_w_limit(),
         scalfac_exdiff=scalfac_exdiff,
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.c_owner_mask(),
-        f_e=sp_d.f_e(),
+        owner_mask=grid_savepoint.c_owner_mask(),
+        f_e=grid_savepoint.f_e(),
         area_edge=edge_geometry.edge_areas,
     )
 
