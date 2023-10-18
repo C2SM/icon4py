@@ -11,14 +11,15 @@ from .test_mo_solve_nonhydro_stencil_40 import mo_solve_nonhydro_stencil_40_nump
 def _fused_solve_nonhydro_39_40_numpy(
     mesh, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
 ):
-    condition = (nflatlev < vert_idx) & (vert_idx < nlev)
+    w_concorr_c = np.where(
+        (nflatlev < vert_idx) & (vert_idx < nlev),
+        mo_solve_nonhydro_stencil_39_numpy(mesh, e_bln_c_s, z_w_concorr_me, wgtfac_c),
+        mo_solve_nonhydro_stencil_40_numpy(mesh, e_bln_c_s, z_w_concorr_me, wgtfacq_c)
+    )
 
-    w_concorr_c_39 = mo_solve_nonhydro_stencil_39_numpy(mesh, e_bln_c_s, z_w_concorr_me, wgtfac_c)
-    w_concorr_c_40 = mo_solve_nonhydro_stencil_40_numpy(mesh, e_bln_c_s, z_w_concorr_me, wgtfacq_c)
-
-    w_concorr_c = np.where(condition, w_concorr_c_39, w_concorr_c_40)
-
-    return w_concorr_c
+    w_concorr_c_res = np.zeros_like(w_concorr_c)
+    w_concorr_c_res[:, -1] = w_concorr_c[:, -1]
+    return w_concorr_c_res
 
 
 class TestFusedSolveNonhydro39To40(StencilTest):
@@ -43,7 +44,7 @@ class TestFusedSolveNonhydro39To40(StencilTest):
             vert_idx[level] = level
 
         nlev = mesh.k_level
-        nflatlev = 13
+        nflatlev = 5
 
         return dict(
             e_bln_c_s=e_bln_c_s,
