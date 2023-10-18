@@ -28,7 +28,6 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 @pytest.mark.datatest
@@ -92,14 +91,13 @@ def test_nonhydro_predictor_step(
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     recompute = sp_v.get_metadata("recompute").get("recompute")
     dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     linit = sp_v.get_metadata("linit").get("linit")
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
@@ -483,7 +481,6 @@ def test_nonhydro_corrector_step(
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -491,8 +488,8 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0  # TODO: @abishekg7 read from serialized data?
@@ -702,7 +699,6 @@ def test_run_solve_nonhydro_single_step(
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
@@ -710,8 +706,8 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
@@ -876,7 +872,6 @@ def test_run_solve_nonhydro_multi_step(
     )
     sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     r_nsubsteps = sp_d.get_metadata("nsteps").get("nsteps")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -885,8 +880,8 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0

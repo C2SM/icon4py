@@ -336,7 +336,7 @@ class SolveNonhydro:
 
         self._allocate_local_fields()
         self._initialized = True
-
+        # TODO (magdalena) vertical nesting only makes sense in the context of (horizontal) nesting, which we don't support.
         if self.grid.lvert_nest():
             self.l_vert_nested = True
             self.jk_start = 1
@@ -1036,9 +1036,7 @@ class SolveNonhydro:
                 },
             )
         # TODO (magdalena) what is 64 ? replace with constant or k level dependent value
-        z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(
-            np.asarray(self.z_hydro_corr)[:, 64]
-        )
+        z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(np.asarray(self.z_hydro_corr)[:, 64])
 
         if config.igradp_method == 3:
             mo_solve_nonhydro_stencil_22.with_backend(run_gtfn)(
@@ -1097,7 +1095,6 @@ class SolveNonhydro:
         handle_edge_comm = self._exchange.exchange_and_wait(
             EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e
         )
-
 
         mo_solve_nonhydro_stencil_30.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
@@ -1399,7 +1396,7 @@ class SolveNonhydro:
                 vertical_end=int32(self.grid.n_lev() + 1),
                 offset_provider={},
             )
-        #TODO (magdalena) remove if condition?
+        # TODO (magdalena) remove if condition?
         if config.lhdiff_rcf and config.divdamp_type >= 3:
             mo_solve_nonhydro_stencil_56_63.with_backend(run_gtfn)(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
@@ -1968,4 +1965,3 @@ class SolveNonhydro:
                 prognostic_state[nnew].exner,
                 prognostic_state[nnew].w,
             )
-
