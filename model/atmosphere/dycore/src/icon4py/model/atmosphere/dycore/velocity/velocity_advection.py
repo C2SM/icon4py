@@ -91,7 +91,6 @@ class VelocityAdvection:
         self.cfl_w_limit: Optional[float] = 0.65
         self.scalfac_exdiff: Optional[float] = 0.05
         self._allocate_local_fields()
-
         self._initialized = True
 
     def init(
@@ -162,32 +161,31 @@ class VelocityAdvection:
         start_edge_lb_plus4 = self.grid.get_start_index(
             EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
-        end_edge_local_minus2 = self.grid.get_end_index(
-            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
-        )
-
         start_edge_lb_plus6 = self.grid.get_start_index(
             EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
-        end_edge_local_minus1 = self.grid.get_end_index(
-            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1
-        )
-        start_cell_lb_plus3 = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
-        )
-        end_cell_local_minus1 = self.grid.get_end_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
-        )
-
-        start_cell_nudging = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.nudging(CellDim)
-        )
-        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-
         start_edge_nudging_plus1 = self.grid.get_start_index(
             EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
         )
         end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
+
+        end_edge_local_minus1 = self.grid.get_end_index(
+            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1
+        )
+        end_edge_local_minus2 = self.grid.get_end_index(
+            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
+        )
+
+        start_cell_lb_plus3 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
+        )
+        start_cell_nudging = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.nudging(CellDim)
+        )
+        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        end_cell_local_minus1 = self.grid.get_end_index(
+            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
+        )
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
@@ -499,6 +497,10 @@ class VelocityAdvection:
         start_edge_lb_plus6 = self.grid.get_start_index(
             EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
+        start_edge_nudging_plus1 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+        )
+        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
         end_edge_local_minus1 = self.grid.get_end_index(
             EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1
         )
@@ -506,17 +508,13 @@ class VelocityAdvection:
         start_cell_lb_plus3 = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
         )
-        end_cell_lb_minus1 = self.grid.get_end_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
-        )
         start_cell_nudging = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
         )
         end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-        start_edge_nudging_plus1 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+        end_cell_lb_minus1 = self.grid.get_end_index(
+            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
         )
-        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(

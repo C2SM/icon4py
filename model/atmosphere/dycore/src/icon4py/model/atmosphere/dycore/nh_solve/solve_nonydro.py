@@ -505,13 +505,17 @@ class SolveNonhydro:
             lprep_adv=lprep_adv,
         )
 
-        indices_0_1 = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
-        indices_0_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        start_cell_local_minus1 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
+        )
+        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
-        indices_1_1 = self.grid.get_start_index(
+        start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
-        indices_1_2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.nudging(CellDim) - 1)
+        end_cell_nudging_minus1 = self.grid.get_end_index(
+            CellDim, HorizontalMarkerIndex.nudging(CellDim) - 1
+        )
 
         if self.grid.limited_area():
             mo_solve_nonhydro_stencil_66.with_backend(run_gtfn)(
@@ -521,8 +525,8 @@ class SolveNonhydro:
                 exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=params.rd_o_cvd,
                 rd_o_p0ref=params.rd_o_p0ref,
-                horizontal_start=indices_0_1,
-                horizontal_end=indices_0_2,
+                horizontal_start=start_cell_local_minus1,
+                horizontal_end=end_cell_local,
                 vertical_start=0,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={},
@@ -534,8 +538,8 @@ class SolveNonhydro:
                 exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=params.rd_o_cvd,
                 rd_o_p0ref=params.rd_o_p0ref,
-                horizontal_start=indices_1_1,
-                horizontal_end=indices_1_2,
+                horizontal_start=start_cell_lb,
+                horizontal_end=end_cell_nudging_minus1,
                 vertical_start=0,
                 vertical_end=self.grid.n_lev(),
                 offset_provider={},
@@ -550,8 +554,8 @@ class SolveNonhydro:
             rho_new=prognostic_state_ls[nnew].rho,
             theta_v_new=prognostic_state_ls[nnew].theta_v,
             cvd_o_rd=params.cvd_o_rd,
-            horizontal_start=indices_0_1,
-            horizontal_end=indices_0_2,
+            horizontal_start=start_cell_local_minus1,
+            horizontal_end=end_cell_local,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={},
@@ -847,15 +851,12 @@ class SolveNonhydro:
                     "C2E2CO": self.grid.get_c2e2co_connectivity(),
                 },
             )
-
         if config.iadv_rhotheta <= 2:
             tmp_0_0 = self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
-            tmp_0_1 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 3)
-            if config.idiv_method == 1:
-                tmp_0_0 = self.grid.get_start_index(
-                    EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
-                )
-                tmp_0_1 = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
+            offset = 2 if config.idiv_method == 1 else 3
+            tmp_0_1 = self.grid.get_end_index(
+                EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - offset
+            )
 
             set_zero_e_k.with_backend(run_gtfn)(
                 field=z_fields.z_rho_e,
