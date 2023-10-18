@@ -63,7 +63,7 @@ def _fused_velocity_advection_stencil_19_to_20(
 ) -> Field[[EdgeDim, KDim], float]:
     zeta = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
 
-    ddt_vn_adv = _mo_velocity_advection_stencil_19(
+    ddt_vn_apc = _mo_velocity_advection_stencil_19(
         z_kin_hor_e,
         coeff_gradekin,
         z_ekinh,
@@ -76,7 +76,7 @@ def _fused_velocity_advection_stencil_19_to_20(
         ddqz_z_full_e,
     )
 
-    ddt_vn_adv = (
+    ddt_vn_apc = (
         where(
             maximum(2, nrdmax - 2) <= k < nlev - 3,
             _mo_velocity_advection_stencil_20(
@@ -90,18 +90,18 @@ def _fused_velocity_advection_stencil_19_to_20(
                 zeta,
                 geofac_grdiv,
                 vn,
-                ddt_vn_adv,
+                ddt_vn_apc,
                 cfl_w_limit,
                 scalfac_exdiff,
                 d_time,
             ),
-            ddt_vn_adv,
+            ddt_vn_apc,
         )
         if extra_diffu
-        else ddt_vn_adv
+        else ddt_vn_apc
     )
 
-    return ddt_vn_adv
+    return ddt_vn_apc
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -122,7 +122,7 @@ def fused_velocity_advection_stencil_19_to_20(
     tangent_orientation: Field[[EdgeDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    ddt_vn_adv: Field[[EdgeDim, KDim], float],
+    ddt_vn_apc: Field[[EdgeDim, KDim], float],
     k: Field[[KDim], int32],
     cfl_w_limit: float,
     scalfac_exdiff: float,
@@ -155,5 +155,5 @@ def fused_velocity_advection_stencil_19_to_20(
         extra_diffu,
         nlev,
         nrdmax,
-        out=ddt_vn_adv,
+        out=ddt_vn_apc,
     )
