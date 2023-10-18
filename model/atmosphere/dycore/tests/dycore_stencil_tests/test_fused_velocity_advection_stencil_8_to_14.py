@@ -18,9 +18,10 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_14 import (
     fused_velocity_advection_stencil_8_to_14,
 )
-from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim, CEDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
+    as_1D_sparse_field,
     random_field,
     random_mask,
     zero_field,
@@ -153,7 +154,7 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         istep = 1
         return dict(
             z_kin_hor_e=z_kin_hor_e,
-            e_bln_c_s=e_bln_c_s,
+            e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             w=w,
