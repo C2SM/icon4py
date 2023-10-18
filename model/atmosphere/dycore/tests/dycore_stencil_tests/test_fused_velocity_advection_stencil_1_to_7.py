@@ -73,13 +73,13 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition2 = (1 < k) & (k < nlevp1)
         vn_ie, z_kin_hor_e = np.where(
             condition2,
-            mo_velocity_advection_stencil_02_numpy(wgtfac_e, vn, vt),
+            mo_velocity_advection_stencil_02_numpy(mesh, wgtfac_e, vn, vt),
             (vn_ie, z_kin_hor_e),
         )
 
         if not lvn_only:
             z_vt_ie = np.where(
-                condition2, mo_velocity_advection_stencil_03_numpy(wgtfac_e, vt), z_vt_ie
+                condition2, mo_velocity_advection_stencil_03_numpy(mesh, wgtfac_e, vt), z_vt_ie
             )
 
         condition3 = k == 0
