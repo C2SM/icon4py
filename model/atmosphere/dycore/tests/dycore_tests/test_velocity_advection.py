@@ -24,6 +24,21 @@ from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
+def test_scalfactors(savepoint_velocity_init, icon_grid):
+    dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
+    velocity_advection = VelocityAdvection(
+        grid=icon_grid,
+        metric_state=None,
+        interpolation_state=None,
+        vertical_params=None,
+        edge_params=None,
+    )
+    (cfl_w_limit, scalfac_exdiff) = velocity_advection._scale_factors_by_dtime(dtime)
+    assert cfl_w_limit == savepoint_velocity_init.cfl_w_limit()
+    assert scalfac_exdiff == savepoint_velocity_init.scalfac_exdiff()
+
+
+@pytest.mark.datatest
 def test_velocity_init(
     savepoint_velocity_init,
     interpolation_savepoint,
@@ -164,7 +179,7 @@ def test_velocity_predictor_step(
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
-        edge_params=grid_savepoint.construct_edge_geometry(),
+        edge_params=edge_geometry,
     )
 
     velocity_advection.run_predictor_step(
@@ -267,7 +282,6 @@ def test_velocity_corrector_step(
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
-    scalfac_exdiff = sp_v.scalfac_exdiff()
 
     diagnostic_state = DiagnosticStateNonHydro(
         vt=sp_v.vt(),

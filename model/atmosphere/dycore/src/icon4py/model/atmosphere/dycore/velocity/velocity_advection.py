@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Optional
 
 import numpy as np
 from gt4py.next.common import Field
@@ -61,7 +60,7 @@ from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import Inte
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, EdgeParams
+from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
