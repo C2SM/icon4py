@@ -31,7 +31,7 @@ class IconRunConfig:
 @dataclass
 class AtmoNonHydroConfig:
 
-    # TODO ndyn_substeps is not a constant in ICON, it may be modified in restart runs.
+    # ndyn_substeps is not a constant in ICON, it may be modified in restart runs.
     ndyn_substeps: int = 5
     apply_horizontal_diff_at_large_dt: bool = True
     apply_extra_diffusion_for_largeCFL: bool = True
