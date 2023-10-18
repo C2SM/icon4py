@@ -36,6 +36,7 @@ def mo_velocity_advection_stencil_16_numpy(
     )
     return ddt_w_adv
 
+
 class TestMoVelocityAdvectionStencil16(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_16
     OUTPUTS = ("ddt_w_adv",)

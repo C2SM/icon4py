@@ -22,7 +22,6 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-
 def mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e: np.array, vn: np.array) -> np.array:
     vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
     vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
@@ -36,17 +35,20 @@ def mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn: np.array, vt: np.arra
     return z_kin_hor_e
 
 
-def mo_velocity_advection_stencil_02_numpy(mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> tuple:
+def mo_velocity_advection_stencil_02_numpy(
+    mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
+) -> tuple:
     vn_ie = mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
     z_kin_hor_e = mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
-    return ( vn_ie, z_kin_hor_e, )
+    return (
+        vn_ie,
+        z_kin_hor_e,
+    )
 
 
 class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_02
     OUTPUTS = ("vn_ie", "z_kin_hor_e")
-
-
 
     @classmethod
     def reference(cls, mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> dict:

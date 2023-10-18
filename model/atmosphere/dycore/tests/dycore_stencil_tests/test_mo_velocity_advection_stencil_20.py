@@ -21,6 +21,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
 from icon4py.model.common.dimension import CellDim, E2C2EODim, E2CDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 
+
 def mo_velocity_advection_stencil_20_numpy(
     mesh,
     levelmask: np.array,
@@ -36,8 +37,8 @@ def mo_velocity_advection_stencil_20_numpy(
     ddt_vn_apc: np.array,
     cfl_w_limit,
     scalfac_exdiff,
-    dtime
-) -> np.array :
+    dtime,
+) -> np.array:
     w_con_e = np.zeros_like(vn)
     difcoef = np.zeros_like(vn)
 
@@ -80,6 +81,7 @@ def mo_velocity_advection_stencil_20_numpy(
         ddt_vn_apc,
     )
     return ddt_vn_apc
+
 
 class TestMoVelocityAdvectionStencil20(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_20
@@ -140,6 +142,22 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
         scalfac_exdiff,
         dtime,
         **kwargs,
-    ) -> dict :
-        ddt_vn_apc = mo_velocity_advection_stencil_20_numpy( mesh, levelmask, c_lin_e, z_w_con_c_full, ddqz_z_full_e, area_edge, tangent_orientation, inv_primal_edge_length, zeta, geofac_grdiv, vn, ddt_vn_apc, cfl_w_limit, scalfac_exdiff, dtime )
+    ) -> dict:
+        ddt_vn_apc = mo_velocity_advection_stencil_20_numpy(
+            mesh,
+            levelmask,
+            c_lin_e,
+            z_w_con_c_full,
+            ddqz_z_full_e,
+            area_edge,
+            tangent_orientation,
+            inv_primal_edge_length,
+            zeta,
+            geofac_grdiv,
+            vn,
+            ddt_vn_apc,
+            cfl_w_limit,
+            scalfac_exdiff,
+            dtime,
+        )
         return dict(ddt_vn_apc=ddt_vn_apc)

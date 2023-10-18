@@ -29,46 +29,46 @@ from icon4py.model.common.test_utils.helpers import (
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-      mesh,
-      mask: np.array,
-      zd_vertoffset: np.array,
-      zd_diffcoef: np.array,
-      geofac_n2s_c: np.array,
-      geofac_n2s_nbh: np.array,
-      vcoef: np.array,
-      theta_v: np.array,
-      z_temp: np.array,
-      **kwargs,
-  ) -> np.array:
-        shape = mesh.c2e2c.shape + vcoef.shape[1:]
-        vcoef = vcoef.reshape(shape)
-        zd_vertoffset = zd_vertoffset.reshape(shape)
-        geofac_n2s_nbh = geofac_n2s_nbh.reshape(mesh.c2e2c.shape)
-        full_shape = vcoef.shape
+    mesh,
+    mask: np.array,
+    zd_vertoffset: np.array,
+    zd_diffcoef: np.array,
+    geofac_n2s_c: np.array,
+    geofac_n2s_nbh: np.array,
+    vcoef: np.array,
+    theta_v: np.array,
+    z_temp: np.array,
+    **kwargs,
+) -> np.array:
+    shape = mesh.c2e2c.shape + vcoef.shape[1:]
+    vcoef = vcoef.reshape(shape)
+    zd_vertoffset = zd_vertoffset.reshape(shape)
+    geofac_n2s_nbh = geofac_n2s_nbh.reshape(mesh.c2e2c.shape)
+    full_shape = vcoef.shape
 
-        geofac_n2s_nbh = np.expand_dims(geofac_n2s_nbh, axis=2)
+    geofac_n2s_nbh = np.expand_dims(geofac_n2s_nbh, axis=2)
 
-        theta_v_at_zd_vertidx = np.zeros_like(vcoef)
-        theta_v_at_zd_vertidx_p1 = np.zeros_like(vcoef)
-        for ic in range(full_shape[0]):
-            for isparse in range(full_shape[1]):
-                for ik in range(full_shape[2]):
-                    theta_v_at_zd_vertidx[ic, isparse, ik] = theta_v[
-                        mesh.c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
-                    ]
-                    theta_v_at_zd_vertidx_p1[ic, isparse, ik] = theta_v[
-                        mesh.c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik] + 1
-                    ]
+    theta_v_at_zd_vertidx = np.zeros_like(vcoef)
+    theta_v_at_zd_vertidx_p1 = np.zeros_like(vcoef)
+    for ic in range(full_shape[0]):
+        for isparse in range(full_shape[1]):
+            for ik in range(full_shape[2]):
+                theta_v_at_zd_vertidx[ic, isparse, ik] = theta_v[
+                    mesh.c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
+                ]
+                theta_v_at_zd_vertidx_p1[ic, isparse, ik] = theta_v[
+                    mesh.c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik] + 1
+                ]
 
-        sum_over = np.sum(
-            geofac_n2s_nbh
-            * (vcoef * theta_v_at_zd_vertidx + (1.0 - vcoef) * theta_v_at_zd_vertidx_p1),
-            axis=1,
-        )
+    sum_over = np.sum(
+        geofac_n2s_nbh * (vcoef * theta_v_at_zd_vertidx + (1.0 - vcoef) * theta_v_at_zd_vertidx_p1),
+        axis=1,
+    )
 
-        geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add KDim
-        z_temp = np.where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over), z_temp)
-        return z_temp
+    geofac_n2s_c = np.expand_dims(geofac_n2s_c, axis=1)  # add KDim
+    z_temp = np.where(mask, z_temp + zd_diffcoef * (theta_v * geofac_n2s_c + sum_over), z_temp)
+    return z_temp
+
 
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
@@ -88,8 +88,18 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         **kwargs,
     ) -> np.array:
 
-      z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy( mesh, mask, zd_vertoffset, zd_diffcoef, geofac_n2s_c, geofac_n2s_nbh, vcoef, theta_v, z_temp)
-      return dict(z_temp=z_temp)
+        z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
+            mesh,
+            mask,
+            zd_vertoffset,
+            zd_diffcoef,
+            geofac_n2s_c,
+            geofac_n2s_nbh,
+            vcoef,
+            theta_v,
+            z_temp,
+        )
+        return dict(z_temp=z_temp)
 
     @pytest.fixture
     def input_data(self, mesh):

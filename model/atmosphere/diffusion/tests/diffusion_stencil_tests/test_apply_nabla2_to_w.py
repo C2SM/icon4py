@@ -27,7 +27,7 @@ def apply_nabla2_to_w_numpy(
     geofac_n2s: np.array,
     w: np.array,
     diff_multfac_w: float,
-)-> np.array:
+) -> np.array:
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     area = np.expand_dims(area, axis=-1)
     w = w - diff_multfac_w * area * area * np.sum(z_nabla2_c[mesh.c2e2cO] * geofac_n2s, axis=1)

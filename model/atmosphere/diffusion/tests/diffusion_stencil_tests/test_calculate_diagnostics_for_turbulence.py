@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 
 def calculate_diagnostics_for_turbulence_numpy(
     wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic
-)-> tuple[np.array, np.array]:
+) -> tuple[np.array, np.array]:
     kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
     div_offset_1 = np.roll(div, shift=1, axis=1)
     div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
@@ -36,9 +36,7 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
     OUTPUTS = ("div_ic", "hdef_ic")
 
     @staticmethod
-    def reference(
-        mesh, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic
-    ) -> dict:
+    def reference(mesh, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic) -> dict:
         div_ic, hdef_ic = calculate_diagnostics_for_turbulence_numpy(
             wgtfac_c, div, kh_c, div_ic, hdef_ic
         )

@@ -22,13 +22,13 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-
-def mo_velocity_advection_stencil_03_numpy(mesh, wgtfac_e: np.array, vt: np.array, **kwargs) -> np.array:
-        vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
-        z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
-        z_vt_ie[:, 0] = 0
-        return z_vt_ie
-
+def mo_velocity_advection_stencil_03_numpy(
+    mesh, wgtfac_e: np.array, vt: np.array, **kwargs
+) -> np.array:
+    vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
+    z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
+    z_vt_ie[:, 0] = 0
+    return z_vt_ie
 
 
 class TestMoVelocityAdvectionStencil03(StencilTest):

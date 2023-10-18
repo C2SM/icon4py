@@ -55,7 +55,8 @@ def mo_velocity_advection_stencil_19_numpy(
         * (vn_ie[:, :-1] - vn_ie[:, 1:])
         / ddqz_z_full_e
     )
-    return(ddt_vn_apc)
+    return ddt_vn_apc
+
 
 class TestMoVelocityAdvectionStencil19(StencilTest):
     PROGRAM = mo_velocity_advection_stencil_19
@@ -76,7 +77,19 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
         ddqz_z_full_e: np.array,
         **kwargs,
     ) -> dict:
-        ddt_vn_apc = mo_velocity_advection_stencil_19_numpy( mesh, z_kin_hor_e, coeff_gradekin, z_ekinh, zeta, vt , f_e, c_lin_e, z_w_con_c_full, vn_ie, ddqz_z_full_e )
+        ddt_vn_apc = mo_velocity_advection_stencil_19_numpy(
+            mesh,
+            z_kin_hor_e,
+            coeff_gradekin,
+            z_ekinh,
+            zeta,
+            vt,
+            f_e,
+            c_lin_e,
+            z_w_con_c_full,
+            vn_ie,
+            ddqz_z_full_e,
+        )
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture

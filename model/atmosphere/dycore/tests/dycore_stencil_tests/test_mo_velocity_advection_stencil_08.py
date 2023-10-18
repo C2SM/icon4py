@@ -27,14 +27,15 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
-def mo_velocity_advection_stencil_08_numpy(mesh, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> np.array:
+def mo_velocity_advection_stencil_08_numpy(
+    mesh, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs
+) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     z_ekinh = np.sum(
         z_kin_hor_e[mesh.c2e] * e_bln_c_s[mesh.get_c2ce_offset_provider().table],
         axis=1,
     )
     return z_ekinh
-
 
 
 class TestMoVelocityAdvectionStencil08(StencilTest):
