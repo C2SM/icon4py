@@ -61,7 +61,7 @@ from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import Inte
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, EdgeParams
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -92,24 +92,6 @@ class VelocityAdvection:
         self.scalfac_exdiff: Optional[float] = 0.05
         self._allocate_local_fields()
 
-        self._initialized = True
-
-    def init(
-        self,
-        grid: IconGrid,
-        metric_state: MetricStateNonHydro,
-        interpolation_state: InterpolationState,
-        vertical_params: VerticalModelParams,
-    ):
-        self.grid = grid
-        self.metric_state: MetricStateNonHydro = metric_state
-        self.interpolation_state: InterpolationState = interpolation_state
-        self.vertical_params = vertical_params
-
-        self._allocate_local_fields()
-
-        self.cfl_w_limit = 0.65
-        self.scalfac_exdiff = 0.05
         self._initialized = True
 
     @property

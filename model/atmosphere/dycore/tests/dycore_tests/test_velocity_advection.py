@@ -85,12 +85,6 @@ def test_verify_velocity_init_against_regular_savepoint(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
     )
-    velocity_advection.init(
-        grid=icon_grid,
-        metric_state=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-    )
 
     assert savepoint.cfl_w_limit() == velocity_advection.cfl_w_limit / dtime
     assert savepoint.scalfac_exdiff() == velocity_advection.scalfac_exdiff / (
