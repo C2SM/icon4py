@@ -71,7 +71,6 @@ def test_nonhydro_predictor_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
-    data_provider,
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
@@ -90,7 +89,6 @@ def test_nonhydro_predictor_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
         nflatlev=grid_savepoint.nflatlev(),
     )
-    sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
     mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
@@ -175,6 +173,7 @@ def test_nonhydro_predictor_step(
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        edge_geometry=edge_geometry,
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
         cell_areas=cell_geometry.area,
@@ -189,14 +188,9 @@ def test_nonhydro_predictor_step(
         prognostic_state=prognostic_state_ls,
         config=config,
         params=nonhydro_params,
-        edge_geometry=edge_geometry,
         z_fields=z_fields,
-        cfl_w_limit=sp_v.cfl_w_limit(),
-        scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.c_owner_mask(),
-        f_e=sp_d.f_e(),
-        area_edge=edge_geometry.edge_areas,
+        owner_mask=grid_savepoint.c_owner_mask(),
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
@@ -463,7 +457,6 @@ def test_nonhydro_corrector_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
-    data_provider,
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
@@ -481,7 +474,6 @@ def test_nonhydro_corrector_step(
         nflatlev=grid_savepoint.nflatlev(),
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
-    sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
     mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
@@ -577,6 +569,7 @@ def test_nonhydro_corrector_step(
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        edge_geometry=edge_geometry,
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
         cell_areas=cell_geometry.area,
@@ -591,14 +584,9 @@ def test_nonhydro_corrector_step(
         prognostic_state=prognostic_state_ls,
         config=config,
         params=nonhydro_params,
-        edge_geometry=edge_geometry,
         z_fields=z_fields,
-        cfl_w_limit=sp_v.cfl_w_limit(),
-        scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
-        owner_mask=sp_d.c_owner_mask(),
-        f_e=sp_d.f_e(),
-        area_edge=edge_geometry.edge_areas,
+        owner_mask=grid_savepoint.c_owner_mask(),
         prep_adv=prep_adv,
         dtime=dtime,
         nnew=nnew,
@@ -680,7 +668,6 @@ def test_run_solve_nonhydro_single_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
-    data_provider,
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
@@ -700,7 +687,6 @@ def test_run_solve_nonhydro_single_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
         nflatlev=grid_savepoint.nflatlev(),
     )
-    sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
     mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
@@ -799,6 +785,7 @@ def test_run_solve_nonhydro_single_step(
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        edge_geometry=edge_geometry,
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
         cell_areas=cell_geometry.area,
@@ -814,16 +801,11 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         config=config,
         params=nonhydro_params,
-        edge_geometry=edge_geometry,
         z_fields=z_fields,
         nh_constants=nh_constants,
-        cfl_w_limit=sp_v.cfl_w_limit(),
-        scalfac_exdiff=sp_v.scalfac_exdiff(),
         cell_areas=cell_geometry.area,
-        c_owner_mask=sp_d.c_owner_mask(),
-        f_e=sp_d.f_e(),
-        area_edge=sp_d.edge_areas(),
-        bdy_divdamp=sp.bdy_divdamp(),
+        c_owner_mask=grid_savepoint.c_owner_mask(),
+        bdy_divdamp=sp.bdy_divdamp(),  # TODO (magdalena) local calculation in solve non-hydro based on nudge_coeff_e and scal_divdamp (also locally calculated)
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
@@ -854,7 +836,6 @@ def test_run_solve_nonhydro_multi_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
-    data_provider,
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
@@ -874,11 +855,10 @@ def test_run_solve_nonhydro_multi_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
         nflatlev=grid_savepoint.nflatlev(),
     )
-    sp_d = data_provider.from_savepoint_grid()
     sp_v = savepoint_velocity_init
     mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
-    r_nsubsteps = sp_d.get_metadata("nsteps").get("nsteps")
+    r_nsubsteps = grid_savepoint.get_metadata("nsteps").get("nsteps")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
@@ -974,6 +954,7 @@ def test_run_solve_nonhydro_multi_step(
         metric_state_nonhydro=metric_state_nonhydro,
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
+        edge_geometry=edge_geometry,
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
         cell_areas=cell_geometry.area,
@@ -990,15 +971,10 @@ def test_run_solve_nonhydro_multi_step(
             prep_adv=prep_adv,
             config=config,
             params=nonhydro_params,
-            edge_geometry=edge_geometry,
             z_fields=z_fields,
             nh_constants=nh_constants,
-            cfl_w_limit=sp_v.cfl_w_limit(),
-            scalfac_exdiff=sp_v.scalfac_exdiff(),
             cell_areas=cell_geometry.area,
-            c_owner_mask=sp_d.c_owner_mask(),
-            f_e=sp_d.f_e(),
-            area_edge=sp_d.edge_areas(),
+            c_owner_mask=grid_savepoint.c_owner_mask(),
             bdy_divdamp=sp.bdy_divdamp(),
             dtime=dtime,
             idyn_timestep=dyn_timestep,
