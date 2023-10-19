@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Optional
 
 import numpy as np
 from gt4py.next.common import Field
@@ -61,7 +60,7 @@ from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import Inte
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -81,35 +80,19 @@ class VelocityAdvection:
         metric_state: MetricStateNonHydro,
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
+        edge_params: EdgeParams,
     ):
         self._initialized = False
         self.grid: IconGrid = grid
         self.metric_state: MetricStateNonHydro = metric_state
         self.interpolation_state: InterpolationState = interpolation_state
         self.vertical_params = vertical_params
+        self.edge_params = edge_params
 
-        self.cfl_w_limit: Optional[float] = 0.65
-        self.scalfac_exdiff: Optional[float] = 0.05
+        self.cfl_w_limit: float = 0.65
+        self.scalfac_exdiff: float = 0.05
         self._allocate_local_fields()
 
-        self._initialized = True
-
-    def init(
-        self,
-        grid: IconGrid,
-        metric_state: MetricStateNonHydro,
-        interpolation_state: InterpolationState,
-        vertical_params: VerticalModelParams,
-    ):
-        self.grid = grid
-        self.metric_state: MetricStateNonHydro = metric_state
-        self.interpolation_state: InterpolationState = interpolation_state
-        self.vertical_params = vertical_params
-
-        self._allocate_local_fields()
-
-        self.cfl_w_limit = 0.65
-        self.scalfac_exdiff = 0.05
         self._initialized = True
 
     @property
@@ -137,20 +120,12 @@ class VelocityAdvection:
         z_w_concorr_me: Field[[EdgeDim, KDim], float],
         z_kin_hor_e: Field[[EdgeDim, KDim], float],
         z_vt_ie: Field[[EdgeDim, KDim], float],
-        inv_dual_edge_length: Field[[EdgeDim], float],
-        inv_primal_edge_length: Field[[EdgeDim], float],
         dtime: float,
         ntnd: int,
-        tangent_orientation: Field[[EdgeDim], float],
-        cfl_w_limit: float,
-        scalfac_exdiff: float,
         cell_areas: Field[[CellDim], float],
         owner_mask: Field[[CellDim], bool],
-        f_e: Field[[EdgeDim], float],
-        area_edge: Field[[EdgeDim], float],
     ):
-        self.cfl_w_limit = self.cfl_w_limit / dtime
-        self.scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - self.cfl_w_limit * dtime))
+        cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         (indices_0_1, indices_0_2) = self.grid.get_indices_from_to(
             VertexDim,
@@ -280,11 +255,11 @@ class VelocityAdvection:
         if not vn_only:
             mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
                 vn_ie=diagnostic_state.vn_ie,
-                inv_dual_edge_length=inv_dual_edge_length,
+                inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
                 z_vt_ie=z_vt_ie,
-                inv_primal_edge_length=inv_primal_edge_length,
-                tangent_orientation=tangent_orientation,
+                inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
+                tangent_orientation=self.edge_params.tangent_orientation,
                 z_w_v=self.z_w_v,
                 z_v_grad_w=self.z_v_grad_w,
                 horizontal_start=indices_2_1,
@@ -421,7 +396,7 @@ class VelocityAdvection:
             z_ekinh=self.z_ekinh,
             zeta=self.zeta,
             vt=diagnostic_state.vt,
-            f_e=f_e,
+            f_e=self.edge_params.f_e,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
             vn_ie=diagnostic_state.vn_ie,
@@ -444,9 +419,9 @@ class VelocityAdvection:
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            area_edge=area_edge,
-            tangent_orientation=tangent_orientation,
-            inv_primal_edge_length=inv_primal_edge_length,
+            area_edge=self.edge_params.edge_areas,
+            tangent_orientation=self.edge_params.tangent_orientation,
+            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
             vn=prognostic_state.vn,
@@ -466,6 +441,11 @@ class VelocityAdvection:
             },
         )
 
+    def _scale_factors_by_dtime(self, dtime):
+        scaled_cfl_w_limit = self.cfl_w_limit / dtime
+        scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
+        return scaled_cfl_w_limit, scalfac_exdiff
+
     def run_corrector_step(
         self,
         vn_only: bool,
@@ -473,20 +453,12 @@ class VelocityAdvection:
         prognostic_state: PrognosticState,
         z_kin_hor_e: Field[[EdgeDim, KDim], float],
         z_vt_ie: Field[[EdgeDim, KDim], float],
-        inv_dual_edge_length: Field[[EdgeDim], float],
-        inv_primal_edge_length: Field[[EdgeDim], float],
         dtime: float,
         ntnd: int,
-        tangent_orientation: Field[[EdgeDim], float],
-        cfl_w_limit: float,
-        scalfac_exdiff: float,
         cell_areas: Field[[CellDim], float],
         owner_mask: Field[[CellDim], bool],
-        f_e: Field[[EdgeDim], float],
-        area_edge: Field[[EdgeDim], float],
     ):
-        self.cfl_w_limit = self.cfl_w_limit / dtime
-        self.scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - self.cfl_w_limit * dtime))
+        cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         (indices_1_1, indices_1_2) = self.grid.get_indices_from_to(
             VertexDim,
@@ -548,11 +520,11 @@ class VelocityAdvection:
         if not vn_only:
             mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
                 vn_ie=diagnostic_state.vn_ie,
-                inv_dual_edge_length=inv_dual_edge_length,
+                inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
                 z_vt_ie=z_vt_ie,
-                inv_primal_edge_length=inv_primal_edge_length,
-                tangent_orientation=tangent_orientation,
+                inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
+                tangent_orientation=self.edge_params.tangent_orientation,
                 z_w_v=self.z_w_v,
                 z_v_grad_w=self.z_v_grad_w,
                 horizontal_start=indices_2_1,
@@ -669,7 +641,7 @@ class VelocityAdvection:
             z_ekinh=self.z_ekinh,
             zeta=self.zeta,
             vt=diagnostic_state.vt,
-            f_e=f_e,
+            f_e=self.edge_params.f_e,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
             vn_ie=diagnostic_state.vn_ie,
@@ -692,9 +664,9 @@ class VelocityAdvection:
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            area_edge=area_edge,
-            tangent_orientation=tangent_orientation,
-            inv_primal_edge_length=inv_primal_edge_length,
+            area_edge=self.edge_params.edge_areas,
+            tangent_orientation=self.edge_params.tangent_orientation,
+            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
             vn=prognostic_state.vn,
