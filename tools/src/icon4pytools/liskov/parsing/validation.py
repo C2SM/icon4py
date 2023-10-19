@@ -15,7 +15,7 @@ import re
 from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
-from typing import Match, Optional, Protocol, Sequence
+from typing import Match, Optional, Protocol, Sequence, Type
 
 import icon4pytools.liskov.parsing.types as ts
 from icon4pytools.common.logger import setup_logger
@@ -36,7 +36,7 @@ class Validator(Protocol):
     filepath: Path
 
     @abstractmethod
-    def validate(self, directives: list[ts.ParsedDirective]) -> None:
+    def validate(self, directives: Sequence[ts.ParsedDirective]) -> None:
         ...
 
 
@@ -60,7 +60,7 @@ class DirectiveSyntaxValidator:
         self.filepath = filepath
         self.exception_handler = SyntaxExceptionHandler
 
-    def validate(self, directives: list[ts.ParsedDirective]) -> None:
+    def validate(self, directives: Sequence[ts.ParsedDirective]) -> None:
         """Validate the syntax of preprocessor directives.
 
             Checks that each directive's pattern and inner contents, if any, match the expected syntax.
@@ -97,7 +97,7 @@ class DirectiveSemanticsValidator:
         """
         self.filepath = filepath
 
-    def validate(self, directives: list[ts.ParsedDirective]) -> None:
+    def validate(self, directives: Sequence[ts.ParsedDirective]) -> None:
         """Validate the semantics of preprocessor directives.
 
         Checks that all used directives are unique, that all required directives
@@ -110,7 +110,7 @@ class DirectiveSemanticsValidator:
         self._validate_required_directives(directives)
         self._validate_stencil_directives(directives)
 
-    def _validate_directive_uniqueness(self, directives: list[ts.ParsedDirective]) -> None:
+    def _validate_directive_uniqueness(self, directives: Sequence[ts.ParsedDirective]) -> None:
         """Check that all used directives are unique.
 
         Note: Allow repeated START STENCIL, END STENCIL and ENDIF directives.
@@ -134,7 +134,7 @@ class DirectiveSemanticsValidator:
                 f"Error in {self.filepath}.\n Found same directive more than once in the following directives:\n {pretty_printed}"
             )
 
-    def _validate_required_directives(self, directives: list[ts.ParsedDirective]) -> None:
+    def _validate_required_directives(self, directives: Sequence[ts.ParsedDirective]) -> None:
         """Check that all required directives are used at least once."""
         expected = [
             parse.Declare,
@@ -155,13 +155,14 @@ class DirectiveSemanticsValidator:
             Raise an error if there are unbalanced START or END directives or if any unique stencil does not have corresponding start and end directive.
 
         Args:
-            directives (list[ts.ParsedDirective]): List of stencil directives to validate.
+            directives (Sequence[ts.ParsedDirective]): List of stencil directives to validate.
         """
 
         def _identify_unbalanced_directives(
-            directives: Sequence[ts.ParsedDirective], directive_types: Sequence[ts.ParsedDirective]
+            directives: Sequence[ts.ParsedDirective],
+            directive_types: tuple[Type[ts.ParsedDirective], ...],
         ):
-            directive_counts = defaultdict(int)
+            directive_counts: dict[str, int] = defaultdict(int)
             for directive in directives:
                 if isinstance(directive, directive_types):
                     directive_name = _extract_arg_from_directive(directive.string, "name")
