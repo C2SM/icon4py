@@ -14,10 +14,9 @@ from dataclasses import dataclass
 from typing import Dict
 
 import numpy as np
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
-from typing_extensions import deprecated
 
 from icon4py.model.common.dimension import (
     CECDim,
@@ -130,25 +129,6 @@ class IconGrid:
 
     def lvert_nest(self):
         return True if self.config.lvertnest else False
-
-    @deprecated(
-        "use get_start_index and get_end_index instead, - should be removed after merge of solve_nonhydro"
-    )
-    def get_indices_from_to(
-        self, dim: Dimension, start_marker: int, end_marker: int
-    ) -> tuple[int32, int32]:
-        """
-        Use to specify domains of a field for field_operator.
-
-        For a given dimension, returns the start and end index if a
-        horizontal region in a field given by the markers.
-
-        field operators will then run from start of the region given by the
-        start_marker to the end of the region given by the end_marker
-        """
-        if dim.kind != DimensionKind.HORIZONTAL:
-            raise ValueError("only defined for {} dimension kind ", DimensionKind.HORIZONTAL)
-        return self.start_indices[dim][start_marker], self.end_indices[dim][end_marker]
 
     def get_start_index(self, dim: Dimension, marker: int) -> int32:
         """
