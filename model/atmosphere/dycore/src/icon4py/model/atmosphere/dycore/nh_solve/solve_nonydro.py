@@ -153,7 +153,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     set_zero_e_k,
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
-from icon4py.model.atmosphere.dycore.velocity import velocity_advection
+from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon_grid import IconGrid
@@ -295,6 +295,8 @@ class SolveNonhydro:
         self.interpolation_state = None
         self.metric_state_nonhydro = None
         self.vertical_params: Optional[VerticalModelParams] = None
+        self.edge_geometry: Optional[EdgeParams] = None
+        self.velocity_advection: Optional[VelocityAdvection] = None
 
         self.config: Optional[NonHydrostaticConfig] = None
         self.params: Optional[NonHydrostaticParams] = None
@@ -314,6 +316,7 @@ class SolveNonhydro:
         metric_state_nonhydro: MetricStateNonHydro,
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
+        edge_geometry: EdgeParams,
         a_vec: Field[[KDim], float],
         enh_smag_fac: Field[[KDim], float],
         cell_areas: Field[[CellDim], float],
@@ -329,9 +332,12 @@ class SolveNonhydro:
         self.params: NonHydrostaticParams = params
         self.grid = grid
         self.vertical_params = vertical_params
+        self.edge_geometry = edge_geometry
         self.metric_state_nonhydro: MetricStateNonHydro = metric_state_nonhydro
         self.interpolation_state: InterpolationState = interpolation_state
-
+        self.velocity_advection = VelocityAdvection(
+            grid, metric_state_nonhydro, interpolation_state, vertical_params, edge_geometry
+        )
         self._allocate_local_fields()
         self._initialized = True
 
@@ -405,15 +411,10 @@ class SolveNonhydro:
         prep_adv: PrepAdvection,
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
-        edge_geometry: EdgeParams,
         z_fields: ZFields,
         nh_constants: NHConstants,
-        cfl_w_limit: float,
-        scalfac_exdiff: float,
         cell_areas: Field[[CellDim], float],
         c_owner_mask: Field[[CellDim], bool],
-        f_e: Field[[EdgeDim], float],
-        area_edge: Field[[EdgeDim], float],
         bdy_divdamp: Field[[KDim], float],
         dtime: float,
         idyn_timestep: float,
@@ -469,14 +470,9 @@ class SolveNonhydro:
             prognostic_state=prognostic_state_ls,
             config=config,
             params=params,
-            edge_geometry=edge_geometry,
             z_fields=z_fields,
-            cfl_w_limit=cfl_w_limit,
-            scalfac_exdiff=scalfac_exdiff,
             cell_areas=cell_areas,
             owner_mask=c_owner_mask,
-            f_e=f_e,
-            area_edge=area_edge,
             dtime=dtime,
             idyn_timestep=idyn_timestep,
             l_recompute=l_recompute,
@@ -490,18 +486,13 @@ class SolveNonhydro:
             prognostic_state=prognostic_state_ls,
             config=config,
             params=params,
-            edge_geometry=edge_geometry,
             z_fields=z_fields,
             prep_adv=prep_adv,
             dtime=dtime,
             nnew=nnew,
             nnow=nnow,
-            cfl_w_limit=cfl_w_limit,
-            scalfac_exdiff=scalfac_exdiff,
             cell_areas=cell_areas,
             owner_mask=c_owner_mask,
-            f_e=f_e,
-            area_edge=area_edge,
             lclean_mflx=lclean_mflx,
             nh_constants=nh_constants,
             bdy_divdamp=bdy_divdamp,
@@ -571,14 +562,9 @@ class SolveNonhydro:
         prognostic_state: list[PrognosticState],
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
-        edge_geometry: EdgeParams,
         z_fields: ZFields,
-        cfl_w_limit: float,
-        scalfac_exdiff: float,
         cell_areas: Field[[CellDim], float],
         owner_mask: Field[[CellDim], bool],
-        f_e: Field[[EdgeDim], float],
-        area_edge: Field[[EdgeDim], float],
         dtime: float,
         idyn_timestep: float,
         l_recompute: bool,
@@ -592,29 +578,17 @@ class SolveNonhydro:
             else:
                 lvn_only = False
 
-        velocity_advection.VelocityAdvection(
-            self.grid,
-            self.metric_state_nonhydro,
-            self.interpolation_state,
-            self.vertical_params,
-        ).run_predictor_step(
+        self.velocity_advection.run_predictor_step(
             vn_only=lvn_only,
             diagnostic_state=diagnostic_state_nh,
             prognostic_state=prognostic_state[nnow],
             z_w_concorr_me=self.z_w_concorr_me,
             z_kin_hor_e=z_fields.z_kin_hor_e,
             z_vt_ie=z_fields.z_vt_ie,
-            inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-            inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
             dtime=dtime,
             ntnd=self.ntl1,
-            tangent_orientation=edge_geometry.tangent_orientation,
-            cfl_w_limit=cfl_w_limit,
-            scalfac_exdiff=scalfac_exdiff,
             cell_areas=cell_areas,
             owner_mask=owner_mask,
-            f_e=f_e,
-            area_edge=area_edge,
         )
 
         p_dthalf = 0.5 * dtime
@@ -935,10 +909,10 @@ class SolveNonhydro:
                     p_vt=diagnostic_state_nh.vt,
                     pos_on_tplane_e_1=self.interpolation_state.pos_on_tplane_e_1,
                     pos_on_tplane_e_2=self.interpolation_state.pos_on_tplane_e_2,
-                    primal_normal_cell_1=edge_geometry.primal_normal_cell[0],
-                    dual_normal_cell_1=edge_geometry.dual_normal_cell[0],
-                    primal_normal_cell_2=edge_geometry.primal_normal_cell[1],
-                    dual_normal_cell_2=edge_geometry.dual_normal_cell[1],
+                    primal_normal_cell_1=self.edge_geometry.primal_normal_cell[0],
+                    dual_normal_cell_1=self.edge_geometry.dual_normal_cell[0],
+                    primal_normal_cell_2=self.edge_geometry.primal_normal_cell[1],
+                    dual_normal_cell_2=self.edge_geometry.dual_normal_cell[1],
                     p_dthalf=p_dthalf,
                     rho_ref_me=self.metric_state_nonhydro.rho_ref_me,
                     theta_ref_me=self.metric_state_nonhydro.theta_ref_me,
@@ -962,7 +936,7 @@ class SolveNonhydro:
 
         # Remaining computations at edge points
         mo_solve_nonhydro_stencil_18.with_backend(run_gtfn)(
-            inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
             z_exner_ex_pr=self.z_exner_ex_pr,
             z_gradh_exner=z_fields.z_gradh_exner,
             horizontal_start=indices_5_1,
@@ -979,7 +953,7 @@ class SolveNonhydro:
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
 
             mo_solve_nonhydro_stencil_19.with_backend(run_gtfn)(
-                inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+                inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
                 c_lin_e=self.interpolation_state.c_lin_e,
@@ -995,7 +969,7 @@ class SolveNonhydro:
             )
 
             mo_solve_nonhydro_stencil_20.with_backend(run_gtfn)(
-                inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+                inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
                 ikoffset=self.metric_state_nonhydro.vertoffset_gradp,
@@ -1021,7 +995,7 @@ class SolveNonhydro:
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
                 theta_v_ic=diagnostic_state_nh.theta_v_ic,
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-                inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+                inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_hydro_corr=self.z_hydro_corr,
                 grav_o_cpd=params.grav_o_cpd,
                 horizontal_start=indices_5_1,
@@ -1417,19 +1391,14 @@ class SolveNonhydro:
         prognostic_state: list[PrognosticState],
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
-        edge_geometry: EdgeParams,
         z_fields: ZFields,
         nh_constants: NHConstants,
         prep_adv: PrepAdvection,
         dtime: float,
         nnew: int,
         nnow: int,
-        cfl_w_limit: float,
-        scalfac_exdiff: float,
         cell_areas: Field[[CellDim], float],
         owner_mask: Field[[CellDim], bool],
-        f_e: Field[[EdgeDim], float],
-        area_edge: Field[[EdgeDim], float],
         lclean_mflx: bool,
         bdy_divdamp: Field[[KDim], float],
         lprep_adv: bool,
@@ -1480,28 +1449,16 @@ class SolveNonhydro:
         )
 
         lvn_only = False
-        velocity_advection.VelocityAdvection(
-            self.grid,
-            self.metric_state_nonhydro,
-            self.interpolation_state,
-            self.vertical_params,
-        ).run_corrector_step(
+        self.velocity_advection.run_corrector_step(
             vn_only=lvn_only,
             diagnostic_state=diagnostic_state_nh,
             prognostic_state=prognostic_state[nnew],
             z_kin_hor_e=z_fields.z_kin_hor_e,
             z_vt_ie=z_fields.z_vt_ie,
-            inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-            inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
             dtime=dtime,
             ntnd=self.ntl2,
-            tangent_orientation=edge_geometry.tangent_orientation,
-            cfl_w_limit=cfl_w_limit,
-            scalfac_exdiff=scalfac_exdiff,
             cell_areas=cell_areas,
             owner_mask=owner_mask,
-            f_e=f_e,
-            area_edge=area_edge,
         )
 
         nvar = nnew
@@ -1547,7 +1504,7 @@ class SolveNonhydro:
         mo_solve_nonhydro_stencil_17.with_backend(run_gtfn)(
             hmask_dd3d=self.metric_state_nonhydro.hmask_dd3d,
             scalfac_dd3d=self.metric_state_nonhydro.scalfac_dd3d,
-            inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
             z_dwdz_dd=z_fields.z_dwdz_dd,
             z_graddiv_vn=z_fields.z_graddiv_vn,
             horizontal_start=indices_0_3,
