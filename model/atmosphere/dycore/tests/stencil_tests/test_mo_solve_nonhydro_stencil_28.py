@@ -22,7 +22,9 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
-def mo_solve_nonhydro_stencil_28_numpy(mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn):
+def mo_solve_nonhydro_stencil_28_numpy(
+    mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn: float
+) -> np.array:
     vn = vn + (iau_wgt_dyn * vn_incr)
     return vn
 
@@ -32,8 +34,8 @@ class TestMoSolveNonhydroStencil28(StencilTest):
     OUTPUTS = ("vn",)
 
     @staticmethod
-    def reference(mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn, **kwargs) -> np.array:
-        vn = vn + (iau_wgt_dyn * vn_incr)
+    def reference(mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn: float, **kwargs) -> dict:
+        vn = mo_solve_nonhydro_stencil_28_numpy(mesh, vn_incr, vn, iau_wgt_dyn)
         return dict(vn=vn)
 
     @pytest.fixture

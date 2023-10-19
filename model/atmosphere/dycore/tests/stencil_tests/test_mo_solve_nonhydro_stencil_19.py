@@ -29,7 +29,7 @@ def mo_solve_nonhydro_stencil_19_numpy(
     ddxn_z_full: np.array,
     c_lin_e: np.array,
     z_dexner_dz_c_1: np.array,
-):
+) -> np.array:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
     c_lin_e = np.expand_dims(c_lin_e, axis=-1)
 
@@ -56,14 +56,8 @@ class TestMoSolveNonhydroStencil19(StencilTest):
         z_dexner_dz_c_1: np.array,
         **kwargs,
     ) -> dict:
-        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
-        c_lin_e = np.expand_dims(c_lin_e, axis=-1)
-
-        z_exner_ex_pr_e2c = z_exner_ex_pr[mesh.e2c]
-        z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
-
-        z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted - ddxn_z_full * np.sum(
-            c_lin_e * z_dexner_dz_c_1[mesh.e2c], axis=1
+        z_gradh_exner = mo_solve_nonhydro_stencil_19_numpy(
+            mesh, inv_dual_edge_length, z_exner_ex_pr, ddxn_z_full, c_lin_e, z_dexner_dz_c_1
         )
         return dict(z_gradh_exner=z_gradh_exner)
 

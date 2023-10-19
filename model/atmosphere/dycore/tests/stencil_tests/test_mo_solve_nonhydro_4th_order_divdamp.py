@@ -27,7 +27,7 @@ def mo_solve_nonhydro_4th_order_divdamp_numpy(
     scal_divdamp: np.array,
     z_graddiv2_vn: np.array,
     vn: np.array,
-):
+) -> np.array:
     scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
     vn = vn + (scal_divdamp * z_graddiv2_vn)
     return vn
@@ -44,9 +44,8 @@ class TestMoSolveNonhydro4thOrderDivdamp(StencilTest):
         z_graddiv2_vn: np.array,
         vn: np.array,
         **kwargs,
-    ) -> np.array:
-        scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
-        vn = vn + (scal_divdamp * z_graddiv2_vn)
+    ) -> dict:
+        vn = mo_solve_nonhydro_4th_order_divdamp_numpy(mesh, scal_divdamp, z_graddiv2_vn, vn)
         return dict(vn=vn)
 
     @pytest.fixture

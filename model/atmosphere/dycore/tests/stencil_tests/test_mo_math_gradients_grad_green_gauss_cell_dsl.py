@@ -28,7 +28,7 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
     p_ccpr2: np.array,
     geofac_grg_x: np.array,
     geofac_grg_y: np.array,
-):
+) -> tuple[np.array]:
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
     p_grad_1_u = np.sum(geofac_grg_x * p_ccpr1[mesh.c2e2cO], axis=1)
 
@@ -53,16 +53,16 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         geofac_grg_x: np.array,
         geofac_grg_y: np.array,
         **kwargs,
-    ) -> tuple[np.array]:
-        geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-        p_grad_1_u = np.sum(geofac_grg_x * p_ccpr1[mesh.c2e2cO], axis=1)
+    ) -> dict:
+        (
+            p_grad_1_u,
+            p_grad_1_v,
+            p_grad_2_u,
+            p_grad_2_v,
+        ) = mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
+            mesh, p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y
+        )
 
-        geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-        p_grad_1_v = np.sum(geofac_grg_y * p_ccpr1[mesh.c2e2cO], axis=1)
-
-        p_grad_2_u = np.sum(geofac_grg_x * p_ccpr2[mesh.c2e2cO], axis=1)
-
-        p_grad_2_v = np.sum(geofac_grg_y * p_ccpr2[mesh.c2e2cO], axis=1)
         return dict(
             p_grad_1_u=p_grad_1_u,
             p_grad_1_v=p_grad_1_v,

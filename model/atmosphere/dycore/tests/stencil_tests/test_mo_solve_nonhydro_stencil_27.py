@@ -29,7 +29,7 @@ def mo_solve_nonhydro_stencil_27_numpy(
     nudgecoeff_e: np.array,
     z_graddiv2_vn: np.array,
     vn: np.array,
-):
+) -> np.array:
     nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
     vn = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn
     return vn
@@ -49,8 +49,10 @@ class TestMoSolveNonhydroStencil27(StencilTest):
         vn: np.array,
         **kwargs,
     ) -> dict:
-        nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
-        vn = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn
+        vn = mo_solve_nonhydro_stencil_27_numpy(
+            mesh, scal_divdamp, bdy_divdamp, nudgecoeff_e, z_graddiv2_vn, vn
+        )
+
         return dict(vn=vn)
 
     @pytest.fixture

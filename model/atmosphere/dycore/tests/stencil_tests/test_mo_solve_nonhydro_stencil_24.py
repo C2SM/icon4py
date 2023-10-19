@@ -31,7 +31,7 @@ def mo_solve_nonhydro_stencil_24_numpy(
     z_gradh_exner: np.array,
     dtime: float,
     cpd: float,
-):
+) -> np.array:
     vn_nnew = vn_nnow + dtime * (ddt_vn_apc_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner)
     return vn_nnew
 
@@ -52,8 +52,15 @@ class TestMoSolveNonhydroStencil24(StencilTest):
         cpd: float,
         **kwargs,
     ) -> np.array:
-        vn_nnew = vn_nnow + dtime * (
-            ddt_vn_apc_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner
+        vn_nnew = mo_solve_nonhydro_stencil_24_numpy(
+            mesh,
+            vn_nnow,
+            ddt_vn_apc_ntl1,
+            ddt_vn_phy,
+            z_theta_v_e,
+            z_gradh_exner,
+            dtime,
+            cpd,
         )
         return dict(vn_nnew=vn_nnew)
 
