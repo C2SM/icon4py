@@ -7,7 +7,7 @@ from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
 
 @field_operator
-def _fused_solve_nonhydro_39_40(
+def _fused_solve_nonhydro_stencil_39_40(
     e_bln_c_s: Field[[CEDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
@@ -35,4 +35,4 @@ def fused_solve_nonhydro_stencil_39_40(
     nflatlev: int32,
     w_concorr_c: Field[[CellDim, KDim], float],
 ):
-    _fused_solve_nonhydro_39_40(e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev, out=w_concorr_c[:, -1:])
+    _fused_solve_nonhydro_stencil_39_40(e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev, out=w_concorr_c[:, -1:])
