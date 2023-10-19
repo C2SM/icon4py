@@ -15,7 +15,25 @@ import numpy as np
 import pytest
 from gt4py.next import np_as_located_field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
+from test_mo_math_gradients_grad_green_gauss_cell_dsl import (
+    mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
+)
+from test_mo_solve_nonhydro_4th_order_divdamp import mo_solve_nonhydro_4th_order_divdamp_numpy
+from test_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
+    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy,
+)
+from test_mo_solve_nonhydro_stencil_17 import mo_solve_nonhydro_stencil_17_numpy
+from test_mo_solve_nonhydro_stencil_18 import mo_solve_nonhydro_stencil_18_numpy
+from test_mo_solve_nonhydro_stencil_19 import mo_solve_nonhydro_stencil_19_numpy
+from test_mo_solve_nonhydro_stencil_20 import mo_solve_nonhydro_stencil_20_numpy
+from test_mo_solve_nonhydro_stencil_21 import mo_solve_nonhydro_stencil_21_numpy
+from test_mo_solve_nonhydro_stencil_22 import mo_solve_nonhydro_stencil_22_numpy
+from test_mo_solve_nonhydro_stencil_23 import mo_solve_nonhydro_stencil_23_numpy
+from test_mo_solve_nonhydro_stencil_24 import mo_solve_nonhydro_stencil_24_numpy
+from test_mo_solve_nonhydro_stencil_25 import mo_solve_nonhydro_stencil_25_numpy
+from test_mo_solve_nonhydro_stencil_26 import mo_solve_nonhydro_stencil_26_numpy
+from test_mo_solve_nonhydro_stencil_27 import mo_solve_nonhydro_stencil_27_numpy
+from test_mo_solve_nonhydro_stencil_28 import mo_solve_nonhydro_stencil_28_numpy
 
 from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_15_to_28 import (
     fused_solve_nonhydro_stencil_15_to_28,
@@ -37,32 +55,12 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
-from test_mo_math_gradients_grad_green_gauss_cell_dsl import \
-    mo_math_gradients_grad_green_gauss_cell_dsl_numpy
-from test_mo_solve_nonhydro_4th_order_divdamp import (
-    mo_solve_nonhydro_4th_order_divdamp_numpy,
-)
-from test_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
-    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy,
-)
-from test_mo_solve_nonhydro_stencil_17 import mo_solve_nonhydro_stencil_17_numpy
-from test_mo_solve_nonhydro_stencil_18 import mo_solve_nonhydro_stencil_18_numpy
-from test_mo_solve_nonhydro_stencil_19 import mo_solve_nonhydro_stencil_19_numpy
-from test_mo_solve_nonhydro_stencil_20 import mo_solve_nonhydro_stencil_20_numpy
-from test_mo_solve_nonhydro_stencil_21 import mo_solve_nonhydro_stencil_21_numpy
-from test_mo_solve_nonhydro_stencil_22 import mo_solve_nonhydro_stencil_22_numpy
-from test_mo_solve_nonhydro_stencil_23 import mo_solve_nonhydro_stencil_23_numpy
-from test_mo_solve_nonhydro_stencil_24 import mo_solve_nonhydro_stencil_24_numpy
-from test_mo_solve_nonhydro_stencil_25 import mo_solve_nonhydro_stencil_25_numpy
-from test_mo_solve_nonhydro_stencil_26 import mo_solve_nonhydro_stencil_26_numpy
-from test_mo_solve_nonhydro_stencil_27 import mo_solve_nonhydro_stencil_27_numpy
-from test_mo_solve_nonhydro_stencil_28 import mo_solve_nonhydro_stencil_28_numpy
-
 
 class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
-    PROGRAM = fused_solve_nonhydro_stencil_15_to_28.with_backend(run_gtfn)
+    PROGRAM = fused_solve_nonhydro_stencil_15_to_28
     OUTPUTS = ("z_rho_e", "z_theta_v_e", "z_gradh_exner", "vn", "z_graddiv_vn")
 
+    # flake8: noqa: C901
     @classmethod
     def reference(
         cls,
@@ -304,27 +302,16 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 )
             # compute hydrostatically approximated correction term that replaces downward extrapolation
             if igradp_method == 3:
-                z_hydro_corr = np.where(
-                    (horizontal_lower < horz_idx)
-                    & (horz_idx < horizontal_upper)
-                    & (vert_idx > (nlev - int32(1)))
-                    & (vert_idx < nlev),
-                    mo_solve_nonhydro_stencil_21_numpy(
-                        mesh=mesh,
-                        theta_v=theta_v,
-                        ikoffset=ikoffset.reshape(new_shape),
-                        zdiff_gradp=zdiff_gradp.reshape(new_shape),
-                        theta_v_ic=theta_v_ic,
-                        inv_ddqz_z_full=inv_ddqz_z_full,
-                        inv_dual_edge_length=inv_dual_edge_length,
-                        grav_o_cpd=grav_o_cpd,
-                    ),
-                    z_hydro_corr,
+                z_hydro_corr = mo_solve_nonhydro_stencil_21_numpy(
+                    mesh=mesh,
+                    theta_v=theta_v,
+                    ikoffset=ikoffset.reshape(new_shape),
+                    zdiff_gradp=zdiff_gradp.reshape(new_shape),
+                    theta_v_ic=theta_v_ic,
+                    inv_ddqz_z_full=inv_ddqz_z_full,
+                    inv_dual_edge_length=inv_dual_edge_length,
+                    grav_o_cpd=grav_o_cpd,
                 )
-
-            z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(
-                np.asarray(z_hydro_corr)[:, nlev - 1]
-            )
 
             if igradp_method == 3:
                 z_gradh_exner = np.where(
@@ -336,7 +323,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                         mesh=mesh,
                         ipeidx_dsl=ipeidx_dsl,
                         pg_exdist=pg_exdist,
-                        z_hydro_corr=z_hydro_corr_horizontal,
+                        z_hydro_corr=z_hydro_corr,
                         z_gradh_exner=z_gradh_exner,
                     ),
                     z_gradh_exner,
@@ -492,7 +479,13 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     vn,
                 )
 
-        return z_rho_e, z_theta_v_e, z_gradh_exner, vn, z_graddiv_vn
+        return dict(
+            z_rho_e=z_rho_e,
+            z_theta_v_e=z_theta_v_e,
+            z_gradh_exner=z_gradh_exner,
+            vn=vn,
+            z_graddiv_vn=z_graddiv_vn,
+        )
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -579,7 +572,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         scal_divdamp_o2 = 194588.14247428576
         limited_area = True
         itime_scheme = 4
-        istep = 2
+        istep = 1
         horizontal_lower = 5387
         horizontal_upper = 31558
         horizontal_lower_00 = 31558

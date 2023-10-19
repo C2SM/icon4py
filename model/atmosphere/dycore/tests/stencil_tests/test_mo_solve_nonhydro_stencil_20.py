@@ -47,7 +47,7 @@ def mo_solve_nonhydro_stencil_20_numpy(
                     ]
         return indexed
 
-    full_shape = mesh.e2c.shape + zdiff_gradp.shape[1:]
+    full_shape = mesh.e2c.shape + zdiff_gradp.shape[2:]
     zdiff_gradp = zdiff_gradp.reshape(full_shape)
     ikoffset = ikoffset.reshape(full_shape)
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)

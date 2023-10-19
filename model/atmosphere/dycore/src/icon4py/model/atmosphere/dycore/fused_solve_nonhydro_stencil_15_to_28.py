@@ -41,7 +41,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_21 import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_22 import (
     _mo_solve_nonhydro_stencil_22,
-    _z_hydro_corr_22,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_23 import (
     _mo_solve_nonhydro_stencil_23,
@@ -242,28 +241,18 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     )
 
     z_hydro_corr = (
-        where(
-            (horizontal_lower < horz_idx < horizontal_upper) & (nlev - int32(1) < vert_idx < nlev),
-            _mo_solve_nonhydro_stencil_21(
-                theta_v=theta_v,
-                ikoffset=ikoffset,
-                zdiff_gradp=zdiff_gradp,
-                theta_v_ic=theta_v_ic,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                inv_dual_edge_length=inv_dual_edge_length,
-                grav_o_cpd=grav_o_cpd,
-            ),
-            z_hydro_corr,
+        _mo_solve_nonhydro_stencil_21(
+            theta_v=theta_v,
+            ikoffset=ikoffset,
+            zdiff_gradp=zdiff_gradp,
+            theta_v_ic=theta_v_ic,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            inv_dual_edge_length=inv_dual_edge_length,
+            grav_o_cpd=grav_o_cpd,
         )
         if igradp_method == 3
         else z_hydro_corr
     )
-
-    # z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(
-    #     np.asarray(z_hydro_corr)[:, 64]
-    # )
-
-    z_hydro_corr_horizontal = _z_hydro_corr_22(z_hydro_corr, vert_idx)
 
     z_gradh_exner = (
         where(
@@ -271,7 +260,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
             _mo_solve_nonhydro_stencil_22(
                 ipeidx_dsl=ipeidx_dsl,
                 pg_exdist=pg_exdist,
-                z_hydro_corr=z_hydro_corr_horizontal,
+                z_hydro_corr=z_hydro_corr,
                 z_gradh_exner=z_gradh_exner,
             ),
             z_gradh_exner,

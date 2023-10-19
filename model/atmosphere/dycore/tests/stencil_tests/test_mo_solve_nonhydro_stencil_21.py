@@ -52,7 +52,7 @@ def mo_solve_nonhydro_stencil_21_numpy(
                     ]
         return indexed, indexed_p1
 
-    full_shape = mesh.e2c.shape + zdiff_gradp.shape[1:]
+    full_shape = mesh.e2c.shape + zdiff_gradp.shape[2:]
     zdiff_gradp = zdiff_gradp.reshape(full_shape)
     ikoffset = ikoffset.reshape(full_shape)
 

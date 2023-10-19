@@ -29,7 +29,6 @@ def mo_solve_nonhydro_stencil_22_numpy(
     z_hydro_corr: np.array,
     z_gradh_exner: np.array,
 ):
-    z_hydro_corr = np.expand_dims(z_hydro_corr, axis=-1)
     z_gradh_exner = np.where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
     return z_gradh_exner
 
@@ -57,7 +56,7 @@ class TestMoSolveNonhydroStencil22(StencilTest):
     def input_data(self, mesh):
         ipeidx_dsl = random_mask(mesh, EdgeDim, KDim)
         pg_exdist = random_field(mesh, EdgeDim, KDim)
-        z_hydro_corr = random_field(mesh, EdgeDim)
+        z_hydro_corr = random_field(mesh, EdgeDim, KDim)
         z_gradh_exner = random_field(mesh, EdgeDim, KDim)
 
         return dict(
