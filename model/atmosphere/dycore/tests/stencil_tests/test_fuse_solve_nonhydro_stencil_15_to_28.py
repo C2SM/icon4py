@@ -179,19 +179,13 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     (tmp_0_0, tmp_0_1) = (horizontal_lower_01, horizontal_upper_01)
 
                 z_rho_e = np.where(
-                    (tmp_0_0 < horz_idx)
-                    & (horz_idx < tmp_0_1)
-                    & (vert_idx > int32(0))
-                    & (vert_idx < nlev),
+                    (tmp_0_0 < horz_idx) & (horz_idx < tmp_0_1),
                     np.zeros_like(z_rho_e),
                     z_rho_e,
                 )
 
                 z_theta_v_e = np.where(
-                    (tmp_0_0 < horz_idx)
-                    & (horz_idx < tmp_0_1)
-                    & (vert_idx > int32(0))
-                    & (vert_idx < nlev),
+                    (tmp_0_0 < horz_idx) & (horz_idx < tmp_0_1),
                     np.zeros_like(z_rho_e),
                     z_theta_v_e,
                 )
@@ -199,19 +193,13 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 # initialize also nest boundary points with zero
                 if limited_area:
                     z_rho_e = np.where(
-                        (horizontal_lower_4 < horz_idx)
-                        & (horz_idx < horizontal_upper_4)
-                        & (vert_idx > int32(0))
-                        & (vert_idx < nlev),
+                        (horizontal_lower_4 < horz_idx) & (horz_idx < horizontal_upper_4),
                         np.zeros_like(z_rho_e),
                         z_rho_e,
                     )
 
                     z_theta_v_e = np.where(
-                        (horizontal_lower_4 < horz_idx)
-                        & (horz_idx < horizontal_upper_4)
-                        & (vert_idx > int32(0))
-                        & (vert_idx < nlev),
+                        (horizontal_lower_4 < horz_idx) & (horz_idx < horizontal_upper_4),
                         np.zeros_like(z_rho_e),
                         z_theta_v_e,
                     )
@@ -221,10 +209,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
                     # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
                     (z_rho_e, z_theta_v_e) = np.where(
-                        (horizontal_lower_1 < horz_idx)
-                        & (horz_idx < horizontal_upper_1)
-                        & (vert_idx > int32(0))
-                        & (vert_idx < nlev),
+                        (horizontal_lower_1 < horz_idx) & (horz_idx < horizontal_upper_1),
                         mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
                             mesh=mesh,
                             p_vn=p_vn,
@@ -252,7 +237,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             z_gradh_exner = np.where(
                 (horizontal_lower < horz_idx)
                 & (horz_idx < horizontal_upper)
-                & (vert_idx > int32(0))
                 & (vert_idx < nflatlev),
                 mo_solve_nonhydro_stencil_18_numpy(
                     mesh=mesh,
@@ -287,8 +271,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 z_gradh_exner = np.where(
                     (horizontal_lower < horz_idx)
                     & (horz_idx < horizontal_upper)
-                    & (vert_idx > (nflat_gradp + int32(1)))
-                    & (vert_idx < nlev),
+                    & (vert_idx > (nflat_gradp + int32(1))),
                     mo_solve_nonhydro_stencil_20_numpy(
                         mesh=mesh,
                         inv_dual_edge_length=inv_dual_edge_length,
@@ -315,10 +298,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             if igradp_method == 3:
                 z_gradh_exner = np.where(
-                    (horizontal_lower_3 < horz_idx)
-                    & (horz_idx < horizontal_upper_3)
-                    & (vert_idx > int32(0))
-                    & (vert_idx < nlev),
+                    (horizontal_lower_3 < horz_idx) & (horz_idx < horizontal_upper_3),
                     mo_solve_nonhydro_stencil_22_numpy(
                         mesh=mesh,
                         ipeidx_dsl=ipeidx_dsl,
@@ -330,10 +310,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 )
 
             vn = np.where(
-                (horizontal_lower < horz_idx)
-                & (horz_idx < horizontal_upper)
-                & (vert_idx > int32(0))
-                & (vert_idx < nlev),
+                (horizontal_lower < horz_idx) & (horz_idx < horizontal_upper),
                 mo_solve_nonhydro_stencil_24_numpy(
                     mesh=mesh,
                     vn_nnow=vn_nnow,
@@ -349,10 +326,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             if is_iau_active:
                 vn = np.where(
-                    (horizontal_lower < horz_idx)
-                    & (horz_idx < horizontal_upper)
-                    & (vert_idx > int32(0))
-                    & (vert_idx < nlev),
+                    (horizontal_lower < horz_idx) & (horz_idx < horizontal_upper),
                     mo_solve_nonhydro_stencil_28_numpy(
                         mesh=mesh,
                         vn_incr=vn_incr,
@@ -367,8 +341,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             z_graddiv_vn = np.where(
                 (horizontal_lower_2 < horz_idx)
                 & (horz_idx < horizontal_upper_2)
-                & (vert_idx > kstart_dd3d)
-                & (vert_idx < nlev),
+                & (vert_idx > kstart_dd3d),
                 mo_solve_nonhydro_stencil_17_numpy(
                     mesh=mesh,
                     hmask_dd3d=hmask_dd3d,
@@ -382,10 +355,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             if itime_scheme == 4:
                 vn = np.where(
-                    (horizontal_lower < horz_idx)
-                    & (horz_idx < horizontal_upper)
-                    & (vert_idx > int32(0))
-                    & (vert_idx < nlev),
+                    (horizontal_lower < horz_idx) & (horz_idx < horizontal_upper),
                     mo_solve_nonhydro_stencil_23_numpy(
                         vn_nnow=vn,
                         ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
@@ -404,10 +374,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             if lhdiff_rcf and (divdamp_order == 24 or divdamp_order == 4):
                 # verified for e-10
                 z_graddiv2_vn = np.where(
-                    (horizontal_lower < horz_idx)
-                    & (horz_idx < horizontal_upper)
-                    & (vert_idx > int32(0))
-                    & (vert_idx < nlev),
+                    (horizontal_lower < horz_idx) & (horz_idx < horizontal_upper),
                     mo_solve_nonhydro_stencil_25_numpy(
                         mesh=mesh,
                         geofac_grdiv=geofac_grdiv,
@@ -419,10 +386,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             if lhdiff_rcf:
                 if divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
                     vn = np.where(
-                        (horizontal_lower < horz_idx)
-                        & (horz_idx < horizontal_upper)
-                        & (vert_idx > int32(0))
-                        & (vert_idx < nlev),
+                        (horizontal_lower < horz_idx) & (horz_idx < horizontal_upper),
                         mo_solve_nonhydro_stencil_26_numpy(
                             mesh=mesh,
                             z_graddiv_vn=z_graddiv_vn,
@@ -435,10 +399,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 if divdamp_order == 24 and divdamp_fac_o2 <= 4 * divdamp_fac:
                     if limited_area:
                         vn = np.where(
-                            (horizontal_lower < horz_idx)
-                            & (horz_idx < horizontal_upper)
-                            & (vert_idx > int32(0))
-                            & (vert_idx < nlev),
+                            (horizontal_lower < horz_idx) & (horz_idx < horizontal_upper),
                             mo_solve_nonhydro_stencil_27_numpy(
                                 mesh=mesh,
                                 scal_divdamp=scal_divdamp,
@@ -451,10 +412,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                         )
                     else:
                         vn = np.where(
-                            (horizontal_lower < horz_idx)
-                            & (horz_idx < horizontal_upper)
-                            & (vert_idx > int32(0))
-                            & (vert_idx < nlev),
+                            (horizontal_lower < horz_idx) & (horz_idx < horizontal_upper),
                             mo_solve_nonhydro_4th_order_divdamp_numpy(
                                 mesh=mesh,
                                 scal_divdamp=scal_divdamp,
@@ -466,10 +424,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             if is_iau_active:
                 vn = np.where(
-                    (horizontal_lower < horz_idx)
-                    & (horz_idx < horizontal_upper)
-                    & (vert_idx > int32(0))
-                    & (vert_idx < nlev),
+                    (horizontal_lower < horz_idx) & (horz_idx < horizontal_upper),
                     mo_solve_nonhydro_stencil_28_numpy(
                         mesh=mesh,
                         vn_incr=vn_incr,

@@ -144,7 +144,6 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
 ]:
     vert_idx = broadcast(vert_idx, (EdgeDim, KDim))
 
-    # no bounds to be set here for _mo_math_gradients_grad_green_gauss_cell_dsl
     (
         z_grad_rth_1,
         z_grad_rth_2,
@@ -162,19 +161,19 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         else (horizontal_lower_00, horizontal_upper_00)
     )
     (z_rho_e, z_theta_v_e) = where(
-        (zero_lower_bound < horz_idx < zero_upper_bound) & (int32(0) < vert_idx < nlev),
+        (zero_lower_bound < horz_idx < zero_upper_bound),
         (_set_zero_e_k(), _set_zero_e_k()),
         (z_rho_e, z_theta_v_e),
     )
     if limited_area:
         (z_rho_e, z_theta_v_e) = where(
-            (horizontal_lower_4 < horz_idx < horizontal_upper_4) & (int32(0) < vert_idx < nlev),
+            (horizontal_lower_4 < horz_idx < horizontal_upper_4),
             (_set_zero_e_k(), _set_zero_e_k()),
             (z_rho_e, z_theta_v_e),
         )
 
     (z_rho_e, z_theta_v_e) = where(
-        (horizontal_lower_1 < horz_idx < horizontal_upper_1) & (int32(0) < vert_idx < nlev),
+        (horizontal_lower_1 < horz_idx < horizontal_upper_1),
         _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
             p_vn=p_vn,
             p_vt=p_vt,
@@ -198,7 +197,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     )
 
     z_gradh_exner = where(
-        (horizontal_lower < horz_idx < horizontal_upper) & (int32(0) < vert_idx < nflatlev),
+        (horizontal_lower < horz_idx < horizontal_upper) & (vert_idx < nflatlev),
         _mo_solve_nonhydro_stencil_18(
             inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
         ),
@@ -224,8 +223,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
 
     z_gradh_exner = (
         where(
-            (horizontal_lower < horz_idx < horizontal_upper)
-            & (nflat_gradp + int32(1) < vert_idx < nlev),
+            (horizontal_lower < horz_idx < horizontal_upper) & (nflat_gradp + int32(1) < vert_idx),
             _mo_solve_nonhydro_stencil_20(
                 inv_dual_edge_length=inv_dual_edge_length,
                 z_exner_ex_pr=z_exner_ex_pr,
@@ -256,7 +254,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
 
     z_gradh_exner = (
         where(
-            (horizontal_lower_3 < horz_idx < horizontal_upper_3) & (int32(0) < vert_idx < nlev),
+            (horizontal_lower_3 < horz_idx < horizontal_upper_3),
             _mo_solve_nonhydro_stencil_22(
                 ipeidx_dsl=ipeidx_dsl,
                 pg_exdist=pg_exdist,
@@ -270,7 +268,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     )
 
     vn = where(
-        (horizontal_lower < horz_idx < horizontal_upper) & (int32(0) < vert_idx < nlev),
+        (horizontal_lower < horz_idx < horizontal_upper),
         _mo_solve_nonhydro_stencil_24(
             vn_nnow=vn_nnow,
             ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
@@ -285,7 +283,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
 
     vn = (
         where(
-            (horizontal_lower < horz_idx < horizontal_upper) & (int32(0) < vert_idx < nlev),
+            (horizontal_lower < horz_idx < horizontal_upper),
             _mo_solve_nonhydro_stencil_28(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
             vn,
         )
@@ -341,7 +339,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
     vert_idx = broadcast(vert_idx, (EdgeDim, KDim))
 
     z_graddiv_vn = where(
-        (horizontal_lower_2 < horz_idx < horizontal_upper_2) & (kstart_dd3d < vert_idx < nlev),
+        (horizontal_lower_2 < horz_idx < horizontal_upper_2) & (kstart_dd3d < vert_idx),
         _mo_solve_nonhydro_stencil_17(
             hmask_dd3d=hmask_dd3d,
             scalfac_dd3d=scalfac_dd3d,
@@ -354,7 +352,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
 
     vn = (
         where(
-            (horizontal_lower < horz_idx < horizontal_upper) & (int32(0) < vert_idx < nlev),
+            (horizontal_lower < horz_idx < horizontal_upper),
             _mo_solve_nonhydro_stencil_23(
                 vn_nnow=vn_nnow,
                 ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
@@ -374,14 +372,14 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
     )
 
     z_graddiv2_vn = where(
-        (horizontal_lower < horz_idx < horizontal_upper) & (int32(0) < vert_idx < nlev),
+        (horizontal_lower < horz_idx < horizontal_upper),
         _mo_solve_nonhydro_stencil_25(geofac_grdiv=geofac_grdiv, z_graddiv_vn=z_graddiv_vn),
         z_graddiv2_vn,
     )
 
     vn = (
         where(
-            (horizontal_lower < horz_idx < horizontal_upper) & (int32(0) < vert_idx < nlev),
+            (horizontal_lower < horz_idx < horizontal_upper),
             _mo_solve_nonhydro_stencil_26(
                 z_graddiv_vn=z_graddiv_vn, vn=vn, scal_divdamp_o2=scal_divdamp_o2
             ),
@@ -393,7 +391,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
 
     vn = (
         where(
-            (horizontal_lower < horz_idx < horizontal_upper) & (int32(0) < vert_idx < nlev),
+            (horizontal_lower < horz_idx < horizontal_upper),
             _mo_solve_nonhydro_stencil_27(
                 scal_divdamp=scal_divdamp,
                 bdy_divdamp=bdy_divdamp,
@@ -405,7 +403,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
         )
         if limited_area
         else where(
-            (horizontal_lower < horz_idx < horizontal_upper) & (int32(0) < vert_idx < nlev),
+            (horizontal_lower < horz_idx < horizontal_upper),
             _mo_solve_nonhydro_4th_order_divdamp(
                 scal_divdamp=scal_divdamp, z_graddiv2_vn=z_graddiv2_vn, vn=vn
             ),
@@ -417,7 +415,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
 
     vn = (
         where(
-            (horizontal_lower < horz_idx < horizontal_upper) & (int32(0) < vert_idx < nlev),
+            (horizontal_lower < horz_idx < horizontal_upper),
             _mo_solve_nonhydro_stencil_28(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
             vn,
         )
