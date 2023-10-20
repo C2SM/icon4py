@@ -80,10 +80,14 @@ def random_field(
     low: float = -1.0,
     high: float = 1.0,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
+    dtype: Optional[npt.DTypeLike] = None,
 ) -> it_embedded.MutableLocatedField:
-    return it_embedded.np_as_located_field(*dims)(
-        np.random.default_rng().uniform(low=low, high=high, size=_shape(mesh, *dims, extend=extend))
+    arr = np.random.default_rng().uniform(
+        low=low, high=high, size=_shape(mesh, *dims, extend=extend)
     )
+    if dtype:
+        arr = arr.astype(dtype)
+    return it_embedded.np_as_located_field(*dims)(arr)
 
 
 def zero_field(
