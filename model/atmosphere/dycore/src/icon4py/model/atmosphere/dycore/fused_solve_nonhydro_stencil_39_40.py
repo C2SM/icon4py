@@ -17,7 +17,7 @@ def _fused_solve_nonhydro_stencil_39_40(
     nflatlev: int32
 ) -> Field[[CellDim, KDim], float]:
     w_concorr_c = where(
-        nflatlev < vert_idx < nlev,
+        nflatlev + 1 <= vert_idx < nlev,
         _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c)
     )
