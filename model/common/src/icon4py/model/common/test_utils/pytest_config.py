@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import os
+
 import pytest
 from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 from gt4py.next.program_processors.runners.roundtrip import executor
@@ -18,6 +20,10 @@ from gt4py.next.program_processors.runners.roundtrip import executor
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
+
+    # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
+    if config.getoption("--enable-mixed-precision"):
+        os.environ["FLOAT_PRECISION"] = "mixed"
 
 
 def pytest_addoption(parser):
@@ -38,6 +44,16 @@ def pytest_addoption(parser):
             action="store",
             default=None,
             help="GT4Py backend to use when executing stencils. Defaults to 'executor' embedded backend. Currently the other option is 'run_gtfn' which is the GTFN CPU backend.",
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
+            "--enable-mixed-precision",
+            action="store_true",
+            help="Switch unit tests from double to mixed-precision",
+            default=False,
         )
     except ValueError:
         pass
