@@ -174,9 +174,10 @@ def test_nonhydro_predictor_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
+        cell_areas=cell_geometry.area,
+        owner_mask=grid_savepoint.c_owner_mask(),
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
-        cell_areas=cell_geometry.area,
         fac=fac,
         z=z,
     )
@@ -186,11 +187,7 @@ def test_nonhydro_predictor_step(
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
-        config=config,
-        params=nonhydro_params,
         z_fields=z_fields,
-        cell_areas=cell_geometry.area,
-        owner_mask=grid_savepoint.c_owner_mask(),
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
@@ -570,9 +567,10 @@ def test_nonhydro_corrector_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
+        cell_areas=cell_geometry.area,
+        owner_mask=grid_savepoint.c_owner_mask(),
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
-        cell_areas=cell_geometry.area,
         fac=fac,
         z=z,
     )
@@ -582,11 +580,7 @@ def test_nonhydro_corrector_step(
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
-        config=config,
-        params=nonhydro_params,
         z_fields=z_fields,
-        cell_areas=cell_geometry.area,
-        owner_mask=grid_savepoint.c_owner_mask(),
         prep_adv=prep_adv,
         dtime=dtime,
         nnew=nnew,
@@ -786,9 +780,10 @@ def test_run_solve_nonhydro_single_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
+        cell_areas=cell_geometry.area,
+        owner_mask=grid_savepoint.c_owner_mask(),
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
-        cell_areas=cell_geometry.area,
         fac=fac,
         z=z,
     )
@@ -799,12 +794,8 @@ def test_run_solve_nonhydro_single_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
-        config=config,
-        params=nonhydro_params,
         z_fields=z_fields,
         nh_constants=nh_constants,
-        cell_areas=cell_geometry.area,
-        c_owner_mask=grid_savepoint.c_owner_mask(),
         bdy_divdamp=sp.bdy_divdamp(),  # TODO (magdalena) local calculation in solve non-hydro based on nudge_coeff_e and scal_divdamp (also locally calculated)
         dtime=dtime,
         idyn_timestep=dyn_timestep,
@@ -898,21 +889,7 @@ def test_run_solve_nonhydro_multi_step(
         exner_incr=None,  # sp.exner_incr(),
     )
 
-    prognostic_state_nnow = PrognosticState(
-        w=sp.w_now(),
-        vn=sp.vn_now(),
-        theta_v=sp.theta_v_now(),
-        rho=sp.rho_now(),
-        exner=sp.exner_now(),
-    )
-
-    prognostic_state_nnew = PrognosticState(
-        w=sp.w_new(),
-        vn=sp.vn_new(),
-        theta_v=sp.theta_v_new(),
-        rho=sp.rho_new(),
-        exner=sp.exner_new(),
-    )
+    prognostic_state_ls, prognostic_state_nnew = create_prognostic_states(sp)
 
     z_fields = ZFields(
         z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
@@ -955,14 +932,13 @@ def test_run_solve_nonhydro_multi_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
+        cell_areas=cell_geometry.area,
+        owner_mask=grid_savepoint.c_owner_mask(),
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
-        cell_areas=cell_geometry.area,
         fac=fac,
         z=z,
     )
-
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
 
     for _ in range(r_nsubsteps):
         solve_nonhydro.time_step(
@@ -973,8 +949,6 @@ def test_run_solve_nonhydro_multi_step(
             params=nonhydro_params,
             z_fields=z_fields,
             nh_constants=nh_constants,
-            cell_areas=cell_geometry.area,
-            c_owner_mask=grid_savepoint.c_owner_mask(),
             bdy_divdamp=sp.bdy_divdamp(),
             dtime=dtime,
             idyn_timestep=dyn_timestep,
@@ -1050,3 +1024,22 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert dallclose(np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner))
+
+
+def create_prognostic_states(sp):
+    prognostic_state_nnow = PrognosticState(
+        w=sp.w_now(),
+        vn=sp.vn_now(),
+        theta_v=sp.theta_v_now(),
+        rho=sp.rho_now(),
+        exner=sp.exner_now(),
+    )
+    prognostic_state_nnew = PrognosticState(
+        w=sp.w_new(),
+        vn=sp.vn_new(),
+        theta_v=sp.theta_v_new(),
+        rho=sp.rho_new(),
+        exner=sp.exner_new(),
+    )
+    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    return prognostic_state_ls
