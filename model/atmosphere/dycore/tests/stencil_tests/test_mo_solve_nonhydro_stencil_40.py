@@ -32,15 +32,9 @@ def mo_solve_nonhydro_stencil_40_numpy(
     z_w_concorr_me_offset_2 = np.roll(z_w_concorr_me, shift=2, axis=1)
     z_w_concorr_me_offset_3 = np.roll(z_w_concorr_me, shift=3, axis=1)
 
-    z_w_concorr_mc_m1 = np.sum(
-        e_bln_c_s[c2ce_table] * z_w_concorr_me_offset_1[mesh.c2e], axis=1
-    )
-    z_w_concorr_mc_m2 = np.sum(
-        e_bln_c_s[c2ce_table] * z_w_concorr_me_offset_2[mesh.c2e], axis=1
-    )
-    z_w_concorr_mc_m3 = np.sum(
-        e_bln_c_s[c2ce_table] * z_w_concorr_me_offset_3[mesh.c2e], axis=1
-    )
+    z_w_concorr_mc_m1 = np.sum(e_bln_c_s[c2ce_table] * z_w_concorr_me_offset_1[mesh.c2e], axis=1)
+    z_w_concorr_mc_m2 = np.sum(e_bln_c_s[c2ce_table] * z_w_concorr_me_offset_2[mesh.c2e], axis=1)
+    z_w_concorr_mc_m3 = np.sum(e_bln_c_s[c2ce_table] * z_w_concorr_me_offset_3[mesh.c2e], axis=1)
 
     w_concorr_c = np.zeros_like(wgtfacq_c)
     w_concorr_c[:, -1] = (
@@ -64,9 +58,7 @@ class TestMoSolveNonhydroStencil40(StencilTest):
         wgtfacq_c: np.array,
         **kwargs,
     ) -> dict:
-        w_concorr_c = mo_solve_nonhydro_stencil_40_numpy(
-            mesh, e_bln_c_s, z_w_concorr_me, wgtfacq_c
-        )
+        w_concorr_c = mo_solve_nonhydro_stencil_40_numpy(mesh, e_bln_c_s, z_w_concorr_me, wgtfacq_c)
         return dict(w_concorr_c=w_concorr_c)
 
     @pytest.fixture
