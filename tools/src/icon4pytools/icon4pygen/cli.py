@@ -15,11 +15,11 @@
 
 from __future__ import annotations
 
+import os
 import pathlib
 
 import click
 
-import os
 
 class ModuleType(click.ParamType):
     dycore_import_path = "icon4py.model.atmosphere.dycore"
@@ -48,7 +48,9 @@ class ModuleType(click.ParamType):
 @click.argument("block_size", type=int, default=128)
 @click.argument("levels_per_thread", type=int, default=4)
 @click.option("--is_global", is_flag=True, type=bool, help="Whether this is a global run.")
-@click.option("--enable-mixed-precision", is_flag=True, type=bool, help="Enable mixed precision dycore")
+@click.option(
+    "--enable-mixed-precision", is_flag=True, type=bool, help="Enable mixed precision dycore"
+)
 @click.argument(
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),

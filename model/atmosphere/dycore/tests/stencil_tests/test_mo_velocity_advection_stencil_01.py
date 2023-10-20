@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_01 import (
     mo_velocity_advection_stencil_01,
 )
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoVelocityAdvectionStencil01(StencilTest):

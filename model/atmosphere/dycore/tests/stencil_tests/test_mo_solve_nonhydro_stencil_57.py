@@ -18,8 +18,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_57 import (
     mo_solve_nonhydro_stencil_57,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil57(StencilTest):

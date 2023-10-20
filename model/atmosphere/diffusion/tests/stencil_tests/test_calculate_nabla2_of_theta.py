@@ -18,13 +18,13 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta impor
     calculate_nabla2_of_theta,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.type_alias import wpfloat, vpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestCalculateNabla2OfTheta(StencilTest):

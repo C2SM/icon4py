@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestUpdateThetaAndExner(StencilTest):

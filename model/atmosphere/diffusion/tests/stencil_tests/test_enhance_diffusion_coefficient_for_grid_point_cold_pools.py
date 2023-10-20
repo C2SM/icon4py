@@ -18,8 +18,8 @@ from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_f
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat
 
 
 class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):

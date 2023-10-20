@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import Field, astype
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -29,9 +29,7 @@ def _mo_solve_nonhydro_stencil_60(
 ) -> Field[[CellDim, KDim], vpfloat]:
     exner_dyn_incr_wp, ddt_exner_phy_wp = astype((exner_dyn_incr, ddt_exner_phy), wpfloat)
 
-    exner_dyn_incr_wp = exner - (
-        exner_dyn_incr_wp + ndyn_substeps_var * dtime * ddt_exner_phy_wp
-    )
+    exner_dyn_incr_wp = exner - (exner_dyn_incr_wp + ndyn_substeps_var * dtime * ddt_exner_phy_wp)
     return astype(exner_dyn_incr_wp, vpfloat)
 
 

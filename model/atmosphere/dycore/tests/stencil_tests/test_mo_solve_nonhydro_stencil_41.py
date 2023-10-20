@@ -19,13 +19,13 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil41(StencilTest):

@@ -19,7 +19,6 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     flatten_first_two_dims,
@@ -27,6 +26,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_mask,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
