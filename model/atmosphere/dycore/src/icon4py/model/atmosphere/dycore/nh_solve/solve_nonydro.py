@@ -593,30 +593,30 @@ class SolveNonhydro:
             else:
                 lvn_only = False
 
-        velocity_advection.VelocityAdvection(
-            self.grid,
-            self.metric_state_nonhydro,
-            self.interpolation_state,
-            self.vertical_params,
-        ).run_predictor_step(
-            vn_only=lvn_only,
-            diagnostic_state=diagnostic_state_nh,
-            prognostic_state=prognostic_state[nnow],
-            z_w_concorr_me=self.z_w_concorr_me,
-            z_kin_hor_e=z_fields.z_kin_hor_e,
-            z_vt_ie=z_fields.z_vt_ie,
-            inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
-            inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
-            dtime=dtime,
-            ntnd=self.ntl1,
-            tangent_orientation=edge_geometry.tangent_orientation,
-            cfl_w_limit=cfl_w_limit,
-            scalfac_exdiff=scalfac_exdiff,
-            cell_areas=cell_areas,
-            owner_mask=owner_mask,
-            f_e=f_e,
-            area_edge=area_edge,
-        )
+            velocity_advection.VelocityAdvection(
+                self.grid,
+                self.metric_state_nonhydro,
+                self.interpolation_state,
+                self.vertical_params,
+            ).run_predictor_step(
+                vn_only=lvn_only,
+                diagnostic_state=diagnostic_state_nh,
+                prognostic_state=prognostic_state[nnow],
+                z_w_concorr_me=self.z_w_concorr_me,
+                z_kin_hor_e=z_fields.z_kin_hor_e,
+                z_vt_ie=z_fields.z_vt_ie,
+                inv_dual_edge_length=edge_geometry.inverse_dual_edge_lengths,
+                inv_primal_edge_length=edge_geometry.inverse_primal_edge_lengths,
+                dtime=dtime,
+                ntnd=self.ntl1,
+                tangent_orientation=edge_geometry.tangent_orientation,
+                cfl_w_limit=cfl_w_limit,
+                scalfac_exdiff=scalfac_exdiff,
+                cell_areas=cell_areas,
+                owner_mask=owner_mask,
+                f_e=f_e,
+                area_edge=area_edge,
+            )
 
         p_dthalf = 0.5 * dtime
 
