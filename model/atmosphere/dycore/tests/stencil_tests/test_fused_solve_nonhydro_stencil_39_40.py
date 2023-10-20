@@ -44,7 +44,7 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
             vert_idx[level] = level
 
         nlev = mesh.k_level
-        nflatlev = 5
+        nflatlev = 13
 
         return dict(
             e_bln_c_s=e_bln_c_s,
