@@ -11,4 +11,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.test_utils.helpers import backend, mesh  # noqa: F401 # fixtures
+from icon4py.model.common.decomposition.definitions import (
+    DecompositionInfo,
+    SingleNodeExchange,
+    create_exchange,
+)
+from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401 # import fixtures form test_utils
+    processor_props,
+)
+
+
+def test_create_single_node_runtime_without_mpi(processor_props):  # noqa: F811 # fixture
+    decomposition_info = DecompositionInfo(klevels=10)
+    exchange = create_exchange(processor_props, decomposition_info)
+
+    assert isinstance(exchange, SingleNodeExchange)

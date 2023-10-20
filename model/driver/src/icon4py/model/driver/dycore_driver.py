@@ -159,17 +159,8 @@ class TimeLoop:
         prognostic_state: PrognosticState,
         # below is a long list of arguments for dycore time_step (suggestion: many can be moved to initialization of SolveNonhydro)
         prep_adv: PrepAdvection,
-        nonhydro_config: NonHydrostaticConfig,
-        nonhydro_params: NonHydrostaticParams,
-        edge_geometry: EdgeParams, # precomputed constants
         z_fields: ZFields, # local constants in solve_nh
-        nh_constants: NHConstants, # user defined constants
-        cfl_w_limit: float, # need to check
-        scalfac_exdiff: float,
-        cell_areas: Field[[CellDim], float], # precomputed constants
-        c_owner_mask: Field[[CellDim], bool], # precomputed constants
-        f_e: Field[[EdgeDim], float],
-        area_edge: Field[[EdgeDim], float], # in EdgeParams, precomputed constants
+        nh_constants: NHConstants,
         bdy_divdamp: Field[[KDim], float],
         lprep_adv: bool
     ):
@@ -201,17 +192,8 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_state,
                 prep_adv,
-                nonhydro_config,
-                nonhydro_params,
-                edge_geometry,
                 z_fields,
                 nh_constants,
-                cfl_w_limit,
-                scalfac_exdiff,
-                cell_areas,
-                c_owner_mask,
-                f_e,
-                area_edge,
                 bdy_divdamp,
                 lprep_adv
             )
@@ -228,17 +210,8 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state: PrognosticState,
         prep_adv: PrepAdvection,
-        nonhydro_config: NonHydrostaticConfig,
-        nonhydro_params: NonHydrostaticParams,
-        edge_geometry: EdgeParams,
         z_fields: ZFields,
         nh_constants: NHConstants,
-        cfl_w_limit: float,
-        scalfac_exdiff: float,
-        cell_areas: Field[[CellDim], float],
-        c_owner_mask: Field[[CellDim], bool],
-        f_e: Field[[EdgeDim], float],
-        area_edge: Field[[EdgeDim], float],
         bdy_divdamp: Field[[KDim], float],
         lprep_adv: bool
     ):
@@ -247,17 +220,8 @@ class TimeLoop:
             solve_nonhydro_diagnostic_state,
             prognostic_state,
             prep_adv,
-            nonhydro_config,
-            nonhydro_params,
-            edge_geometry,
             z_fields,
             nh_constants,
-            cfl_w_limit,
-            scalfac_exdiff,
-            cell_areas,
-            c_owner_mask,
-            f_e,
-            area_edge,
             bdy_divdamp,
             lprep_adv
         )
@@ -277,17 +241,8 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state: PrognosticState,
         prep_adv: PrepAdvection,
-        nonhydro_config: NonHydrostaticConfig,
-        nonhydro_params: NonHydrostaticParams,
-        edge_geometry: EdgeParams,
         z_fields: ZFields,
         nh_constants: NHConstants,
-        cfl_w_limit: float,
-        scalfac_exdiff: float,
-        cell_areas: Field[[CellDim], float],
-        c_owner_mask: Field[[CellDim], bool],
-        f_e: Field[[EdgeDim], float],
-        area_edge: Field[[EdgeDim], float],
         bdy_divdamp: Field[[KDim], float],
         lprep_adv: bool
     ):
@@ -334,17 +289,8 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
                 prep_adv=prep_adv,
-                config=nonhydro_config,
-                params=nonhydro_params,
-                edge_geometry=edge_geometry,
                 z_fields=z_fields,
                 nh_constants=nh_constants,
-                cfl_w_limit=cfl_w_limit,
-                scalfac_exdiff=scalfac_exdiff,
-                cell_areas=cell_areas,
-                c_owner_mask=c_owner_mask,
-                f_e=f_e,
-                area_edge=area_edge,
                 bdy_divdamp=bdy_divdamp,
                 dtime=self._substep_timestep,
                 idyn_timestep=idyn_timestep,

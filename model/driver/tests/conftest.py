@@ -16,7 +16,7 @@ from datetime import datetime
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 
-from icon4py.model.common.test_utils.fixtures import (  # noqa: F401
+from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401
     data_provider,
     grid_savepoint,
     icon_grid,

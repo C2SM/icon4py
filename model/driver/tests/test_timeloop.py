@@ -115,28 +115,6 @@ def test_run_timeloop_single_step(
     #linit = sp_v.get_metadata("linit").get("linit") # moved to time loop
     #dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
 
-    diagnostic_state_nh = DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
-        grf_tend_rho=sp.grf_tend_rho(),
-        grf_tend_thv=sp.grf_tend_thv(),
-        grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
-        grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-    )
 
     assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
     assert r04b09_iconrun_config.dtime == diffusion_dtime
@@ -181,9 +159,11 @@ def test_run_timeloop_single_step(
         metric_state_nonhydro=nonhydro_metric_state,
         interpolation_state=nonhydro_interpolation_state,
         vertical_params=vertical_params,
+        edge_geometry=edge_geometry,
+        cell_areas=cell_geometry.area,
+        owner_mask=grid_savepoint.c_owner_mask(),
         a_vec=a_vec,
         enh_smag_fac=enh_smag_fac,
-        cell_areas=cell_geometry.area,
         fac=fac,
         z=z,
     )
@@ -224,18 +204,10 @@ def test_run_timeloop_single_step(
         nonhydro_diagnostic_state,
         prognostic_state,
         prep_adv,
-        nonhydro_config,
-        nonhydro_params,
-        edge_geometry,
         z_fields,
         nh_constants,
-        sp_v.cfl_w_limit(),
-        sp_v.scalfac_exdiff(),
-        cell_geometry.area,
-        grid_savepoint.c_owner_mask(),
-        grid_savepoint.f_e(),
-        grid_savepoint.edge_areas(),
-        sp.bdy_divdamp(),lprep_adv
+        sp.bdy_divdamp(),
+        lprep_adv
     )
 
     try:
