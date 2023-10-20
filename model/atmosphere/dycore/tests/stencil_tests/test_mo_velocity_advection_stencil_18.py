@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
     mo_velocity_advection_stencil_18,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 
 
@@ -71,14 +72,14 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         levmask = random_mask(mesh, KDim)
         cfl_clipping = random_mask(mesh, CellDim, KDim)
         owner_mask = random_mask(mesh, CellDim)
-        z_w_con_c = random_field(mesh, CellDim, KDim)
-        ddqz_z_half = random_field(mesh, CellDim, KDim)
-        area = random_field(mesh, CellDim)
-        geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
-        w = random_field(mesh, CellDim, KDim)
-        ddt_w_adv = random_field(mesh, CellDim, KDim)
+        z_w_con_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        area = random_field(mesh, CellDim, dtype=wpfloat)
+        geofac_n2s = random_field(mesh, CellDim, C2E2CODim, dtype=wpfloat)
+        w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        ddt_w_adv = random_field(mesh, CellDim, KDim, dtype=vpfloat)
         scalfac_exdiff = 10.0
-        cfl_w_limit = 3.0
+        cfl_w_limit = vpfloat("3.0")
         dtime = 2.0
 
         return dict(

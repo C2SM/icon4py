@@ -16,6 +16,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
@@ -40,11 +41,11 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        p_e_in = random_field(mesh, EdgeDim, KDim)
-        ptr_coeff_1 = random_field(mesh, VertexDim, V2EDim)
-        ptr_coeff_2 = random_field(mesh, VertexDim, V2EDim)
-        p_v_out = zero_field(mesh, VertexDim, KDim)
-        p_u_out = zero_field(mesh, VertexDim, KDim)
+        p_e_in = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        ptr_coeff_1 = random_field(mesh, VertexDim, V2EDim, dtype=wpfloat)
+        ptr_coeff_2 = random_field(mesh, VertexDim, V2EDim, dtype=wpfloat)
+        p_v_out = zero_field(mesh, VertexDim, KDim, dtype=wpfloat)
+        p_u_out = zero_field(mesh, VertexDim, KDim, dtype=wpfloat)
 
         return dict(
             p_e_in=p_e_in,

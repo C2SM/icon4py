@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -53,14 +54,14 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        vn = random_field(mesh, EdgeDim, KDim)
-        geofac_div = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
-        kh_smag_ec = random_field(mesh, EdgeDim, KDim)
-        e_bln_c_s = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
-        diff_multfac_smag = random_field(mesh, KDim)
+        vn = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        geofac_div = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim, dtype=wpfloat), CEDim)
+        kh_smag_ec = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        e_bln_c_s = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim, dtype=wpfloat), CEDim)
+        diff_multfac_smag = random_field(mesh, KDim, dtype=vpfloat)
 
-        kh_c = zero_field(mesh, CellDim, KDim)
-        div = zero_field(mesh, CellDim, KDim)
+        kh_c = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+        div = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             kh_smag_ec=kh_smag_ec,

@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoMathDivrotRotVertexRiDsl(StencilTest):
@@ -34,9 +35,9 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        vec_e = random_field(mesh, EdgeDim, KDim)
-        geofac_rot = random_field(mesh, VertexDim, V2EDim)
-        rot_vec = zero_field(mesh, VertexDim, KDim)
+        vec_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        geofac_rot = random_field(mesh, VertexDim, V2EDim, dtype=wpfloat)
+        rot_vec = zero_field(mesh, VertexDim, KDim, dtype=vpfloat)
 
         return dict(
             vec_e=vec_e,

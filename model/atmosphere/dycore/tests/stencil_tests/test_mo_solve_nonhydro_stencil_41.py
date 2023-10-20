@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -52,11 +53,11 @@ class TestMoSolveNonhydroStencil41(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        geofac_div = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
-        z_theta_v_fl_e = random_field(mesh, EdgeDim, KDim)
-        z_flxdiv_theta = zero_field(mesh, CellDim, KDim)
-        mass_fl_e = random_field(mesh, EdgeDim, KDim)
-        z_flxdiv_mass = zero_field(mesh, CellDim, KDim)
+        geofac_div = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim, dtype=wpfloat), CEDim)
+        z_theta_v_fl_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        z_flxdiv_theta = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+        mass_fl_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        z_flxdiv_mass = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             geofac_div=geofac_div,

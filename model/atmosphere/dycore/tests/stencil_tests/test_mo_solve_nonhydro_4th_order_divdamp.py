@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import 
     mo_solve_nonhydro_4th_order_divdamp,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
@@ -40,9 +41,9 @@ class TestMoSolveNonhydro4thOrderDivdamp(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        scal_divdamp = random_field(mesh, KDim)
-        z_graddiv2_vn = random_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+        scal_divdamp = random_field(mesh, KDim, dtype=wpfloat)
+        z_graddiv2_vn = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        vn = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             scal_divdamp=scal_divdamp,

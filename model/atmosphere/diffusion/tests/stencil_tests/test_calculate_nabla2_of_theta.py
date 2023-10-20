@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta impor
     calculate_nabla2_of_theta,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import wpfloat, vpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -39,10 +40,10 @@ class TestCalculateNabla2OfTheta(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        geofac_div = random_field(mesh, CellDim, C2EDim)
+        z_nabla2_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        geofac_div = random_field(mesh, CellDim, C2EDim, dtype=wpfloat)
         geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
 
-        z_temp = zero_field(mesh, CellDim, KDim)
+        z_temp = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
 
         return dict(z_nabla2_e=z_nabla2_e, geofac_div=geofac_div_new, z_temp=z_temp)

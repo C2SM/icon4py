@@ -16,6 +16,7 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -73,20 +74,20 @@ class TestCalculateNabla4(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        u_vert = random_field(mesh, VertexDim, KDim)
-        v_vert = random_field(mesh, VertexDim, KDim)
+        u_vert = random_field(mesh, VertexDim, KDim, dtype=vpfloat)
+        v_vert = random_field(mesh, VertexDim, KDim, dtype=vpfloat)
 
-        primal_normal_vert_v1 = random_field(mesh, EdgeDim, E2C2VDim)
-        primal_normal_vert_v2 = random_field(mesh, EdgeDim, E2C2VDim)
+        primal_normal_vert_v1 = random_field(mesh, EdgeDim, E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_v2 = random_field(mesh, EdgeDim, E2C2VDim, dtype=wpfloat)
 
         primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, ECVDim)
         primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, ECVDim)
 
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        inv_vert_vert_length = random_field(mesh, EdgeDim)
-        inv_primal_edge_length = random_field(mesh, EdgeDim)
+        z_nabla2_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        inv_vert_vert_length = random_field(mesh, EdgeDim, dtype=wpfloat)
+        inv_primal_edge_length = random_field(mesh, EdgeDim, dtype=wpfloat)
 
-        z_nabla4_e2 = zero_field(mesh, EdgeDim, KDim)
+        z_nabla4_e2 = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             u_vert=u_vert,

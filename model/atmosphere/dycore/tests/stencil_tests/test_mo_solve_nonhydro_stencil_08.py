@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
     mo_solve_nonhydro_stencil_08,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -27,14 +28,14 @@ class TestMoSolveNonhydroStencil08(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        wgtfac_c = random_field(mesh, CellDim, KDim)
-        rho = random_field(mesh, CellDim, KDim)
-        rho_ref_mc = random_field(mesh, CellDim, KDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        theta_ref_mc = random_field(mesh, CellDim, KDim)
-        rho_ic = zero_field(mesh, CellDim, KDim)
-        z_rth_pr_1 = zero_field(mesh, CellDim, KDim)
-        z_rth_pr_2 = zero_field(mesh, CellDim, KDim)
+        wgtfac_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        rho = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        rho_ref_mc = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        theta_v = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        theta_ref_mc = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        rho_ic = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
+        z_rth_pr_1 = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+        z_rth_pr_2 = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,

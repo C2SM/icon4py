@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     calculate_nabla2_for_w,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -34,9 +35,9 @@ class TestCalculateNabla2ForW(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        w = random_field(mesh, CellDim, KDim)
-        geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
-        z_nabla2_c = zero_field(mesh, CellDim, KDim)
+        w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        geofac_n2s = random_field(mesh, CellDim, C2E2CODim, dtype=wpfloat)
+        z_nabla2_c = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             w=w,

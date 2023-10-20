@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
 )
 from icon4py.model.common.dimension import CellDim, E2C2EODim, E2CDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoVelocityAdvectionStencil20(StencilTest):
@@ -29,17 +30,17 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
     @pytest.fixture
     def input_data(self, mesh):
         levelmask = random_mask(mesh, KDim, extend={KDim: 1})
-        c_lin_e = random_field(mesh, EdgeDim, E2CDim)
-        z_w_con_c_full = random_field(mesh, CellDim, KDim)
-        ddqz_z_full_e = random_field(mesh, EdgeDim, KDim)
+        c_lin_e = random_field(mesh, EdgeDim, E2CDim, dtype=wpfloat)
+        z_w_con_c_full = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        ddqz_z_full_e = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
         area_edge = random_field(mesh, EdgeDim)
         tangent_orientation = random_field(mesh, EdgeDim)
         inv_primal_edge_length = random_field(mesh, EdgeDim)
-        zeta = random_field(mesh, VertexDim, KDim)
+        zeta = random_field(mesh, VertexDim, KDim, dtype=vpfloat)
         geofac_grdiv = random_field(mesh, EdgeDim, E2C2EODim)
         vn = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_apc = random_field(mesh, EdgeDim, KDim)
-        cfl_w_limit = 4.0
+        ddt_vn_apc = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        cfl_w_limit = vpfloat("4.0")
         scalfac_exdiff = 6.0
         dtime = 2.0
         return dict(

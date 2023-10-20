@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_21 import (
     mo_solve_nonhydro_stencil_21,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     flatten_first_two_dims,
@@ -111,17 +112,17 @@ class TestMoSolveNonHydroStencil21(StencilTest):
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
 
-        theta_v = random_field(mesh, CellDim, KDim)
-        zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
-        theta_v_ic = random_field(mesh, CellDim, KDim)
-        inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        grav_o_cpd = 10.0
+        theta_v = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim, dtype=vpfloat)
+        theta_v_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        inv_ddqz_z_full = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        inv_dual_edge_length = random_field(mesh, EdgeDim, dtype=wpfloat)
+        grav_o_cpd = wpfloat("10.0")
 
         zdiff_gradp_new = flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp)
         ikoffset_new = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
 
-        z_hydro_corr = zero_field(mesh, EdgeDim, KDim)
+        z_hydro_corr = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             theta_v=theta_v,

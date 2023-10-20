@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_33 import (
     mo_solve_nonhydro_stencil_33,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
 
 
@@ -34,8 +35,8 @@ class TestMoSolveNonhydroStencil33(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        vn_traj = zero_field(mesh, EdgeDim, KDim)
-        mass_flx_me = zero_field(mesh, EdgeDim, KDim)
+        vn_traj = zero_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        mass_flx_me = zero_field(mesh, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             vn_traj=vn_traj,

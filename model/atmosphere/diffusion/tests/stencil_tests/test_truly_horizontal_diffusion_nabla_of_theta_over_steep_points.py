@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     flatten_first_two_dims,
@@ -90,12 +91,12 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
 
-        zd_diffcoef = random_field(mesh, CellDim, KDim)
-        geofac_n2s_c = random_field(mesh, CellDim)
-        geofac_n2s_nbh = random_field(mesh, CellDim, C2E2CDim)
-        vcoef = random_field(mesh, CellDim, C2E2CDim, KDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        z_temp = random_field(mesh, CellDim, KDim)
+        zd_diffcoef = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        geofac_n2s_c = random_field(mesh, CellDim, dtype=wpfloat)
+        geofac_n2s_nbh = random_field(mesh, CellDim, C2E2CDim, dtype=wpfloat)
+        vcoef = random_field(mesh, CellDim, C2E2CDim, KDim, dtype=wpfloat)
+        theta_v = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        z_temp = random_field(mesh, CellDim, KDim, dtype=vpfloat)
 
         vcoef_new = flatten_first_two_dims(CECDim, KDim, field=vcoef)
         zd_vertoffset_new = flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset)

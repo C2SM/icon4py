@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -89,25 +90,25 @@ class TestMoSolveNonhydroStencil10(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        dtime = 1.0
-        wgt_nnow_rth = 2.0
-        wgt_nnew_rth = 3.0
-        w = random_field(mesh, CellDim, KDim)
-        w_concorr_c = random_field(mesh, CellDim, KDim)
-        ddqz_z_half = random_field(mesh, CellDim, KDim)
-        rho_now = random_field(mesh, CellDim, KDim)
-        rho_var = random_field(mesh, CellDim, KDim)
-        theta_now = random_field(mesh, CellDim, KDim)
-        theta_var = random_field(mesh, CellDim, KDim)
-        wgtfac_c = random_field(mesh, CellDim, KDim)
-        theta_ref_mc = random_field(mesh, CellDim, KDim)
-        vwind_expl_wgt = random_field(mesh, CellDim)
-        exner_pr = random_field(mesh, CellDim, KDim)
-        d_exner_dz_ref_ic = random_field(mesh, CellDim, KDim)
-        rho_ic = zero_field(mesh, CellDim, KDim)
-        z_theta_v_pr_ic = zero_field(mesh, CellDim, KDim)
-        theta_v_ic = zero_field(mesh, CellDim, KDim)
-        z_th_ddz_exner_c = zero_field(mesh, CellDim, KDim)
+        dtime = wpfloat("1.0")
+        wgt_nnow_rth = wpfloat("2.0")
+        wgt_nnew_rth = wpfloat("3.0")
+        w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        w_concorr_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        rho_now = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        rho_var = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        theta_now = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        theta_var = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        wgtfac_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        theta_ref_mc = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        vwind_expl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
+        exner_pr = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        d_exner_dz_ref_ic = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        rho_ic = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
+        z_theta_v_pr_ic = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+        theta_v_ic = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
+        z_th_ddz_exner_c = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             w=w,

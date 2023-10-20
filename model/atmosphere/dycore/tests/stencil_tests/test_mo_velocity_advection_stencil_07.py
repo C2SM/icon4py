@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -56,14 +57,14 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        vn_ie = random_field(mesh, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        w = random_field(mesh, CellDim, KDim)
-        z_vt_ie = random_field(mesh, EdgeDim, KDim)
-        inv_primal_edge_length = random_field(mesh, EdgeDim)
-        tangent_orientation = random_field(mesh, EdgeDim)
-        z_w_v = random_field(mesh, VertexDim, KDim)
-        z_v_grad_w = zero_field(mesh, EdgeDim, KDim)
+        vn_ie = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        inv_dual_edge_length = random_field(mesh, EdgeDim, dtype=wpfloat)
+        w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        z_vt_ie = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        inv_primal_edge_length = random_field(mesh, EdgeDim, dtype=wpfloat)
+        tangent_orientation = random_field(mesh, EdgeDim, dtype=wpfloat)
+        z_w_v = random_field(mesh, VertexDim, KDim, dtype=vpfloat)
+        z_v_grad_w = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             vn_ie=vn_ie,

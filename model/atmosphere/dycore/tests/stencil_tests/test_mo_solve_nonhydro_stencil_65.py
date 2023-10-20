@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
@@ -48,14 +49,14 @@ class TestMoSolveNonhydroStencil65(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        r_nsubsteps = 10.0
-        rho_ic = random_field(mesh, CellDim, KDim)
-        vwind_expl_wgt = random_field(mesh, CellDim)
-        vwind_impl_wgt = random_field(mesh, CellDim)
-        w_now = random_field(mesh, CellDim, KDim)
-        w_new = random_field(mesh, CellDim, KDim)
-        w_concorr_c = random_field(mesh, CellDim, KDim)
-        mass_flx_ic = random_field(mesh, CellDim, KDim)
+        r_nsubsteps = wpfloat("10.0")
+        rho_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        vwind_expl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
+        vwind_impl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
+        w_now = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        w_new = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        w_concorr_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        mass_flx_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
 
         return dict(
             rho_ic=rho_ic,

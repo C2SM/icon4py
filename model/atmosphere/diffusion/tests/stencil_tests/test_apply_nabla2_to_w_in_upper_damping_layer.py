@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damp
     apply_nabla2_to_w_in_upper_damping_layer,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import wpfloat, vpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
@@ -28,10 +29,10 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        w = random_field(mesh, CellDim, KDim)
-        diff_multfac_n2w = random_field(mesh, KDim)
-        cell_area = random_field(mesh, CellDim)
-        z_nabla2_c = random_field(mesh, CellDim, KDim)
+        w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        diff_multfac_n2w = random_field(mesh, KDim, dtype=wpfloat)
+        cell_area = random_field(mesh, CellDim, dtype=wpfloat)
+        z_nabla2_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             w=w,

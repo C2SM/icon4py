@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_20 import (
     mo_solve_nonhydro_stencil_20,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     flatten_first_two_dims,
@@ -80,9 +81,9 @@ class TestMoSolveNonHydroStencil20(StencilTest):
     @pytest.fixture
     def input_data(self, mesh):
 
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-        zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
+        inv_dual_edge_length = random_field(mesh, EdgeDim, dtype=wpfloat)
+        z_exner_ex_pr = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim, dtype=vpfloat)
         ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int32)
 
         rng = np.random.default_rng()
@@ -97,9 +98,9 @@ class TestMoSolveNonHydroStencil20(StencilTest):
         zdiff_gradp_new = flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp)
         ikoffset_new = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
 
-        z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim)
-        z_dexner_dz_c_2 = random_field(mesh, CellDim, KDim)
-        z_gradh_exner = zero_field(mesh, EdgeDim, KDim)
+        z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        z_dexner_dz_c_2 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        z_gradh_exner = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,

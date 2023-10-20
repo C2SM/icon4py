@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45 import (
     mo_solve_nonhydro_stencil_45,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
 
 
@@ -32,7 +33,7 @@ class TestMoSolveNonhydroStencil45(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        z_alpha = zero_field(mesh, CellDim, KDim)
+        z_alpha = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             z_alpha=z_alpha,

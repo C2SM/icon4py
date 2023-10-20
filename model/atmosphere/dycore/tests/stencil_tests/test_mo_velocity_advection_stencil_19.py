@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
     mo_velocity_advection_stencil_19,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -64,18 +65,18 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        z_kin_hor_e = random_field(mesh, EdgeDim, KDim)
-        coeff_gradekin = random_field(mesh, EdgeDim, E2CDim)
+        z_kin_hor_e = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        coeff_gradekin = random_field(mesh, EdgeDim, E2CDim, dtype=vpfloat)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)
-        z_ekinh = random_field(mesh, CellDim, KDim)
-        zeta = random_field(mesh, VertexDim, KDim)
-        vt = random_field(mesh, EdgeDim, KDim)
-        f_e = random_field(mesh, EdgeDim)
-        c_lin_e = random_field(mesh, EdgeDim, E2CDim)
-        z_w_con_c_full = random_field(mesh, CellDim, KDim)
-        vn_ie = random_field(mesh, EdgeDim, KDim, extend={KDim: 1})
-        ddqz_z_full_e = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_apc = zero_field(mesh, EdgeDim, KDim)
+        z_ekinh = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        zeta = random_field(mesh, VertexDim, KDim, dtype=vpfloat)
+        vt = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        f_e = random_field(mesh, EdgeDim, dtype=wpfloat)
+        c_lin_e = random_field(mesh, EdgeDim, E2CDim, dtype=wpfloat)
+        z_w_con_c_full = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        vn_ie = random_field(mesh, EdgeDim, KDim, extend={KDim: 1}, dtype=vpfloat)
+        ddqz_z_full_e = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        ddt_vn_apc = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,

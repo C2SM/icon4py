@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
     mo_velocity_advection_stencil_06,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -44,9 +45,9 @@ class TestMoVelocityAdvectionStencil06(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        wgtfacq_e = random_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        vn_ie = zero_field(mesh, EdgeDim, KDim)
+        wgtfacq_e = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        vn = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        vn_ie = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfacq_e=wgtfacq_e,

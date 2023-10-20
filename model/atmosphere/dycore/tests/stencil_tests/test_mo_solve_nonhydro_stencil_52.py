@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
     mo_solve_nonhydro_stencil_52,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -61,18 +62,18 @@ def mo_solve_nonhydro_stencil_52_numpy(
 
 def test_mo_solve_nonhydro_stencil_52():
     mesh = SimpleMesh()
-    vwind_impl_wgt = random_field(mesh, CellDim)
-    theta_v_ic = random_field(mesh, CellDim, KDim)
-    ddqz_z_half = random_field(mesh, CellDim, KDim)
-    z_alpha = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    z_beta = random_field(mesh, CellDim, KDim)
-    z_exner_expl = random_field(mesh, CellDim, KDim)
-    z_w_expl = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    dtime = 8.0
-    cpd = 7.0
+    vwind_impl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
+    theta_v_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+    ddqz_z_half = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+    z_alpha = random_field(mesh, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
+    z_beta = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+    z_exner_expl = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+    z_w_expl = random_field(mesh, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+    dtime = wpfloat("8.0")
+    cpd = wpfloat("7.0")
 
-    z_q = random_field(mesh, CellDim, KDim)
-    w = random_field(mesh, CellDim, KDim)
+    z_q = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+    w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
 
     z_q_ref, w_ref = mo_solve_nonhydro_stencil_52_numpy(
         np.asarray(vwind_impl_wgt),

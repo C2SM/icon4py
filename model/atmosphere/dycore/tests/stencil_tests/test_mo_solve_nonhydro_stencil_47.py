@@ -18,6 +18,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
     mo_solve_nonhydro_stencil_47,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -33,9 +34,9 @@ class TestMoSolveNonhydroStencil47(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        w_concorr_c = random_field(mesh, CellDim, KDim)
-        z_contr_w_fl_l = zero_field(mesh, CellDim, KDim)
-        w_nnew = zero_field(mesh, CellDim, KDim)
+        w_concorr_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        z_contr_w_fl_l = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
+        w_nnew = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
 
         return dict(
             w_nnew=w_nnew,

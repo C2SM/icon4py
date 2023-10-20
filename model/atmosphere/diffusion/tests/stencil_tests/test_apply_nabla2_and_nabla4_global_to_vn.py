@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
@@ -27,12 +28,12 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, mesh):
-        area_edge = random_field(mesh, EdgeDim)
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla4_e2 = random_field(mesh, EdgeDim, KDim)
-        diff_multfac_vn = random_field(mesh, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+        area_edge = random_field(mesh, EdgeDim, dtype=wpfloat)
+        kh_smag_e = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        z_nabla2_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        z_nabla4_e2 = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        diff_multfac_vn = random_field(mesh, KDim, dtype=wpfloat)
+        vn = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             area_edge=area_edge,
