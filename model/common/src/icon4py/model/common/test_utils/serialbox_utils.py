@@ -360,6 +360,7 @@ class IconGridSavePoint(IconSavepoint):
             primal_normal_cell_y=primal_normal_cell[1],
             dual_normal_cell_y=dual_normal_cell[1],
             edge_areas=self.edge_areas(),
+            f_e=self.f_e(),
         )
 
     def construct_cell_geometry(self) -> CellParams:
