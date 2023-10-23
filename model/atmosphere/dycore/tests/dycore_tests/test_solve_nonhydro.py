@@ -29,6 +29,10 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
 
+EDGE_START_LB_PLUS6 = 3777
+
+NLEV_MINUS1 = 64
+
 
 @pytest.mark.datatest
 def test_nonhydro_params():
@@ -205,98 +209,99 @@ def test_nonhydro_predictor_step(
 
     # TODO: @abishekg7 remove bounds from asserts?
     # stencils 2, 3
+    CELL_START_LB_PLUS2 = 1688
     assert dallclose(
-        np.asarray(sp_exit.exner_pr())[1688:20896, :],
-        np.asarray(diagnostic_state_nh.exner_pr)[1688:20896, :],
+        np.asarray(sp_exit.exner_pr())[CELL_START_LB_PLUS2:, :],
+        np.asarray(diagnostic_state_nh.exner_pr)[CELL_START_LB_PLUS2:, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_exner_ex_pr())[1688:20896, :],
-        np.asarray(solve_nonhydro.z_exner_ex_pr)[1688:20896, :],
+        np.asarray(sp_exit.z_exner_ex_pr())[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_exner_ex_pr)[CELL_START_LB_PLUS2:, :],
     )
 
     # stencils 4,5
     assert dallclose(
-        np.asarray(sp_exit.z_exner_ic())[1688:20896, 64],
-        np.asarray(solve_nonhydro.z_exner_ic)[1688:20896, 64],
+        np.asarray(sp_exit.z_exner_ic())[CELL_START_LB_PLUS2:, NLEV_MINUS1],
+        np.asarray(solve_nonhydro.z_exner_ic)[CELL_START_LB_PLUS2:, NLEV_MINUS1],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_exner_ic())[1688:20896, 4:64],
-        np.asarray(solve_nonhydro.z_exner_ic)[1688:20896, 4:64],
+        np.asarray(sp_exit.z_exner_ic())[CELL_START_LB_PLUS2:, 4:NLEV_MINUS1],
+        np.asarray(solve_nonhydro.z_exner_ic)[CELL_START_LB_PLUS2:, 4:NLEV_MINUS1],
         rtol=1.0e-9,
     )
     # stencil 6
     assert dallclose(
-        np.asarray(sp_exit.z_dexner_dz_c(1))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_dexner_dz_c_1)[1688:20896, :],
+        np.asarray(sp_exit.z_dexner_dz_c(1))[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_1)[CELL_START_LB_PLUS2:, :],
         atol=5e-18,
     )
 
     # stencils 7,8,9
     assert dallclose(
-        np.asarray(icon_result_rho_ic)[1688:20896, :],
-        np.asarray(diagnostic_state_nh.rho_ic)[1688:20896, :],
+        np.asarray(icon_result_rho_ic)[CELL_START_LB_PLUS2:, :],
+        np.asarray(diagnostic_state_nh.rho_ic)[CELL_START_LB_PLUS2:, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_th_ddz_exner_c())[1688:20896, 1:],
-        np.asarray(solve_nonhydro.z_th_ddz_exner_c)[1688:20896, 1:],
+        np.asarray(sp_exit.z_th_ddz_exner_c())[CELL_START_LB_PLUS2:, 1:],
+        np.asarray(solve_nonhydro.z_th_ddz_exner_c)[CELL_START_LB_PLUS2:, 1:],
     )
 
     # stencils 7,8,9, 11
     assert dallclose(
-        np.asarray(sp_exit.z_theta_v_pr_ic())[1688:20896, :],
-        np.asarray(solve_nonhydro.z_theta_v_pr_ic)[1688:20896, :],
+        np.asarray(sp_exit.z_theta_v_pr_ic())[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_theta_v_pr_ic)[CELL_START_LB_PLUS2:, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.theta_v_ic())[1688:20896, :],
-        np.asarray(diagnostic_state_nh.theta_v_ic)[1688:20896, :],
+        np.asarray(sp_exit.theta_v_ic())[CELL_START_LB_PLUS2:, :],
+        np.asarray(diagnostic_state_nh.theta_v_ic)[CELL_START_LB_PLUS2:, :],
     )
     # stencils 7,8,9, 13
     assert dallclose(
-        np.asarray(sp_exit.z_rth_pr(1))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_rth_pr_1)[1688:20896, :],
+        np.asarray(sp_exit.z_rth_pr(1))[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_rth_pr_1)[CELL_START_LB_PLUS2:, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_rth_pr(2))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_rth_pr_2)[1688:20896, :],
+        np.asarray(sp_exit.z_rth_pr(2))[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_rth_pr_2)[CELL_START_LB_PLUS2:, :],
     )
 
     # stencils 12
     assert dallclose(
-        np.asarray(sp_exit.z_dexner_dz_c(2))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_dexner_dz_c_2)[1688:20896, :],
+        np.asarray(sp_exit.z_dexner_dz_c(2))[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_2)[CELL_START_LB_PLUS2:, :],
         atol=1e-22,
     )
 
     # grad_green_gauss_cell_dsl
     assert dallclose(
-        np.asarray(sp_exit.z_grad_rth(1))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_grad_rth_1)[1688:20896, :],
+        np.asarray(sp_exit.z_grad_rth(1))[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_grad_rth_1)[CELL_START_LB_PLUS2:, :],
         rtol=1e-6,
     )
     assert dallclose(
-        np.asarray(sp_exit.z_grad_rth(2))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_grad_rth_2)[1688:20896, :],
+        np.asarray(sp_exit.z_grad_rth(2))[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_grad_rth_2)[CELL_START_LB_PLUS2:, :],
         rtol=1e-6,
     )
     assert dallclose(
-        np.asarray(sp_exit.z_grad_rth(3))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_grad_rth_3)[1688:20896, :],
+        np.asarray(sp_exit.z_grad_rth(3))[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_grad_rth_3)[CELL_START_LB_PLUS2:, :],
         rtol=5e-6,
     )
     assert dallclose(
-        np.asarray(sp_exit.z_grad_rth(4))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_grad_rth_4)[1688:20896, :],
+        np.asarray(sp_exit.z_grad_rth(4))[CELL_START_LB_PLUS2:, :],
+        np.asarray(solve_nonhydro.z_grad_rth_4)[CELL_START_LB_PLUS2:, :],
         rtol=1e-5,
     )
 
     # mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
     assert dallclose(
-        np.asarray(sp_exit.z_rho_e())[3777:31558, :],
-        np.asarray(z_fields.z_rho_e)[3777:31558, :],
+        np.asarray(sp_exit.z_rho_e())[EDGE_START_LB_PLUS6:31558, :],
+        np.asarray(z_fields.z_rho_e)[EDGE_START_LB_PLUS6:31558, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_theta_v_e())[3777:31558, :],
-        np.asarray(z_fields.z_theta_v_e)[3777:31558, :],
+        np.asarray(sp_exit.z_theta_v_e())[EDGE_START_LB_PLUS6:31558, :],
+        np.asarray(z_fields.z_theta_v_e)[EDGE_START_LB_PLUS6:31558, :],
     )
 
     # stencils 18,19, 20, 22
@@ -307,8 +312,8 @@ def test_nonhydro_predictor_step(
     )
     # stencil 21
     assert dallclose(
-        np.asarray(sp_exit.z_hydro_corr())[5387:31558, 64],
-        np.asarray(solve_nonhydro.z_hydro_corr)[5387:31558, 64],
+        np.asarray(sp_exit.z_hydro_corr())[5387:31558, NLEV_MINUS1],
+        np.asarray(solve_nonhydro.z_hydro_corr)[5387:31558, NLEV_MINUS1],
         atol=1e-20,
     )
     # stencils 24
@@ -319,8 +324,8 @@ def test_nonhydro_predictor_step(
     )
     # stencil 29
     assert dallclose(
-        np.asarray(icon_result_vn_new)[0:5387, :],
-        np.asarray(prognostic_state_nnew.vn)[0:5387, :],
+        np.asarray(icon_result_vn_new)[:5387, :],
+        np.asarray(prognostic_state_nnew.vn)[:5387, :],
     )
 
     # stencil 30
@@ -391,25 +396,25 @@ def test_nonhydro_predictor_step(
     )
     # stencils 43, 46, 47
     assert dallclose(
-        np.asarray(sp_exit.z_contr_w_fl_l())[3316:20896, :],
-        np.asarray(z_fields.z_contr_w_fl_l)[3316:20896, :],
+        np.asarray(sp_exit.z_contr_w_fl_l())[3316:, :],
+        np.asarray(z_fields.z_contr_w_fl_l)[3316:, :],
         atol=2e-15,
     )
     # stencil 43
     assert dallclose(
-        np.asarray(sp_exit.z_w_expl())[3316:20896, 1:65],
-        np.asarray(z_fields.z_w_expl)[3316:20896, 1:65],
+        np.asarray(sp_exit.z_w_expl())[3316:, 1:65],
+        np.asarray(z_fields.z_w_expl)[3316:, 1:65],
         atol=1e-14,
     )
     # stencil 44, 45
     assert dallclose(
-        np.asarray(sp_exit.z_alpha())[3316:20896, :],
-        np.asarray(z_fields.z_alpha)[3316:20896, :],
+        np.asarray(sp_exit.z_alpha())[3316:, :],
+        np.asarray(z_fields.z_alpha)[3316:, :],
         atol=5e-13,
     )
     # stencil 44
     assert dallclose(
-        np.asarray(sp_exit.z_beta())[3316:20896, :],
+        np.asarray(sp_exit.z_beta())[3316:, :],
         np.asarray(z_fields.z_beta)[3316:20896, :],
         atol=2e-15,
     )
@@ -421,13 +426,13 @@ def test_nonhydro_predictor_step(
     )
     # stencil 48, 49  #level 0 wrong
     assert dallclose(
-        np.asarray(sp_exit.z_rho_expl())[3316:20896, :],
-        np.asarray(z_fields.z_rho_expl)[3316:20896, :],
+        np.asarray(sp_exit.z_rho_expl())[3316:, :],
+        np.asarray(z_fields.z_rho_expl)[3316:, :],
         atol=2e-15,
     )
     assert dallclose(
-        np.asarray(sp_exit.z_exner_expl())[3316:20896, :],
-        np.asarray(z_fields.z_exner_expl)[3316:20896, :],
+        np.asarray(sp_exit.z_exner_expl())[3316:, :],
+        np.asarray(z_fields.z_exner_expl)[3316:, :],
         atol=2e-15,
     )
 
