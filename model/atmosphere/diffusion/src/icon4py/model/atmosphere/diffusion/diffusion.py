@@ -463,7 +463,7 @@ class Diffusion:
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
         self.w_tmp = np_as_located_field(CellDim, KDim)(
-            np.zeros((self.grid.num_cells(), self.grid.n_lev() + 1), dtype=float)
+            np.zeros((self.grid.n_cells(), self.grid.n_lev() + 1), dtype=float)
         )
 
     def initial_run(

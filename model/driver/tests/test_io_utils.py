@@ -32,9 +32,9 @@ def test_read_geometry_fields_not_implemented_type(read_fun, datapath):
 
 
 def assert_grid_size_and_connectivities(grid):
-    assert grid.num_edges() == 31558
-    assert grid.num_cells() == 20896
-    assert grid.num_vertices() == 10663
+    assert grid.n_edges() == 31558
+    assert grid.n_cells() == 20896
+    assert grid.n_vertices() == 10663
     assert grid.get_e2v_connectivity()
     assert grid.get_v2e_connectivity()
     assert grid.get_c2e_connectivity()

@@ -181,15 +181,15 @@ def test_decomposition_info_matches_gridsize(
         decomposition_info.global_index(
             dim=CellDim, entry_type=DecompositionInfo.EntryType.ALL
         ).shape[0]
-        == icon_grid.num_cells()
+        == icon_grid.n_cells()
     )
     assert (
         decomposition_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape[0]
-        == icon_grid.num_vertices()
+        == icon_grid.n_vertices()
     )
     assert (
         decomposition_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape[0]
-        == icon_grid.num_edges()
+        == icon_grid.n_edges()
     )
 
 

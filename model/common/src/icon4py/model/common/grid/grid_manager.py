@@ -325,11 +325,11 @@ class GridManager:
 
     def get_size(self, dim: Dimension):
         if dim == VertexDim:
-            return self._grid.config.num_vertices
+            return self._grid.config.n_vertices
         elif dim == CellDim:
-            return self._grid.config.num_cells
+            return self._grid.config.n_cells
         elif dim == EdgeDim:
-            return self._grid.config.num_edges
+            return self._grid.config.n_edges
         else:
             self._log.warning(f"cannot determine size of unknown dimension {dim}")
             raise IconGridError(f"Unknown dimension {dim}")

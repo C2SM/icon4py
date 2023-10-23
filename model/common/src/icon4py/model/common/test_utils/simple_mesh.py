@@ -398,9 +398,9 @@ class SimpleMeshData:
 
 
 class SimpleMesh:
-    _DEFAULT_K_LEVEL = 10
-
-    def __init__(self, k_level: int = _DEFAULT_K_LEVEL):
+    def __init__(self):
+        # todo: move these to .connectivity
+        # todo: move n_... to .size
         self.diamond_arr = SimpleMeshData.diamond_table
         self.c2v = SimpleMeshData.c2v_table
         self.e2c = SimpleMeshData.e2c_table
@@ -429,7 +429,7 @@ class SimpleMesh:
         self.n_c2e2c2e2c = self.c2e2c2e2c.shape[1]
         self.n_edges = 27
         self.n_vertices = 9
-        self.k_level = k_level
+        self.k_level = 10
         self.size = {
             CellDim: self.n_cells,
             EdgeDim: self.n_edges,

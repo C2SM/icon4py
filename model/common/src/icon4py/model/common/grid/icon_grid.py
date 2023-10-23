@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
-from typing import Dict
 
 import numpy as np
 from gt4py.next.common import Dimension
@@ -25,10 +24,10 @@ from icon4py.model.common.dimension import (
     ECDim,
     ECVDim,
     EdgeDim,
-    KDim,
     VertexDim,
 )
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
+from icon4py.model.common.grid.mesh import BaseMesh
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
 
@@ -53,41 +52,27 @@ class GridConfig:
     lvertnest: bool = False
 
     @property
-    def num_k_levels(self):
+    def k_levels(self):
         return self.vertical_config.num_lev
 
     @property
-    def num_vertices(self):
-        return self.horizontal_config.num_vertices
+    def n_vertices(self):
+        return self.horizontal_config.n_vertices
 
     @property
-    def num_edges(self):
-        return self.horizontal_config.num_edges
+    def n_edges(self):
+        return self.horizontal_config.n_edges
 
     @property
-    def num_cells(self):
-        return self.horizontal_config.num_cells
+    def n_cells(self):
+        return self.horizontal_config.n_cells
 
 
-class IconGrid:
+class IconGrid(BaseMesh):
     def __init__(self):
-        self.config: GridConfig = None
-
+        super().__init__()
         self.start_indices = {}
         self.end_indices = {}
-        self.connectivities: Dict[str, np.ndarray] = {}
-        self.size: Dict[Dimension, int] = {}
-
-    def _update_size(self, config: GridConfig):
-        self.size[VertexDim] = config.num_vertices
-        self.size[CellDim] = config.num_cells
-        self.size[EdgeDim] = config.num_edges
-        self.size[KDim] = config.num_k_levels
-
-    @builder
-    def with_config(self, config: GridConfig):
-        self.config = config
-        self._update_size(config)
 
     @builder
     def with_start_end_indices(
@@ -95,13 +80,6 @@ class IconGrid:
     ):
         self.start_indices[dim] = start_indices.astype(int32)
         self.end_indices[dim] = end_indices.astype(int32)
-
-    @builder
-    def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
-        self.connectivities.update(
-            {d.value.lower(): k.astype(int) for d, k in connectivity.items()}
-        )
-        self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     def limited_area(self):
         # defined in mo_grid_nml.f90
@@ -111,21 +89,21 @@ class IconGrid:
         return self.config.n_shift_total if self.config else 0
 
     def n_lev(self):
-        return self.config.num_k_levels if self.config else 0
+        return self.config.k_levels if self.config else 0
 
     def nflat_gradp(self):
         return (
-            self.config.num_k_levels if self.config else 0
+            self.config.k_levels if self.config else 0
         )  # according to line 1168 in mo_vertical_grid.f90
 
-    def num_cells(self):
-        return self.config.num_cells if self.config else 0
+    def n_cells(self):
+        return self.config.n_cells if self.config else 0
 
-    def num_vertices(self):
-        return self.config.num_vertices if self.config else 0
+    def n_vertices(self):
+        return self.config.n_vertices if self.config else 0
 
-    def num_edges(self):
-        return self.config.num_edges
+    def n_edges(self):
+        return self.config.n_edges
 
     def lvert_nest(self):
         return True if self.config.lvertnest else False
@@ -220,3 +198,22 @@ class IconGrid:
     def get_e2c2eo_connectivity(self):
         table = self.connectivities["e2c2eo"]
         return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
+
+    def get_offset_provider(self):
+        return {
+            "C2E": self.get_c2e_connectivity(),
+            "E2C": self.get_e2c_connectivity(),
+            "E2V": self.get_e2v_connectivity(),
+            "C2E2C": self.get_c2e2c_connectivity(),
+            "E2EC": self.get_e2ec_connectivity(),
+            "C2E2CO": self.get_c2e2co_connectivity(),
+            "E2C2V": self.get_e2c2v_connectivity(),
+            "V2E": self.get_v2e_connectivity(),
+            "V2C": self.get_v2c_connectivity(),
+            "C2V": self.get_c2v_connectivity(),
+            "E2ECV": self.get_e2ecv_connectivity(),
+            "C2CEC": self.get_c2cec_connectivity(),
+            "C2CE": self.get_c2ce_connectivity(),
+            "E2C2E": self.get_e2c2e_connectivity(),
+            "E2C2EO": self.get_e2c2eo_connectivity(),
+        }
