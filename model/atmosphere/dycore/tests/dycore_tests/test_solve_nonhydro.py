@@ -61,11 +61,13 @@ def test_nonhydro_params():
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep, step_date_init, step_date_exit",
-    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "istep_init, istep_exit, step_date_init, step_date_exit",
+    [(1, 1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_nonhydro_predictor_step(
-    istep,
+    istep_init,
+    istep_exit,
+    jstep_init,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -73,7 +75,6 @@ def test_nonhydro_predictor_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    savepoint_velocity_exit,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -459,11 +460,12 @@ def test_nonhydro_predictor_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep, step_date_init, step_date_exit",
-    [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "istep_init, istep_exit, step_date_init, step_date_exit",
+    [(2, 2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_nonhydro_corrector_step(
-    istep,
+    istep_init,
+    istep_exit,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -474,7 +476,6 @@ def test_nonhydro_corrector_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_velocity_exit,
 ):
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
@@ -666,26 +667,27 @@ def test_nonhydro_corrector_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep, step_date_init, step_date_exit",
-    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "istep_init,jstep_init, step_date_init,  istep_exit, jstep_exit,step_date_exit",
+    [(1, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000")],
 )
 def test_run_solve_nonhydro_single_step(
-    istep,
+    istep_init,
+    istep_exit,
+    jstep_init,
+    jstep_exit,
     step_date_init,
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
     damping_height,
     grid_savepoint,
-    savepoint_velocity_init,
-    savepoint_velocity_exit,
+    savepoint_velocity_init,  # TODO (magdalena) this should go away
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
 ):
     config = NonHydrostaticConfig()
-    sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
@@ -699,7 +701,9 @@ def test_run_solve_nonhydro_single_step(
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+        vn_traj=savepoint_nonhydro_init.vn_traj(),
+        mass_flx_me=savepoint_nonhydro_init.mass_flx_me(),
+        mass_flx_ic=savepoint_nonhydro_init.mass_flx_ic(),
     )
 
     enh_smag_fac = zero_field(icon_grid, KDim)
@@ -713,16 +717,16 @@ def test_run_solve_nonhydro_single_step(
     dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
 
     diagnostic_state_nh = DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
-        grf_tend_rho=sp.grf_tend_rho(),
-        grf_tend_thv=sp.grf_tend_thv(),
-        grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
-        grf_tend_vn=sp.grf_tend_vn(),
+        theta_v_ic=savepoint_nonhydro_init.theta_v_ic(),
+        exner_pr=savepoint_nonhydro_init.exner_pr(),
+        rho_ic=savepoint_nonhydro_init.rho_ic(),
+        ddt_exner_phy=savepoint_nonhydro_init.ddt_exner_phy(),
+        grf_tend_rho=savepoint_nonhydro_init.grf_tend_rho(),
+        grf_tend_thv=savepoint_nonhydro_init.grf_tend_thv(),
+        grf_tend_w=savepoint_nonhydro_init.grf_tend_w(),
+        mass_fl_e=savepoint_nonhydro_init.mass_fl_e(),
+        ddt_vn_phy=savepoint_nonhydro_init.ddt_vn_phy(),
+        grf_tend_vn=savepoint_nonhydro_init.grf_tend_vn(),
         ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
         ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
         ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
@@ -736,19 +740,19 @@ def test_run_solve_nonhydro_single_step(
     )
 
     prognostic_state_nnow = PrognosticState(
-        w=sp.w_now(),
-        vn=sp.vn_now(),
-        theta_v=sp.theta_v_now(),
-        rho=sp.rho_now(),
-        exner=sp.exner_now(),
+        w=savepoint_nonhydro_init.w_now(),
+        vn=savepoint_nonhydro_init.vn_now(),
+        theta_v=savepoint_nonhydro_init.theta_v_now(),
+        rho=savepoint_nonhydro_init.rho_now(),
+        exner=savepoint_nonhydro_init.exner_now(),
     )
 
     prognostic_state_nnew = PrognosticState(
-        w=sp.w_new(),
-        vn=sp.vn_new(),
-        theta_v=sp.theta_v_new(),
-        rho=sp.rho_new(),
-        exner=sp.exner_new(),
+        w=savepoint_nonhydro_init.w_new(),
+        vn=savepoint_nonhydro_init.vn_new(),
+        theta_v=savepoint_nonhydro_init.theta_v_new(),
+        rho=savepoint_nonhydro_init.rho_new(),
+        exner=savepoint_nonhydro_init.exner_new(),
     )
 
     z_fields = ZFields(
@@ -769,12 +773,12 @@ def test_run_solve_nonhydro_single_step(
     )
 
     nh_constants = NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
-        scal_divdamp=sp.scal_divdamp(),
-        scal_divdamp_o2=sp.scal_divdamp_o2(),
+        wgt_nnow_rth=savepoint_nonhydro_init.wgt_nnow_rth(),
+        wgt_nnew_rth=savepoint_nonhydro_init.wgt_nnew_rth(),
+        wgt_nnow_vel=savepoint_nonhydro_init.wgt_nnow_vel(),
+        wgt_nnew_vel=savepoint_nonhydro_init.wgt_nnew_vel(),
+        scal_divdamp=savepoint_nonhydro_init.scal_divdamp(),
+        scal_divdamp_o2=savepoint_nonhydro_init.scal_divdamp_o2(),
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
@@ -808,7 +812,7 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         z_fields=z_fields,
         nh_constants=nh_constants,
-        bdy_divdamp=sp.bdy_divdamp(),  # TODO (magdalena) local calculation in solve non-hydro based on nudge_coeff_e and scal_divdamp (also locally calculated)
+        bdy_divdamp=savepoint_nonhydro_init.bdy_divdamp(),  # TODO (magdalena) local calculation in solve non-hydro based on nudge_coeff_e and scal_divdamp (also locally calculated)
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
@@ -856,7 +860,6 @@ def test_run_solve_nonhydro_multi_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    savepoint_velocity_exit,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
