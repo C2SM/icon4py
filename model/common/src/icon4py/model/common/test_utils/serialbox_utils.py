@@ -967,19 +967,7 @@ class IconDiffusionExitSavepoint(IconSavepoint):
 
 
 class IconExitSavepoint(IconSavepoint):
-    def vn(self):
-        return self._get_field("x_vn", EdgeDim, KDim)
-
-    def theta_v(self):
-        return self._get_field("x_theta_v", CellDim, KDim)
-
-    def w(self):
-        return self._get_field("x_w", CellDim, KDim)
-
-    def exner(self):
-        return self._get_field("x_exner", CellDim, KDim)
-
-    def rho(self):
+    def rho_new(self):
         return self._get_field("x_rho_new", CellDim, KDim)
 
     def rho_now(self):
