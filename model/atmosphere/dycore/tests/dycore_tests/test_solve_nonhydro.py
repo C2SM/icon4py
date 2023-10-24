@@ -448,7 +448,7 @@ def test_nonhydro_predictor_step(
     )
 
     # end
-    assert dallclose(np.asarray(sp_exit.rho()), np.asarray(prognostic_state_nnew.rho))
+    assert dallclose(np.asarray(sp_exit.rho_new()), np.asarray(prognostic_state_nnew.rho))
     assert dallclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state_nnew.w), atol=7e-14)
 
     # not tested
@@ -625,7 +625,7 @@ def test_nonhydro_corrector_step(
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.rho()),
+        np.asarray(savepoint_nonhydro_exit.rho_new()),
         np.asarray(np.asarray(prognostic_state_ls[nnew].rho)),
     )
 
@@ -826,6 +826,20 @@ def test_run_solve_nonhydro_single_step(
 
     assert dallclose(np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner))
 
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.vn_new()),
+        np.asarray(prognostic_state_nnew.vn),
+        rtol=1e-10,
+    )
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.rho_new()), np.asarray(prognostic_state_nnew.rho)
+    )
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.w_new()),
+        np.asarray(prognostic_state_nnew.w),
+        atol=8e-14,
+    )
+
 
 @pytest.mark.skip
 @pytest.mark.datatest
@@ -991,8 +1005,8 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.rho()),
-        np.asarray(np.asarray(prognostic_state_ls[nnew].rho)),
+        np.asarray(savepoint_nonhydro_exit.rho_new()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].rho_new)),
     )
 
     assert dallclose(

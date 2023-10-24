@@ -228,8 +228,405 @@ def test_run_solve_nonhydro_single_step(
         np.asarray(prognostic_state_nnew.exner)[decomposition_info.owner_mask(CellDim), :],
     )
 
-    # assert dallclose(np.asarray(savepoint_nonhydro_exit.vn()), np.asarray(prognostic_state_nnew.vn))
-    # assert dallclose(np.asarray(savepoint_nonhydro_exit.w()), np.asarray(prognostic_state_nnew.w))
     # assert dallclose(
-    #    np.asarray(savepoint_nonhydro_exit.rho()), np.asarray(prognostic_state_nnew.rho)
+    #    np.asarray(savepoint_nonhydro_exit.vn_new())[decomposition_info.owner_mask(EdgeDim), :],
+    #    np.asarray(prognostic_state_nnew.vn)[decomposition_info.owner_mask(EdgeDim), :], rtol=1e-10
     # )
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.w_new())[decomposition_info.owner_mask(CellDim), :],
+        np.asarray(prognostic_state_nnew.w)[decomposition_info.owner_mask(CellDim), :],
+        atol=8e-14,
+    )
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.rho_new())[decomposition_info.owner_mask(CellDim), :],
+        np.asarray(prognostic_state_nnew.rho)[decomposition_info.owner_mask(CellDim), :],
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "istep, step_date_init, step_date_exit",
+    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+)
+def test_nonhydro_predictor_step(
+    istep,
+    step_date_init,
+    step_date_exit,
+    icon_grid,
+    savepoint_nonhydro_init,
+    damping_height,
+    grid_savepoint,
+    savepoint_velocity_init,
+    savepoint_velocity_exit,
+    metrics_savepoint,
+    interpolation_savepoint,
+    savepoint_nonhydro_exit,
+    processor_props,  # noqa : F811 fixture
+    decomposition_info,  # noqa : F811 fixture
+):
+    check_comm_size(processor_props)
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
+        f"local cells = {decomposition_info.global_index(CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local edges = {decomposition_info.global_index(EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local vertices = {decomposition_info.global_index(VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
+    )
+
+    config = NonHydrostaticConfig()
+    sp = savepoint_nonhydro_init
+    sp_exit = savepoint_nonhydro_exit
+    nonhydro_params = NonHydrostaticParams(config)
+    vertical_params = VerticalModelParams(
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflatlev=grid_savepoint.nflatlev(),
+    )
+    sp_v = savepoint_velocity_init
+    dtime = sp_v.get_metadata("dtime").get("dtime")
+    recompute = sp_v.get_metadata("recompute").get("recompute")
+    dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
+    linit = sp_v.get_metadata("linit").get("linit")
+
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    fac = (0.67, 0.5, 1.3, 0.8)
+    z = (0.1, 0.2, 0.3, 0.4)
+    nnow = 0
+    nnew = 1
+
+    diagnostic_state_nh = DiagnosticStateNonHydro(
+        theta_v_ic=sp.theta_v_ic(),
+        exner_pr=sp.exner_pr(),
+        rho_ic=sp.rho_ic(),
+        ddt_exner_phy=sp.ddt_exner_phy(),
+        grf_tend_rho=sp.grf_tend_rho(),
+        grf_tend_thv=sp.grf_tend_thv(),
+        grf_tend_w=sp.grf_tend_w(),
+        mass_fl_e=sp.mass_fl_e(),
+        ddt_vn_phy=sp.ddt_vn_phy(),
+        grf_tend_vn=sp.grf_tend_vn(),
+        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        vt=sp_v.vt(),
+        vn_ie=sp_v.vn_ie(),
+        w_concorr_c=sp_v.w_concorr_c(),
+        rho_incr=None,  # sp.rho_incr(),
+        vn_incr=None,  # sp.vn_incr(),
+        exner_incr=None,  # sp.exner_incr(),
+    )
+
+    prognostic_state_nnow = PrognosticState(
+        w=sp.w_now(),
+        vn=sp.vn_now(),
+        theta_v=sp.theta_v_now(),
+        rho=sp.rho_now(),
+        exner=sp.exner_now(),
+    )
+
+    prognostic_state_nnew = PrognosticState(
+        w=sp.w_new(),
+        vn=sp.vn_new(),
+        theta_v=sp.theta_v_new(),
+        rho=sp.rho_new(),
+        exner=sp.exner_new(),
+    )
+
+    z_fields = ZFields(
+        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+    )
+
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+
+    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    solve_nonhydro = SolveNonhydro(exchange)
+    solve_nonhydro.init(
+        grid=icon_grid,
+        config=config,
+        params=nonhydro_params,
+        metric_state_nonhydro=metric_state_nonhydro,
+        interpolation_state=interpolation_state,
+        vertical_params=vertical_params,
+        edge_geometry=edge_geometry,
+        cell_areas=cell_geometry.area,
+        owner_mask=grid_savepoint.c_owner_mask(),
+        a_vec=a_vec,
+        enh_smag_fac=enh_smag_fac,
+        fac=fac,
+        z=z,
+    )
+
+    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    solve_nonhydro.set_timelevels(nnow, nnew)
+    solve_nonhydro.run_predictor_step(
+        diagnostic_state_nh=diagnostic_state_nh,
+        prognostic_state=prognostic_state_ls,
+        z_fields=z_fields,
+        dtime=dtime,
+        idyn_timestep=dyn_timestep,
+        l_recompute=recompute,
+        l_init=linit,
+        nnow=nnow,
+        nnew=nnew,
+    )
+    print(f"rank={processor_props.rank}/{processor_props.comm_size}: dycore predictor run ")
+
+    icon_result_w_new = sp_exit.w_new()
+    icon_result_exner_new = sp_exit.exner_new()
+    icon_result_theta_v_new = sp_exit.theta_v_new()
+
+    # end
+    assert dallclose(np.asarray(sp_exit.rho_new()), np.asarray(prognostic_state_nnew.rho))
+    assert dallclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state_nnew.w), atol=7e-14)
+
+    # not tested
+    assert dallclose(np.asarray(icon_result_exner_new), np.asarray(prognostic_state_nnew.exner))
+
+    assert dallclose(np.asarray(icon_result_theta_v_new), np.asarray(prognostic_state_nnew.theta_v))
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "istep, step_date_init, step_date_exit",
+    [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+)
+def test_nonhydro_corrector_step(
+    istep,
+    step_date_init,
+    step_date_exit,
+    icon_grid,
+    savepoint_nonhydro_init,
+    damping_height,
+    grid_savepoint,
+    savepoint_velocity_init,
+    metrics_savepoint,
+    interpolation_savepoint,
+    savepoint_nonhydro_exit,
+    savepoint_velocity_exit,
+    processor_props,  # noqa : F811 fixture
+    decomposition_info,  # noqa : F811 fixture
+):
+    check_comm_size(processor_props)
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
+        f"local cells = {decomposition_info.global_index(CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local edges = {decomposition_info.global_index(EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local vertices = {decomposition_info.global_index(VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
+    )
+    config = NonHydrostaticConfig()
+    sp = savepoint_nonhydro_init
+    nonhydro_params = NonHydrostaticParams(config)
+    vertical_params = VerticalModelParams(
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflatlev=grid_savepoint.nflatlev(),
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+    )
+    sp_v = savepoint_velocity_init
+    dtime = sp_v.get_metadata("dtime").get("dtime")
+    clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
+    lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
+    prep_adv = PrepAdvection(
+        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+    )
+
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    fac = (0.67, 0.5, 1.3, 0.8)
+    z = (0.1, 0.2, 0.3, 0.4)
+    nnow = 0  # TODO: @abishekg7 read from serialized data?
+    nnew = 1
+
+    diagnostic_state_nh = DiagnosticStateNonHydro(
+        theta_v_ic=sp.theta_v_ic(),
+        exner_pr=sp.exner_pr(),
+        rho_ic=sp.rho_ic(),
+        ddt_exner_phy=sp.ddt_exner_phy(),
+        grf_tend_rho=sp.grf_tend_rho(),
+        grf_tend_thv=sp.grf_tend_thv(),
+        grf_tend_w=sp.grf_tend_w(),
+        mass_fl_e=sp.mass_fl_e(),
+        ddt_vn_phy=sp.ddt_vn_phy(),
+        grf_tend_vn=sp.grf_tend_vn(),
+        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        vt=sp_v.vt(),  # sp_v.vt(), #TODO: @abishekg7 change back to sp_v
+        vn_ie=sp_v.vn_ie(),
+        w_concorr_c=sp_v.w_concorr_c(),
+        rho_incr=None,  # sp.rho_incr(),
+        vn_incr=None,  # sp.vn_incr(),
+        exner_incr=None,  # sp.exner_incr(),
+    )
+
+    prognostic_state_nnow = PrognosticState(
+        w=sp.w_now(),
+        vn=sp.vn_now(),
+        theta_v=sp.theta_v_now(),
+        rho=sp.rho_now(),
+        exner=sp.exner_now(),
+    )
+
+    prognostic_state_nnew = PrognosticState(
+        w=sp.w_new(),
+        vn=sp.vn_new(),
+        theta_v=sp.theta_v_new(),
+        rho=sp.rho_new(),
+        exner=sp.exner_new(),
+    )
+
+    z_fields = ZFields(
+        z_gradh_exner=sp.z_gradh_exner(),
+        z_alpha=sp.z_alpha(),
+        z_beta=sp.z_beta(),
+        z_w_expl=sp.z_w_expl(),
+        z_exner_expl=sp.z_exner_expl(),
+        z_q=sp.z_q(),
+        z_contr_w_fl_l=sp.z_contr_w_fl_l(),
+        z_rho_e=sp.z_rho_e(),
+        z_theta_v_e=sp.z_theta_v_e(),
+        z_graddiv_vn=sp.z_graddiv_vn(),
+        z_rho_expl=sp.z_rho_expl(),
+        z_dwdz_dd=sp.z_dwdz_dd(),
+        z_kin_hor_e=sp_v.z_kin_hor_e(),
+        z_vt_ie=sp_v.z_vt_ie(),
+    )
+
+    nh_constants = NHConstants(
+        wgt_nnow_rth=sp.wgt_nnow_rth(),
+        wgt_nnew_rth=sp.wgt_nnew_rth(),
+        wgt_nnow_vel=sp.wgt_nnow_vel(),
+        wgt_nnew_vel=sp.wgt_nnew_vel(),
+        scal_divdamp=sp.scal_divdamp(),
+        scal_divdamp_o2=sp.scal_divdamp_o2(),
+    )
+
+    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+
+    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+
+    solve_nonhydro = SolveNonhydro(definitions.create_exchange(processor_props, decomposition_info))
+    solve_nonhydro.init(
+        grid=icon_grid,
+        config=config,
+        params=nonhydro_params,
+        metric_state_nonhydro=metric_state_nonhydro,
+        interpolation_state=interpolation_state,
+        vertical_params=vertical_params,
+        edge_geometry=edge_geometry,
+        cell_areas=cell_geometry.area,
+        owner_mask=grid_savepoint.c_owner_mask(),
+        a_vec=a_vec,
+        enh_smag_fac=enh_smag_fac,
+        fac=fac,
+        z=z,
+    )
+
+    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    solve_nonhydro.set_timelevels(nnow, nnew)
+    solve_nonhydro.run_corrector_step(
+        diagnostic_state_nh=diagnostic_state_nh,
+        prognostic_state=prognostic_state_ls,
+        z_fields=z_fields,
+        prep_adv=prep_adv,
+        dtime=dtime,
+        nnew=nnew,
+        nnow=nnow,
+        lclean_mflx=clean_mflx,
+        nh_constants=nh_constants,
+        bdy_divdamp=sp.bdy_divdamp(),
+        lprep_adv=lprep_adv,
+    )
+    print(f"rank={processor_props.rank}/{processor_props.comm_size}: dycore corrector run ")
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.rho_ic()),
+        np.asarray(diagnostic_state_nh.rho_ic),
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.theta_v_ic()),
+        np.asarray(diagnostic_state_nh.theta_v_ic),
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.z_graddiv_vn()),
+        np.asarray(z_fields.z_graddiv_vn),
+        atol=1e-12,
+    )
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.exner_new()),
+        np.asarray(prognostic_state_ls[nnew].exner),
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.rho_new()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].rho)),
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.w_new()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].w)),
+        atol=8e-14,
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.vn_new()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].vn)),
+        rtol=1e-10,
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.theta_v_new()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].theta_v)),
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.mass_fl_e()),
+        np.asarray(diagnostic_state_nh.mass_fl_e),
+        rtol=1e-10,
+    )
+
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.mass_flx_me()),
+        np.asarray(prep_adv.mass_flx_me),
+        rtol=1e-10,
+    )
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.vn_traj()),
+        np.asarray(prep_adv.vn_traj),
+        rtol=1e-10,
+    )
