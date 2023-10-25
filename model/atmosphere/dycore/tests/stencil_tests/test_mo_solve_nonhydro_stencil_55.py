@@ -22,6 +22,40 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_solve_nonhydro_stencil_55_numpy(
+    mesh,
+    z_rho_expl: np.array,
+    vwind_impl_wgt: np.array,
+    inv_ddqz_z_full: np.array,
+    rho_ic: np.array,
+    w: np.array,
+    z_exner_expl: np.array,
+    exner_ref_mc: np.array,
+    z_alpha: np.array,
+    z_beta: np.array,
+    rho_now: np.array,
+    theta_v_now: np.array,
+    exner_now: np.array,
+    dtime: float,
+    cvd_o_rd: float,
+) -> tuple[np.array, np.array, np.array]:
+    rho_ic_offset_1 = rho_ic[:, 1:]
+    w_offset_0 = w[:, :-1]
+    w_offset_1 = w[:, 1:]
+    z_alpha_offset_1 = z_alpha[:, 1:]
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
+    rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
+        rho_ic[:, :-1] * w_offset_0 - rho_ic_offset_1 * w_offset_1
+    )
+    exner_new = (
+        z_exner_expl
+        + exner_ref_mc
+        - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
+    )
+    theta_v_new = rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new
+    return rho_new, exner_new, theta_v_new
+
+
 class TestMoSolveNonhydroStencil55(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_55
     OUTPUTS = ("rho_new", "exner_new", "theta_v_new")
@@ -41,26 +75,28 @@ class TestMoSolveNonhydroStencil55(StencilTest):
         rho_now: np.array,
         theta_v_now: np.array,
         exner_now: np.array,
-        dtime,
-        cvd_o_rd,
+        dtime: float,
+        cvd_o_rd: float,
         **kwargs,
     ) -> dict:
-        rho_ic_offset_1 = rho_ic[:, 1:]
-        w_offset_0 = w[:, :-1]
-        w_offset_1 = w[:, 1:]
-        z_alpha_offset_1 = z_alpha[:, 1:]
-        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=1)
-        rho_new = z_rho_expl - vwind_impl_wgt * dtime * inv_ddqz_z_full * (
-            rho_ic[:, :-1] * w_offset_0 - rho_ic_offset_1 * w_offset_1
+        rho_new, exner_new, theta_v_new = mo_solve_nonhydro_stencil_55_numpy(
+            mesh,
+            z_rho_expl,
+            vwind_impl_wgt,
+            inv_ddqz_z_full,
+            rho_ic,
+            w,
+            z_exner_expl,
+            exner_ref_mc,
+            z_alpha,
+            z_beta,
+            rho_now,
+            theta_v_now,
+            exner_now,
+            dtime,
+            cvd_o_rd,
         )
-        exner_new = (
-            z_exner_expl
-            + exner_ref_mc
-            - z_beta * (z_alpha[:, :-1] * w_offset_0 - z_alpha_offset_1 * w_offset_1)
-        )
-        theta_v_new = (
-            rho_now * theta_v_now * ((exner_new / exner_now - 1.0) * cvd_o_rd + 1.0) / rho_new
-        )
+
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 
     @pytest.fixture

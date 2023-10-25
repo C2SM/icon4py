@@ -22,14 +22,21 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
 
 
+def mo_solve_nonhydro_stencil_46_numpy(
+    mesh, w_nnew: np.array, z_contr_w_fl_l: np.array
+) -> tuple[np.array, np.array]:
+    w_nnew = np.zeros_like(w_nnew)
+    z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
+    return w_nnew, z_contr_w_fl_l
+
+
 class TestMoSolveNonhydroStencil46(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_46
     OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
 
     @staticmethod
     def reference(mesh, w_nnew: np.array, z_contr_w_fl_l: np.array, **kwargs) -> dict:
-        w_nnew = np.zeros_like(w_nnew)
-        z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
+        w_nnew, z_contr_w_fl_l = mo_solve_nonhydro_stencil_46_numpy(mesh, w_nnew, z_contr_w_fl_l)
         return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture

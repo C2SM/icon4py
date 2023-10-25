@@ -22,6 +22,15 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def mo_solve_nonhydro_stencil_56_63_numpy(
+    mesh, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array
+) -> np.array:
+    z_dwdz_dd = inv_ddqz_z_full * (
+        (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
+    )
+    return z_dwdz_dd
+
+
 class TestMoSolveNonhydroStencil5663(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_56_63
     OUTPUTS = ("z_dwdz_dd",)
@@ -30,10 +39,8 @@ class TestMoSolveNonhydroStencil5663(StencilTest):
     def reference(
         mesh, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array, **kwargs
     ) -> np.array:
-        z_dwdz_dd = inv_ddqz_z_full * (
-            (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
-        )
-        return dict(z_dwdz_dd=z_dwdz_dd)
+        z_dwdz_dd = mo_solve_nonhydro_stencil_56_63_numpy(mesh, inv_ddqz_z_full, w, w_concorr_c)
+        return z_dwdz_dd
 
     @pytest.fixture
     def input_data(self, mesh):

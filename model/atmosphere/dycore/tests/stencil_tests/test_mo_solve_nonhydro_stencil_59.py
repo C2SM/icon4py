@@ -22,13 +22,18 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_solve_nonhydro_stencil_59_numpy(mesh, exner: np.array) -> np.array:
+    exner_dyn_incr = exner
+    return exner_dyn_incr
+
+
 class TestMoSolveNonhydroStencil59(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_59
     OUTPUTS = ("exner_dyn_incr",)
 
     @staticmethod
     def reference(mesh, exner: np.array, **kwargs) -> dict:
-        exner_dyn_incr = exner
+        exner_dyn_incr = mo_solve_nonhydro_stencil_59_numpy(mesh, exner)
         return dict(exner_dyn_incr=exner_dyn_incr)
 
     @pytest.fixture

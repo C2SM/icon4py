@@ -27,6 +27,24 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
+def mo_solve_nonhydro_stencil_41_numpy(
+    mesh,
+    geofac_div: np.array,
+    mass_fl_e: np.array,
+    z_theta_v_fl_e: np.array,
+) -> tuple[np.array, np.array]:
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    z_flxdiv_mass = np.sum(
+        geofac_div[mesh.get_c2ce_offset_provider().table] * mass_fl_e[mesh.c2e],
+        axis=1,
+    )
+    z_flxdiv_theta = np.sum(
+        geofac_div[mesh.get_c2ce_offset_provider().table] * z_theta_v_fl_e[mesh.c2e],
+        axis=1,
+    )
+    return z_flxdiv_mass, z_flxdiv_theta
+
+
 class TestMoSolveNonhydroStencil41(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_41
     OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")
@@ -38,15 +56,12 @@ class TestMoSolveNonhydroStencil41(StencilTest):
         mass_fl_e: np.array,
         z_theta_v_fl_e: np.array,
         **kwargs,
-    ) -> tuple[np.array]:
-        geofac_div = np.expand_dims(geofac_div, axis=-1)
-        z_flxdiv_mass = np.sum(
-            geofac_div[mesh.get_c2ce_offset_provider().table] * mass_fl_e[mesh.c2e],
-            axis=1,
-        )
-        z_flxdiv_theta = np.sum(
-            geofac_div[mesh.get_c2ce_offset_provider().table] * z_theta_v_fl_e[mesh.c2e],
-            axis=1,
+    ) -> dict:
+        z_flxdiv_mass, z_flxdiv_theta = mo_solve_nonhydro_stencil_41_numpy(
+            mesh,
+            geofac_div,
+            mass_fl_e,
+            z_theta_v_fl_e,
         )
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
 
