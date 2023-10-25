@@ -17,7 +17,7 @@ from numpy import int32
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import hflx_limiter_mo_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def hflx_limiter_mo_stencil_02_numpy(
@@ -45,7 +45,7 @@ def hflx_limiter_mo_stencil_02_numpy(
 
 
 def test_hflx_limiter_mo_stencil_02_some_matching_condition():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
 
     hi_bound = np.int32(1)
     lo_bound = np.int32(5)
@@ -93,7 +93,7 @@ def test_hflx_limiter_mo_stencil_02_some_matching_condition():
 
 
 def test_hflx_limiter_mo_stencil_02_none_matching_condition():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
 
     hi_bound = np.int32(3)
     lo_bound = np.int32(1)

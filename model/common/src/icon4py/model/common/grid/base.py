@@ -51,7 +51,7 @@ class VerticalMeshConfig:
     def num_lev(self) -> int:
         return self._num_lev
 
-class BaseMesh(ABC):
+class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None
         self.connectivities: Dict[Dimension, np.ndarray] = {}

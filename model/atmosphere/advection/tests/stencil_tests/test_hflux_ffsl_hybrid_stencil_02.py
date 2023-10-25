@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_02 import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def hflux_ffsl_hybrid_stencil_02_numpy(
@@ -33,7 +33,7 @@ def hflux_ffsl_hybrid_stencil_02_numpy(
 
 
 def test_hflux_ffsl_hybrid_stencil_02():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     p_out_e_hybrid_2 = random_field(mesh, EdgeDim, KDim)
     p_mass_flx_e = random_field(mesh, EdgeDim, KDim)
     z_dreg_area = random_field(mesh, EdgeDim, KDim)

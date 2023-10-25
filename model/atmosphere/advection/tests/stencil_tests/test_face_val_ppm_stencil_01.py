@@ -18,7 +18,7 @@ from gt4py.next.iterator import embedded as it_embedded
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def face_val_ppm_stencil_01_numpy(
@@ -62,7 +62,7 @@ def face_val_ppm_stencil_01_numpy(
 
 
 def test_face_val_ppm_stencil_01():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     p_cc = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     p_cellhgt_mc_now = random_field(mesh, CellDim, KDim, extend={KDim: 1})
     vert_idx = zero_field(mesh, KDim, dtype=int32, extend={KDim: 1})

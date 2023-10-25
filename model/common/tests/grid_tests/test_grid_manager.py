@@ -38,7 +38,7 @@ from icon4py.model.common.grid.grid_manager import (
     ToGt4PyTransformation,
 )
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 SIMPLE_MESH_NC = "simple_mesh_grid.nc"
@@ -47,7 +47,7 @@ SIMPLE_MESH_NC = "simple_mesh_grid.nc"
 @pytest.fixture
 def simple_mesh_gridfile(tmp_path):
     path = tmp_path.joinpath(SIMPLE_MESH_NC).absolute()
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
     dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
     dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=mesh.num_vertices)
@@ -212,7 +212,7 @@ def _add_to_dataset(
 def test_gridparser_dimension(simple_mesh_gridfile):
     data = netCDF4.Dataset(simple_mesh_gridfile, "r")
     grid_parser = GridFile(data)
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     assert grid_parser.dimension(GridFile.DimensionName.CELL_NAME) == mesh.num_cells
     assert grid_parser.dimension(GridFile.DimensionName.VERTEX_NAME) == mesh.num_vertices
     assert grid_parser.dimension(GridFile.DimensionName.EDGE_NAME) == mesh.num_edges
@@ -233,7 +233,7 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfil
 def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
     caplog.set_level(logging.DEBUG)
     data = netCDF4.Dataset(simple_mesh_gridfile, "r")
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     grid_parser = GridFile(data)
 
     assert np.allclose(grid_parser.int_field(GridFile.OffsetName.C2E), mesh.connectivities[C2EDim])
@@ -424,7 +424,7 @@ def test_grid_manager_getsize(simple_mesh_gridfile, dim, size, caplog):
 
 @pytest.mark.with_netcdf
 def test_grid_manager_diamond_offset(simple_mesh_gridfile):
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     gm = GridManager(
         IndexTransformation(),
         simple_mesh_gridfile,

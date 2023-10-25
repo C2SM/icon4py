@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def mo_solve_nonhydro_stencil_52_numpy(
@@ -60,7 +60,7 @@ def mo_solve_nonhydro_stencil_52_numpy(
 
 
 def test_mo_solve_nonhydro_stencil_52():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     vwind_impl_wgt = random_field(mesh, CellDim)
     theta_v_ic = random_field(mesh, CellDim, KDim)
     ddqz_z_half = random_field(mesh, CellDim, KDim)

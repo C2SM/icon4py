@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_02 impor
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def upwind_hflux_miura_cycl_stencil_02_numpy(
@@ -51,7 +51,7 @@ def upwind_hflux_miura_cycl_stencil_02_numpy(
 
 
 def test_upwind_hflux_miura_cycl_stencil_02():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     nsub = int32(1)
     p_mass_flx_e = random_field(mesh, EdgeDim, KDim)
     geofac_div = random_field(mesh, CellDim, C2EDim)

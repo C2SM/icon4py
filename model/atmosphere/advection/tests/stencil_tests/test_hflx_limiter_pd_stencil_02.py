@@ -16,7 +16,7 @@ import numpy as np
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_02 import hflx_limiter_pd_stencil_02
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
 from icon4py.model.common.test_utils.helpers import constant_field, random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def hflx_limiter_pd_stencil_02_numpy(
@@ -41,7 +41,7 @@ def hflx_limiter_pd_stencil_02_numpy(
 
 
 def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     bound = np.int32(7)
     refin_ctrl = constant_field(mesh, 4, EdgeDim, dtype=np.int32)
     r_m = random_field(mesh, CellDim, KDim)
@@ -68,7 +68,7 @@ def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl():
 
 
 def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     bound = np.int32(7)
     refin_ctrl = constant_field(mesh, bound, EdgeDim, dtype=np.int32)
     r_m = random_field(mesh, CellDim, KDim)
@@ -87,7 +87,7 @@ def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl():
 
 
 def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     bound = np.int32(4)
     refin_ctrl = constant_field(mesh, 5, EdgeDim, dtype=np.int32)
     refin_ctrl[2:6] = bound
@@ -107,7 +107,7 @@ def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl():
 
 
 def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl_does_not_change_inout_arg():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     bound = np.int32(7)
     refin_ctrl = constant_field(mesh, bound, EdgeDim, dtype=np.int32)
     r_m = random_field(mesh, CellDim, KDim)

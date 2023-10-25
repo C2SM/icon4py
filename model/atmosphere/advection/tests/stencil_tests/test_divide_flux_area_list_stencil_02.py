@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_02 import 
 )
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, random_mask
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def divide_flux_area_list_stencil_02_numpy(
@@ -175,7 +175,7 @@ def divide_flux_area_list_stencil_02_numpy(
 
 
 def test_divide_flux_area_list_stencil_02():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
 
     famask_int = random_mask(mesh, EdgeDim, KDim, dtype=int32)
     p_vn = random_field(mesh, EdgeDim, KDim)

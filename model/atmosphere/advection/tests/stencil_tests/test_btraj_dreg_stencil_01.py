@@ -16,7 +16,7 @@ import numpy as np
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_01 import btraj_dreg_stencil_01
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def btraj_dreg_stencil_01_numpy(
@@ -38,7 +38,7 @@ def btraj_dreg_stencil_01_numpy(
 
 
 def test_btraj_dreg_stencil_01():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     lcounterclock = True
     p_vn = random_field(mesh, EdgeDim, KDim)
 

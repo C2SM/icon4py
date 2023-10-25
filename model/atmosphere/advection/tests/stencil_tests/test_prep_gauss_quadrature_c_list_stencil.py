@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_list_stencil imp
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def prep_gauss_quadrature_c_list_stencil_numpy(
@@ -318,7 +318,7 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
 
 @pytest.mark.slow_tests
 def test_prep_gauss_quadrature_c_list_stencil():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
 
     famask_int = constant_field(mesh, 1, EdgeDim, KDim, dtype=int32)
     p_coords_dreg_v_1_x = random_field(mesh, EdgeDim, KDim)

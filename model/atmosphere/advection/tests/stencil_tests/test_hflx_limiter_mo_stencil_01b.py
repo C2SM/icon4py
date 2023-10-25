@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01b import (
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def hflx_limiter_mo_stencil_01b_numpy(
@@ -69,7 +69,7 @@ def hflx_limiter_mo_stencil_01b_numpy(
 
 
 def test_hflx_limiter_mo_stencil_01b():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
 
     geofac_div = random_field(mesh, CellDim, C2EDim)
     geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)

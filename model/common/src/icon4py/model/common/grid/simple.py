@@ -58,7 +58,7 @@ from icon4py.model.common.dimension import (
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.mesh import BaseMesh, GridConfig
+from icon4py.model.common.grid.base import BaseGrid, GridConfig
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 
@@ -400,7 +400,7 @@ class SimpleMeshData:
     )
 
 
-class SimpleMesh(BaseMesh):
+class SimpleGrid(BaseGrid):
     _CELLS = 18
     _EDGES = 27
     _VERTICES = 9

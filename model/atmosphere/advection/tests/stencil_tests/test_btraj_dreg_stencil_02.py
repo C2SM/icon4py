@@ -18,7 +18,7 @@ from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_02 import btraj_dreg_stencil_02
 from icon4py.model.common.dimension import ECDim, EdgeDim, KDim, E2CDim
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def btraj_dreg_stencil_02_numpy(
@@ -44,7 +44,7 @@ def btraj_dreg_stencil_02_numpy(
 
 
 def test_btraj_dreg_stencil_02():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     p_vn = random_field(mesh, EdgeDim, KDim)
     p_vt = random_field(mesh, EdgeDim, KDim)
     edge_cell_length = np.asarray(mesh.connectivities[E2CDim], dtype=float)

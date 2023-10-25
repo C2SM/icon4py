@@ -17,7 +17,7 @@ from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 from icon4py.model.atmosphere.advection.hor_adv_stencil_01 import hor_adv_stencil_01
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def hor_adv_stencil_01_numpy(
@@ -41,7 +41,7 @@ def hor_adv_stencil_01_numpy(
 
 
 def test_hor_adv_stencil_01():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
 
     p_mflx_tracer_h = random_field(mesh, EdgeDim, KDim)
     deepatmo_divh = random_field(mesh, KDim)

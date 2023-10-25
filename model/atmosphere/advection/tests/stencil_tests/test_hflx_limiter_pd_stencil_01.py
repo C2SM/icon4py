@@ -17,7 +17,7 @@ from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_01 import hflx_limiter_pd_stencil_01
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def hflx_limiter_pd_stencil_01_numpy(
@@ -41,7 +41,7 @@ def hflx_limiter_pd_stencil_01_numpy(
 
 
 def test_hflx_limiter_pd_stencil_01():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     geofac_div = random_field(mesh, CellDim, C2EDim)
     p_cc = random_field(mesh, CellDim, KDim)
     p_rhodz_now = random_field(mesh, CellDim, KDim)

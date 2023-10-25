@@ -50,8 +50,8 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.model.common.grid.icon_grid import IconGrid
-from icon4py.model.common.grid.mesh import GridConfig, VerticalGridSize
+from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 

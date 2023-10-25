@@ -16,7 +16,7 @@ import numpy as np
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02a import face_val_ppm_stencil_02a
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def face_val_ppm_stencil_02a_numpy(
@@ -34,7 +34,7 @@ def face_val_ppm_stencil_02a_numpy(
 
 
 def test_face_val_ppm_stencil_02a():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     p_cc = random_field(mesh, CellDim, KDim)
     p_cellhgt_mc_now = random_field(mesh, CellDim, KDim)
     p_face = random_field(mesh, CellDim, KDim)

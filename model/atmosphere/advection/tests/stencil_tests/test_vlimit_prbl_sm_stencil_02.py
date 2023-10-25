@@ -17,7 +17,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_02 import v_limit_prbl_sm_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field, random_mask, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def v_limit_prbl_sm_stencil_02_numpy(
@@ -44,7 +44,7 @@ def v_limit_prbl_sm_stencil_02_numpy(
 
 
 def test_v_limit_prbl_sm_stencil_02():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     l_limit = random_mask(mesh, CellDim, KDim, dtype=int32)
     p_cc = random_field(mesh, CellDim, KDim)
     p_face = random_field(mesh, CellDim, KDim, extend={KDim: 1})

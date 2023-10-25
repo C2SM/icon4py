@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.advection.recon_lsq_cell_l_svd_stencil import (
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def recon_lsq_cell_l_svd_stencil_numpy(
@@ -39,7 +39,7 @@ def recon_lsq_cell_l_svd_stencil_numpy(
 
 
 def test_recon_lsq_cell_l_svd_stencil():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     p_cc = random_field(mesh, CellDim, KDim)
     lsq_pseudoinv_1 = random_field(mesh, CellDim, C2E2CDim)
     lsq_pseudoinv_1_field = as_1D_sparse_field(lsq_pseudoinv_1, CECDim)

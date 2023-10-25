@@ -25,7 +25,7 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     VertexDim, E2C2EODim, E2C2EDim, C2EDim, C2E2CDim, E2C2VDim, C2VDim, V2CDim, V2EDim, C2E2CODim, E2CDim, E2VDim,
 )
-from icon4py.model.common.grid.mesh import BaseMesh
+from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder
 
 
@@ -38,7 +38,7 @@ def _neighbortable_offset_provider_for_1d_sparse_fields(
     return NeighborTableOffsetProvider(table, origin_axis, neighbor_axis, table.shape[1])
 
 
-class IconGrid(BaseMesh):
+class IconGrid(BaseGrid):
     def __init__(self):
         super().__init__()
         self.start_indices = {}

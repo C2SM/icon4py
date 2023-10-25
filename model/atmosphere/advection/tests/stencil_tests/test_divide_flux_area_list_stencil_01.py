@@ -26,7 +26,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_mask,
     zero_field,
 )
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 # FUNCTIONS
@@ -662,7 +662,7 @@ def divide_flux_area_list_stencil_01_numpy(
 
 @pytest.mark.slow_tests
 def test_divide_flux_area_list_stencil_01():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
 
     famask_int = random_mask(mesh, EdgeDim, KDim, dtype=int32)
     p_vn = random_field(mesh, EdgeDim, KDim)

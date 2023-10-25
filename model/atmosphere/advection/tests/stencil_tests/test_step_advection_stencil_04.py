@@ -16,7 +16,7 @@ import numpy as np
 from icon4py.model.atmosphere.advection.step_advection_stencil_04 import step_advection_stencil_04
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def step_advection_stencil_04_numpy(
@@ -29,7 +29,7 @@ def step_advection_stencil_04_numpy(
 
 
 def test_step_advection_stencil_04():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
 
     p_tracer_now = random_field(mesh, CellDim, KDim)
     p_tracer_new = random_field(mesh, CellDim, KDim)

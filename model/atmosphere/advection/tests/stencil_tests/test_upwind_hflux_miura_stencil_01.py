@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_stencil_01 import (
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
 from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def upwind_hflux_miura_stencil_01_numpy(
@@ -61,7 +61,7 @@ def upwind_hflux_miura_stencil_01_numpy(
 
 
 def test_upwind_hflux_miura_stencil_01():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
 
     z_lsq_coeff_1 = random_field(mesh, CellDim, KDim)
     z_lsq_coeff_2 = random_field(mesh, CellDim, KDim)

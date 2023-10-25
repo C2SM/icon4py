@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_03a impo
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def upwind_hflux_miura_cycl_stencil_03a_numpy(
@@ -30,7 +30,7 @@ def upwind_hflux_miura_cycl_stencil_03a_numpy(
 
 
 def test_upwind_hflux_miura_cycl_stencil_03a():
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     z_tracer_mflx_1_dsl = random_field(mesh, EdgeDim, KDim)
     z_tracer_mflx_2_dsl = random_field(mesh, EdgeDim, KDim)
     p_out_e = zero_field(mesh, EdgeDim, KDim)

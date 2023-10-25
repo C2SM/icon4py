@@ -28,7 +28,7 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 @pytest.mark.datatest
@@ -90,7 +90,7 @@ def test_nonhydro_predictor_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     recompute = sp_v.get_metadata("recompute").get("recompute")
     dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
@@ -472,7 +472,7 @@ def test_nonhydro_corrector_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -682,7 +682,7 @@ def test_run_solve_nonhydro_single_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
@@ -847,7 +847,7 @@ def test_run_solve_nonhydro_multi_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
+    mesh = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     r_nsubsteps = grid_savepoint.get_metadata("nsteps").get("nsteps")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
