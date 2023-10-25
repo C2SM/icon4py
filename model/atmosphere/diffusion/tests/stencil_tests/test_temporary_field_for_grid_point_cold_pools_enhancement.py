@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_cold_pools_enhancement import (
     temporary_field_for_grid_point_cold_pools_enhancement,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim, C2E2CDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -29,8 +29,9 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
     def reference(
         mesh, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff, **kwargs
     ) -> np.array:
-        tdiff = theta_v - np.sum(theta_v[mesh.c2e2c], axis=1) / 3
-        trefdiff = theta_ref_mc - np.sum(theta_ref_mc[mesh.c2e2c], axis=1) / 3
+        c2e2c = mesh.connectivities[C2E2CDim]
+        tdiff = theta_v - np.sum(theta_v[c2e2c], axis=1) / 3
+        trefdiff = theta_ref_mc - np.sum(theta_ref_mc[c2e2c], axis=1) / 3
 
         enh_diffu_3d = np.where(
             ((tdiff - trefdiff) < thresh_tdiff) & (trefdiff < 0),

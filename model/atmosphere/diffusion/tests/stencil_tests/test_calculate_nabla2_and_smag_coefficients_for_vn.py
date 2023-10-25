@@ -48,13 +48,14 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         smag_offset,
         **kwargs,
     ) -> tuple[np.array]:
-        primal_normal_vert_x = primal_normal_vert_x.reshape(mesh.e2c2v.shape)
-        primal_normal_vert_y = primal_normal_vert_y.reshape(mesh.e2c2v.shape)
-        dual_normal_vert_x = dual_normal_vert_x.reshape(mesh.e2c2v.shape)
-        dual_normal_vert_y = dual_normal_vert_y.reshape(mesh.e2c2v.shape)
+        e2c2v = mesh.connectivities[E2C2VDim]
+        primal_normal_vert_x = primal_normal_vert_x.reshape(e2c2v.shape)
+        primal_normal_vert_y = primal_normal_vert_y.reshape(e2c2v.shape)
+        dual_normal_vert_x = dual_normal_vert_x.reshape(e2c2v.shape)
+        dual_normal_vert_y = dual_normal_vert_y.reshape(e2c2v.shape)
 
-        u_vert_e2c2v = u_vert[mesh.e2c2v]
-        v_vert_e2c2v = v_vert[mesh.e2c2v]
+        u_vert_e2c2v = u_vert[e2c2v]
+        v_vert_e2c2v = v_vert[e2c2v]
         dual_normal_vert_x = np.expand_dims(dual_normal_vert_x, axis=-1)
         dual_normal_vert_y = np.expand_dims(dual_normal_vert_y, axis=-1)
         primal_normal_vert_x = np.expand_dims(primal_normal_vert_x, axis=-1)
@@ -197,7 +198,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
             z_nabla2_e=z_nabla2_e,
             smag_offset=smag_offset,
             horizontal_start=0,
-            horizontal_end=mesh.n_edges,
+            horizontal_end=mesh.num_edges,
             vertical_start=0,
-            vertical_end=mesh.k_level,
+            vertical_end=mesh.num_levels,
         )

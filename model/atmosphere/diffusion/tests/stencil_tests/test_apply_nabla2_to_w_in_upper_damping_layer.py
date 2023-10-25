@@ -39,9 +39,9 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
             cell_area=cell_area,
             z_nabla2_c=z_nabla2_c,
             horizontal_start=int32(0),
-            horizontal_end=int(mesh.n_cells),
+            horizontal_end=int(mesh.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )
 
     @staticmethod

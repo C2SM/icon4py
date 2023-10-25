@@ -40,11 +40,12 @@ class TestCalculateNabla4(StencilTest):
         inv_primal_edge_length: np.array,
         **kwargs,
     ) -> np.array:
-        u_vert_e2c2v = u_vert[mesh.e2c2v]
-        v_vert_e2c2v = v_vert[mesh.e2c2v]
+        e2c2v = mesh.connectivities[E2C2VDim]
+        u_vert_e2c2v = u_vert[e2c2v]
+        v_vert_e2c2v = v_vert[e2c2v]
 
-        primal_normal_vert_v1 = primal_normal_vert_v1.reshape(mesh.e2c2v.shape)
-        primal_normal_vert_v2 = primal_normal_vert_v2.reshape(mesh.e2c2v.shape)
+        primal_normal_vert_v1 = primal_normal_vert_v1.reshape(e2c2v.shape)
+        primal_normal_vert_v2 = primal_normal_vert_v2.reshape(e2c2v.shape)
 
         primal_normal_vert_v1 = np.expand_dims(primal_normal_vert_v1, axis=-1)
         primal_normal_vert_v2 = np.expand_dims(primal_normal_vert_v2, axis=-1)

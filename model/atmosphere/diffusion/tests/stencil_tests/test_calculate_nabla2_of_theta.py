@@ -32,9 +32,10 @@ class TestCalculateNabla2OfTheta(StencilTest):
 
     @staticmethod
     def reference(mesh, z_nabla2_e: np.array, geofac_div: np.array, **kwargs) -> np.array:
-        geofac_div = geofac_div.reshape(mesh.c2e.shape)
+        c2e = mesh.connectivities[C2EDim]
+        geofac_div = geofac_div.reshape(c2e.shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
-        z_temp = np.sum(z_nabla2_e[mesh.c2e] * geofac_div, axis=1)  # sum along edge dimension
+        z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=1)  # sum along edge dimension
         return dict(z_temp=z_temp)
 
     @pytest.fixture

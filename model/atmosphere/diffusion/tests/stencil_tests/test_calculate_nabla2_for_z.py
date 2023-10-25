@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
@@ -35,7 +35,7 @@ class TestCalculateNabla2ForZ(StencilTest):
     ) -> np.array:
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-        theta_v_e2c = theta_v[mesh.e2c]
+        theta_v_e2c = theta_v[mesh.connectivities[E2CDim]]
         theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
         z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted

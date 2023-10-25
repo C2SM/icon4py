@@ -29,7 +29,7 @@ class TestCalculateNabla2ForW(StencilTest):
     @staticmethod
     def reference(mesh, w: np.array, geofac_n2s: np.array, **kwargs) -> np.array:
         geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
-        z_nabla2_c = np.sum(w[mesh.c2e2cO] * geofac_n2s, axis=1)
+        z_nabla2_c = np.sum(w[mesh.connectivities[C2E2CODim]] * geofac_n2s, axis=1)
         return dict(z_nabla2_c=z_nabla2_c)
 
     @pytest.fixture
@@ -43,7 +43,7 @@ class TestCalculateNabla2ForW(StencilTest):
             geofac_n2s=geofac_n2s,
             z_nabla2_c=z_nabla2_c,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(mesh.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )
