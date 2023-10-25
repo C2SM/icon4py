@@ -153,7 +153,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     set_zero_e_k,
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
-from icon4py.model.atmosphere.dycore.velocity import velocity_advection
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
@@ -496,19 +495,16 @@ class SolveNonhydro:
             lprep_adv=lprep_adv,
         )
 
-        start_cell_local_minus1 = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
-        )
-        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
         end_cell_nudging_minus1 = self.grid.get_end_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim) - 1
         )
-
+        start_cell_halo = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
+        end_cell_end = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
         if self.grid.limited_area():
+            # TODO (magdalena) this does not need any boundary args while it is using the mask
             mo_solve_nonhydro_stencil_66.with_backend(run_gtfn)(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
                 rho=prognostic_state_ls[nnew].rho,
@@ -516,10 +512,6 @@ class SolveNonhydro:
                 exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=self.params.rd_o_cvd,
                 rd_o_p0ref=self.params.rd_o_p0ref,
-                horizontal_start=start_cell_local_minus1,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.n_lev(),
                 offset_provider={},
             )
 
@@ -545,8 +537,8 @@ class SolveNonhydro:
             rho_new=prognostic_state_ls[nnew].rho,
             theta_v_new=prognostic_state_ls[nnew].theta_v,
             cvd_o_rd=self.params.cvd_o_rd,
-            horizontal_start=start_cell_local_minus1,
-            horizontal_end=end_cell_local,
+            horizontal_start=start_cell_halo,
+            horizontal_end=end_cell_end,
             vertical_start=0,
             vertical_end=self.grid.n_lev(),
             offset_provider={},
@@ -565,10 +557,12 @@ class SolveNonhydro:
         nnow: int,
         nnew: int,
     ):
-        lvn_only = False
+        # TODO (magdalena) fix this! condition makes no sense, when fixing call of velocity advection in predictor
         if l_init or l_recompute:
             if self.config.itime_scheme == 4 and not l_init:
                 lvn_only = True  # Recompute only vn tendency
+            else:
+                lvn_only = False
 
         self.velocity_advection.run_predictor_step(
             vn_only=lvn_only,
@@ -975,16 +969,16 @@ class SolveNonhydro:
                     "Koff": KDim,
                 },
             )
-        # TODO (magdalena) what is 64?
-        self.z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(
-            np.asarray(self.z_hydro_corr)[:, 64]
+        lowest_level = self.grid.n_lev() - 1
+        hydro_corr_horizontal = np_as_located_field(EdgeDim)(
+            np.asarray(self.z_hydro_corr)[:, lowest_level]
         )
 
         if self.config.igradp_method == 3:
             mo_solve_nonhydro_stencil_22.with_backend(run_gtfn)(
                 ipeidx_dsl=self.metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
-                z_hydro_corr=self.z_hydro_corr_horizontal,
+                z_hydro_corr=hydro_corr_horizontal,
                 z_gradh_exner=z_fields.z_gradh_exner,
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_end,
@@ -1354,6 +1348,7 @@ class SolveNonhydro:
         else:
             self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w)
 
+    # flake8: noqa: C901
     def run_corrector_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,

@@ -13,7 +13,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import (
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro,
