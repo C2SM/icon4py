@@ -397,7 +397,7 @@ class Diffusion:
                 CellDim,
                 (
                     HorizontalMarkerIndex.nudging(CellDim)
-                    if self.grid.limited_area()
+                    if self.grid.limited_area
                     else HorizontalMarkerIndex.interior(CellDim)
                 ),
             )
@@ -719,7 +719,7 @@ class Diffusion:
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
-            limited_area=self.grid.limited_area(),
+            limited_area=self.grid.limited_area,
             horizontal_start=edge_start_lb_plus4,
             horizontal_end=edge_end_local,
             vertical_start=0,

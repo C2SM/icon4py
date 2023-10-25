@@ -349,7 +349,7 @@ class SolveNonhydro:
 
         # TODO (magdalena) vertical nesting is only relevant in the context of
         #      horizontal nesting, since we don't support this we should remove this option
-        if grid.lvert_nest():
+        if grid.lvert_nest:
             self.l_vert_nested = True
             self.jk_start = 1
         else:
@@ -505,7 +505,7 @@ class SolveNonhydro:
             CellDim, HorizontalMarkerIndex.nudging(CellDim) - 1
         )
 
-        if self.grid.limited_area():
+        if self.grid.limited_area:
             mo_solve_nonhydro_stencil_66.with_backend(run_gtfn)(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
                 rho=prognostic_state_ls[nnew].rho,
@@ -652,7 +652,7 @@ class SolveNonhydro:
         )
 
         # initialize nest boundary points of z_rth_pr with zero
-        if self.grid.limited_area():
+        if self.grid.limited_area:
             mo_solve_nonhydro_stencil_01.with_backend(run_gtfn)(
                 z_rth_pr_1=self.z_rth_pr_1,
                 z_rth_pr_2=self.z_rth_pr_2,
@@ -843,7 +843,7 @@ class SolveNonhydro:
             )
 
             # initialize also nest boundary points with zero
-            if self.grid.limited_area():
+            if self.grid.limited_area:
                 set_zero_e_k.with_backend(run_gtfn)(
                     field=z_fields.z_rho_e,
                     horizontal_start=start_edge_lb,
@@ -1019,7 +1019,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if self.grid.limited_area():
+        if self.grid.limited_area:
             mo_solve_nonhydro_stencil_29.with_backend(run_gtfn)(
                 grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
                 vn_now=prognostic_state[nnow].vn,
@@ -1314,7 +1314,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if self.grid.limited_area():  # for MPI-parallelized case
+        if self.grid.limited_area:  # for MPI-parallelized case
             nhsolve_prog.stencils_61_62.with_backend(run_gtfn)(
                 rho_now=prognostic_state[nnow].rho,
                 grf_tend_rho=diagnostic_state_nh.grf_tend_rho,
@@ -1524,7 +1524,7 @@ class SolveNonhydro:
                 self.config.divdamp_order == 24
                 and self.config.divdamp_fac_o2 <= 4 * self.config.divdamp_fac
             ):
-                if self.grid.limited_area():
+                if self.grid.limited_area:
                     mo_solve_nonhydro_stencil_27.with_backend(run_gtfn)(
                         scal_divdamp=self.scal_divdamp,
                         bdy_divdamp=bdy_divdamp,

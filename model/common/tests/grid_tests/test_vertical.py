@@ -30,7 +30,7 @@ def test_nrdmax_calculation(max_h, damping, delta, grid_savepoint):
     vertical_params = VerticalModelParams(
         rayleigh_damping_height=damping,
         vct_a=vct_a,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp,
         nflatlev=grid_savepoint.nflatlev(),
     )
     assert vertical_params.index_of_damping_layer == vct_a.shape[0] - math.ceil(damping / delta) - 1
@@ -43,7 +43,7 @@ def test_nrdmax_calculation_from_icon_input(grid_savepoint, damping_height):
     vertical_params = VerticalModelParams(
         rayleigh_damping_height=damping_height,
         vct_a=a,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp,
         nflatlev=grid_savepoint.nflatlev(),
     )
     assert nrdmax == vertical_params.index_of_damping_layer

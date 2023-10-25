@@ -86,7 +86,7 @@ def test_nonhydro_predictor_step(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp,
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
@@ -469,7 +469,7 @@ def test_nonhydro_corrector_step(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
         nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp,
     )
     sp_v = savepoint_velocity_init
     grid = SimpleGrid()
@@ -678,7 +678,7 @@ def test_run_solve_nonhydro_single_step(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp,
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
@@ -843,7 +843,7 @@ def test_run_solve_nonhydro_multi_step(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp,
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
