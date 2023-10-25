@@ -63,7 +63,7 @@ from icon4py.model.common.grid.vertical import VerticalGridSize
 
 
 @dataclass
-class SimpleMeshData:
+class SimpleGridData:
     c2v_table = np.asarray(
         [
             [0, 1, 4],
@@ -423,7 +423,7 @@ class SimpleGrid(BaseGrid):
 
     @property
     def diamond_table(self) -> int:
-        return SimpleMeshData.diamond_table
+        return SimpleGridData.diamond_table
 
     @property
     def num_levels(self) -> int:
@@ -450,18 +450,18 @@ class SimpleGrid(BaseGrid):
         )
 
         connectivity_dict = {
-            C2VDim: SimpleMeshData.c2v_table,
-            E2CDim: SimpleMeshData.e2c_table,
-            E2VDim: SimpleMeshData.e2v_table,
-            C2EDim: SimpleMeshData.c2e_table,
-            C2E2CODim: SimpleMeshData.c2e2cO_table,
-            C2E2CDim: SimpleMeshData.c2e2c_table,
-            E2C2EODim: SimpleMeshData.e2c2eO_table,
-            E2C2EDim: SimpleMeshData.e2c2e_table,
-            E2C2VDim: SimpleMeshData.e2c2v_table,
-            V2CDim: SimpleMeshData.v2c_table,
-            V2EDim: SimpleMeshData.v2e_table,
-            C2E2C2E2CDim: SimpleMeshData.c2e2c2e2c_table,
+            C2VDim: SimpleGridData.c2v_table,
+            E2CDim: SimpleGridData.e2c_table,
+            E2VDim: SimpleGridData.e2v_table,
+            C2EDim: SimpleGridData.c2e_table,
+            C2E2CODim: SimpleGridData.c2e2cO_table,
+            C2E2CDim: SimpleGridData.c2e2c_table,
+            E2C2EODim: SimpleGridData.e2c2eO_table,
+            E2C2EDim: SimpleGridData.e2c2e_table,
+            E2C2VDim: SimpleGridData.e2c2v_table,
+            V2CDim: SimpleGridData.v2c_table,
+            V2EDim: SimpleGridData.v2e_table,
+            C2E2C2E2CDim: SimpleGridData.c2e2c2e2c_table,
         }
 
         self.with_config(config).with_connectivities(connectivity_dict)

@@ -62,3 +62,12 @@ class VerticalModelParams:
     @property
     def physical_heights(self) -> Field[[KDim], float]:
         return self.vct_a
+
+
+class VerticalGridConfig:
+    def __init__(self, num_lev: int):
+        self._num_lev = num_lev
+
+    @property
+    def num_lev(self) -> int:
+        return self._num_lev

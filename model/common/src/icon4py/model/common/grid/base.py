@@ -43,14 +43,6 @@ class GridConfig:
         return self.horizontal_config.num_cells
 
 
-class VerticalMeshConfig:
-    def __init__(self, num_lev: int):
-        self._num_lev = num_lev
-
-    @property
-    def num_lev(self) -> int:
-        return self._num_lev
-
 class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None

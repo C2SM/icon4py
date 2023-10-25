@@ -28,9 +28,9 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array, **kwargs
+        grid, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array, **kwargs
     ) -> tuple[np.array]:
-        v2e = mesh.connectivities[V2EDim]
+        v2e = grid.connectivities[V2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
 
