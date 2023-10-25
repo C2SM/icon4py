@@ -47,8 +47,8 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.icon_grid import IconGrid, VerticalGridSize
-from icon4py.model.common.grid.mesh import GridConfig
+from icon4py.model.common.grid.icon_grid import IconGrid
+from icon4py.model.common.grid.mesh import GridConfig, VerticalGridSize
 
 
 class GridFileName(str, Enum):
@@ -326,11 +326,11 @@ class GridManager:
 
     def get_size(self, dim: Dimension):
         if dim == VertexDim:
-            return self._grid.config.n_vertices
+            return self._grid.config.num_vertices
         elif dim == CellDim:
-            return self._grid.config.n_cells
+            return self._grid.config.num_cells
         elif dim == EdgeDim:
-            return self._grid.config.n_edges
+            return self._grid.config.num_edges
         else:
             self._log.warning(f"cannot determine size of unknown dimension {dim}")
             raise IconGridError(f"Unknown dimension {dim}")

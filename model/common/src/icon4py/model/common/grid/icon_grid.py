@@ -23,10 +23,19 @@ from icon4py.model.common.dimension import (
     ECDim,
     ECVDim,
     EdgeDim,
-    VertexDim,
+    VertexDim, E2C2EODim, E2C2EDim, C2EDim, C2E2CDim, E2C2VDim, C2VDim, V2CDim, V2EDim, C2E2CODim, E2CDim, E2VDim,
 )
 from icon4py.model.common.grid.mesh import BaseMesh
 from icon4py.model.common.utils import builder
+
+
+def _neighbortable_offset_provider_for_1d_sparse_fields(
+    old_shape: tuple[int, int],
+    origin_axis: Dimension,
+    neighbor_axis: Dimension,
+):
+    table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+    return NeighborTableOffsetProvider(table, origin_axis, neighbor_axis, table.shape[1])
 
 
 class IconGrid(BaseMesh):
@@ -42,30 +51,38 @@ class IconGrid(BaseMesh):
         self.start_indices[dim] = start_indices.astype(int32)
         self.end_indices[dim] = end_indices.astype(int32)
 
+    @property
+    def num_levels(self):
+        return self.config.num_levels if self.config else 0
+
+    @property
+    def num_cells(self):
+        return self.config.num_cells if self.config else 0
+
+    @property
+    def num_vertices(self):
+        return self.config.num_vertices if self.config else 0
+
+    @property
+    def num_edges(self):
+        return self.config.num_edges
+
+    @property
     def limited_area(self):
         # defined in mo_grid_nml.f90
         return self.config.limited_area
 
+    @property
     def n_shift(self):
         return self.config.n_shift_total if self.config else 0
 
-    def n_lev(self):
-        return self.config.k_levels if self.config else 0
-
+    @property
     def nflat_gradp(self):
         return (
-            self.config.k_levels if self.config else 0
+            self.config.num_levels if self.config else 0
         )  # according to line 1168 in mo_vertical_grid.f90
 
-    def n_cells(self):
-        return self.config.n_cells if self.config else 0
-
-    def n_vertices(self):
-        return self.config.n_vertices if self.config else 0
-
-    def n_edges(self):
-        return self.config.n_edges
-
+    @property
     def lvert_nest(self):
         return True if self.config.lvertnest else False
 
@@ -87,94 +104,85 @@ class IconGrid(BaseMesh):
         """
         return self.end_indices[dim][marker]
 
-    def get_c2e_connectivity(self):
-        table = self.connectivities["c2e"]
+    def get_c2e_offset_provider(self):
+        table = self.connectivities[C2EDim]
         return NeighborTableOffsetProvider(table, CellDim, EdgeDim, table.shape[1])
 
-    def get_e2c_connectivity(self):
-        table = self.connectivities["e2c"]
+    def get_e2c_offset_provider(self):
+        table = self.connectivities[E2CDim]
         return NeighborTableOffsetProvider(table, EdgeDim, CellDim, table.shape[1])
 
-    def get_e2v_connectivity(self):
-        table = self.connectivities["e2v"]
+    def get_e2v_offset_provider(self):
+        table = self.connectivities[E2VDim]
         return NeighborTableOffsetProvider(table, EdgeDim, VertexDim, table.shape[1])
 
-    def get_c2e2c_connectivity(self):
-        table = self.connectivities["c2e2c"]
+    def get_c2e2c_offset_provider(self):
+        table = self.connectivities[C2E2CDim]
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
 
-    def get_e2ec_connectivity(self):
-        old_shape = self.connectivities["e2c"].shape
+    def get_e2ec_offset_provider(self):
+        old_shape = self.connectivities[E2CDim].shape
         e2ec_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
         return NeighborTableOffsetProvider(e2ec_table, EdgeDim, ECDim, e2ec_table.shape[1])
 
-    def get_c2e2co_connectivity(self):
-        table = self.connectivities["c2e2co"]
+    def get_c2e2co_offset_provider(self):
+        table = self.connectivities[C2E2CODim]
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
 
-    def get_e2c2v_connectivity(self):
-        table = self.connectivities["e2c2v"]
+    def get_e2c2v_offset_provider(self):
+        table = self.connectivities[E2C2VDim]
         return NeighborTableOffsetProvider(table, EdgeDim, VertexDim, table.shape[1])
 
-    def get_v2e_connectivity(self):
-        table = self.connectivities["v2e"]
+    def get_v2e_offset_provider(self):
+        table = self.connectivities[V2EDim]
         return NeighborTableOffsetProvider(table, VertexDim, EdgeDim, table.shape[1])
 
-    def get_v2c_connectivity(self):
-        table = self.connectivities["v2c"]
+    def get_v2c_offset_provider(self):
+        table = self.connectivities[V2CDim]
         return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
 
-    def get_c2v_connectivity(self):
-        table = self.connectivities["c2v"]
+    def get_c2v_offset_provider(self):
+        table = self.connectivities[C2VDim]
         return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
 
-    def get_e2ecv_connectivity(self):
+    def get_e2ecv_offset_provider(self):
         return self._neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities["e2c2v"].shape, EdgeDim, ECVDim
+            self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim
         )
 
-    def _neighbortable_offset_provider_for_1d_sparse_fields(
-        self,
-        old_shape: tuple[int, int],
-        origin_axis: Dimension,
-        neighbor_axis: Dimension,
-    ):
-        table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(table, origin_axis, neighbor_axis, table.shape[1])
-
-    def get_c2cec_connectivity(self):
-        return self._neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities["c2e2c"].shape, CellDim, CECDim
+    def get_c2cec_offset_provider(self):
+        return _neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities[C2E2CDim].shape, CellDim, CECDim
         )
 
-    def get_c2ce_connectivity(self):
-        return self._neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities["c2e"].shape, CellDim, CEDim
+    def get_c2ce_offset_provider(self):
+        return _neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities[C2EDim].shape, CellDim, CEDim
         )
 
-    def get_e2c2e_connectivity(self):
-        table = self.connectivities["e2c2e"]
+    def get_e2c2e_offset_provider(self):
+        table = self.connectivities[E2C2EDim]
         return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
 
-    def get_e2c2eo_connectivity(self):
-        table = self.connectivities["e2c2eo"]
+    def get_e2c2eo_offset_provider(self):
+        table = self.connectivities[E2C2EODim]
         return NeighborTableOffsetProvider(table, EdgeDim, EdgeDim, table.shape[1])
 
     def get_offset_provider(self):
         return {
-            "C2E": self.get_c2e_connectivity(),
-            "E2C": self.get_e2c_connectivity(),
-            "E2V": self.get_e2v_connectivity(),
-            "C2E2C": self.get_c2e2c_connectivity(),
-            "E2EC": self.get_e2ec_connectivity(),
-            "C2E2CO": self.get_c2e2co_connectivity(),
-            "E2C2V": self.get_e2c2v_connectivity(),
-            "V2E": self.get_v2e_connectivity(),
-            "V2C": self.get_v2c_connectivity(),
-            "C2V": self.get_c2v_connectivity(),
-            "E2ECV": self.get_e2ecv_connectivity(),
-            "C2CEC": self.get_c2cec_connectivity(),
-            "C2CE": self.get_c2ce_connectivity(),
-            "E2C2E": self.get_e2c2e_connectivity(),
-            "E2C2EO": self.get_e2c2eo_connectivity(),
+            "C2E": self.get_c2e_offset_provider(),
+            "E2C": self.get_e2c_offset_provider(),
+            "E2V": self.get_e2v_offset_provider(),
+            "C2E2C": self.get_c2e2c_offset_provider(),
+            "E2EC": self.get_e2ec_offset_provider(),
+            "C2E2CO": self.get_c2e2co_offset_provider(),
+            "E2C2V": self.get_e2c2v_offset_provider(),
+            "V2E": self.get_v2e_offset_provider(),
+            "V2C": self.get_v2c_offset_provider(),
+            "C2V": self.get_c2v_offset_provider(),
+            "E2ECV": self.get_e2ecv_offset_provider(),
+            "C2CEC": self.get_c2cec_offset_provider(),
+            "C2CE": self.get_c2ce_offset_provider(),
+            "E2C2E": self.get_e2c2e_offset_provider(),
+            "E2C2EO": self.get_e2c2eo_offset_provider(),
         }

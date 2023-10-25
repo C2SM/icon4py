@@ -28,7 +28,8 @@ try:
 except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, E2VDim, E2C2EDim, C2EDim, V2CDim, E2CDim, \
+    C2VDim, V2EDim, C2E2CDim
 from icon4py.model.common.grid.grid_manager import (
     GridFile,
     GridFileName,
@@ -37,9 +38,8 @@ from icon4py.model.common.grid.grid_manager import (
     ToGt4PyTransformation,
 )
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.grid.icon_grid import VerticalGridSize
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
-
+from icon4py.model.common.grid.vertical import VerticalGridSize
 
 SIMPLE_MESH_NC = "simple_mesh_grid.nc"
 
@@ -50,12 +50,12 @@ def simple_mesh_gridfile(tmp_path):
     mesh = SimpleMesh()
     dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
     dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
-    dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=mesh.n_vertices)
+    dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=mesh.num_vertices)
 
-    dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=mesh.n_edges)
-    dataset.createDimension(GridFile.DimensionName.CELL_NAME, size=mesh.n_cells)
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=mesh.n_e2v)
-    dataset.createDimension(GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=mesh.n_e2c2e)
+    dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=mesh.num_edges)
+    dataset.createDimension(GridFile.DimensionName.CELL_NAME, size=mesh.num_cells)
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=mesh.size[E2VDim])
+    dataset.createDimension(GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=mesh.size[E2C2EDim])
     dataset.createDimension(GridFile.DimensionName.MAX_CHILD_DOMAINS, size=1)
     # add dummy values for the grf dimensions
     dataset.createDimension(GridFile.DimensionName.CELL_GRF, size=14)
@@ -63,30 +63,30 @@ def simple_mesh_gridfile(tmp_path):
     dataset.createDimension(GridFile.DimensionName.VERTEX_GRF, size=13)
     _add_to_dataset(
         dataset,
-        np.zeros(mesh.n_edges),
+        np.zeros(mesh.num_edges),
         GridFile.GridRefinementName.CONTROL_EDGES,
         (GridFile.DimensionName.EDGE_NAME,),
     )
 
     _add_to_dataset(
         dataset,
-        np.zeros(mesh.n_cells),
+        np.zeros(mesh.num_cells),
         GridFile.GridRefinementName.CONTROL_CELLS,
         (GridFile.DimensionName.CELL_NAME,),
     )
     _add_to_dataset(
         dataset,
-        np.zeros(mesh.n_vertices),
+        np.zeros(mesh.num_vertices),
         GridFile.GridRefinementName.CONTROL_VERTICES,
         (GridFile.DimensionName.VERTEX_NAME,),
     )
 
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=mesh.n_c2e)
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=mesh.n_v2c)
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=mesh.size[C2EDim])
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=mesh.size[V2CDim])
 
     _add_to_dataset(
         dataset,
-        mesh.c2e,
+        mesh.connectivities[C2EDim],
         GridFile.OffsetName.C2E,
         (
             GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
@@ -96,7 +96,7 @@ def simple_mesh_gridfile(tmp_path):
 
     _add_to_dataset(
         dataset,
-        mesh.e2c,
+        mesh.connectivities[E2CDim],
         GridFile.OffsetName.E2C,
         (
             GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
@@ -105,7 +105,7 @@ def simple_mesh_gridfile(tmp_path):
     )
     _add_to_dataset(
         dataset,
-        mesh.e2v,
+        mesh.connectivities[E2VDim],
         GridFile.OffsetName.E2V,
         (
             GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
@@ -115,7 +115,7 @@ def simple_mesh_gridfile(tmp_path):
 
     _add_to_dataset(
         dataset,
-        mesh.v2c,
+        mesh.connectivities[V2CDim],
         GridFile.OffsetName.V2C,
         (
             GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
@@ -125,7 +125,7 @@ def simple_mesh_gridfile(tmp_path):
 
     _add_to_dataset(
         dataset,
-        mesh.c2v,
+        mesh.connectivities[C2VDim],
         GridFile.OffsetName.C2V,
         (
             GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
@@ -134,13 +134,13 @@ def simple_mesh_gridfile(tmp_path):
     )
     _add_to_dataset(
         dataset,
-        np.zeros((mesh.n_vertices, 4), dtype=np.int32),
+        np.zeros((mesh.num_vertices, 4), dtype=np.int32),
         GridFile.OffsetName.V2E2V,
         (GridFile.DimensionName.DIAMOND_EDGE_SIZE, GridFile.DimensionName.VERTEX_NAME),
     )
     _add_to_dataset(
         dataset,
-        mesh.v2e,
+        mesh.connectivities[V2EDim],
         GridFile.OffsetName.V2E,
         (
             GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
@@ -149,7 +149,7 @@ def simple_mesh_gridfile(tmp_path):
     )
     _add_to_dataset(
         dataset,
-        mesh.c2e2c,
+        mesh.connectivities[C2E2CDim],
         GridFile.OffsetName.C2E2C,
         (
             GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
@@ -213,9 +213,9 @@ def test_gridparser_dimension(simple_mesh_gridfile):
     data = netCDF4.Dataset(simple_mesh_gridfile, "r")
     grid_parser = GridFile(data)
     mesh = SimpleMesh()
-    assert grid_parser.dimension(GridFile.DimensionName.CELL_NAME) == mesh.n_cells
-    assert grid_parser.dimension(GridFile.DimensionName.VERTEX_NAME) == mesh.n_vertices
-    assert grid_parser.dimension(GridFile.DimensionName.EDGE_NAME) == mesh.n_edges
+    assert grid_parser.dimension(GridFile.DimensionName.CELL_NAME) == mesh.num_cells
+    assert grid_parser.dimension(GridFile.DimensionName.VERTEX_NAME) == mesh.num_vertices
+    assert grid_parser.dimension(GridFile.DimensionName.EDGE_NAME) == mesh.num_edges
 
 
 @pytest.mark.datatest
@@ -236,10 +236,10 @@ def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
     mesh = SimpleMesh()
     grid_parser = GridFile(data)
 
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.C2E), mesh.c2e)
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.E2C), mesh.e2c)
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2E), mesh.v2e)
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2C), mesh.v2c)
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.C2E), mesh.connectivities[C2EDim])
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.E2C), mesh.connectivities[E2CDim])
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2E), mesh.connectivities[V2EDim])
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2C), mesh.connectivities[V2CDim])
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -252,14 +252,14 @@ def test_grid_parser_index_fields(simple_mesh_gridfile, caplog):
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    seralized_v2e = grid_savepoint.v2e()[0 : grid.n_vertices(), :]
+    seralized_v2e = grid_savepoint.v2e()[0 : grid.num_vertices(), :]
     # there are vertices at the boundary of a local domain or at a pentagon point that have less than
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(seralized_v2e)
-    assert has_invalid_index(grid.get_v2e_connectivity().table)
+    assert has_invalid_index(grid.get_v2e_offset_provider().table)
     reset_invalid_index(seralized_v2e)
-    assert np.allclose(grid.get_v2e_connectivity().table, seralized_v2e)
+    assert np.allclose(grid.get_v2e_offset_provider().table, seralized_v2e)
 
 
 # v2c: exists in serial, simple, grid
@@ -268,16 +268,16 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    serialized_v2c = grid_savepoint.v2c()[0 : grid.n_vertices(), :]
+    serialized_v2c = grid_savepoint.v2c()[0 : grid.num_vertices(), :]
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
     # hence in the grid file there are "missing values"
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(serialized_v2c)
-    assert has_invalid_index(grid.get_v2c_connectivity().table)
+    assert has_invalid_index(grid.get_v2c_offset_provider().table)
     reset_invalid_index(serialized_v2c)
 
-    assert np.allclose(grid.get_v2c_connectivity().table, serialized_v2c)
+    assert np.allclose(grid.get_v2c_offset_provider().table, serialized_v2c)
 
 
 def reset_invalid_index(index_array: np.ndarray):
@@ -314,12 +314,12 @@ def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
 
-    serialized_e2v = grid_savepoint.e2v()[0 : grid.n_edges(), :]
+    serialized_e2v = grid_savepoint.e2v()[0 : grid.num_edges(), :]
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
     assert not has_invalid_index(serialized_e2v)
-    assert not has_invalid_index(grid.get_e2v_connectivity().table)
-    assert np.allclose(grid.get_e2v_connectivity().table, serialized_e2v)
+    assert not has_invalid_index(grid.get_e2v_offset_provider().table)
+    assert np.allclose(grid.get_e2v_offset_provider().table, serialized_e2v)
 
 
 def has_invalid_index(ar: np.ndarray):
@@ -332,13 +332,13 @@ def has_invalid_index(ar: np.ndarray):
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    serialized_e2c = grid_savepoint.e2c()[0 : grid.n_edges(), :]
+    serialized_e2c = grid_savepoint.e2c()[0 : grid.num_edges(), :]
     # there are edges at the boundary that have only one
     # neighboring cell, there are "missing values" in the grid file
     # and here they do not get substituted in the ICON preprocessing
     assert has_invalid_index(serialized_e2c)
-    assert has_invalid_index(grid.get_e2c_connectivity().table)
-    assert np.allclose(grid.get_e2c_connectivity().table, serialized_e2c)
+    assert has_invalid_index(grid.get_e2c_offset_provider().table)
+    assert np.allclose(grid.get_e2c_offset_provider().table, serialized_e2c)
 
 
 # c2e: serial, simple, grid
@@ -348,13 +348,13 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
 
-    serialized_c2e = grid_savepoint.c2e()[0 : grid.n_cells(), :]
+    serialized_c2e = grid_savepoint.c2e()[0 : grid.num_cells(), :]
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
     # first place
     # hence there are no "missing values" in the grid file
     assert not has_invalid_index(serialized_c2e)
-    assert not has_invalid_index(grid.get_c2e_connectivity().table)
-    assert np.allclose(grid.get_c2e_connectivity().table, serialized_c2e)
+    assert not has_invalid_index(grid.get_c2e_offset_provider().table)
+    assert np.allclose(grid.get_c2e_offset_provider().table, serialized_c2e)
 
 
 # c2e2c: exists in  serial, simple_mesh, grid
@@ -364,8 +364,8 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     assert np.allclose(
-        grid.get_c2e2c_connectivity().table,
-        grid_savepoint.c2e2c()[0 : grid.n_cells(), :],
+        grid.get_c2e2c_offset_provider().table,
+        grid_savepoint.c2e2c()[0 : grid.num_cells(), :],
     )
 
 
@@ -380,8 +380,8 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     serialized_e2c2e = grid_savepoint.e2c2e()[0:num_cells, :]
     assert has_invalid_index(serialized_e2c2e)
     grid = gm.get_grid()
-    assert has_invalid_index(grid.get_e2c2e_connectivity().table)
-    assert np.allclose(grid.get_e2c2e_connectivity().table, serialized_e2c2e)
+    assert has_invalid_index(grid.get_e2c2e_offset_provider().table)
+    assert np.allclose(grid.get_e2c2e_offset_provider().table, serialized_e2c2e)
 
 
 @pytest.mark.xfail
@@ -393,8 +393,8 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     # the "far" (adjacent to edge normal ) is not there. why?
     # despite that: ordering is different
     assert np.allclose(
-        grid.get_e2c2v_connectivity().table,
-        grid_savepoint.e2c2v()[0 : grid.n_edges(), :],
+        grid.get_e2c2v_offset_provider().table,
+        grid_savepoint.e2c2v()[0 : grid.num_edges(), :],
     )
 
 
@@ -403,8 +403,8 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    c2v = grid.get_c2v_connectivity().table
-    assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.n_cells(), :])
+    c2v = grid.get_c2v_offset_provider().table
+    assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.num_cells(), :])
 
 
 def init_grid_manager(fname):
@@ -428,12 +428,12 @@ def test_grid_manager_diamond_offset(simple_mesh_gridfile):
     gm = GridManager(
         IndexTransformation(),
         simple_mesh_gridfile,
-        VerticalGridSize(num_lev=mesh.k_level),
+        VerticalGridSize(num_lev=mesh.num_levels),
     )
     gm()
     grid = gm.get_grid()
     assert np.allclose(
-        np.sort(grid.get_e2c2v_connectivity().table, 1), np.sort(mesh.diamond_arr, 1)
+        np.sort(grid.get_e2c2v_offset_provider().table, 1), np.sort(mesh.diamond_table, 1)
     )
 
 

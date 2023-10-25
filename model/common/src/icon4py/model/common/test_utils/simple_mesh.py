@@ -422,6 +422,10 @@ class SimpleMesh(BaseMesh):
         return self.config.num_edges
 
     @property
+    def diamond_table(self) -> int:
+        return SimpleMeshData.diamond_table
+
+    @property
     def num_levels(self) -> int:
         return self.config.num_levels
 
@@ -446,7 +450,6 @@ class SimpleMesh(BaseMesh):
         )
 
         connectivity_dict = {
-            # "diamond_arr": SimpleMeshData.diamond_table,
             C2VDim: SimpleMeshData.c2v_table,
             E2CDim: SimpleMeshData.e2c_table,
             E2VDim: SimpleMeshData.e2v_table,
