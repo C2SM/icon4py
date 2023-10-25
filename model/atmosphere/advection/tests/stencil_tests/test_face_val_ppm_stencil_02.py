@@ -46,14 +46,14 @@ def face_val_ppm_stencil_02_numpy(
 
 
 def test_face_val_ppm_stencil_02():
-    mesh = SimpleGrid()
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_cellhgt_mc_now = random_field(mesh, CellDim, KDim)
-    p_face_in = random_field(mesh, CellDim, KDim)
-    p_face = random_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim)
+    p_cellhgt_mc_now = random_field(grid, CellDim, KDim)
+    p_face_in = random_field(grid, CellDim, KDim)
+    p_face = random_field(grid, CellDim, KDim)
 
     vert_idx = it_embedded.np_as_located_field(KDim)(
-        np.arange(0, _shape(mesh, KDim)[0], dtype=int32)
+        np.arange(0, _shape(grid, KDim)[0], dtype=int32)
     )
 
     slev = int32(1)

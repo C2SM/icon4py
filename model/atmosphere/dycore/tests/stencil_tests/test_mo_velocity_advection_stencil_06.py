@@ -26,7 +26,7 @@ class TestMoVelocityAdvectionStencil06(StencilTest):
     OUTPUTS = ("vn_ie",)
 
     @staticmethod
-    def reference(mesh, wgtfacq_e: np.array, vn: np.array, **kwargs) -> np.array:
+    def reference(grid, wgtfacq_e: np.array, vn: np.array, **kwargs) -> np.array:
         vn_k_minus_1 = np.roll(vn, shift=1, axis=1)
         vn_k_minus_2 = np.roll(vn, shift=2, axis=1)
         vn_k_minus_3 = np.roll(vn, shift=3, axis=1)
@@ -43,10 +43,10 @@ class TestMoVelocityAdvectionStencil06(StencilTest):
         return dict(vn_ie=vn_ie)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        wgtfacq_e = random_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        vn_ie = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        wgtfacq_e = random_field(grid, EdgeDim, KDim)
+        vn = random_field(grid, EdgeDim, KDim)
+        vn_ie = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             wgtfacq_e=wgtfacq_e,

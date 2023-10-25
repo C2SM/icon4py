@@ -27,9 +27,9 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff, **kwargs
+        grid, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff, **kwargs
     ) -> np.array:
-        c2e2c = mesh.connectivities[C2E2CDim]
+        c2e2c = grid.connectivities[C2E2CDim]
         tdiff = theta_v - np.sum(theta_v[c2e2c], axis=1) / 3
         trefdiff = theta_ref_mc - np.sum(theta_ref_mc[c2e2c], axis=1) / 3
 
@@ -42,10 +42,10 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
         return dict(enh_diffu_3d=enh_diffu_3d)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        theta_v = random_field(mesh, CellDim, KDim)
-        theta_ref_mc = random_field(mesh, CellDim, KDim)
-        enh_diffu_3d = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        theta_v = random_field(grid, CellDim, KDim)
+        theta_ref_mc = random_field(grid, CellDim, KDim)
+        enh_diffu_3d = zero_field(grid, CellDim, KDim)
         thresh_tdiff = 5.0
 
         return dict(

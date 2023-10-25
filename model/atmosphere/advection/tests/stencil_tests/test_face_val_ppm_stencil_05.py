@@ -63,11 +63,11 @@ def face_val_ppm_stencil_05_numpy(
 
 
 def test_face_val_ppm_stencil_05():
-    mesh = SimpleGrid()
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_cellhgt_mc_now = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    z_slope = random_field(mesh, CellDim, KDim)
-    p_face = zero_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim)
+    p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    z_slope = random_field(grid, CellDim, KDim)
+    p_face = zero_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_05_numpy(
         np.asarray(p_cc),

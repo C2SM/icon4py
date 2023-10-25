@@ -26,20 +26,20 @@ class TestMoVelocityAdvectionStencil05(StencilTest):
     OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
 
     @staticmethod
-    def reference(mesh, vn: np.array, vt: np.array, **kwargs) -> dict:
+    def reference(grid, vn: np.array, vt: np.array, **kwargs) -> dict:
         vn_ie = vn
         z_vt_ie = vt
         z_kin_hor_e = 0.5 * ((vn * vn) + (vt * vt))
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn = random_field(mesh, EdgeDim, KDim)
-        vt = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        vn = random_field(grid, EdgeDim, KDim)
+        vt = random_field(grid, EdgeDim, KDim)
 
-        vn_ie = zero_field(mesh, EdgeDim, KDim)
-        z_vt_ie = zero_field(mesh, EdgeDim, KDim)
-        z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
+        vn_ie = zero_field(grid, EdgeDim, KDim)
+        z_vt_ie = zero_field(grid, EdgeDim, KDim)
+        z_kin_hor_e = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             vn=vn,

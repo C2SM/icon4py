@@ -38,13 +38,13 @@ def btraj_dreg_stencil_01_numpy(
 
 
 def test_btraj_dreg_stencil_01():
-    mesh = SimpleGrid()
+    grid = SimpleGrid()
     lcounterclock = True
-    p_vn = random_field(mesh, EdgeDim, KDim)
+    p_vn = random_field(grid, EdgeDim, KDim)
 
-    tangent_orientation = random_field(mesh, EdgeDim)
+    tangent_orientation = random_field(grid, EdgeDim)
 
-    lvn_sys_pos = zero_field(mesh, EdgeDim, KDim, dtype=bool)
+    lvn_sys_pos = zero_field(grid, EdgeDim, KDim, dtype=bool)
 
     ref = btraj_dreg_stencil_01_numpy(
         lcounterclock,

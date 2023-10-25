@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil19(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         inv_dual_edge_length: np.array,
         z_exner_ex_pr: np.array,
         ddxn_z_full: np.array,
@@ -36,7 +36,7 @@ class TestMoSolveNonhydroStencil19(StencilTest):
         z_dexner_dz_c_1: np.array,
         **kwargs,
     ) -> dict:
-        e2c = mesh.connectivities[E2CDim]
+        e2c = grid.connectivities[E2CDim]
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
         c_lin_e = np.expand_dims(c_lin_e, axis=-1)
 
@@ -49,13 +49,13 @@ class TestMoSolveNonhydroStencil19(StencilTest):
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-        ddxn_z_full = random_field(mesh, EdgeDim, KDim)
-        c_lin_e = random_field(mesh, EdgeDim, E2CDim)
-        z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim)
-        z_gradh_exner = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        inv_dual_edge_length = random_field(grid, EdgeDim)
+        z_exner_ex_pr = random_field(grid, CellDim, KDim)
+        ddxn_z_full = random_field(grid, EdgeDim, KDim)
+        c_lin_e = random_field(grid, EdgeDim, E2CDim)
+        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim)
+        z_gradh_exner = random_field(grid, EdgeDim, KDim)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,
@@ -65,7 +65,7 @@ class TestMoSolveNonhydroStencil19(StencilTest):
             z_dexner_dz_c_1=z_dexner_dz_c_1,
             z_gradh_exner=z_gradh_exner,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

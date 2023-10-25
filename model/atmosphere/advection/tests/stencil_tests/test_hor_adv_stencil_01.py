@@ -41,20 +41,20 @@ def hor_adv_stencil_01_numpy(
 
 
 def test_hor_adv_stencil_01():
-    mesh = SimpleGrid()
+    grid = SimpleGrid()
 
-    p_mflx_tracer_h = random_field(mesh, EdgeDim, KDim)
-    deepatmo_divh = random_field(mesh, KDim)
-    tracer_now = random_field(mesh, CellDim, KDim)
-    rhodz_now = random_field(mesh, CellDim, KDim)
-    rhodz_new = random_field(mesh, CellDim, KDim)
-    geofac_div = random_field(mesh, CellDim, C2EDim)
+    p_mflx_tracer_h = random_field(grid, EdgeDim, KDim)
+    deepatmo_divh = random_field(grid, KDim)
+    tracer_now = random_field(grid, CellDim, KDim)
+    rhodz_now = random_field(grid, CellDim, KDim)
+    rhodz_new = random_field(grid, CellDim, KDim)
+    geofac_div = random_field(grid, CellDim, C2EDim)
     geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
-    tracer_new = random_field(mesh, CellDim, KDim)
+    tracer_new = random_field(grid, CellDim, KDim)
     p_dtime = np.float64(5.0)
 
     ref = hor_adv_stencil_01_numpy(
-        mesh.connectivities[C2EDim],
+        grid.connectivities[C2EDim],
         np.asarray(p_mflx_tracer_h),
         np.asarray(deepatmo_divh),
         np.asarray(tracer_now),
@@ -73,8 +73,8 @@ def test_hor_adv_stencil_01():
         tracer_new,
         p_dtime,
         offset_provider={
-            "C2E": mesh.get_c2e_offset_provider(),
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.size[C2EDim]),
+            "C2E": grid.get_c2e_offset_provider(),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
         },
     )
     assert np.allclose(tracer_new, ref)

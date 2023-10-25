@@ -60,19 +60,19 @@ def mo_solve_nonhydro_stencil_52_numpy(
 
 
 def test_mo_solve_nonhydro_stencil_52():
-    mesh = SimpleGrid()
-    vwind_impl_wgt = random_field(mesh, CellDim)
-    theta_v_ic = random_field(mesh, CellDim, KDim)
-    ddqz_z_half = random_field(mesh, CellDim, KDim)
-    z_alpha = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    z_beta = random_field(mesh, CellDim, KDim)
-    z_exner_expl = random_field(mesh, CellDim, KDim)
-    z_w_expl = random_field(mesh, CellDim, KDim, extend={KDim: 1})
+    grid = SimpleGrid()
+    vwind_impl_wgt = random_field(grid, CellDim)
+    theta_v_ic = random_field(grid, CellDim, KDim)
+    ddqz_z_half = random_field(grid, CellDim, KDim)
+    z_alpha = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    z_beta = random_field(grid, CellDim, KDim)
+    z_exner_expl = random_field(grid, CellDim, KDim)
+    z_w_expl = random_field(grid, CellDim, KDim, extend={KDim: 1})
     dtime = 8.0
     cpd = 7.0
 
-    z_q = random_field(mesh, CellDim, KDim)
-    w = random_field(mesh, CellDim, KDim)
+    z_q = random_field(grid, CellDim, KDim)
+    w = random_field(grid, CellDim, KDim)
 
     z_q_ref, w_ref = mo_solve_nonhydro_stencil_52_numpy(
         np.asarray(vwind_impl_wgt),
@@ -88,9 +88,9 @@ def test_mo_solve_nonhydro_stencil_52():
         cpd,
     )
     h_start = int32(0)
-    h_end = int32(mesh.num_cells)
+    h_end = int32(grid.num_cells)
     v_start = int32(1)
-    v_end = int32(mesh.num_levels)
+    v_end = int32(grid.num_levels)
     # TODO we run this test with the C++ backend as the `embedded` backend doesn't handle this pattern
     mo_solve_nonhydro_stencil_52.with_backend(run_gtfn)(
         vwind_impl_wgt=vwind_impl_wgt,

@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil17(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         hmask_dd3d: np.array,
         scalfac_dd3d: np.array,
         inv_dual_edge_length: np.array,
@@ -40,7 +40,7 @@ class TestMoSolveNonhydroStencil17(StencilTest):
         hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-        z_dwdz_dd_e2c = z_dwdz_dd[mesh.connectivities[E2CDim]]
+        z_dwdz_dd_e2c = z_dwdz_dd[grid.connectivities[E2CDim]]
         z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
 
         z_graddiv_vn = z_graddiv_vn + (
@@ -49,12 +49,12 @@ class TestMoSolveNonhydroStencil17(StencilTest):
         return dict(z_graddiv_vn=z_graddiv_vn)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        hmask_dd3d = random_field(mesh, EdgeDim)
-        scalfac_dd3d = random_field(mesh, KDim)
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        z_dwdz_dd = random_field(mesh, CellDim, KDim)
-        z_graddiv_vn = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        hmask_dd3d = random_field(grid, EdgeDim)
+        scalfac_dd3d = random_field(grid, KDim)
+        inv_dual_edge_length = random_field(grid, EdgeDim)
+        z_dwdz_dd = random_field(grid, CellDim, KDim)
+        z_graddiv_vn = random_field(grid, EdgeDim, KDim)
 
         return dict(
             hmask_dd3d=hmask_dd3d,
@@ -63,7 +63,7 @@ class TestMoSolveNonhydroStencil17(StencilTest):
             z_dwdz_dd=z_dwdz_dd,
             z_graddiv_vn=z_graddiv_vn,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

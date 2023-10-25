@@ -101,17 +101,17 @@ class VelocityAdvection:
         return self._initialized
 
     def _allocate_local_fields(self):
-        self.z_w_v = _allocate(VertexDim, KDim, is_halfdim=True, mesh=self.grid)
-        self.z_v_grad_w = _allocate(EdgeDim, KDim, mesh=self.grid)
-        self.z_ekinh = _allocate(CellDim, KDim, mesh=self.grid)
-        self.z_w_concorr_mc = _allocate(CellDim, KDim, mesh=self.grid)
-        self.z_w_con_c = _allocate(CellDim, KDim, is_halfdim=True, mesh=self.grid)
-        self.zeta = _allocate(VertexDim, KDim, mesh=self.grid)
-        self.z_w_con_c_full = _allocate(CellDim, KDim, mesh=self.grid)
-        self.cfl_clipping = _allocate(CellDim, KDim, mesh=self.grid, dtype=bool)
-        self.levmask = _allocate(KDim, mesh=self.grid, dtype=bool)
-        self.vcfl_dsl = _allocate(CellDim, KDim, mesh=self.grid)
-        self.k_field = _allocate_indices(KDim, mesh=self.grid, is_halfdim=True)
+        self.z_w_v = _allocate(VertexDim, KDim, is_halfdim=True, grid=self.grid)
+        self.z_v_grad_w = _allocate(EdgeDim, KDim, grid=self.grid)
+        self.z_ekinh = _allocate(CellDim, KDim, grid=self.grid)
+        self.z_w_concorr_mc = _allocate(CellDim, KDim, grid=self.grid)
+        self.z_w_con_c = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
+        self.zeta = _allocate(VertexDim, KDim, grid=self.grid)
+        self.z_w_con_c_full = _allocate(CellDim, KDim, grid=self.grid)
+        self.cfl_clipping = _allocate(CellDim, KDim, grid=self.grid, dtype=bool)
+        self.levmask = _allocate(KDim, grid=self.grid, dtype=bool)
+        self.vcfl_dsl = _allocate(CellDim, KDim, grid=self.grid)
+        self.k_field = _allocate_indices(KDim, grid=self.grid, is_halfdim=True)
 
     def run_predictor_step(
         self,

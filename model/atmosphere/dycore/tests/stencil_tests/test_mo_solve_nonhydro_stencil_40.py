@@ -27,13 +27,13 @@ class TestMoSolveNonhydroStencil40(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         e_bln_c_s: np.array,
         z_w_concorr_me: np.array,
         wgtfacq_c: np.array,
         **kwargs,
     ) -> np.array:
-        c2e = mesh.connectivities[C2EDim]
+        c2e = grid.connectivities[C2EDim]
         c2e_shape = c2e.shape
         c2ce_table = np.arange(c2e_shape[0] * c2e_shape[1]).reshape(c2e_shape)
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
@@ -58,11 +58,11 @@ class TestMoSolveNonhydroStencil40(StencilTest):
         return dict(w_concorr_c=w_concorr_c)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        e_bln_c_s = random_field(mesh, CEDim)
-        z_w_concorr_me = random_field(mesh, EdgeDim, KDim)
-        wgtfacq_c = random_field(mesh, CellDim, KDim)
-        w_concorr_c = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        e_bln_c_s = random_field(grid, CEDim)
+        z_w_concorr_me = random_field(grid, EdgeDim, KDim)
+        wgtfacq_c = random_field(grid, CellDim, KDim)
+        w_concorr_c = zero_field(grid, CellDim, KDim)
 
         return dict(
             e_bln_c_s=e_bln_c_s,

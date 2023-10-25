@@ -34,7 +34,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         mask: np.array,
         zd_vertoffset: np.array,
         zd_diffcoef: np.array,
@@ -45,7 +45,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         z_temp: np.array,
         **kwargs,
     ) -> np.array:
-        c2e2c = mesh.connectivities[C2E2CDim]
+        c2e2c = grid.connectivities[C2E2CDim]
         shape = c2e2c.shape + vcoef.shape[1:]
         vcoef = vcoef.reshape(shape)
         zd_vertoffset = zd_vertoffset.reshape(shape)
@@ -77,26 +77,26 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         return dict(z_temp=z_temp)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
 
-        mask = random_mask(mesh, CellDim, KDim)
+        mask = random_mask(grid, CellDim, KDim)
 
-        zd_vertoffset = zero_field(mesh, CellDim, C2E2CDim, KDim, dtype=int32)
+        zd_vertoffset = zero_field(grid, CellDim, C2E2CDim, KDim, dtype=int32)
         rng = np.random.default_rng()
-        for k in range(mesh.num_levels):
+        for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
             zd_vertoffset[:, :, k] = rng.integers(
                 low=0 - k,
-                high=mesh.num_levels - k - 1,
+                high=grid.num_levels - k - 1,
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
 
-        zd_diffcoef = random_field(mesh, CellDim, KDim)
-        geofac_n2s_c = random_field(mesh, CellDim)
-        geofac_n2s_nbh = random_field(mesh, CellDim, C2E2CDim)
-        vcoef = random_field(mesh, CellDim, C2E2CDim, KDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        z_temp = random_field(mesh, CellDim, KDim)
+        zd_diffcoef = random_field(grid, CellDim, KDim)
+        geofac_n2s_c = random_field(grid, CellDim)
+        geofac_n2s_nbh = random_field(grid, CellDim, C2E2CDim)
+        vcoef = random_field(grid, CellDim, C2E2CDim, KDim)
+        theta_v = random_field(grid, CellDim, KDim)
+        z_temp = random_field(grid, CellDim, KDim)
 
         vcoef_new = flatten_first_two_dims(CECDim, KDim, field=vcoef)
         zd_vertoffset_new = flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset)
@@ -112,7 +112,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
             z_temp=z_temp,
             vcoef=vcoef_new,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

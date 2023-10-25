@@ -34,10 +34,10 @@ def v_limit_prbl_sm_stencil_01_numpy(
 
 
 def test_v_limit_prbl_sm_stencil_01():
-    mesh = SimpleGrid()
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_face = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    l_limit = zero_field(mesh, CellDim, KDim, dtype=int32)
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim)
+    p_face = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    l_limit = zero_field(grid, CellDim, KDim, dtype=int32)
 
     l_limit_ref = v_limit_prbl_sm_stencil_01_numpy(
         np.asarray(p_face),

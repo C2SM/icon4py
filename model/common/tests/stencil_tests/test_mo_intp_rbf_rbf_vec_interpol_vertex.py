@@ -40,12 +40,12 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         return dict(p_v_out=p_v_out, p_u_out=p_u_out)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        p_e_in = random_field(mesh, EdgeDim, KDim)
-        ptr_coeff_1 = random_field(mesh, VertexDim, V2EDim)
-        ptr_coeff_2 = random_field(mesh, VertexDim, V2EDim)
-        p_v_out = zero_field(mesh, VertexDim, KDim)
-        p_u_out = zero_field(mesh, VertexDim, KDim)
+    def input_data(self, grid):
+        p_e_in = random_field(grid, EdgeDim, KDim)
+        ptr_coeff_1 = random_field(grid, VertexDim, V2EDim)
+        ptr_coeff_2 = random_field(grid, VertexDim, V2EDim)
+        p_v_out = zero_field(grid, VertexDim, KDim)
+        p_u_out = zero_field(grid, VertexDim, KDim)
 
         return dict(
             p_e_in=p_e_in,
@@ -54,7 +54,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
             p_v_out=p_v_out,
             p_u_out=p_u_out,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_vertices),
+            horizontal_end=int32(grid.num_vertices),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

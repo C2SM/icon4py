@@ -131,35 +131,35 @@ def upwind_hflux_miura3_stencil_01_numpy(
 
 
 def test_upwind_hflux_miura3_stencil_01():
-    mesh = SimpleGrid()
+    grid = SimpleGrid()
 
-    z_lsq_coeff_1 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_2 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_3 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_4 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_5 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_6 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_7 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_8 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_9 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_10 = random_field(mesh, CellDim, KDim)
-    z_quad_vector_sum_1 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum_2 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum_3 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum_4 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum_5 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum_6 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum_7 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum_8 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum_9 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum_10 = random_field(mesh, EdgeDim, KDim)
-    p_mass_flx_e = random_field(mesh, EdgeDim, KDim)
-    z_dreg_area = random_field(mesh, EdgeDim, KDim)
-    cell_rel_idx_dsl = random_mask(mesh, EdgeDim, KDim, dtype=int32)
-    p_out_e_miura3 = zero_field(mesh, EdgeDim, KDim)
+    z_lsq_coeff_1 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_2 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_3 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_4 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_5 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_6 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_7 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_8 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_9 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_10 = random_field(grid, CellDim, KDim)
+    z_quad_vector_sum_1 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum_2 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum_3 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum_4 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum_5 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum_6 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum_7 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum_8 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum_9 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum_10 = random_field(grid, EdgeDim, KDim)
+    p_mass_flx_e = random_field(grid, EdgeDim, KDim)
+    z_dreg_area = random_field(grid, EdgeDim, KDim)
+    cell_rel_idx_dsl = random_mask(grid, EdgeDim, KDim, dtype=int32)
+    p_out_e_miura3 = zero_field(grid, EdgeDim, KDim)
 
     ref = upwind_hflux_miura3_stencil_01_numpy(
-        mesh.connectivities[E2CDim],
+        grid.connectivities[E2CDim],
         np.asarray(z_lsq_coeff_1),
         np.asarray(z_lsq_coeff_2),
         np.asarray(z_lsq_coeff_3),
@@ -211,7 +211,7 @@ def test_upwind_hflux_miura3_stencil_01():
         cell_rel_idx_dsl,
         p_out_e_miura3,
         offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
+            "E2C": grid.get_e2c_offset_provider(),
         },
     )
     assert np.allclose(np.asarray(p_out_e_miura3), ref)

@@ -60,19 +60,19 @@ def upwind_hflux_miura_cycl_stencil_01_numpy(
 
 
 def test_upwind_hflux_miura_cycl_stencil_01():
-    mesh = SimpleGrid()
+    grid = SimpleGrid()
 
-    z_lsq_coeff_1_dsl = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_2_dsl = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_3_dsl = random_field(mesh, CellDim, KDim)
-    distv_bary_1 = random_field(mesh, EdgeDim, KDim)
-    distv_bary_2 = random_field(mesh, EdgeDim, KDim)
-    p_mass_flx_e = random_field(mesh, EdgeDim, KDim)
-    cell_rel_idx_dsl = random_mask(mesh, EdgeDim, KDim, dtype=int32)
-    z_tracer_mflx_dsl = zero_field(mesh, EdgeDim, KDim)
+    z_lsq_coeff_1_dsl = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_2_dsl = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_3_dsl = random_field(grid, CellDim, KDim)
+    distv_bary_1 = random_field(grid, EdgeDim, KDim)
+    distv_bary_2 = random_field(grid, EdgeDim, KDim)
+    p_mass_flx_e = random_field(grid, EdgeDim, KDim)
+    cell_rel_idx_dsl = random_mask(grid, EdgeDim, KDim, dtype=int32)
+    z_tracer_mflx_dsl = zero_field(grid, EdgeDim, KDim)
 
     ref = upwind_hflux_miura_cycl_stencil_01_numpy(
-        mesh.connectivities[E2CDim],
+        grid.connectivities[E2CDim],
         np.asarray(z_lsq_coeff_1_dsl),
         np.asarray(z_lsq_coeff_2_dsl),
         np.asarray(z_lsq_coeff_3_dsl),
@@ -92,7 +92,7 @@ def test_upwind_hflux_miura_cycl_stencil_01():
         cell_rel_idx_dsl,
         z_tracer_mflx_dsl,
         offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
+            "E2C": grid.get_e2c_offset_provider(),
         },
     )
     assert np.allclose(ref, z_tracer_mflx_dsl)

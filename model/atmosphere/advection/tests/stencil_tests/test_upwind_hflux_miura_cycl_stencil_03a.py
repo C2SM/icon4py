@@ -30,10 +30,10 @@ def upwind_hflux_miura_cycl_stencil_03a_numpy(
 
 
 def test_upwind_hflux_miura_cycl_stencil_03a():
-    mesh = SimpleGrid()
-    z_tracer_mflx_1_dsl = random_field(mesh, EdgeDim, KDim)
-    z_tracer_mflx_2_dsl = random_field(mesh, EdgeDim, KDim)
-    p_out_e = zero_field(mesh, EdgeDim, KDim)
+    grid = SimpleGrid()
+    z_tracer_mflx_1_dsl = random_field(grid, EdgeDim, KDim)
+    z_tracer_mflx_2_dsl = random_field(grid, EdgeDim, KDim)
+    p_out_e = zero_field(grid, EdgeDim, KDim)
 
     ref = upwind_hflux_miura_cycl_stencil_03a_numpy(
         np.asarray(z_tracer_mflx_1_dsl),

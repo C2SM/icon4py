@@ -28,7 +28,7 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         vn_ie: np.array,
         inv_dual_edge_length: np.array,
         w: np.array,
@@ -42,8 +42,8 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
         inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
         tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
-        w_e2c = w[mesh.connectivities[E2CDim]]
-        z_w_v_e2v = z_w_v[mesh.connectivities[E2VDim]]
+        w_e2c = w[grid.connectivities[E2CDim]]
+        z_w_v_e2v = z_w_v[grid.connectivities[E2VDim]]
 
         red_w = w_e2c[:, 0] - w_e2c[:, 1]
         red_z_w_v = z_w_v_e2v[:, 0] - z_w_v_e2v[:, 1]
@@ -55,15 +55,15 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
         return dict(z_v_grad_w=z_v_grad_w)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn_ie = random_field(mesh, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        w = random_field(mesh, CellDim, KDim)
-        z_vt_ie = random_field(mesh, EdgeDim, KDim)
-        inv_primal_edge_length = random_field(mesh, EdgeDim)
-        tangent_orientation = random_field(mesh, EdgeDim)
-        z_w_v = random_field(mesh, VertexDim, KDim)
-        z_v_grad_w = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        vn_ie = random_field(grid, EdgeDim, KDim)
+        inv_dual_edge_length = random_field(grid, EdgeDim)
+        w = random_field(grid, CellDim, KDim)
+        z_vt_ie = random_field(grid, EdgeDim, KDim)
+        inv_primal_edge_length = random_field(grid, EdgeDim)
+        tangent_orientation = random_field(grid, EdgeDim)
+        z_w_v = random_field(grid, VertexDim, KDim)
+        z_v_grad_w = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             vn_ie=vn_ie,
@@ -75,7 +75,7 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
             z_w_v=z_w_v,
             z_v_grad_w=z_v_grad_w,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

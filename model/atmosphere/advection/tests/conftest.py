@@ -13,5 +13,5 @@
 
 from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
     backend,
-    mesh,
+    grid,
 )

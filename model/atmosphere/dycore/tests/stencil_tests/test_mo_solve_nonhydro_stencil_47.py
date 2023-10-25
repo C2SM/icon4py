@@ -26,16 +26,16 @@ class TestMoSolveNonhydroStencil47(StencilTest):
     OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
 
     @staticmethod
-    def reference(mesh, w_concorr_c: np.array, z_contr_w_fl_l: np.array, **kwargs) -> dict:
+    def reference(grid, w_concorr_c: np.array, z_contr_w_fl_l: np.array, **kwargs) -> dict:
         w_nnew = w_concorr_c
         z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
         return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        w_concorr_c = random_field(mesh, CellDim, KDim)
-        z_contr_w_fl_l = zero_field(mesh, CellDim, KDim)
-        w_nnew = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        w_concorr_c = random_field(grid, CellDim, KDim)
+        z_contr_w_fl_l = zero_field(grid, CellDim, KDim)
+        w_nnew = zero_field(grid, CellDim, KDim)
 
         return dict(
             w_nnew=w_nnew,

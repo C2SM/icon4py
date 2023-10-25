@@ -20,8 +20,8 @@ from icon4py.model.common.grid.simple import SimpleGrid
 
 
 def test_set_zero_c_k():
-    mesh = SimpleGrid()
-    field = random_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    field = random_field(grid, CellDim, KDim)
 
     set_zero_c_k(field, offset_provider={})
-    assert np.allclose(field, zero_field(mesh, CellDim, KDim))
+    assert np.allclose(field, zero_field(grid, CellDim, KDim))

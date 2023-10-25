@@ -27,23 +27,23 @@ class TestMoSolveNonhydroStencil31(StencilTest):
     OUTPUTS = ("z_vn_avg",)
 
     @staticmethod
-    def reference(mesh, e_flx_avg: np.array, vn: np.array, **kwargs) -> np.array:
+    def reference(grid, e_flx_avg: np.array, vn: np.array, **kwargs) -> np.array:
         geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
-        z_vn_avg = np.sum(vn[mesh.connectivities[E2C2EODim]] * geofac_grdiv, axis=1)
+        z_vn_avg = np.sum(vn[grid.connectivities[E2C2EODim]] * geofac_grdiv, axis=1)
         return dict(z_vn_avg=z_vn_avg)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        e_flx_avg = random_field(mesh, EdgeDim, E2C2EODim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        z_vn_avg = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        e_flx_avg = random_field(grid, EdgeDim, E2C2EODim)
+        vn = random_field(grid, EdgeDim, KDim)
+        z_vn_avg = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             e_flx_avg=e_flx_avg,
             vn=vn,
             z_vn_avg=z_vn_avg,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

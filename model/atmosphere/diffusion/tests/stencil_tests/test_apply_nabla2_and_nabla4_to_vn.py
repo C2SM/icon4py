@@ -29,14 +29,14 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
     OUTPUTS = ("vn",)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        area_edge = random_field(mesh, EdgeDim)
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla4_e2 = random_field(mesh, EdgeDim, KDim)
-        diff_multfac_vn = random_field(mesh, KDim)
-        nudgecoeff_e = random_field(mesh, EdgeDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        area_edge = random_field(grid, EdgeDim)
+        kh_smag_e = random_field(grid, EdgeDim, KDim)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim)
+        z_nabla4_e2 = random_field(grid, EdgeDim, KDim)
+        diff_multfac_vn = random_field(grid, KDim)
+        nudgecoeff_e = random_field(grid, EdgeDim)
+        vn = random_field(grid, EdgeDim, KDim)
         nudgezone_diff = 9.0
 
         return dict(
@@ -52,7 +52,7 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         area_edge,
         kh_smag_e,
         z_nabla2_e,
@@ -78,13 +78,13 @@ class TestApplyNabla2AndNabla4ToVnGlobalMode(StencilTest):
     OUTPUTS = ("vn",)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        area_edge = random_field(mesh, EdgeDim)
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla4_e2 = random_field(mesh, EdgeDim, KDim)
-        diff_multfac_vn = random_field(mesh, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        area_edge = random_field(grid, EdgeDim)
+        kh_smag_e = random_field(grid, EdgeDim, KDim)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim)
+        z_nabla4_e2 = random_field(grid, EdgeDim, KDim)
+        diff_multfac_vn = random_field(grid, KDim)
+        vn = random_field(grid, EdgeDim, KDim)
 
         return dict(
             area_edge=area_edge,
@@ -96,7 +96,7 @@ class TestApplyNabla2AndNabla4ToVnGlobalMode(StencilTest):
         )
 
     @staticmethod
-    def reference(mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn):
+    def reference(grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn):
         area_edge = np.expand_dims(area_edge, axis=-1)
         diff_multfac_vn = np.expand_dims(diff_multfac_vn, axis=0)
         vn = vn + area_edge * (kh_smag_e * z_nabla2_e - diff_multfac_vn * z_nabla4_e2 * area_edge)

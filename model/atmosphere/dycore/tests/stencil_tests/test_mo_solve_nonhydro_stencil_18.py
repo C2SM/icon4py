@@ -28,28 +28,28 @@ class TestMoSolveNonhydroStencil18(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs
+        grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs
     ) -> np.array:
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-        z_exner_ex_pr_e2c = z_exner_ex_pr[mesh.connectivities[E2CDim]]
+        z_exner_ex_pr_e2c = z_exner_ex_pr[grid.connectivities[E2CDim]]
         z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
 
         z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-        z_gradh_exner = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        inv_dual_edge_length = random_field(grid, EdgeDim)
+        z_exner_ex_pr = random_field(grid, CellDim, KDim)
+        z_gradh_exner = random_field(grid, EdgeDim, KDim)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,
             z_exner_ex_pr=z_exner_ex_pr,
             z_gradh_exner=z_gradh_exner,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

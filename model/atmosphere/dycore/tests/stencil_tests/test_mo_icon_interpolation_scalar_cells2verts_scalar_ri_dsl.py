@@ -27,25 +27,25 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
     OUTPUTS = ("p_vert_out",)
 
     @staticmethod
-    def reference(mesh, p_cell_in: np.array, c_intp: np.array, **kwargs) -> np.array:
+    def reference(grid, p_cell_in: np.array, c_intp: np.array, **kwargs) -> np.array:
         c_intp = np.expand_dims(c_intp, axis=-1)
-        p_vert_out = np.sum(p_cell_in[mesh.connectivities[V2CDim]] * c_intp, axis=1)
+        p_vert_out = np.sum(p_cell_in[grid.connectivities[V2CDim]] * c_intp, axis=1)
         return dict(
             p_vert_out=p_vert_out,
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        p_cell_in = random_field(mesh, CellDim, KDim)
-        c_intp = random_field(mesh, VertexDim, V2CDim)
-        p_vert_out = zero_field(mesh, VertexDim, KDim)
+    def input_data(self, grid):
+        p_cell_in = random_field(grid, CellDim, KDim)
+        c_intp = random_field(grid, VertexDim, V2CDim)
+        p_vert_out = zero_field(grid, VertexDim, KDim)
 
         return dict(
             p_cell_in=p_cell_in,
             c_intp=c_intp,
             p_vert_out=p_vert_out,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_vertices),
+            horizontal_end=int32(grid.num_vertices),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

@@ -26,15 +26,15 @@ class TestMoSolveNonhydroStencil08(StencilTest):
     OUTPUTS = ("rho_ic", "z_rth_pr_1", "z_rth_pr_2")
 
     @pytest.fixture
-    def input_data(self, mesh):
-        wgtfac_c = random_field(mesh, CellDim, KDim)
-        rho = random_field(mesh, CellDim, KDim)
-        rho_ref_mc = random_field(mesh, CellDim, KDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        theta_ref_mc = random_field(mesh, CellDim, KDim)
-        rho_ic = zero_field(mesh, CellDim, KDim)
-        z_rth_pr_1 = zero_field(mesh, CellDim, KDim)
-        z_rth_pr_2 = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        wgtfac_c = random_field(grid, CellDim, KDim)
+        rho = random_field(grid, CellDim, KDim)
+        rho_ref_mc = random_field(grid, CellDim, KDim)
+        theta_v = random_field(grid, CellDim, KDim)
+        theta_ref_mc = random_field(grid, CellDim, KDim)
+        rho_ic = zero_field(grid, CellDim, KDim)
+        z_rth_pr_1 = zero_field(grid, CellDim, KDim)
+        z_rth_pr_2 = zero_field(grid, CellDim, KDim)
 
         return dict(
             wgtfac_c=wgtfac_c,
@@ -49,7 +49,7 @@ class TestMoSolveNonhydroStencil08(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         wgtfac_c: np.array,
         rho: np.array,
         rho_ref_mc: np.array,

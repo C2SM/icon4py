@@ -27,23 +27,23 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
     OUTPUTS = ("rot_vec",)
 
     @staticmethod
-    def reference(mesh, vec_e: np.array, geofac_rot: np.array, **kwargs) -> np.array:
+    def reference(grid, vec_e: np.array, geofac_rot: np.array, **kwargs) -> np.array:
         geofac_rot = np.expand_dims(geofac_rot, axis=-1)
-        rot_vec = np.sum(vec_e[mesh.connectivities[V2EDim]] * geofac_rot, axis=1)
+        rot_vec = np.sum(vec_e[grid.connectivities[V2EDim]] * geofac_rot, axis=1)
         return dict(rot_vec=rot_vec)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vec_e = random_field(mesh, EdgeDim, KDim)
-        geofac_rot = random_field(mesh, VertexDim, V2EDim)
-        rot_vec = zero_field(mesh, VertexDim, KDim)
+    def input_data(self, grid):
+        vec_e = random_field(grid, EdgeDim, KDim)
+        geofac_rot = random_field(grid, VertexDim, V2EDim)
+        rot_vec = zero_field(grid, VertexDim, KDim)
 
         return dict(
             vec_e=vec_e,
             geofac_rot=geofac_rot,
             rot_vec=rot_vec,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_vertices),
+            horizontal_end=int32(grid.num_vertices),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

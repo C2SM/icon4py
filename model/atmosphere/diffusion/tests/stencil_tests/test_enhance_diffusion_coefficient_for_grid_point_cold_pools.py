@@ -27,17 +27,17 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         kh_smag_e: np.array,
         enh_diffu_3d: np.array,
     ) -> np.array:
-        kh_smag_e = np.maximum(kh_smag_e, np.max(enh_diffu_3d[mesh.connectivities[E2CDim]], axis=1))
+        kh_smag_e = np.maximum(kh_smag_e, np.max(enh_diffu_3d[grid.connectivities[E2CDim]], axis=1))
         return dict(kh_smag_e=kh_smag_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        enh_diffu_3d = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        kh_smag_e = random_field(grid, EdgeDim, KDim)
+        enh_diffu_3d = random_field(grid, CellDim, KDim)
 
         return dict(
             kh_smag_e=kh_smag_e,

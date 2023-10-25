@@ -11,4 +11,4 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.test_utils.helpers import backend, mesh  # noqa F401
+from icon4py.model.common.test_utils.helpers import backend, grid  # noqa F401

@@ -27,23 +27,23 @@ class TestCalculateNabla2ForW(StencilTest):
     OUTPUTS = ("z_nabla2_c",)
 
     @staticmethod
-    def reference(mesh, w: np.array, geofac_n2s: np.array, **kwargs) -> np.array:
+    def reference(grid, w: np.array, geofac_n2s: np.array, **kwargs) -> np.array:
         geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
-        z_nabla2_c = np.sum(w[mesh.connectivities[C2E2CODim]] * geofac_n2s, axis=1)
+        z_nabla2_c = np.sum(w[grid.connectivities[C2E2CODim]] * geofac_n2s, axis=1)
         return dict(z_nabla2_c=z_nabla2_c)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        w = random_field(mesh, CellDim, KDim)
-        geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
-        z_nabla2_c = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        w = random_field(grid, CellDim, KDim)
+        geofac_n2s = random_field(grid, CellDim, C2E2CODim)
+        z_nabla2_c = zero_field(grid, CellDim, KDim)
 
         return dict(
             w=w,
             geofac_n2s=geofac_n2s,
             z_nabla2_c=z_nabla2_c,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

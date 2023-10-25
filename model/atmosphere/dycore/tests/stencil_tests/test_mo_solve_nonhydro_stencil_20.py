@@ -33,7 +33,7 @@ class TestMoSolveNonHydroStencil20(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         inv_dual_edge_length: np.array,
         z_exner_ex_pr: np.array,
         zdiff_gradp: np.array,
@@ -53,7 +53,7 @@ class TestMoSolveNonHydroStencil20(StencilTest):
                         ]
             return indexed
 
-        e2c = mesh.connectivities[E2CDim]
+        e2c = grid.connectivities[E2CDim]
         full_shape = e2c.shape + zdiff_gradp.shape[1:]
         zdiff_gradp = zdiff_gradp.reshape(full_shape)
         ikoffset = ikoffset.reshape(full_shape)
@@ -79,28 +79,28 @@ class TestMoSolveNonHydroStencil20(StencilTest):
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
 
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-        zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
-        ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int32)
+        inv_dual_edge_length = random_field(grid, EdgeDim)
+        z_exner_ex_pr = random_field(grid, CellDim, KDim)
+        zdiff_gradp = random_field(grid, EdgeDim, E2CDim, KDim)
+        ikoffset = zero_field(grid, EdgeDim, E2CDim, KDim, dtype=int32)
 
         rng = np.random.default_rng()
-        for k in range(mesh.num_levels):
+        for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
             ikoffset[:, :, k] = rng.integers(
                 low=0 - k,
-                high=mesh.num_levels - k - 1,
+                high=grid.num_levels - k - 1,
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
 
         zdiff_gradp_new = flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp)
         ikoffset_new = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
 
-        z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim)
-        z_dexner_dz_c_2 = random_field(mesh, CellDim, KDim)
-        z_gradh_exner = zero_field(mesh, EdgeDim, KDim)
+        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim)
+        z_dexner_dz_c_2 = random_field(grid, CellDim, KDim)
+        z_gradh_exner = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,
@@ -111,7 +111,7 @@ class TestMoSolveNonHydroStencil20(StencilTest):
             z_dexner_dz_c_2=z_dexner_dz_c_2,
             z_gradh_exner=z_gradh_exner,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.num_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.num_levels),
+            vertical_end=int32(grid.num_levels),
         )

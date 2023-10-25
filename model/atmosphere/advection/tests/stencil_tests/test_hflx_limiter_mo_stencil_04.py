@@ -35,14 +35,14 @@ def hflx_limiter_mo_stencil_04_numpy(
 
 
 def test_hflx_limiter_mo_stencil_04():
-    mesh = SimpleGrid()
-    z_anti = random_field(mesh, EdgeDim, KDim, low=-2.0, high=2.0)
-    r_m = random_field(mesh, CellDim, KDim)
-    r_p = random_field(mesh, CellDim, KDim)
-    z_mflx_low = random_field(mesh, EdgeDim, KDim)
-    p_mflx_tracer_h = zero_field(mesh, EdgeDim, KDim)
+    grid = SimpleGrid()
+    z_anti = random_field(grid, EdgeDim, KDim, low=-2.0, high=2.0)
+    r_m = random_field(grid, CellDim, KDim)
+    r_p = random_field(grid, CellDim, KDim)
+    z_mflx_low = random_field(grid, EdgeDim, KDim)
+    p_mflx_tracer_h = zero_field(grid, EdgeDim, KDim)
     ref = hflx_limiter_mo_stencil_04_numpy(
-        mesh.connectivities[E2CDim],
+        grid.connectivities[E2CDim],
         np.asarray(z_anti),
         np.asarray(r_m),
         np.asarray(r_p),
@@ -54,6 +54,6 @@ def test_hflx_limiter_mo_stencil_04():
         r_p,
         z_mflx_low,
         p_mflx_tracer_h,
-        offset_provider={"E2C": mesh.get_e2c_offset_provider()},
+        offset_provider={"E2C": grid.get_e2c_offset_provider()},
     )
     assert np.allclose(p_mflx_tracer_h, ref)

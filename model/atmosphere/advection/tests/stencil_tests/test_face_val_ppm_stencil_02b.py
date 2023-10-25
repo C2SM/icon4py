@@ -29,9 +29,9 @@ def face_val_ppm_stencil_02b_numpy(
 
 
 def test_face_val_ppm_stencil_02b():
-    mesh = SimpleGrid()
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_face = random_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim)
+    p_face = random_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_02b_numpy(
         np.asarray(p_cc),

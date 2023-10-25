@@ -41,17 +41,17 @@ def hflx_limiter_pd_stencil_01_numpy(
 
 
 def test_hflx_limiter_pd_stencil_01():
-    mesh = SimpleGrid()
-    geofac_div = random_field(mesh, CellDim, C2EDim)
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_rhodz_now = random_field(mesh, CellDim, KDim)
-    p_mflx_tracer_h = random_field(mesh, EdgeDim, KDim)
-    r_m = zero_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    geofac_div = random_field(grid, CellDim, C2EDim)
+    p_cc = random_field(grid, CellDim, KDim)
+    p_rhodz_now = random_field(grid, CellDim, KDim)
+    p_mflx_tracer_h = random_field(grid, EdgeDim, KDim)
+    r_m = zero_field(grid, CellDim, KDim)
     p_dtime = np.float64(5)
     dbl_eps = np.float64(1e-9)
 
     ref = hflx_limiter_pd_stencil_01_numpy(
-        mesh.connectivities[C2EDim],
+        grid.connectivities[C2EDim],
         np.asarray(geofac_div),
         np.asarray(p_cc),
         np.asarray(p_rhodz_now),
@@ -69,8 +69,8 @@ def test_hflx_limiter_pd_stencil_01():
         p_dtime,
         dbl_eps,
         offset_provider={
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.size[C2EDim]),
-            "C2E": mesh.get_c2e_offset_provider(),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
+            "C2E": grid.get_c2e_offset_provider(),
         },
     )
     assert np.allclose(r_m, ref)

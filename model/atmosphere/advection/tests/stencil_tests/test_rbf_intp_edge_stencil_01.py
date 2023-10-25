@@ -31,14 +31,14 @@ def rbf_intp_edge_stencil_01_numpy(
 
 
 def test_rbf_intp_edge_stencil_01():
-    mesh = SimpleGrid()
+    grid = SimpleGrid()
 
-    p_vn_in = random_field(mesh, EdgeDim, KDim)
-    ptr_coeff = random_field(mesh, EdgeDim, E2C2EDim)
-    p_vt_out = zero_field(mesh, EdgeDim, KDim)
+    p_vn_in = random_field(grid, EdgeDim, KDim)
+    ptr_coeff = random_field(grid, EdgeDim, E2C2EDim)
+    p_vt_out = zero_field(grid, EdgeDim, KDim)
 
     ref = rbf_intp_edge_stencil_01_numpy(
-        mesh.connectivities[E2C2EDim],
+        grid.connectivities[E2C2EDim],
         np.asarray(p_vn_in),
         np.asarray(ptr_coeff),
     )
@@ -48,7 +48,7 @@ def test_rbf_intp_edge_stencil_01():
         ptr_coeff,
         p_vt_out,
         offset_provider={
-            "E2C2E": mesh.get_e2c2e_offset_provider(),
+            "E2C2E": grid.get_e2c2e_offset_provider(),
         },
     )
     assert np.allclose(p_vt_out, ref)
