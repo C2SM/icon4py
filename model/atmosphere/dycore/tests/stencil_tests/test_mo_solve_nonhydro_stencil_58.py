@@ -58,7 +58,7 @@ class TestMoSolveNonhydroStencil58(StencilTest):
             mass_flx_ic=mass_flx_ic,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(mesh.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

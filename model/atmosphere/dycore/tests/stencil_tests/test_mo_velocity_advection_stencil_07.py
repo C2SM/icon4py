@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim, E2CDim, E2VDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -42,8 +42,8 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
         inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
         tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
-        w_e2c = w[mesh.e2c]
-        z_w_v_e2v = z_w_v[mesh.e2v]
+        w_e2c = w[mesh.connectivities[E2CDim]]
+        z_w_v_e2v = z_w_v[mesh.connectivities[E2VDim]]
 
         red_w = w_e2c[:, 0] - w_e2c[:, 1]
         red_z_w_v = z_w_v_e2v[:, 0] - z_w_v_e2v[:, 1]
@@ -75,7 +75,7 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
             z_w_v=z_w_v,
             z_v_grad_w=z_v_grad_w,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(mesh.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

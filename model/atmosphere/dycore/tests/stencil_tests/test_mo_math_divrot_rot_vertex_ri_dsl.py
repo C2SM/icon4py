@@ -29,7 +29,7 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
     @staticmethod
     def reference(mesh, vec_e: np.array, geofac_rot: np.array, **kwargs) -> np.array:
         geofac_rot = np.expand_dims(geofac_rot, axis=-1)
-        rot_vec = np.sum(vec_e[mesh.v2e] * geofac_rot, axis=1)
+        rot_vec = np.sum(vec_e[mesh.connectivities[V2EDim]] * geofac_rot, axis=1)
         return dict(rot_vec=rot_vec)
 
     @pytest.fixture
@@ -43,7 +43,7 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
             geofac_rot=geofac_rot,
             rot_vec=rot_vec,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_vertices),
+            horizontal_end=int32(mesh.num_vertices),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

@@ -29,7 +29,7 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
     @staticmethod
     def reference(mesh, p_cell_in: np.array, c_intp: np.array, **kwargs) -> np.array:
         c_intp = np.expand_dims(c_intp, axis=-1)
-        p_vert_out = np.sum(p_cell_in[mesh.v2c] * c_intp, axis=1)
+        p_vert_out = np.sum(p_cell_in[mesh.connectivities[V2CDim]] * c_intp, axis=1)
         return dict(
             p_vert_out=p_vert_out,
         )
@@ -45,7 +45,7 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
             c_intp=c_intp,
             p_vert_out=p_vert_out,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_vertices),
+            horizontal_end=int32(mesh.num_vertices),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

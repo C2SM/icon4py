@@ -44,7 +44,7 @@ class TestMoSolveNonhydroStencil29(StencilTest):
             vn_new=vn_new,
             dtime=dtime,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(mesh.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
-from icon4py.model.common.dimension import CellDim, E2C2EODim, E2CDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, E2C2EODim, E2CDim, EdgeDim, KDim, VertexDim, E2VDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 
 
@@ -58,9 +58,9 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
             c_lin_e=c_lin_e,
             z_w_con_c_full=z_w_con_c_full,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(mesh.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )
 
     @staticmethod
@@ -96,7 +96,7 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
 
         w_con_e = np.where(
             (levelmask_offset_0) | (levelmask_offset_1),
-            np.sum(c_lin_e * z_w_con_c_full[mesh.e2c], axis=1),
+            np.sum(c_lin_e * z_w_con_c_full[mesh.connectivities[E2CDim]], axis=1),
             w_con_e,
         )
         difcoef = np.where(
@@ -116,10 +116,10 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
             + difcoef
             * area_edge
             * (
-                np.sum(geofac_grdiv * vn[mesh.e2c2eO], axis=1)
+                np.sum(geofac_grdiv * vn[mesh.connectivities[E2C2EODim]], axis=1)
                 + tangent_orientation
                 * inv_primal_edge_length
-                * (zeta[mesh.e2v][:, 1] - zeta[mesh.e2v][:, 0])
+                * (zeta[mesh.connectivities[E2VDim]][:, 1] - zeta[mesh.connectivities[E2VDim]][:, 0])
             ),
             ddt_vn_apc,
         )

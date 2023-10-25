@@ -39,13 +39,14 @@ class TestMoSolveNonhydroStencil41(StencilTest):
         z_theta_v_fl_e: np.array,
         **kwargs,
     ) -> tuple[np.array]:
+        c2e = mesh.connectivities[C2EDim]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         z_flxdiv_mass = np.sum(
-            geofac_div[mesh.get_c2ce_offset_provider().table] * mass_fl_e[mesh.c2e],
+            geofac_div[mesh.get_c2ce_offset_provider().table] * mass_fl_e[c2e],
             axis=1,
         )
         z_flxdiv_theta = np.sum(
-            geofac_div[mesh.get_c2ce_offset_provider().table] * z_theta_v_fl_e[mesh.c2e],
+            geofac_div[mesh.get_c2ce_offset_provider().table] * z_theta_v_fl_e[c2e],
             axis=1,
         )
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
@@ -65,7 +66,7 @@ class TestMoSolveNonhydroStencil41(StencilTest):
             z_flxdiv_mass=z_flxdiv_mass,
             z_flxdiv_theta=z_flxdiv_theta,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(mesh.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

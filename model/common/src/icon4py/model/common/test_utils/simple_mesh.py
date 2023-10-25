@@ -35,7 +35,7 @@ from icon4py.model.common.dimension import (
     KDim,
     V2CDim,
     V2EDim,
-    VertexDim,
+    VertexDim, C2VDim,
 )
 
 
@@ -57,6 +57,9 @@ from icon4py.model.common.dimension import (
 # |20e  \   |23e  \   |26e  \
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
+from icon4py.model.common.grid.horizontal import HorizontalGridSize
+from icon4py.model.common.grid.mesh import BaseMesh, GridConfig
+from icon4py.model.common.grid.vertical import VerticalGridSize
 
 
 @dataclass
@@ -397,105 +400,115 @@ class SimpleMeshData:
     )
 
 
-class SimpleMesh:
+class SimpleMesh(BaseMesh):
+    _CELLS = 18
+    _EDGES = 27
+    _VERTICES = 9
+
     def __init__(self):
-        # todo: move these to .connectivity
-        # todo: move n_... to .size
-        self.diamond_arr = SimpleMeshData.diamond_table
-        self.c2v = SimpleMeshData.c2v_table
-        self.e2c = SimpleMeshData.e2c_table
-        self.e2v = SimpleMeshData.e2v_table
-        self.c2e = SimpleMeshData.c2e_table
-        self.c2e2cO = SimpleMeshData.c2e2cO_table
-        self.c2e2c = SimpleMeshData.c2e2c_table
-        self.e2c2eO = SimpleMeshData.e2c2eO_table
-        self.e2c2e = SimpleMeshData.e2c2e_table
-        self.e2c2v = SimpleMeshData.e2c2v_table
-        self.v2c = SimpleMeshData.v2c_table
-        self.v2e = SimpleMeshData.v2e_table
-        self.c2e2c2e2c = SimpleMeshData.c2e2c2e2c_table
-        self.n_e2c = self.e2c.shape[1]
-        self.n_e2v = self.e2v.shape[1]
-        self.n_c2e = self.c2e.shape[1]
-        self.n_c2e2cO = self.c2e2cO.shape[1]
-        self.n_c2e2c = self.c2e2c.shape[1]
-        self.n_e2c2eO = self.e2c2eO.shape[1]
-        self.n_e2c2e = self.e2c2e.shape[1]
-        self.n_e2c2v = self.e2c2v.shape[1]
-        self.n_v2c = self.v2c.shape[1]
-        self.n_c2v = self.c2v.shape[1]
-        self.n_v2e = self.v2e.shape[1]
-        self.n_cells = self.c2e.shape[0]
-        self.n_c2e2c2e2c = self.c2e2c2e2c.shape[1]
-        self.n_edges = 27
-        self.n_vertices = 9
-        self.k_level = 10
-        self.size = {
-            CellDim: self.n_cells,
-            EdgeDim: self.n_edges,
-            E2VDim: self.n_e2v,
-            E2CDim: self.n_e2c,
-            C2EDim: self.n_c2e,
-            C2E2CODim: self.n_c2e2cO,
-            C2E2CDim: self.n_c2e2c,
-            E2C2EODim: self.n_e2c2eO,
-            E2C2EDim: self.n_e2c2e,
-            V2CDim: self.n_v2c,
-            KDim: self.k_level,
-            VertexDim: self.n_vertices,
-            V2EDim: self.n_v2e,
-            CEDim: self.n_cells * self.n_c2e,
-            ECDim: self.n_edges * self.n_e2c,
-            E2C2VDim: self.n_e2c2v,
-            ECVDim: self.n_edges * self.n_e2c2v,
-            C2E2C2E2CDim: self.n_c2e2c2e2c,
+        super().__init__()
+        self._configure()
+
+    @property
+    def num_cells(self) -> int:
+        return self.config.num_cells
+
+    @property
+    def num_vertices(self) -> int:
+        return self.config.num_vertices
+
+    @property
+    def num_edges(self) -> int:
+        return self.config.num_edges
+
+    @property
+    def num_levels(self) -> int:
+        return self.config.num_levels
+
+    def _update_size_connectivities(self):
+        new_sizes = {
+            ECVDim: self.size[EdgeDim] * self.size[E2C2VDim],
+            CEDim: self.size[CellDim] * self.size[C2EDim],
+            ECDim: self.size[EdgeDim] * self.size[E2CDim],
+        }
+        self.size.update(new_sizes)
+
+    def _configure(self):
+        horizontal_grid_size = HorizontalGridSize(
+            num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
+        )
+        vertical_grid_size = VerticalGridSize(
+            num_lev=10
+        )
+        config = GridConfig(
+            horizontal_config=horizontal_grid_size,
+            vertical_config=vertical_grid_size,
+        )
+
+        connectivity_dict = {
+            # "diamond_arr": SimpleMeshData.diamond_table,
+            C2VDim: SimpleMeshData.c2v_table,
+            E2CDim: SimpleMeshData.e2c_table,
+            E2VDim: SimpleMeshData.e2v_table,
+            C2EDim: SimpleMeshData.c2e_table,
+            C2E2CODim: SimpleMeshData.c2e2cO_table,
+            C2E2CDim: SimpleMeshData.c2e2c_table,
+            E2C2EODim: SimpleMeshData.e2c2eO_table,
+            E2C2EDim: SimpleMeshData.e2c2e_table,
+            E2C2VDim: SimpleMeshData.e2c2v_table,
+            V2CDim: SimpleMeshData.v2c_table,
+            V2EDim: SimpleMeshData.v2e_table,
+            C2E2C2E2CDim: SimpleMeshData.c2e2c2e2c_table,
         }
 
+        self.with_config(config).with_connectivities(connectivity_dict)
+        self._update_size_connectivities()
+
     def get_c2v_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.c2v, VertexDim, CellDim, self.n_c2v)
+        return NeighborTableOffsetProvider(self.connectivities[C2VDim], VertexDim, CellDim, self.size[C2VDim])
 
     def get_c2e_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.c2e, CellDim, EdgeDim, self.n_c2e)
+        return NeighborTableOffsetProvider(self.connectivities[C2EDim], CellDim, EdgeDim, self.size[C2EDim])
 
     def get_c2e2cO_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.c2e2cO, CellDim, CellDim, self.n_c2e2cO)
+        return NeighborTableOffsetProvider(self.connectivities[C2E2CODim], CellDim, CellDim, self.size[C2E2CODim])
 
     def get_c2e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.c2e2c, CellDim, CellDim, self.n_c2e2c)
+        return NeighborTableOffsetProvider(self.connectivities[C2E2CDim], CellDim, CellDim, self.size[C2E2CDim])
 
     def get_e2c2eO_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.e2c2eO, EdgeDim, EdgeDim, self.n_e2c2eO)
+        return NeighborTableOffsetProvider(self.connectivities[E2C2EODim], EdgeDim, EdgeDim, self.size[E2C2EODim])
 
     def get_e2c2e_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.e2c2e, EdgeDim, EdgeDim, self.n_e2c2e)
+        return NeighborTableOffsetProvider(self.connectivities[E2C2EDim], EdgeDim, EdgeDim, self.size[E2C2EDim])
 
     def get_v2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.v2c, VertexDim, CellDim, self.n_v2c)
+        return NeighborTableOffsetProvider(self.connectivities[V2CDim], VertexDim, CellDim, self.size[V2CDim])
 
     def get_v2e_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.v2e, VertexDim, EdgeDim, self.n_v2e)
+        return NeighborTableOffsetProvider(self.connectivities[V2EDim], VertexDim, EdgeDim, self.size[V2EDim])
 
     def get_e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.e2c, EdgeDim, CellDim, self.n_e2c)
+        return NeighborTableOffsetProvider(self.connectivities[E2CDim], EdgeDim, CellDim, self.size[E2CDim])
 
     def get_e2v_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.e2v, EdgeDim, VertexDim, self.n_e2v)
+        return NeighborTableOffsetProvider(self.connectivities[E2VDim], EdgeDim, VertexDim, self.size[E2VDim])
 
     def get_e2c2v_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.e2c2v, EdgeDim, VertexDim, self.n_e2c2v)
+        return NeighborTableOffsetProvider(self.connectivities[E2C2VDim], EdgeDim, VertexDim, self.size[E2C2VDim])
 
     def get_c2e2c2e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.c2e2c2e2c, CellDim, CellDim, self.n_c2e2c2e2c)
+        return NeighborTableOffsetProvider(self.connectivities[C2E2C2E2CDim], CellDim, CellDim, self.size[C2E2C2E2CDim])
 
     def get_e2ecv_offset_provider(self):
-        old_shape = self.e2c2v.shape
+        old_shape = self.connectivities[E2C2VDim].shape
         e2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(e2ecv_table, EdgeDim, ECVDim, e2ecv_table.shape[1])
+        return NeighborTableOffsetProvider(e2ecv_table, EdgeDim, ECVDim, self.size[E2C2VDim])
 
     def get_c2ce_offset_provider(self):
-        old_shape = self.c2e.shape
+        old_shape = self.connectivities[C2EDim].shape
         c2ce_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(c2ce_table, CellDim, CEDim, c2ce_table.shape[1])
+        return NeighborTableOffsetProvider(c2ce_table, CellDim, CEDim, self.size[C2EDim])
 
     def get_offset_provider(self):
         return {
@@ -512,7 +525,7 @@ class SimpleMesh:
             "C2CE": self.get_c2ce_offset_provider(),
             "Koff": KDim,
             "C2E2C2E2C": self.get_c2e2c2e2c_offset_provider(),
-            "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, self.n_e2c2v),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, self.n_e2c),
-            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, self.n_c2e2c),
+            "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, self.size[E2C2VDim]),
+            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, self.size[E2CDim]),
+            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, self.size[C2E2CDim]),
         }

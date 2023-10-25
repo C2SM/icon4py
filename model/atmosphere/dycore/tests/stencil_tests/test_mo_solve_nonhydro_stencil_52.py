@@ -88,9 +88,9 @@ def test_mo_solve_nonhydro_stencil_52():
         cpd,
     )
     h_start = int32(0)
-    h_end = int32(mesh.n_cells)
+    h_end = int32(mesh.num_cells)
     v_start = int32(1)
-    v_end = int32(mesh.k_level)
+    v_end = int32(mesh.num_levels)
     # TODO we run this test with the C++ backend as the `embedded` backend doesn't handle this pattern
     mo_solve_nonhydro_stencil_52.with_backend(run_gtfn)(
         vwind_impl_wgt=vwind_impl_wgt,

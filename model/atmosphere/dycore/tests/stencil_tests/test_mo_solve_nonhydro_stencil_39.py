@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
     mo_solve_nonhydro_stencil_39,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim, C2EDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -33,14 +33,15 @@ class TestMoSolveNonhydroStencil39(StencilTest):
         wgtfac_c: np.array,
         **kwargs,
     ) -> np.array:
-        c2e_shape = mesh.c2e.shape
+        c2e = mesh.connectivities[C2EDim]
+        c2e_shape = c2e.shape
         c2ce_table = np.arange(c2e_shape[0] * c2e_shape[1]).reshape(c2e_shape)
 
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_w_concorr_me_offset_1 = np.roll(z_w_concorr_me, shift=1, axis=1)
-        z_w_concorr_mc_m0 = np.sum(e_bln_c_s[c2ce_table] * z_w_concorr_me[mesh.c2e], axis=1)
+        z_w_concorr_mc_m0 = np.sum(e_bln_c_s[c2ce_table] * z_w_concorr_me[c2e], axis=1)
         z_w_concorr_mc_m1 = np.sum(
-            e_bln_c_s[c2ce_table] * z_w_concorr_me_offset_1[mesh.c2e], axis=1
+            e_bln_c_s[c2ce_table] * z_w_concorr_me_offset_1[c2e], axis=1
         )
         w_concorr_c = wgtfac_c * z_w_concorr_mc_m0 + (1.0 - wgtfac_c) * z_w_concorr_mc_m1
         w_concorr_c[:, 0] = 0

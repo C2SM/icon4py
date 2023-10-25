@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from dataclasses import dataclass
 
 import numpy as np
 from gt4py.next.common import Dimension
@@ -26,46 +25,8 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     VertexDim,
 )
-from icon4py.model.common.grid.horizontal import HorizontalGridSize
 from icon4py.model.common.grid.mesh import BaseMesh
-from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
-
-
-class VerticalMeshConfig:
-    def __init__(self, num_lev: int):
-        self._num_lev = num_lev
-
-    @property
-    def num_lev(self) -> int:
-        return self._num_lev
-
-
-@dataclass(
-    frozen=True,
-)
-class GridConfig:
-    horizontal_config: HorizontalGridSize
-    vertical_config: VerticalGridSize
-    limited_area: bool = True
-    n_shift_total: int = 0
-    lvertnest: bool = False
-
-    @property
-    def k_levels(self):
-        return self.vertical_config.num_lev
-
-    @property
-    def n_vertices(self):
-        return self.horizontal_config.n_vertices
-
-    @property
-    def n_edges(self):
-        return self.horizontal_config.n_edges
-
-    @property
-    def n_cells(self):
-        return self.horizontal_config.n_cells
 
 
 class IconGrid(BaseMesh):

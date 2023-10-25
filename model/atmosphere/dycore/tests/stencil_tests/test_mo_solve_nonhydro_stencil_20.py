@@ -53,17 +53,18 @@ class TestMoSolveNonHydroStencil20(StencilTest):
                         ]
             return indexed
 
-        full_shape = mesh.e2c.shape + zdiff_gradp.shape[1:]
+        e2c = mesh.connectivities[E2CDim]
+        full_shape = e2c.shape + zdiff_gradp.shape[1:]
         zdiff_gradp = zdiff_gradp.reshape(full_shape)
         ikoffset = ikoffset.reshape(full_shape)
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
-        z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, mesh.e2c, ikoffset)
+        z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, e2c, ikoffset)
         z_dexner_dz_c_1_at_kidx = _apply_index_field(
-            full_shape, z_dexner_dz_c_1, mesh.e2c, ikoffset
+            full_shape, z_dexner_dz_c_1, e2c, ikoffset
         )
         z_dexner_dz_c_2_at_kidx = _apply_index_field(
-            full_shape, z_dexner_dz_c_2, mesh.e2c, ikoffset
+            full_shape, z_dexner_dz_c_2, e2c, ikoffset
         )
 
         def at_neighbor(i):
@@ -86,11 +87,11 @@ class TestMoSolveNonHydroStencil20(StencilTest):
         ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int32)
 
         rng = np.random.default_rng()
-        for k in range(mesh.k_level):
+        for k in range(mesh.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
             ikoffset[:, :, k] = rng.integers(
                 low=0 - k,
-                high=mesh.k_level - k - 1,
+                high=mesh.num_levels - k - 1,
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
 
@@ -110,7 +111,7 @@ class TestMoSolveNonHydroStencil20(StencilTest):
             z_dexner_dz_c_2=z_dexner_dz_c_2,
             z_gradh_exner=z_gradh_exner,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(mesh.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

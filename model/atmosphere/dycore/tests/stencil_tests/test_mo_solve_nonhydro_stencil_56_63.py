@@ -48,7 +48,7 @@ class TestMoSolveNonhydroStencil5663(StencilTest):
             w_concorr_c=w_concorr_c,
             z_dwdz_dd=z_dwdz_dd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(mesh.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

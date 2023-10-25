@@ -42,9 +42,9 @@ class TestMoSolveNonhydroStencil53(StencilTest):
         z_q = random_field(mesh, CellDim, KDim)
         w = random_field(mesh, CellDim, KDim)
         h_start = int32(0)
-        h_end = int32(mesh.n_cells)
+        h_end = int32(mesh.num_cells)
         v_start = int32(1)
-        v_end = int32(mesh.k_level)
+        v_end = int32(mesh.num_levels)
         return dict(
             z_q=z_q,
             w=w,

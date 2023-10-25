@@ -55,7 +55,7 @@ class TestMoSolveNonhydroStencil50(StencilTest):
             exner_incr=exner_incr,
             iau_wgt_dyn=iau_wgt_dyn,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(mesh.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

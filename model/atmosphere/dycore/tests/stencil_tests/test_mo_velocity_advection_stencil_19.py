@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
     mo_velocity_advection_stencil_19,
 )
-from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim, VertexDim, E2VDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -46,8 +46,9 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
         ddqz_z_full_e: np.array,
         **kwargs,
     ) -> np.array:
-        z_ekinh_e2c = z_ekinh[mesh.e2c]
-        coeff_gradekin = coeff_gradekin.reshape(mesh.e2c.shape)
+        e2c = mesh.connectivities[E2CDim]
+        z_ekinh_e2c = z_ekinh[e2c]
+        coeff_gradekin = coeff_gradekin.reshape(e2c.shape)
         coeff_gradekin = np.expand_dims(coeff_gradekin, axis=-1)
         f_e = np.expand_dims(f_e, axis=-1)
         c_lin_e = np.expand_dims(c_lin_e, axis=-1)
@@ -55,8 +56,8 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
         ddt_vn_apc = -(
             (coeff_gradekin[:, 0] - coeff_gradekin[:, 1]) * z_kin_hor_e
             + (-coeff_gradekin[:, 0] * z_ekinh_e2c[:, 0] + coeff_gradekin[:, 1] * z_ekinh_e2c[:, 1])
-            + vt * (f_e + 0.5 * np.sum(zeta[mesh.e2v], axis=1))
-            + np.sum(z_w_con_c_full[mesh.e2c] * c_lin_e, axis=1)
+            + vt * (f_e + 0.5 * np.sum(zeta[mesh.connectivities[E2VDim]], axis=1))
+            + np.sum(z_w_con_c_full[e2c] * c_lin_e, axis=1)
             * (vn_ie[:, :-1] - vn_ie[:, 1:])
             / ddqz_z_full_e
         )
@@ -90,7 +91,7 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
             ddqz_z_full_e=ddqz_z_full_e,
             ddt_vn_apc=ddt_vn_apc,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(mesh.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

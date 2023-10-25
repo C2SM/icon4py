@@ -29,7 +29,7 @@ class TestMoSolveNonhydroStencil31(StencilTest):
     @staticmethod
     def reference(mesh, e_flx_avg: np.array, vn: np.array, **kwargs) -> np.array:
         geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
-        z_vn_avg = np.sum(vn[mesh.e2c2eO] * geofac_grdiv, axis=1)
+        z_vn_avg = np.sum(vn[mesh.connectivities[E2C2EODim]] * geofac_grdiv, axis=1)
         return dict(z_vn_avg=z_vn_avg)
 
     @pytest.fixture
@@ -43,7 +43,7 @@ class TestMoSolveNonhydroStencil31(StencilTest):
             vn=vn,
             z_vn_avg=z_vn_avg,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(mesh.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

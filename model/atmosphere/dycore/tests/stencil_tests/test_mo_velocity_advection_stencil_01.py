@@ -29,7 +29,7 @@ class TestMoVelocityAdvectionStencil01(StencilTest):
     @staticmethod
     def reference(mesh, vn: np.array, rbf_vec_coeff_e: np.array, **kwargs) -> np.array:
         rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-        vt = np.sum(vn[mesh.e2c2e] * rbf_vec_coeff_e, axis=1)
+        vt = np.sum(vn[mesh.connectivities[E2C2EDim]] * rbf_vec_coeff_e, axis=1)
         return dict(vt=vt)
 
     @pytest.fixture
@@ -43,7 +43,7 @@ class TestMoVelocityAdvectionStencil01(StencilTest):
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             vt=vt,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(mesh.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

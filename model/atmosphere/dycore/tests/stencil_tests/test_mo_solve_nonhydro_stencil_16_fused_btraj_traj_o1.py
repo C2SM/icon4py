@@ -88,12 +88,13 @@ class TestComputeBtraj(StencilTest):
         z_rth_pr_2: np.array,
         **kwargs,
     ) -> np.array:
-        z_rth_pr_1_e2c = z_rth_pr_1[mesh.e2c]
-        z_rth_pr_2_e2c = z_rth_pr_2[mesh.e2c]
-        z_grad_rth_1_e2c = z_grad_rth_1[mesh.e2c]
-        z_grad_rth_2_e2c = z_grad_rth_2[mesh.e2c]
-        z_grad_rth_3_e2c = z_grad_rth_3[mesh.e2c]
-        z_grad_rth_4_e2c = z_grad_rth_4[mesh.e2c]
+        e2c = mesh.connectivities[E2CDim]
+        z_rth_pr_1_e2c = z_rth_pr_1[e2c]
+        z_rth_pr_2_e2c = z_rth_pr_2[e2c]
+        z_grad_rth_1_e2c = z_grad_rth_1[e2c]
+        z_grad_rth_2_e2c = z_grad_rth_2[e2c]
+        z_grad_rth_3_e2c = z_grad_rth_3[e2c]
+        z_grad_rth_4_e2c = z_grad_rth_4[e2c]
 
         z_rho_e = np.where(
             p_vn > 0,
@@ -144,12 +145,13 @@ class TestComputeBtraj(StencilTest):
         z_rth_pr_2: np.array,
         **kwargs,
     ):
-        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(mesh.e2c.shape)
-        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(mesh.e2c.shape)
-        primal_normal_cell_1 = primal_normal_cell_1.reshape(mesh.e2c.shape)
-        dual_normal_cell_1 = dual_normal_cell_1.reshape(mesh.e2c.shape)
-        primal_normal_cell_2 = primal_normal_cell_2.reshape(mesh.e2c.shape)
-        dual_normal_cell_2 = dual_normal_cell_2.reshape(mesh.e2c.shape)
+        e2c = mesh.connectivities[E2CDim]
+        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
+        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
+        primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)
+        dual_normal_cell_1 = dual_normal_cell_1.reshape(e2c.shape)
+        primal_normal_cell_2 = primal_normal_cell_2.reshape(e2c.shape)
+        dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
 
         p_distv_bary_1, p_distv_bary_2 = cls.compute_btraj_numpy(
             mesh,

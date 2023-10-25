@@ -44,8 +44,8 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
         vn_ie = cls.mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
         z_kin_hor_e = cls.mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
         return dict(
-            vn_ie=vn_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
-            z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            vn_ie=vn_ie[int32(1) : int32(mesh.num_cells), int32(1) : int32(mesh.num_levels)],
+            z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.num_cells), int32(1) : int32(mesh.num_levels)],
         )
 
     @pytest.fixture
@@ -61,10 +61,10 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
             wgtfac_e=wgtfac_e,
             vn=vn,
             vt=vt,
-            vn_ie=vn_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
-            z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            vn_ie=vn_ie[int32(1) : int32(mesh.num_cells), int32(1) : int32(mesh.num_levels)],
+            z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.num_cells), int32(1) : int32(mesh.num_levels)],
             horizontal_start=int32(1),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(mesh.num_cells),
             vertical_start=int32(1),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

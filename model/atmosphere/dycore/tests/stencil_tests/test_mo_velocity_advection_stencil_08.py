@@ -35,7 +35,7 @@ class TestMoVelocityAdvectionStencil08(StencilTest):
     def reference(mesh, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_ekinh = np.sum(
-            z_kin_hor_e[mesh.c2e] * e_bln_c_s[mesh.get_c2ce_offset_provider().table],
+            z_kin_hor_e[mesh.connectivities[C2EDim]] * e_bln_c_s[mesh.get_c2ce_offset_provider().table],
             axis=1,
         )
         return dict(z_ekinh=z_ekinh)
@@ -51,7 +51,7 @@ class TestMoVelocityAdvectionStencil08(StencilTest):
             e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
             z_ekinh=z_ekinh,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(mesh.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

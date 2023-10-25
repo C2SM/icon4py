@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_17 import (
     mo_solve_nonhydro_stencil_17,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
@@ -40,7 +40,7 @@ class TestMoSolveNonhydroStencil17(StencilTest):
         hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-        z_dwdz_dd_e2c = z_dwdz_dd[mesh.e2c]
+        z_dwdz_dd_e2c = z_dwdz_dd[mesh.connectivities[E2CDim]]
         z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
 
         z_graddiv_vn = z_graddiv_vn + (
@@ -63,7 +63,7 @@ class TestMoSolveNonhydroStencil17(StencilTest):
             z_dwdz_dd=z_dwdz_dd,
             z_graddiv_vn=z_graddiv_vn,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(mesh.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )

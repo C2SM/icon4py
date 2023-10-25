@@ -35,12 +35,13 @@ class TestMoSolveNonhydroStencil30(StencilTest):
         rbf_vec_coeff_e: np.array,
         **kwargs,
     ) -> dict:
+        e2c2eO = mesh.connectivities[E2C2EODim]
         e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
-        z_vn_avg = np.sum(vn[mesh.e2c2eO] * e_flx_avg, axis=1)
+        z_vn_avg = np.sum(vn[e2c2eO] * e_flx_avg, axis=1)
         geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
-        z_graddiv_vn = np.sum(vn[mesh.e2c2eO] * geofac_grdiv, axis=1)
+        z_graddiv_vn = np.sum(vn[e2c2eO] * geofac_grdiv, axis=1)
         rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-        vt = np.sum(vn[mesh.e2c2e] * rbf_vec_coeff_e, axis=1)
+        vt = np.sum(vn[mesh.connectivities[E2C2EDim]] * rbf_vec_coeff_e, axis=1)
         return dict(z_vn_avg=z_vn_avg, z_graddiv_vn=z_graddiv_vn, vt=vt)
 
     @pytest.fixture
@@ -62,7 +63,7 @@ class TestMoSolveNonhydroStencil30(StencilTest):
             z_graddiv_vn=z_graddiv_vn,
             vt=vt,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(mesh.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(mesh.num_levels),
         )
