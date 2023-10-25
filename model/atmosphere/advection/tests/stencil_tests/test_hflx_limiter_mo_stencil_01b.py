@@ -86,7 +86,7 @@ def test_hflx_limiter_mo_stencil_01b():
     z_tracer_min = random_field(mesh, CellDim, KDim)
 
     ref_1, ref_2, ref_3, ref_4, ref_5 = hflx_limiter_mo_stencil_01b_numpy(
-        mesh.c2e,
+        mesh.connectivities[C2EDim],
         np.asarray(geofac_div),
         np.asarray(p_rhodz_now),
         np.asarray(p_rhodz_new),
@@ -111,7 +111,7 @@ def test_hflx_limiter_mo_stencil_01b():
         z_tracer_min,
         offset_provider={
             "C2E": mesh.get_c2e_offset_provider(),
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.size[C2EDim]),
         },
     )
 

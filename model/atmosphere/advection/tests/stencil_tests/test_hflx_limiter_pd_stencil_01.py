@@ -51,7 +51,7 @@ def test_hflx_limiter_pd_stencil_01():
     dbl_eps = np.float64(1e-9)
 
     ref = hflx_limiter_pd_stencil_01_numpy(
-        mesh.c2e,
+        mesh.connectivities[C2EDim],
         np.asarray(geofac_div),
         np.asarray(p_cc),
         np.asarray(p_rhodz_now),
@@ -69,7 +69,7 @@ def test_hflx_limiter_pd_stencil_01():
         p_dtime,
         dbl_eps,
         offset_provider={
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.size[C2EDim]),
             "C2E": mesh.get_c2e_offset_provider(),
         },
     )

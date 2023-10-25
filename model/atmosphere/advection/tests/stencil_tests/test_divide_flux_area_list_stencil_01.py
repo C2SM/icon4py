@@ -722,7 +722,7 @@ def test_divide_flux_area_list_stencil_01():
         ref_23,
         ref_24,
     ) = divide_flux_area_list_stencil_01_numpy(
-        mesh.e2c,
+        mesh.connectivities[E2CDim],
         np.asarray(famask_int),
         np.asarray(p_vn),
         np.asarray(ptr_v3_lon),
@@ -770,7 +770,7 @@ def test_divide_flux_area_list_stencil_01():
         dreg_patch2_4_lat_vmask,
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
+            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.size[E2CDim]),
         },
     )
     assert np.allclose(dreg_patch0_1_lon_dsl, ref_1)

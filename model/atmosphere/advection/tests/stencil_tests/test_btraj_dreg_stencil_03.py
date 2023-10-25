@@ -112,7 +112,7 @@ def test_btraj_dreg_stencil_03():
 
     p_vn = random_field(mesh, EdgeDim, KDim)
     p_vt = random_field(mesh, EdgeDim, KDim)
-    cell_idx = np.asarray(mesh.e2c, dtype=int32)
+    cell_idx = np.asarray(mesh.connectivities[E2CDim], dtype=int32)
     cell_idx_new = as_1D_sparse_field(cell_idx, ECDim)
     cell_blk = constant_field(mesh, 1, EdgeDim, E2CDim, dtype=int32)
     cell_blk_new = as_1D_sparse_field(cell_blk, ECDim)
@@ -212,7 +212,7 @@ def test_btraj_dreg_stencil_03():
         p_coords_dreg_v_4_lat_dsl,
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
+            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.size[E2CDim]),
         },
     )
     assert np.allclose(p_cell_idx, p_cell_idx_ref)

@@ -17,7 +17,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
     hflux_ffsl_hybrid_stencil_01a,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
 from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -150,7 +150,7 @@ def test_hflux_ffsl_hybrid_stencil_01a():
     p_out_e_hybrid_1a = zero_field(mesh, EdgeDim, KDim)
 
     ref = hflux_ffsl_hybrid_stencil_01a_numpy(
-        mesh.e2c,
+        mesh.connectivities[E2CDim],
         np.asarray(z_lsq_coeff_1),
         np.asarray(z_lsq_coeff_2),
         np.asarray(z_lsq_coeff_3),

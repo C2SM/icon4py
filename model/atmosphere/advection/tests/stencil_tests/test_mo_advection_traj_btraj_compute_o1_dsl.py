@@ -47,14 +47,15 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         p_dthalf: float,
         **kwargs,
     ) -> np.array:
-        cell_idx = cell_idx.reshape(mesh.e2c.shape)
-        cell_blk = cell_blk.reshape(mesh.e2c.shape)
-        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(mesh.e2c.shape)
-        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(mesh.e2c.shape)
-        primal_normal_cell_1 = primal_normal_cell_1.reshape(mesh.e2c.shape)
-        primal_normal_cell_2 = primal_normal_cell_2.reshape(mesh.e2c.shape)
-        dual_normal_cell_1 = dual_normal_cell_1.reshape(mesh.e2c.shape)
-        dual_normal_cell_2 = dual_normal_cell_2.reshape(mesh.e2c.shape)
+        e2c = mesh.connectivities[E2CDim]
+        cell_idx = cell_idx.reshape(e2c.shape)
+        cell_blk = cell_blk.reshape(e2c.shape)
+        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
+        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
+        primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)
+        primal_normal_cell_2 = primal_normal_cell_2.reshape(e2c.shape)
+        dual_normal_cell_1 = dual_normal_cell_1.reshape(e2c.shape)
+        dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
 
         lvn_pos = np.where(p_vn > 0.0, True, False)
         cell_idx = np.expand_dims(cell_idx, axis=-1)
@@ -103,7 +104,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
     def input_data(self, mesh):
         p_vn = random_field(mesh, EdgeDim, KDim)
         p_vt = random_field(mesh, EdgeDim, KDim)
-        cell_idx = np.asarray(mesh.e2c, dtype=int32)
+        cell_idx = np.asarray(mesh.connectivities[E2CDim], dtype=int32)
         cell_idx_new = as_1D_sparse_field(cell_idx, ECDim)
         cell_blk = constant_field(mesh, 1, EdgeDim, E2CDim, dtype=int32)
         cell_blk_new = as_1D_sparse_field(cell_blk, ECDim)

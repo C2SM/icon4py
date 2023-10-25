@@ -66,7 +66,7 @@ def test_upwind_hflux_miura_cycl_stencil_02():
     z_tracer_new_dsl = random_field(mesh, CellDim, KDim)
 
     ref_1, ref_2, ref_3, ref_4 = upwind_hflux_miura_cycl_stencil_02_numpy(
-        mesh.c2e,
+        mesh.connectivities[C2EDim],
         nsub,
         np.asarray(p_mass_flx_e),
         np.asarray(geofac_div),
@@ -91,7 +91,7 @@ def test_upwind_hflux_miura_cycl_stencil_02():
         z_rho_new_dsl,
         z_tracer_new_dsl,
         offset_provider={
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.size[C2EDim]),
             "C2E": mesh.get_c2e_offset_provider(),
         },
     )

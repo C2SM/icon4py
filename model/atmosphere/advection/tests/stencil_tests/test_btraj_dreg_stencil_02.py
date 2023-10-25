@@ -16,7 +16,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_02 import btraj_dreg_stencil_02
-from icon4py.model.common.dimension import ECDim, EdgeDim, KDim
+from icon4py.model.common.dimension import ECDim, EdgeDim, KDim, E2CDim
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -47,7 +47,7 @@ def test_btraj_dreg_stencil_02():
     mesh = SimpleMesh()
     p_vn = random_field(mesh, EdgeDim, KDim)
     p_vt = random_field(mesh, EdgeDim, KDim)
-    edge_cell_length = np.asarray(mesh.e2c, dtype=float)
+    edge_cell_length = np.asarray(mesh.connectivities[E2CDim], dtype=float)
     edge_cell_length_new = as_1D_sparse_field(edge_cell_length, ECDim)
     p_dt = 1.0
     opt_famask_dsl = zero_field(mesh, EdgeDim, KDim, dtype=int32)
@@ -64,7 +64,7 @@ def test_btraj_dreg_stencil_02():
         opt_famask_dsl,
         offset_provider={
             "E2C": mesh.get_e2c_offset_provider(),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
+            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.size[E2CDim]),
         },
     )
 

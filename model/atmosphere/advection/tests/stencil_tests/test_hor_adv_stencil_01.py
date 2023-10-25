@@ -54,7 +54,7 @@ def test_hor_adv_stencil_01():
     p_dtime = np.float64(5.0)
 
     ref = hor_adv_stencil_01_numpy(
-        mesh.c2e,
+        mesh.connectivities[C2EDim],
         np.asarray(p_mflx_tracer_h),
         np.asarray(deepatmo_divh),
         np.asarray(tracer_now),
@@ -74,7 +74,7 @@ def test_hor_adv_stencil_01():
         p_dtime,
         offset_provider={
             "C2E": mesh.get_c2e_offset_provider(),
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.size[C2EDim]),
         },
     )
     assert np.allclose(tracer_new, ref)

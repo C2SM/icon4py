@@ -14,7 +14,7 @@
 import numpy as np
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_04 import hflx_limiter_mo_stencil_04
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -42,7 +42,7 @@ def test_hflx_limiter_mo_stencil_04():
     z_mflx_low = random_field(mesh, EdgeDim, KDim)
     p_mflx_tracer_h = zero_field(mesh, EdgeDim, KDim)
     ref = hflx_limiter_mo_stencil_04_numpy(
-        mesh.e2c,
+        mesh.connectivities[E2CDim],
         np.asarray(z_anti),
         np.asarray(r_m),
         np.asarray(r_p),

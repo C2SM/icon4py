@@ -51,7 +51,7 @@ def test_recon_lsq_cell_l_svd_stencil():
     p_coeff_3 = zero_field(mesh, CellDim, KDim)
 
     ref_1, ref_2, ref_3 = recon_lsq_cell_l_svd_stencil_numpy(
-        mesh.c2e2c,
+        mesh.connectivities[C2E2CDim],
         np.asarray(p_cc),
         np.asarray(lsq_pseudoinv_1),
         np.asarray(lsq_pseudoinv_2),
@@ -66,7 +66,7 @@ def test_recon_lsq_cell_l_svd_stencil():
         p_coeff_3,
         offset_provider={
             "C2E2C": mesh.get_c2e2c_offset_provider(),
-            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, mesh.n_c2e2c),
+            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, mesh.size[C2E2CDim]),
         },
     )
     co1 = np.asarray(p_coeff_1)

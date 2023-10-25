@@ -17,7 +17,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_stencil_01 import (
     upwind_hflux_miura_stencil_01,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
 from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -73,7 +73,7 @@ def test_upwind_hflux_miura_stencil_01():
     p_out_e = zero_field(mesh, EdgeDim, KDim)
 
     ref = upwind_hflux_miura_stencil_01_numpy(
-        mesh.e2c,
+        mesh.connectivities[E2CDim],
         np.asarray(z_lsq_coeff_1),
         np.asarray(z_lsq_coeff_2),
         np.asarray(z_lsq_coeff_3),

@@ -38,7 +38,7 @@ def test_rbf_intp_edge_stencil_01():
     p_vt_out = zero_field(mesh, EdgeDim, KDim)
 
     ref = rbf_intp_edge_stencil_01_numpy(
-        mesh.e2c2e,
+        mesh.connectivities[E2C2EDim],
         np.asarray(p_vn_in),
         np.asarray(ptr_coeff),
     )

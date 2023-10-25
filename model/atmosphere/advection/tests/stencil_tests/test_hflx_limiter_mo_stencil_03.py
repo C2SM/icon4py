@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_03 import (
     hflx_limiter_mo_stencil_03,
     hflx_limiter_mo_stencil_03_min_max,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim, C2E2CDim
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
@@ -61,7 +61,7 @@ def test_hflx_diffusion_mo_stencil_03_min_max():
     beta_fct = 0.9
     r_beta_fct = 0.3
     z_max_ref, z_min_ref = hflx_limiter_mo_stencil_03_min_max_numpy(
-        mesh.c2e2c,
+        mesh.connectivities[C2E2CDim],
         np.asarray(z_tracer_max),
         np.asarray(z_tracer_min),
         beta_fct,
@@ -94,7 +94,7 @@ def test_hflx_diffusion_mo_stencil_03():
     r_m = zero_field(mesh, CellDim, KDim)
 
     r_p_ref, r_m_ref = hflx_limiter_mo_stencil_03_numpy(
-        mesh.c2e2c,
+        mesh.connectivities[C2E2CDim],
         np.asarray(z_tracer_max),
         np.asarray(z_tracer_min),
         beta_fct,
