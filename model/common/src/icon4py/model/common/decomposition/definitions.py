@@ -131,7 +131,7 @@ class ExchangeRuntime(Protocol):
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         ...
 
-    def exchange_and_wait(self, dim:Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
         ...
 
     def get_size(self):
@@ -152,7 +152,7 @@ class SingleNodeExchange:
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim:Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
         return
 
     def my_rank(self):

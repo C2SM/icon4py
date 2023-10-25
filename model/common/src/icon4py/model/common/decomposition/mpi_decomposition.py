@@ -202,9 +202,10 @@ class GHexMultiNodeExchange:
         log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
-    def exchange_and_wait(self, dim:Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
         res = self.exchange(dim, *fields)
         res.wait()
+
 
 @dataclass
 class MultiNodeResult:

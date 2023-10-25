@@ -504,7 +504,6 @@ class SolveNonhydro:
         start_cell_halo = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
         end_cell_end = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
         if self.grid.limited_area():
-            # TODO (magdalena) this does not need any boundary args while it is using the mask
             mo_solve_nonhydro_stencil_66.with_backend(run_gtfn)(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
                 rho=prognostic_state_ls[nnew].rho,
@@ -557,7 +556,7 @@ class SolveNonhydro:
         nnow: int,
         nnew: int,
     ):
-        # TODO (magdalena) fix this! condition makes no sense, when fixing call of velocity advection in predictor
+        # TODO (magdalena) fix this! when fixing call of velocity advection in predictor, condition is broken,
         if l_init or l_recompute:
             if self.config.itime_scheme == 4 and not l_init:
                 lvn_only = True  # Recompute only vn tendency
@@ -1348,7 +1347,6 @@ class SolveNonhydro:
         else:
             self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w)
 
-    # flake8: noqa: C901
     def run_corrector_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
