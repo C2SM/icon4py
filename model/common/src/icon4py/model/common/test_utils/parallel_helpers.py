@@ -1,6 +1,4 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
-# TODO: This license is not consistent with license used in the project.
-#       Delete the inconsistent license and above line and rerun pre-commit to insert a good license.
 #
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
@@ -11,8 +9,8 @@
 # version. See the LICENSE.txt file at the top-level directory of this
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
-
 # SPDX-License-Identifier: GPL-3.0-or-later
+
 import pytest
 
 from icon4py.model.common.decomposition.definitions import ProcessProperties, get_runtype
