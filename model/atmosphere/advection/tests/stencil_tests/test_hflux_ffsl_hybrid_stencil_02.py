@@ -17,8 +17,8 @@ from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_02 import (
     hflux_ffsl_hybrid_stencil_02,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import random_field
 
 
 def hflux_ffsl_hybrid_stencil_02_numpy(

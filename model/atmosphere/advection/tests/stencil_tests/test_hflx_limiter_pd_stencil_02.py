@@ -14,9 +14,9 @@
 import numpy as np
 
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_02 import hflx_limiter_pd_stencil_02
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
-from icon4py.model.common.test_utils.helpers import constant_field, random_field
+from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import constant_field, random_field
 
 
 def hflx_limiter_pd_stencil_02_numpy(

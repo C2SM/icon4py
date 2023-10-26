@@ -17,8 +17,8 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_03a impo
     upwind_hflux_miura_cycl_stencil_03a,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 
 def upwind_hflux_miura_cycl_stencil_03a_numpy(

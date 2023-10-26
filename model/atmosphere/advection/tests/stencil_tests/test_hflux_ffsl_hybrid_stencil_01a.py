@@ -17,9 +17,9 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
     hflux_ffsl_hybrid_stencil_01a,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
-from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
+from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
 
 
 def hflux_ffsl_hybrid_stencil_01a_numpy(

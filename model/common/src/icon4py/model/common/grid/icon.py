@@ -17,13 +17,24 @@ from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import (
+    C2E2CDim,
+    C2E2CODim,
+    C2EDim,
+    C2VDim,
     CECDim,
     CEDim,
     CellDim,
+    E2C2EDim,
+    E2C2EODim,
+    E2C2VDim,
+    E2CDim,
+    E2VDim,
     ECDim,
     ECVDim,
     EdgeDim,
-    VertexDim, E2C2EODim, E2C2EDim, C2EDim, C2E2CDim, E2C2VDim, C2VDim, V2CDim, V2EDim, C2E2CODim, E2CDim, E2VDim,
+    V2CDim,
+    V2EDim,
+    VertexDim,
 )
 from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder

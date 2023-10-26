@@ -23,6 +23,7 @@ from gt4py.next.iterator import embedded as it_embedded
 from ..grid.grid_manager import GridManager, IndexTransformation
 from ..grid.vertical import VerticalGridSize
 
+
 try:
     import pytest_benchmark
 except ModuleNotFoundError:
@@ -48,7 +49,7 @@ GRIDS = {
 def grid(request):
     if request.param == "icon_grid":
         # Dynamically get the icon_grid fixture
-        return request.getfixturevalue('icon_grid')
+        return request.getfixturevalue("icon_grid")
     else:
         return GRIDS[request.param]
 

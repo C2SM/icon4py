@@ -20,13 +20,13 @@ from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_01 import 
     divide_flux_area_list_stencil_01,
 )
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     random_field,
     random_mask,
     zero_field,
 )
-from icon4py.model.common.grid.simple import SimpleGrid
 
 
 # FUNCTIONS

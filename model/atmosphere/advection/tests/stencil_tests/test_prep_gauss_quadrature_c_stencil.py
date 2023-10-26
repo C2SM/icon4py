@@ -18,8 +18,8 @@ from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_stencil import (
     prep_gauss_quadrature_c_stencil,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 
 def prep_gauss_quadrature_c_stencil_numpy(

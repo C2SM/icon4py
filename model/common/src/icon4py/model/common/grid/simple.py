@@ -21,6 +21,7 @@ from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    C2VDim,
     CECDim,
     CEDim,
     CellDim,
@@ -35,9 +36,9 @@ from icon4py.model.common.dimension import (
     KDim,
     V2CDim,
     V2EDim,
-    VertexDim, C2VDim,
+    VertexDim,
 )
-
+from icon4py.model.common.grid.base import BaseGrid, GridConfig
 
 # periodic
 #
@@ -58,7 +59,6 @@ from icon4py.model.common.dimension import (
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.base import BaseGrid, GridConfig
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 
@@ -442,9 +442,7 @@ class SimpleGrid(BaseGrid):
         horizontal_grid_size = HorizontalGridSize(
             num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
         )
-        vertical_grid_size = VerticalGridSize(
-            num_lev=10
-        )
+        vertical_grid_size = VerticalGridSize(num_lev=10)
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
             vertical_config=vertical_grid_size,
@@ -469,40 +467,64 @@ class SimpleGrid(BaseGrid):
         self._update_size_connectivities()
 
     def get_c2v_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[C2VDim], VertexDim, CellDim, self.size[C2VDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[C2VDim], VertexDim, CellDim, self.size[C2VDim]
+        )
 
     def get_c2e_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[C2EDim], CellDim, EdgeDim, self.size[C2EDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[C2EDim], CellDim, EdgeDim, self.size[C2EDim]
+        )
 
     def get_c2e2cO_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[C2E2CODim], CellDim, CellDim, self.size[C2E2CODim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[C2E2CODim], CellDim, CellDim, self.size[C2E2CODim]
+        )
 
     def get_c2e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[C2E2CDim], CellDim, CellDim, self.size[C2E2CDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[C2E2CDim], CellDim, CellDim, self.size[C2E2CDim]
+        )
 
     def get_e2c2eO_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[E2C2EODim], EdgeDim, EdgeDim, self.size[E2C2EODim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[E2C2EODim], EdgeDim, EdgeDim, self.size[E2C2EODim]
+        )
 
     def get_e2c2e_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[E2C2EDim], EdgeDim, EdgeDim, self.size[E2C2EDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[E2C2EDim], EdgeDim, EdgeDim, self.size[E2C2EDim]
+        )
 
     def get_v2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[V2CDim], VertexDim, CellDim, self.size[V2CDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[V2CDim], VertexDim, CellDim, self.size[V2CDim]
+        )
 
     def get_v2e_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[V2EDim], VertexDim, EdgeDim, self.size[V2EDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[V2EDim], VertexDim, EdgeDim, self.size[V2EDim]
+        )
 
     def get_e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[E2CDim], EdgeDim, CellDim, self.size[E2CDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[E2CDim], EdgeDim, CellDim, self.size[E2CDim]
+        )
 
     def get_e2v_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[E2VDim], EdgeDim, VertexDim, self.size[E2VDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[E2VDim], EdgeDim, VertexDim, self.size[E2VDim]
+        )
 
     def get_e2c2v_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[E2C2VDim], EdgeDim, VertexDim, self.size[E2C2VDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[E2C2VDim], EdgeDim, VertexDim, self.size[E2C2VDim]
+        )
 
     def get_c2e2c2e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(self.connectivities[C2E2C2E2CDim], CellDim, CellDim, self.size[C2E2C2E2CDim])
+        return NeighborTableOffsetProvider(
+            self.connectivities[C2E2C2E2CDim], CellDim, CellDim, self.size[C2E2C2E2CDim]
+        )
 
     def get_e2ecv_offset_provider(self):
         old_shape = self.connectivities[E2C2VDim].shape

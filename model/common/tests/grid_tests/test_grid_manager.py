@@ -28,8 +28,19 @@ try:
 except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, E2VDim, E2C2EDim, C2EDim, V2CDim, E2CDim, \
-    C2VDim, V2EDim, C2E2CDim
+from icon4py.model.common.dimension import (
+    C2E2CDim,
+    C2EDim,
+    C2VDim,
+    CellDim,
+    E2C2EDim,
+    E2CDim,
+    E2VDim,
+    EdgeDim,
+    V2CDim,
+    V2EDim,
+    VertexDim,
+)
 from icon4py.model.common.grid.grid_manager import (
     GridFile,
     GridFileName,
@@ -40,6 +51,7 @@ from icon4py.model.common.grid.grid_manager import (
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
+
 
 SIMPLE_GRID_NC = "simple_grid.nc"
 
@@ -433,7 +445,8 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
     gm()
     icon_grid = gm.get_grid()
     assert np.allclose(
-        np.sort(icon_grid.get_e2c2v_offset_provider().table, 1), np.sort(simple_grid.diamond_table, 1)
+        np.sort(icon_grid.get_e2c2v_offset_provider().table, 1),
+        np.sort(simple_grid.diamond_table, 1),
     )
 
 

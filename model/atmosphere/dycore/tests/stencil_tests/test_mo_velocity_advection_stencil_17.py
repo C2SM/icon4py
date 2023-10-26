@@ -31,7 +31,8 @@ class TestMoVelocityAdvectionStencil17(StencilTest):
     ) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         ddt_w_adv = ddt_w_adv + np.sum(
-            z_v_grad_w[grid.connectivities[C2EDim]] * e_bln_c_s[grid.get_c2ce_offset_provider().table],
+            z_v_grad_w[grid.connectivities[C2EDim]]
+            * e_bln_c_s[grid.get_c2ce_offset_provider().table],
             axis=1,
         )
         return dict(ddt_w_adv=ddt_w_adv)

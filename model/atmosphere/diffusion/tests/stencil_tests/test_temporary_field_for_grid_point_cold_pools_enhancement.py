@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_cold_pools_enhancement import (
     temporary_field_for_grid_point_cold_pools_enhancement,
 )
-from icon4py.model.common.dimension import CellDim, KDim, C2E2CDim
+from icon4py.model.common.dimension import C2E2CDim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 

@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.advection.recon_lsq_cell_c_svd_stencil import (
     recon_lsq_cell_c_svd_stencil,
 )
 from icon4py.model.common.dimension import C2E2C2E2CDim, CECECDim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
 
 
 def recon_lsq_cell_c_svd_stencil_numpy(

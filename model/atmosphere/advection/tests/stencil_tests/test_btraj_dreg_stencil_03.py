@@ -17,8 +17,8 @@ from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_03 import btraj_dreg_stencil_03
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, constant_field, random_field
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, constant_field, random_field
 
 
 def btraj_dreg_stencil_03_numpy(
