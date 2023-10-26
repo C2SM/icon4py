@@ -11,4 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.test_utils.helpers import backend, grid  # noqa F401
+from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
+    backend,
+    grid,
+    all_grids,
+    icon_grid,
+)
+
+from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtures from test_utils
+   simple_grid_gridfile
+)

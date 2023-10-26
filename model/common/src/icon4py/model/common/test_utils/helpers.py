@@ -20,6 +20,7 @@ from gt4py.next import common as gt_common
 from gt4py.next.ffront.decorator import Program
 from gt4py.next.iterator import embedded as it_embedded
 
+from ..dimension import C2E2C2E2CDim, E2C2EDim, E2C2EODim
 from ..grid.grid_manager import GridManager, IndexTransformation
 from ..grid.vertical import VerticalGridSize
 
@@ -28,29 +29,34 @@ try:
 except ModuleNotFoundError:
     pytest_benchmark = None
 
-from ..grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.grid_utils import simple_grid_gridfile
+from ..grid.simple import SimpleGrid, SimpleGridData
 
 
 @pytest.fixture
 def icon_grid(simple_grid_gridfile):
     gm = GridManager(IndexTransformation(), simple_grid_gridfile, VerticalGridSize(num_lev=80))
     gm()
-    return gm.get_grid()
+    grid = gm.get_grid()
+    grid.with_connectivities(
+        {C2E2C2E2CDim: SimpleGridData.c2e2c2e2c_table,
+         E2C2EDim: SimpleGridData.e2c2e_table,
+         E2C2EODim: SimpleGridData.e2c2eO_table}
+    )
+    return grid
 
 
-GRIDS = {
-    "simple_grid": SimpleGrid(),
-    # "icon_grid": None  # This is a placeholder.
-}
+@pytest.fixture
+def all_grids(icon_grid):
+    return {
+        "simple_grid": SimpleGrid(),
+        "icon_grid": icon_grid
+    }
 
 
-@pytest.fixture(params=GRIDS.keys(), ids=GRIDS.keys())
-def grid(request):
-    if request.param == "icon_grid":
-        # Dynamically get the icon_grid fixture
-        return request.getfixturevalue('icon_grid')
-    else:
-        return GRIDS[request.param]
+@pytest.fixture(params=["simple_grid", "icon_grid"])
+def grid(request, all_grids):
+    return all_grids[request.param]
 
 
 @pytest.fixture
