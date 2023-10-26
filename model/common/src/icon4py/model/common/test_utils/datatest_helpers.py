@@ -28,8 +28,8 @@ base_path = common.parent.joinpath("testdata")
 # TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
 data_uris = {
     1: "https://polybox.ethz.ch/index.php/s/psBNNhng0h9KrB4/download",
-    2: "https://polybox.ethz.ch/index.php/s/NUQjmJcMEoQxFiK/download",
-    4: "https://polybox.ethz.ch/index.php/s/QC7xt7xLT5xeVN5/download",
+    2: "https://polybox.ethz.ch/index.php/s/YyC5qDJWyC39y7u/download",
+    4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }
 
 ser_data_basepath = base_path.joinpath("ser_icondata")
