@@ -22,19 +22,24 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def mo_solve_nonhydro_stencil_53_numpy(mesh, z_q: np.array, w: np.array) -> np.array:
+    w_new = np.zeros_like(w)
+    last_k_level = w.shape[1] - 1
+
+    w_new[:, last_k_level] = w[:, last_k_level]
+    for k in reversed(range(1, last_k_level)):
+        w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
+    w_new[:, 0] = w[:, 0]
+    return w_new
+
+
 class TestMoSolveNonhydroStencil53(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_53
     OUTPUTS = ("w",)
 
     @staticmethod
-    def reference(mesh, z_q: np.array, w: np.array, **kwargs) -> np.array:
-        w_new = np.zeros_like(w)
-        last_k_level = w.shape[1] - 1
-
-        w_new[:, last_k_level] = w[:, last_k_level]
-        for k in reversed(range(1, last_k_level)):
-            w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
-        w_new[:, 0] = w[:, 0]
+    def reference(mesh, z_q: np.array, w: np.array, **kwargs) -> dict:
+        w_new = mo_solve_nonhydro_stencil_53_numpy(mesh, z_q, w)
         return dict(w=w_new)
 
     @pytest.fixture

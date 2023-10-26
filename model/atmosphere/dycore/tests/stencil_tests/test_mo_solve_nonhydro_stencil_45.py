@@ -21,13 +21,18 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
 
 
+def mo_solve_nonhydro_stencil_45_numpy(mesh, z_alpha: np.array) -> np.array:
+    z_alpha = np.zeros_like(z_alpha)
+    return z_alpha
+
+
 class TestMoSolveNonhydroStencil45(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_45
     OUTPUTS = ("z_alpha",)
 
     @staticmethod
     def reference(mesh, z_alpha: np.array, **kwargs) -> dict:
-        z_alpha = np.zeros_like(z_alpha)
+        z_alpha = mo_solve_nonhydro_stencil_45_numpy(mesh, z_alpha)
         return dict(z_alpha=z_alpha)
 
     @pytest.fixture

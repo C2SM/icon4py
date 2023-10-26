@@ -21,6 +21,26 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_solve_nonhydro_stencil_44_numpy(
+    mesh,
+    exner_nnow: np.array,
+    rho_nnow: np.array,
+    theta_v_nnow: np.array,
+    inv_ddqz_z_full: np.array,
+    vwind_impl_wgt: np.array,
+    theta_v_ic: np.array,
+    rho_ic: np.array,
+    dtime: float,
+    rd: float,
+    cvd: float,
+) -> tuple[np.array, np.array]:
+    z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
+
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
+    return z_beta, z_alpha
+
+
 class TestMoSolveNonhydroStencil44(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_44
     OUTPUTS = ("z_beta", "z_alpha")
@@ -35,15 +55,24 @@ class TestMoSolveNonhydroStencil44(StencilTest):
         vwind_impl_wgt: np.array,
         theta_v_ic: np.array,
         rho_ic: np.array,
-        dtime,
-        rd,
-        cvd,
+        dtime: float,
+        rd: float,
+        cvd: float,
         **kwargs,
     ) -> dict:
-        z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
-
-        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-        z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
+        z_beta, z_alpha = mo_solve_nonhydro_stencil_44_numpy(
+            mesh,
+            exner_nnow,
+            rho_nnow,
+            theta_v_nnow,
+            inv_ddqz_z_full,
+            vwind_impl_wgt,
+            theta_v_ic,
+            rho_ic,
+            dtime,
+            rd,
+            cvd,
+        )
         return dict(z_beta=z_beta, z_alpha=z_alpha)
 
     @pytest.fixture

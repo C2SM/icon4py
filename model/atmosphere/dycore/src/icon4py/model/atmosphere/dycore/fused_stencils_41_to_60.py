@@ -115,9 +115,14 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     kstart_moist: int32,
     horizontal_lower: int32,
     horizontal_upper: int32,
+    horizontal_lower_1: int32,
+    horizontal_upper_1: int32,
 ):
     # horizontal_lower = start_cell_nudging
-    # horizontal_upper=end_cell_local
+    # horizontal_upper = end_cell_local
+    # horizontal_lower_1 = cell_startindex_nudging_plus1
+    # horizontal_upper_1 = cell_endindex_interior
+
     if idiv_method == 1:
         z_flxdiv_mass, z_flxdiv_theta = where(
             horizontal_lower <= horz_idx < horizontal_upper,
@@ -131,7 +136,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
 
     z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q = where(
         (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < (n_lev + int32(1))),
-        # TODO: edit tests
         nhsolve_prog._stencils_43_44_45_45b(
             z_w_expl=z_w_expl,
             w_nnow=w_nnow,
@@ -170,7 +174,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     w_nnew, z_contr_w_fl_l, z_rho_expl, z_exner_expl = where(
         (horizontal_lower <= horz_idx < horizontal_upper)
         & (n_lev <= vert_idx < (n_lev + int32(1))),
-        # TODO: edit tests
         nhsolve_prog._stencils_47_48_49(
             w_nnew=w,
             z_contr_w_fl_l=z_contr_w_fl_l,
@@ -187,9 +190,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             ddt_exner_phy=ddt_exner_phy,
             k_field=k_field,
             dtime=dtime,
-            # TODO: think about what to do here
-            cell_startindex_nudging_plus1=horizontal_lower,
-            cell_endindex_interior=horizontal_upper,
+            cell_startindex_nudging_plus1=horizontal_lower_1,
+            cell_endindex_interior=horizontal_upper_1,
             nlev=n_lev,
             nlev_k=n_lev + 1,
         ),
@@ -229,7 +231,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
 
     w = where(
         (horizontal_lower <= horz_idx < horizontal_upper) & (int32(1) <= vert_idx),
-        # TODO: edit tests
         _mo_solve_nonhydro_stencil_53_scan(
             z_q=z_q,
             w=w,
@@ -356,9 +357,14 @@ def fused_solve_nonhdyro_stencil_41_to_60_corrector(
     r_nsubsteps: float,
     horizontal_lower: int32,
     horizontal_upper: int32,
+    horizontal_lower_1: int32,
+    horizontal_upper_1: int32,
 ):
     # horizontal_lower = start_cell_nudging
     # horizontal_upper = end_cell_local
+    # horizontal_lower_1 = cell_startindex_nudging_plus1
+    # horizontal_upper_1 = cell_endindex_interior
+
     if idiv_method == 1:
         # verified for e-9
         z_flxdiv_mass, z_flxdiv_theta = where(
@@ -374,7 +380,6 @@ def fused_solve_nonhdyro_stencil_41_to_60_corrector(
     if itime_scheme == 4:
         (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
             (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < nlev + 1),
-            # TODO: edit tests
             nhsolve_prog._stencils_42_44_45_45b(
                 z_w_expl=z_w_expl,
                 w_nnow=w_nnow,
@@ -408,7 +413,6 @@ def fused_solve_nonhdyro_stencil_41_to_60_corrector(
     else:
         (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
             (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < nlev + 1),
-            # TODO: edit tests
             nhsolve_prog._stencils_43_44_45_45b(
                 z_w_expl=z_w_expl,
                 w_nnow=w_nnow,
@@ -446,7 +450,6 @@ def fused_solve_nonhdyro_stencil_41_to_60_corrector(
 
     w, z_contr_w_fl_l, z_rho_expl, z_exner_expl = where(
         (horizontal_lower <= horz_idx < horizontal_upper) & (nlev <= vert_idx < (nlev + int32(1))),
-        # TODO: edit tests
         nhsolve_prog._stencils_47_48_49(
             w_nnew=w,
             z_contr_w_fl_l=z_contr_w_fl_l,
@@ -463,9 +466,8 @@ def fused_solve_nonhdyro_stencil_41_to_60_corrector(
             ddt_exner_phy=ddt_exner_phy,
             k_field=k_field,
             dtime=dtime,
-            # TODO: think about what to do here
-            cell_startindex_nudging_plus1=horizontal_lower,
-            cell_endindex_interior=horizontal_upper,
+            cell_startindex_nudging_plus1=horizontal_lower_1,
+            cell_endindex_interior=horizontal_upper_1,
             nlev=nlev,
             nlev_k=nlev + 1,
         ),
@@ -505,7 +507,6 @@ def fused_solve_nonhdyro_stencil_41_to_60_corrector(
 
     w = where(
         (horizontal_lower <= horz_idx < horizontal_upper) & (int32(1) <= vert_idx),
-        # TODO: edit tests
         _mo_solve_nonhydro_stencil_53_scan(
             z_q=z_q,
             w=w,
@@ -550,7 +551,6 @@ def fused_solve_nonhdyro_stencil_41_to_60_corrector(
         if lclean_mflx:
             mass_flx_ic = where(
                 (horizontal_lower <= horz_idx < horizontal_upper),
-                # TODO: edit tests
                 _set_zero_c_k(),
                 mass_flx_ic,
             )
