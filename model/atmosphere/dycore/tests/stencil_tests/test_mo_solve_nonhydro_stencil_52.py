@@ -13,7 +13,7 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
     mo_solve_nonhydro_stencil_52,
