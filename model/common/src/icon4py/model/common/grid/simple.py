@@ -406,6 +406,7 @@ class SimpleGrid(BaseGrid):
     _VERTICES = 9
 
     def __init__(self):
+        """Instantiate a SimpleGrid used for testing purposes."""
         super().__init__()
         self._configure()
 

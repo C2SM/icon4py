@@ -50,12 +50,12 @@ def test_velocity_init(
     damping_height,
 ):
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflat_gradp=int32(grid_savepoint.nflat_gradp),
+        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
         nflatlev=int32(grid_savepoint.nflatlev()),
     )
 
@@ -89,11 +89,11 @@ def test_verify_velocity_init_against_regular_savepoint(
     dtime = savepoint.get_metadata("dtime").get("dtime")
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflat_gradp=int32(grid_savepoint.nflat_gradp),
+        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
         nflatlev=int32(grid_savepoint.nflatlev()),
     )
 
@@ -165,7 +165,7 @@ def test_velocity_predictor_step(
     )
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
 
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -174,7 +174,7 @@ def test_velocity_predictor_step(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
         nflatlev=int32(grid_savepoint.nflatlev()),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp),
+        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
     )
 
     velocity_advection = VelocityAdvection(
@@ -226,20 +226,20 @@ def test_velocity_predictor_step(
     # stencil 09
     assert dallclose(
         np.asarray(icon_result_z_w_concorr_mc)[
-            3316:20896, vertical_params.nflatlev : icon_grid.n_lev()
+            3316:20896, vertical_params.nflatlev : icon_grid.num_levels
         ],
         np.asarray(velocity_advection.z_w_concorr_mc)[
-            3316:20896, vertical_params.nflatlev : icon_grid.n_lev()
+            3316:20896, vertical_params.nflatlev : icon_grid.num_levels
         ],
         atol=1.0e-15,
     )
     # stencil 10
     assert dallclose(
         np.asarray(icon_result_w_concorr_c)[
-            3316:20896, vertical_params.nflatlev + 1 : icon_grid.n_lev()
+            3316:20896, vertical_params.nflatlev + 1 : icon_grid.num_levels
         ],
         np.asarray(diagnostic_state.w_concorr_c)[
-            3316:20896, vertical_params.nflatlev + 1 : icon_grid.n_lev()
+            3316:20896, vertical_params.nflatlev + 1 : icon_grid.num_levels
         ],
         atol=1.0e-15,
     )
@@ -318,7 +318,7 @@ def test_velocity_corrector_step(
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
 
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -327,7 +327,7 @@ def test_velocity_corrector_step(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
         nflatlev=int32(grid_savepoint.nflatlev()),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp),
+        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
     )
 
     velocity_advection = VelocityAdvection(

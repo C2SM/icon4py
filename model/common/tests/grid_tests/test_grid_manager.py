@@ -252,7 +252,7 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    seralized_v2e = grid_savepoint.v2e()[0 : grid.num_vertices(), :]
+    seralized_v2e = grid_savepoint.v2e()[0 : grid.num_vertices, :]
     # there are vertices at the boundary of a local domain or at a pentagon point that have less than
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
@@ -268,7 +268,7 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    serialized_v2c = grid_savepoint.v2c()[0 : grid.num_vertices(), :]
+    serialized_v2c = grid_savepoint.v2c()[0 : grid.num_vertices, :]
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
     # hence in the grid file there are "missing values"
@@ -314,7 +314,7 @@ def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
 
-    serialized_e2v = grid_savepoint.e2v()[0 : grid.num_edges(), :]
+    serialized_e2v = grid_savepoint.e2v()[0 : grid.num_edges, :]
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
     assert not has_invalid_index(serialized_e2v)
@@ -332,7 +332,7 @@ def has_invalid_index(ar: np.ndarray):
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    serialized_e2c = grid_savepoint.e2c()[0 : grid.num_edges(), :]
+    serialized_e2c = grid_savepoint.e2c()[0 : grid.num_edges, :]
     # there are edges at the boundary that have only one
     # neighboring cell, there are "missing values" in the grid file
     # and here they do not get substituted in the ICON preprocessing
@@ -348,7 +348,7 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
 
-    serialized_c2e = grid_savepoint.c2e()[0 : grid.num_cells(), :]
+    serialized_c2e = grid_savepoint.c2e()[0 : grid.num_cells, :]
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
     # first place
     # hence there are no "missing values" in the grid file
@@ -365,7 +365,7 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     assert np.allclose(
         grid.get_c2e2c_offset_provider().table,
-        grid_savepoint.c2e2c()[0 : grid.num_cells(), :],
+        grid_savepoint.c2e2c()[0 : grid.num_cells, :],
     )
 
 
@@ -394,7 +394,7 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     # despite that: ordering is different
     assert np.allclose(
         grid.get_e2c2v_offset_provider().table,
-        grid_savepoint.e2c2v()[0 : grid.num_edges(), :],
+        grid_savepoint.e2c2v()[0 : grid.num_edges, :],
     )
 
 
@@ -404,7 +404,7 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     c2v = grid.get_c2v_offset_provider().table
-    assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.num_cells(), :])
+    assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.num_cells, :])
 
 
 def init_grid_manager(fname):

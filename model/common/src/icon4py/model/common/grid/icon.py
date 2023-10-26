@@ -40,6 +40,7 @@ def _neighbortable_offset_provider_for_1d_sparse_fields(
 
 class IconGrid(BaseGrid):
     def __init__(self):
+        """Instantiate a grid according to the ICON model."""
         super().__init__()
         self.start_indices = {}
         self.end_indices = {}
@@ -146,7 +147,7 @@ class IconGrid(BaseGrid):
         return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
 
     def get_e2ecv_offset_provider(self):
-        return self._neighbortable_offset_provider_for_1d_sparse_fields(
+        return _neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim
         )
 

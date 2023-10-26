@@ -86,7 +86,7 @@ def test_nonhydro_predictor_step(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
@@ -160,7 +160,7 @@ def test_nonhydro_predictor_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -469,7 +469,7 @@ def test_nonhydro_corrector_step(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
         nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
     grid = SimpleGrid()
@@ -553,7 +553,7 @@ def test_nonhydro_corrector_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -678,7 +678,7 @@ def test_run_solve_nonhydro_single_step(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
@@ -766,7 +766,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -843,7 +843,7 @@ def test_run_solve_nonhydro_multi_step(
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
@@ -918,7 +918,7 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()

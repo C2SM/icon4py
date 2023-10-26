@@ -107,7 +107,7 @@ def test_diffusion_init(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
         nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
     )
 
     meta = diffusion_savepoint_init.get_metadata("linit", "date")
@@ -141,7 +141,7 @@ def test_diffusion_init(
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_ec))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_e))
 
-    shape_k = (icon_grid.n_lev(),)
+    shape_k = (icon_grid.num_levels,)
     expected_smag_limit = smag_limit_numpy(
         diff_multfac_vn_numpy,
         shape_k,
@@ -236,7 +236,7 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
         nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
@@ -287,7 +287,7 @@ def test_run_diffusion_single_step(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
         nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     config = r04b09_diffusion_config
     additional_parameters = DiffusionParams(config)
