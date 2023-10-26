@@ -30,6 +30,8 @@ try:
     import mpi4py
 
     mpi4py.rc.initialize = False
+    mpi4py.rc.finalize = False
+
 except ImportError:
     mpi4py = None
     ghex = None

@@ -207,6 +207,9 @@ def test_run_solve_nonhydro_single_step(
     )
 
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}:  entering : solve_nonhydro.time_step"
+    )
 
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,

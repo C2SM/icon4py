@@ -1,4 +1,6 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
+# TODO: This license is not consistent with license used in the project.
+#       Delete the inconsistent license and above line and rerun pre-commit to insert a good license.
 #
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
@@ -9,11 +11,15 @@
 # version. See the LICENSE.txt file at the top-level directory of this
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
+
 # SPDX-License-Identifier: GPL-3.0-or-later
 import pytest
 
 from icon4py.model.common.decomposition.definitions import ProcessProperties, get_runtype
-from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
+from icon4py.model.common.decomposition.mpi_decomposition import (
+    finalize_mpi,
+    get_multinode_properties,
+)
 
 
 def check_comm_size(props: ProcessProperties, sizes=(1, 2, 4)):
@@ -21,10 +27,12 @@ def check_comm_size(props: ProcessProperties, sizes=(1, 2, 4)):
         pytest.xfail(f"wrong comm size: {props.comm_size}: test only works for comm-sizes: {sizes}")
 
 
-# TODO (magdalena) do we still need the parametrization?
-@pytest.fixture(params=[False], scope="session")
+@pytest.fixture(scope="session")
 def processor_props(request):
-    with_mpi = request.param
-    runtype = get_runtype(with_mpi)
+    runtype = get_runtype(with_mpi=True)
     yield get_multinode_properties(runtype)
-    # TODO (magdalena) fix inproper mpi cleanup
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup(request):
+    request.addfinalizer(finalize_mpi)
