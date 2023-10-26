@@ -21,6 +21,28 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_solve_nonhydro_stencil_42_numpy(
+    mesh,
+    w_nnow: np.array,
+    ddt_w_adv_ntl1: np.array,
+    ddt_w_adv_ntl2: np.array,
+    z_th_ddz_exner_c: np.array,
+    rho_ic: np.array,
+    w_concorr_c: np.array,
+    vwind_expl_wgt: np.array,
+    dtime,
+    wgt_nnow_vel,
+    wgt_nnew_vel,
+    cpd,
+) -> tuple[np.array, np.array]:
+    z_w_expl = w_nnow + dtime * (
+        wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
+    )
+    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+    return z_w_expl, z_contr_w_fl_l
+
+
 class TestMoSolveNonhydroStencil42(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_42
     OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
@@ -35,17 +57,26 @@ class TestMoSolveNonhydroStencil42(StencilTest):
         rho_ic: np.array,
         w_concorr_c: np.array,
         vwind_expl_wgt: np.array,
-        dtime,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
-        cpd,
+        dtime: float,
+        wgt_nnow_vel: float,
+        wgt_nnew_vel: float,
+        cpd: float,
         **kwargs,
-    ) -> tuple[np.array]:
-        z_w_expl = w_nnow + dtime * (
-            wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
+    ) -> dict:
+        z_w_expl, z_contr_w_fl_l = mo_solve_nonhydro_stencil_42_numpy(
+            mesh,
+            w_nnow,
+            ddt_w_adv_ntl1,
+            ddt_w_adv_ntl2,
+            z_th_ddz_exner_c,
+            rho_ic,
+            w_concorr_c,
+            vwind_expl_wgt,
+            dtime,
+            wgt_nnow_vel,
+            wgt_nnew_vel,
+            cpd,
         )
-        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-        z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture

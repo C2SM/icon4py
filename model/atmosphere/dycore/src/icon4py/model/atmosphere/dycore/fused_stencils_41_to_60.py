@@ -115,13 +115,9 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     kstart_moist: int32,
     horizontal_lower: int32,
     horizontal_upper: int32,
-    horizontal_lower_1: int32,
-    horizontal_upper_1: int32,
 ):
     # horizontal_lower = start_cell_nudging
     # horizontal_upper = end_cell_local
-    # horizontal_lower_1 = cell_startindex_nudging_plus1
-    # horizontal_upper_1 = cell_endindex_interior
 
     if idiv_method == 1:
         z_flxdiv_mass, z_flxdiv_theta = where(
@@ -190,8 +186,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             ddt_exner_phy=ddt_exner_phy,
             k_field=k_field,
             dtime=dtime,
-            cell_startindex_nudging_plus1=horizontal_lower_1,
-            cell_endindex_interior=horizontal_upper_1,
+            cell_startindex_nudging_plus1=horizontal_lower,
+            cell_endindex_interior=horizontal_upper,
             nlev=n_lev,
             nlev_k=n_lev + 1,
         ),
@@ -375,13 +371,9 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
     r_nsubsteps: float,
     horizontal_lower: int32,
     horizontal_upper: int32,
-    horizontal_lower_1: int32,
-    horizontal_upper_1: int32,
 ):
     # horizontal_lower = start_cell_nudging
     # horizontal_upper = end_cell_local
-    # horizontal_lower_1 = cell_startindex_nudging_plus1
-    # horizontal_upper_1 = cell_endindex_interior
 
     if idiv_method == 1:
         # verified for e-9
@@ -485,8 +477,8 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
             ddt_exner_phy=ddt_exner_phy,
             k_field=k_field,
             dtime=dtime,
-            cell_startindex_nudging_plus1=horizontal_lower_1,
-            cell_endindex_interior=horizontal_upper_1,
+            cell_startindex_nudging_plus1=horizontal_lower,
+            cell_endindex_interior=horizontal_upper,
             nlev=n_lev,
             nlev_k=n_lev + 1,
         ),
@@ -677,8 +669,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
     kstart_moist: int32,
     horizontal_lower: int32,
     horizontal_upper: int32,
-    horizontal_lower_1: int32,
-    horizontal_upper_1: int32,
     istep: int32,
 ):
     if istep == 1:
@@ -762,8 +752,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
             kstart_moist=kstart_moist,
             horizontal_lower=horizontal_lower,
             horizontal_upper=horizontal_upper,
-            horizontal_lower_1=horizontal_lower_1,
-            horizontal_upper_1=horizontal_upper_1,
         )
     else:
         (
@@ -846,8 +834,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
             r_nsubsteps=r_nsubsteps,
             horizontal_lower=horizontal_lower,
             horizontal_upper=horizontal_upper,
-            horizontal_lower_1=horizontal_lower_1,
-            horizontal_upper_1=horizontal_upper_1,
         )
     return (
         z_flxdiv_mass,
@@ -942,8 +928,6 @@ def fused_solve_nonhdyro_stencil_41_to_60(
     kstart_moist: int32,
     horizontal_lower: int32,
     horizontal_upper: int32,
-    horizontal_lower_1: int32,
-    horizontal_upper_1: int32,
     istep: int32,
 ):
     _fused_solve_nonhdyro_stencil_41_to_60(
@@ -1018,7 +1002,5 @@ def fused_solve_nonhdyro_stencil_41_to_60(
         kstart_moist=kstart_moist,
         horizontal_lower=horizontal_lower,
         horizontal_upper=horizontal_upper,
-        horizontal_lower_1=horizontal_lower_1,
-        horizontal_upper_1=horizontal_upper_1,
         istep=istep,
     )
