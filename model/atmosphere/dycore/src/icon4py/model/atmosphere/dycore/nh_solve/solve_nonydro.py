@@ -301,7 +301,7 @@ class SolveNonhydro:
         self.cell_areas: Optional[Field[[CellDim], float]] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
-        self.enh_divdamp_fac = None
+        self.enh_divdamp_fac: Field[[KDim], float] = None
         self.scal_divdamp: Field[[KDim], float] = None
         self.p_test_run = True
         self.jk_start = 0  # used in stencil_55
@@ -319,10 +319,6 @@ class SolveNonhydro:
         edge_geometry: EdgeParams,
         cell_areas: Field[[CellDim], float],
         owner_mask: Field[[CellDim], bool],
-        a_vec: Field[[KDim], float],
-        enh_smag_fac: Field[[KDim], float],
-        fac: tuple,
-        z: tuple,
     ):
         """
         Initialize NonHydrostatic granule with configuration.
@@ -355,21 +351,28 @@ class SolveNonhydro:
         else:
             self.jk_start = 0
 
-        out = enh_smag_fac
         _en_smag_fac_for_zero_nshift(
-            a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
+            self.vertical_params.vct_a,
+            self.config.divdamp_fac,
+            self.config.divdamp_fac2,
+            self.config.divdamp_fac3,
+            self.config.divdamp_fac4,
+            self.config.divdamp_z,
+            self.config.divdamp_z2,
+            self.config.divdamp_z3,
+            self.config.divdamp_z4,
+            out=self.enh_divdamp_fac,
+            offset_provider={"Koff": KDim},
         )
-        self.enh_divdamp_fac = enh_smag_fac
 
         cell_areas_avg = np.sum(cell_areas) / float(self.grid.num_cells())
         # TODO @tehrengruber: fix power
         scal_divdamp_calcs.with_backend(run_gtfn)(
-            enh_smag_fac,
-            out,
+            self.enh_divdamp_fac,
+            self.scal_divdamp,
             cell_areas_avg,
             offset_provider={},
         )
-        self.scal_divdamp = out
         self.p_test_run = True
         self._initialized = True
 
@@ -403,6 +406,8 @@ class SolveNonhydro:
         self.z_w_concorr_me = _allocate(EdgeDim, KDim, mesh=self.grid)
         self.z_hydro_corr_horizontal = _allocate(EdgeDim, mesh=self.grid)
         self.z_raylfac = _allocate(KDim, mesh=self.grid)
+        self.enh_divdamp_fac = _allocate(KDim, mesh=self.grid)
+        self.scal_divdamp = _allocate(KDim, mesh=self.grid)
 
     def set_timelevels(self, nnow, nnew):
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
@@ -1520,11 +1525,15 @@ class SolveNonhydro:
                 )
 
             # TODO: this does not get accessed in FORTRAN
+            print(
+                f"damping: divdamp_fac_o2 = {self.config.divdamp_fac_o2} divdamp_fac={self.config.divdamp_fac}"
+            )
             if (
                 self.config.divdamp_order == 24
                 and self.config.divdamp_fac_o2 <= 4 * self.config.divdamp_fac
             ):
                 if self.grid.limited_area():
+                    print(f"running stencil_27: 2n order div damping")
                     mo_solve_nonhydro_stencil_27.with_backend(run_gtfn)(
                         scal_divdamp=self.scal_divdamp,
                         bdy_divdamp=bdy_divdamp,
@@ -1538,6 +1547,9 @@ class SolveNonhydro:
                         offset_provider={},
                     )
                 else:
+                    logging.debug(
+                        f"running  mo_solve_nonhydro_4th_order_divdamp: 4th order div damping"
+                    )
                     mo_solve_nonhydro_4th_order_divdamp.with_backend(run_gtfn)(
                         scal_divdamp=self.scal_divdamp,
                         z_graddiv2_vn=self.z_graddiv2_vn,

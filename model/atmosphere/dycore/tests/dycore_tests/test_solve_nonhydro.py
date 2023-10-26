@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import logging
+
 import numpy as np
 import pytest
 
@@ -27,7 +29,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
@@ -83,23 +85,13 @@ def test_nonhydro_predictor_step(
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
-        rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
-        nflatlev=grid_savepoint.nflatlev(),
-    )
+    vertical_params = create_vertical_params(damping_height, grid_savepoint)
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     recompute = sp_v.get_metadata("recompute").get("recompute")
     dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     linit = sp_v.get_metadata("linit").get("linit")
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
     nnew = 1
 
@@ -142,22 +134,7 @@ def test_nonhydro_predictor_step(
         exner=sp.exner_new(),
     )
 
-    z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
-    )
+    z_fields = allocate_z_fields(icon_grid)
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
@@ -176,10 +153,6 @@ def test_nonhydro_predictor_step(
         edge_geometry=edge_geometry,
         cell_areas=cell_geometry.area,
         owner_mask=grid_savepoint.c_owner_mask(),
-        a_vec=a_vec,
-        enh_smag_fac=enh_smag_fac,
-        fac=fac,
-        z=z,
     )
 
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
@@ -443,6 +416,34 @@ def test_nonhydro_predictor_step(
     assert dallclose(np.asarray(icon_result_theta_v_new), np.asarray(prognostic_state_nnew.theta_v))
 
 
+def allocate_z_fields(icon_grid):
+    return ZFields(
+        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+    )
+
+
+def create_vertical_params(damping_height, grid_savepoint):
+    return VerticalModelParams(
+        vct_a=grid_savepoint.vct_a(),
+        rayleigh_damping_height=damping_height,
+        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflatlev=grid_savepoint.nflatlev(),
+    )
+
+
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep, step_date_init, step_date_exit",
@@ -461,7 +462,9 @@ def test_nonhydro_corrector_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_velocity_exit,
+    caplog,
 ):
+    caplog.set_level(logging.DEBUG)
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
     nonhydro_params = NonHydrostaticParams(config)
@@ -480,10 +483,6 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0  # TODO: @abishekg7 read from serialized data?
     nnew = 1
 
@@ -569,10 +568,6 @@ def test_nonhydro_corrector_step(
         edge_geometry=edge_geometry,
         cell_areas=cell_geometry.area,
         owner_mask=grid_savepoint.c_owner_mask(),
-        a_vec=a_vec,
-        enh_smag_fac=enh_smag_fac,
-        fac=fac,
-        z=z,
     )
 
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
@@ -690,10 +685,6 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
     nnew = 1
     recompute = sp_v.get_metadata("recompute").get("recompute")
@@ -739,22 +730,7 @@ def test_run_solve_nonhydro_single_step(
         exner=sp.exner_new(),
     )
 
-    z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
-    )
+    z_fields = allocate_z_fields(icon_grid)
 
     nh_constants = NHConstants(
         wgt_nnow_rth=sp.wgt_nnow_rth(),
@@ -782,10 +758,6 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_areas=cell_geometry.area,
         owner_mask=grid_savepoint.c_owner_mask(),
-        a_vec=a_vec,
-        enh_smag_fac=enh_smag_fac,
-        fac=fac,
-        z=z,
     )
 
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
@@ -856,10 +828,6 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
     nnew = 1
     recompute = sp_v.get_metadata("recompute").get("recompute")
@@ -891,22 +859,7 @@ def test_run_solve_nonhydro_multi_step(
 
     prognostic_state_ls, prognostic_state_nnew = create_prognostic_states(sp)
 
-    z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
-    )
+    z_fields = allocate_z_fields(icon_grid)
 
     nh_constants = NHConstants(
         wgt_nnow_rth=sp.wgt_nnow_rth(),
@@ -934,10 +887,6 @@ def test_run_solve_nonhydro_multi_step(
         edge_geometry=edge_geometry,
         cell_areas=cell_geometry.area,
         owner_mask=grid_savepoint.c_owner_mask(),
-        a_vec=a_vec,
-        enh_smag_fac=enh_smag_fac,
-        fac=fac,
-        z=z,
     )
 
     for _ in range(r_nsubsteps):
