@@ -475,7 +475,6 @@ def test_nonhydro_corrector_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -550,6 +549,9 @@ def test_nonhydro_corrector_step(
         scal_divdamp=sp.scal_divdamp(),
         scal_divdamp_o2=sp.scal_divdamp_o2(),
     )
+    print(f"nh_constants.scal_divdamp = {nh_constants.scal_divdamp}")
+    print(f"scal_divdamp_o2 = {sp.scal_divdamp_o2}")
+    scal_divdamp_o2 = sp.scal_divdamp_o2()  # only used in stencil_26
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
@@ -572,11 +574,13 @@ def test_nonhydro_corrector_step(
 
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
     solve_nonhydro.set_timelevels(nnow, nnew)
+
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
         z_fields=z_fields,
         prep_adv=prep_adv,
+        scal_divdamp_o2=scal_divdamp_o2,
         dtime=dtime,
         nnew=nnew,
         nnow=nnow,
@@ -677,7 +681,6 @@ def test_run_solve_nonhydro_single_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
@@ -761,7 +764,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
-
+    divdamp_fac_o2 = 0.032  # TODO (magdalena) get from somewhere??
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
@@ -769,6 +772,7 @@ def test_run_solve_nonhydro_single_step(
         z_fields=z_fields,
         nh_constants=nh_constants,
         bdy_divdamp=sp.bdy_divdamp(),  # TODO (magdalena) local calculation in solve non-hydro based on nudge_coeff_e and scal_divdamp (also locally calculated)
+        divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,

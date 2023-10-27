@@ -14,7 +14,7 @@ import logging
 
 import numpy as np
 import serialbox as ser
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 
@@ -825,6 +825,9 @@ class IconNonHydroInitSavepoint(IconSavepoint):
 
     def scal_divdamp_o2(self) -> float:
         return self.serializer.read("scal_divdamp_o2", self.savepoint)[0]
+
+    def scal_divdamp_field(self) -> Field[[KDim], float]:
+        return self._get_field("scal_divdamp", KDim)
 
     def theta_v_ic(self):
         return self._get_field("theta_v_ic", CellDim, KDim)
