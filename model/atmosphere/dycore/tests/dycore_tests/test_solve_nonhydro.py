@@ -151,7 +151,7 @@ def test_nonhydro_predictor_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
-        cell_areas=cell_geometry.area,
+        cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
@@ -568,7 +568,7 @@ def test_nonhydro_corrector_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
-        cell_areas=cell_geometry.area,
+        cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
@@ -759,7 +759,7 @@ def test_run_solve_nonhydro_single_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
-        cell_areas=cell_geometry.area,
+        cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
@@ -889,7 +889,7 @@ def test_run_solve_nonhydro_multi_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
-        cell_areas=cell_geometry.area,
+        cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 

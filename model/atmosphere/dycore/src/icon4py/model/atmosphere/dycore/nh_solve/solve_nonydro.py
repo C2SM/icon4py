@@ -148,7 +148,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _calculate_bdy_divdamp,
     _en_smag_fac_for_zero_nshift,
     compute_z_raylfac,
-    scal_divdamp_calcs,
     set_zero_c_k,
     set_zero_e_k,
     _scal_divdamp_NEW,
@@ -156,7 +155,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
+from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex, CellParams
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -299,7 +298,7 @@ class SolveNonhydro:
         self.interpolation_state: Optional[InterpolationState] = None
         self.vertical_params: Optional[VerticalModelParams] = None
         self.edge_geometry: Optional[EdgeParams] = None
-        self.cell_areas: Optional[Field[[CellDim], float]] = None
+        self.cell_params: Optional[CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
         self.enh_divdamp_fac: Field[[KDim], float] = None
@@ -318,7 +317,7 @@ class SolveNonhydro:
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
         edge_geometry: EdgeParams,
-        cell_areas: Field[[CellDim], float],
+        cell_geometry: CellParams,
         owner_mask: Field[[CellDim], bool],
     ):
         """
@@ -333,7 +332,7 @@ class SolveNonhydro:
         self.interpolation_state: InterpolationState = interpolation_state
         self.vertical_params = vertical_params
         self.edge_geometry = edge_geometry
-        self.cell_areas = cell_areas
+        self.cell_params = cell_geometry
         self.velocity_advection = VelocityAdvection(
             grid,
             metric_state_nonhydro,
@@ -430,7 +429,7 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-        mean_cell_area = np.sum(self.cell_areas) / float(self.grid.num_cells())
+        mean_cell_area = np.sum(self.cell_params.area) / float(self.grid.num_cells())
         scal_divdamp_o2 = divdamp_fac_o2 * mean_cell_area
         # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
         # delta_x**2 is approximated by the mean cell area
@@ -588,7 +587,7 @@ class SolveNonhydro:
             z_vt_ie=z_fields.z_vt_ie,
             dtime=dtime,
             ntnd=self.ntl1,
-            cell_areas=self.cell_areas,
+            cell_areas=self.cell_params.area,
         )
 
         p_dthalf = 0.5 * dtime
@@ -1423,7 +1422,7 @@ class SolveNonhydro:
             z_vt_ie=z_fields.z_vt_ie,
             dtime=dtime,
             ntnd=self.ntl2,
-            cell_areas=self.cell_areas,
+            cell_areas=self.cell_params.area,
         )
 
         nvar = nnew
