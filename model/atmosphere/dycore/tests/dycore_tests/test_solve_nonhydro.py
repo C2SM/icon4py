@@ -30,7 +30,6 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 @pytest.mark.datatest
@@ -76,7 +75,6 @@ def test_nonhydro_predictor_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    savepoint_velocity_exit,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -95,44 +93,7 @@ def test_nonhydro_predictor_step(
     nnow = 0
     nnew = 1
 
-    diagnostic_state_nh = DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
-        grf_tend_rho=sp.grf_tend_rho(),
-        grf_tend_thv=sp.grf_tend_thv(),
-        grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
-        grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-    )
-
-    prognostic_state_nnow = PrognosticState(
-        w=sp.w_now(),
-        vn=sp.vn_now(),
-        theta_v=sp.theta_v_now(),
-        rho=sp.rho_now(),
-        exner=sp.exner_now(),
-    )
-
-    prognostic_state_nnew = PrognosticState(
-        w=sp.w_new(),
-        vn=sp.vn_new(),
-        theta_v=sp.theta_v_new(),
-        rho=sp.rho_new(),
-        exner=sp.exner_new(),
-    )
+    diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
     z_fields = allocate_z_fields(icon_grid)
 
@@ -155,7 +116,7 @@ def test_nonhydro_predictor_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    prognostic_state_ls = create_prognostic_states(sp)
     solve_nonhydro.set_timelevels(nnow, nnew)
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -178,6 +139,7 @@ def test_nonhydro_predictor_step(
     icon_result_w_concorr_c = sp_exit.w_concorr_c()
     icon_result_mass_fl_e = sp_exit.mass_fl_e()
 
+    prognostic_state_nnew = prognostic_state_ls[1]
     # TODO: @abishekg7 remove bounds from asserts?
     # stencils 2, 3
     assert dallclose(
@@ -416,6 +378,31 @@ def test_nonhydro_predictor_step(
     assert dallclose(np.asarray(icon_result_theta_v_new), np.asarray(prognostic_state_nnew.theta_v))
 
 
+def construct_diagnostics(sp, sp_v):
+    return DiagnosticStateNonHydro(
+        theta_v_ic=sp.theta_v_ic(),
+        exner_pr=sp.exner_pr(),
+        rho_ic=sp.rho_ic(),
+        ddt_exner_phy=sp.ddt_exner_phy(),
+        grf_tend_rho=sp.grf_tend_rho(),
+        grf_tend_thv=sp.grf_tend_thv(),
+        grf_tend_w=sp.grf_tend_w(),
+        mass_fl_e=sp.mass_fl_e(),
+        ddt_vn_phy=sp.ddt_vn_phy(),
+        grf_tend_vn=sp.grf_tend_vn(),
+        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        vt=sp_v.vt(),
+        vn_ie=sp_v.vn_ie(),
+        w_concorr_c=sp_v.w_concorr_c(),
+        rho_incr=None,  # sp.rho_incr(),
+        vn_incr=None,  # sp.vn_incr(),
+        exner_incr=None,  # sp.exner_incr(),
+    )
+
+
 def allocate_z_fields(icon_grid):
     return ZFields(
         z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
@@ -461,7 +448,6 @@ def test_nonhydro_corrector_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_velocity_exit,
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
@@ -485,44 +471,7 @@ def test_nonhydro_corrector_step(
     nnow = 0  # TODO: @abishekg7 read from serialized data?
     nnew = 1
 
-    diagnostic_state_nh = DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
-        grf_tend_rho=sp.grf_tend_rho(),
-        grf_tend_thv=sp.grf_tend_thv(),
-        grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
-        grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
-        vt=sp_v.vt(),  # sp_v.vt(), #TODO: @abishekg7 change back to sp_v
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-    )
-
-    prognostic_state_nnow = PrognosticState(
-        w=sp.w_now(),
-        vn=sp.vn_now(),
-        theta_v=sp.theta_v_now(),
-        rho=sp.rho_now(),
-        exner=sp.exner_now(),
-    )
-
-    prognostic_state_nnew = PrognosticState(
-        w=sp.w_new(),
-        vn=sp.vn_new(),
-        theta_v=sp.theta_v_new(),
-        rho=sp.rho_new(),
-        exner=sp.exner_new(),
-    )
+    diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
     z_fields = ZFields(
         z_gradh_exner=sp.z_gradh_exner(),
@@ -541,16 +490,11 @@ def test_nonhydro_corrector_step(
         z_vt_ie=sp_v.z_vt_ie(),
     )
 
-    nh_constants = NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
-        scal_divdamp=sp.scal_divdamp(),
-        scal_divdamp_o2=sp.scal_divdamp_o2(),
-    )
-    print(f"nh_constants.scal_divdamp = {nh_constants.scal_divdamp}")
-    print(f"scal_divdamp_o2 = {sp.scal_divdamp_o2}")
+    nh_constants = create_nh_constants(sp)
+    print(f"nh_constants.scal_divdamp = {sp.scal_divdamp()}")
+    print(f"nh_constants.scal_divdamp_field = {sp.scal_divdamp_field()}")
+
+    print(f"scal_divdamp_o2 = {sp.scal_divdamp_o2()}")
     scal_divdamp_o2 = sp.scal_divdamp_o2()  # only used in stencil_26
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
@@ -572,7 +516,7 @@ def test_nonhydro_corrector_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    prognostic_state_ls = create_prognostic_states(sp)
     solve_nonhydro.set_timelevels(nnow, nnew)
 
     solve_nonhydro.run_corrector_step(
@@ -664,7 +608,6 @@ def test_run_solve_nonhydro_single_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    savepoint_velocity_exit,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -717,32 +660,9 @@ def test_run_solve_nonhydro_single_step(
         exner_incr=None,  # sp.exner_incr(),
     )
 
-    prognostic_state_nnow = PrognosticState(
-        w=sp.w_now(),
-        vn=sp.vn_now(),
-        theta_v=sp.theta_v_now(),
-        rho=sp.rho_now(),
-        exner=sp.exner_now(),
-    )
-
-    prognostic_state_nnew = PrognosticState(
-        w=sp.w_new(),
-        vn=sp.vn_new(),
-        theta_v=sp.theta_v_new(),
-        rho=sp.rho_new(),
-        exner=sp.exner_new(),
-    )
-
     z_fields = allocate_z_fields(icon_grid)
 
-    nh_constants = NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
-        scal_divdamp=sp.scal_divdamp(),
-        scal_divdamp_o2=sp.scal_divdamp_o2(),
-    )
+    nh_constants = create_nh_constants(sp)
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
@@ -763,7 +683,7 @@ def test_run_solve_nonhydro_single_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    prognostic_state_ls = create_prognostic_states(sp)
     divdamp_fac_o2 = 0.032  # TODO (magdalena) get from somewhere??
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -782,7 +702,7 @@ def test_run_solve_nonhydro_single_step(
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
     )
-
+    prognostic_state_nnew = prognostic_state_ls[1]
     assert dallclose(
         np.asarray(sp_step_exit.theta_v_new()),
         np.asarray(prognostic_state_nnew.theta_v),
@@ -806,7 +726,6 @@ def test_run_solve_nonhydro_multi_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    savepoint_velocity_exit,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -823,7 +742,6 @@ def test_run_solve_nonhydro_multi_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     r_nsubsteps = grid_savepoint.get_metadata("nsteps").get("nsteps")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -838,41 +756,13 @@ def test_run_solve_nonhydro_multi_step(
     linit = sp_v.get_metadata("linit").get("linit")
     dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
 
-    diagnostic_state_nh = DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
-        grf_tend_rho=sp.grf_tend_rho(),
-        grf_tend_thv=sp.grf_tend_thv(),
-        grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
-        grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-    )
+    diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
     prognostic_state_ls, prognostic_state_nnew = create_prognostic_states(sp)
 
     z_fields = allocate_z_fields(icon_grid)
 
-    nh_constants = NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
-        scal_divdamp=sp.scal_divdamp(),
-        scal_divdamp_o2=sp.scal_divdamp_o2(),
-    )
+    nh_constants = create_nh_constants(sp)
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
@@ -977,6 +867,15 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert dallclose(np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner))
+
+
+def create_nh_constants(sp):
+    return NHConstants(
+        wgt_nnow_rth=sp.wgt_nnow_rth(),
+        wgt_nnew_rth=sp.wgt_nnew_rth(),
+        wgt_nnow_vel=sp.wgt_nnow_vel(),
+        wgt_nnew_vel=sp.wgt_nnew_vel(),
+    )
 
 
 def create_prognostic_states(sp):
