@@ -301,8 +301,9 @@ class SolveNonhydro:
         self.cell_params: Optional[CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
-        self.enh_divdamp_fac: Field[[KDim], float] = None
-        self.scal_divdamp: Field[[KDim], float] = None
+        self.enh_divdamp_fac: Optional[Field[[KDim], float]] = None
+        self.scal_divdamp: Optional[Field[[KDim], float]] = None
+        self._bdy_divdamp: Optional[Field[[KDim], float]] = None
         self.p_test_run = True
         self.jk_start = 0  # used in stencil_55
         self.ntl1 = 0
@@ -399,7 +400,7 @@ class SolveNonhydro:
         self.z_hydro_corr_horizontal = _allocate(EdgeDim, mesh=self.grid)
         self.z_raylfac = _allocate(KDim, mesh=self.grid)
         self.enh_divdamp_fac = _allocate(KDim, mesh=self.grid)
-
+        self._bdy_divdamp = _allocate(KDim, mesh=self.grid)
         self.scal_divdamp = _allocate(KDim, mesh=self.grid)
 
     def set_timelevels(self, nnow, nnew):
@@ -418,7 +419,6 @@ class SolveNonhydro:
         prep_adv: PrepAdvection,
         z_fields: ZFields,
         nh_constants: NHConstants,
-        bdy_divdamp: Field[[KDim], float],
         divdamp_fac_o2: float,
         dtime: float,
         idyn_timestep: float,
@@ -433,21 +433,20 @@ class SolveNonhydro:
         scal_divdamp_o2 = divdamp_fac_o2 * mean_cell_area
         # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
         # delta_x**2 is approximated by the mean cell area
-        scal_divdamp = _allocate(KDim, mesh=self.grid)
         _scal_divdamp_NEW(
             self.enh_divdamp_fac,
             int32(self.config.divdamp_order),
             mean_cell_area,
             divdamp_fac_o2,
-            out=scal_divdamp,
+            out=self.scal_divdamp,
             offset_provider={},
         )
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
         _calculate_bdy_divdamp(
-            scal_divdamp,
+            self.scal_divdamp,
             self.config.nudge_max_coeff,
             constants.dbl_eps,
-            out=bdy_divdamp,
+            out=self._bdy_divdamp,
             offset_provider={},
         )
 
@@ -499,7 +498,6 @@ class SolveNonhydro:
             nnow=nnow,
             lclean_mflx=lclean_mflx,
             nh_constants=nh_constants,
-            bdy_divdamp=bdy_divdamp,
             lprep_adv=lprep_adv,
         )
 
@@ -663,6 +661,7 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area():
+            print("predictor stencil_01 start")
             mo_solve_nonhydro_stencil_01.with_backend(run_gtfn)(
                 z_rth_pr_1=self.z_rth_pr_1,
                 z_rth_pr_2=self.z_rth_pr_2,
@@ -672,7 +671,8 @@ class SolveNonhydro:
                 vertical_end=self.grid.n_lev(),
                 offset_provider={},
             )
-
+            print("predictor stencil_01 start")
+        print("predictor stencil_02 3 start")
         nhsolve_prog.predictor_stencils_2_3.with_backend(run_gtfn)(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
             exner=prognostic_state[nnow].exner,
@@ -687,8 +687,10 @@ class SolveNonhydro:
             vertical_end=self.grid.n_lev() + 1,
             offset_provider={},
         )
+        print("predictor stencil_02 3 end")
 
         if self.config.igradp_method == 3:
+            print("predictor stencil_04 5 6 start")
             nhsolve_prog.predictor_stencils_4_5_6.with_backend(run_gtfn)(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
                 z_exner_ex_pr=self.z_exner_ex_pr,
@@ -704,11 +706,12 @@ class SolveNonhydro:
                 vertical_end=self.grid.n_lev() + 1,
                 offset_provider={"Koff": KDim},
             )
-
+            print("predictor stencil_04 5 6 end")
             if self.vertical_params.nflatlev == 1:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
+        print("predictor stencil_07 8 9 start")
         nhsolve_prog.predictor_stencils_7_8_9.with_backend(run_gtfn)(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
@@ -733,8 +736,10 @@ class SolveNonhydro:
             vertical_end=self.grid.n_lev(),
             offset_provider={"Koff": KDim},
         )
+        print("predictor stencil_07 8 9 end")
 
         # Perturbation theta at top and surface levels
+        print("predictor stencil_11 start")
         nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(run_gtfn)(
             wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
             z_rth_pr=self.z_rth_pr_2,
@@ -749,9 +754,11 @@ class SolveNonhydro:
             vertical_end=self.grid.n_lev() + 1,
             offset_provider={"Koff": KDim},
         )
+        print("predictor stencil_11 end")
 
         if self.config.igradp_method == 3:
             # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
+            print("predictor stencil_12 start")
             mo_solve_nonhydro_stencil_12.with_backend(run_gtfn)(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=self.metric_state_nonhydro.d2dexdz2_fac1_mc,
@@ -764,6 +771,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.n_lev(),
                 offset_provider={"Koff": KDim},
             )
+            print("predictor stencil_12 start")
 
         # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
         # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
@@ -1372,7 +1380,6 @@ class SolveNonhydro:
         nnew: int,
         nnow: int,
         lclean_mflx: bool,
-        bdy_divdamp: Field[[KDim], float],
         lprep_adv: bool,
     ):
         # Inverse value of ndyn_substeps for tracer advection precomputations
@@ -1544,7 +1551,7 @@ class SolveNonhydro:
                     print(f"running stencil_27: 2nd order div damping")
                     mo_solve_nonhydro_stencil_27.with_backend(run_gtfn)(
                         scal_divdamp=self.scal_divdamp,
-                        bdy_divdamp=bdy_divdamp,
+                        bdy_divdamp=self._bdy_divdamp,
                         nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
                         z_graddiv2_vn=self.z_graddiv2_vn,
                         vn=prognostic_state[nnew].vn,
@@ -1597,7 +1604,7 @@ class SolveNonhydro:
                 "E2C2EO": self.grid.get_e2c2eo_connectivity(),
             },
         )
-        print(f"corrector - stencil_28 start ")
+        print(f"corrector - stencil_31 end ")
 
         if self.config.idiv_method == 1:
             print(f"corrector - stencil_32 start ")
@@ -1614,7 +1621,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.n_lev(),
                 offset_provider={},
             )
-            print(f"corrector - stencil_32 start ")
+            print(f"corrector - stencil_32 end ")
             if lprep_adv:  # Preparations for tracer advection
                 if lclean_mflx:
                     print(f"corrector - stencil_33 start ")
@@ -1627,6 +1634,7 @@ class SolveNonhydro:
                         vertical_end=self.grid.n_lev(),
                         offset_provider={},
                     )
+                    print(f"corrector - stencil_33 end ")
                 print(f"corrector - stencil_34 start ")
                 mo_solve_nonhydro_stencil_34.with_backend(run_gtfn)(
                     z_vn_avg=self.z_vn_avg,

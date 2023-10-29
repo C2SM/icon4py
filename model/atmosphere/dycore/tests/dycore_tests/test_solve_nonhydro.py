@@ -496,6 +496,7 @@ def test_nonhydro_corrector_step(
 
     print(f"scal_divdamp_o2 = {sp.scal_divdamp_o2()}")
     scal_divdamp_o2 = sp.scal_divdamp_o2()  # only used in stencil_26
+    bdy_divdamp = sp.bdy_divdamp()
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
@@ -518,7 +519,7 @@ def test_nonhydro_corrector_step(
 
     prognostic_state_ls = create_prognostic_states(sp)
     solve_nonhydro.set_timelevels(nnow, nnew)
-
+    solve_nonhydro._bdy_divdamp = sp.bdy_divdamp()
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
@@ -530,7 +531,6 @@ def test_nonhydro_corrector_step(
         nnow=nnow,
         lclean_mflx=clean_mflx,
         nh_constants=nh_constants,
-        bdy_divdamp=sp.bdy_divdamp(),
         lprep_adv=lprep_adv,
     )
 
@@ -691,7 +691,6 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         z_fields=z_fields,
         nh_constants=nh_constants,
-        bdy_divdamp=sp.bdy_divdamp(),  # TODO (magdalena) local calculation in solve non-hydro based on nudge_coeff_e and scal_divdamp (also locally calculated)
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
         idyn_timestep=dyn_timestep,
