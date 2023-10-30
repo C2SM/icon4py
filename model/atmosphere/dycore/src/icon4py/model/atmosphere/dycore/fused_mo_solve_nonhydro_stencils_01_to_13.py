@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, maximum, where, bool
+from gt4py.next.ffront.fbuiltins import Field, bool, broadcast, int32, maximum, where
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     _mo_solve_nonhydro_stencil_10,
@@ -32,12 +32,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
 from icon4py.model.common.dimension import (
-    C2E2CODim,
     CellDim,
-    E2C2EODim,
-    E2CDim,
-    ECDim,
-    EdgeDim,
     KDim,
 )
 
@@ -100,19 +95,15 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
 ]:
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
-    (z_rth_pr_1, z_rth_pr_2) = (
-        where(
-            (horizontal_lower_01 <= horz_idx < horizontal_upper_01) & (int32(0) <= vert_idx < nlev),
+    if limited_area:
+        (z_rth_pr_1, z_rth_pr_2) = where(
+            (horizontal_lower_01 <= horz_idx < horizontal_upper_01),
             (_set_zero_c_k(), _set_zero_c_k()),
             (z_rth_pr_1, z_rth_pr_2),
         )
-        if limited_area
-        else (z_rth_pr_1, z_rth_pr_2)
-    )
 
     (z_exner_ex_pr, exner_pr) = where(
-        (horizontal_lower_02 <= horz_idx < horizontal_upper_02)
-        & (int32(0) <= vert_idx < nlev + int32(1)),
+        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx < (nlev + int32(1))),
         _predictor_stencils_2_3(
             exner_exfac=exner_exfac,
             exner=exner,
@@ -126,10 +117,10 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     )
 
     vert_start = maximum(1, nflatlev)
-    (z_exner_ic, z_dexner_dz_c_1) = (
-        where(
+    if igradp_method == 3:
+        (z_exner_ic, z_dexner_dz_c_1) = where(
             (horizontal_lower_02 <= horz_idx < horizontal_upper_02)
-            & (vert_start <= vert_idx < nlev + int32(1)),
+            & (vert_start <= vert_idx < (nlev + int32(1))),
             _predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=wgtfacq_c_dsl,
                 z_exner_ex_pr=z_exner_ex_pr,
@@ -142,12 +133,9 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
             ),
             (z_exner_ic, z_dexner_dz_c_1),
         )
-        if igradp_method == 3
-        else (z_exner_ic, z_dexner_dz_c_1)
-    )
 
     (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (int32(0) <= vert_idx < nlev),
+        (horizontal_lower_02 <= horz_idx < horizontal_upper_02),
         _predictor_stencils_7_8_9(
             rho=rho,
             rho_ref_mc=rho_ref_mc,
@@ -171,8 +159,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     )
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
-        (horizontal_lower_02 <= horz_idx < horizontal_upper_02)
-        & (int32(0) <= vert_idx < nlev + int32(1)),
+        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx < (nlev + int32(1))),
         _predictor_stencils_11_lower_upper(
             wgtfacq_c_dsl=wgtfacq_c_dsl,
             z_rth_pr=z_rth_pr_2,
@@ -186,10 +173,9 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     )
 
     vert_start = nflat_gradp
-    z_dexner_dz_c_2 = (
-        where(
-            (horizontal_lower_02 <= horz_idx < horizontal_upper_02)
-            & (vert_start <= vert_idx < nlev),
+    if igradp_method == 3:
+        z_dexner_dz_c_2 = where(
+            (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_start <= vert_idx),
             _mo_solve_nonhydro_stencil_12(
                 z_theta_v_pr_ic=z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
@@ -198,12 +184,9 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
             ),
             z_dexner_dz_c_2,
         )
-        if igradp_method == 3
-        else z_dexner_dz_c_2
-    )
 
     (z_rth_pr_1, z_rth_pr_2) = where(
-        (horizontal_lower_03 <= horz_idx < horizontal_upper_03) & (int32(0) <= vert_idx < nlev),
+        (horizontal_lower_03 <= horz_idx < horizontal_upper_03),
         _mo_solve_nonhydro_stencil_13(
             rho=rho,
             rho_ref_mc=rho_ref_mc,
@@ -263,7 +246,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_corrector(
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c,) = where(
-        (horizontal_lower_11 <= horz_idx < horizontal_upper_11) & (int32(1) <= vert_idx < nlev),
+        (horizontal_lower_11 <= horz_idx < horizontal_upper_11) & (int32(1) <= vert_idx),
         _mo_solve_nonhydro_stencil_10(
             w=w,
             w_concorr_c=w_concorr_c,
@@ -365,21 +348,20 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-
-    (
-        z_exner_ex_pr,
-        exner_pr,
-        z_exner_ic,
-        z_dexner_dz_c_1,
-        z_rth_pr_1,
-        z_rth_pr_2,
-        rho_ic,
-        z_theta_v_pr_ic,
-        theta_v_ic,
-        z_th_ddz_exner_c,
-        z_dexner_dz_c_2,
-    ) = (
-        _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
+    if istep == 1:
+        (
+            z_exner_ex_pr,
+            exner_pr,
+            z_exner_ic,
+            z_dexner_dz_c_1,
+            z_rth_pr_1,
+            z_rth_pr_2,
+            rho_ic,
+            z_theta_v_pr_ic,
+            theta_v_ic,
+            z_th_ddz_exner_c,
+            z_dexner_dz_c_2,
+        ) = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
             rho=rho,
             rho_ref_mc=rho_ref_mc,
             theta_v=theta_v,
@@ -422,24 +404,14 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
         )
-        if istep == 1
-        else (
-            z_exner_ex_pr,
-            exner_pr,
-            z_exner_ic,
-            z_dexner_dz_c_1,
-            z_rth_pr_1,
-            z_rth_pr_2,
+    else:
+
+        (
             rho_ic,
             z_theta_v_pr_ic,
             theta_v_ic,
             z_th_ddz_exner_c,
-            z_dexner_dz_c_2,
-        )
-    )
-
-    (rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = (
-        _fused_mo_solve_nonhydro_stencils_01_to_13_corrector(
+        ) = _fused_mo_solve_nonhydro_stencils_01_to_13_corrector(
             w=w,
             w_concorr_c=w_concorr_c,
             ddqz_z_half=ddqz_z_half,
@@ -465,14 +437,6 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
             horizontal_upper_11=horizontal_upper_11,
             nlev=nlev,
         )
-        if istep == 2
-        else (
-            rho_ic,
-            z_theta_v_pr_ic,
-            theta_v_ic,
-            z_th_ddz_exner_c,
-        )
-    )
 
     return (
         z_exner_ex_pr,

@@ -13,26 +13,34 @@
 
 import numpy as np
 import pytest
-
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_15_to_18 import (fused_velocity_advection_stencil_15_to_18)
-from icon4py.model.common.dimension import CellDim, EdgeDim, C2EDim, C2E2CODim, KDim
-
-from icon4py.model.common.test_utils.helpers import random_field, random_mask, zero_field, StencilTest
+from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_15_to_18 import (
+    fused_velocity_advection_stencil_15_to_18,
+)
+from icon4py.model.common.dimension import C2E2CODim, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    random_mask,
+    zero_field,
+)
 
 
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_15_to_18
-    OUTPUTS = ("z_w_con_c_full", "ddt_w_adv",)
+    OUTPUTS = (
+        "z_w_con_c_full",
+        "ddt_w_adv",
+    )
 
     @staticmethod
     def reference(
         mesh,
         **kwargs,
     ) -> tuple[np.array]:
-        z_w_con_c_full = 0.
-        ddt_w_adv = 0.
+        z_w_con_c_full = 0.0
+        ddt_w_adv = 0.0
         return dict(z_w_con_c_full=z_w_con_c_full, ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture
@@ -72,8 +80,8 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         nrdmax = 5
         extra_diffu = True
 
-        horz_lower_bound=2
-        horz_upper_bound=4
+        horz_lower_bound = 2
+        horz_upper_bound = 4
 
         lvn_only = False
 

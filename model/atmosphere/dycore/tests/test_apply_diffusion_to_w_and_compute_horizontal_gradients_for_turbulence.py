@@ -13,19 +13,18 @@
 
 import numpy as np
 import pytest
-
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
+from icon4py.model.atmosphere.dycore.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+)
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-
-from icon4py.model.common.test_utils.helpers import random_field, zero_field, StencilTest
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
-
 
     @staticmethod
     def reference(
@@ -47,12 +46,11 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         dwdy,
     ) -> np.array:
 
-        w = 0.
-        dwdx = 0.
-        dwdy = 0.
+        w = 0.0
+        dwdx = 0.0
+        dwdy = 0.0
 
-        return dict(w=w,dwdx=dwdx, dwdy=dwdy)
-
+        return dict(w=w, dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
     def input_data(self, mesh):

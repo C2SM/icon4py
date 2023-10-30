@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, where, broadcast
+from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
@@ -38,7 +38,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     _mo_velocity_advection_stencil_07,
 )
-from icon4py.model.common.dimension import E2C2EDim, V2CDim, CellDim, EdgeDim, VertexDim, KDim
+from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 
 
 @field_operator
@@ -82,7 +82,7 @@ def _fused_velocity_advection_stencil_1_to_6(
             1 < vert_idx < nlevp1,
             _mo_velocity_advection_stencil_03(wgtfac_e, vt),
             z_vt_ie,
-            )
+        )
         if not lvn_only
         else z_vt_ie
     )
@@ -93,11 +93,7 @@ def _fused_velocity_advection_stencil_1_to_6(
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 
-    vn_ie = where(
-        vert_idx == nlevp1,
-        _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn),
-        vn_ie
-    )
+    vn_ie = where(vert_idx == nlevp1, _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn), vn_ie)
 
     z_w_concorr_me = where(
         nflatlev < vert_idx < nlevp1,
@@ -106,6 +102,7 @@ def _fused_velocity_advection_stencil_1_to_6(
     )
 
     return vt, vn_ie, z_kin_hor_e, z_w_concorr_me
+
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7(
@@ -168,9 +165,18 @@ def _fused_velocity_advection_stencil_1_to_7(
     z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
     z_v_grad_w = (
-        where((lateral_boundary_7 < horz_idx < halo_1) & (vert_idx < nlevp1),
-              _mo_velocity_advection_stencil_07(vn_ie, inv_dual_edge_length, w, z_vt_ie, inv_primal_edge_length, tangent_orientation, z_w_v),
-              z_v_grad_w
+        where(
+            (lateral_boundary_7 < horz_idx < halo_1) & (vert_idx < nlevp1),
+            _mo_velocity_advection_stencil_07(
+                vn_ie,
+                inv_dual_edge_length,
+                w,
+                z_vt_ie,
+                inv_primal_edge_length,
+                tangent_orientation,
+                z_w_v,
+            ),
+            z_v_grad_w,
         )
         if not lvn_only
         else z_v_grad_w
@@ -233,5 +239,5 @@ def fused_velocity_advection_stencil_1_to_7(
         horz_idx,
         lateral_boundary_7,
         halo_1,
-        out=(vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w)
+        out=(vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w),
     )

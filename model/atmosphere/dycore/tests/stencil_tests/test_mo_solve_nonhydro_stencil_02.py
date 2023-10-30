@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
+
 def mo_solve_nonhydro_stencil_02_numpy(
     mesh,
     exner_exfac: np.array,
@@ -30,6 +31,7 @@ def mo_solve_nonhydro_stencil_02_numpy(
     z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
     exner_pr = exner - exner_ref_mc
     return z_exner_ex_pr, exner_pr
+
 
 class TestMoSolveNonhydroStencil02(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_02
@@ -44,10 +46,9 @@ class TestMoSolveNonhydroStencil02(StencilTest):
         exner_exfac: np.array,
         **kwargs,
     ) -> dict:
-        z_exner_ex_pr, exner_pr = mo_solve_nonhydro_stencil_02_numpy(exner_exfac,
-                                                                     exner,
-                                                                     exner_ref_mc,
-                                                                     exner_pr)
+        z_exner_ex_pr, exner_pr = mo_solve_nonhydro_stencil_02_numpy(
+            exner_exfac, exner, exner_ref_mc, exner_pr
+        )
 
         return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
 

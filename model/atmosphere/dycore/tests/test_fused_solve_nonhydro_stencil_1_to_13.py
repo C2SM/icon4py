@@ -183,7 +183,7 @@ class TestFusedMoSolveNonHydroStencil1To13(StencilTest):
         theta_now = random_field(mesh, CellDim, KDim)
         theta_var = random_field(mesh, CellDim, KDim)
 
-        k_field = zero_field(mesh, KDim, dtype=int32) #TODO: @abishekg7 change later
+        k_field = zero_field(mesh, KDim, dtype=int32)  # TODO: @abishekg7 change later
 
         vert_idx = zero_field(mesh, KDim, dtype=int32)
         for level in range(mesh.k_level):

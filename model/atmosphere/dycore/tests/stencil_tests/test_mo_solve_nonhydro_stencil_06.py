@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
+
 def mo_solve_nonhydro_stencil_06_numpy(
     mesh,
     inv_ddqz_z_full: np.array,
@@ -29,14 +30,14 @@ def mo_solve_nonhydro_stencil_06_numpy(
     z_dexner_dz_c_1 = (z_exner_ic[:, :-1] - z_exner_ic[:, 1:]) * inv_ddqz_z_full
     return z_dexner_dz_c_1
 
+
 class TestMoSolveNonhydroStencil06(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_06
     OUTPUTS = ("z_dexner_dz_c_1",)
 
     @staticmethod
     def reference(mesh, z_exner_ic: np.array, inv_ddqz_z_full: np.array, **kwargs) -> np.array:
-        z_dexner_dz_c_1 = mo_solve_nonhydro_stencil_06_numpy(z_exner_ic,
-                                                             inv_ddqz_z_full)
+        z_dexner_dz_c_1 = mo_solve_nonhydro_stencil_06_numpy(z_exner_ic, inv_ddqz_z_full)
         return dict(z_dexner_dz_c_1=z_dexner_dz_c_1)
 
     @pytest.fixture
