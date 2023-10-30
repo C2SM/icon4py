@@ -27,7 +27,7 @@ def mo_solve_nonhydro_stencil_02_numpy(
     exner: np.array,
     exner_ref_mc: np.array,
     exner_pr: np.array,
-) -> np.array:
+) -> tuple[np.array, np.array]:
     z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
     exner_pr = exner - exner_ref_mc
     return z_exner_ex_pr, exner_pr
@@ -47,7 +47,7 @@ class TestMoSolveNonhydroStencil02(StencilTest):
         **kwargs,
     ) -> dict:
         z_exner_ex_pr, exner_pr = mo_solve_nonhydro_stencil_02_numpy(
-            exner_exfac, exner, exner_ref_mc, exner_pr
+            mesh, exner_exfac, exner, exner_ref_mc, exner_pr
         )
 
         return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)

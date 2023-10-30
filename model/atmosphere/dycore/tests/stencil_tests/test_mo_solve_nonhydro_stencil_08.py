@@ -28,7 +28,7 @@ def mo_solve_nonhydro_stencil_08_numpy(
     theta_v: np.array,
     theta_ref_mc: np.array,
     wgtfac_c: np.array,
-) -> np.array:
+) -> tuple[np.array, np.array, np.array]:
     rho_offset_1 = np.roll(rho, shift=1, axis=1)
     rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1
     rho_ic[:, 0] = 0
@@ -42,6 +42,21 @@ def mo_solve_nonhydro_stencil_08_numpy(
 class TestMoSolveNonhydroStencil08(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_08
     OUTPUTS = ("rho_ic", "z_rth_pr_1", "z_rth_pr_2")
+
+    @staticmethod
+    def reference(
+        mesh,
+        wgtfac_c: np.array,
+        rho: np.array,
+        rho_ref_mc: np.array,
+        theta_v: np.array,
+        theta_ref_mc: np.array,
+        **kwargs,
+    ) -> dict:
+        rho_ic, z_rth_pr_1, z_rth_pr_2 = mo_solve_nonhydro_stencil_08_numpy(
+            mesh, rho, rho_ref_mc, theta_v, theta_ref_mc, wgtfac_c
+        )
+        return dict(rho_ic=rho_ic, z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
     @pytest.fixture
     def input_data(self, mesh):
@@ -64,18 +79,3 @@ class TestMoSolveNonhydroStencil08(StencilTest):
             z_rth_pr_1=z_rth_pr_1,
             z_rth_pr_2=z_rth_pr_2,
         )
-
-    @staticmethod
-    def reference(
-        mesh,
-        wgtfac_c: np.array,
-        rho: np.array,
-        rho_ref_mc: np.array,
-        theta_v: np.array,
-        theta_ref_mc: np.array,
-        **kwargs,
-    ) -> tuple[np.array, np.array, np.array]:
-        rho_ic, z_rth_pr_1, z_rth_pr_2 = mo_solve_nonhydro_stencil_08_numpy(
-            rho, rho_ref_mc, theta_v, theta_ref_mc, wgtfac_c
-        )
-        return dict(rho_ic=rho_ic, z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)

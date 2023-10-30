@@ -35,7 +35,7 @@ class TestMoSolveNonhydroStencil03(StencilTest):
 
     @staticmethod
     def reference(mesh, z_exner_ex_pr: np.array, **kwargs) -> dict:
-        z_exner_ex_pr = mo_solve_nonhydro_stencil_03_numpy(z_exner_ex_pr)
+        z_exner_ex_pr = mo_solve_nonhydro_stencil_03_numpy(mesh, z_exner_ex_pr)
         return dict(z_exner_ex_pr=z_exner_ex_pr)
 
     @pytest.fixture

@@ -22,6 +22,18 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_solve_nonhydro_stencil_13_numpy(
+    mesh,
+    rho: np.array,
+    rho_ref_mc: np.array,
+    theta_v: np.array,
+    theta_ref_mc: np.array,
+) -> tuple[np.array, np.array]:
+    z_rth_pr_1 = rho - rho_ref_mc
+    z_rth_pr_2 = theta_v - theta_ref_mc
+    return z_rth_pr_1, z_rth_pr_2
+
+
 class TestMoSolveNonhydroStencil13(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_13
     OUTPUTS = ("z_rth_pr_1", "z_rth_pr_2")
@@ -35,8 +47,13 @@ class TestMoSolveNonhydroStencil13(StencilTest):
         theta_ref_mc: np.array,
         **kwargs,
     ) -> dict:
-        z_rth_pr_1 = rho - rho_ref_mc
-        z_rth_pr_2 = theta_v - theta_ref_mc
+        z_rth_pr_1, z_rth_pr_2 = mo_solve_nonhydro_stencil_13_numpy(
+            mesh,
+            rho,
+            rho_ref_mc,
+            theta_v,
+            theta_ref_mc,
+        )
         return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
     @pytest.fixture

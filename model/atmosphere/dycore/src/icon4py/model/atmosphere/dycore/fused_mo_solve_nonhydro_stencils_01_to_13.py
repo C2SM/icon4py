@@ -31,10 +31,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
     _predictor_stencils_11_lower_upper,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
-from icon4py.model.common.dimension import (
-    CellDim,
-    KDim,
-)
+from icon4py.model.common.dimension import CellDim, KDim
 
 
 @field_operator

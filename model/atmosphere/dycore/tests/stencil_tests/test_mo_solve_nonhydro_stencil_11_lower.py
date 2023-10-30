@@ -21,13 +21,17 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def mo_solve_nonhydro_stencil_11_lower_numpy(mesh, z_theta_v_pr_ic: np.array) -> np.array:
+    return np.zeros_like(z_theta_v_pr_ic)
+
+
 class TestMoSolveNonhydroStencil11Lower(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_11_lower
     OUTPUTS = ("z_theta_v_pr_ic",)
 
     @staticmethod
-    def reference(mesh, **kwargs) -> np.array:
-        z_theta_v_pr_ic = 0
+    def reference(mesh, z_theta_v_pr_ic, **kwargs) -> dict:
+        z_theta_v_pr_ic = mo_solve_nonhydro_stencil_11_lower_numpy(mesh, z_theta_v_pr_ic)
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic)
 
     @pytest.fixture

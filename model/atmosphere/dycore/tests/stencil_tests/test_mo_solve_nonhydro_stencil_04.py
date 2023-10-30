@@ -45,9 +45,9 @@ class TestMoSolveNonhydroStencil04(StencilTest):
         z_exner_ex_pr: np.array,
         wgtfacq_c: np.array,
         z_exner_ic: np.array,
-    ) -> np.array:
-        z_exner_ic = mo_solve_nonhydro_stencil_04_numpy(z_exner_ex_pr, wgtfacq_c, z_exner_ic)
-        return {"z_exner_ic": z_exner_ic}
+    ) -> dict:
+        z_exner_ic = mo_solve_nonhydro_stencil_04_numpy(mesh, z_exner_ex_pr, wgtfacq_c, z_exner_ic)
+        return dict(z_exner_ic=z_exner_ic)
 
     @pytest.fixture
     def input_data(self, mesh):

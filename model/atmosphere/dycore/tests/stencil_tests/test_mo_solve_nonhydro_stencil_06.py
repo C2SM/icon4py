@@ -23,9 +23,8 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 
 def mo_solve_nonhydro_stencil_06_numpy(
     mesh,
-    inv_ddqz_z_full: np.array,
     z_exner_ic: np.array,
-    z_exner_ex_pr_offset_1: np.array,
+    inv_ddqz_z_full: np.array,
 ) -> np.array:
     z_dexner_dz_c_1 = (z_exner_ic[:, :-1] - z_exner_ic[:, 1:]) * inv_ddqz_z_full
     return z_dexner_dz_c_1
@@ -36,8 +35,8 @@ class TestMoSolveNonhydroStencil06(StencilTest):
     OUTPUTS = ("z_dexner_dz_c_1",)
 
     @staticmethod
-    def reference(mesh, z_exner_ic: np.array, inv_ddqz_z_full: np.array, **kwargs) -> np.array:
-        z_dexner_dz_c_1 = mo_solve_nonhydro_stencil_06_numpy(z_exner_ic, inv_ddqz_z_full)
+    def reference(mesh, z_exner_ic: np.array, inv_ddqz_z_full: np.array, **kwargs) -> dict:
+        z_dexner_dz_c_1 = mo_solve_nonhydro_stencil_06_numpy(mesh, z_exner_ic, inv_ddqz_z_full)
         return dict(z_dexner_dz_c_1=z_dexner_dz_c_1)
 
     @pytest.fixture

@@ -25,7 +25,6 @@ def mo_solve_nonhydro_stencil_05_numpy(
     mesh,
     z_exner_ex_pr: np.array,
     wgtfac_c: np.array,
-    z_exner_ic: np.array,
 ) -> np.array:
     z_exner_ex_pr_offset_1 = np.roll(z_exner_ex_pr, shift=1, axis=1)
     z_exner_ic = wgtfac_c * z_exner_ex_pr + (1.0 - wgtfac_c) * z_exner_ex_pr_offset_1
@@ -38,8 +37,10 @@ class TestMoSolveNonhydroStencil05(StencilTest):
     OUTPUTS = ("z_exner_ic",)
 
     @staticmethod
-    def reference(mesh, wgtfac_c: np.array, z_exner_ex_pr: np.array, **kwargs) -> np.array:
-        z_exner_ic = mo_solve_nonhydro_stencil_05_numpy(z_exner_ex_pr, wgtfac_c, z_exner_ic)
+    def reference(
+        mesh, z_exner_ex_pr: np.array, wgtfac_c: np.array, z_exner_ic: np.array, **kwargs
+    ) -> dict:
+        z_exner_ic = mo_solve_nonhydro_stencil_05_numpy(mesh, z_exner_ex_pr, wgtfac_c)
         return dict(z_exner_ic=z_exner_ic)
 
     @pytest.fixture
