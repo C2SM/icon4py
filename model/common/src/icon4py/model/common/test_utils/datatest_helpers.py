@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from .helpers import StencilTest
 from ..decomposition.definitions import SingleNodeRun, get_processor_properties
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
@@ -57,12 +58,13 @@ def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
-    try:
-        has_data_marker = any(map(lambda i: i.iter_markers(name="datatest"), request.node.items))
-        if not has_data_marker or not request.config.getoption("datatest"):
-            pytest.skip("not running datatest marked tests")
-    except ValueError:
-        pass
+    if not any(isinstance(item.instance, StencilTest) for item in request.node.items):
+        try:
+            has_data_marker = any(map(lambda i: i.iter_markers(name="datatest"), request.node.items))
+            if not has_data_marker or not request.config.getoption("datatest"):
+                pytest.skip("not running datatest marked tests")
+        except ValueError:
+            pass
 
     try:
         uri = data_uris[processor_props.comm_size]

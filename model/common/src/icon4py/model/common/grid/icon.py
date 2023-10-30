@@ -37,16 +37,8 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.base import BaseGrid
+from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
 from icon4py.model.common.utils import builder
-
-
-def _neighbortable_offset_provider_for_1d_sparse_fields(
-    old_shape: tuple[int, int],
-    origin_axis: Dimension,
-    neighbor_axis: Dimension,
-):
-    table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-    return NeighborTableOffsetProvider(table, origin_axis, neighbor_axis, table.shape[1])
 
 
 class IconGrid(BaseGrid):
@@ -158,17 +150,17 @@ class IconGrid(BaseGrid):
         return NeighborTableOffsetProvider(table, VertexDim, CellDim, table.shape[1])
 
     def get_e2ecv_offset_provider(self):
-        return _neighbortable_offset_provider_for_1d_sparse_fields(
+        return neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim
         )
 
     def get_c2cec_offset_provider(self):
-        return _neighbortable_offset_provider_for_1d_sparse_fields(
+        return neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities[C2E2CDim].shape, CellDim, CECDim
         )
 
     def get_c2ce_offset_provider(self):
-        return _neighbortable_offset_provider_for_1d_sparse_fields(
+        return neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities[C2EDim].shape, CellDim, CEDim
         )
 
@@ -191,7 +183,7 @@ class IconGrid(BaseGrid):
             "E2C2V": self.get_e2c2v_offset_provider(),
             "V2E": self.get_v2e_offset_provider(),
             "V2C": self.get_v2c_offset_provider(),
-            "C2V": self.get_c2v_offset_provider(),
+            # "C2V": self.get_c2v_offset_provider(),
             "E2ECV": self.get_e2ecv_offset_provider(),
             "C2CEC": self.get_c2cec_offset_provider(),
             "C2CE": self.get_c2ce_offset_provider(),

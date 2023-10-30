@@ -39,6 +39,7 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.base import BaseGrid, GridConfig
+from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
 
 # periodic
 #
@@ -551,7 +552,7 @@ class SimpleGrid(BaseGrid):
             "C2CE": self.get_c2ce_offset_provider(),
             "Koff": KDim,
             "C2E2C2E2C": self.get_c2e2c2e2c_offset_provider(),
-            "E2ECV": StridedNeighborOffsetProvider(EdgeDim, ECVDim, self.size[E2C2VDim]),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, self.size[E2CDim]),
-            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, self.size[C2E2CDim]),
+            "E2ECV": neighbortable_offset_provider_for_1d_sparse_fields(self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim),
+            "E2EC": neighbortable_offset_provider_for_1d_sparse_fields(self.connectivities[E2CDim].shape, EdgeDim, ECDim),
+            "C2CEC": neighbortable_offset_provider_for_1d_sparse_fields(self.connectivities[C2E2CDim].shape, CellDim, CECDim),
         }
