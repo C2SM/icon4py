@@ -18,7 +18,15 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
-from icon4py.model.common.dimension import CellDim, E2C2EODim, E2CDim, EdgeDim, KDim, VertexDim, E2VDim
+from icon4py.model.common.dimension import (
+    CellDim,
+    E2C2EODim,
+    E2CDim,
+    E2VDim,
+    EdgeDim,
+    KDim,
+    VertexDim,
+)
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 
 
@@ -119,7 +127,10 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
                 np.sum(geofac_grdiv * vn[grid.connectivities[E2C2EODim]], axis=1)
                 + tangent_orientation
                 * inv_primal_edge_length
-                * (zeta[grid.connectivities[E2VDim]][:, 1] - zeta[grid.connectivities[E2VDim]][:, 0])
+                * (
+                    zeta[grid.connectivities[E2VDim]][:, 1]
+                    - zeta[grid.connectivities[E2VDim]][:, 0]
+                )
             ),
             ddt_vn_apc,
         )

@@ -16,8 +16,8 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_01 import v_limit_prbl_sm_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 
 def v_limit_prbl_sm_stencil_01_numpy(

@@ -17,8 +17,8 @@ from icon4py.model.atmosphere.advection.upwind_vflux_ppm_stencil_01 import (
     upwind_vflux_ppm_stencil_01,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 
 def upwind_vflux_ppm_stencil_01_numpy(

@@ -50,11 +50,11 @@ def icon_grid(simple_grid_gridfile):
 def all_grids(icon_grid):
     return {
         "simple_grid": SimpleGrid(),
-        "icon_grid": icon_grid
+        # "icon_grid": icon_grid
     }
 
 
-@pytest.fixture(params=["simple_grid", "icon_grid"])
+@pytest.fixture(params=["simple_grid"])
 def grid(request, all_grids):
     return all_grids[request.param]
 

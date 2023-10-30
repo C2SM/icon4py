@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_17 import (
     mo_solve_nonhydro_stencil_17,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
+from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 

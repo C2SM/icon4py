@@ -15,7 +15,7 @@ import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.program_processors.runners.gtfn_cpu import (
+from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
     run_gtfn_imperative,

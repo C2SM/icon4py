@@ -31,7 +31,9 @@ class TestMoVelocityAdvectionStencil03(StencilTest):
         vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
         z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
         z_vt_ie[:, 0] = 0
-        return dict(z_vt_ie=z_vt_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)])
+        return dict(
+            z_vt_ie=z_vt_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)]
+        )
 
     @pytest.fixture
     def input_data(self, grid):
@@ -43,7 +45,7 @@ class TestMoVelocityAdvectionStencil03(StencilTest):
         return dict(
             wgtfac_e=wgtfac_e,
             vt=vt,
-            z_vt_ie=z_vt_ie[int32(1) : int32(grid.num_cells), int32(1): int32(grid.num_levels)],
+            z_vt_ie=z_vt_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)],
             horizontal_start=int32(1),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(1),

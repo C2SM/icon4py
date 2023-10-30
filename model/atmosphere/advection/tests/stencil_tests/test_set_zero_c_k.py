@@ -15,8 +15,8 @@ import numpy as np
 
 from icon4py.model.atmosphere.advection.set_zero_c_k import set_zero_c_k
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 
 def test_set_zero_c_k():
