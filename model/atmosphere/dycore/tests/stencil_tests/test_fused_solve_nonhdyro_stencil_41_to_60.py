@@ -107,7 +107,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         exner_incr,
         ddqz_z_half,
         z_raylfac,
-        w_1,
         exner_ref_mc,
         rho,
         exner,
@@ -172,8 +171,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     w_nnow=w_nnow,
                     ddt_w_adv_ntl1=ddt_w_adv_ntl1,
                     z_th_ddz_exner_c=z_th_ddz_exner_c,
-                    rho_ic=rho_ic,
-                    w_concorr_c=w_concorr_c,
+                    rho_ic=rho_ic[:, :n_lev],
+                    w_concorr_c=w_concorr_c[:, :n_lev],
                     vwind_expl_wgt=vwind_expl_wgt,
                     dtime=dtime,
                     cpd=cpd,
@@ -302,6 +301,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 w[:, :n_lev],
             )
 
+            w_1 = w[:, :1]
             if rayleigh_type == rayleigh_klemp:
                 w[:, :n_lev] = np.where(
                     (horizontal_lower <= horz_idx)
@@ -438,20 +438,20 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 )
 
             else:
-                (z_w_expl, z_contr_w_fl_l) = np.where(
+                (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
                     (vert_idx >= int32(1)) & (vert_idx < n_lev),
                     mo_solve_nonhydro_stencil_43_numpy(
                         mesh=mesh,
                         w_nnow=w_nnow,
                         ddt_w_adv_ntl1=ddt_w_adv_ntl1,
                         z_th_ddz_exner_c=z_th_ddz_exner_c,
-                        rho_ic=rho_ic,
-                        w_concorr_c=w_concorr_c,
+                        rho_ic=rho_ic[:, :n_lev],
+                        w_concorr_c=w_concorr_c[:, :n_lev],
                         vwind_expl_wgt=vwind_expl_wgt,
                         dtime=dtime,
                         cpd=cpd,
                     ),
-                    (z_w_expl, z_contr_w_fl_l),
+                    (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]),
                 )
                 (z_beta, z_alpha) = np.where(
                     (vert_idx >= int32(0)) & (vert_idx < n_lev),
@@ -571,6 +571,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 w[:, :n_lev],
             )
 
+            w_1 = w[:, :1]
             if rayleigh_type == rayleigh_klemp:
                 w[:, :n_lev] = np.where(
                     (horizontal_lower <= horz_idx)
@@ -681,7 +682,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         exner_incr = random_field(mesh, CellDim, KDim)
         ddqz_z_half = random_field(mesh, CellDim, KDim)
         z_raylfac = random_field(mesh, KDim)
-        w_1 = random_field(mesh, CellDim)  # TODO: change later
         exner_ref_mc = random_field(mesh, CellDim, KDim)
         rho = random_field(mesh, CellDim, KDim)
         exner = random_field(mesh, CellDim, KDim)
@@ -760,7 +760,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             exner_incr=exner_incr,
             ddqz_z_half=ddqz_z_half,
             z_raylfac=z_raylfac,
-            w_1=w_1,
             exner_ref_mc=exner_ref_mc,
             rho=rho,
             exner=exner,

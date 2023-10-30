@@ -53,6 +53,8 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
+from model.atmosphere.dycore.src.icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import _set_w_level_1
+
 
 @field_operator
 def _fused_solve_nonhydro_stencil_41_to_60_predictor(
@@ -87,7 +89,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     exner_incr: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_raylfac: Field[[KDim], float],
-    w_1: Field[[CellDim], float],
     exner_ref_mc: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
@@ -233,7 +234,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         ),
         w,
     )
-
+    w_1 = _set_w_level_1(w, vert_idx_1d)
     if rayleigh_type == rayleigh_klemp:
         w = where(
             (horizontal_lower <= horz_idx < horizontal_upper)
@@ -339,7 +340,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
     exner_incr: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_raylfac: Field[[KDim], float],
-    w_1: Field[[CellDim], float],
     exner_ref_mc: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
@@ -520,7 +520,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
         ),
         w,
     )
-
+    w_1 = _set_w_level_1(w, vert_idx_1d)
     if rayleigh_type == rayleigh_klemp:
         w = where(
             (horizontal_lower <= horz_idx < horizontal_upper)
@@ -626,7 +626,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
     exner_incr: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_raylfac: Field[[KDim], float],
-    w_1: Field[[CellDim], float],
     exner_ref_mc: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
@@ -715,7 +714,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
             exner_incr=exner_incr,
             ddqz_z_half=ddqz_z_half,
             z_raylfac=z_raylfac,
-            w_1=w_1,
             exner_ref_mc=exner_ref_mc,
             rho=rho,
             exner=exner,
@@ -796,7 +794,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
             exner_incr=exner_incr,
             ddqz_z_half=ddqz_z_half,
             z_raylfac=z_raylfac,
-            w_1=w_1,
             exner_ref_mc=exner_ref_mc,
             rho=rho,
             exner=exner,
@@ -882,7 +879,6 @@ def fused_solve_nonhdyro_stencil_41_to_60(
     exner_incr: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_raylfac: Field[[KDim], float],
-    w_1: Field[[CellDim], float],
     exner_ref_mc: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
@@ -955,7 +951,6 @@ def fused_solve_nonhdyro_stencil_41_to_60(
         exner_incr=exner_incr,
         ddqz_z_half=ddqz_z_half,
         z_raylfac=z_raylfac,
-        w_1=w_1,
         exner_ref_mc=exner_ref_mc,
         rho=rho,
         exner=exner,
