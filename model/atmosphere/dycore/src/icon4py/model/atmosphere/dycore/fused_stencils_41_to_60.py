@@ -13,9 +13,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, where
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
-import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     _mo_solve_nonhydro_stencil_41,
 )
@@ -46,6 +45,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
     _mo_solve_nonhydro_stencil_59,
 )
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
+    _stencils_42_44_45_45b,
+    _stencils_43_44_45_45b,
+    _stencils_47_48_49,
+)
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
@@ -74,7 +78,6 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
     w: Field[[CellDim, KDim], float],
     z_rho_expl: Field[[CellDim, KDim], float],
     z_exner_expl: Field[[CellDim, KDim], float],
@@ -99,12 +102,12 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     rd: float,
     cvd: float,
     cpd: float,
-    rayleigh_klemp: float,
+    rayleigh_klemp: int32,
     idiv_method: int32,
     l_open_ubc: bool,
     l_vert_nested: bool,
     is_iau_active: bool,
-    rayleigh_type: float,
+    rayleigh_type: int32,
     lhdiff_rcf: bool,
     divdamp_type: int32,
     idyn_timestep: int32,
@@ -116,8 +119,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     horizontal_lower: int32,
     horizontal_upper: int32,
 ):
-    # horizontal_lower = start_cell_nudging
-    # horizontal_upper = end_cell_local
+    vert_idx_1d = vert_idx
+    vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     if idiv_method == 1:
         z_flxdiv_mass, z_flxdiv_theta = where(
@@ -132,7 +135,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
 
     z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q = where(
         (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < (n_lev + int32(1))),
-        nhsolve_prog._stencils_43_44_45_45b(
+        _stencils_43_44_45_45b(
             z_w_expl=z_w_expl,
             w_nnow=w_nnow,
             ddt_w_adv_ntl1=ddt_w_adv_ntl1,
@@ -150,7 +153,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             vwind_impl_wgt=vwind_impl_wgt,
             theta_v_ic=theta_v_ic,
             z_q=z_q,
-            k_field=k_field,
+            k_field=vert_idx_1d,
             rd=rd,
             cvd=cvd,
             dtime=dtime,
@@ -160,7 +163,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
     )
 
-    if not (l_open_ubc and l_vert_nested):
+    if not (l_open_ubc & l_vert_nested):
         w, z_contr_w_fl_l = where(
             (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < int32(1)),
             _mo_solve_nonhydro_stencil_46(),
@@ -170,7 +173,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     w, z_contr_w_fl_l, z_rho_expl, z_exner_expl = where(
         (horizontal_lower <= horz_idx < horizontal_upper)
         & (n_lev <= vert_idx < (n_lev + int32(1))),
-        nhsolve_prog._stencils_47_48_49(
+        _stencils_47_48_49(
             w_nnew=w,
             z_contr_w_fl_l=z_contr_w_fl_l,
             w_concorr_c=w_concorr_c,
@@ -184,12 +187,9 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             z_flxdiv_theta=z_flxdiv_theta,
             theta_v_ic=theta_v_ic,
             ddt_exner_phy=ddt_exner_phy,
-            k_field=k_field,
+            k_field=vert_idx_1d,
             dtime=dtime,
-            cell_startindex_nudging_plus1=horizontal_lower,
-            cell_endindex_interior=horizontal_upper,
             nlev=n_lev,
-            nlev_k=n_lev + 1,
         ),
         (w, z_contr_w_fl_l, z_rho_expl, z_exner_expl),
     )
@@ -247,7 +247,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         )
 
     rho, exner, theta_v = where(
-        (horizontal_lower <= horz_idx < horizontal_upper) & (int32(jk_start) <= vert_idx),
+        (horizontal_lower <= horz_idx < horizontal_upper) & (jk_start <= vert_idx),
         _mo_solve_nonhydro_stencil_55(
             z_rho_expl=z_rho_expl,
             vwind_impl_wgt=vwind_impl_wgt,
@@ -268,7 +268,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     )
 
     # compute dw/dz for divergence damping term
-    if lhdiff_rcf and divdamp_type >= 3:
+    if lhdiff_rcf & (divdamp_type >= 3):
         z_dwdz_dd = where(
             (horizontal_lower <= horz_idx < horizontal_upper) & (kstart_dd3d <= vert_idx),
             _mo_solve_nonhydro_stencil_56_63(
@@ -330,7 +330,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
     w: Field[[CellDim, KDim], float],
     z_rho_expl: Field[[CellDim, KDim], float],
     z_exner_expl: Field[[CellDim, KDim], float],
@@ -363,17 +362,17 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
     l_vert_nested: bool,
     is_iau_active: bool,
     index_of_damping_layer: int32,
-    rayleigh_klemp: float,
-    rayleigh_type: float,
+    rayleigh_klemp: int32,
+    rayleigh_type: int32,
     jk_start: int32,
-    lprep_adv: float,
-    lclean_mflx: float,
+    lprep_adv: bool,
+    lclean_mflx: bool,
     r_nsubsteps: float,
     horizontal_lower: int32,
     horizontal_upper: int32,
 ):
-    # horizontal_lower = start_cell_nudging
-    # horizontal_upper = end_cell_local
+    vert_idx_1d = vert_idx
+    vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     if idiv_method == 1:
         # verified for e-9
@@ -390,7 +389,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
     if itime_scheme == 4:
         (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
             (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < n_lev + 1),
-            nhsolve_prog._stencils_42_44_45_45b(
+            _stencils_42_44_45_45b(
                 z_w_expl=z_w_expl,
                 w_nnow=w_nnow,
                 ddt_w_adv_ntl1=ddt_w_adv_ntl1,
@@ -409,7 +408,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
                 vwind_impl_wgt=vwind_impl_wgt,
                 theta_v_ic=theta_v_ic,
                 z_q=z_q,
-                k_field=k_field,
+                k_field=vert_idx_1d,
                 rd=rd,
                 cvd=cvd,
                 dtime=dtime,
@@ -423,7 +422,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
     else:
         (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
             (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < n_lev + 1),
-            nhsolve_prog._stencils_43_44_45_45b(
+            _stencils_43_44_45_45b(
                 z_w_expl=z_w_expl,
                 w_nnow=w_nnow,
                 ddt_w_adv_ntl1=ddt_w_adv_ntl1,
@@ -441,7 +440,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
                 vwind_impl_wgt=vwind_impl_wgt,
                 theta_v_ic=theta_v_ic,
                 z_q=z_q,
-                k_field=k_field,
+                k_field=vert_idx_1d,
                 rd=rd,
                 cvd=cvd,
                 dtime=dtime,
@@ -451,7 +450,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
             (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
         )
 
-    if not l_open_ubc and not l_vert_nested:
+    if not (l_open_ubc & l_vert_nested):
         w, z_contr_w_fl_l = where(
             (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < int32(1)),
             _mo_solve_nonhydro_stencil_46(),
@@ -461,7 +460,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
     w, z_contr_w_fl_l, z_rho_expl, z_exner_expl = where(
         (horizontal_lower <= horz_idx < horizontal_upper)
         & (n_lev <= vert_idx < (n_lev + int32(1))),
-        nhsolve_prog._stencils_47_48_49(
+        _stencils_47_48_49(
             w_nnew=w,
             z_contr_w_fl_l=z_contr_w_fl_l,
             w_concorr_c=w_concorr_c,
@@ -475,12 +474,9 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
             z_flxdiv_theta=z_flxdiv_theta,
             theta_v_ic=theta_v_ic,
             ddt_exner_phy=ddt_exner_phy,
-            k_field=k_field,
+            k_field=vert_idx_1d,
             dtime=dtime,
-            cell_startindex_nudging_plus1=horizontal_lower,
-            cell_endindex_interior=horizontal_upper,
             nlev=n_lev,
-            nlev_k=n_lev + 1,
         ),
         (w, z_contr_w_fl_l, z_rho_expl, z_exner_expl),
     )
@@ -538,7 +534,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
         )
 
     rho, exner, theta_v = where(
-        (horizontal_lower <= horz_idx < horizontal_upper) & (int32(jk_start) <= vert_idx),
+        (horizontal_lower <= horz_idx < horizontal_upper) & (jk_start <= vert_idx),
         _mo_solve_nonhydro_stencil_55(
             z_rho_expl=z_rho_expl,
             vwind_impl_wgt=vwind_impl_wgt,
@@ -621,7 +617,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
     w: Field[[CellDim, KDim], float],
     z_rho_expl: Field[[CellDim, KDim], float],
     z_exner_expl: Field[[CellDim, KDim], float],
@@ -644,8 +639,8 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
     itime_scheme: int32,
-    lprep_adv: float,
-    lclean_mflx: float,
+    lprep_adv: bool,
+    lclean_mflx: bool,
     r_nsubsteps: float,
     cvd_o_rd: float,
     iau_wgt_dyn: float,
@@ -653,12 +648,12 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
     rd: float,
     cvd: float,
     cpd: float,
-    rayleigh_klemp: float,
+    rayleigh_klemp: int32,
     idiv_method: int32,
     l_open_ubc: bool,
     l_vert_nested: bool,
     is_iau_active: bool,
-    rayleigh_type: float,
+    rayleigh_type: int32,
     lhdiff_rcf: bool,
     divdamp_type: int32,
     idyn_timestep: int32,
@@ -711,7 +706,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
             vwind_impl_wgt=vwind_impl_wgt,
             theta_v_ic=theta_v_ic,
             z_q=z_q,
-            k_field=k_field,
             w=w,
             z_rho_expl=z_rho_expl,
             z_exner_expl=z_exner_expl,
@@ -793,7 +787,6 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
             vwind_impl_wgt=vwind_impl_wgt,
             theta_v_ic=theta_v_ic,
             z_q=z_q,
-            k_field=k_field,
             w=w,
             z_rho_expl=z_rho_expl,
             z_exner_expl=z_exner_expl,
@@ -819,7 +812,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
             cpd=cpd,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
-            nlev=n_lev,
+            n_lev=n_lev,
             idiv_method=idiv_method,
             itime_scheme=itime_scheme,
             l_open_ubc=l_open_ubc,
@@ -880,7 +873,6 @@ def fused_solve_nonhdyro_stencil_41_to_60(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
     w: Field[[CellDim, KDim], float],
     z_rho_expl: Field[[CellDim, KDim], float],
     z_exner_expl: Field[[CellDim, KDim], float],
@@ -903,8 +895,8 @@ def fused_solve_nonhdyro_stencil_41_to_60(
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
     itime_scheme: int32,
-    lprep_adv: float,
-    lclean_mflx: float,
+    lprep_adv: bool,
+    lclean_mflx: bool,
     r_nsubsteps: float,
     cvd_o_rd: float,
     iau_wgt_dyn: float,
@@ -912,12 +904,12 @@ def fused_solve_nonhdyro_stencil_41_to_60(
     rd: float,
     cvd: float,
     cpd: float,
-    rayleigh_klemp: float,
+    rayleigh_klemp: int32,
     idiv_method: int32,
     l_open_ubc: bool,
     l_vert_nested: bool,
     is_iau_active: bool,
-    rayleigh_type: float,
+    rayleigh_type: int32,
     lhdiff_rcf: bool,
     divdamp_type: int32,
     idyn_timestep: int32,
@@ -954,7 +946,6 @@ def fused_solve_nonhdyro_stencil_41_to_60(
         vwind_impl_wgt=vwind_impl_wgt,
         theta_v_ic=theta_v_ic,
         z_q=z_q,
-        k_field=k_field,
         w=w,
         z_rho_expl=z_rho_expl,
         z_exner_expl=z_exner_expl,
@@ -1003,4 +994,22 @@ def fused_solve_nonhdyro_stencil_41_to_60(
         horizontal_lower=horizontal_lower,
         horizontal_upper=horizontal_upper,
         istep=istep,
+        out=(
+            z_flxdiv_mass,
+            z_flxdiv_theta,
+            z_w_expl,
+            z_contr_w_fl_l,
+            z_beta,
+            z_alpha,
+            z_q,
+            w,
+            z_rho_expl,
+            z_exner_expl,
+            rho,
+            exner,
+            theta_v,
+            z_dwdz_dd,
+            exner_dyn_incr,
+            mass_flx_ic,
+        ),
     )

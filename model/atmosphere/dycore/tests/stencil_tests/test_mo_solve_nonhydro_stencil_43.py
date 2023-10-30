@@ -32,7 +32,7 @@ def mo_solve_nonhydro_stencil_43_numpy(
     dtime: float,
     cpd: float,
 ) -> tuple[np.array, np.array]:
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, -1)
+    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
     z_w_expl = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * z_th_ddz_exner_c)
     z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
     return z_w_expl, z_contr_w_fl_l

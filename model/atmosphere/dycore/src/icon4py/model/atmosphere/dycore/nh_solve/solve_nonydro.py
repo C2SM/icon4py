@@ -1263,6 +1263,8 @@ class SolveNonhydro:
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
             )
+        # TODO: w_1 access the top field of w --> w_1 is a 1D field
+        # w_1 = asoffet(w, Koff[np.asarray([-1, -2, -3,...., n_lev])])
 
         mo_solve_nonhydro_stencil_55.with_backend(run_gtfn)(
             z_rho_expl=z_fields.z_rho_expl,
