@@ -20,6 +20,7 @@ import icon4py.model.atmosphere.dycore as dycore
 import icon4py.model.common.interpolation.stencils as intp
 import pytest
 from click.testing import CliRunner
+from gt4py.next.ffront.fbuiltins import float32, float64
 
 from icon4pytools.icon4pygen.cli import main
 
@@ -145,3 +146,16 @@ def test_invalid_module_path(cli) -> None:
     result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
     assert result.exit_code == 1
     assert isinstance(result.exception, ModuleNotFoundError)
+
+
+@pytest.mark.parametrize(("stencil_module", "stencil_name"), interpolation_fencils())
+def test_mixed_precision_option(cli, stencil_module, stencil_name) -> None:
+    module_path = get_stencil_module_path(stencil_module, stencil_name)
+    cli.invoke(
+        main, [module_path, "--enable-mixed-precision", BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH]
+    )
+    # Import has to be done after the env. var. is set
+    from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+    assert os.environ.get("FLOAT_PRECISION") == "mixed"
+    assert (vpfloat == float32) and (wpfloat == float64)
