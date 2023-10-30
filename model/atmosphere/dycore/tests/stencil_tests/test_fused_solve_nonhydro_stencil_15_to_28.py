@@ -527,7 +527,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         scal_divdamp_o2 = 194588.14247428576
         limited_area = True
         itime_scheme = 4
-        istep = 1
+        istep = 2
         horizontal_lower = 5387
         horizontal_upper = 31558
         horizontal_lower_00 = 31558
