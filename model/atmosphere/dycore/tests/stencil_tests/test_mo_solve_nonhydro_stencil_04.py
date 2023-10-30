@@ -20,6 +20,19 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_04 import (
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
+def mo_solve_nonhydro_stencil_04_numpy(
+    mesh,
+    z_exner_ex_pr: np.array,
+    wgtfacq_c: np.array,
+    z_exner_ic: np.array,
+) -> np.array:
+    z_exner_ic[:, 3:] = (
+                            np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_exner_ex_pr, shift=1, axis=1)
+                            + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_exner_ex_pr, shift=2, axis=1)
+                            + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_exner_ex_pr, shift=3, axis=1)
+                        )[:, 3:]
+    return z_exner_ic
+
 
 class TestMoSolveNonhydroStencil04(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_04
@@ -32,11 +45,9 @@ class TestMoSolveNonhydroStencil04(StencilTest):
         wgtfacq_c: np.array,
         z_exner_ic: np.array,
     ) -> np.array:
-        z_exner_ic[:, 3:] = (
-            np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_exner_ex_pr, shift=1, axis=1)
-            + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_exner_ex_pr, shift=2, axis=1)
-            + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_exner_ex_pr, shift=3, axis=1)
-        )[:, 3:]
+        z_exner_ic = mo_solve_nonhydro_stencil_04_numpy(z_exner_ex_pr,
+                                                      wgtfacq_c,
+                                                       z_exner_ic)
         return {"z_exner_ic": z_exner_ic}
 
     @pytest.fixture

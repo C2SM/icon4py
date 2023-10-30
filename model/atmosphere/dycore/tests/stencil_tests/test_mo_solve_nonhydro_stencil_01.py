@@ -21,6 +21,14 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_01 import (
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
+def mo_solve_nonhydro_stencil_01_numpy(
+    mesh,
+    z_rth_pr_1: np.array,
+    z_rth_pr_2: np.array,
+) -> np.array:
+    z_rth_pr_1 = np.zeros_like(z_rth_pr_1)
+    z_rth_pr_2 = np.zeros_like(z_rth_pr_2)
+    return z_rth_pr_1, z_rth_pr_2
 
 class TestMoSolveNonhydroStencil01(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_01
@@ -32,9 +40,8 @@ class TestMoSolveNonhydroStencil01(StencilTest):
         z_rth_pr_1: np.array,
         z_rth_pr_2: np.array,
         **kwargs,
-    ) -> tuple[np.array]:
-        z_rth_pr_1 = np.zeros_like(z_rth_pr_1)
-        z_rth_pr_2 = np.zeros_like(z_rth_pr_2)
+    ) -> dict:
+        z_rth_pr_1, z_rth_pr_2 = mo_solve_nonhydro_stencil_01_numpy(z_rth_pr_1, z_rth_pr_2)
         return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
     @pytest.fixture
