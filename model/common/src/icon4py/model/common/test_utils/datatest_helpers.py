@@ -21,34 +21,55 @@ from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
 
 
-test_utils = Path(__file__).parent
-model = test_utils.parent.parent
-common = model.parent.parent.parent.parent
-base_path = common.parent.joinpath("testdata")
+TEST_UTILS_PATH = Path(__file__).parent
+MODEL_PATH = TEST_UTILS_PATH.parent.parent
+COMMON_PATH = MODEL_PATH.parent.parent.parent.parent
+BASE_PATH = COMMON_PATH.parent.joinpath("testdata")
 
 # TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
-data_uris = {
+DATA_URIS = {
     1: "https://polybox.ethz.ch/index.php/s/psBNNhng0h9KrB4/download",
     2: "https://polybox.ethz.ch/index.php/s/NUQjmJcMEoQxFiK/download",
     4: "https://polybox.ethz.ch/index.php/s/QC7xt7xLT5xeVN5/download",
 }
 
-ser_data_basepath = base_path.joinpath("ser_icondata")
+SER_DATA_BASEPATH = BASE_PATH.joinpath("ser_icondata")
+
+
+def get_processor_properties_for_run(run_instance):
+    return get_processor_properties(run_instance)
+
+
+def get_ranked_data_path(base_path, processor_properties):
+    return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
+
+
+def get_datapath_for_ranked_data(ranked_base_path):
+    return ranked_base_path.joinpath("mch_ch_r04b09_dsl/ser_data")
+
+
+def create_icon_serial_data_provider(datapath, processor_props):
+    return IconSerialDataProvider(
+        fname_prefix="icon_pydycore",
+        path=str(datapath),
+        mpi_rank=processor_props.rank,
+        do_print=True,
+    )
 
 
 @pytest.fixture(params=[False], scope="session")
 def processor_props(request):
-    return get_processor_properties(SingleNodeRun())
+    return get_processor_properties_for_run(SingleNodeRun())
 
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return ser_data_basepath.absolute().joinpath(f"mpitask{processor_props.comm_size}")
+    return get_ranked_data_path(SER_DATA_BASEPATH, processor_props)
 
 
 @pytest.fixture(scope="session")
 def datapath(ranked_data_path):
-    return ranked_data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
+    return get_datapath_for_ranked_data(ranked_data_path)
 
 
 @pytest.fixture(scope="session")
@@ -58,16 +79,15 @@ def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
-    if not any(isinstance(item.instance, StencilTest) for item in request.node.items):
-        try:
-            has_data_marker = any(map(lambda i: i.iter_markers(name="datatest"), request.node.items))
-            if not has_data_marker or not request.config.getoption("datatest"):
-                pytest.skip("not running datatest marked tests")
-        except ValueError:
-            pass
+    try:
+        has_data_marker = any(map(lambda i: i.iter_markers(name="datatest"), request.node.items))
+        if not has_data_marker or not request.config.getoption("datatest"):
+            pytest.skip("not running datatest marked tests")
+    except ValueError:
+        pass
 
     try:
-        uri = data_uris[processor_props.comm_size]
+        uri = DATA_URIS[processor_props.comm_size]
 
         data_file = ranked_data_path.joinpath(
             f"mch_ch_r04b09_dsl_mpitask{processor_props.comm_size}.tar.gz"
@@ -83,13 +103,8 @@ def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
 
 
 @pytest.fixture(scope="session")
-def data_provider(download_ser_data, datapath, processor_props) -> IconSerialDataProvider:
-    return IconSerialDataProvider(
-        fname_prefix="icon_pydycore",
-        path=str(datapath),
-        mpi_rank=processor_props.rank,
-        do_print=True,
-    )
+def data_provider(download_ser_data, datapath, processor_props):
+    return create_icon_serial_data_provider(datapath, processor_props)
 
 
 @pytest.fixture

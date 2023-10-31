@@ -4,9 +4,13 @@ from uuid import uuid4
 import netCDF4
 import numpy as np
 
+from icon4py.model.common.decomposition.definitions import SingleNodeRun
 from icon4py.model.common.dimension import E2VDim, E2C2EDim, C2EDim, V2CDim, E2CDim, C2VDim, V2EDim, C2E2CDim
 from icon4py.model.common.grid.grid_manager import GridFile, GridFileName
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.datatest_helpers import get_processor_properties_for_run, get_ranked_data_path, \
+    get_datapath_for_ranked_data, create_icon_serial_data_provider, SER_DATA_BASEPATH
+from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
 
 
 def _add_to_dataset(
@@ -174,6 +178,24 @@ def simple_grid_gridfile(tmp_path):
     dataset.close()
     yield path
     path.unlink()
+
+
+def get_icon_grid():
+    processor_properties = get_processor_properties_for_run(SingleNodeRun())
+    ranked_path = get_ranked_data_path(SER_DATA_BASEPATH, processor_properties)
+    data_path = get_datapath_for_ranked_data(ranked_path)
+    icon_data_provider = create_icon_serial_data_provider(data_path, processor_properties)
+    grid_savepoint = icon_data_provider.from_savepoint_grid()
+    return grid_savepoint.construct_icon_grid()
+
+
+def get_grid_by_type(grid_type):
+    if grid_type == "simple_grid":
+        return SimpleGrid()
+    elif grid_type == "icon_grid":
+        return get_icon_grid()
+    else:
+        raise ValueError(f"Unknown grid type: {grid_type}")
 
 
 @pytest.fixture

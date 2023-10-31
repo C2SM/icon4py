@@ -14,7 +14,7 @@ import pytest
 
 from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401
-    base_path,
+    BASE_PATH,
     damping_height,
     data_provider,
     datapath,
@@ -30,7 +30,7 @@ from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtu
    simple_grid_gridfile
 )
 
-grids_path = base_path.joinpath("grids")
+grids_path = BASE_PATH.joinpath("grids")
 r04b09_dsl_grid_path = grids_path.joinpath("mch_ch_r04b09_dsl")
 r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1.tar.gz").name
 r02b04_global_grid_path = grids_path.joinpath("r02b04_global")
