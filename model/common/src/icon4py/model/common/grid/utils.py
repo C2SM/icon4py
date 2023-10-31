@@ -11,9 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import numpy as np
+from gt4py.next import Dimension, NeighborTableOffsetProvider
 
-from icon4py.model.common.test_utils.grid_utils import (  # noqa: F401 # fixtures
-    grid,
-    simple_grid_gridfile,
-)
-from icon4py.model.common.test_utils.helpers import backend  # noqa: F401 # fixtures
+
+def neighbortable_offset_provider_for_1d_sparse_fields(
+    old_shape: tuple[int, int],
+    origin_axis: Dimension,
+    neighbor_axis: Dimension,
+):
+    table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+    return NeighborTableOffsetProvider(table, origin_axis, neighbor_axis, table.shape[1])

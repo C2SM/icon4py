@@ -3,8 +3,8 @@ include:
 
 stages:
   - build
-  - test_model
-  - test_tools
+  - test
+  - benchmark
 
 variables:
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
@@ -34,18 +34,18 @@ build_job:
 
 test_model_job:
   extends: .test_template
-  stage: test_model
-  script:   # TODO: once gtfn backends work parametrise with backend
+  stage: test
+  script:
     - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
 
-benchmark_model_job:
+benchmark_model_gtfn_cpu:
   extends: .test_template
-  stage: test_model
-  script:   # TODO: once gtfn backends work parametrise with backend
-    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only
+  stage: benchmark
+  script:
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
 
 test_tools_job:
   extends: .test_template
-  stage: test_tools
+  stage: test
   script:
     - tox -r -e py${pyversion_no_dot} -c tools/ --verbose
