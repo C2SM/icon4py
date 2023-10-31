@@ -17,15 +17,20 @@ from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
 from icon4py.model.common.dimension import CellDim, KDim
 
+
 @scan_operator(axis=KDim, forward=True, init=0.0)
 def _set_w_level_1_scan(state: float, field: float) -> float:
     return state + field
 
+
 @field_operator
-def _set_w_level_1(w: Field[[CellDim, KDim], float], k_field: Field[[KDim], int32]) -> Field[[CellDim, KDim], float]:
+def _set_w_level_1(
+    w: Field[[CellDim, KDim], float], k_field: Field[[KDim], int32]
+) -> Field[[CellDim, KDim], float]:
     w_1 = where(k_field == 0, w, 0.0)
     w_1 = _set_w_level_1_scan(w_1)
     return w_1
+
 
 @field_operator
 def _mo_solve_nonhydro_stencil_54(

@@ -49,7 +49,7 @@ from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_
 )
 
 
-class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
+class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
     PROGRAM = fused_solve_nonhdyro_stencil_41_to_60
     OUTPUTS = (
         "z_flxdiv_mass",
@@ -145,6 +145,10 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         horizontal_lower,
         horizontal_upper,
         istep,
+        horizontal_start,
+        horizontal_end,
+        vertical_start,
+        vertical_end,
     ):
         horz_idx = horz_idx[:, np.newaxis]
         if istep == 1:
@@ -710,7 +714,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         kstart_moist = 1
         horizontal_lower = 3316
         horizontal_upper = 20896
-        istep = 2
+        istep = 1
         dtime = 0.9
         wgt_nnow_vel = 0.25
         wgt_nnew_vel = 0.75
@@ -718,6 +722,10 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         iau_wgt_dyn = 1.0
         lhdiff_rcf = True
         itime_scheme = 4
+        horizontal_start = 5387
+        horizontal_end = 31558
+        vertical_start = 0
+        vertical_end = n_lev
 
         vert_idx = zero_field(mesh, KDim, dtype=int32)
         for level in range(mesh.k_level):
@@ -798,4 +806,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             horizontal_lower=horizontal_lower,
             horizontal_upper=horizontal_upper,
             istep=istep,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=vertical_start,
+            vertical_end=vertical_end,
         )
