@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, maximum, where
+from gt4py.next.ffront.fbuiltins import int32, where, maximum
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
     _mo_velocity_advection_stencil_08,
@@ -35,8 +35,8 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
     _mo_velocity_advection_stencil_14,
 )
-from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 
+from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 
 @field_operator
 def _fused_velocity_advection_stencil_8_to_14(
@@ -49,9 +49,9 @@ def _fused_velocity_advection_stencil_8_to_14(
     cfl_clipping: Field[[CellDim, KDim], bool],
     pre_levelmask: Field[[CellDim, KDim], bool],
     vcfl: Field[[CellDim, KDim], float],
-    z_w_concorr_mc: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    z_ekinh: Field[[CellDim, KDim], float],
+    z_w_concorr_mc : Field[[CellDim, KDim], float],
+    w_concorr_c : Field[[CellDim, KDim], float],
+    z_ekinh : Field[[CellDim, KDim], float],
     vert_idx: Field[[KDim], int32],
     istep: int32,
     cfl_w_limit: float,
@@ -69,10 +69,10 @@ def _fused_velocity_advection_stencil_8_to_14(
 ]:
 
     z_ekinh = where(
-        vert_idx < nlev,
-        _mo_velocity_advection_stencil_08(z_kin_hor_e, e_bln_c_s),
-        z_ekinh,
-    )
+            vert_idx < nlev,
+            _mo_velocity_advection_stencil_08(z_kin_hor_e, e_bln_c_s),
+            z_ekinh,
+        )
 
     z_w_concorr_mc = (
         where(
@@ -94,22 +94,18 @@ def _fused_velocity_advection_stencil_8_to_14(
         else w_concorr_c
     )
 
-    z_w_con_c = where(
-        vert_idx < nlevp1,
-        _mo_velocity_advection_stencil_11(w),
-        _mo_velocity_advection_stencil_12(),
-    )
+    z_w_con_c = where(vert_idx < nlevp1,
+                    _mo_velocity_advection_stencil_11(w),
+                    _mo_velocity_advection_stencil_12(),
+                )
 
-    z_w_con_c = where(
-        nflatlev + 1 < vert_idx < nlev,
-        _mo_velocity_advection_stencil_13(z_w_con_c, w_concorr_c),
-        z_w_con_c,
-    )
+    z_w_con_c = where(nflatlev + 1 < vert_idx < nlev,
+                      _mo_velocity_advection_stencil_13(z_w_con_c, w_concorr_c),
+                      z_w_con_c,
+                     )
     cfl_clipping, pre_levelmask, vcfl, z_w_con_c = where(
         maximum(3, nrdmax - 2) < vert_idx < nlev - 3,
-        _mo_velocity_advection_stencil_14(
-            ddqz_z_half, z_w_con_c, cfl_clipping, pre_levelmask, vcfl, cfl_w_limit, dtime
-        ),
+        _mo_velocity_advection_stencil_14(ddqz_z_half, z_w_con_c, cfl_clipping, pre_levelmask, vcfl, cfl_w_limit, dtime),
         (cfl_clipping, pre_levelmask, vcfl, z_w_con_c),
     )
 
@@ -127,9 +123,9 @@ def fused_velocity_advection_stencil_8_to_14(
     cfl_clipping: Field[[CellDim, KDim], bool],
     pre_levelmask: Field[[CellDim, KDim], bool],
     vcfl: Field[[CellDim, KDim], float],
-    z_w_concorr_mc: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    z_ekinh: Field[[CellDim, KDim], float],
+    z_w_concorr_mc : Field[[CellDim, KDim], float],
+    w_concorr_c : Field[[CellDim, KDim], float],
+    z_ekinh : Field[[CellDim, KDim], float],
     z_w_con_c: Field[[CellDim, KDim], float],
     vert_idx: Field[[KDim], int32],
     istep: int32,
@@ -150,9 +146,9 @@ def fused_velocity_advection_stencil_8_to_14(
         cfl_clipping,
         pre_levelmask,
         vcfl,
-        z_w_concorr_mc,
-        w_concorr_c,
-        z_ekinh,
+        z_w_concorr_mc ,
+        w_concorr_c ,
+        z_ekinh ,
         vert_idx,
         istep,
         cfl_w_limit,
@@ -161,5 +157,5 @@ def fused_velocity_advection_stencil_8_to_14(
         nlev,
         nflatlev,
         nrdmax,
-        out=(z_ekinh, cfl_clipping, pre_levelmask, vcfl, z_w_con_c),
+        out=(z_ekinh, cfl_clipping, pre_levelmask, vcfl, z_w_con_c)
     )

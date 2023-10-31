@@ -13,24 +13,18 @@
 
 import numpy as np
 import pytest
+
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 import (
-    fused_velocity_advection_stencil_1_to_7,
-)
-from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 import (fused_velocity_advection_stencil_1_to_7)
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, E2C2EDim, V2CDim, KDim
+
+from icon4py.model.common.test_utils.helpers import random_field, zero_field, StencilTest
 
 
 class TestFusedVelocityAdvectionStencil1To7(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_1_to_7
-    OUTPUTS = (
-        "vt",
-        "vn_ie",
-        "z_kin_hor_e",
-        "z_w_concorr_me",
-        "z_v_grad_w",
-    )
+    OUTPUTS = ("vt", "vn_ie", "z_kin_hor_e", "z_w_concorr_me", "z_v_grad_w",)
 
     @staticmethod
     def reference(
@@ -38,19 +32,13 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         **kwargs,
     ) -> tuple[np.array]:
 
-        vt = 0.0
-        vn_ie = 0.0
-        z_kin_hor_e = 0.0
-        z_w_concorr_me = 0.0
-        z_v_grad_w = 0.0
+        vt = 0.
+        vn_ie = 0.
+        z_kin_hor_e = 0.
+        z_w_concorr_me = 0.
+        z_v_grad_w = 0.
 
-        return dict(
-            vt=vt,
-            vn_ie=vn_ie,
-            z_kin_hor_e=z_kin_hor_e,
-            z_w_concorr_me=z_w_concorr_me,
-            z_v_grad_w=z_v_grad_w,
-        )
+        return dict(vt=vt, vn_ie=vn_ie, z_kin_hor_e=z_kin_hor_e, z_w_concorr_me=z_w_concorr_me, z_v_grad_w=z_v_grad_w)
 
     @pytest.fixture
     def input_data(self, mesh):

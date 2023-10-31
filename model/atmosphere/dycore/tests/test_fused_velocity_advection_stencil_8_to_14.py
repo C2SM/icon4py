@@ -13,29 +13,18 @@
 
 import numpy as np
 import pytest
+
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_14 import (
-    fused_velocity_advection_stencil_8_to_14,
-)
-from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    random_mask,
-    zero_field,
-)
+from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_14 import (fused_velocity_advection_stencil_8_to_14)
+from icon4py.model.common.dimension import CellDim, EdgeDim, C2EDim, KDim
+
+from icon4py.model.common.test_utils.helpers import random_field, random_mask, zero_field, StencilTest
 
 
 class TestFusedVelocityAdvectionStencil8To14(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_8_to_14
-    OUTPUTS = (
-        "z_ekinh",
-        "cfl_clipping",
-        "pre_levelmask",
-        "vcfl",
-        "z_w_con_c",
-    )
+    OUTPUTS = ("z_ekinh", "cfl_clipping", "pre_levelmask", "vcfl", "z_w_con_c",)
 
     @staticmethod
     def reference(
@@ -43,19 +32,13 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         **kwargs,
     ) -> tuple[np.array]:
 
-        z_ekinh = 0.0
-        cfl_clipping = 0.0
-        pre_levelmask = 0.0
-        vcfl = 0.0
-        z_w_con_c = 0.0
+        z_ekinh = 0.
+        cfl_clipping = 0.
+        pre_levelmask = 0.
+        vcfl = 0.
+        z_w_con_c = 0.
 
-        return dict(
-            z_ekinh=z_ekinh,
-            cfl_clipping=cfl_clipping,
-            pre_levelmask=pre_levelmask,
-            vcfl=vcfl,
-            z_w_con_c=z_w_con_c,
-        )
+        return dict(z_ekinh=z_ekinh, cfl_clipping=cfl_clipping, pre_levelmask=pre_levelmask, vcfl=vcfl, z_w_con_c=z_w_con_c)
 
     @pytest.fixture
     def input_data(self, mesh):

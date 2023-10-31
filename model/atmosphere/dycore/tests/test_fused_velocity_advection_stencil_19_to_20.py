@@ -13,28 +13,13 @@
 
 import numpy as np
 import pytest
+
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_19_to_20 import (
-    fused_velocity_advection_stencil_19_to_20,
-)
-from icon4py.model.common.dimension import (
-    CellDim,
-    E2C2EODim,
-    E2CDim,
-    ECDim,
-    EdgeDim,
-    KDim,
-    V2EDim,
-    VertexDim,
-)
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    as_1D_sparse_field,
-    random_field,
-    random_mask,
-    zero_field,
-)
+from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_19_to_20 import (fused_velocity_advection_stencil_19_to_20)
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, E2CDim, ECDim, E2C2EODim, V2EDim, KDim
+
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, random_mask, zero_field, StencilTest
 
 
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
@@ -46,7 +31,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         mesh,
         **kwargs,
     ) -> tuple[np.array]:
-        ddt_vn_adv = 0.0
+        ddt_vn_adv = 0.
         return dict(ddt_vn_adv=ddt_vn_adv)
 
     @pytest.fixture

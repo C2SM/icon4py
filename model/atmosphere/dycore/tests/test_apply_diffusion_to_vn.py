@@ -13,16 +13,13 @@
 
 import numpy as np
 import pytest
+
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    as_1D_sparse_field,
-    random_field,
-    zero_field,
-)
+from icon4py.model.atmosphere.dycore.apply_diffusion_to_vn import (apply_diffusion_to_vn)
+from icon4py.model.common.dimension import EdgeDim, VertexDim, ECVDim, E2C2VDim, KDim
+
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field, StencilTest
 
 
 class TestApplyDiffusionToVn(StencilTest):
@@ -34,7 +31,7 @@ class TestApplyDiffusionToVn(StencilTest):
         mesh,
         **kwargs,
     ) -> tuple[np.array]:
-        vn = 0.0
+        vn = 0.
         return dict(vn=vn)
 
     @pytest.fixture
