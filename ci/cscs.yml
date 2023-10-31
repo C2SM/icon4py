@@ -3,7 +3,7 @@ include:
 
 stages:
   - build
-  - test_model
+  - test_model_gtfn_cpu
   - test_tools
 
 variables:
