@@ -15,6 +15,8 @@ import pytest
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 from gt4py.next.program_processors.runners.roundtrip import executor
 
+from icon4py.model.common.grid.simple import SimpleGrid
+
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
@@ -57,17 +59,33 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
-    # parametrise backends
+    # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
 
         params = []
+        ids = []  # list to hold the custom names
+
         if backend_option == "gtfn_cpu":
             params.append(run_gtfn)
+            ids.append("backend=gtfn_cpu")
         elif backend_option == "embedded":
             params.append(executor)
+            ids.append("backend=embedded")
         # TODO: add gpu support
         else:
-            raise Exception("Need to select a backend. Select from [embedded, gtfn_cpu] and pass it as an argument to --backend when invoking pytest.")
+            raise Exception("Need to select a backend. Select from: ['embedded', 'gtfn_cpu'] and pass it as an argument to --backend when invoking pytest.")
 
-        metafunc.parametrize("backend", params)
+        metafunc.parametrize("backend", params, ids=ids)
+
+    # parametrise grid
+    if "grid" in metafunc.fixturenames:
+        all_grids = {
+            "simple_grid": SimpleGrid(),
+            # "icon_grid": icon_grid    # todo: add icon_grid
+        }
+        selected_grid_type = metafunc.config.getoption("--grid")
+        if selected_grid_type in all_grids:
+            metafunc.parametrize("grid", [all_grids[selected_grid_type]], ids=[f"grid={selected_grid_type}"])
+        else:
+            raise Exception(f"Selected grid: '{selected_grid_type}' does not exist. Select from: {list(all_grids.keys())}")

@@ -7,7 +7,6 @@ import numpy as np
 from icon4py.model.common.dimension import E2VDim, E2C2EDim, C2EDim, V2CDim, E2CDim, C2VDim, V2EDim, C2E2CDim
 from icon4py.model.common.grid.grid_manager import GridFile, GridFileName
 from icon4py.model.common.grid.simple import SimpleGrid
-from .datatest_helpers import icon_grid
 
 
 def _add_to_dataset(
@@ -178,17 +177,5 @@ def simple_grid_gridfile(tmp_path):
 
 
 @pytest.fixture
-def all_grids(icon_grid):
-    return {
-        "simple_grid": SimpleGrid(),
-        "icon_grid": icon_grid
-    }
-
-
-@pytest.fixture
-def grid(request, all_grids):
-    try:
-        selected_grid = request.config.getoption("--grid")
-        return all_grids[selected_grid]
-    except Exception as e:
-        raise Exception(f"Need to select correct grid.")
+def grid(request):
+    return request.param
