@@ -183,7 +183,6 @@ class IconGrid(BaseGrid):
             "E2C2V": self.get_e2c2v_offset_provider(),
             "V2E": self.get_v2e_offset_provider(),
             "V2C": self.get_v2c_offset_provider(),
-            # "C2V": self.get_c2v_offset_provider(),
             "E2ECV": self.get_e2ecv_offset_provider(),
             "C2CEC": self.get_c2cec_offset_provider(),
             "C2CE": self.get_c2ce_offset_provider(),

@@ -1,16 +1,42 @@
-import pytest
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from uuid import uuid4
 
 import netCDF4
 import numpy as np
+import pytest
 
 from icon4py.model.common.decomposition.definitions import SingleNodeRun
-from icon4py.model.common.dimension import E2VDim, E2C2EDim, C2EDim, V2CDim, E2CDim, C2VDim, V2EDim, C2E2CDim
+from icon4py.model.common.dimension import (
+    C2E2CDim,
+    C2EDim,
+    C2VDim,
+    E2C2EDim,
+    E2CDim,
+    E2VDim,
+    V2CDim,
+    V2EDim,
+)
 from icon4py.model.common.grid.grid_manager import GridFile, GridFileName
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.datatest_helpers import get_processor_properties_for_run, get_ranked_data_path, \
-    get_datapath_for_ranked_data, create_icon_serial_data_provider, SER_DATA_BASEPATH
-from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
+from icon4py.model.common.test_utils.datatest_helpers import (
+    SER_DATA_BASEPATH,
+    create_icon_serial_data_provider,
+    get_datapath_for_ranked_data,
+    get_processor_properties_for_run,
+    get_ranked_data_path,
+)
 
 
 def _add_to_dataset(

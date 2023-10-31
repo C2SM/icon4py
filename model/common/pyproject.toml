@@ -19,7 +19,8 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-  "gt4py>=1.0.1"
+  "gt4py>=1.0.1",
+  "netcdf4>=1.6.0"
 ]
 description = "Shared code for the icon4py model."
 dynamic = ['version']
@@ -29,9 +30,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
-all = ["icon4py-common[ghex,netcdf]"]
+all = ["icon4py-common[ghex]"]
 ghex = ["pyghex>=0.3.0", "mpi4py<=3.1.4"]
-netcdf = ["netcdf4>=1.6.0"]
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"

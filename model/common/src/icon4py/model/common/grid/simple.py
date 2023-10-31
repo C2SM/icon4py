@@ -14,7 +14,7 @@
 from dataclasses import dataclass
 
 import numpy as np
-from gt4py.next.iterator.embedded import NeighborTableOffsetProvider, StridedNeighborOffsetProvider
+from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
@@ -39,7 +39,6 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.base import BaseGrid, GridConfig
-from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
 
 # periodic
 #
@@ -60,6 +59,7 @@ from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
+from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 
@@ -552,7 +552,13 @@ class SimpleGrid(BaseGrid):
             "C2CE": self.get_c2ce_offset_provider(),
             "Koff": KDim,
             "C2E2C2E2C": self.get_c2e2c2e2c_offset_provider(),
-            "E2ECV": neighbortable_offset_provider_for_1d_sparse_fields(self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim),
-            "E2EC": neighbortable_offset_provider_for_1d_sparse_fields(self.connectivities[E2CDim].shape, EdgeDim, ECDim),
-            "C2CEC": neighbortable_offset_provider_for_1d_sparse_fields(self.connectivities[C2E2CDim].shape, CellDim, CECDim),
+            "E2ECV": neighbortable_offset_provider_for_1d_sparse_fields(
+                self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim
+            ),
+            "E2EC": neighbortable_offset_provider_for_1d_sparse_fields(
+                self.connectivities[E2CDim].shape, EdgeDim, ECDim
+            ),
+            "C2CEC": neighbortable_offset_provider_for_1d_sparse_fields(
+                self.connectivities[C2E2CDim].shape, CellDim, CECDim
+            ),
         }

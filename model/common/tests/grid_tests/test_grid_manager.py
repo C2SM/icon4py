@@ -19,6 +19,7 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
+
 if typing.TYPE_CHECKING:
     import netCDF4
 
@@ -27,8 +28,6 @@ try:
 except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, C2EDim, V2CDim, E2CDim, \
-    V2EDim
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2EDim,
@@ -44,6 +43,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.grid_manager import (
     GridFile,
+    GridFileName,
     GridManager,
     IndexTransformation,
     ToGt4PyTransformation,
@@ -445,7 +445,8 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
     gm()
     icon_grid = gm.get_grid()
     assert np.allclose(
-        np.sort(icon_grid.get_e2c2v_offset_provider().table, 1), np.sort(simple_grid.diamond_table, 1)
+        np.sort(icon_grid.get_e2c2v_offset_provider().table, 1),
+        np.sort(simple_grid.diamond_table, 1),
     )
 
 

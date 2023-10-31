@@ -46,7 +46,10 @@ def pytest_addoption(parser):
 
     try:
         parser.addoption(
-            "--grid", action="store", default="simple_grid", help="Grid to use. Defaults to simple_grid, other options include icon_grid"
+            "--grid",
+            action="store",
+            default="simple_grid",
+            help="Grid to use. Defaults to simple_grid, other options include icon_grid",
         )
     except ValueError:
         pass
@@ -75,7 +78,8 @@ def pytest_generate_tests(metafunc):
         # TODO (skellerhals): add gpu support
         else:
             raise Exception(
-                "Need to select a backend. Select from: ['embedded', 'gtfn_cpu'] and pass it as an argument to --backend when invoking pytest.")
+                "Need to select a backend. Select from: ['embedded', 'gtfn_cpu'] and pass it as an argument to --backend when invoking pytest."
+            )
 
         metafunc.parametrize("backend", params, ids=ids)
 

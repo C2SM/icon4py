@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pytest
 
-from .helpers import StencilTest
 from ..decomposition.definitions import SingleNodeRun, get_processor_properties
 from .data_handling import download_and_extract
 from .serialbox_utils import IconSerialDataProvider
