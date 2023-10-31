@@ -917,6 +917,8 @@ def fused_solve_nonhdyro_stencil_41_to_60(
     kstart_moist: int32,
     horizontal_lower: int32,
     horizontal_upper: int32,
+    vertical_lower: int32,
+    vertical_upper: int32,
     istep: int32,
     horizontal_start: int32,
     horizontal_end: int32,

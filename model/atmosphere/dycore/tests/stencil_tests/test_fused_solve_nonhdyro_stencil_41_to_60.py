@@ -726,6 +726,8 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
         horizontal_end = horizontal_upper + 1
         vertical_start = 0
         vertical_end = n_lev
+        vertical_lower = 0
+        vertical_upper = n_lev + 1
 
         vert_idx = zero_field(mesh, KDim, dtype=int32)
         for level in range(mesh.k_level):
@@ -805,6 +807,8 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
             kstart_moist=kstart_moist,
             horizontal_lower=horizontal_lower,
             horizontal_upper=horizontal_upper,
+            vertical_lower=vertical_lower,
+            vertical_upper=vertical_upper,
             istep=istep,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
