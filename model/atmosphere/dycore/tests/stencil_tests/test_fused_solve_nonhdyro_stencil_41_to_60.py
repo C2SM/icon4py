@@ -722,8 +722,8 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
         iau_wgt_dyn = 1.0
         lhdiff_rcf = True
         itime_scheme = 4
-        horizontal_start = 5387
-        horizontal_end = 31558
+        horizontal_start = horizontal_lower - 1
+        horizontal_end = horizontal_upper + 1
         vertical_start = 0
         vertical_end = n_lev
 
