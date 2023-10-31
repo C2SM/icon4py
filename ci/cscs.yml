@@ -3,7 +3,8 @@ include:
 
 stages:
   - build
-  - test_model_gtfn_cpu
+  - test_model
+  - benchmark_model_gtfn_cpu
   - test_tools
 
 variables:
@@ -35,12 +36,12 @@ build_job:
 test_model_job:
   extends: .test_template
   stage: test_model
-  script:   # TODO: once gtfn backends work parametrise with backend
+  script:
     - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
 
 benchmark_model_job:
   extends: .test_template
-  stage: test_model_gtfn_cpu
+  stage: benchmark_model_gtfn_cpu
   script:
     - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
 
