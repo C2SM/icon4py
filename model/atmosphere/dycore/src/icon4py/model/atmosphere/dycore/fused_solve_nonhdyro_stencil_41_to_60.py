@@ -52,7 +52,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
-from model.atmosphere.dycore.src.icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
     _set_w_level_1,
 )
 
