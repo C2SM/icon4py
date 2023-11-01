@@ -45,16 +45,25 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
     _mo_solve_nonhydro_stencil_59,
 )
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
-    _stencils_42_44_45_45b,
-    _stencils_43_44_45_45b,
-    _stencils_47_48_49,
-)
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
     _set_w_level_1,
 )
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_42 import \
+    _mo_solve_nonhydro_stencil_42
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_43 import \
+    _mo_solve_nonhydro_stencil_43
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_44 import \
+    _mo_solve_nonhydro_stencil_44
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45 import \
+    _mo_solve_nonhydro_stencil_45
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45_b import \
+    _mo_solve_nonhydro_stencil_45_b
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import \
+    _mo_solve_nonhydro_stencil_47
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_49 import \
+    _mo_solve_nonhydro_stencil_49
 
 
 @field_operator
@@ -134,36 +143,68 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             ),
             (z_flxdiv_mass, z_flxdiv_theta),
         )
-
-    z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q = where(
-        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < (n_lev + int32(1))),
-        _stencils_43_44_45_45b(
-            z_w_expl=z_w_expl,
-            w_nnow=w_nnow,
-            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
-            z_beta=z_beta,
-            exner_nnow=exner_nnow,
-            rho_nnow=rho_nnow,
-            theta_v_nnow=theta_v_nnow,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            z_alpha=z_alpha,
-            vwind_impl_wgt=vwind_impl_wgt,
-            theta_v_ic=theta_v_ic,
-            z_q=z_q,
-            k_field=vert_idx_1d,
-            rd=rd,
-            cvd=cvd,
-            dtime=dtime,
-            cpd=cpd,
-            nlev=n_lev,
+    (z_w_expl, z_contr_w_fl_l) = where(
+        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d >= int32(1)),
+        _mo_solve_nonhydro_stencil_43(
+            w_nnow,
+            ddt_w_adv_ntl1,
+            z_th_ddz_exner_c,
+            rho_ic,
+            w_concorr_c,
+            vwind_expl_wgt,
+            dtime,
+            cpd,
         ),
-        (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
+        (z_w_expl, z_contr_w_fl_l),
     )
+    (z_beta, z_alpha) = where(
+        (horizontal_lower <= horz_idx < horizontal_upper),
+        _mo_solve_nonhydro_stencil_44(
+            exner_nnow,
+            rho_nnow,
+            theta_v_nnow,
+            inv_ddqz_z_full,
+            vwind_impl_wgt,
+            theta_v_ic,
+            rho_ic,
+            dtime,
+            rd,
+            cvd,
+        ),
+        (z_beta, z_alpha),
+    )
+    z_alpha = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev), _mo_solve_nonhydro_stencil_45(), z_alpha)
+    z_q = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == int32(0)), _mo_solve_nonhydro_stencil_45_b(), z_q)
+
+    # z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q = where(
+    #     (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < (n_lev + int32(1))),
+    #     _stencils_43_44_45_45b(
+    #         z_w_expl=z_w_expl,
+    #         w_nnow=w_nnow,
+    #         ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+    #         z_th_ddz_exner_c=z_th_ddz_exner_c,
+    #         z_contr_w_fl_l=z_contr_w_fl_l,
+    #         rho_ic=rho_ic,
+    #         w_concorr_c=w_concorr_c,
+    #         vwind_expl_wgt=vwind_expl_wgt,
+    #         z_beta=z_beta,
+    #         exner_nnow=exner_nnow,
+    #         rho_nnow=rho_nnow,
+    #         theta_v_nnow=theta_v_nnow,
+    #         inv_ddqz_z_full=inv_ddqz_z_full,
+    #         z_alpha=z_alpha,
+    #         vwind_impl_wgt=vwind_impl_wgt,
+    #         theta_v_ic=theta_v_ic,
+    #         z_q=z_q,
+    #         k_field=vert_idx_1d,
+    #         rd=rd,
+    #         cvd=cvd,
+    #         dtime=dtime,
+    #         cpd=cpd,
+    #         nlev=n_lev,
+    #     ),
+    #     (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
+    # )
 
     if not (l_open_ubc & l_vert_nested):
         w, z_contr_w_fl_l = where(
@@ -172,29 +213,51 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             (w, z_contr_w_fl_l),
         )
 
-    w, z_contr_w_fl_l, z_rho_expl, z_exner_expl = where(
-        (horizontal_lower <= horz_idx < horizontal_upper)
-        & (n_lev <= vert_idx < (n_lev + int32(1))),
-        _stencils_47_48_49(
-            w_nnew=w,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            w_concorr_c=w_concorr_c,
-            z_rho_expl=z_rho_expl,
-            z_exner_expl=z_exner_expl,
-            rho_nnow=rho_nnow,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            z_flxdiv_mass=z_flxdiv_mass,
-            exner_pr=exner_pr,
-            z_beta=z_beta,
-            z_flxdiv_theta=z_flxdiv_theta,
-            theta_v_ic=theta_v_ic,
-            ddt_exner_phy=ddt_exner_phy,
-            k_field=vert_idx_1d,
-            dtime=dtime,
-            nlev=n_lev,
-        ),
-        (w, z_contr_w_fl_l, z_rho_expl, z_exner_expl),
+    (w, z_contr_w_fl_l) = where(
+        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev),
+        _mo_solve_nonhydro_stencil_47(w_concorr_c),
+        (w, z_contr_w_fl_l),
     )
+    # 48 and 49 are identical except for bounds
+    (z_rho_expl, z_exner_expl) = where(
+        (horizontal_lower <= horz_idx < horizontal_upper),
+        _mo_solve_nonhydro_stencil_49(
+            rho_nnow,
+            inv_ddqz_z_full,
+            z_flxdiv_mass,
+            z_contr_w_fl_l,
+            exner_pr,
+            z_beta,
+            z_flxdiv_theta,
+            theta_v_ic,
+            ddt_exner_phy,
+            dtime,
+        ),
+        (z_rho_expl, z_exner_expl),
+    )
+    # w, z_contr_w_fl_l, z_rho_expl, z_exner_expl = where(
+    #     (horizontal_lower <= horz_idx < horizontal_upper)
+    #     & (n_lev <= vert_idx < (n_lev + int32(1))),
+    #     _stencils_47_48_49(
+    #         w_nnew=w,
+    #         z_contr_w_fl_l=z_contr_w_fl_l,
+    #         w_concorr_c=w_concorr_c,
+    #         z_rho_expl=z_rho_expl,
+    #         z_exner_expl=z_exner_expl,
+    #         rho_nnow=rho_nnow,
+    #         inv_ddqz_z_full=inv_ddqz_z_full,
+    #         z_flxdiv_mass=z_flxdiv_mass,
+    #         exner_pr=exner_pr,
+    #         z_beta=z_beta,
+    #         z_flxdiv_theta=z_flxdiv_theta,
+    #         theta_v_ic=theta_v_ic,
+    #         ddt_exner_phy=ddt_exner_phy,
+    #         k_field=vert_idx_1d,
+    #         dtime=dtime,
+    #         nlev=n_lev,
+    #     ),
+    #     (w, z_contr_w_fl_l, z_rho_expl, z_exner_expl),
+    # )
 
     if is_iau_active:
         z_rho_expl, z_exner_expl = where(
@@ -388,68 +451,141 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
         )
 
     if itime_scheme == 4:
-        (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
-            (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < n_lev + 1),
-            _stencils_42_44_45_45b(
-                z_w_expl=z_w_expl,
-                w_nnow=w_nnow,
-                ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-                ddt_w_adv_ntl2=ddt_w_adv_ntl2,
-                z_th_ddz_exner_c=z_th_ddz_exner_c,
-                z_contr_w_fl_l=z_contr_w_fl_l,
-                rho_ic=rho_ic,
-                w_concorr_c=w_concorr_c,
-                vwind_expl_wgt=vwind_expl_wgt,
-                z_beta=z_beta,
-                exner_nnow=exner_nnow,
-                rho_nnow=rho_nnow,
-                theta_v_nnow=theta_v_nnow,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                z_alpha=z_alpha,
-                vwind_impl_wgt=vwind_impl_wgt,
-                theta_v_ic=theta_v_ic,
-                z_q=z_q,
-                k_field=vert_idx_1d,
-                rd=rd,
-                cvd=cvd,
-                dtime=dtime,
-                cpd=cpd,
-                wgt_nnow_vel=wgt_nnow_vel,
-                wgt_nnew_vel=wgt_nnew_vel,
-                nlev=n_lev,
+        (z_w_expl, z_contr_w_fl_l) = where(
+            (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d >= int32(1)),
+            _mo_solve_nonhydro_stencil_42(
+                w_nnow,
+                ddt_w_adv_ntl1,
+                ddt_w_adv_ntl2,
+                z_th_ddz_exner_c,
+                rho_ic,
+                w_concorr_c,
+                vwind_expl_wgt,
+                dtime,
+                wgt_nnow_vel,
+                wgt_nnew_vel,
+                cpd,
             ),
-            (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
+            (z_w_expl, z_contr_w_fl_l),
         )
+
+        (z_beta, z_alpha) = where(
+            (horizontal_lower <= horz_idx < horizontal_upper),
+            _mo_solve_nonhydro_stencil_44(
+                exner_nnow,
+                rho_nnow,
+                theta_v_nnow,
+                inv_ddqz_z_full,
+                vwind_impl_wgt,
+                theta_v_ic,
+                rho_ic,
+                dtime,
+                rd,
+                cvd,
+            ),
+            (z_beta, z_alpha),
+        )
+        z_alpha = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev), _mo_solve_nonhydro_stencil_45(), z_alpha)
+
+        z_q = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == int32(0)), _mo_solve_nonhydro_stencil_45_b(), z_q)
+
+        # (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
+        #     (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < n_lev + 1),
+        #     _stencils_42_44_45_45b(
+        #         z_w_expl=z_w_expl,
+        #         w_nnow=w_nnow,
+        #         ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+        #         ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+        #         z_th_ddz_exner_c=z_th_ddz_exner_c,
+        #         z_contr_w_fl_l=z_contr_w_fl_l,
+        #         rho_ic=rho_ic,
+        #         w_concorr_c=w_concorr_c,
+        #         vwind_expl_wgt=vwind_expl_wgt,
+        #         z_beta=z_beta,
+        #         exner_nnow=exner_nnow,
+        #         rho_nnow=rho_nnow,
+        #         theta_v_nnow=theta_v_nnow,
+        #         inv_ddqz_z_full=inv_ddqz_z_full,
+        #         z_alpha=z_alpha,
+        #         vwind_impl_wgt=vwind_impl_wgt,
+        #         theta_v_ic=theta_v_ic,
+        #         z_q=z_q,
+        #         k_field=vert_idx_1d,
+        #         rd=rd,
+        #         cvd=cvd,
+        #         dtime=dtime,
+        #         cpd=cpd,
+        #         wgt_nnow_vel=wgt_nnow_vel,
+        #         wgt_nnew_vel=wgt_nnew_vel,
+        #         nlev=n_lev,
+        #     ),
+        #     (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
+        # )
     else:
-        (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
-            (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < n_lev + 1),
-            _stencils_43_44_45_45b(
-                z_w_expl=z_w_expl,
-                w_nnow=w_nnow,
-                ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-                z_th_ddz_exner_c=z_th_ddz_exner_c,
-                z_contr_w_fl_l=z_contr_w_fl_l,
-                rho_ic=rho_ic,
-                w_concorr_c=w_concorr_c,
-                vwind_expl_wgt=vwind_expl_wgt,
-                z_beta=z_beta,
-                exner_nnow=exner_nnow,
-                rho_nnow=rho_nnow,
-                theta_v_nnow=theta_v_nnow,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                z_alpha=z_alpha,
-                vwind_impl_wgt=vwind_impl_wgt,
-                theta_v_ic=theta_v_ic,
-                z_q=z_q,
-                k_field=vert_idx_1d,
-                rd=rd,
-                cvd=cvd,
-                dtime=dtime,
-                cpd=cpd,
-                nlev=n_lev,
+        (z_w_expl, z_contr_w_fl_l) = where(
+            (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d >= int32(1)),
+            _mo_solve_nonhydro_stencil_43(
+                w_nnow,
+                ddt_w_adv_ntl1,
+                z_th_ddz_exner_c,
+                rho_ic,
+                w_concorr_c,
+                vwind_expl_wgt,
+                dtime,
+                cpd,
             ),
-            (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
+            (z_w_expl, z_contr_w_fl_l),
         )
+        (z_beta, z_alpha) = where(
+            (horizontal_lower <= horz_idx < horizontal_upper),
+            _mo_solve_nonhydro_stencil_44(
+                exner_nnow,
+                rho_nnow,
+                theta_v_nnow,
+                inv_ddqz_z_full,
+                vwind_impl_wgt,
+                theta_v_ic,
+                rho_ic,
+                dtime,
+                rd,
+                cvd,
+            ),
+            (z_beta, z_alpha),
+        )
+        z_alpha = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev),
+                        _mo_solve_nonhydro_stencil_45(), z_alpha)
+        z_q = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == int32(0)),
+                    _mo_solve_nonhydro_stencil_45_b(), z_q)
+
+        # (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
+        #     (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < n_lev + 1),
+        #     _stencils_43_44_45_45b(
+        #         z_w_expl=z_w_expl,
+        #         w_nnow=w_nnow,
+        #         ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+        #         z_th_ddz_exner_c=z_th_ddz_exner_c,
+        #         z_contr_w_fl_l=z_contr_w_fl_l,
+        #         rho_ic=rho_ic,
+        #         w_concorr_c=w_concorr_c,
+        #         vwind_expl_wgt=vwind_expl_wgt,
+        #         z_beta=z_beta,
+        #         exner_nnow=exner_nnow,
+        #         rho_nnow=rho_nnow,
+        #         theta_v_nnow=theta_v_nnow,
+        #         inv_ddqz_z_full=inv_ddqz_z_full,
+        #         z_alpha=z_alpha,
+        #         vwind_impl_wgt=vwind_impl_wgt,
+        #         theta_v_ic=theta_v_ic,
+        #         z_q=z_q,
+        #         k_field=vert_idx_1d,
+        #         rd=rd,
+        #         cvd=cvd,
+        #         dtime=dtime,
+        #         cpd=cpd,
+        #         nlev=n_lev,
+        #     ),
+        #     (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
+        # )
 
     if not (l_open_ubc & l_vert_nested):
         w, z_contr_w_fl_l = where(
@@ -457,30 +593,51 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
             _mo_solve_nonhydro_stencil_46(),
             (w, z_contr_w_fl_l),
         )
-
-    w, z_contr_w_fl_l, z_rho_expl, z_exner_expl = where(
-        (horizontal_lower <= horz_idx < horizontal_upper)
-        & (n_lev <= vert_idx < (n_lev + int32(1))),
-        _stencils_47_48_49(
-            w_nnew=w,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            w_concorr_c=w_concorr_c,
-            z_rho_expl=z_rho_expl,
-            z_exner_expl=z_exner_expl,
-            rho_nnow=rho_nnow,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            z_flxdiv_mass=z_flxdiv_mass,
-            exner_pr=exner_pr,
-            z_beta=z_beta,
-            z_flxdiv_theta=z_flxdiv_theta,
-            theta_v_ic=theta_v_ic,
-            ddt_exner_phy=ddt_exner_phy,
-            k_field=vert_idx_1d,
-            dtime=dtime,
-            nlev=n_lev,
-        ),
-        (w, z_contr_w_fl_l, z_rho_expl, z_exner_expl),
+    (w, z_contr_w_fl_l) = where(
+        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev),
+        _mo_solve_nonhydro_stencil_47(w_concorr_c),
+        (w, z_contr_w_fl_l),
     )
+    # 48 and 49 are identical except for bounds
+    (z_rho_expl, z_exner_expl) = where(
+        (horizontal_lower <= horz_idx < horizontal_upper),
+        _mo_solve_nonhydro_stencil_49(
+            rho_nnow,
+            inv_ddqz_z_full,
+            z_flxdiv_mass,
+            z_contr_w_fl_l,
+            exner_pr,
+            z_beta,
+            z_flxdiv_theta,
+            theta_v_ic,
+            ddt_exner_phy,
+            dtime,
+        ),
+        (z_rho_expl, z_exner_expl),
+    )
+    # w, z_contr_w_fl_l, z_rho_expl, z_exner_expl = where(
+    #     (horizontal_lower <= horz_idx < horizontal_upper)
+    #     & (n_lev <= vert_idx < (n_lev + int32(1))),
+    #     _stencils_47_48_49(
+    #         w_nnew=w,
+    #         z_contr_w_fl_l=z_contr_w_fl_l,
+    #         w_concorr_c=w_concorr_c,
+    #         z_rho_expl=z_rho_expl,
+    #         z_exner_expl=z_exner_expl,
+    #         rho_nnow=rho_nnow,
+    #         inv_ddqz_z_full=inv_ddqz_z_full,
+    #         z_flxdiv_mass=z_flxdiv_mass,
+    #         exner_pr=exner_pr,
+    #         z_beta=z_beta,
+    #         z_flxdiv_theta=z_flxdiv_theta,
+    #         theta_v_ic=theta_v_ic,
+    #         ddt_exner_phy=ddt_exner_phy,
+    #         k_field=vert_idx_1d,
+    #         dtime=dtime,
+    #         nlev=n_lev,
+    #     ),
+    #     (w, z_contr_w_fl_l, z_rho_expl, z_exner_expl),
+    # )
 
     if is_iau_active:
         z_rho_expl, z_exner_expl = where(
