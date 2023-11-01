@@ -529,8 +529,8 @@ class SimpleGrid(BaseGrid):
 
     def get_e2ecv_offset_provider(self):
         return neighbortable_offset_provider_for_1d_sparse_fields(
-                self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim
-            )
+            self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim
+        )
 
     def get_c2ce_offset_provider(self):
         return neighbortable_offset_provider_for_1d_sparse_fields(
