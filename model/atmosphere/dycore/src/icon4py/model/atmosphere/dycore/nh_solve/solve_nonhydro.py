@@ -968,6 +968,7 @@ class SolveNonhydro:
                     "Koff": KDim,
                 },
             )
+        # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.n_lev() - 1
         hydro_corr_horizontal = np_as_located_field(EdgeDim)(
             np.asarray(self.z_hydro_corr)[:, lowest_level]
