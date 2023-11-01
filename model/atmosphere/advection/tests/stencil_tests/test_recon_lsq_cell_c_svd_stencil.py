@@ -314,7 +314,7 @@ def test_recon_lsq_cell_c_svd_stencil():
         p_coeff_9_dsl,
         p_coeff_10_dsl,
         offset_provider={
-            "C2E2C2E2C": grid.get_c2e2c2e2c_offset_provider(),
+            "C2E2C2E2C": grid.get_offset_provider["C2E2C2E2C"],
             "C2CECEC": StridedNeighborOffsetProvider(CellDim, CECECDim, grid.size[C2E2C2E2CDim]),
         },
     )

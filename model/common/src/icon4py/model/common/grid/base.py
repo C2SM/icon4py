@@ -17,9 +17,11 @@ from typing import Dict
 
 import numpy as np
 from gt4py.next.common import Dimension
+from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
+from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
 
@@ -96,3 +98,14 @@ class BaseGrid(ABC):
         self.size[CellDim] = config.num_cells
         self.size[EdgeDim] = config.num_edges
         self.size[KDim] = config.num_levels
+
+    def _get_offset_provider(self, dim, from_dim, to_dim):
+        return NeighborTableOffsetProvider(
+            self.connectivities[dim], from_dim, to_dim, self.size[dim]
+        )
+
+    def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):
+        return neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities[dim].shape, from_dim, to_dim
+        )
+

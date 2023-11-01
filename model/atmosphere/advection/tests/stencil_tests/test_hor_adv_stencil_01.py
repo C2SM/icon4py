@@ -73,7 +73,7 @@ def test_hor_adv_stencil_01():
         tracer_new,
         p_dtime,
         offset_provider={
-            "C2E": grid.get_c2e_offset_provider(),
+            "C2E": grid.get_offset_provider["C2E"],
             "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
         },
     )

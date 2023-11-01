@@ -59,7 +59,7 @@ from icon4py.model.common.grid.base import BaseGrid, GridConfig
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
+from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields, ClassLevelCache
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 
@@ -467,102 +467,24 @@ class SimpleGrid(BaseGrid):
         self.with_config(config).with_connectivities(connectivity_dict)
         self._update_size_connectivities()
 
-    def get_c2v_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[C2VDim], VertexDim, CellDim, self.size[C2VDim]
-        )
-
-    def get_c2e_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[C2EDim], CellDim, EdgeDim, self.size[C2EDim]
-        )
-
-    def get_c2e2cO_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[C2E2CODim], CellDim, CellDim, self.size[C2E2CODim]
-        )
-
-    def get_c2e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[C2E2CDim], CellDim, CellDim, self.size[C2E2CDim]
-        )
-
-    def get_e2c2eO_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[E2C2EODim], EdgeDim, EdgeDim, self.size[E2C2EODim]
-        )
-
-    def get_e2c2e_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[E2C2EDim], EdgeDim, EdgeDim, self.size[E2C2EDim]
-        )
-
-    def get_v2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[V2CDim], VertexDim, CellDim, self.size[V2CDim]
-        )
-
-    def get_v2e_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[V2EDim], VertexDim, EdgeDim, self.size[V2EDim]
-        )
-
-    def get_e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[E2CDim], EdgeDim, CellDim, self.size[E2CDim]
-        )
-
-    def get_e2v_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[E2VDim], EdgeDim, VertexDim, self.size[E2VDim]
-        )
-
-    def get_e2c2v_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[E2C2VDim], EdgeDim, VertexDim, self.size[E2C2VDim]
-        )
-
-    def get_c2e2c2e2c_offset_provider(self) -> NeighborTableOffsetProvider:
-        return NeighborTableOffsetProvider(
-            self.connectivities[C2E2C2E2CDim], CellDim, CellDim, self.size[C2E2C2E2CDim]
-        )
-
-    def get_e2ecv_offset_provider(self):
-        return neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim
-        )
-
-    def get_c2ce_offset_provider(self):
-        return neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities[C2EDim].shape, CellDim, CEDim
-        )
-
-    def get_e2ec_offset_provider(self):
-        return neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities[E2CDim].shape, EdgeDim, ECDim
-        )
-
-    def get_c2cec_offset_provider(self):
-        return neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities[C2E2CDim].shape, CellDim, CECDim
-        )
-
+    @property
+    @ClassLevelCache.cache_method
     def get_offset_provider(self):
         return {
-            "C2E": self.get_c2e_offset_provider(),
-            "C2E2CO": self.get_c2e2cO_offset_provider(),
-            "C2E2C": self.get_c2e2c_offset_provider(),
-            "E2C2EO": self.get_e2c2eO_offset_provider(),
-            "E2C2E": self.get_e2c2e_offset_provider(),
-            "V2C": self.get_v2c_offset_provider(),
-            "V2E": self.get_v2e_offset_provider(),
-            "E2C": self.get_e2c_offset_provider(),
-            "E2V": self.get_e2v_offset_provider(),
-            "E2C2V": self.get_e2c2v_offset_provider(),
-            "C2CE": self.get_c2ce_offset_provider(),
+            "C2E": self._get_offset_provider(C2EDim, CellDim, EdgeDim),
+            "C2E2CO": self._get_offset_provider(C2E2CODim, CellDim, CellDim),
+            "C2E2C": self._get_offset_provider(C2E2CDim, CellDim, CellDim),
+            "E2C2EO": self._get_offset_provider(E2C2EODim, EdgeDim, EdgeDim),
+            "E2C2E": self._get_offset_provider(E2C2EDim, EdgeDim, EdgeDim),
+            "V2C": self._get_offset_provider(V2CDim, VertexDim, CellDim),
+            "V2E": self._get_offset_provider(V2EDim, VertexDim, EdgeDim),
+            "E2C": self._get_offset_provider(E2CDim, EdgeDim, CellDim),
+            "E2V": self._get_offset_provider(E2VDim, EdgeDim, VertexDim),
+            "E2C2V": self._get_offset_provider(E2C2VDim, EdgeDim, VertexDim),
+            "C2CE": self._get_offset_provider_for_sparse_fields(C2EDim, CellDim, CEDim),
             "Koff": KDim,
-            "C2E2C2E2C": self.get_c2e2c2e2c_offset_provider(),
-            "E2ECV": self.get_e2ecv_offset_provider(),
-            "E2EC": self.get_e2ec_offset_provider(),
-            "C2CEC": self.get_c2cec_offset_provider(),
+            "C2E2C2E2C": self._get_offset_provider(C2E2C2E2CDim, CellDim, CellDim),
+            "E2ECV": self._get_offset_provider_for_sparse_fields(E2C2VDim, EdgeDim, ECVDim),
+            "E2EC": self._get_offset_provider_for_sparse_fields(E2CDim, EdgeDim, ECDim),
+            "C2CEC": self._get_offset_provider_for_sparse_fields(C2E2CDim, CellDim, CECDim),
         }

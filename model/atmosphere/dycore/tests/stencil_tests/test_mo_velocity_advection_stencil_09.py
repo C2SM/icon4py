@@ -35,7 +35,7 @@ class TestMoVelocityAdvectionStencil09(StencilTest):
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_w_concorr_mc = np.sum(
             z_w_concorr_me[grid.connectivities[C2EDim]]
-            * e_bln_c_s[grid.get_c2ce_offset_provider().table],
+            * e_bln_c_s[grid.get_offset_provider["C2CE"].table],
             axis=1,
         )
         return dict(z_w_concorr_mc=z_w_concorr_mc)

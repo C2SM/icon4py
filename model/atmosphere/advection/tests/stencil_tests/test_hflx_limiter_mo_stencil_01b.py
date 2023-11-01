@@ -110,7 +110,7 @@ def test_hflx_limiter_mo_stencil_01b():
         z_tracer_max,
         z_tracer_min,
         offset_provider={
-            "C2E": grid.get_c2e_offset_provider(),
+            "C2E": grid.get_offset_provider["C2E"],
             "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
         },
     )

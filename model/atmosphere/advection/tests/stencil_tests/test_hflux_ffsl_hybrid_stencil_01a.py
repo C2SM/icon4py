@@ -198,7 +198,7 @@ def test_hflux_ffsl_hybrid_stencil_01a():
         patch0_cell_rel_idx_dsl,
         p_out_e_hybrid_1a,
         offset_provider={
-            "E2C": grid.get_e2c_offset_provider(),
+            "E2C": grid.get_offset_provider["E2C"],
         },
     )
 

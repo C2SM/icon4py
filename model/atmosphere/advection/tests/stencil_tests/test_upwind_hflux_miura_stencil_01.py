@@ -93,7 +93,7 @@ def test_upwind_hflux_miura_stencil_01():
         cell_rel_idx_dsl,
         p_out_e,
         offset_provider={
-            "E2C": grid.get_e2c_offset_provider(),
+            "E2C": grid.get_offset_provider["E2C"],
         },
     )
     assert np.allclose(p_out_e, ref)

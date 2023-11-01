@@ -61,7 +61,7 @@ def test_hflx_limiter_mo_stencil_01a():
         z_mflx_low,
         z_anti,
         offset_provider={
-            "E2C": grid.get_e2c_offset_provider(),
+            "E2C": grid.get_offset_provider["E2C"],
         },
     )
 

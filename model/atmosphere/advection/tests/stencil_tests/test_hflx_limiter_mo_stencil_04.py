@@ -54,6 +54,6 @@ def test_hflx_limiter_mo_stencil_04():
         r_p,
         z_mflx_low,
         p_mflx_tracer_h,
-        offset_provider={"E2C": grid.get_e2c_offset_provider()},
+        offset_provider={"E2C": grid.get_offset_provider["E2C"]},
     )
     assert np.allclose(p_mflx_tracer_h, ref)
