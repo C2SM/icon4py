@@ -14,6 +14,7 @@ import logging
 
 import numpy as np
 import pytest
+from gt4py.next import Field
 
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import (
     NonHydrostaticConfig,
@@ -23,13 +24,43 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import (
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+from icon4py.model.atmosphere.dycore.state_utils.utils import (
+    _allocate,
+    _en_smag_fac_for_zero_nshift,
+)
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
+
+
+@pytest.mark.datatest
+def test_divdamp_factor(savepoint_nonhydro_init, grid_savepoint):
+    config = NonHydrostaticConfig()
+    divdamp_fac_o2 = 0.032  # TODO fix value
+    divdamp_order = 24
+    mean_cell_area = 194588.14247428576
+    enh_divdamp_fac = _allocate(KDim, float)
+    scal_divdamp = _allocate(KDim, float)
+    _en_smag_fac_for_zero_nshift(
+        grid_savepoint.vct_a(),
+        config.divdamp_fac,
+        config.divdamp_fac2,
+        config.divdamp_fac3,
+        config.divdamp_fac4,
+        config.divdamp_z,
+        config.divdamp_z2,
+        config.divdamp_z3,
+        config.divdamp_z4,
+        out=enh_divdamp_fac,
+        offset_provider={"Koff": KDim},
+    )
+    # _scal_divdamp_NEW(
+    #    enh_divdamp_fac, divdamp_order, divdamp_fac_o2
+    # )
+    # scal_divdamp
 
 
 @pytest.mark.datatest
@@ -491,13 +522,13 @@ def test_nonhydro_corrector_step(
     )
 
     nh_constants = create_nh_constants(sp)
-    print(f"nh_constants.scal_divdamp = {sp.scal_divdamp()}")
-    print(f"nh_constants.scal_divdamp_field = {sp.scal_divdamp_field()}")
+    print(f"sp.scal_divdamp = {sp.scal_divdamp()}")
+    print(f"sp.scal_divdamp_field = {sp.scal_divdamp_field()}")
 
     print(f"scal_divdamp_o2 = {sp.scal_divdamp_o2()}")
-    scal_divdamp_o2 = sp.scal_divdamp_o2()  # only used in stencil_26
-    bdy_divdamp = sp.bdy_divdamp()
 
+    scal_divdamp_o2 = sp.scal_divdamp_o2()  # only used in stencil_26
+    divdamp_fac_o2 = 0.032  # TODO (magdalena) fix value!
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
@@ -525,7 +556,8 @@ def test_nonhydro_corrector_step(
         prognostic_state=prognostic_state_ls,
         z_fields=z_fields,
         prep_adv=prep_adv,
-        scal_divdamp_o2=scal_divdamp_o2,
+        scal_divdamp_o2=scal_divdamp_o2,  # TODO (magdalena) remove
+        divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
         nnew=nnew,
         nnow=nnow,
@@ -684,7 +716,14 @@ def test_run_solve_nonhydro_single_step(
     )
 
     prognostic_state_ls = create_prognostic_states(sp)
+    print(f"sp.scal_divdamp = {sp.scal_divdamp()}")
+    print(f"sp.scal_divdamp_field = {np.asarray(sp.scal_divdamp_field())}")
+
+    print(
+        f"scal_divdamp_o2 = {sp.scal_divdamp_o2()}"
+    )  # TODO calcualated internally use for comparing
     divdamp_fac_o2 = 0.032  # TODO (magdalena) get from somewhere??
+    print(f"manual divdamp_fac_o2 = {divdamp_fac_o2}")
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
@@ -692,6 +731,7 @@ def test_run_solve_nonhydro_single_step(
         z_fields=z_fields,
         nh_constants=nh_constants,
         divdamp_fac_o2=divdamp_fac_o2,
+        scal_divdamp_o2_in=sp.scal_divdamp_o2(),  # TODO TO BE removed. either divdamp_fac_o2 is wrong or mean cell area is wrong.
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
