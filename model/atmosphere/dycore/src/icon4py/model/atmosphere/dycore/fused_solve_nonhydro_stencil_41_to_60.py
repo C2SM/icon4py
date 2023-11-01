@@ -144,7 +144,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             (z_flxdiv_mass, z_flxdiv_theta),
         )
     (z_w_expl, z_contr_w_fl_l) = where(
-        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d >= int32(1)),
+        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx >= int32(1)),
         _mo_solve_nonhydro_stencil_43(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -173,8 +173,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev), _mo_solve_nonhydro_stencil_45(), z_alpha)
-    z_q = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == int32(0)), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_alpha = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx == n_lev), _mo_solve_nonhydro_stencil_45(), z_alpha)
+    z_q = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx == int32(0)), _mo_solve_nonhydro_stencil_45_b(), z_q)
 
     # z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q = where(
     #     (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < (n_lev + int32(1))),
@@ -214,7 +214,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         )
 
     (w, z_contr_w_fl_l) = where(
-        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev),
+        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx == n_lev),
         _mo_solve_nonhydro_stencil_47(w_concorr_c),
         (w, z_contr_w_fl_l),
     )
@@ -452,7 +452,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
 
     if itime_scheme == 4:
         (z_w_expl, z_contr_w_fl_l) = where(
-            (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d >= int32(1)),
+            (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx >= int32(1)),
             _mo_solve_nonhydro_stencil_42(
                 w_nnow,
                 ddt_w_adv_ntl1,
@@ -485,9 +485,9 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
             ),
             (z_beta, z_alpha),
         )
-        z_alpha = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev), _mo_solve_nonhydro_stencil_45(), z_alpha)
+        z_alpha = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx == n_lev), _mo_solve_nonhydro_stencil_45(), z_alpha)
 
-        z_q = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == int32(0)), _mo_solve_nonhydro_stencil_45_b(), z_q)
+        z_q = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx == int32(0)), _mo_solve_nonhydro_stencil_45_b(), z_q)
 
         # (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
         #     (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx < n_lev + 1),
@@ -523,7 +523,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         # )
     else:
         (z_w_expl, z_contr_w_fl_l) = where(
-            (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d >= int32(1)),
+            (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx >= int32(1)),
             _mo_solve_nonhydro_stencil_43(
                 w_nnow,
                 ddt_w_adv_ntl1,
@@ -552,9 +552,9 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
             ),
             (z_beta, z_alpha),
         )
-        z_alpha = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev),
+        z_alpha = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx == n_lev),
                         _mo_solve_nonhydro_stencil_45(), z_alpha)
-        z_q = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == int32(0)),
+        z_q = where((horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx == int32(0)),
                     _mo_solve_nonhydro_stencil_45_b(), z_q)
 
         # (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
@@ -594,7 +594,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
             (w, z_contr_w_fl_l),
         )
     (w, z_contr_w_fl_l) = where(
-        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx_1d == n_lev),
+        (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx == n_lev),
         _mo_solve_nonhydro_stencil_47(w_concorr_c),
         (w, z_contr_w_fl_l),
     )
