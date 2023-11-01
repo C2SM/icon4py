@@ -28,7 +28,7 @@ from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
+def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
@@ -77,7 +77,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
 
 
 @program
-def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
+def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
@@ -98,7 +98,7 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
+    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         area,
         geofac_n2s,
         geofac_grg_x,
