@@ -125,9 +125,9 @@ class IconGrid(BaseGrid):
         return NeighborTableOffsetProvider(table, CellDim, CellDim, table.shape[1])
 
     def get_e2ec_offset_provider(self):
-        old_shape = self.connectivities[E2CDim].shape
-        e2ec_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(e2ec_table, EdgeDim, ECDim, e2ec_table.shape[1])
+        return neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities[E2CDim].shape, EdgeDim, ECDim
+        )
 
     def get_c2e2co_offset_provider(self):
         table = self.connectivities[C2E2CODim]

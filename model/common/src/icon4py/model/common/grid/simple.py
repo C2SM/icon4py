@@ -528,14 +528,24 @@ class SimpleGrid(BaseGrid):
         )
 
     def get_e2ecv_offset_provider(self):
-        old_shape = self.connectivities[E2C2VDim].shape
-        e2ecv_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(e2ecv_table, EdgeDim, ECVDim, self.size[E2C2VDim])
+        return neighbortable_offset_provider_for_1d_sparse_fields(
+                self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim
+            )
 
     def get_c2ce_offset_provider(self):
-        old_shape = self.connectivities[C2EDim].shape
-        c2ce_table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-        return NeighborTableOffsetProvider(c2ce_table, CellDim, CEDim, self.size[C2EDim])
+        return neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities[C2EDim].shape, CellDim, CEDim
+        )
+
+    def get_e2ec_offset_provider(self):
+        return neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities[E2CDim].shape, EdgeDim, ECDim
+        )
+
+    def get_c2cec_offset_provider(self):
+        return neighbortable_offset_provider_for_1d_sparse_fields(
+            self.connectivities[C2E2CDim].shape, CellDim, CECDim
+        )
 
     def get_offset_provider(self):
         return {
@@ -552,13 +562,7 @@ class SimpleGrid(BaseGrid):
             "C2CE": self.get_c2ce_offset_provider(),
             "Koff": KDim,
             "C2E2C2E2C": self.get_c2e2c2e2c_offset_provider(),
-            "E2ECV": neighbortable_offset_provider_for_1d_sparse_fields(
-                self.connectivities[E2C2VDim].shape, EdgeDim, ECVDim
-            ),
-            "E2EC": neighbortable_offset_provider_for_1d_sparse_fields(
-                self.connectivities[E2CDim].shape, EdgeDim, ECDim
-            ),
-            "C2CEC": neighbortable_offset_provider_for_1d_sparse_fields(
-                self.connectivities[C2E2CDim].shape, CellDim, CECDim
-            ),
+            "E2ECV": self.get_e2ecv_offset_provider(),
+            "E2EC": self.get_e2ec_offset_provider(),
+            "C2CEC": self.get_c2cec_offset_provider(),
         }
