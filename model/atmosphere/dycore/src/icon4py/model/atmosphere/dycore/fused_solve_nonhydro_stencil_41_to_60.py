@@ -371,7 +371,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
 
 
 @field_operator
-def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
+def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     geofac_div: Field[[CEDim], float],
     mass_fl_e: Field[[EdgeDim, KDim], float],
     z_theta_v_fl_e: Field[[EdgeDim, KDim], float],
@@ -751,7 +751,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60_corrector(
 
 
 @field_operator
-def _fused_solve_nonhdyro_stencil_41_to_60(
+def _fused_solve_nonhydro_stencil_41_to_60(
     geofac_div: Field[[CEDim], float],
     mass_fl_e: Field[[EdgeDim, KDim], float],
     z_theta_v_fl_e: Field[[EdgeDim, KDim], float],
@@ -919,7 +919,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
             exner,
             theta_v,
             mass_flx_ic,
-        ) = _fused_solve_nonhdyro_stencil_41_to_60_corrector(
+        ) = _fused_solve_nonhydro_stencil_41_to_60_corrector(
             geofac_div=geofac_div,
             mass_fl_e=mass_fl_e,
             z_theta_v_fl_e=z_theta_v_fl_e,
@@ -1004,7 +1004,7 @@ def _fused_solve_nonhdyro_stencil_41_to_60(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def fused_solve_nonhdyro_stencil_41_to_60(
+def fused_solve_nonhydro_stencil_41_to_60(
     geofac_div: Field[[CEDim], float],
     mass_fl_e: Field[[EdgeDim, KDim], float],
     z_theta_v_fl_e: Field[[EdgeDim, KDim], float],
@@ -1082,7 +1082,7 @@ def fused_solve_nonhdyro_stencil_41_to_60(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _fused_solve_nonhdyro_stencil_41_to_60(
+    _fused_solve_nonhydro_stencil_41_to_60(
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
@@ -1177,7 +1177,7 @@ def fused_solve_nonhdyro_stencil_41_to_60(
         },
     )
 
-    _fused_solve_nonhdyro_stencil_41_to_60(
+    _fused_solve_nonhydro_stencil_41_to_60(
         geofac_div=geofac_div,
         mass_fl_e=mass_fl_e,
         z_theta_v_fl_e=z_theta_v_fl_e,
