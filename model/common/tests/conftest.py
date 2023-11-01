@@ -14,6 +14,5 @@
 
 from icon4py.model.common.test_utils.grid_utils import (  # noqa: F401 # fixtures
     grid,
-    simple_grid_gridfile,
 )
 from icon4py.model.common.test_utils.helpers import backend  # noqa: F401 # fixtures
