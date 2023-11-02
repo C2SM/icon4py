@@ -35,13 +35,13 @@ def assert_grid_size_and_connectivities(grid):
     assert grid.num_edges == 31558
     assert grid.num_cells == 20896
     assert grid.num_vertices == 10663
-    assert grid.get_e2v_offset_provider()
-    assert grid.get_v2e_offset_provider()
-    assert grid.get_c2e_offset_provider()
-    assert grid.get_e2c_offset_provider()
-    assert grid.get_e2c2v_offset_provider()
-    assert grid.get_c2e2c_offset_provider()
-    assert grid.get_e2ecv_offset_provider()
+    assert grid.get_offset_provider("E2V")
+    assert grid.get_offset_provider("V2E")
+    assert grid.get_offset_provider("C2E")
+    assert grid.get_offset_provider("E2C")
+    assert grid.get_offset_provider("E2C2V")
+    assert grid.get_offset_provider("C2E2C")
+    assert grid.get_offset_provider("E2ECV")
 
 
 @pytest.mark.datatest

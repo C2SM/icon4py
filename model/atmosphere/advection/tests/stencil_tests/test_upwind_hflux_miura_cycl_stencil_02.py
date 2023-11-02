@@ -92,7 +92,7 @@ def test_upwind_hflux_miura_cycl_stencil_02():
         z_tracer_new_dsl,
         offset_provider={
             "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
-            "C2E": grid.get_offset_provider["C2E"],
+            "C2E": grid.get_offset_provider("C2E"),
         },
     )
     assert np.allclose(ref_1, z_rhofluxdiv_c_out)

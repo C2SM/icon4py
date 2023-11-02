@@ -125,7 +125,7 @@ def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(grid, **{k: np.array(v) for k, v in input_data.items()})
     self.PROGRAM.with_backend(backend)(
         **input_data,
-        offset_provider=grid.get_offset_provider,
+        offset_provider=grid.get_all_offset_providers(),
     )
     for name in self.OUTPUTS:
         assert np.allclose(
@@ -144,7 +144,7 @@ if pytest_benchmark:
             benchmark(
                 self.PROGRAM.with_backend(backend),
                 **input_data,
-                offset_provider=grid.get_offset_provider,
+                offset_provider=grid.get_all_offset_providers(),
             )
 
 else:

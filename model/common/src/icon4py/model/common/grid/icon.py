@@ -14,13 +14,11 @@
 import numpy as np
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
-    C2VDim,
     CECDim,
     CEDim,
     CellDim,
@@ -37,7 +35,6 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.base import BaseGrid
-from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields, ClassLevelCache
 from icon4py.model.common.utils import builder
 
 
@@ -47,6 +44,22 @@ class IconGrid(BaseGrid):
         super().__init__()
         self.start_indices = {}
         self.end_indices = {}
+        self.offset_provider_mapping = {
+            "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
+            "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
+            "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
+            "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
+            "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
+            "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
+            "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
+            "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim),
+            "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim),
+            "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
+            "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
+            "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
+            "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
+            "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
+        }
 
     @builder
     def with_start_end_indices(
@@ -107,23 +120,3 @@ class IconGrid(BaseGrid):
         horizontal region in a field given by the marker.
         """
         return self.end_indices[dim][marker]
-
-    @property
-    @ClassLevelCache.cache_method
-    def get_offset_provider(self):
-        return {
-            "C2E": self._get_offset_provider(C2EDim, CellDim, EdgeDim),
-            "E2C": self._get_offset_provider(E2CDim, EdgeDim, CellDim),
-            "E2V": self._get_offset_provider(E2VDim, EdgeDim, VertexDim),
-            "C2E2C": self._get_offset_provider(C2E2CDim, CellDim, CellDim),
-            "E2EC": self._get_offset_provider_for_sparse_fields(E2CDim, EdgeDim, ECDim),
-            "C2E2CO": self._get_offset_provider(C2E2CODim, CellDim, CellDim),
-            "E2C2V": self._get_offset_provider(E2C2VDim, EdgeDim, VertexDim),
-            "V2E": self._get_offset_provider(V2EDim, VertexDim, EdgeDim),
-            "V2C": self._get_offset_provider(V2CDim, VertexDim, CellDim),
-            "E2ECV": self._get_offset_provider_for_sparse_fields(E2C2VDim, EdgeDim, ECVDim),
-            "C2CEC": self._get_offset_provider_for_sparse_fields(C2E2CDim, CellDim, CECDim),
-            "C2CE": self._get_offset_provider_for_sparse_fields(C2EDim, CellDim, CEDim),
-            "E2C2E": self._get_offset_provider(E2C2EDim, EdgeDim, EdgeDim),
-            "E2C2EO": self._get_offset_provider(E2C2EODim, EdgeDim, EdgeDim),
-        }

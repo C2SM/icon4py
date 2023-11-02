@@ -13,7 +13,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Dict
+from typing import Callable, Dict
 
 import numpy as np
 from gt4py.next.common import Dimension
@@ -21,7 +21,10 @@ from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
+from icon4py.model.common.grid.utils import (
+    ClassLevelCache,
+    neighbortable_offset_provider_for_1d_sparse_fields,
+)
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
 
@@ -58,6 +61,7 @@ class BaseGrid(ABC):
         self.config: GridConfig = None
         self.connectivities: Dict[Dimension, np.ndarray] = {}
         self.size: Dict[Dimension, int] = {}
+        self.offset_provider_mapping: Dict[str, tuple[Callable, Dimension, ...]] = {}
 
     @property
     @abstractmethod
@@ -77,10 +81,6 @@ class BaseGrid(ABC):
     @property
     @abstractmethod
     def num_levels(self) -> int:
-        pass
-
-    @abstractmethod
-    def get_offset_provider(self) -> dict:
         pass
 
     @builder
@@ -109,3 +109,19 @@ class BaseGrid(ABC):
             self.connectivities[dim].shape, from_dim, to_dim
         )
 
+    @ClassLevelCache.cache_method
+    def get_offset_provider(self, name):
+        if name in self.offset_provider_mapping:
+            method, *args = self.offset_provider_mapping[name]
+            return method(*args)
+        else:
+            raise Exception(f"Offset provider for {name} not found.")
+
+    @ClassLevelCache.cache_method
+    def get_all_offset_providers(self):
+        offset_providers = {}
+        for key, value in self.offset_provider_mapping.items():
+            method, *args = value
+            offset_providers[key] = method(*args) if args else method()
+
+        return offset_providers

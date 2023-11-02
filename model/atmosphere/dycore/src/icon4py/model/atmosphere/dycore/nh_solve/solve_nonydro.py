@@ -783,7 +783,7 @@ class SolveNonhydro:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_cell_in,2)
                 offset_provider={
-                    "V2C": self.grid.get_v2c_offset_provider(),
+                    "V2C": self.grid.get_offset_provider("V2C"),
                 },
             )
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
@@ -795,7 +795,7 @@ class SolveNonhydro:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_cell_in,2)
                 offset_provider={
-                    "V2C": self.grid.get_v2c_offset_provider(),
+                    "V2C": self.grid.get_offset_provider("V2C"),
                 },
             )
         elif self.config.iadv_rhotheta == 2:
@@ -814,7 +814,7 @@ class SolveNonhydro:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_ccpr,2)
                 offset_provider={
-                    "C2E2CO": self.grid.get_c2e2co_offset_provider(),
+                    "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
                 },
             )
         if self.config.iadv_rhotheta <= 2:
@@ -894,8 +894,8 @@ class SolveNonhydro:
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider={
-                        "E2C": self.grid.get_e2c_offset_provider(),
-                        "E2EC": self.grid.get_e2ec_offset_provider(),
+                        "E2C": self.grid.get_offset_provider("E2C"),
+                        "E2EC": self.grid.get_offset_provider("E2EC"),
                     },
                 )
 
@@ -909,7 +909,7 @@ class SolveNonhydro:
             vertical_start=0,
             vertical_end=self.vertical_params.nflatlev,
             offset_provider={
-                "E2C": self.grid.get_e2c_offset_provider(),
+                "E2C": self.grid.get_offset_provider("E2C"),
             },
         )
 
@@ -929,7 +929,7 @@ class SolveNonhydro:
                 vertical_start=self.vertical_params.nflatlev,
                 vertical_end=int32(self.vertical_params.nflat_gradp + 1),
                 offset_provider={
-                    "E2C": self.grid.get_e2c_offset_provider(),
+                    "E2C": self.grid.get_offset_provider("E2C"),
                 },
             )
 
@@ -946,8 +946,8 @@ class SolveNonhydro:
                 vertical_start=int32(self.vertical_params.nflat_gradp + 1),
                 vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "E2C": self.grid.get_e2c_offset_provider(),
-                    "E2EC": self.grid.get_e2ec_offset_provider(),
+                    "E2C": self.grid.get_offset_provider("E2C"),
+                    "E2EC": self.grid.get_offset_provider("E2EC"),
                     "Koff": KDim,
                 },
             )
@@ -968,8 +968,8 @@ class SolveNonhydro:
                 vertical_start=self.grid.num_levels - 1,
                 vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "E2C": self.grid.get_e2c_offset_provider(),
-                    "E2EC": self.grid.get_e2ec_offset_provider(),
+                    "E2C": self.grid.get_offset_provider("E2C"),
+                    "E2EC": self.grid.get_offset_provider("E2EC"),
                     "Koff": KDim,
                 },
             )
@@ -1047,8 +1047,8 @@ class SolveNonhydro:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "E2C2EO": self.grid.get_e2c2eo_offset_provider(),
-                "E2C2E": self.grid.get_e2c2e_offset_provider(),
+                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
+                "E2C2E": self.grid.get_offset_provider("E2C2E"),
             },
         )
 
@@ -1118,8 +1118,8 @@ class SolveNonhydro:
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider={
-                "C2E": self.grid.get_c2e_offset_provider(),
-                "C2CE": self.grid.get_c2ce_offset_provider(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
                 "Koff": KDim,
             },
         )
@@ -1136,8 +1136,8 @@ class SolveNonhydro:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "C2E": self.grid.get_c2e_offset_provider(),
-                    "C2CE": self.grid.get_c2ce_offset_provider(),
+                    "C2E": self.grid.get_offset_provider("C2E"),
+                    "C2CE": self.grid.get_offset_provider("C2CE"),
                 },
             )
 
@@ -1465,7 +1465,7 @@ class SolveNonhydro:
             vertical_start=self.params.kstart_dd3d,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "E2C": self.grid.get_e2c_offset_provider(),
+                "E2C": self.grid.get_offset_provider("E2C"),
             },
         )
 
@@ -1502,7 +1502,7 @@ class SolveNonhydro:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "E2C2EO": self.grid.get_e2c2eo_offset_provider(),
+                    "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
                 },
             )
 
@@ -1573,7 +1573,7 @@ class SolveNonhydro:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "E2C2EO": self.grid.get_e2c2eo_offset_provider(),
+                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
             },
         )
 
@@ -1630,8 +1630,8 @@ class SolveNonhydro:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "C2E": self.grid.get_c2e_offset_provider(),
-                    "C2CE": self.grid.get_c2ce_offset_provider(),
+                    "C2E": self.grid.get_offset_provider("C2E"),
+                    "C2CE": self.grid.get_offset_provider("C2CE"),
                 },
             )
 

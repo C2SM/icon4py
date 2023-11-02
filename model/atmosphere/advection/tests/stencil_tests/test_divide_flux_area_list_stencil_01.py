@@ -769,7 +769,7 @@ def test_divide_flux_area_list_stencil_01():
         dreg_patch2_4_lon_vmask,
         dreg_patch2_4_lat_vmask,
         offset_provider={
-            "E2C": grid.get_offset_provider["E2C"],
+            "E2C": grid.get_offset_provider("E2C"),
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, grid.size[E2CDim]),
         },
     )

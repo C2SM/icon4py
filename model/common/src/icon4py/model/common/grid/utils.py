@@ -34,4 +34,5 @@ class ClassLevelCache:
             if key not in ClassLevelCache._cache:
                 ClassLevelCache._cache[key] = method(self, *args, **kwargs)
             return ClassLevelCache._cache[key]
+
         return wrapper

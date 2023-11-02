@@ -70,7 +70,7 @@ def test_hflx_limiter_pd_stencil_01():
         dbl_eps,
         offset_provider={
             "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
-            "C2E": grid.get_offset_provider["C2E"],
+            "C2E": grid.get_offset_provider("C2E"),
         },
     )
     assert np.allclose(r_m, ref)

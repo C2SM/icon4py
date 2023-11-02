@@ -61,7 +61,7 @@ def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl():
         p_mflx_tracer_h_in,
         bound,
         offset_provider={
-            "E2C": grid.get_offset_provider["E2C"],
+            "E2C": grid.get_offset_provider("E2C"),
         },
     )
     assert np.allclose(p_mflx_tracer_h_in, ref)
@@ -80,7 +80,7 @@ def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl():
         p_mflx_tracer_h_in,
         bound,
         offset_provider={
-            "E2C": grid.get_offset_provider["E2C"],
+            "E2C": grid.get_offset_provider("E2C"),
         },
     )
     assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)
@@ -100,7 +100,7 @@ def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl():
         p_mflx_tracer_h_in,
         bound,
         offset_provider={
-            "E2C": grid.get_offset_provider["E2C"],
+            "E2C": grid.get_offset_provider("E2C"),
         },
     )
     assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)
@@ -119,7 +119,7 @@ def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl_does_not_chang
         p_mflx_tracer_h_in,
         bound,
         offset_provider={
-            "E2C": grid.get_offset_provider["E2C"],
+            "E2C": grid.get_offset_provider("E2C"),
         },
     )
     assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)

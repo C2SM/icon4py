@@ -173,7 +173,7 @@ class VelocityAdvection:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "V2C": self.grid.get_v2c_offset_provider(),
+                    "V2C": self.grid.get_offset_provider("V2C"),
                 },
             )
 
@@ -186,7 +186,7 @@ class VelocityAdvection:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "V2E": self.grid.get_v2e_offset_provider(),
+                "V2E": self.grid.get_offset_provider("V2E"),
             },
         )
 
@@ -199,7 +199,7 @@ class VelocityAdvection:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "E2C2E": self.grid.get_e2c2e_offset_provider(),
+                "E2C2E": self.grid.get_offset_provider("E2C2E"),
             },
         )
 
@@ -267,8 +267,8 @@ class VelocityAdvection:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "E2C": self.grid.get_e2c_offset_provider(),
-                    "E2V": self.grid.get_e2v_offset_provider(),
+                    "E2C": self.grid.get_offset_provider("E2C"),
+                    "E2V": self.grid.get_offset_provider("E2V"),
                 },
             )
 
@@ -281,8 +281,8 @@ class VelocityAdvection:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "C2E": self.grid.get_c2e_offset_provider(),
-                "C2CE": self.grid.get_c2ce_offset_provider(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
             },
         )
 
@@ -300,8 +300,8 @@ class VelocityAdvection:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "C2E": self.grid.get_c2e_offset_provider(),
-                "C2CE": self.grid.get_c2ce_offset_provider(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
                 "Koff": KDim,
             },
         )
@@ -359,8 +359,8 @@ class VelocityAdvection:
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "C2E": self.grid.get_c2e_offset_provider(),
-                "C2CE": self.grid.get_c2ce_offset_provider(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
                 "Koff": KDim,
             },
         )
@@ -383,7 +383,7 @@ class VelocityAdvection:
             vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
             vertical_end=int32(self.grid.num_levels - 3),
             offset_provider={
-                "C2E2CO": self.grid.get_c2e2co_offset_provider(),
+                "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
             },
         )
 
@@ -407,9 +407,9 @@ class VelocityAdvection:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "E2C": self.grid.get_e2c_offset_provider(),
-                "E2V": self.grid.get_e2v_offset_provider(),
-                "E2EC": self.grid.get_e2ec_offset_provider(),
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "E2V": self.grid.get_offset_provider("E2V"),
+                "E2EC": self.grid.get_offset_provider("E2EC"),
                 "Koff": KDim,
             },
         )
@@ -434,9 +434,9 @@ class VelocityAdvection:
             vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
             vertical_end=int32(self.grid.num_levels - 4),
             offset_provider={
-                "E2C": self.grid.get_e2c_offset_provider(),
-                "E2V": self.grid.get_e2v_offset_provider(),
-                "E2C2EO": self.grid.get_e2c2eo_offset_provider(),
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "E2V": self.grid.get_offset_provider("E2V"),
+                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
                 "Koff": KDim,
             },
         )
@@ -498,7 +498,7 @@ class VelocityAdvection:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "V2C": self.grid.get_v2c_offset_provider(),
+                    "V2C": self.grid.get_offset_provider("V2C"),
                 },
             )
 
@@ -511,7 +511,7 @@ class VelocityAdvection:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "V2E": self.grid.get_v2e_offset_provider(),
+                "V2E": self.grid.get_offset_provider("V2E"),
             },
         )
 
@@ -530,8 +530,8 @@ class VelocityAdvection:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "E2C": self.grid.get_e2c_offset_provider(),
-                    "E2V": self.grid.get_e2v_offset_provider(),
+                    "E2C": self.grid.get_offset_provider("E2C"),
+                    "E2V": self.grid.get_offset_provider("E2V"),
                 },
             )
 
@@ -544,8 +544,8 @@ class VelocityAdvection:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "C2E": self.grid.get_c2e_offset_provider(),
-                "C2CE": self.grid.get_c2ce_offset_provider(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
             },
         )
 
@@ -602,8 +602,8 @@ class VelocityAdvection:
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "C2E": self.grid.get_c2e_offset_provider(),
-                "C2CE": self.grid.get_c2ce_offset_provider(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
                 "Koff": KDim,
             },
         )
@@ -626,7 +626,7 @@ class VelocityAdvection:
             vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
             vertical_end=int32(self.grid.num_levels - 4),
             offset_provider={
-                "C2E2CO": self.grid.get_c2e2co_offset_provider(),
+                "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
             },
         )
 
@@ -650,9 +650,9 @@ class VelocityAdvection:
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={
-                "E2C": self.grid.get_e2c_offset_provider(),
-                "E2V": self.grid.get_e2v_offset_provider(),
-                "E2EC": self.grid.get_e2ec_offset_provider(),
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "E2V": self.grid.get_offset_provider("E2V"),
+                "E2EC": self.grid.get_offset_provider("E2EC"),
                 "Koff": KDim,
             },
         )
@@ -677,9 +677,9 @@ class VelocityAdvection:
             vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
             vertical_end=int32(self.grid.num_levels - 4),
             offset_provider={
-                "E2C": self.grid.get_e2c_offset_provider(),
-                "E2V": self.grid.get_e2v_offset_provider(),
-                "E2C2EO": self.grid.get_e2c2eo_offset_provider(),
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "E2V": self.grid.get_offset_provider("E2V"),
+                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
                 "Koff": KDim,
             },
         )

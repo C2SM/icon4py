@@ -74,7 +74,7 @@ def test_hflx_diffusion_mo_stencil_03_min_max():
         r_beta_fct,
         z_max,
         z_min,
-        offset_provider={"C2E2C": grid.get_offset_provider["C2E2C"]},
+        offset_provider={"C2E2C": grid.get_offset_provider("C2E2C")},
     )
     assert np.allclose(z_max, z_max_ref)
     assert np.allclose(z_min, z_min_ref)
@@ -116,7 +116,7 @@ def test_hflx_diffusion_mo_stencil_03():
         dbl_eps,
         r_p,
         r_m,
-        offset_provider={"C2E2C": grid.get_offset_provider["C2E2C"]},
+        offset_provider={"C2E2C": grid.get_offset_provider("C2E2C")},
     )
     np.allclose(r_p_ref, r_p)
     np.allclose(r_m_ref, r_m)

@@ -211,7 +211,7 @@ def test_upwind_hflux_miura3_stencil_01():
         cell_rel_idx_dsl,
         p_out_e_miura3,
         offset_provider={
-            "E2C": grid.get_offset_provider["E2C"],
+            "E2C": grid.get_offset_provider("E2C"),
         },
     )
     assert np.allclose(np.asarray(p_out_e_miura3), ref)

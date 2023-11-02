@@ -14,7 +14,6 @@
 from dataclasses import dataclass
 
 import numpy as np
-from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
@@ -59,7 +58,6 @@ from icon4py.model.common.grid.base import BaseGrid, GridConfig
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields, ClassLevelCache
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 
@@ -410,6 +408,24 @@ class SimpleGrid(BaseGrid):
         """Instantiate a SimpleGrid used for testing purposes."""
         super().__init__()
         self._configure()
+        self.offset_provider_mapping = {
+            "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
+            "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
+            "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
+            "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
+            "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
+            "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim),
+            "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim),
+            "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
+            "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
+            "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
+            "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
+            "Koff": (lambda: KDim,),  # Koff is a special case
+            "C2E2C2E2C": (self._get_offset_provider, C2E2C2E2CDim, CellDim, CellDim),
+            "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
+            "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
+            "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
+        }
 
     @property
     def num_cells(self) -> int:
@@ -466,25 +482,3 @@ class SimpleGrid(BaseGrid):
 
         self.with_config(config).with_connectivities(connectivity_dict)
         self._update_size_connectivities()
-
-    @property
-    @ClassLevelCache.cache_method
-    def get_offset_provider(self):
-        return {
-            "C2E": self._get_offset_provider(C2EDim, CellDim, EdgeDim),
-            "C2E2CO": self._get_offset_provider(C2E2CODim, CellDim, CellDim),
-            "C2E2C": self._get_offset_provider(C2E2CDim, CellDim, CellDim),
-            "E2C2EO": self._get_offset_provider(E2C2EODim, EdgeDim, EdgeDim),
-            "E2C2E": self._get_offset_provider(E2C2EDim, EdgeDim, EdgeDim),
-            "V2C": self._get_offset_provider(V2CDim, VertexDim, CellDim),
-            "V2E": self._get_offset_provider(V2EDim, VertexDim, EdgeDim),
-            "E2C": self._get_offset_provider(E2CDim, EdgeDim, CellDim),
-            "E2V": self._get_offset_provider(E2VDim, EdgeDim, VertexDim),
-            "E2C2V": self._get_offset_provider(E2C2VDim, EdgeDim, VertexDim),
-            "C2CE": self._get_offset_provider_for_sparse_fields(C2EDim, CellDim, CEDim),
-            "Koff": KDim,
-            "C2E2C2E2C": self._get_offset_provider(C2E2C2E2CDim, CellDim, CellDim),
-            "E2ECV": self._get_offset_provider_for_sparse_fields(E2C2VDim, EdgeDim, ECVDim),
-            "E2EC": self._get_offset_provider_for_sparse_fields(E2CDim, EdgeDim, ECDim),
-            "C2CEC": self._get_offset_provider_for_sparse_fields(C2E2CDim, CellDim, CECDim),
-        }

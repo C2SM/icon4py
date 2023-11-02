@@ -48,7 +48,7 @@ def test_rbf_intp_edge_stencil_01():
         ptr_coeff,
         p_vt_out,
         offset_provider={
-            "E2C2E": grid.get_offset_provider["E2C2E"],
+            "E2C2E": grid.get_offset_provider("E2C2E"),
         },
     )
     assert np.allclose(p_vt_out, ref)

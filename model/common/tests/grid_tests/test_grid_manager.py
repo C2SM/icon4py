@@ -269,9 +269,9 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(seralized_v2e)
-    assert has_invalid_index(grid.get_v2e_offset_provider().table)
+    assert has_invalid_index(grid.get_offset_provider("V2E").table)
     reset_invalid_index(seralized_v2e)
-    assert np.allclose(grid.get_v2e_offset_provider().table, seralized_v2e)
+    assert np.allclose(grid.get_offset_provider("V2E").table, seralized_v2e)
 
 
 # v2c: exists in serial, simple, grid
@@ -286,10 +286,10 @@ def test_gridmanager_eval_v2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     # hence in the grid file there are "missing values"
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(serialized_v2c)
-    assert has_invalid_index(grid.get_v2c_offset_provider().table)
+    assert has_invalid_index(grid.get_offset_provider("V2C").table)
     reset_invalid_index(serialized_v2c)
 
-    assert np.allclose(grid.get_v2c_offset_provider().table, serialized_v2c)
+    assert np.allclose(grid.get_offset_provider("V2C").table, serialized_v2c)
 
 
 def reset_invalid_index(index_array: np.ndarray):
@@ -330,8 +330,8 @@ def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
     assert not has_invalid_index(serialized_e2v)
-    assert not has_invalid_index(grid.get_e2v_offset_provider().table)
-    assert np.allclose(grid.get_e2v_offset_provider().table, serialized_e2v)
+    assert not has_invalid_index(grid.get_offset_provider("E2V").table)
+    assert np.allclose(grid.get_offset_provider("E2V").table, serialized_e2v)
 
 
 def has_invalid_index(ar: np.ndarray):
@@ -349,8 +349,8 @@ def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     # neighboring cell, there are "missing values" in the grid file
     # and here they do not get substituted in the ICON preprocessing
     assert has_invalid_index(serialized_e2c)
-    assert has_invalid_index(grid.get_e2c_offset_provider().table)
-    assert np.allclose(grid.get_e2c_offset_provider().table, serialized_e2c)
+    assert has_invalid_index(grid.get_offset_provider("E2C").table)
+    assert np.allclose(grid.get_offset_provider("E2C").table, serialized_e2c)
 
 
 # c2e: serial, simple, grid
@@ -365,8 +365,8 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     # first place
     # hence there are no "missing values" in the grid file
     assert not has_invalid_index(serialized_c2e)
-    assert not has_invalid_index(grid.get_c2e_offset_provider().table)
-    assert np.allclose(grid.get_c2e_offset_provider().table, serialized_c2e)
+    assert not has_invalid_index(grid.get_offset_provider("C2E").table)
+    assert np.allclose(grid.get_offset_provider("C2E").table, serialized_c2e)
 
 
 # c2e2c: exists in  serial, simple_mesh, grid
@@ -376,7 +376,7 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     assert np.allclose(
-        grid.get_c2e2c_offset_provider().table,
+        grid.get_offset_provider("C2E2C").table,
         grid_savepoint.c2e2c()[0 : grid.num_cells, :],
     )
 
@@ -392,8 +392,8 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     serialized_e2c2e = grid_savepoint.e2c2e()[0:num_cells, :]
     assert has_invalid_index(serialized_e2c2e)
     grid = gm.get_grid()
-    assert has_invalid_index(grid.get_e2c2e_offset_provider().table)
-    assert np.allclose(grid.get_e2c2e_offset_provider().table, serialized_e2c2e)
+    assert has_invalid_index(grid.get_offset_provider("E2C2E").table)
+    assert np.allclose(grid.get_offset_provider("E2C2E").table, serialized_e2c2e)
 
 
 @pytest.mark.xfail
@@ -405,7 +405,7 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     # the "far" (adjacent to edge normal ) is not there. why?
     # despite that: ordering is different
     assert np.allclose(
-        grid.get_e2c2v_offset_provider().table,
+        grid.get_offset_provider("E2C2V").table,
         grid_savepoint.e2c2v()[0 : grid.num_edges, :],
     )
 
@@ -415,7 +415,7 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    c2v = grid.get_c2v_offset_provider().table
+    c2v = grid.get_offset_provider("C2V").table
     assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.num_cells, :])
 
 
@@ -445,7 +445,7 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
     gm()
     icon_grid = gm.get_grid()
     assert np.allclose(
-        np.sort(icon_grid.get_e2c2v_offset_provider().table, 1),
+        icon_grid.get_offset_provider("E2C2V").table,
         np.sort(simple_grid.diamond_table, 1),
     )
 

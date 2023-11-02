@@ -612,7 +612,7 @@ class Diffusion:
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"V2E": self.grid.get_v2e_offset_provider()},
+            offset_provider={"V2E": self.grid.get_offset_provider("V2E")},
         )
         log.debug("rbf interpolation 1: end")
 
@@ -645,8 +645,8 @@ class Diffusion:
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "E2C2V": self.grid.get_e2c2v_offset_provider(),
-                "E2ECV": self.grid.get_e2ecv_offset_provider(),
+                "E2C2V": self.grid.get_offset_provider("E2C2V"),
+                "E2ECV": self.grid.get_offset_provider("E2C2V"),
             },
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
@@ -665,8 +665,8 @@ class Diffusion:
             vertical_start=1,
             vertical_end=klevels,
             offset_provider={
-                "C2E": self.grid.get_c2e_offset_provider(),
-                "C2CE": self.grid.get_c2ce_offset_provider(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
                 "Koff": KDim,
             },
         )
@@ -691,7 +691,7 @@ class Diffusion:
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"V2E": self.grid.get_v2e_offset_provider()},
+            offset_provider={"V2E": self.grid.get_offset_provider("V2E")},
         )
         log.debug("2nd rbf interpolation: end")
 
@@ -725,8 +725,8 @@ class Diffusion:
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "E2C2V": self.grid.get_e2c2v_offset_provider(),
-                "E2ECV": self.grid.get_e2ecv_offset_provider(),
+                "E2C2V": self.grid.get_offset_provider("E2C2V"),
+                "E2ECV": self.grid.get_offset_provider("E2ECV"),
             },
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
@@ -761,7 +761,7 @@ class Diffusion:
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "C2E2CO": self.grid.get_c2e2co_offset_provider(),
+                "C2E2CO": self.grid.get_offset_provider("C2E2CO")(),
             },
         )
         log.debug(
@@ -781,8 +781,8 @@ class Diffusion:
             vertical_start=(klevels - 2),
             vertical_end=klevels,
             offset_provider={
-                "E2C": self.grid.get_e2c_offset_provider(),
-                "C2E2C": self.grid.get_c2e2c_offset_provider(),
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "C2E2C": self.grid.get_offset_provider("C2E2C"),
             },
         )
         log.debug(
@@ -800,9 +800,9 @@ class Diffusion:
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "C2E": self.grid.get_c2e_offset_provider(),
-                "E2C": self.grid.get_e2c_offset_provider(),
-                "C2CE": self.grid.get_c2ce_offset_provider(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
             },
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
@@ -823,8 +823,8 @@ class Diffusion:
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "C2CEC": self.grid.get_c2cec_offset_provider(),
-                "C2E2C": self.grid.get_c2e2c_offset_provider(),
+                "C2CEC": self.grid.get_offset_provider("C2CEC"),
+                "C2E2C": self.grid.get_offset_provider("C2E2C"),
                 "Koff": KDim,
             },
         )
