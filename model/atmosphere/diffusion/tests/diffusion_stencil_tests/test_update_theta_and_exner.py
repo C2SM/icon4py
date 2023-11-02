@@ -48,7 +48,7 @@ class TestUpdateThetaAndExner(StencilTest):
         area: np.array,
         theta_v: np.array,
         exner: np.array,
-        rd_o_cvd,
+        rd_o_cvd: float,
         **kwargs,
     ) -> tuple[np.array]:
         theta_v, exner = update_theta_and_exner_numpy(mesh, z_temp, area, theta_v, exner, rd_o_cvd)
