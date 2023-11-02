@@ -36,7 +36,7 @@ def mo_velocity_advection_stencil_18_numpy(
     scalfac_exdiff: float,
     cfl_w_limit: float,
     dtime: float,
-):
+) -> np.array:
     levmask = np.expand_dims(levmask, axis=0)
     owner_mask = np.expand_dims(owner_mask, axis=-1)
     area = np.expand_dims(area, axis=-1)
