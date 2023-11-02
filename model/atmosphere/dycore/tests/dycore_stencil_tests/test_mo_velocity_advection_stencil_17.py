@@ -39,7 +39,7 @@ class TestMoVelocityAdvectionStencil17(StencilTest):
     @staticmethod
     def reference(
         mesh, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
-    ) -> np.array:
+    ) -> dict:
         ddt_w_adv = mo_velocity_advection_stencil_17_numpy(mesh, e_bln_c_s, z_v_grad_w, ddt_w_adv)
         return dict(ddt_w_adv=ddt_w_adv)
 
