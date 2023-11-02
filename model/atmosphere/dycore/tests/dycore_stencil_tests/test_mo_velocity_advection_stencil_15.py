@@ -32,7 +32,7 @@ class TestMoVelocityAdvectionStencil15(StencilTest):
     OUTPUTS = ("z_w_con_c_full",)
 
     @staticmethod
-    def reference(mesh, z_w_con_c: np.array, **kwargs):
+    def reference(mesh, z_w_con_c: np.array, **kwargs) -> dict:
         z_w_con_c_full = mo_velocity_advection_stencil_15_numpy(mesh, z_w_con_c)
         return dict(z_w_con_c_full=z_w_con_c_full)
 
