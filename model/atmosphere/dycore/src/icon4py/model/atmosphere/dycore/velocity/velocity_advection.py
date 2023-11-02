@@ -15,7 +15,7 @@ import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.program_processors.runners.gtfn_cpu import (
+from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
     run_gtfn_imperative,
@@ -81,6 +81,7 @@ class VelocityAdvection:
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
         edge_params: EdgeParams,
+        owner_mask: Field[[CellDim], bool],
     ):
         self._initialized = False
         self.grid: IconGrid = grid
@@ -88,6 +89,7 @@ class VelocityAdvection:
         self.interpolation_state: InterpolationState = interpolation_state
         self.vertical_params = vertical_params
         self.edge_params = edge_params
+        self.c_owner_mask = owner_mask
 
         self.cfl_w_limit: float = 0.65
         self.scalfac_exdiff: float = 0.05
@@ -122,7 +124,6 @@ class VelocityAdvection:
         dtime: float,
         ntnd: int,
         cell_areas: Field[[CellDim], float],
-        owner_mask: Field[[CellDim], bool],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -367,7 +368,7 @@ class VelocityAdvection:
         mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
             levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
-            owner_mask=owner_mask,
+            owner_mask=self.c_owner_mask,
             z_w_con_c=self.z_w_con_c,
             ddqz_z_half=self.metric_state.ddqz_z_half,
             area=cell_areas,
@@ -455,7 +456,6 @@ class VelocityAdvection:
         dtime: float,
         ntnd: int,
         cell_areas: Field[[CellDim], float],
-        owner_mask: Field[[CellDim], bool],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -611,7 +611,7 @@ class VelocityAdvection:
         mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
             levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
-            owner_mask=owner_mask,
+            owner_mask=self.c_owner_mask,
             z_w_con_c=self.z_w_con_c,
             ddqz_z_half=self.metric_state.ddqz_z_half,
             area=cell_areas,

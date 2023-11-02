@@ -142,6 +142,7 @@ def _calculate_bdy_divdamp(
     return 0.75 / (nudge_max_coeff + dbl_eps) * abs(scal_divdamp)
 
 
+# TODO (magdalena) copied from diffusion/diffusion_utils/_en_smag_fac_for_zero_nshift makes sense?
 @field_operator
 def _en_smag_fac_for_zero_nshift(
     vect_a: Field[[KDim], float],

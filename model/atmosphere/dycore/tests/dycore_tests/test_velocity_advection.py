@@ -32,6 +32,7 @@ def test_scalfactors(savepoint_velocity_init, icon_grid):
         interpolation_state=None,
         vertical_params=None,
         edge_params=None,
+        owner_mask=None,
     )
     (cfl_w_limit, scalfac_exdiff) = velocity_advection._scale_factors_by_dtime(dtime)
     assert cfl_w_limit == savepoint_velocity_init.cfl_w_limit()
@@ -64,6 +65,7 @@ def test_velocity_init(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=grid_savepoint.construct_edge_geometry(),
+        owner_mask=grid_savepoint.c_owner_mask(),
     )
 
     assert dallclose(0.0, np.asarray(velocity_advection.cfl_clipping))
@@ -101,6 +103,7 @@ def test_verify_velocity_init_against_regular_savepoint(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=grid_savepoint.construct_edge_geometry(),
+        owner_mask=grid_savepoint.c_owner_mask(),
     )
 
     assert savepoint.cfl_w_limit() == velocity_advection.cfl_w_limit / dtime
@@ -180,6 +183,7 @@ def test_velocity_predictor_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=edge_geometry,
+        owner_mask=grid_savepoint.c_owner_mask(),
     )
 
     velocity_advection.run_predictor_step(
@@ -192,7 +196,6 @@ def test_velocity_predictor_step(
         dtime=dtime,
         ntnd=ntnd - 1,
         cell_areas=cell_geometry.area,
-        owner_mask=grid_savepoint.c_owner_mask(),
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd)
@@ -333,6 +336,7 @@ def test_velocity_corrector_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_params=edge_geometry,
+        owner_mask=grid_savepoint.c_owner_mask(),
     )
 
     velocity_advection.run_corrector_step(
@@ -344,7 +348,6 @@ def test_velocity_corrector_step(
         dtime=dtime,
         ntnd=ntnd - 1,
         cell_areas=cell_geometry.area,
-        owner_mask=grid_savepoint.c_owner_mask(),
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd)
