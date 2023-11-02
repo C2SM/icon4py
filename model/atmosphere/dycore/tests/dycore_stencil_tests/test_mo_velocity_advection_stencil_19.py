@@ -39,7 +39,6 @@ def mo_velocity_advection_stencil_19_numpy(
     z_w_con_c_full: np.array,
     vn_ie: np.array,
     ddqz_z_full_e: np.array,
-    **kwargs,
 ) -> np.array:
     z_ekinh_e2c = z_ekinh[mesh.e2c]
     coeff_gradekin = coeff_gradekin.reshape(mesh.e2c.shape)
