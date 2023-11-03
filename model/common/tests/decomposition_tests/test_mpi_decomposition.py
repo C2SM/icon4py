@@ -28,7 +28,7 @@ from icon4py.model.common.decomposition.definitions import (
 )
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401 # import fixtures from test_utils
+from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
     datapath,
     decomposition_info,

@@ -13,8 +13,7 @@
 import pytest
 
 from icon4py.model.common.test_utils.data_handling import download_and_extract
-from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401
-    BASE_PATH,
+from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
     datapath,
@@ -26,6 +25,7 @@ from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401
     processor_props,
     ranked_data_path,
 )
+from icon4py.model.common.test_utils.datatest_utils import BASE_PATH
 
 
 grids_path = BASE_PATH.joinpath("grids")
