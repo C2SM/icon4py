@@ -42,10 +42,10 @@ def _mo_velocity_advection_stencil_18(
         levmask & cfl_clipping & owner_mask,
         scalfac_exdiff
         * minimum(
-            0.85 - cfl_w_limit_wp * dtime,
+            wpfloat("0.85") - cfl_w_limit_wp * dtime,
             abs(z_w_con_c_wp) * dtime / ddqz_z_half_wp - cfl_w_limit_wp * dtime,
         ),
-        0.0,
+        wpfloat("0.0"),
     )
 
     ddt_w_adv_wp = where(

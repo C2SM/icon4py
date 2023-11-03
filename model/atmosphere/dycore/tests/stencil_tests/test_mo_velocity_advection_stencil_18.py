@@ -39,9 +39,9 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         geofac_n2s: np.array,
         w: np.array,
         ddt_w_adv: np.array,
-        scalfac_exdiff: float,
-        cfl_w_limit: float,
-        dtime: float,
+        scalfac_exdiff: wpfloat,
+        cfl_w_limit: wpfloat,
+        dtime: wpfloat,
         **kwargs,
     ):
         levmask = np.expand_dims(levmask, axis=0)
@@ -78,9 +78,9 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         geofac_n2s = random_field(mesh, CellDim, C2E2CODim, dtype=wpfloat)
         w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
         ddt_w_adv = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        scalfac_exdiff = 10.0
+        scalfac_exdiff = wpfloat("10.0")
         cfl_w_limit = vpfloat("3.0")
-        dtime = 2.0
+        dtime = wpfloat("2.0")
 
         return dict(
             levmask=levmask,

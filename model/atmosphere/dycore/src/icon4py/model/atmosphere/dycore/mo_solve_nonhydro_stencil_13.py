@@ -30,7 +30,7 @@ def _mo_solve_nonhydro_stencil_13(
 
     z_rth_pr_1_wp = rho - rho_ref_mc_wp
     z_rth_pr_2_wp = theta_v - theta_ref_mc_wp
-    return astype(z_rth_pr_1_wp, vpfloat), astype(z_rth_pr_2_wp, vpfloat)
+    return astype((z_rth_pr_1_wp, z_rth_pr_2_wp), vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)

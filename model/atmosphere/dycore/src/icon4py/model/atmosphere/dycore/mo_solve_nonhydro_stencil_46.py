@@ -23,8 +23,8 @@ from icon4py.model.common.type_alias import wpfloat
 def _mo_solve_nonhydro_stencil_46() -> (
     tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]
 ):
-    w_nnew_wp = broadcast(0.0, (CellDim, KDim))
-    z_contr_w_fl_l_wp = broadcast(0.0, (CellDim, KDim))
+    w_nnew_wp = broadcast(wpfloat("0.0"), (CellDim, KDim))
+    z_contr_w_fl_l_wp = broadcast(wpfloat("0.0"), (CellDim, KDim))
     return w_nnew_wp, z_contr_w_fl_l_wp
 
 

@@ -26,7 +26,7 @@ def _mo_solve_nonhydro_stencil_47(
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
 
     w_nnew_wp = w_concorr_c_wp
-    z_contr_w_fl_l_wp = broadcast(0.0, (CellDim, KDim))
+    z_contr_w_fl_l_wp = broadcast(wpfloat("0.0"), (CellDim, KDim))
     return w_nnew_wp, z_contr_w_fl_l_wp
 
 

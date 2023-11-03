@@ -35,10 +35,10 @@ def _mo_solve_nonhydro_stencil_08(
         (wgtfac_c, rho_ref_mc, theta_ref_mc), wpfloat
     )
 
-    rho_ic_wp = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(Koff[-1])
-    z_rth_pr_1_vp = astype(rho - rho_ref_mc_wp, vpfloat)
-    z_rth_pr_2_vp = astype(theta_v - theta_ref_mc_wp, vpfloat)
-    return rho_ic_wp, z_rth_pr_1_vp, z_rth_pr_2_vp
+    rho_ic = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(Koff[-1])
+    z_rth_pr_1 = astype(rho - rho_ref_mc_wp, vpfloat)
+    z_rth_pr_2 = astype(theta_v - theta_ref_mc_wp, vpfloat)
+    return rho_ic, z_rth_pr_1, z_rth_pr_2
 
 
 @program(grid_type=GridType.UNSTRUCTURED)

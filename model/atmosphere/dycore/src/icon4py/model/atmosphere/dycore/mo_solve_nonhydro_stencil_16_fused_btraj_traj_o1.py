@@ -31,7 +31,7 @@ def _compute_btraj(
     dual_normal_cell_2: Field[[ECDim], wpfloat],
     p_dthalf: wpfloat,
 ) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
-    lvn_pos = where(p_vn >= 0.0, True, False)
+    lvn_pos = where(p_vn >= wpfloat("0.0"), True, False)
 
     z_ntdistv_bary_1 = -(
         p_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1(E2EC[0]), pos_on_tplane_e_1(E2EC[1]))
@@ -99,7 +99,7 @@ def _sten_16(
     )
 
     z_rho_e_wp = where(
-        p_vn >= 0.0,
+        p_vn >= wpfloat("0.0"),
         rho_ref_me_wp
         + z_rth_pr_1_wp(E2C[0])
         + p_distv_bary_1 * z_grad_rth_1_wp(E2C[0])
@@ -111,7 +111,7 @@ def _sten_16(
     )
 
     z_theta_v_e_wp = where(
-        p_vn >= 0.0,
+        p_vn >= wpfloat("0.0"),
         theta_ref_me_wp
         + z_rth_pr_2_wp(E2C[0])
         + p_distv_bary_1 * z_grad_rth_3_wp(E2C[0])

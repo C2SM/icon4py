@@ -30,9 +30,7 @@ def _mo_velocity_advection_stencil_14(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-    cfl_w_limit_wp, z_w_con_c_wp, ddqz_z_half_wp = astype(
-        (cfl_w_limit, z_w_con_c, ddqz_z_half), wpfloat
-    )
+    z_w_con_c_wp, ddqz_z_half_wp = astype((z_w_con_c, ddqz_z_half), wpfloat)
 
     cfl_clipping = where(
         abs(z_w_con_c) > cfl_w_limit * ddqz_z_half,
@@ -40,7 +38,7 @@ def _mo_velocity_advection_stencil_14(
         False,
     )
 
-    vcfl = where(cfl_clipping, z_w_con_c_wp * dtime / ddqz_z_half_wp, 0.0)
+    vcfl = where(cfl_clipping, z_w_con_c_wp * dtime / ddqz_z_half_wp, wpfloat("0.0"))
     vcfl_vp = astype(vcfl, vpfloat)
 
     z_w_con_c_wp = where(

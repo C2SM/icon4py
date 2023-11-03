@@ -39,8 +39,8 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], wpfloat],
 ]:
-    diff_multfac_smag_wp, u_vert_wp, v_vert_wp, smag_limit_wp, smag_offset_wp = astype(
-        (diff_multfac_smag, u_vert, v_vert, smag_limit, smag_offset), wpfloat
+    diff_multfac_smag_wp, u_vert_wp, v_vert_wp, smag_offset_wp = astype(
+        (diff_multfac_smag, u_vert, v_vert, smag_offset), wpfloat
     )
 
     dvt_tang_wp = (

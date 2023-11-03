@@ -35,7 +35,7 @@ def _mo_solve_nonhydro_stencil_36(
     z_vt_ie_wp = astype(wgtfac_e * vt, wpfloat) + (wpfloat("1.0") - wgtfac_e_wp) * vt_wp(Koff[-1])
     # TODO(magdalena): change exponent back to int (workaround for gt4py)
     z_kin_hor_e_wp = wpfloat("0.5") * (vn**2.0 + astype(vt**2.0, wpfloat))
-    return astype(vn_ie_wp, vpfloat), astype(z_vt_ie_wp, vpfloat), astype(z_kin_hor_e_wp, vpfloat)
+    return astype((vn_ie_wp, z_vt_ie_wp, z_kin_hor_e_wp), vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)

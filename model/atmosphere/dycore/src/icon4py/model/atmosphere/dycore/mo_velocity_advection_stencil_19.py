@@ -56,7 +56,7 @@ def _mo_velocity_advection_stencil_19(
             wpfloat,
         )
         + vt_wp * (f_e + astype(vpfloat("0.5") * neighbor_sum(zeta(E2V), axis=E2VDim), wpfloat))
-        + neighbor_sum(z_w_con_c_full_wp(E2C) * c_lin_e, axis=E2CDim)
+        + neighbor_sum(c_lin_e * z_w_con_c_full_wp(E2C), axis=E2CDim)
         * astype((vn_ie - vn_ie(Koff[1])), wpfloat)
         / ddqz_z_full_e_wp
     )

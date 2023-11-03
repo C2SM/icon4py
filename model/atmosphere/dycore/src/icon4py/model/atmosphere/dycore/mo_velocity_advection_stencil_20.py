@@ -60,8 +60,8 @@ def _mo_velocity_advection_stencil_20(
         (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
     )
 
-    w_con_e = broadcast(0.0, (EdgeDim, KDim))
-    difcoef = broadcast(0.0, (EdgeDim, KDim))
+    w_con_e = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
+    difcoef = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
 
     w_con_e = where(
         levelmask | levelmask(Koff[1]),
@@ -69,16 +69,18 @@ def _mo_velocity_advection_stencil_20(
         w_con_e,
     )
     difcoef = where(
-        (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > cfl_w_limit_wp * ddqz_z_full_e_wp),
+        (levelmask | levelmask(Koff[1]))
+        & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
         scalfac_exdiff
         * minimum(
-            0.85 - cfl_w_limit_wp * dtime,
+            wpfloat("0.85") - cfl_w_limit_wp * dtime,
             abs(w_con_e) * dtime / ddqz_z_full_e_wp - cfl_w_limit_wp * dtime,
         ),
         difcoef,
     )
     ddt_vn_apc_wp = where(
-        (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > cfl_w_limit_wp * ddqz_z_full_e_wp),
+        (levelmask | levelmask(Koff[1]))
+        & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
         ddt_vn_apc_wp
         + difcoef
         * area_edge

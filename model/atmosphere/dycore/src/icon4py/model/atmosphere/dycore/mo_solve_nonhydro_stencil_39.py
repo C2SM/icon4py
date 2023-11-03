@@ -25,9 +25,12 @@ def _mo_solve_nonhydro_stencil_39(
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    z_w_concorr_me_wp = astype(z_w_concorr_me, wpfloat)
+    z_w_concorr_me_offset_1 = z_w_concorr_me(Koff[-1])
 
-    z_w_concorr_me_offset_1_wp = z_w_concorr_me_wp(Koff[-1])
+    z_w_concorr_me_wp, z_w_concorr_me_offset_1_wp = astype(
+        (z_w_concorr_me, z_w_concorr_me_offset_1), wpfloat
+    )
+
     z_w_concorr_mc_m1_wp = neighbor_sum(
         e_bln_c_s(C2CE) * z_w_concorr_me_offset_1_wp(C2E), axis=C2EDim
     )
