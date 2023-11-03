@@ -33,15 +33,6 @@ def get_icon_grid():
     return grid_savepoint.construct_icon_grid()
 
 
-def get_grid_by_type(grid_type):
-    if grid_type == "simple_grid":
-        return SimpleGrid()
-    elif grid_type == "icon_grid":
-        return get_icon_grid()
-    else:
-        raise ValueError(f"Unknown grid type: {grid_type}")
-
-
 @pytest.fixture
 def grid(request):
     return request.param

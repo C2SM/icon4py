@@ -83,11 +83,17 @@ def pytest_generate_tests(metafunc):
 
     # parametrise grid
     if "grid" in metafunc.fixturenames:
-        from icon4py.model.common.test_utils.grid_utils import get_grid_by_type
         selected_grid_type = metafunc.config.getoption("--grid")
 
         try:
-            grid_instance = get_grid_by_type(selected_grid_type)
+            if selected_grid_type == "simple_grid":
+                from icon4py.model.common.grid.simple import SimpleGrid
+                grid_instance = SimpleGrid()
+            elif selected_grid_type == "icon_grid":
+                from icon4py.model.common.test_utils.grid_utils import get_icon_grid
+                grid_instance = get_icon_grid()
+            else:
+                raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
         except ValueError as e:
             available_grids = ["simple_grid", "icon_grid"]

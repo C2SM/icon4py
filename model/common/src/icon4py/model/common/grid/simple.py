@@ -447,14 +447,6 @@ class SimpleGrid(BaseGrid):
     def num_levels(self) -> int:
         return self.config.num_levels
 
-    def _update_size_connectivities(self):
-        new_sizes = {
-            ECVDim: self.size[EdgeDim] * self.size[E2C2VDim],
-            CEDim: self.size[CellDim] * self.size[C2EDim],
-            ECDim: self.size[EdgeDim] * self.size[E2CDim],
-        }
-        self.size.update(new_sizes)
-
     def _configure(self):
         horizontal_grid_size = HorizontalGridSize(
             num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
@@ -481,4 +473,9 @@ class SimpleGrid(BaseGrid):
         }
 
         self.with_config(config).with_connectivities(connectivity_dict)
-        self._update_size_connectivities()
+        self.update_size_connectivities({
+            ECVDim: self.size[EdgeDim] * self.size[E2C2VDim],
+            CEDim: self.size[CellDim] * self.size[C2EDim],
+            ECDim: self.size[EdgeDim] * self.size[E2CDim],
+        })
+

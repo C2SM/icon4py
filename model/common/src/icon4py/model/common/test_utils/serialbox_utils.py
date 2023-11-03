@@ -326,6 +326,13 @@ class IconGridSavePoint(IconSavepoint):
                 }
             )
         )
+
+        grid.update_size_connectivities({
+            ECVDim: grid.size[EdgeDim] * grid.size[E2C2VDim],
+            CEDim: grid.size[CellDim] * grid.size[C2EDim],
+            ECDim: grid.size[EdgeDim] * grid.size[E2CDim],
+        })
+
         return grid
 
     def construct_edge_geometry(self) -> EdgeParams:

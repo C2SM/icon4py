@@ -91,13 +91,13 @@ class BaseGrid(ABC):
     @builder
     def with_config(self, config: GridConfig):
         self.config = config
-        self._update_size(config)
+        self._update_size()
 
-    def _update_size(self, config: GridConfig):
-        self.size[VertexDim] = config.num_vertices
-        self.size[CellDim] = config.num_cells
-        self.size[EdgeDim] = config.num_edges
-        self.size[KDim] = config.num_levels
+    def _update_size(self):
+        self.size[VertexDim] = self.config.num_vertices
+        self.size[CellDim] = self.config.num_cells
+        self.size[EdgeDim] = self.config.num_edges
+        self.size[KDim] = self.config.num_levels
 
     def _get_offset_provider(self, dim, from_dim, to_dim):
         return NeighborTableOffsetProvider(
@@ -125,3 +125,6 @@ class BaseGrid(ABC):
             offset_providers[key] = method(*args) if args else method()
 
         return offset_providers
+
+    def update_size_connectivities(self, new_sizes):
+        self.size.update(new_sizes)

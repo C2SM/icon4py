@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from icon4py.model.common.decomposition.definitions import get_processor_properties
-from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
 
 TEST_UTILS_PATH = Path(__file__).parent
 MODEL_PATH = TEST_UTILS_PATH.parent.parent
