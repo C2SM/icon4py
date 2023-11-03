@@ -14,7 +14,6 @@
 import pytest
 
 from icon4py.model.common.decomposition.definitions import SingleNodeRun
-from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.datatest_utils import (
     SER_DATA_BASEPATH,
     create_icon_serial_data_provider,

@@ -13,10 +13,16 @@
 
 import pytest
 
-from .datatest_utils import DATA_URIS, SER_DATA_BASEPATH, get_processor_properties_for_run, get_ranked_data_path, \
-    get_datapath_for_ranked_data, create_icon_serial_data_provider
 from ..decomposition.definitions import SingleNodeRun
 from .data_handling import download_and_extract
+from .datatest_utils import (
+    DATA_URIS,
+    SER_DATA_BASEPATH,
+    create_icon_serial_data_provider,
+    get_datapath_for_ranked_data,
+    get_processor_properties_for_run,
+    get_ranked_data_path,
+)
 
 
 # TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated

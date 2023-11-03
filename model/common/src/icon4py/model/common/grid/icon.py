@@ -30,9 +30,10 @@ from icon4py.model.common.dimension import (
     ECDim,
     ECVDim,
     EdgeDim,
+    KDim,
     V2CDim,
     V2EDim,
-    VertexDim, KDim,
+    VertexDim,
 )
 from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder

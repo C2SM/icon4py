@@ -88,9 +88,11 @@ def pytest_generate_tests(metafunc):
         try:
             if selected_grid_type == "simple_grid":
                 from icon4py.model.common.grid.simple import SimpleGrid
+
                 grid_instance = SimpleGrid()
             elif selected_grid_type == "icon_grid":
                 from icon4py.model.common.test_utils.grid_utils import get_icon_grid
+
                 grid_instance = get_icon_grid()
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")

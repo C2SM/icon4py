@@ -473,9 +473,10 @@ class SimpleGrid(BaseGrid):
         }
 
         self.with_config(config).with_connectivities(connectivity_dict)
-        self.update_size_connectivities({
-            ECVDim: self.size[EdgeDim] * self.size[E2C2VDim],
-            CEDim: self.size[CellDim] * self.size[C2EDim],
-            ECDim: self.size[EdgeDim] * self.size[E2CDim],
-        })
-
+        self.update_size_connectivities(
+            {
+                ECVDim: self.size[EdgeDim] * self.size[E2C2VDim],
+                CEDim: self.size[CellDim] * self.size[C2EDim],
+                ECDim: self.size[EdgeDim] * self.size[E2CDim],
+            }
+        )
