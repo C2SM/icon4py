@@ -282,7 +282,6 @@ class IconGridSavePoint(IconSavepoint):
         return dim, global_index, mask
 
     def construct_icon_grid(self) -> IconGrid:
-
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -361,6 +360,7 @@ class IconGridSavePoint(IconSavepoint):
             primal_normal_cell_y=primal_normal_cell[1],
             dual_normal_cell_y=dual_normal_cell[1],
             edge_areas=self.edge_areas(),
+            f_e=self.f_e(),
         )
 
     def construct_cell_geometry(self) -> CellParams:
