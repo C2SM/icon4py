@@ -15,8 +15,6 @@ import pytest
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 from gt4py.next.program_processors.runners.roundtrip import executor
 
-from icon4py.model.common.test_utils.grid_utils import get_grid_by_type
-
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
@@ -85,6 +83,7 @@ def pytest_generate_tests(metafunc):
 
     # parametrise grid
     if "grid" in metafunc.fixturenames:
+        from icon4py.model.common.test_utils.grid_utils import get_grid_by_type
         selected_grid_type = metafunc.config.getoption("--grid")
 
         try:
