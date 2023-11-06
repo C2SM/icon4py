@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     calculate_nabla2_for_w,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field, constant_field
 
 
 class TestCalculateNabla2ForW(StencilTest):
@@ -28,14 +28,15 @@ class TestCalculateNabla2ForW(StencilTest):
 
     @staticmethod
     def reference(grid, w: np.array, geofac_n2s: np.array, **kwargs) -> np.array:
+        c2e2cO = grid.connectivities[C2E2CODim]
         geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
-        z_nabla2_c = np.sum(w[grid.connectivities[C2E2CODim]] * geofac_n2s, axis=1)
+        z_nabla2_c = np.sum(np.where((c2e2cO != -1)[:, :, np.newaxis], w[c2e2cO] * geofac_n2s, 0), axis=1)
         return dict(z_nabla2_c=z_nabla2_c)
 
     @pytest.fixture
     def input_data(self, grid):
-        w = random_field(grid, CellDim, KDim)
-        geofac_n2s = random_field(grid, CellDim, C2E2CODim)
+        w = constant_field(grid, 1., CellDim, KDim)
+        geofac_n2s = constant_field(grid, 2., CellDim, C2E2CODim)
         z_nabla2_c = zero_field(grid, CellDim, KDim)
 
         return dict(

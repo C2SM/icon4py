@@ -42,6 +42,7 @@ def get_datapath_for_ranked_data(ranked_base_path):
 
 def create_icon_serial_data_provider(datapath, processor_props):
     from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
+
     return IconSerialDataProvider(
         fname_prefix="icon_pydycore",
         path=str(datapath),

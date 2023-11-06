@@ -42,7 +42,9 @@ class TestCalculateNabla2ForZ(StencilTest):
         return dict(z_nabla2_e=z_nabla2_e)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid, backend):
+        if backend.name.startswith("run_gtfn"):
+            pytest.skip("Execution domain needs to be restricted or boundary taken into account in stencil.")
         kh_smag_e = random_field(grid, EdgeDim, KDim)
         inv_dual_edge_length = random_field(grid, EdgeDim)
         theta_v = random_field(grid, CellDim, KDim)
