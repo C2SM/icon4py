@@ -30,7 +30,7 @@ try:
     import mpi4py
 
     mpi4py.rc.initialize = False
-    mpi4py.rc.finalize = False
+    mpi4py.rc.finalize = True
 
 except ImportError:
     mpi4py = None

@@ -15,7 +15,6 @@ import pytest
 
 from icon4py.model.common.decomposition.definitions import ProcessProperties, get_runtype
 from icon4py.model.common.decomposition.mpi_decomposition import (
-    finalize_mpi,
     get_multinode_properties,
 )
 
@@ -29,8 +28,3 @@ def check_comm_size(props: ProcessProperties, sizes=(1, 2, 4)):
 def processor_props(request):
     runtype = get_runtype(with_mpi=True)
     yield get_multinode_properties(runtype)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def cleanup(request):
-    request.addfinalizer(finalize_mpi)
