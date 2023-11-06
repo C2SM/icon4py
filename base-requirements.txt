@@ -1,2 +1,2 @@
 # VCS
-gt4py @ git+https://github.com/nfarabullini/gt4py.git@revert_tuple_get_edits
+-e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
