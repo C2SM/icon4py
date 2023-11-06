@@ -50,6 +50,9 @@ class TestMoSolveNonhydroStencil19(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
         inv_dual_edge_length = random_field(grid, EdgeDim)
         z_exner_ex_pr = random_field(grid, CellDim, KDim)
         ddxn_z_full = random_field(grid, EdgeDim, KDim)

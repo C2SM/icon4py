@@ -28,8 +28,9 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
 
     @staticmethod
     def reference(grid, p_cell_in: np.array, c_intp: np.array, **kwargs) -> np.array:
+        v2c = grid.connectivities[V2CDim]
         c_intp = np.expand_dims(c_intp, axis=-1)
-        p_vert_out = np.sum(p_cell_in[grid.connectivities[V2CDim]] * c_intp, axis=1)
+        p_vert_out = np.sum(np.where((v2c != -1)[:, :, np.newaxis], p_cell_in[v2c] * c_intp, 0), axis = 1)
         return dict(
             p_vert_out=p_vert_out,
         )
