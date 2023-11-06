@@ -56,6 +56,9 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1) or np.any(grid.connectivities[E2VDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
         vn_ie = random_field(grid, EdgeDim, KDim)
         inv_dual_edge_length = random_field(grid, EdgeDim)
         w = random_field(grid, CellDim, KDim)
