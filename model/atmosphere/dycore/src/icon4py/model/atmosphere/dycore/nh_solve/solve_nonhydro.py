@@ -1701,7 +1701,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if not self.config.l_open_ubc and not self.l_vert_nested:
+        if not (self.config.l_open_ubc and self.l_vert_nested):
             mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
                 w_nnew=prognostic_state[nnew].w,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,

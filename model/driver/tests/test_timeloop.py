@@ -1,9 +1,12 @@
 import pytest
 import numpy as np
+import os
+
+from icon4py.model.common.states.prognostic_state import PrognosticState
 
 from icon4py.model.driver.dycore_driver import TimeLoop
 
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import (
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro
@@ -19,25 +22,23 @@ from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionPar
 from icon4py.model.common.grid.horizontal import EdgeParams, CellParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 
-from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 
 
-# step_date_init and step_date_exit are used in diffusion, declared in fixtures
 # testing on MCH_CH_r04b09_dsl data
-# TODO include timeloop_date_start, = "2021-06-20T12:00:00.000", for icon_run_config
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "timeloop_date_init, timeloop_date_exit",
-    [("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "debug_mode,timeloop_istep_init,timeloop_istep_exit,timeloop_jstep_init,timeloop_jstep_exit,timeloop_date_init, timeloop_date, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only_init",
+    [(False, 1, 2, 0, 1, "2021-06-20T12:00:00.000", "2021-06-20T12:00:10.000", True, False, False)],
 )
 def test_run_timeloop_single_step(
+    debug_mode,
     timeloop_date_init,
-    timeloop_date_exit,
+    timeloop_date,
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
@@ -45,6 +46,7 @@ def test_run_timeloop_single_step(
     r04b09_diffusion_config,
     r04b09_iconrun_config,
     damping_height,
+    timeloop_diffusion_linit_init,
     timeloop_diffusion_savepoint_init,
     timeloop_diffusion_savepoint_exit,
     timeloop_nonhydro_savepoint_init,
@@ -59,7 +61,6 @@ def test_run_timeloop_single_step(
     diffusion_interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
     diffusion_metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diffusion_diagnostic_state = timeloop_diffusion_savepoint_init.construct_diagnostics_for_diffusion()
-    prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -68,8 +69,6 @@ def test_run_timeloop_single_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     additional_parameters = DiffusionParams(diffusion_config)
-
-    #verify_diffusion_fields(diffusion_diagnostic_state, before_dycore_prognostic_state, diffusion_savepoint_init)
 
     diffusion = Diffusion()
     diffusion.init(
@@ -83,26 +82,15 @@ def test_run_timeloop_single_step(
         cell_params=cell_geometry,
     )
 
-    '''
-    verify_diffusion_fields(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        diffusion_savepoint=diffusion_savepoint_exit,
-    )
-    '''
-
-    # TODO a wrapper for constructing explicitly the MCH_CH_r04b09_dsl run config for nonhydro
+    # Default construction is for the MCH_CH_r04b09_dsl run config for nonhydro
     nonhydro_config = NonHydrostaticConfig()
-    sp = timeloop_nonhydro_savepoint_init #savepoint_nonhydro_init
-    sp_step_exit = timeloop_nonhydro_step_savepoint_exit
+    sp = timeloop_nonhydro_savepoint_init
     nonhydro_params = NonHydrostaticParams(nonhydro_config)
-    #sp_d = data_provider.from_savepoint_grid()
     sp_v = timeloop_velocity_savepoint_init
     mesh = SimpleMesh()
     nonhydro_dtime = timeloop_velocity_savepoint_init.get_metadata("dtime").get("dtime")
-    # TODO lprep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
+    # lprep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
-    #clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx") # moved to time loop
     prep_adv = PrepAdvection(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
@@ -111,10 +99,6 @@ def test_run_timeloop_single_step(
     a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
-    #recompute = sp_v.get_metadata("recompute").get("recompute") # moved to time loop
-    #linit = sp_v.get_metadata("linit").get("linit") # moved to time loop
-    #dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
-
 
     assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
     assert r04b09_iconrun_config.dtime == diffusion_dtime
@@ -194,15 +178,38 @@ def test_run_timeloop_single_step(
     timeloop = TimeLoop(
         r04b09_iconrun_config,
         diffusion,
-        solve_nonhydro
+        solve_nonhydro,
+        timeloop_diffusion_linit_init
     )
 
     assert timeloop.substep_timestep == nonhydro_dtime
 
+    if (timeloop_date == "2021-06-20T12:00:10.000"):
+        print("diffusion prognostic state as initial condition")
+        prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
+    else:
+        print("solve_nh prognostic state as initial condition")
+        prognostic_state = PrognosticState(
+            w=sp.w_now(),
+            vn=sp.vn_now(),
+            theta_v=sp.theta_v_now(),
+            rho=sp.rho_now(),
+            exner=sp.exner_now(),
+        )
+    prognostic_state_new = PrognosticState(
+        w=sp.w_new(),
+        vn=sp.vn_new(),
+        theta_v=sp.theta_v_new(),
+        rho=sp.rho_new(),
+        exner=sp.exner_new(),
+    )
+
+    prognostic_state_list = [prognostic_state, prognostic_state_new]
+
     timeloop.time_integration(
         diffusion_diagnostic_state,
         nonhydro_diagnostic_state,
-        prognostic_state,
+        prognostic_state_list,
         prep_adv,
         z_fields,
         nh_constants,
@@ -210,57 +217,59 @@ def test_run_timeloop_single_step(
         lprep_adv
     )
 
-    try:
-        assert np.allclose(
-            np.asarray(timeloop_diffusion_savepoint_exit.vn()),
-            np.asarray(prognostic_state.vn)
-        )
-    except:
-        print("vn is not the same")
-        print( np.max( np.abs( np.asarray(timeloop_diffusion_savepoint_exit.vn()) - np.asarray(prognostic_state.vn) ) ) )
-        print(np.max(np.abs(np.asarray(timeloop_diffusion_savepoint_exit.vn()))))
-        print(np.max(np.abs(np.asarray(prognostic_state.vn))))
+    rho_sp = timeloop_nonhydro_savepoint_exit
+    exner_sp = timeloop_diffusion_savepoint_exit.exner()
+    theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
+    vn_sp = timeloop_diffusion_savepoint_exit.vn()
+    w_sp = timeloop_diffusion_savepoint_exit.w()
 
-    try:
-        assert np.allclose(
-            np.asarray(timeloop_diffusion_savepoint_exit.w()),
-            np.asarray(prognostic_state.w)
-        )
-    except:
-        print("w is not the same")
-        print( np.max( np.abs( np.asarray(timeloop_diffusion_savepoint_exit.w()) - np.asarray(prognostic_state.w) ) ) )
-        print(np.max(np.abs(np.asarray(timeloop_diffusion_savepoint_exit.w()))))
-        print(np.max(np.abs(np.asarray(prognostic_state.w))))
+    assert np.allclose(
+        np.asarray(vn_sp),
+        np.asarray(prognostic_state_list[timeloop.prognostic_now].vn),
+        rtol=1e-9,
+    )
 
-    try:
-        assert np.allclose(
-            np.asarray(timeloop_diffusion_savepoint_exit.exner()),
-            np.asarray(prognostic_state.exner)
-        )
-    except:
-        print("exner is not the same")
-        print( np.max( np.abs( np.asarray(timeloop_diffusion_savepoint_exit.exner()) - np.asarray(prognostic_state.exner) ) ) )
-        print(np.max(np.abs(np.asarray(timeloop_diffusion_savepoint_exit.exner()))))
-        print(np.max(np.abs(np.asarray(prognostic_state.exner))))
+    assert np.allclose(
+        np.asarray(w_sp),
+        np.asarray(prognostic_state_list[timeloop.prognostic_now].w),
+        atol=8e-14,
+    )
 
-    try:
-        assert np.allclose(
-            np.asarray(timeloop_diffusion_savepoint_exit.theta_v()),
-            np.asarray(prognostic_state.theta_v)
-        )
-    except:
-        print("thehta_v is not the same")
-        print( np.max( np.abs( np.asarray(timeloop_diffusion_savepoint_exit.theta_v()) - np.asarray(prognostic_state.theta_v) ) ) )
-        print(np.max(np.abs(np.asarray(timeloop_diffusion_savepoint_exit.theta_v()))))
-        print(np.max(np.abs(np.asarray(prognostic_state.theta_v))))
+    assert np.allclose(
+        np.asarray(exner_sp),
+        np.asarray(prognostic_state_list[timeloop.prognostic_now].exner)
+    )
 
-    try:
-        assert np.allclose(
-            np.asarray(timeloop_nonhydro_savepoint_exit.rho()),
-            np.asarray(prognostic_state.rho)
-        )
-    except:
-        print("rho is not the same")
-        print( np.max( np.abs( np.asarray(timeloop_nonhydro_savepoint_exit.rho()) - np.asarray(prognostic_state.rho) ) ) )
-        print(np.max(np.abs(np.asarray(timeloop_nonhydro_savepoint_exit.rho()))))
-        print(np.max(np.abs(np.asarray(prognostic_state.rho))))
+    assert np.allclose(
+        np.asarray(theta_sp),
+        np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v)
+    )
+
+    assert np.allclose(
+        np.asarray(rho_sp.rho()),
+        np.asarray(prognostic_state_list[timeloop.prognostic_now].rho)
+    )
+
+    if (debug_mode):
+
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        base_dir = script_dir + '/'
+
+        def printing(ref, predict, title: str):
+            with open(base_dir + 'analysis_' + title + '.dat', 'w') as f:
+                cell_size = ref.shape[0]
+                k_size = ref.shape[1]
+                print(title, cell_size, k_size)
+                difference = np.abs(ref - predict)
+                # initial = np.asarray(sp.z_vn_avg())
+                for i in range(cell_size):
+                    for k in range(k_size):
+                        f.write("{0:7d} {1:7d}".format(i, k))
+                        f.write(" {0:.20e} {1:.20e} {2:.20e} ".format(difference[i, k], ref[i, k], predict[i, k]))
+                        f.write("\n")
+
+        printing(np.asarray(rho_sp.rho()), np.asarray(prognostic_state_list[timeloop.prognostic_now].rho), 'rho')
+        printing(np.asarray(exner_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].exner), 'exner')
+        printing(np.asarray(theta_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v), 'theta_v')
+        printing(np.asarray(w_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].w), 'w')
+        printing(np.asarray(vn_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].vn), 'vn')

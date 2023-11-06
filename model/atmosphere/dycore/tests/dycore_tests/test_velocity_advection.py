@@ -114,11 +114,10 @@ def test_verify_velocity_init_against_regular_savepoint(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep, step_date_init, step_date_exit",
-    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "istep_exit, jstep_exit, velocity_istep_init, velocity_jstep_init, step_date_init, step_date_exit, vn_only_init, vn_only_exit",
+    [(1, 0, 1, 0, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", False, False)],
 )
 def test_velocity_predictor_step(
-    istep,
     step_date_init,
     step_date_exit,
     damping_height,
@@ -213,6 +212,7 @@ def test_velocity_predictor_step(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie), atol=1.0e-14
     )
     # stencil 07
+    # TODO: this is not called when vn_only is true, no comparison should be done
     assert dallclose(
         np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
         np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :],
@@ -266,11 +266,10 @@ def test_velocity_predictor_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep, step_date_init, step_date_exit",
-    [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "istep_exit, jstep_exit, velocity_istep_init, velocity_jstep_init, step_date_init, step_date_exit",
+    [(2, 0, 2, 0, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_velocity_corrector_step(
-    istep,
     step_date_init,
     step_date_exit,
     damping_height,

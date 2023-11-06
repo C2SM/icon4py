@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import NonHydrostaticConfig
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
 
 n_substeps_reduced = 2
 
@@ -26,9 +26,8 @@ class IconRunConfig:
     dtime: float = 60.0
     start_date: datetime = datetime(1, 1, 1, 0, 0,0)
     end_date: datetime = datetime(1,1,1,1,0,0)
-    is_testcase: bool = True
 
-    # ndyn_substeps is not a constant in ICON, it may be modified in restart runs.
+    # ndyn_substeps is not a constant in ICON, it may be modified in restart runs. Create another ndyn_substeps in timeloop
     ndyn_substeps: int = 5
     apply_horizontal_diff_at_large_dt: bool = True # lhdiff_rcf
     apply_extra_diffusion_for_largeCFL: bool = True # lextra_diffu
@@ -37,7 +36,7 @@ class IconRunConfig:
 class IconConfig:
     run_config: IconRunConfig
     diffusion_config: DiffusionConfig
-    nonhydro_solver_config: NonHydrostaticConfig
+    solve_nonhydro_config: NonHydrostaticConfig
 
 
 
@@ -75,8 +74,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             IconRunConfig(
                 dtime=10.0,
                 start_date=datetime(2021, 6, 20, 12, 0, 0),
-                end_date=datetime(2021, 6, 20, 12, 0, 20),
-                is_testcase=False,
+                end_date=datetime(2021, 6, 20, 12, 0, 10),
                 ndyn_substeps=2,
                 apply_horizontal_diff_at_large_dt=True,
                 apply_extra_diffusion_for_largeCFL=True,
@@ -93,5 +91,5 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     return IconConfig(
         run_config=model_run_config,
         diffusion_config=diffusion_config,
-        nonhydro_config=nonhydro_config,
+        solve_nonhydro_config=nonhydro_config,
     )
