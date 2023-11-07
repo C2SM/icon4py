@@ -56,7 +56,7 @@ def test_read_static_fields_for_type_sb(datapath):
         diffusion_metric_state,
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
-        solve_nonhydro_interpolation_state
+        solve_nonhydro_interpolation_state,
     ) = read_static_fields(datapath, ser_type=SerializationType.SB)
     assert_diffusion_metric_state_fields(diffusion_metric_state)
     assert_diffusion_interpolation_state_fields(diffusion_interpolation_state)
@@ -100,6 +100,7 @@ def assert_diffusion_metric_state_fields(metric_state):
     assert metric_state.theta_ref_mc
     assert metric_state.mask_hdiff
     assert metric_state.zd_vertoffset
+
 
 def assert_nonhydro_metric_state_fields(metric_state):
     assert metric_state.bdy_halo_c
