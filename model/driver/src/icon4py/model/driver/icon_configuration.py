@@ -11,26 +11,30 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
 
+
 n_substeps_reduced = 2
+
 
 @dataclass
 class IconRunConfig:
 
     dtime: float = 60.0
-    start_date: datetime = datetime(1, 1, 1, 0, 0,0)
-    end_date: datetime = datetime(1,1,1,1,0,0)
+    start_date: datetime = datetime(1, 1, 1, 0, 0, 0)
+    end_date: datetime = datetime(1, 1, 1, 1, 0, 0)
 
-    # ndyn_substeps is not a constant in ICON, it may be modified in restart runs. Create another ndyn_substeps in timeloop
-    ndyn_substeps: int = 5
-    apply_horizontal_diff_at_large_dt: bool = True # lhdiff_rcf
-    apply_extra_diffusion_for_largeCFL: bool = True # lextra_diffu
+    ndyn_substeps: int = (
+        5  # ndyn_substeps is not a constant in ICON, it may be modified in restart runs
+    )
+    apply_horizontal_diff_at_large_dt: bool = True  # lhdiff_rcf
+    apply_extra_diffusion_for_largeCFL: bool = True  # lextra_diffu
+
 
 @dataclass
 class IconConfig:
@@ -39,11 +43,8 @@ class IconConfig:
     solve_nonhydro_config: NonHydrostaticConfig
 
 
-
 def read_config(experiment: Optional[str]) -> IconConfig:
-    def _default_run_config(n_steps: int):
-        #if n_steps > 5:
-        #    raise NotImplementedError("only five dummy timesteps available")
+    def _default_run_config():
         return IconRunConfig()
 
     def mch_ch_r04b09_diffusion_config():
@@ -65,8 +66,8 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     def _default_diffusion_config():
         return DiffusionConfig()
 
-    def _default_config(n_steps):
-        run_config = _default_run_config(n_steps)
+    def _default_config():
+        run_config = _default_run_config()
         return run_config, _default_diffusion_config(), NonHydrostaticConfig()
 
     def _mch_ch_r04b09_config():
@@ -87,7 +88,6 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         (model_run_config, diffusion_config, nonhydro_config) = _mch_ch_r04b09_config()
     else:
         raise NotImplementedError("Please specify experiment name for icon run config")
-        #(model_run_config, diffusion_config, dycore_config) = _default_config()
     return IconConfig(
         run_config=model_run_config,
         diffusion_config=diffusion_config,

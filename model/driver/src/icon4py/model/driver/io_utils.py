@@ -28,13 +28,12 @@ from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import Inte
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
-
+from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon_grid import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -99,7 +98,16 @@ def model_initialization():
 
 def read_initial_state(
     path: Path, rank=0
-) -> tuple[DiffusionDiagnosticState, DiagnosticStateNonHydro, ZFields, NHConstants, PrepAdvection, Field[[KDim],float], PrognosticState, PrognosticState]:
+) -> tuple[
+    DiffusionDiagnosticState,
+    DiagnosticStateNonHydro,
+    ZFields,
+    NHConstants,
+    PrepAdvection,
+    Field[[KDim], float],
+    PrognosticState,
+    PrognosticState,
+]:
     """
     Read prognostic and diagnostic state from serialized data.
 
@@ -114,9 +122,11 @@ def read_initial_state(
     data_provider = sb.IconSerialDataProvider(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
-    icon_grid = sb.IconSerialDataProvider(
-        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-    ).from_savepoint_grid().construct_icon_grid()
+    icon_grid = (
+        sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+        .from_savepoint_grid()
+        .construct_icon_grid()
+    )
     diffusion_init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
     )
@@ -189,7 +199,7 @@ def read_initial_state(
     prep_adv = PrepAdvection(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
-        mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic()
+        mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
     )
 
     return (
@@ -200,7 +210,7 @@ def read_initial_state(
         prep_adv,
         solve_nonhydro_init_savepoint.bdy_divdamp(),
         prognostic_state_now,
-        prognostic_state_next
+        prognostic_state_next,
     )
 
 
@@ -227,7 +237,7 @@ def read_geometry_fields(
             vct_a=sp.vct_a(),
             rayleigh_damping_height=12500,
             nflatlev=sp.nflatlev(),
-            nflat_gradp=sp.nflat_gradp()
+            nflat_gradp=sp.nflat_gradp(),
         )
         return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()
     else:
@@ -250,7 +260,9 @@ def read_decomp_info(
 
 def read_static_fields(
     path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
-) -> tuple[DiffusionMetricState, DiffusionInterpolationState, MetricStateNonHydro, InterpolationState]:
+) -> tuple[
+    DiffusionMetricState, DiffusionInterpolationState, MetricStateNonHydro, InterpolationState
+]:
     """
     Read fields for metric and interpolation state.
 
@@ -268,21 +280,36 @@ def read_static_fields(
         dataprovider = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         )
-        icon_grid = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-        ).from_savepoint_grid().construct_icon_grid()
+        icon_grid = (
+            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+            .from_savepoint_grid()
+            .construct_icon_grid()
+        )
         diffusion_interpolation_state = (
             dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
         )
-        diffusion_metric_state = dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
-        solve_nonhydro_interpolation_state = dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_nonhydro()
-        solve_nonhydro_metric_state = dataprovider.from_metrics_savepoint().construct_nh_metric_state(icon_grid.n_lev())
-        return diffusion_metric_state, diffusion_interpolation_state, solve_nonhydro_metric_state, solve_nonhydro_interpolation_state
+        diffusion_metric_state = (
+            dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        )
+        solve_nonhydro_interpolation_state = (
+            dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_nonhydro()
+        )
+        solve_nonhydro_metric_state = (
+            dataprovider.from_metrics_savepoint().construct_nh_metric_state(icon_grid.n_lev())
+        )
+        return (
+            diffusion_metric_state,
+            diffusion_interpolation_state,
+            solve_nonhydro_metric_state,
+            solve_nonhydro_interpolation_state,
+        )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def configure_logging(run_path: str, start_time: datetime, processor_procs: ProcessProperties = None) -> None:
+def configure_logging(
+    run_path: str, start_time: datetime, processor_procs: ProcessProperties = None
+) -> None:
     """
     Configure logging.
 

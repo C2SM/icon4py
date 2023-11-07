@@ -11,26 +11,28 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import pytest
 from datetime import datetime
-from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
-from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 
+import pytest
+
+from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401
+    damping_height,
     data_provider,
+    datapath,
+    download_ser_data,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
-    datapath,
-    download_ser_data,
+    ndyn_substeps,
     processor_props,
     ranked_data_path,
-    ndyn_substeps,
-    damping_height,
-    vn_only_init,
     vn_only_exit,
+    vn_only_init,
 )
+from icon4py.model.driver.icon_configuration import IconRunConfig
+
 
 @pytest.fixture
 def r04b09_diffusion_config(
@@ -71,32 +73,33 @@ def r04b09_iconrun_config(
     from the default.
     """
     return IconRunConfig(
-        dtime = 10.0,
-        start_date = datetime(
+        dtime=10.0,
+        start_date=datetime(
             int(timeloop_date_init[0:4]),
             int(timeloop_date_init[5:7]),
             int(timeloop_date_init[8:10]),
             int(timeloop_date_init[11:13]),
             int(timeloop_date_init[14:16]),
-            int(timeloop_date_init[17:19])
+            int(timeloop_date_init[17:19]),
         ),
-        end_date = datetime(
+        end_date=datetime(
             int(timeloop_date[0:4]),
             int(timeloop_date[5:7]),
             int(timeloop_date[8:10]),
             int(timeloop_date[11:13]),
             int(timeloop_date[14:16]),
-            int(timeloop_date[17:19])
+            int(timeloop_date[17:19]),
         ),
-        ndyn_substeps = ndyn_substeps,
-        apply_horizontal_diff_at_large_dt = True,
-        apply_extra_diffusion_for_largeCFL = True,
+        ndyn_substeps=ndyn_substeps,
+        apply_horizontal_diff_at_large_dt=True,
+        apply_extra_diffusion_for_largeCFL=True,
     )
+
 
 @pytest.fixture
 def timeloop_diffusion_savepoint_init(
     data_provider,  # noqa: F811 # imported fixtures data_provider
-    timeloop_date,  # noqa: F811 # imported fixtures data_provider
+    timeloop_date,  # imported fixtures data_provider
     timeloop_diffusion_linit_init,
 ):
     """
@@ -107,13 +110,15 @@ def timeloop_diffusion_savepoint_init(
 
     linit flag is set to true
     """
-    return data_provider.from_savepoint_diffusion_init(linit=timeloop_diffusion_linit_init, date=timeloop_date)
+    return data_provider.from_savepoint_diffusion_init(
+        linit=timeloop_diffusion_linit_init, date=timeloop_date
+    )
 
 
 @pytest.fixture
 def timeloop_diffusion_savepoint_exit(
     data_provider,  # noqa: F811 # imported fixtures data_provider`
-    timeloop_date,  # noqa: F811 # imported fixtures step_date_exit`
+    timeloop_date,  # imported fixtures step_date_exit`
     timeloop_diffusion_linit_exit,
 ):
     """
@@ -122,11 +127,20 @@ def timeloop_diffusion_savepoint_exit(
     date of the timestamp to be selected can be set seperately by overriding the 'timeloop_date'
     fixture, passing 'step_data=<iso_string>'
     """
-    sp = data_provider.from_savepoint_diffusion_exit(linit=timeloop_diffusion_linit_exit, date=timeloop_date)
+    sp = data_provider.from_savepoint_diffusion_exit(
+        linit=timeloop_diffusion_linit_exit, date=timeloop_date
+    )
     return sp
 
+
 @pytest.fixture
-def timeloop_velocity_savepoint_init(data_provider, timeloop_date, timeloop_istep_init, vn_only_init, timeloop_jstep_init):  # F811
+def timeloop_velocity_savepoint_init(
+    data_provider,  # noqa: F811
+    timeloop_date,
+    timeloop_istep_init,
+    vn_only_init,  # noqa: F811
+    timeloop_jstep_init,
+):
     """
     Load data from ICON savepoint at start of velocity_advection module.
 
@@ -134,63 +148,91 @@ def timeloop_velocity_savepoint_init(data_provider, timeloop_date, timeloop_iste
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.from_savepoint_velocity_init(
-        istep=timeloop_istep_init, vn_only=vn_only_init, date=timeloop_date, jstep=timeloop_jstep_init
+        istep=timeloop_istep_init,
+        vn_only=vn_only_init,
+        date=timeloop_date,
+        jstep=timeloop_jstep_init,
     )
 
 
 @pytest.fixture
-def timeloop_nonhydro_savepoint_init(data_provider, timeloop_date, timeloop_istep_init, timeloop_jstep_init):  # noqa F811
+def timeloop_nonhydro_savepoint_init(
+    data_provider,  # noqa: F811
+    timeloop_date,
+    timeloop_istep_init,
+    timeloop_jstep_init,
+):
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    return data_provider.from_savepoint_nonhydro_init(istep=timeloop_istep_init, date=timeloop_date, jstep=timeloop_jstep_init)
+    return data_provider.from_savepoint_nonhydro_init(
+        istep=timeloop_istep_init, date=timeloop_date, jstep=timeloop_jstep_init
+    )
 
 
 @pytest.fixture
-def timeloop_nonhydro_savepoint_exit(data_provider, timeloop_date, timeloop_istep_exit, timeloop_jstep_exit):  # noqa F811
+def timeloop_nonhydro_savepoint_exit(
+    data_provider,  # noqa: F811
+    timeloop_date,
+    timeloop_istep_exit,
+    timeloop_jstep_exit,
+):  # F811
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    return data_provider.from_savepoint_nonhydro_exit(istep=timeloop_istep_exit, date=timeloop_date, jstep=timeloop_jstep_exit)
+    return data_provider.from_savepoint_nonhydro_exit(
+        istep=timeloop_istep_exit, date=timeloop_date, jstep=timeloop_jstep_exit
+    )
 
 
 @pytest.fixture
-def timeloop_nonhydro_step_savepoint_exit(data_provider, timeloop_date, timeloop_jstep_exit):  # noqa F811
+def timeloop_nonhydro_step_savepoint_exit(
+    data_provider,  # noqa: F811
+    timeloop_date,
+    timeloop_jstep_exit,
+):  # F811
     """
     Load data from ICON savepoint at final exit (after predictor and corrector, and 3 final stencils) of solve_nonhydro module.
 
     date of the timestamp to be selected can be set seperately by overriding the 'step_data'
     fixture, passing 'step_data=<iso_string>'
     """
-    return data_provider.from_savepoint_nonhydro_step_exit(date=timeloop_date, jstep=timeloop_jstep_exit)
+    return data_provider.from_savepoint_nonhydro_step_exit(
+        date=timeloop_date, jstep=timeloop_jstep_exit
+    )
+
 
 @pytest.fixture
 def timeloop_istep_init():
     return 1
 
+
 @pytest.fixture
 def timeloop_jstep_init():
     return 0
+
 
 @pytest.fixture
 def timeloop_istep_exit():
     return 2
 
+
 @pytest.fixture
 def timeloop_jstep_exit():
     return 1
+
 
 @pytest.fixture
 def timeloop_date_init():
     return "2021-06-20T12:00:00.000"
 
+
 @pytest.fixture
 def timeloop_date():
     return "2021-06-20T12:00:10.000"
-

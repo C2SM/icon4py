@@ -16,26 +16,21 @@ from pathlib import Path
 from typing import Callable
 
 import click
-import pytz
 from devtools import Timer
 from gt4py.next import Field, program
-from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
 
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
+from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
+from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
-    SolveNonhydro
+    SolveNonhydro,
 )
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
-
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
-from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
-
-from icon4py.model.common.grid.horizontal import EdgeParams
 from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
     create_exchange,
@@ -43,7 +38,9 @@ from icon4py.model.common.decomposition.definitions import (
     get_runtype,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.states.prognostic_state import PrognosticState, copy_prognostics
+from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.io_utils import (
     configure_logging,
@@ -53,10 +50,6 @@ from icon4py.model.driver.io_utils import (
     read_initial_state,
     read_static_fields,
 )
-
-from icon4py.model.common.test_utils.helpers import zero_field, random_field
-
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 log = logging.getLogger(__name__)
@@ -92,9 +85,7 @@ def _copy_diagnostic_and_prognostics(
     _identity_c_k(theta_v_new, out=theta_v)
 
 
-
 class TimeLoop:
-
     @classmethod
     def name(cls):
         return cls.__name__
@@ -110,8 +101,11 @@ class TimeLoop:
         self.diffusion = diffusion
         self.solve_nonhydro = solve_nonhydro
 
-        self._n_time_steps: int = int((self.run_config.end_date - self.run_config.start_date) / timedelta(seconds=self.run_config.dtime))
-        self._substep_timestep: float = float(self.run_config.dtime/self.run_config.ndyn_substeps)
+        self._n_time_steps: int = int(
+            (self.run_config.end_date - self.run_config.start_date)
+            / timedelta(seconds=self.run_config.dtime)
+        )
+        self._substep_timestep: float = float(self.run_config.dtime / self.run_config.ndyn_substeps)
 
         # check validity of configurations
         self._validate()
@@ -121,8 +115,8 @@ class TimeLoop:
 
         self._l_init: bool = apply_initial_stabilization
 
-        self._now: int = 0 # TODO: move to PrognosticState
-        self._next: int = 1 # TODO: move to PrognosticState
+        self._now: int = 0  # TODO: move to PrognosticState
+        self._next: int = 1  # TODO: move to PrognosticState
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -131,13 +125,12 @@ class TimeLoop:
         self._next: int = 1  # TODO: move to PrognosticState
 
     def _validate(self):
-        if (self._n_time_steps < 0):
+        if self._n_time_steps < 0:
             raise ValueError("end_date should be larger than start_date. Please check.")
-        if (not self.diffusion.initialized):
+        if not self.diffusion.initialized:
             raise Exception("diffusion is not initialized before time loop")
-        if (not self.solve_nonhydro.initialized):
+        if not self.solve_nonhydro.initialized:
             raise Exception("nonhydro solver is not initialized before time loop")
-
 
     def _not_first_step(self):
         self._l_init = False
@@ -185,10 +178,10 @@ class TimeLoop:
         prognostic_state_list: list[PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: PrepAdvection,
-        z_fields: ZFields, # local constants in solve_nh
+        z_fields: ZFields,  # local constants in solve_nh
         nh_constants: NHConstants,
         bdy_divdamp: Field[[KDim], float],
-        lprep_adv: bool
+        lprep_adv: bool,
     ):
 
         log.info(
@@ -197,7 +190,7 @@ class TimeLoop:
         log.info(
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} linit={self._l_init} apply_horizontal_diff_at_large_dt={self.run_config.apply_horizontal_diff_at_large_dt} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
         )
-        if (self.diffusion.config.apply_to_horizontal_wind and self._l_init):
+        if self.diffusion.config.apply_to_horizontal_wind and self._l_init:
             log.info("running initial step to diffuse fields before timeloop starts")
             self.diffusion.initial_run(
                 diffusion_diagnostic_state,
@@ -209,7 +202,9 @@ class TimeLoop:
         )
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for i_time_step in range(self._n_time_steps):
-            log.info(f"simulation date : {self._simulation_date} run timestep : {i_time_step} linit : {self._l_init}")
+            log.info(
+                f"simulation date : {self._simulation_date} run timestep : {i_time_step} linit : {self._l_init}"
+            )
 
             self._next_simulation_date()
 
@@ -224,12 +219,11 @@ class TimeLoop:
                 z_fields,
                 nh_constants,
                 bdy_divdamp,
-                lprep_adv
+                lprep_adv,
             )
             timer.capture()
 
             # TODO IO
-
 
         timer.summary(True)
 
@@ -242,7 +236,7 @@ class TimeLoop:
         z_fields: ZFields,
         nh_constants: NHConstants,
         bdy_divdamp: Field[[KDim], float],
-        lprep_adv: bool
+        lprep_adv: bool,
     ):
 
         self._do_dyn_substepping(
@@ -253,14 +247,15 @@ class TimeLoop:
             z_fields,
             nh_constants,
             bdy_divdamp,
-            lprep_adv
+            lprep_adv,
         )
 
-        if (self.diffusion.config.apply_to_horizontal_wind and self.run_config.apply_horizontal_diff_at_large_dt):
+        if (
+            self.diffusion.config.apply_to_horizontal_wind
+            and self.run_config.apply_horizontal_diff_at_large_dt
+        ):
             self.diffusion.run(
-                diffusion_diagnostic_state,
-                prognostic_state_list[self._next],
-                self.run_config.dtime
+                diffusion_diagnostic_state, prognostic_state_list[self._next], self.run_config.dtime
             )
 
         self._swap()
@@ -276,7 +271,7 @@ class TimeLoop:
         z_fields: ZFields,
         nh_constants: NHConstants,
         bdy_divdamp: Field[[KDim], float],
-        lprep_adv: bool
+        lprep_adv: bool,
     ):
 
         # TODO compute airmass for prognostic_state
@@ -301,43 +296,46 @@ class TimeLoop:
                 nnew=self._next,
                 nnow=self._now,
                 lclean_mflx=lclean_mflx,
-                lprep_adv=lprep_adv
+                lprep_adv=lprep_adv,
             )
-            if (self.diffusion.config.apply_to_horizontal_wind and not self.run_config.apply_horizontal_diff_at_large_dt):
+            if (
+                self.diffusion.config.apply_to_horizontal_wind
+                and not self.run_config.apply_horizontal_diff_at_large_dt
+            ):
                 self.diffusion.run(
                     diffusion_diagnostic_state,
                     prognostic_state_list[self._next],
-                    self._substep_timestep
+                    self._substep_timestep,
                 )
 
             l_recompute = False
             lclean_mflx = False
 
-            if (idyn_timestep != self.run_config.ndyn_substeps - 1):
+            if idyn_timestep != self.run_config.ndyn_substeps - 1:
                 self._swap()
 
             self._not_first_step()
 
         # TODO compute airmass for prognostic_state
 
+
 def initialize(file_path: Path, props: ProcessProperties):
     """
-        Inititalize the driver run.
+    Inititalize the driver run.
 
-        "reads" in
-            - configuration
+    "reads" in
+        - configuration
 
-            - grid information
+        - grid information
 
-            - (serialized) input fields, initial
+        - (serialized) input fields, initial
 
-         Returns:
-             tl: configured timeloop,
-             prognostic_state: initial state fro prognostic and diagnostic variables
-             diagnostic_state:
-             other temporary fields:
+     Returns:
+         tl: configured timeloop,
+         prognostic_state: initial state fro prognostic and diagnostic variables
+         diagnostic_state:
+         other temporary fields:
     """
-
     log.info("initialize parallel runtime")
     experiment_name = "mch_ch_r04b09_dsl"
     log.info(f"reading configuration: experiment {experiment_name}")
@@ -355,7 +353,7 @@ def initialize(file_path: Path, props: ProcessProperties):
         diffusion_metric_state,
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
-        solve_nonhydro_interpolation_state
+        solve_nonhydro_interpolation_state,
     ) = read_static_fields(file_path)
 
     log.info("initializing diffusion")
@@ -373,10 +371,17 @@ def initialize(file_path: Path, props: ProcessProperties):
         cell_geometry,
     )
 
-    diffusion_diagnostic_state, solve_nonhydro_diagnostic_state, z_fields, nh_constants, prep_adv, bdy_divdamp, prognostic_state_now, prognostic_state_next = read_initial_state(
-        file_path, rank=props.rank
-    )
-    prognostic_state_list = [prognostic_state_now,prognostic_state_next]
+    (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        z_fields,
+        nh_constants,
+        prep_adv,
+        bdy_divdamp,
+        prognostic_state_now,
+        prognostic_state_next,
+    ) = read_initial_state(file_path, rank=props.rank)
+    prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
     nonhydro_config = NonHydrostaticConfig()
     nonhydro_params = NonHydrostaticParams(nonhydro_config)
@@ -418,7 +423,7 @@ def initialize(file_path: Path, props: ProcessProperties):
         z_fields,
         nh_constants,
         prep_adv,
-        bdy_divdamp
+        bdy_divdamp,
     )
 
 
@@ -444,17 +449,23 @@ def main(input_path, run_path, mpi):
         d) setup the time loop
 
     2. run time loop
-
     """
-
-
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
-    timeloop, diffusion_diagnostic_state, solve_nonhydro_diagnostic_state, prognostic_state_list, z_fields, nh_constants, prep_adv, bdy_divdamp = initialize(
-        Path(input_path), parallel_props
-    )
+    (
+        timeloop,
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prognostic_state_list,
+        z_fields,
+        nh_constants,
+        prep_adv,
+        bdy_divdamp,
+    ) = initialize(Path(input_path), parallel_props)
     configure_logging(run_path, timeloop.simulation_date, parallel_props)
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
-    log.info(f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}")
+    log.info(
+        f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
+    )
 
     log.info(f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}")
 
@@ -469,7 +480,7 @@ def main(input_path, run_path, mpi):
         z_fields,
         nh_constants,
         bdy_divdamp,
-        lprep_adv=False
+        lprep_adv=False,
     )
 
     log.info("timeloop:  DONE")
@@ -477,4 +488,3 @@ def main(input_path, run_path, mpi):
 
 if __name__ == "__main__":
     main()
-

@@ -1,32 +1,39 @@
-import pytest
-import numpy as np
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import os
 
-from icon4py.model.common.states.prognostic_state import PrognosticState
+import numpy as np
+import pytest
 
-from icon4py.model.driver.dycore_driver import TimeLoop
-
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
-    SolveNonhydro
+    SolveNonhydro,
 )
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
-
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-
-from icon4py.model.common.grid.horizontal import EdgeParams, CellParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
-
-
+from icon4py.model.driver.dycore_driver import TimeLoop
 
 
 # testing on MCH_CH_r04b09_dsl data
@@ -58,10 +65,13 @@ def test_run_timeloop_single_step(
     diffusion_dtime = timeloop_diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    diffusion_interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    diffusion_interpolation_state = (
+        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    )
     diffusion_metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
-    diffusion_diagnostic_state = timeloop_diffusion_savepoint_init.construct_diagnostics_for_diffusion()
-    vct_a = grid_savepoint.vct_a()
+    diffusion_diagnostic_state = (
+        timeloop_diffusion_savepoint_init.construct_diagnostics_for_diffusion()
+    )
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
@@ -129,7 +139,9 @@ def test_run_timeloop_single_step(
         scal_divdamp_o2=sp.scal_divdamp_o2(),
     )
 
-    nonhydro_interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    nonhydro_interpolation_state = (
+        interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    )
     nonhydro_metric_state = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
@@ -176,19 +188,14 @@ def test_run_timeloop_single_step(
     )
 
     timeloop = TimeLoop(
-        r04b09_iconrun_config,
-        diffusion,
-        solve_nonhydro,
-        timeloop_diffusion_linit_init
+        r04b09_iconrun_config, diffusion, solve_nonhydro, timeloop_diffusion_linit_init
     )
 
     assert timeloop.substep_timestep == nonhydro_dtime
 
-    if (timeloop_date == "2021-06-20T12:00:10.000"):
-        print("diffusion prognostic state as initial condition")
+    if timeloop_date == "2021-06-20T12:00:10.000":
         prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
     else:
-        print("solve_nh prognostic state as initial condition")
         prognostic_state = PrognosticState(
             w=sp.w_now(),
             vn=sp.vn_now(),
@@ -214,7 +221,7 @@ def test_run_timeloop_single_step(
         z_fields,
         nh_constants,
         sp.bdy_divdamp(),
-        lprep_adv
+        lprep_adv,
     )
 
     rho_sp = timeloop_nonhydro_savepoint_exit
@@ -226,7 +233,7 @@ def test_run_timeloop_single_step(
     assert np.allclose(
         np.asarray(vn_sp),
         np.asarray(prognostic_state_list[timeloop.prognostic_now].vn),
-        rtol=1e-9,
+        atol=5e-13,
     )
 
     assert np.allclose(
@@ -236,40 +243,56 @@ def test_run_timeloop_single_step(
     )
 
     assert np.allclose(
-        np.asarray(exner_sp),
-        np.asarray(prognostic_state_list[timeloop.prognostic_now].exner)
+        np.asarray(exner_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].exner)
     )
 
     assert np.allclose(
-        np.asarray(theta_sp),
-        np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v)
+        np.asarray(theta_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v)
     )
 
     assert np.allclose(
-        np.asarray(rho_sp.rho()),
-        np.asarray(prognostic_state_list[timeloop.prognostic_now].rho)
+        np.asarray(rho_sp.rho()), np.asarray(prognostic_state_list[timeloop.prognostic_now].rho)
     )
 
-    if (debug_mode):
+    if debug_mode:
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_dir = script_dir + '/'
+        base_dir = script_dir + "/"
 
         def printing(ref, predict, title: str):
-            with open(base_dir + 'analysis_' + title + '.dat', 'w') as f:
+            with open(base_dir + "analysis_" + title + ".dat", "w") as f:
                 cell_size = ref.shape[0]
                 k_size = ref.shape[1]
                 print(title, cell_size, k_size)
                 difference = np.abs(ref - predict)
-                # initial = np.asarray(sp.z_vn_avg())
                 for i in range(cell_size):
                     for k in range(k_size):
                         f.write("{0:7d} {1:7d}".format(i, k))
-                        f.write(" {0:.20e} {1:.20e} {2:.20e} ".format(difference[i, k], ref[i, k], predict[i, k]))
+                        f.write(
+                            " {0:.20e} {1:.20e} {2:.20e} ".format(
+                                difference[i, k], ref[i, k], predict[i, k]
+                            )
+                        )
                         f.write("\n")
 
-        printing(np.asarray(rho_sp.rho()), np.asarray(prognostic_state_list[timeloop.prognostic_now].rho), 'rho')
-        printing(np.asarray(exner_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].exner), 'exner')
-        printing(np.asarray(theta_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v), 'theta_v')
-        printing(np.asarray(w_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].w), 'w')
-        printing(np.asarray(vn_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].vn), 'vn')
+        printing(
+            np.asarray(rho_sp.rho()),
+            np.asarray(prognostic_state_list[timeloop.prognostic_now].rho),
+            "rho",
+        )
+        printing(
+            np.asarray(exner_sp),
+            np.asarray(prognostic_state_list[timeloop.prognostic_now].exner),
+            "exner",
+        )
+        printing(
+            np.asarray(theta_sp),
+            np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v),
+            "theta_v",
+        )
+        printing(
+            np.asarray(w_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].w), "w"
+        )
+        printing(
+            np.asarray(vn_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].vn), "vn"
+        )

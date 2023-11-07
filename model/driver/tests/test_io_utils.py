@@ -52,14 +52,21 @@ def test_read_icon_grid_for_type_sb(datapath):
 
 @pytest.mark.datatest
 def test_read_static_fields_for_type_sb(datapath):
-    metric_state, interpolation_state = read_static_fields(datapath, ser_type=SerializationType.SB)
-    assert_metric_state_fields(metric_state)
-    assert_interpolation_state_fields(interpolation_state)
+    (
+        diffusion_metric_state,
+        diffusion_interpolation_state,
+        solve_nonhydro_metric_state,
+        solve_nonhydro_interpolation_state
+    ) = read_static_fields(datapath, ser_type=SerializationType.SB)
+    assert_diffusion_metric_state_fields(diffusion_metric_state)
+    assert_diffusion_interpolation_state_fields(diffusion_interpolation_state)
+    assert_nonhydro_metric_state_fields(solve_nonhydro_metric_state)
+    assert_nonhydro_interpolation_state_fields(solve_nonhydro_interpolation_state)
 
 
 @pytest.mark.datatest
 def test_read_geometry_fields_for_type_sb(datapath):
-    edge_geometry, cell_geometry, vertical_geometry = read_geometry_fields(
+    edge_geometry, cell_geometry, vertical_geometry, c_owner_mask = read_geometry_fields(
         datapath, ser_type=SerializationType.SB
     )
     assert_edge_geometry_fields(edge_geometry)
@@ -86,7 +93,7 @@ def assert_edge_geometry_fields(edge_geometry: EdgeParams):
     assert edge_geometry.dual_normal_vert
 
 
-def assert_metric_state_fields(metric_state):
+def assert_diffusion_metric_state_fields(metric_state):
     assert metric_state.wgtfac_c
     assert metric_state.zd_intcoef
     assert metric_state.zd_diffcoef
@@ -94,8 +101,43 @@ def assert_metric_state_fields(metric_state):
     assert metric_state.mask_hdiff
     assert metric_state.zd_vertoffset
 
+def assert_nonhydro_metric_state_fields(metric_state):
+    assert metric_state.bdy_halo_c
+    assert metric_state.mask_prog_halo_c
+    assert metric_state.rayleigh_w
+    assert metric_state.wgtfac_c
+    assert metric_state.wgtfacq_c_dsl
+    assert metric_state.wgtfac_e
+    assert metric_state.wgtfacq_e_dsl
+    assert metric_state.exner_exfac
+    assert metric_state.exner_ref_mc
+    assert metric_state.rho_ref_mc
+    assert metric_state.theta_ref_mc
+    assert metric_state.rho_ref_me
+    assert metric_state.theta_ref_me
+    assert metric_state.theta_ref_ic
+    assert metric_state.d_exner_dz_ref_ic
+    assert metric_state.ddqz_z_half
+    assert metric_state.d2dexdz2_fac1_mc
+    assert metric_state.d2dexdz2_fac2_mc
+    assert metric_state.ddxn_z_full
+    assert metric_state.ddqz_z_full_e
+    assert metric_state.ddxt_z_full
+    assert metric_state.inv_ddqz_z_full
+    assert metric_state.vertoffset_gradp
+    assert metric_state.zdiff_gradp
+    assert metric_state.ipeidx_dsl
+    assert metric_state.pg_exdist
+    assert metric_state.vwind_expl_wgt
+    assert metric_state.vwind_impl_wgt
+    assert metric_state.hmask_dd3d
+    assert metric_state.scalfac_dd3d
+    assert metric_state.coeff1_dwdz
+    assert metric_state.coeff2_dwdz
+    assert metric_state.coeff_gradekin
 
-def assert_interpolation_state_fields(interpolation_state):
+
+def assert_diffusion_interpolation_state_fields(interpolation_state):
     assert interpolation_state.geofac_n2s
     assert interpolation_state.e_bln_c_s
     assert interpolation_state.nudgecoeff_e
@@ -106,3 +148,25 @@ def assert_interpolation_state_fields(interpolation_state):
     assert interpolation_state.rbf_coeff_2
     assert interpolation_state.rbf_coeff_1
     assert interpolation_state.geofac_n2s_c
+
+
+def assert_nonhydro_interpolation_state_fields(interpolation_state):
+    assert interpolation_state.e_bln_c_s
+    assert interpolation_state.rbf_coeff_1
+    assert interpolation_state.rbf_coeff_2
+    assert interpolation_state.geofac_div
+    assert interpolation_state.geofac_n2s
+    assert interpolation_state.geofac_grg_x
+    assert interpolation_state.geofac_grg_y
+    assert interpolation_state.nudgecoeff_e
+    assert interpolation_state.c_lin_e
+    assert interpolation_state.geofac_grdiv
+    assert interpolation_state.rbf_vec_coeff_e
+    assert interpolation_state.c_intp
+    assert interpolation_state.geofac_rot
+    assert interpolation_state.pos_on_tplane_e_1
+    assert interpolation_state.pos_on_tplane_e_2
+    assert interpolation_state.e_flx_avg
+
+    assert interpolation_state.geofac_n2s_c
+    assert interpolation_state.geofac_n2s_nbh

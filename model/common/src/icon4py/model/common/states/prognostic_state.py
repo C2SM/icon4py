@@ -15,7 +15,6 @@ from dataclasses import dataclass
 
 import numpy as np
 from gt4py.next.common import Field
-from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
@@ -39,34 +38,3 @@ class PrognosticState:
     @property
     def w_1(self) -> Field[[CellDim], float]:
         return np_as_located_field(CellDim)(np.asarray(self.w)[:, 0])
-
-
-@field_operator
-def copy_field_celldim_kdim(field: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
-    return field
-
-@field_operator
-def copy_field_edgedim_kdim(field: Field[[EdgeDim, KDim], float]) -> Field[[EdgeDim, KDim], float]:
-    return field
-
-
-@program
-def copy_prognostics(
-    rho: Field[[CellDim, KDim], float],
-    rho_new: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    vn_new: Field[[EdgeDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    exner_new: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    theta_v_new: Field[[CellDim, KDim], float]
-):
-    copy_field_celldim_kdim(rho, out=rho_new)
-    copy_field_celldim_kdim(w, out=w_new)
-    copy_field_edgedim_kdim(vn, out=vn_new)
-    copy_field_celldim_kdim(exner, out=exner_new)
-    copy_field_celldim_kdim(theta_v, out=theta_v_new)
-
-

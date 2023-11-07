@@ -328,7 +328,9 @@ def test_nonhydro_predictor_step(
 
     # stencil 30
     assert dallclose(
-        np.asarray(sp_exit.z_vn_avg())[2538:31558, :], np.asarray(solve_nonhydro.z_vn_avg)[2538:31558, :], atol=5e-14
+        np.asarray(sp_exit.z_vn_avg())[2538:31558, :],
+        np.asarray(solve_nonhydro.z_vn_avg)[2538:31558, :],
+        atol=5e-14,
     )
     # stencil 30
     assert dallclose(
@@ -384,8 +386,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 41
     assert dallclose(
-        np.asarray(sp_exit.z_flxdiv_mass())[3316:20896,:],
-        np.asarray(solve_nonhydro.z_flxdiv_mass)[3316:20896,:],
+        np.asarray(sp_exit.z_flxdiv_mass())[3316:20896, :],
+        np.asarray(solve_nonhydro.z_flxdiv_mass)[3316:20896, :],
         atol=5e-15,
     )
 
@@ -441,7 +443,6 @@ def test_nonhydro_predictor_step(
         atol=2e-15,
     )
 
-
     # end
     assert dallclose(np.asarray(sp_exit.rho()), np.asarray(prognostic_state_nnew.rho))
     assert dallclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state_nnew.w), atol=7e-14)
@@ -481,8 +482,6 @@ def test_nonhydro_corrector_step(
     sp_v = savepoint_velocity_init
     mesh = SimpleMesh()
     dtime = sp_v.get_metadata("dtime").get("dtime")
-    #clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
-    #lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     prep_adv = PrepAdvection(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
@@ -710,7 +709,6 @@ def test_run_solve_nonhydro_single_step(
     linit = sp_v.get_metadata("linit").get("linit")
     dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
 
-
     diagnostic_state_nh = DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
@@ -823,10 +821,7 @@ def test_run_solve_nonhydro_single_step(
         np.asarray(prognostic_state_nnew.theta_v),
     )
 
-    assert dallclose(
-        np.asarray(sp_step_exit.exner_new()),
-        np.asarray(prognostic_state_nnew.exner)
-    )
+    assert dallclose(np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner))
 
     assert dallclose(
         np.asarray(sp_exit.rho()),
@@ -846,7 +841,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
-#@pytest.mark.skip
+# @pytest.mark.skip
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, istep_exit, jstep_init, jstep_exit, velocity_istep_init, velocity_jstep_init, step_date_init, step_date_exit, vn_only_init, vn_only_exit",
@@ -990,11 +985,10 @@ def test_run_solve_nonhydro_multi_step(
         linit = False
         recompute = False
         clean_mflx = False
-        if (i_substep != r_nsubsteps - 1):
+        if i_substep != r_nsubsteps - 1:
             ntemp = nnow
             nnow = nnew
             nnew = ntemp
-
 
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.rho_ic()),
@@ -1009,7 +1003,7 @@ def test_run_solve_nonhydro_multi_step(
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.z_graddiv_vn()[2538:31558, :]),
         np.asarray(z_fields.z_graddiv_vn[2538:31558, :]),
-        atol=1.e-18,
+        atol=1.0e-18,
     )
 
     assert dallclose(
@@ -1030,20 +1024,16 @@ def test_run_solve_nonhydro_multi_step(
         atol=1e-12,
     )
 
-
     assert np.allclose(
-        np.asarray(sp_step_exit.theta_v_new()),
-        np.asarray(prognostic_state_ls[nnew].theta_v)
+        np.asarray(sp_step_exit.theta_v_new()), np.asarray(prognostic_state_ls[nnew].theta_v)
     )
 
     assert np.allclose(
-        np.asarray(savepoint_nonhydro_exit.rho()),
-        np.asarray(prognostic_state_ls[nnew].rho)
+        np.asarray(savepoint_nonhydro_exit.rho()), np.asarray(prognostic_state_ls[nnew].rho)
     )
 
     assert dallclose(
-        np.asarray(sp_step_exit.exner_new()),
-        np.asarray(prognostic_state_ls[nnew].exner)
+        np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_ls[nnew].exner)
     )
 
     assert dallclose(
@@ -1055,9 +1045,8 @@ def test_run_solve_nonhydro_multi_step(
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.vn_new()),
         np.asarray(prognostic_state_ls[nnew].vn),
-        rtol=1e-9, # changed from 10 to 9
+        atol=5e-13,
     )
-
 
 def create_prognostic_states(sp):
     prognostic_state_nnow = PrognosticState(
