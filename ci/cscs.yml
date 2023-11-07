@@ -18,6 +18,7 @@ variables:
 
 .test_template:
   extends: .container-runner-hohgant-a100
+  timeout: 2h
   image: $PERSIST_IMAGE_NAME
   before_script:
     - apt-get update
@@ -28,6 +29,7 @@ variables:
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_NTASKS: 2
+    SLURM_TIMELIMIT: '01:00:00'
 
 build_job:
   extends: .build_template
@@ -40,12 +42,9 @@ test_model_job:
 
 benchmark_model_gtfn_cpu:
   extends: .test_template
-  timeout: 2h
   stage: benchmark
   script:
     - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
-  variables:
-    SLURM_TIMELIMIT: '01:00:00'
 
 test_tools_job:
   extends: .test_template
