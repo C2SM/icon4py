@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
@@ -43,8 +44,10 @@ class TestCalculateNabla2ForZ(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid, backend):
-        if backend.name.startswith("run_gtfn"):
-            pytest.skip("Execution domain needs to be restricted or boundary taken into account in stencil.")
+        if isinstance(backend, OTFCompileExecutor):
+            pytest.skip(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
         kh_smag_e = random_field(grid, EdgeDim, KDim)
         inv_dual_edge_length = random_field(grid, EdgeDim)
         theta_v = random_field(grid, CellDim, KDim)

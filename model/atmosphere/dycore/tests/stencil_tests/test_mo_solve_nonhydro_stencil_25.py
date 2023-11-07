@@ -30,7 +30,10 @@ class TestMoSolveNonhydroStencil25(StencilTest):
     def reference(grid, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> np.array:
         e2c2eO = grid.connectivities[E2C2EODim]
         geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
-        z_graddiv2_vn = np.sum(np.where((e2c2eO != -1)[:, :, np.newaxis], z_graddiv_vn[e2c2eO] * geofac_grdiv, 0), axis=1)
+        z_graddiv2_vn = np.sum(
+            np.where((e2c2eO != -1)[:, :, np.newaxis], z_graddiv_vn[e2c2eO] * geofac_grdiv, 0),
+            axis=1,
+        )
         return dict(z_graddiv2_vn=z_graddiv2_vn)
 
     @pytest.fixture

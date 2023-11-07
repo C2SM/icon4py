@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import math
+
 import numpy as np
 import pytest
 
@@ -32,7 +33,10 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
         enh_diffu_3d: np.array,
     ) -> np.array:
         e2c = grid.connectivities[E2CDim]
-        kh_smag_e = np.max(np.where((e2c != -1)[:, :, np.newaxis], enh_diffu_3d[e2c], -math.inf), axis=1)
+        kh_smag_e = np.maximum(
+            kh_smag_e,
+            np.max(np.where((e2c != -1)[:, :, np.newaxis], enh_diffu_3d[e2c], -math.inf), axis=1),
+        )
         return dict(kh_smag_e=kh_smag_e)
 
     @pytest.fixture

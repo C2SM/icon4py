@@ -32,12 +32,14 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
     ) -> tuple[np.array]:
         c2e2cO = grid.connectivities[C2E2CODim]
         geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-        dwdx = np.sum(np.where((c2e2cO != -1)[:, :, np.newaxis],
-                               geofac_grg_x * w[c2e2cO], 0.), axis=1)
+        dwdx = np.sum(
+            np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * w[c2e2cO], 0.0), axis=1
+        )
 
         geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-        dwdy = np.sum(np.where((c2e2cO != -1)[:, :, np.newaxis],
-                               geofac_grg_y * w[c2e2cO], 0.), axis=1)
+        dwdy = np.sum(
+            np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * w[c2e2cO], 0.0), axis=1
+        )
         return dict(dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
