@@ -14,9 +14,7 @@
 import pytest
 
 from icon4py.model.common.decomposition.definitions import ProcessProperties, get_runtype
-from icon4py.model.common.decomposition.mpi_decomposition import (
-    get_multinode_properties,
-)
+from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
 
 
 def check_comm_size(props: ProcessProperties, sizes=(1, 2, 4)):
