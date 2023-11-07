@@ -149,6 +149,9 @@ class IconGridSavePoint(IconSavepoint):
     def cell_areas(self):
         return self._get_field("cell_areas", CellDim)
 
+    def mean_cell_area(self):
+        return self.serializer.read("mean_cell_area", self.savepoint).astype(float)
+
     def edge_areas(self):
         return self._get_field("edge_areas", EdgeDim)
 
@@ -364,7 +367,7 @@ class IconGridSavePoint(IconSavepoint):
         )
 
     def construct_cell_geometry(self) -> CellParams:
-        return CellParams(area=self.cell_areas())
+        return CellParams(area=self.cell_areas(), mean_cell_area=self.mean_cell_area())
 
 
 class InterpolationSavepoint(IconSavepoint):
@@ -747,6 +750,9 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 class IconNonHydroInitSavepoint(IconSavepoint):
     def bdy_divdamp(self):
         return self._get_field("bdy_divdamp", KDim)
+
+    def divdamp_fac_o2(self):
+        return self.serializer.read("divdamp_fac_o2", self.savepoint).astype(float)
 
     def ddt_exner_phy(self):
         return self._get_field("ddt_exner_phy", CellDim, KDim)

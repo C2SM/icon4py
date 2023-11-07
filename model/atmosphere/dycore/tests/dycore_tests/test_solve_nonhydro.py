@@ -124,9 +124,61 @@ def test_nonhydro_predictor_step(
     nnow = 0
     nnew = 1
 
-    diagnostic_state_nh = construct_diagnostics(sp, sp_v)
+    diagnostic_state_nh = DiagnosticStateNonHydro(
+        theta_v_ic=sp.theta_v_ic(),
+        exner_pr=sp.exner_pr(),
+        rho_ic=sp.rho_ic(),
+        ddt_exner_phy=sp.ddt_exner_phy(),
+        grf_tend_rho=sp.grf_tend_rho(),
+        grf_tend_thv=sp.grf_tend_thv(),
+        grf_tend_w=sp.grf_tend_w(),
+        mass_fl_e=sp.mass_fl_e(),
+        ddt_vn_phy=sp.ddt_vn_phy(),
+        grf_tend_vn=sp.grf_tend_vn(),
+        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        vt=sp_v.vt(),
+        vn_ie=sp_v.vn_ie(),
+        w_concorr_c=sp_v.w_concorr_c(),
+        rho_incr=None,  # sp.rho_incr(),
+        vn_incr=None,  # sp.vn_incr(),
+        exner_incr=None,  # sp.exner_incr(),
+    )
 
-    z_fields = allocate_z_fields(icon_grid)
+    prognostic_state_nnow = PrognosticState(
+        w=sp.w_now(),
+        vn=sp.vn_now(),
+        theta_v=sp.theta_v_now(),
+        rho=sp.rho_now(),
+        exner=sp.exner_now(),
+    )
+
+    prognostic_state_nnew = PrognosticState(
+        w=sp.w_new(),
+        vn=sp.vn_new(),
+        theta_v=sp.theta_v_new(),
+        rho=sp.rho_new(),
+        exner=sp.exner_new(),
+    )
+
+    z_fields = ZFields(
+        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+    )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
@@ -147,7 +199,7 @@ def test_nonhydro_predictor_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = create_prognostic_states(sp)
+    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
     solve_nonhydro.set_timelevels(nnow, nnew)
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -170,7 +222,6 @@ def test_nonhydro_predictor_step(
     icon_result_w_concorr_c = sp_exit.w_concorr_c()
     icon_result_mass_fl_e = sp_exit.mass_fl_e()
 
-    prognostic_state_nnew = prognostic_state_ls[1]
     # TODO: @abishekg7 remove bounds from asserts?
     # stencils 2, 3
     assert dallclose(
@@ -524,11 +575,13 @@ def test_nonhydro_corrector_step(
     nh_constants = create_nh_constants(sp)
     print(f"sp.scal_divdamp = {sp.scal_divdamp()}")
     print(f"sp.scal_divdamp_field = {sp.scal_divdamp_field()}")
+    print(f"sp.divdamp_fac_o2 = {sp.divdamp_fac_o2()}")
 
     print(f"scal_divdamp_o2 = {sp.scal_divdamp_o2()}")
+    print(f" mean cell area from sp= {grid_savepoint.mean_cell_area()}")
 
-    scal_divdamp_o2 = sp.scal_divdamp_o2()  # only used in stencil_26
-    divdamp_fac_o2 = 0.032  # TODO (magdalena) fix value!
+    divdamp_fac_o2 = sp.divdamp_fac_o2()  # is this 0.032
+
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
 
@@ -556,7 +609,6 @@ def test_nonhydro_corrector_step(
         prognostic_state=prognostic_state_ls,
         z_fields=z_fields,
         prep_adv=prep_adv,
-        scal_divdamp_o2=scal_divdamp_o2,  # TODO (magdalena) remove
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
         nnew=nnew,
@@ -649,12 +701,7 @@ def test_run_solve_nonhydro_single_step(
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
-        rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
-        nflatlev=grid_savepoint.nflatlev(),
-    )
+    vertical_params = create_vertical_params(damping_height, grid_savepoint)
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -669,28 +716,7 @@ def test_run_solve_nonhydro_single_step(
     linit = sp_v.get_metadata("linit").get("linit")
     dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
 
-    diagnostic_state_nh = DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
-        grf_tend_rho=sp.grf_tend_rho(),
-        grf_tend_thv=sp.grf_tend_thv(),
-        grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
-        grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-    )
+    diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
     z_fields = allocate_z_fields(icon_grid)
 
@@ -720,18 +746,17 @@ def test_run_solve_nonhydro_single_step(
     print(f"sp.scal_divdamp_field = {np.asarray(sp.scal_divdamp_field())}")
 
     print(
-        f"scal_divdamp_o2 = {sp.scal_divdamp_o2()}"
+        f" savepoint scal_divdamp_o2 = {sp.divdamp_fac_o2()}"
     )  # TODO calcualated internally use for comparing
-    divdamp_fac_o2 = 0.032  # TODO (magdalena) get from somewhere??
-    print(f"manual divdamp_fac_o2 = {divdamp_fac_o2}")
+    initial_divdamp_fac = 0.032  # TODO (magdalena) get from somewhere??
+    print(f"manual divdamp_fac_o2 = {initial_divdamp_fac}")
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
         z_fields=z_fields,
         nh_constants=nh_constants,
-        divdamp_fac_o2=divdamp_fac_o2,
-        scal_divdamp_o2_in=sp.scal_divdamp_o2(),  # TODO TO BE removed. either divdamp_fac_o2 is wrong or mean cell area is wrong.
+        divdamp_fac_o2=initial_divdamp_fac,
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,

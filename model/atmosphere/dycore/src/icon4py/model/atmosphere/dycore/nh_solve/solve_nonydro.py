@@ -148,6 +148,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _calculate_bdy_divdamp,
     _en_smag_fac_for_zero_nshift,
     compute_z_raylfac,
+    scal_divdamp_calcs,
     set_zero_c_k,
     set_zero_e_k,
     _scal_divdamp_NEW,
@@ -429,27 +430,6 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
-        mean_cell_area = np.sum(self.cell_params.area) / float(self.grid.num_cells())
-        scal_divdamp_o2 = divdamp_fac_o2 * mean_cell_area
-        # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
-        # delta_x**2 is approximated by the mean cell area
-        _scal_divdamp_NEW(
-            self.enh_divdamp_fac,
-            int32(self.config.divdamp_order),
-            mean_cell_area,
-            divdamp_fac_o2,
-            out=self.scal_divdamp,
-            offset_provider={},
-        )
-        # Coefficient for reduced fourth-order divergence damping along nest boundaries
-        _calculate_bdy_divdamp(
-            self.scal_divdamp,
-            self.config.nudge_max_coeff,
-            constants.dbl_eps,
-            out=self._bdy_divdamp,
-            offset_provider={},
-        )
-
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
@@ -492,7 +472,7 @@ class SolveNonhydro:
             prognostic_state=prognostic_state_ls,
             z_fields=z_fields,
             prep_adv=prep_adv,
-            scal_divdamp_o2=scal_divdamp_o2,
+            divdamp_fac_o2=divdamp_fac_o2,
             dtime=dtime,
             nnew=nnew,
             nnow=nnow,
@@ -1374,7 +1354,7 @@ class SolveNonhydro:
         prognostic_state: list[PrognosticState],
         z_fields: ZFields,
         nh_constants: NHConstants,
-        scal_divdamp_o2: float,
+        divdamp_fac_o2: float,
         prep_adv: PrepAdvection,
         dtime: float,
         nnew: int,
@@ -1384,6 +1364,27 @@ class SolveNonhydro:
     ):
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / self.config.ndyn_substeps_var
+
+        # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
+        # delta_x**2 is approximated by the mean cell area
+        scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
+
+        _scal_divdamp_NEW(
+            self.enh_divdamp_fac,
+            int32(self.config.divdamp_order),
+            self.cell_params.mean_cell_area,
+            divdamp_fac_o2,
+            out=self.scal_divdamp,
+            offset_provider={},
+        )
+        # Coefficient for reduced fourth-order divergence damping along nest boundaries
+        _calculate_bdy_divdamp(
+            self.scal_divdamp,
+            self.config.nudge_max_coeff,
+            constants.dbl_eps,
+            out=self._bdy_divdamp,
+            offset_provider={},
+        )
 
         start_cell_lb_plus2 = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
