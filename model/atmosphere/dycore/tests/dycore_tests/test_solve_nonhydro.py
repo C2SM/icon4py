@@ -39,9 +39,9 @@ from icon4py.model.common.test_utils.helpers import dallclose
 @pytest.mark.datatest
 def test_divdamp_factor(savepoint_nonhydro_init, grid_savepoint):
     config = NonHydrostaticConfig()
-    divdamp_fac_o2 = 0.032  # TODO fix value
+    divdamp_fac_o2 = 0.032
     divdamp_order = 24
-    mean_cell_area = 194588.14247428576
+    mean_cell_area = 6080879.45232143
     enh_divdamp_fac = _allocate(KDim, float)
     scal_divdamp = _allocate(KDim, float)
     _en_smag_fac_for_zero_nshift(
