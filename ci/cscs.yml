@@ -40,9 +40,12 @@ test_model_job:
 
 benchmark_model_gtfn_cpu:
   extends: .test_template
+  timeout: 2h
   stage: benchmark
   script:
     - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
+  variables:
+    SLURM_TIMELIMIT: '01:00:00'
 
 test_tools_job:
   extends: .test_template
