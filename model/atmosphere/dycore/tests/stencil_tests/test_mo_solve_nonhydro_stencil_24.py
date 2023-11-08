@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil24(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         vn_nnow: np.array,
         ddt_vn_apc_ntl1: np.array,
         ddt_vn_phy: np.array,
@@ -44,14 +44,14 @@ class TestMoSolveNonhydroStencil24(StencilTest):
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         dtime, cpd = 10.0, 10.0
-        vn_nnow = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_apc_ntl1 = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_phy = random_field(mesh, EdgeDim, KDim)
-        z_theta_v_e = random_field(mesh, EdgeDim, KDim)
-        z_gradh_exner = random_field(mesh, EdgeDim, KDim)
-        vn_nnew = zero_field(mesh, EdgeDim, KDim)
+        vn_nnow = random_field(grid, EdgeDim, KDim)
+        ddt_vn_apc_ntl1 = random_field(grid, EdgeDim, KDim)
+        ddt_vn_phy = random_field(grid, EdgeDim, KDim)
+        z_theta_v_e = random_field(grid, EdgeDim, KDim)
+        z_gradh_exner = random_field(grid, EdgeDim, KDim)
+        vn_nnew = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             vn_nnow=vn_nnow,
@@ -63,7 +63,7 @@ class TestMoSolveNonhydroStencil24(StencilTest):
             dtime=dtime,
             cpd=cpd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

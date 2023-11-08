@@ -27,7 +27,7 @@ class TestMoSolveNonhydroStencil66(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         bdy_halo_c: np.array,
         rho: np.array,
         theta_v: np.array,
@@ -46,13 +46,13 @@ class TestMoSolveNonhydroStencil66(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         rd_o_cvd = 10.0
         rd_o_p0ref = 20.0
-        bdy_halo_c = random_mask(mesh, CellDim)
-        exner = random_field(mesh, CellDim, KDim, low=1, high=2)
-        rho = random_field(mesh, CellDim, KDim, low=1, high=2)
-        theta_v = random_field(mesh, CellDim, KDim, low=1, high=2)
+        bdy_halo_c = random_mask(grid, CellDim)
+        exner = random_field(grid, CellDim, KDim, low=1, high=2)
+        rho = random_field(grid, CellDim, KDim, low=1, high=2)
+        theta_v = random_field(grid, CellDim, KDim, low=1, high=2)
 
         return dict(
             bdy_halo_c=bdy_halo_c,

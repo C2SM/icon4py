@@ -27,7 +27,7 @@ class TestMoSolveNonhydroStencil53(StencilTest):
     OUTPUTS = ("w",)
 
     @staticmethod
-    def reference(mesh, z_q: np.array, w: np.array, **kwargs) -> np.array:
+    def reference(grid, z_q: np.array, w: np.array, **kwargs) -> np.array:
         w_new = np.zeros_like(w)
         last_k_level = w.shape[1] - 1
 
@@ -38,13 +38,13 @@ class TestMoSolveNonhydroStencil53(StencilTest):
         return dict(w=w_new)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_q = random_field(mesh, CellDim, KDim)
-        w = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_q = random_field(grid, CellDim, KDim)
+        w = random_field(grid, CellDim, KDim)
         h_start = int32(0)
-        h_end = int32(mesh.n_cells)
+        h_end = int32(grid.num_cells)
         v_start = int32(1)
-        v_end = int32(mesh.k_level)
+        v_end = int32(grid.num_levels)
         return dict(
             z_q=z_q,
             w=w,

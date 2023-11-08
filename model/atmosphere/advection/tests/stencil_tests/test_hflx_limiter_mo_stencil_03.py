@@ -16,9 +16,9 @@ from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_03 import (
     hflx_limiter_mo_stencil_03,
     hflx_limiter_mo_stencil_03_min_max,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import C2E2CDim, CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflx_limiter_mo_stencil_03_numpy(
@@ -53,15 +53,15 @@ def hflx_limiter_mo_stencil_03_min_max_numpy(
 
 
 def test_hflx_diffusion_mo_stencil_03_min_max():
-    mesh = SimpleMesh()
-    z_tracer_max = random_field(mesh, CellDim, KDim)
-    z_tracer_min = random_field(mesh, CellDim, KDim)
-    z_max = zero_field(mesh, CellDim, KDim)
-    z_min = zero_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    z_tracer_max = random_field(grid, CellDim, KDim)
+    z_tracer_min = random_field(grid, CellDim, KDim)
+    z_max = zero_field(grid, CellDim, KDim)
+    z_min = zero_field(grid, CellDim, KDim)
     beta_fct = 0.9
     r_beta_fct = 0.3
     z_max_ref, z_min_ref = hflx_limiter_mo_stencil_03_min_max_numpy(
-        mesh.c2e2c,
+        grid.connectivities[C2E2CDim],
         np.asarray(z_tracer_max),
         np.asarray(z_tracer_min),
         beta_fct,
@@ -74,27 +74,27 @@ def test_hflx_diffusion_mo_stencil_03_min_max():
         r_beta_fct,
         z_max,
         z_min,
-        offset_provider={"C2E2C": mesh.get_c2e2c_offset_provider()},
+        offset_provider={"C2E2C": grid.get_offset_provider("C2E2C")},
     )
     assert np.allclose(z_max, z_max_ref)
     assert np.allclose(z_min, z_min_ref)
 
 
 def test_hflx_diffusion_mo_stencil_03():
-    mesh = SimpleMesh()
-    z_tracer_max = random_field(mesh, CellDim, KDim)
-    z_tracer_min = random_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    z_tracer_max = random_field(grid, CellDim, KDim)
+    z_tracer_min = random_field(grid, CellDim, KDim)
     beta_fct = 0.4
     r_beta_fct = 0.6
-    z_mflx_anti_in = random_field(mesh, CellDim, KDim)
-    z_mflx_anti_out = random_field(mesh, CellDim, KDim)
-    z_tracer_new_low = random_field(mesh, CellDim, KDim)
+    z_mflx_anti_in = random_field(grid, CellDim, KDim)
+    z_mflx_anti_out = random_field(grid, CellDim, KDim)
+    z_tracer_new_low = random_field(grid, CellDim, KDim)
     dbl_eps = 1e-5
-    r_p = zero_field(mesh, CellDim, KDim)
-    r_m = zero_field(mesh, CellDim, KDim)
+    r_p = zero_field(grid, CellDim, KDim)
+    r_m = zero_field(grid, CellDim, KDim)
 
     r_p_ref, r_m_ref = hflx_limiter_mo_stencil_03_numpy(
-        mesh.c2e2c,
+        grid.connectivities[C2E2CDim],
         np.asarray(z_tracer_max),
         np.asarray(z_tracer_min),
         beta_fct,
@@ -116,7 +116,7 @@ def test_hflx_diffusion_mo_stencil_03():
         dbl_eps,
         r_p,
         r_m,
-        offset_provider={"C2E2C": mesh.get_c2e2c_offset_provider()},
+        offset_provider={"C2E2C": grid.get_offset_provider("C2E2C")},
     )
     np.allclose(r_p_ref, r_p)
     np.allclose(r_m_ref, r_m)

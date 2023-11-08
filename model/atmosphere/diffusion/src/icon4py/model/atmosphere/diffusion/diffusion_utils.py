@@ -22,8 +22,8 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexD
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
-def zero_field(mesh, *dims: Dimension, dtype=float):
-    shapex = tuple(map(lambda x: mesh.size[x], dims))
+def zero_field(grid, *dims: Dimension, dtype=float):
+    shapex = tuple(map(lambda x: grid.size[x], dims))
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
 

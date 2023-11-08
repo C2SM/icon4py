@@ -30,7 +30,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.datatest_helpers import (  # noqa : F401 fixture
+from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa : F401 fixture
     decomposition_info,
 )
 from icon4py.model.common.test_utils.helpers import dallclose, random_field
@@ -157,20 +157,20 @@ def test_run_solve_nonhydro_single_step(
     )
 
     z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_q=_allocate(CellDim, KDim, grid=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
     nh_constants = NHConstants(
@@ -183,7 +183,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()

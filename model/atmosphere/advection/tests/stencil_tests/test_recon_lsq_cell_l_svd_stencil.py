@@ -18,8 +18,8 @@ from icon4py.model.atmosphere.advection.recon_lsq_cell_l_svd_stencil import (
     recon_lsq_cell_l_svd_stencil,
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def recon_lsq_cell_l_svd_stencil_numpy(
@@ -39,19 +39,19 @@ def recon_lsq_cell_l_svd_stencil_numpy(
 
 
 def test_recon_lsq_cell_l_svd_stencil():
-    mesh = SimpleMesh()
-    p_cc = random_field(mesh, CellDim, KDim)
-    lsq_pseudoinv_1 = random_field(mesh, CellDim, C2E2CDim)
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim)
+    lsq_pseudoinv_1 = random_field(grid, CellDim, C2E2CDim)
     lsq_pseudoinv_1_field = as_1D_sparse_field(lsq_pseudoinv_1, CECDim)
 
-    lsq_pseudoinv_2 = random_field(mesh, CellDim, C2E2CDim)
+    lsq_pseudoinv_2 = random_field(grid, CellDim, C2E2CDim)
     lsq_pseudoinv_2_field = as_1D_sparse_field(lsq_pseudoinv_2, CECDim)
-    p_coeff_1 = zero_field(mesh, CellDim, KDim)
-    p_coeff_2 = zero_field(mesh, CellDim, KDim)
-    p_coeff_3 = zero_field(mesh, CellDim, KDim)
+    p_coeff_1 = zero_field(grid, CellDim, KDim)
+    p_coeff_2 = zero_field(grid, CellDim, KDim)
+    p_coeff_3 = zero_field(grid, CellDim, KDim)
 
     ref_1, ref_2, ref_3 = recon_lsq_cell_l_svd_stencil_numpy(
-        mesh.c2e2c,
+        grid.connectivities[C2E2CDim],
         np.asarray(p_cc),
         np.asarray(lsq_pseudoinv_1),
         np.asarray(lsq_pseudoinv_2),
@@ -65,8 +65,8 @@ def test_recon_lsq_cell_l_svd_stencil():
         p_coeff_2,
         p_coeff_3,
         offset_provider={
-            "C2E2C": mesh.get_c2e2c_offset_provider(),
-            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, mesh.n_c2e2c),
+            "C2E2C": grid.get_offset_provider("C2E2C"),
+            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, grid.size[C2E2CDim]),
         },
     )
     co1 = np.asarray(p_coeff_1)

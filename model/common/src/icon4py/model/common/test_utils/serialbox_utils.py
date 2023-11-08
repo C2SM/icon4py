@@ -49,8 +49,9 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
@@ -329,6 +330,15 @@ class IconGridSavePoint(IconSavepoint):
                 }
             )
         )
+
+        grid.update_size_connectivities(
+            {
+                ECVDim: grid.size[EdgeDim] * grid.size[E2C2VDim],
+                CEDim: grid.size[CellDim] * grid.size[C2EDim],
+                ECDim: grid.size[EdgeDim] * grid.size[E2CDim],
+            }
+        )
+
         return grid
 
     def construct_edge_geometry(self) -> EdgeParams:
