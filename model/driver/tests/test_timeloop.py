@@ -62,8 +62,8 @@ from icon4py.model.driver.dycore_driver import TimeLoop
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:20.000",
             False,
-            True,
             False,
+            True,
         ),
     ],
 )
@@ -249,7 +249,7 @@ def test_run_timeloop_single_step(
         lprep_adv,
     )
 
-    rho_sp = timeloop_nonhydro_savepoint_exit
+    rho_sp = timeloop_nonhydro_savepoint_exit.rho_new()
     exner_sp = timeloop_diffusion_savepoint_exit.exner()
     theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
@@ -268,15 +268,18 @@ def test_run_timeloop_single_step(
     )
 
     assert np.allclose(
-        np.asarray(exner_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].exner)
+        np.asarray(exner_sp),
+        np.asarray(prognostic_state_list[timeloop.prognostic_now].exner),
     )
 
     assert np.allclose(
-        np.asarray(theta_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v)
+        np.asarray(theta_sp),
+        np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v),
     )
 
     assert np.allclose(
-        np.asarray(rho_sp.rho()), np.asarray(prognostic_state_list[timeloop.prognostic_now].rho)
+        np.asarray(rho_sp),
+        np.asarray(prognostic_state_list[timeloop.prognostic_now].rho),
     )
 
     if debug_mode:

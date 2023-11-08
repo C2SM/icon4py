@@ -35,8 +35,5 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
     savepoint_velocity_init,
     step_date_exit,
     step_date_init,
-    velocity_istep_init,
-    velocity_jstep_init,
-    vn_only_exit,
-    vn_only_init,
+    vn_only,
 )

@@ -28,8 +28,6 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     ndyn_substeps,
     processor_props,
     ranked_data_path,
-    vn_only_exit,
-    vn_only_init,
 )
 from icon4py.model.driver.icon_configuration import IconRunConfig
 
