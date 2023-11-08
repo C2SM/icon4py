@@ -13,7 +13,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonydro import (
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro,
@@ -24,8 +24,7 @@ from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvec
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
@@ -62,11 +61,13 @@ def test_nonhydro_params():
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep, step_date_init, step_date_exit",
-    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "istep_init, istep_exit, step_date_init, step_date_exit",
+    [(1, 1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_nonhydro_predictor_step(
-    istep,
+    istep_init,
+    istep_exit,
+    jstep_init,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -74,7 +75,6 @@ def test_nonhydro_predictor_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    savepoint_velocity_exit,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -90,14 +90,13 @@ def test_nonhydro_predictor_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    grid = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     recompute = sp_v.get_metadata("recompute").get("recompute")
     dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     linit = sp_v.get_metadata("linit").get("linit")
 
-    enh_smag_fac = zero_field(grid, KDim)
-    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
@@ -166,6 +165,7 @@ def test_nonhydro_predictor_step(
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = SolveNonhydro()
+    nlev = icon_grid.num_levels
     solve_nonhydro.init(
         grid=icon_grid,
         config=config,
@@ -207,122 +207,136 @@ def test_nonhydro_predictor_step(
 
     # TODO: @abishekg7 remove bounds from asserts?
     # stencils 2, 3
+    cell_start_lb_plus2 = icon_grid.get_start_index(
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    )
+    cell_start_nudging = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
+    edge_start_lb_plus4 = icon_grid.get_start_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+    )
+    edge_start_lb_plus6 = icon_grid.get_start_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+    )
+    edge_start_nuding_plus1 = icon_grid.get_start_index(
+        EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+    )
+
     assert dallclose(
-        np.asarray(sp_exit.exner_pr())[1688:20896, :],
-        np.asarray(diagnostic_state_nh.exner_pr)[1688:20896, :],
+        np.asarray(sp_exit.exner_pr())[cell_start_lb_plus2:, :],
+        np.asarray(diagnostic_state_nh.exner_pr)[cell_start_lb_plus2:, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_exner_ex_pr())[1688:20896, :],
-        np.asarray(solve_nonhydro.z_exner_ex_pr)[1688:20896, :],
+        np.asarray(sp_exit.z_exner_ex_pr())[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_exner_ex_pr)[cell_start_lb_plus2:, :],
     )
 
     # stencils 4,5
     assert dallclose(
-        np.asarray(sp_exit.z_exner_ic())[1688:20896, 64],
-        np.asarray(solve_nonhydro.z_exner_ic)[1688:20896, 64],
+        np.asarray(sp_exit.z_exner_ic())[cell_start_lb_plus2:, nlev - 1],
+        np.asarray(solve_nonhydro.z_exner_ic)[cell_start_lb_plus2:, nlev - 1],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_exner_ic())[1688:20896, 4:64],
-        np.asarray(solve_nonhydro.z_exner_ic)[1688:20896, 4:64],
+        np.asarray(sp_exit.z_exner_ic())[cell_start_lb_plus2:, 4 : nlev - 1],
+        np.asarray(solve_nonhydro.z_exner_ic)[cell_start_lb_plus2:, 4 : nlev - 1],
         rtol=1.0e-9,
     )
     # stencil 6
     assert dallclose(
-        np.asarray(sp_exit.z_dexner_dz_c(1))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_dexner_dz_c_1)[1688:20896, :],
+        np.asarray(sp_exit.z_dexner_dz_c(1))[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_1)[cell_start_lb_plus2:, :],
         atol=5e-18,
     )
 
     # stencils 7,8,9
     assert dallclose(
-        np.asarray(icon_result_rho_ic)[1688:20896, :],
-        np.asarray(diagnostic_state_nh.rho_ic)[1688:20896, :],
+        np.asarray(icon_result_rho_ic)[cell_start_lb_plus2:, :],
+        np.asarray(diagnostic_state_nh.rho_ic)[cell_start_lb_plus2:, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_th_ddz_exner_c())[1688:20896, 1:],
-        np.asarray(solve_nonhydro.z_th_ddz_exner_c)[1688:20896, 1:],
+        np.asarray(sp_exit.z_th_ddz_exner_c())[cell_start_lb_plus2:, 1:],
+        np.asarray(solve_nonhydro.z_th_ddz_exner_c)[cell_start_lb_plus2:, 1:],
     )
 
     # stencils 7,8,9, 11
     assert dallclose(
-        np.asarray(sp_exit.z_theta_v_pr_ic())[1688:20896, :],
-        np.asarray(solve_nonhydro.z_theta_v_pr_ic)[1688:20896, :],
+        np.asarray(sp_exit.z_theta_v_pr_ic())[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_theta_v_pr_ic)[cell_start_lb_plus2:, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.theta_v_ic())[1688:20896, :],
-        np.asarray(diagnostic_state_nh.theta_v_ic)[1688:20896, :],
+        np.asarray(sp_exit.theta_v_ic())[cell_start_lb_plus2:, :],
+        np.asarray(diagnostic_state_nh.theta_v_ic)[cell_start_lb_plus2:, :],
     )
     # stencils 7,8,9, 13
     assert dallclose(
-        np.asarray(sp_exit.z_rth_pr(1))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_rth_pr_1)[1688:20896, :],
+        np.asarray(sp_exit.z_rth_pr(1))[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_rth_pr_1)[cell_start_lb_plus2:, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_rth_pr(2))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_rth_pr_2)[1688:20896, :],
+        np.asarray(sp_exit.z_rth_pr(2))[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_rth_pr_2)[cell_start_lb_plus2:, :],
     )
 
     # stencils 12
     assert dallclose(
-        np.asarray(sp_exit.z_dexner_dz_c(2))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_dexner_dz_c_2)[1688:20896, :],
+        np.asarray(sp_exit.z_dexner_dz_c(2))[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_2)[cell_start_lb_plus2:, :],
         atol=1e-22,
     )
 
     # grad_green_gauss_cell_dsl
     assert dallclose(
-        np.asarray(sp_exit.z_grad_rth(1))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_grad_rth_1)[1688:20896, :],
+        np.asarray(sp_exit.z_grad_rth(1))[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_grad_rth_1)[cell_start_lb_plus2:, :],
         rtol=1e-6,
     )
     assert dallclose(
-        np.asarray(sp_exit.z_grad_rth(2))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_grad_rth_2)[1688:20896, :],
+        np.asarray(sp_exit.z_grad_rth(2))[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_grad_rth_2)[cell_start_lb_plus2:, :],
         rtol=1e-6,
     )
     assert dallclose(
-        np.asarray(sp_exit.z_grad_rth(3))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_grad_rth_3)[1688:20896, :],
+        np.asarray(sp_exit.z_grad_rth(3))[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_grad_rth_3)[cell_start_lb_plus2:, :],
         rtol=5e-6,
     )
     assert dallclose(
-        np.asarray(sp_exit.z_grad_rth(4))[1688:20896, :],
-        np.asarray(solve_nonhydro.z_grad_rth_4)[1688:20896, :],
+        np.asarray(sp_exit.z_grad_rth(4))[cell_start_lb_plus2:, :],
+        np.asarray(solve_nonhydro.z_grad_rth_4)[cell_start_lb_plus2:, :],
         rtol=1e-5,
     )
 
     # mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
     assert dallclose(
-        np.asarray(sp_exit.z_rho_e())[3777:31558, :],
-        np.asarray(z_fields.z_rho_e)[3777:31558, :],
+        np.asarray(sp_exit.z_rho_e())[edge_start_lb_plus6:, :],
+        np.asarray(z_fields.z_rho_e)[edge_start_lb_plus6:, :],
     )
     assert dallclose(
-        np.asarray(sp_exit.z_theta_v_e())[3777:31558, :],
-        np.asarray(z_fields.z_theta_v_e)[3777:31558, :],
+        np.asarray(sp_exit.z_theta_v_e())[edge_start_lb_plus6:, :],
+        np.asarray(z_fields.z_theta_v_e)[edge_start_lb_plus6:, :],
     )
 
     # stencils 18,19, 20, 22
     assert dallclose(
-        np.asarray(sp_exit.z_gradh_exner())[5387:31558, :],
-        np.asarray(z_fields.z_gradh_exner)[5387:31558, :],
+        np.asarray(sp_exit.z_gradh_exner())[edge_start_nuding_plus1:, :],
+        np.asarray(z_fields.z_gradh_exner)[edge_start_nuding_plus1:, :],
         atol=1e-20,
     )
     # stencil 21
     assert dallclose(
-        np.asarray(sp_exit.z_hydro_corr())[5387:31558, 64],
-        np.asarray(solve_nonhydro.z_hydro_corr)[5387:31558, 64],
+        np.asarray(sp_exit.z_hydro_corr())[edge_start_nuding_plus1:, nlev - 1],
+        np.asarray(solve_nonhydro.z_hydro_corr)[edge_start_nuding_plus1:, nlev - 1],
         atol=1e-20,
     )
     # stencils 24
     assert dallclose(
-        np.asarray(icon_result_vn_new)[5387:31558, :],
-        np.asarray(prognostic_state_nnew.vn)[5387:31558, :],
+        np.asarray(icon_result_vn_new)[edge_start_nuding_plus1:, :],
+        np.asarray(prognostic_state_nnew.vn)[edge_start_nuding_plus1:, :],
         atol=6e-15,
     )
     # stencil 29
     assert dallclose(
-        np.asarray(icon_result_vn_new)[0:5387, :],
-        np.asarray(prognostic_state_nnew.vn)[0:5387, :],
+        np.asarray(icon_result_vn_new)[:edge_start_nuding_plus1, :],
+        np.asarray(prognostic_state_nnew.vn)[:edge_start_nuding_plus1, :],
     )
 
     # stencil 30
@@ -331,8 +345,8 @@ def test_nonhydro_predictor_step(
     )
     # stencil 30
     assert dallclose(
-        np.asarray(sp_exit.z_graddiv_vn()[2538:31558, :]),
-        np.asarray(z_fields.z_graddiv_vn)[2538:31558, :],
+        np.asarray(sp_exit.z_graddiv_vn()[edge_start_lb_plus4:, :]),
+        np.asarray(z_fields.z_graddiv_vn)[edge_start_lb_plus4:, :],
         atol=5e-20,
     )
     # stencil 30
@@ -352,8 +366,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 35,36, 37,38
     assert dallclose(
-        np.asarray(icon_result_vn_ie)[2538:31558, :],
-        np.asarray(diagnostic_state_nh.vn_ie)[2538:31558, :],
+        np.asarray(icon_result_vn_ie)[edge_start_lb_plus4:, :],
+        np.asarray(diagnostic_state_nh.vn_ie)[edge_start_lb_plus4:, :],
         atol=2e-14,
     )
 
@@ -361,8 +375,8 @@ def test_nonhydro_predictor_step(
     assert dallclose(np.asarray(sp_exit.z_vt_ie()), np.asarray(z_fields.z_vt_ie), atol=2e-14)
     # stencil 35,36
     assert dallclose(
-        np.asarray(sp_exit.z_kin_hor_e())[2538:31558, :],
-        np.asarray(z_fields.z_kin_hor_e)[2538:31558, :],
+        np.asarray(sp_exit.z_kin_hor_e())[edge_start_lb_plus4:, :],
+        np.asarray(z_fields.z_kin_hor_e)[edge_start_lb_plus4:, :],
         atol=10e-13,
     )
 
@@ -393,48 +407,48 @@ def test_nonhydro_predictor_step(
     )
     # stencils 43, 46, 47
     assert dallclose(
-        np.asarray(sp_exit.z_contr_w_fl_l())[3316:20896, :],
-        np.asarray(z_fields.z_contr_w_fl_l)[3316:20896, :],
+        np.asarray(sp_exit.z_contr_w_fl_l())[cell_start_nudging:, :],
+        np.asarray(z_fields.z_contr_w_fl_l)[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 43
     assert dallclose(
-        np.asarray(sp_exit.z_w_expl())[3316:20896, 1:65],
-        np.asarray(z_fields.z_w_expl)[3316:20896, 1:65],
+        np.asarray(sp_exit.z_w_expl())[cell_start_nudging:, 1:nlev],
+        np.asarray(z_fields.z_w_expl)[cell_start_nudging:, 1:nlev],
         atol=1e-14,
     )
     # stencil 44, 45
     assert dallclose(
-        np.asarray(sp_exit.z_alpha())[3316:20896, :],
-        np.asarray(z_fields.z_alpha)[3316:20896, :],
+        np.asarray(sp_exit.z_alpha())[cell_start_nudging:, :],
+        np.asarray(z_fields.z_alpha)[cell_start_nudging:, :],
         atol=5e-13,
     )
     # stencil 44
     assert dallclose(
-        np.asarray(sp_exit.z_beta())[3316:20896, :],
-        np.asarray(z_fields.z_beta)[3316:20896, :],
+        np.asarray(sp_exit.z_beta())[cell_start_nudging:, :],
+        np.asarray(z_fields.z_beta)[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 45_b, 52
     assert dallclose(
-        np.asarray(sp_exit.z_q())[3316:20896, :],
-        np.asarray(z_fields.z_q)[3316:20896, :],
+        np.asarray(sp_exit.z_q())[cell_start_nudging:, :],
+        np.asarray(z_fields.z_q)[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 48, 49  #level 0 wrong
     assert dallclose(
-        np.asarray(sp_exit.z_rho_expl())[3316:20896, :],
-        np.asarray(z_fields.z_rho_expl)[3316:20896, :],
+        np.asarray(sp_exit.z_rho_expl())[cell_start_nudging:, :],
+        np.asarray(z_fields.z_rho_expl)[cell_start_nudging:, :],
         atol=2e-15,
     )
     assert dallclose(
-        np.asarray(sp_exit.z_exner_expl())[3316:20896, :],
-        np.asarray(z_fields.z_exner_expl)[3316:20896, :],
+        np.asarray(sp_exit.z_exner_expl())[cell_start_nudging:, :],
+        np.asarray(z_fields.z_exner_expl)[cell_start_nudging:, :],
         atol=2e-15,
     )
 
     # end
-    assert dallclose(np.asarray(sp_exit.rho()), np.asarray(prognostic_state_nnew.rho))
+    assert dallclose(np.asarray(sp_exit.rho_new()), np.asarray(prognostic_state_nnew.rho))
     assert dallclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state_nnew.w), atol=7e-14)
 
     # not tested
@@ -445,11 +459,12 @@ def test_nonhydro_predictor_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep, step_date_init, step_date_exit",
-    [(2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "istep_init, istep_exit, step_date_init, step_date_exit",
+    [(2, 2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_nonhydro_corrector_step(
-    istep,
+    istep_init,
+    istep_exit,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -460,7 +475,6 @@ def test_nonhydro_corrector_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_velocity_exit,
 ):
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
@@ -472,7 +486,6 @@ def test_nonhydro_corrector_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
-    grid = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -480,8 +493,8 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(grid, KDim)
-    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0  # TODO: @abishekg7 read from serialized data?
@@ -612,7 +625,7 @@ def test_nonhydro_corrector_step(
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.rho()),
+        np.asarray(savepoint_nonhydro_exit.rho_new()),
         np.asarray(np.asarray(prognostic_state_ls[nnew].rho)),
     )
 
@@ -653,19 +666,21 @@ def test_nonhydro_corrector_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep, step_date_init, step_date_exit",
-    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "istep_init, jstep_init, step_date_init,  istep_exit, jstep_exit,step_date_exit",
+    [(1, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000")],
 )
 def test_run_solve_nonhydro_single_step(
-    istep,
+    istep_init,
+    istep_exit,
+    jstep_init,
+    jstep_exit,
     step_date_init,
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
     damping_height,
     grid_savepoint,
-    savepoint_velocity_init,
-    savepoint_velocity_exit,
+    savepoint_velocity_init,  # TODO (magdalena) this should go away
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -682,7 +697,6 @@ def test_run_solve_nonhydro_single_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    grid = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
@@ -690,8 +704,8 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(grid, KDim)
-    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
@@ -814,6 +828,20 @@ def test_run_solve_nonhydro_single_step(
 
     assert dallclose(np.asarray(sp_step_exit.exner_new()), np.asarray(prognostic_state_nnew.exner))
 
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.vn_new()),
+        np.asarray(prognostic_state_nnew.vn),
+        rtol=1e-10,
+    )
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.rho_new()), np.asarray(prognostic_state_nnew.rho)
+    )
+    assert dallclose(
+        np.asarray(savepoint_nonhydro_exit.w_new()),
+        np.asarray(prognostic_state_nnew.w),
+        atol=8e-14,
+    )
+
 
 @pytest.mark.skip
 @pytest.mark.datatest
@@ -830,7 +858,6 @@ def test_run_solve_nonhydro_multi_step(
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
-    savepoint_velocity_exit,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -847,7 +874,6 @@ def test_run_solve_nonhydro_multi_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    grid = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     r_nsubsteps = grid_savepoint.get_metadata("nsteps").get("nsteps")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -856,8 +882,8 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(grid, KDim)
-    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
@@ -980,8 +1006,8 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.rho()),
-        np.asarray(np.asarray(prognostic_state_ls[nnew].rho)),
+        np.asarray(savepoint_nonhydro_exit.rho_new()),
+        np.asarray(np.asarray(prognostic_state_ls[nnew].rho_new)),
     )
 
     assert dallclose(
