@@ -60,7 +60,7 @@ def test_parallel_diffusion(
     )
 
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     cell_geometry = grid_savepoint.construct_cell_geometry()

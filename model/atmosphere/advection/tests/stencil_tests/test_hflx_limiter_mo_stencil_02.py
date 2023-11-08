@@ -16,8 +16,8 @@ from numpy import int32
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import hflx_limiter_mo_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflx_limiter_mo_stencil_02_numpy(
@@ -45,23 +45,23 @@ def hflx_limiter_mo_stencil_02_numpy(
 
 
 def test_hflx_limiter_mo_stencil_02_some_matching_condition():
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
 
     hi_bound = np.int32(1)
     lo_bound = np.int32(5)
 
-    refin_ctrl = constant_field(mesh, hi_bound, CellDim, dtype=int32)
+    refin_ctrl = constant_field(grid, hi_bound, CellDim, dtype=int32)
 
     refin_ctrl[0:2] = np.int32(3)
 
-    p_cc = random_field(mesh, CellDim, KDim)
-    z_tracer_new_low_in = random_field(mesh, CellDim, KDim)
-    z_tracer_max_in = random_field(mesh, CellDim, KDim)
-    z_tracer_min_in = random_field(mesh, CellDim, KDim)
+    p_cc = random_field(grid, CellDim, KDim)
+    z_tracer_new_low_in = random_field(grid, CellDim, KDim)
+    z_tracer_max_in = random_field(grid, CellDim, KDim)
+    z_tracer_min_in = random_field(grid, CellDim, KDim)
 
-    z_tracer_new_low = zero_field(mesh, CellDim, KDim)
-    z_tracer_max = zero_field(mesh, CellDim, KDim)
-    z_tracer_min = zero_field(mesh, CellDim, KDim)
+    z_tracer_new_low = zero_field(grid, CellDim, KDim)
+    z_tracer_max = zero_field(grid, CellDim, KDim)
+    z_tracer_min = zero_field(grid, CellDim, KDim)
 
     ref_new_low, ref_max, ref_min = hflx_limiter_mo_stencil_02_numpy(
         np.asarray(refin_ctrl),
@@ -93,22 +93,22 @@ def test_hflx_limiter_mo_stencil_02_some_matching_condition():
 
 
 def test_hflx_limiter_mo_stencil_02_none_matching_condition():
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
 
     hi_bound = np.int32(3)
     lo_bound = np.int32(1)
 
-    refin_ctrl = constant_field(mesh, 2, CellDim, dtype=int32)
+    refin_ctrl = constant_field(grid, 2, CellDim, dtype=int32)
 
-    p_cc = random_field(mesh, CellDim, KDim)
+    p_cc = random_field(grid, CellDim, KDim)
 
-    z_tracer_new_low_in = random_field(mesh, CellDim, KDim)
-    z_tracer_max_in = random_field(mesh, CellDim, KDim)
-    z_tracer_min_in = random_field(mesh, CellDim, KDim)
+    z_tracer_new_low_in = random_field(grid, CellDim, KDim)
+    z_tracer_max_in = random_field(grid, CellDim, KDim)
+    z_tracer_min_in = random_field(grid, CellDim, KDim)
 
-    z_tracer_new_low = zero_field(mesh, CellDim, KDim)
-    z_tracer_max = zero_field(mesh, CellDim, KDim)
-    z_tracer_min = zero_field(mesh, CellDim, KDim)
+    z_tracer_new_low = zero_field(grid, CellDim, KDim)
+    z_tracer_max = zero_field(grid, CellDim, KDim)
+    z_tracer_min = zero_field(grid, CellDim, KDim)
 
     hflx_limiter_mo_stencil_02(
         refin_ctrl,

@@ -28,7 +28,7 @@ class TestUpdateThetaAndExner(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_temp: np.array,
         area: np.array,
         theta_v: np.array,
@@ -43,11 +43,11 @@ class TestUpdateThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_temp = random_field(mesh, CellDim, KDim)
-        area = random_field(mesh, CellDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        exner = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_temp = random_field(grid, CellDim, KDim)
+        area = random_field(grid, CellDim)
+        theta_v = random_field(grid, CellDim, KDim)
+        exner = random_field(grid, CellDim, KDim)
         rd_o_cvd = 5.0
 
         return dict(
@@ -57,7 +57,7 @@ class TestUpdateThetaAndExner(StencilTest):
             exner=exner,
             rd_o_cvd=rd_o_cvd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

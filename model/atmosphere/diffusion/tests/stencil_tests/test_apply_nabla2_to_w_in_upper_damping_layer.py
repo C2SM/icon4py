@@ -27,11 +27,11 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
     OUTPUTS = ("w",)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        w = random_field(mesh, CellDim, KDim)
-        diff_multfac_n2w = random_field(mesh, KDim)
-        cell_area = random_field(mesh, CellDim)
-        z_nabla2_c = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        w = random_field(grid, CellDim, KDim)
+        diff_multfac_n2w = random_field(grid, KDim)
+        cell_area = random_field(grid, CellDim)
+        z_nabla2_c = random_field(grid, CellDim, KDim)
 
         return dict(
             w=w,
@@ -39,14 +39,14 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
             cell_area=cell_area,
             z_nabla2_c=z_nabla2_c,
             horizontal_start=int32(0),
-            horizontal_end=int(mesh.n_cells),
+            horizontal_end=int(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         w: np.array,
         diff_multfac_n2w: np.array,
         cell_area: np.array,

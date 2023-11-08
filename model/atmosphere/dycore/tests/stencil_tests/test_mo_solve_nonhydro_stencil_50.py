@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil50(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_rho_expl: np.array,
         rho_incr: np.array,
         z_exner_expl: np.array,
@@ -41,11 +41,11 @@ class TestMoSolveNonhydroStencil50(StencilTest):
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_exner_expl = random_field(mesh, CellDim, KDim)
-        exner_incr = random_field(mesh, CellDim, KDim)
-        z_rho_expl = random_field(mesh, CellDim, KDim)
-        rho_incr = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_exner_expl = random_field(grid, CellDim, KDim)
+        exner_incr = random_field(grid, CellDim, KDim)
+        z_rho_expl = random_field(grid, CellDim, KDim)
+        rho_incr = random_field(grid, CellDim, KDim)
         iau_wgt_dyn = 8.0
 
         return dict(
@@ -55,7 +55,7 @@ class TestMoSolveNonhydroStencil50(StencilTest):
             exner_incr=exner_incr,
             iau_wgt_dyn=iau_wgt_dyn,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

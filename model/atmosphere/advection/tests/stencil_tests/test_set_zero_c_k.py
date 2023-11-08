@@ -15,13 +15,13 @@ import numpy as np
 
 from icon4py.model.atmosphere.advection.set_zero_c_k import set_zero_c_k
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def test_set_zero_c_k():
-    mesh = SimpleMesh()
-    field = random_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    field = random_field(grid, CellDim, KDim)
 
     set_zero_c_k(field, offset_provider={})
-    assert np.allclose(field, zero_field(mesh, CellDim, KDim))
+    assert np.allclose(field, zero_field(grid, CellDim, KDim))

@@ -31,6 +31,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
@@ -164,24 +165,24 @@ def test_nonhydro_predictor_step(
     )
 
     z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_q=_allocate(CellDim, KDim, grid=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -487,20 +488,20 @@ def construct_diagnostics(sp, sp_v):
 
 def allocate_z_fields(icon_grid):
     return ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_q=_allocate(CellDim, KDim, grid=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
 
@@ -583,7 +584,7 @@ def test_nonhydro_corrector_step(
     divdamp_fac_o2 = sp.divdamp_fac_o2()  # is this 0.032
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -723,7 +724,7 @@ def test_run_solve_nonhydro_single_step(
     nh_constants = create_nh_constants(sp)
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -829,7 +830,7 @@ def test_run_solve_nonhydro_multi_step(
     nh_constants = create_nh_constants(sp)
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
