@@ -38,9 +38,9 @@ from icon4py.model.common.decomposition.definitions import (
     get_runtype,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.io_utils import (
     configure_logging,

@@ -29,10 +29,10 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.driver.dycore_driver import TimeLoop
 
 
@@ -41,8 +41,30 @@ from icon4py.model.driver.dycore_driver import TimeLoop
 @pytest.mark.parametrize(
     "debug_mode,timeloop_istep_init,timeloop_istep_exit,timeloop_jstep_init,timeloop_jstep_exit,timeloop_date_init, timeloop_date, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only_init",
     [
-        (False, 1, 2, 0, 1, "2021-06-20T12:00:00.000", "2021-06-20T12:00:10.000", True, False, False),
-        (False, 1, 2, 0, 1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:20.000", False, True, False),
+        (
+            False,
+            1,
+            2,
+            0,
+            1,
+            "2021-06-20T12:00:00.000",
+            "2021-06-20T12:00:10.000",
+            True,
+            False,
+            False,
+        ),
+        (
+            False,
+            1,
+            2,
+            0,
+            1,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:20.000",
+            False,
+            True,
+            False,
+        ),
     ],
 )
 def test_run_timeloop_single_step(
