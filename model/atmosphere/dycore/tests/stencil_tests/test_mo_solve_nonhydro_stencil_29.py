@@ -27,15 +27,15 @@ class TestMoSolveNonhydroStencil29(StencilTest):
     OUTPUTS = ("vn_new",)
 
     @staticmethod
-    def reference(mesh, grf_tend_vn: np.array, vn_now: np.array, dtime, **kwargs) -> dict:
+    def reference(grid, grf_tend_vn: np.array, vn_now: np.array, dtime, **kwargs) -> dict:
         vn_new = vn_now + dtime * grf_tend_vn
         return dict(vn_new=vn_new)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        grf_tend_vn = random_field(mesh, EdgeDim, KDim)
-        vn_now = random_field(mesh, EdgeDim, KDim)
-        vn_new = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        grf_tend_vn = random_field(grid, EdgeDim, KDim)
+        vn_now = random_field(grid, EdgeDim, KDim)
+        vn_new = zero_field(grid, EdgeDim, KDim)
         dtime = 6.0
 
         return dict(
@@ -44,7 +44,7 @@ class TestMoSolveNonhydroStencil29(StencilTest):
             vn_new=vn_new,
             dtime=dtime,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

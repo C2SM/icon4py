@@ -27,7 +27,7 @@ class TestMoSolveNonhydroStencil09(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         wgtfac_c: np.array,
         z_rth_pr_2: np.array,
         theta_v: np.array,
@@ -58,17 +58,17 @@ class TestMoSolveNonhydroStencil09(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        wgtfac_c = random_field(mesh, CellDim, KDim)
-        z_rth_pr_2 = random_field(mesh, CellDim, KDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        vwind_expl_wgt = random_field(mesh, CellDim)
-        exner_pr = random_field(mesh, CellDim, KDim)
-        d_exner_dz_ref_ic = random_field(mesh, CellDim, KDim)
-        ddqz_z_half = random_field(mesh, CellDim, KDim)
-        z_theta_v_pr_ic = zero_field(mesh, CellDim, KDim)
-        theta_v_ic = zero_field(mesh, CellDim, KDim)
-        z_th_ddz_exner_c = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        wgtfac_c = random_field(grid, CellDim, KDim)
+        z_rth_pr_2 = random_field(grid, CellDim, KDim)
+        theta_v = random_field(grid, CellDim, KDim)
+        vwind_expl_wgt = random_field(grid, CellDim)
+        exner_pr = random_field(grid, CellDim, KDim)
+        d_exner_dz_ref_ic = random_field(grid, CellDim, KDim)
+        ddqz_z_half = random_field(grid, CellDim, KDim)
+        z_theta_v_pr_ic = zero_field(grid, CellDim, KDim)
+        theta_v_ic = zero_field(grid, CellDim, KDim)
+        z_th_ddz_exner_c = zero_field(grid, CellDim, KDim)
 
         return dict(
             wgtfac_c=wgtfac_c,

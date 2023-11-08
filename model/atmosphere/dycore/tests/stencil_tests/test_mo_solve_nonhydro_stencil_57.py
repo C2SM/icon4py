@@ -26,13 +26,13 @@ class TestMoSolveNonhydroStencil57(StencilTest):
     OUTPUTS = ("mass_flx_ic",)
 
     @staticmethod
-    def reference(mesh, mass_flx_ic: np.array, **kwargs) -> dict:
+    def reference(grid, mass_flx_ic: np.array, **kwargs) -> dict:
         mass_flx_ic = np.zeros_like(mass_flx_ic)
         return dict(mass_flx_ic=mass_flx_ic)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        mass_flx_ic = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        mass_flx_ic = zero_field(grid, CellDim, KDim)
 
         return dict(
             mass_flx_ic=mass_flx_ic,

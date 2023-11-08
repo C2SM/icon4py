@@ -72,7 +72,7 @@ from icon4py.model.common.constants import (
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
-from icon4py.model.common.grid.icon_grid import IconGrid
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
@@ -397,7 +397,7 @@ class Diffusion:
                 CellDim,
                 (
                     HorizontalMarkerIndex.nudging(CellDim)
-                    if self.grid.limited_area()
+                    if self.grid.limited_area
                     else HorizontalMarkerIndex.interior(CellDim)
                 ),
             )
@@ -426,7 +426,7 @@ class Diffusion:
         )
 
         self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
-            k_size=self.grid.n_lev(),
+            k_size=self.grid.num_levels,
             nshift=0,
             physical_heights=np.asarray(self.vertical_params.physical_heights),
             nrdmax=self.vertical_params.index_of_damping_layer,
@@ -459,11 +459,11 @@ class Diffusion:
         self.diff_multfac_smag = _allocate(KDim)
         self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
         # TODO(Magdalena): this is KHalfDim
-        self.vertical_index = _index_field(KDim, self.grid.n_lev() + 1)
+        self.vertical_index = _index_field(KDim, self.grid.num_levels + 1)
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
         self.w_tmp = np_as_located_field(CellDim, KDim)(
-            np.zeros((self.grid.num_cells(), self.grid.n_lev() + 1), dtype=float)
+            np.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
         )
 
     def initial_run(
@@ -564,7 +564,7 @@ class Diffusion:
             smag_offset:
 
         """
-        klevels = self.grid.n_lev()
+        klevels = self.grid.num_levels
         cell_start_interior = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.interior(CellDim)
         )
@@ -612,7 +612,7 @@ class Diffusion:
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"V2E": self.grid.get_v2e_connectivity()},
+            offset_provider={"V2E": self.grid.get_offset_provider("V2E")},
         )
         log.debug("rbf interpolation 1: end")
 
@@ -645,8 +645,8 @@ class Diffusion:
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "E2C2V": self.grid.get_e2c2v_connectivity(),
-                "E2ECV": self.grid.get_e2ecv_connectivity(),
+                "E2C2V": self.grid.get_offset_provider("E2C2V"),
+                "E2ECV": self.grid.get_offset_provider("E2C2V"),
             },
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
@@ -665,8 +665,8 @@ class Diffusion:
             vertical_start=1,
             vertical_end=klevels,
             offset_provider={
-                "C2E": self.grid.get_c2e_connectivity(),
-                "C2CE": self.grid.get_c2ce_connectivity(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
                 "Koff": KDim,
             },
         )
@@ -691,7 +691,7 @@ class Diffusion:
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"V2E": self.grid.get_v2e_connectivity()},
+            offset_provider={"V2E": self.grid.get_offset_provider("V2E")},
         )
         log.debug("2nd rbf interpolation: end")
 
@@ -719,14 +719,14 @@ class Diffusion:
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
-            limited_area=self.grid.limited_area(),
+            limited_area=self.grid.limited_area,
             horizontal_start=edge_start_lb_plus4,
             horizontal_end=edge_end_local,
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "E2C2V": self.grid.get_e2c2v_connectivity(),
-                "E2ECV": self.grid.get_e2ecv_connectivity(),
+                "E2C2V": self.grid.get_offset_provider("E2C2V"),
+                "E2ECV": self.grid.get_offset_provider("E2ECV"),
             },
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
@@ -761,7 +761,7 @@ class Diffusion:
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "C2E2CO": self.grid.get_c2e2co_connectivity(),
+                "C2E2CO": self.grid.get_offset_provider("C2E2CO")(),
             },
         )
         log.debug(
@@ -781,8 +781,8 @@ class Diffusion:
             vertical_start=(klevels - 2),
             vertical_end=klevels,
             offset_provider={
-                "E2C": self.grid.get_e2c_connectivity(),
-                "C2E2C": self.grid.get_c2e2c_connectivity(),
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "C2E2C": self.grid.get_offset_provider("C2E2C"),
             },
         )
         log.debug(
@@ -800,9 +800,9 @@ class Diffusion:
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "C2E": self.grid.get_c2e_connectivity(),
-                "E2C": self.grid.get_e2c_connectivity(),
-                "C2CE": self.grid.get_c2ce_connectivity(),
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
             },
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
@@ -823,8 +823,8 @@ class Diffusion:
             vertical_start=0,
             vertical_end=klevels,
             offset_provider={
-                "C2CEC": self.grid.get_c2cec_connectivity(),
-                "C2E2C": self.grid.get_c2e2c_connectivity(),
+                "C2CEC": self.grid.get_offset_provider("C2CEC"),
+                "C2E2C": self.grid.get_offset_provider("C2E2C"),
                 "Koff": KDim,
             },
         )

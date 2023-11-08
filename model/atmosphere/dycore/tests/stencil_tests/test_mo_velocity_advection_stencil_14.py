@@ -32,7 +32,7 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, ddqz_z_half: np.array, z_w_con_c: np.array, cfl_w_limit, dtime, **kwargs
+        grid, ddqz_z_half: np.array, z_w_con_c: np.array, cfl_w_limit, dtime, **kwargs
     ) -> dict:
         num_rows, num_cols = z_w_con_c.shape
         cfl_clipping = np.where(
@@ -58,11 +58,11 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        ddqz_z_half = random_field(mesh, CellDim, KDim)
-        z_w_con_c = random_field(mesh, CellDim, KDim)
-        cfl_clipping = random_mask(mesh, CellDim, KDim, dtype=bool)
-        vcfl = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        ddqz_z_half = random_field(grid, CellDim, KDim)
+        z_w_con_c = random_field(grid, CellDim, KDim)
+        cfl_clipping = random_mask(grid, CellDim, KDim, dtype=bool)
+        vcfl = zero_field(grid, CellDim, KDim)
         cfl_w_limit = 5.0
         dtime = 9.0
 
