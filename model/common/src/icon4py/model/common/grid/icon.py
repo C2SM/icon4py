@@ -19,6 +19,7 @@ from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    C2VDim,
     CECDim,
     CEDim,
     CellDim,
@@ -34,7 +35,6 @@ from icon4py.model.common.dimension import (
     V2CDim,
     V2EDim,
     VertexDim,
-    C2VDim,
 )
 from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder
