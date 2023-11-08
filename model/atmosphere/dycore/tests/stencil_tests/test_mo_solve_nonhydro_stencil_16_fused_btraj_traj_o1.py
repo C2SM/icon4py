@@ -185,6 +185,9 @@ class TestComputeBtraj(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
         p_vn = random_field(grid, EdgeDim, KDim)
         p_vt = random_field(grid, EdgeDim, KDim)
         pos_on_tplane_e_1 = random_field(grid, EdgeDim, E2CDim)
