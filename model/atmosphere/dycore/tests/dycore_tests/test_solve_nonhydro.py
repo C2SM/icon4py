@@ -25,10 +25,10 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 @pytest.mark.datatest
@@ -90,14 +90,14 @@ def test_nonhydro_predictor_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     recompute = sp_v.get_metadata("recompute").get("recompute")
     dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     linit = sp_v.get_metadata("linit").get("linit")
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(grid, KDim)
+    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
@@ -143,24 +143,24 @@ def test_nonhydro_predictor_step(
     )
 
     z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_q=_allocate(CellDim, KDim, grid=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -472,7 +472,7 @@ def test_nonhydro_corrector_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -480,8 +480,8 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(grid, KDim)
+    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0  # TODO: @abishekg7 read from serialized data?
@@ -553,7 +553,7 @@ def test_nonhydro_corrector_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -682,7 +682,7 @@ def test_run_solve_nonhydro_single_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
@@ -690,8 +690,8 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(grid, KDim)
+    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
@@ -740,20 +740,20 @@ def test_run_solve_nonhydro_single_step(
     )
 
     z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_q=_allocate(CellDim, KDim, grid=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
     nh_constants = NHConstants(
@@ -766,7 +766,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -847,7 +847,7 @@ def test_run_solve_nonhydro_multi_step(
         nflatlev=grid_savepoint.nflatlev(),
     )
     sp_v = savepoint_velocity_init
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
     dtime = sp_v.get_metadata("dtime").get("dtime")
     r_nsubsteps = grid_savepoint.get_metadata("nsteps").get("nsteps")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -856,8 +856,8 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(grid, KDim)
+    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
@@ -892,20 +892,20 @@ def test_run_solve_nonhydro_multi_step(
     prognostic_state_ls, prognostic_state_nnew = create_prognostic_states(sp)
 
     z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_q=_allocate(CellDim, KDim, grid=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
     nh_constants = NHConstants(
@@ -918,7 +918,7 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()

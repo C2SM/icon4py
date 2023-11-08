@@ -33,30 +33,31 @@ class TestMoSolveNonhydroStencil41(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         geofac_div: np.array,
         mass_fl_e: np.array,
         z_theta_v_fl_e: np.array,
         **kwargs,
     ) -> tuple[np.array]:
+        c2e = grid.connectivities[C2EDim]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         z_flxdiv_mass = np.sum(
-            geofac_div[mesh.get_c2ce_offset_provider().table] * mass_fl_e[mesh.c2e],
+            geofac_div[grid.get_offset_provider("C2CE").table] * mass_fl_e[c2e],
             axis=1,
         )
         z_flxdiv_theta = np.sum(
-            geofac_div[mesh.get_c2ce_offset_provider().table] * z_theta_v_fl_e[mesh.c2e],
+            geofac_div[grid.get_offset_provider("C2CE").table] * z_theta_v_fl_e[c2e],
             axis=1,
         )
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        geofac_div = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
-        z_theta_v_fl_e = random_field(mesh, EdgeDim, KDim)
-        z_flxdiv_theta = zero_field(mesh, CellDim, KDim)
-        mass_fl_e = random_field(mesh, EdgeDim, KDim)
-        z_flxdiv_mass = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        geofac_div = as_1D_sparse_field(random_field(grid, CellDim, C2EDim), CEDim)
+        z_theta_v_fl_e = random_field(grid, EdgeDim, KDim)
+        z_flxdiv_theta = zero_field(grid, CellDim, KDim)
+        mass_fl_e = random_field(grid, EdgeDim, KDim)
+        z_flxdiv_mass = zero_field(grid, CellDim, KDim)
 
         return dict(
             geofac_div=geofac_div,
@@ -65,7 +66,7 @@ class TestMoSolveNonhydroStencil41(StencilTest):
             z_flxdiv_mass=z_flxdiv_mass,
             z_flxdiv_theta=z_flxdiv_theta,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

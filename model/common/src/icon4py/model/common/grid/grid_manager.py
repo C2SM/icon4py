@@ -46,8 +46,9 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid, VerticalGridSize
+from icon4py.model.common.grid.icon import IconGrid
 
 
 class GridFileName(str, Enum):
@@ -87,7 +88,7 @@ class GridFile:
 
         #: name of V2E2V connectivity in gridfile: dims(ne=6, vertex),
         #: all vertices of a pentagon/hexagon, same as V2C2V
-        V2E2V = "vertices_of_vertex"  # does not exist in simple_mesh.py
+        V2E2V = "vertices_of_vertex"  # does not exist in simple.py
 
         #: name of V2E dimension in grid file: dims(ne=6, vertex)
         V2E = "edges_of_vertex"
@@ -99,7 +100,7 @@ class GridFile:
         E2V = "edge_vertices"
 
         #: name of C2V connectivity in grid file: dims(nv=3, cell)
-        C2V = "vertex_of_cell"  # does not exist in simple_mesh.py
+        C2V = "vertex_of_cell"  # does not exist in grid.simple.py
 
         #: name of E2C connectivity in grid file: dims(nc=2, edge)
         E2C = "adjacent_cell_of_edge"

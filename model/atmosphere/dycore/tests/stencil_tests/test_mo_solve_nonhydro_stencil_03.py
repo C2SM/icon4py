@@ -26,13 +26,13 @@ class TestMoSolveNonhydroStencil03(StencilTest):
     OUTPUTS = ("z_exner_ex_pr",)
 
     @staticmethod
-    def reference(mesh, z_exner_ex_pr: np.array, **kwargs) -> dict:
+    def reference(grid, z_exner_ex_pr: np.array, **kwargs) -> dict:
         z_exner_ex_pr = np.zeros_like(z_exner_ex_pr)
         return dict(z_exner_ex_pr=z_exner_ex_pr)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_exner_ex_pr = random_field(grid, CellDim, KDim)
 
         return dict(
             z_exner_ex_pr=z_exner_ex_pr,

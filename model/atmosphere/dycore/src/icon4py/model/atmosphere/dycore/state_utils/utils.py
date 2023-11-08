@@ -27,25 +27,25 @@ from gt4py.next.iterator.embedded import np_as_located_field
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
 
-def zero_field(mesh, *dims: Dimension, is_halfdim=False, dtype=float):
-    shapex = tuple(map(lambda x: mesh.size[x], dims))
+def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
+    shapex = tuple(map(lambda x: grid.size[x], dims))
     if is_halfdim:
         assert len(shapex) == 2
         shapex = (shapex[0], shapex[1] + 1)
     return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
 
 
-def indices_field(dim: Dimension, mesh, is_halfdim, dtype=int):
-    shapex = mesh.size[dim] + 1 if is_halfdim else mesh.size[dim]
+def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
+    shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
     return np_as_located_field(dim)(np.arange(shapex, dtype=dtype))
 
 
-def _allocate(*dims: Dimension, mesh, is_halfdim=False, dtype=float):
-    return zero_field(mesh, *dims, is_halfdim=is_halfdim, dtype=dtype)
+def _allocate(*dims: Dimension, grid, is_halfdim=False, dtype=float):
+    return zero_field(grid, *dims, is_halfdim=is_halfdim, dtype=dtype)
 
 
-def _allocate_indices(*dims: Dimension, mesh, is_halfdim=False, dtype=int32):
-    return indices_field(*dims, mesh=mesh, is_halfdim=is_halfdim, dtype=dtype)
+def _allocate_indices(*dims: Dimension, grid, is_halfdim=False, dtype=int32):
+    return indices_field(*dims, grid=grid, is_halfdim=is_halfdim, dtype=dtype)
 
 
 @field_operator
