@@ -12,7 +12,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, abs, maximum, where
+from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
+    Field,
+    abs,
+    maximum,
+    where,
+)
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 
@@ -70,7 +75,6 @@ def _prep_gauss_quadrature_c_stencil(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-
     z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
     z_wgt_2 = 0.0625 * wgt_zeta_1 * wgt_eta_2
     z_wgt_3 = 0.0625 * wgt_zeta_2 * wgt_eta_1
