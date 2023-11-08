@@ -15,7 +15,13 @@ from typing import Tuple
 import numpy as np
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import abs, broadcast, int32, maximum, minimum
+from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
+    abs,
+    broadcast,
+    int32,
+    maximum,
+    minimum,
+)
 from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
