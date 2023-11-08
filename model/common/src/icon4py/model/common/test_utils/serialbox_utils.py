@@ -68,14 +68,18 @@ class IconSavepoint:
 
     def _get_field(self, name, *dimensions, dtype=float):
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+
+        self.log.debug(f"{name} {buffer.shape}")
+        return np_as_located_field(*dimensions)(buffer)
+
+    def _reduce_to_dim_size(self, buffer, dimensions):
         buffer_size = (
             self.sizes[d] if d.kind is DimensionKind.HORIZONTAL else s
             for s, d in zip(buffer.shape, dimensions)
         )
         buffer = buffer[tuple(map(slice, buffer_size))]
-
-        self.log.debug(f"{name} {buffer.shape}")
-        return np_as_located_field(*dimensions)(buffer)
+        return buffer
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
         return np_as_located_field(*dimensions)(ar)
@@ -973,19 +977,7 @@ class IconDiffusionExitSavepoint(IconSavepoint):
 
 
 class IconExitSavepoint(IconSavepoint):
-    def vn(self):
-        return self._get_field("x_vn", EdgeDim, KDim)
-
-    def theta_v(self):
-        return self._get_field("x_theta_v", CellDim, KDim)
-
-    def w(self):
-        return self._get_field("x_w", CellDim, KDim)
-
-    def exner(self):
-        return self._get_field("x_exner", CellDim, KDim)
-
-    def rho(self):
+    def rho_new(self):
         return self._get_field("x_rho_new", CellDim, KDim)
 
     def rho_now(self):
@@ -1104,12 +1096,18 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_w_new", CellDim, KDim)
 
     def z_dexner_dz_c(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_z_dexner_dz_c", self.savepoint).astype(float))
-        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
+        buffer = np.squeeze(self.serializer.read("x_z_dexner_dz_c", self.savepoint).astype(float))[
+            :, :, ntnd - 1
+        ]
+        buffer = self._reduce_to_dim_size(buffer, (CellDim, KDim))
+        return np_as_located_field(CellDim, KDim)(buffer)
 
     def z_rth_pr(self, ind):
-        buffer = np.squeeze(self.serializer.read("x_z_rth_pr", self.savepoint).astype(float))
-        return np_as_located_field(CellDim, KDim)(buffer[:, :, ind - 1])
+        buffer = np.squeeze(self.serializer.read("x_z_rth_pr", self.savepoint).astype(float))[
+            :, :, ind - 1
+        ]
+        buffer = self._reduce_to_dim_size(buffer, (CellDim, KDim))
+        return np_as_located_field(CellDim, KDim)(buffer)
 
     def z_th_ddz_exner_c(self):
         return self._get_field("x_z_th_ddz_exner_c", CellDim, KDim)
@@ -1163,8 +1161,12 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_z_graddiv_vn", EdgeDim, KDim)
 
     def z_grad_rth(self, ind):
-        buffer = np.squeeze(self.serializer.read("x_z_grad_rth", self.savepoint).astype(float))
-        return np_as_located_field(CellDim, KDim)(buffer[:, :, ind - 1])
+        buffer = np.squeeze(self.serializer.read("x_z_grad_rth", self.savepoint).astype(float))[
+            :, :, ind - 1
+        ]
+
+        dims = (CellDim, KDim)
+        return np_as_located_field(*dims)(self._reduce_to_dim_size(buffer, dims))
 
     def z_gradh_exner_18(self):
         return self._get_field("x_z_gradh_exner_18", EdgeDim, KDim)

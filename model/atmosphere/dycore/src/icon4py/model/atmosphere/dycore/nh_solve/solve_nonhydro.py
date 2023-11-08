@@ -154,6 +154,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
+from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
@@ -289,7 +290,8 @@ class NonHydrostaticParams:
 
 
 class SolveNonhydro:
-    def __init__(self):
+    def __init__(self, exchange: ExchangeRuntime = SingleNodeExchange()):
+        self._exchange = exchange
         self._initialized = False
         self.grid: Optional[IconGrid] = None
         self.config: Optional[NonHydrostaticConfig] = None
@@ -493,18 +495,14 @@ class SolveNonhydro:
             lprep_adv=lprep_adv,
         )
 
-        start_cell_local_minus1 = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
-        )
-        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
         end_cell_nudging_minus1 = self.grid.get_end_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim) - 1
         )
-
+        start_cell_halo = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
+        end_cell_end = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
         if self.grid.limited_area:
             mo_solve_nonhydro_stencil_66.with_backend(run_gtfn)(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
@@ -513,10 +511,6 @@ class SolveNonhydro:
                 exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=self.params.rd_o_cvd,
                 rd_o_p0ref=self.params.rd_o_p0ref,
-                horizontal_start=start_cell_local_minus1,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
 
@@ -542,8 +536,8 @@ class SolveNonhydro:
             rho_new=prognostic_state_ls[nnew].rho,
             theta_v_new=prognostic_state_ls[nnew].theta_v,
             cvd_o_rd=self.params.cvd_o_rd,
-            horizontal_start=start_cell_local_minus1,
-            horizontal_end=end_cell_local,
+            horizontal_start=start_cell_halo,
+            horizontal_end=end_cell_end,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -562,6 +556,7 @@ class SolveNonhydro:
         nnow: int,
         nnew: int,
     ):
+        # TODO (magdalena) fix this! when fixing call of velocity advection in predictor, condition is broken,
         if l_init or l_recompute:
             if self.config.itime_scheme == 4 and not l_init:
                 lvn_only = True  # Recompute only vn tendency
@@ -973,16 +968,17 @@ class SolveNonhydro:
                     "Koff": KDim,
                 },
             )
-        # TODO (magdalena) what is 64?
-        self.z_hydro_corr_horizontal = np_as_located_field(EdgeDim)(
-            np.asarray(self.z_hydro_corr)[:, 64]
+        # TODO (Nikki) check when merging fused stencil
+        lowest_level = self.grid.num_levels - 1
+        hydro_corr_horizontal = np_as_located_field(EdgeDim)(
+            np.asarray(self.z_hydro_corr)[:, lowest_level]
         )
 
         if self.config.igradp_method == 3:
             mo_solve_nonhydro_stencil_22.with_backend(run_gtfn)(
                 ipeidx_dsl=self.metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
-                z_hydro_corr=self.z_hydro_corr_horizontal,
+                z_hydro_corr=hydro_corr_horizontal,
                 z_gradh_exner=z_fields.z_gradh_exner,
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_end,
@@ -1032,7 +1028,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # COMMUNICATION PHASE
+        self._exchange.exchange_and_wait(EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e)
 
         mo_solve_nonhydro_stencil_30.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
@@ -1314,7 +1310,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if self.grid.limited_area:  # for MPI-parallelized case
+        if self.grid.limited_area:
             nhsolve_prog.stencils_61_62.with_backend(run_gtfn)(
                 rho_now=prognostic_state[nnow].rho,
                 grf_tend_rho=diagnostic_state_nh.grf_tend_rho,
@@ -1348,7 +1344,9 @@ class SolveNonhydro:
                 offset_provider={"Koff": KDim},
             )
 
-        # COMMUNICATION PHASE
+            self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
+        else:
+            self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w)
 
     def run_corrector_step(
         self,
@@ -1562,8 +1560,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # COMMUNICATION PHASE
-
+        self._exchange.exchange_and_wait(EdgeDim, (prognostic_state[nnew].vn))
         mo_solve_nonhydro_stencil_31.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
@@ -1872,4 +1869,9 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # COMMUNICATION PHASE
+            self._exchange.exchange_and_wait(
+                CellDim,
+                prognostic_state[nnew].rho,
+                prognostic_state[nnew].exner,
+                prognostic_state[nnew].w,
+            )
