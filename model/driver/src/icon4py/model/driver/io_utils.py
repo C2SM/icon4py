@@ -163,20 +163,20 @@ def read_initial_state(
 
     # TODO: move local fields to SolveNonHydro
     z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_q=_allocate(CellDim, KDim, grid=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
     nh_constants = NHConstants(
@@ -295,7 +295,7 @@ def read_static_fields(
             dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_nonhydro()
         )
         solve_nonhydro_metric_state = (
-            dataprovider.from_metrics_savepoint().construct_nh_metric_state(icon_grid.n_lev())
+            dataprovider.from_metrics_savepoint().construct_nh_metric_state(icon_grid.num_levels)
         )
         return (
             diffusion_metric_state,

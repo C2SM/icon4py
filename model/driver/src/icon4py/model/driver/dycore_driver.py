@@ -40,7 +40,7 @@ from icon4py.model.common.decomposition.definitions import (
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.io_utils import (
     configure_logging,
@@ -386,9 +386,9 @@ def initialize(file_path: Path, props: ProcessProperties):
     nonhydro_config = NonHydrostaticConfig()
     nonhydro_params = NonHydrostaticParams(nonhydro_config)
 
-    mesh = SimpleMesh()
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    grid = SimpleGrid()
+    enh_smag_fac = zero_field(grid, KDim)
+    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 

@@ -358,10 +358,10 @@ class VelocityAdvection:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=1,
-                vertical_end=self.grid.n_lev(),
+                vertical_end=self.grid.num_levels,
                 offset_provider={
-                    "C2E": self.grid.get_c2e_connectivity(),
-                    "C2CE": self.grid.get_c2ce_connectivity(),
+                    "C2E": self.grid.get_offset_provider("C2E"),
+                    "C2CE": self.grid.get_offset_provider("C2CE"),
                     "Koff": KDim,
                 },
             )
@@ -382,9 +382,9 @@ class VelocityAdvection:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-                vertical_end=int32(self.grid.n_lev() - 3),
+                vertical_end=int32(self.grid.num_levels - 3),
                 offset_provider={
-                    "C2E2CO": self.grid.get_c2e2co_connectivity(),
+                    "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
                 },
             )
 

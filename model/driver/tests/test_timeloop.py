@@ -32,7 +32,7 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.driver.dycore_driver import TimeLoop
 
 
@@ -40,7 +40,10 @@ from icon4py.model.driver.dycore_driver import TimeLoop
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "debug_mode,timeloop_istep_init,timeloop_istep_exit,timeloop_jstep_init,timeloop_jstep_exit,timeloop_date_init, timeloop_date, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only_init",
-    [(False, 1, 2, 0, 1, "2021-06-20T12:00:00.000", "2021-06-20T12:00:10.000", True, False, False)],
+    [
+        (False, 1, 2, 0, 1, "2021-06-20T12:00:00.000", "2021-06-20T12:00:10.000", True, False, False),
+        (False, 1, 2, 0, 1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:20.000", False, True, False),
+    ],
 )
 def test_run_timeloop_single_step(
     debug_mode,
@@ -97,7 +100,7 @@ def test_run_timeloop_single_step(
     sp = timeloop_nonhydro_savepoint_init
     nonhydro_params = NonHydrostaticParams(nonhydro_config)
     sp_v = timeloop_velocity_savepoint_init
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
     nonhydro_dtime = timeloop_velocity_savepoint_init.get_metadata("dtime").get("dtime")
     # lprep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
@@ -105,8 +108,8 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(grid, KDim)
+    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
@@ -114,20 +117,20 @@ def test_run_timeloop_single_step(
     assert r04b09_iconrun_config.dtime == diffusion_dtime
 
     z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_beta=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_q=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, mesh=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, mesh=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, mesh=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, mesh=icon_grid),
+        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_q=_allocate(CellDim, KDim, grid=icon_grid),
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
+        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
+        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
     nh_constants = NHConstants(
@@ -142,7 +145,7 @@ def test_run_timeloop_single_step(
     nonhydro_interpolation_state = (
         interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     )
-    nonhydro_metric_state = metrics_savepoint.construct_nh_metric_state(icon_grid.n_lev())
+    nonhydro_metric_state = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
