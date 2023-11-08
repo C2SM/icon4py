@@ -136,7 +136,7 @@ def timeloop_velocity_savepoint_init(
     data_provider,  # noqa: F811
     timeloop_date,
     timeloop_istep_init,
-    vn_only_init,  # noqa: F811
+    vn_only_init,
     timeloop_jstep_init,
 ):
     """

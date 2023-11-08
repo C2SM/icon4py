@@ -859,7 +859,6 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
-
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit",
