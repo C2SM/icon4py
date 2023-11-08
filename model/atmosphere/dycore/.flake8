@@ -15,9 +15,7 @@ extend-ignore =
     # Line too long (using Bugbear's B950 warning)
     E501,
     # Line break occurred before a binary operator
-    W503,
-    # Import statement is shadowing a Python builtin
-    A004
+    W503
 
 exclude =
     .eggs,
