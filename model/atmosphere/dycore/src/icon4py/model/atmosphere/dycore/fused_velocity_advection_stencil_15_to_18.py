@@ -122,32 +122,35 @@ def _fused_velocity_advection_stencil_15_to_18(
     extra_diffu: bool,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_w_con_c_full = _mo_velocity_advection_stencil_15(z_w_con_c)
-    if not lvn_only:
-      ddt_w_adv = _fused_velocity_advection_stencil_16_to_18(
-              z_w_con_c,
-              w,
-              coeff1_dwdz,
-              coeff2_dwdz,
-              ddt_w_adv,
-              e_bln_c_s,
-              z_v_grad_w,
-              levelmask,
-              cfl_clipping,
-              owner_mask,
-              ddqz_z_half,
-              area,
-              geofac_n2s,
-              cell,
-              k,
-              scalfac_exdiff,
-              cfl_w_limit,
-              dtime,
-              cell_lower_bound,
-              cell_upper_bound,
-              nlev,
-              nrdmax,
-              extra_diffu,
-          )
+    ddt_w_adv = (
+        _fused_velocity_advection_stencil_16_to_18(
+            z_w_con_c,
+            w,
+            coeff1_dwdz,
+            coeff2_dwdz,
+            ddt_w_adv,
+            e_bln_c_s,
+            z_v_grad_w,
+            levelmask,
+            cfl_clipping,
+            owner_mask,
+            ddqz_z_half,
+            area,
+            geofac_n2s,
+            cell,
+            k,
+            scalfac_exdiff,
+            cfl_w_limit,
+            dtime,
+            cell_lower_bound,
+            cell_upper_bound,
+            nlev,
+            nrdmax,
+            extra_diffu,
+        )
+        if not lvn_only
+        else ddt_w_adv
+    )
 
     return (z_w_con_c_full, ddt_w_adv)
 
