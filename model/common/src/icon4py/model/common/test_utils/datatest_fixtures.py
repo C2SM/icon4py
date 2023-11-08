@@ -11,43 +11,36 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from pathlib import Path
-
 import pytest
 
-from ..decomposition.definitions import SingleNodeRun, get_processor_properties
+from ..decomposition.definitions import SingleNodeRun
 from .data_handling import download_and_extract
-from .serialbox_utils import IconSerialDataProvider
+from .datatest_utils import (
+    DATA_URIS,
+    SER_DATA_BASEPATH,
+    create_icon_serial_data_provider,
+    get_datapath_for_ranked_data,
+    get_processor_properties_for_run,
+    get_ranked_data_path,
+)
 
-
-test_utils = Path(__file__).parent
-model = test_utils.parent.parent
-common = model.parent.parent.parent.parent
-base_path = common.parent.joinpath("testdata")
 
 # TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
-data_uris = {
-    1: "https://polybox.ethz.ch/index.php/s/psBNNhng0h9KrB4/download",
-    2: "https://polybox.ethz.ch/index.php/s/NUQjmJcMEoQxFiK/download",
-    4: "https://polybox.ethz.ch/index.php/s/QC7xt7xLT5xeVN5/download",
-}
-
-ser_data_basepath = base_path.joinpath("ser_icondata")
 
 
 @pytest.fixture(params=[False], scope="session")
 def processor_props(request):
-    return get_processor_properties(SingleNodeRun())
+    return get_processor_properties_for_run(SingleNodeRun())
 
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return ser_data_basepath.absolute().joinpath(f"mpitask{processor_props.comm_size}")
+    return get_ranked_data_path(SER_DATA_BASEPATH, processor_props)
 
 
 @pytest.fixture(scope="session")
 def datapath(ranked_data_path):
-    return ranked_data_path.joinpath("mch_ch_r04b09_dsl/ser_data")
+    return get_datapath_for_ranked_data(ranked_data_path)
 
 
 @pytest.fixture(scope="session")
@@ -65,7 +58,7 @@ def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
         pass
 
     try:
-        uri = data_uris[processor_props.comm_size]
+        uri = DATA_URIS[processor_props.comm_size]
 
         data_file = ranked_data_path.joinpath(
             f"mch_ch_r04b09_dsl_mpitask{processor_props.comm_size}.tar.gz"
@@ -81,13 +74,8 @@ def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
 
 
 @pytest.fixture(scope="session")
-def data_provider(download_ser_data, datapath, processor_props) -> IconSerialDataProvider:
-    return IconSerialDataProvider(
-        fname_prefix="icon_pydycore",
-        path=str(datapath),
-        mpi_rank=processor_props.rank,
-        do_print=True,
-    )
+def data_provider(download_ser_data, datapath, processor_props):
+    return create_icon_serial_data_provider(datapath, processor_props)
 
 
 @pytest.fixture

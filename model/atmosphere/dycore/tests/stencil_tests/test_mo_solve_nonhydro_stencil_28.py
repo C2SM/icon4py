@@ -27,14 +27,14 @@ class TestMoSolveNonhydroStencil28(StencilTest):
     OUTPUTS = ("vn",)
 
     @staticmethod
-    def reference(mesh, vn_incr: np.array, vn: np.array, iau_wgt_dyn, **kwargs) -> np.array:
+    def reference(grid, vn_incr: np.array, vn: np.array, iau_wgt_dyn, **kwargs) -> np.array:
         vn = vn + (iau_wgt_dyn * vn_incr)
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn_incr = random_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        vn_incr = random_field(grid, EdgeDim, KDim)
+        vn = random_field(grid, EdgeDim, KDim)
         iau_wgt_dyn = 5.0
 
         return dict(
@@ -42,7 +42,7 @@ class TestMoSolveNonhydroStencil28(StencilTest):
             vn=vn,
             iau_wgt_dyn=iau_wgt_dyn,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

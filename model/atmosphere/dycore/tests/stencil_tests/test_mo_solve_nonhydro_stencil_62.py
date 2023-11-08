@@ -26,16 +26,16 @@ class TestMoSolveNonhydroStencil62(StencilTest):
     OUTPUTS = ("w_new",)
 
     @staticmethod
-    def reference(mesh, w_now: np.array, grf_tend_w: np.array, dtime: float, **kwargs) -> np.array:
+    def reference(grid, w_now: np.array, grf_tend_w: np.array, dtime: float, **kwargs) -> np.array:
         w_new = w_now + dtime * grf_tend_w
         return dict(w_new=w_new)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         dtime = 10.0
-        w_now = random_field(mesh, CellDim, KDim)
-        grf_tend_w = random_field(mesh, CellDim, KDim)
-        w_new = zero_field(mesh, CellDim, KDim)
+        w_now = random_field(grid, CellDim, KDim)
+        grf_tend_w = random_field(grid, CellDim, KDim)
+        w_new = zero_field(grid, CellDim, KDim)
 
         return dict(
             w_now=w_now,

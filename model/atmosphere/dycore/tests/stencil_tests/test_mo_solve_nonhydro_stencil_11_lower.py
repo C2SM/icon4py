@@ -26,13 +26,13 @@ class TestMoSolveNonhydroStencil11Lower(StencilTest):
     OUTPUTS = ("z_theta_v_pr_ic",)
 
     @staticmethod
-    def reference(mesh, **kwargs) -> np.array:
+    def reference(grid, **kwargs) -> np.array:
         z_theta_v_pr_ic = 0
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_theta_v_pr_ic = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_theta_v_pr_ic = random_field(grid, CellDim, KDim)
         return dict(
             z_theta_v_pr_ic=z_theta_v_pr_ic,
         )

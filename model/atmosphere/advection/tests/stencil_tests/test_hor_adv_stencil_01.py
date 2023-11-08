@@ -16,8 +16,8 @@ from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.hor_adv_stencil_01 import hor_adv_stencil_01
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hor_adv_stencil_01_numpy(
@@ -41,20 +41,20 @@ def hor_adv_stencil_01_numpy(
 
 
 def test_hor_adv_stencil_01():
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
 
-    p_mflx_tracer_h = random_field(mesh, EdgeDim, KDim)
-    deepatmo_divh = random_field(mesh, KDim)
-    tracer_now = random_field(mesh, CellDim, KDim)
-    rhodz_now = random_field(mesh, CellDim, KDim)
-    rhodz_new = random_field(mesh, CellDim, KDim)
-    geofac_div = random_field(mesh, CellDim, C2EDim)
+    p_mflx_tracer_h = random_field(grid, EdgeDim, KDim)
+    deepatmo_divh = random_field(grid, KDim)
+    tracer_now = random_field(grid, CellDim, KDim)
+    rhodz_now = random_field(grid, CellDim, KDim)
+    rhodz_new = random_field(grid, CellDim, KDim)
+    geofac_div = random_field(grid, CellDim, C2EDim)
     geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
-    tracer_new = random_field(mesh, CellDim, KDim)
+    tracer_new = random_field(grid, CellDim, KDim)
     p_dtime = np.float64(5.0)
 
     ref = hor_adv_stencil_01_numpy(
-        mesh.c2e,
+        grid.connectivities[C2EDim],
         np.asarray(p_mflx_tracer_h),
         np.asarray(deepatmo_divh),
         np.asarray(tracer_now),
@@ -73,8 +73,8 @@ def test_hor_adv_stencil_01():
         tracer_new,
         p_dtime,
         offset_provider={
-            "C2E": mesh.get_c2e_offset_provider(),
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
+            "C2E": grid.get_offset_provider("C2E"),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
         },
     )
     assert np.allclose(tracer_new, ref)

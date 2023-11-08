@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_02 impor
     upwind_hflux_miura_cycl_stencil_02,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def upwind_hflux_miura_cycl_stencil_02_numpy(
@@ -51,22 +51,22 @@ def upwind_hflux_miura_cycl_stencil_02_numpy(
 
 
 def test_upwind_hflux_miura_cycl_stencil_02():
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
     nsub = int32(1)
-    p_mass_flx_e = random_field(mesh, EdgeDim, KDim)
-    geofac_div = random_field(mesh, CellDim, C2EDim)
-    z_rhofluxdiv_c = random_field(mesh, CellDim, KDim)
-    z_tracer_mflx = random_field(mesh, EdgeDim, KDim)
-    z_rho_now = random_field(mesh, CellDim, KDim)
-    z_tracer_now = random_field(mesh, CellDim, KDim)
+    p_mass_flx_e = random_field(grid, EdgeDim, KDim)
+    geofac_div = random_field(grid, CellDim, C2EDim)
+    z_rhofluxdiv_c = random_field(grid, CellDim, KDim)
+    z_tracer_mflx = random_field(grid, EdgeDim, KDim)
+    z_rho_now = random_field(grid, CellDim, KDim)
+    z_tracer_now = random_field(grid, CellDim, KDim)
     z_dtsub = 0.5
-    z_rhofluxdiv_c_out = random_field(mesh, CellDim, KDim)
-    z_fluxdiv_c_dsl = random_field(mesh, CellDim, KDim)
-    z_rho_new_dsl = random_field(mesh, CellDim, KDim)
-    z_tracer_new_dsl = random_field(mesh, CellDim, KDim)
+    z_rhofluxdiv_c_out = random_field(grid, CellDim, KDim)
+    z_fluxdiv_c_dsl = random_field(grid, CellDim, KDim)
+    z_rho_new_dsl = random_field(grid, CellDim, KDim)
+    z_tracer_new_dsl = random_field(grid, CellDim, KDim)
 
     ref_1, ref_2, ref_3, ref_4 = upwind_hflux_miura_cycl_stencil_02_numpy(
-        mesh.c2e,
+        grid.connectivities[C2EDim],
         nsub,
         np.asarray(p_mass_flx_e),
         np.asarray(geofac_div),
@@ -91,8 +91,8 @@ def test_upwind_hflux_miura_cycl_stencil_02():
         z_rho_new_dsl,
         z_tracer_new_dsl,
         offset_provider={
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
-            "C2E": mesh.get_c2e_offset_provider(),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
+            "C2E": grid.get_offset_provider("C2E"),
         },
     )
     assert np.allclose(ref_1, z_rhofluxdiv_c_out)
