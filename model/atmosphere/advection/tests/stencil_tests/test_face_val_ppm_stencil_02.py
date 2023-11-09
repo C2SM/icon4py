@@ -51,9 +51,7 @@ def test_face_val_ppm_stencil_02():
     p_face_in = random_field(grid, CellDim, KDim)
     p_face = random_field(grid, CellDim, KDim)
 
-    k = it_embedded.np_as_located_field(KDim)(
-        np.arange(0, _shape(grid, KDim)[0], dtype=int32)
-    )
+    k = it_embedded.np_as_located_field(KDim)(np.arange(0, _shape(grid, KDim)[0], dtype=int32))
 
     slev = int32(1)
     slevp1 = slev + int32(1)
