@@ -617,12 +617,6 @@ class MetricSavepoint(IconSavepoint):
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 
-    def zd_vertidx(self):
-        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
-
-    def zd_indlist(self):
-        return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
-
     def construct_nh_metric_state(self, num_k_lev) -> MetricStateNonHydro:
         return MetricStateNonHydro(
             bdy_halo_c=self.bdy_halo_c(),
