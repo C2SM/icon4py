@@ -27,20 +27,20 @@ class TestMoSolveNonhydroStencil59(StencilTest):
     OUTPUTS = ("exner_dyn_incr",)
 
     @staticmethod
-    def reference(mesh, exner: np.array, **kwargs) -> dict:
+    def reference(grid, exner: np.array, **kwargs) -> dict:
         exner_dyn_incr = exner
         return dict(exner_dyn_incr=exner_dyn_incr)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        exner = random_field(mesh, CellDim, KDim)
-        exner_dyn_incr = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        exner = random_field(grid, CellDim, KDim)
+        exner_dyn_incr = zero_field(grid, CellDim, KDim)
 
         return dict(
             exner=exner,
             exner_dyn_incr=exner_dyn_incr,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

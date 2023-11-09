@@ -47,10 +47,10 @@ class TestMoVelocityAdvectionStencil06(StencilTest):
         return dict(vn_ie=vn_ie)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        wgtfacq_e = random_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        vn_ie = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        wgtfacq_e = random_field(grid, EdgeDim, KDim)
+        vn = random_field(grid, EdgeDim, KDim)
+        vn_ie = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             wgtfacq_e=wgtfacq_e,

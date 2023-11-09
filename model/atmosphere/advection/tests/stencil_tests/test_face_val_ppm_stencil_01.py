@@ -17,8 +17,8 @@ from gt4py.next.iterator import embedded as it_embedded
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def face_val_ppm_stencil_01_numpy(
@@ -61,17 +61,17 @@ def face_val_ppm_stencil_01_numpy(
 
 
 def test_face_val_ppm_stencil_01():
-    mesh = SimpleMesh()
-    p_cc = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    p_cellhgt_mc_now = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    k = zero_field(mesh, KDim, dtype=int32, extend={KDim: 1})
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    k = zero_field(grid, KDim, dtype=int32, extend={KDim: 1})
 
     k = it_embedded.np_as_located_field(KDim)(
-        np.arange(0, _shape(mesh, KDim, extend={KDim: 1})[0], dtype=int32)
+        np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32)
     )
     elev = k[-2]
 
-    z_slope = random_field(mesh, CellDim, KDim)
+    z_slope = random_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_01_numpy(
         np.asarray(p_cc),

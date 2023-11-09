@@ -15,8 +15,8 @@ import numpy as np
 
 from icon4py.model.atmosphere.advection.rbf_intp_edge_stencil_01 import rbf_intp_edge_stencil_01
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def rbf_intp_edge_stencil_01_numpy(
@@ -30,14 +30,14 @@ def rbf_intp_edge_stencil_01_numpy(
 
 
 def test_rbf_intp_edge_stencil_01():
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
 
-    p_vn_in = random_field(mesh, EdgeDim, KDim)
-    ptr_coeff = random_field(mesh, EdgeDim, E2C2EDim)
-    p_vt_out = zero_field(mesh, EdgeDim, KDim)
+    p_vn_in = random_field(grid, EdgeDim, KDim)
+    ptr_coeff = random_field(grid, EdgeDim, E2C2EDim)
+    p_vt_out = zero_field(grid, EdgeDim, KDim)
 
     ref = rbf_intp_edge_stencil_01_numpy(
-        mesh.e2c2e,
+        grid.connectivities[E2C2EDim],
         np.asarray(p_vn_in),
         np.asarray(ptr_coeff),
     )
@@ -47,7 +47,7 @@ def test_rbf_intp_edge_stencil_01():
         ptr_coeff,
         p_vt_out,
         offset_provider={
-            "E2C2E": mesh.get_e2c2e_offset_provider(),
+            "E2C2E": grid.get_offset_provider("E2C2E"),
         },
     )
     assert np.allclose(p_vt_out, ref)

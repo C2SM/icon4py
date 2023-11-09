@@ -34,18 +34,18 @@ class TestMoVelocityAdvectionStencil04(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, vn: np.array, ddxn_z_full: np.array, ddxt_z_full: np.array, vt: np.array, **kwargs
+        grid, vn: np.array, ddxn_z_full: np.array, ddxt_z_full: np.array, vt: np.array, **kwargs
     ) -> dict:
         z_w_concorr_me = mo_velocity_advection_stencil_04_numpy(vn, ddxn_z_full, ddxt_z_full, vt)
         return dict(z_w_concorr_me=z_w_concorr_me)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn = random_field(mesh, EdgeDim, KDim)
-        ddxn_z_full = random_field(mesh, EdgeDim, KDim)
-        ddxt_z_full = random_field(mesh, EdgeDim, KDim)
-        vt = random_field(mesh, EdgeDim, KDim)
-        z_w_concorr_me = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        vn = random_field(grid, EdgeDim, KDim)
+        ddxn_z_full = random_field(grid, EdgeDim, KDim)
+        ddxt_z_full = random_field(grid, EdgeDim, KDim)
+        vt = random_field(grid, EdgeDim, KDim)
+        z_w_concorr_me = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             vn=vn,

@@ -22,11 +22,16 @@ from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-def calculate_horizontal_gradients_for_turbulence_numpy(mesh, w, geofac_grg_x, geofac_grg_y):
+def calculate_horizontal_gradients_for_turbulence_numpy(grid, w, geofac_grg_x, geofac_grg_y):
+    c2e2cO = grid.connectivities[C2E2CODim]
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-    dwdx = np.sum(geofac_grg_x * w[mesh.c2e2cO], axis=1)
+    dwdx = np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * w[c2e2cO], 0.0), axis=1
+    )
+
     geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-    dwdy = np.sum(geofac_grg_y * w[mesh.c2e2cO], axis=1)
+    dwdy = np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * w[c2e2cO], 0.0), axis=1)
     return dwdx, dwdy
 
 
@@ -36,20 +41,20 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, w: np.array, geofac_grg_x: np.array, geofac_grg_y: np.array, **kwargs
+        grid, w: np.array, geofac_grg_x: np.array, geofac_grg_y: np.array, **kwargs
     ) -> tuple[np.array]:
         dwdx, dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
-            mesh, w, geofac_grg_x, geofac_grg_y
+            grid, w, geofac_grg_x, geofac_grg_y
         )
         return dict(dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        w = random_field(mesh, CellDim, KDim)
-        geofac_grg_x = random_field(mesh, CellDim, C2E2CODim)
-        geofac_grg_y = random_field(mesh, CellDim, C2E2CODim)
-        dwdx = zero_field(mesh, CellDim, KDim)
-        dwdy = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        w = random_field(grid, CellDim, KDim)
+        geofac_grg_x = random_field(grid, CellDim, C2E2CODim)
+        geofac_grg_y = random_field(grid, CellDim, C2E2CODim)
+        dwdx = zero_field(grid, CellDim, KDim)
+        dwdy = zero_field(grid, CellDim, KDim)
 
         return dict(
             w=w,
@@ -58,7 +63,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
             dwdx=dwdx,
             dwdy=dwdy,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

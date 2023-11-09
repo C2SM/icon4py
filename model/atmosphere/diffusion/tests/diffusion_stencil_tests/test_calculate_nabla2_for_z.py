@@ -13,23 +13,24 @@
 
 import numpy as np
 import pytest
+from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def calculate_nabla2_for_z_numpy(
-    mesh,
+    grid,
     kh_smag_e: np.array,
     inv_dual_edge_length: np.array,
     theta_v: np.array,
 ) -> np.array:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    theta_v_e2c = theta_v[mesh.e2c]
+    theta_v_e2c = theta_v[grid.connectivities[E2CDim]]
     theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
     z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
@@ -42,21 +43,25 @@ class TestCalculateNabla2ForZ(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         kh_smag_e: np.array,
         inv_dual_edge_length: np.array,
         theta_v: np.array,
         **kwargs,
     ) -> dict:
-        z_nabla2_e = calculate_nabla2_for_z_numpy(mesh, kh_smag_e, inv_dual_edge_length, theta_v)
+        z_nabla2_e = calculate_nabla2_for_z_numpy(grid, kh_smag_e, inv_dual_edge_length, theta_v)
         return dict(z_nabla2_e=z_nabla2_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid, backend):
+        if isinstance(backend, OTFCompileExecutor):
+            pytest.skip(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
+        kh_smag_e = random_field(grid, EdgeDim, KDim)
+        inv_dual_edge_length = random_field(grid, EdgeDim)
+        theta_v = random_field(grid, CellDim, KDim)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim)
 
         return dict(
             kh_smag_e=kh_smag_e,

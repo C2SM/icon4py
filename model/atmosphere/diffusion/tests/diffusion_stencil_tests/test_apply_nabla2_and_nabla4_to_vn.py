@@ -22,7 +22,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def apply_nabla2_and_nabla4_to_vn_numpy(
-    mesh,
+    grid,
     area_edge,
     kh_smag_e,
     z_nabla2_e,
@@ -48,7 +48,7 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         area_edge,
         kh_smag_e,
         z_nabla2_e,
@@ -60,7 +60,7 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
         **kwargs,
     ):
         vn = apply_nabla2_and_nabla4_to_vn_numpy(
-            mesh,
+            grid,
             area_edge,
             kh_smag_e,
             z_nabla2_e,
@@ -73,14 +73,14 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        area_edge = random_field(mesh, EdgeDim)
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla4_e2 = random_field(mesh, EdgeDim, KDim)
-        diff_multfac_vn = random_field(mesh, KDim)
-        nudgecoeff_e = random_field(mesh, EdgeDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        area_edge = random_field(grid, EdgeDim)
+        kh_smag_e = random_field(grid, EdgeDim, KDim)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim)
+        z_nabla4_e2 = random_field(grid, EdgeDim, KDim)
+        diff_multfac_vn = random_field(grid, KDim)
+        nudgecoeff_e = random_field(grid, EdgeDim)
+        vn = random_field(grid, EdgeDim, KDim)
         nudgezone_diff = 9.0
 
         return dict(

@@ -22,7 +22,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def apply_nabla2_to_vn_in_lateral_boundary_numpy(
-    mesh, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
+    grid, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
 ) -> np.array:
     area_edge = np.expand_dims(area_edge, axis=-1)
     vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
@@ -33,24 +33,24 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
     PROGRAM = apply_nabla2_to_vn_in_lateral_boundary
     OUTPUTS = ("vn",)
 
-    @staticmethod
-    def reference(
-        mesh, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
-    ) -> np.array:
-        vn = apply_nabla2_to_vn_in_lateral_boundary_numpy(
-            mesh, z_nabla2_e, area_edge, vn, fac_bdydiff_v
-        )
-        return dict(vn=vn)
-
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         fac_bdydiff_v = 5.0
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        area_edge = random_field(mesh, EdgeDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim)
+        area_edge = random_field(grid, EdgeDim)
+        vn = random_field(grid, EdgeDim, KDim)
         return dict(
             fac_bdydiff_v=fac_bdydiff_v,
             z_nabla2_e=z_nabla2_e,
             area_edge=area_edge,
             vn=vn,
         )
+
+    @staticmethod
+    def reference(
+        grid, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
+    ) -> np.array:
+        vn = apply_nabla2_to_vn_in_lateral_boundary_numpy(
+            grid, z_nabla2_e, area_edge, vn, fac_bdydiff_v
+        )
+        return dict(vn=vn)

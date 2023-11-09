@@ -17,8 +17,8 @@ from gt4py.next.iterator import embedded as it_embedded
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02 import face_val_ppm_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import _shape, random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def face_val_ppm_stencil_02_numpy(
@@ -45,13 +45,15 @@ def face_val_ppm_stencil_02_numpy(
 
 
 def test_face_val_ppm_stencil_02():
-    mesh = SimpleMesh()
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_cellhgt_mc_now = random_field(mesh, CellDim, KDim)
-    p_face_in = random_field(mesh, CellDim, KDim)
-    p_face = random_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim)
+    p_cellhgt_mc_now = random_field(grid, CellDim, KDim)
+    p_face_in = random_field(grid, CellDim, KDim)
+    p_face = random_field(grid, CellDim, KDim)
 
-    k = it_embedded.np_as_located_field(KDim)(np.arange(0, _shape(mesh, KDim)[0], dtype=int32))
+    k = it_embedded.np_as_located_field(KDim)(
+        np.arange(0, _shape(grid, KDim)[0], dtype=int32)
+    )
 
     slev = int32(1)
     slevp1 = slev + int32(1)

@@ -23,10 +23,13 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 
 
 def mo_velocity_advection_stencil_01_numpy(
-    mesh, vn: np.array, rbf_vec_coeff_e: np.array
+    grid, vn: np.array, rbf_vec_coeff_e: np.array
 ) -> np.array:
     rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-    vt = np.sum(vn[mesh.e2c2e] * rbf_vec_coeff_e, axis=1)
+    e2c2e = grid.connectivities[E2C2EDim]
+    vt = np.sum(
+        np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1
+    )
     return vt
 
 
@@ -35,22 +38,22 @@ class TestMoVelocityAdvectionStencil01(StencilTest):
     OUTPUTS = ("vt",)
 
     @staticmethod
-    def reference(mesh, vn: np.array, rbf_vec_coeff_e: np.array, **kwargs) -> np.array:
-        vt = mo_velocity_advection_stencil_01_numpy(mesh, vn, rbf_vec_coeff_e)
+    def reference(grid, vn: np.array, rbf_vec_coeff_e: np.array, **kwargs) -> np.array:
+        vt = mo_velocity_advection_stencil_01_numpy(grid, vn, rbf_vec_coeff_e)
         return dict(vt=vt)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn = random_field(mesh, EdgeDim, KDim)
-        rbf_vec_coeff_e = random_field(mesh, EdgeDim, E2C2EDim)
-        vt = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        vn = random_field(grid, EdgeDim, KDim)
+        rbf_vec_coeff_e = random_field(grid, EdgeDim, E2C2EDim)
+        vt = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             vn=vn,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             vt=vt,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

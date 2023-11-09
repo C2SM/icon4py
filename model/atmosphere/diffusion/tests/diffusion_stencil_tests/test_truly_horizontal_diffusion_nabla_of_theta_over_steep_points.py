@@ -29,7 +29,7 @@ from icon4py.model.common.test_utils.helpers import (
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-    mesh,
+    grid,
     mask: np.array,
     zd_vertoffset: np.array,
     zd_diffcoef: np.array,
@@ -40,10 +40,11 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     z_temp: np.array,
     **kwargs,
 ) -> np.array:
-    shape = mesh.c2e2c.shape + vcoef.shape[1:]
+    c2e2c = grid.connectivities[C2E2CDim]
+    shape = c2e2c.shape + vcoef.shape[1:]
     vcoef = vcoef.reshape(shape)
     zd_vertoffset = zd_vertoffset.reshape(shape)
-    geofac_n2s_nbh = geofac_n2s_nbh.reshape(mesh.c2e2c.shape)
+    geofac_n2s_nbh = geofac_n2s_nbh.reshape(c2e2c.shape)
     full_shape = vcoef.shape
 
     geofac_n2s_nbh = np.expand_dims(geofac_n2s_nbh, axis=2)
@@ -54,14 +55,15 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
         for isparse in range(full_shape[1]):
             for ik in range(full_shape[2]):
                 theta_v_at_zd_vertidx[ic, isparse, ik] = theta_v[
-                    mesh.c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
+                    c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik]
                 ]
                 theta_v_at_zd_vertidx_p1[ic, isparse, ik] = theta_v[
-                    mesh.c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik] + 1
+                    c2e2c[ic, isparse], ik + zd_vertoffset[ic, isparse, ik] + 1
                 ]
 
     sum_over = np.sum(
-        geofac_n2s_nbh * (vcoef * theta_v_at_zd_vertidx + (1.0 - vcoef) * theta_v_at_zd_vertidx_p1),
+        geofac_n2s_nbh
+        * (vcoef * theta_v_at_zd_vertidx + (1.0 - vcoef) * theta_v_at_zd_vertidx_p1),
         axis=1,
     )
 
@@ -76,7 +78,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         mask: np.array,
         zd_vertoffset: np.array,
         zd_diffcoef: np.array,
@@ -89,7 +91,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     ) -> np.array:
 
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-            mesh,
+            grid,
             mask,
             zd_vertoffset,
             zd_diffcoef,
@@ -102,26 +104,26 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         return dict(z_temp=z_temp)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
 
-        mask = random_mask(mesh, CellDim, KDim)
+        mask = random_mask(grid, CellDim, KDim)
 
-        zd_vertoffset = zero_field(mesh, CellDim, C2E2CDim, KDim, dtype=int32)
+        zd_vertoffset = zero_field(grid, CellDim, C2E2CDim, KDim, dtype=int32)
         rng = np.random.default_rng()
-        for k in range(mesh.k_level):
+        for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
             zd_vertoffset[:, :, k] = rng.integers(
                 low=0 - k,
-                high=mesh.k_level - k - 1,
+                high=grid.num_levels - k - 1,
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
 
-        zd_diffcoef = random_field(mesh, CellDim, KDim)
-        geofac_n2s_c = random_field(mesh, CellDim)
-        geofac_n2s_nbh = random_field(mesh, CellDim, C2E2CDim)
-        vcoef = random_field(mesh, CellDim, C2E2CDim, KDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        z_temp = random_field(mesh, CellDim, KDim)
+        zd_diffcoef = random_field(grid, CellDim, KDim)
+        geofac_n2s_c = random_field(grid, CellDim)
+        geofac_n2s_nbh = random_field(grid, CellDim, C2E2CDim)
+        vcoef = random_field(grid, CellDim, C2E2CDim, KDim)
+        theta_v = random_field(grid, CellDim, KDim)
+        z_temp = random_field(grid, CellDim, KDim)
 
         vcoef_new = flatten_first_two_dims(CECDim, KDim, field=vcoef)
         zd_vertoffset_new = flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset)
@@ -137,7 +139,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
             z_temp=z_temp,
             vcoef=vcoef_new,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

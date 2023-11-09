@@ -21,16 +21,19 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def apply_nabla2_to_w_numpy(
-    mesh,
+    grid,
     area: np.array,
     z_nabla2_c: np.array,
     geofac_n2s: np.array,
     w: np.array,
     diff_multfac_w: float,
 ) -> np.array:
+    c2e2cO = grid.connectivities[C2E2CODim]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     area = np.expand_dims(area, axis=-1)
-    w = w - diff_multfac_w * area * area * np.sum(z_nabla2_c[mesh.c2e2cO] * geofac_n2s, axis=1)
+    w = w - diff_multfac_w * area * area * np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], z_nabla2_c[c2e2cO] * geofac_n2s, 0.0), axis=1
+    )
     return w
 
 
@@ -40,7 +43,7 @@ class TestMoApplyNabla2ToW(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         area: np.array,
         z_nabla2_c: np.array,
         geofac_n2s: np.array,
@@ -48,15 +51,15 @@ class TestMoApplyNabla2ToW(StencilTest):
         diff_multfac_w: float,
         **kwargs,
     ) -> dict:
-        w = apply_nabla2_to_w_numpy(mesh, area, z_nabla2_c, geofac_n2s, w, diff_multfac_w)
+        w = apply_nabla2_to_w_numpy(grid, area, z_nabla2_c, geofac_n2s, w, diff_multfac_w)
         return dict(w=w)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        area = random_field(mesh, CellDim)
-        z_nabla2_c = random_field(mesh, CellDim, KDim)
-        geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
-        w = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        area = random_field(grid, CellDim)
+        z_nabla2_c = random_field(grid, CellDim, KDim)
+        geofac_n2s = random_field(grid, CellDim, C2E2CODim)
+        w = random_field(grid, CellDim, KDim)
         return dict(
             area=area,
             z_nabla2_c=z_nabla2_c,
@@ -64,7 +67,7 @@ class TestMoApplyNabla2ToW(StencilTest):
             w=w,
             diff_multfac_w=5.0,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

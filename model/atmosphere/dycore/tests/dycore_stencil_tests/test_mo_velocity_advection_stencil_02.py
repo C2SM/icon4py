@@ -36,7 +36,7 @@ def mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn: np.array, vt: np.arra
 
 
 def mo_velocity_advection_stencil_02_numpy(
-    mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
+    grid, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
 ) -> tuple:
     vn_ie = mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
     z_kin_hor_e = mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
@@ -51,30 +51,34 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
     OUTPUTS = ("vn_ie", "z_kin_hor_e")
 
     @classmethod
-    def reference(cls, mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> dict:
-        vn_ie, z_kin_hor_e = mo_velocity_advection_stencil_02_numpy(mesh, wgtfac_e, vn, vt)
+    def reference(cls, grid, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> dict:
+        vn_ie, z_kin_hor_e = mo_velocity_advection_stencil_02_numpy(grid, wgtfac_e, vn, vt)
         return dict(
-            vn_ie=vn_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
-            z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            vn_ie=vn_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)],
+            z_kin_hor_e=z_kin_hor_e[
+                int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)
+            ],
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        wgtfac_e = random_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        vt = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        wgtfac_e = random_field(grid, EdgeDim, KDim)
+        vn = random_field(grid, EdgeDim, KDim)
+        vt = random_field(grid, EdgeDim, KDim)
 
-        vn_ie = zero_field(mesh, EdgeDim, KDim)
-        z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
+        vn_ie = zero_field(grid, EdgeDim, KDim)
+        z_kin_hor_e = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             wgtfac_e=wgtfac_e,
             vn=vn,
             vt=vt,
-            vn_ie=vn_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
-            z_kin_hor_e=z_kin_hor_e[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            vn_ie=vn_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)],
+            z_kin_hor_e=z_kin_hor_e[
+                int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)
+            ],
             horizontal_start=int32(1),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(1),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

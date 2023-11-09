@@ -30,6 +30,8 @@ try:
     import mpi4py
 
     mpi4py.rc.initialize = False
+    mpi4py.rc.finalize = True
+
 except ImportError:
     mpi4py = None
     ghex = None
@@ -201,6 +203,10 @@ class GHexMultiNodeExchange:
         handle = self._comm.exchange(applied_patterns)
         log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
+
+    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+        res = self.exchange(dim, *fields)
+        res.wait()
 
 
 @dataclass

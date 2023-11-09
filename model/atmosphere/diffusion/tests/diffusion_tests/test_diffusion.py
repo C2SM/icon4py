@@ -141,7 +141,7 @@ def test_diffusion_init(
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_ec))
     assert np.allclose(0.0, np.asarray(diffusion.kh_smag_e))
 
-    shape_k = (icon_grid.n_lev(),)
+    shape_k = (icon_grid.num_levels,)
     expected_smag_limit = smag_limit_numpy(
         diff_multfac_vn_numpy,
         shape_k,

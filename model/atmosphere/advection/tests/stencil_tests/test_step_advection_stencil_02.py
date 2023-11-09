@@ -15,8 +15,8 @@ import numpy as np
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_02 import step_advection_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def step_advection_stencil_02_numpy(
@@ -31,12 +31,12 @@ def step_advection_stencil_02_numpy(
 
 
 def test_step_advection_stencil_02():
-    mesh = SimpleMesh()
-    rhodz_ast = random_field(mesh, CellDim, KDim)
-    p_mflx_contra = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    deepatmo_divzl = random_field(mesh, KDim)
-    deepatmo_divzu = random_field(mesh, KDim)
-    result = zero_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    rhodz_ast = random_field(grid, CellDim, KDim)
+    p_mflx_contra = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    deepatmo_divzl = random_field(grid, KDim)
+    deepatmo_divzu = random_field(grid, KDim)
+    result = zero_field(grid, CellDim, KDim)
     p_dtime = 0.1
 
     ref = step_advection_stencil_02_numpy(

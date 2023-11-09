@@ -36,17 +36,17 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
     OUTPUTS = ("div_ic", "hdef_ic")
 
     @staticmethod
-    def reference(mesh, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic) -> dict:
+    def reference(grid, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic) -> dict:
         div_ic, hdef_ic = calculate_diagnostics_for_turbulence_numpy(
             wgtfac_c, div, kh_c, div_ic, hdef_ic
         )
         return dict(div_ic=div_ic, hdef_ic=hdef_ic)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        wgtfac_c = random_field(mesh, CellDim, KDim)
-        div = random_field(mesh, CellDim, KDim)
-        kh_c = random_field(mesh, CellDim, KDim)
-        div_ic = zero_field(mesh, CellDim, KDim)
-        hdef_ic = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        wgtfac_c = random_field(grid, CellDim, KDim)
+        div = random_field(grid, CellDim, KDim)
+        kh_c = random_field(grid, CellDim, KDim)
+        div_ic = zero_field(grid, CellDim, KDim)
+        hdef_ic = zero_field(grid, CellDim, KDim)
         return dict(wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic)

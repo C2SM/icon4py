@@ -26,18 +26,7 @@ try:
 except ModuleNotFoundError:
     pytest_benchmark = None
 
-from .simple_mesh import SimpleMesh
-
-
-MESHES = {"simple_mesh": SimpleMesh()}
-
-
-@pytest.fixture(
-    ids=MESHES.keys(),
-    params=MESHES.values(),
-)
-def mesh(request):
-    return request.param
+from ..grid.simple import SimpleGrid
 
 
 @pytest.fixture
@@ -46,7 +35,7 @@ def backend(request):
 
 
 def _shape(
-    mesh,
+    grid,
     *dims: gt_common.Dimension,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ):
@@ -55,16 +44,16 @@ def _shape(
     for d in dims:
         if d not in extend.keys():
             extend[d] = 0
-    return tuple(mesh.size[dim] + extend[dim] for dim in dims)
+    return tuple(grid.size[dim] + extend[dim] for dim in dims)
 
 
 def random_mask(
-    mesh: SimpleMesh,
+    grid: SimpleGrid,
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> it_embedded.MutableLocatedField:
-    shape = _shape(mesh, *dims, extend=extend)
+    shape = _shape(grid, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
     np.random.shuffle(arr)
@@ -75,33 +64,33 @@ def random_mask(
 
 
 def random_field(
-    mesh,
+    grid,
     *dims,
     low: float = -1.0,
     high: float = 1.0,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.random.default_rng().uniform(low=low, high=high, size=_shape(mesh, *dims, extend=extend))
+        np.random.default_rng().uniform(low=low, high=high, size=_shape(grid, *dims, extend=extend))
     )
 
 
 def zero_field(
-    mesh: SimpleMesh,
+    grid: SimpleGrid,
     *dims: gt_common.Dimension,
     dtype=float,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        np.zeros(shape=_shape(mesh, *dims, extend=extend), dtype=dtype)
+        np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype)
     )
 
 
 def constant_field(
-    mesh: SimpleMesh, value: float, *dims: gt_common.Dimension, dtype=float
+    grid: SimpleGrid, value: float, *dims: gt_common.Dimension, dtype=float
 ) -> it_embedded.MutableLocatedField:
     return it_embedded.np_as_located_field(*dims)(
-        value * np.ones(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)
+        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
     )
 
 
@@ -139,11 +128,11 @@ def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
-def _test_validation(self, mesh, backend, input_data):
-    reference_outputs = self.reference(mesh, **{k: np.array(v) for k, v in input_data.items()})
+def _test_validation(self, grid, backend, input_data):
+    reference_outputs = self.reference(grid, **{k: np.array(v) for k, v in input_data.items()})
     self.PROGRAM.with_backend(backend)(
         **input_data,
-        offset_provider=mesh.get_offset_provider(),
+        offset_provider=grid.get_all_offset_providers(),
     )
     for name in self.OUTPUTS:
         assert np.allclose(
@@ -153,7 +142,7 @@ def _test_validation(self, mesh, backend, input_data):
 
 if pytest_benchmark:
 
-    def _test_execution_benchmark(self, pytestconfig, mesh, backend, input_data, benchmark):
+    def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.
@@ -162,7 +151,7 @@ if pytest_benchmark:
             benchmark(
                 self.PROGRAM.with_backend(backend),
                 **input_data,
-                offset_provider=mesh.get_offset_provider(),
+                offset_provider=grid.get_all_offset_providers(),
             )
 
 else:

@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, r
 
 
 def mo_velocity_advection_stencil_18_numpy(
-    mesh,
+    grid,
     levmask: np.array,
     cfl_clipping: np.array,
     owner_mask: np.array,
@@ -54,8 +54,18 @@ def mo_velocity_advection_stencil_18_numpy(
 
     ddt_w_adv = np.where(
         (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
-        ddt_w_adv + difcoef * area * np.sum(w[mesh.c2e2cO] * geofac_n2s, axis=1),
-        ddt_w_adv,
+        ddt_w_adv
+        + difcoef
+        * area
+        * np.sum(
+            np.where(
+                (grid.connectivities[C2E2CODim] != -1)[:, :, np.newaxis],
+                w[grid.connectivities[C2E2CODim]] * geofac_n2s,
+                0,
+            ),
+            axis=1,
+        ),
+    ddt_w_adv,
     )
     return ddt_w_adv
 
@@ -66,7 +76,7 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         levmask: np.array,
         cfl_clipping: np.array,
         owner_mask: np.array,
@@ -82,7 +92,7 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         **kwargs,
     ):
         ddt_w_adv = mo_velocity_advection_stencil_18_numpy(
-            mesh,
+            grid,
             levmask,
             cfl_clipping,
             owner_mask,
@@ -99,16 +109,16 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        levmask = random_mask(mesh, KDim)
-        cfl_clipping = random_mask(mesh, CellDim, KDim)
-        owner_mask = random_mask(mesh, CellDim)
-        z_w_con_c = random_field(mesh, CellDim, KDim)
-        ddqz_z_half = random_field(mesh, CellDim, KDim)
-        area = random_field(mesh, CellDim)
-        geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
-        w = random_field(mesh, CellDim, KDim)
-        ddt_w_adv = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        levmask = random_mask(grid, KDim)
+        cfl_clipping = random_mask(grid, CellDim, KDim)
+        owner_mask = random_mask(grid, CellDim)
+        z_w_con_c = random_field(grid, CellDim, KDim)
+        ddqz_z_half = random_field(grid, CellDim, KDim)
+        area = random_field(grid, CellDim)
+        geofac_n2s = random_field(grid, CellDim, C2E2CODim)
+        w = random_field(grid, CellDim, KDim)
+        ddt_w_adv = random_field(grid, CellDim, KDim)
         scalfac_exdiff = 10.0
         cfl_w_limit = 3.0
         dtime = 2.0
@@ -127,7 +137,7 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

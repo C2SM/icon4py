@@ -28,11 +28,12 @@ from icon4py.model.common.test_utils.helpers import (
 
 
 def mo_velocity_advection_stencil_08_numpy(
-    mesh, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs
+    grid, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     z_ekinh = np.sum(
-        z_kin_hor_e[mesh.c2e] * e_bln_c_s[mesh.get_c2ce_offset_provider().table],
+        z_kin_hor_e[grid.connectivities[C2EDim]]
+        * e_bln_c_s[grid.get_offset_provider("C2CE").table],
         axis=1,
     )
     return z_ekinh
@@ -43,22 +44,22 @@ class TestMoVelocityAdvectionStencil08(StencilTest):
     OUTPUTS = ("z_ekinh",)
 
     @staticmethod
-    def reference(mesh, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> dict:
-        z_ekinh = mo_velocity_advection_stencil_08_numpy(mesh, z_kin_hor_e, e_bln_c_s)
+    def reference(grid, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> dict:
+        z_ekinh = mo_velocity_advection_stencil_08_numpy(grid, z_kin_hor_e, e_bln_c_s)
         return dict(z_ekinh=z_ekinh)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_kin_hor_e = random_field(mesh, EdgeDim, KDim)
-        e_bln_c_s = random_field(mesh, CellDim, C2EDim)
-        z_ekinh = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_kin_hor_e = random_field(grid, EdgeDim, KDim)
+        e_bln_c_s = random_field(grid, CellDim, C2EDim)
+        z_ekinh = zero_field(grid, CellDim, KDim)
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
             z_ekinh=z_ekinh,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

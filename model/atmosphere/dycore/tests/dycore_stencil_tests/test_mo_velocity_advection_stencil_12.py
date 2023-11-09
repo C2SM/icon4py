@@ -31,13 +31,13 @@ class TestMoVelocityAdvectionStencil12(StencilTest):
     OUTPUTS = ("z_w_con_c",)
 
     @staticmethod
-    def reference(mesh, z_w_con_c: np.array, **kwargs) -> dict:
+    def reference(grid, z_w_con_c: np.array, **kwargs) -> dict:
         z_w_con_c = mo_velocity_advection_stencil_12_numpy(z_w_con_c)
         return dict(z_w_con_c=z_w_con_c)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_w_con_c = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_w_con_c = random_field(grid, CellDim, KDim)
 
         return dict(
             z_w_con_c=z_w_con_c,

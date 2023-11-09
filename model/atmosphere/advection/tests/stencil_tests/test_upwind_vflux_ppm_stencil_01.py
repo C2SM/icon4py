@@ -17,8 +17,8 @@ from icon4py.model.atmosphere.advection.upwind_vflux_ppm_stencil_01 import (
     upwind_vflux_ppm_stencil_01,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def upwind_vflux_ppm_stencil_01_numpy(
@@ -30,12 +30,12 @@ def upwind_vflux_ppm_stencil_01_numpy(
 
 
 def test_upwind_vflux_ppm_stencil_01():
-    mesh = SimpleMesh()
-    z_face_up = random_field(mesh, CellDim, KDim)
-    z_face_down = random_field(mesh, CellDim, KDim)
-    p_cc = random_field(mesh, CellDim, KDim)
-    z_delta_q = zero_field(mesh, CellDim, KDim)
-    z_a1 = zero_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    z_face_up = random_field(grid, CellDim, KDim)
+    z_face_down = random_field(grid, CellDim, KDim)
+    p_cc = random_field(grid, CellDim, KDim)
+    z_delta_q = zero_field(grid, CellDim, KDim)
+    z_a1 = zero_field(grid, CellDim, KDim)
 
     ref_z_delta_q, ref_z_a1 = upwind_vflux_ppm_stencil_01_numpy(
         np.asarray(z_face_up), np.asarray(z_face_down), np.asarray(p_cc)

@@ -74,6 +74,7 @@ def test_horizontal_end_index(icon_grid, dim, marker, index):
         (CellDim, HorizontalMarkerIndex.local(CellDim), -1),
         (CellDim, HorizontalMarkerIndex.halo(CellDim), 20896),
         (CellDim, HorizontalMarkerIndex.nudging(CellDim), 3316),
+        (CellDim, HorizontalMarkerIndex.nudging(CellDim) - 1, 2511),
         (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3, 2511),
         (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2, 1688),
         (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1, 850),
