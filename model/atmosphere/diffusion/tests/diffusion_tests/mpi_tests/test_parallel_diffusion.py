@@ -29,7 +29,6 @@ from ..utils import verify_diffusion_fields
 @pytest.mark.mpi
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_parallel_diffusion(
     r04b09_diffusion_config,
     step_date_init,
