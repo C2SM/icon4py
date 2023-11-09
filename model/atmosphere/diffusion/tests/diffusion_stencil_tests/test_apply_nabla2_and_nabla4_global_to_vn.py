@@ -34,7 +34,6 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
     PROGRAM = apply_nabla2_and_nabla4_global_to_vn
     OUTPUTS = ("vn",)
 
-
     @pytest.fixture
     def input_data(self, grid):
         area_edge = random_field(grid, EdgeDim)

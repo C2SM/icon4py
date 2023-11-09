@@ -58,7 +58,7 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
         grid, ddqz_z_half: np.array, z_w_con_c: np.array, cfl_w_limit, dtime, **kwargs
     ) -> dict:
         cfl_clipping, vcfl, z_w_con_c = mo_velocity_advection_stencil_14_numpy(
-            mesh, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
+            grid, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
         )
 
         return dict(

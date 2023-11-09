@@ -26,8 +26,7 @@ def mo_velocity_advection_stencil_17_numpy(
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     ddt_w_adv = ddt_w_adv + np.sum(
-        z_v_grad_w[grid.connectivities[C2EDim]]
-        * e_bln_c_s[grid.get_offset_provider("C2CE").table],
+        z_v_grad_w[grid.connectivities[C2EDim]] * e_bln_c_s[grid.get_offset_provider("C2CE").table],
         axis=1,
     )
     return ddt_w_adv

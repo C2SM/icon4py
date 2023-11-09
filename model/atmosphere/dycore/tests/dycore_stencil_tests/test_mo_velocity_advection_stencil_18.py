@@ -65,7 +65,7 @@ def mo_velocity_advection_stencil_18_numpy(
             ),
             axis=1,
         ),
-    ddt_w_adv,
+        ddt_w_adv,
     )
     return ddt_w_adv
 
