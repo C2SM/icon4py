@@ -147,7 +147,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
     _calculate_divdamp_fields,
-    _en_smag_fac_for_zero_nshift,
     compute_z_raylfac,
     set_zero_c_k,
     set_zero_e_k,
@@ -159,6 +158,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
@@ -344,7 +344,7 @@ class SolveNonhydro:
         else:
             self.jk_start = 0
 
-        _en_smag_fac_for_zero_nshift.with_backend(run_gtfn)(
+        en_smag_fac_for_zero_nshift.with_backend(run_gtfn)(
             self.vertical_params.vct_a,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,

@@ -27,13 +27,13 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _calculate_bdy_divdamp,
     _calculate_scal_divdamp,
-    _en_smag_fac_for_zero_nshift,
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
 
@@ -48,7 +48,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     enh_divdamp_fac = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
     scal_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
     bdy_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
-    _en_smag_fac_for_zero_nshift(
+    en_smag_fac_for_zero_nshift(
         grid_savepoint.vct_a(),
         config.divdamp_fac,
         config.divdamp_fac2,

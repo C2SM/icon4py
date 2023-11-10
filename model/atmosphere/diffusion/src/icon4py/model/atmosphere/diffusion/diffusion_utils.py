@@ -15,10 +15,11 @@ from typing import Tuple
 import numpy as np
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, minimum
+from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
@@ -99,35 +100,6 @@ def setup_fields_for_initial_step(
 
 
 @field_operator
-def _en_smag_fac_for_zero_nshift(
-    vect_a: Field[[KDim], float],
-    hdiff_smag_fac: float,
-    hdiff_smag_fac2: float,
-    hdiff_smag_fac3: float,
-    hdiff_smag_fac4: float,
-    hdiff_smag_z: float,
-    hdiff_smag_z2: float,
-    hdiff_smag_z3: float,
-    hdiff_smag_z4: float,
-) -> Field[[KDim], float]:
-    dz21 = hdiff_smag_z2 - hdiff_smag_z
-    alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
-    df32 = hdiff_smag_fac3 - hdiff_smag_fac2
-    df42 = hdiff_smag_fac4 - hdiff_smag_fac2
-    dz32 = hdiff_smag_z3 - hdiff_smag_z2
-    dz42 = hdiff_smag_z4 - hdiff_smag_z2
-
-    bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
-    aqdr = df32 / dz32 - bqdr * dz32
-    zf = 0.5 * (vect_a + vect_a(Koff[1]))
-
-    dzlin = minimum(dz21, maximum(0.0, zf - hdiff_smag_z))
-    dzqdr = minimum(dz42, maximum(0.0, zf - hdiff_smag_z2))
-    enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (aqdr + dzqdr * bqdr)
-    return enh_smag_fac
-
-
-@field_operator
 def _init_diffusion_local_fields_for_regular_timestemp(
     k4: float,
     dyn_substeps: float,
@@ -143,7 +115,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
 ) -> tuple[Field[[KDim], float], Field[[KDim], float], Field[[KDim], float]]:
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
-    enh_smag_fac = _en_smag_fac_for_zero_nshift(
+    enh_smag_fac = en_smag_fac_for_zero_nshift(
         vect_a,
         hdiff_smag_fac,
         hdiff_smag_fac2,

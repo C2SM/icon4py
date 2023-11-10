@@ -19,11 +19,10 @@ from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
     broadcast,
     int32,
     maximum,
-    minimum,
 )
 from gt4py.next.iterator.embedded import np_as_located_field
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 
 
 def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
@@ -147,36 +146,6 @@ def _calculate_divdamp_fields(
     )
     bdy_divdamp = _calculate_bdy_divdamp(scal_divdamp, nudge_max_coeff, dbl_eps)
     return (scal_divdamp, bdy_divdamp)
-
-
-# TODO (magdalena) copied from diffusion/diffusion_utils/_en_smag_fac_for_zero_nshift makes sense?
-@field_operator
-def _en_smag_fac_for_zero_nshift(
-    vect_a: Field[[KDim], float],
-    hdiff_smag_fac: float,
-    hdiff_smag_fac2: float,
-    hdiff_smag_fac3: float,
-    hdiff_smag_fac4: float,
-    hdiff_smag_z: float,
-    hdiff_smag_z2: float,
-    hdiff_smag_z3: float,
-    hdiff_smag_z4: float,
-) -> Field[[KDim], float]:
-    dz21 = hdiff_smag_z2 - hdiff_smag_z
-    alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
-    df32 = hdiff_smag_fac3 - hdiff_smag_fac2
-    df42 = hdiff_smag_fac4 - hdiff_smag_fac2
-    dz32 = hdiff_smag_z3 - hdiff_smag_z2
-    dz42 = hdiff_smag_z4 - hdiff_smag_z2
-
-    bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
-    aqdr = df32 / dz32 - bqdr * dz32
-    zf = 0.5 * (vect_a + vect_a(Koff[1]))
-
-    dzlin = minimum(dz21, maximum(0.0, zf - hdiff_smag_z))
-    dzqdr = minimum(dz42, maximum(0.0, zf - hdiff_smag_z2))
-    enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (aqdr + dzqdr * bqdr)
-    return enh_smag_fac
 
 
 @field_operator
