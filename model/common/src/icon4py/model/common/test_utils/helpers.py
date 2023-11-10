@@ -22,6 +22,7 @@ from gt4py.next.iterator import embedded as it_embedded
 
 from ..grid.base import BaseGrid
 
+
 try:
     import pytest_benchmark
 except ModuleNotFoundError:

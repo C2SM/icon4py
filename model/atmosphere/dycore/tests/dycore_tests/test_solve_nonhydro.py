@@ -25,9 +25,9 @@ from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
+    _calculate_bdy_divdamp,
     _en_smag_fac_for_zero_nshift,
     _scal_divdamp_NEW,
-    _calculate_bdy_divdamp,
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common import constants
@@ -578,13 +578,8 @@ def test_nonhydro_corrector_step(
 
     nh_constants = create_nh_constants(sp)
     print(f"sp.scal_divdamp = {sp.scal_divdamp()}")
-    print(f"sp.scal_divdamp_field = {sp.scal_divdamp_field()}")
-    # print(f"sp.divdamp_fac_o2 = {sp.divdamp_fac_o2()}")
 
-    # print(f"scal_divdamp_o2 = {sp.scal_divdamp_o2()}")
-    # print(f" mean cell area from sp= {grid_savepoint.mean_cell_area()}")
-
-    divdamp_fac_o2 = 0.032  # sp.divdamp_fac_o2()  # is this 0.032
+    divdamp_fac_o2 = sp.divdamp_fac_o2()
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
