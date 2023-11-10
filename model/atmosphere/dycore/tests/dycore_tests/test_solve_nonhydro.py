@@ -73,7 +73,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         scal_divdamp, config.nudge_max_coeff, constants.dbl_eps, out=bdy_divdamp, offset_provider={}
     )
 
-    assert np.allclose(scal_divdamp, savepoint_nonhydro_init.scal_divdamp_field())
+    assert np.allclose(scal_divdamp, savepoint_nonhydro_init.scal_divdamp())
     assert np.allclose(bdy_divdamp, savepoint_nonhydro_init.bdy_divdamp())
 
 
