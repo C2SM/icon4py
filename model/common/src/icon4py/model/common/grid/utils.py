@@ -30,7 +30,7 @@ class ClassLevelCache:
     @staticmethod
     def cache_method(method):
         def wrapper(self, *args, **kwargs):
-            key = f"{method.__name__}_{args}_{kwargs}"
+            key = f"{self.__class__.__name__}_{method.__name__}_{args}_{kwargs}"
             if key not in ClassLevelCache._cache:
                 ClassLevelCache._cache[key] = method(self, *args, **kwargs)
             return ClassLevelCache._cache[key]
