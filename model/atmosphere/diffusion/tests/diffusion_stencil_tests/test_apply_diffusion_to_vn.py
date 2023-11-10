@@ -38,7 +38,7 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         u_vert,
         v_vert,
         primal_normal_vert_v1,
@@ -60,7 +60,7 @@ class TestApplyDiffusionToVn(StencilTest):
     ):
 
         z_nabla4_e2 = calculate_nabla4_numpy(
-            mesh,
+            grid,
             u_vert,
             v_vert,
             primal_normal_vert_v1,
@@ -76,7 +76,7 @@ class TestApplyDiffusionToVn(StencilTest):
             vn = np.where(
                 condition,
                 apply_nabla2_and_nabla4_to_vn_numpy(
-                    mesh,
+                    grid,
                     area_edge,
                     kh_smag_e,
                     z_nabla2_e,
@@ -87,14 +87,14 @@ class TestApplyDiffusionToVn(StencilTest):
                     nudgezone_diff,
                 ),
                 apply_nabla2_to_vn_in_lateral_boundary_numpy(
-                    mesh, z_nabla2_e, area_edge, vn, fac_bdydiff_v
+                    grid, z_nabla2_e, area_edge, vn, fac_bdydiff_v
                 ),
             )
         else:
             vn = np.where(
                 condition,
                 apply_nabla2_and_nabla4_global_to_vn_numpy(
-                    mesh, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
+                    grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
                 ),
                 vn,
             )
@@ -102,29 +102,29 @@ class TestApplyDiffusionToVn(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        edge = zero_field(mesh, EdgeDim, dtype=int32)
-        for e in range(mesh.n_edges):
+    def input_data(self, grid):
+        edge = zero_field(grid, EdgeDim, dtype=int32)
+        for e in range(grid.num_edges):
             edge[e] = e
 
-        u_vert = random_field(mesh, VertexDim, KDim)
-        v_vert = random_field(mesh, VertexDim, KDim)
+        u_vert = random_field(grid, VertexDim, KDim)
+        v_vert = random_field(grid, VertexDim, KDim)
 
-        primal_normal_vert_v1 = random_field(mesh, EdgeDim, E2C2VDim)
-        primal_normal_vert_v2 = random_field(mesh, EdgeDim, E2C2VDim)
+        primal_normal_vert_v1 = random_field(grid, EdgeDim, E2C2VDim)
+        primal_normal_vert_v2 = random_field(grid, EdgeDim, E2C2VDim)
 
         primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, ECVDim)
         primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, ECVDim)
 
-        inv_vert_vert_length = random_field(mesh, EdgeDim)
-        inv_primal_edge_length = random_field(mesh, EdgeDim)
+        inv_vert_vert_length = random_field(grid, EdgeDim)
+        inv_primal_edge_length = random_field(grid, EdgeDim)
 
-        area_edge = random_field(mesh, EdgeDim)
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        diff_multfac_vn = random_field(mesh, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        nudgecoeff_e = random_field(mesh, EdgeDim)
+        area_edge = random_field(grid, EdgeDim)
+        kh_smag_e = random_field(grid, EdgeDim, KDim)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim)
+        diff_multfac_vn = random_field(grid, KDim)
+        vn = random_field(grid, EdgeDim, KDim)
+        nudgecoeff_e = random_field(grid, EdgeDim)
 
         limited_area = True
         fac_bdydiff_v = 5.0
@@ -151,7 +151,7 @@ class TestApplyDiffusionToVn(StencilTest):
             start_2nd_nudge_line_idx_e=start_2nd_nudge_line_idx_e,
             limited_area=limited_area,
             horizontal_start=0,
-            horizontal_end=mesh.n_edges,
+            horizontal_end=grid.num_edges,
             vertical_start=0,
-            vertical_end=mesh.k_level,
+            vertical_end=grid.num_levels,
         )

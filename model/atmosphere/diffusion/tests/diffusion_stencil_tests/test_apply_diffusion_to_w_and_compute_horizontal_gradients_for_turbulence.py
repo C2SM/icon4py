@@ -37,7 +37,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         area,
         geofac_n2s,
         geofac_grg_x,
@@ -60,16 +60,16 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         dwdx, dwdy = np.where(
             0 < reshaped_k,
             calculate_horizontal_gradients_for_turbulence_numpy(
-                mesh, w_old, geofac_grg_x, geofac_grg_y
+                grid, w_old, geofac_grg_x, geofac_grg_y
             ),
             (dwdx, dwdy),
         )
 
-        z_nabla2_c = calculate_nabla2_for_w_numpy(mesh, w_old, geofac_n2s)
+        z_nabla2_c = calculate_nabla2_for_w_numpy(grid, w_old, geofac_n2s)
 
         w = np.where(
             (interior_idx <= reshaped_cell) & (reshaped_cell < halo_idx),
-            apply_nabla2_to_w_numpy(mesh, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
+            apply_nabla2_to_w_numpy(grid, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
             w_old,
         )
 
@@ -84,30 +84,30 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         return dict(w=w, dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        k = zero_field(mesh, KDim, dtype=int32)
-        for lev in range(mesh.k_level):
+    def input_data(self, grid):
+        k = zero_field(grid, KDim, dtype=int32)
+        for lev in range(grid.num_levels):
             k[lev] = lev
 
-        cell = zero_field(mesh, CellDim, dtype=int32)
-        for c in range(mesh.n_cells):
+        cell = zero_field(grid, CellDim, dtype=int32)
+        for c in range(grid.num_cells):
             cell[c] = c
 
         nrdmax = 13
         interior_idx = 1
         halo_idx = 5
 
-        geofac_grg_x = random_field(mesh, CellDim, C2E2CODim)
-        geofac_grg_y = random_field(mesh, CellDim, C2E2CODim)
-        diff_multfac_n2w = random_field(mesh, KDim)
-        area = random_field(mesh, CellDim)
-        geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
-        w_old = random_field(mesh, CellDim, KDim)
+        geofac_grg_x = random_field(grid, CellDim, C2E2CODim)
+        geofac_grg_y = random_field(grid, CellDim, C2E2CODim)
+        diff_multfac_n2w = random_field(grid, KDim)
+        area = random_field(grid, CellDim)
+        geofac_n2s = random_field(grid, CellDim, C2E2CODim)
+        w_old = random_field(grid, CellDim, KDim)
         diff_multfac_w = 5.0
 
-        w = zero_field(mesh, CellDim, KDim)
-        dwdx = zero_field(mesh, CellDim, KDim)
-        dwdy = zero_field(mesh, CellDim, KDim)
+        w = zero_field(grid, CellDim, KDim)
+        dwdx = zero_field(grid, CellDim, KDim)
+        dwdy = zero_field(grid, CellDim, KDim)
 
         return dict(
             area=area,
@@ -126,7 +126,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             dwdx=dwdx,
             dwdy=dwdy,
             horizontal_start=0,
-            horizontal_end=mesh.n_cells,
+            horizontal_end=grid.num_cells,
             vertical_start=0,
-            vertical_end=mesh.k_level,
+            vertical_end=grid.num_levels,
         )

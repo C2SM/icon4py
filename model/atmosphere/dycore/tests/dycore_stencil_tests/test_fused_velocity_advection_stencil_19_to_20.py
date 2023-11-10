@@ -47,7 +47,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         vn,
         geofac_rot,
         z_kin_hor_e,
@@ -73,12 +73,12 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         nrdmax,
         **kwargs,
     ):
-        zeta = mo_math_divrot_rot_vertex_ri_dsl_numpy(mesh, vn, geofac_rot)
+        zeta = mo_math_divrot_rot_vertex_ri_dsl_numpy(grid, vn, geofac_rot)
 
-        coeff_gradekin = np.reshape(coeff_gradekin, (mesh.n_edges, 2))
+        coeff_gradekin = np.reshape(coeff_gradekin, (grid.num_edges, 2))
 
         ddt_vn_apc = mo_velocity_advection_stencil_19_numpy(
-            mesh,
+            grid,
             z_kin_hor_e,
             coeff_gradekin,
             z_ekinh,
@@ -94,7 +94,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         condition = (np.maximum(2, nrdmax - 2) <= k) & (k < nlev - 3)
 
         ddt_vn_apc_extra_diffu = mo_velocity_advection_stencil_20_numpy(
-            mesh,
+            grid,
             levelmask,
             c_lin_e,
             z_w_con_c_full,
@@ -116,34 +116,35 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_kin_hor_e = random_field(mesh, EdgeDim, KDim)
-        coeff_gradekin = random_field(mesh, EdgeDim, E2CDim)
+    def input_data(self, grid):
+        z_kin_hor_e = random_field(grid, EdgeDim, KDim)
+        coeff_gradekin = random_field(grid, EdgeDim, E2CDim)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)
-        z_ekinh = random_field(mesh, CellDim, KDim)
-        vt = random_field(mesh, EdgeDim, KDim)
-        f_e = random_field(mesh, EdgeDim)
-        c_lin_e = random_field(mesh, EdgeDim, E2CDim)
-        z_w_con_c_full = random_field(mesh, CellDim, KDim)
-        vn_ie = random_field(mesh, EdgeDim, KDim, extend={KDim: 1})
-        ddqz_z_full_e = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_apc = zero_field(mesh, EdgeDim, KDim)
-        levelmask = random_mask(mesh, KDim, extend={KDim: 1})
-        area_edge = random_field(mesh, EdgeDim)
-        tangent_orientation = random_field(mesh, EdgeDim)
-        inv_primal_edge_length = random_field(mesh, EdgeDim)
-        geofac_grdiv = random_field(mesh, EdgeDim, E2C2EODim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        geofac_rot = random_field(mesh, VertexDim, V2EDim)
+        z_ekinh = random_field(grid, CellDim, KDim)
+        vt = random_field(grid, EdgeDim, KDim)
+        f_e = random_field(grid, EdgeDim)
+        c_lin_e = random_field(grid, EdgeDim, E2CDim)
+        z_w_con_c_full = random_field(grid, CellDim, KDim)
+        vn_ie = random_field(grid, EdgeDim, KDim, extend={KDim: 1})
+        ddqz_z_full_e = random_field(grid, EdgeDim, KDim)
+        ddt_vn_apc = zero_field(grid, EdgeDim, KDim)
+        levelmask = random_mask(grid, KDim, extend={KDim: 1})
+        area_edge = random_field(grid, EdgeDim)
+        tangent_orientation = random_field(grid, EdgeDim)
+        inv_primal_edge_length = random_field(grid, EdgeDim)
+        geofac_grdiv = random_field(grid, EdgeDim, E2C2EODim)
+        vn = random_field(grid, EdgeDim, KDim)
+        geofac_rot = random_field(grid, VertexDim, V2EDim)
         cfl_w_limit = 4.0
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        k = zero_field(mesh, KDim, dtype=int32)
-        for level in range(mesh.k_level):
+        k = zero_field(grid, KDim, dtype=int32)
+        nlev = grid.num_levels
+
+        for level in range(nlev):
             k[level] = level
 
-        nlev = mesh.k_level
         nrdmax = 5
         extra_diffu = True
 

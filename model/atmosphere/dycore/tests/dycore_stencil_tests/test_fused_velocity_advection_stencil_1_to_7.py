@@ -45,7 +45,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
-        mesh,
+        grid,
         vn,
         rbf_vec_coeff_e,
         wgtfac_e,
@@ -67,19 +67,19 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         condition1 = k < nlevp1
         vt = np.where(
-            condition1, mo_velocity_advection_stencil_01_numpy(mesh, vn, rbf_vec_coeff_e), vt
+            condition1, mo_velocity_advection_stencil_01_numpy(grid, vn, rbf_vec_coeff_e), vt
         )
 
         condition2 = (1 < k) & (k < nlevp1)
         vn_ie, z_kin_hor_e = np.where(
             condition2,
-            mo_velocity_advection_stencil_02_numpy(mesh, wgtfac_e, vn, vt),
+            mo_velocity_advection_stencil_02_numpy(grid, wgtfac_e, vn, vt),
             (vn_ie, z_kin_hor_e),
         )
 
         if not lvn_only:
             z_vt_ie = np.where(
-                condition2, mo_velocity_advection_stencil_03_numpy(mesh, wgtfac_e, vt), z_vt_ie
+                condition2, mo_velocity_advection_stencil_03_numpy(grid, wgtfac_e, vt), z_vt_ie
             )
 
         condition3 = k == 0
@@ -106,7 +106,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
     @classmethod
     def reference(
         cls,
-        mesh,
+        grid,
         vn,
         rbf_vec_coeff_e,
         wgtfac_e,
@@ -142,7 +142,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
                 z_kin_hor_e,
                 z_w_concorr_me,
             ) = cls._fused_velocity_advection_stencil_1_to_6_numpy(
-                mesh,
+                grid,
                 vn,
                 rbf_vec_coeff_e,
                 wgtfac_e,
@@ -162,7 +162,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         edge = edge[:, np.newaxis]
 
-        z_w_v = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(mesh, w, c_intp)
+        z_w_v = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
 
         condition_mask = (lateral_boundary_7 < edge) & (edge < halo_1) & (k < nlevp1)
 
@@ -170,7 +170,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
             z_v_grad_w = np.where(
                 condition_mask,
                 mo_velocity_advection_stencil_07_numpy(
-                    mesh,
+                    grid,
                     vn_ie,
                     inv_dual_edge_length,
                     w,
@@ -191,34 +191,34 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        c_intp = random_field(mesh, VertexDim, V2CDim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        rbf_vec_coeff_e = random_field(mesh, EdgeDim, E2C2EDim)
-        vt = zero_field(mesh, EdgeDim, KDim)
-        wgtfac_e = random_field(mesh, EdgeDim, KDim)
-        vn_ie = zero_field(mesh, EdgeDim, KDim)
-        z_kin_hor_e = zero_field(mesh, EdgeDim, KDim)
-        z_vt_ie = zero_field(mesh, EdgeDim, KDim)
-        ddxn_z_full = random_field(mesh, EdgeDim, KDim)
-        ddxt_z_full = random_field(mesh, EdgeDim, KDim)
-        z_w_concorr_me = zero_field(mesh, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        w = random_field(mesh, CellDim, KDim)
-        inv_primal_edge_length = random_field(mesh, EdgeDim)
-        tangent_orientation = random_field(mesh, EdgeDim)
-        z_v_grad_w = zero_field(mesh, EdgeDim, KDim)
-        wgtfacq_e = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        c_intp = random_field(grid, VertexDim, V2CDim)
+        vn = random_field(grid, EdgeDim, KDim)
+        rbf_vec_coeff_e = random_field(grid, EdgeDim, E2C2EDim)
+        vt = zero_field(grid, EdgeDim, KDim)
+        wgtfac_e = random_field(grid, EdgeDim, KDim)
+        vn_ie = zero_field(grid, EdgeDim, KDim)
+        z_kin_hor_e = zero_field(grid, EdgeDim, KDim)
+        z_vt_ie = zero_field(grid, EdgeDim, KDim)
+        ddxn_z_full = random_field(grid, EdgeDim, KDim)
+        ddxt_z_full = random_field(grid, EdgeDim, KDim)
+        z_w_concorr_me = zero_field(grid, EdgeDim, KDim)
+        inv_dual_edge_length = random_field(grid, EdgeDim)
+        w = random_field(grid, CellDim, KDim)
+        inv_primal_edge_length = random_field(grid, EdgeDim)
+        tangent_orientation = random_field(grid, EdgeDim)
+        z_v_grad_w = zero_field(grid, EdgeDim, KDim)
+        wgtfacq_e = random_field(grid, EdgeDim, KDim)
 
-        k = zero_field(mesh, KDim, dtype=int32)
-        for level in range(mesh.k_level):
+        k = zero_field(grid, KDim, dtype=int32)
+        for level in range(grid.num_levels):
             k[level] = level
 
-        edge = zero_field(mesh, EdgeDim, dtype=int32)
-        for e in range(mesh.n_edges):
+        edge = zero_field(grid, EdgeDim, dtype=int32)
+        for e in range(grid.num_edges):
             edge[e] = e
 
-        nlevp1 = mesh.k_level + 1
+        nlevp1 = grid.num_levels + 1
         nflatlev = 13
 
         istep = 1

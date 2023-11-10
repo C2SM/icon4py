@@ -42,7 +42,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
     @staticmethod
     def _fused_velocity_advection_stencil_16_to_18(
-        mesh,
+        grid,
         z_w_con_c,
         w,
         coeff1_dwdz,
@@ -79,7 +79,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
         ddt_w_adv = np.where(
             condition1,
-            mo_velocity_advection_stencil_17_numpy(mesh, e_bln_c_s, z_v_grad_w, ddt_w_adv),
+            mo_velocity_advection_stencil_17_numpy(grid, e_bln_c_s, z_v_grad_w, ddt_w_adv),
             ddt_w_adv,
         )
 
@@ -94,7 +94,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
             ddt_w_adv = np.where(
                 condition2,
                 mo_velocity_advection_stencil_18_numpy(
-                    mesh,
+                    grid,
                     levelmask,
                     cfl_clipping,
                     owner_mask,
@@ -116,7 +116,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
     @classmethod
     def reference(
         cls,
-        mesh,
+        grid,
         z_w_con_c,
         w,
         coeff1_dwdz,
@@ -143,11 +143,11 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         extra_diffu,
         **kwargs,
     ):
-        z_w_con_c_full = mo_velocity_advection_stencil_15_numpy(mesh, z_w_con_c)
+        z_w_con_c_full = mo_velocity_advection_stencil_15_numpy(grid, z_w_con_c)
 
         if not lvn_only:
             ddt_w_adv = cls._fused_velocity_advection_stencil_16_to_18(
-                mesh,
+                grid,
                 z_w_con_c,
                 w,
                 coeff1_dwdz,
@@ -176,38 +176,38 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         return {"z_w_con_c_full": z_w_con_c_full, "ddt_w_adv": ddt_w_adv}
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_w_con_c = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        w = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        coeff1_dwdz = random_field(mesh, CellDim, KDim)
-        coeff2_dwdz = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_w_con_c = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        w = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        coeff1_dwdz = random_field(grid, CellDim, KDim)
+        coeff2_dwdz = random_field(grid, CellDim, KDim)
 
-        z_v_grad_w = random_field(mesh, EdgeDim, KDim)
-        e_bln_c_s = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
+        z_v_grad_w = random_field(grid, EdgeDim, KDim)
+        e_bln_c_s = as_1D_sparse_field(random_field(grid, CellDim, C2EDim), CEDim)
 
-        levelmask = random_mask(mesh, KDim)
-        cfl_clipping = random_mask(mesh, CellDim, KDim)
-        owner_mask = random_mask(mesh, CellDim)
-        ddqz_z_half = random_field(mesh, CellDim, KDim)
-        area = random_field(mesh, CellDim)
-        geofac_n2s = random_field(mesh, CellDim, C2E2CODim)
+        levelmask = random_mask(grid, KDim)
+        cfl_clipping = random_mask(grid, CellDim, KDim)
+        owner_mask = random_mask(grid, CellDim)
+        ddqz_z_half = random_field(grid, CellDim, KDim)
+        area = random_field(grid, CellDim)
+        geofac_n2s = random_field(grid, CellDim, C2E2CODim)
 
-        z_w_con_c_full = zero_field(mesh, CellDim, KDim)
-        ddt_w_adv = zero_field(mesh, CellDim, KDim)
+        z_w_con_c_full = zero_field(grid, CellDim, KDim)
+        ddt_w_adv = zero_field(grid, CellDim, KDim)
 
         scalfac_exdiff = 10.0
         cfl_w_limit = 3.0
         dtime = 2.0
 
-        k = zero_field(mesh, KDim, dtype=int32)
-        for level in range(mesh.k_level):
+        k = zero_field(grid, KDim, dtype=int32)
+        for level in range(grid.num_levels):
             k[level] = level
 
-        cell = zero_field(mesh, CellDim, dtype=int32)
-        for c in range(mesh.n_cells):
+        cell = zero_field(grid, CellDim, dtype=int32)
+        for c in range(grid.num_cells):
             cell[c] = c
 
-        nlev = mesh.k_level
+        nlev = grid.num_levels
         nrdmax = 5
         extra_diffu = True
 

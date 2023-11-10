@@ -48,7 +48,7 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_kin_hor_e,
         e_bln_c_s,
         z_w_concorr_me,
@@ -75,20 +75,20 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
         z_ekinh = np.where(
             k < nlev,
-            mo_velocity_advection_stencil_08_numpy(mesh, z_kin_hor_e, e_bln_c_s),
+            mo_velocity_advection_stencil_08_numpy(grid, z_kin_hor_e, e_bln_c_s),
             z_ekinh,
         )
 
         if istep == 1:
             z_w_concorr_mc = np.where(
                 (nflatlev < k) & (k < nlev),
-                mo_velocity_advection_stencil_09_numpy(mesh, z_w_concorr_me, e_bln_c_s),
+                mo_velocity_advection_stencil_09_numpy(grid, z_w_concorr_me, e_bln_c_s),
                 z_w_concorr_mc,
             )
 
             w_concorr_c = np.where(
                 (nflatlev + 1 < k) & (k < nlev),
-                mo_velocity_advection_stencil_10_numpy(mesh, z_w_concorr_mc, wgtfac_c),
+                mo_velocity_advection_stencil_10_numpy(grid, z_w_concorr_mc, wgtfac_c),
                 w_concorr_c,
             )
 
@@ -106,7 +106,7 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
         condition = (np.maximum(3, nrdmax - 2) < k) & (k < nlev - 3)
         cfl_clipping_new, vcfl_new, z_w_con_c_new = mo_velocity_advection_stencil_14_numpy(
-            mesh, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
+            grid, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
         )
 
         cfl_clipping = np.where(condition, cfl_clipping_new, cfl_clipping)
@@ -122,32 +122,32 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_kin_hor_e = random_field(mesh, EdgeDim, KDim)
-        e_bln_c_s = random_field(mesh, CellDim, C2EDim)
-        z_ekinh = zero_field(mesh, CellDim, KDim)
-        z_w_concorr_me = random_field(mesh, EdgeDim, KDim)
-        z_w_concorr_mc = zero_field(mesh, CellDim, KDim)
-        wgtfac_c = random_field(mesh, CellDim, KDim)
-        w_concorr_c = zero_field(mesh, CellDim, KDim)
-        w = random_field(mesh, CellDim, KDim)
-        z_w_con_c = zero_field(mesh, CellDim, KDim)
-        ddqz_z_half = random_field(mesh, CellDim, KDim)
-        cfl_clipping = random_mask(mesh, CellDim, KDim, dtype=bool)
+    def input_data(self, grid):
+        z_kin_hor_e = random_field(grid, EdgeDim, KDim)
+        e_bln_c_s = random_field(grid, CellDim, C2EDim)
+        z_ekinh = zero_field(grid, CellDim, KDim)
+        z_w_concorr_me = random_field(grid, EdgeDim, KDim)
+        z_w_concorr_mc = zero_field(grid, CellDim, KDim)
+        wgtfac_c = random_field(grid, CellDim, KDim)
+        w_concorr_c = zero_field(grid, CellDim, KDim)
+        w = random_field(grid, CellDim, KDim)
+        z_w_con_c = zero_field(grid, CellDim, KDim)
+        ddqz_z_half = random_field(grid, CellDim, KDim)
+        cfl_clipping = random_mask(grid, CellDim, KDim, dtype=bool)
         pre_levelmask = random_mask(
-            mesh, CellDim, KDim, dtype=bool
+            grid, CellDim, KDim, dtype=bool
         )  # TODO should be just a K field
 
-        vcfl = zero_field(mesh, CellDim, KDim)
+        vcfl = zero_field(grid, CellDim, KDim)
         cfl_w_limit = 5.0
         dtime = 9.0
 
-        k = zero_field(mesh, KDim, dtype=int32)
-        for level in range(mesh.k_level):
+        k = zero_field(grid, KDim, dtype=int32)
+        for level in range(grid.num_levels):
             k[level] = level
 
-        nlevp1 = mesh.k_level + 1
-        nlev = mesh.k_level
+        nlevp1 = grid.num_levels + 1
+        nlev = grid.num_levels
         nflatlev = 13
         nrdmax = 10
 

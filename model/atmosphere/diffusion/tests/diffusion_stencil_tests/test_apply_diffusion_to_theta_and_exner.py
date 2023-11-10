@@ -42,7 +42,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         kh_smag_e,
         inv_dual_edge_length,
         theta_v_in,
@@ -58,14 +58,14 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         rd_o_cvd,
         **kwargs,
     ):
-        z_nabla2_e = calculate_nabla2_for_z_numpy(mesh, kh_smag_e, inv_dual_edge_length, theta_v_in)
-        z_temp = calculate_nabla2_of_theta_numpy(mesh, z_nabla2_e, geofac_div)
+        z_nabla2_e = calculate_nabla2_for_z_numpy(grid, kh_smag_e, inv_dual_edge_length, theta_v_in)
+        z_temp = calculate_nabla2_of_theta_numpy(grid, z_nabla2_e, geofac_div)
 
         geofac_n2s_nbh = unflatten_first_two_dims(geofac_n2s_nbh)
         zd_vertoffset = unflatten_first_two_dims(zd_vertoffset)
 
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-            mesh,
+            grid,
             mask,
             zd_vertoffset,
             zd_diffcoef,
@@ -76,33 +76,33 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
             z_temp,
         )
         theta_v, exner = update_theta_and_exner_numpy(
-            mesh, z_temp, area, theta_v_in, exner, rd_o_cvd
+            grid, z_temp, area, theta_v_in, exner, rd_o_cvd
         )
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        theta_v_in = random_field(mesh, CellDim, KDim)
-        geofac_div = random_field(mesh, CEDim)
-        mask = random_mask(mesh, CellDim, KDim)
-        zd_vertoffset = zero_field(mesh, CellDim, C2E2CDim, KDim, dtype=int32)
+    def input_data(self, grid):
+        kh_smag_e = random_field(grid, EdgeDim, KDim)
+        inv_dual_edge_length = random_field(grid, EdgeDim)
+        theta_v_in = random_field(grid, CellDim, KDim)
+        geofac_div = random_field(grid, CEDim)
+        mask = random_mask(grid, CellDim, KDim)
+        zd_vertoffset = zero_field(grid, CellDim, C2E2CDim, KDim, dtype=int32)
         rng = np.random.default_rng()
-        for k in range(mesh.k_level):
+        for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
             zd_vertoffset[:, :, k] = rng.integers(
                 low=0 - k,
-                high=mesh.k_level - k - 1,
+                high=grid.num_levels - k - 1,
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
-        zd_diffcoef = random_field(mesh, CellDim, KDim)
-        geofac_n2s_c = random_field(mesh, CellDim)
-        geofac_n2s_nbh = random_field(mesh, CellDim, C2E2CDim)
-        vcoef = random_field(mesh, CellDim, C2E2CDim, KDim)
-        area = random_field(mesh, CellDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        exner = random_field(mesh, CellDim, KDim)
+        zd_diffcoef = random_field(grid, CellDim, KDim)
+        geofac_n2s_c = random_field(grid, CellDim)
+        geofac_n2s_nbh = random_field(grid, CellDim, C2E2CDim)
+        vcoef = random_field(grid, CellDim, C2E2CDim, KDim)
+        area = random_field(grid, CellDim)
+        theta_v = random_field(grid, CellDim, KDim)
+        exner = random_field(grid, CellDim, KDim)
         rd_o_cvd = 5.0
 
         vcoef_new = flatten_first_two_dims(CECDim, KDim, field=vcoef)
