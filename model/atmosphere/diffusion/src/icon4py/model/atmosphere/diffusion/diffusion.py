@@ -14,7 +14,6 @@ import functools
 import logging
 import math
 import sys
-from collections import namedtuple
 from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import Final, Optional
@@ -79,11 +78,16 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
+"""Diffusion module ported from ICON mo_nh_diffusion.f90.
+
+Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
+
+
+"""
 
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-VectorTuple = namedtuple("VectorTuple", "x y")
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
