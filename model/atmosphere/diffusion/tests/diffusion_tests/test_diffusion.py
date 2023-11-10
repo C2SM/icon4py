@@ -25,6 +25,9 @@ from .utils import (
     enhanced_smagorinski_factor_numpy,
     smag_limit_numpy,
     verify_diffusion_fields,
+    construct_interpolation_state,
+    construct_metric_state_for_diffusion,
+    construct_diagnostics,
 )
 
 
@@ -115,8 +118,8 @@ def test_diffusion_init(
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
@@ -200,8 +203,8 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
 
     diffusion = Diffusion()
     diffusion.init(
@@ -238,8 +241,8 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
         nflatlev=grid_savepoint.nflatlev(),
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
@@ -279,9 +282,9 @@ def test_run_diffusion_single_step(
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
-    diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -328,9 +331,9 @@ def test_run_diffusion_initial_step(
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
-    diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=damping_height)

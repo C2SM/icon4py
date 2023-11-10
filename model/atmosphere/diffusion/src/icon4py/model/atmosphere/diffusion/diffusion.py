@@ -84,7 +84,6 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 log = logging.getLogger(__name__)
 
 VectorTuple = namedtuple("VectorTuple", "x y")
-
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative

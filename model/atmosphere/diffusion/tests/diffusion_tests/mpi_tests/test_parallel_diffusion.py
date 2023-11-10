@@ -23,7 +23,12 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # 
     processor_props,
 )
 
-from ..utils import verify_diffusion_fields
+from ..utils import (
+    verify_diffusion_fields,
+    construct_interpolation_state,
+    construct_metric_state_for_diffusion,
+    construct_diagnostics,
+)
 
 
 @pytest.mark.mpi
@@ -61,10 +66,10 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
+    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
 
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
@@ -86,8 +91,8 @@ def test_parallel_diffusion(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
-    prognostic_state = diffusion_savepoint_init.construct_prognostics()
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
+    prognostic_state = diffusion_savepoint_init.construct_prognostics(d)
     if linit:
         diffusion.initial_run(
             diagnostic_state=diagnostic_state,

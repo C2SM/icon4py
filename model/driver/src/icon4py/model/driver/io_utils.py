@@ -29,6 +29,12 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
 
+# TODO (magdalena) should be removed when fields can be calculated properly.
+from model.atmosphere.diffusion.tests.diffusion_tests.utils import (
+    construct_interpolation_state,
+    construct_metric_state_for_diffusion,
+    construct_diagnostics,
+)
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
@@ -84,7 +90,7 @@ def read_initial_state(
         linit=True, date=SIMULATION_START_DATE
     )
     prognostic_state = init_savepoint.construct_prognostics()
-    diagnostic_state = init_savepoint.construct_diagnostics_for_diffusion()
+    diagnostic_state = construct_diagnostics(init_savepoint)
     return data_provider, diagnostic_state, prognostic_state
 
 
@@ -147,10 +153,10 @@ def read_static_fields(
         dataprovider = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         )
-        interpolation_state = (
-            dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
+        interpolation_state = construct_interpolation_state(
+            dataprovider.from_interpolation_savepoint()
         )
-        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        metric_state = construct_metric_state_for_diffusion(dataprovider.from_metrics_savepoint())
         return metric_state, interpolation_state
     else:
         raise NotImplementedError(SB_ONLY_MSG)

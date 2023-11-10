@@ -14,16 +14,9 @@ import logging
 
 import numpy as np
 import serialbox as ser
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
-
-from icon4py.model.atmosphere.diffusion.diffusion import VectorTuple
-from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-    DiffusionInterpolationState,
-    DiffusionMetricState,
-)
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
@@ -80,9 +73,6 @@ class IconSavepoint:
         )
         buffer = buffer[tuple(map(slice, buffer_size))]
         return buffer
-
-    def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
-        return np_as_located_field(*dimensions)(ar)
 
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()
@@ -342,21 +332,21 @@ class IconGridSavePoint(IconSavepoint):
         return grid
 
     def construct_edge_geometry(self) -> EdgeParams:
-        primal_normal_vert: VectorTuple = (
+        primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
             as_1D_sparse_field(self.primal_normal_vert_x(), ECVDim),
             as_1D_sparse_field(self.primal_normal_vert_y(), ECVDim),
         )
-        dual_normal_vert: VectorTuple = (
+        dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
             as_1D_sparse_field(self.dual_normal_vert_x(), ECVDim),
             as_1D_sparse_field(self.dual_normal_vert_y(), ECVDim),
         )
 
-        primal_normal_cell: VectorTuple = (
+        primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
             as_1D_sparse_field(self.primal_normal_cell_x(), ECDim),
             as_1D_sparse_field(self.primal_normal_cell_y(), ECDim),
         )
 
-        dual_normal_cell: VectorTuple = (
+        dual_normal_cell: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
             as_1D_sparse_field(self.dual_normal_cell_x(), ECDim),
             as_1D_sparse_field(self.dual_normal_cell_y(), ECDim),
         )
@@ -438,21 +428,6 @@ class InterpolationSavepoint(IconSavepoint):
 
     def rbf_vec_coeff_v2(self):
         return self._get_field("rbf_vec_coeff_v2", VertexDim, V2EDim)
-
-    def construct_interpolation_state_for_diffusion(
-        self,
-    ) -> DiffusionInterpolationState:
-        grg = self.geofac_grg()
-        return DiffusionInterpolationState(
-            e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),
-            rbf_coeff_1=self.rbf_vec_coeff_v1(),
-            rbf_coeff_2=self.rbf_vec_coeff_v2(),
-            geofac_div=as_1D_sparse_field(self.geofac_div(), CEDim),
-            geofac_n2s=self.geofac_n2s(),
-            geofac_grg_x=grg[0],
-            geofac_grg_y=grg[1],
-            nudgecoeff_e=self.nudgecoeff_e(),
-        )
 
     def construct_interpolation_state_for_nonhydro(self) -> InterpolationState:
         grg = self.geofac_grg()
@@ -588,7 +563,7 @@ class MetricSavepoint(IconSavepoint):
         ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
         k = k_level - 3
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
-        return self._get_field_from_ndarray(ar, EdgeDim, KDim)
+        return np_as_located_field(EdgeDim, KDim)(ar)
 
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)
@@ -654,16 +629,6 @@ class MetricSavepoint(IconSavepoint):
             coeff_gradekin=self.coeff_gradekin(),
         )
 
-    def construct_metric_state_for_diffusion(self) -> DiffusionMetricState:
-        return DiffusionMetricState(
-            mask_hdiff=self.mask_hdiff(),
-            theta_ref_mc=self.theta_ref_mc(),
-            wgtfac_c=self.wgtfac_c(),
-            zd_intcoef=self.zd_intcoef(),
-            zd_vertoffset=self.zd_vertoffset(),
-            zd_diffcoef=self.zd_diffcoef(),
-        )
-
 
 class IconDiffusionInitSavepoint(IconSavepoint):
     def hdef_ic(self):
@@ -727,14 +692,6 @@ class IconDiffusionInitSavepoint(IconSavepoint):
             exner=self.exner(),
             theta_v=self.theta_v(),
             rho=self.rho(),
-        )
-
-    def construct_diagnostics_for_diffusion(self) -> DiffusionDiagnosticState:
-        return DiffusionDiagnosticState(
-            hdef_ic=self.hdef_ic(),
-            div_ic=self.div_ic(),
-            dwdx=self.dwdx(),
-            dwdy=self.dwdy(),
         )
 
     def construct_diagnostics(self) -> DiagnosticState:
