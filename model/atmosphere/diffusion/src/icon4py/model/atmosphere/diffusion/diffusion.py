@@ -13,6 +13,7 @@
 import functools
 import logging
 import math
+import sys
 from collections import namedtuple
 from dataclasses import InitVar, dataclass, field
 from enum import Enum
@@ -63,7 +64,6 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner,
 )
-from icon4py.model.common import constants
 from icon4py.model.common.constants import (
     CPD,
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
@@ -402,8 +402,8 @@ class Diffusion:
                 ),
             )
 
-        self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + constants.dbl_eps)
-        self.bdy_diff: float = 0.015 / (params.scaled_nudge_max_coeff + constants.dbl_eps)
+        self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
+        self.bdy_diff: float = 0.015 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
         self.fac_bdydiff_v: float = (
             math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
             if config.lhdiff_rcf
