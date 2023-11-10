@@ -26,8 +26,11 @@ from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvec
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _en_smag_fac_for_zero_nshift,
+    _scal_divdamp_NEW,
+    _calculate_bdy_divdamp,
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
+from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -36,13 +39,15 @@ from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
-def test_divdamp_factor(savepoint_nonhydro_init, grid_savepoint, icon_grid):
+def test_validate_divdamp_fields_against_savepoint_values(
+    grid_savepoint, savepoint_nonhydro_init, icon_grid
+):
     config = NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
-    divdamp_order = 24
-    mean_cell_area = 6080879.45232143
+    mean_cell_area = grid_savepoint.mean_cell_area()
     enh_divdamp_fac = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
     scal_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
+    bdy_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
     _en_smag_fac_for_zero_nshift(
         grid_savepoint.vct_a(),
         config.divdamp_fac,
@@ -56,10 +61,20 @@ def test_divdamp_factor(savepoint_nonhydro_init, grid_savepoint, icon_grid):
         out=enh_divdamp_fac,
         offset_provider={"Koff": KDim},
     )
-    # _scal_divdamp_NEW(
-    #    enh_divdamp_fac, divdamp_order, divdamp_fac_o2
-    # )
-    # scal_divdamp
+    _scal_divdamp_NEW(
+        enh_divdamp_fac=enh_divdamp_fac,
+        divdamp_order=config.divdamp_order,
+        mean_cell_area=mean_cell_area,
+        divdamp_fac_o2=divdamp_fac_o2,
+        out=scal_divdamp,
+        offset_provider={},
+    )
+    _calculate_bdy_divdamp(
+        scal_divdamp, config.nudge_max_coeff, constants.dbl_eps, out=bdy_divdamp, offset_provider={}
+    )
+
+    assert np.allclose(scal_divdamp, savepoint_nonhydro_init.scal_divdamp_field())
+    assert np.allclose(bdy_divdamp, savepoint_nonhydro_init.bdy_divdamp())
 
 
 @pytest.mark.datatest

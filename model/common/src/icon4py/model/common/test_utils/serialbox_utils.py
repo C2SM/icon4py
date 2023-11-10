@@ -155,7 +155,7 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_field("cell_areas", CellDim)
 
     def mean_cell_area(self):
-        return self.serializer.read("mean_cell_area", self.savepoint).astype(float)
+        return self.serializer.read("mean_cell_area", self.savepoint).astype(float)[0]
 
     def edge_areas(self):
         return self._get_field("edge_areas", EdgeDim)
