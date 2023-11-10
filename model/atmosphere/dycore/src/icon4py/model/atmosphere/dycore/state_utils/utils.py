@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Tuple
 
 import numpy as np
 from gt4py.next.common import Dimension, Field
@@ -113,35 +112,6 @@ def set_zero_c_k(
 
 
 @field_operator
-def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]) -> Field[[KDim], float]:
-    return 0.125 - 4.0 * diff_multfac_vn
-
-
-@field_operator
-def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> Field[[KDim], float]:
-    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
-
-
-@field_operator
-def _setup_fields_for_initial_step(
-    k4: float, hdiff_efdt_ratio: float
-) -> Tuple[Field[[KDim], float], Field[[KDim], float]]:
-    diff_multfac_vn = _setup_initial_diff_multfac_vn(k4, hdiff_efdt_ratio)
-    smag_limit = _setup_smag_limit(diff_multfac_vn)
-    return diff_multfac_vn, smag_limit
-
-
-@program
-def setup_fields_for_initial_step(
-    k4: float,
-    hdiff_efdt_ratio: float,
-    diff_multfac_vn: Field[[KDim], float],
-    smag_limit: Field[[KDim], float],
-):
-    _setup_fields_for_initial_step(k4, hdiff_efdt_ratio, out=(diff_multfac_vn, smag_limit))
-
-
-@field_operator
 def _calculate_bdy_divdamp(
     scal_divdamp: Field[[KDim], float], nudge_max_coeff: float, dbl_eps: float
 ) -> Field[[KDim], float]:
@@ -149,7 +119,7 @@ def _calculate_bdy_divdamp(
 
 
 @field_operator
-def _scal_divdamp_NEW(
+def _calculate_scal_divdamp(
     enh_divdamp_fac: Field[[KDim], float],
     divdamp_order: int32,
     mean_cell_area: float,
@@ -172,7 +142,9 @@ def _calculate_divdamp_fields(
     nudge_max_coeff: float,
     dbl_eps: float,
 ) -> tuple[Field[[KDim], float], Field[[KDim], float]]:
-    scal_divdamp = _scal_divdamp_NEW(enh_divdamp_fac, divdamp_order, mean_cell_area, divdamp_fac_o2)
+    scal_divdamp = _calculate_scal_divdamp(
+        enh_divdamp_fac, divdamp_order, mean_cell_area, divdamp_fac_o2
+    )
     bdy_divdamp = _calculate_bdy_divdamp(scal_divdamp, nudge_max_coeff, dbl_eps)
     return (scal_divdamp, bdy_divdamp)
 
@@ -217,19 +189,3 @@ def compute_z_raylfac(
     rayleigh_w: Field[[KDim], float], dtime: float, z_raylfac: Field[[KDim], float]
 ):
     _compute_z_raylfac(rayleigh_w, dtime, out=z_raylfac)
-
-
-@field_operator
-def _scal_divdamp_calcs(
-    enh_divdamp_fac: Field[[KDim], float], mean_cell_area: float
-) -> Field[[KDim], float]:
-    return -enh_divdamp_fac * mean_cell_area**2.0
-
-
-@program
-def scal_divdamp_calcs(
-    enh_divdamp_fac: Field[[KDim], float],
-    out: Field[[KDim], float],
-    mean_cell_area: float,
-):
-    _scal_divdamp_calcs(enh_divdamp_fac, mean_cell_area, out=out)

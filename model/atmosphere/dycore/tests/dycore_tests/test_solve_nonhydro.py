@@ -26,8 +26,8 @@ from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvec
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _calculate_bdy_divdamp,
+    _calculate_scal_divdamp,
     _en_smag_fac_for_zero_nshift,
-    _scal_divdamp_NEW,
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common import constants
@@ -61,7 +61,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         out=enh_divdamp_fac,
         offset_provider={"Koff": KDim},
     )
-    _scal_divdamp_NEW(
+    _calculate_scal_divdamp(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_order=config.divdamp_order,
         mean_cell_area=mean_cell_area,
@@ -667,7 +667,9 @@ def test_run_solve_nonhydro_single_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
+    caplog,
 ):
+    caplog.set_level(logging.DEBUG)
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
@@ -831,11 +833,9 @@ def test_run_solve_nonhydro_multi_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state_ls=prognostic_state_ls,
             prep_adv=prep_adv,
-            config=config,
-            params=nonhydro_params,
             z_fields=z_fields,
             nh_constants=nh_constants,
-            bdy_divdamp=sp.bdy_divdamp(),
+            divdamp_fac_o2=sp.divdamp_fac_o2(),
             dtime=dtime,
             idyn_timestep=dyn_timestep,
             l_recompute=recompute,

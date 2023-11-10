@@ -382,7 +382,6 @@ class IconGridSavePoint(IconSavepoint):
 
     def construct_cell_geometry(self) -> CellParams:
         return CellParams(area=self.cell_areas(), mean_cell_area=self.mean_cell_area())
-        # return CellParams(area=self.cell_areas(), mean_cell_area=6080879.45232143)
 
 
 class InterpolationSavepoint(IconSavepoint):

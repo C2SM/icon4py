@@ -146,11 +146,9 @@ from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvec
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
-    _calculate_bdy_divdamp,
+    _calculate_divdamp_fields,
     _en_smag_fac_for_zero_nshift,
-    _scal_divdamp_NEW,
     compute_z_raylfac,
-    scal_divdamp_calcs,
     set_zero_c_k,
     set_zero_e_k,
 )
@@ -346,7 +344,7 @@ class SolveNonhydro:
         else:
             self.jk_start = 0
 
-        _en_smag_fac_for_zero_nshift(
+        _en_smag_fac_for_zero_nshift.with_backend(run_gtfn)(
             self.vertical_params.vct_a,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,
@@ -1354,22 +1352,17 @@ class SolveNonhydro:
 
         # scaling factor for second-order divergence damping: divdamp_fac_o2*delta_x**2
         # delta_x**2 is approximated by the mean cell area
+        # Coefficient for reduced fourth-order divergence d
         scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
 
-        _scal_divdamp_NEW.with_backend(run_gtfn)(
+        _calculate_divdamp_fields.with_backend(run_gtfn)(
             self.enh_divdamp_fac,
             int32(self.config.divdamp_order),
             self.cell_params.mean_cell_area,
             divdamp_fac_o2,
-            out=self.scal_divdamp,
-            offset_provider={},
-        )
-        # Coefficient for reduced fourth-order divergence damping along nest boundaries
-        _calculate_bdy_divdamp.with_backend(run_gtfn)(
-            self.scal_divdamp,
             self.config.nudge_max_coeff,
             constants.dbl_eps,
-            out=self._bdy_divdamp,
+            out=(self.scal_divdamp, self._bdy_divdamp),
             offset_provider={},
         )
 
