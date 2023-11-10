@@ -43,9 +43,8 @@ from icon4py.model.driver.io_utils import (
     read_initial_state,
     read_static_fields,
 )
-from model.atmosphere.diffusion.tests.diffusion_tests.utils import (
-    construct_diagnostics,
-)
+from icon4py.model.driver.serialbox_helpers import construct_diagnostics_for_diffusion
+
 
 log = logging.getLogger(__name__)
 
@@ -109,7 +108,7 @@ class DummyAtmoNonHydro:
             linit=False, date=self.simulation_date.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
         )
         new_p = sp.construct_prognostics()
-        new_d = construct_diagnostics(sp)
+        new_d = construct_diagnostics_for_diffusion(sp)
         _copy_diagnostic_and_prognostics.with_backend(run_gtfn)(
             new_d.hdef_ic,
             diagnostic_state.hdef_ic,
