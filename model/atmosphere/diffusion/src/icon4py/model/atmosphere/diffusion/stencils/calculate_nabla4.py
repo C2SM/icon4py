@@ -44,8 +44,8 @@ def _calculate_nabla4(
     )
     # TODO(magdalena): change exponent back to int (workaround for gt4py)
     z_nabla4_e2 = 4.0 * (
-        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2.0
-        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2.0
+        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2
+        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2
     )
     return z_nabla4_e2
 

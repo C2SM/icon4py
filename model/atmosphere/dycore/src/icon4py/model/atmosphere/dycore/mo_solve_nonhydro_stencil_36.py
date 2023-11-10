@@ -31,7 +31,7 @@ def _mo_solve_nonhydro_stencil_36(
     vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn(Koff[-1])
     z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt(Koff[-1])
     # TODO(magdalena): change exponent back to int (workaround for gt4py)
-    z_kin_hor_e = 0.5 * (vn**2.0 + vt**2.0)
+    z_kin_hor_e = 0.5 * (vn**2 + vt**2)
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 
