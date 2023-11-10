@@ -1115,86 +1115,15 @@ class IconExitSavepoint(IconSavepoint):
         buffer = np.squeeze(self.serializer.read("x_z_grad_rth", self.savepoint).astype(float))[
             :, :, ind - 1
         ]
-
-        dims = (CellDim, KDim)
-        return np_as_located_field(*dims)(self._reduce_to_dim_size(buffer, dims))
-
-    def z_gradh_exner_18(self):
-        return self._get_field("x_z_gradh_exner_18", EdgeDim, KDim)
-
-    def z_gradh_exner_19(self):
-        return self._get_field("x_z_gradh_exner_19", EdgeDim, KDim)
-
-    def z_gradh_exner_20(self):
-        return self._get_field("x_z_gradh_exner_20", EdgeDim, KDim)
-
-    def z_gradh_exner_22(self):
-        return self._get_field("x_z_gradh_exner_22", EdgeDim, KDim)
-
-    def vn_new_23(self):
-        return self._get_field("x_vn_new_23", EdgeDim, KDim)
-
-    def vn_new_24(self):
-        return self._get_field("x_vn_new_24", EdgeDim, KDim)
-
-    def vn_new_26(self):
-        return self._get_field("x_vn_new_26", EdgeDim, KDim)
-
-    def vn_new_27(self):
-        return self._get_field("x_vn_new_27", EdgeDim, KDim)
-
-    def vn_new_29(self):
-        return self._get_field("x_vn_new_29", EdgeDim, KDim)
-
-    def z_rho_e_01(self):
-        return self._get_field("x_z_rho_e_01", EdgeDim, KDim)
-
-    def z_theta_v_e_01(self):
-        return self._get_field("x_z_theta_v_e_01", EdgeDim, KDim)
-
-    def z_rho_e_00(self):
-        return self._get_field("x_z_rho_e_00", EdgeDim, KDim)
-
-    def z_theta_v_e_00(self):
-        return self._get_field("x_z_theta_v_e_00", EdgeDim, KDim)
-
-    def w_new_52(self):
-        return self._get_field("x_w_new_52", CellDim, KDim)
-
-    def w_new_53(self):
-        return self._get_field("x_w_new_53", CellDim, KDim)
-
-    def exner_new_55(self):
-        return self._get_field("x_exner_new_55", CellDim, KDim)
-
-    def theta_v_new_55(self):
-        return self._get_field("x_theta_v_new_55", CellDim, KDim)
-
-    def rho_new_55(self):
-        return self._get_field("x_rho_new_55", CellDim, KDim)
-
-    def w_10_start(self):
-        return self._get_field("w_10_start", CellDim, KDim)
-
-    def z_graddiv_vn_26_start(self):
-        return self._get_field("z_graddiv_vn_26_start", EdgeDim, KDim)
-
-    def z_graddiv2_vn_27_start(self):
-        return self._get_field("z_graddiv2_vn_27_start", EdgeDim, KDim)
-
-    def x_vn_new_26_end(self):
-        return self._get_field("x_vn_new_26_end", EdgeDim, KDim)
-
-    def x_vn_new_27_end(self):
-        return self._get_field("x_vn_new_27_end", EdgeDim, KDim)
-
-    def vn_26_start(self):
-        return self._get_field("vn_26_start", EdgeDim, KDim)
+        return np_as_located_field(*(CellDim, KDim))(
+            self._reduce_to_dim_size(buffer, (CellDim, KDim))
+        )
 
     def z_dwdz_dd(self):
         return self._get_field("x_z_dwdz_dd", CellDim, KDim)
 
 
+# TODO (magdalena) rename
 class IconNHFinalExitSavepoint(IconSavepoint):
     def theta_v_new(self):
         return self._get_field("x_theta_v", CellDim, KDim)
