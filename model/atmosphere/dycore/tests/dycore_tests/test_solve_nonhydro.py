@@ -78,35 +78,6 @@ def test_validate_divdamp_fields_against_savepoint_values(
 
 
 @pytest.mark.datatest
-def test_nonhydro_params():
-    config = NonHydrostaticConfig()
-    nonhydro_params = NonHydrostaticParams(config)
-
-    assert nonhydro_params.df32 == pytest.approx(
-        config.divdamp_fac3 - config.divdamp_fac2, abs=1e-12
-    )
-    assert nonhydro_params.dz32 == pytest.approx(config.divdamp_z3 - config.divdamp_z2, abs=1e-12)
-    assert nonhydro_params.df42 == pytest.approx(
-        config.divdamp_fac4 - config.divdamp_fac2, abs=1e-12
-    )
-    assert nonhydro_params.dz42 == pytest.approx(config.divdamp_z4 - config.divdamp_z2, abs=1e-12)
-
-    assert nonhydro_params.bqdr == pytest.approx(
-        (nonhydro_params.df42 * nonhydro_params.dz32 - nonhydro_params.df32 * nonhydro_params.dz42)
-        / (
-            nonhydro_params.dz32
-            * nonhydro_params.dz42
-            * (nonhydro_params.dz42 - nonhydro_params.dz32)
-        ),
-        abs=1e-12,
-    )
-    assert nonhydro_params.aqdr == pytest.approx(
-        nonhydro_params.df32 / nonhydro_params.dz32 - nonhydro_params.bqdr * nonhydro_params.dz32,
-        abs=1e-12,
-    )
-
-
-@pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, istep_exit, step_date_init, step_date_exit",
     [(1, 1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
@@ -577,8 +548,6 @@ def test_nonhydro_corrector_step(
     )
 
     nh_constants = create_nh_constants(sp)
-    print(f"sp.scal_divdamp = {sp.scal_divdamp()}")
-
     divdamp_fac_o2 = sp.divdamp_fac_o2()
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
@@ -745,8 +714,7 @@ def test_run_solve_nonhydro_single_step(
 
     prognostic_state_ls = create_prognostic_states(sp)
 
-    initial_divdamp_fac = 0.032  # TODO (magdalena) get from somewhere??  sp.divdamp_fac_o2()
-    print(f"manual divdamp_fac_o2 = {initial_divdamp_fac}")
+    initial_divdamp_fac = sp.divdamp_fac_o2()
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,

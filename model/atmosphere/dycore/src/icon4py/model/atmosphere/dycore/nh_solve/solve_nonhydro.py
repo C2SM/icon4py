@@ -280,20 +280,6 @@ class NonHydrostaticParams:
         if self.kstart_moist != 1:
             raise NotImplementedError("kstart_moist can only be 1")
 
-        self.alin = (config.divdamp_fac2 - config.divdamp_fac) / (
-            config.divdamp_z2 - config.divdamp_z
-        )
-
-        self.df32 = config.divdamp_fac3 - config.divdamp_fac2
-        self.dz32 = config.divdamp_z3 - config.divdamp_z2
-        self.df42 = config.divdamp_fac4 - config.divdamp_fac2
-        self.dz42 = config.divdamp_z4 - config.divdamp_z2
-
-        self.bqdr = (self.df42 * self.dz32 - self.df32 * self.dz42) / (
-            self.dz32 * self.dz42 * (self.dz42 - self.dz32)
-        )
-        self.aqdr = self.df32 / self.dz32 - self.bqdr * self.dz32
-
 
 class SolveNonhydro:
     def __init__(self, exchange: ExchangeRuntime = SingleNodeExchange()):
@@ -437,6 +423,9 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
     ):
+        log.info(
+            f"running timestep: dtime = {dtime}, dyn_timestep = {idyn_timestep}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv} "
+        )
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
@@ -487,7 +476,9 @@ class SolveNonhydro:
             nh_constants=nh_constants,
             lprep_adv=lprep_adv,
         )
-
+        log.info(
+            f"running corrector step: dtime = {dtime}, dyn_timestep = {idyn_timestep}, prep_adv = {lprep_adv},  divdamp_fac_od = {divdamp_fac_o2} "
+        )
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
@@ -549,6 +540,9 @@ class SolveNonhydro:
         nnow: int,
         nnew: int,
     ):
+        log.info(
+            f"running predictor step: dtime = {dtime}, dyn_timestep = {idyn_timestep}, init = {l_init}, recompute = {l_recompute} "
+        )
         if l_init or l_recompute:
             if self.config.itime_scheme == 4 and not l_init:
                 lvn_only = True  # Recompute only vn tendency
@@ -628,9 +622,6 @@ class SolveNonhydro:
         start_cell_nudging = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
         )
-        print(f" CELLS end indices")
-        print(f" end_halo={end_cell_halo}")
-        print(f" end_local_m1={end_cell_local_minus1}")
 
         end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
@@ -644,7 +635,6 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
-            print("predictor stencil_01 start")
             mo_solve_nonhydro_stencil_01.with_backend(run_gtfn)(
                 z_rth_pr_1=self.z_rth_pr_1,
                 z_rth_pr_2=self.z_rth_pr_2,
@@ -654,8 +644,6 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-            print("predictor stencil_01 start")
-        print("predictor stencil_02 3 start")
         nhsolve_prog.predictor_stencils_2_3.with_backend(run_gtfn)(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
             exner=prognostic_state[nnow].exner,
@@ -670,13 +658,9 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels + 1,
             offset_provider={},
         )
-        print("predictor stencil_02 3 end")
-        print(f"nflatlev: {self.vertical_params.nflatlev}")
-        print(f"nflatlev_gradp: {self.vertical_params.nflat_gradp}")
 
         if self.config.igradp_method == 3:
-            print("predictor stencil_04 5 6 start")
-            # should be run over all vertical levels and max(1, self.vertical_params.nflatlev) handled in where inside the stencil
+            # TODO (magdalena) should be run over all vertical levels and max(1, self.vertical_params.nflatlev) handled in where inside the stencil
             nhsolve_prog.predictor_stencils_4_5_6.with_backend(run_gtfn)(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
                 z_exner_ex_pr=self.z_exner_ex_pr,
@@ -692,12 +676,10 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={"Koff": KDim},
             )
-            print("predictor stencil_04 5 6 end")
             if self.vertical_params.nflatlev == 1:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
-        print("predictor stencil_07 8 9 start")
         nhsolve_prog.predictor_stencils_7_8_9.with_backend(run_gtfn)(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
@@ -722,10 +704,8 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
         )
-        print("predictor stencil_07 8 9 end")
 
         # Perturbation theta at top and surface levels
-        print("predictor stencil_11 start")
         nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(run_gtfn)(
             wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
             z_rth_pr=self.z_rth_pr_2,
@@ -740,11 +720,9 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels + 1,
             offset_provider={"Koff": KDim},
         )
-        print("predictor stencil_11 end")
 
         if self.config.igradp_method == 3:
             # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
-            print("predictor stencil_12 start")
             mo_solve_nonhydro_stencil_12.with_backend(run_gtfn)(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=self.metric_state_nonhydro.d2dexdz2_fac1_mc,
@@ -757,7 +735,6 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={"Koff": KDim},
             )
-            print("predictor stencil_12 start")
 
         # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
         # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
@@ -1036,7 +1013,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-
+        log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
         self._exchange.exchange_and_wait(EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e)
 
         mo_solve_nonhydro_stencil_30.with_backend(run_gtfn)(
@@ -1352,9 +1329,10 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={"Koff": KDim},
             )
-
+            log.debug("exchanging prognostic field 'w' and local field 'z_dwdz_dd'")
             self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
         else:
+            log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w)
 
     def run_corrector_step(
@@ -1451,7 +1429,6 @@ class SolveNonhydro:
             self.z_raylfac,
             offset_provider={},
         )
-        print(f"corrector - stencil_10 start ")
         mo_solve_nonhydro_stencil_10.with_backend(run_gtfn)(
             w=prognostic_state[nnew].w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1478,10 +1455,8 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
         )
-        print(f"corrector - stencil_10 end ")
         if self.config.l_open_ubc and not self.l_vert_nested:
             raise NotImplementedError("l_open_ubc not implemented")
-        print(f"corrector - stencil_17 start ")
         mo_solve_nonhydro_stencil_17.with_backend(run_gtfn)(
             hmask_dd3d=self.metric_state_nonhydro.hmask_dd3d,
             scalfac_dd3d=self.metric_state_nonhydro.scalfac_dd3d,
@@ -1496,8 +1471,6 @@ class SolveNonhydro:
                 "E2C": self.grid.get_offset_provider("E2C"),
             },
         )
-        print(f"corrector - stencil_17 end ")
-
         if self.config.itime_scheme == 4:
             mo_solve_nonhydro_stencil_23.with_backend(run_gtfn)(
                 vn_nnow=prognostic_state[nnow].vn,
@@ -1522,7 +1495,6 @@ class SolveNonhydro:
             self.config.divdamp_order == 24 or self.config.divdamp_order == 4
         ):
             # verified for e-10
-            print(f"corrector - stencil_25 start ")
             mo_solve_nonhydro_stencil_25.with_backend(run_gtfn)(
                 geofac_grdiv=self.interpolation_state.geofac_grdiv,
                 z_graddiv_vn=z_fields.z_graddiv_vn,
@@ -1535,7 +1507,6 @@ class SolveNonhydro:
                     "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
                 },
             )
-        print(f"corrector - stencil25 end ")
         if self.config.lhdiff_rcf:
             if self.config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
                 mo_solve_nonhydro_stencil_26.with_backend(run_gtfn)(
@@ -1550,15 +1521,11 @@ class SolveNonhydro:
                 )
 
             # TODO: this does not get accessed in FORTRAN
-            print(
-                f"damping: divdamp_fac_o2 = {self.config.divdamp_fac_o2} divdamp_fac={self.config.divdamp_fac}"
-            )
             if (
                 self.config.divdamp_order == 24
                 and self.config.divdamp_fac_o2 <= 4 * self.config.divdamp_fac
             ):
                 if self.grid.limited_area:
-                    print(f"running stencil_27: 2nd order div damping")
                     mo_solve_nonhydro_stencil_27.with_backend(run_gtfn)(
                         scal_divdamp=self.scal_divdamp,
                         bdy_divdamp=self._bdy_divdamp,
@@ -1572,9 +1539,6 @@ class SolveNonhydro:
                         offset_provider={},
                     )
                 else:
-                    print(
-                        f"local area running  mo_solve_nonhydro_4th_order_divdamp: 4th order div damping"
-                    )
                     mo_solve_nonhydro_4th_order_divdamp.with_backend(run_gtfn)(
                         scal_divdamp=self.scal_divdamp,
                         z_graddiv2_vn=self.z_graddiv2_vn,
@@ -1588,7 +1552,6 @@ class SolveNonhydro:
 
         # TODO: this does not get accessed in FORTRAN
         if self.config.is_iau_active:
-            print(f"corrector - stencil_28 start ")
             mo_solve_nonhydro_stencil_28(
                 diagnostic_state_nh.vn_incr,
                 prognostic_state[nnew].vn,
@@ -1599,7 +1562,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-
+        log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(EdgeDim, (prognostic_state[nnew].vn))
         mo_solve_nonhydro_stencil_31.with_backend(run_gtfn)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
@@ -1613,10 +1576,8 @@ class SolveNonhydro:
                 "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
             },
         )
-        print(f"corrector - stencil_31 end ")
 
         if self.config.idiv_method == 1:
-            print(f"corrector - stencil_32 start ")
             mo_solve_nonhydro_stencil_32.with_backend(run_gtfn)(
                 z_rho_e=z_fields.z_rho_e,
                 z_vn_avg=self.z_vn_avg,
@@ -1630,10 +1591,8 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-            print(f"corrector - stencil_32 end ")
             if lprep_adv:  # Preparations for tracer advection
                 if lclean_mflx:
-                    print(f"corrector - stencil_33 start ")
                     mo_solve_nonhydro_stencil_33.with_backend(run_gtfn)(
                         vn_traj=prep_adv.vn_traj,
                         mass_flx_me=prep_adv.mass_flx_me,
@@ -1643,8 +1602,6 @@ class SolveNonhydro:
                         vertical_end=self.grid.num_levels,
                         offset_provider={},
                     )
-                    print(f"corrector - stencil_33 end ")
-                print(f"corrector - stencil_34 start ")
                 mo_solve_nonhydro_stencil_34.with_backend(run_gtfn)(
                     z_vn_avg=self.z_vn_avg,
                     mass_fl_e=diagnostic_state_nh.mass_fl_e,
@@ -1660,7 +1617,6 @@ class SolveNonhydro:
 
         if self.config.idiv_method == 1:
             # verified for e-9
-            print(f"corrector - stencil_41 start ")
             mo_solve_nonhydro_stencil_41.with_backend(run_gtfn)(
                 geofac_div=self.interpolation_state.geofac_div,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
@@ -1676,9 +1632,7 @@ class SolveNonhydro:
                     "C2CE": self.grid.get_offset_provider("C2CE"),
                 },
             )
-        print(f"corrector - stencil_14 end ")
         if self.config.itime_scheme == 4:
-            print(f"corrector - stencil_42 45b start ")
             nhsolve_prog.stencils_42_44_45_45b.with_backend(run_gtfn)(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
@@ -1712,9 +1666,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={},
             )
-            print(f"corrector - stencil_42 45b start ")
         else:
-            print(f"corrector - stencil_43 45b end ")
             nhsolve_prog.stencils_43_44_45_45b.with_backend(run_gtfn)(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
@@ -1745,10 +1697,8 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={},
             )
-            print(f"corrector - stencil_43 45b end ")
 
         if not self.config.l_open_ubc and not self.l_vert_nested:
-            print(f"corrector - stencil_46 start ")
             mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
                 w_nnew=prognostic_state[nnew].w,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
@@ -1758,9 +1708,7 @@ class SolveNonhydro:
                 vertical_end=0,
                 offset_provider={},
             )
-            print(f"corrector - stencil_46 end ")
 
-        print(f"corrector - stencil_47 49 start ")
         nhsolve_prog.stencils_47_48_49.with_backend(run_gtfn)(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
@@ -1785,11 +1733,9 @@ class SolveNonhydro:
                 "Koff": KDim,
             },
         )
-        print(f"corrector - stencil_47 49 start ")
 
         # TODO: this is not tested in green line so far
         if self.config.is_iau_active:
-            print(f"corrector - stencil_50 start ")
             mo_solve_nonhydro_stencil_50(
                 z_rho_expl=z_fields.z_rho_expl,
                 z_exner_expl=z_fields.z_exner_expl,
@@ -1802,8 +1748,6 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-            print(f"corrector - stencil_50 start ")
-        print(f"corrector - stencil_52 start ")
         mo_solve_nonhydro_stencil_52.with_backend(run_gtfn)(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
@@ -1822,8 +1766,6 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
         )
-        print(f"corrector - stencil_52 end ")
-        print(f"corrector - stencil_53 start ")
         mo_solve_nonhydro_stencil_53.with_backend(run_gtfn)(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
@@ -1833,10 +1775,8 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        print(f"corrector - stencil_52 end ")
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
-            print(f"corrector - stencil_54 start ")
             mo_solve_nonhydro_stencil_54.with_backend(run_gtfn)(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -1849,9 +1789,6 @@ class SolveNonhydro:
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
             )
-            print(f"corrector - stencil_54 end ")
-
-        print(f"corrector - stencil_55 start ")
         mo_solve_nonhydro_stencil_55.with_backend(run_gtfn)(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
@@ -1876,7 +1813,6 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
         )
-        print(f"corrector - stencil_55 end ")
 
         if lprep_adv:
             if lclean_mflx:
@@ -1888,7 +1824,6 @@ class SolveNonhydro:
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
-        print(f"corrector - stencil_58 start ")
         mo_solve_nonhydro_stencil_58.with_backend(run_gtfn)(
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
@@ -1902,7 +1837,6 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        print(f"corrector - stencil_58 end ")
 
         if lprep_adv:
             if lclean_mflx:
@@ -1914,7 +1848,6 @@ class SolveNonhydro:
                     vertical_end=self.grid.num_levels + 1,
                     offset_provider={},
                 )
-            print(f"corrector - stencil_65 start ")
             mo_solve_nonhydro_stencil_65.with_backend(run_gtfn)(
                 rho_ic=diagnostic_state_nh.rho_ic,
                 vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
@@ -1930,8 +1863,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-            print(f"corrector - stencil_65 end ")
-
+            log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
             self._exchange.exchange_and_wait(
                 CellDim,
                 prognostic_state[nnew].rho,
