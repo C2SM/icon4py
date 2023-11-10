@@ -14,6 +14,7 @@ import logging
 
 import numpy as np
 import pytest
+
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
@@ -109,7 +110,9 @@ def test_nonhydro_predictor_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
+    caplog,
 ):
+    caplog.set_level(logging.DEBUG)
     config = NonHydrostaticConfig()
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
@@ -192,10 +195,8 @@ def test_nonhydro_predictor_step(
     icon_result_w_concorr_c = sp_exit.w_concorr_c()
     icon_result_mass_fl_e = sp_exit.mass_fl_e()
 
-    # TODO: @abishekg7 remove bounds from asserts?
-    # stencils 2, 3
     cell_start_lb_plus2 = icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
     )
     cell_start_nudging = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
     edge_start_lb_plus4 = icon_grid.get_start_index(
@@ -208,6 +209,7 @@ def test_nonhydro_predictor_step(
         EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
     )
 
+    # stencils 2, 3
     assert dallclose(
         np.asarray(sp_exit.exner_pr())[cell_start_lb_plus2:, :],
         np.asarray(diagnostic_state_nh.exner_pr)[cell_start_lb_plus2:, :],
@@ -222,15 +224,16 @@ def test_nonhydro_predictor_step(
         np.asarray(sp_exit.z_exner_ic())[cell_start_lb_plus2:, nlev - 1],
         np.asarray(solve_nonhydro.z_exner_ic)[cell_start_lb_plus2:, nlev - 1],
     )
+    nflatlev = vertical_params.nflatlev
     assert dallclose(
-        np.asarray(sp_exit.z_exner_ic())[cell_start_lb_plus2:, 4 : nlev - 1],
-        np.asarray(solve_nonhydro.z_exner_ic)[cell_start_lb_plus2:, 4 : nlev - 1],
+        np.asarray(sp_exit.z_exner_ic())[cell_start_lb_plus2:, nflatlev : nlev - 1],
+        np.asarray(solve_nonhydro.z_exner_ic)[cell_start_lb_plus2:, nflatlev : nlev - 1],
         rtol=1.0e-9,
     )
     # stencil 6
     assert dallclose(
-        np.asarray(sp_exit.z_dexner_dz_c(1))[cell_start_lb_plus2:, :],
-        np.asarray(solve_nonhydro.z_dexner_dz_c_1)[cell_start_lb_plus2:, :],
+        np.asarray(sp_exit.z_dexner_dz_c(1))[cell_start_lb_plus2:, nflatlev:],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_1)[cell_start_lb_plus2:, nflatlev:],
         atol=5e-18,
     )
 
@@ -264,9 +267,10 @@ def test_nonhydro_predictor_step(
     )
 
     # stencils 12
+    nflat_gradp = vertical_params.nflat_gradp
     assert dallclose(
-        np.asarray(sp_exit.z_dexner_dz_c(2))[cell_start_lb_plus2:, :],
-        np.asarray(solve_nonhydro.z_dexner_dz_c_2)[cell_start_lb_plus2:, :],
+        np.asarray(sp_exit.z_dexner_dz_c(2))[cell_start_lb_plus2:, nflat_gradp:],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_2)[cell_start_lb_plus2:, nflat_gradp:],
         atol=1e-22,
     )
 
@@ -370,8 +374,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 35
     assert dallclose(
-        np.asarray(sp_exit.z_w_concorr_me()),
-        np.asarray(solve_nonhydro.z_w_concorr_me),
+        np.asarray(sp_exit.z_w_concorr_me())[edge_start_lb_plus4:, nflatlev:],
+        np.asarray(solve_nonhydro.z_w_concorr_me)[edge_start_lb_plus4:, nflatlev:],
         atol=2e-15,
     )
     # stencils 39,40
@@ -439,7 +443,6 @@ def test_nonhydro_predictor_step(
     assert dallclose(np.asarray(sp_exit.rho_new()), np.asarray(prognostic_state_nnew.rho))
     assert dallclose(np.asarray(icon_result_w_new), np.asarray(prognostic_state_nnew.w), atol=7e-14)
 
-    # not tested
     assert dallclose(np.asarray(icon_result_exner_new), np.asarray(prognostic_state_nnew.exner))
 
     assert dallclose(np.asarray(icon_result_theta_v_new), np.asarray(prognostic_state_nnew.theta_v))
@@ -732,10 +735,7 @@ def test_run_solve_nonhydro_single_step(
 
     prognostic_state_ls = create_prognostic_states(sp)
 
-    # print(
-    #    f" savepoint scal_divdamp_o2 = {sp.divdamp_fac_o2()}"
-    # )  # TODO calcualated internally use for comparing
-    initial_divdamp_fac = 0.032  # TODO (magdalena) get from somewhere??
+    initial_divdamp_fac = 0.032  # TODO (magdalena) get from somewhere??  sp.divdamp_fac_o2()
     print(f"manual divdamp_fac_o2 = {initial_divdamp_fac}")
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,

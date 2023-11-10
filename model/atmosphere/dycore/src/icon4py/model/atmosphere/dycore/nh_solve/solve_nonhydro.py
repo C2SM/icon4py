@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import logging
 from typing import Final, Optional
 
 import numpy as np
@@ -147,20 +148,24 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate_indices,
     _calculate_bdy_divdamp,
     _en_smag_fac_for_zero_nshift,
+    _scal_divdamp_NEW,
     compute_z_raylfac,
     scal_divdamp_calcs,
     set_zero_c_k,
     set_zero_e_k,
-    _scal_divdamp_NEW,
 )
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex, CellParams
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
+
+
+# flake8: noqa
+log = logging.getLogger(__name__)
 
 
 class NonHydrostaticConfig:
@@ -619,10 +624,14 @@ class SolveNonhydro:
         end_cell_local_minus1 = self.grid.get_end_index(
             CellDim, HorizontalMarkerIndex.local(CellDim) - 1
         )
-
+        end_cell_halo = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
         start_cell_nudging = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
         )
+        print(f" CELLS end indices")
+        print(f" end_halo={end_cell_halo}")
+        print(f" end_local_m1={end_cell_local_minus1}")
+
         end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
         #  Precompute Rayleigh damping factor
@@ -662,9 +671,12 @@ class SolveNonhydro:
             offset_provider={},
         )
         print("predictor stencil_02 3 end")
+        print(f"nflatlev: {self.vertical_params.nflatlev}")
+        print(f"nflatlev_gradp: {self.vertical_params.nflat_gradp}")
 
         if self.config.igradp_method == 3:
             print("predictor stencil_04 5 6 start")
+            # should be run over all vertical levels and max(1, self.vertical_params.nflatlev) handled in where inside the stencil
             nhsolve_prog.predictor_stencils_4_5_6.with_backend(run_gtfn)(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
                 z_exner_ex_pr=self.z_exner_ex_pr,
@@ -1366,7 +1378,7 @@ class SolveNonhydro:
         # delta_x**2 is approximated by the mean cell area
         scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
 
-        _scal_divdamp_NEW(
+        _scal_divdamp_NEW.with_backend(run_gtfn)(
             self.enh_divdamp_fac,
             int32(self.config.divdamp_order),
             self.cell_params.mean_cell_area,
@@ -1375,7 +1387,7 @@ class SolveNonhydro:
             offset_provider={},
         )
         # Coefficient for reduced fourth-order divergence damping along nest boundaries
-        _calculate_bdy_divdamp(
+        _calculate_bdy_divdamp.with_backend(run_gtfn)(
             self.scal_divdamp,
             self.config.nudge_max_coeff,
             constants.dbl_eps,
