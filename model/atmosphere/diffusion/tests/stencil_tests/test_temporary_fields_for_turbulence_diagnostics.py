@@ -1,3 +1,5 @@
+# TODO: This license is not consistent with license used in the project.
+#       Delete the inconsistent license and above line and rerun pre-commit to insert a good license.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 

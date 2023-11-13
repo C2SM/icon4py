@@ -40,8 +40,8 @@ class TestMoSolveNonhydroStencil01(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_rth_pr_1 = random_field(grid, CellDim, KDim)
-        z_rth_pr_2 = random_field(grid, CellDim, KDim)
+        z_rth_pr_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_rth_pr_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             z_rth_pr_1=z_rth_pr_1,
