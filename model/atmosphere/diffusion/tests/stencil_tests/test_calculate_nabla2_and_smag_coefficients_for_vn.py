@@ -33,7 +33,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         diff_multfac_smag: np.array,
         tangent_orientation: np.array,
         inv_primal_edge_length: np.array,
@@ -49,13 +49,14 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         smag_offset,
         **kwargs,
     ) -> tuple[np.array]:
-        primal_normal_vert_x = primal_normal_vert_x.reshape(mesh.e2c2v.shape)
-        primal_normal_vert_y = primal_normal_vert_y.reshape(mesh.e2c2v.shape)
-        dual_normal_vert_x = dual_normal_vert_x.reshape(mesh.e2c2v.shape)
-        dual_normal_vert_y = dual_normal_vert_y.reshape(mesh.e2c2v.shape)
+        e2c2v = grid.connectivities[E2C2VDim]
+        primal_normal_vert_x = primal_normal_vert_x.reshape(e2c2v.shape)
+        primal_normal_vert_y = primal_normal_vert_y.reshape(e2c2v.shape)
+        dual_normal_vert_x = dual_normal_vert_x.reshape(e2c2v.shape)
+        dual_normal_vert_y = dual_normal_vert_y.reshape(e2c2v.shape)
 
-        u_vert_e2c2v = u_vert[mesh.e2c2v]
-        v_vert_e2c2v = v_vert[mesh.e2c2v]
+        u_vert_e2c2v = u_vert[e2c2v]
+        v_vert_e2c2v = v_vert[e2c2v]
         dual_normal_vert_x = np.expand_dims(dual_normal_vert_x, axis=-1)
         dual_normal_vert_y = np.expand_dims(dual_normal_vert_y, axis=-1)
         primal_normal_vert_x = np.expand_dims(primal_normal_vert_x, axis=-1)
@@ -155,30 +156,30 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         return dict(kh_smag_e=kh_smag_e, kh_smag_ec=kh_smag_ec, z_nabla2_e=z_nabla2_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        u_vert = random_field(mesh, VertexDim, KDim, dtype=vpfloat)
-        v_vert = random_field(mesh, VertexDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        u_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
+        v_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
         smag_offset = vpfloat("9.0")
-        diff_multfac_smag = random_field(mesh, KDim, dtype=vpfloat)
-        tangent_orientation = random_field(mesh, EdgeDim, dtype=wpfloat)
-        vn = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
-        smag_limit = random_field(mesh, KDim, dtype=vpfloat)
-        inv_vert_vert_length = random_field(mesh, EdgeDim, dtype=wpfloat)
-        inv_primal_edge_length = random_field(mesh, EdgeDim, dtype=wpfloat)
+        diff_multfac_smag = random_field(grid, KDim, dtype=vpfloat)
+        tangent_orientation = random_field(grid, EdgeDim, dtype=wpfloat)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        smag_limit = random_field(grid, KDim, dtype=vpfloat)
+        inv_vert_vert_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        inv_primal_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
 
-        primal_normal_vert_x = random_field(mesh, EdgeDim, E2C2VDim, dtype=wpfloat)
-        primal_normal_vert_y = random_field(mesh, EdgeDim, E2C2VDim, dtype=wpfloat)
-        dual_normal_vert_x = random_field(mesh, EdgeDim, E2C2VDim, dtype=wpfloat)
-        dual_normal_vert_y = random_field(mesh, EdgeDim, E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_x = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_y = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
+        dual_normal_vert_x = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
+        dual_normal_vert_y = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
 
         primal_normal_vert_x_new = as_1D_sparse_field(primal_normal_vert_x, ECVDim)
         primal_normal_vert_y_new = as_1D_sparse_field(primal_normal_vert_y, ECVDim)
         dual_normal_vert_x_new = as_1D_sparse_field(dual_normal_vert_x, ECVDim)
         dual_normal_vert_y_new = as_1D_sparse_field(dual_normal_vert_y, ECVDim)
 
-        z_nabla2_e = zero_field(mesh, EdgeDim, KDim, dtype=wpfloat)
-        kh_smag_e = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        kh_smag_ec = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        z_nabla2_e = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        kh_smag_e = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        kh_smag_ec = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             diff_multfac_smag=diff_multfac_smag,
@@ -198,7 +199,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
             z_nabla2_e=z_nabla2_e,
             smag_offset=smag_offset,
             horizontal_start=0,
-            horizontal_end=mesh.n_edges,
+            horizontal_end=grid.num_edges,
             vertical_start=0,
-            vertical_end=mesh.k_level,
+            vertical_end=grid.num_levels,
         )

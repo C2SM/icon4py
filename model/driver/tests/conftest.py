@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401
+from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     datapath,
     download_ser_data,
     processor_props,

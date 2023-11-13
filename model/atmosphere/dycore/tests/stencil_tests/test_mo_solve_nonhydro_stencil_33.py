@@ -28,21 +28,21 @@ class TestMoSolveNonhydroStencil33(StencilTest):
     OUTPUTS = ("vn_traj", "mass_flx_me")
 
     @staticmethod
-    def reference(mesh, vn_traj: np.array, mass_flx_me: np.array, **kwargs) -> dict:
+    def reference(grid, vn_traj: np.array, mass_flx_me: np.array, **kwargs) -> dict:
         vn_traj = np.zeros_like(vn_traj)
         mass_flx_me = np.zeros_like(mass_flx_me)
         return dict(vn_traj=vn_traj, mass_flx_me=mass_flx_me)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn_traj = zero_field(mesh, EdgeDim, KDim, dtype=wpfloat)
-        mass_flx_me = zero_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+    def input_data(self, grid):
+        vn_traj = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        mass_flx_me = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             vn_traj=vn_traj,
             mass_flx_me=mass_flx_me,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

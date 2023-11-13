@@ -28,7 +28,7 @@ class TestComputeBtraj(StencilTest):
 
     @staticmethod
     def compute_btraj_numpy(
-        mesh,
+        grid,
         p_vn: np.array,
         p_vt: np.array,
         pos_on_tplane_e_1: np.array,
@@ -75,7 +75,7 @@ class TestComputeBtraj(StencilTest):
 
     @staticmethod
     def sten_16_numpy(
-        mesh,
+        grid,
         p_vn: np.array,
         rho_ref_me: np.array,
         theta_ref_me: np.array,
@@ -89,12 +89,13 @@ class TestComputeBtraj(StencilTest):
         z_rth_pr_2: np.array,
         **kwargs,
     ) -> np.array:
-        z_rth_pr_1_e2c = z_rth_pr_1[mesh.e2c]
-        z_rth_pr_2_e2c = z_rth_pr_2[mesh.e2c]
-        z_grad_rth_1_e2c = z_grad_rth_1[mesh.e2c]
-        z_grad_rth_2_e2c = z_grad_rth_2[mesh.e2c]
-        z_grad_rth_3_e2c = z_grad_rth_3[mesh.e2c]
-        z_grad_rth_4_e2c = z_grad_rth_4[mesh.e2c]
+        e2c = grid.connectivities[E2CDim]
+        z_rth_pr_1_e2c = z_rth_pr_1[e2c]
+        z_rth_pr_2_e2c = z_rth_pr_2[e2c]
+        z_grad_rth_1_e2c = z_grad_rth_1[e2c]
+        z_grad_rth_2_e2c = z_grad_rth_2[e2c]
+        z_grad_rth_3_e2c = z_grad_rth_3[e2c]
+        z_grad_rth_4_e2c = z_grad_rth_4[e2c]
 
         z_rho_e = np.where(
             p_vn > 0,
@@ -125,7 +126,7 @@ class TestComputeBtraj(StencilTest):
     @classmethod
     def reference(
         cls,
-        mesh,
+        grid,
         p_vn: np.array,
         p_vt: np.array,
         pos_on_tplane_e_1: np.array,
@@ -145,15 +146,16 @@ class TestComputeBtraj(StencilTest):
         z_rth_pr_2: np.array,
         **kwargs,
     ):
-        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(mesh.e2c.shape)
-        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(mesh.e2c.shape)
-        primal_normal_cell_1 = primal_normal_cell_1.reshape(mesh.e2c.shape)
-        dual_normal_cell_1 = dual_normal_cell_1.reshape(mesh.e2c.shape)
-        primal_normal_cell_2 = primal_normal_cell_2.reshape(mesh.e2c.shape)
-        dual_normal_cell_2 = dual_normal_cell_2.reshape(mesh.e2c.shape)
+        e2c = grid.connectivities[E2CDim]
+        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
+        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
+        primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)
+        dual_normal_cell_1 = dual_normal_cell_1.reshape(e2c.shape)
+        primal_normal_cell_2 = primal_normal_cell_2.reshape(e2c.shape)
+        dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
 
         p_distv_bary_1, p_distv_bary_2 = cls.compute_btraj_numpy(
-            mesh,
+            grid,
             p_vn,
             p_vt,
             pos_on_tplane_e_1,
@@ -166,7 +168,7 @@ class TestComputeBtraj(StencilTest):
         )
 
         z_rho_e, z_theta_v_e = cls.sten_16_numpy(
-            mesh,
+            grid,
             p_vn,
             rho_ref_me,
             theta_ref_me,
@@ -183,33 +185,33 @@ class TestComputeBtraj(StencilTest):
         return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        p_vn = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
-        p_vt = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        pos_on_tplane_e_1 = random_field(mesh, EdgeDim, E2CDim, dtype=wpfloat)
+    def input_data(self, grid):
+        p_vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        p_vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        pos_on_tplane_e_1 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
         pos_on_tplane_e_1_new = as_1D_sparse_field(pos_on_tplane_e_1, ECDim)
-        pos_on_tplane_e_2 = random_field(mesh, EdgeDim, E2CDim, dtype=wpfloat)
+        pos_on_tplane_e_2 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
         pos_on_tplane_e_2_new = as_1D_sparse_field(pos_on_tplane_e_2, ECDim)
-        primal_normal_cell_1 = random_field(mesh, EdgeDim, E2CDim, dtype=wpfloat)
+        primal_normal_cell_1 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
         primal_normal_cell_1_new = as_1D_sparse_field(primal_normal_cell_1, ECDim)
-        dual_normal_cell_1 = random_field(mesh, EdgeDim, E2CDim, dtype=wpfloat)
+        dual_normal_cell_1 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
         dual_normal_cell_1_new = as_1D_sparse_field(dual_normal_cell_1, ECDim)
-        primal_normal_cell_2 = random_field(mesh, EdgeDim, E2CDim, dtype=wpfloat)
+        primal_normal_cell_2 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
         primal_normal_cell_2_new = as_1D_sparse_field(primal_normal_cell_2, ECDim)
-        dual_normal_cell_2 = random_field(mesh, EdgeDim, E2CDim, dtype=wpfloat)
+        dual_normal_cell_2 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
         dual_normal_cell_2_new = as_1D_sparse_field(dual_normal_cell_2, ECDim)
         p_dthalf = wpfloat("2.0")
 
-        rho_ref_me = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        theta_ref_me = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        z_grad_rth_1 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_grad_rth_2 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_grad_rth_3 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_grad_rth_4 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_1 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_2 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_rho_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
-        z_theta_v_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+        rho_ref_me = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        theta_ref_me = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_grad_rth_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_grad_rth_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_grad_rth_3 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_grad_rth_4 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_rth_pr_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_rth_pr_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_rho_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_theta_v_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             p_vn=p_vn,

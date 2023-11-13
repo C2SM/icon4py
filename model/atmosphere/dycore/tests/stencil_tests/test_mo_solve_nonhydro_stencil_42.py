@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil42(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         w_nnow: np.array,
         ddt_w_adv_ntl1: np.array,
         ddt_w_adv_ntl2: np.array,
@@ -50,16 +50,16 @@ class TestMoSolveNonhydroStencil42(StencilTest):
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        w_nnow = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        ddt_w_adv_ntl1 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        ddt_w_adv_ntl2 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_th_ddz_exner_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_w_expl = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
-        rho_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        w_concorr_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
-        z_contr_w_fl_l = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
+    def input_data(self, grid):
+        w_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        ddt_w_adv_ntl1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        ddt_w_adv_ntl2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_th_ddz_exner_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_w_expl = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        vwind_expl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+        z_contr_w_fl_l = zero_field(grid, CellDim, KDim, dtype=wpfloat)
         dtime = wpfloat("5.0")
         wgt_nnow_vel = wpfloat("8.0")
         wgt_nnew_vel = wpfloat("9.0")

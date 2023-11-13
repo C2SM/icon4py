@@ -27,13 +27,13 @@ class TestMoSolveNonhydroStencil45(StencilTest):
     OUTPUTS = ("z_alpha",)
 
     @staticmethod
-    def reference(mesh, z_alpha: np.array, **kwargs) -> dict:
+    def reference(grid, z_alpha: np.array, **kwargs) -> dict:
         z_alpha = np.zeros_like(z_alpha)
         return dict(z_alpha=z_alpha)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_alpha = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        z_alpha = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             z_alpha=z_alpha,

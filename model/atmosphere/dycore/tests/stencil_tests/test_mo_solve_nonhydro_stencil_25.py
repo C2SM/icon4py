@@ -28,23 +28,27 @@ class TestMoSolveNonhydroStencil25(StencilTest):
     OUTPUTS = ("z_graddiv2_vn",)
 
     @staticmethod
-    def reference(mesh, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> np.array:
+    def reference(grid, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> np.array:
+        e2c2eO = grid.connectivities[E2C2EODim]
         geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
-        z_graddiv2_vn = np.sum(z_graddiv_vn[mesh.e2c2eO] * geofac_grdiv, axis=1)
+        z_graddiv2_vn = np.sum(
+            np.where((e2c2eO != -1)[:, :, np.newaxis], z_graddiv_vn[e2c2eO] * geofac_grdiv, 0),
+            axis=1,
+        )
         return dict(z_graddiv2_vn=z_graddiv2_vn)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_graddiv_vn = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        geofac_grdiv = random_field(mesh, EdgeDim, E2C2EODim, dtype=wpfloat)
-        z_graddiv2_vn = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        z_graddiv_vn = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        geofac_grdiv = random_field(grid, EdgeDim, E2C2EODim, dtype=wpfloat)
+        z_graddiv2_vn = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             geofac_grdiv=geofac_grdiv,
             z_graddiv_vn=z_graddiv_vn,
             z_graddiv2_vn=z_graddiv2_vn,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

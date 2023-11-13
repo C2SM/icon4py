@@ -26,17 +26,17 @@ class TestComputeAirmass(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, rho_in: np.array, ddqz_z_full_in: np.array, deepatmo_t1mc_in: np.array, **kwargs
+        grid, rho_in: np.array, ddqz_z_full_in: np.array, deepatmo_t1mc_in: np.array, **kwargs
     ) -> dict:
         airmass_out = rho_in * ddqz_z_full_in * deepatmo_t1mc_in
         return dict(airmass_out=airmass_out)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        rho_in = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        ddqz_z_full_in = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        deepatmo_t1mc_in = random_field(mesh, KDim, dtype=wpfloat)
-        airmass_out = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+    def input_data(self, grid):
+        rho_in = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        ddqz_z_full_in = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        deepatmo_t1mc_in = random_field(grid, KDim, dtype=wpfloat)
+        airmass_out = random_field(grid, CellDim, KDim, dtype=wpfloat)
         return dict(
             rho_in=rho_in,
             ddqz_z_full_in=ddqz_z_full_in,

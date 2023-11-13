@@ -29,7 +29,7 @@ class TestMoSolveNonhydroStencil68(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         mask_prog_halo_c: np.array,
         rho_now: np.array,
         theta_v_now: np.array,
@@ -50,14 +50,14 @@ class TestMoSolveNonhydroStencil68(StencilTest):
         return dict(theta_v_new=theta_v_new)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        mask_prog_halo_c = random_mask(mesh, CellDim)
-        rho_now = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        theta_v_now = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        exner_new = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        exner_now = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        rho_new = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        theta_v_new = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+    def input_data(self, grid):
+        mask_prog_halo_c = random_mask(grid, CellDim)
+        rho_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
         cvd_o_rd = wpfloat("10.0")
 
         return dict(
@@ -70,7 +70,7 @@ class TestMoSolveNonhydroStencil68(StencilTest):
             theta_v_new=theta_v_new,
             cvd_o_rd=cvd_o_rd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

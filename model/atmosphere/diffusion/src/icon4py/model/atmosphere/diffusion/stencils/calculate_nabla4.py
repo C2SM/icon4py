@@ -54,12 +54,10 @@ def _calculate_nabla4(
         ),
         vpfloat,
     )
-
     nabv_tang_wp, nabv_norm_wp = astype((nabv_tang_vp, nabv_norm_vp), wpfloat)
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
     z_nabla4_e2_wp = wpfloat("4.0") * (
-        (nabv_norm_wp - wpfloat("2.0") * z_nabla2_e) * inv_vert_vert_length**2.0
-        + (nabv_tang_wp - wpfloat("2.0") * z_nabla2_e) * inv_primal_edge_length**2.0
+        (nabv_norm_wp - wpfloat("2.0") * z_nabla2_e) * inv_vert_vert_length**2
+        + (nabv_tang_wp - wpfloat("2.0") * z_nabla2_e) * inv_primal_edge_length**2
     )
     return astype(z_nabla4_e2_wp, vpfloat)
 

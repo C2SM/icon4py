@@ -28,25 +28,27 @@ class TestMoVelocityAdvectionStencil03(StencilTest):
     OUTPUTS = ("z_vt_ie",)
 
     @staticmethod
-    def reference(mesh, wgtfac_e: np.array, vt: np.array, **kwargs) -> np.array:
+    def reference(grid, wgtfac_e: np.array, vt: np.array, **kwargs) -> np.array:
         vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
         z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
         z_vt_ie[:, 0] = 0
-        return dict(z_vt_ie=z_vt_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)])
+        return dict(
+            z_vt_ie=z_vt_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)]
+        )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        wgtfac_e = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        vt = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        wgtfac_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
-        z_vt_ie = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+        z_vt_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,
             vt=vt,
-            z_vt_ie=z_vt_ie[int32(1) : int32(mesh.n_cells), int32(1) : int32(mesh.k_level)],
+            z_vt_ie=z_vt_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)],
             horizontal_start=int32(1),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(1),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

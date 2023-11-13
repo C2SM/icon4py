@@ -29,7 +29,7 @@ class TestMoSolveNonhydroStencil13(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         rho: np.array,
         rho_ref_mc: np.array,
         theta_v: np.array,
@@ -41,13 +41,13 @@ class TestMoSolveNonhydroStencil13(StencilTest):
         return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        rho = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        rho_ref_mc = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        theta_v = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        theta_ref_mc = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_1 = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_2 = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        rho = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_rth_pr_1 = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_rth_pr_2 = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             rho=rho,
@@ -57,7 +57,7 @@ class TestMoSolveNonhydroStencil13(StencilTest):
             z_rth_pr_1=z_rth_pr_1,
             z_rth_pr_2=z_rth_pr_2,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

@@ -29,7 +29,6 @@ from ..utils import verify_diffusion_fields
 @pytest.mark.mpi
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
-@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_parallel_diffusion(
     r04b09_diffusion_config,
     step_date_init,
@@ -60,7 +59,7 @@ def test_parallel_diffusion(
     )
 
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells()} Cells, {icon_grid.num_edges()} Edges, {icon_grid.num_vertices()} Vertices"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
     metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     cell_geometry = grid_savepoint.construct_cell_geometry()

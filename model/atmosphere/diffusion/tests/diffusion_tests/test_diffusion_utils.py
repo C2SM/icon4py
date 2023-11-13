@@ -24,8 +24,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     setup_fields_for_initial_step,
 )
 from icon4py.model.common.dimension import KDim, VertexDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 from .utils import diff_multfac_vn_numpy, enhanced_smagorinski_factor_numpy, smag_limit_numpy
 
@@ -35,18 +35,18 @@ def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
 
 
 def test_scale_k():
-    mesh = SimpleMesh()
-    field = random_field(mesh, KDim)
-    scaled_field = zero_field(mesh, KDim)
+    grid = SimpleGrid()
+    field = random_field(grid, KDim)
+    scaled_field = zero_field(grid, KDim)
     factor = 2.0
     scale_k(field, factor, scaled_field, offset_provider={})
     assert np.allclose(factor * np.asarray(field), scaled_field)
 
 
 def test_diff_multfac_vn_and_smag_limit_for_initial_step():
-    mesh = SimpleMesh()
-    diff_multfac_vn_init = zero_field(mesh, KDim)
-    smag_limit_init = zero_field(mesh, KDim)
+    grid = SimpleGrid()
+    diff_multfac_vn_init = zero_field(grid, KDim)
+    smag_limit_init = zero_field(grid, KDim)
     k4 = 1.0
     efdt_ratio = 24.0
     shape = np.asarray(diff_multfac_vn_init).shape
@@ -65,9 +65,9 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step():
 
 
 def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value():
-    mesh = SimpleMesh()
-    diff_multfac_vn = zero_field(mesh, KDim)
-    smag_limit = zero_field(mesh, KDim)
+    grid = SimpleGrid()
+    diff_multfac_vn = zero_field(grid, KDim)
+    smag_limit = zero_field(grid, KDim)
     k4 = 1.0
     substeps = 5.0
     efdt_ratio = 24.0
@@ -84,9 +84,9 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value():
 
 
 def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps():
-    mesh = SimpleMesh()
-    diff_multfac_vn = zero_field(mesh, KDim)
-    smag_limit = zero_field(mesh, KDim)
+    grid = SimpleGrid()
+    diff_multfac_vn = zero_field(grid, KDim)
+    smag_limit = zero_field(grid, KDim)
     k4 = 0.003
     substeps = 1.0
 
@@ -101,9 +101,9 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps():
 
 
 def test_init_enh_smag_fac():
-    mesh = SimpleMesh()
-    enh_smag_fac = zero_field(mesh, KDim)
-    a_vec = random_field(mesh, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    grid = SimpleGrid()
+    enh_smag_fac = zero_field(grid, KDim)
+    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
@@ -114,8 +114,8 @@ def test_init_enh_smag_fac():
 
 
 def test_set_zero_vertex_k():
-    mesh = SimpleMesh()
-    f = random_field(mesh, VertexDim, KDim)
+    grid = SimpleGrid()
+    f = random_field(grid, VertexDim, KDim)
     set_zero_v_k(f, offset_provider={})
     assert np.allclose(0.0, f)
 

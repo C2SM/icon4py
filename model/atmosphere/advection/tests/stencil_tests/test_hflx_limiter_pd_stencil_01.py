@@ -16,8 +16,8 @@ from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_01 import hflx_limiter_pd_stencil_01
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflx_limiter_pd_stencil_01_numpy(
@@ -41,17 +41,17 @@ def hflx_limiter_pd_stencil_01_numpy(
 
 
 def test_hflx_limiter_pd_stencil_01():
-    mesh = SimpleMesh()
-    geofac_div = random_field(mesh, CellDim, C2EDim)
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_rhodz_now = random_field(mesh, CellDim, KDim)
-    p_mflx_tracer_h = random_field(mesh, EdgeDim, KDim)
-    r_m = zero_field(mesh, CellDim, KDim)
+    grid = SimpleGrid()
+    geofac_div = random_field(grid, CellDim, C2EDim)
+    p_cc = random_field(grid, CellDim, KDim)
+    p_rhodz_now = random_field(grid, CellDim, KDim)
+    p_mflx_tracer_h = random_field(grid, EdgeDim, KDim)
+    r_m = zero_field(grid, CellDim, KDim)
     p_dtime = np.float64(5)
     dbl_eps = np.float64(1e-9)
 
     ref = hflx_limiter_pd_stencil_01_numpy(
-        mesh.c2e,
+        grid.connectivities[C2EDim],
         np.asarray(geofac_div),
         np.asarray(p_cc),
         np.asarray(p_rhodz_now),
@@ -69,8 +69,8 @@ def test_hflx_limiter_pd_stencil_01():
         p_dtime,
         dbl_eps,
         offset_provider={
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
-            "C2E": mesh.get_c2e_offset_provider(),
+            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
+            "C2E": grid.get_offset_provider("C2E"),
         },
     )
     assert np.allclose(r_m, ref)

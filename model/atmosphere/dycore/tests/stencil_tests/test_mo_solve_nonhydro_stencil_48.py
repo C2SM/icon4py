@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil48(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         rho_nnow: np.array,
         inv_ddqz_z_full: np.array,
         z_flxdiv_mass: np.array,
@@ -58,20 +58,20 @@ class TestMoSolveNonhydroStencil48(StencilTest):
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         dtime = wpfloat("1.0")
-        rho_nnow = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        inv_ddqz_z_full = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_flxdiv_mass = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_contr_w_fl_l = random_field(mesh, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
-        exner_pr = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        z_beta = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_flxdiv_theta = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        theta_v_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
-        ddt_exner_phy = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        rho_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        inv_ddqz_z_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_flxdiv_mass = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_contr_w_fl_l = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+        exner_pr = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_beta = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_flxdiv_theta = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        theta_v_ic = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+        ddt_exner_phy = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
-        z_rho_expl = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
-        z_exner_expl = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
+        z_rho_expl = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_exner_expl = zero_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
             z_rho_expl=z_rho_expl,
