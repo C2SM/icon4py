@@ -27,17 +27,17 @@ class TestMoSolveNonhydroStencil05(StencilTest):
     OUTPUTS = ("z_exner_ic",)
 
     @staticmethod
-    def reference(mesh, wgtfac_c: np.array, z_exner_ex_pr: np.array, **kwargs) -> np.array:
+    def reference(grid, wgtfac_c: np.array, z_exner_ex_pr: np.array, **kwargs) -> np.array:
         z_exner_ex_pr_offset_1 = np.roll(z_exner_ex_pr, shift=1, axis=1)
         z_exner_ic = wgtfac_c * z_exner_ex_pr + (1.0 - wgtfac_c) * z_exner_ex_pr_offset_1
         z_exner_ic[:, 0] = 0
         return dict(z_exner_ic=z_exner_ic)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_exner_ex_pr = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        wgtfac_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_exner_ic = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        z_exner_ex_pr = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_exner_ic = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,

@@ -29,7 +29,7 @@ class TestMoSolveNonhydroStencil65(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         rho_ic: np.array,
         vwind_expl_wgt: np.array,
         vwind_impl_wgt: np.array,
@@ -48,15 +48,15 @@ class TestMoSolveNonhydroStencil65(StencilTest):
         return dict(mass_flx_ic=mass_flx_ic)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         r_nsubsteps = wpfloat("10.0")
-        rho_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        vwind_expl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
-        vwind_impl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
-        w_now = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        w_new = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        w_concorr_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        mass_flx_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        vwind_expl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+        vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+        w_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        mass_flx_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
             rho_ic=rho_ic,
@@ -68,7 +68,7 @@ class TestMoSolveNonhydroStencil65(StencilTest):
             mass_flx_ic=mass_flx_ic,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

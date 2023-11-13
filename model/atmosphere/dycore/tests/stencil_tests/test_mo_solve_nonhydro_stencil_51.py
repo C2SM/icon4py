@@ -45,7 +45,7 @@ class TestMoSolveNonHydroStencil51(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         vwind_impl_wgt: np.array,
         theta_v_ic: np.array,
         ddqz_z_half: np.array,
@@ -75,16 +75,16 @@ class TestMoSolveNonHydroStencil51(StencilTest):
         return dict(z_q=z_q, w_nnew=w_nnew)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_q = zero_field(mesh, CellDim, KDim)
-        w_nnew = zero_field(mesh, CellDim, KDim)
-        vwind_impl_wgt = random_field(mesh, CellDim)
-        theta_v_ic = random_field(mesh, CellDim, KDim)
-        ddqz_z_half = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
-        z_beta = random_field(mesh, CellDim, KDim, low=0.5, high=1.5)
-        z_alpha = random_field(mesh, CellDim, KDim, low=0.5, high=1.5, extend={KDim: 1})
-        z_w_expl = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        z_exner_expl = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_q = zero_field(grid, CellDim, KDim)
+        w_nnew = zero_field(grid, CellDim, KDim)
+        vwind_impl_wgt = random_field(grid, CellDim)
+        theta_v_ic = random_field(grid, CellDim, KDim)
+        ddqz_z_half = random_field(grid, CellDim, KDim, low=0.5, high=1.5)
+        z_beta = random_field(grid, CellDim, KDim, low=0.5, high=1.5)
+        z_alpha = random_field(grid, CellDim, KDim, low=0.5, high=1.5, extend={KDim: 1})
+        z_w_expl = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        z_exner_expl = random_field(grid, CellDim, KDim)
         dtime = 10.0
         cpd = 1.0
         return dict(

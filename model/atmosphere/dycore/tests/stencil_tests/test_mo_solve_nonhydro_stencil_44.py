@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil44(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         exner_nnow: np.array,
         rho_nnow: np.array,
         theta_v_nnow: np.array,
@@ -48,16 +48,16 @@ class TestMoSolveNonhydroStencil44(StencilTest):
         return dict(z_beta=z_beta, z_alpha=z_alpha)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        exner_nnow = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        rho_nnow = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        theta_v_nnow = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        inv_ddqz_z_full = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        vwind_impl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
-        theta_v_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        rho_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        z_alpha = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_beta = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        exner_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        inv_ddqz_z_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+        theta_v_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_alpha = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_beta = zero_field(grid, CellDim, KDim, dtype=vpfloat)
         dtime = wpfloat("10.0")
         rd = wpfloat("5.0")
         cvd = wpfloat("3.0")

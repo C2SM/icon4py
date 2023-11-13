@@ -28,21 +28,21 @@ class TestMoSolveNonhydroStencil15(StencilTest):
     OUTPUTS = ("z_rho_e", "z_theta_v_e")
 
     @staticmethod
-    def reference(mesh, z_rho_e: np.array, z_theta_v_e: np.array, **kwargs) -> tuple[np.array]:
+    def reference(grid, z_rho_e: np.array, z_theta_v_e: np.array, **kwargs) -> tuple[np.array]:
         z_rho_e = np.zeros_like(z_rho_e)
         z_theta_v_e = np.zeros_like(z_theta_v_e)
         return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_rho_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
-        z_theta_v_e = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
+    def input_data(self, grid):
+        z_rho_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_theta_v_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             z_rho_e=z_rho_e,
             z_theta_v_e=z_theta_v_e,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

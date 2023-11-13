@@ -29,7 +29,7 @@ class TestMoSolveNonhydroStencil67(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         rho: np.array,
         exner: np.array,
         rd_o_cvd: float,
@@ -41,12 +41,12 @@ class TestMoSolveNonhydroStencil67(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
-        rho = random_field(mesh, CellDim, KDim, low=1, high=2, dtype=wpfloat)
-        theta_v = random_field(mesh, CellDim, KDim, low=1, high=2, dtype=wpfloat)
-        exner = random_field(mesh, CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        rho = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        theta_v = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        exner = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
 
         return dict(
             rho=rho,
@@ -55,7 +55,7 @@ class TestMoSolveNonhydroStencil67(StencilTest):
             rd_o_cvd=rd_o_cvd,
             rd_o_p0ref=rd_o_p0ref,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

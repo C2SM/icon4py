@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil36(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
+        grid, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
     ) -> tuple[np.array, np.array]:
         vn_offset_1 = np.roll(vn, shift=1, axis=1)
         vt_offset_1 = np.roll(vt, shift=1, axis=1)
@@ -42,13 +42,13 @@ class TestMoSolveNonhydroStencil36(StencilTest):
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        wgtfac_e = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        vn = random_field(mesh, EdgeDim, KDim, dtype=wpfloat)
-        vt = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        vn_ie = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        z_vt_ie = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        z_kin_hor_e = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        wgtfac_e = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_vt_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_kin_hor_e = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

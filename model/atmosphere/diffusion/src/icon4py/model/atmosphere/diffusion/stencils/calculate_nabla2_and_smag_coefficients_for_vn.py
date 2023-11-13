@@ -108,7 +108,6 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     kh_smag_2_wp = kh_smag_2_wp * kh_smag_2_wp
 
     kh_smag_e_wp = diff_multfac_smag_wp * sqrt(kh_smag_2_wp + kh_smag_1_wp)
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
     z_nabla2_e_wp = (
         astype(
             astype(

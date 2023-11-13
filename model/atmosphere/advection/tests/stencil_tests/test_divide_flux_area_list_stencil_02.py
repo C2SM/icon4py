@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_02 import 
     divide_flux_area_list_stencil_02,
 )
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, random_mask
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def divide_flux_area_list_stencil_02_numpy(
@@ -175,46 +175,46 @@ def divide_flux_area_list_stencil_02_numpy(
 
 
 def test_divide_flux_area_list_stencil_02():
-    mesh = SimpleMesh()
+    grid = SimpleGrid()
 
-    famask_int = random_mask(mesh, EdgeDim, KDim, dtype=int32)
-    p_vn = random_field(mesh, EdgeDim, KDim)
-    bf_cc_patch1_lon = random_field(mesh, EdgeDim, E2CDim)
+    famask_int = random_mask(grid, EdgeDim, KDim, dtype=int32)
+    p_vn = random_field(grid, EdgeDim, KDim)
+    bf_cc_patch1_lon = random_field(grid, EdgeDim, E2CDim)
     bf_cc_patch1_lon_field = as_1D_sparse_field(bf_cc_patch1_lon, ECDim)
-    bf_cc_patch1_lat = random_field(mesh, EdgeDim, E2CDim)
+    bf_cc_patch1_lat = random_field(grid, EdgeDim, E2CDim)
     bf_cc_patch1_lat_field = as_1D_sparse_field(bf_cc_patch1_lat, ECDim)
-    bf_cc_patch2_lon = random_field(mesh, EdgeDim, E2CDim)
+    bf_cc_patch2_lon = random_field(grid, EdgeDim, E2CDim)
     bf_cc_patch2_lon_field = as_1D_sparse_field(bf_cc_patch2_lon, ECDim)
-    bf_cc_patch2_lat = random_field(mesh, EdgeDim, E2CDim)
+    bf_cc_patch2_lat = random_field(grid, EdgeDim, E2CDim)
     bf_cc_patch2_lat_field = as_1D_sparse_field(bf_cc_patch2_lat, ECDim)
-    butterfly_idx_patch1_vnpos = random_mask(mesh, EdgeDim, dtype=int32)
-    butterfly_idx_patch1_vnneg = random_mask(mesh, EdgeDim, dtype=int32)
-    butterfly_blk_patch1_vnpos = random_mask(mesh, EdgeDim, dtype=int32)
-    butterfly_blk_patch1_vnneg = random_mask(mesh, EdgeDim, dtype=int32)
-    butterfly_idx_patch2_vnpos = random_mask(mesh, EdgeDim, dtype=int32)
-    butterfly_idx_patch2_vnneg = random_mask(mesh, EdgeDim, dtype=int32)
-    butterfly_blk_patch2_vnpos = random_mask(mesh, EdgeDim, dtype=int32)
-    butterfly_blk_patch2_vnneg = random_mask(mesh, EdgeDim, dtype=int32)
-    dreg_patch1_1_lon_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch1_1_lat_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch1_2_lon_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch1_2_lat_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch1_3_lon_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch1_3_lat_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch1_4_lon_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch1_4_lat_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch2_1_lon_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch2_1_lat_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch2_2_lon_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch2_2_lat_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch2_3_lon_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch2_3_lat_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch2_4_lon_vmask = random_field(mesh, EdgeDim, KDim)
-    dreg_patch2_4_lat_vmask = random_field(mesh, EdgeDim, KDim)
-    patch1_cell_idx_vmask = random_mask(mesh, EdgeDim, KDim, dtype=int32)
-    patch1_cell_blk_vmask = random_mask(mesh, EdgeDim, KDim, dtype=int32)
-    patch2_cell_idx_vmask = random_mask(mesh, EdgeDim, KDim, dtype=int32)
-    patch2_cell_blk_vmask = random_mask(mesh, EdgeDim, KDim, dtype=int32)
+    butterfly_idx_patch1_vnpos = random_mask(grid, EdgeDim, dtype=int32)
+    butterfly_idx_patch1_vnneg = random_mask(grid, EdgeDim, dtype=int32)
+    butterfly_blk_patch1_vnpos = random_mask(grid, EdgeDim, dtype=int32)
+    butterfly_blk_patch1_vnneg = random_mask(grid, EdgeDim, dtype=int32)
+    butterfly_idx_patch2_vnpos = random_mask(grid, EdgeDim, dtype=int32)
+    butterfly_idx_patch2_vnneg = random_mask(grid, EdgeDim, dtype=int32)
+    butterfly_blk_patch2_vnpos = random_mask(grid, EdgeDim, dtype=int32)
+    butterfly_blk_patch2_vnneg = random_mask(grid, EdgeDim, dtype=int32)
+    dreg_patch1_1_lon_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch1_1_lat_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch1_2_lon_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch1_2_lat_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch1_3_lon_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch1_3_lat_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch1_4_lon_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch1_4_lat_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch2_1_lon_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch2_1_lat_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch2_2_lon_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch2_2_lat_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch2_3_lon_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch2_3_lat_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch2_4_lon_vmask = random_field(grid, EdgeDim, KDim)
+    dreg_patch2_4_lat_vmask = random_field(grid, EdgeDim, KDim)
+    patch1_cell_idx_vmask = random_mask(grid, EdgeDim, KDim, dtype=int32)
+    patch1_cell_blk_vmask = random_mask(grid, EdgeDim, KDim, dtype=int32)
+    patch2_cell_idx_vmask = random_mask(grid, EdgeDim, KDim, dtype=int32)
+    patch2_cell_blk_vmask = random_mask(grid, EdgeDim, KDim, dtype=int32)
 
     (
         ref_1,
@@ -238,7 +238,7 @@ def test_divide_flux_area_list_stencil_02():
         ref_19,
         ref_20,
     ) = divide_flux_area_list_stencil_02_numpy(
-        mesh.e2c,
+        grid.connectivities[E2CDim],
         np.asarray(famask_int),
         np.asarray(p_vn),
         np.asarray(bf_cc_patch1_lon),
@@ -307,8 +307,8 @@ def test_divide_flux_area_list_stencil_02():
         patch2_cell_idx_vmask,
         patch2_cell_blk_vmask,
         offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
+            "E2C": grid.get_offset_provider("E2C"),
+            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, grid.size[E2CDim]),
         },
     )
     assert np.allclose(dreg_patch1_1_lon_vmask, ref_1)

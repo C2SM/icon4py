@@ -14,9 +14,9 @@
 import numpy as np
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_04 import hflx_limiter_mo_stencil_04
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflx_limiter_mo_stencil_04_numpy(
@@ -35,14 +35,14 @@ def hflx_limiter_mo_stencil_04_numpy(
 
 
 def test_hflx_limiter_mo_stencil_04():
-    mesh = SimpleMesh()
-    z_anti = random_field(mesh, EdgeDim, KDim, low=-2.0, high=2.0)
-    r_m = random_field(mesh, CellDim, KDim)
-    r_p = random_field(mesh, CellDim, KDim)
-    z_mflx_low = random_field(mesh, EdgeDim, KDim)
-    p_mflx_tracer_h = zero_field(mesh, EdgeDim, KDim)
+    grid = SimpleGrid()
+    z_anti = random_field(grid, EdgeDim, KDim, low=-2.0, high=2.0)
+    r_m = random_field(grid, CellDim, KDim)
+    r_p = random_field(grid, CellDim, KDim)
+    z_mflx_low = random_field(grid, EdgeDim, KDim)
+    p_mflx_tracer_h = zero_field(grid, EdgeDim, KDim)
     ref = hflx_limiter_mo_stencil_04_numpy(
-        mesh.e2c,
+        grid.connectivities[E2CDim],
         np.asarray(z_anti),
         np.asarray(r_m),
         np.asarray(r_p),
@@ -54,6 +54,6 @@ def test_hflx_limiter_mo_stencil_04():
         r_p,
         z_mflx_low,
         p_mflx_tracer_h,
-        offset_provider={"E2C": mesh.get_e2c_offset_provider()},
+        offset_provider={"E2C": grid.get_offset_provider("E2C")},
     )
     assert np.allclose(p_mflx_tracer_h, ref)

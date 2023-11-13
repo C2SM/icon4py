@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil60(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         exner: np.array,
         ddt_exner_phy: np.array,
         exner_dyn_incr: np.array,
@@ -40,11 +40,11 @@ class TestMoSolveNonhydroStencil60(StencilTest):
         return dict(exner_dyn_incr=exner_dyn_incr)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         ndyn_substeps_var, dtime = wpfloat("10.0"), wpfloat("12.0")
-        exner = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        ddt_exner_phy = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        exner_dyn_incr = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+        exner = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        ddt_exner_phy = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        exner_dyn_incr = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             exner=exner,

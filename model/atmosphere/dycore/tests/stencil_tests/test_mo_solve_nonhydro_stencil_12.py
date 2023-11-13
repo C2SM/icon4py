@@ -29,7 +29,7 @@ class TestMoSolveNonhydroStencil12(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_theta_v_pr_ic: np.array,
         d2dexdz2_fac1_mc: np.array,
         d2dexdz2_fac2_mc: np.array,
@@ -44,13 +44,13 @@ class TestMoSolveNonhydroStencil12(StencilTest):
         return dict(z_dexner_dz_c_2=z_dexner_dz_c_2)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_theta_v_pr_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
-        d2dexdz2_fac1_mc = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_2 = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        d2dexdz2_fac2_mc = random_field(mesh, CellDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        z_theta_v_pr_ic = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
+        d2dexdz2_fac1_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_rth_pr_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        d2dexdz2_fac2_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
-        z_dexner_dz_c_2 = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+        z_dexner_dz_c_2 = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             z_theta_v_pr_ic=z_theta_v_pr_ic,
@@ -59,7 +59,7 @@ class TestMoSolveNonhydroStencil12(StencilTest):
             z_rth_pr_2=z_rth_pr_2,
             z_dexner_dz_c_2=z_dexner_dz_c_2,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

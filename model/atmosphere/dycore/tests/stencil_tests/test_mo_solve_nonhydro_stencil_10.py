@@ -29,7 +29,7 @@ class TestMoSolveNonhydroStencil10(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         w: np.array,
         w_concorr_c: np.array,
         ddqz_z_half: np.array,
@@ -89,27 +89,26 @@ class TestMoSolveNonhydroStencil10(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         dtime = wpfloat("1.0")
         wgt_nnow_rth = wpfloat("2.0")
         wgt_nnew_rth = wpfloat("3.0")
-        w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        w_concorr_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        rho_now = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        rho_var = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        theta_now = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        theta_var = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        wgtfac_c = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        theta_ref_mc = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
-        exner_pr = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        d_exner_dz_ref_ic = random_field(mesh, CellDim, KDim, dtype=vpfloat)
-        rho_ic = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
-        z_theta_v_pr_ic = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(mesh, CellDim, KDim, dtype=wpfloat)
-        z_th_ddz_exner_c = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
-
+        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        rho_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_var = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_var = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        wgtfac_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        theta_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        vwind_expl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+        exner_pr = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        d_exner_dz_ref_ic = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        rho_ic = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_theta_v_pr_ic = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        theta_v_ic = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_th_ddz_exner_c = zero_field(grid, CellDim, KDim, dtype=vpfloat)
         return dict(
             w=w,
             w_concorr_c=w_concorr_c,
@@ -131,7 +130,7 @@ class TestMoSolveNonhydroStencil10(StencilTest):
             wgt_nnow_rth=wgt_nnow_rth,
             wgt_nnew_rth=wgt_nnew_rth,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(1),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

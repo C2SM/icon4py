@@ -29,7 +29,7 @@ class TestMoSolveNonhydroStencil58(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_contr_w_fl_l: np.array,
         rho_ic: np.array,
         vwind_impl_wgt: np.array,
@@ -43,12 +43,12 @@ class TestMoSolveNonhydroStencil58(StencilTest):
         return dict(mass_flx_ic=mass_flx_ic)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_contr_w_fl_l = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        rho_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        vwind_impl_wgt = random_field(mesh, CellDim, dtype=wpfloat)
-        w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        mass_flx_ic = random_field(mesh, CellDim, KDim, dtype=wpfloat)
+    def input_data(self, grid):
+        z_contr_w_fl_l = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        mass_flx_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
         r_nsubsteps = 7.0
 
         return dict(
@@ -59,7 +59,7 @@ class TestMoSolveNonhydroStencil58(StencilTest):
             mass_flx_ic=mass_flx_ic,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

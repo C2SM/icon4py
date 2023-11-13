@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, E2CDim, E2VDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -29,7 +29,7 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         vn_ie: np.array,
         inv_dual_edge_length: np.array,
         w: np.array,
@@ -43,8 +43,8 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
         inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
         tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
-        w_e2c = w[mesh.e2c]
-        z_w_v_e2v = z_w_v[mesh.e2v]
+        w_e2c = w[grid.connectivities[E2CDim]]
+        z_w_v_e2v = z_w_v[grid.connectivities[E2VDim]]
 
         red_w = w_e2c[:, 0] - w_e2c[:, 1]
         red_z_w_v = z_w_v_e2v[:, 0] - z_w_v_e2v[:, 1]
@@ -56,15 +56,18 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
         return dict(z_v_grad_w=z_v_grad_w)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn_ie = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        inv_dual_edge_length = random_field(mesh, EdgeDim, dtype=wpfloat)
-        w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        z_vt_ie = random_field(mesh, EdgeDim, KDim, dtype=vpfloat)
-        inv_primal_edge_length = random_field(mesh, EdgeDim, dtype=wpfloat)
-        tangent_orientation = random_field(mesh, EdgeDim, dtype=wpfloat)
-        z_w_v = random_field(mesh, VertexDim, KDim, dtype=vpfloat)
-        z_v_grad_w = zero_field(mesh, EdgeDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1) or np.any(grid.connectivities[E2VDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
+        vn_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_vt_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        inv_primal_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        tangent_orientation = random_field(grid, EdgeDim, dtype=wpfloat)
+        z_w_v = random_field(grid, VertexDim, KDim, dtype=vpfloat)
+        z_v_grad_w = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             vn_ie=vn_ie,
@@ -76,7 +79,7 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
             z_w_v=z_w_v,
             z_v_grad_w=z_v_grad_w,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

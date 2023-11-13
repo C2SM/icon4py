@@ -29,22 +29,27 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, w: np.array, geofac_grg_x: np.array, geofac_grg_y: np.array, **kwargs
+        grid, w: np.array, geofac_grg_x: np.array, geofac_grg_y: np.array, **kwargs
     ) -> tuple[np.array]:
+        c2e2cO = grid.connectivities[C2E2CODim]
         geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-        dwdx = np.sum(geofac_grg_x * w[mesh.c2e2cO], axis=1)
+        dwdx = np.sum(
+            np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * w[c2e2cO], 0.0), axis=1
+        )
 
         geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-        dwdy = np.sum(geofac_grg_y * w[mesh.c2e2cO], axis=1)
+        dwdy = np.sum(
+            np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * w[c2e2cO], 0.0), axis=1
+        )
         return dict(dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        w = random_field(mesh, CellDim, KDim, dtype=wpfloat)
-        geofac_grg_x = random_field(mesh, CellDim, C2E2CODim, dtype=wpfloat)
-        geofac_grg_y = random_field(mesh, CellDim, C2E2CODim, dtype=wpfloat)
-        dwdx = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
-        dwdy = zero_field(mesh, CellDim, KDim, dtype=vpfloat)
+    def input_data(self, grid):
+        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        geofac_grg_x = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
+        geofac_grg_y = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
+        dwdx = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        dwdy = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             w=w,
@@ -53,7 +58,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
             dwdx=dwdx,
             dwdy=dwdy,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )
