@@ -34,13 +34,13 @@ variables:
 build_job:
   extends: .build_template
 
-test_model_job:
+test_model_job_embedded_simple_grid:
   extends: .test_template
   stage: test
   script:
     - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
 
-benchmark_model_gtfn_cpu:
+benchmark_model_gtfn_cpu_simple_grid:
   extends: .test_template
   stage: benchmark
   script:
