@@ -25,7 +25,7 @@ def _calculate_diagnostics_for_turbulence(
     wgtfac_c: Field[[CellDim, KDim], float],
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * div(Koff[-1])
-    hdef_ic = (wgtfac_c * kh_c + (1.0 - wgtfac_c) * kh_c(Koff[-1]))
+    hdef_ic = wgtfac_c * kh_c + (1.0 - wgtfac_c) * kh_c(Koff[-1])
     hdef_ic = hdef_ic * hdef_ic
     return div_ic, hdef_ic
 

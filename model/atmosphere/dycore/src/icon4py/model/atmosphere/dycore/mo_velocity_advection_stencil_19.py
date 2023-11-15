@@ -43,7 +43,8 @@ def _mo_velocity_advection_stencil_19(
     vn_ie: Field[[EdgeDim, KDim], float],
     ddqz_z_full_e: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    ddt_vn_apc = -(z_kin_hor_e * (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1]))
+    ddt_vn_apc = -(
+        z_kin_hor_e * (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1]))
         + coeff_gradekin(E2EC[1]) * z_ekinh(E2C[1])
         - coeff_gradekin(E2EC[0]) * z_ekinh(E2C[0])
         + vt * (f_e + 0.5 * neighbor_sum(zeta(E2V), axis=E2VDim))
