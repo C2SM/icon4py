@@ -25,9 +25,8 @@ def _apply_nabla2_to_w_in_upper_damping_layer(
     cell_area: Field[[CellDim], float],
     z_nabla2_c: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    # diff_multfac_n2w = broadcast(diff_multfac_n2w, (CellDim, KDim))
-    # w = w + diff_multfac_n2w * cell_area * z_nabla2_c
-    w = w + diff_multfac_n2w * (cell_area * z_nabla2_c)
+    cell_area_tmp = broadcast(cell_area, (CellDim, KDim))
+    w = w + diff_multfac_n2w * cell_area_tmp * z_nabla2_c
     return w
 
 
