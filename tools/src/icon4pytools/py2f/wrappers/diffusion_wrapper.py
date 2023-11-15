@@ -121,6 +121,7 @@ def diffusion_init(
     cells_edge_idx: Field[[CellDim, C2EDim], int32],
     cells_area: Field[[CellDim], float],
     # dsl specific additional args
+    mean_cell_area: float,
     mask_hdiff: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[
         [CECDim], int32
@@ -182,7 +183,7 @@ def diffusion_init(
         primal_normal_vert_y=edges_primal_normal_vert_2,
         edge_areas=edges_area_edge,
     )
-    cell_params = CellParams(cells_area)
+    cell_params = CellParams(cells_area, mean_cell_area=mean_cell_area)
     config: DiffusionConfig = DiffusionConfig(
         diffusion_type=DiffusionType(hdiff_order),
         hdiff_w=lhdiff_w,
