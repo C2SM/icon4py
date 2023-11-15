@@ -129,7 +129,7 @@ def _calculate_scal_divdamp(
         if divdamp_order == 24
         else enh_divdamp_fac
     )
-    return -enh_divdamp_fac * mean_cell_area**2.0
+    return -enh_divdamp_fac * mean_cell_area**2
 
 
 @field_operator
