@@ -39,8 +39,8 @@ def get_ranked_data_path(base_path, processor_properties):
     return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
 
 
-def get_datapath_for_ranked_data(ranked_base_path):
-    return ranked_base_path.joinpath("mch_ch_r04b09_dsl/ser_data")
+def get_datapath_for_ranked_data(ranked_base_path, experiment="mch_ch_r04b09_dsl"):
+    return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
 def create_icon_serial_data_provider(datapath, processor_props):

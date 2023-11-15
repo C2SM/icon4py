@@ -28,11 +28,12 @@ from .utils import (
     construct_interpolation_state,
     construct_metric_state_for_diffusion,
     construct_diagnostics,
+    construct_config,
 )
 
 
-def test_diffusion_coefficients_with_hdiff_efdt_ratio(r04b09_diffusion_config):
-    config = r04b09_diffusion_config
+def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
+    config = construct_config(experiment, ndyn_substeps=5)
     config.hdiff_efdt_ratio = 1.0
     config.hdiff_w_efdt_ratio = 2.0
 
@@ -44,8 +45,8 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio(r04b09_diffusion_config):
     assert params.K4W == pytest.approx(1.0 / 72.0, abs=1e-12)
 
 
-def test_diffusion_coefficients_without_hdiff_efdt_ratio(r04b09_diffusion_config):
-    config = r04b09_diffusion_config
+def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
+    config = construct_config(experiment)
     config.hdiff_efdt_ratio = 0.0
     config.hdiff_w_efdt_ratio = 0.0
 
@@ -57,8 +58,8 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(r04b09_diffusion_config
     assert params.K4W == 0.0
 
 
-def test_smagorinski_factor_for_diffusion_type_4(r04b09_diffusion_config):
-    config = r04b09_diffusion_config
+def test_smagorinski_factor_for_diffusion_type_4(experiment):
+    config = construct_config(experiment, ndyn_substeps=5)
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 4
 
@@ -69,9 +70,9 @@ def test_smagorinski_factor_for_diffusion_type_4(r04b09_diffusion_config):
 
 
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
-    r04b09_diffusion_config,
+    experiment,
 ):
-    config = r04b09_diffusion_config
+    config = construct_config(experiment, ndyn_substeps=5)
     config.smagorinski_scaling_factor = 0.15
     config.diffusion_type = 5
 
@@ -85,8 +86,8 @@ def test_smagorinski_heights_diffusion_type_5_are_consistent(
     assert params.smagorinski_height[2] != params.smagorinski_height[3]
 
 
-def test_smagorinski_factor_diffusion_type_5(r04b09_diffusion_config):
-    params = DiffusionParams(r04b09_diffusion_config)
+def test_smagorinski_factor_diffusion_type_5(experiment):
+    params = DiffusionParams(construct_config(experiment, ndyn_substeps=5))
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
@@ -99,11 +100,12 @@ def test_diffusion_init(
     metrics_savepoint,
     grid_savepoint,
     icon_grid,
-    r04b09_diffusion_config,
+    experiment,
     step_date_init,
     damping_height,
+    ndyn_substeps,
 ):
-    config = r04b09_diffusion_config
+    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = DiffusionParams(config)
 
     vertical_params = VerticalModelParams(
@@ -188,16 +190,18 @@ def _verify_init_values_against_savepoint(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_verify_diffusion_init_against_first_regular_savepoint(
     diffusion_savepoint_init,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    r04b09_diffusion_config,
+    experiment,
     icon_grid,
     damping_height,
+    ndyn_substeps,
 ):
-    config = r04b09_diffusion_config
+    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = DiffusionParams(config)
     vct_a = grid_savepoint.vct_a()
     cell_geometry = grid_savepoint.construct_cell_geometry()
@@ -223,16 +227,18 @@ def test_verify_diffusion_init_against_first_regular_savepoint(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:20.000"])
+@pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_verify_diffusion_init_against_other_regular_savepoint(
-    r04b09_diffusion_config,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
     diffusion_savepoint_init,
     damping_height,
+    ndyn_substeps,
 ):
-    config = r04b09_diffusion_config
+    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = DiffusionParams(config)
 
     vertical_params = VerticalModelParams(
@@ -263,12 +269,13 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "step_date_init, step_date_exit",
+    "experiment,step_date_init, step_date_exit",
     [
-        ("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        ("2021-06-20T12:00:20.000", "2021-06-20T12:00:20.000"),
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:00.000", "2000-01-01T00:00:00.000"),
     ],
 )
+@pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_run_diffusion_single_step(
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
@@ -276,8 +283,9 @@ def test_run_diffusion_single_step(
     metrics_savepoint,
     grid_savepoint,
     icon_grid,
-    r04b09_diffusion_config,
+    experiment,
     damping_height,
+    ndyn_substeps,
 ):
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -292,7 +300,7 @@ def test_run_diffusion_single_step(
         nflatlev=grid_savepoint.nflatlev(),
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
-    config = r04b09_diffusion_config
+    config = construct_config(experiment, ndyn_substeps)
     additional_parameters = DiffusionParams(config)
 
     diffusion = Diffusion()
@@ -325,7 +333,7 @@ def test_run_diffusion_initial_step(
     metrics_savepoint,
     grid_savepoint,
     icon_grid,
-    r04b09_diffusion_config,
+    experiment,
     damping_height,
 ):
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
@@ -337,7 +345,7 @@ def test_run_diffusion_initial_step(
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=damping_height)
-    config = r04b09_diffusion_config
+    config = construct_config(experiment, ndyn_substeps=2)
     additional_parameters = DiffusionParams(config)
 
     diffusion = Diffusion()

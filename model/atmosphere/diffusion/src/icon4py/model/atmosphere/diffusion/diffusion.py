@@ -238,7 +238,7 @@ class DiffusionConfig:
         else:
             self.apply_to_temperature = True
             self.apply_to_horizontal_wind = True
-
+        # TODO(magdalena) remove: is not set for APE experiment
         if not self.apply_zdiffusion_t:
             raise NotImplementedError("zdiffu_t = False is not implemented (leaves out stencil_15)")
 
@@ -808,29 +808,30 @@ class Diffusion:
         log.debug(
             "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
-        truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)(
-            mask=self.metric_state.mask_hdiff,
-            zd_vertoffset=self.metric_state.zd_vertoffset,
-            zd_diffcoef=self.metric_state.zd_diffcoef,
-            geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
-            geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
-            vcoef=self.metric_state.zd_intcoef,
-            theta_v=prognostic_state.theta_v,
-            z_temp=self.z_temp,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "C2CEC": self.grid.get_offset_provider("C2CEC"),
-                "C2E2C": self.grid.get_offset_provider("C2E2C"),
-                "Koff": KDim,
-            },
-        )
+        if self.config.apply_zdiffusion_t:
+            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)(
+                mask=self.metric_state.mask_hdiff,
+                zd_vertoffset=self.metric_state.zd_vertoffset,
+                zd_diffcoef=self.metric_state.zd_diffcoef,
+                geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
+                geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
+                vcoef=self.metric_state.zd_intcoef,
+                theta_v=prognostic_state.theta_v,
+                z_temp=self.z_temp,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_local,
+                vertical_start=0,
+                vertical_end=klevels,
+                offset_provider={
+                    "C2CEC": self.grid.get_offset_provider("C2CEC"),
+                    "C2E2C": self.grid.get_offset_provider("C2E2C"),
+                    "Koff": KDim,
+                },
+            )
 
-        log.debug(
-            "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
-        )
+            log.debug(
+                "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+            )
         log.debug("running stencil 16 (update_theta_and_exner): start")
         update_theta_and_exner.with_backend(backend)(
             z_temp=self.z_temp,

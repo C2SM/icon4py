@@ -34,29 +34,8 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
 
 
 @pytest.fixture
-def r04b09_diffusion_config(
-    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
-) -> DiffusionConfig:
-    """
-    Create DiffusionConfig matching MCH_CH_r04b09_dsl.
-
-    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
-    from the default.
-    """
-    return DiffusionConfig(
-        diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        type_t_diffu=2,
-        type_vn_diffu=1,
-        hdiff_efdt_ratio=24.0,
-        hdiff_w_efdt_ratio=15.0,
-        smagorinski_scaling_factor=0.025,
-        zdiffu_t=True,
-        velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
-        n_substeps=ndyn_substeps,
-    )
+def experiment():
+    return "mch_ch_r04b09_dsl"
 
 
 @pytest.fixture
