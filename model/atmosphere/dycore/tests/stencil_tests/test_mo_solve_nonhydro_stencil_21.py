@@ -99,6 +99,8 @@ class TestMoSolveNonHydroStencil21(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
 
         ikoffset = zero_field(grid, EdgeDim, E2CDim, KDim, dtype=int32)
         rng = np.random.default_rng()
