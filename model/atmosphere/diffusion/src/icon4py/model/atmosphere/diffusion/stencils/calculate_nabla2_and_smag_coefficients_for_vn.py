@@ -91,7 +91,6 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     kh_smag_2 = kh_smag_2 * kh_smag_2
 
     kh_smag_e = diff_multfac_smag * sqrt(kh_smag_2 + kh_smag_1)
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
     z_nabla2_e = (
         (
             (
@@ -104,8 +103,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
             )
         )
         - 2.0 * vn
-    ) * (inv_primal_edge_length**2.0)
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
+    ) * (inv_primal_edge_length*inv_primal_edge_length)
     z_nabla2_e = z_nabla2_e + (
         (
             (
@@ -118,7 +116,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
             )
         )
         - 2.0 * vn
-    ) * (inv_vert_vert_length**2.0)
+    ) * (inv_vert_vert_length*inv_vert_vert_length)
 
     z_nabla2_e = 4.0 * z_nabla2_e
 

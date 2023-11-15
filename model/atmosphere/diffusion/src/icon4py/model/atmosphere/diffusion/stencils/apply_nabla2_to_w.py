@@ -26,7 +26,7 @@ def _apply_nabla2_to_w(
     w: Field[[CellDim, KDim], float],
     diff_multfac_w: float,
 ) -> Field[[CellDim, KDim], float]:
-    w = w - diff_multfac_w * area * area * neighbor_sum(
+    w = w - diff_multfac_w * (area * area) * neighbor_sum(
         z_nabla2_c(C2E2CO) * geofac_n2s, axis=C2E2CODim
     )
     return w

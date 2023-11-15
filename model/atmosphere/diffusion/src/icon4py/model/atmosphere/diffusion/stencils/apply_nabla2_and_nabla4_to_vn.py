@@ -30,7 +30,7 @@ def _apply_nabla2_and_nabla4_to_vn(
 ) -> Field[[EdgeDim, KDim], float]:
     vn = vn + area_edge * (
         maximum(nudgezone_diff * nudgecoeff_e, kh_smag_e) * z_nabla2_e
-        - diff_multfac_vn * z_nabla4_e2 * area_edge
+        - area_edge * diff_multfac_vn * z_nabla4_e2
     )
     return vn
 

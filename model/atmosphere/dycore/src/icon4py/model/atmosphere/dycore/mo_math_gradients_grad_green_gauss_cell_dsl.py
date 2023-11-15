@@ -30,10 +30,10 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-    p_grad_1_u = neighbor_sum(p_ccpr1(C2E2CO) * geofac_grg_x, axis=C2E2CODim)
-    p_grad_1_v = neighbor_sum(p_ccpr1(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
-    p_grad_2_u = neighbor_sum(p_ccpr2(C2E2CO) * geofac_grg_x, axis=C2E2CODim)
-    p_grad_2_v = neighbor_sum(p_ccpr2(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
+    p_grad_1_u = neighbor_sum(geofac_grg_x * p_ccpr1(C2E2CO), axis=C2E2CODim)
+    p_grad_1_v = neighbor_sum(geofac_grg_y * p_ccpr1(C2E2CO), axis=C2E2CODim)
+    p_grad_2_u = neighbor_sum(geofac_grg_x * p_ccpr2(C2E2CO), axis=C2E2CODim)
+    p_grad_2_v = neighbor_sum(geofac_grg_y * p_ccpr2(C2E2CO), axis=C2E2CODim)
     return p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v
 
 

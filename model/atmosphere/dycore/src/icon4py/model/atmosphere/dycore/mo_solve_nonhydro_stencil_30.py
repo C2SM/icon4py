@@ -29,9 +29,9 @@ def _mo_solve_nonhydro_stencil_30(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-    z_vn_avg = neighbor_sum(vn(E2C2EO) * e_flx_avg, axis=E2C2EODim)
-    z_graddiv_vn = neighbor_sum(vn(E2C2EO) * geofac_grdiv, axis=E2C2EODim)
-    vt = neighbor_sum(vn(E2C2E) * rbf_vec_coeff_e, axis=E2C2EDim)
+    z_vn_avg = neighbor_sum(e_flx_avg * vn(E2C2EO), axis=E2C2EODim)
+    z_graddiv_vn = neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
+    vt = neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=E2C2EDim)
     return z_vn_avg, z_graddiv_vn, vt
 
 

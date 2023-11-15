@@ -28,24 +28,19 @@ def _calculate_nabla4(
     inv_vert_vert_length: Field[[EdgeDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    nabv_tang = (
-        u_vert(E2C2V[0]) * primal_normal_vert_v1(E2ECV[0])
+    nabv_tang = u_vert(E2C2V[0]) * primal_normal_vert_v1(E2ECV[0])
         + v_vert(E2C2V[0]) * primal_normal_vert_v2(E2ECV[0])
-    ) + (
-        u_vert(E2C2V[1]) * primal_normal_vert_v1(E2ECV[1])
+        + u_vert(E2C2V[1]) * primal_normal_vert_v1(E2ECV[1])
         + v_vert(E2C2V[1]) * primal_normal_vert_v2(E2ECV[1])
-    )
-    nabv_norm = (
-        u_vert(E2C2V[2]) * primal_normal_vert_v1(E2ECV[2])
+
+    nabv_norm = u_vert(E2C2V[2]) * primal_normal_vert_v1(E2ECV[2])
         + v_vert(E2C2V[2]) * primal_normal_vert_v2(E2ECV[2])
-    ) + (
-        u_vert(E2C2V[3]) * primal_normal_vert_v1(E2ECV[3])
+        + u_vert(E2C2V[3]) * primal_normal_vert_v1(E2ECV[3])
         + v_vert(E2C2V[3]) * primal_normal_vert_v2(E2ECV[3])
-    )
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
+
     z_nabla4_e2 = 4.0 * (
-        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2.0
-        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2.0
+        (nabv_norm - 2.0 * z_nabla2_e) * (inv_vert_vert_length*inv_vert_vert_length)
+        + (nabv_tang - 2.0 * z_nabla2_e) * (inv_primal_edge_length*inv_primal_edge_length)
     )
     return z_nabla4_e2
 
