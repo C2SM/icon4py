@@ -61,15 +61,15 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         z_v_grad_w = zero_field(mesh, EdgeDim, KDim)
         wgtfacq_e = random_field(mesh, EdgeDim, KDim)
 
-        vert_idx = zero_field(mesh, KDim, dtype=int32)
+        k = zero_field(mesh, KDim, dtype=int32)
         for level in range(mesh.k_level):
-            vert_idx[level] = level
+            k[level] = level
 
         horz_idx = zero_field(mesh, EdgeDim, dtype=int32)
         for edge in range(mesh.n_edges):
             horz_idx[edge] = edge
 
-        nlevp1 = mesh.k_level + 1
+        nlev = mesh.k_level
         nflatlev = 13
 
         istep = 1
@@ -85,7 +85,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
             ddxn_z_full=ddxn_z_full,
             ddxt_z_full=ddxt_z_full,
             z_w_concorr_me=z_w_concorr_me,
-            wgtfacq_e_dsl=wgtfacq_e,
+            wgtfacq_e=wgtfacq_e,
             nflatlev=nflatlev,
             c_intp=c_intp,
             w=w,
@@ -97,9 +97,9 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
             vn_ie=vn_ie,
             z_kin_hor_e=z_kin_hor_e,
             z_v_grad_w=z_v_grad_w,
-            vert_idx=vert_idx,
+            k=k,
             istep=istep,
-            nlevp1=nlevp1,
+            nlev=nlev,
             lvn_only=lvn_only,
             horz_idx=horz_idx,
             lateral_boundary_7=lateral_boundary_7,

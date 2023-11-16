@@ -35,8 +35,8 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     theta_v_2 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2])))
 
     theta_v_0_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0]) + 1))
-    theta_v_1_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1]) + int32(1)))
-    theta_v_2_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2]) + int32(1)))
+    theta_v_1_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1]) + 1))
+    theta_v_2_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2]) + 1))
 
     sum_over_neighbors = (
         geofac_n2s_nbh(C2CEC[0])
