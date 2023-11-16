@@ -33,7 +33,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         p_vn: np.array,
         p_vt: np.array,
         cell_idx: np.array,
@@ -47,14 +47,15 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         p_dthalf: float,
         **kwargs,
     ) -> np.array:
-        cell_idx = cell_idx.reshape(mesh.e2c.shape)
-        cell_blk = cell_blk.reshape(mesh.e2c.shape)
-        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(mesh.e2c.shape)
-        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(mesh.e2c.shape)
-        primal_normal_cell_1 = primal_normal_cell_1.reshape(mesh.e2c.shape)
-        primal_normal_cell_2 = primal_normal_cell_2.reshape(mesh.e2c.shape)
-        dual_normal_cell_1 = dual_normal_cell_1.reshape(mesh.e2c.shape)
-        dual_normal_cell_2 = dual_normal_cell_2.reshape(mesh.e2c.shape)
+        e2c = grid.connectivities[E2CDim]
+        cell_idx = cell_idx.reshape(e2c.shape)
+        cell_blk = cell_blk.reshape(e2c.shape)
+        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
+        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
+        primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)
+        primal_normal_cell_2 = primal_normal_cell_2.reshape(e2c.shape)
+        dual_normal_cell_1 = dual_normal_cell_1.reshape(e2c.shape)
+        dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
 
         lvn_pos = np.where(p_vn > 0.0, True, False)
         cell_idx = np.expand_dims(cell_idx, axis=-1)
@@ -100,29 +101,29 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        p_vn = random_field(mesh, EdgeDim, KDim)
-        p_vt = random_field(mesh, EdgeDim, KDim)
-        cell_idx = np.asarray(mesh.e2c, dtype=int32)
+    def input_data(self, grid):
+        p_vn = random_field(grid, EdgeDim, KDim)
+        p_vt = random_field(grid, EdgeDim, KDim)
+        cell_idx = np.asarray(grid.connectivities[E2CDim], dtype=int32)
         cell_idx_new = as_1D_sparse_field(cell_idx, ECDim)
-        cell_blk = constant_field(mesh, 1, EdgeDim, E2CDim, dtype=int32)
+        cell_blk = constant_field(grid, 1, EdgeDim, E2CDim, dtype=int32)
         cell_blk_new = as_1D_sparse_field(cell_blk, ECDim)
-        pos_on_tplane_e_1 = random_field(mesh, EdgeDim, E2CDim)
+        pos_on_tplane_e_1 = random_field(grid, EdgeDim, E2CDim)
         pos_on_tplane_e_1_new = as_1D_sparse_field(pos_on_tplane_e_1, ECDim)
-        pos_on_tplane_e_2 = random_field(mesh, EdgeDim, E2CDim)
+        pos_on_tplane_e_2 = random_field(grid, EdgeDim, E2CDim)
         pos_on_tplane_e_2_new = as_1D_sparse_field(pos_on_tplane_e_2, ECDim)
-        primal_normal_cell_1 = random_field(mesh, EdgeDim, E2CDim)
+        primal_normal_cell_1 = random_field(grid, EdgeDim, E2CDim)
         primal_normal_cell_1_new = as_1D_sparse_field(primal_normal_cell_1, ECDim)
-        dual_normal_cell_1 = random_field(mesh, EdgeDim, E2CDim)
+        dual_normal_cell_1 = random_field(grid, EdgeDim, E2CDim)
         dual_normal_cell_1_new = as_1D_sparse_field(dual_normal_cell_1, ECDim)
-        primal_normal_cell_2 = random_field(mesh, EdgeDim, E2CDim)
+        primal_normal_cell_2 = random_field(grid, EdgeDim, E2CDim)
         primal_normal_cell_2_new = as_1D_sparse_field(primal_normal_cell_2, ECDim)
-        dual_normal_cell_2 = random_field(mesh, EdgeDim, E2CDim)
+        dual_normal_cell_2 = random_field(grid, EdgeDim, E2CDim)
         dual_normal_cell_2_new = as_1D_sparse_field(dual_normal_cell_2, ECDim)
-        p_cell_idx = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
-        p_cell_blk = constant_field(mesh, 0, EdgeDim, KDim, dtype=int32)
-        p_distv_bary_1 = random_field(mesh, EdgeDim, KDim)
-        p_distv_bary_2 = random_field(mesh, EdgeDim, KDim)
+        p_cell_idx = constant_field(grid, 0, EdgeDim, KDim, dtype=int32)
+        p_cell_blk = constant_field(grid, 0, EdgeDim, KDim, dtype=int32)
+        p_distv_bary_1 = random_field(grid, EdgeDim, KDim)
+        p_distv_bary_2 = random_field(grid, EdgeDim, KDim)
         p_dthalf = 2.0
 
         return dict(

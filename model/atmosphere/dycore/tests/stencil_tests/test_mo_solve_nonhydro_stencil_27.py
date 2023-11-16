@@ -41,7 +41,7 @@ class TestMoSolveNonhydroStencil27(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         scal_divdamp: np.array,
         bdy_divdamp: np.array,
         nudgecoeff_e: np.array,
@@ -56,12 +56,12 @@ class TestMoSolveNonhydroStencil27(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        scal_divdamp = random_field(mesh, KDim)
-        bdy_divdamp = random_field(mesh, KDim)
-        nudgecoeff_e = random_field(mesh, EdgeDim)
-        z_graddiv2_vn = random_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        scal_divdamp = random_field(grid, KDim)
+        bdy_divdamp = random_field(grid, KDim)
+        nudgecoeff_e = random_field(grid, EdgeDim)
+        z_graddiv2_vn = random_field(grid, EdgeDim, KDim)
+        vn = random_field(grid, EdgeDim, KDim)
 
         return dict(
             scal_divdamp=scal_divdamp,
@@ -70,7 +70,7 @@ class TestMoSolveNonhydroStencil27(StencilTest):
             z_graddiv2_vn=z_graddiv2_vn,
             vn=vn,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

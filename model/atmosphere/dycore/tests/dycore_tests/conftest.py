@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-from icon4py.model.common.test_utils.datatest_helpers import (  # noqa F401
+from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
     damping_height,
     data_provider,
     datapath,
@@ -20,8 +20,10 @@ from icon4py.model.common.test_utils.datatest_helpers import (  # noqa F401
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
-    istep,
-    jstep,
+    istep_exit,
+    istep_init,
+    jstep_exit,
+    jstep_init,
     linit,
     metrics_savepoint,
     processor_props,

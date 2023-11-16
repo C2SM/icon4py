@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def mo_solve_nonhydro_stencil_26_numpy(
-    mesh, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2: float
+    grid, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2: float
 ) -> np.array:
     vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
     return vn
@@ -35,15 +35,15 @@ class TestMoSolveNonhydroStencil26(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2: float, **kwargs
+        grid, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2: float, **kwargs
     ) -> dict:
-        vn = mo_solve_nonhydro_stencil_26_numpy(mesh, z_graddiv_vn, vn, scal_divdamp_o2)
+        vn = mo_solve_nonhydro_stencil_26_numpy(grid, z_graddiv_vn, vn, scal_divdamp_o2)
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_graddiv_vn = random_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        z_graddiv_vn = random_field(grid, EdgeDim, KDim)
+        vn = random_field(grid, EdgeDim, KDim)
         scal_divdamp_o2 = 5.0
 
         return dict(
@@ -51,7 +51,7 @@ class TestMoSolveNonhydroStencil26(StencilTest):
             vn=vn,
             scal_divdamp_o2=scal_divdamp_o2,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )
