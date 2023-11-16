@@ -34,4 +34,4 @@ def mo_velocity_advection_stencil_10(
     wgtfac_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
 ):
-    _mo_velocity_advection_stencil_10(z_w_concorr_mc, wgtfac_c, out=w_concorr_c[:, 1:])
+    _mo_velocity_advection_stencil_10(z_w_concorr_mc, wgtfac_c, out=w_concorr_c)
