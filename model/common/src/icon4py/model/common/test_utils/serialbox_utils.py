@@ -10,13 +10,16 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import functools
 import logging
 
 import numpy as np
+import serialbox
 import serialbox as ser
 from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
+from serialbox import SerialboxError
 
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
@@ -48,6 +51,22 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, Horizon
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
+
+log = logging.getLogger(__name__)
+
+
+def optionally_registered(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            name = func.__name__
+            return func(self, *args, **kwargs)
+        except serialbox.SerialboxError:
+            log.warning(f"{name}: field not registered in savepoint {self.savepoint.metainfo}")
+
+            return np
+
+    return wrapper
 
 
 class IconSavepoint:
@@ -398,6 +417,7 @@ class InterpolationSavepoint(IconSavepoint):
             CellDim, C2E2CODim
         )(grg[:num_cells, :, 1])
 
+    @optionally_registered
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
 
@@ -546,6 +566,7 @@ class MetricSavepoint(IconSavepoint):
     def ddxt_z_full(self):
         return self._get_field("ddxt_z_full", EdgeDim, KDim)
 
+    @optionally_registered
     def mask_hdiff(self):
         return self._get_field("mask_hdiff", CellDim, KDim, dtype=bool)
 
@@ -566,16 +587,18 @@ class MetricSavepoint(IconSavepoint):
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return np_as_located_field(EdgeDim, KDim)(ar)
 
+    @optionally_registered
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
+    @optionally_registered
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
     def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
         ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
         if ser_input.shape[1] != sparse_size:
-            ser_input = np.moveaxis((ser_input), 1, -1)
+            ser_input = np.moveaxis(ser_input, 1, -1)
 
         return self._linearize_first_2dims(
             ser_input, sparse_size=sparse_size, target_dims=(CECDim, KDim)
@@ -590,6 +613,7 @@ class MetricSavepoint(IconSavepoint):
             data.reshape(old_shape[0] * old_shape[1], old_shape[2])
         )
 
+    @optionally_registered
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 

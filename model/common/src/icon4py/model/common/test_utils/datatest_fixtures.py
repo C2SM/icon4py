@@ -25,7 +25,9 @@ from .datatest_utils import (
 )
 
 
-# TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
+@pytest.fixture
+def experiment():
+    return "mch_ch_r04b09_dsl"
 
 
 @pytest.fixture(params=[False], scope="session")
@@ -38,9 +40,9 @@ def ranked_data_path(processor_props):
     return get_ranked_data_path(SER_DATA_BASEPATH, processor_props)
 
 
-@pytest.fixture(scope="session")
-def datapath(ranked_data_path):
-    return get_datapath_for_ranked_data(ranked_data_path)
+@pytest.fixture
+def datapath(ranked_data_path, experiment):
+    return get_datapath_for_ranked_data(ranked_data_path, experiment)
 
 
 @pytest.fixture(scope="session")
@@ -73,7 +75,7 @@ def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
         )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def data_provider(download_ser_data, datapath, processor_props):
     return create_icon_serial_data_provider(datapath, processor_props)
 

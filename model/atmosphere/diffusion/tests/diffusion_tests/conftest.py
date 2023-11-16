@@ -13,7 +13,6 @@
 
 import pytest
 
-from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     damping_height,
     data_provider,
@@ -30,12 +29,8 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     ranked_data_path,
     step_date_exit,
     step_date_init,
+    experiment,
 )
-
-
-@pytest.fixture
-def experiment():
-    return "mch_ch_r04b09_dsl"
 
 
 @pytest.fixture

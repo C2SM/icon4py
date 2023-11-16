@@ -190,45 +190,17 @@ def _verify_init_values_against_savepoint(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment,step_date_init,damping_height",
+    [
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", 12500.0),
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:20.000", 12500.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", 50000.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:08.000", 50000.0),
+    ],
+)
 @pytest.mark.parametrize("ndyn_substeps", (2,))
-def test_verify_diffusion_init_against_first_regular_savepoint(
-    diffusion_savepoint_init,
-    interpolation_savepoint,
-    metrics_savepoint,
-    grid_savepoint,
-    experiment,
-    icon_grid,
-    damping_height,
-    ndyn_substeps,
-):
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
-    additional_parameters = DiffusionParams(config)
-    vct_a = grid_savepoint.vct_a()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
-    edge_geometry = grid_savepoint.construct_edge_geometry()
-
-    interpolation_state = construct_interpolation_state(interpolation_savepoint)
-    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
-
-    diffusion = Diffusion()
-    diffusion.init(
-        grid=icon_grid,
-        config=config,
-        params=additional_parameters,
-        vertical_params=VerticalModelParams(vct_a, damping_height),
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-    )
-
-    _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize("step_date_init", ["2021-06-20T12:00:20.000"])
-@pytest.mark.parametrize("ndyn_substeps", (2,))
-def test_verify_diffusion_init_against_other_regular_savepoint(
+def test_verify_diffusion_init_against_savepoint(
     experiment,
     grid_savepoint,
     icon_grid,
@@ -240,7 +212,6 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
 ):
     config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = DiffusionParams(config)
-
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,

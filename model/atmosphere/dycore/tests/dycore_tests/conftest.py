@@ -36,4 +36,5 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
     step_date_exit,
     step_date_init,
     vn_only,
+    experiment,
 )

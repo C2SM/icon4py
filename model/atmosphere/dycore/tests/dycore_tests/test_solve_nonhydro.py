@@ -235,15 +235,17 @@ def test_nonhydro_predictor_step(
         np.asarray(sp_exit.z_exner_ic())[cell_start_lb_plus2:, nlev - 1],
         np.asarray(solve_nonhydro.z_exner_ic)[cell_start_lb_plus2:, nlev - 1],
     )
+    nflatlev = vertical_params.nflatlev
     assert dallclose(
-        np.asarray(sp_exit.z_exner_ic())[cell_start_lb_plus2:, 4 : nlev - 1],
-        np.asarray(solve_nonhydro.z_exner_ic)[cell_start_lb_plus2:, 4 : nlev - 1],
+        np.asarray(sp_exit.z_exner_ic())[cell_start_lb_plus2:, nflatlev : nlev - 1],
+        np.asarray(solve_nonhydro.z_exner_ic)[cell_start_lb_plus2:, nflatlev : nlev - 1],
         rtol=1.0e-9,
     )
+
     # stencil 6
     assert dallclose(
-        np.asarray(sp_exit.z_dexner_dz_c(1))[cell_start_lb_plus2:, :],
-        np.asarray(solve_nonhydro.z_dexner_dz_c_1)[cell_start_lb_plus2:, :],
+        np.asarray(sp_exit.z_dexner_dz_c(1))[cell_start_lb_plus2:, nflatlev:],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_1)[cell_start_lb_plus2:, nflatlev:],
         atol=5e-18,
     )
 
@@ -277,9 +279,10 @@ def test_nonhydro_predictor_step(
     )
 
     # stencils 12
+    nflat_gradp = vertical_params.nflat_gradp
     assert dallclose(
-        np.asarray(sp_exit.z_dexner_dz_c(2))[cell_start_lb_plus2:, :],
-        np.asarray(solve_nonhydro.z_dexner_dz_c_2)[cell_start_lb_plus2:, :],
+        np.asarray(sp_exit.z_dexner_dz_c(2))[cell_start_lb_plus2:, nflat_gradp:],
+        np.asarray(solve_nonhydro.z_dexner_dz_c_2)[cell_start_lb_plus2:, nflat_gradp:],
         atol=1e-22,
     )
 
