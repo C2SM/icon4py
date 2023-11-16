@@ -240,10 +240,10 @@ def test_verify_diffusion_init_against_savepoint(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit",
+    "experiment,step_date_init, step_date_exit, damping_height",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:00.000", "2000-01-01T00:00:00.000"),
+        # ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -263,7 +263,7 @@ def test_run_diffusion_single_step(
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -312,7 +312,7 @@ def test_run_diffusion_initial_step(
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=damping_height)

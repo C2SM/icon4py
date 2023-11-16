@@ -63,8 +63,7 @@ def optionally_registered(func):
             return func(self, *args, **kwargs)
         except serialbox.SerialboxError:
             log.warning(f"{name}: field not registered in savepoint {self.savepoint.metainfo}")
-
-            return np
+            return None
 
     return wrapper
 
@@ -124,7 +123,7 @@ class IconSavepoint:
         return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
 
 
-class IconGridSavePoint(IconSavepoint):
+class IconGridSavepoint(IconSavepoint):
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 
@@ -662,9 +661,11 @@ class IconDiffusionInitSavepoint(IconSavepoint):
     def div_ic(self):
         return self._get_field("div_ic", CellDim, KDim)
 
+    @optionally_registered
     def dwdx(self):
         return self._get_field("dwdx", CellDim, KDim)
 
+    @optionally_registered
     def dwdy(self):
         return self._get_field("dwdy", CellDim, KDim)
 
@@ -1188,9 +1189,9 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(self) -> IconGridSavePoint:
+    def from_savepoint_grid(self) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
-        return IconGridSavePoint(savepoint, self.serializer, size=self.grid_size)
+        return IconGridSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def _get_icon_grid_savepoint(self):
         savepoint = self.serializer.savepoint["icon-grid"].id[1].as_savepoint()

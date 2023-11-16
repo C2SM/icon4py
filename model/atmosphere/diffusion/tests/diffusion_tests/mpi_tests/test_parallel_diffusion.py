@@ -91,7 +91,7 @@ def test_parallel_diffusion(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     if linit:
         diffusion.initial_run(

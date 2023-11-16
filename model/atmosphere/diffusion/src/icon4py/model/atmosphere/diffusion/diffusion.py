@@ -97,6 +97,7 @@ backend = run_gtfn_cached  #
 class DiffusionType(int, Enum):
     """
     Order of nabla operator for diffusion.
+
     Note: Called `hdiff_order` in `mo_diffusion_nml.f90`.
     Note: We currently only support type 5.
     """
@@ -106,6 +107,23 @@ class DiffusionType(int, Enum):
     SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
     LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
     SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
+
+
+class TurbulenceShearForcingType(int, Enum):
+    """
+    Type of shear forcing used in turbulance.
+
+    Note: called `itype_sher` in `mo_turbdiff_nml.f90`
+    """
+
+    VERTICAL_OF_HORIZONTAL_WIND = 0  #: only vertical shear of horizontal wind
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND = (
+        1  #: as `VERTICAL_ONLY` plus horizontal shar correction
+    )
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND = (
+        2  #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
+    )
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
 
 
 class DiffusionConfig:
@@ -139,6 +157,7 @@ class DiffusionConfig:
         temperature_boundary_diffusion_denom: float = 135.0,
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
+        shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
@@ -221,6 +240,10 @@ class DiffusionConfig:
         #: Called `nudge_efold_width` in mo_interpol_nml.f90
         self.nudge_efold_width: float = nudging_decay_rate
 
+        #: Type of shear forcing used in turbulence
+        #: Called itype_shear in `mo_turbdiff_nml.f90
+        self.shear_type = shear_type
+
         self._validate()
 
     def _validate(self):
@@ -238,9 +261,8 @@ class DiffusionConfig:
         else:
             self.apply_to_temperature = True
             self.apply_to_horizontal_wind = True
-        # TODO(magdalena) remove: is not set for APE experiment
-        if not self.apply_zdiffusion_t:
-            raise NotImplementedError("zdiffu_t = False is not implemented (leaves out stencil_15)")
+
+        # TODO validate shear_type
 
     @functools.cached_property
     def substep_as_float(self):
@@ -620,7 +642,7 @@ class Diffusion:
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
-        h = self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
+        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -651,30 +673,38 @@ class Diffusion:
             },
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
-        log.debug("running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start")
-        calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
-            kh_smag_ec=self.kh_smag_ec,
-            vn=prognostic_state.vn,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            geofac_div=self.interpolation_state.geofac_div,
-            diff_multfac_smag=self.diff_multfac_smag,
-            wgtfac_c=self.metric_state.wgtfac_c,
-            div_ic=diagnostic_state.div_ic,
-            hdef_ic=diagnostic_state.hdef_ic,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
-            vertical_start=1,
-            vertical_end=klevels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            },
-        )
-        log.debug("running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end")
+        if (
+            self.config.shear_type
+            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+        ):  # TODO or ltkesh
+            log.debug(
+                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
+            )
+            calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
+                kh_smag_ec=self.kh_smag_ec,
+                vn=prognostic_state.vn,
+                e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                geofac_div=self.interpolation_state.geofac_div,
+                diff_multfac_smag=self.diff_multfac_smag,
+                wgtfac_c=self.metric_state.wgtfac_c,
+                div_ic=diagnostic_state.div_ic,
+                hdef_ic=diagnostic_state.hdef_ic,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_local,
+                vertical_start=1,
+                vertical_end=klevels,
+                offset_provider={
+                    "C2E": self.grid.get_offset_provider("C2E"),
+                    "C2CE": self.grid.get_offset_provider("C2CE"),
+                    "Koff": KDim,
+                },
+            )
+            log.debug(
+                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
+            )
 
-        # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
-
+        # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
+        # TODO (magdalena) move this up and do asynchronousely
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
             self._exchange.exchange_and_wait(EdgeDim, self.z_nabla2_e)
@@ -744,6 +774,7 @@ class Diffusion:
             geofac_grg_y=self.interpolation_state.geofac_grg_y,
             w_old=self.w_tmp,
             w=prognostic_state.w,
+            type_shear=int32(self.config.shear_type.value),
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,

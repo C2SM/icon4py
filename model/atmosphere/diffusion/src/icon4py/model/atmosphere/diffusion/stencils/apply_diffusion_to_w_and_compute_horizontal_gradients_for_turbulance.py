@@ -28,12 +28,13 @@ from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 
 
 @field_operator
-def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
+def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: Field[[CellDim], float],
     geofac_n2s: Field[[CellDim, C2E2CODim], float],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
     w_old: Field[[CellDim, KDim], float],
+    type_shear: int32,
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
     diff_multfac_w: float,
@@ -49,11 +50,14 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     Field[[CellDim, KDim], float],
 ]:
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
-
-    dwdx, dwdy = where(
-        int32(0) < vert_idx,
-        _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
-        (dwdx, dwdy),
+    dwdx, dwdy = (
+        where(
+            int32(0) < vert_idx,
+            _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
+            (dwdx, dwdy),
+        )
+        if type_shear == int32(2)
+        else (dwdx, dwdy)
     )
 
     z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
@@ -84,6 +88,7 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     geofac_grg_y: Field[[CellDim, C2E2CODim], float],
     w_old: Field[[CellDim, KDim], float],
     w: Field[[CellDim, KDim], float],
+    type_shear: int32,
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
     diff_multfac_w: float,
@@ -98,12 +103,13 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
+    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         area,
         geofac_n2s,
         geofac_grg_x,
         geofac_grg_y,
         w_old,
+        type_shear,
         dwdx,
         dwdy,
         diff_multfac_w,
