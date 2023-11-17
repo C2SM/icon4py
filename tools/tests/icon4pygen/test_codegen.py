@@ -109,7 +109,7 @@ def check_header_codegen(fname: str) -> None:
 
 def check_gridtools_codegen(fname: str) -> None:
     stencil_name = fname.replace(".hpp", "")
-    patterns = ["#include <.*>", "using .*;", f"inline\s+auto\s+{stencil_name}"]
+    patterns = ["#include <.*>", "using .*;", f"inline\\s+auto\\s+{stencil_name}"]
     check_for_matches(fname, patterns)
 
 
