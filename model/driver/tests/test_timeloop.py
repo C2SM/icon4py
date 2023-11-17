@@ -81,7 +81,6 @@ def test_run_timeloop_single_step(
     r04b09_diffusion_config,
     r04b09_iconrun_config,
     damping_height,
-    timeloop_diffusion_linit_init,
     timeloop_diffusion_savepoint_init,
     timeloop_diffusion_savepoint_exit,
     savepoint_velocity_init,

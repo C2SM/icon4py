@@ -74,6 +74,7 @@ def r04b09_iconrun_config(
     ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
     timeloop_date_init,
     timeloop_date_exit,
+    timeloop_diffusion_linit_init,
 ) -> IconRunConfig:
     """
     Create IconRunConfig matching MCH_CH_r04b09_dsl.
@@ -100,7 +101,7 @@ def r04b09_iconrun_config(
             int(timeloop_date_exit[17:19]),
         ),
         n_substeps=ndyn_substeps,
-        apply_initial_stabilization=True,
+        apply_initial_stabilization=timeloop_diffusion_linit_init,
     )
 
 

@@ -72,7 +72,8 @@ class TimeLoop:
             (self.run_config.end_date - self.run_config.start_date)
             / timedelta(seconds=self.run_config.dtime)
         )
-        self._substep_timestep: float = float(self.run_config.dtime / self.run_config.n_substeps)
+        self._n_substeps_var: int = self.run_config.n_substeps
+        self._substep_timestep: float = float(self.run_config.dtime / self._n_substeps_var)
 
         # check validity of configurations
         self._validate()
@@ -81,8 +82,6 @@ class TimeLoop:
         self._simulation_date: datetime = self.run_config.start_date
 
         self._l_init: bool = self.run_config.apply_initial_stabilization
-
-        self._n_substeps_var: int = self.run_config.n_substeps
 
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
@@ -216,7 +215,6 @@ class TimeLoop:
     ):
 
         self._do_dyn_substepping(
-            diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
             prep_adv,
@@ -237,7 +235,6 @@ class TimeLoop:
 
     def _do_dyn_substepping(
         self,
-        diffusion_diagnostic_state: DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
@@ -262,7 +259,7 @@ class TimeLoop:
                 z_fields=z_fields,
                 nh_constants=nh_constants,
                 bdy_divdamp=bdy_divdamp,
-                dtime=self._n_substeps_var,
+                dtime=self._substep_timestep,
                 idyn_timestep=idyn_timestep,
                 l_recompute=l_recompute,
                 l_init=self._l_init,
