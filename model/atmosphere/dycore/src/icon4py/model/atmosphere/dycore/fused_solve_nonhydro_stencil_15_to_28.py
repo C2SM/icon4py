@@ -60,7 +60,7 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 # from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_28 import (
 #     _mo_solve_nonhydro_stencil_28,
 # )
-# from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_e_k
+from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_e_k
 from icon4py.model.common.dimension import (
     C2E2CODim,
     CellDim,
@@ -110,7 +110,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     # ddt_vn_phy: Field[[EdgeDim, KDim], float],
     # vn_incr: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
-    # horz_idx: Field[[EdgeDim], int32],
+    horz_idx: Field[[EdgeDim], int32],
     # vert_idx: Field[[KDim], int32],
     # grav_o_cpd: float,
     # dtime: float,
@@ -118,8 +118,8 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     # p_dthalf: float,
     # iau_wgt_dyn: float,
     # is_iau_active: bool,
-    # limited_area: bool,
-    # idiv_method: int32,
+    limited_area: bool,
+    idiv_method: int32,
     # igradp_method: int32,
     # horizontal_lower_0: int32,
     # horizontal_upper_0: int32,
@@ -131,8 +131,8 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     # horizontal_upper_1: int32,
     # horizontal_lower_3: int32,
     # horizontal_upper_3: int32,
-    # horizontal_lower_4: int32,
-    # horizontal_upper_4: int32,
+    horizontal_lower_4: int32,
+    horizontal_upper_4: int32,
     # nlev: int32,
     # nflatlev: int32,
     # nflat_gradp: int32,
@@ -155,22 +155,19 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
     )
-    # if idiv_method == 1:
-    #     (zero_lower_bound, zero_upper_bound) = (horizontal_lower_01, horizontal_upper_01)
-    # else:
-    #     (zero_lower_bound, zero_upper_bound) = (horizontal_lower_00, horizontal_upper_00)
+    (zero_lower_bound, zero_upper_bound) = (horizontal_lower_01, horizontal_upper_01) if idiv_method == 1 else (zero_lower_bound, zero_upper_bound) = (horizontal_lower_00, horizontal_upper_00)
 
-    # (z_rho_e, z_theta_v_e) = where(
-    #     (zero_lower_bound <= horz_idx < zero_upper_bound),
-    #     (_set_zero_e_k(), _set_zero_e_k()),
-    #     (z_rho_e, z_theta_v_e),
-    # )
-    # if limited_area:
-    #     (z_rho_e, z_theta_v_e) = where(
-    #         (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
-    #         (_set_zero_e_k(), _set_zero_e_k()),
-    #         (z_rho_e, z_theta_v_e),
-    #     )
+    (z_rho_e, z_theta_v_e) = where(
+        (zero_lower_bound <= horz_idx < zero_upper_bound),
+        (_set_zero_e_k(), _set_zero_e_k()),
+        (z_rho_e, z_theta_v_e),
+    )
+
+    (z_rho_e, z_theta_v_e) = where(
+        (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
+        (_set_zero_e_k(), _set_zero_e_k()),
+        (z_rho_e, z_theta_v_e),
+    ) if limited_area else (z_rho_e, z_theta_v_e)
 
     # (z_rho_e, z_theta_v_e) = where(
     #     (horizontal_lower_1 <= horz_idx < horizontal_upper_1),
