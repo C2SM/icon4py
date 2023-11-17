@@ -157,6 +157,9 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if np.any(grid.connectivities[E2C2VDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
         u_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
         v_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
         smag_offset = vpfloat("9.0")

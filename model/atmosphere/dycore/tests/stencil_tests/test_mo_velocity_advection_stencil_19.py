@@ -66,6 +66,9 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
         z_kin_hor_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
         coeff_gradekin = random_field(grid, EdgeDim, E2CDim, dtype=vpfloat)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)
