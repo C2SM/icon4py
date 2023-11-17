@@ -1,0 +1,67 @@
+2023-11-09 15:37:52,502 dycore_driver.py     (433 ) : main                :  INFO     Starting ICON dycore run: 2021-06-20T12:00:00
+2023-11-09 15:37:52,502 dycore_driver.py     (434 ) : main                :  INFO     input args: input_path=testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data, n_time_steps=1, ending date=2021-06-20 12:00:10
+2023-11-09 15:37:52,502 dycore_driver.py     (438 ) : main                :  INFO     input args: input_path=testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data, n_time_steps=1
+2023-11-09 15:37:52,502 dycore_driver.py     (440 ) : main                :  INFO     dycore configuring: DONE
+2023-11-09 15:37:52,503 dycore_driver.py     (441 ) : main                :  INFO     timeloop: START
+2023-11-09 15:37:52,503 dycore_driver.py     (155 ) : time_integration    :  INFO     starting time loop for dtime=10.0 n_timesteps=1
+2023-11-09 15:37:52,503 dycore_driver.py     (158 ) : time_integration    :  INFO     apply_to_horizontal_wind=True linit=True apply_horizontal_diffusion_at_large_dt=True dtime=10.0 substep_timestep=5.0
+2023-11-09 15:37:52,503 dycore_driver.py     (162 ) : time_integration    :  INFO     running initial step to diffuse fields before timeloop starts
+2023-11-09 15:37:55,008 diffusion.py         (603 ) : _do_diffusion_step  :  DEBUG    rbf interpolation 1: start
+2023-11-09 15:37:59,215 diffusion.py         (616 ) : _do_diffusion_step  :  DEBUG    rbf interpolation 1: end
+2023-11-09 15:37:59,218 diffusion.py         (619 ) : _do_diffusion_step  :  DEBUG    communication rbf extrapolation of vn - start
+2023-11-09 15:37:59,218 diffusion.py         (621 ) : _do_diffusion_step  :  DEBUG    communication rbf extrapolation of vn - end
+2023-11-09 15:37:59,218 diffusion.py         (623 ) : _do_diffusion_step  :  DEBUG    running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start
+2023-11-09 15:38:09,923 diffusion.py         (650 ) : _do_diffusion_step  :  DEBUG    running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end
+2023-11-09 15:38:09,923 diffusion.py         (651 ) : _do_diffusion_step  :  DEBUG    running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start
+2023-11-09 15:38:14,813 diffusion.py         (671 ) : _do_diffusion_step  :  DEBUG    running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end
+2023-11-09 15:38:14,814 diffusion.py         (680 ) : _do_diffusion_step  :  DEBUG    2nd rbf interpolation: start
+2023-11-09 15:38:16,419 diffusion.py         (693 ) : _do_diffusion_step  :  DEBUG    2nd rbf interpolation: end
+2023-11-09 15:38:16,420 diffusion.py         (696 ) : _do_diffusion_step  :  DEBUG    communication rbf extrapolation of z_nable2_e - start
+2023-11-09 15:38:16,420 diffusion.py         (698 ) : _do_diffusion_step  :  DEBUG    communication rbf extrapolation of z_nable2_e - end
+2023-11-09 15:38:16,420 diffusion.py         (700 ) : _do_diffusion_step  :  DEBUG    running stencils 04 05 06 (apply_diffusion_to_vn): start
+2023-11-09 15:38:27,303 diffusion.py         (728 ) : _do_diffusion_step  :  DEBUG    running stencils 04 05 06 (apply_diffusion_to_vn): end
+2023-11-09 15:38:27,303 diffusion.py         (729 ) : _do_diffusion_step  :  DEBUG    communication of prognistic.vn : start
+2023-11-09 15:38:27,303 diffusion.py         (732 ) : _do_diffusion_step  :  DEBUG    running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start
+2023-11-09 15:38:45,458 diffusion.py         (763 ) : _do_diffusion_step  :  DEBUG    running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end
+2023-11-09 15:38:45,458 diffusion.py         (767 ) : _do_diffusion_step  :  DEBUG    running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start
+2023-11-09 15:38:48,481 diffusion.py         (784 ) : _do_diffusion_step  :  DEBUG    running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end
+2023-11-09 15:38:48,481 diffusion.py         (787 ) : _do_diffusion_step  :  DEBUG    running stencils 13 14 (calculate_nabla2_for_theta): start
+2023-11-09 15:38:51,332 diffusion.py         (804 ) : _do_diffusion_step  :  DEBUG    running stencils 13_14 (calculate_nabla2_for_theta): end
+2023-11-09 15:38:51,332 diffusion.py         (805 ) : _do_diffusion_step  :  DEBUG    running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start
+2023-11-09 15:38:55,772 diffusion.py         (828 ) : _do_diffusion_step  :  DEBUG    running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end
+2023-11-09 15:38:55,772 diffusion.py         (831 ) : _do_diffusion_step  :  DEBUG    running stencil 16 (update_theta_and_exner): start
+2023-11-09 15:38:58,441 diffusion.py         (844 ) : _do_diffusion_step  :  DEBUG    running stencil 16 (update_theta_and_exner): end
+2023-11-09 15:38:58,442 diffusion.py         (846 ) : _do_diffusion_step  :  DEBUG    communication of prognogistic.vn - end
+2023-11-09 15:38:58,442 diffusion.py         (536 ) : _sync_cell_fields   :  DEBUG    communication of prognostic cell fields: theta, w, exner - start
+2023-11-09 15:38:58,442 diffusion.py         (543 ) : _sync_cell_fields   :  DEBUG    communication of prognostic cell fields: theta, w, exner - done
+2023-11-09 15:38:58,442 dycore_driver.py     (168 ) : time_integration    :  INFO     starting real time loop for dtime=10.0 n_timesteps=1
+2023-11-09 15:38:58,442 dycore_driver.py     (173 ) : time_integration    :  INFO     simulation date : 2021-06-20 12:00:00 run timestep : 0 linit : True
+2023-11-09 15:38:58,442 dycore_driver.py     (250 ) : _do_dyn_substepping :  INFO     simulation date : 2021-06-20 12:00:10 sub timestep : 0, linit : True, nnow: 0, nnew : 1
+2023-11-09 15:44:47,480 dycore_driver.py     (250 ) : _do_dyn_substepping :  INFO     simulation date : 2021-06-20 12:00:10 sub timestep : 1, linit : False, nnow: 1, nnew : 0
+2023-11-09 15:46:32,712 diffusion.py         (603 ) : _do_diffusion_step  :  DEBUG    rbf interpolation 1: start
+2023-11-09 15:46:34,282 diffusion.py         (616 ) : _do_diffusion_step  :  DEBUG    rbf interpolation 1: end
+2023-11-09 15:46:34,283 diffusion.py         (619 ) : _do_diffusion_step  :  DEBUG    communication rbf extrapolation of vn - start
+2023-11-09 15:46:34,283 diffusion.py         (621 ) : _do_diffusion_step  :  DEBUG    communication rbf extrapolation of vn - end
+2023-11-09 15:46:34,283 diffusion.py         (623 ) : _do_diffusion_step  :  DEBUG    running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start
+2023-11-09 15:46:40,201 diffusion.py         (650 ) : _do_diffusion_step  :  DEBUG    running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end
+2023-11-09 15:46:40,204 diffusion.py         (651 ) : _do_diffusion_step  :  DEBUG    running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start
+2023-11-09 15:46:42,425 diffusion.py         (671 ) : _do_diffusion_step  :  DEBUG    running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end
+2023-11-09 15:46:42,425 diffusion.py         (680 ) : _do_diffusion_step  :  DEBUG    2nd rbf interpolation: start
+2023-11-09 15:46:44,032 diffusion.py         (693 ) : _do_diffusion_step  :  DEBUG    2nd rbf interpolation: end
+2023-11-09 15:46:44,033 diffusion.py         (696 ) : _do_diffusion_step  :  DEBUG    communication rbf extrapolation of z_nable2_e - start
+2023-11-09 15:46:44,033 diffusion.py         (698 ) : _do_diffusion_step  :  DEBUG    communication rbf extrapolation of z_nable2_e - end
+2023-11-09 15:46:44,033 diffusion.py         (700 ) : _do_diffusion_step  :  DEBUG    running stencils 04 05 06 (apply_diffusion_to_vn): start
+2023-11-09 15:46:47,572 diffusion.py         (728 ) : _do_diffusion_step  :  DEBUG    running stencils 04 05 06 (apply_diffusion_to_vn): end
+2023-11-09 15:46:47,573 diffusion.py         (729 ) : _do_diffusion_step  :  DEBUG    communication of prognistic.vn : start
+2023-11-09 15:46:47,573 diffusion.py         (732 ) : _do_diffusion_step  :  DEBUG    running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start
+2023-11-09 15:46:57,401 diffusion.py         (763 ) : _do_diffusion_step  :  DEBUG    running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end
+2023-11-09 15:46:57,401 diffusion.py         (767 ) : _do_diffusion_step  :  DEBUG    running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start
+2023-11-09 15:46:58,513 diffusion.py         (784 ) : _do_diffusion_step  :  DEBUG    running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end
+2023-11-09 15:46:58,513 diffusion.py         (787 ) : _do_diffusion_step  :  DEBUG    running stencils 13 14 (calculate_nabla2_for_theta): start
+2023-11-09 15:46:59,431 diffusion.py         (804 ) : _do_diffusion_step  :  DEBUG    running stencils 13_14 (calculate_nabla2_for_theta): end
+2023-11-09 15:46:59,432 diffusion.py         (805 ) : _do_diffusion_step  :  DEBUG    running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start
+2023-11-09 15:47:02,140 diffusion.py         (828 ) : _do_diffusion_step  :  DEBUG    running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end
+2023-11-09 15:47:02,140 diffusion.py         (831 ) : _do_diffusion_step  :  DEBUG    running stencil 16 (update_theta_and_exner): start
+2023-11-09 15:47:03,077 diffusion.py         (844 ) : _do_diffusion_step  :  DEBUG    running stencil 16 (update_theta_and_exner): end
+2023-11-09 15:47:03,079 diffusion.py         (846 ) : _do_diffusion_step  :  DEBUG    communication of prognogistic.vn - end
+2023-11-09 15:47:03,082 dycore_driver.py     (454 ) : main                :  INFO     timeloop:  DONE

@@ -214,12 +214,12 @@ def test_velocity_predictor_step(
         np.asarray(icon_result_vn_ie), np.asarray(diagnostic_state.vn_ie), atol=1.0e-14
     )
     # stencil 07
-    # TODO: this is not called when vn_only is true, no comparison should be done
-    assert dallclose(
-        np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
-        np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :],
-        atol=1.0e-16,
-    )
+    if not vn_only:
+        assert dallclose(
+            np.asarray(icon_result_z_v_grad_w)[3777:31558, :],
+            np.asarray(velocity_advection.z_v_grad_w)[3777:31558, :],
+            atol=1.0e-16,
+        )
     # stencil 08
     assert dallclose(
         np.asarray(savepoint_velocity_exit.z_ekinh())[3316:20896, :],

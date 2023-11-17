@@ -420,7 +420,7 @@ class SolveNonhydro:
         diagnostic_state_nh: DiagnosticStateNonHydro,
         prognostic_state_ls: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
+        z_fields: ZFields,  # TODO (Magdalena): move local fields to SolveNonHydro
         nh_constants: NHConstants,
         bdy_divdamp: Field[[KDim], float],
         dtime: float,
@@ -1697,6 +1697,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        # TODO (magdalena): delete NonHydrostaticConfig. l_open_ubc
         if not (self.config.l_open_ubc and self.l_vert_nested):
             mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
                 w_nnew=prognostic_state[nnew].w,

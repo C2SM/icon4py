@@ -17,11 +17,10 @@ from typing import Callable
 
 import click
 from devtools import Timer
-from gt4py.next import Field, program
+from gt4py.next import Field
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
-from icon4py.model.atmosphere.diffusion.diffusion_utils import _identity_c_k, _identity_e_k
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
@@ -37,8 +36,7 @@ from icon4py.model.common.decomposition.definitions import (
     get_processor_properties,
     get_runtype,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
@@ -55,36 +53,6 @@ from icon4py.model.driver.io_utils import (
 log = logging.getLogger(__name__)
 
 
-# TODO (magdalena) to be removed once there is a proper time stepping
-@program
-def _copy_diagnostic_and_prognostics(
-    hdef_ic_new: Field[[CellDim, KDim], float],
-    hdef_ic: Field[[CellDim, KDim], float],
-    div_ic_new: Field[[CellDim, KDim], float],
-    div_ic: Field[[CellDim, KDim], float],
-    dwdx_new: Field[[CellDim, KDim], float],
-    dwdx: Field[[CellDim, KDim], float],
-    dwdy_new: Field[[CellDim, KDim], float],
-    dwdy: Field[[CellDim, KDim], float],
-    vn_new: Field[[EdgeDim, KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    exner_new: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    theta_v_new: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-):
-    _identity_c_k(hdef_ic_new, out=hdef_ic)
-    _identity_c_k(div_ic_new, out=div_ic)
-    _identity_c_k(dwdx_new, out=dwdx)
-    _identity_c_k(dwdy_new, out=dwdy)
-    _identity_e_k(vn_new, out=vn)
-    _identity_c_k(w_new, out=w)
-    _identity_c_k(exner_new, out=exner)
-    _identity_c_k(theta_v_new, out=theta_v)
-
-
 class TimeLoop:
     @classmethod
     def name(cls):
@@ -95,7 +63,6 @@ class TimeLoop:
         run_config: IconRunConfig,
         diffusion: Diffusion,
         solve_nonhydro: SolveNonhydro,
-        apply_initial_stabilization: bool = True,
     ):
         self.run_config: IconRunConfig = run_config
         self.diffusion = diffusion
@@ -105,7 +72,7 @@ class TimeLoop:
             (self.run_config.end_date - self.run_config.start_date)
             / timedelta(seconds=self.run_config.dtime)
         )
-        self._substep_timestep: float = float(self.run_config.dtime / self.run_config.ndyn_substeps)
+        self._substep_timestep: float = float(self.run_config.dtime / self.run_config.n_substeps)
 
         # check validity of configurations
         self._validate()
@@ -113,16 +80,19 @@ class TimeLoop:
         # current simulation date
         self._simulation_date: datetime = self.run_config.start_date
 
-        self._l_init: bool = apply_initial_stabilization
+        self._l_init: bool = self.run_config.apply_initial_stabilization
 
-        self._now: int = 0  # TODO: move to PrognosticState
-        self._next: int = 1  # TODO: move to PrognosticState
+        self._n_substeps_var: int = self.run_config.n_substeps
+
+        self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
+        self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
-        self._l_init = True
-        self._now: int = 0  # TODO: move to PrognosticState
-        self._next: int = 1  # TODO: move to PrognosticState
+        self._l_init = self.run_config.apply_initial_stabilization
+        self._n_substeps_var = self.run_config.n_substeps
+        self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
+        self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
     def _validate(self):
         if self._n_time_steps < 0:
@@ -141,6 +111,10 @@ class TimeLoop:
     @property
     def linit(self):
         return self._l_init
+
+    @property
+    def n_substeps_var(self):
+        return self._n_substeps_var
 
     @property
     def simulation_date(self):
@@ -174,7 +148,7 @@ class TimeLoop:
         self,
         diffusion_diagnostic_state: DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
-        # TODO: expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
+        # TODO (Chia Rui): expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
         prognostic_state_list: list[PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: PrepAdvection,
@@ -188,7 +162,7 @@ class TimeLoop:
             f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
         )
         log.info(
-            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} linit={self._l_init} apply_horizontal_diff_at_large_dt={self.run_config.apply_horizontal_diff_at_large_dt} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
+            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} linit={self._l_init} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
         )
         if self.diffusion.config.apply_to_horizontal_wind and self._l_init:
             log.info("running initial step to diffuse fields before timeloop starts")
@@ -223,7 +197,9 @@ class TimeLoop:
             )
             timer.capture()
 
-            # TODO IO
+            # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
+
+            # TODO (Chia Rui): simple IO enough for JW test
 
         timer.summary(True)
 
@@ -250,17 +226,14 @@ class TimeLoop:
             lprep_adv,
         )
 
-        if (
-            self.diffusion.config.apply_to_horizontal_wind
-            and self.run_config.apply_horizontal_diff_at_large_dt
-        ):
+        if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.run_config.dtime
             )
 
         self._swap()
 
-        # TODO tracer advection
+        # TODO (Chia Rui): add tracer advection here
 
     def _do_dyn_substepping(
         self,
@@ -274,11 +247,11 @@ class TimeLoop:
         lprep_adv: bool,
     ):
 
-        # TODO compute airmass for prognostic_state
+        # TODO (Chia Rui): compute airmass for prognostic_state here
 
         l_recompute = True
         lclean_mflx = True
-        for idyn_timestep in range(self.run_config.ndyn_substeps):
+        for idyn_timestep in range(self._n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} sub timestep : {idyn_timestep}, linit : {self._l_init}, nnow: {self._now}, nnew : {self._next}"
             )
@@ -289,7 +262,7 @@ class TimeLoop:
                 z_fields=z_fields,
                 nh_constants=nh_constants,
                 bdy_divdamp=bdy_divdamp,
-                dtime=self._substep_timestep,
+                dtime=self._n_substeps_var,
                 idyn_timestep=idyn_timestep,
                 l_recompute=l_recompute,
                 l_init=self._l_init,
@@ -298,25 +271,16 @@ class TimeLoop:
                 lclean_mflx=lclean_mflx,
                 lprep_adv=lprep_adv,
             )
-            if (
-                self.diffusion.config.apply_to_horizontal_wind
-                and not self.run_config.apply_horizontal_diff_at_large_dt
-            ):
-                self.diffusion.run(
-                    diffusion_diagnostic_state,
-                    prognostic_state_list[self._next],
-                    self._substep_timestep,
-                )
 
             l_recompute = False
             lclean_mflx = False
 
-            if idyn_timestep != self.run_config.ndyn_substeps - 1:
+            if idyn_timestep != self._n_substeps_var - 1:
                 self._swap()
 
             self._not_first_step()
 
-        # TODO compute airmass for prognostic_state
+        # TODO (Chia Rui): compute airmass for prognostic_state here
 
 
 def initialize(file_path: Path, props: ProcessProperties):
@@ -332,9 +296,10 @@ def initialize(file_path: Path, props: ProcessProperties):
 
      Returns:
          tl: configured timeloop,
-         prognostic_state: initial state fro prognostic and diagnostic variables
-         diagnostic_state:
-         other temporary fields:
+         diffusion_diagnostic_state: initial state for diffusion diagnostic variables
+         nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
+         prognostic_state: initial state for prognostic variables
+         other temporary fields: to be removed in the future
     """
     log.info("initialize parallel runtime")
     experiment_name = "mch_ch_r04b09_dsl"
@@ -386,9 +351,8 @@ def initialize(file_path: Path, props: ProcessProperties):
     nonhydro_config = NonHydrostaticConfig()
     nonhydro_params = NonHydrostaticParams(nonhydro_config)
 
-    grid = SimpleGrid()
-    enh_smag_fac = zero_field(grid, KDim)
-    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
@@ -413,7 +377,6 @@ def initialize(file_path: Path, props: ProcessProperties):
         run_config=config.run_config,
         diffusion=diffusion,
         solve_nonhydro=solve_nonhydro,
-        apply_initial_stabilization=True,
     )
     return (
         timeloop,

@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -19,21 +19,24 @@ from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, Diffus
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
 
 
+log = logging.getLogger(__name__)
+
 n_substeps_reduced = 2
 
 
-@dataclass
+@dataclass(frozen=True)
 class IconRunConfig:
 
-    dtime: float = 60.0
+    dtime: float = 600.0  # length of a time step [s]
     start_date: datetime = datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime = datetime(1, 1, 1, 1, 0, 0)
 
-    ndyn_substeps: int = (
-        5  # ndyn_substeps is not a constant in ICON, it may be modified in restart runs
-    )
-    apply_horizontal_diff_at_large_dt: bool = True  # lhdiff_rcf
-    apply_extra_diffusion_for_largeCFL: bool = True  # lextra_diffu
+    """ndyn_substeps in ICON"""
+    # TODO (Chia Rui): check ICON code if we need to define extra ndyn_substeps in timeloop that changes in runtime
+    n_substeps: int = 5
+
+    """linit_dyn in ICON"""
+    apply_initial_stabilization: bool = True  # False if in restart mode
 
 
 @dataclass
@@ -76,9 +79,8 @@ def read_config(experiment: Optional[str]) -> IconConfig:
                 dtime=10.0,
                 start_date=datetime(2021, 6, 20, 12, 0, 0),
                 end_date=datetime(2021, 6, 20, 12, 0, 10),
-                ndyn_substeps=2,
-                apply_horizontal_diff_at_large_dt=True,
-                apply_extra_diffusion_for_largeCFL=True,
+                n_substeps=2,
+                apply_initial_stabilization=True,
             ),
             mch_ch_r04b09_diffusion_config(),
             NonHydrostaticConfig(),
@@ -87,7 +89,8 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     if experiment == "mch_ch_r04b09_dsl":
         (model_run_config, diffusion_config, nonhydro_config) = _mch_ch_r04b09_config()
     else:
-        raise NotImplementedError("Please specify experiment name for icon run config")
+        log.info("Warning: Experiment name is not specified, default configuration is used.")
+        (model_run_config, diffusion_config, nonhydro_config) = _default_config()
     return IconConfig(
         run_config=model_run_config,
         diffusion_config=diffusion_config,

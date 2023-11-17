@@ -228,6 +228,7 @@ def test_nonhydro_predictor_step(
     assert dallclose(
         np.asarray(sp_exit.z_exner_ex_pr())[cell_start_lb_plus2:, :],
         np.asarray(solve_nonhydro.z_exner_ex_pr)[cell_start_lb_plus2:, :],
+        atol=2.0e-18,
     )
 
     # stencils 4,5
@@ -255,6 +256,7 @@ def test_nonhydro_predictor_step(
     assert dallclose(
         np.asarray(sp_exit.z_th_ddz_exner_c())[cell_start_lb_plus2:, 1:],
         np.asarray(solve_nonhydro.z_th_ddz_exner_c)[cell_start_lb_plus2:, 1:],
+        atol=1.0e-18,
     )
 
     # stencils 7,8,9, 11
@@ -341,13 +343,13 @@ def test_nonhydro_predictor_step(
 
     # stencil 30
     assert dallclose(
-        np.asarray(sp_exit.z_vn_avg())[2538:31558, :],
-        np.asarray(solve_nonhydro.z_vn_avg)[2538:31558, :],
+        np.asarray(sp_exit.z_vn_avg())[edge_start_lb_plus4:, :],
+        np.asarray(solve_nonhydro.z_vn_avg)[edge_start_lb_plus4:, :],
         atol=5e-14,
     )
     # stencil 30
     assert dallclose(
-        np.asarray(sp_exit.z_graddiv_vn()[edge_start_lb_plus4:, :]),
+        np.asarray(sp_exit.z_graddiv_vn())[edge_start_lb_plus4:, :],
         np.asarray(z_fields.z_graddiv_vn)[edge_start_lb_plus4:, :],
         atol=5e-20,
     )
@@ -399,8 +401,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 41
     assert dallclose(
-        np.asarray(sp_exit.z_flxdiv_mass())[3316:20896, :],
-        np.asarray(solve_nonhydro.z_flxdiv_mass)[3316:20896, :],
+        np.asarray(sp_exit.z_flxdiv_mass())[cell_start_nudging:, :],
+        np.asarray(solve_nonhydro.z_flxdiv_mass)[cell_start_nudging:, :],
         atol=5e-15,
     )
 

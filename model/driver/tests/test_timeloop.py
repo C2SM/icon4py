@@ -29,7 +29,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
@@ -39,7 +38,7 @@ from icon4py.model.driver.dycore_driver import TimeLoop
 # testing on MCH_CH_r04b09_dsl data
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "debug_mode,timeloop_istep_init,timeloop_istep_exit,timeloop_jstep_init,timeloop_jstep_exit,timeloop_date_init, timeloop_date, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only_init",
+    "debug_mode,istep_init, istep_exit, jstep_init, jstep_exit,timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
             False,
@@ -48,6 +47,8 @@ from icon4py.model.driver.dycore_driver import TimeLoop
             0,
             1,
             "2021-06-20T12:00:00.000",
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
             True,
             False,
@@ -61,6 +62,8 @@ from icon4py.model.driver.dycore_driver import TimeLoop
             1,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
             False,
             False,
             True,
@@ -70,7 +73,7 @@ from icon4py.model.driver.dycore_driver import TimeLoop
 def test_run_timeloop_single_step(
     debug_mode,
     timeloop_date_init,
-    timeloop_date,
+    timeloop_date_exit,
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
@@ -81,10 +84,9 @@ def test_run_timeloop_single_step(
     timeloop_diffusion_linit_init,
     timeloop_diffusion_savepoint_init,
     timeloop_diffusion_savepoint_exit,
-    timeloop_nonhydro_savepoint_init,
-    timeloop_velocity_savepoint_init,
-    timeloop_nonhydro_savepoint_exit,
-    timeloop_nonhydro_step_savepoint_exit,
+    savepoint_velocity_init,
+    savepoint_nonhydro_init,
+    savepoint_nonhydro_exit,
 ):
     diffusion_config = r04b09_diffusion_config
     diffusion_dtime = timeloop_diffusion_savepoint_init.get_metadata("dtime").get("dtime")
@@ -119,19 +121,18 @@ def test_run_timeloop_single_step(
 
     # Default construction is for the MCH_CH_r04b09_dsl run config for nonhydro
     nonhydro_config = NonHydrostaticConfig()
-    sp = timeloop_nonhydro_savepoint_init
+    sp = savepoint_nonhydro_init
     nonhydro_params = NonHydrostaticParams(nonhydro_config)
-    sp_v = timeloop_velocity_savepoint_init
-    grid = SimpleGrid()
-    nonhydro_dtime = timeloop_velocity_savepoint_init.get_metadata("dtime").get("dtime")
+    sp_v = savepoint_velocity_init
+    nonhydro_dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     # lprep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     prep_adv = PrepAdvection(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(grid, KDim)
-    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
+    enh_smag_fac = zero_field(icon_grid, KDim)
+    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
@@ -212,13 +213,11 @@ def test_run_timeloop_single_step(
         exner_incr=None,  # sp.exner_incr(),
     )
 
-    timeloop = TimeLoop(
-        r04b09_iconrun_config, diffusion, solve_nonhydro, timeloop_diffusion_linit_init
-    )
+    timeloop = TimeLoop(r04b09_iconrun_config, diffusion, solve_nonhydro)
 
     assert timeloop.substep_timestep == nonhydro_dtime
 
-    if timeloop_date == "2021-06-20T12:00:10.000":
+    if timeloop_date_exit == "2021-06-20T12:00:10.000":
         prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
     else:
         prognostic_state = PrognosticState(
@@ -249,7 +248,7 @@ def test_run_timeloop_single_step(
         lprep_adv,
     )
 
-    rho_sp = timeloop_nonhydro_savepoint_exit.rho_new()
+    rho_sp = savepoint_nonhydro_exit.rho_new()
     exner_sp = timeloop_diffusion_savepoint_exit.exner()
     theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
     vn_sp = timeloop_diffusion_savepoint_exit.vn()

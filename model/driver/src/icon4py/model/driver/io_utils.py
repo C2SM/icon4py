@@ -73,7 +73,7 @@ def read_icon_grid(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-# TODO initialization of prognostic variables and topography of Jablonowski Williamson test
+# TODO (Chia Rui): initialization of prognostic variables and topography of Jablonowski Williamson test
 def model_initialization():
 
     # create two prognostic states, nnow and nnew?
@@ -112,7 +112,8 @@ def read_initial_state(
     Read prognostic and diagnostic state from serialized data.
 
     Args:
-        path: path the serialized input data
+        path: path to the serialized input data
+        rank: mpi rank of the current compute node
 
     Returns: a tuple containing the data_provider, the initial diagnostic and prognostic state.
         The data_provider is returned such that further timesteps of diagnostics and prognostics
@@ -161,7 +162,6 @@ def read_initial_state(
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
     )
 
-    # TODO: move local fields to SolveNonHydro
     z_fields = ZFields(
         z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
         z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
