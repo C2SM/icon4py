@@ -167,7 +167,7 @@ class NonHydrostaticConfig:
     Contains necessary parameter to configure a nonhydro run.
 
     Encapsulates namelist parameters and derived parameters.
-    Values should be read from configuration.
+    TODO: (magdalena) values should be read from a configuration file.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     """
 
@@ -199,11 +199,17 @@ class NonHydrostaticConfig:
         divdamp_z3: float = 60000,
         divdamp_z4: float = 80000,
     ):
-        # parameters from namelist diffusion_nml
+        # parameters from namelist nonhydrostatic_nml
+
+        #: time scheme for the non hydro static model
         self.itime_scheme: int = itime_scheme
+
+        #: Miura scheme for advection of rho and theta
         self.iadv_rhotheta: int = iadv_rhotheta
 
+        #:
         self.l_open_ubc: bool = l_open_ubc
+
         self.igradp_method: int = igradp_method
         self.ndyn_substeps_var = ndyn_substeps_var
         self.idiv_method: int = idiv_method
@@ -1376,11 +1382,12 @@ class SolveNonhydro:
         start_edge_nudging_plus1 = self.grid.get_start_index(
             EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
         )
-        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
 
         start_edge_lb_plus4 = self.grid.get_start_index(
             EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
+        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
+
         end_edge_local_minus2 = self.grid.get_end_index(
             EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
         )

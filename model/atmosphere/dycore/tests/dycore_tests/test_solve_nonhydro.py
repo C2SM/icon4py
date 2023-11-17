@@ -465,7 +465,10 @@ def test_nonhydro_predictor_step(
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit, damping_height",
-    [("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0)],
+    [
+        # ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+    ],
 )
 def test_nonhydro_corrector_step(
     istep_init,
@@ -627,12 +630,12 @@ def test_nonhydro_corrector_step(
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.exner_new()),
         np.asarray(prognostic_state_ls[nnew].exner),
-    )
+    )  # TODO (magdalena) APE  atol=1e-7
 
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.rho_new()),
         np.asarray(np.asarray(prognostic_state_ls[nnew].rho)),
-    )
+    )  # TODO (magdalena) APE  atol=1e-7
 
     assert dallclose(
         np.asarray(savepoint_nonhydro_exit.w_new()),
