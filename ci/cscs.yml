@@ -17,7 +17,7 @@ variables:
     DOCKERFILE: ci/docker/Dockerfile.build
 
 .test_template:
-  extends: .container-runner-hohgant-a100
+  extends: .container-runner-clariden-a100
   timeout: 2h
   image: $PERSIST_IMAGE_NAME
   before_script:
