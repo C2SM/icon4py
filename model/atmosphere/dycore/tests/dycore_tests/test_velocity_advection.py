@@ -77,6 +77,13 @@ def test_velocity_init(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, step_date_init, damping_height",
+    [
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", 12500.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", 50000.0),
+    ],
+)
 def test_verify_velocity_init_against_regular_savepoint(
     savepoint_velocity_init,
     interpolation_savepoint,
@@ -84,6 +91,7 @@ def test_verify_velocity_init_against_regular_savepoint(
     icon_grid,
     metrics_savepoint,
     damping_height,
+    experiment,
 ):
     savepoint = savepoint_velocity_init
     dtime = savepoint.get_metadata("dtime").get("dtime")
@@ -113,11 +121,16 @@ def test_verify_velocity_init_against_regular_savepoint(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 @pytest.mark.parametrize(
-    "istep_init, istep_exit, step_date_init, step_date_exit",
-    [(1, 1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "experiment,step_date_init, step_date_exit, damping_height",
+    [
+        # ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+    ],
 )
 def test_velocity_predictor_step(
+    experiment,
     istep_init,
     istep_exit,
     step_date_init,
@@ -266,9 +279,13 @@ def test_velocity_predictor_step(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
-    "istep_init, istep_exit, step_date_init, step_date_exit",
-    [(2, 2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "experiment, step_date_init, step_date_exit, damping_height",
+    [
+        # ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+    ],
 )
 def test_velocity_corrector_step(
     istep_init,

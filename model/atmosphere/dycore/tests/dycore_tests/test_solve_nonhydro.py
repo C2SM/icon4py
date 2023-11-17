@@ -60,9 +60,10 @@ def test_nonhydro_params():
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 @pytest.mark.parametrize(
-    "istep_init, istep_exit, step_date_init, step_date_exit",
-    [(1, 1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "experiment,step_date_init, step_date_exit, damping_height",
+    [("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0)],
 )
 def test_nonhydro_predictor_step(
     istep_init,
@@ -461,9 +462,10 @@ def test_nonhydro_predictor_step(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
-    "istep_init, istep_exit, step_date_init, step_date_exit",
-    [(2, 2, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "experiment,step_date_init, step_date_exit, damping_height",
+    [("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0)],
 )
 def test_nonhydro_corrector_step(
     istep_init,
@@ -668,9 +670,10 @@ def test_nonhydro_corrector_step(
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("istep_init,jstep_init, istep_exit,jstep_exit", [(1, 0, 2, 0)])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init,  istep_exit, jstep_exit,step_date_exit",
-    [(1, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000")],
+    "step_date_init ,step_date_exit",
+    [("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
 )
 def test_run_solve_nonhydro_single_step(
     istep_init,
