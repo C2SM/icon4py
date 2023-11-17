@@ -28,10 +28,10 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclose, zero_field
 from icon4py.model.common.test_utils.serialbox_utils import (
     IconDiffusionExitSavepoint,
-    InterpolationSavepoint,
-    MetricSavepoint,
     IconDiffusionInitSavepoint,
     IconGridSavepoint,
+    InterpolationSavepoint,
+    MetricSavepoint,
 )
 
 
@@ -56,7 +56,7 @@ def exclaim_ape_diffusion_config(ndyn_substeps):
 
 
 def r04b09_diffusion_config(
-    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
+    ndyn_substeps,  # imported `ndyn_substeps` fixture
 ) -> DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.

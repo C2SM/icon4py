@@ -18,35 +18,6 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
 
 @dataclass
-class DiagnosticState:
-    # fields for 3D elements in turbdiff
-    hdef_ic: Field[
-        [CellDim, KDim], float
-    ]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
-    div_ic: Field[
-        [CellDim, KDim], float
-    ]  # ! horizontal wind field deformation (nproma,nlevp1,nblks_c)     [1/s^2]
-    dwdx: Field[
-        [CellDim, KDim], float
-    ]  # zonal gradient of vertical wind speed (nproma,nlevp1,nblks_c)     [1/s]
-
-    dwdy: Field[
-        [CellDim, KDim], float
-    ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
-
-    vt: Field[[EdgeDim, KDim], float]
-    vn_ie: Field[
-        [EdgeDim, KDim], float
-    ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    w_concorr_c: Field[
-        [CellDim, KDim], float
-    ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    ddt_w_adv_pc: Field[[CellDim, KDim], float]
-    ddt_vn_apc_pc: Field[[EdgeDim, KDim], float]
-    ntnd: float
-
-
-@dataclass
 class DiagnosticStateNonHydro:
     vt: Field[[EdgeDim, KDim], float]
     vn_ie: Field[
@@ -70,10 +41,12 @@ class DiagnosticStateNonHydro:
     ddt_w_adv_ntl1: Field[[CellDim, KDim], float]
     ddt_w_adv_ntl2: Field[[CellDim, KDim], float]
 
-    # Analysis increments
-    rho_incr: Field[[EdgeDim, KDim], float]  # moist density increment [kg/m^3]
+    # Analysis increments (for IAU)
+    rho_incr: Field[[CellDim, KDim], float]  # moist density increment [kg/m^3]
     vn_incr: Field[[EdgeDim, KDim], float]  # normal velocity increment [m/s]
-    exner_incr: Field[[EdgeDim, KDim], float]  # exner increment [- ]
+    exner_incr: Field[[CellDim, KDim], float]  # exner increment [- ]
+
+    exner_dyn_incr: Field[[CellDim, KDim], float] = None  # exner pressure dynamics increment
 
     @property
     def ddt_vn_apc_pc(

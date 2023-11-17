@@ -19,9 +19,7 @@ import serialbox as ser
 from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
-from serialbox import SerialboxError
 
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.common import dimension
@@ -51,6 +49,7 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, Horizon
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
+
 
 log = logging.getLogger(__name__)
 
@@ -720,20 +719,6 @@ class IconDiffusionInitSavepoint(IconSavepoint):
             rho=self.rho(),
         )
 
-    def construct_diagnostics(self) -> DiagnosticState:
-        return DiagnosticState(
-            hdef_ic=self.hdef_ic(),
-            div_ic=self.div_ic(),
-            dwdx=self.dwdx(),
-            dwdy=self.dwdy(),
-            vt=None,
-            vn_ie=None,
-            w_concorr_c=None,
-            ddt_w_adv_pc_before=None,
-            ddt_vn_apc_pc_before=None,
-            ntnd=None,
-        )
-
 
 class IconNonHydroInitSavepoint(IconSavepoint):
     def bdy_divdamp(self):
@@ -810,6 +795,9 @@ class IconNonHydroInitSavepoint(IconSavepoint):
 
     def vn_incr(self):
         return self._get_field("vn_incr", EdgeDim, KDim)
+
+    def exner_dyn_incr(self):
+        return self._get_field("exner_dyn_incr", CellDim, KDim)
 
     def scal_divdamp(self) -> float:
         return self.serializer.read("scal_divdamp", self.savepoint)[0]
@@ -953,7 +941,7 @@ class IconDiffusionExitSavepoint(IconSavepoint):
         return self._get_field("x_hdef_ic", CellDim, KDim)
 
 
-class IconExitSavepoint(IconSavepoint):
+class IconNonhydroExitSavepoint(IconSavepoint):
     def rho_new(self):
         return self._get_field("x_rho_new", CellDim, KDim)
 
@@ -970,22 +958,8 @@ class IconExitSavepoint(IconSavepoint):
         buffer = np.squeeze(self.serializer.read("x_ddt_vn_apc_pc", self.savepoint).astype(float))
         return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
 
-    def ddt_vn_apc_pc_19(self, ntnd):
-        buffer = np.squeeze(
-            self.serializer.read("x_ddt_vn_apc_pc_19", self.savepoint).astype(float)
-        )
-        return np_as_located_field(EdgeDim, KDim)(buffer[:, :, ntnd - 1])
-
     def ddt_w_adv_pc(self, ntnd):
         buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc", self.savepoint).astype(float))
-        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
-
-    def ddt_w_adv_pc_16(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc_16", self.savepoint).astype(float))
-        return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
-
-    def ddt_w_adv_pc_17(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc_17", self.savepoint).astype(float))
         return np_as_located_field(CellDim, KDim)(buffer[:, :, ntnd - 1])
 
     def scalfac_exdiff(self) -> float:
@@ -1148,8 +1122,11 @@ class IconExitSavepoint(IconSavepoint):
     def z_dwdz_dd(self):
         return self._get_field("x_z_dwdz_dd", CellDim, KDim)
 
+    def exner_dyn_incr(self):
+        return self._get_field("x_exner_dyn_incr", CellDim, KDim)
 
-# TODO (magdalena) rename
+
+# TODO (magdalena) rename?
 class IconNHFinalExitSavepoint(IconSavepoint):
     def theta_v_new(self):
         return self._get_field("x_theta_v", CellDim, KDim)
@@ -1248,7 +1225,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_velocity_exit(
         self, istep: int, vn_only: bool, date: str, jstep: int
-    ) -> IconExitSavepoint:
+    ) -> IconNonhydroExitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-velocity-tendencies"]
             .istep[istep]
@@ -1257,9 +1234,11 @@ class IconSerialDataProvider:
             .jstep[jstep]
             .as_savepoint()
         )
-        return IconExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+        return IconNonhydroExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_nonhydro_exit(self, istep: int, date: str, jstep: int) -> IconExitSavepoint:
+    def from_savepoint_nonhydro_exit(
+        self, istep: int, date: str, jstep: int
+    ) -> IconNonhydroExitSavepoint:
         savepoint = (
             self.serializer.savepoint["solve_nonhydro"]
             .istep[istep]
@@ -1267,7 +1246,7 @@ class IconSerialDataProvider:
             .jstep[jstep]
             .as_savepoint()
         )
-        return IconExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+        return IconNonhydroExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_nonhydro_step_exit(self, date: str, jstep: int) -> IconNHFinalExitSavepoint:
         savepoint = (

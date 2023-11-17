@@ -24,10 +24,10 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # 
 )
 
 from ..utils import (
-    verify_diffusion_fields,
+    construct_diagnostics,
     construct_interpolation_state,
     construct_metric_state_for_diffusion,
-    construct_diagnostics,
+    verify_diffusion_fields,
 )
 
 

@@ -29,6 +29,8 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
 
+from .utils import construct_config
+
 
 @pytest.mark.datatest
 def test_nonhydro_params():
@@ -79,8 +81,10 @@ def test_nonhydro_predictor_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
+    experiment,
+    ndyn_substeps,
 ):
-    config = NonHydrostaticConfig()
+    config = construct_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = NonHydrostaticParams(config)
@@ -124,6 +128,7 @@ def test_nonhydro_predictor_step(
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=None,  # sp.exner_dyn_incr(),
     )
 
     prognostic_state_nnow = PrognosticState(
@@ -466,8 +471,8 @@ def test_nonhydro_predictor_step(
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
-        # ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_nonhydro_corrector_step(
@@ -483,8 +488,10 @@ def test_nonhydro_corrector_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
+    experiment,
+    ndyn_substeps,
 ):
-    config = NonHydrostaticConfig()
+    config = construct_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = VerticalModelParams(
@@ -529,6 +536,7 @@ def test_nonhydro_corrector_step(
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=None,
     )
 
     prognostic_state_nnow = PrognosticState(
@@ -694,8 +702,10 @@ def test_run_solve_nonhydro_single_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
+    experiment,
+    ndyn_substeps,
 ):
-    config = NonHydrostaticConfig()
+    config = config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
@@ -744,6 +754,7 @@ def test_run_solve_nonhydro_single_step(
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=None,  # sp.exner_dyn_incr()
     )
 
     prognostic_state_nnow = PrognosticState(
@@ -871,8 +882,9 @@ def test_run_solve_nonhydro_multi_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
+    experiment,
 ):
-    config = NonHydrostaticConfig()
+    config = config = construct_config(experiment)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
@@ -922,6 +934,7 @@ def test_run_solve_nonhydro_multi_step(
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=None,  # sp.exner_dyn_incr()
     )
 
     prognostic_state_ls, prognostic_state_nnew = create_prognostic_states(sp)

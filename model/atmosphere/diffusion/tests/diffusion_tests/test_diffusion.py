@@ -21,14 +21,14 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.serialbox_utils import IconDiffusionInitSavepoint
 
 from .utils import (
+    construct_config,
+    construct_diagnostics,
+    construct_interpolation_state,
+    construct_metric_state_for_diffusion,
     diff_multfac_vn_numpy,
     enhanced_smagorinski_factor_numpy,
     smag_limit_numpy,
     verify_diffusion_fields,
-    construct_interpolation_state,
-    construct_metric_state_for_diffusion,
-    construct_diagnostics,
-    construct_config,
 )
 
 

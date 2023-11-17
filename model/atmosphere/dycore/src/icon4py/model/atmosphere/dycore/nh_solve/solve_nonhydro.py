@@ -176,21 +176,22 @@ class NonHydrostaticConfig:
         itime_scheme: int = 4,
         iadv_rhotheta: int = 2,
         igradp_method: int = 3,
-        ndyn_substeps_var: float = 2.0,
+        ndyn_substeps_var: float = 5.0,
         rayleigh_type: int = 2,
-        divdamp_order: int = 24,
+        rayleigh_coeff: float = 0.05,
+        divdamp_order: int = 24,  # the ICON default is 4,
         idiv_method: int = 1,
         is_iau_active: bool = False,
-        iau_wgt_dyn: float = 1.0,
+        iau_wgt_dyn: float = 0.0,
         divdamp_type: int = 3,
         lhdiff_rcf: bool = True,
         l_vert_nested: bool = False,
         l_open_ubc: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
-        divdamp_fac: float = 0.004,  # checked for corrector after serialization
-        divdamp_fac_o2: float = 0.032,  # checked for corrector after serialization
-        max_nudging_coeff: float = 0.075,
+        divdamp_fac_o2: float = 0.032,  # TODO (magdalena) dynamic parameter: https://github.com/C2SM/icon4py/pull/313
+        max_nudging_coeff: float = 0.02,
+        divdamp_fac: float = 0.0025,
         divdamp_fac2: float = 0.004,
         divdamp_fac3: float = 0.004,
         divdamp_fac4: float = 0.004,
@@ -198,6 +199,8 @@ class NonHydrostaticConfig:
         divdamp_z2: float = 40000,
         divdamp_z3: float = 60000,
         divdamp_z4: float = 80000,
+        htop_moist_proc: float = 22500.0,
+        ltestcase: bool = False,
     ):
         # parameters from namelist nonhydrostatic_nml
 
@@ -207,25 +210,43 @@ class NonHydrostaticConfig:
         #: Miura scheme for advection of rho and theta
         self.iadv_rhotheta: int = iadv_rhotheta
 
-        #:
+        #: whether to use open upper boundary conditions
         self.l_open_ubc: bool = l_open_ubc
 
+        #: Use truly horizontal pressure-gradient computation to ensure numerical
+        #: stability without heavy orography smoothing
         self.igradp_method: int = igradp_method
-        self.ndyn_substeps_var = ndyn_substeps_var
-        self.idiv_method: int = idiv_method
-        self.is_iau_active: bool = is_iau_active
-        self.iau_wgt_dyn: float = iau_wgt_dyn
-        self.divdamp_type: int = divdamp_type
-        self.lhdiff_rcf: bool = lhdiff_rcf
-        self.rayleigh_type: int = rayleigh_type
-        self.divdamp_order: int = divdamp_order
-        self.l_vert_nested: bool = l_vert_nested
-        self.rhotheta_offctr: float = rhotheta_offctr
-        self.veladv_offctr: float = veladv_offctr
-        self.divdamp_fac: float = divdamp_fac
-        self.divdamp_fac_o2: float = divdamp_fac_o2
-        self.nudge_max_coeff: float = max_nudging_coeff
 
+        #: number of dynamics substeps per fast-physics timestep
+        self.ndyn_substeps_var = ndyn_substeps_var
+
+        #: reduced calling frequency also for horizontal diffusion
+        #: TODO (magdalena) to be removed, see discussion between Anurag and Ong Chia Rui
+        self.lhdiff_rcf: bool = lhdiff_rcf
+
+        #: type of Rayleigh damping
+        self.rayleigh_type: int = rayleigh_type
+        # TODO (magdalena) used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
+        self.rayleigh_coeff: float = rayleigh_coeff
+
+        #: order of divergence damping
+        self.divdamp_order: int = divdamp_order
+
+        #: type of divergence damping
+        self.divdamp_type: int = divdamp_type
+
+        #: off-centering for density and potential temperature at interface levels.
+        #: Specifying a negative value here reduces the amount of vertical
+        #: wind off-centering needed for stability of sound waves.
+        self.rhotheta_offctr: float = rhotheta_offctr
+
+        #: off-centering of velocity advection in corrector step
+        self.veladv_offctr: float = veladv_offctr
+
+        self.divdamp_fac_o2: float = divdamp_fac_o2
+
+        #: scaling factor for divergence damping (used only if lhdiff_rcf = true)
+        self.divdamp_fac: float = divdamp_fac
         self.divdamp_fac2: float = divdamp_fac2
         self.divdamp_fac3: float = divdamp_fac3
         self.divdamp_fac4: float = divdamp_fac4
@@ -233,6 +254,28 @@ class NonHydrostaticConfig:
         self.divdamp_z2: float = divdamp_z2
         self.divdamp_z3: float = divdamp_z3
         self.divdamp_z4: float = divdamp_z4
+
+        #: height [m] where moist physics is turned off
+        self.htop_moist_proc: float = htop_moist_proc
+
+        #: parameters from other namelists:
+
+        #: from mo_interpol_nml.f90
+        self.nudge_max_coeff: float = max_nudging_coeff
+
+        #: from mo_run_nml.f90
+        #: use vertical nesting
+        self.l_vert_nested: bool = l_vert_nested
+        self.ltestcase = ltestcase  # TODO (magdalena) handle differently
+
+        #: from mo_initicon_nml.f90/ mo_initicon_config.f90
+        #: whether IAU is active at current time
+        self.is_iau_active: bool = is_iau_active
+        #: IAU weight for dynamics fields
+        self.iau_wgt_dyn: float = iau_wgt_dyn
+
+        #: from mo_dynamics_nml.f90
+        self.idiv_method: int = idiv_method
 
         self._validate()
 
@@ -274,11 +317,6 @@ class NonHydrostaticParams:
 
         # start level for 3D divergence damping terms
         self.kstart_dd3d: int = 0
-
-        # start level for moist physics processes (specified by htop_moist_proc)
-        self.kstart_moist: int = 1
-        if self.kstart_moist != 1:
-            raise NotImplementedError("kstart_moist can only be 1")
 
         self.alin = (config.divdamp_fac2 - config.divdamp_fac) / (
             config.divdamp_z2 - config.divdamp_z
@@ -1311,7 +1349,7 @@ class SolveNonhydro:
                 exner_dyn_incr=self.exner_dyn_incr,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
-                vertical_start=self.params.kstart_moist,
+                vertical_start=self.vertical_params.kstart_moist,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
@@ -1848,6 +1886,7 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
+        # TODO (magdalena) stencil_60???
 
         if lprep_adv:
             if lclean_mflx:
