@@ -690,10 +690,6 @@ def fused_solve_nonhydro_stencil_15_to_28(
     nlev: int32,
     nflatlev: int32,
     nflat_gradp: int32,
-    horizontal_lower: int32,
-    horizontal_upper: int32,
-    vertical_lower: int32,
-    vertical_upper: int32
 ):
     _fused_solve_nonhydro_stencil_15_to_28(
         geofac_grg_x,
