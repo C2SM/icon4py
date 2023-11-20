@@ -10,14 +10,20 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import copy
 
+import numpy as np
 import pytest
+
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
-from icon4py.model.common.dimension import CellDim, KDim
 
-from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
+from icon4py.model.common.dimension import CellDim, EdgeDim, E2V, E2VDim, KDim, VertexDim
+from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import random_field
 
+
+from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table, add_grid_element_sizes
 
 chain_false_skipvalues = [
     "C2E",
@@ -136,3 +142,57 @@ def test_get_field_infos_does_not_contain_domain_args(program):
     assert field_info["b"].inp
     assert field_info["result"].out
     assert not field_info["result"].inp
+
+
+@field_operator
+def testee_op(a: Field[[VertexDim], float]) -> Field[[EdgeDim], float]:
+    amul = a * 2.0
+    return amul(E2V[0]) + amul(E2V[1])
+
+
+@program
+def prog(
+    a: Field[[VertexDim], float],
+    out: Field[[EdgeDim], float],
+) -> Field[[EdgeDim], float]:
+    testee_op(a, out=out)
+
+
+def reference(grid, a):
+    amul = a * 2.0
+    return amul[grid.connectivities[E2VDim][:, 0]] + amul[grid.connectivities[E2VDim][:, 1]]
+
+
+def test_add_grid_sizes():
+    original_prog = copy.deepcopy(prog.past_node)
+    result = add_grid_element_sizes(prog.past_node)
+
+    new_symbols = {"num_cells", "num_edges", "num_vertices"}
+    result_symbols = {param.id for param in result.params}
+    for symbol in new_symbols:
+        assert symbol in result_symbols, f"Symbol {symbol} is not in program params"
+
+    type_symbols = set(result.type.definition.pos_or_kw_args.keys())
+    for symbol in new_symbols:
+        assert symbol in type_symbols, f"Symbol {symbol} is not in new_program_type definition"
+
+    assert result.id == original_prog.id, "Program ID has changed"
+    assert result.body == original_prog.body, "Program body has changed"
+    assert result.closure_vars == original_prog.closure_vars, "Program closure_vars have changed"
+
+
+def test_stencil():
+    grid = SimpleGrid()
+    a = random_field(grid, VertexDim)
+    out = random_field(grid, EdgeDim)
+    offset_provider = {"E2V": grid.get_offset_provider("E2V")}
+
+    ref = reference(grid, a.ndarray)
+
+    # without addition of size args
+    prog(a, out, offset_provider=offset_provider)
+
+    # todo: add size args and test for equality with original program without size args
+    #   use from gt4py.next.program_processors.runners.gtfn import run_gtfn_with_temporaries_and_sizes
+
+    assert np.allclose(ref, out)

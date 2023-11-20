@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
+import copy
 import importlib
 import types
 from dataclasses import dataclass
@@ -31,6 +32,7 @@ from icon4pytools.icon4pygen.exceptions import (
     MultipleFieldOperatorException,
 )
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
+from gt4py.next.ffront import program_ast as past, dialect_ast_enums
 
 
 @dataclass(frozen=True)
@@ -213,10 +215,10 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     all_dims = set(i for j in all_field_types for i in j.dims)
     all_offset_labels = (
         fvprog.itir.pre_walk_values()
-        .if_isinstance(itir.OffsetLiteral)
-        .getattr("value")
-        .if_isinstance(str)
-        .to_list()
+            .if_isinstance(itir.OffsetLiteral)
+            .getattr("value")
+            .if_isinstance(str)
+            .to_list()
     )
     all_dim_labels = [dim.value for dim in all_dims if dim.kind == DimensionKind.LOCAL]
 
@@ -225,12 +227,68 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     return sorted_dims
 
 
+def _create_symbol(symbol_name, symbol_type, starting_line, starting_column, filename) -> past.DataSymbol:
+    """
+    Create a new DataSymbol instance for the given symbol name.
+    """
+    location = eve.SourceLocation(
+        filename=filename,
+        line=starting_line,
+        end_line=starting_line,
+        column=starting_column,
+        end_column=starting_column
+    )
+    return past.DataSymbol(
+        id=symbol_name,
+        type=symbol_type,
+        namespace=dialect_ast_enums.Namespace.LOCAL,
+        location=location
+    )
+
+
+def add_grid_element_sizes(past_node: past.Program) -> past.Program:
+    """
+    Add grid element size parameters to the given program.
+    """
+    symbol_type = ts.ScalarType(kind=ts.ScalarKind.INT32)
+
+    # Create new type definitions
+    new_program_type = copy.deepcopy(past_node.type)
+    new_types = {"num_cells": symbol_type, "num_edges": symbol_type, "num_vertices": symbol_type}
+    new_program_type.definition.pos_or_kw_args.update(new_types)
+
+    symbols = ["num_cells", "num_edges", "num_vertices"]
+    last_param = past_node.params[-1]
+    new_params = list(past_node.params)  # Clone the existing params list
+
+    # Starting location for new symbols
+    symbol_line = last_param.location.line
+    symbol_column = last_param.location.column
+    fname = last_param.location.filename
+
+    for i, symbol in enumerate(symbols, start=1):
+        param = _create_symbol(symbol, symbol_type, symbol_line + i, symbol_column, fname)
+        new_params.append(param)
+
+    new_program = past.Program(
+        id=past_node.id,
+        type=new_program_type,
+        params=new_params,
+        body=past_node.body,
+        closure_vars=past_node.closure_vars,
+        location=past_node.location
+    )
+
+    return new_program
+
+
 def get_stencil_info(
     fencil_def: Program | FieldOperator | types.FunctionType | FendefDispatcher,
     is_global: bool = False,
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
+    fvprog = add_grid_element_sizes(fvprog)
     offsets = scan_for_offsets(fvprog)
     itir = fvprog.itir
     fields = _get_field_infos(fvprog)
