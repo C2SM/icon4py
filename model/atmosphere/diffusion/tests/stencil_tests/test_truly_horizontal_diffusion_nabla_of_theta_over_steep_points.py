@@ -78,6 +78,8 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if np.any(grid.connectivities[C2E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
 
         mask = random_mask(grid, CellDim, KDim)
 

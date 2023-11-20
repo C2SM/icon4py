@@ -194,7 +194,7 @@ def compute_z_raylfac(
 def _scal_divdamp_calcs(
     enh_divdamp_fac: Field[[KDim], float], mean_cell_area: float
 ) -> Field[[KDim], float]:
-    return -enh_divdamp_fac * mean_cell_area**2.0
+    return -enh_divdamp_fac * mean_cell_area**2
 
 
 @program
