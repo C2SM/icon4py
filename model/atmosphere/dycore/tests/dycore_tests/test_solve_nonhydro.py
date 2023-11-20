@@ -65,7 +65,10 @@ def test_nonhydro_params():
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit, damping_height",
-    [("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0)],
+    [
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+    ],
 )
 def test_nonhydro_predictor_step(
     istep_init,
@@ -683,8 +686,11 @@ def test_nonhydro_corrector_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init,jstep_init, istep_exit,jstep_exit", [(1, 0, 2, 0)])
 @pytest.mark.parametrize(
-    "step_date_init ,step_date_exit",
-    [("2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "experiment,step_date_init, step_date_exit, damping_height",
+    [
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+    ],
 )
 def test_run_solve_nonhydro_single_step(
     istep_init,
@@ -697,7 +703,7 @@ def test_run_solve_nonhydro_single_step(
     savepoint_nonhydro_init,
     damping_height,
     grid_savepoint,
-    savepoint_velocity_init,  # TODO (magdalena) this should go away
+    savepoint_velocity_init,  # TODO (magdalena) this should not be needed in test_solve_nonhydro.py, only for test_velocity_advection.py
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -884,7 +890,7 @@ def test_run_solve_nonhydro_multi_step(
     savepoint_nonhydro_step_exit,
     experiment,
 ):
-    config = config = construct_config(experiment)
+    config = construct_config(experiment)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
