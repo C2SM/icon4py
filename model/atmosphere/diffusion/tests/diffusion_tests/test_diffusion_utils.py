@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
@@ -33,6 +34,8 @@ from .utils import (
     enhanced_smagorinski_factor_numpy,
     smag_limit_numpy,
 )
+
+backend = run_gtfn
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
@@ -61,7 +64,7 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step():
         initial_diff_multfac_vn_numpy, shape, k4, efdt_ratio
     )
 
-    setup_fields_for_initial_step(
+    setup_fields_for_initial_step.with_backend(backend)(
         k4, efdt_ratio, diff_multfac_vn_init, smag_limit_init, offset_provider={}
     )
 
@@ -81,8 +84,10 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value():
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
 
-    _setup_runtime_diff_multfac_vn(k4, efdt_ratio, out=diff_multfac_vn, offset_provider={})
-    _setup_smag_limit(diff_multfac_vn, out=smag_limit, offset_provider={})
+    _setup_runtime_diff_multfac_vn.with_backend(backend)(
+        k4, efdt_ratio, out=diff_multfac_vn, offset_provider={}
+    )
+    _setup_smag_limit.with_backend(backend)(diff_multfac_vn, out=smag_limit, offset_provider={})
 
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
     assert np.allclose(expected_smag_limit, smag_limit)
@@ -98,11 +103,13 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps():
     shape = np.asarray(diff_multfac_vn).shape
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
-    _setup_runtime_diff_multfac_vn(k4, substeps, out=diff_multfac_vn, offset_provider={})
-    _setup_smag_limit(diff_multfac_vn, out=smag_limit, offset_provider={})
+    _setup_runtime_diff_multfac_vn.with_backend(backend)(
+        k4, substeps, out=diff_multfac_vn, offset_provider={}
+    )
+    _setup_smag_limit.with_backend(backend)(diff_multfac_vn, out=smag_limit, offset_provider={})
 
-    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
-    assert np.allclose(expected_smag_limit, smag_limit)
+    assert np.allclose(expected_diff_multfac_vn, np.asarray(diff_multfac_vn))
+    assert np.allclose(expected_smag_limit, np.asarray(smag_limit))
 
 
 def test_init_enh_smag_fac():
@@ -114,14 +121,16 @@ def test_init_enh_smag_fac():
 
     enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, np.asarray(a_vec))
 
-    _en_smag_fac_for_zero_nshift(a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim})
+    _en_smag_fac_for_zero_nshift.with_backend(backend)(
+        a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
+    )
     assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac))
 
 
 def test_set_zero_vertex_k():
     grid = SimpleGrid()
     f = random_field(grid, VertexDim, KDim)
-    set_zero_v_k(f, offset_provider={})
+    set_zero_v_k.with_backend(backend)(f, offset_provider={})
     assert np.allclose(0.0, f)
 
 
@@ -140,7 +149,7 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 
     diff_multfac_vn = zero_field(icon_grid, KDim)
     smag_limit = zero_field(icon_grid, KDim)
-    setup_fields_for_initial_step(
+    setup_fields_for_initial_step.with_backend(backend)(
         params.K4,
         config.hdiff_efdt_ratio,
         diff_multfac_vn,

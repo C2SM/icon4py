@@ -711,7 +711,7 @@ def test_run_solve_nonhydro_single_step(
     experiment,
     ndyn_substeps,
 ):
-    config = config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)

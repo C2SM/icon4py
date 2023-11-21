@@ -126,7 +126,7 @@ def test_verify_velocity_init_against_regular_savepoint(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_velocity_predictor_step(
@@ -284,7 +284,7 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit, damping_height",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_velocity_corrector_step(

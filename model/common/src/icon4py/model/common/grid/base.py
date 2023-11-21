@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import functools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, Dict
@@ -109,7 +109,7 @@ class BaseGrid(ABC):
             self.connectivities[dim].shape, from_dim, to_dim
         )
 
-    @ClassLevelCache.cache_method
+    # @ClassLevelCache.cache_method
     def get_offset_provider(self, name):
         if name in self.offset_provider_mapping:
             method, *args = self.offset_provider_mapping[name]
@@ -117,7 +117,7 @@ class BaseGrid(ABC):
         else:
             raise Exception(f"Offset provider for {name} not found.")
 
-    @ClassLevelCache.cache_method
+    # @ClassLevelCache.cache_method
     def get_all_offset_providers(self):
         offset_providers = {}
         for key, value in self.offset_provider_mapping.items():

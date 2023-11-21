@@ -22,7 +22,7 @@ from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
     maximum,
     minimum,
 )
-from gt4py.next.iterator.embedded import np_as_located_field
+import gt4py.next as gtx
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
@@ -32,12 +32,12 @@ def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
     if is_halfdim:
         assert len(shapex) == 2
         shapex = (shapex[0], shapex[1] + 1)
-    return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
+    return gtx.as_field(domain=dims, data=np.zeros(shapex, dtype=dtype))
 
 
 def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
-    return np_as_located_field(dim)(np.arange(shapex, dtype=dtype))
+    return gtx.as_field(domain=[dim], data=np.arange(shapex, dtype=dtype))
 
 
 def _allocate(*dims: Dimension, grid, is_halfdim=False, dtype=float):

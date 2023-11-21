@@ -97,6 +97,7 @@ def verify_diffusion_fields(
     val_div_ic = np.asarray(diagnostic_state.div_ic)
     ref_hdef_ic = np.asarray(diffusion_savepoint.hdef_ic())
     val_hdef_ic = np.asarray(diagnostic_state.hdef_ic)
+    # TODO (magdalena) not run in global model
     # assert dallclose(ref_div_ic, val_div_ic, atol=5.0e-18)
     # assert dallclose(ref_hdef_ic, val_hdef_ic)
     ref_w = np.asarray(diffusion_savepoint.w())
