@@ -81,7 +81,7 @@ def test_velocity_init(
     "experiment, step_date_init, damping_height",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", 12500.0),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", 50000.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_verify_velocity_init_against_regular_savepoint(
