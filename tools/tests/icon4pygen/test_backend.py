@@ -10,11 +10,16 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import re
+
 import pytest
 from gt4py.next.iterator import ir as itir
+from icon4py.model.common.grid.simple import SimpleGrid
 
 from icon4pytools.icon4pygen import backend
-from icon4pytools.icon4pygen.backend import GTHeader
+from icon4pytools.icon4pygen.backend import generate_gtheader, get_missing_domain_params
+from icon4pytools.icon4pygen.metadata import add_grid_element_size_args
+from tools.tests.icon4pygen.helpers import testee_prog
 
 
 @pytest.mark.parametrize(
@@ -28,6 +33,23 @@ from icon4pytools.icon4pygen.backend import GTHeader
 )
 def test_missing_domain_args(input_params, expected_complement):
     params = [itir.Sym(id=p) for p in input_params]
-    domain_boundaries = set(map(lambda s: str(s.id), GTHeader._missing_domain_params(params)))
+    domain_boundaries = set(map(lambda s: str(s.id), get_missing_domain_params(params)))
     assert len(domain_boundaries) == len(expected_complement)
     assert domain_boundaries == set(expected_complement)
+
+
+def search_for_grid_sizes(code: str) -> bool:
+    patterns = [r"num_cells", r"num_edges", r"num_vertices"]
+    return all(re.search(pattern, code) for pattern in patterns)
+
+
+@pytest.mark.parametrize(
+    "temporaries, imperative", [(True, True), (True, False), (False, True), (False, False)]
+)
+def test_grid_size_param_generation(temporaries, imperative):
+    grid = SimpleGrid()
+    offset_provider = {"E2V": grid.get_offset_provider("E2V")}
+    new_prog = add_grid_element_size_args(testee_prog)
+    fencil = new_prog.itir
+    gtheader = generate_gtheader(fencil, offset_provider, None, temporaries, imperative)
+    assert search_for_grid_sizes(gtheader)

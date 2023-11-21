@@ -14,16 +14,20 @@ import copy
 
 import numpy as np
 import pytest
-
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
-
-from icon4py.model.common.dimension import CellDim, EdgeDim, E2V, E2VDim, KDim, VertexDim
+from gt4py.next.program_processors.runners import gtfn, roundtrip
+from icon4py.model.common.dimension import CellDim, E2VDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field
 
+from icon4pytools.icon4pygen.metadata import (
+    _get_field_infos,
+    add_grid_element_size_args,
+    provide_neighbor_table,
+)
+from tools.tests.icon4pygen.helpers import testee_prog
 
-from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table, add_grid_element_sizes
 
 chain_false_skipvalues = [
     "C2E",
@@ -144,44 +148,36 @@ def test_get_field_infos_does_not_contain_domain_args(program):
     assert not field_info["result"].inp
 
 
-@field_operator
-def testee_op(a: Field[[VertexDim], float]) -> Field[[EdgeDim], float]:
-    amul = a * 2.0
-    return amul(E2V[0]) + amul(E2V[1])
-
-
-@program
-def prog(
-    a: Field[[VertexDim], float],
-    out: Field[[EdgeDim], float],
-) -> Field[[EdgeDim], float]:
-    testee_op(a, out=out)
-
-
 def reference(grid, a):
     amul = a * 2.0
     return amul[grid.connectivities[E2VDim][:, 0]] + amul[grid.connectivities[E2VDim][:, 1]]
 
 
-def test_add_grid_sizes():
-    original_prog = copy.deepcopy(prog.past_node)
-    result = add_grid_element_sizes(prog.past_node)
+def test_add_grid_element_size_args():
+    original_past = copy.deepcopy(testee_prog).past_node
+    result_past = add_grid_element_size_args(testee_prog).past_node
 
     new_symbols = {"num_cells", "num_edges", "num_vertices"}
-    result_symbols = {param.id for param in result.params}
+    result_symbols = {param.id for param in result_past.params}
     for symbol in new_symbols:
         assert symbol in result_symbols, f"Symbol {symbol} is not in program params"
 
-    type_symbols = set(result.type.definition.pos_or_kw_args.keys())
+    type_symbols = set(result_past.type.definition.pos_or_kw_args.keys())
     for symbol in new_symbols:
         assert symbol in type_symbols, f"Symbol {symbol} is not in new_program_type definition"
 
-    assert result.id == original_prog.id, "Program ID has changed"
-    assert result.body == original_prog.body, "Program body has changed"
-    assert result.closure_vars == original_prog.closure_vars, "Program closure_vars have changed"
+    assert result_past.id == original_past.id, "Program ID has changed"
+    assert result_past.body == original_past.body, "Program body has changed"
+    assert (
+        result_past.closure_vars == original_past.closure_vars
+    ), "Program closure_vars have changed"
 
 
-def test_stencil():
+@pytest.mark.parametrize(
+    "backend",
+    [gtfn.run_gtfn_with_temporaries, gtfn.run_gtfn, roundtrip.executor, gtfn.run_gtfn_imperative],
+)
+def test_stencil_execution_with_grid_element_size_args(backend):
     grid = SimpleGrid()
     a = random_field(grid, VertexDim)
     out = random_field(grid, EdgeDim)
@@ -189,10 +185,20 @@ def test_stencil():
 
     ref = reference(grid, a.ndarray)
 
+    prog = testee_prog.with_backend(backend)
+
     # without addition of size args
     prog(a, out, offset_provider=offset_provider)
+    assert np.allclose(ref, out)
 
-    # todo: add size args and test for equality with original program without size args
-    #   use from gt4py.next.program_processors.runners.gtfn import run_gtfn_with_temporaries_and_sizes
-
+    # with additional size args
+    new_prog = add_grid_element_size_args(prog)
+    new_prog(
+        a,
+        out,
+        offset_provider=offset_provider,
+        num_cells=grid.num_cells,
+        num_edges=grid.num_edges,
+        num_vertices=grid.num_vertices,
+    )
     assert np.allclose(ref, out)

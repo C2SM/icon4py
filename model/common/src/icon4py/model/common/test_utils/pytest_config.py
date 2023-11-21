@@ -12,8 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
-from gt4py.next.program_processors.runners.roundtrip import executor
+from gt4py.next.program_processors.runners import gtfn, roundtrip
 
 
 def pytest_configure(config):
@@ -68,10 +67,10 @@ def pytest_generate_tests(metafunc):
         ids = []
 
         if backend_option == "gtfn_cpu":
-            params.append(run_gtfn)
+            params.append(gtfn.run_gtfn)
             ids.append("backend=gtfn_cpu")
         elif backend_option == "embedded":
-            params.append(executor)
+            params.append(roundtrip.executor)
             ids.append("backend=embedded")
         # TODO (skellerhals): add gpu support
         else:

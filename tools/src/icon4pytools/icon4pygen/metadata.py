@@ -15,11 +15,12 @@ from __future__ import annotations
 import copy
 import importlib
 import types
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Optional, TypeGuard
 
 from gt4py import eve
 from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.ffront import dialect_ast_enums
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
 from gt4py.next.iterator import ir as itir
@@ -32,7 +33,6 @@ from icon4pytools.icon4pygen.exceptions import (
     MultipleFieldOperatorException,
 )
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
-from gt4py.next.ffront import program_ast as past, dialect_ast_enums
 
 
 @dataclass(frozen=True)
@@ -215,10 +215,10 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     all_dims = set(i for j in all_field_types for i in j.dims)
     all_offset_labels = (
         fvprog.itir.pre_walk_values()
-            .if_isinstance(itir.OffsetLiteral)
-            .getattr("value")
-            .if_isinstance(str)
-            .to_list()
+        .if_isinstance(itir.OffsetLiteral)
+        .getattr("value")
+        .if_isinstance(str)
+        .to_list()
     )
     all_dim_labels = [dim.value for dim in all_dims if dim.kind == DimensionKind.LOCAL]
 
@@ -227,7 +227,9 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     return sorted_dims
 
 
-def _create_symbol(symbol_name, symbol_type, starting_line, starting_column, filename) -> past.DataSymbol:
+def _create_symbol(
+    symbol_name, symbol_type, starting_line, starting_column, filename
+) -> past.DataSymbol:
     """
     Create a new DataSymbol instance for the given symbol name.
     """
@@ -236,20 +238,21 @@ def _create_symbol(symbol_name, symbol_type, starting_line, starting_column, fil
         line=starting_line,
         end_line=starting_line,
         column=starting_column,
-        end_column=starting_column
+        end_column=starting_column,
     )
     return past.DataSymbol(
         id=symbol_name,
         type=symbol_type,
         namespace=dialect_ast_enums.Namespace.LOCAL,
-        location=location
+        location=location,
     )
 
 
-def add_grid_element_sizes(past_node: past.Program) -> past.Program:
+def add_grid_element_size_args(program_decorator: Program) -> past.Program:
     """
     Add grid element size parameters to the given program.
     """
+    past_node = program_decorator.past_node
     symbol_type = ts.ScalarType(kind=ts.ScalarKind.INT32)
 
     # Create new type definitions
@@ -270,15 +273,15 @@ def add_grid_element_sizes(past_node: past.Program) -> past.Program:
         param = _create_symbol(symbol, symbol_type, symbol_line + i, symbol_column, fname)
         new_params.append(param)
 
-    new_program = past.Program(
+    new_past = past.Program(
         id=past_node.id,
         type=new_program_type,
         params=new_params,
         body=past_node.body,
         closure_vars=past_node.closure_vars,
-        location=past_node.location
+        location=past_node.location,
     )
-
+    new_program = replace(program_decorator, past_node=new_past)
     return new_program
 
 
@@ -288,7 +291,7 @@ def get_stencil_info(
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
-    fvprog = add_grid_element_sizes(fvprog)
+    fvprog = add_grid_element_size_args(fvprog)
     offsets = scan_for_offsets(fvprog)
     itir = fvprog.itir
     fields = _get_field_infos(fvprog)
