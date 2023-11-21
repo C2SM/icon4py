@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.rbf_intp_edge_stencil_01 import rbf_intp_edge_stencil_01
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
@@ -43,7 +44,7 @@ def test_rbf_intp_edge_stencil_01():
         np.asarray(ptr_coeff),
     )
 
-    rbf_intp_edge_stencil_01(
+    rbf_intp_edge_stencil_01.with_backend(roundtrip.backend)(
         p_vn_in,
         ptr_coeff,
         p_vt_out,

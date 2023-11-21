@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_02 import hflx_limiter_pd_stencil_02
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
@@ -55,7 +56,7 @@ def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl():
         bound,
     )
 
-    hflx_limiter_pd_stencil_02(
+    hflx_limiter_pd_stencil_02.with_backend(roundtrip.backend)(
         refin_ctrl,
         r_m,
         p_mflx_tracer_h_in,
@@ -74,7 +75,7 @@ def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl():
     r_m = random_field(grid, CellDim, KDim)
     p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
 
-    hflx_limiter_pd_stencil_02(
+    hflx_limiter_pd_stencil_02.with_backend(roundtrip.backend)(
         refin_ctrl,
         r_m,
         p_mflx_tracer_h_in,
@@ -94,7 +95,7 @@ def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl():
     r_m = random_field(grid, CellDim, KDim)
     p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
 
-    hflx_limiter_pd_stencil_02(
+    hflx_limiter_pd_stencil_02.with_backend(roundtrip.backend)(
         refin_ctrl,
         r_m,
         p_mflx_tracer_h_in,
@@ -113,7 +114,7 @@ def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl_does_not_chang
     r_m = random_field(grid, CellDim, KDim)
     p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
 
-    hflx_limiter_pd_stencil_02(
+    hflx_limiter_pd_stencil_02.with_backend(roundtrip.backend)(
         refin_ctrl,
         r_m,
         p_mflx_tracer_h_in,

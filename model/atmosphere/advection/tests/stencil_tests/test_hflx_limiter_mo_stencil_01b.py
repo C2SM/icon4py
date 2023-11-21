@@ -13,6 +13,7 @@
 
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01b import (
     hflx_limiter_mo_stencil_01b,
@@ -96,7 +97,7 @@ def test_hflx_limiter_mo_stencil_01b():
         np.asarray(p_dtime),
     )
 
-    hflx_limiter_mo_stencil_01b(
+    hflx_limiter_mo_stencil_01b.with_backend(roundtrip.backend)(
         geofac_div_new,
         p_rhodz_now,
         p_rhodz_new,

@@ -14,6 +14,7 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_02 import btraj_dreg_stencil_02
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
@@ -56,7 +57,7 @@ def test_btraj_dreg_stencil_02():
         np.asarray(p_vn), np.asarray(p_vt), np.asarray(edge_cell_length), p_dt
     )
 
-    btraj_dreg_stencil_02(
+    btraj_dreg_stencil_02.with_backend(roundtrip.backend)(
         p_vn,
         p_vt,
         edge_cell_length_new,

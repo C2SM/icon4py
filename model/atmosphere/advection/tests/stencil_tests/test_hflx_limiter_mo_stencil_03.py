@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import numpy as np
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_03 import (
     hflx_limiter_mo_stencil_03,
@@ -67,7 +68,7 @@ def test_hflx_diffusion_mo_stencil_03_min_max():
         beta_fct,
         r_beta_fct,
     )
-    hflx_limiter_mo_stencil_03_min_max(
+    hflx_limiter_mo_stencil_03_min_max.with_backend(roundtrip.backend)(
         z_tracer_max,
         z_tracer_min,
         beta_fct,
@@ -105,7 +106,7 @@ def test_hflx_diffusion_mo_stencil_03():
         dbl_eps,
     )
 
-    hflx_limiter_mo_stencil_03(
+    hflx_limiter_mo_stencil_03.with_backend(roundtrip.backend)(
         z_tracer_max,
         z_tracer_min,
         beta_fct,

@@ -14,6 +14,7 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator import embedded as it_embedded
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02 import face_val_ppm_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
@@ -72,7 +73,7 @@ def test_face_val_ppm_stencil_02():
         elevp1,
     )
 
-    face_val_ppm_stencil_02(
+    face_val_ppm_stencil_02.with_backend(roundtrip.backend)(
         p_cc,
         p_cellhgt_mc_now,
         p_face_in,

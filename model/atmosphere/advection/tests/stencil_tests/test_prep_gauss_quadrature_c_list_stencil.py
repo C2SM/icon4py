@@ -14,6 +14,7 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_list_stencil import (
     prep_gauss_quadrature_c_list_stencil,
@@ -427,7 +428,7 @@ def test_prep_gauss_quadrature_c_list_stencil():
         np.asarray(p_dreg_area_in),
     )
 
-    prep_gauss_quadrature_c_list_stencil(
+    prep_gauss_quadrature_c_list_stencil.with_backend(roundtrip.backend)(
         famask_int,
         p_coords_dreg_v_1_x,
         p_coords_dreg_v_2_x,

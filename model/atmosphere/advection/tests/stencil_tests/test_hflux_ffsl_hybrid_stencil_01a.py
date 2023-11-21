@@ -13,6 +13,7 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
     hflux_ffsl_hybrid_stencil_01a,
@@ -174,7 +175,7 @@ def test_hflux_ffsl_hybrid_stencil_01a():
         np.asarray(patch0_cell_rel_idx_dsl),
     )
 
-    hflux_ffsl_hybrid_stencil_01a(
+    hflux_ffsl_hybrid_stencil_01a.with_backend(roundtrip.backend)(
         z_lsq_coeff_1,
         z_lsq_coeff_2,
         z_lsq_coeff_3,

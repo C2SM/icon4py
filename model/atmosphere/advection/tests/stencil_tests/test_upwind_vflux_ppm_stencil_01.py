@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.upwind_vflux_ppm_stencil_01 import (
     upwind_vflux_ppm_stencil_01,
@@ -41,7 +42,9 @@ def test_upwind_vflux_ppm_stencil_01():
         np.asarray(z_face_up), np.asarray(z_face_down), np.asarray(p_cc)
     )
 
-    upwind_vflux_ppm_stencil_01(z_face_up, z_face_down, p_cc, z_delta_q, z_a1, offset_provider={})
+    upwind_vflux_ppm_stencil_01.with_backend(roundtrip.backend)(
+        z_face_up, z_face_down, p_cc, z_delta_q, z_a1, offset_provider={}
+    )
 
     assert np.allclose(ref_z_delta_q, z_delta_q)
     assert np.allclose(ref_z_a1, z_a1)

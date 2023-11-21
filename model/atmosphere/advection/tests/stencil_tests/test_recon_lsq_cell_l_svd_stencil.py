@@ -13,6 +13,7 @@
 
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.recon_lsq_cell_l_svd_stencil import (
     recon_lsq_cell_l_svd_stencil,
@@ -57,7 +58,7 @@ def test_recon_lsq_cell_l_svd_stencil():
         np.asarray(lsq_pseudoinv_2),
     )
 
-    recon_lsq_cell_l_svd_stencil(
+    recon_lsq_cell_l_svd_stencil.with_backend(roundtrip.backend)(
         p_cc,
         lsq_pseudoinv_1_field,
         lsq_pseudoinv_2_field,

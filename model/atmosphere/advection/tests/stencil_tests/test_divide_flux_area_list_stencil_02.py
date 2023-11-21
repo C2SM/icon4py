@@ -14,6 +14,7 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_02 import (
     divide_flux_area_list_stencil_02,
@@ -271,7 +272,7 @@ def test_divide_flux_area_list_stencil_02():
         np.asarray(dreg_patch2_4_lat_vmask),
     )
 
-    divide_flux_area_list_stencil_02(
+    divide_flux_area_list_stencil_02.with_backend(roundtrip.backend)(
         famask_int,
         p_vn,
         bf_cc_patch1_lon_field,

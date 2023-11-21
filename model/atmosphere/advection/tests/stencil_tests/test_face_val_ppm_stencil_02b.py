@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02b import face_val_ppm_stencil_02b
 from icon4py.model.common.dimension import CellDim, KDim
@@ -37,7 +38,7 @@ def test_face_val_ppm_stencil_02b():
         np.asarray(p_cc),
     )
 
-    face_val_ppm_stencil_02b(
+    face_val_ppm_stencil_02b.with_backend(roundtrip.backend)(
         p_cc,
         p_face,
         offset_provider={"Koff": KDim},

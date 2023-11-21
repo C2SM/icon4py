@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_stencil import (
     prep_gauss_quadrature_c_stencil,
@@ -391,7 +392,7 @@ def test_prep_gauss_quadrature_c_stencil():
         eps,
     )
 
-    prep_gauss_quadrature_c_stencil(
+    prep_gauss_quadrature_c_stencil.with_backend(roundtrip.backend)(
         p_coords_dreg_v_1_x,
         p_coords_dreg_v_2_x,
         p_coords_dreg_v_3_x,

@@ -14,6 +14,7 @@
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_02 import (
     upwind_hflux_miura_cycl_stencil_02,
@@ -77,7 +78,7 @@ def test_upwind_hflux_miura_cycl_stencil_02():
         z_dtsub,
     )
 
-    upwind_hflux_miura_cycl_stencil_02(
+    upwind_hflux_miura_cycl_stencil_02.with_backend(roundtrip.backend)(
         nsub,
         p_mass_flx_e,
         geofac_div,

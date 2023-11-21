@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_04 import hflx_limiter_mo_stencil_04
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
@@ -48,7 +49,7 @@ def test_hflx_limiter_mo_stencil_04():
         np.asarray(r_p),
         np.asarray(z_mflx_low),
     )
-    hflx_limiter_mo_stencil_04(
+    hflx_limiter_mo_stencil_04.with_backend(roundtrip.backend)(
         z_anti,
         r_m,
         r_p,

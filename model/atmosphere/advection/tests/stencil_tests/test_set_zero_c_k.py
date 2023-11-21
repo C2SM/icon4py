@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.set_zero_c_k import set_zero_c_k
 from icon4py.model.common.dimension import CellDim, KDim
@@ -23,5 +24,5 @@ def test_set_zero_c_k():
     grid = SimpleGrid()
     field = random_field(grid, CellDim, KDim)
 
-    set_zero_c_k(field, offset_provider={})
+    set_zero_c_k.with_backend(roundtrip.backend)(field, offset_provider={})
     assert np.allclose(field, zero_field(grid, CellDim, KDim))
