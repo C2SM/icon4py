@@ -25,6 +25,7 @@ CPD: Final[float] = 1004.64
 #: [J/K/kg] specific heat at constant volume
 CVD: Final[float] = CPD - RD
 CVD_O_RD: Final[float] = CVD / RD
+RD_O_CPD: Final[float] = RD / CPD
 
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[float] = 461.51
@@ -37,9 +38,23 @@ GRAV: Final[float] = GRAVITATIONAL_ACCELERATION
 #: reference pressure for Exner function [Pa]
 P0REF: Final[float] = 100000.0
 
+#: Earth average radius [m]
+EARTH_RADIUS: Final[float] = 6.371229e6
+
+#: Earth angular velocity [rad/s]
+EARTH_ANGULAR_VELOCITY: Final[float] = 7.29212e-5
 
 # Math constants
 dbl_eps = 0.01  # EPSILON(1._wp)
+
+#: math constant pi, circumference of a unit circle
+MATH_PI: Final[float] = 3.14159265358979323846264338327950288
+
+#: math constant pi²
+MATH_PI_2: Final[float] = 1.57079632679489661923132169163975144
+
+#: math constant pi⁴
+MATH_PI_4: Final[float] = 0.785398163397448309615660845819875721
 
 # Implementation constants
 #: default physics to dynamics time step ratio

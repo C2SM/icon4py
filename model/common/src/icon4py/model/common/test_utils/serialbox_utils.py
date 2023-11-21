@@ -596,6 +596,9 @@ class MetricSavepoint(IconSavepoint):
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
+    def geopot(self):
+        return self._get_field("geopot", CellDim, KDim)
+
     def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
         ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
         if ser_input.shape[1] != sparse_size:

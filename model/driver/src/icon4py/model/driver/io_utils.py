@@ -16,6 +16,8 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+import numpy as np
+
 from gt4py.next import Field
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -38,7 +40,9 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common.constants import GRAV, RD, EARTH_RADIUS, EARTH_ANGULAR_VELOCITY, MATH_PI, MATH_PI_2, RD_O_CPD, P0REF, CVD_O_RD
 
+from gt4py.next.iterator.embedded import np_as_located_field
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
@@ -74,24 +78,127 @@ def read_icon_grid(
 
 
 # TODO (Chia Rui): initialization of prognostic variables and topography of Jablonowski Williamson test
-def model_initialization():
+def model_initialization(
+    cell_param: CellParams,
+    edge_param: EdgeParams,
+    geopot: Field[[CellDim,KDim], float],
+    num_levels: int,
+    p_sfc: float,
+    jw_up: float,
+    jw_u0: float,
+    jw_temp0: float
+):
+    #jw_up = 1.0
+    #jw_u0 = 35.0
+    #jw_temp0 = 288.
+    # DEFINED PARAMETERS for jablonowski williamson:
+    eta0 = 0.252
+    etat = 0.2    # tropopause
+    gamma = 0.005 # temperature elapse rate (K/m)
+    dtemp = 4.8e5 # empirical temperature difference (K)
+    # for baroclinic wave test in the future
+    lonC = MATH_PI / 9.0 # longitude of the perturb centre
+    latC = 2.0 * lonC # latitude of the perturb centre
+    ps_o_p0ref = p_sfc / P0REF
+    cpd_o_rd = 1.0 / RD_O_CPD
 
     # create two prognostic states, nnow and nnew?
     # at least two prognostic states are global because they are needed in the dycore, AND possibly nesting and restart processes in the future
     # one is enough for the JW test
+    cell_lat = np.asarray(cell_param.center_lat)
+    cell_lon = np.asarray(cell_param.center_lon)
+    edge_lat = np.asarray(edge_param.center[0])
+    edge_lon = np.asarray(edge_param.center[1])
+    primal_normal_x = np.asarray(edge_param.primal_normal[0])
+    primal_normal_y = np.asarray(edge_param.primal_normal[1])
+    geopot_numpy = np.asarray(geopot)
+    cell_size = cell_lat.size
+    edge_size = edge_lat.size
+    vn_numpy = np.zeros((edge_size, num_levels), dtype=float)
+    w_numpy = np.zeros((cell_size, num_levels+1), dtype=float)
+    exner_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    rho_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    temperature_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    pressure_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    theta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
+
+    for cell_index in range(cell_size):
+        z_siny = np.sin(cell_lat[cell_index])
+        z_cosy = np.cos(cell_lat[cell_index])
+        z_fac1= 1.0 / 6.3 - 2.0 * (z_siny ** 6) * (z_cosy ** 2 + 1.0/ 3.0)
+        z_fac2 = (8.0/ 5.0 * (z_cosy ** 3) * (z_siny ** 2 + 2.0/ 3.0) - 0.25 * MATH_PI) * EARTH_RADIUS * EARTH_ANGULAR_VELOCITY
+        z_exp = RD * gamma / GRAV
+        for k_index in range(num_levels-1,0,-1):
+            zeta_old = 1.0e-7
+            # Newton iteration to determine zeta
+            for newton_iter_index in range(100):
+                zeta_v = (zeta_old - eta0) * MATH_PI_2
+                zcoszetav = np.cos(zeta_v)
+                zsinzetav = np.sin(zeta_v)
+                z_tavg = jw_temp0 * (zeta_old ** z_exp)
+                z_favg = jw_temp0 * GRAV / gamma * (1.0 - zeta_old ** z_exp)
+                if (zeta_old < etat):
+                    z_tavg = z_tavg + dtemp * ((etat - zeta_old) ** 5)
+                    z_favg = z_favg - RD * dtemp * ((np.log(zeta_old / etat) + 137.0 / 60.0) * (etat ** 5) - 5.0 * (etat ** 4) * zeta_old + 5.0 * (etat ** 3) * (zeta_old ** 2) - 10.0 / 3.0 * (etat ** 2) * (zeta_old ** 3) + 1.25 * etat * (zeta_old ** 4) - 0.2 * (zeta_old ** 5))
+                z_geopot = z_favg + jw_u0 * (zcoszetav ** 1.5) *(z_fac1 * jw_u0 * (zcoszetav ** 1.5) + z_fac2)
+                z_temp = z_tavg + 0.75 * zeta_old * MATH_PI * jw_u0 / RD * zsinzetav * np.sqrt(zcoszetav) * (2.0 * jw_u0 * z_fac1 * (zcoszetav ** 1.5) + z_fac2)
+                z_fun = z_geopot - geopot_numpy[cell_index, k_index]
+                z_fund = -RD / zeta_old * z_temp
+                zeta = zeta_old - z_fun / z_fund
+                zeta_old = zeta
+
+            # Final update for zeta_v
+            zeta_v = (zeta_old - eta0) * MATH_PI_2
+            # Use analytic expressions at all model level
+            exner_numpy[cell_index,k_index] = zeta_old * ps_o_p0ref ** RD_O_CPD
+            theta_v_numpy[cell_index,k_index] = z_temp / exner_numpy[cell_index,k_index]
+            rho_numpy[cell_index,k_index] = exner_numpy[cell_index,k_index] ** CVD_O_RD * P0REF / RD / theta_v_numpy[cell_index,k_index]
+            #initialize diagnose pressure and temperature variables
+            pressure_numpy[cell_index,k_index] = P0REF * exner_numpy[cell_index,k_index] ** cpd_o_rd
+            temperature_numpy[cell_index,k_index] = z_temp
+
+    # need cell to edge function
+    zeta_v_e = zeta_v
+
+    for edge_index in range(edge_size):
+        for k_index in range(num_levels):
+            z_lat = edge_lat[edge_index,k_index]
+            z_lon = edge_lon[edge_index,k_index]
+            zu = jw_u0 * (np.cos(zeta_v_e) ** 1.5) * (np.sin(2.0 * z_lat) ** 2)
+            if (jw_up > 1.e-20):
+                z_fac1 = np.sin(latC) * np.sin(z_lat) + np.cos(latC) * np.cos(z_lat) * np.cos(z_lon - lonC)
+                z_fac2 = 10.0 * np.arccos(z_fac1)
+                zu = zu + jw_up * np.exp(-z_fac2 ** 2)
+
+            zv = 0.0
+            vn_numpy[edge_index,k_index] = zu * primal_normal_x[edge_index,k_index] + zv * primal_normal_y[edge_index,k_index]
+
+    vn = np_as_located_field(EdgeDim, KDim)(vn_numpy)
+    w = np_as_located_field(CellDim, KDim)(w_numpy)
+    exner = np_as_located_field(CellDim, KDim)(exner_numpy)
+    rho = np_as_located_field(CellDim, KDim)(rho_numpy)
+    temperature = np_as_located_field(CellDim, KDim)(temperature_numpy)
+    pressure = np_as_located_field(CellDim, KDim)(pressure_numpy)
+    theta_v = np_as_located_field(CellDim, KDim)(theta_v_numpy)
+
+    # set surface pressure to the prescribed value
+    pres_sfc = np_as_located_field(CellDim, KDim)(np.full((cell_size, num_levels), fill_value=p_sfc, dtype=float))
+
+    #TODO (Chia Rui): set up diagnostic values of surface pressure, pressure, and temperature
+
     prognostic_state_1 = PrognosticState(
-        w=None,
-        vn=None,
-        theta_v=None,
-        rho=None,
-        exner=None,
+        w=w,
+        vn=vn,
+        theta_v=theta_v,
+        rho=rho,
+        exner=exner,
     )
     prognostic_state_2 = PrognosticState(
-        w=None,
-        vn=None,
-        theta_v=None,
-        rho=None,
-        exner=None,
+        w=w,
+        vn=vn,
+        theta_v=theta_v,
+        rho=rho,
+        exner=exner,
     )
     return (prognostic_state_1, prognostic_state_2)
 
