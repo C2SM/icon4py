@@ -67,7 +67,7 @@ def test_unpack_local_field(field_type):
 
     input_field = np.arange(n_edges * e2c_sparse_size).reshape((n_edges, e2c_sparse_size))
     res_field = local_field(ffi.from_buffer("int*", input_field))
-    assert np.all(res_field == input_field)
+    assert np.allclose(res_field, input_field, atol=0)
 
 
 def test_unknown_dimension_raises_exception():
