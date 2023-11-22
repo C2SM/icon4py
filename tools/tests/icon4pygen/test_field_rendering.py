@@ -31,11 +31,10 @@ def test_horizontal_field_sid_rendering():
     stencil_info = get_stencil_info(identity_prog)
     bindgen = PyBindGen(stencil_info, 128, 1)
     for field in bindgen.fields:
-        if field.name not in ["num_cells", "num_edges", "num_vertices"]:
-            assert (
-                field.renderer.render_sid()
-                == "gridtools::hymap::keys<unstructured::dim::horizontal>::make_values(1)"
-            )
+        assert (
+            field.renderer.render_sid()
+            == "gridtools::hymap::keys<unstructured::dim::horizontal>::make_values(1)"
+        )
 
 
 def test_vertical_field_sid_rendering():
@@ -50,11 +49,10 @@ def test_vertical_field_sid_rendering():
     stencil_info = get_stencil_info(identity_prog)
     bindgen = PyBindGen(stencil_info, 128, 1)
     for field in bindgen.fields:
-        if field.name not in ["num_cells", "num_edges", "num_vertices"]:
-            assert (
-                field.renderer.render_sid()
-                == "gridtools::hymap::keys<unstructured::dim::vertical>::make_values(1)"
-            )
+        assert (
+            field.renderer.render_sid()
+            == "gridtools::hymap::keys<unstructured::dim::vertical>::make_values(1)"
+        )
 
 
 def test_dense_field_sid_rendering():
@@ -69,11 +67,10 @@ def test_dense_field_sid_rendering():
     stencil_info = get_stencil_info(identity_prog)
     bindgen = PyBindGen(stencil_info, 128, 1)
     for field in bindgen.fields:
-        if field.name not in ["num_cells", "num_edges", "num_vertices"]:
-            assert (
-                field.renderer.render_sid()
-                == "gridtools::hymap::keys<unstructured::dim::horizontal,unstructured::dim::vertical>::make_values(1, mesh_.EdgeStride)"
-            )
+        assert (
+            field.renderer.render_sid()
+            == "gridtools::hymap::keys<unstructured::dim::horizontal,unstructured::dim::vertical>::make_values(1, mesh_.EdgeStride)"
+        )
 
 
 def test_vertical_sparse_field_sid_rendering():
@@ -91,8 +88,7 @@ def test_vertical_sparse_field_sid_rendering():
     stencil_info = get_stencil_info(reduction_prog)
     bindgen = PyBindGen(stencil_info, 128, 1)
     for field in bindgen.fields:
-        if field.name not in ["num_cells", "num_edges", "num_vertices"]:
-            assert (
-                field.renderer.render_sid()
-                == "gridtools::hymap::keys<unstructured::dim::horizontal,unstructured::dim::vertical>::make_values(1, mesh_.EdgeStride)"
-            )
+        assert (
+            field.renderer.render_sid()
+            == "gridtools::hymap::keys<unstructured::dim::horizontal,unstructured::dim::vertical>::make_values(1, mesh_.EdgeStride)"
+        )

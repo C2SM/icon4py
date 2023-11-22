@@ -71,7 +71,7 @@ def main(
     is_global: bool,
     outpath: pathlib.Path,
     imperative: bool,
-    temporaries: bool
+    temporaries: bool,
 ) -> None:
     """
     Generate Gridtools C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
@@ -90,6 +90,7 @@ def main(
     stencil_info = get_stencil_info(fencil_def, is_global)
     GTHeader(stencil_info)(outpath, imperative, temporaries)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+
 
 if __name__ == "__main__":
     main()

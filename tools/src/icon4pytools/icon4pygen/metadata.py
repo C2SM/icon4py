@@ -203,7 +203,7 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
         has_skip_values=skip_values,
         origin_axis=location_chain[0],
-        neighbor_axis=location_chain[-1]
+        neighbor_axis=location_chain[-1],
     )
 
 
@@ -303,3 +303,11 @@ def get_stencil_info(
         offset_provider[offset] = provide_offset(offset, is_global)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
     return StencilInfo(itir, fields, connectivity_chains, offset_provider, column_axis)
+
+
+def remove_symbols(symbol_dict, to_remove):
+    return {
+        symbol_name: info
+        for symbol_name, info in symbol_dict.items()
+        if symbol_name not in to_remove
+    }
