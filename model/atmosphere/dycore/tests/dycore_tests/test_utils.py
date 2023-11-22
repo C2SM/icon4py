@@ -13,6 +13,7 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _calculate_bdy_divdamp,
@@ -22,7 +23,10 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
+
+
+backend = run_gtfn
 
 
 def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: float):
@@ -42,7 +46,7 @@ def test_caclulate_scal_divdamp_order_24():
     enh_divdamp_fac = random_field(grid, KDim)
     out = random_field(grid, KDim)
 
-    _calculate_scal_divdamp(
+    _calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_fac_o2=divdamp_fac_o2,
         divdamp_order=divdamp_order,
@@ -52,7 +56,7 @@ def test_caclulate_scal_divdamp_order_24():
     )
 
     ref = scal_divdamp_for_order_24_numpy(enh_divdamp_fac, divdamp_fac_o2, mean_cell_area)
-    assert np.allclose(np.asarray(ref), np.asarray(out))
+    assert dallclose(ref, np.asarray(out))
 
 
 def test_calculate_scal_divdamp_any_order():
@@ -63,7 +67,7 @@ def test_calculate_scal_divdamp_any_order():
     enh_divdamp_fac = random_field(grid, KDim)
     out = random_field(grid, KDim)
 
-    _calculate_scal_divdamp(
+    _calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_fac_o2=divdamp_fac_o2,
         divdamp_order=divdamp_order,
@@ -71,7 +75,7 @@ def test_calculate_scal_divdamp_any_order():
         out=out,
         offset_provider={},
     )
-    assert np.allclose(np.asarray(-enh_divdamp_fac * mean_cell_area**2), np.asarray(out))
+    assert dallclose(np.asarray(-enh_divdamp_fac * mean_cell_area**2), np.asarray(out))
 
 
 def test_calculate_bdy_divdamp():
@@ -79,8 +83,10 @@ def test_calculate_bdy_divdamp():
     scal_divdamp = random_field(grid, KDim)
     out = zero_field(grid, KDim)
     coeff = 0.3
-    _calculate_bdy_divdamp(scal_divdamp, coeff, constants.dbl_eps, out=out, offset_provider={})
-    assert np.allclose(out, bdy_divdamp_numpy(coeff, np.asarray(scal_divdamp)))
+    _calculate_bdy_divdamp.with_backend(backend)(
+        scal_divdamp, coeff, constants.dbl_eps, out=out, offset_provider={}
+    )
+    assert dallclose(out, bdy_divdamp_numpy(coeff, scal_divdamp.ndarray))
 
 
 def test_calculate_divdamp_fields():
@@ -99,7 +105,7 @@ def test_calculate_divdamp_fields():
 
     boundary_ref = bdy_divdamp_numpy(nudge_max_coeff, scaled_ref)
 
-    _calculate_divdamp_fields(
+    _calculate_divdamp_fields.with_backend(backend)(
         divdamp_field,
         divdamp_order,
         mean_cell_area,
@@ -109,5 +115,5 @@ def test_calculate_divdamp_fields():
         out=(scal_divdamp, boundary_divdamp),
         offset_provider={},
     )
-    np.allclose(np.asarray(scal_divdamp), scaled_ref)
-    np.allclose(np.asarray(boundary_divdamp), boundary_ref)
+    dallclose(scal_divdamp.ndarray, scaled_ref)
+    dallclose(boundary_divdamp.ndarray, boundary_ref)

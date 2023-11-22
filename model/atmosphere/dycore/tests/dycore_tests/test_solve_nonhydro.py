@@ -14,6 +14,7 @@ import logging
 
 import numpy as np
 import pytest
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
@@ -38,9 +39,14 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
 
 
+backend = run_gtfn
+
+
 @pytest.mark.datatest
 def test_validate_divdamp_fields_against_savepoint_values(
-    grid_savepoint, savepoint_nonhydro_init, icon_grid
+    grid_savepoint,
+    savepoint_nonhydro_init,
+    icon_grid,
 ):
     config = NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
@@ -48,7 +54,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     enh_divdamp_fac = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
     scal_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
     bdy_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
-    en_smag_fac_for_zero_nshift(
+    en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
         config.divdamp_fac,
         config.divdamp_fac2,
@@ -61,7 +67,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         out=enh_divdamp_fac,
         offset_provider={"Koff": KDim},
     )
-    _calculate_scal_divdamp(
+    _calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_order=config.divdamp_order,
         mean_cell_area=mean_cell_area,
@@ -69,12 +75,12 @@ def test_validate_divdamp_fields_against_savepoint_values(
         out=scal_divdamp,
         offset_provider={},
     )
-    _calculate_bdy_divdamp(
+    _calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp, config.nudge_max_coeff, constants.dbl_eps, out=bdy_divdamp, offset_provider={}
     )
 
-    assert np.allclose(scal_divdamp, savepoint_nonhydro_init.scal_divdamp())
-    assert np.allclose(bdy_divdamp, savepoint_nonhydro_init.bdy_divdamp())
+    assert dallclose(scal_divdamp.ndarray, savepoint_nonhydro_init.scal_divdamp())
+    assert dallclose(bdy_divdamp.ndarray, savepoint_nonhydro_init.bdy_divdamp())
 
 
 @pytest.mark.datatest
