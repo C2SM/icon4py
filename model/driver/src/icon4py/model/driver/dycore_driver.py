@@ -153,7 +153,7 @@ class TimeLoop:
         z_fields: ZFields,  # local constants in solve_nh
         nh_constants: NHConstants,
         bdy_divdamp: Field[[KDim], float],
-        lprep_adv: bool,
+        do_prep_adv: bool,
     ):
 
         log.info(
@@ -164,6 +164,10 @@ class TimeLoop:
         )
 
         # TODO (Chia Rui): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
+
+        # TODO (Chia Rui): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+
+        # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
         if self.diffusion.config.apply_to_horizontal_wind and self._do_initial_stabilization:
             log.info("running initial step to diffuse fields before timeloop starts")
@@ -194,11 +198,13 @@ class TimeLoop:
                 z_fields,
                 nh_constants,
                 bdy_divdamp,
-                lprep_adv,
+                do_prep_adv,
             )
             timer.capture()
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
+
+            # TODO (Chia Rui): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
             # TODO (Chia Rui): simple IO enough for JW test
 
@@ -213,7 +219,7 @@ class TimeLoop:
         z_fields: ZFields,
         nh_constants: NHConstants,
         bdy_divdamp: Field[[KDim], float],
-        lprep_adv: bool,
+        do_prep_adv: bool,
     ):
 
         self._do_dyn_substepping(
@@ -223,7 +229,7 @@ class TimeLoop:
             z_fields,
             nh_constants,
             bdy_divdamp,
-            lprep_adv,
+            do_prep_adv,
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
@@ -243,7 +249,7 @@ class TimeLoop:
         z_fields: ZFields,
         nh_constants: NHConstants,
         bdy_divdamp: Field[[KDim], float],
-        lprep_adv: bool,
+        do_prep_adv: bool,
     ):
 
         # TODO (Chia Rui): compute airmass for prognostic_state here
@@ -268,7 +274,7 @@ class TimeLoop:
                 nnew=self._next,
                 nnow=self._now,
                 lclean_mflx=do_clean_mflx,
-                lprep_adv=lprep_adv,
+                lprep_adv=do_prep_adv,
             )
 
             do_recompute = False
@@ -442,7 +448,7 @@ def main(input_path, run_path, mpi):
         z_fields,
         nh_constants,
         bdy_divdamp,
-        lprep_adv=False,
+        do_prep_adv=False,
     )
 
     log.info("timeloop:  DONE")

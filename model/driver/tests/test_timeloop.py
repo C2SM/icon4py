@@ -124,8 +124,8 @@ def test_run_timeloop_single_step(
     nonhydro_params = NonHydrostaticParams(nonhydro_config)
     sp_v = savepoint_velocity_init
     nonhydro_dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
-    # lprep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
-    lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
+    # do_prep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
+    do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     prep_adv = PrepAdvection(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
@@ -244,7 +244,7 @@ def test_run_timeloop_single_step(
         z_fields,
         nh_constants,
         sp.bdy_divdamp(),
-        lprep_adv,
+        do_prep_adv,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
