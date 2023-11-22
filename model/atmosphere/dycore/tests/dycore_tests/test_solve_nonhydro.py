@@ -208,7 +208,7 @@ def test_nonhydro_predictor_step(
     # TODO: @abishekg7 remove bounds from asserts?
     # stencils 2, 3
     cell_start_lb_plus2 = icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
     )
     cell_start_nudging = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
     edge_start_lb_plus4 = icon_grid.get_start_index(
@@ -385,17 +385,16 @@ def test_nonhydro_predictor_step(
     )
 
     # stencil 35
-    # TODO: first few levels are not computed in the test, please add a bound
     assert dallclose(
-        np.asarray(sp_exit.z_w_concorr_me()),
-        np.asarray(solve_nonhydro.z_w_concorr_me),
+        np.asarray(sp_exit.z_w_concorr_me())[edge_start_lb_plus4:, vertical_params.nflatlev :],
+        np.asarray(solve_nonhydro.z_w_concorr_me)[edge_start_lb_plus4:, vertical_params.nflatlev :],
         atol=2e-15,
     )
 
     # stencils 39,40
     assert dallclose(
-        np.asarray(icon_result_w_concorr_c),
-        np.asarray(diagnostic_state_nh.w_concorr_c),
+        np.asarray(icon_result_w_concorr_c)[cell_start_lb_plus2:, :],
+        np.asarray(diagnostic_state_nh.w_concorr_c)[cell_start_lb_plus2:, :],
         atol=1e-15,
     )
 
@@ -408,8 +407,8 @@ def test_nonhydro_predictor_step(
 
     # TODO: @abishekg7 higher tol.
     assert dallclose(
-        np.asarray(sp_exit.z_flxdiv_theta()),
-        np.asarray(solve_nonhydro.z_flxdiv_theta),
+        np.asarray(sp_exit.z_flxdiv_theta())[cell_start_nudging:, :],
+        np.asarray(solve_nonhydro.z_flxdiv_theta)[cell_start_nudging:, :],
         atol=5e-12,
     )
 

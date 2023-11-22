@@ -89,7 +89,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     if experiment == "mch_ch_r04b09_dsl":
         (model_run_config, diffusion_config, nonhydro_config) = _mch_ch_r04b09_config()
     else:
-        log.info("Warning: Experiment name is not specified, default configuration is used.")
+        log.warning("Experiment name is not specified, default configuration is used.")
         (model_run_config, diffusion_config, nonhydro_config) = _default_config()
     return IconConfig(
         run_config=model_run_config,
