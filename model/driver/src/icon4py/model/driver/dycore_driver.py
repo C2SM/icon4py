@@ -75,25 +75,24 @@ class TimeLoop:
         self._n_substeps_var: int = self.run_config.n_substeps
         self._substep_timestep: float = float(self.run_config.dtime / self._n_substeps_var)
 
-        # check validity of configurations
-        self._validate()
+        self._validate_config()
 
         # current simulation date
         self._simulation_date: datetime = self.run_config.start_date
 
-        self._l_init: bool = self.run_config.apply_initial_stabilization
+        self._do_initial_stabilization: bool = self.run_config.apply_initial_stabilization
 
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
-        self._l_init = self.run_config.apply_initial_stabilization
+        self._do_initial_stabilization = self.run_config.apply_initial_stabilization
         self._n_substeps_var = self.run_config.n_substeps
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
-    def _validate(self):
+    def _validate_config(self):
         if self._n_time_steps < 0:
             raise ValueError("end_date should be larger than start_date. Please check.")
         if not self.diffusion.initialized:
@@ -102,14 +101,14 @@ class TimeLoop:
             raise Exception("nonhydro solver is not initialized before time loop")
 
     def _not_first_step(self):
-        self._l_init = False
+        self._do_initial_stabilization = False
 
     def _next_simulation_date(self):
         self._simulation_date += timedelta(seconds=self.run_config.dtime)
 
     @property
-    def linit(self):
-        return self._l_init
+    def do_initial_stabilization(self):
+        return self._do_initial_stabilization
 
     @property
     def n_substeps_var(self):
@@ -161,9 +160,12 @@ class TimeLoop:
             f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
         )
         log.info(
-            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} linit={self._l_init} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
+            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self._do_initial_stabilization} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
         )
-        if self.diffusion.config.apply_to_horizontal_wind and self._l_init:
+
+        # TODO (Chia Rui): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
+
+        if self.diffusion.config.apply_to_horizontal_wind and self._do_initial_stabilization:
             log.info("running initial step to diffuse fields before timeloop starts")
             self.diffusion.initial_run(
                 diffusion_diagnostic_state,
@@ -174,9 +176,9 @@ class TimeLoop:
             f"starting real time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
         )
         timer = Timer(self._full_name(self._integrate_one_time_step))
-        for i_time_step in range(self._n_time_steps):
+        for time_step in range(self._n_time_steps):
             log.info(
-                f"simulation date : {self._simulation_date} run timestep : {i_time_step} linit : {self._l_init}"
+                f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
             )
 
             self._next_simulation_date()
@@ -246,11 +248,11 @@ class TimeLoop:
 
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
-        l_recompute = True
-        lclean_mflx = True
-        for idyn_timestep in range(self._n_substeps_var):
+        do_recompute = True
+        do_clean_mflx = True
+        for dyn_substep in range(self._n_substeps_var):
             log.info(
-                f"simulation date : {self._simulation_date} sub timestep : {idyn_timestep}, linit : {self._l_init}, nnow: {self._now}, nnew : {self._next}"
+                f"simulation date : {self._simulation_date} sub timestep : {dyn_substep}, initial_stabilization : {self._do_initial_stabilization}, nnow: {self._now}, nnew : {self._next}"
             )
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
@@ -260,19 +262,19 @@ class TimeLoop:
                 nh_constants=nh_constants,
                 bdy_divdamp=bdy_divdamp,
                 dtime=self._substep_timestep,
-                idyn_timestep=idyn_timestep,
-                l_recompute=l_recompute,
-                l_init=self._l_init,
+                idyn_timestep=dyn_substep,
+                l_recompute=do_recompute,
+                l_init=self._do_initial_stabilization,
                 nnew=self._next,
                 nnow=self._now,
-                lclean_mflx=lclean_mflx,
+                lclean_mflx=do_clean_mflx,
                 lprep_adv=lprep_adv,
             )
 
-            l_recompute = False
-            lclean_mflx = False
+            do_recompute = False
+            do_clean_mflx = False
 
-            if idyn_timestep != self._n_substeps_var - 1:
+            if dyn_substep != self._n_substeps_var - 1:
                 self._swap()
 
             self._not_first_step()
