@@ -14,7 +14,11 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
+from icon4py.model.atmosphere.diffusion.diffusion import (
+    Diffusion,
+    DiffusionParams,
+    TurbulenceShearForcingType,
+)
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -285,14 +289,17 @@ def test_run_diffusion_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
     )
-    verify_diffusion_fields(diagnostic_state, prognostic_state, diffusion_savepoint_init)
+
+    verify_diffusion_fields(config, diagnostic_state, prognostic_state, diffusion_savepoint_init)
     assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
+
     diffusion.run(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
     )
-    verify_diffusion_fields(diagnostic_state, prognostic_state, diffusion_savepoint_exit)
+
+    verify_diffusion_fields(config, diagnostic_state, prognostic_state, diffusion_savepoint_exit)
 
 
 @pytest.mark.datatest
@@ -339,6 +346,7 @@ def test_run_diffusion_initial_step(
     )
 
     verify_diffusion_fields(
+        config=config,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         diffusion_savepoint=diffusion_savepoint_exit,

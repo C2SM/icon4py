@@ -677,7 +677,7 @@ class Diffusion:
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-        ):  # TODO or ltkesh
+        ):  # TODO (magdalena) or ltkesh
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
             )
