@@ -13,7 +13,6 @@
 
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_01 import hflx_limiter_pd_stencil_01
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
@@ -41,7 +40,7 @@ def hflx_limiter_pd_stencil_01_numpy(
     return r_m
 
 
-def test_hflx_limiter_pd_stencil_01():
+def test_hflx_limiter_pd_stencil_01(backend):
     grid = SimpleGrid()
     geofac_div = random_field(grid, CellDim, C2EDim)
     p_cc = random_field(grid, CellDim, KDim)
@@ -61,7 +60,7 @@ def test_hflx_limiter_pd_stencil_01():
         dbl_eps,
     )
 
-    hflx_limiter_pd_stencil_01.with_backend(roundtrip.backend)(
+    hflx_limiter_pd_stencil_01.with_backend(backend)(
         as_1D_sparse_field(geofac_div, CEDim),
         p_cc,
         p_rhodz_now,

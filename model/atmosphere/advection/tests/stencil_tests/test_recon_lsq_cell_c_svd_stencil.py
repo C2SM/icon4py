@@ -14,7 +14,6 @@
 import numpy as np
 import pytest
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.recon_lsq_cell_c_svd_stencil import (
     recon_lsq_cell_c_svd_stencil,
@@ -209,7 +208,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
 
 
 @pytest.mark.slow_tests
-def test_recon_lsq_cell_c_svd_stencil():
+def test_recon_lsq_cell_c_svd_stencil(backend):
     grid = SimpleGrid()
     p_cc = random_field(grid, CellDim, KDim)
     lsq_pseudoinv_1 = random_field(grid, CellDim, C2E2C2E2CDim)
@@ -284,7 +283,7 @@ def test_recon_lsq_cell_c_svd_stencil():
         np.asarray(lsq_moments_9),
     )
 
-    recon_lsq_cell_c_svd_stencil.with_backend(roundtrip.backend)(
+    recon_lsq_cell_c_svd_stencil.with_backend(backend)(
         p_cc,
         lsq_pseudoinv_1_field,
         lsq_pseudoinv_2_field,

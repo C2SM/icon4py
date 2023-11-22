@@ -13,7 +13,6 @@
 
 import numpy as np
 from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hor_adv_stencil_01 import hor_adv_stencil_01
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
@@ -41,7 +40,7 @@ def hor_adv_stencil_01_numpy(
     return tracer_new
 
 
-def test_hor_adv_stencil_01():
+def test_hor_adv_stencil_01(backend):
     grid = SimpleGrid()
 
     p_mflx_tracer_h = random_field(grid, EdgeDim, KDim)
@@ -64,7 +63,7 @@ def test_hor_adv_stencil_01():
         np.asarray(geofac_div),
         p_dtime,
     )
-    hor_adv_stencil_01.with_backend(roundtrip.backend)(
+    hor_adv_stencil_01.with_backend(backend)(
         p_mflx_tracer_h,
         deepatmo_divh,
         tracer_now,

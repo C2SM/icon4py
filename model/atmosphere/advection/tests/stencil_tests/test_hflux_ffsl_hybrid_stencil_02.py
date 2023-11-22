@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_02 import (
     hflux_ffsl_hybrid_stencil_02,
@@ -33,7 +32,7 @@ def hflux_ffsl_hybrid_stencil_02_numpy(
     return p_out_e_hybrid_2
 
 
-def test_hflux_ffsl_hybrid_stencil_02():
+def test_hflux_ffsl_hybrid_stencil_02(backend):
     grid = SimpleGrid()
     p_out_e_hybrid_2 = random_field(grid, EdgeDim, KDim)
     p_mass_flx_e = random_field(grid, EdgeDim, KDim)
@@ -45,7 +44,7 @@ def test_hflux_ffsl_hybrid_stencil_02():
         np.asarray(z_dreg_area),
     )
 
-    hflux_ffsl_hybrid_stencil_02.with_backend(roundtrip.backend)(
+    hflux_ffsl_hybrid_stencil_02.with_backend(backend)(
         p_out_e_hybrid_2,
         p_mass_flx_e,
         z_dreg_area,

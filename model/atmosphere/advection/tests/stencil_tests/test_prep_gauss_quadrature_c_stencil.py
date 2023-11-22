@@ -13,7 +13,6 @@
 
 import numpy as np
 import pytest
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_stencil import (
     prep_gauss_quadrature_c_stencil,
@@ -286,7 +285,7 @@ def prep_gauss_quadrature_c_stencil_numpy(
 
 
 @pytest.mark.slow_tests
-def test_prep_gauss_quadrature_c_stencil():
+def test_prep_gauss_quadrature_c_stencil(backend):
     grid = SimpleGrid()
 
     p_coords_dreg_v_1_x = random_field(grid, EdgeDim, KDim)
@@ -392,7 +391,7 @@ def test_prep_gauss_quadrature_c_stencil():
         eps,
     )
 
-    prep_gauss_quadrature_c_stencil.with_backend(roundtrip.backend)(
+    prep_gauss_quadrature_c_stencil.with_backend(backend)(
         p_coords_dreg_v_1_x,
         p_coords_dreg_v_2_x,
         p_coords_dreg_v_3_x,

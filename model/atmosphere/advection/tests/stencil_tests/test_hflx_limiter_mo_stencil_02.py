@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.program_processors.runners import roundtrip
 from numpy import int32
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import hflx_limiter_mo_stencil_02
@@ -45,7 +44,7 @@ def hflx_limiter_mo_stencil_02_numpy(
     return z_tracer_new_out, z_tracer_max_out, z_tracer_min_out
 
 
-def test_hflx_limiter_mo_stencil_02_some_matching_condition():
+def test_hflx_limiter_mo_stencil_02_some_matching_condition(backend):
     grid = SimpleGrid()
 
     hi_bound = np.int32(1)
@@ -74,7 +73,7 @@ def test_hflx_limiter_mo_stencil_02_some_matching_condition():
         hi_bound,
     )
 
-    hflx_limiter_mo_stencil_02.with_backend(roundtrip.backend)(
+    hflx_limiter_mo_stencil_02.with_backend(backend)(
         refin_ctrl,
         p_cc,
         z_tracer_new_low_in,
@@ -93,7 +92,7 @@ def test_hflx_limiter_mo_stencil_02_some_matching_condition():
     assert np.allclose(z_tracer_min, ref_min)
 
 
-def test_hflx_limiter_mo_stencil_02_none_matching_condition():
+def test_hflx_limiter_mo_stencil_02_none_matching_condition(backend):
     grid = SimpleGrid()
 
     hi_bound = np.int32(3)
@@ -111,7 +110,7 @@ def test_hflx_limiter_mo_stencil_02_none_matching_condition():
     z_tracer_max = zero_field(grid, CellDim, KDim)
     z_tracer_min = zero_field(grid, CellDim, KDim)
 
-    hflx_limiter_mo_stencil_02.with_backend(roundtrip.backend)(
+    hflx_limiter_mo_stencil_02.with_backend(backend)(
         refin_ctrl,
         p_cc,
         z_tracer_new_low_in,

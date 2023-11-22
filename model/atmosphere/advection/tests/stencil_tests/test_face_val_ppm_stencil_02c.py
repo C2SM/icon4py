@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02c import face_val_ppm_stencil_02c
 from icon4py.model.common.dimension import CellDim, KDim
@@ -31,7 +30,7 @@ def face_val_ppm_stencil_02c_numpy(
     return p_face
 
 
-def test_face_val_ppm_stencil_02c():
+def test_face_val_ppm_stencil_02c(backend):
     grid = SimpleGrid()
     p_cc = random_field(grid, CellDim, KDim)
     p_face = random_field(grid, CellDim, KDim)
@@ -40,7 +39,7 @@ def test_face_val_ppm_stencil_02c():
         np.asarray(p_cc),
     )
 
-    face_val_ppm_stencil_02c.with_backend(roundtrip.backend)(
+    face_val_ppm_stencil_02c.with_backend(backend)(
         p_cc,
         p_face,
         offset_provider={"Koff": KDim},

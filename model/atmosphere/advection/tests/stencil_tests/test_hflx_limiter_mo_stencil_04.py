@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_04 import hflx_limiter_mo_stencil_04
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
@@ -35,7 +34,7 @@ def hflx_limiter_mo_stencil_04_numpy(
     return z_mflx_low + np.minimum(1.0, r_frac) * z_anti
 
 
-def test_hflx_limiter_mo_stencil_04():
+def test_hflx_limiter_mo_stencil_04(backend):
     grid = SimpleGrid()
     z_anti = random_field(grid, EdgeDim, KDim, low=-2.0, high=2.0)
     r_m = random_field(grid, CellDim, KDim)
@@ -49,7 +48,7 @@ def test_hflx_limiter_mo_stencil_04():
         np.asarray(r_p),
         np.asarray(z_mflx_low),
     )
-    hflx_limiter_mo_stencil_04.with_backend(roundtrip.backend)(
+    hflx_limiter_mo_stencil_04.with_backend(backend)(
         z_anti,
         r_m,
         r_p,

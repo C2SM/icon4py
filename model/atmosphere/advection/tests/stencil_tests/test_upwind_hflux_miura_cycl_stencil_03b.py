@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_03b import (
     upwind_hflux_miura_cycl_stencil_03b,
@@ -31,7 +30,7 @@ def upwind_hflux_miura_cycl_stencil_03b_numpy(
     return p_out_e
 
 
-def test_upwind_hflux_miura_cycl_stencil_03b():
+def test_upwind_hflux_miura_cycl_stencil_03b(backend):
     grid = SimpleGrid()
     z_tracer_mflx_1_dsl = random_field(grid, EdgeDim, KDim)
     z_tracer_mflx_2_dsl = random_field(grid, EdgeDim, KDim)
@@ -44,7 +43,7 @@ def test_upwind_hflux_miura_cycl_stencil_03b():
         np.asarray(z_tracer_mflx_3_dsl),
     )
 
-    upwind_hflux_miura_cycl_stencil_03b.with_backend(roundtrip.backend)(
+    upwind_hflux_miura_cycl_stencil_03b.with_backend(backend)(
         z_tracer_mflx_1_dsl,
         z_tracer_mflx_2_dsl,
         z_tracer_mflx_3_dsl,

@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import numpy as np
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_03 import (
     hflx_limiter_mo_stencil_03,
@@ -53,7 +52,7 @@ def hflx_limiter_mo_stencil_03_min_max_numpy(
     return z_max, z_min
 
 
-def test_hflx_diffusion_mo_stencil_03_min_max():
+def test_hflx_diffusion_mo_stencil_03_min_max(backend):
     grid = SimpleGrid()
     z_tracer_max = random_field(grid, CellDim, KDim)
     z_tracer_min = random_field(grid, CellDim, KDim)
@@ -68,7 +67,7 @@ def test_hflx_diffusion_mo_stencil_03_min_max():
         beta_fct,
         r_beta_fct,
     )
-    hflx_limiter_mo_stencil_03_min_max.with_backend(roundtrip.backend)(
+    hflx_limiter_mo_stencil_03_min_max.with_backend(backend)(
         z_tracer_max,
         z_tracer_min,
         beta_fct,
@@ -81,7 +80,7 @@ def test_hflx_diffusion_mo_stencil_03_min_max():
     assert np.allclose(z_min, z_min_ref)
 
 
-def test_hflx_diffusion_mo_stencil_03():
+def test_hflx_diffusion_mo_stencil_03(backend):
     grid = SimpleGrid()
     z_tracer_max = random_field(grid, CellDim, KDim)
     z_tracer_min = random_field(grid, CellDim, KDim)
@@ -106,7 +105,7 @@ def test_hflx_diffusion_mo_stencil_03():
         dbl_eps,
     )
 
-    hflx_limiter_mo_stencil_03.with_backend(roundtrip.backend)(
+    hflx_limiter_mo_stencil_03.with_backend(backend)(
         z_tracer_max,
         z_tracer_min,
         beta_fct,

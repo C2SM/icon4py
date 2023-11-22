@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import vert_adv_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
@@ -39,7 +38,7 @@ def vert_adv_stencil_01_numpy(
     return tracer_new
 
 
-def test_vert_adv_stencil_01():
+def test_vert_adv_stencil_01(backend):
     grid = SimpleGrid()
 
     tracer_now = random_field(grid, CellDim, KDim)
@@ -60,7 +59,7 @@ def test_vert_adv_stencil_01():
         np.asarray(rhodz_new),
         p_dtime,
     )
-    vert_adv_stencil_01.with_backend(roundtrip.backend)(
+    vert_adv_stencil_01.with_backend(backend)(
         tracer_now,
         rhodz_now,
         p_mflx_tracer_v,

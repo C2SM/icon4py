@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_01 import btraj_dreg_stencil_01
 from icon4py.model.common.dimension import EdgeDim, KDim
@@ -38,7 +37,7 @@ def btraj_dreg_stencil_01_numpy(
     return lvn_sys_pos
 
 
-def test_btraj_dreg_stencil_01():
+def test_btraj_dreg_stencil_01(backend):
     grid = SimpleGrid()
     lcounterclock = True
     p_vn = random_field(grid, EdgeDim, KDim)
@@ -53,7 +52,7 @@ def test_btraj_dreg_stencil_01():
         np.asarray(tangent_orientation),
     )
 
-    btraj_dreg_stencil_01.with_backend(roundtrip.backend)(
+    btraj_dreg_stencil_01.with_backend(backend)(
         lcounterclock,
         p_vn,
         tangent_orientation,

@@ -13,7 +13,6 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_02 import v_limit_prbl_sm_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
@@ -44,7 +43,7 @@ def v_limit_prbl_sm_stencil_02_numpy(
     return q_face_up, q_face_low
 
 
-def test_v_limit_prbl_sm_stencil_02():
+def test_v_limit_prbl_sm_stencil_02(backend):
     grid = SimpleGrid()
     l_limit = random_mask(grid, CellDim, KDim, dtype=int32)
     p_cc = random_field(grid, CellDim, KDim)
@@ -58,7 +57,7 @@ def test_v_limit_prbl_sm_stencil_02():
         np.asarray(p_cc),
     )
 
-    v_limit_prbl_sm_stencil_02.with_backend(roundtrip.backend)(
+    v_limit_prbl_sm_stencil_02.with_backend(backend)(
         l_limit,
         p_face,
         p_cc,

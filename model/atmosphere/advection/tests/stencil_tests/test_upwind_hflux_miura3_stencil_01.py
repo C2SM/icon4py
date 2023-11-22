@@ -13,7 +13,6 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.upwind_hflux_miura3_stencil_01 import (
     upwind_hflux_miura3_stencil_01,
@@ -131,7 +130,7 @@ def upwind_hflux_miura3_stencil_01_numpy(
     return p_out_e_miura3
 
 
-def test_upwind_hflux_miura3_stencil_01():
+def test_upwind_hflux_miura3_stencil_01(backend):
     grid = SimpleGrid()
 
     z_lsq_coeff_1 = random_field(grid, CellDim, KDim)
@@ -186,7 +185,7 @@ def test_upwind_hflux_miura3_stencil_01():
         np.asarray(cell_rel_idx_dsl),
     )
 
-    upwind_hflux_miura3_stencil_01.with_backend(roundtrip.backend)(
+    upwind_hflux_miura3_stencil_01.with_backend(backend)(
         z_lsq_coeff_1,
         z_lsq_coeff_2,
         z_lsq_coeff_3,

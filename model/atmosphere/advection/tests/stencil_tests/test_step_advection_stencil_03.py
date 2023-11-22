@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_03 import step_advection_stencil_03
 from icon4py.model.common.dimension import CellDim, KDim
@@ -32,7 +31,7 @@ def step_advection_stencil_03_numpy(
     return p_tracer_new
 
 
-def test_step_advection_stencil_03():
+def test_step_advection_stencil_03(backend):
     grid = SimpleGrid()
 
     p_tracer_now = random_field(grid, CellDim, KDim)
@@ -46,7 +45,7 @@ def test_step_advection_stencil_03():
         np.asarray(p_grf_tend_tracer),
         p_dtime,
     )
-    step_advection_stencil_03.with_backend(roundtrip.backend)(
+    step_advection_stencil_03.with_backend(backend)(
         p_tracer_now,
         p_grf_tend_tracer,
         p_tracer_new,
