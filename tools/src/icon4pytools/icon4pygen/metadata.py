@@ -203,6 +203,7 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
         has_skip_values=skip_values,
         origin_axis=location_chain[0],
+        neighbor_axis=location_chain[-1]
     )
 
 

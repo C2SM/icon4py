@@ -100,6 +100,13 @@ def generate_gtheader(
         use_imperative_backend=imperative, lift_mode=lift_mode
     )
 
+    if temporaries:
+        gtfn_translation = gtfn_translation.replace(symbolic_domain_sizes={
+                            "Cell": "num_cells",
+                            "Edge": "num_edges",
+                            "Vertex": "num_vertices",
+                        })
+
     return gtfn_translation.generate_stencil_source(
         fencil,
         offset_provider=offset_provider,

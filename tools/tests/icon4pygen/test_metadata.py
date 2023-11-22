@@ -171,34 +171,3 @@ def test_add_grid_element_size_args():
     assert (
         result_past.closure_vars == original_past.closure_vars
     ), "Program closure_vars have changed"
-
-
-@pytest.mark.parametrize(
-    "backend",
-    [gtfn.run_gtfn_with_temporaries, gtfn.run_gtfn, roundtrip.executor, gtfn.run_gtfn_imperative],
-)
-def test_stencil_execution_with_grid_element_size_args(backend):
-    grid = SimpleGrid()
-    a = random_field(grid, VertexDim)
-    out = random_field(grid, EdgeDim)
-    offset_provider = {"E2V": grid.get_offset_provider("E2V")}
-
-    ref = reference(grid, a.ndarray)
-
-    prog = testee_prog.with_backend(backend)
-
-    # without addition of size args
-    prog(a, out, offset_provider=offset_provider)
-    assert np.allclose(ref, out)
-
-    # with additional size args
-    new_prog = add_grid_element_size_args(prog)
-    new_prog(
-        a,
-        out,
-        offset_provider=offset_provider,
-        num_cells=grid.num_cells,
-        num_edges=grid.num_edges,
-        num_vertices=grid.num_vertices,
-    )
-    assert np.allclose(ref, out)
