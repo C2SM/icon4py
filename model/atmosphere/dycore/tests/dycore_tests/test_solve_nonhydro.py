@@ -386,8 +386,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 35
     assert dallclose(
-        np.asarray(sp_exit.z_w_concorr_me())[edge_start_lb_plus4:, vertical_params.nflatlev:],
-        np.asarray(solve_nonhydro.z_w_concorr_me)[edge_start_lb_plus4:, vertical_params.nflatlev:],
+        np.asarray(sp_exit.z_w_concorr_me())[edge_start_lb_plus4:, vertical_params.nflatlev :],
+        np.asarray(solve_nonhydro.z_w_concorr_me)[edge_start_lb_plus4:, vertical_params.nflatlev :],
         atol=2e-15,
     )
 

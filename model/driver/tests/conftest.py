@@ -45,6 +45,7 @@ from icon4py.model.driver.icon_configuration import IconRunConfig
 
 # TODO (Chia Rui): Reuse those pytest fixtures for diffusion test instead of creating here
 
+
 @pytest.fixture
 def r04b09_diffusion_config(
     ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
