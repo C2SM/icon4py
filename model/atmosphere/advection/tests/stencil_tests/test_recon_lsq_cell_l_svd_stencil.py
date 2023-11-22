@@ -52,9 +52,9 @@ def test_recon_lsq_cell_l_svd_stencil(backend):
 
     ref_1, ref_2, ref_3 = recon_lsq_cell_l_svd_stencil_numpy(
         grid.connectivities[C2E2CDim],
-        np.asarray(p_cc),
-        np.asarray(lsq_pseudoinv_1),
-        np.asarray(lsq_pseudoinv_2),
+        p_cc.asnumpy(),
+        lsq_pseudoinv_1.asnumpy(),
+        lsq_pseudoinv_2.asnumpy(),
     )
 
     recon_lsq_cell_l_svd_stencil.with_backend(backend)(
@@ -69,9 +69,9 @@ def test_recon_lsq_cell_l_svd_stencil(backend):
             "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, grid.size[C2E2CDim]),
         },
     )
-    co1 = np.asarray(p_coeff_1)
-    co2 = np.asarray(p_coeff_2)
-    co3 = np.asarray(p_coeff_3)
+    co1 = p_coeff_1.asnumpy()
+    co2 = p_coeff_2.asnumpy()
+    co3 = p_coeff_3.asnumpy()
     assert np.allclose(ref_1, co1)
     assert np.allclose(ref_2, co2)
     assert np.allclose(ref_3, co3)

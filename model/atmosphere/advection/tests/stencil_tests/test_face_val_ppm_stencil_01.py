@@ -12,13 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator import embedded as it_embedded
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import _shape, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import _shape, random_field
 
 
 def face_val_ppm_stencil_01_numpy(
@@ -27,7 +27,6 @@ def face_val_ppm_stencil_01_numpy(
     vert_idx: np.array,
     elev: int32,
 ):
-
     # this is a comment: vert_idx = np.broadcast_to(vert_idx, p_cc.shape)
 
     # 01a
@@ -65,19 +64,16 @@ def test_face_val_ppm_stencil_01(backend):
     grid = SimpleGrid()
     p_cc = random_field(grid, CellDim, KDim, extend={KDim: 1})
     p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
-    vert_idx = zero_field(grid, KDim, dtype=int32, extend={KDim: 1})
 
-    vert_idx = it_embedded.np_as_located_field(KDim)(
-        np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32)
-    )
+    vert_idx = as_field((KDim,), np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32))
     elev = vert_idx[-2]
 
     z_slope = random_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_01_numpy(
-        np.asarray(p_cc),
-        np.asarray(p_cellhgt_mc_now),
-        np.asarray(vert_idx),
+        p_cc.asnumpy(),
+        p_cellhgt_mc_now.asnumpy(),
+        vert_idx.asnumpy(),
         elev,
     )
 
@@ -90,4 +86,4 @@ def test_face_val_ppm_stencil_01(backend):
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:, :-1], z_slope[:, 1:-1])
+    assert np.allclose(ref[:, :-1], z_slope.asnumpy()[:, 1:-1])

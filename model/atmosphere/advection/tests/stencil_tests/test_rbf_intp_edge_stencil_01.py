@@ -24,7 +24,6 @@ def rbf_intp_edge_stencil_01_numpy(
     p_vn_in: np.array,
     ptr_coeff: np.array,
 ) -> np.array:
-
     ptr_coeff = np.expand_dims(ptr_coeff, axis=-1)
     p_vt_out = np.sum(p_vn_in[e2c2e] * ptr_coeff, axis=1)
     return p_vt_out
@@ -39,8 +38,8 @@ def test_rbf_intp_edge_stencil_01(backend):
 
     ref = rbf_intp_edge_stencil_01_numpy(
         grid.connectivities[E2C2EDim],
-        np.asarray(p_vn_in),
-        np.asarray(ptr_coeff),
+        p_vn_in.asnumpy(),
+        ptr_coeff.asnumpy(),
     )
 
     rbf_intp_edge_stencil_01.with_backend(backend)(
@@ -51,4 +50,4 @@ def test_rbf_intp_edge_stencil_01(backend):
             "E2C2E": grid.get_offset_provider("E2C2E"),
         },
     )
-    assert np.allclose(p_vt_out, ref)
+    assert np.allclose(p_vt_out.asnumpy(), ref)

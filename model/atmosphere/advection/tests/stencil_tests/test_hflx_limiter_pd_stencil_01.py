@@ -52,10 +52,10 @@ def test_hflx_limiter_pd_stencil_01(backend):
 
     ref = hflx_limiter_pd_stencil_01_numpy(
         grid.connectivities[C2EDim],
-        np.asarray(geofac_div),
-        np.asarray(p_cc),
-        np.asarray(p_rhodz_now),
-        np.asarray(p_mflx_tracer_h),
+        geofac_div.asnumpy(),
+        p_cc.asnumpy(),
+        p_rhodz_now.asnumpy(),
+        p_mflx_tracer_h.asnumpy(),
         p_dtime,
         dbl_eps,
     )
@@ -73,4 +73,4 @@ def test_hflx_limiter_pd_stencil_01(backend):
             "C2E": grid.get_offset_provider("C2E"),
         },
     )
-    assert np.allclose(r_m, ref)
+    assert np.allclose(r_m.asnumpy(), ref)

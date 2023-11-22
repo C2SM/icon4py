@@ -24,4 +24,4 @@ def test_set_zero_cell_k(backend):
     field = random_field(grid, CellDim)
 
     set_zero_c.with_backend(backend)(field, offset_provider={})
-    assert np.allclose(field, zero_field(grid, CellDim))
+    assert np.allclose(field.asnumpy(), zero_field(grid, CellDim).asnumpy())

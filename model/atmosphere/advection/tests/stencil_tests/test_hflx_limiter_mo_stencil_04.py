@@ -43,10 +43,10 @@ def test_hflx_limiter_mo_stencil_04(backend):
     p_mflx_tracer_h = zero_field(grid, EdgeDim, KDim)
     ref = hflx_limiter_mo_stencil_04_numpy(
         grid.connectivities[E2CDim],
-        np.asarray(z_anti),
-        np.asarray(r_m),
-        np.asarray(r_p),
-        np.asarray(z_mflx_low),
+        z_anti.asnumpy(),
+        r_m.asnumpy(),
+        r_p.asnumpy(),
+        z_mflx_low.asnumpy(),
     )
     hflx_limiter_mo_stencil_04.with_backend(backend)(
         z_anti,
@@ -56,4 +56,4 @@ def test_hflx_limiter_mo_stencil_04(backend):
         p_mflx_tracer_h,
         offset_provider={"E2C": grid.get_offset_provider("E2C")},
     )
-    assert np.allclose(p_mflx_tracer_h, ref)
+    assert np.allclose(p_mflx_tracer_h.asnumpy(), ref)

@@ -26,7 +26,6 @@ def hflux_ffsl_hybrid_stencil_02_numpy(
     p_mass_flx_e: np.ndarray,
     z_dreg_area: np.ndarray,
 ):
-
     p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
 
     return p_out_e_hybrid_2
@@ -39,9 +38,9 @@ def test_hflux_ffsl_hybrid_stencil_02(backend):
     z_dreg_area = random_field(grid, EdgeDim, KDim)
 
     ref = hflux_ffsl_hybrid_stencil_02_numpy(
-        np.asarray(p_out_e_hybrid_2),
-        np.asarray(p_mass_flx_e),
-        np.asarray(z_dreg_area),
+        p_out_e_hybrid_2.asnumpy(),
+        p_mass_flx_e.asnumpy(),
+        z_dreg_area.asnumpy(),
     )
 
     hflux_ffsl_hybrid_stencil_02.with_backend(backend)(
@@ -51,4 +50,4 @@ def test_hflux_ffsl_hybrid_stencil_02(backend):
         offset_provider={},
     )
 
-    assert np.allclose(p_out_e_hybrid_2, ref)
+    assert np.allclose(p_out_e_hybrid_2.asnumpy(), ref)

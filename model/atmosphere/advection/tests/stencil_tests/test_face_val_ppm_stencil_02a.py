@@ -23,7 +23,6 @@ def face_val_ppm_stencil_02a_numpy(
     p_cc: np.array,
     p_cellhgt_mc_now: np.array,
 ):
-
     p_face = p_cc.copy()
 
     p_face[:, 1:] = p_cc[:, 1:] * (1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])) + (
@@ -40,8 +39,8 @@ def test_face_val_ppm_stencil_02a(backend):
     p_face = random_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_02a_numpy(
-        np.asarray(p_cc),
-        np.asarray(p_cellhgt_mc_now),
+        p_cc.asnumpy(),
+        p_cellhgt_mc_now.asnumpy(),
     )
 
     face_val_ppm_stencil_02a.with_backend(backend)(
@@ -51,4 +50,4 @@ def test_face_val_ppm_stencil_02a(backend):
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:, 1:], p_face[:, 1:])
+    assert np.allclose(ref[:, 1:], p_face.asnumpy()[:, 1:])

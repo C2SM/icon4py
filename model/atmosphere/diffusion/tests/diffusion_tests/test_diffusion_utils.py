@@ -40,7 +40,7 @@ def test_scale_k(backend):
     scaled_field = zero_field(grid, KDim)
     factor = 2.0
     scale_k.with_backend(backend)(field, factor, scaled_field, offset_provider={})
-    assert np.allclose(factor * np.asarray(field), scaled_field)
+    assert np.allclose(factor * field.asnumpy(), scaled_field.asnumpy())
 
 
 def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
@@ -60,8 +60,8 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
         k4, efdt_ratio, diff_multfac_vn_init, smag_limit_init, offset_provider={}
     )
 
-    assert np.allclose(expected_diff_multfac_vn_init, diff_multfac_vn_init)
-    assert np.allclose(expected_smag_limit_init, smag_limit_init)
+    assert np.allclose(expected_diff_multfac_vn_init, diff_multfac_vn_init.asnumpy())
+    assert np.allclose(expected_smag_limit_init, smag_limit_init.asnumpy())
 
 
 def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
@@ -81,8 +81,8 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
     )
     _setup_smag_limit.with_backend(backend)(diff_multfac_vn, out=smag_limit, offset_provider={})
 
-    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
-    assert np.allclose(expected_smag_limit, smag_limit)
+    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
+    assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
 
 
 def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
@@ -100,8 +100,8 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
     )
     _setup_smag_limit.with_backend(backend)(diff_multfac_vn, out=smag_limit, offset_provider={})
 
-    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
-    assert np.allclose(expected_smag_limit, smag_limit)
+    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
+    assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
 
 
 def test_init_enh_smag_fac(backend):
@@ -111,19 +111,19 @@ def test_init_enh_smag_fac(backend):
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
-    enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, np.asarray(a_vec))
+    enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, a_vec.asnumpy())
 
     _en_smag_fac_for_zero_nshift.with_backend(backend)(
         a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
     )
-    assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac))
+    assert np.allclose(enhanced_smag_fac_np, enh_smag_fac.asnumpy())
 
 
 def test_set_zero_vertex_k(backend):
     grid = SimpleGrid()
     f = random_field(grid, VertexDim, KDim)
     set_zero_v_k.with_backend(backend)(f, offset_provider={})
-    assert np.allclose(0.0, f)
+    assert np.allclose(0.0, f.asnumpy())
 
 
 @pytest.mark.datatest
@@ -148,6 +148,6 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
         smag_limit,
         offset_provider={},
     )
-    assert np.allclose(expected_smag_limit, smag_limit)
-    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
+    assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
+    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
     assert exptected_smag_offset == 0.0

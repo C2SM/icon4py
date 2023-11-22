@@ -68,12 +68,12 @@ def test_upwind_hflux_miura_cycl_stencil_02(backend):
     ref_1, ref_2, ref_3, ref_4 = upwind_hflux_miura_cycl_stencil_02_numpy(
         grid.connectivities[C2EDim],
         nsub,
-        np.asarray(p_mass_flx_e),
-        np.asarray(geofac_div),
-        np.asarray(z_rhofluxdiv_c),
-        np.asarray(z_tracer_mflx),
-        np.asarray(z_rho_now),
-        np.asarray(z_tracer_now),
+        p_mass_flx_e.asnumpy(),
+        geofac_div.asnumpy(),
+        z_rhofluxdiv_c.asnumpy(),
+        z_tracer_mflx.asnumpy(),
+        z_rho_now.asnumpy(),
+        z_tracer_now.asnumpy(),
         z_dtsub,
     )
 
@@ -95,7 +95,7 @@ def test_upwind_hflux_miura_cycl_stencil_02(backend):
             "C2E": grid.get_offset_provider("C2E"),
         },
     )
-    assert np.allclose(ref_1, z_rhofluxdiv_c_out)
-    assert np.allclose(ref_2, z_fluxdiv_c_dsl)
-    assert np.allclose(ref_3, z_rho_new_dsl)
-    assert np.allclose(ref_4, z_tracer_new_dsl)
+    assert np.allclose(ref_1, z_rhofluxdiv_c_out.asnumpy())
+    assert np.allclose(ref_2, z_fluxdiv_c_dsl.asnumpy())
+    assert np.allclose(ref_3, z_rho_new_dsl.asnumpy())
+    assert np.allclose(ref_4, z_tracer_new_dsl.asnumpy())

@@ -26,7 +26,6 @@ def step_advection_stencil_02_numpy(
     deepatmo_divzu: np.ndarray,
     pd_time: float,
 ) -> np.ndarray:
-
     tmp = p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
     return np.maximum(0.1 * rhodz_new, rhodz_new) - pd_time * tmp
 
@@ -41,10 +40,10 @@ def test_step_advection_stencil_02(backend):
     p_dtime = 0.1
 
     ref = step_advection_stencil_02_numpy(
-        np.asarray(rhodz_ast),
-        np.asarray(p_mflx_contra),
-        np.asarray(deepatmo_divzl),
-        np.asarray(deepatmo_divzu),
+        rhodz_ast.asnumpy(),
+        p_mflx_contra.asnumpy(),
+        deepatmo_divzl.asnumpy(),
+        deepatmo_divzu.asnumpy(),
         p_dtime,
     )
 
@@ -58,4 +57,4 @@ def test_step_advection_stencil_02(backend):
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:, :-1], result[:, :-1])
+    assert np.allclose(ref[:, :-1], result.asnumpy()[:, :-1])

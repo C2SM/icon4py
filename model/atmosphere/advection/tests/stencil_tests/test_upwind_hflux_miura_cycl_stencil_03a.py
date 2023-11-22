@@ -36,8 +36,8 @@ def test_upwind_hflux_miura_cycl_stencil_03a(backend):
     p_out_e = zero_field(grid, EdgeDim, KDim)
 
     ref = upwind_hflux_miura_cycl_stencil_03a_numpy(
-        np.asarray(z_tracer_mflx_1_dsl),
-        np.asarray(z_tracer_mflx_2_dsl),
+        z_tracer_mflx_1_dsl.asnumpy(),
+        z_tracer_mflx_2_dsl.asnumpy(),
     )
 
     upwind_hflux_miura_cycl_stencil_03a.with_backend(backend)(
@@ -46,4 +46,4 @@ def test_upwind_hflux_miura_cycl_stencil_03a(backend):
         p_out_e,
         offset_provider={},
     )
-    assert np.allclose(ref, p_out_e)
+    assert np.allclose(ref, p_out_e.asnumpy())

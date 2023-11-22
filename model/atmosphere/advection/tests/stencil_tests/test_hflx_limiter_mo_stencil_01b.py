@@ -87,13 +87,13 @@ def test_hflx_limiter_mo_stencil_01b(backend):
 
     ref_1, ref_2, ref_3, ref_4, ref_5 = hflx_limiter_mo_stencil_01b_numpy(
         grid.connectivities[C2EDim],
-        np.asarray(geofac_div),
-        np.asarray(p_rhodz_now),
-        np.asarray(p_rhodz_new),
-        np.asarray(z_mflx_low),
-        np.asarray(z_anti),
-        np.asarray(p_cc),
-        np.asarray(p_dtime),
+        geofac_div.asnumpy(),
+        p_rhodz_now.asnumpy(),
+        p_rhodz_new.asnumpy(),
+        z_mflx_low.asnumpy(),
+        z_anti.asnumpy(),
+        p_cc.asnumpy(),
+        p_dtime,
     )
 
     hflx_limiter_mo_stencil_01b.with_backend(backend)(
@@ -115,8 +115,8 @@ def test_hflx_limiter_mo_stencil_01b(backend):
         },
     )
 
-    assert np.allclose(z_mflx_anti_in, ref_1)
-    assert np.allclose(z_mflx_anti_out, ref_2)
-    assert np.allclose(z_tracer_new_low, ref_3)
-    assert np.allclose(z_tracer_max, ref_4)
-    assert np.allclose(z_tracer_min, ref_5)
+    assert np.allclose(z_mflx_anti_in.asnumpy(), ref_1)
+    assert np.allclose(z_mflx_anti_out.asnumpy(), ref_2)
+    assert np.allclose(z_tracer_new_low.asnumpy(), ref_3)
+    assert np.allclose(z_tracer_max.asnumpy(), ref_4)
+    assert np.allclose(z_tracer_min.asnumpy(), ref_5)

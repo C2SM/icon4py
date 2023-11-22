@@ -49,9 +49,9 @@ def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl(backend):
 
     ref = hflx_limiter_pd_stencil_02_numpy(
         grid.connectivities[E2CDim],
-        np.asarray(refin_ctrl),
-        np.asarray(r_m),
-        np.asarray(p_mflx_tracer_h_in),
+        refin_ctrl.asnumpy(),
+        r_m.asnumpy(),
+        p_mflx_tracer_h_in.asnumpy(),
         bound,
     )
 
@@ -64,9 +64,10 @@ def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl(backend):
             "E2C": grid.get_offset_provider("E2C"),
         },
     )
-    assert np.allclose(p_mflx_tracer_h_in, ref)
+    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), ref)
 
 
+# TODO (Nina) what is this test for? its trivially true
 def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl(backend):
     grid = SimpleGrid()
     bound = np.int32(7)
@@ -83,9 +84,10 @@ def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl(backend):
             "E2C": grid.get_offset_provider("E2C"),
         },
     )
-    assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)
+    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), p_mflx_tracer_h_in.asnumpy())
 
 
+# TODO (Nina) what is this test for? its trivially true
 def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl(backend):
     grid = SimpleGrid()
     bound = np.int32(4)
@@ -103,9 +105,10 @@ def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl(backend):
             "E2C": grid.get_offset_provider("E2C"),
         },
     )
-    assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)
+    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), p_mflx_tracer_h_in.asnumpy())
 
 
+# TODO (Nina) what is this test for? its trivially true
 def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl_does_not_change_inout_arg(
     backend,
 ):
@@ -124,4 +127,4 @@ def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl_does_not_chang
             "E2C": grid.get_offset_provider("E2C"),
         },
     )
-    assert np.allclose(p_mflx_tracer_h_in, p_mflx_tracer_h_in)
+    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), p_mflx_tracer_h_in.asnumpy())

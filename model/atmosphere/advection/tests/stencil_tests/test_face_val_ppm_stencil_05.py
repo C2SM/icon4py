@@ -70,9 +70,9 @@ def test_face_val_ppm_stencil_05(backend):
     p_face = zero_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_05_numpy(
-        np.asarray(p_cc),
-        np.asarray(p_cellhgt_mc_now),
-        np.asarray(z_slope),
+        p_cc.asnumpy(),
+        p_cellhgt_mc_now.asnumpy(),
+        z_slope.asnumpy(),
     )
 
     face_val_ppm_stencil_05.with_backend(backend)(
@@ -83,4 +83,4 @@ def test_face_val_ppm_stencil_05(backend):
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:, :], p_face[:, 2:])
+    assert np.allclose(ref[:, :], p_face.asnumpy()[:, 2:])

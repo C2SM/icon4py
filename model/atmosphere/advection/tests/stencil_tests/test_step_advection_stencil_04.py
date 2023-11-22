@@ -37,8 +37,8 @@ def test_step_advection_stencil_04(backend):
     p_dtime = np.float64(5.0)
 
     ref = step_advection_stencil_04_numpy(
-        np.asarray(p_tracer_now),
-        np.asarray(p_tracer_new),
+        p_tracer_now.asnumpy(),
+        p_tracer_new.asnumpy(),
         p_dtime,
     )
     step_advection_stencil_04.with_backend(backend)(
@@ -48,4 +48,4 @@ def test_step_advection_stencil_04(backend):
         p_dtime,
         offset_provider={},
     )
-    assert np.allclose(opt_ddt_tracer_adv, ref)
+    assert np.allclose(opt_ddt_tracer_adv.asnumpy(), ref)

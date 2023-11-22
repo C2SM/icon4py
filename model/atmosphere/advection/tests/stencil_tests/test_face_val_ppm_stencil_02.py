@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator import embedded as it_embedded
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02 import face_val_ppm_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
@@ -51,9 +51,7 @@ def test_face_val_ppm_stencil_02(backend):
     p_face_in = random_field(grid, CellDim, KDim)
     p_face = random_field(grid, CellDim, KDim)
 
-    vert_idx = it_embedded.np_as_located_field(KDim)(
-        np.arange(0, _shape(grid, KDim)[0], dtype=int32)
-    )
+    vert_idx = as_field((KDim,), np.arange(0, _shape(grid, KDim)[0], dtype=int32))
 
     slev = int32(1)
     slevp1 = slev + int32(1)
@@ -61,10 +59,10 @@ def test_face_val_ppm_stencil_02(backend):
     elevp1 = elev + int32(1)
 
     ref = face_val_ppm_stencil_02_numpy(
-        np.asarray(p_cc),
-        np.asarray(p_cellhgt_mc_now),
-        np.asarray(p_face_in),
-        np.asarray(vert_idx),
+        p_cc.asnumpy(),
+        p_cellhgt_mc_now.asnumpy(),
+        p_face_in.asnumpy(),
+        vert_idx.asnumpy(),
         slev,
         elev,
         slevp1,
@@ -84,4 +82,4 @@ def test_face_val_ppm_stencil_02(backend):
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref, p_face)
+    assert np.allclose(ref, p_face.asnumpy())

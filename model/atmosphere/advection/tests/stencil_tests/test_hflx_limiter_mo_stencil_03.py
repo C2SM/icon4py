@@ -62,8 +62,8 @@ def test_hflx_diffusion_mo_stencil_03_min_max(backend):
     r_beta_fct = 0.3
     z_max_ref, z_min_ref = hflx_limiter_mo_stencil_03_min_max_numpy(
         grid.connectivities[C2E2CDim],
-        np.asarray(z_tracer_max),
-        np.asarray(z_tracer_min),
+        z_tracer_max.asnumpy(),
+        z_tracer_min.asnumpy(),
         beta_fct,
         r_beta_fct,
     )
@@ -76,8 +76,8 @@ def test_hflx_diffusion_mo_stencil_03_min_max(backend):
         z_min,
         offset_provider={"C2E2C": grid.get_offset_provider("C2E2C")},
     )
-    assert np.allclose(z_max, z_max_ref)
-    assert np.allclose(z_min, z_min_ref)
+    assert np.allclose(z_max.asnumpy(), z_max_ref)
+    assert np.allclose(z_min.asnumpy(), z_min_ref)
 
 
 def test_hflx_diffusion_mo_stencil_03(backend):
@@ -95,13 +95,13 @@ def test_hflx_diffusion_mo_stencil_03(backend):
 
     r_p_ref, r_m_ref = hflx_limiter_mo_stencil_03_numpy(
         grid.connectivities[C2E2CDim],
-        np.asarray(z_tracer_max),
-        np.asarray(z_tracer_min),
+        z_tracer_max.asnumpy(),
+        z_tracer_min.asnumpy(),
         beta_fct,
         r_beta_fct,
-        np.asarray(z_mflx_anti_in),
-        np.asarray(z_mflx_anti_out),
-        np.asarray(z_tracer_new_low),
+        z_mflx_anti_in.asnumpy(),
+        z_mflx_anti_out.asnumpy(),
+        z_tracer_new_low.asnumpy(),
         dbl_eps,
     )
 
@@ -118,5 +118,5 @@ def test_hflx_diffusion_mo_stencil_03(backend):
         r_m,
         offset_provider={"C2E2C": grid.get_offset_provider("C2E2C")},
     )
-    np.allclose(r_p_ref, r_p)
-    np.allclose(r_m_ref, r_m)
+    np.allclose(r_p_ref, r_p.asnumpy())
+    np.allclose(r_m_ref, r_m.asnumpy())

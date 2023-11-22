@@ -73,13 +73,13 @@ def test_upwind_hflux_miura_cycl_stencil_01(backend):
 
     ref = upwind_hflux_miura_cycl_stencil_01_numpy(
         grid.connectivities[E2CDim],
-        np.asarray(z_lsq_coeff_1_dsl),
-        np.asarray(z_lsq_coeff_2_dsl),
-        np.asarray(z_lsq_coeff_3_dsl),
-        np.asarray(distv_bary_1),
-        np.asarray(distv_bary_2),
-        np.asarray(p_mass_flx_e),
-        np.asarray(cell_rel_idx_dsl),
+        z_lsq_coeff_1_dsl.asnumpy(),
+        z_lsq_coeff_2_dsl.asnumpy(),
+        z_lsq_coeff_3_dsl.asnumpy(),
+        distv_bary_1.asnumpy(),
+        distv_bary_2.asnumpy(),
+        p_mass_flx_e.asnumpy(),
+        cell_rel_idx_dsl.asnumpy(),
     )
 
     upwind_hflux_miura_cycl_stencil_01.with_backend(backend)(
@@ -95,4 +95,4 @@ def test_upwind_hflux_miura_cycl_stencil_01(backend):
             "E2C": grid.get_offset_provider("E2C"),
         },
     )
-    assert np.allclose(ref, z_tracer_mflx_dsl)
+    assert np.allclose(ref, z_tracer_mflx_dsl.asnumpy())
