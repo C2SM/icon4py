@@ -44,7 +44,7 @@ def test_unpack_from_buffer_to_field(pointer_type: str):
     input_factor = 0.5
     res_factor, result_field = identity(ffi.from_buffer(pointer_type, input_array), input_factor)
     assert res_factor == input_factor
-    assert np.allclose(np.asarray(result_field), input_array)
+    assert np.allclose(result_field.asnumpy(), input_array)
 
 
 def test_unpack_only_scalar_args():
@@ -67,7 +67,7 @@ def test_unpack_local_field(field_type):
 
     input_field = np.arange(n_edges * e2c_sparse_size).reshape((n_edges, e2c_sparse_size))
     res_field = local_field(ffi.from_buffer("int*", input_field))
-    assert np.allclose(res_field, input_field, atol=0)
+    assert np.allclose(res_field.asnumpy(), input_field, atol=0)
 
 
 def test_unknown_dimension_raises_exception():
