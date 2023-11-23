@@ -19,10 +19,11 @@ from dataclasses import dataclass, replace
 from typing import Any, Optional, TypeGuard
 
 from gt4py import eve
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import dialect_ast_enums
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
+from gt4py.next.ffront.type_specifications import ProgramType
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
@@ -33,6 +34,9 @@ from icon4pytools.icon4pygen.exceptions import (
     MultipleFieldOperatorException,
 )
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
+
+
+GRID_SIZE_SYMBOLS = ["num_cells", "num_edges", "num_vertices"]
 
 
 @dataclass(frozen=True)
@@ -52,16 +56,16 @@ class FieldInfo:
 
 
 @dataclass
-class DummyConnectivity:
+class DummyConnectivity(Connectivity):
     """Provides static information to the code generator (`max_neighbors`, `has_skip_values`)."""
 
     max_neighbors: int
-    has_skip_values: int
+    has_skip_values: bool
     origin_axis: Dimension
     neighbor_axis: Dimension = Dimension("unused")
     index_type: type[int] = int
 
-    def mapped_index(_, __) -> int:
+    def mapped_index(self, cur_index, neigh_index) -> int:
         raise AssertionError("Unreachable")
         return 0
 
@@ -231,9 +235,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 def _create_symbol(
     symbol_name, symbol_type, starting_line, starting_column, filename
 ) -> past.DataSymbol:
-    """
-    Create a new DataSymbol instance for the given symbol name.
-    """
+    """Create a new DataSymbol instance for the given symbol name."""
     location = eve.SourceLocation(
         filename=filename,
         line=starting_line,
@@ -249,19 +251,17 @@ def _create_symbol(
     )
 
 
-def add_grid_element_size_args(program_decorator: Program) -> past.Program:
-    """
-    Add grid element size parameters to the given program.
-    """
+def add_grid_element_size_args(program_decorator: Program) -> Program:
+    """Add grid element size parameters to the given program."""
     past_node = program_decorator.past_node
     symbol_type = ts.ScalarType(kind=ts.ScalarKind.INT32)
 
     # Create new type definitions
     new_program_type = copy.deepcopy(past_node.type)
+    assert isinstance(new_program_type, ProgramType)
     new_types = {"num_cells": symbol_type, "num_edges": symbol_type, "num_vertices": symbol_type}
     new_program_type.definition.pos_or_kw_args.update(new_types)
 
-    symbols = ["num_cells", "num_edges", "num_vertices"]
     last_param = past_node.params[-1]
     new_params = list(past_node.params)  # Clone the existing params list
 
@@ -270,7 +270,7 @@ def add_grid_element_size_args(program_decorator: Program) -> past.Program:
     symbol_column = last_param.location.column
     fname = last_param.location.filename
 
-    for i, symbol in enumerate(symbols, start=1):
+    for i, symbol in enumerate(GRID_SIZE_SYMBOLS, start=1):
         param = _create_symbol(symbol, symbol_type, symbol_line + i, symbol_column, fname)
         new_params.append(param)
 

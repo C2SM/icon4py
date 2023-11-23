@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 from gt4py.next import common
+from gt4py.next.common import Connectivity
 from gt4py.next.iterator import ir as itir
-from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.runners import gtfn
 from icon4py.model.common.dimension import Koff
@@ -84,13 +84,13 @@ def get_missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
 
 def generate_gtheader(
     fencil: itir.FencilDefinition,
-    offset_provider: dict[str, NeighborTableOffsetProvider],
+    offset_provider: dict[str, Connectivity],
     column_axis: Optional[common.Dimension],
     imperative: bool,
     temporaries: bool,
 ) -> str:
-    """Generates a GridTools C++ header for a given stencil definition using specified configuration parameters."""
-    gtfn_translation = gtfn.run_gtfn.executor.otf_workflow.translation
+    """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
+    gtfn_translation = gtfn.run_gtfn.executor.otf_workflow.translation  # type: ignore
     assert isinstance(gtfn_translation, gtfn.gtfn_module.GTFNTranslationStep)
 
     lift_mode = LiftMode.FORCE_TEMPORARIES if temporaries else LiftMode.FORCE_INLINE
@@ -111,7 +111,7 @@ def generate_gtheader(
 
     return gtfn_translation.generate_stencil_source(
         fencil,
-        offset_provider=offset_provider,
+        offset_provider=offset_provider,  # type: ignore
         column_axis=column_axis,
     )
 
