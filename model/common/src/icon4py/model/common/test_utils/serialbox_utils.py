@@ -14,6 +14,7 @@ import logging
 
 import numpy as np
 import serialbox as ser
+from gt4py.next import as_field
 from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
@@ -71,7 +72,7 @@ class IconSavepoint:
         buffer = self._reduce_to_dim_size(buffer, dimensions)
 
         self.log.debug(f"{name} {buffer.shape}")
-        return np_as_located_field(*dimensions)(buffer)
+        return as_field(dimensions, buffer)
 
     def _reduce_to_dim_size(self, buffer, dimensions):
         buffer_size = (
@@ -82,7 +83,7 @@ class IconSavepoint:
         return buffer
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
-        return np_as_located_field(*dimensions)(ar)
+        return as_field(dimensions, ar)
 
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()

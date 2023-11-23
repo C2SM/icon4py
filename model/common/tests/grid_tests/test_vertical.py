@@ -15,6 +15,7 @@ import math
 
 import numpy as np
 import pytest
+import gt4py.next as gtx
 
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -26,10 +27,10 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 )
 def test_nrdmax_calculation(max_h, damping, delta, grid_savepoint):
     vct_a = np.arange(0, max_h, delta)
-    vct_a = vct_a[::-1]
+    vct_a_field = gtx.as_field((KDim,), data=vct_a[::-1])
     vertical_params = VerticalModelParams(
         rayleigh_damping_height=damping,
-        vct_a=vct_a,
+        vct_a=vct_a_field,
         nflat_gradp=grid_savepoint.nflat_gradp,
         nflatlev=grid_savepoint.nflatlev(),
     )
@@ -47,7 +48,7 @@ def test_nrdmax_calculation_from_icon_input(grid_savepoint, damping_height):
         nflatlev=grid_savepoint.nflatlev(),
     )
     assert nrdmax == vertical_params.index_of_damping_layer
-    a_array = np.asarray(a)
+    a_array = a.asnumpy()
     assert a_array[nrdmax] > damping_height
     assert a_array[nrdmax + 1] < damping_height
 
