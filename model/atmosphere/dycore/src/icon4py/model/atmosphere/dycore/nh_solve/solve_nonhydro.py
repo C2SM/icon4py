@@ -363,7 +363,7 @@ class SolveNonhydro:
         )
         self.enh_divdamp_fac = enh_smag_fac
 
-        cell_areas_avg = np.sum(cell_areas) / float(self.grid.num_cells)
+        cell_areas_avg = np.sum(cell_areas.asnumpy()) / float(self.grid.num_cells)
         # TODO @tehrengruber: fix power
         scal_divdamp_calcs.with_backend(run_gtfn)(
             enh_smag_fac,
