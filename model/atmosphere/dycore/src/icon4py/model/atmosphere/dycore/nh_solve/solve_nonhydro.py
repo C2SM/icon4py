@@ -13,9 +13,9 @@
 from typing import Final, Optional
 
 import numpy as np
+from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
@@ -358,7 +358,7 @@ class SolveNonhydro:
             self.jk_start = 0
 
         out = enh_smag_fac
-        _en_smag_fac_for_zero_nshift(
+        _en_smag_fac_for_zero_nshift.with_backend(run_gtfn)(
             a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
         )
         self.enh_divdamp_fac = enh_smag_fac
@@ -970,9 +970,7 @@ class SolveNonhydro:
             )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
-        hydro_corr_horizontal = np_as_located_field(EdgeDim)(
-            np.asarray(self.z_hydro_corr)[:, lowest_level]
-        )
+        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
 
         if self.config.igradp_method == 3:
             mo_solve_nonhydro_stencil_22.with_backend(run_gtfn)(

@@ -96,15 +96,10 @@ def constant_field(
     )
 
 
-def as_1D_sparse_field(
-    field: gt_common.Field, dim: gt_common.Dimension
-) -> it_embedded.MutableLocatedField:
+def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    old_shape = field.shape
-    assert len(old_shape) == 2
-    new_shape = (old_shape[0] * old_shape[1],)
-    data = field.asnumpy().reshape(new_shape)
-    return as_field((dim,), data)
+    buffer = field.asnumpy()
+    return numpy_to_1D_sparse_field(buffer, target_dim)
 
 
 def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_common.Field:

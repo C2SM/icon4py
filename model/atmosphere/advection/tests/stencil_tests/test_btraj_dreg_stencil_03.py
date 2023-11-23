@@ -229,4 +229,4 @@ def test_btraj_dreg_stencil_03(backend):
     assert np.allclose(p_coords_dreg_v_1_lat_dsl.asnumpy(), p_coords_dreg_v_1_lat_dsl_ref)
     assert np.allclose(p_coords_dreg_v_2_lat_dsl.asnumpy(), p_coords_dreg_v_2_lat_dsl_ref)
     assert np.allclose(p_coords_dreg_v_3_lat_dsl.asnumpy(), p_coords_dreg_v_3_lat_dsl_ref)
-    assert np.allclose(p_coords_dreg_v_4_lat_dsl.ndarray, p_coords_dreg_v_4_lat_dsl_ref)
+    assert np.allclose(p_coords_dreg_v_4_lat_dsl.asnumpy(), p_coords_dreg_v_4_lat_dsl_ref)
