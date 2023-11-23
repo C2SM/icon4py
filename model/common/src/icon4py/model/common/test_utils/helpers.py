@@ -16,7 +16,8 @@ from typing import ClassVar, Optional
 import numpy as np
 import numpy.typing as npt
 import pytest
-from gt4py.next import common as gt_common, as_field
+from gt4py.next import as_field
+from gt4py.next import common as gt_common
 from gt4py.next.ffront.decorator import Program
 from gt4py.next.iterator import embedded as it_embedded
 
