@@ -13,9 +13,9 @@
 
 import math
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-import gt4py.next as gtx
 
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.vertical import VerticalModelParams
