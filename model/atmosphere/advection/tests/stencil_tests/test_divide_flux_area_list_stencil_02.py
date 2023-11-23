@@ -239,36 +239,36 @@ def test_divide_flux_area_list_stencil_02(backend):
         ref_20,
     ) = divide_flux_area_list_stencil_02_numpy(
         grid.connectivities[E2CDim],
-        famask_int.ndarray,
-        p_vn.ndarray,
-        bf_cc_patch1_lon.ndarray,
-        bf_cc_patch1_lat.ndarray,
-        bf_cc_patch2_lon.ndarray,
-        bf_cc_patch2_lat.ndarray,
-        butterfly_idx_patch1_vnpos.ndarray,
-        butterfly_idx_patch1_vnneg.ndarray,
-        butterfly_blk_patch1_vnpos.ndarray,
-        butterfly_blk_patch1_vnneg.ndarray,
-        butterfly_idx_patch2_vnpos.ndarray,
-        butterfly_idx_patch2_vnneg.ndarray,
-        butterfly_blk_patch2_vnpos.ndarray,
-        butterfly_blk_patch2_vnneg.ndarray,
-        dreg_patch1_1_lon_vmask.ndarray,
-        dreg_patch1_1_lat_vmask.ndarray,
-        dreg_patch1_2_lon_vmask.ndarray,
-        dreg_patch1_2_lat_vmask.ndarray,
-        dreg_patch1_3_lon_vmask.ndarray,
-        dreg_patch1_3_lat_vmask.ndarray,
-        dreg_patch1_4_lon_vmask.ndarray,
-        dreg_patch1_4_lat_vmask.ndarray,
-        dreg_patch2_1_lon_vmask.ndarray,
-        dreg_patch2_1_lat_vmask.ndarray,
-        dreg_patch2_2_lon_vmask.ndarray,
-        dreg_patch2_2_lat_vmask.ndarray,
-        dreg_patch2_3_lon_vmask.ndarray,
-        dreg_patch2_3_lat_vmask.ndarray,
-        dreg_patch2_4_lon_vmask.ndarray,
-        dreg_patch2_4_lat_vmask.ndarray,
+        famask_int.asnumpy(),
+        p_vn.asnumpy(),
+        bf_cc_patch1_lon.asnumpy(),
+        bf_cc_patch1_lat.asnumpy(),
+        bf_cc_patch2_lon.asnumpy(),
+        bf_cc_patch2_lat.asnumpy(),
+        butterfly_idx_patch1_vnpos.asnumpy(),
+        butterfly_idx_patch1_vnneg.asnumpy(),
+        butterfly_blk_patch1_vnpos.asnumpy(),
+        butterfly_blk_patch1_vnneg.asnumpy(),
+        butterfly_idx_patch2_vnpos.asnumpy(),
+        butterfly_idx_patch2_vnneg.asnumpy(),
+        butterfly_blk_patch2_vnpos.asnumpy(),
+        butterfly_blk_patch2_vnneg.asnumpy(),
+        dreg_patch1_1_lon_vmask.asnumpy(),
+        dreg_patch1_1_lat_vmask.asnumpy(),
+        dreg_patch1_2_lon_vmask.asnumpy(),
+        dreg_patch1_2_lat_vmask.asnumpy(),
+        dreg_patch1_3_lon_vmask.asnumpy(),
+        dreg_patch1_3_lat_vmask.asnumpy(),
+        dreg_patch1_4_lon_vmask.asnumpy(),
+        dreg_patch1_4_lat_vmask.asnumpy(),
+        dreg_patch2_1_lon_vmask.asnumpy(),
+        dreg_patch2_1_lat_vmask.asnumpy(),
+        dreg_patch2_2_lon_vmask.asnumpy(),
+        dreg_patch2_2_lat_vmask.asnumpy(),
+        dreg_patch2_3_lon_vmask.asnumpy(),
+        dreg_patch2_3_lat_vmask.asnumpy(),
+        dreg_patch2_4_lon_vmask.asnumpy(),
+        dreg_patch2_4_lat_vmask.asnumpy(),
     )
 
     divide_flux_area_list_stencil_02.with_backend(backend)(
@@ -311,23 +311,23 @@ def test_divide_flux_area_list_stencil_02(backend):
             "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, grid.size[E2CDim]),
         },
     )
-    assert np.allclose(dreg_patch1_1_lon_vmask.ndarray, ref_1)
-    assert np.allclose(dreg_patch1_1_lat_vmask.ndarray, ref_2)
-    assert np.allclose(dreg_patch1_2_lon_vmask.ndarray, ref_3)
-    assert np.allclose(dreg_patch1_2_lat_vmask.ndarray, ref_4)
-    assert np.allclose(dreg_patch1_3_lon_vmask.ndarray, ref_5)
-    assert np.allclose(dreg_patch1_3_lat_vmask.ndarray, ref_6)
-    assert np.allclose(dreg_patch1_4_lon_vmask.ndarray, ref_7)
-    assert np.allclose(dreg_patch1_4_lat_vmask.ndarray, ref_8)
-    assert np.allclose(dreg_patch2_1_lon_vmask.ndarray, ref_9)
-    assert np.allclose(dreg_patch2_1_lat_vmask.ndarray, ref_10)
-    assert np.allclose(dreg_patch2_2_lon_vmask.ndarray, ref_11)
-    assert np.allclose(dreg_patch2_2_lat_vmask.ndarray, ref_12)
-    assert np.allclose(dreg_patch2_3_lon_vmask.ndarray, ref_13)
-    assert np.allclose(dreg_patch2_3_lat_vmask.ndarray, ref_14)
-    assert np.allclose(dreg_patch2_4_lon_vmask.ndarray, ref_15)
-    assert np.allclose(dreg_patch2_4_lat_vmask.ndarray, ref_16)
-    assert np.allclose(patch1_cell_idx_vmask.ndarray, ref_17)
-    assert np.allclose(patch1_cell_blk_vmask.ndarray, ref_18)
-    assert np.allclose(patch2_cell_idx_vmask.ndarray, ref_19)
-    assert np.allclose(patch2_cell_blk_vmask.ndarray, ref_20)
+    assert np.allclose(dreg_patch1_1_lon_vmask.asnumpy(), ref_1)
+    assert np.allclose(dreg_patch1_1_lat_vmask.asnumpy(), ref_2)
+    assert np.allclose(dreg_patch1_2_lon_vmask.asnumpy(), ref_3)
+    assert np.allclose(dreg_patch1_2_lat_vmask.asnumpy(), ref_4)
+    assert np.allclose(dreg_patch1_3_lon_vmask.asnumpy(), ref_5)
+    assert np.allclose(dreg_patch1_3_lat_vmask.asnumpy(), ref_6)
+    assert np.allclose(dreg_patch1_4_lon_vmask.asnumpy(), ref_7)
+    assert np.allclose(dreg_patch1_4_lat_vmask.asnumpy(), ref_8)
+    assert np.allclose(dreg_patch2_1_lon_vmask.asnumpy(), ref_9)
+    assert np.allclose(dreg_patch2_1_lat_vmask.asnumpy(), ref_10)
+    assert np.allclose(dreg_patch2_2_lon_vmask.asnumpy(), ref_11)
+    assert np.allclose(dreg_patch2_2_lat_vmask.asnumpy(), ref_12)
+    assert np.allclose(dreg_patch2_3_lon_vmask.asnumpy(), ref_13)
+    assert np.allclose(dreg_patch2_3_lat_vmask.asnumpy(), ref_14)
+    assert np.allclose(dreg_patch2_4_lon_vmask.asnumpy(), ref_15)
+    assert np.allclose(dreg_patch2_4_lat_vmask.asnumpy(), ref_16)
+    assert np.allclose(patch1_cell_idx_vmask.asnumpy(), ref_17)
+    assert np.allclose(patch1_cell_blk_vmask.asnumpy(), ref_18)
+    assert np.allclose(patch2_cell_idx_vmask.asnumpy(), ref_19)
+    assert np.allclose(patch2_cell_blk_vmask.asnumpy(), ref_20)
