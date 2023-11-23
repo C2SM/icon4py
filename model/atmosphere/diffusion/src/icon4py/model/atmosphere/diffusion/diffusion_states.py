@@ -13,10 +13,10 @@
 import functools
 from dataclasses import dataclass
 
-import numpy as np
+
+from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.model.common.dimension import (
     C2E2CODim,
@@ -89,14 +89,15 @@ class DiffusionInterpolationState:
 
     @functools.cached_property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
-        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
+        return as_field((CellDim,), data=self.geofac_n2s.asnumpy()[:, 0])
 
     @functools.cached_property
     def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
-        geofac_nbh_ar = np.asarray(self.geofac_n2s)[:, 1:]
+        geofac_nbh_ar = self.geofac_n2s.asnumpy()[:, 1:]
         old_shape = geofac_nbh_ar.shape
-        return np_as_located_field(CECDim)(
+        return as_field(
+            (CECDim,),
             geofac_nbh_ar.reshape(
                 old_shape[0] * old_shape[1],
-            )
+            ),
         )
