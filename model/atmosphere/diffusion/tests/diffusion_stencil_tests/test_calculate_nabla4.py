@@ -97,6 +97,9 @@ class TestCalculateNabla4(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if np.any(grid.connectivities[E2C2VDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
         u_vert = random_field(grid, VertexDim, KDim)
         v_vert = random_field(grid, VertexDim, KDim)
 

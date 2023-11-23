@@ -61,7 +61,14 @@ def mo_velocity_advection_stencil_20_numpy(
 
     w_con_e = np.where(
         (levelmask_offset_0) | (levelmask_offset_1),
-        np.sum(c_lin_e * z_w_con_c_full[grid.connectivities[E2CDim]], axis=1),
+        np.sum(
+            np.where(
+                (grid.connectivities[E2CDim] != -1)[:, :, np.newaxis],
+                c_lin_e * z_w_con_c_full[grid.connectivities[E2CDim]],
+                0,
+            ),
+            axis=1,
+        ),
         w_con_e,
     )
     difcoef = np.where(
@@ -81,10 +88,20 @@ def mo_velocity_advection_stencil_20_numpy(
         + difcoef
         * area_edge
         * (
-            np.sum(geofac_grdiv * vn[grid.connectivities[E2C2EODim]], axis=1)
+            np.sum(
+                np.where(
+                    (grid.connectivities[E2C2EODim] != -1)[:, :, np.newaxis],
+                    geofac_grdiv * vn[grid.connectivities[E2C2EODim]],
+                    0,
+                ),
+                axis=1,
+            )
             + tangent_orientation
             * inv_primal_edge_length
-            * (zeta[grid.connectivities[E2VDim]][:, 1] - zeta[grid.connectivities[E2VDim]][:, 0])
+            * (
+                zeta[grid.connectivities[E2VDim]][:, 1]
+                - zeta[grid.connectivities[E2VDim]][:, 0]
+            )
         ),
         ddt_vn_apc,
     )
