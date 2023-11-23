@@ -13,7 +13,6 @@
 import functools
 from dataclasses import dataclass
 
-
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
