@@ -147,10 +147,10 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_field("primal_normal_cell_y", EdgeDim, E2CDim)
 
     def dual_normal_cell_x(self):
-        return self._get_field("dual_normal_cell_x", CellDim, E2CDim)
+        return self._get_field("dual_normal_cell_x", EdgeDim, E2CDim)
 
     def dual_normal_cell_y(self):
-        return self._get_field("dual_normal_cell_y", CellDim, E2CDim)
+        return self._get_field("dual_normal_cell_y", EdgeDim, E2CDim)
 
     def cell_areas(self):
         return self._get_field("cell_areas", CellDim)
