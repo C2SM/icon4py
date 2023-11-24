@@ -907,12 +907,20 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self.serializer.read("cfl_w_limit", self.savepoint)[0]
 
     def ddt_vn_apc_pc(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float))
-        return as_field((EdgeDim, KDim), buffer[:, :, ntnd - 1])
+        buffer = np.squeeze(self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float))[
+            :, :, ntnd - 1
+        ]
+        dims = (EdgeDim, KDim)
+        buffer = self._reduce_to_dim_size(buffer, dims)
+        return as_field(dims, buffer)
 
     def ddt_w_adv_pc(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("ddt_w_adv_pc", self.savepoint).astype(float))
-        return as_field((CellDim, KDim), buffer[:, :, ntnd - 1])
+        buffer = np.squeeze(self.serializer.read("ddt_w_adv_pc", self.savepoint).astype(float))[
+            :, :, ntnd - 1
+        ]
+        dims = (CellDim, KDim)
+        buffer = self._reduce_to_dim_size(buffer, dims)
+        return as_field(dims, buffer)
 
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
