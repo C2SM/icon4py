@@ -246,7 +246,7 @@ class VelocityAdvection:
             horizontal_start=start_edge_lb_plus4,
             horizontal_end=end_edge_local_minus2,
             vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
+            vertical_end=self.grid.num_levels,  # TODO (magdalena) was num_levels + 1, generates obvious segfault. need to handle last level ov vn_ie separately
             offset_provider={
                 "Koff": KDim,
             },

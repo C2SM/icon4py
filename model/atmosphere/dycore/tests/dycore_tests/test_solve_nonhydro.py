@@ -59,7 +59,6 @@ def test_nonhydro_params():
     )
 
 
-@pytest.mark.skip("TODO (magdalena) fix update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, istep_exit, step_date_init, step_date_exit",
@@ -365,8 +364,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 35,36, 37,38
     assert dallclose(
-        icon_result_vn_ie[edge_start_lb_plus4:, :],
-        diagnostic_state_nh.vn_ie.asnumpy()[edge_start_lb_plus4:, :],
+        icon_result_vn_ie[edge_start_lb_plus4:, :nlev],
+        diagnostic_state_nh.vn_ie.asnumpy()[edge_start_lb_plus4:, :nlev],
         atol=2e-14,
     )
 
@@ -663,7 +662,6 @@ def test_nonhydro_corrector_step(
     )
 
 
-@pytest.mark.skip("TODO (magdalena) fix update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,  istep_exit, jstep_exit,step_date_exit",

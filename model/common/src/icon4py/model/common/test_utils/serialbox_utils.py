@@ -82,6 +82,7 @@ class IconSavepoint:
         return buffer
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
+        ar = self._reduce_to_dim_size(ar, dimensions)
         return as_field(dimensions, ar)
 
     def get_metadata(self, *names):
@@ -128,22 +129,22 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_field("inv_vert_vert_length", EdgeDim)
 
     def primal_normal_vert_x(self):
-        return self._get_field("primal_normal_vert_x", VertexDim, E2C2VDim)
+        return self._get_field("primal_normal_vert_x", EdgeDim, E2C2VDim)
 
     def primal_normal_vert_y(self):
-        return self._get_field("primal_normal_vert_y", VertexDim, E2C2VDim)
+        return self._get_field("primal_normal_vert_y", EdgeDim, E2C2VDim)
 
     def dual_normal_vert_y(self):
-        return self._get_field("dual_normal_vert_y", VertexDim, E2C2VDim)
+        return self._get_field("dual_normal_vert_y", EdgeDim, E2C2VDim)
 
     def dual_normal_vert_x(self):
-        return self._get_field("dual_normal_vert_x", VertexDim, E2C2VDim)
+        return self._get_field("dual_normal_vert_x", EdgeDim, E2C2VDim)
 
     def primal_normal_cell_x(self):
-        return self._get_field("primal_normal_cell_x", CellDim, E2CDim)
+        return self._get_field("primal_normal_cell_x", EdgeDim, E2CDim)
 
     def primal_normal_cell_y(self):
-        return self._get_field("primal_normal_cell_y", CellDim, E2CDim)
+        return self._get_field("primal_normal_cell_y", EdgeDim, E2CDim)
 
     def dual_normal_cell_x(self):
         return self._get_field("dual_normal_cell_x", CellDim, E2CDim)
@@ -586,6 +587,7 @@ class MetricSavepoint(IconSavepoint):
         self, k_level
     ):  # TODO: @abishekg7 Simplify this after serialized data is fixed
         ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
+
         k = k_level - 3
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, EdgeDim, KDim)
@@ -907,6 +909,7 @@ class IconVelocityInitSavepoint(IconSavepoint):
 
     def ddt_vn_apc_pc(self, ntnd):
         buffer = np.squeeze(self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float))
+
         return as_field((EdgeDim, KDim), buffer[:, :, ntnd - 1])
 
     def ddt_w_adv_pc(self, ntnd):
@@ -984,8 +987,12 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_theta_v_now", CellDim, KDim)
 
     def ddt_vn_apc_pc(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_ddt_vn_apc_pc", self.savepoint).astype(float))
-        return as_field((EdgeDim, KDim), buffer[:, :, ntnd - 1])
+        buffer = np.squeeze(self.serializer.read("x_ddt_vn_apc_pc", self.savepoint).astype(float))[
+            :, :, ntnd - 1
+        ]
+        dims = (EdgeDim, KDim)
+        buffer = self._reduce_to_dim_size(buffer, dims)
+        return as_field((EdgeDim, KDim), buffer)
 
     def ddt_vn_apc_pc_19(self, ntnd):
         buffer = np.squeeze(
@@ -994,8 +1001,12 @@ class IconExitSavepoint(IconSavepoint):
         return as_field((EdgeDim, KDim), buffer[:, :, ntnd - 1])
 
     def ddt_w_adv_pc(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc", self.savepoint).astype(float))
-        return as_field((CellDim, KDim), buffer[:, :, ntnd - 1])
+        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc", self.savepoint).astype(float))[
+            :, :, ntnd - 1
+        ]
+        dims = (CellDim, KDim)
+        buffer = self._reduce_to_dim_size(buffer, dims)
+        return as_field(dims, buffer)
 
     def ddt_w_adv_pc_16(self, ntnd):
         buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc_16", self.savepoint).astype(float))
