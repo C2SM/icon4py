@@ -37,7 +37,7 @@ def btraj_dreg_stencil_01_numpy(
     return lvn_sys_pos
 
 
-def test_btraj_dreg_stencil_01():
+def test_btraj_dreg_stencil_01(backend):
     grid = SimpleGrid()
     lcounterclock = True
     p_vn = random_field(grid, EdgeDim, KDim)
@@ -48,11 +48,11 @@ def test_btraj_dreg_stencil_01():
 
     ref = btraj_dreg_stencil_01_numpy(
         lcounterclock,
-        np.asarray(p_vn),
-        np.asarray(tangent_orientation),
+        p_vn.asnumpy(),
+        tangent_orientation.asnumpy(),
     )
 
-    btraj_dreg_stencil_01(
+    btraj_dreg_stencil_01.with_backend(backend)(
         lcounterclock,
         p_vn,
         tangent_orientation,
@@ -60,4 +60,4 @@ def test_btraj_dreg_stencil_01():
         offset_provider={},
     )
 
-    assert np.allclose(ref, lvn_sys_pos)
+    assert np.allclose(ref, lvn_sys_pos.asnumpy())

@@ -13,10 +13,10 @@
 from typing import Tuple
 
 import numpy as np
+from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, minimum
-from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 
@@ -24,7 +24,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexD
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
 def zero_field(grid, *dims: Dimension, dtype=float):
     shapex = tuple(map(lambda x: grid.size[x], dims))
-    return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
+    return as_field(dims, np.zeros(shapex, dtype=dtype))
 
 
 @field_operator
@@ -199,7 +199,7 @@ def init_diffusion_local_fields_for_regular_timestep(
 
 
 def init_nabla2_factor_in_upper_damping_zone(
-    k_size: int, nrdmax: int32, nshift: int, physical_heights: np.ndarray
+    k_size: int, nrdmax: int32, nshift: int, physical_heights: Field[[KDim], float]
 ) -> Field[[KDim], float]:
     """
     Calculate diff_multfac_n2w.
@@ -213,18 +213,15 @@ def init_nabla2_factor_in_upper_damping_zone(
         physcial_heights: vector of physical heights [m] of the height levels
     """
     # TODO(Magdalena): fix with as_offset in gt4py
-
+    heights = physical_heights.asnumpy()
     buffer = np.zeros(k_size)
     buffer[1 : nrdmax + 1] = (
         1.0
         / 12.0
         * (
-            (
-                physical_heights[1 + nshift : nrdmax + 1 + nshift]
-                - physical_heights[nshift + nrdmax + 1]
-            )
-            / (physical_heights[1] - physical_heights[nshift + nrdmax + 1])
+            (heights[1 + nshift : nrdmax + 1 + nshift] - heights[nshift + nrdmax + 1])
+            / (heights[1] - heights[nshift + nrdmax + 1])
         )
         ** 4
     )
-    return np_as_located_field(KDim)(buffer)
+    return as_field((KDim,), buffer)

@@ -40,7 +40,7 @@ def hor_adv_stencil_01_numpy(
     return tracer_new
 
 
-def test_hor_adv_stencil_01():
+def test_hor_adv_stencil_01(backend):
     grid = SimpleGrid()
 
     p_mflx_tracer_h = random_field(grid, EdgeDim, KDim)
@@ -55,15 +55,15 @@ def test_hor_adv_stencil_01():
 
     ref = hor_adv_stencil_01_numpy(
         grid.connectivities[C2EDim],
-        np.asarray(p_mflx_tracer_h),
-        np.asarray(deepatmo_divh),
-        np.asarray(tracer_now),
-        np.asarray(rhodz_now),
-        np.asarray(rhodz_new),
-        np.asarray(geofac_div),
+        p_mflx_tracer_h.asnumpy(),
+        deepatmo_divh.asnumpy(),
+        tracer_now.asnumpy(),
+        rhodz_now.asnumpy(),
+        rhodz_new.asnumpy(),
+        geofac_div.asnumpy(),
         p_dtime,
     )
-    hor_adv_stencil_01(
+    hor_adv_stencil_01.with_backend(backend)(
         p_mflx_tracer_h,
         deepatmo_divh,
         tracer_now,
@@ -77,4 +77,4 @@ def test_hor_adv_stencil_01():
             "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
         },
     )
-    assert np.allclose(tracer_new, ref)
+    assert np.allclose(tracer_new.asnumpy(), ref)

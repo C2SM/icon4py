@@ -44,7 +44,7 @@ def hflx_limiter_mo_stencil_02_numpy(
     return z_tracer_new_out, z_tracer_max_out, z_tracer_min_out
 
 
-def test_hflx_limiter_mo_stencil_02_some_matching_condition():
+def test_hflx_limiter_mo_stencil_02_some_matching_condition(backend):
     grid = SimpleGrid()
 
     hi_bound = np.int32(1)
@@ -64,16 +64,16 @@ def test_hflx_limiter_mo_stencil_02_some_matching_condition():
     z_tracer_min = zero_field(grid, CellDim, KDim)
 
     ref_new_low, ref_max, ref_min = hflx_limiter_mo_stencil_02_numpy(
-        np.asarray(refin_ctrl),
-        np.asarray(p_cc),
-        np.asarray(z_tracer_new_low_in),
-        np.asarray(z_tracer_max_in),
-        np.asarray(z_tracer_min_in),
+        refin_ctrl.asnumpy(),
+        p_cc.asnumpy(),
+        z_tracer_new_low_in.asnumpy(),
+        z_tracer_max_in.asnumpy(),
+        z_tracer_min_in.asnumpy(),
         lo_bound,
         hi_bound,
     )
 
-    hflx_limiter_mo_stencil_02(
+    hflx_limiter_mo_stencil_02.with_backend(backend)(
         refin_ctrl,
         p_cc,
         z_tracer_new_low_in,
@@ -87,12 +87,12 @@ def test_hflx_limiter_mo_stencil_02_some_matching_condition():
         offset_provider={},
     )
 
-    assert np.allclose(z_tracer_new_low, ref_new_low)
-    assert np.allclose(z_tracer_max, ref_max)
-    assert np.allclose(z_tracer_min, ref_min)
+    assert np.allclose(z_tracer_new_low.asnumpy(), ref_new_low)
+    assert np.allclose(z_tracer_max.asnumpy(), ref_max)
+    assert np.allclose(z_tracer_min.asnumpy(), ref_min)
 
 
-def test_hflx_limiter_mo_stencil_02_none_matching_condition():
+def test_hflx_limiter_mo_stencil_02_none_matching_condition(backend):
     grid = SimpleGrid()
 
     hi_bound = np.int32(3)
@@ -110,7 +110,7 @@ def test_hflx_limiter_mo_stencil_02_none_matching_condition():
     z_tracer_max = zero_field(grid, CellDim, KDim)
     z_tracer_min = zero_field(grid, CellDim, KDim)
 
-    hflx_limiter_mo_stencil_02(
+    hflx_limiter_mo_stencil_02.with_backend(backend)(
         refin_ctrl,
         p_cc,
         z_tracer_new_low_in,
@@ -124,6 +124,6 @@ def test_hflx_limiter_mo_stencil_02_none_matching_condition():
         offset_provider={},
     )
 
-    assert np.allclose(z_tracer_new_low_in, z_tracer_new_low)
-    assert np.allclose(z_tracer_min_in, z_tracer_min)
-    assert np.allclose(z_tracer_max_in, z_tracer_max)
+    assert np.allclose(z_tracer_new_low_in.asnumpy(), z_tracer_new_low.asnumpy())
+    assert np.allclose(z_tracer_min_in.asnumpy(), z_tracer_min.asnumpy())
+    assert np.allclose(z_tracer_max_in.asnumpy(), z_tracer_max.asnumpy())
