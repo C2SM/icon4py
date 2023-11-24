@@ -587,7 +587,6 @@ class MetricSavepoint(IconSavepoint):
         self, k_level
     ):  # TODO: @abishekg7 Simplify this after serialized data is fixed
         ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
-
         k = k_level - 3
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, EdgeDim, KDim)
