@@ -109,7 +109,6 @@ class BaseGrid(ABC):
             self.connectivities[dim].shape, from_dim, to_dim
         )
 
-    @ClassLevelCache.cache_method
     def get_offset_provider(self, name):
         if name in self.offset_provider_mapping:
             method, *args = self.offset_provider_mapping[name]
@@ -117,7 +116,6 @@ class BaseGrid(ABC):
         else:
             raise Exception(f"Offset provider for {name} not found.")
 
-    @ClassLevelCache.cache_method
     def get_all_offset_providers(self):
         offset_providers = {}
         for key, value in self.offset_provider_mapping.items():
