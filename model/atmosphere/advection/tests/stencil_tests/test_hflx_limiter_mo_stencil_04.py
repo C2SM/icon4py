@@ -14,9 +14,9 @@
 import numpy as np
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_04 import hflx_limiter_mo_stencil_04
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflx_limiter_mo_stencil_04_numpy(
@@ -34,26 +34,26 @@ def hflx_limiter_mo_stencil_04_numpy(
     return z_mflx_low + np.minimum(1.0, r_frac) * z_anti
 
 
-def test_hflx_limiter_mo_stencil_04():
-    mesh = SimpleMesh()
-    z_anti = random_field(mesh, EdgeDim, KDim, low=-2.0, high=2.0)
-    r_m = random_field(mesh, CellDim, KDim)
-    r_p = random_field(mesh, CellDim, KDim)
-    z_mflx_low = random_field(mesh, EdgeDim, KDim)
-    p_mflx_tracer_h = zero_field(mesh, EdgeDim, KDim)
+def test_hflx_limiter_mo_stencil_04(backend):
+    grid = SimpleGrid()
+    z_anti = random_field(grid, EdgeDim, KDim, low=-2.0, high=2.0)
+    r_m = random_field(grid, CellDim, KDim)
+    r_p = random_field(grid, CellDim, KDim)
+    z_mflx_low = random_field(grid, EdgeDim, KDim)
+    p_mflx_tracer_h = zero_field(grid, EdgeDim, KDim)
     ref = hflx_limiter_mo_stencil_04_numpy(
-        mesh.e2c,
-        np.asarray(z_anti),
-        np.asarray(r_m),
-        np.asarray(r_p),
-        np.asarray(z_mflx_low),
+        grid.connectivities[E2CDim],
+        z_anti.asnumpy(),
+        r_m.asnumpy(),
+        r_p.asnumpy(),
+        z_mflx_low.asnumpy(),
     )
-    hflx_limiter_mo_stencil_04(
+    hflx_limiter_mo_stencil_04.with_backend(backend)(
         z_anti,
         r_m,
         r_p,
         z_mflx_low,
         p_mflx_tracer_h,
-        offset_provider={"E2C": mesh.get_e2c_offset_provider()},
+        offset_provider={"E2C": grid.get_offset_provider("E2C")},
     )
-    assert np.allclose(p_mflx_tracer_h, ref)
+    assert np.allclose(p_mflx_tracer_h.asnumpy(), ref)

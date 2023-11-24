@@ -15,8 +15,8 @@ import numpy as np
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_02 import step_advection_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def step_advection_stencil_02_numpy(
@@ -26,29 +26,28 @@ def step_advection_stencil_02_numpy(
     deepatmo_divzu: np.ndarray,
     pd_time: float,
 ) -> np.ndarray:
-
     tmp = p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
     return np.maximum(0.1 * rhodz_new, rhodz_new) - pd_time * tmp
 
 
-def test_step_advection_stencil_02():
-    mesh = SimpleMesh()
-    rhodz_ast = random_field(mesh, CellDim, KDim)
-    p_mflx_contra = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    deepatmo_divzl = random_field(mesh, KDim)
-    deepatmo_divzu = random_field(mesh, KDim)
-    result = zero_field(mesh, CellDim, KDim)
+def test_step_advection_stencil_02(backend):
+    grid = SimpleGrid()
+    rhodz_ast = random_field(grid, CellDim, KDim)
+    p_mflx_contra = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    deepatmo_divzl = random_field(grid, KDim)
+    deepatmo_divzu = random_field(grid, KDim)
+    result = zero_field(grid, CellDim, KDim)
     p_dtime = 0.1
 
     ref = step_advection_stencil_02_numpy(
-        np.asarray(rhodz_ast),
-        np.asarray(p_mflx_contra),
-        np.asarray(deepatmo_divzl),
-        np.asarray(deepatmo_divzu),
+        rhodz_ast.asnumpy(),
+        p_mflx_contra.asnumpy(),
+        deepatmo_divzl.asnumpy(),
+        deepatmo_divzu.asnumpy(),
         p_dtime,
     )
 
-    step_advection_stencil_02(
+    step_advection_stencil_02.with_backend(backend)(
         rhodz_ast,
         p_mflx_contra,
         deepatmo_divzl,
@@ -58,4 +57,4 @@ def test_step_advection_stencil_02():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:, :-1], result[:, :-1])
+    assert np.allclose(ref[:, :-1], result.asnumpy()[:, :-1])

@@ -17,9 +17,9 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
     hflux_ffsl_hybrid_stencil_01a,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import constant_field, random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflux_ffsl_hybrid_stencil_01a_numpy(
@@ -46,7 +46,6 @@ def hflux_ffsl_hybrid_stencil_01a_numpy(
     z_quad_vector_sum0_10: np.ndarray,
     patch0_cell_rel_idx_dsl: np.ndarray,
 ):
-
     z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
     z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
     z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
@@ -124,57 +123,57 @@ def hflux_ffsl_hybrid_stencil_01a_numpy(
     return p_out_e_hybrid_1a
 
 
-def test_hflux_ffsl_hybrid_stencil_01a():
-    mesh = SimpleMesh()
-    z_lsq_coeff_1 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_2 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_3 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_4 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_5 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_6 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_7 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_8 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_9 = random_field(mesh, CellDim, KDim)
-    z_lsq_coeff_10 = random_field(mesh, CellDim, KDim)
-    z_quad_vector_sum0_1 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum0_2 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum0_3 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum0_4 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum0_5 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum0_6 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum0_7 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum0_8 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum0_9 = random_field(mesh, EdgeDim, KDim)
-    z_quad_vector_sum0_10 = random_field(mesh, EdgeDim, KDim)
-    patch0_cell_rel_idx_dsl = constant_field(mesh, 1, EdgeDim, KDim, dtype=int32)
-    p_out_e_hybrid_1a = zero_field(mesh, EdgeDim, KDim)
+def test_hflux_ffsl_hybrid_stencil_01a(backend):
+    grid = SimpleGrid()
+    z_lsq_coeff_1 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_2 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_3 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_4 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_5 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_6 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_7 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_8 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_9 = random_field(grid, CellDim, KDim)
+    z_lsq_coeff_10 = random_field(grid, CellDim, KDim)
+    z_quad_vector_sum0_1 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum0_2 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum0_3 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum0_4 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum0_5 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum0_6 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum0_7 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum0_8 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum0_9 = random_field(grid, EdgeDim, KDim)
+    z_quad_vector_sum0_10 = random_field(grid, EdgeDim, KDim)
+    patch0_cell_rel_idx_dsl = constant_field(grid, 1, EdgeDim, KDim, dtype=int32)
+    p_out_e_hybrid_1a = zero_field(grid, EdgeDim, KDim)
 
     ref = hflux_ffsl_hybrid_stencil_01a_numpy(
-        mesh.e2c,
-        np.asarray(z_lsq_coeff_1),
-        np.asarray(z_lsq_coeff_2),
-        np.asarray(z_lsq_coeff_3),
-        np.asarray(z_lsq_coeff_4),
-        np.asarray(z_lsq_coeff_5),
-        np.asarray(z_lsq_coeff_6),
-        np.asarray(z_lsq_coeff_7),
-        np.asarray(z_lsq_coeff_8),
-        np.asarray(z_lsq_coeff_9),
-        np.asarray(z_lsq_coeff_10),
-        np.asarray(z_quad_vector_sum0_1),
-        np.asarray(z_quad_vector_sum0_2),
-        np.asarray(z_quad_vector_sum0_3),
-        np.asarray(z_quad_vector_sum0_4),
-        np.asarray(z_quad_vector_sum0_5),
-        np.asarray(z_quad_vector_sum0_6),
-        np.asarray(z_quad_vector_sum0_7),
-        np.asarray(z_quad_vector_sum0_8),
-        np.asarray(z_quad_vector_sum0_9),
-        np.asarray(z_quad_vector_sum0_10),
-        np.asarray(patch0_cell_rel_idx_dsl),
+        grid.connectivities[E2CDim],
+        z_lsq_coeff_1.asnumpy(),
+        z_lsq_coeff_2.asnumpy(),
+        z_lsq_coeff_3.asnumpy(),
+        z_lsq_coeff_4.asnumpy(),
+        z_lsq_coeff_5.asnumpy(),
+        z_lsq_coeff_6.asnumpy(),
+        z_lsq_coeff_7.asnumpy(),
+        z_lsq_coeff_8.asnumpy(),
+        z_lsq_coeff_9.asnumpy(),
+        z_lsq_coeff_10.asnumpy(),
+        z_quad_vector_sum0_1.asnumpy(),
+        z_quad_vector_sum0_2.asnumpy(),
+        z_quad_vector_sum0_3.asnumpy(),
+        z_quad_vector_sum0_4.asnumpy(),
+        z_quad_vector_sum0_5.asnumpy(),
+        z_quad_vector_sum0_6.asnumpy(),
+        z_quad_vector_sum0_7.asnumpy(),
+        z_quad_vector_sum0_8.asnumpy(),
+        z_quad_vector_sum0_9.asnumpy(),
+        z_quad_vector_sum0_10.asnumpy(),
+        patch0_cell_rel_idx_dsl.asnumpy(),
     )
 
-    hflux_ffsl_hybrid_stencil_01a(
+    hflux_ffsl_hybrid_stencil_01a.with_backend(backend)(
         z_lsq_coeff_1,
         z_lsq_coeff_2,
         z_lsq_coeff_3,
@@ -198,8 +197,8 @@ def test_hflux_ffsl_hybrid_stencil_01a():
         patch0_cell_rel_idx_dsl,
         p_out_e_hybrid_1a,
         offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
+            "E2C": grid.get_offset_provider("E2C"),
         },
     )
 
-    assert np.allclose(p_out_e_hybrid_1a, ref)
+    assert np.allclose(p_out_e_hybrid_1a.asnumpy(), ref)

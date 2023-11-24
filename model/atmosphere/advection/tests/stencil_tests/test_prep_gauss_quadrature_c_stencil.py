@@ -18,8 +18,8 @@ from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_stencil import (
     prep_gauss_quadrature_c_stencil,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def prep_gauss_quadrature_c_stencil_numpy(
@@ -285,17 +285,17 @@ def prep_gauss_quadrature_c_stencil_numpy(
 
 
 @pytest.mark.slow_tests
-def test_prep_gauss_quadrature_c_stencil():
-    mesh = SimpleMesh()
+def test_prep_gauss_quadrature_c_stencil(backend):
+    grid = SimpleGrid()
 
-    p_coords_dreg_v_1_x = random_field(mesh, EdgeDim, KDim)
-    p_coords_dreg_v_2_x = random_field(mesh, EdgeDim, KDim)
-    p_coords_dreg_v_3_x = random_field(mesh, EdgeDim, KDim)
-    p_coords_dreg_v_4_x = random_field(mesh, EdgeDim, KDim)
-    p_coords_dreg_v_1_y = random_field(mesh, EdgeDim, KDim)
-    p_coords_dreg_v_2_y = random_field(mesh, EdgeDim, KDim)
-    p_coords_dreg_v_3_y = random_field(mesh, EdgeDim, KDim)
-    p_coords_dreg_v_4_y = random_field(mesh, EdgeDim, KDim)
+    p_coords_dreg_v_1_x = random_field(grid, EdgeDim, KDim)
+    p_coords_dreg_v_2_x = random_field(grid, EdgeDim, KDim)
+    p_coords_dreg_v_3_x = random_field(grid, EdgeDim, KDim)
+    p_coords_dreg_v_4_x = random_field(grid, EdgeDim, KDim)
+    p_coords_dreg_v_1_y = random_field(grid, EdgeDim, KDim)
+    p_coords_dreg_v_2_y = random_field(grid, EdgeDim, KDim)
+    p_coords_dreg_v_3_y = random_field(grid, EdgeDim, KDim)
+    p_coords_dreg_v_4_y = random_field(grid, EdgeDim, KDim)
     shape_func_1_1 = 0.001
     shape_func_2_1 = 0.001
     shape_func_3_1 = 0.001
@@ -326,17 +326,17 @@ def test_prep_gauss_quadrature_c_stencil():
     wgt_eta_2 = 0.007
     dbl_eps = np.float64(0.1)
     eps = 0.1
-    p_quad_vector_sum_1 = zero_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_2 = zero_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_3 = zero_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_4 = zero_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_5 = zero_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_6 = zero_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_7 = zero_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_8 = zero_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_9 = zero_field(mesh, EdgeDim, KDim)
-    p_quad_vector_sum_10 = zero_field(mesh, EdgeDim, KDim)
-    p_dreg_area_out = zero_field(mesh, EdgeDim, KDim)
+    p_quad_vector_sum_1 = zero_field(grid, EdgeDim, KDim)
+    p_quad_vector_sum_2 = zero_field(grid, EdgeDim, KDim)
+    p_quad_vector_sum_3 = zero_field(grid, EdgeDim, KDim)
+    p_quad_vector_sum_4 = zero_field(grid, EdgeDim, KDim)
+    p_quad_vector_sum_5 = zero_field(grid, EdgeDim, KDim)
+    p_quad_vector_sum_6 = zero_field(grid, EdgeDim, KDim)
+    p_quad_vector_sum_7 = zero_field(grid, EdgeDim, KDim)
+    p_quad_vector_sum_8 = zero_field(grid, EdgeDim, KDim)
+    p_quad_vector_sum_9 = zero_field(grid, EdgeDim, KDim)
+    p_quad_vector_sum_10 = zero_field(grid, EdgeDim, KDim)
+    p_dreg_area_out = zero_field(grid, EdgeDim, KDim)
 
     (
         ref_1,
@@ -391,7 +391,7 @@ def test_prep_gauss_quadrature_c_stencil():
         eps,
     )
 
-    prep_gauss_quadrature_c_stencil(
+    prep_gauss_quadrature_c_stencil.with_backend(backend)(
         p_coords_dreg_v_1_x,
         p_coords_dreg_v_2_x,
         p_coords_dreg_v_3_x,

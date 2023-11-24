@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
     mo_velocity_advection_stencil_19,
 )
-from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, E2CDim, E2VDim, ECDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -33,7 +33,7 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_kin_hor_e: np.array,
         coeff_gradekin: np.array,
         z_ekinh: np.array,
@@ -46,8 +46,9 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
         ddqz_z_full_e: np.array,
         **kwargs,
     ) -> np.array:
-        z_ekinh_e2c = z_ekinh[mesh.e2c]
-        coeff_gradekin = coeff_gradekin.reshape(mesh.e2c.shape)
+        e2c = grid.connectivities[E2CDim]
+        z_ekinh_e2c = z_ekinh[e2c]
+        coeff_gradekin = coeff_gradekin.reshape(e2c.shape)
         coeff_gradekin = np.expand_dims(coeff_gradekin, axis=-1)
         f_e = np.expand_dims(f_e, axis=-1)
         c_lin_e = np.expand_dims(c_lin_e, axis=-1)
@@ -55,27 +56,30 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
         ddt_vn_apc = -(
             (coeff_gradekin[:, 0] - coeff_gradekin[:, 1]) * z_kin_hor_e
             + (-coeff_gradekin[:, 0] * z_ekinh_e2c[:, 0] + coeff_gradekin[:, 1] * z_ekinh_e2c[:, 1])
-            + vt * (f_e + 0.5 * np.sum(zeta[mesh.e2v], axis=1))
-            + np.sum(z_w_con_c_full[mesh.e2c] * c_lin_e, axis=1)
+            + vt * (f_e + 0.5 * np.sum(zeta[grid.connectivities[E2VDim]], axis=1))
+            + np.sum(z_w_con_c_full[e2c] * c_lin_e, axis=1)
             * (vn_ie[:, :-1] - vn_ie[:, 1:])
             / ddqz_z_full_e
         )
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_kin_hor_e = random_field(mesh, EdgeDim, KDim)
-        coeff_gradekin = random_field(mesh, EdgeDim, E2CDim)
+    def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
+        z_kin_hor_e = random_field(grid, EdgeDim, KDim)
+        coeff_gradekin = random_field(grid, EdgeDim, E2CDim)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)
-        z_ekinh = random_field(mesh, CellDim, KDim)
-        zeta = random_field(mesh, VertexDim, KDim)
-        vt = random_field(mesh, EdgeDim, KDim)
-        f_e = random_field(mesh, EdgeDim)
-        c_lin_e = random_field(mesh, EdgeDim, E2CDim)
-        z_w_con_c_full = random_field(mesh, CellDim, KDim)
-        vn_ie = random_field(mesh, EdgeDim, KDim, extend={KDim: 1})
-        ddqz_z_full_e = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_apc = zero_field(mesh, EdgeDim, KDim)
+        z_ekinh = random_field(grid, CellDim, KDim)
+        zeta = random_field(grid, VertexDim, KDim)
+        vt = random_field(grid, EdgeDim, KDim)
+        f_e = random_field(grid, EdgeDim)
+        c_lin_e = random_field(grid, EdgeDim, E2CDim)
+        z_w_con_c_full = random_field(grid, CellDim, KDim)
+        vn_ie = random_field(grid, EdgeDim, KDim, extend={KDim: 1})
+        ddqz_z_full_e = random_field(grid, EdgeDim, KDim)
+        ddt_vn_apc = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
@@ -90,7 +94,7 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
             ddqz_z_full_e=ddqz_z_full_e,
             ddt_vn_apc=ddt_vn_apc,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

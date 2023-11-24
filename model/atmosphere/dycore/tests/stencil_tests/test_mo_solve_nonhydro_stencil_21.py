@@ -33,7 +33,7 @@ class TestMoSolveNonHydroStencil21(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         theta_v: np.array,
         ikoffset: np.array,
         zdiff_gradp: np.array,
@@ -58,21 +58,20 @@ class TestMoSolveNonHydroStencil21(StencilTest):
                         ]
             return indexed, indexed_p1
 
-        full_shape = mesh.e2c.shape + zdiff_gradp.shape[1:]
+        e2c = grid.connectivities[E2CDim]
+        full_shape = e2c.shape + zdiff_gradp.shape[1:]
         zdiff_gradp = zdiff_gradp.reshape(full_shape)
         ikoffset = ikoffset.reshape(full_shape)
 
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
 
-        theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, mesh.e2c, ikoffset)
+        theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikoffset)
 
         theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
-            full_shape, theta_v_ic, mesh.e2c, ikoffset
+            full_shape, theta_v_ic, e2c, ikoffset
         )
 
-        inv_ddqz_z_full_at_kidx, _ = _apply_index_field(
-            full_shape, inv_ddqz_z_full, mesh.e2c, ikoffset
-        )
+        inv_ddqz_z_full_at_kidx, _ = _apply_index_field(full_shape, inv_ddqz_z_full, e2c, ikoffset)
 
         z_theta1 = (
             theta_v_at_kidx[:, 0, :]
@@ -99,29 +98,31 @@ class TestMoSolveNonHydroStencil21(StencilTest):
         return dict(z_hydro_corr=z_hydro_corr)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
 
-        ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int32)
+        ikoffset = zero_field(grid, EdgeDim, E2CDim, KDim, dtype=int32)
         rng = np.random.default_rng()
-        for k in range(mesh.k_level):
+        for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
             ikoffset[:, :, k] = rng.integers(
                 low=0 - k,
-                high=mesh.k_level - k - 1,
+                high=grid.num_levels - k - 1,
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
 
-        theta_v = random_field(mesh, CellDim, KDim)
-        zdiff_gradp = random_field(mesh, EdgeDim, E2CDim, KDim)
-        theta_v_ic = random_field(mesh, CellDim, KDim)
-        inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
+        theta_v = random_field(grid, CellDim, KDim)
+        zdiff_gradp = random_field(grid, EdgeDim, E2CDim, KDim)
+        theta_v_ic = random_field(grid, CellDim, KDim)
+        inv_ddqz_z_full = random_field(grid, CellDim, KDim)
+        inv_dual_edge_length = random_field(grid, EdgeDim)
         grav_o_cpd = 10.0
 
         zdiff_gradp_new = flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp)
         ikoffset_new = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
 
-        z_hydro_corr = zero_field(mesh, EdgeDim, KDim)
+        z_hydro_corr = zero_field(grid, EdgeDim, KDim)
 
         return dict(
             theta_v=theta_v,
@@ -133,7 +134,7 @@ class TestMoSolveNonHydroStencil21(StencilTest):
             inv_dual_edge_length=inv_dual_edge_length,
             grav_o_cpd=grav_o_cpd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

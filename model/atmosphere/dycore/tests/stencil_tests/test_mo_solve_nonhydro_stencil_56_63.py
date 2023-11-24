@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def mo_solve_nonhydro_stencil_56_63_numpy(
-    mesh, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array
+    grid, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array
 ) -> np.array:
     z_dwdz_dd = inv_ddqz_z_full * (
         (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
@@ -37,17 +37,17 @@ class TestMoSolveNonhydroStencil5663(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array, **kwargs
+        grid, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array, **kwargs
     ) -> np.array:
-        z_dwdz_dd = mo_solve_nonhydro_stencil_56_63_numpy(mesh, inv_ddqz_z_full, w, w_concorr_c)
+        z_dwdz_dd = mo_solve_nonhydro_stencil_56_63_numpy(grid, inv_ddqz_z_full, w, w_concorr_c)
         return z_dwdz_dd
 
     @pytest.fixture
-    def input_data(self, mesh):
-        inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-        w = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        w_concorr_c = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        z_dwdz_dd = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        inv_ddqz_z_full = random_field(grid, CellDim, KDim)
+        w = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        w_concorr_c = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        z_dwdz_dd = random_field(grid, CellDim, KDim)
 
         return dict(
             inv_ddqz_z_full=inv_ddqz_z_full,
@@ -55,7 +55,7 @@ class TestMoSolveNonhydroStencil5663(StencilTest):
             w_concorr_c=w_concorr_c,
             z_dwdz_dd=z_dwdz_dd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

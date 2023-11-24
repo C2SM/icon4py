@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def mo_solve_nonhydro_stencil_58_numpy(
-    mesh,
+    grid,
     z_contr_w_fl_l: np.array,
     rho_ic: np.array,
     vwind_impl_wgt: np.array,
@@ -42,7 +42,7 @@ class TestMoSolveNonhydroStencil58(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_contr_w_fl_l: np.array,
         rho_ic: np.array,
         vwind_impl_wgt: np.array,
@@ -52,17 +52,17 @@ class TestMoSolveNonhydroStencil58(StencilTest):
         **kwargs,
     ) -> dict:
         mass_flx_ic = mo_solve_nonhydro_stencil_58_numpy(
-            mesh, z_contr_w_fl_l, rho_ic, vwind_impl_wgt, w, mass_flx_ic, r_nsubsteps
+            grid, z_contr_w_fl_l, rho_ic, vwind_impl_wgt, w, mass_flx_ic, r_nsubsteps
         )
         return dict(mass_flx_ic=mass_flx_ic)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_contr_w_fl_l = random_field(mesh, CellDim, KDim)
-        rho_ic = random_field(mesh, CellDim, KDim)
-        vwind_impl_wgt = random_field(mesh, CellDim)
-        w = random_field(mesh, CellDim, KDim)
-        mass_flx_ic = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_contr_w_fl_l = random_field(grid, CellDim, KDim)
+        rho_ic = random_field(grid, CellDim, KDim)
+        vwind_impl_wgt = random_field(grid, CellDim)
+        w = random_field(grid, CellDim, KDim)
+        mass_flx_ic = random_field(grid, CellDim, KDim)
         r_nsubsteps = 7.0
 
         return dict(
@@ -73,7 +73,7 @@ class TestMoSolveNonhydroStencil58(StencilTest):
             mass_flx_ic=mass_flx_ic,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

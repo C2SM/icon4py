@@ -22,7 +22,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 
 
 def mo_solve_nonhydro_stencil_43_numpy(
-    mesh,
+    grid,
     w_nnow: np.array,
     ddt_w_adv_ntl1: np.array,
     z_th_ddz_exner_c: np.array,
@@ -44,7 +44,7 @@ class TestMoSolveNonhydroStencil43(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         w_nnow: np.array,
         ddt_w_adv_ntl1: np.array,
         z_th_ddz_exner_c: np.array,
@@ -56,7 +56,7 @@ class TestMoSolveNonhydroStencil43(StencilTest):
         **kwargs,
     ) -> dict:
         z_w_expl, z_contr_w_fl_l = mo_solve_nonhydro_stencil_43_numpy(
-            mesh,
+            grid,
             w_nnow,
             ddt_w_adv_ntl1,
             z_th_ddz_exner_c,
@@ -69,15 +69,15 @@ class TestMoSolveNonhydroStencil43(StencilTest):
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        w_nnow = random_field(mesh, CellDim, KDim)
-        ddt_w_adv_ntl1 = random_field(mesh, CellDim, KDim)
-        z_th_ddz_exner_c = random_field(mesh, CellDim, KDim)
-        z_w_expl = zero_field(mesh, CellDim, KDim)
-        rho_ic = random_field(mesh, CellDim, KDim)
-        w_concorr_c = random_field(mesh, CellDim, KDim)
-        vwind_expl_wgt = random_field(mesh, CellDim)
-        z_contr_w_fl_l = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        w_nnow = random_field(grid, CellDim, KDim)
+        ddt_w_adv_ntl1 = random_field(grid, CellDim, KDim)
+        z_th_ddz_exner_c = random_field(grid, CellDim, KDim)
+        z_w_expl = zero_field(grid, CellDim, KDim)
+        rho_ic = random_field(grid, CellDim, KDim)
+        w_concorr_c = random_field(grid, CellDim, KDim)
+        vwind_expl_wgt = random_field(grid, CellDim)
+        z_contr_w_fl_l = zero_field(grid, CellDim, KDim)
         dtime = 5.0
         cpd = 10.0
 

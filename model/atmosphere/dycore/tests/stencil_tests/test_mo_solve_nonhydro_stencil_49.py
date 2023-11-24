@@ -22,7 +22,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 
 
 def mo_solve_nonhydro_stencil_49_numpy(
-    mesh,
+    grid,
     rho_nnow: np.array,
     inv_ddqz_z_full: np.array,
     z_flxdiv_mass: np.array,
@@ -56,7 +56,7 @@ class TestMoSolveNonhydroStencil49(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         rho_nnow: np.array,
         inv_ddqz_z_full: np.array,
         z_flxdiv_mass: np.array,
@@ -70,7 +70,7 @@ class TestMoSolveNonhydroStencil49(StencilTest):
         **kwargs,
     ) -> dict:
         z_rho_expl, z_exner_expl = mo_solve_nonhydro_stencil_49_numpy(
-            mesh,
+            grid,
             rho_nnow,
             inv_ddqz_z_full,
             z_flxdiv_mass,
@@ -85,21 +85,21 @@ class TestMoSolveNonhydroStencil49(StencilTest):
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture
-    def input_data(self, mesh):
+    def input_data(self, grid):
         dtime = 7.0
 
-        rho_nnow = random_field(mesh, CellDim, KDim)
-        inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-        z_flxdiv_mass = random_field(mesh, CellDim, KDim)
-        z_contr_w_fl_l = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        exner_pr = random_field(mesh, CellDim, KDim)
-        z_beta = random_field(mesh, CellDim, KDim)
-        z_flxdiv_theta = random_field(mesh, CellDim, KDim)
-        theta_v_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        ddt_exner_phy = random_field(mesh, CellDim, KDim)
+        rho_nnow = random_field(grid, CellDim, KDim)
+        inv_ddqz_z_full = random_field(grid, CellDim, KDim)
+        z_flxdiv_mass = random_field(grid, CellDim, KDim)
+        z_contr_w_fl_l = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        exner_pr = random_field(grid, CellDim, KDim)
+        z_beta = random_field(grid, CellDim, KDim)
+        z_flxdiv_theta = random_field(grid, CellDim, KDim)
+        theta_v_ic = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        ddt_exner_phy = random_field(grid, CellDim, KDim)
 
-        z_rho_expl = zero_field(mesh, CellDim, KDim)
-        z_exner_expl = zero_field(mesh, CellDim, KDim)
+        z_rho_expl = zero_field(grid, CellDim, KDim)
+        z_exner_expl = zero_field(grid, CellDim, KDim)
 
         return dict(
             z_rho_expl=z_rho_expl,
