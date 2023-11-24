@@ -29,21 +29,21 @@ def upwind_hflux_miura_cycl_stencil_03a_numpy(
     return p_out_e
 
 
-def test_upwind_hflux_miura_cycl_stencil_03a():
+def test_upwind_hflux_miura_cycl_stencil_03a(backend):
     grid = SimpleGrid()
     z_tracer_mflx_1_dsl = random_field(grid, EdgeDim, KDim)
     z_tracer_mflx_2_dsl = random_field(grid, EdgeDim, KDim)
     p_out_e = zero_field(grid, EdgeDim, KDim)
 
     ref = upwind_hflux_miura_cycl_stencil_03a_numpy(
-        np.asarray(z_tracer_mflx_1_dsl),
-        np.asarray(z_tracer_mflx_2_dsl),
+        z_tracer_mflx_1_dsl.asnumpy(),
+        z_tracer_mflx_2_dsl.asnumpy(),
     )
 
-    upwind_hflux_miura_cycl_stencil_03a(
+    upwind_hflux_miura_cycl_stencil_03a.with_backend(backend)(
         z_tracer_mflx_1_dsl,
         z_tracer_mflx_2_dsl,
         p_out_e,
         offset_provider={},
     )
-    assert np.allclose(ref, p_out_e)
+    assert np.allclose(ref, p_out_e.asnumpy())

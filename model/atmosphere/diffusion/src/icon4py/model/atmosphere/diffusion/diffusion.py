@@ -20,9 +20,9 @@ from enum import Enum
 from typing import Final, Optional
 
 import numpy as np
+from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
-from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
@@ -428,7 +428,7 @@ class Diffusion:
         self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
             k_size=self.grid.num_levels,
             nshift=0,
-            physical_heights=np.asarray(self.vertical_params.physical_heights),
+            physical_heights=self.vertical_params.physical_heights,
             nrdmax=self.vertical_params.index_of_damping_layer,
         )
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
@@ -444,7 +444,7 @@ class Diffusion:
 
         def _index_field(dim: Dimension, size=None):
             size = size if size else self.grid.size[dim]
-            return np_as_located_field(dim)(np.arange(size, dtype=int32))
+            return as_field((dim,), np.arange(size, dtype=int32))
 
         self.diff_multfac_vn = _allocate(KDim)
 
@@ -462,8 +462,8 @@ class Diffusion:
         self.vertical_index = _index_field(KDim, self.grid.num_levels + 1)
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
-        self.w_tmp = np_as_located_field(CellDim, KDim)(
-            np.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
+        self.w_tmp = as_field(
+            (CellDim, KDim), np.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
         )
 
     def initial_run(

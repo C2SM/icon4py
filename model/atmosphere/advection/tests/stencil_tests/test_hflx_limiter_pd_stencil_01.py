@@ -40,7 +40,7 @@ def hflx_limiter_pd_stencil_01_numpy(
     return r_m
 
 
-def test_hflx_limiter_pd_stencil_01():
+def test_hflx_limiter_pd_stencil_01(backend):
     grid = SimpleGrid()
     geofac_div = random_field(grid, CellDim, C2EDim)
     p_cc = random_field(grid, CellDim, KDim)
@@ -52,15 +52,15 @@ def test_hflx_limiter_pd_stencil_01():
 
     ref = hflx_limiter_pd_stencil_01_numpy(
         grid.connectivities[C2EDim],
-        np.asarray(geofac_div),
-        np.asarray(p_cc),
-        np.asarray(p_rhodz_now),
-        np.asarray(p_mflx_tracer_h),
+        geofac_div.asnumpy(),
+        p_cc.asnumpy(),
+        p_rhodz_now.asnumpy(),
+        p_mflx_tracer_h.asnumpy(),
         p_dtime,
         dbl_eps,
     )
 
-    hflx_limiter_pd_stencil_01(
+    hflx_limiter_pd_stencil_01.with_backend(backend)(
         as_1D_sparse_field(geofac_div, CEDim),
         p_cc,
         p_rhodz_now,
@@ -73,4 +73,4 @@ def test_hflx_limiter_pd_stencil_01():
             "C2E": grid.get_offset_provider("C2E"),
         },
     )
-    assert np.allclose(r_m, ref)
+    assert np.allclose(r_m.asnumpy(), ref)
