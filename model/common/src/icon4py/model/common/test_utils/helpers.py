@@ -53,7 +53,7 @@ def random_mask(
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> it_embedded.MutableLocatedField:
+) -> gt_common.Field:
     shape = _shape(grid, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
