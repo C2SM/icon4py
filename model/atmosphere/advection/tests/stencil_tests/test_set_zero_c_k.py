@@ -19,9 +19,9 @@ from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 
-def test_set_zero_c_k():
+def test_set_zero_c_k(backend):
     grid = SimpleGrid()
     field = random_field(grid, CellDim, KDim)
 
-    set_zero_c_k(field, offset_provider={})
-    assert np.allclose(field, zero_field(grid, CellDim, KDim))
+    set_zero_c_k.with_backend(backend)(field, offset_provider={})
+    assert np.allclose(field.asnumpy(), zero_field(grid, CellDim, KDim).asnumpy())

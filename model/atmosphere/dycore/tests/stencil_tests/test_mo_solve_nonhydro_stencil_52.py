@@ -76,15 +76,15 @@ def test_mo_solve_nonhydro_stencil_52():
     w = random_field(grid, CellDim, KDim, dtype=wpfloat)
 
     z_q_ref, w_ref = mo_solve_nonhydro_stencil_52_numpy(
-        np.asarray(vwind_impl_wgt),
-        np.asarray(theta_v_ic),
-        np.asarray(ddqz_z_half),
-        np.asarray(z_alpha),
-        np.asarray(z_beta),
-        np.asarray(z_exner_expl),
-        np.asarray(z_w_expl),
-        np.asarray(z_q),
-        np.asarray(w),
+        vwind_impl_wgt.asnumpy(),
+        theta_v_ic.asnumpy(),
+        ddqz_z_half.asnumpy(),
+        z_alpha.asnumpy(),
+        z_beta.asnumpy(),
+        z_exner_expl.asnumpy(),
+        z_w_expl.asnumpy(),
+        z_q.asnumpy(),
+        w.asnumpy(),
         dtime,
         cpd,
     )
@@ -112,5 +112,9 @@ def test_mo_solve_nonhydro_stencil_52():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(z_q_ref[h_start:h_end, v_start:v_end], z_q[h_start:h_end, v_start:v_end])
-    assert np.allclose(w_ref[h_start:h_end, v_start:v_end], w[h_start:h_end, v_start:v_end])
+    assert np.allclose(
+        z_q_ref[h_start:h_end, v_start:v_end], z_q.asnumpy()[h_start:h_end, v_start:v_end]
+    )
+    assert np.allclose(
+        w_ref[h_start:h_end, v_start:v_end], w.asnumpy()[h_start:h_end, v_start:v_end]
+    )

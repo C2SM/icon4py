@@ -50,7 +50,7 @@ def upwind_hflux_miura_cycl_stencil_02_numpy(
     return (z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl)
 
 
-def test_upwind_hflux_miura_cycl_stencil_02():
+def test_upwind_hflux_miura_cycl_stencil_02(backend):
     grid = SimpleGrid()
     nsub = int32(1)
     p_mass_flx_e = random_field(grid, EdgeDim, KDim)
@@ -68,16 +68,16 @@ def test_upwind_hflux_miura_cycl_stencil_02():
     ref_1, ref_2, ref_3, ref_4 = upwind_hflux_miura_cycl_stencil_02_numpy(
         grid.connectivities[C2EDim],
         nsub,
-        np.asarray(p_mass_flx_e),
-        np.asarray(geofac_div),
-        np.asarray(z_rhofluxdiv_c),
-        np.asarray(z_tracer_mflx),
-        np.asarray(z_rho_now),
-        np.asarray(z_tracer_now),
+        p_mass_flx_e.asnumpy(),
+        geofac_div.asnumpy(),
+        z_rhofluxdiv_c.asnumpy(),
+        z_tracer_mflx.asnumpy(),
+        z_rho_now.asnumpy(),
+        z_tracer_now.asnumpy(),
         z_dtsub,
     )
 
-    upwind_hflux_miura_cycl_stencil_02(
+    upwind_hflux_miura_cycl_stencil_02.with_backend(backend)(
         nsub,
         p_mass_flx_e,
         geofac_div,
@@ -95,7 +95,7 @@ def test_upwind_hflux_miura_cycl_stencil_02():
             "C2E": grid.get_offset_provider("C2E"),
         },
     )
-    assert np.allclose(ref_1, z_rhofluxdiv_c_out)
-    assert np.allclose(ref_2, z_fluxdiv_c_dsl)
-    assert np.allclose(ref_3, z_rho_new_dsl)
-    assert np.allclose(ref_4, z_tracer_new_dsl)
+    assert np.allclose(ref_1, z_rhofluxdiv_c_out.asnumpy())
+    assert np.allclose(ref_2, z_fluxdiv_c_dsl.asnumpy())
+    assert np.allclose(ref_3, z_rho_new_dsl.asnumpy())
+    assert np.allclose(ref_4, z_tracer_new_dsl.asnumpy())
