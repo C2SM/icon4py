@@ -37,9 +37,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
     mo_velocity_advection_stencil_03,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
-    _mo_velocity_advection_stencil_06,
-)
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
 )

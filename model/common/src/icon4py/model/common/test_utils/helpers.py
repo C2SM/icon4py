@@ -19,7 +19,6 @@ import pytest
 from gt4py.next import as_field
 from gt4py.next import common as gt_common
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.iterator import embedded as it_embedded
 
 
 try:
