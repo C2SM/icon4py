@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def mo_solve_nonhydro_stencil_27_numpy(
-    mesh,
+    grid,
     scal_divdamp: np.array,
     bdy_divdamp: np.array,
     nudgecoeff_e: np.array,

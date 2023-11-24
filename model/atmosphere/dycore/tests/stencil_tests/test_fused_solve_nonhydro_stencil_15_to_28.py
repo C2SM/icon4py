@@ -13,8 +13,8 @@
 
 import numpy as np
 import pytest
-from gt4py.next import np_as_located_field
-from gt4py.next.ffront.fbuiltins import int32
+
+from gt4py.next import int32
 
 from .test_mo_math_gradients_grad_green_gauss_cell_dsl import \
     mo_math_gradients_grad_green_gauss_cell_dsl_numpy
@@ -65,7 +65,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
     @classmethod
     def reference(
         cls,
-        mesh,
+        grid,
         geofac_grg_x,
         geofac_grg_y,
         p_vn,
@@ -153,10 +153,11 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
     ):
         iadv_rhotheta = 2
         horz_idx = horz_idx[:, np.newaxis]
-        z_grad_rth_1 = np_as_located_field(CellDim, KDim)(np.zeros_like(z_rth_pr_1))
-        z_grad_rth_2 = np_as_located_field(CellDim, KDim)(np.zeros_like(z_rth_pr_1))
-        z_grad_rth_3 = np_as_located_field(CellDim, KDim)(np.zeros_like(z_rth_pr_1))
-        z_grad_rth_4 = np_as_located_field(CellDim, KDim)(np.zeros_like(z_rth_pr_1))
+
+        z_grad_rth_1 = zero_field(grid, CellDim, KDim)
+        z_grad_rth_2 = zero_field(grid, CellDim, KDim)
+        z_grad_rth_3 = zero_field(grid, CellDim, KDim)
+        z_grad_rth_4 = zero_field(grid, CellDim, KDim)
 
         if istep == 1:
             if iadv_rhotheta == 2:
@@ -167,7 +168,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     z_grad_rth_3,
                     z_grad_rth_4,
                 ) = mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-                    mesh=mesh,
+                    grid=grid,
                     p_ccpr1=z_rth_pr_1,
                     p_ccpr2=z_rth_pr_2,
                     geofac_grg_x=geofac_grg_x,
@@ -212,7 +213,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     (z_rho_e, z_theta_v_e) = np.where(
                         (horizontal_lower_1 <= horz_idx) & (horz_idx < horizontal_upper_1),
                         mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
-                            mesh=mesh,
+                            grid=grid,
                             p_vn=p_vn,
                             p_vt=p_vt,
                             pos_on_tplane_e_1=pos_on_tplane_e_1,
@@ -240,7 +241,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 & (horz_idx < horizontal_upper)
                 & (vert_idx < nflatlev),
                 mo_solve_nonhydro_stencil_18_numpy(
-                    mesh=mesh,
+                    grid=grid,
                     inv_dual_edge_length=inv_dual_edge_length,
                     z_exner_ex_pr=z_exner_ex_pr,
                 ),
@@ -256,7 +257,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     & (vert_idx >= nflatlev)
                     & (vert_idx < (nflat_gradp + int32(1))),
                     mo_solve_nonhydro_stencil_19_numpy(
-                        mesh=mesh,
+                        grid=grid,
                         inv_dual_edge_length=inv_dual_edge_length,
                         z_exner_ex_pr=z_exner_ex_pr,
                         ddxn_z_full=ddxn_z_full,
@@ -266,7 +267,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     z_gradh_exner,
                 )
 
-                new_shape = list(mesh.e2c.shape)
+                new_shape = list(grid.e2c.shape)
                 new_shape.append(nlev)
                 new_shape = tuple(new_shape)
                 z_gradh_exner = np.where(
@@ -274,7 +275,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     & (horz_idx < horizontal_upper)
                     & (vert_idx >= (nflat_gradp + int32(1))),
                     mo_solve_nonhydro_stencil_20_numpy(
-                        mesh=mesh,
+                        grid=grid,
                         inv_dual_edge_length=inv_dual_edge_length,
                         z_exner_ex_pr=z_exner_ex_pr,
                         zdiff_gradp=zdiff_gradp.reshape(new_shape),
@@ -287,7 +288,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             # compute hydrostatically approximated correction term that replaces downward extrapolation
             if igradp_method == 3:
                 z_hydro_corr = mo_solve_nonhydro_stencil_21_numpy(
-                    mesh=mesh,
+                    grid=grid,
                     theta_v=theta_v,
                     ikoffset=ikoffset.reshape(new_shape),
                     zdiff_gradp=zdiff_gradp.reshape(new_shape),
@@ -301,7 +302,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 z_gradh_exner = np.where(
                     (horizontal_lower_3 <= horz_idx) & (horz_idx < horizontal_upper_3),
                     mo_solve_nonhydro_stencil_22_numpy(
-                        mesh=mesh,
+                        grid=grid,
                         ipeidx_dsl=ipeidx_dsl,
                         pg_exdist=pg_exdist,
                         z_hydro_corr=z_hydro_corr,
@@ -313,7 +314,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             vn = np.where(
                 (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
                 mo_solve_nonhydro_stencil_24_numpy(
-                    mesh=mesh,
+                    grid=grid,
                     vn_nnow=vn_nnow,
                     ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
                     ddt_vn_phy=ddt_vn_phy,
@@ -329,7 +330,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 vn = np.where(
                     (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
                     mo_solve_nonhydro_stencil_28_numpy(
-                        mesh=mesh,
+                        grid=grid,
                         vn_incr=vn_incr,
                         vn=vn,
                         iau_wgt_dyn=iau_wgt_dyn,
@@ -344,7 +345,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 & (horz_idx < horizontal_upper_2)
                 & (vert_idx >= kstart_dd3d),
                 mo_solve_nonhydro_stencil_17_numpy(
-                    mesh=mesh,
+                    grid=grid,
                     hmask_dd3d=hmask_dd3d,
                     scalfac_dd3d=scalfac_dd3d,
                     inv_dual_edge_length=inv_dual_edge_length,
@@ -377,7 +378,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 z_graddiv2_vn = np.where(
                     (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
                     mo_solve_nonhydro_stencil_25_numpy(
-                        mesh=mesh,
+                        grid=grid,
                         geofac_grdiv=geofac_grdiv,
                         z_graddiv_vn=z_graddiv_vn,
                     ),
@@ -389,7 +390,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     vn = np.where(
                         (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
                         mo_solve_nonhydro_stencil_26_numpy(
-                            mesh=mesh,
+                            grid=grid,
                             z_graddiv_vn=z_graddiv_vn,
                             vn=vn,
                             scal_divdamp_o2=scal_divdamp_o2,
@@ -402,7 +403,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                         vn = np.where(
                             (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
                             mo_solve_nonhydro_stencil_27_numpy(
-                                mesh=mesh,
+                                grid=grid,
                                 scal_divdamp=scal_divdamp,
                                 bdy_divdamp=bdy_divdamp,
                                 nudgecoeff_e=nudgecoeff_e,
@@ -415,7 +416,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                         vn = np.where(
                             (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
                             mo_solve_nonhydro_4th_order_divdamp_numpy(
-                                mesh=mesh,
+                                grid=grid,
                                 scal_divdamp=scal_divdamp,
                                 z_graddiv2_vn=z_graddiv2_vn,
                                 vn=vn,
@@ -427,7 +428,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 vn = np.where(
                     (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
                     mo_solve_nonhydro_stencil_28_numpy(
-                        mesh=mesh,
+                        grid=grid,
                         vn_incr=vn_incr,
                         vn=vn,
                         iau_wgt_dyn=iau_wgt_dyn,
@@ -444,71 +445,72 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        geofac_grg_x = random_field(mesh, CellDim, C2E2CODim)
-        geofac_grg_y = random_field(mesh, CellDim, C2E2CODim)
-        p_vn = random_field(mesh, EdgeDim, KDim)
-        p_vt = random_field(mesh, EdgeDim, KDim)
-        pos_on_tplane_e_1 = random_field(mesh, ECDim)
-        pos_on_tplane_e_2 = random_field(mesh, ECDim)
-        primal_normal_cell_1 = random_field(mesh, ECDim)
-        dual_normal_cell_1 = random_field(mesh, ECDim)
-        primal_normal_cell_2 = random_field(mesh, ECDim)
-        dual_normal_cell_2 = random_field(mesh, ECDim)
-        rho_ref_me = random_field(mesh, EdgeDim, KDim)
-        theta_ref_me = random_field(mesh, EdgeDim, KDim)
-        z_rth_pr_1 = random_field(mesh, CellDim, KDim)
-        z_rth_pr_2 = random_field(mesh, CellDim, KDim)
-        ddxn_z_full = random_field(mesh, EdgeDim, KDim)
-        c_lin_e = random_field(mesh, EdgeDim, E2CDim)
-        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-        z_dexner_dz_c_1 = random_field(mesh, CellDim, KDim)
-        z_dexner_dz_c_2 = random_field(mesh, CellDim, KDim)
-        z_hydro_corr = random_field(mesh, EdgeDim, KDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        zdiff_gradp = random_field(mesh, ECDim, KDim)
-        theta_v_ic = random_field(mesh, CellDim, KDim)
-        inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-        ipeidx_dsl = random_mask(mesh, EdgeDim, KDim)
-        pg_exdist = random_field(mesh, EdgeDim, KDim)
-        hmask_dd3d = random_field(mesh, EdgeDim)
-        scalfac_dd3d = random_field(mesh, KDim)
-        z_dwdz_dd = random_field(mesh, CellDim, KDim)
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        ddt_vn_apc_ntl2 = random_field(mesh, EdgeDim, KDim)
-        vn_nnow = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_apc_ntl1 = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_phy = random_field(mesh, EdgeDim, KDim)
-        z_graddiv_vn = random_field(mesh, EdgeDim, KDim)
-        vn_incr = random_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        z_theta_v_e = random_field(mesh, EdgeDim, KDim)
-        z_gradh_exner = random_field(mesh, EdgeDim, KDim)
-        z_graddiv2_vn = random_field(mesh, EdgeDim, KDim)
-        z_rho_e = random_field(mesh, EdgeDim, KDim)
-        geofac_grdiv = random_field(mesh, EdgeDim, E2C2EODim)
-        scal_divdamp = random_field(mesh, KDim)
-        bdy_divdamp = random_field(mesh, KDim)
-        nudgecoeff_e = random_field(mesh, EdgeDim)
+    def input_data(self, grid):
+        geofac_grg_x = random_field(grid, CellDim, C2E2CODim)
+        geofac_grg_y = random_field(grid, CellDim, C2E2CODim)
+        p_vn = random_field(grid, EdgeDim, KDim)
+        p_vt = random_field(grid, EdgeDim, KDim)
+        pos_on_tplane_e_1 = random_field(grid, ECDim)
+        pos_on_tplane_e_2 = random_field(grid, ECDim)
+        primal_normal_cell_1 = random_field(grid, ECDim)
+        dual_normal_cell_1 = random_field(grid, ECDim)
+        primal_normal_cell_2 = random_field(grid, ECDim)
+        dual_normal_cell_2 = random_field(grid, ECDim)
+        rho_ref_me = random_field(grid, EdgeDim, KDim)
+        theta_ref_me = random_field(grid, EdgeDim, KDim)
+        z_rth_pr_1 = random_field(grid, CellDim, KDim)
+        z_rth_pr_2 = random_field(grid, CellDim, KDim)
+        ddxn_z_full = random_field(grid, EdgeDim, KDim)
+        c_lin_e = random_field(grid, EdgeDim, E2CDim)
+        z_exner_ex_pr = random_field(grid, CellDim, KDim)
+        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim)
+        z_dexner_dz_c_2 = random_field(grid, CellDim, KDim)
+        z_hydro_corr = random_field(grid, EdgeDim, KDim)
+        theta_v = random_field(grid, CellDim, KDim)
+        zdiff_gradp = random_field(grid, ECDim, KDim)
+        theta_v_ic = random_field(grid, CellDim, KDim)
+        inv_ddqz_z_full = random_field(grid, CellDim, KDim)
+        ipeidx_dsl = random_mask(grid, EdgeDim, KDim)
+        pg_exdist = random_field(grid, EdgeDim, KDim)
+        hmask_dd3d = random_field(grid, EdgeDim)
+        scalfac_dd3d = random_field(grid, KDim)
+        z_dwdz_dd = random_field(grid, CellDim, KDim)
+        inv_dual_edge_length = random_field(grid, EdgeDim)
+        ddt_vn_apc_ntl2 = random_field(grid, EdgeDim, KDim)
+        vn_nnow = random_field(grid, EdgeDim, KDim)
+        ddt_vn_apc_ntl1 = random_field(grid, EdgeDim, KDim)
+        ddt_vn_phy = random_field(grid, EdgeDim, KDim)
+        z_graddiv_vn = random_field(grid, EdgeDim, KDim)
+        vn_incr = random_field(grid, EdgeDim, KDim)
+        vn = random_field(grid, EdgeDim, KDim)
+        z_theta_v_e = random_field(grid, EdgeDim, KDim)
+        z_gradh_exner = random_field(grid, EdgeDim, KDim)
+        z_graddiv2_vn = random_field(grid, EdgeDim, KDim)
+        z_rho_e = random_field(grid, EdgeDim, KDim)
+        geofac_grdiv = random_field(grid, EdgeDim, E2C2EODim)
+        scal_divdamp = random_field(grid, KDim)
+        bdy_divdamp = random_field(grid, KDim)
+        nudgecoeff_e = random_field(grid, EdgeDim)
 
-        ikoffset = zero_field(mesh, EdgeDim, E2CDim, KDim, dtype=int32)
+        ikoffset = zero_field(grid, EdgeDim, E2CDim, KDim, dtype=int32)
         rng = np.random.default_rng()
+        k_levels = 10
 
-        for k in range(mesh.k_level):
+        for k in range(k_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
             ikoffset[:, :, k] = rng.integers(
                 low=0 - k,
-                high=mesh.k_level - k - 1,
+                high=k_levels - k - 1,
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
         ikoffset = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
 
-        vert_idx = zero_field(mesh, KDim, dtype=int32)
-        for level in range(mesh.k_level):
+        vert_idx = zero_field(grid, KDim, dtype=int32)
+        for level in range(k_levels):
             vert_idx[level] = level
 
-        horz_idx = zero_field(mesh, EdgeDim, dtype=int32)
-        for edge in range(mesh.n_edges):
+        horz_idx = zero_field(grid, EdgeDim, dtype=int32)
+        for edge in range(grid.num_edges):
             horz_idx[edge] = edge
 
         grav_o_cpd = 9.80665 / 1004.64
@@ -544,7 +546,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         horizontal_lower_4 = 0
         horizontal_upper_4 = 31558
         kstart_dd3d = 0
-        nlev = mesh.k_level
+        nlev = k_levels
         nflatlev = 4
         nflat_gradp = 27
 

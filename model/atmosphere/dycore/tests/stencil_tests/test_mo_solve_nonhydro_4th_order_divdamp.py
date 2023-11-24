@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 def mo_solve_nonhydro_4th_order_divdamp_numpy(
-    mesh,
+    grid,
     scal_divdamp: np.array,
     z_graddiv2_vn: np.array,
     vn: np.array,
