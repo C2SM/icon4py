@@ -317,7 +317,7 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
 
 
 @pytest.mark.slow_tests
-def test_prep_gauss_quadrature_c_list_stencil():
+def test_prep_gauss_quadrature_c_list_stencil(backend):
     grid = SimpleGrid()
 
     famask_int = constant_field(grid, 1, EdgeDim, KDim, dtype=int32)
@@ -427,7 +427,7 @@ def test_prep_gauss_quadrature_c_list_stencil():
         np.asarray(p_dreg_area_in),
     )
 
-    prep_gauss_quadrature_c_list_stencil(
+    prep_gauss_quadrature_c_list_stencil.with_backend(backend)(
         famask_int,
         p_coords_dreg_v_1_x,
         p_coords_dreg_v_2_x,

@@ -24,14 +24,13 @@ def step_advection_stencil_03_numpy(
     p_grf_tend_tracer: np.array,
     p_dtime,
 ) -> np.array:
-
     p_tracer_new = p_tracer_now + p_dtime * p_grf_tend_tracer
     p_tracer_new = np.where(p_tracer_new < 0.0, 0.0, p_tracer_new)
 
     return p_tracer_new
 
 
-def test_step_advection_stencil_03():
+def test_step_advection_stencil_03(backend):
     grid = SimpleGrid()
 
     p_tracer_now = random_field(grid, CellDim, KDim)
@@ -41,15 +40,15 @@ def test_step_advection_stencil_03():
     p_dtime = np.float64(5.0)
 
     ref = step_advection_stencil_03_numpy(
-        np.asarray(p_tracer_now),
-        np.asarray(p_grf_tend_tracer),
+        p_tracer_now.asnumpy(),
+        p_grf_tend_tracer.asnumpy(),
         p_dtime,
     )
-    step_advection_stencil_03(
+    step_advection_stencil_03.with_backend(backend)(
         p_tracer_now,
         p_grf_tend_tracer,
         p_tracer_new,
         p_dtime,
         offset_provider={},
     )
-    assert np.allclose(p_tracer_new, ref)
+    assert np.allclose(p_tracer_new.asnumpy(), ref)

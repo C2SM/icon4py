@@ -12,9 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
-from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
@@ -334,7 +334,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping, 0))
+        self._update_levmask_from_cfl_clipping()
 
         mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
             z_w_con_c=self.z_w_con_c,
@@ -439,6 +439,11 @@ class VelocityAdvection:
                 "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
                 "Koff": KDim,
             },
+        )
+
+    def _update_levmask_from_cfl_clipping(self):
+        self.levmask = as_field(
+            domain=(KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):
@@ -577,7 +582,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        self.levmask = np_as_located_field(KDim)(np.any(self.cfl_clipping, 0))
+        self._update_levmask_from_cfl_clipping()
 
         mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
             z_w_con_c=self.z_w_con_c,
