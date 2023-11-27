@@ -99,10 +99,7 @@ def mo_velocity_advection_stencil_20_numpy(
             )
             + tangent_orientation
             * inv_primal_edge_length
-            * (
-                zeta[grid.connectivities[E2VDim]][:, 1]
-                - zeta[grid.connectivities[E2VDim]][:, 0]
-            )
+            * (zeta[grid.connectivities[E2VDim]][:, 1] - zeta[grid.connectivities[E2VDim]][:, 0])
         ),
         ddt_vn_apc,
     )
