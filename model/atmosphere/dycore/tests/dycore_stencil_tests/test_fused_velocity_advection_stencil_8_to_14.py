@@ -73,45 +73,45 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         **kwargs,
     ):
 
-        z_ekinh = np.where(
-            k < nlev,
-            mo_velocity_advection_stencil_08_numpy(grid, z_kin_hor_e, e_bln_c_s),
-            z_ekinh,
-        )
+        # z_ekinh = np.where(
+        #     k < nlev,
+        #     mo_velocity_advection_stencil_08_numpy(grid, z_kin_hor_e, e_bln_c_s),
+        #     z_ekinh,
+        # )
 
-        if istep == 1:
-            z_w_concorr_mc = np.where(
-                (nflatlev < k) & (k < nlev),
-                mo_velocity_advection_stencil_09_numpy(grid, z_w_concorr_me, e_bln_c_s),
-                z_w_concorr_mc,
-            )
+        # if istep == 1:
+        #     z_w_concorr_mc = np.where(
+        #         (nflatlev < k) & (k < nlev),
+        #         mo_velocity_advection_stencil_09_numpy(grid, z_w_concorr_me, e_bln_c_s),
+        #         z_w_concorr_mc,
+        #     )
 
-            w_concorr_c = np.where(
-                (nflatlev + 1 < k) & (k < nlev),
-                mo_velocity_advection_stencil_10_numpy(grid, z_w_concorr_mc, wgtfac_c),
-                w_concorr_c,
-            )
+        #     w_concorr_c = np.where(
+        #         (nflatlev + 1 < k) & (k < nlev),
+        #         mo_velocity_advection_stencil_10_numpy(grid, z_w_concorr_mc, wgtfac_c),
+        #         w_concorr_c,
+        #     )
 
-        z_w_con_c = np.where(
-            k < nlevp1,
-            mo_velocity_advection_stencil_11_numpy(w),
-            mo_velocity_advection_stencil_12_numpy(z_w_con_c),
-        )
+        # z_w_con_c = np.where(
+        #     k < nlevp1,
+        #     mo_velocity_advection_stencil_11_numpy(w),
+        #     mo_velocity_advection_stencil_12_numpy(z_w_con_c),
+        # )
 
-        z_w_con_c = np.where(
-            (nflatlev + 1 < k) & (k < nlev),
-            mo_velocity_advection_stencil_13_numpy(z_w_con_c, w_concorr_c),
-            z_w_con_c,
-        )
+        # z_w_con_c = np.where(
+        #     (nflatlev + 1 < k) & (k < nlev),
+        #     mo_velocity_advection_stencil_13_numpy(z_w_con_c, w_concorr_c),
+        #     z_w_con_c,
+        # )
 
-        condition = (np.maximum(3, nrdmax - 2) < k) & (k < nlev - 3)
-        cfl_clipping_new, vcfl_new, z_w_con_c_new = mo_velocity_advection_stencil_14_numpy(
-            grid, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
-        )
+        # condition = (np.maximum(3, nrdmax - 2) < k) & (k < nlev - 3)
+        # cfl_clipping_new, vcfl_new, z_w_con_c_new = mo_velocity_advection_stencil_14_numpy(
+        #     grid, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
+        # )
 
-        cfl_clipping = np.where(condition, cfl_clipping_new, cfl_clipping)
-        vcfl = np.where(condition, vcfl_new, vcfl)
-        z_w_con_c = np.where(condition, z_w_con_c_new, z_w_con_c)
+        # cfl_clipping = np.where(condition, cfl_clipping_new, cfl_clipping)
+        # vcfl = np.where(condition, vcfl_new, vcfl)
+        # z_w_con_c = np.where(condition, z_w_con_c_new, z_w_con_c)
 
         return dict(
             z_ekinh=z_ekinh,
