@@ -92,8 +92,8 @@ def model_initialization(
     #jw_u0 = 35.0
     #jw_temp0 = 288.
     # DEFINED PARAMETERS for jablonowski williamson:
-    eta0 = 0.252
-    etat = 0.2    # tropopause
+    eta_0 = 0.252
+    eta_t = 0.2    # tropopause
     gamma = 0.005 # temperature elapse rate (K/m)
     dtemp = 4.8e5 # empirical temperature difference (K)
     # for baroclinic wave test in the future
@@ -122,48 +122,55 @@ def model_initialization(
     pressure_numpy = np.zeros((cell_size, num_levels), dtype=float)
     theta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
 
-    for cell_index in range(cell_size):
-        z_siny = np.sin(cell_lat[cell_index])
-        z_cosy = np.cos(cell_lat[cell_index])
-        z_fac1= 1.0 / 6.3 - 2.0 * (z_siny ** 6) * (z_cosy ** 2 + 1.0/ 3.0)
-        z_fac2 = (8.0/ 5.0 * (z_cosy ** 3) * (z_siny ** 2 + 2.0/ 3.0) - 0.25 * MATH_PI) * EARTH_RADIUS * EARTH_ANGULAR_VELOCITY
-        z_exp = RD * gamma / GRAV
-        for k_index in range(num_levels-1,0,-1):
-            zeta_old = 1.0e-7
-            # Newton iteration to determine zeta
-            for newton_iter_index in range(100):
-                zeta_v = (zeta_old - eta0) * MATH_PI_2
-                zcoszetav = np.cos(zeta_v)
-                zsinzetav = np.sin(zeta_v)
-                z_tavg = jw_temp0 * (zeta_old ** z_exp)
-                z_favg = jw_temp0 * GRAV / gamma * (1.0 - zeta_old ** z_exp)
-                if (zeta_old < etat):
-                    z_tavg = z_tavg + dtemp * ((etat - zeta_old) ** 5)
-                    z_favg = z_favg - RD * dtemp * ((np.log(zeta_old / etat) + 137.0 / 60.0) * (etat ** 5) - 5.0 * (etat ** 4) * zeta_old + 5.0 * (etat ** 3) * (zeta_old ** 2) - 10.0 / 3.0 * (etat ** 2) * (zeta_old ** 3) + 1.25 * etat * (zeta_old ** 4) - 0.2 * (zeta_old ** 5))
-                z_geopot = z_favg + jw_u0 * (zcoszetav ** 1.5) *(z_fac1 * jw_u0 * (zcoszetav ** 1.5) + z_fac2)
-                z_temp = z_tavg + 0.75 * zeta_old * MATH_PI * jw_u0 / RD * zsinzetav * np.sqrt(zcoszetav) * (2.0 * jw_u0 * z_fac1 * (zcoszetav ** 1.5) + z_fac2)
-                z_fun = z_geopot - geopot_numpy[cell_index, k_index]
-                z_fund = -RD / zeta_old * z_temp
-                zeta = zeta_old - z_fun / z_fund
-                zeta_old = zeta
+    sin_lat = np.sin(cell_lat)
+    cos_lat = np.cos(cell_lat)
+    fac1 = 1.0 / 6.3 - 2.0 * (sin_lat ** 6) * (cos_lat ** 2 + 1.0/ 3.0)
+    fac2 = (8.0/ 5.0 * (cos_lat ** 3) * (sin_lat ** 2 + 2.0/ 3.0) - 0.25 * MATH_PI) * EARTH_RADIUS * EARTH_ANGULAR_VELOCITY
+    lapse_rate = RD * gamma / GRAV
+    for k_index in range(num_levels-1,0,-1):
+        eta_old = np.full(cell_size,fill_value=1.0e-7, dtype=float)
+        # Newton iteration to determine zeta
+        for newton_iter_index in range(100):
+            eta_v = (eta_old - eta_0) * MATH_PI_2
+            cos_etav = np.cos(eta_v)
+            sin_etav = np.sin(eta_v)
 
-            # Final update for zeta_v
-            zeta_v = (zeta_old - eta0) * MATH_PI_2
-            # Use analytic expressions at all model level
-            exner_numpy[cell_index,k_index] = zeta_old * ps_o_p0ref ** RD_O_CPD
-            theta_v_numpy[cell_index,k_index] = z_temp / exner_numpy[cell_index,k_index]
-            rho_numpy[cell_index,k_index] = exner_numpy[cell_index,k_index] ** CVD_O_RD * P0REF / RD / theta_v_numpy[cell_index,k_index]
-            #initialize diagnose pressure and temperature variables
-            pressure_numpy[cell_index,k_index] = P0REF * exner_numpy[cell_index,k_index] ** cpd_o_rd
-            temperature_numpy[cell_index,k_index] = z_temp
+            temperature_avg = jw_temp0 * (eta_old ** lapse_rate)
+            geopot_avg = jw_temp0 * GRAV / gamma * (1.0 - eta_old ** lapse_rate)
+            temperature_avg = np.where(
+                eta_old < eta_t,
+                temperature_avg + dtemp * ((eta_t - eta_old) ** 5),
+                temperature_avg
+            )
+            geopot_avg = np.where(
+                eta_old < eta_t,
+                geopot_avg - RD * dtemp * ((np.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t ** 5) - 5.0 * (eta_t ** 4) * eta_old + 5.0 * (eta_t ** 3) * (eta_old ** 2) - 10.0 / 3.0 * (eta_t ** 2) * (eta_old ** 3) + 1.25 * eta_t * (eta_old ** 4) - 0.2 * (eta_old ** 5)),
+                geopot_avg
+            )
+
+            geopot_jw = geopot_avg + jw_u0 * (cos_etav ** 1.5) * (fac1 * jw_u0 * (cos_etav ** 1.5) + fac2)
+            temperature_jw = temperature_avg + 0.75 * eta_old * MATH_PI * jw_u0 / RD * sin_etav * np.sqrt(cos_etav) * (2.0 * jw_u0 * fac1 * (cos_etav ** 1.5) + fac2)
+            newton_function = geopot_jw - geopot_numpy[:, k_index]
+            newton_function_prime = -RD / eta_old * temperature_jw
+            eta_old = eta_old - newton_function / newton_function_prime
+
+        # Final update for zeta_v
+        eta_v = (eta_old - eta_0) * MATH_PI_2
+        # Use analytic expressions at all model level
+        exner_numpy[:, k_index] = eta_old * ps_o_p0ref ** RD_O_CPD
+        theta_v_numpy[:, k_index] = temperature_jw / exner_numpy[:, k_index]
+        rho_numpy[:, k_index] = exner_numpy[:, k_index] ** CVD_O_RD * P0REF / RD / theta_v_numpy[:, k_index]
+        #initialize diagnose pressure and temperature variables
+        pressure_numpy[:, k_index] = P0REF * exner_numpy[:, k_index] ** cpd_o_rd
+        temperature_numpy[:, k_index] = temperature_jw
 
     # need cell to edge function
     zeta_v_e = zeta_v
 
     for edge_index in range(edge_size):
         for k_index in range(num_levels):
-            z_lat = edge_lat[edge_index,k_index]
-            z_lon = edge_lon[edge_index,k_index]
+            z_lat = edge_lat[edge_index, k_index]
+            z_lon = edge_lon[edge_index, k_index]
             zu = jw_u0 * (np.cos(zeta_v_e) ** 1.5) * (np.sin(2.0 * z_lat) ** 2)
             if (jw_up > 1.e-20):
                 z_fac1 = np.sin(latC) * np.sin(z_lat) + np.cos(latC) * np.cos(z_lat) * np.cos(z_lon - lonC)
@@ -171,7 +178,7 @@ def model_initialization(
                 zu = zu + jw_up * np.exp(-z_fac2 ** 2)
 
             zv = 0.0
-            vn_numpy[edge_index,k_index] = zu * primal_normal_x[edge_index,k_index] + zv * primal_normal_y[edge_index,k_index]
+            vn_numpy[edge_index, k_index] = zu * primal_normal_x[edge_index, k_index] + zv * primal_normal_y[edge_index, k_index]
 
     vn = np_as_located_field(EdgeDim, KDim)(vn_numpy)
     w = np_as_located_field(CellDim, KDim)(w_numpy)
