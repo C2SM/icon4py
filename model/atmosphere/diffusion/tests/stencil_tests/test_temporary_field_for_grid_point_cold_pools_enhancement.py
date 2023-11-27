@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_
 )
 from icon4py.model.common.dimension import C2E2CDim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
@@ -27,7 +28,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
 
     @staticmethod
     def reference(
-        grid, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff, **kwargs
+        grid, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff, smallest_vpfloat, **kwargs
     ) -> np.array:
         c2e2c = grid.connectivities[C2E2CDim]
         tdiff = (
@@ -40,23 +41,26 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
         )
 
         enh_diffu_3d = np.where(
-            ((tdiff - trefdiff) < thresh_tdiff) & (trefdiff < 0),
+            ((tdiff - trefdiff) < thresh_tdiff) & (trefdiff < 0)
+            | (tdiff - trefdiff < 1.5 * thresh_tdiff),
             (thresh_tdiff - tdiff + trefdiff) * 5e-4,
-            -1.7976931348623157e308,
+            smallest_vpfloat,
         )
 
         return dict(enh_diffu_3d=enh_diffu_3d)
 
     @pytest.fixture
     def input_data(self, grid):
-        theta_v = random_field(grid, CellDim, KDim)
-        theta_ref_mc = random_field(grid, CellDim, KDim)
-        enh_diffu_3d = zero_field(grid, CellDim, KDim)
-        thresh_tdiff = 5.0
+        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        enh_diffu_3d = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        thresh_tdiff = wpfloat("5.0")
+        smallest_vpfloat = -np.finfo(vpfloat).max
 
         return dict(
             theta_v=theta_v,
             theta_ref_mc=theta_ref_mc,
             enh_diffu_3d=enh_diffu_3d,
             thresh_tdiff=thresh_tdiff,
+            smallest_vpfloat=smallest_vpfloat,
         )

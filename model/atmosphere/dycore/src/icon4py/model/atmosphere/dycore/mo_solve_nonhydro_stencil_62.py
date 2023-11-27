@@ -16,23 +16,24 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_62(
-    w_now: Field[[CellDim, KDim], float],
-    grf_tend_w: Field[[CellDim, KDim], float],
-    dtime: float,
-) -> Field[[CellDim, KDim], float]:
-    w_new = w_now + dtime * grf_tend_w
-    return w_new
+    w_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_w: Field[[CellDim, KDim], wpfloat],
+    dtime: wpfloat,
+) -> Field[[CellDim, KDim], wpfloat]:
+    w_new_wp = w_now + dtime * grf_tend_w
+    return w_new_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_62(
-    w_now: Field[[CellDim, KDim], float],
-    grf_tend_w: Field[[CellDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    dtime: float,
+    w_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_w: Field[[CellDim, KDim], wpfloat],
+    w_new: Field[[CellDim, KDim], wpfloat],
+    dtime: wpfloat,
 ):
     _mo_solve_nonhydro_stencil_62(w_now, grf_tend_w, dtime, out=w_new)

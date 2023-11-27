@@ -26,6 +26,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_mask,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
@@ -93,12 +94,12 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
 
-        zd_diffcoef = random_field(grid, CellDim, KDim)
-        geofac_n2s_c = random_field(grid, CellDim)
-        geofac_n2s_nbh = random_field(grid, CellDim, C2E2CDim)
-        vcoef = random_field(grid, CellDim, C2E2CDim, KDim)
-        theta_v = random_field(grid, CellDim, KDim)
-        z_temp = random_field(grid, CellDim, KDim)
+        zd_diffcoef = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        geofac_n2s_c = random_field(grid, CellDim, dtype=wpfloat)
+        geofac_n2s_nbh = random_field(grid, CellDim, C2E2CDim, dtype=wpfloat)
+        vcoef = random_field(grid, CellDim, C2E2CDim, KDim, dtype=wpfloat)
+        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_temp = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         vcoef_new = flatten_first_two_dims(CECDim, KDim, field=vcoef)
         zd_vertoffset_new = flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset)

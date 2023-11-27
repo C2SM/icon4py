@@ -24,6 +24,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
@@ -54,14 +55,14 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        vn = random_field(grid, EdgeDim, KDim)
-        geofac_div = as_1D_sparse_field(random_field(grid, CellDim, C2EDim), CEDim)
-        kh_smag_ec = random_field(grid, EdgeDim, KDim)
-        e_bln_c_s = as_1D_sparse_field(random_field(grid, CellDim, C2EDim), CEDim)
-        diff_multfac_smag = random_field(grid, KDim)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        geofac_div = as_1D_sparse_field(random_field(grid, CellDim, C2EDim, dtype=wpfloat), CEDim)
+        kh_smag_ec = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        e_bln_c_s = as_1D_sparse_field(random_field(grid, CellDim, C2EDim, dtype=wpfloat), CEDim)
+        diff_multfac_smag = random_field(grid, KDim, dtype=vpfloat)
 
-        kh_c = zero_field(grid, CellDim, KDim)
-        div = zero_field(grid, CellDim, KDim)
+        kh_c = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        div = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             kh_smag_ec=kh_smag_ec,
