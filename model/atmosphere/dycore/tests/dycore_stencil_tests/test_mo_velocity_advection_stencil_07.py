@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, E2VDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def mo_velocity_advection_stencil_07_numpy(
@@ -82,14 +83,14 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
         if np.any(grid.connectivities[E2CDim] == -1) or np.any(grid.connectivities[E2VDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        vn_ie = random_field(grid, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(grid, EdgeDim)
-        w = random_field(grid, CellDim, KDim)
-        z_vt_ie = random_field(grid, EdgeDim, KDim)
-        inv_primal_edge_length = random_field(grid, EdgeDim)
-        tangent_orientation = random_field(grid, EdgeDim)
-        z_w_v = random_field(grid, VertexDim, KDim)
-        z_v_grad_w = zero_field(grid, EdgeDim, KDim)
+        vn_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_vt_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        inv_primal_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        tangent_orientation = random_field(grid, EdgeDim, dtype=wpfloat)
+        z_w_v = random_field(grid, VertexDim, KDim, dtype=vpfloat)
+        z_v_grad_w = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             vn_ie=vn_ie,

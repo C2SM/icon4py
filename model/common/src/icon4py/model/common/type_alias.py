@@ -10,18 +10,18 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import os
+from typing import TypeAlias
 
-import numpy as np
-
-from icon4py.model.atmosphere.advection.set_zero_c import set_zero_c
-from icon4py.model.common.dimension import CellDim
-from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from gt4py.next.ffront.fbuiltins import float32, float64
 
 
-def test_set_zero_cell_k(backend):
-    grid = SimpleGrid()
-    field = random_field(grid, CellDim)
+wpfloat: TypeAlias = float64
 
-    set_zero_c.with_backend(backend)(field, offset_provider={})
-    assert np.allclose(field.asnumpy(), zero_field(grid, CellDim).asnumpy())
+precision = os.environ.get("FLOAT_PRECISION", "double").lower()
+if precision == "double":
+    vpfloat = wpfloat
+elif precision == "mixed":
+    vpfloat: TypeAlias = float32
+else:
+    raise ValueError("Only 'double' and 'mixed' precision are supported.")

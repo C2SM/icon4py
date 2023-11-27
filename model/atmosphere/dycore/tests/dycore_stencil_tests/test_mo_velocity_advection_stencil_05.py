@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def mo_velocity_advection_stencil_05_numpy(vn: np.array, vt: np.array) -> tuple:
@@ -39,12 +40,12 @@ class TestMoVelocityAdvectionStencil05(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        vn = random_field(grid, EdgeDim, KDim)
-        vt = random_field(grid, EdgeDim, KDim)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
-        vn_ie = zero_field(grid, EdgeDim, KDim)
-        z_vt_ie = zero_field(grid, EdgeDim, KDim)
-        z_kin_hor_e = zero_field(grid, EdgeDim, KDim)
+        vn_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_vt_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_kin_hor_e = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

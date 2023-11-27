@@ -25,28 +25,29 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_b
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import _calculate_nabla4
 from icon4py.model.common.dimension import ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _apply_diffusion_to_vn(
-    u_vert: Field[[VertexDim, KDim], float],
-    v_vert: Field[[VertexDim, KDim], float],
-    primal_normal_vert_v1: Field[[ECVDim], float],
-    primal_normal_vert_v2: Field[[ECVDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    inv_vert_vert_length: Field[[EdgeDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    area_edge: Field[[EdgeDim], float],
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    diff_multfac_vn: Field[[KDim], float],
-    nudgecoeff_e: Field[[EdgeDim], float],
-    vn: Field[[EdgeDim, KDim], float],
+    u_vert: Field[[VertexDim, KDim], vpfloat],
+    v_vert: Field[[VertexDim, KDim], vpfloat],
+    primal_normal_vert_v1: Field[[ECVDim], wpfloat],
+    primal_normal_vert_v2: Field[[ECVDim], wpfloat],
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    area_edge: Field[[EdgeDim], wpfloat],
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    diff_multfac_vn: Field[[KDim], wpfloat],
+    nudgecoeff_e: Field[[EdgeDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
     edge: Field[[EdgeDim], int32],
-    nudgezone_diff: float,
-    fac_bdydiff_v: float,
+    nudgezone_diff: vpfloat,
+    fac_bdydiff_v: wpfloat,
     start_2nd_nudge_line_idx_e: int32,
     limited_area: bool,
-) -> Field[[EdgeDim, KDim], float]:
+) -> Field[[EdgeDim, KDim], wpfloat]:
     z_nabla4_e2 = _calculate_nabla4(
         u_vert,
         v_vert,
@@ -93,21 +94,21 @@ def _apply_diffusion_to_vn(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def apply_diffusion_to_vn(
-    u_vert: Field[[VertexDim, KDim], float],
-    v_vert: Field[[VertexDim, KDim], float],
-    primal_normal_vert_v1: Field[[ECVDim], float],
-    primal_normal_vert_v2: Field[[ECVDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    inv_vert_vert_length: Field[[EdgeDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    area_edge: Field[[EdgeDim], float],
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    diff_multfac_vn: Field[[KDim], float],
-    nudgecoeff_e: Field[[EdgeDim], float],
-    vn: Field[[EdgeDim, KDim], float],
+    u_vert: Field[[VertexDim, KDim], vpfloat],
+    v_vert: Field[[VertexDim, KDim], vpfloat],
+    primal_normal_vert_v1: Field[[ECVDim], wpfloat],
+    primal_normal_vert_v2: Field[[ECVDim], wpfloat],
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    area_edge: Field[[EdgeDim], wpfloat],
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    diff_multfac_vn: Field[[KDim], wpfloat],
+    nudgecoeff_e: Field[[EdgeDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
     edge: Field[[EdgeDim], int32],
-    nudgezone_diff: float,
-    fac_bdydiff_v: float,
+    nudgezone_diff: vpfloat,
+    fac_bdydiff_v: wpfloat,
     start_2nd_nudge_line_idx_e: int32,
     limited_area: bool,
     horizontal_start: int32,

@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def mo_velocity_advection_stencil_18_numpy(
@@ -86,9 +87,9 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         geofac_n2s: np.array,
         w: np.array,
         ddt_w_adv: np.array,
-        scalfac_exdiff: float,
-        cfl_w_limit: float,
-        dtime: float,
+        scalfac_exdiff: wpfloat,
+        cfl_w_limit: wpfloat,
+        dtime: wpfloat,
         **kwargs,
     ):
         ddt_w_adv = mo_velocity_advection_stencil_18_numpy(
@@ -113,15 +114,15 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         levmask = random_mask(grid, KDim)
         cfl_clipping = random_mask(grid, CellDim, KDim)
         owner_mask = random_mask(grid, CellDim)
-        z_w_con_c = random_field(grid, CellDim, KDim)
-        ddqz_z_half = random_field(grid, CellDim, KDim)
-        area = random_field(grid, CellDim)
-        geofac_n2s = random_field(grid, CellDim, C2E2CODim)
-        w = random_field(grid, CellDim, KDim)
-        ddt_w_adv = random_field(grid, CellDim, KDim)
-        scalfac_exdiff = 10.0
-        cfl_w_limit = 3.0
-        dtime = 2.0
+        z_w_con_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        area = random_field(grid, CellDim, dtype=wpfloat)
+        geofac_n2s = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
+        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        ddt_w_adv = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        scalfac_exdiff = wpfloat("10.0")
+        cfl_w_limit = vpfloat("3.0")
+        dtime = wpfloat("2.0")
 
         return dict(
             levmask=levmask,

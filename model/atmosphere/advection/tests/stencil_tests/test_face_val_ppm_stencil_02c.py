@@ -29,19 +29,19 @@ def face_val_ppm_stencil_02c_numpy(
     return p_face
 
 
-def test_face_val_ppm_stencil_02c():
+def test_face_val_ppm_stencil_02c(backend):
     grid = SimpleGrid()
     p_cc = random_field(grid, CellDim, KDim)
     p_face = random_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_02c_numpy(
-        np.asarray(p_cc),
+        p_cc.asnumpy(),
     )
 
-    face_val_ppm_stencil_02c(
+    face_val_ppm_stencil_02c.with_backend(backend)(
         p_cc,
         p_face,
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:, 1:], p_face[:, 1:])
+    assert np.allclose(ref[:, 1:], p_face.asnumpy()[:, 1:])

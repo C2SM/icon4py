@@ -24,6 +24,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def calculate_nabla2_of_theta_numpy(grid, z_nabla2_e: np.array, geofac_div: np.array) -> np.array:
@@ -45,10 +46,10 @@ class TestCalculateNabla2OfTheta(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_nabla2_e = random_field(grid, EdgeDim, KDim)
-        geofac_div = random_field(grid, CellDim, C2EDim)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        geofac_div = random_field(grid, CellDim, C2EDim, dtype=wpfloat)
         geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
 
-        z_temp = zero_field(grid, CellDim, KDim)
+        z_temp = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(z_nabla2_e=z_nabla2_e, geofac_div=geofac_div_new, z_temp=z_temp)

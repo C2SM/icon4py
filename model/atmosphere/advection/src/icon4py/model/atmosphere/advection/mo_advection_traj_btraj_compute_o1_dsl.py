@@ -13,29 +13,30 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, where
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
 
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_advection_traj_btraj_compute_o1_dsl(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
+    p_vn: Field[[EdgeDim, KDim], wpfloat],
+    p_vt: Field[[EdgeDim, KDim], wpfloat],
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
-    pos_on_tplane_e_1: Field[[ECDim], float],
-    pos_on_tplane_e_2: Field[[ECDim], float],
-    primal_normal_cell_1: Field[[ECDim], float],
-    dual_normal_cell_1: Field[[ECDim], float],
-    primal_normal_cell_2: Field[[ECDim], float],
-    dual_normal_cell_2: Field[[ECDim], float],
-    p_dthalf: float,
+    pos_on_tplane_e_1: Field[[ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[ECDim], wpfloat],
+    primal_normal_cell_1: Field[[ECDim], wpfloat],
+    dual_normal_cell_1: Field[[ECDim], wpfloat],
+    primal_normal_cell_2: Field[[ECDim], wpfloat],
+    dual_normal_cell_2: Field[[ECDim], wpfloat],
+    p_dthalf: wpfloat,
 ) -> tuple[
     Field[[EdgeDim, KDim], int32],
     Field[[EdgeDim, KDim], int32],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], vpfloat],
+    Field[[EdgeDim, KDim], vpfloat],
 ]:
     lvn_pos = where(p_vn > 0.0, True, False)
 
@@ -66,26 +67,26 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
         + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[1]),
     )
 
-    return p_cell_idx, p_cell_blk, p_distv_bary_1, p_distv_bary_2
+    return p_cell_idx, p_cell_blk, astype(p_distv_bary_1, vpfloat), astype(p_distv_bary_2, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_advection_traj_btraj_compute_o1_dsl(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
+    p_vn: Field[[EdgeDim, KDim], wpfloat],
+    p_vt: Field[[EdgeDim, KDim], wpfloat],
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
-    pos_on_tplane_e_1: Field[[ECDim], float],
-    pos_on_tplane_e_2: Field[[ECDim], float],
-    primal_normal_cell_1: Field[[ECDim], float],
-    dual_normal_cell_1: Field[[ECDim], float],
-    primal_normal_cell_2: Field[[ECDim], float],
-    dual_normal_cell_2: Field[[ECDim], float],
+    pos_on_tplane_e_1: Field[[ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[ECDim], wpfloat],
+    primal_normal_cell_1: Field[[ECDim], wpfloat],
+    dual_normal_cell_1: Field[[ECDim], wpfloat],
+    primal_normal_cell_2: Field[[ECDim], wpfloat],
+    dual_normal_cell_2: Field[[ECDim], wpfloat],
     p_cell_idx: Field[[EdgeDim, KDim], int32],
     p_cell_blk: Field[[EdgeDim, KDim], int32],
-    p_distv_bary_1: Field[[EdgeDim, KDim], float],
-    p_distv_bary_2: Field[[EdgeDim, KDim], float],
-    p_dthalf: float,
+    p_distv_bary_1: Field[[EdgeDim, KDim], vpfloat],
+    p_distv_bary_2: Field[[EdgeDim, KDim], vpfloat],
+    p_dthalf: wpfloat,
 ):
     _mo_advection_traj_btraj_compute_o1_dsl(
         p_vn,

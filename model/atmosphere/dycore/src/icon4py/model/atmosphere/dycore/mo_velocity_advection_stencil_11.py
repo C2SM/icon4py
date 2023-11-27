@@ -13,21 +13,22 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_velocity_advection_stencil_11(
-    w: Field[[CellDim, KDim], float]
-) -> Field[[CellDim, KDim], float]:
-    z_w_con_c = w
-    return z_w_con_c
+    w: Field[[CellDim, KDim], wpfloat]
+) -> Field[[CellDim, KDim], vpfloat]:
+    z_w_con_c_wp = w
+    return astype(z_w_con_c_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_11(
-    w: Field[[CellDim, KDim], float], z_w_con_c: Field[[CellDim, KDim], float]
+    w: Field[[CellDim, KDim], wpfloat], z_w_con_c: Field[[CellDim, KDim], vpfloat]
 ):
     _mo_velocity_advection_stencil_11(w, out=z_w_con_c)

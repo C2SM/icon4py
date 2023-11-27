@@ -25,6 +25,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def mo_velocity_advection_stencil_08_numpy(
@@ -50,9 +51,9 @@ class TestMoVelocityAdvectionStencil08(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_kin_hor_e = random_field(grid, EdgeDim, KDim)
-        e_bln_c_s = random_field(grid, CellDim, C2EDim)
-        z_ekinh = zero_field(grid, CellDim, KDim)
+        z_kin_hor_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        e_bln_c_s = random_field(grid, CellDim, C2EDim, dtype=wpfloat)
+        z_ekinh = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,

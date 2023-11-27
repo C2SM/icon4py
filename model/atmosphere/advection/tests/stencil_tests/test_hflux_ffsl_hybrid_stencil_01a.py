@@ -123,7 +123,7 @@ def hflux_ffsl_hybrid_stencil_01a_numpy(
     return p_out_e_hybrid_1a
 
 
-def test_hflux_ffsl_hybrid_stencil_01a():
+def test_hflux_ffsl_hybrid_stencil_01a(backend):
     grid = SimpleGrid()
     z_lsq_coeff_1 = random_field(grid, CellDim, KDim)
     z_lsq_coeff_2 = random_field(grid, CellDim, KDim)
@@ -150,30 +150,30 @@ def test_hflux_ffsl_hybrid_stencil_01a():
 
     ref = hflux_ffsl_hybrid_stencil_01a_numpy(
         grid.connectivities[E2CDim],
-        np.asarray(z_lsq_coeff_1),
-        np.asarray(z_lsq_coeff_2),
-        np.asarray(z_lsq_coeff_3),
-        np.asarray(z_lsq_coeff_4),
-        np.asarray(z_lsq_coeff_5),
-        np.asarray(z_lsq_coeff_6),
-        np.asarray(z_lsq_coeff_7),
-        np.asarray(z_lsq_coeff_8),
-        np.asarray(z_lsq_coeff_9),
-        np.asarray(z_lsq_coeff_10),
-        np.asarray(z_quad_vector_sum0_1),
-        np.asarray(z_quad_vector_sum0_2),
-        np.asarray(z_quad_vector_sum0_3),
-        np.asarray(z_quad_vector_sum0_4),
-        np.asarray(z_quad_vector_sum0_5),
-        np.asarray(z_quad_vector_sum0_6),
-        np.asarray(z_quad_vector_sum0_7),
-        np.asarray(z_quad_vector_sum0_8),
-        np.asarray(z_quad_vector_sum0_9),
-        np.asarray(z_quad_vector_sum0_10),
-        np.asarray(patch0_cell_rel_idx_dsl),
+        z_lsq_coeff_1.asnumpy(),
+        z_lsq_coeff_2.asnumpy(),
+        z_lsq_coeff_3.asnumpy(),
+        z_lsq_coeff_4.asnumpy(),
+        z_lsq_coeff_5.asnumpy(),
+        z_lsq_coeff_6.asnumpy(),
+        z_lsq_coeff_7.asnumpy(),
+        z_lsq_coeff_8.asnumpy(),
+        z_lsq_coeff_9.asnumpy(),
+        z_lsq_coeff_10.asnumpy(),
+        z_quad_vector_sum0_1.asnumpy(),
+        z_quad_vector_sum0_2.asnumpy(),
+        z_quad_vector_sum0_3.asnumpy(),
+        z_quad_vector_sum0_4.asnumpy(),
+        z_quad_vector_sum0_5.asnumpy(),
+        z_quad_vector_sum0_6.asnumpy(),
+        z_quad_vector_sum0_7.asnumpy(),
+        z_quad_vector_sum0_8.asnumpy(),
+        z_quad_vector_sum0_9.asnumpy(),
+        z_quad_vector_sum0_10.asnumpy(),
+        patch0_cell_rel_idx_dsl.asnumpy(),
     )
 
-    hflux_ffsl_hybrid_stencil_01a(
+    hflux_ffsl_hybrid_stencil_01a.with_backend(backend)(
         z_lsq_coeff_1,
         z_lsq_coeff_2,
         z_lsq_coeff_3,
@@ -201,4 +201,4 @@ def test_hflux_ffsl_hybrid_stencil_01a():
         },
     )
 
-    assert np.allclose(p_out_e_hybrid_1a, ref)
+    assert np.allclose(p_out_e_hybrid_1a.asnumpy(), ref)
