@@ -13,29 +13,43 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, astype, neighbor_sum
 
 from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_39(
-    e_bln_c_s: Field[[CEDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
     z_w_concorr_me_offset_1 = z_w_concorr_me(Koff[-1])
-    z_w_concorr_mc_m1 = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me_offset_1(C2E), axis=C2EDim)
-    z_w_concorr_mc_m0 = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me(C2E), axis=C2EDim)
-    w_concorr_c = wgtfac_c * z_w_concorr_mc_m0 + (1.0 - wgtfac_c) * z_w_concorr_mc_m1
-    return w_concorr_c
+
+    z_w_concorr_me_wp, z_w_concorr_me_offset_1_wp = astype(
+        (z_w_concorr_me, z_w_concorr_me_offset_1), wpfloat
+    )
+
+    z_w_concorr_mc_m1_wp = neighbor_sum(
+        e_bln_c_s(C2CE) * z_w_concorr_me_offset_1_wp(C2E), axis=C2EDim
+    )
+    z_w_concorr_mc_m0_wp = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me_wp(C2E), axis=C2EDim)
+
+    z_w_concorr_mc_m1_vp, z_w_concorr_mc_m0_vp = astype(
+        (z_w_concorr_mc_m1_wp, z_w_concorr_mc_m0_wp), vpfloat
+    )
+    w_concorr_c_vp = (
+        wgtfac_c * z_w_concorr_mc_m0_vp + (vpfloat("1.0") - wgtfac_c) * z_w_concorr_mc_m1_vp
+    )
+    return w_concorr_c_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_39(
-    e_bln_c_s: Field[[CEDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
 ):
     _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c, out=w_concorr_c[:, 1:])

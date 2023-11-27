@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil59(StencilTest):
@@ -33,8 +34,8 @@ class TestMoSolveNonhydroStencil59(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        exner = random_field(grid, CellDim, KDim)
-        exner_dyn_incr = zero_field(grid, CellDim, KDim)
+        exner = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_dyn_incr = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             exner=exner,

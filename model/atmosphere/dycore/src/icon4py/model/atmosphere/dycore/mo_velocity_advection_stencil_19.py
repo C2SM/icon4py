@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
 from icon4py.model.common.dimension import (
     E2C,
@@ -28,45 +28,55 @@ from icon4py.model.common.dimension import (
     Koff,
     VertexDim,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_velocity_advection_stencil_19(
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    coeff_gradekin: Field[[ECDim], float],
-    z_ekinh: Field[[CellDim, KDim], float],
-    zeta: Field[[VertexDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    f_e: Field[[EdgeDim], float],
-    c_lin_e: Field[[EdgeDim, E2CDim], float],
-    z_w_con_c_full: Field[[CellDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    ddqz_z_full_e: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    ddt_vn_apc = -(
-        (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1])) * z_kin_hor_e
-        + (-coeff_gradekin(E2EC[0]) * z_ekinh(E2C[0]) + coeff_gradekin(E2EC[1]) * z_ekinh(E2C[1]))
-        + vt * (f_e + 0.5 * neighbor_sum(zeta(E2V), axis=E2VDim))
-        + neighbor_sum(z_w_con_c_full(E2C) * c_lin_e, axis=E2CDim)
-        * (vn_ie - vn_ie(Koff[1]))
-        / ddqz_z_full_e
+    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    coeff_gradekin: Field[[ECDim], vpfloat],
+    z_ekinh: Field[[CellDim, KDim], vpfloat],
+    zeta: Field[[VertexDim, KDim], vpfloat],
+    vt: Field[[EdgeDim, KDim], vpfloat],
+    f_e: Field[[EdgeDim], wpfloat],
+    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
+    vn_ie: Field[[EdgeDim, KDim], vpfloat],
+    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    vt_wp, z_w_con_c_full_wp, ddqz_z_full_e_wp = astype(
+        (vt, z_w_con_c_full, ddqz_z_full_e), wpfloat
     )
-    return ddt_vn_apc
+
+    ddt_vn_apc_wp = -(
+        astype(
+            z_kin_hor_e * (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1]))
+            + coeff_gradekin(E2EC[1]) * z_ekinh(E2C[1])
+            - (coeff_gradekin(E2EC[0]) * z_ekinh(E2C[0])),
+            wpfloat,
+        )
+        + vt_wp * (f_e + astype(vpfloat("0.5") * neighbor_sum(zeta(E2V), axis=E2VDim), wpfloat))
+        + neighbor_sum(c_lin_e * z_w_con_c_full_wp(E2C), axis=E2CDim)
+        * astype((vn_ie - vn_ie(Koff[1])), wpfloat)
+        / ddqz_z_full_e_wp
+    )
+
+    return astype(ddt_vn_apc_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_19(
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    coeff_gradekin: Field[[ECDim], float],
-    z_ekinh: Field[[CellDim, KDim], float],
-    zeta: Field[[VertexDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    f_e: Field[[EdgeDim], float],
-    c_lin_e: Field[[EdgeDim, E2CDim], float],
-    z_w_con_c_full: Field[[CellDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    ddqz_z_full_e: Field[[EdgeDim, KDim], float],
-    ddt_vn_apc: Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    coeff_gradekin: Field[[ECDim], vpfloat],
+    z_ekinh: Field[[CellDim, KDim], vpfloat],
+    zeta: Field[[VertexDim, KDim], vpfloat],
+    vt: Field[[EdgeDim, KDim], vpfloat],
+    f_e: Field[[EdgeDim], wpfloat],
+    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
+    vn_ie: Field[[EdgeDim, KDim], vpfloat],
+    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_apc: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

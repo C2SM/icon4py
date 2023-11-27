@@ -16,18 +16,19 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_11_lower() -> Field[[CellDim, KDim], float]:
-    z_theta_v_pr_ic = broadcast(0.0, (CellDim, KDim))
+def _mo_solve_nonhydro_stencil_11_lower() -> Field[[CellDim, KDim], vpfloat]:
+    z_theta_v_pr_ic_vp = broadcast(vpfloat("0.0"), (CellDim, KDim))
 
-    return z_theta_v_pr_ic
+    return z_theta_v_pr_ic_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_11_lower(
-    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
 ):
     _mo_solve_nonhydro_stencil_11_lower(
         out=z_theta_v_pr_ic,

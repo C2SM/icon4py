@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_42 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil42(StencilTest):
@@ -50,19 +51,19 @@ class TestMoSolveNonhydroStencil42(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        w_nnow = random_field(grid, CellDim, KDim)
-        ddt_w_adv_ntl1 = random_field(grid, CellDim, KDim)
-        ddt_w_adv_ntl2 = random_field(grid, CellDim, KDim)
-        z_th_ddz_exner_c = random_field(grid, CellDim, KDim)
-        z_w_expl = zero_field(grid, CellDim, KDim)
-        rho_ic = random_field(grid, CellDim, KDim)
-        w_concorr_c = random_field(grid, CellDim, KDim)
-        vwind_expl_wgt = random_field(grid, CellDim)
-        z_contr_w_fl_l = zero_field(grid, CellDim, KDim)
-        dtime = 5.0
-        wgt_nnow_vel = 8.0
-        wgt_nnew_vel = 9.0
-        cpd = 10.0
+        w_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        ddt_w_adv_ntl1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        ddt_w_adv_ntl2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_th_ddz_exner_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_w_expl = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        vwind_expl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+        z_contr_w_fl_l = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        dtime = wpfloat("5.0")
+        wgt_nnow_vel = wpfloat("8.0")
+        wgt_nnew_vel = wpfloat("9.0")
+        cpd = wpfloat("10.0")
 
         return dict(
             z_w_expl=z_w_expl,

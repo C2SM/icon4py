@@ -16,16 +16,17 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_64() -> Field[[CellDim, KDim], float]:
-    mass_flx_ic = broadcast(0.0, (CellDim, KDim))
-    return mass_flx_ic
+def _mo_solve_nonhydro_stencil_64() -> Field[[CellDim, KDim], wpfloat]:
+    mass_flx_ic_wp = broadcast(wpfloat("0.0"), (CellDim, KDim))
+    return mass_flx_ic_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_64(
-    mass_flx_ic: Field[[CellDim, KDim], float],
+    mass_flx_ic: Field[[CellDim, KDim], wpfloat],
 ):
     _mo_solve_nonhydro_stencil_64(out=mass_flx_ic)
