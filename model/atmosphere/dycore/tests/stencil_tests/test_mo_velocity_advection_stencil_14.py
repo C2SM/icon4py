@@ -24,6 +24,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_mask,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoVelocityAdvectionStencil14(StencilTest):
@@ -59,12 +60,12 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        ddqz_z_half = random_field(grid, CellDim, KDim)
-        z_w_con_c = random_field(grid, CellDim, KDim)
+        ddqz_z_half = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_w_con_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
         cfl_clipping = random_mask(grid, CellDim, KDim, dtype=bool)
-        vcfl = zero_field(grid, CellDim, KDim)
-        cfl_w_limit = 5.0
-        dtime = 9.0
+        vcfl = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        cfl_w_limit = vpfloat("5.0")
+        dtime = wpfloat("9.0")
 
         return dict(
             ddqz_z_half=ddqz_z_half,

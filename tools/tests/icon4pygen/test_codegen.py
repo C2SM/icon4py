@@ -14,12 +14,15 @@
 import os
 import pkgutil
 import re
+from importlib import reload
 
 import icon4py.model.atmosphere.diffusion.stencils as diffusion
 import icon4py.model.atmosphere.dycore as dycore
 import icon4py.model.common.interpolation.stencils as intp
+import icon4py.model.common.type_alias as type_alias
 import pytest
 from click.testing import CliRunner
+from gt4py.next.ffront.fbuiltins import float32, float64
 
 from icon4pytools.icon4pygen.cli import main
 
@@ -147,3 +150,13 @@ def test_invalid_module_path(cli) -> None:
     result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
     assert result.exit_code == 1
     assert isinstance(result.exception, ModuleNotFoundError)
+
+
+def test_mixed_precision_option(cli) -> None:
+    module_path = get_stencil_module_path("some_module", "foo")
+    cli.invoke(
+        main, [module_path, "--enable-mixed-precision", BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH]
+    )
+    reload(type_alias)
+    assert os.environ.get("FLOAT_PRECISION") == "mixed"
+    assert (type_alias.vpfloat == float32) and (type_alias.wpfloat == float64)

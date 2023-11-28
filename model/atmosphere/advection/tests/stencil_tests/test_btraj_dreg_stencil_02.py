@@ -18,7 +18,11 @@ from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_02 import btraj_dreg_stencil_02
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    numpy_to_1D_sparse_field,
+    random_field,
+    zero_field,
+)
 
 
 def btraj_dreg_stencil_02_numpy(
@@ -43,20 +47,18 @@ def btraj_dreg_stencil_02_numpy(
     return opt_famask_dsl
 
 
-def test_btraj_dreg_stencil_02():
+def test_btraj_dreg_stencil_02(backend):
     grid = SimpleGrid()
     p_vn = random_field(grid, EdgeDim, KDim)
     p_vt = random_field(grid, EdgeDim, KDim)
     edge_cell_length = np.asarray(grid.connectivities[E2CDim], dtype=float)
-    edge_cell_length_new = as_1D_sparse_field(edge_cell_length, ECDim)
+    edge_cell_length_new = numpy_to_1D_sparse_field(edge_cell_length, ECDim)
     p_dt = 1.0
     opt_famask_dsl = zero_field(grid, EdgeDim, KDim, dtype=int32)
 
-    ref = btraj_dreg_stencil_02_numpy(
-        np.asarray(p_vn), np.asarray(p_vt), np.asarray(edge_cell_length), p_dt
-    )
+    ref = btraj_dreg_stencil_02_numpy(p_vn.asnumpy(), p_vt.asnumpy(), edge_cell_length, p_dt)
 
-    btraj_dreg_stencil_02(
+    btraj_dreg_stencil_02.with_backend(backend)(
         p_vn,
         p_vt,
         edge_cell_length_new,
@@ -68,4 +70,4 @@ def test_btraj_dreg_stencil_02():
         },
     )
 
-    assert np.allclose(ref, opt_famask_dsl)
+    assert np.allclose(ref, opt_famask_dsl.asnumpy())

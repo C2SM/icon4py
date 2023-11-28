@@ -22,25 +22,24 @@ from icon4py.model.common.test_utils.helpers import random_field
 def face_val_ppm_stencil_02b_numpy(
     p_cc: np.array,
 ):
-
     p_face = p_cc.copy()
 
     return p_face
 
 
-def test_face_val_ppm_stencil_02b():
+def test_face_val_ppm_stencil_02b(backend):
     grid = SimpleGrid()
     p_cc = random_field(grid, CellDim, KDim)
     p_face = random_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_02b_numpy(
-        np.asarray(p_cc),
+        p_cc.asnumpy(),
     )
 
-    face_val_ppm_stencil_02b(
+    face_val_ppm_stencil_02b.with_backend(backend)(
         p_cc,
         p_face,
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref, p_face)
+    assert np.allclose(ref, p_face.asnumpy())
