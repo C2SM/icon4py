@@ -59,7 +59,6 @@ def test_nonhydro_params():
     )
 
 
-@pytest.mark.skip("TODO (magdalena) fix update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, istep_exit, step_date_init, step_date_exit",
@@ -341,7 +340,11 @@ def test_nonhydro_predictor_step(
     )
 
     # stencil 30
-    assert dallclose(sp_exit.z_vn_avg().asnumpy(), solve_nonhydro.z_vn_avg.asnumpy(), atol=5e-14)
+    assert dallclose(
+        sp_exit.z_vn_avg().asnumpy(),
+        solve_nonhydro.z_vn_avg.asnumpy(),
+        atol=5e-14,
+    )
     # stencil 30
     assert dallclose(
         sp_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
@@ -349,7 +352,11 @@ def test_nonhydro_predictor_step(
         atol=5e-20,
     )
     # stencil 30
-    assert dallclose(sp_exit.vt().asnumpy(), diagnostic_state_nh.vt.asnumpy(), atol=5e-14)
+    assert dallclose(
+        sp_exit.vt().asnumpy(),
+        diagnostic_state_nh.vt.asnumpy(),
+        atol=5e-14,
+    )
 
     # stencil 32
     assert dallclose(
@@ -360,7 +367,9 @@ def test_nonhydro_predictor_step(
     # stencil 32
     # TODO: @abishekg7 higher tol.
     assert dallclose(
-        sp_exit.z_theta_v_fl_e().asnumpy(), solve_nonhydro.z_theta_v_fl_e.asnumpy(), atol=1e-9
+        sp_exit.z_theta_v_fl_e().asnumpy(),
+        solve_nonhydro.z_theta_v_fl_e.asnumpy(),
+        atol=1e-9,
     )
 
     # stencil 35,36, 37,38
@@ -371,7 +380,11 @@ def test_nonhydro_predictor_step(
     )
 
     # stencil 35,36, 37,38
-    assert dallclose(sp_exit.z_vt_ie().asnumpy(), z_fields.z_vt_ie.asnumpy(), atol=2e-14)
+    assert dallclose(
+        sp_exit.z_vt_ie().asnumpy(),
+        z_fields.z_vt_ie.asnumpy(),
+        atol=2e-14,
+    )
     # stencil 35,36
     assert dallclose(
         sp_exit.z_kin_hor_e().asnumpy()[edge_start_lb_plus4:, :],
@@ -434,12 +447,13 @@ def test_nonhydro_predictor_step(
         z_fields.z_q.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
-    # stencil 48, 49  #level 0 wrong
+    # stencil 48, 49
     assert dallclose(
         sp_exit.z_rho_expl().asnumpy()[cell_start_nudging:, :],
         z_fields.z_rho_expl.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
+    # stencil 48, 49 # TODO (magdalena) there is a problem at last  2 klevel=nlev-1,nlev-2
     assert dallclose(
         sp_exit.z_exner_expl().asnumpy()[cell_start_nudging:, :],
         z_fields.z_exner_expl.asnumpy()[cell_start_nudging:, :],
@@ -448,7 +462,7 @@ def test_nonhydro_predictor_step(
 
     # end
     assert dallclose(sp_exit.rho_new().asnumpy(), prognostic_state_nnew.rho.asnumpy())
-    assert dallclose(icon_result_w_new.asnumpy(), prognostic_state_nnew.w.asnumpy(), atol=7e-14)
+    assert dallclose(icon_result_w_new, prognostic_state_nnew.w.asnumpy(), atol=7e-14)
 
     # not tested
     assert dallclose(icon_result_exner_new, prognostic_state_nnew.exner.asnumpy())
@@ -663,7 +677,6 @@ def test_nonhydro_corrector_step(
     )
 
 
-@pytest.mark.skip("TODO (magdalena) fix update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,  istep_exit, jstep_exit,step_date_exit",
