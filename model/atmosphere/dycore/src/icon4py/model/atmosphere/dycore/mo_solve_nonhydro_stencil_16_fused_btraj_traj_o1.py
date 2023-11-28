@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, where
+from gt4py.next.ffront.fbuiltins import Field, astype, where, int32
 
 from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -195,6 +195,10 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
     z_rho_e: Field[[EdgeDim, KDim], wpfloat],
     z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         p_vn,
@@ -215,4 +219,8 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
         z_rth_pr_1,
         z_rth_pr_2,
         out=(z_rho_e, z_theta_v_e),
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

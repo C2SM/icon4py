@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -72,6 +72,10 @@ def calculate_nabla4(
     inv_vert_vert_length: Field[[EdgeDim], wpfloat],
     inv_primal_edge_length: Field[[EdgeDim], wpfloat],
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _calculate_nabla4(
         u_vert,
@@ -82,4 +86,8 @@ def calculate_nabla4(
         inv_vert_vert_length,
         inv_primal_edge_length,
         out=z_nabla4_e2,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        }
     )

@@ -87,6 +87,10 @@ def mo_advection_traj_btraj_compute_o1_dsl(
     p_distv_bary_1: Field[[EdgeDim, KDim], vpfloat],
     p_distv_bary_2: Field[[EdgeDim, KDim], vpfloat],
     p_dthalf: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32
 ):
     _mo_advection_traj_btraj_compute_o1_dsl(
         p_vn,
@@ -101,4 +105,8 @@ def mo_advection_traj_btraj_compute_o1_dsl(
         dual_normal_cell_2,
         p_dthalf,
         out=(p_cell_idx, p_cell_blk, p_distv_bary_1, p_distv_bary_2),
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
