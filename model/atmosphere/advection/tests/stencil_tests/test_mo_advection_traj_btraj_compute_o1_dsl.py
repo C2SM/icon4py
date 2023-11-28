@@ -23,6 +23,7 @@ from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
     constant_field,
+    numpy_to_1D_sparse_field,
     random_field,
 )
 
@@ -105,7 +106,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         p_vn = random_field(grid, EdgeDim, KDim)
         p_vt = random_field(grid, EdgeDim, KDim)
         cell_idx = np.asarray(grid.connectivities[E2CDim], dtype=int32)
-        cell_idx_new = as_1D_sparse_field(cell_idx, ECDim)
+        cell_idx_new = numpy_to_1D_sparse_field(cell_idx, ECDim)
         cell_blk = constant_field(grid, 1, EdgeDim, E2CDim, dtype=int32)
         cell_blk_new = as_1D_sparse_field(cell_blk, ECDim)
         pos_on_tplane_e_1 = random_field(grid, EdgeDim, E2CDim)

@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 )
 from icon4py.model.common.dimension import CellDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
@@ -39,9 +40,9 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_cell_in = random_field(grid, CellDim, KDim)
-        c_intp = random_field(grid, VertexDim, V2CDim)
-        p_vert_out = zero_field(grid, VertexDim, KDim)
+        p_cell_in = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        c_intp = random_field(grid, VertexDim, V2CDim, dtype=wpfloat)
+        p_vert_out = zero_field(grid, VertexDim, KDim, dtype=vpfloat)
 
         return dict(
             p_cell_in=p_cell_in,

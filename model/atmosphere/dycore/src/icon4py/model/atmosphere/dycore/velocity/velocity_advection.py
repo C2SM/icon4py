@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import gt4py.next
 import numpy as np
+from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
 from gt4py.next.program_processors.runners.gtfn import (
@@ -68,7 +69,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-backend = run_gtfn_cached
+backend = run_gtfn
 #
 
 
@@ -229,7 +230,7 @@ class VelocityAdvection:
                 offset_provider={"Koff": KDim},
             )
 
-        velocity_prog.fused_stencils_4_5_6.with_backend(backend)(
+        velocity_prog.fused_stencils_4_5.with_backend(backend)(
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
@@ -238,18 +239,26 @@ class VelocityAdvection:
             ddxn_z_full=self.metric_state.ddxn_z_full,
             ddxt_z_full=self.metric_state.ddxt_z_full,
             z_w_concorr_me=z_w_concorr_me,
-            wgtfacq_e_dsl=self.metric_state.wgtfacq_e_dsl,
             k_field=self.k_field,
             nflatlev_startindex=self.vertical_params.nflatlev,
             nlev=self.grid.num_levels,
             horizontal_start=start_edge_lb_plus4,
             horizontal_end=end_edge_local_minus2,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,  # TODO (magdalena) was grid.num_levels + 1, there should be no vertical bounds at all since it uses a k_level mask internally
-            offset_provider={
-                "Koff": KDim,
-            },
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
         )
+        velocity_prog.mo_velocity_advection_stencil_06.with_backend(backend)(
+            wgtfacq_e=self.metric_state.wgtfacq_e_dsl,
+            vn=prognostic_state.vn,
+            vn_ie=diagnostic_state.vn_ie,
+            horizontal_start=start_edge_lb_plus4,
+            horizontal_end=end_edge_local_minus2,
+            vertical_start=self.grid.num_levels,
+            vertical_end=self.grid.num_levels + 1,
+            offset_provider={"Koff": KDim},
+        )
+
         if not vn_only:
             mo_velocity_advection_stencil_07.with_backend(backend)(
                 vn_ie=diagnostic_state.vn_ie,
@@ -332,7 +341,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        self.levmask = gt4py.next.as_field(domain=(KDim,), data=np.any(self.cfl_clipping, 0))
+        self._update_levmask_from_cfl_clipping()
 
         mo_velocity_advection_stencil_15.with_backend(backend)(
             z_w_con_c=self.z_w_con_c,
@@ -385,7 +394,6 @@ class VelocityAdvection:
             },
         )
 
-        # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
         mo_velocity_advection_stencil_19.with_backend(backend)(
@@ -437,6 +445,11 @@ class VelocityAdvection:
                 "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
                 "Koff": KDim,
             },
+        )
+
+    def _update_levmask_from_cfl_clipping(self):
+        self.levmask = as_field(
+            domain=(KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):
@@ -575,7 +588,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        self.levmask = gt4py.next.as_field((KDim,), np.any(self.cfl_clipping, 0))
+        self._update_levmask_from_cfl_clipping()
 
         mo_velocity_advection_stencil_15.with_backend(backend)(
             z_w_con_c=self.z_w_con_c,

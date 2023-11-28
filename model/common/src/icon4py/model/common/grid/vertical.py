@@ -53,7 +53,7 @@ class VerticalModelParams:
             self,
             "index_of_damping_layer",
             self._determine_damping_height_index(
-                np.asarray(self.vct_a), self.rayleigh_damping_height
+                self.vct_a.asnumpy(), self.rayleigh_damping_height
             ),
         )
         object.__setattr__(

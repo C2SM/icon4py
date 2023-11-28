@@ -16,25 +16,26 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_22(
     ipeidx_dsl: Field[[EdgeDim, KDim], bool],
-    pg_exdist: Field[[EdgeDim, KDim], float],
-    z_hydro_corr: Field[[EdgeDim], float],
-    z_gradh_exner: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    z_gradh_exner = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
-    return z_gradh_exner
+    pg_exdist: Field[[EdgeDim, KDim], vpfloat],
+    z_hydro_corr: Field[[EdgeDim], vpfloat],
+    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    z_gradh_exner_vp = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
+    return z_gradh_exner_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_22(
     ipeidx_dsl: Field[[EdgeDim, KDim], bool],
-    pg_exdist: Field[[EdgeDim, KDim], float],
-    z_hydro_corr: Field[[EdgeDim], float],
-    z_gradh_exner: Field[[EdgeDim, KDim], float],
+    pg_exdist: Field[[EdgeDim, KDim], vpfloat],
+    z_hydro_corr: Field[[EdgeDim], vpfloat],
+    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

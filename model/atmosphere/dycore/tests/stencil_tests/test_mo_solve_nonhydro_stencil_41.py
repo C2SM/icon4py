@@ -25,6 +25,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil41(StencilTest):
@@ -53,11 +54,11 @@ class TestMoSolveNonhydroStencil41(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        geofac_div = as_1D_sparse_field(random_field(grid, CellDim, C2EDim), CEDim)
-        z_theta_v_fl_e = random_field(grid, EdgeDim, KDim)
-        z_flxdiv_theta = zero_field(grid, CellDim, KDim)
-        mass_fl_e = random_field(grid, EdgeDim, KDim)
-        z_flxdiv_mass = zero_field(grid, CellDim, KDim)
+        geofac_div = as_1D_sparse_field(random_field(grid, CellDim, C2EDim, dtype=wpfloat), CEDim)
+        z_theta_v_fl_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_flxdiv_theta = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        mass_fl_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_flxdiv_mass = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             geofac_div=geofac_div,

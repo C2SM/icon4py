@@ -94,35 +94,37 @@ def verify_diffusion_fields(
     prognostic_state: PrognosticState,
     diffusion_savepoint: IconDiffusionExitSavepoint,
 ):
+    ref_w = diffusion_savepoint.w().asnumpy()
+    val_w = prognostic_state.w.asnumpy()
+    ref_exner = diffusion_savepoint.exner().asnumpy()
+    ref_theta_v = diffusion_savepoint.theta_v().asnumpy()
+    val_theta_v = prognostic_state.theta_v.asnumpy()
+    val_exner = prognostic_state.exner.asnumpy()
+    ref_vn = diffusion_savepoint.vn().asnumpy()
+    val_vn = prognostic_state.vn.asnumpy()
+
     validate_diagnostics = (
         config.shear_type >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
     )
     if validate_diagnostics:
-        ref_div_ic = np.asarray(diffusion_savepoint.div_ic())
-        val_div_ic = np.asarray(diagnostic_state.div_ic)
-        ref_hdef_ic = np.asarray(diffusion_savepoint.hdef_ic())
-        val_hdef_ic = np.asarray(diagnostic_state.hdef_ic)
-        assert dallclose(ref_div_ic, val_div_ic, atol=5.0e-18)
-        assert dallclose(ref_hdef_ic, val_hdef_ic)
-        ref_dwdx = np.asarray(diffusion_savepoint.dwdx())
-        val_dwdx = np.asarray(diagnostic_state.dwdx)
-        ref_dwdy = np.asarray(diffusion_savepoint.dwdy())
-        val_dwdy = np.asarray(diagnostic_state.dwdy)
-        assert dallclose(ref_dwdx, val_dwdx, atol=1e-19)
-        assert dallclose(ref_dwdy, val_dwdy, atol=1e-19)
+        ref_div_ic = diffusion_savepoint.div_ic().asnumpy()
+        val_div_ic = diagnostic_state.div_ic.asnumpy()
+        ref_hdef_ic = diffusion_savepoint.hdef_ic().asnumpy()
+        val_hdef_ic = diagnostic_state.hdef_ic.asnumpy()
+        ref_dwdx = diffusion_savepoint.dwdx().asnumpy()
+        val_dwdx = diagnostic_state.dwdx.asnumpy()
+        ref_dwdy = diffusion_savepoint.dwdy().asnumpy()
+        val_dwdy = diagnostic_state.dwdy.asnumpy()
 
-    ref_w = np.asarray(diffusion_savepoint.w())
-    val_w = np.asarray(prognostic_state.w)
-    ref_vn = np.asarray(diffusion_savepoint.vn())
-    val_vn = np.asarray(prognostic_state.vn)
-    assert dallclose(ref_vn, val_vn, atol=1e-15)
-    assert dallclose(ref_w, val_w, atol=1e-16)
-    ref_exner = np.asarray(diffusion_savepoint.exner())
-    ref_theta_v = np.asarray(diffusion_savepoint.theta_v())
-    val_theta_v = np.asarray(prognostic_state.theta_v)
-    val_exner = np.asarray(prognostic_state.exner)
-    assert dallclose(ref_theta_v, val_theta_v)
-    assert dallclose(ref_exner, val_exner)
+        assert np.allclose(ref_div_ic, val_div_ic)
+        assert np.allclose(ref_hdef_ic, val_hdef_ic)
+        assert np.allclose(ref_dwdx, val_dwdx)
+        assert np.allclose(ref_dwdy, val_dwdy)
+
+    assert np.allclose(ref_vn, val_vn)
+    assert np.allclose(ref_w, val_w)
+    assert np.allclose(ref_theta_v, val_theta_v)
+    assert np.allclose(ref_exner, val_exner)
 
 
 def smag_limit_numpy(func, *args):

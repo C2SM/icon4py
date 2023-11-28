@@ -24,7 +24,7 @@ BASE_PATH = COMMON_PATH.parent.joinpath("testdata")
 
 # TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
 DATA_URIS = {
-    1: "https://polybox.ethz.ch/index.php/s/psBNNhng0h9KrB4/download",
+    1: "https://polybox.ethz.ch/index.php/s/re46l1xnJZ4uCMx/download",
     2: "https://polybox.ethz.ch/index.php/s/YyC5qDJWyC39y7u/download",
     4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }

@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_14 import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil14(StencilTest):
@@ -34,8 +35,8 @@ class TestMoSolveNonhydroStencil14(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_rho_e = zero_field(grid, EdgeDim, KDim)
-        z_theta_v_e = zero_field(grid, EdgeDim, KDim)
+        z_rho_e = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_theta_v_e = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             z_rho_e=z_rho_e,
