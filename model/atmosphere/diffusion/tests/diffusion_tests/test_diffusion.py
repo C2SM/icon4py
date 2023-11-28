@@ -264,7 +264,6 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
-@pytest.mark.skip("#TODO (magdalena) assertion failure after update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "step_date_init, step_date_exit",
@@ -320,7 +319,6 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(diagnostic_state, prognostic_state, diffusion_savepoint_exit)
 
 
-@pytest.mark.skip("#TODO (magdalena) assertion failure after update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(
