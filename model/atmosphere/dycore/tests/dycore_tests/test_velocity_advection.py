@@ -372,9 +372,9 @@ def test_velocity_corrector_step(
         diagnostic_state.ddt_w_adv_pc[ntnd - 1].asnumpy()[3316:20896, :],
         atol=5.0e-16,
     )
-    # stencil 19 level 0 not verifying
+    # stencil 19
     assert dallclose(
-        icon_result_ddt_vn_apc_pc[5387:31558, 0:65],
-        diagnostic_state.ddt_vn_apc_pc[ntnd - 1].asnumpy()[5387:31558, 0:65],
+        icon_result_ddt_vn_apc_pc,
+        diagnostic_state.ddt_vn_apc_pc[ntnd - 1].asnumpy(),
         atol=5.0e-16,
     )
