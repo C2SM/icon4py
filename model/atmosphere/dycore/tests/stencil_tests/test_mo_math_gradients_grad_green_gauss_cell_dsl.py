@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
@@ -59,14 +60,14 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_ccpr1 = random_field(grid, CellDim, KDim)
-        p_ccpr2 = random_field(grid, CellDim, KDim)
-        geofac_grg_x = random_field(grid, CellDim, C2E2CODim)
-        geofac_grg_y = random_field(grid, CellDim, C2E2CODim)
-        p_grad_1_u = zero_field(grid, CellDim, KDim)
-        p_grad_1_v = zero_field(grid, CellDim, KDim)
-        p_grad_2_u = zero_field(grid, CellDim, KDim)
-        p_grad_2_v = zero_field(grid, CellDim, KDim)
+        p_ccpr1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        p_ccpr2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        geofac_grg_x = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
+        geofac_grg_y = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
+        p_grad_1_u = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        p_grad_1_v = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        p_grad_2_u = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        p_grad_2_v = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             p_grad_1_u=p_grad_1_u,

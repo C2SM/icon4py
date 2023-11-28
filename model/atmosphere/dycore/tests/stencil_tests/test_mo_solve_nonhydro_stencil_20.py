@@ -25,6 +25,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonHydroStencil20(StencilTest):
@@ -76,10 +77,12 @@ class TestMoSolveNonHydroStencil20(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
 
-        inv_dual_edge_length = random_field(grid, EdgeDim)
-        z_exner_ex_pr = random_field(grid, CellDim, KDim)
-        zdiff_gradp = random_field(grid, EdgeDim, E2CDim, KDim)
+        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        z_exner_ex_pr = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        zdiff_gradp = random_field(grid, EdgeDim, E2CDim, KDim, dtype=vpfloat)
         ikoffset = zero_field(grid, EdgeDim, E2CDim, KDim, dtype=int32)
 
         rng = np.random.default_rng()
@@ -94,9 +97,9 @@ class TestMoSolveNonHydroStencil20(StencilTest):
         zdiff_gradp_new = flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp)
         ikoffset_new = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
 
-        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim)
-        z_dexner_dz_c_2 = random_field(grid, CellDim, KDim)
-        z_gradh_exner = zero_field(grid, EdgeDim, KDim)
+        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_dexner_dz_c_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_gradh_exner = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,

@@ -28,6 +28,7 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoVelocityAdvectionStencil20(StencilTest):
@@ -37,17 +38,17 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         levelmask = random_mask(grid, KDim, extend={KDim: 1})
-        c_lin_e = random_field(grid, EdgeDim, E2CDim)
-        z_w_con_c_full = random_field(grid, CellDim, KDim)
-        ddqz_z_full_e = random_field(grid, EdgeDim, KDim)
+        c_lin_e = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
+        z_w_con_c_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        ddqz_z_full_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
         area_edge = random_field(grid, EdgeDim)
         tangent_orientation = random_field(grid, EdgeDim)
         inv_primal_edge_length = random_field(grid, EdgeDim)
-        zeta = random_field(grid, VertexDim, KDim)
+        zeta = random_field(grid, VertexDim, KDim, dtype=vpfloat)
         geofac_grdiv = random_field(grid, EdgeDim, E2C2EODim)
         vn = random_field(grid, EdgeDim, KDim)
-        ddt_vn_apc = random_field(grid, EdgeDim, KDim)
-        cfl_w_limit = 4.0
+        ddt_vn_apc = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        cfl_w_limit = vpfloat("4.0")
         scalfac_exdiff = 6.0
         dtime = 2.0
         return dict(
@@ -104,7 +105,14 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
 
         w_con_e = np.where(
             (levelmask_offset_0) | (levelmask_offset_1),
-            np.sum(c_lin_e * z_w_con_c_full[grid.connectivities[E2CDim]], axis=1),
+            np.sum(
+                np.where(
+                    (grid.connectivities[E2CDim] != -1)[:, :, np.newaxis],
+                    c_lin_e * z_w_con_c_full[grid.connectivities[E2CDim]],
+                    0,
+                ),
+                axis=1,
+            ),
             w_con_e,
         )
         difcoef = np.where(
@@ -124,7 +132,14 @@ class TestMoVelocityAdvectionStencil20(StencilTest):
             + difcoef
             * area_edge
             * (
-                np.sum(geofac_grdiv * vn[grid.connectivities[E2C2EODim]], axis=1)
+                np.sum(
+                    np.where(
+                        (grid.connectivities[E2C2EODim] != -1)[:, :, np.newaxis],
+                        geofac_grdiv * vn[grid.connectivities[E2C2EODim]],
+                        0,
+                    ),
+                    axis=1,
+                )
                 + tangent_orientation
                 * inv_primal_edge_length
                 * (

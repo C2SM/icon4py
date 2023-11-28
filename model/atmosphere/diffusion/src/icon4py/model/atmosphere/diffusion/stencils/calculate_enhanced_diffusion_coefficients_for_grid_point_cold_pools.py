@@ -21,28 +21,34 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_
     _temporary_field_for_grid_point_cold_pools_enhancement,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-    theta_v: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-    thresh_tdiff: float,
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    thresh_tdiff: wpfloat,
+    smallest_vpfloat: vpfloat,
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
     enh_diffu_3d = _temporary_field_for_grid_point_cold_pools_enhancement(
-        theta_v, theta_ref_mc, thresh_tdiff
+        theta_v,
+        theta_ref_mc,
+        thresh_tdiff,
+        smallest_vpfloat,
     )
-    kh_smag_e = _enhance_diffusion_coefficient_for_grid_point_cold_pools(kh_smag_e, enh_diffu_3d)
-    return kh_smag_e
+    kh_smag_e_vp = _enhance_diffusion_coefficient_for_grid_point_cold_pools(kh_smag_e, enh_diffu_3d)
+    return kh_smag_e_vp
 
 
 @program
 def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-    theta_v: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-    thresh_tdiff: float,
-    kh_smag_e: Field[[EdgeDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    thresh_tdiff: wpfloat,
+    smallest_vpfloat: vpfloat,
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -52,6 +58,7 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
         theta_v,
         theta_ref_mc,
         thresh_tdiff,
+        smallest_vpfloat,
         kh_smag_e,
         out=kh_smag_e,
         domain={

@@ -16,9 +16,9 @@ from typing import ClassVar, Optional
 import numpy as np
 import numpy.typing as npt
 import pytest
+from gt4py.next import as_field
 from gt4py.next import common as gt_common
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.iterator import embedded as it_embedded
 
 
 try:
@@ -52,7 +52,7 @@ def random_mask(
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> it_embedded.MutableLocatedField:
+) -> gt_common.Field:
     shape = _shape(grid, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
@@ -60,7 +60,7 @@ def random_mask(
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return it_embedded.np_as_located_field(*dims)(arr)
+    return as_field(dims, arr)
 
 
 def random_field(
@@ -69,10 +69,14 @@ def random_field(
     low: float = -1.0,
     high: float = 1.0,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> it_embedded.MutableLocatedField:
-    return it_embedded.np_as_located_field(*dims)(
-        np.random.default_rng().uniform(low=low, high=high, size=_shape(grid, *dims, extend=extend))
+    dtype: Optional[npt.DTypeLike] = None,
+) -> gt_common.Field:
+    arr = np.random.default_rng().uniform(
+        low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
+    if dtype:
+        arr = arr.astype(dtype)
+    return as_field(dims, arr)
 
 
 def zero_field(
@@ -80,41 +84,42 @@ def zero_field(
     *dims: gt_common.Dimension,
     dtype=float,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> it_embedded.MutableLocatedField:
-    return it_embedded.np_as_located_field(*dims)(
-        np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype)
-    )
+) -> gt_common.Field:
+    return as_field(dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
 
 
 def constant_field(
     grid: SimpleGrid, value: float, *dims: gt_common.Dimension, dtype=float
-) -> it_embedded.MutableLocatedField:
-    return it_embedded.np_as_located_field(*dims)(
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
+) -> gt_common.Field:
+    return as_field(
+        dims, value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
     )
 
 
-def as_1D_sparse_field(
-    field: it_embedded.MutableLocatedField, dim: gt_common.Dimension
-) -> it_embedded.MutableLocatedField:
+def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    old_shape = np.asarray(field).shape
+    buffer = field.asnumpy()
+    return numpy_to_1D_sparse_field(buffer, target_dim)
+
+
+def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_common.Field:
+    """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
+    old_shape = field.shape
     assert len(old_shape) == 2
     new_shape = (old_shape[0] * old_shape[1],)
-    return it_embedded.np_as_located_field(dim)(np.asarray(field).reshape(new_shape))
+    return as_field((dim,), field.reshape(new_shape))
 
 
-def flatten_first_two_dims(
-    *dims: gt_common.Dimension, field: it_embedded.MutableLocatedField
-) -> it_embedded.MutableLocatedField:
+def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -> gt_common.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
-    old_shape = np.asarray(field).shape
+    buffer = field.asnumpy()
+    old_shape = buffer.shape
     assert len(old_shape) >= 2
     flattened_size = old_shape[0] * old_shape[1]
     flattened_shape = (flattened_size,)
     new_shape = flattened_shape + old_shape[2:]
-    newarray = np.asarray(field).reshape(new_shape)
-    return it_embedded.np_as_located_field(*dims)(newarray)
+    newarray = buffer.reshape(new_shape)
+    return as_field(dims, newarray)
 
 
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
@@ -122,14 +127,20 @@ def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
 
 
 def _test_validation(self, grid, backend, input_data):
-    reference_outputs = self.reference(grid, **{k: np.array(v) for k, v in input_data.items()})
+    reference_outputs = self.reference(
+        grid,
+        **{
+            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
+            for k, v in input_data.items()
+        },
+    )
     self.PROGRAM.with_backend(backend)(
         **input_data,
         offset_provider=grid.get_all_offset_providers(),
     )
     for name in self.OUTPUTS:
         assert np.allclose(
-            input_data[name], reference_outputs[name]
+            input_data[name].asnumpy(), reference_outputs[name]
         ), f"Validation failed for '{name}'"
 
 

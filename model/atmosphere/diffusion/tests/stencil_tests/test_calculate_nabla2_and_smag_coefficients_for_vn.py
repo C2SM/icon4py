@@ -24,6 +24,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
@@ -156,29 +157,32 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        u_vert = random_field(grid, VertexDim, KDim)
-        v_vert = random_field(grid, VertexDim, KDim)
-        smag_offset = 9.0
-        diff_multfac_smag = random_field(grid, KDim)
-        tangent_orientation = random_field(grid, EdgeDim)
-        vn = random_field(grid, EdgeDim, KDim)
-        smag_limit = random_field(grid, KDim)
-        inv_vert_vert_length = random_field(grid, EdgeDim)
-        inv_primal_edge_length = random_field(grid, EdgeDim)
+        if np.any(grid.connectivities[E2C2VDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
 
-        primal_normal_vert_x = random_field(grid, EdgeDim, E2C2VDim)
-        primal_normal_vert_y = random_field(grid, EdgeDim, E2C2VDim)
-        dual_normal_vert_x = random_field(grid, EdgeDim, E2C2VDim)
-        dual_normal_vert_y = random_field(grid, EdgeDim, E2C2VDim)
+        u_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
+        v_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
+        smag_offset = vpfloat("9.0")
+        diff_multfac_smag = random_field(grid, KDim, dtype=vpfloat)
+        tangent_orientation = random_field(grid, EdgeDim, dtype=wpfloat)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        smag_limit = random_field(grid, KDim, dtype=vpfloat)
+        inv_vert_vert_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        inv_primal_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
+
+        primal_normal_vert_x = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_y = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
+        dual_normal_vert_x = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
+        dual_normal_vert_y = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
 
         primal_normal_vert_x_new = as_1D_sparse_field(primal_normal_vert_x, ECVDim)
         primal_normal_vert_y_new = as_1D_sparse_field(primal_normal_vert_y, ECVDim)
         dual_normal_vert_x_new = as_1D_sparse_field(dual_normal_vert_x, ECVDim)
         dual_normal_vert_y_new = as_1D_sparse_field(dual_normal_vert_y, ECVDim)
 
-        z_nabla2_e = zero_field(grid, EdgeDim, KDim)
-        kh_smag_e = zero_field(grid, EdgeDim, KDim)
-        kh_smag_ec = zero_field(grid, EdgeDim, KDim)
+        z_nabla2_e = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        kh_smag_e = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        kh_smag_ec = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             diff_multfac_smag=diff_multfac_smag,

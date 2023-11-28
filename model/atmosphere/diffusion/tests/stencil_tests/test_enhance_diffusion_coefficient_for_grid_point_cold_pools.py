@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_f
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat
 
 
 class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
@@ -41,8 +42,8 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        kh_smag_e = random_field(grid, EdgeDim, KDim)
-        enh_diffu_3d = random_field(grid, CellDim, KDim)
+        kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        enh_diffu_3d = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,

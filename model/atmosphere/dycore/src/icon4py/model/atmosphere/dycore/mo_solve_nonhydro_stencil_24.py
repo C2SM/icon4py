@@ -13,35 +13,40 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_24(
-    vn_nnow: Field[[EdgeDim, KDim], float],
-    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float],
-    ddt_vn_phy: Field[[EdgeDim, KDim], float],
-    z_theta_v_e: Field[[EdgeDim, KDim], float],
-    z_gradh_exner: Field[[EdgeDim, KDim], float],
-    dtime: float,
-    cpd: float,
-) -> Field[[EdgeDim, KDim], float]:
-    vn_nnew = vn_nnow + dtime * (ddt_vn_apc_ntl1 - cpd * z_theta_v_e * z_gradh_exner + ddt_vn_phy)
-    return vn_nnew
+    vn_nnow: Field[[EdgeDim, KDim], wpfloat],
+    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
+    z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
+    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+    dtime: wpfloat,
+    cpd: wpfloat,
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    z_gradh_exner_wp = astype(z_gradh_exner, wpfloat)
+
+    vn_nnew_wp = vn_nnow + dtime * (
+        astype(ddt_vn_apc_ntl1 + ddt_vn_phy, wpfloat) - cpd * z_theta_v_e * z_gradh_exner_wp
+    )
+    return vn_nnew_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_24(
-    vn_nnow: Field[[EdgeDim, KDim], float],
-    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float],
-    ddt_vn_phy: Field[[EdgeDim, KDim], float],
-    z_theta_v_e: Field[[EdgeDim, KDim], float],
-    z_gradh_exner: Field[[EdgeDim, KDim], float],
-    vn_nnew: Field[[EdgeDim, KDim], float],
-    dtime: float,
-    cpd: float,
+    vn_nnow: Field[[EdgeDim, KDim], wpfloat],
+    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
+    z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
+    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+    vn_nnew: Field[[EdgeDim, KDim], wpfloat],
+    dtime: wpfloat,
+    cpd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

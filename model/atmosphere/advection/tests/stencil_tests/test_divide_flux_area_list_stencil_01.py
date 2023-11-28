@@ -661,7 +661,7 @@ def divide_flux_area_list_stencil_01_numpy(
 
 
 @pytest.mark.slow_tests
-def test_divide_flux_area_list_stencil_01():
+def test_divide_flux_area_list_stencil_01(backend):
     grid = SimpleGrid()
 
     famask_int = random_mask(grid, EdgeDim, KDim, dtype=int32)
@@ -738,7 +738,7 @@ def test_divide_flux_area_list_stencil_01():
         np.asarray(dreg_patch0_4_lat_dsl),
     )
 
-    divide_flux_area_list_stencil_01(
+    divide_flux_area_list_stencil_01.with_backend(backend)(
         famask_int,
         p_vn,
         ptr_v3_lon_field,

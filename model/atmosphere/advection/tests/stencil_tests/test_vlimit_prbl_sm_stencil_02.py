@@ -25,7 +25,6 @@ def v_limit_prbl_sm_stencil_02_numpy(
     p_face: np.array,
     p_cc: np.array,
 ):
-
     q_face_up, q_face_low = np.where(
         l_limit != int32(0),
         np.where(
@@ -43,7 +42,7 @@ def v_limit_prbl_sm_stencil_02_numpy(
     return q_face_up, q_face_low
 
 
-def test_v_limit_prbl_sm_stencil_02():
+def test_v_limit_prbl_sm_stencil_02(backend):
     grid = SimpleGrid()
     l_limit = random_mask(grid, CellDim, KDim, dtype=int32)
     p_cc = random_field(grid, CellDim, KDim)
@@ -52,12 +51,12 @@ def test_v_limit_prbl_sm_stencil_02():
     p_face_low = zero_field(grid, CellDim, KDim)
 
     p_face_up_ref, p_face_low_ref = v_limit_prbl_sm_stencil_02_numpy(
-        np.asarray(l_limit),
-        np.asarray(p_face),
-        np.asarray(p_cc),
+        l_limit.asnumpy(),
+        p_face.asnumpy(),
+        p_cc.asnumpy(),
     )
 
-    v_limit_prbl_sm_stencil_02(
+    v_limit_prbl_sm_stencil_02.with_backend(backend)(
         l_limit,
         p_face,
         p_cc,
@@ -66,5 +65,5 @@ def test_v_limit_prbl_sm_stencil_02():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(p_face_up_ref[:, :-1], p_face_up[:, :-1])
-    assert np.allclose(p_face_low_ref[:, :-1], p_face_low[:, :-1])
+    assert np.allclose(p_face_up_ref[:, :-1], p_face_up.asnumpy()[:, :-1])
+    assert np.allclose(p_face_low_ref[:, :-1], p_face_low.asnumpy()[:, :-1])

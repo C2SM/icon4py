@@ -13,6 +13,7 @@
 from typing import Tuple
 
 import numpy as np
+from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
@@ -22,9 +23,13 @@ from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
     maximum,
     minimum,
 )
-from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
+
+
+def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
+    shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
+    return as_field((dim,), np.arange(shapex, dtype=dtype))
 
 
 def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
@@ -32,12 +37,7 @@ def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
     if is_halfdim:
         assert len(shapex) == 2
         shapex = (shapex[0], shapex[1] + 1)
-    return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
-
-
-def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
-    shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
-    return np_as_located_field(dim)(np.arange(shapex, dtype=dtype))
+    return as_field(dims, np.zeros(shapex, dtype=dtype))
 
 
 def _allocate(*dims: Dimension, grid, is_halfdim=False, dtype=float):
@@ -194,7 +194,7 @@ def compute_z_raylfac(
 def _scal_divdamp_calcs(
     enh_divdamp_fac: Field[[KDim], float], mean_cell_area: float
 ) -> Field[[KDim], float]:
-    return -enh_divdamp_fac * mean_cell_area**2.0
+    return -enh_divdamp_fac * mean_cell_area**2
 
 
 @program

@@ -13,29 +13,34 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_diagnostics_for_turbulence(
-    div: Field[[CellDim, KDim], float],
-    kh_c: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    div_ic = wgtfac_c * div + (1.0 - wgtfac_c) * div(Koff[-1])
-    hdef_ic = wgtfac_c * kh_c + (1.0 - wgtfac_c) * kh_c(Koff[-1])
-    hdef_ic = hdef_ic * hdef_ic
-    return div_ic, hdef_ic
+    div: Field[[CellDim, KDim], vpfloat],
+    kh_c: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+    wgtfac_c_wp, div_wp, kh_c_wp = astype((wgtfac_c, div, kh_c), wpfloat)
+
+    div_ic_wp = astype(wgtfac_c * div, wpfloat) + (wpfloat("1.0") - wgtfac_c_wp) * div_wp(Koff[-1])
+    # TODO(magdalena): change exponent back to int (workaround for gt4py)
+    hdef_ic_wp = (
+        astype(wgtfac_c * kh_c, wpfloat) + (wpfloat("1.0") - wgtfac_c_wp) * kh_c_wp(Koff[-1])
+    ) ** 2
+    return astype((div_ic_wp, hdef_ic_wp), vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def calculate_diagnostics_for_turbulence(
-    div: Field[[CellDim, KDim], float],
-    kh_c: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    div_ic: Field[[CellDim, KDim], float],
-    hdef_ic: Field[[CellDim, KDim], float],
+    div: Field[[CellDim, KDim], vpfloat],
+    kh_c: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    div_ic: Field[[CellDim, KDim], vpfloat],
+    hdef_ic: Field[[CellDim, KDim], vpfloat],
 ):
     _calculate_diagnostics_for_turbulence(div, kh_c, wgtfac_c, out=(div_ic[:, 1:], hdef_ic[:, 1:]))
