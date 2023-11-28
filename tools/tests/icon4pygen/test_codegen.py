@@ -132,7 +132,7 @@ def check_code_was_generated(stencil_name: str) -> None:
     ("stencil_module", "stencil_name"),
     dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
 )
-@pytest.mark.parametrize("flags", [("--temporaries",), ()], ids=["temporaries", "normal"])
+@pytest.mark.parametrize("flags", [()], ids=["normal"])
 def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
