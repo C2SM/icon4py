@@ -49,7 +49,7 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
     smag_limit_init = zero_field(grid, KDim)
     k4 = 1.0
     efdt_ratio = 24.0
-    shape = np.asarray(diff_multfac_vn_init).shape
+    shape = diff_multfac_vn_init.asnumpy().shape
 
     expected_diff_multfac_vn_init = initial_diff_multfac_vn_numpy(shape, k4, efdt_ratio)
     expected_smag_limit_init = smag_limit_numpy(
@@ -71,7 +71,7 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
     k4 = 1.0
     substeps = 5.0
     efdt_ratio = 24.0
-    shape = np.asarray(diff_multfac_vn).shape
+    shape = diff_multfac_vn.asnumpy().shape
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
@@ -92,7 +92,7 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
     k4 = 0.003
     substeps = 1.0
 
-    shape = np.asarray(diff_multfac_vn).shape
+    shape = diff_multfac_vn.asnumpy().shape
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
     _setup_runtime_diff_multfac_vn.with_backend(backend)(

@@ -235,50 +235,50 @@ def test_run_solve_nonhydro_single_step(
         expected_theta_v,
         calculated_theta_v,
     )
-    expected_exner = np.asarray(sp_step_exit.exner_new())
-    calculated_exner = np.asarray(prognostic_state_nnew.exner)
+    expected_exner = sp_step_exit.exner_new().asnumpy()
+    calculated_exner = prognostic_state_nnew.exner.asnumpy()
     assert dallclose(
         expected_exner,
         calculated_exner,
     )
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.vn_new()),
-        np.asarray(prognostic_state_nnew.vn),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
+        prognostic_state_nnew.vn.asnumpy(),
         rtol=1e-10,
     )
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.w_new()),
-        np.asarray(prognostic_state_nnew.w),
+        savepoint_nonhydro_exit.w_new().asnumpy(),
+        prognostic_state_nnew.w.asnumpy(),
         atol=8e-14,
     )
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.rho_new()),
-        np.asarray(prognostic_state_nnew.rho),
+        savepoint_nonhydro_exit.rho_new().asnumpy(),
+        prognostic_state_nnew.rho.asnumpy(),
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.rho_ic()),
-        np.asarray(diagnostic_state_nh.rho_ic),
+        savepoint_nonhydro_exit.rho_ic().asnumpy(),
+        diagnostic_state_nh.rho_ic.asnumpy(),
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.theta_v_ic()),
-        np.asarray(diagnostic_state_nh.theta_v_ic),
+        savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
+        diagnostic_state_nh.theta_v_ic.asnumpy(),
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.mass_fl_e()),
-        np.asarray(diagnostic_state_nh.mass_fl_e),
+        savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
+        diagnostic_state_nh.mass_fl_e.asnumpy(),
         rtol=1e-10,
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.mass_flx_me()),
-        np.asarray(prep_adv.mass_flx_me),
+        savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
+        prep_adv.mass_flx_me.asnumpy(),
         rtol=1e-10,
     )
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.vn_traj()),
-        np.asarray(prep_adv.vn_traj),
+        savepoint_nonhydro_exit.vn_traj().asnumpy(),
+        prep_adv.vn_traj.asnumpy(),
         rtol=1e-10,
     )
