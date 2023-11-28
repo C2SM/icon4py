@@ -137,10 +137,10 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     nflatlev: int32,
     nflat_gradp: int32,
 ) -> tuple[
-    gtx.Field[[EdgeDim, KDim], float],
-    gtx.Field[[EdgeDim, KDim], float],
-    gtx.Field[[EdgeDim, KDim], float],
-    gtx.Field[[EdgeDim, KDim], float],
+    gtx.Field[[EdgeDim, KDim], wpfloat],
+    gtx.Field[[EdgeDim, KDim], wpfloat],
+    gtx.Field[[EdgeDim, KDim], wpfloat],
+    gtx.Field[[EdgeDim, KDim], wpfloat],
 ]:
     vert_idx = broadcast(vert_idx, (EdgeDim, KDim))
 
