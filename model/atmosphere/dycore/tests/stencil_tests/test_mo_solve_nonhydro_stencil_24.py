@@ -53,7 +53,7 @@ class TestMoSolveNonhydroStencil24(StencilTest):
         **kwargs,
     ) -> np.array:
         vn_nnew = mo_solve_nonhydro_stencil_24_numpy(
-            mesh,
+            grid,
             vn_nnow,
             ddt_vn_apc_ntl1,
             ddt_vn_phy,

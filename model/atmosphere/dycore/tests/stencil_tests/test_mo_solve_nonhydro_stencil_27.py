@@ -50,7 +50,7 @@ class TestMoSolveNonhydroStencil27(StencilTest):
         **kwargs,
     ) -> dict:
         vn = mo_solve_nonhydro_stencil_27_numpy(
-            mesh, scal_divdamp, bdy_divdamp, nudgecoeff_e, z_graddiv2_vn, vn
+            grid, scal_divdamp, bdy_divdamp, nudgecoeff_e, z_graddiv2_vn, vn
         )
 
         return dict(vn=vn)
