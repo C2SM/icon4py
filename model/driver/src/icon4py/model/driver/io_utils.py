@@ -30,7 +30,7 @@ from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import Inte
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
@@ -42,7 +42,9 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.common.constants import GRAV, RD, EARTH_RADIUS, EARTH_ANGULAR_VELOCITY, MATH_PI, MATH_PI_2, RD_O_CPD, P0REF, CVD_O_RD
 
-from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next import as_field
+
+from icon4py.model.common.interpolation.stencils import mo_cells2edges_scalar_interior
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
@@ -81,13 +83,26 @@ def read_icon_grid(
 def model_initialization(
     cell_param: CellParams,
     edge_param: EdgeParams,
+    interpolation_savepoint,
     geopot: Field[[CellDim,KDim], float],
     num_levels: int,
     p_sfc: float,
     jw_up: float,
     jw_u0: float,
-    jw_temp0: float
+    jw_temp0: float,
+    path: Path,
+    rank=0
 ):
+    data_provider = sb.IconSerialDataProvider(
+        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+    )
+    icon_grid = (
+        sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+        .from_savepoint_grid()
+        .construct_icon_grid()
+    )
+    cells2edges_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
+
     #jw_up = 1.0
     #jw_u0 = 35.0
     #jw_temp0 = 288.
@@ -164,14 +179,19 @@ def model_initialization(
         pressure_numpy[:, k_index] = P0REF * exner_numpy[:, k_index] ** cpd_o_rd
         temperature_numpy[:, k_index] = temperature_jw
 
-    # need cell to edge function
-    zeta_v_e = zeta_v
+    eta_v_e = zero_field(icon_grid, EdgeDim, KDim)
+    mo_cells2edges_scalar_interior(
+        cells2edges_coeff,
+        eta_v,
+        eta_v_e,
+
+    )
 
     for edge_index in range(edge_size):
         for k_index in range(num_levels):
             z_lat = edge_lat[edge_index, k_index]
             z_lon = edge_lon[edge_index, k_index]
-            zu = jw_u0 * (np.cos(zeta_v_e) ** 1.5) * (np.sin(2.0 * z_lat) ** 2)
+            zu = jw_u0 * (np.cos(eta_v_e) ** 1.5) * (np.sin(2.0 * z_lat) ** 2)
             if (jw_up > 1.e-20):
                 z_fac1 = np.sin(latC) * np.sin(z_lat) + np.cos(latC) * np.cos(z_lat) * np.cos(z_lon - lonC)
                 z_fac2 = 10.0 * np.arccos(z_fac1)
@@ -180,16 +200,16 @@ def model_initialization(
             zv = 0.0
             vn_numpy[edge_index, k_index] = zu * primal_normal_x[edge_index, k_index] + zv * primal_normal_y[edge_index, k_index]
 
-    vn = np_as_located_field(EdgeDim, KDim)(vn_numpy)
-    w = np_as_located_field(CellDim, KDim)(w_numpy)
-    exner = np_as_located_field(CellDim, KDim)(exner_numpy)
-    rho = np_as_located_field(CellDim, KDim)(rho_numpy)
-    temperature = np_as_located_field(CellDim, KDim)(temperature_numpy)
-    pressure = np_as_located_field(CellDim, KDim)(pressure_numpy)
-    theta_v = np_as_located_field(CellDim, KDim)(theta_v_numpy)
+    vn = as_field((EdgeDim, KDim), vn_numpy)
+    w = as_field((CellDim, KDim), w_numpy)
+    exner = as_field((CellDim, KDim), exner_numpy)
+    rho = as_field((CellDim, KDim), rho_numpy)
+    temperature = as_field((CellDim, KDim), temperature_numpy)
+    pressure = as_field((CellDim, KDim), pressure_numpy)
+    theta_v = as_field((CellDim, KDim), theta_v_numpy)
 
     # set surface pressure to the prescribed value
-    pres_sfc = np_as_located_field(CellDim, KDim)(np.full((cell_size, num_levels), fill_value=p_sfc, dtype=float))
+    pres_sfc = as_field((CellDim, KDim), np.full((cell_size, num_levels), fill_value=p_sfc, dtype=float))
 
     #TODO (Chia Rui): set up diagnostic values of surface pressure, pressure, and temperature
 
