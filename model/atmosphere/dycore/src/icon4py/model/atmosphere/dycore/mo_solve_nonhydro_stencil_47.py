@@ -13,24 +13,27 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast
+from gt4py.next.ffront.fbuiltins import Field, astype, broadcast
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_47(
-    w_concorr_c: Field[[CellDim, KDim], float]
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    w_nnew = w_concorr_c
-    z_contr_w_fl_l = broadcast(0.0, (CellDim, KDim))
-    return w_nnew, z_contr_w_fl_l
+    w_concorr_c: Field[[CellDim, KDim], vpfloat]
+) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    w_concorr_c_wp = astype(w_concorr_c, wpfloat)
+
+    w_nnew_wp = w_concorr_c_wp
+    z_contr_w_fl_l_wp = broadcast(wpfloat("0.0"), (CellDim, KDim))
+    return w_nnew_wp, z_contr_w_fl_l_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_47(
-    w_nnew: Field[[CellDim, KDim], float],
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
+    w_nnew: Field[[CellDim, KDim], wpfloat],
+    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
 ):
     _mo_solve_nonhydro_stencil_47(w_concorr_c, out=(w_nnew, z_contr_w_fl_l))

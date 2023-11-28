@@ -435,6 +435,7 @@ def test_nonhydro_predictor_step(
         z_fields.z_rho_expl.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
+    # stencil 48, 49
     assert dallclose(
         sp_exit.z_exner_expl().asnumpy()[cell_start_nudging:, :],
         z_fields.z_exner_expl.asnumpy()[cell_start_nudging:, :],
@@ -447,7 +448,6 @@ def test_nonhydro_predictor_step(
 
     # not tested
     assert dallclose(icon_result_exner_new, prognostic_state_nnew.exner.asnumpy())
-
     assert dallclose(icon_result_theta_v_new, prognostic_state_nnew.theta_v.asnumpy())
 
 

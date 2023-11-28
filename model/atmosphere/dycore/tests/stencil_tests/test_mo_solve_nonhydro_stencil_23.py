@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_23 import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil23(StencilTest):
@@ -51,17 +52,17 @@ class TestMoSolveNonhydroStencil23(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        vn_nnow = random_field(grid, EdgeDim, KDim)
-        ddt_vn_apc_ntl1 = random_field(grid, EdgeDim, KDim)
-        ddt_vn_apc_ntl2 = random_field(grid, EdgeDim, KDim)
-        ddt_vn_phy = random_field(grid, EdgeDim, KDim)
-        z_theta_v_e = random_field(grid, EdgeDim, KDim)
-        z_gradh_exner = random_field(grid, EdgeDim, KDim)
-        vn_nnew = zero_field(grid, EdgeDim, KDim)
-        dtime = 5.0
-        wgt_nnow_vel = 8.0
-        wgt_nnew_vel = 7.0
-        cpd = 2.0
+        vn_nnow = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        ddt_vn_apc_ntl1 = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        ddt_vn_apc_ntl2 = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        ddt_vn_phy = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_theta_v_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_gradh_exner = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn_nnew = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        dtime = wpfloat("5.0")
+        wgt_nnow_vel = wpfloat("8.0")
+        wgt_nnew_vel = wpfloat("7.0")
+        cpd = wpfloat("2.0")
 
         return dict(
             vn_nnow=vn_nnow,

@@ -106,7 +106,7 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
 def test_set_zero_vertex_k(backend):
     grid = SimpleGrid()
     f = random_field(grid, VertexDim, KDim)
-    set_zero_v_k.with_backend(backend)(f, offset_provider={})
+    set_zero_v_k(f, offset_provider={})
     assert np.allclose(0.0, f.asnumpy())
 
 

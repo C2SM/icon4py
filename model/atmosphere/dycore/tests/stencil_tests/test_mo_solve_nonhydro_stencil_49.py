@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_49 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil49(StencilTest):
@@ -59,18 +60,18 @@ class TestMoSolveNonhydroStencil49(StencilTest):
     def input_data(self, grid):
         dtime = 7.0
 
-        rho_nnow = random_field(grid, CellDim, KDim)
-        inv_ddqz_z_full = random_field(grid, CellDim, KDim)
-        z_flxdiv_mass = random_field(grid, CellDim, KDim)
-        z_contr_w_fl_l = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        exner_pr = random_field(grid, CellDim, KDim)
-        z_beta = random_field(grid, CellDim, KDim)
-        z_flxdiv_theta = random_field(grid, CellDim, KDim)
-        theta_v_ic = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        ddt_exner_phy = random_field(grid, CellDim, KDim)
+        rho_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        inv_ddqz_z_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_flxdiv_mass = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_contr_w_fl_l = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+        exner_pr = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_beta = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_flxdiv_theta = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        theta_v_ic = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+        ddt_exner_phy = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
-        z_rho_expl = zero_field(grid, CellDim, KDim)
-        z_exner_expl = zero_field(grid, CellDim, KDim)
+        z_rho_expl = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_exner_expl = zero_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
             z_rho_expl=z_rho_expl,

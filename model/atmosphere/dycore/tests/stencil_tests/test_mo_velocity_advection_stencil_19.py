@@ -25,6 +25,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoVelocityAdvectionStencil19(StencilTest):
@@ -68,18 +69,18 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
         if np.any(grid.connectivities[E2CDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        z_kin_hor_e = random_field(grid, EdgeDim, KDim)
-        coeff_gradekin = random_field(grid, EdgeDim, E2CDim)
+        z_kin_hor_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        coeff_gradekin = random_field(grid, EdgeDim, E2CDim, dtype=vpfloat)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)
-        z_ekinh = random_field(grid, CellDim, KDim)
-        zeta = random_field(grid, VertexDim, KDim)
-        vt = random_field(grid, EdgeDim, KDim)
-        f_e = random_field(grid, EdgeDim)
-        c_lin_e = random_field(grid, EdgeDim, E2CDim)
-        z_w_con_c_full = random_field(grid, CellDim, KDim)
-        vn_ie = random_field(grid, EdgeDim, KDim, extend={KDim: 1})
-        ddqz_z_full_e = random_field(grid, EdgeDim, KDim)
-        ddt_vn_apc = zero_field(grid, EdgeDim, KDim)
+        z_ekinh = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        zeta = random_field(grid, VertexDim, KDim, dtype=vpfloat)
+        vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        f_e = random_field(grid, EdgeDim, dtype=wpfloat)
+        c_lin_e = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
+        z_w_con_c_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        vn_ie = random_field(grid, EdgeDim, KDim, extend={KDim: 1}, dtype=vpfloat)
+        ddqz_z_full_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        ddt_vn_apc = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,

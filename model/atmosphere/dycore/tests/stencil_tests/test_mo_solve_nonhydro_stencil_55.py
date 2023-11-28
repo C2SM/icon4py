@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_55 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil55(StencilTest):
@@ -65,23 +66,23 @@ class TestMoSolveNonhydroStencil55(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_rho_expl = random_field(grid, CellDim, KDim)
-        vwind_impl_wgt = random_field(grid, CellDim)
-        inv_ddqz_z_full = random_field(grid, CellDim, KDim)
-        rho_ic = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        w = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        z_exner_expl = random_field(grid, CellDim, KDim)
-        exner_ref_mc = random_field(grid, CellDim, KDim)
-        z_alpha = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        z_beta = random_field(grid, CellDim, KDim)
-        rho_now = random_field(grid, CellDim, KDim)
-        theta_v_now = random_field(grid, CellDim, KDim)
-        exner_now = random_field(grid, CellDim, KDim)
-        rho_new = zero_field(grid, CellDim, KDim)
-        exner_new = zero_field(grid, CellDim, KDim)
-        theta_v_new = zero_field(grid, CellDim, KDim)
-        dtime = 5.0
-        cvd_o_rd = 9.0
+        z_rho_expl = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+        inv_ddqz_z_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        rho_ic = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+        w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+        z_exner_expl = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_alpha = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
+        z_beta = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        rho_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_new = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_new = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_new = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        dtime = wpfloat("5.0")
+        cvd_o_rd = wpfloat("9.0")
 
         return dict(
             z_rho_expl=z_rho_expl,

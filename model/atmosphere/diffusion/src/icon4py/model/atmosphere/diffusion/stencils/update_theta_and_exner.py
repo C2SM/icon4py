@@ -13,32 +13,35 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _update_theta_and_exner(
-    z_temp: Field[[CellDim, KDim], float],
-    area: Field[[CellDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    z_temp: Field[[CellDim, KDim], vpfloat],
+    area: Field[[CellDim], wpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    exner: Field[[CellDim, KDim], wpfloat],
+    rd_o_cvd: vpfloat,
+) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    rd_o_cvd_wp, z_temp_wp = astype((rd_o_cvd, z_temp), wpfloat)
+
     z_theta = theta_v
-    theta_v = theta_v + (area * z_temp)
-    exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
+    theta_v = theta_v + (area * z_temp_wp)
+    exner = exner * (wpfloat("1.0") + rd_o_cvd_wp * (theta_v / z_theta - wpfloat("1.0")))
     return theta_v, exner
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def update_theta_and_exner(
-    z_temp: Field[[CellDim, KDim], float],
-    area: Field[[CellDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
+    z_temp: Field[[CellDim, KDim], vpfloat],
+    area: Field[[CellDim], wpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    exner: Field[[CellDim, KDim], wpfloat],
+    rd_o_cvd: vpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

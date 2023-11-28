@@ -16,7 +16,7 @@ import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, minimum
+from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift

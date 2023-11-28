@@ -161,6 +161,7 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
+
 backend = run_gtfn
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -659,7 +660,6 @@ class SolveNonhydro:
         )
 
         if self.config.igradp_method == 3:
-            # TODO (magdalena) should be run over all vertical levels and max(1, self.vertical_params.nflatlev) handled in where inside the stencil
             nhsolve_prog.predictor_stencils_4_5_6.with_backend(backend)(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
                 z_exner_ex_pr=self.z_exner_ex_pr,

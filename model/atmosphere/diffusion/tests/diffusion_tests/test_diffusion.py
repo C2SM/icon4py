@@ -28,6 +28,9 @@ from .utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fie
 backend = icon4py.model.atmosphere.diffusion.diffusion.backend
 
 
+backend = icon4py.model.atmosphere.diffusion.diffusion.backend
+
+
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(r04b09_diffusion_config):
     config = r04b09_diffusion_config
     config.hdiff_efdt_ratio = 1.0

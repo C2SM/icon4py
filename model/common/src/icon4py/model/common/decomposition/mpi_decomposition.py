@@ -16,7 +16,7 @@ from __future__ import annotations
 import functools
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Union, Sequence
+from typing import TYPE_CHECKING, Sequence, Union
 
 from gt4py.next import Dimension, Field
 

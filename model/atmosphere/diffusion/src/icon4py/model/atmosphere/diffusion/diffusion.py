@@ -68,6 +68,7 @@ from icon4py.model.common.constants import (
     CPD,
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
+    dbl_eps,
 )
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
@@ -78,6 +79,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 # flake8: noqa
@@ -336,7 +338,7 @@ class Diffusion:
         self._exchange = exchange
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
-        self.thresh_tdiff: float = (
+        self.thresh_tdiff: wpfloat = (
             -5.0
         )  #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
         self.grid: Optional[IconGrid] = None
@@ -771,6 +773,7 @@ class Diffusion:
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
+            smallest_vpfloat=dbl_eps,
             kh_smag_e=self.kh_smag_e,
             horizontal_start=edge_start_nudging,
             horizontal_end=edge_end_halo,
