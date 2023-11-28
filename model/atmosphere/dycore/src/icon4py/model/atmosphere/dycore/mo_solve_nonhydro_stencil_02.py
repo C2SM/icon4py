@@ -12,30 +12,35 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_02(
-    exner_exfac: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_exner_ex_pr = (1.0 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
-    exner_pr = exner - exner_ref_mc
-    return z_exner_ex_pr, exner_pr
+    exner_exfac: Field[[CellDim, KDim], vpfloat],
+    exner: Field[[CellDim, KDim], wpfloat],
+    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    exner_pr: Field[[CellDim, KDim], wpfloat],
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], wpfloat]]:
+    exner_exfac_wp, exner_ref_mc_wp = astype((exner_exfac, exner_ref_mc), wpfloat)
+
+    z_exner_ex_pr_wp = (wpfloat("1.0") + exner_exfac_wp) * (
+        exner - exner_ref_mc_wp
+    ) - exner_exfac_wp * exner_pr
+    exner_pr_wp = exner - exner_ref_mc_wp
+    return astype(z_exner_ex_pr_wp, vpfloat), exner_pr_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_02(
-    exner_exfac: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
+    exner_exfac: Field[[CellDim, KDim], vpfloat],
+    exner: Field[[CellDim, KDim], wpfloat],
+    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    exner_pr: Field[[CellDim, KDim], wpfloat],
+    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
 ):
     _mo_solve_nonhydro_stencil_02(
         exner_exfac, exner, exner_ref_mc, exner_pr, out=(z_exner_ex_pr, exner_pr)

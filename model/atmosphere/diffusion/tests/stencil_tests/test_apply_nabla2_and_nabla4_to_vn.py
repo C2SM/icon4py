@@ -22,6 +22,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn i
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestApplyNabla2AndNabla4ToVn(StencilTest):
@@ -30,14 +31,14 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        area_edge = random_field(grid, EdgeDim)
-        kh_smag_e = random_field(grid, EdgeDim, KDim)
-        z_nabla2_e = random_field(grid, EdgeDim, KDim)
-        z_nabla4_e2 = random_field(grid, EdgeDim, KDim)
-        diff_multfac_vn = random_field(grid, KDim)
-        nudgecoeff_e = random_field(grid, EdgeDim)
-        vn = random_field(grid, EdgeDim, KDim)
-        nudgezone_diff = 9.0
+        area_edge = random_field(grid, EdgeDim, dtype=wpfloat)
+        kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_nabla4_e2 = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        diff_multfac_vn = random_field(grid, KDim, dtype=wpfloat)
+        nudgecoeff_e = random_field(grid, EdgeDim, dtype=wpfloat)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        nudgezone_diff = vpfloat("9.0")
 
         return dict(
             area_edge=area_edge,
@@ -79,12 +80,12 @@ class TestApplyNabla2AndNabla4ToVnGlobalMode(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        area_edge = random_field(grid, EdgeDim)
-        kh_smag_e = random_field(grid, EdgeDim, KDim)
-        z_nabla2_e = random_field(grid, EdgeDim, KDim)
-        z_nabla4_e2 = random_field(grid, EdgeDim, KDim)
-        diff_multfac_vn = random_field(grid, KDim)
-        vn = random_field(grid, EdgeDim, KDim)
+        area_edge = random_field(grid, EdgeDim, dtype=wpfloat)
+        kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_nabla4_e2 = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        diff_multfac_vn = random_field(grid, KDim, dtype=wpfloat)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             area_edge=area_edge,

@@ -70,13 +70,14 @@ def random_field(
     low: float = -1.0,
     high: float = 1.0,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
+    dtype: Optional[npt.DTypeLike] = None,
 ) -> gt_common.Field:
-    return as_field(
-        dims,
-        np.random.default_rng().uniform(
-            low=low, high=high, size=_shape(grid, *dims, extend=extend)
-        ),
+    arr = np.random.default_rng().uniform(
+        low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
+    if dtype:
+        arr = arr.astype(dtype)
+    return as_field(dims, arr)
 
 
 def zero_field(

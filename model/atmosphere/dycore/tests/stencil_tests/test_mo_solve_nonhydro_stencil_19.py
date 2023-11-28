@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_19 import (
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def mo_solve_nonhydro_stencil_19_numpy(
@@ -67,12 +68,12 @@ class TestMoSolveNonhydroStencil19(StencilTest):
         if np.any(grid.connectivities[E2CDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        inv_dual_edge_length = random_field(grid, EdgeDim)
-        z_exner_ex_pr = random_field(grid, CellDim, KDim)
-        ddxn_z_full = random_field(grid, EdgeDim, KDim)
-        c_lin_e = random_field(grid, EdgeDim, E2CDim)
-        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim)
-        z_gradh_exner = random_field(grid, EdgeDim, KDim)
+        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        z_exner_ex_pr = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        ddxn_z_full = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        c_lin_e = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
+        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_gradh_exner = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,

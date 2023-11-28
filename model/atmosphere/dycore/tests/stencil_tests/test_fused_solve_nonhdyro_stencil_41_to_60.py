@@ -143,6 +143,8 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
         kstart_moist,
         horizontal_lower,
         horizontal_upper,
+        vertical_lower,
+        vertical_upper,
         istep,
         horizontal_start,
         horizontal_end,
@@ -707,7 +709,7 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
         divdamp_type = 3
         idyn_timestep = 1
         index_of_damping_layer = 9
-        n_lev = grid.k_level
+        n_lev = 10
         jk_start = 0
         kstart_dd3d = 0
         kstart_moist = 1
@@ -729,11 +731,11 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
         vertical_upper = n_lev + 1
 
         vert_idx = zero_field(grid, KDim, dtype=int32)
-        for level in range(grid.k_level):
+        for level in range(n_lev):
             vert_idx[level] = level
 
         horz_idx = zero_field(grid, CellDim, dtype=int32)
-        for cell in range(grid.n_cells):
+        for cell in range(grid.num_cells):
             horz_idx[cell] = cell
 
         return dict(

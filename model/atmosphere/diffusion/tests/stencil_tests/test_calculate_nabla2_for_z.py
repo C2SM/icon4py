@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestCalculateNabla2ForZ(StencilTest):
@@ -48,10 +49,10 @@ class TestCalculateNabla2ForZ(StencilTest):
             pytest.skip(
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
-        kh_smag_e = random_field(grid, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(grid, EdgeDim)
-        theta_v = random_field(grid, CellDim, KDim)
-        z_nabla2_e = random_field(grid, EdgeDim, KDim)
+        kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,
