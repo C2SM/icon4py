@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import gt4py.next as gtx
-from gt4py.next.common import GridType
 from gt4py.next import broadcast, int32, where
+from gt4py.next.common import GridType
 
 from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,

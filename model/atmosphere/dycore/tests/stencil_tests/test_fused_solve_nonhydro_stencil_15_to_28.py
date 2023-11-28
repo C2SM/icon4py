@@ -13,28 +13,7 @@
 
 import numpy as np
 import pytest
-
 from gt4py.next import int32
-
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import \
-    mo_math_gradients_grad_green_gauss_cell_dsl_numpy
-
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_4th_order_divdamp import mo_solve_nonhydro_4th_order_divdamp_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
-    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy,
-)
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_17 import mo_solve_nonhydro_stencil_17_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_18 import mo_solve_nonhydro_stencil_18_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_19 import mo_solve_nonhydro_stencil_19_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_20 import mo_solve_nonhydro_stencil_20_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_21 import mo_solve_nonhydro_stencil_21_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_22 import mo_solve_nonhydro_stencil_22_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_23 import mo_solve_nonhydro_stencil_23_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_24 import mo_solve_nonhydro_stencil_24_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_25 import mo_solve_nonhydro_stencil_25_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_26 import mo_solve_nonhydro_stencil_26_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_27 import mo_solve_nonhydro_stencil_27_numpy
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_28 import mo_solve_nonhydro_stencil_28_numpy
 
 from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_15_to_28 import (
     fused_solve_nonhydro_stencil_15_to_28,
@@ -54,6 +33,51 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     random_mask,
     zero_field,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
+    mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_4th_order_divdamp import (
+    mo_solve_nonhydro_4th_order_divdamp_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
+    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_17 import (
+    mo_solve_nonhydro_stencil_17_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_18 import (
+    mo_solve_nonhydro_stencil_18_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_19 import (
+    mo_solve_nonhydro_stencil_19_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_20 import (
+    mo_solve_nonhydro_stencil_20_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_21 import (
+    mo_solve_nonhydro_stencil_21_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_22 import (
+    mo_solve_nonhydro_stencil_22_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_23 import (
+    mo_solve_nonhydro_stencil_23_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_24 import (
+    mo_solve_nonhydro_stencil_24_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_25 import (
+    mo_solve_nonhydro_stencil_25_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_26 import (
+    mo_solve_nonhydro_stencil_26_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_27 import (
+    mo_solve_nonhydro_stencil_27_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_28 import (
+    mo_solve_nonhydro_stencil_28_numpy,
 )
 
 

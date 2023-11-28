@@ -35,35 +35,21 @@ def mo_solve_nonhydro_stencil_41_numpy(
     z_theta_v_fl_e: np.array,
 ) -> tuple[np.array, np.array]:
     geofac_div = np.expand_dims(geofac_div, axis=-1)
+    c2e = grid.connectivities[C2EDim]
+    c2e_shape = c2e.shape
+    c2ce_table = np.arange(c2e_shape[0] * c2e_shape[1]).reshape(c2e_shape)
+
     z_flxdiv_mass = np.sum(
-        geofac_div[grid.get_c2ce_offset_provider().table] * mass_fl_e[grid.c2e],
+        geofac_div[c2ce_table] * mass_fl_e[grid.connectivities[C2EDim]],
         axis=1,
     )
     z_flxdiv_theta = np.sum(
-        geofac_div[grid.get_c2ce_offset_provider().table] * z_theta_v_fl_e[grid.c2e],
+        geofac_div[c2ce_table] * z_theta_v_fl_e[grid.connectivities[C2EDim]],
         axis=1,
     )
     return z_flxdiv_mass, z_flxdiv_theta
 
 
-class TestMoSolveNonhydroStencil41(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_41
-    OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")
-
-    @staticmethod
-    def reference(
-        grid,
-        geofac_div: np.array,
-        mass_fl_e: np.array,
-        z_theta_v_fl_e: np.array,
-        **kwargs,
-    ) -> dict:
-        z_flxdiv_mass, z_flxdiv_theta = mo_solve_nonhydro_stencil_41_numpy(
-            grid,
-            geofac_div,
-            mass_fl_e,
-            z_theta_v_fl_e,
-        )
 class TestMoSolveNonhydroStencil41(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_41
     OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")

@@ -22,6 +22,7 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+
 def mo_solve_nonhydro_stencil_53_numpy(grid, z_q: np.array, w: np.array) -> np.array:
     w_new = np.zeros_like(w)
     last_k_level = w.shape[1] - 1
@@ -31,6 +32,7 @@ def mo_solve_nonhydro_stencil_53_numpy(grid, z_q: np.array, w: np.array) -> np.a
         w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
     w_new[:, 0] = w[:, 0]
     return w_new
+
 
 class TestMoSolveNonhydroStencil53(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_53
