@@ -293,11 +293,15 @@ def initialize(file_path: Path, props: ProcessProperties):
     Inititalize the driver run.
 
     "reads" in
-        - configuration
+        - load configuration
 
-        - grid information
+        - load grid information
 
-        - (serialized) input fields, initial
+        - initialize components: diffusion and solve_nh
+
+        - load diagnostic and prognostic variables (serialized data)
+
+        - setup the time loop
 
      Returns:
          tl: configured timeloop,
@@ -341,20 +345,7 @@ def initialize(file_path: Path, props: ProcessProperties):
         cell_geometry,
     )
 
-    (
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
-        z_fields,
-        nh_constants,
-        prep_adv,
-        bdy_divdamp,
-        prognostic_state_now,
-        prognostic_state_next,
-    ) = read_initial_state(file_path, rank=props.rank)
-    prognostic_state_list = [prognostic_state_now, prognostic_state_next]
-
-    nonhydro_config = NonHydrostaticConfig()
-    nonhydro_params = NonHydrostaticParams(nonhydro_config)
+    nonhydro_params = NonHydrostaticParams(config.solve_nonhydro_config)
 
     enh_smag_fac = zero_field(icon_grid, KDim)
     a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
@@ -364,7 +355,7 @@ def initialize(file_path: Path, props: ProcessProperties):
     solve_nonhydro = SolveNonhydro()
     solve_nonhydro.init(
         grid=icon_grid,
-        config=nonhydro_config,
+        config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
         interpolation_state=solve_nonhydro_interpolation_state,
@@ -377,6 +368,18 @@ def initialize(file_path: Path, props: ProcessProperties):
         fac=fac,
         z=z,
     )
+
+    (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        z_fields,
+        nh_constants,
+        prep_adv,
+        bdy_divdamp,
+        prognostic_state_now,
+        prognostic_state_next,
+    ) = read_initial_state(file_path, rank=props.rank)
+    prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
     timeloop = TimeLoop(
         run_config=config.run_config,
@@ -403,18 +406,20 @@ def main(input_path, run_path, mpi):
     """
     Run the driver.
 
-    usage: python driver/dycore_driver.py ../testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
+    usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
 
     steps:
-    1. initialize model:
+    1. initialize model from serialized data:
 
-        a) load config
+        a) load config of icon and components: diffusion and solve_nh
 
         b) initialize grid
 
         c) initialize/configure components ie "granules"
 
-        d) setup the time loop
+        d) load local, diagnostic and prognostic variables
+
+        e) setup the time loop
 
     2. run time loop
     """

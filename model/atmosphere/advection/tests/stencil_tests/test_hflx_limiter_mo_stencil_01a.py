@@ -39,7 +39,7 @@ def hflx_limiter_mo_stencil_01a_numpy(
     return (z_mflx_low, z_anti)
 
 
-def test_hflx_limiter_mo_stencil_01a():
+def test_hflx_limiter_mo_stencil_01a(backend):
     grid = SimpleGrid()
     p_mflx_tracer_h = random_field(grid, EdgeDim, KDim)
     p_mass_flx_e = random_field(grid, EdgeDim, KDim)
@@ -49,12 +49,12 @@ def test_hflx_limiter_mo_stencil_01a():
 
     ref_1, ref_2 = hflx_limiter_mo_stencil_01a_numpy(
         grid.connectivities[E2CDim],
-        np.asarray(p_mflx_tracer_h),
-        np.asarray(p_mass_flx_e),
-        np.asarray(p_cc),
+        p_mflx_tracer_h.asnumpy(),
+        p_mass_flx_e.asnumpy(),
+        p_cc.asnumpy(),
     )
 
-    hflx_limiter_mo_stencil_01a(
+    hflx_limiter_mo_stencil_01a.with_backend(backend)(
         p_mflx_tracer_h,
         p_mass_flx_e,
         p_cc,
@@ -65,5 +65,5 @@ def test_hflx_limiter_mo_stencil_01a():
         },
     )
 
-    assert np.allclose(z_mflx_low, ref_1)
-    assert np.allclose(z_anti, ref_2)
+    assert np.allclose(z_mflx_low.asnumpy(), ref_1)
+    assert np.allclose(z_anti.asnumpy(), ref_2)
