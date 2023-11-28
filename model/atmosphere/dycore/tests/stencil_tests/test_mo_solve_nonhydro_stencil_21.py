@@ -27,6 +27,71 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
+def mo_solve_nonhydro_stencil_21_numpy(
+    grid,
+    theta_v: np.array,
+    ikoffset: np.array,
+    zdiff_gradp: np.array,
+    theta_v_ic: np.array,
+    inv_ddqz_z_full: np.array,
+    inv_dual_edge_length: np.array,
+    grav_o_cpd: float,
+) -> tuple[np.array]:
+    def _apply_index_field(shape, to_index, neighbor_table, offset_field):
+        indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
+        for iprimary in range(shape[0]):
+            for isparse in range(shape[1]):
+                for ik in range(shape[2]):
+                    indexed[iprimary, isparse, ik] = to_index[
+                        neighbor_table[iprimary, isparse],
+                        ik + offset_field[iprimary, isparse, ik],
+                    ]
+                    indexed_p1[iprimary, isparse, ik] = to_index[
+                        neighbor_table[iprimary, isparse],
+                        ik + offset_field[iprimary, isparse, ik] + 1,
+                    ]
+        return indexed, indexed_p1
+
+    e2c = grid.connectivities[E2CDim]
+    full_shape = e2c.shape + zdiff_gradp.shape[1:]
+    zdiff_gradp = zdiff_gradp.reshape(full_shape)
+    ikoffset = ikoffset.reshape(full_shape)
+
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
+
+    theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikoffset)
+
+    theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
+        full_shape, theta_v_ic, e2c, ikoffset
+    )
+
+    inv_ddqz_z_full_at_kidx, _ = _apply_index_field(full_shape, inv_ddqz_z_full, e2c, ikoffset)
+
+    z_theta1 = (
+        theta_v_at_kidx[:, 0, :]
+        + zdiff_gradp[:, 0, :]
+        * (theta_v_ic_at_kidx[:, 0, :] - theta_v_ic_at_kidx_p1[:, 0, :])
+        * inv_ddqz_z_full_at_kidx[:, 0, :]
+    )
+
+    z_theta2 = (
+        theta_v_at_kidx[:, 1, :]
+        + zdiff_gradp[:, 1, :]
+        * (theta_v_ic_at_kidx[:, 1, :] - theta_v_ic_at_kidx_p1[:, 1, :])
+        * inv_ddqz_z_full_at_kidx[:, 1, :]
+    )
+
+    z_hydro_corr = (
+        grav_o_cpd
+        * inv_dual_edge_length
+        * (z_theta2 - z_theta1)
+        * 4.0
+        / ((z_theta1 + z_theta2) ** 2)
+    )
+
+    return z_hydro_corr
+
+
 class TestMoSolveNonHydroStencil21(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = mo_solve_nonhydro_stencil_21
@@ -42,57 +107,17 @@ class TestMoSolveNonHydroStencil21(StencilTest):
         inv_dual_edge_length: np.array,
         grav_o_cpd: float,
         **kwargs,
-    ) -> tuple[np.array]:
-        def _apply_index_field(shape, to_index, neighbor_table, offset_field):
-            indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
-            for iprimary in range(shape[0]):
-                for isparse in range(shape[1]):
-                    for ik in range(shape[2]):
-                        indexed[iprimary, isparse, ik] = to_index[
-                            neighbor_table[iprimary, isparse],
-                            ik + offset_field[iprimary, isparse, ik],
-                        ]
-                        indexed_p1[iprimary, isparse, ik] = to_index[
-                            neighbor_table[iprimary, isparse],
-                            ik + offset_field[iprimary, isparse, ik] + 1,
-                        ]
-            return indexed, indexed_p1
+    ) -> dict:
 
-        e2c = grid.connectivities[E2CDim]
-        full_shape = e2c.shape + zdiff_gradp.shape[1:]
-        zdiff_gradp = zdiff_gradp.reshape(full_shape)
-        ikoffset = ikoffset.reshape(full_shape)
-
-        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
-
-        theta_v_at_kidx, _ = _apply_index_field(full_shape, theta_v, e2c, ikoffset)
-
-        theta_v_ic_at_kidx, theta_v_ic_at_kidx_p1 = _apply_index_field(
-            full_shape, theta_v_ic, e2c, ikoffset
-        )
-
-        inv_ddqz_z_full_at_kidx, _ = _apply_index_field(full_shape, inv_ddqz_z_full, e2c, ikoffset)
-
-        z_theta1 = (
-            theta_v_at_kidx[:, 0, :]
-            + zdiff_gradp[:, 0, :]
-            * (theta_v_ic_at_kidx[:, 0, :] - theta_v_ic_at_kidx_p1[:, 0, :])
-            * inv_ddqz_z_full_at_kidx[:, 0, :]
-        )
-
-        z_theta2 = (
-            theta_v_at_kidx[:, 1, :]
-            + zdiff_gradp[:, 1, :]
-            * (theta_v_ic_at_kidx[:, 1, :] - theta_v_ic_at_kidx_p1[:, 1, :])
-            * inv_ddqz_z_full_at_kidx[:, 1, :]
-        )
-
-        z_hydro_corr = (
-            grav_o_cpd
-            * inv_dual_edge_length
-            * (z_theta2 - z_theta1)
-            * 4.0
-            / ((z_theta1 + z_theta2) ** 2)
+        z_hydro_corr = mo_solve_nonhydro_stencil_21_numpy(
+            grid,
+            theta_v,
+            ikoffset,
+            zdiff_gradp,
+            theta_v_ic,
+            inv_ddqz_z_full,
+            inv_dual_edge_length,
+            grav_o_cpd,
         )
 
         return dict(z_hydro_corr=z_hydro_corr)

@@ -22,18 +22,25 @@ from icon4py.model.common.dimension import E2C2EODim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_solve_nonhydro_stencil_25_numpy(
+    grid, geofac_grdiv: np.array, z_graddiv_vn: np.array
+) -> np.array:
+    e2c2eO = grid.connectivities[E2C2EODim]
+    geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
+    z_graddiv2_vn = np.sum(
+        np.where((e2c2eO != -1)[:, :, np.newaxis], z_graddiv_vn[e2c2eO] * geofac_grdiv, 0),
+        axis=1,
+    )
+    return z_graddiv2_vn
+
+
 class TestMoSolveNonhydroStencil25(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_25
     OUTPUTS = ("z_graddiv2_vn",)
 
     @staticmethod
     def reference(grid, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> np.array:
-        e2c2eO = grid.connectivities[E2C2EODim]
-        geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
-        z_graddiv2_vn = np.sum(
-            np.where((e2c2eO != -1)[:, :, np.newaxis], z_graddiv_vn[e2c2eO] * geofac_grdiv, 0),
-            axis=1,
-        )
+        z_graddiv2_vn = mo_solve_nonhydro_stencil_25_numpy(grid, geofac_grdiv, z_graddiv_vn)
         return dict(z_graddiv2_vn=z_graddiv2_vn)
 
     @pytest.fixture

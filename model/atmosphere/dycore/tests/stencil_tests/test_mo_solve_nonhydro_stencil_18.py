@@ -22,20 +22,27 @@ from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def mo_solve_nonhydro_stencil_18_numpy(
+    grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array
+) -> np.array:
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+
+    z_exner_ex_pr_e2c = z_exner_ex_pr[grid.connectivities[E2CDim]]
+    z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
+
+    z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
+    return z_gradh_exner
+
+
 class TestMoSolveNonhydroStencil18(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_18
     OUTPUTS = ("z_gradh_exner",)
 
     @staticmethod
-    def reference(
-        grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs
-    ) -> np.array:
-        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
-
-        z_exner_ex_pr_e2c = z_exner_ex_pr[grid.connectivities[E2CDim]]
-        z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
-
-        z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
+    def reference(grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs) -> dict:
+        z_gradh_exner = mo_solve_nonhydro_stencil_18_numpy(
+            grid, inv_dual_edge_length, z_exner_ex_pr
+        )
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture

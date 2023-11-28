@@ -22,6 +22,20 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_solve_nonhydro_stencil_24_numpy(
+    mesh,
+    vn_nnow: np.array,
+    ddt_vn_apc_ntl1: np.array,
+    ddt_vn_phy: np.array,
+    z_theta_v_e: np.array,
+    z_gradh_exner: np.array,
+    dtime: float,
+    cpd: float,
+) -> np.array:
+    vn_nnew = vn_nnow + dtime * (ddt_vn_apc_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner)
+    return vn_nnew
+
+
 class TestMoSolveNonhydroStencil24(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_24
     OUTPUTS = ("vn_nnew",)
@@ -38,8 +52,15 @@ class TestMoSolveNonhydroStencil24(StencilTest):
         cpd: float,
         **kwargs,
     ) -> np.array:
-        vn_nnew = vn_nnow + dtime * (
-            ddt_vn_apc_ntl1 + ddt_vn_phy - cpd * z_theta_v_e * z_gradh_exner
+        vn_nnew = mo_solve_nonhydro_stencil_24_numpy(
+            grid,
+            vn_nnow,
+            ddt_vn_apc_ntl1,
+            ddt_vn_phy,
+            z_theta_v_e,
+            z_gradh_exner,
+            dtime,
+            cpd,
         )
         return dict(vn_nnew=vn_nnew)
 

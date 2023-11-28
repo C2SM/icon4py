@@ -22,13 +22,22 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
+def mo_solve_nonhydro_stencil_26_numpy(
+    grid, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2: float
+) -> np.array:
+    vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
+    return vn
+
+
 class TestMoSolveNonhydroStencil26(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_26
     OUTPUTS = ("vn",)
 
     @staticmethod
-    def reference(grid, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2, **kwargs) -> dict:
-        vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
+    def reference(
+        grid, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2: float, **kwargs
+    ) -> dict:
+        vn = mo_solve_nonhydro_stencil_26_numpy(grid, z_graddiv_vn, vn, scal_divdamp_o2)
         return dict(vn=vn)
 
     @pytest.fixture

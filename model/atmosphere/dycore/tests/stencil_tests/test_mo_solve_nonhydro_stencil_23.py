@@ -22,6 +22,27 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
+def mo_solve_nonhydro_stencil_23_numpy(
+    vn_nnow: np.array,
+    ddt_vn_apc_ntl1: np.array,
+    ddt_vn_apc_ntl2: np.array,
+    ddt_vn_phy: np.array,
+    z_theta_v_e: np.array,
+    z_gradh_exner: np.array,
+    dtime: float,
+    wgt_nnow_vel: float,
+    wgt_nnew_vel: float,
+    cpd: float,
+) -> np.array:
+    vn_nnew = vn_nnow + dtime * (
+        wgt_nnow_vel * ddt_vn_apc_ntl1
+        + wgt_nnew_vel * ddt_vn_apc_ntl2
+        + ddt_vn_phy
+        - cpd * z_theta_v_e * z_gradh_exner
+    )
+    return vn_nnew
+
+
 class TestMoSolveNonhydroStencil23(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_23
     OUTPUTS = ("vn_nnew",)
@@ -35,17 +56,23 @@ class TestMoSolveNonhydroStencil23(StencilTest):
         ddt_vn_phy: np.array,
         z_theta_v_e: np.array,
         z_gradh_exner: np.array,
-        dtime,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
-        cpd,
+        dtime: float,
+        wgt_nnow_vel: float,
+        wgt_nnew_vel: float,
+        cpd: float,
         **kwargs,
-    ) -> np.array:
-        vn_nnew = vn_nnow + dtime * (
-            wgt_nnow_vel * ddt_vn_apc_ntl1
-            + wgt_nnew_vel * ddt_vn_apc_ntl2
-            + ddt_vn_phy
-            - cpd * z_theta_v_e * z_gradh_exner
+    ) -> dict:
+        vn_nnew = mo_solve_nonhydro_stencil_23_numpy(
+            vn_nnow,
+            ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2,
+            ddt_vn_phy,
+            z_theta_v_e,
+            z_gradh_exner,
+            dtime,
+            wgt_nnow_vel,
+            wgt_nnew_vel,
+            cpd,
         )
         return dict(vn_nnew=vn_nnew)
 
