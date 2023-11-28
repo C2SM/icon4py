@@ -79,7 +79,6 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 # flake8: noqa
@@ -338,7 +337,7 @@ class Diffusion:
         self._exchange = exchange
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
-        self.thresh_tdiff: wpfloat = (
+        self.thresh_tdiff: float = (
             -5.0
         )  #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
         self.grid: Optional[IconGrid] = None
