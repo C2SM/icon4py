@@ -20,6 +20,8 @@ from gt4py.next import as_field
 from gt4py.next import common as gt_common
 from gt4py.next.ffront.decorator import Program
 
+from ..grid.base import BaseGrid
+
 
 try:
     import pytest_benchmark
@@ -80,7 +82,7 @@ def random_field(
 
 
 def zero_field(
-    grid: SimpleGrid,
+    grid: BaseGrid,
     *dims: gt_common.Dimension,
     dtype=float,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
