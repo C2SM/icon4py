@@ -33,83 +33,87 @@ def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
     return k4 * hdiff_efdt_ratio / 3.0 * np.ones(shape)
 
 
-def test_scale_k():
+def test_scale_k(backend):
     grid = SimpleGrid()
     field = random_field(grid, KDim)
     scaled_field = zero_field(grid, KDim)
     factor = 2.0
-    scale_k(field, factor, scaled_field, offset_provider={})
-    assert np.allclose(factor * np.asarray(field), scaled_field)
+    scale_k.with_backend(backend)(field, factor, scaled_field, offset_provider={})
+    assert np.allclose(factor * field.asnumpy(), scaled_field.asnumpy())
 
 
-def test_diff_multfac_vn_and_smag_limit_for_initial_step():
+def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
     grid = SimpleGrid()
     diff_multfac_vn_init = zero_field(grid, KDim)
     smag_limit_init = zero_field(grid, KDim)
     k4 = 1.0
     efdt_ratio = 24.0
-    shape = np.asarray(diff_multfac_vn_init).shape
+    shape = diff_multfac_vn_init.asnumpy().shape
 
     expected_diff_multfac_vn_init = initial_diff_multfac_vn_numpy(shape, k4, efdt_ratio)
     expected_smag_limit_init = smag_limit_numpy(
         initial_diff_multfac_vn_numpy, shape, k4, efdt_ratio
     )
 
-    setup_fields_for_initial_step(
+    setup_fields_for_initial_step.with_backend(backend)(
         k4, efdt_ratio, diff_multfac_vn_init, smag_limit_init, offset_provider={}
     )
 
-    assert np.allclose(expected_diff_multfac_vn_init, diff_multfac_vn_init)
-    assert np.allclose(expected_smag_limit_init, smag_limit_init)
+    assert np.allclose(expected_diff_multfac_vn_init, diff_multfac_vn_init.asnumpy())
+    assert np.allclose(expected_smag_limit_init, smag_limit_init.asnumpy())
 
 
-def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value():
+def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
     grid = SimpleGrid()
     diff_multfac_vn = zero_field(grid, KDim)
     smag_limit = zero_field(grid, KDim)
     k4 = 1.0
     substeps = 5.0
     efdt_ratio = 24.0
-    shape = np.asarray(diff_multfac_vn).shape
+    shape = diff_multfac_vn.asnumpy().shape
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
 
-    _setup_runtime_diff_multfac_vn(k4, efdt_ratio, out=diff_multfac_vn, offset_provider={})
-    _setup_smag_limit(diff_multfac_vn, out=smag_limit, offset_provider={})
+    _setup_runtime_diff_multfac_vn.with_backend(backend)(
+        k4, efdt_ratio, out=diff_multfac_vn, offset_provider={}
+    )
+    _setup_smag_limit.with_backend(backend)(diff_multfac_vn, out=smag_limit, offset_provider={})
 
-    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
-    assert np.allclose(expected_smag_limit, smag_limit)
+    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
+    assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
 
 
-def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps():
+def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
     grid = SimpleGrid()
     diff_multfac_vn = zero_field(grid, KDim)
     smag_limit = zero_field(grid, KDim)
     k4 = 0.003
     substeps = 1.0
 
-    shape = np.asarray(diff_multfac_vn).shape
+    shape = diff_multfac_vn.asnumpy().shape
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
-    _setup_runtime_diff_multfac_vn(k4, substeps, out=diff_multfac_vn, offset_provider={})
-    _setup_smag_limit(diff_multfac_vn, out=smag_limit, offset_provider={})
+    _setup_runtime_diff_multfac_vn.with_backend(backend)(
+        k4, substeps, out=diff_multfac_vn, offset_provider={}
+    )
+    _setup_smag_limit.with_backend(backend)(diff_multfac_vn, out=smag_limit, offset_provider={})
 
-    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
-    assert np.allclose(expected_smag_limit, smag_limit)
+    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
+    assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
 
 
-def test_set_zero_vertex_k():
+def test_set_zero_vertex_k(backend):
     grid = SimpleGrid()
     f = random_field(grid, VertexDim, KDim)
-    set_zero_v_k(f, offset_provider={})
-    assert np.allclose(0.0, f)
+    set_zero_v_k.with_backend(backend)(f, offset_provider={})
+    assert np.allclose(0.0, f.asnumpy())
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    diffusion_savepoint_init, r04b09_diffusion_config, icon_grid, linit
+    diffusion_savepoint_init, r04b09_diffusion_config, icon_grid, linit, backend
 ):
     savepoint = diffusion_savepoint_init
     config = r04b09_diffusion_config
@@ -121,13 +125,13 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
 
     diff_multfac_vn = zero_field(icon_grid, KDim)
     smag_limit = zero_field(icon_grid, KDim)
-    setup_fields_for_initial_step(
+    setup_fields_for_initial_step.with_backend(backend)(
         params.K4,
         config.hdiff_efdt_ratio,
         diff_multfac_vn,
         smag_limit,
         offset_provider={},
     )
-    assert np.allclose(expected_smag_limit, smag_limit)
-    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn)
+    assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
+    assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
     assert exptected_smag_offset == 0.0

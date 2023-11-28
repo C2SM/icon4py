@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next import Field, field_operator
-from gt4py.next.ffront.fbuiltins import maximum, minimum
+from gt4py.next.ffront.fbuiltins import maximum, minimum, broadcast
 
 from icon4py.model.common.dimension import KDim, Koff
 
@@ -39,8 +39,9 @@ def en_smag_fac_for_zero_nshift(
     bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
     aqdr = df32 / dz32 - bqdr * dz32
     zf = 0.5 * (vect_a + vect_a(Koff[1]))
+    zero = broadcast(0.0, (KDim,))
 
-    dzlin = minimum(dz21, maximum(0.0, zf - hdiff_smag_z))
-    dzqdr = minimum(dz42, maximum(0.0, zf - hdiff_smag_z2))
+    dzlin = minimum(broadcast(dz21, (KDim,)), maximum(zero, zf - hdiff_smag_z))
+    dzqdr = minimum(broadcast(dz42, (KDim,)), maximum(zero, zf - hdiff_smag_z2))
     enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (aqdr + dzqdr * bqdr)
     return enh_smag_fac

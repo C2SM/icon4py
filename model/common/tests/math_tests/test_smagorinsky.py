@@ -27,7 +27,12 @@ def test_init_enh_smag_fac():
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
-    enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, np.asarray(a_vec))
-
-    en_smag_fac_for_zero_nshift(a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim})
-    assert np.allclose(enhanced_smag_fac_np, np.asarray(enh_smag_fac))
+    enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, a_vec.asnumpy())
+    en_smag_fac_for_zero_nshift(
+        a_vec,
+        *fac,
+        *z,
+        out=enh_smag_fac,
+        offset_provider={"Koff": KDim},
+    )
+    assert np.allclose(enhanced_smag_fac_np, enh_smag_fac.asnumpy())

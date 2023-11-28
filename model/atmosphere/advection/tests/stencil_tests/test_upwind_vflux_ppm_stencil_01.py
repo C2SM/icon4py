@@ -29,7 +29,7 @@ def upwind_vflux_ppm_stencil_01_numpy(
     return z_delta_q, z_a1
 
 
-def test_upwind_vflux_ppm_stencil_01():
+def test_upwind_vflux_ppm_stencil_01(backend):
     grid = SimpleGrid()
     z_face_up = random_field(grid, CellDim, KDim)
     z_face_down = random_field(grid, CellDim, KDim)
@@ -38,10 +38,12 @@ def test_upwind_vflux_ppm_stencil_01():
     z_a1 = zero_field(grid, CellDim, KDim)
 
     ref_z_delta_q, ref_z_a1 = upwind_vflux_ppm_stencil_01_numpy(
-        np.asarray(z_face_up), np.asarray(z_face_down), np.asarray(p_cc)
+        z_face_up.asnumpy(), z_face_down.asnumpy(), p_cc.asnumpy()
     )
 
-    upwind_vflux_ppm_stencil_01(z_face_up, z_face_down, p_cc, z_delta_q, z_a1, offset_provider={})
+    upwind_vflux_ppm_stencil_01.with_backend(backend)(
+        z_face_up, z_face_down, p_cc, z_delta_q, z_a1, offset_provider={}
+    )
 
-    assert np.allclose(ref_z_delta_q, z_delta_q)
-    assert np.allclose(ref_z_a1, z_a1)
+    assert np.allclose(ref_z_delta_q, z_delta_q.asnumpy())
+    assert np.allclose(ref_z_a1, z_a1.asnumpy())

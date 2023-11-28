@@ -45,7 +45,6 @@ def recon_lsq_cell_c_svd_stencil_numpy(
     lsq_moments_8: np.ndarray,
     lsq_moments_9: np.ndarray,
 ) -> tuple[np.ndarray]:
-
     lsq_moments_1 = np.expand_dims(lsq_moments_1, axis=-1)
     lsq_moments_2 = np.expand_dims(lsq_moments_2, axis=-1)
     lsq_moments_3 = np.expand_dims(lsq_moments_3, axis=-1)
@@ -208,7 +207,7 @@ def recon_lsq_cell_c_svd_stencil_numpy(
 
 
 @pytest.mark.slow_tests
-def test_recon_lsq_cell_c_svd_stencil():
+def test_recon_lsq_cell_c_svd_stencil(backend):
     grid = SimpleGrid()
     p_cc = random_field(grid, CellDim, KDim)
     lsq_pseudoinv_1 = random_field(grid, CellDim, C2E2C2E2CDim)
@@ -262,28 +261,28 @@ def test_recon_lsq_cell_c_svd_stencil():
         ref_10,
     ) = recon_lsq_cell_c_svd_stencil_numpy(
         grid.connectivities[C2E2C2E2CDim],
-        np.asarray(p_cc),
-        np.asarray(lsq_pseudoinv_1),
-        np.asarray(lsq_pseudoinv_2),
-        np.asarray(lsq_pseudoinv_3),
-        np.asarray(lsq_pseudoinv_4),
-        np.asarray(lsq_pseudoinv_5),
-        np.asarray(lsq_pseudoinv_6),
-        np.asarray(lsq_pseudoinv_7),
-        np.asarray(lsq_pseudoinv_8),
-        np.asarray(lsq_pseudoinv_9),
-        np.asarray(lsq_moments_1),
-        np.asarray(lsq_moments_2),
-        np.asarray(lsq_moments_3),
-        np.asarray(lsq_moments_4),
-        np.asarray(lsq_moments_5),
-        np.asarray(lsq_moments_6),
-        np.asarray(lsq_moments_7),
-        np.asarray(lsq_moments_8),
-        np.asarray(lsq_moments_9),
+        p_cc.asnumpy(),
+        lsq_pseudoinv_1.asnumpy(),
+        lsq_pseudoinv_2.asnumpy(),
+        lsq_pseudoinv_3.asnumpy(),
+        lsq_pseudoinv_4.asnumpy(),
+        lsq_pseudoinv_5.asnumpy(),
+        lsq_pseudoinv_6.asnumpy(),
+        lsq_pseudoinv_7.asnumpy(),
+        lsq_pseudoinv_8.asnumpy(),
+        lsq_pseudoinv_9.asnumpy(),
+        lsq_moments_1.asnumpy(),
+        lsq_moments_2.asnumpy(),
+        lsq_moments_3.asnumpy(),
+        lsq_moments_4.asnumpy(),
+        lsq_moments_5.asnumpy(),
+        lsq_moments_6.asnumpy(),
+        lsq_moments_7.asnumpy(),
+        lsq_moments_8.asnumpy(),
+        lsq_moments_9.asnumpy(),
     )
 
-    recon_lsq_cell_c_svd_stencil(
+    recon_lsq_cell_c_svd_stencil.with_backend(backend)(
         p_cc,
         lsq_pseudoinv_1_field,
         lsq_pseudoinv_2_field,
@@ -318,16 +317,16 @@ def test_recon_lsq_cell_c_svd_stencil():
             "C2CECEC": StridedNeighborOffsetProvider(CellDim, CECECDim, grid.size[C2E2C2E2CDim]),
         },
     )
-    co1 = np.asarray(p_coeff_1_dsl)
-    co2 = np.asarray(p_coeff_2_dsl)
-    co3 = np.asarray(p_coeff_3_dsl)
-    co4 = np.asarray(p_coeff_4_dsl)
-    co5 = np.asarray(p_coeff_5_dsl)
-    co6 = np.asarray(p_coeff_6_dsl)
-    co7 = np.asarray(p_coeff_7_dsl)
-    co8 = np.asarray(p_coeff_8_dsl)
-    co9 = np.asarray(p_coeff_9_dsl)
-    co10 = np.asarray(p_coeff_10_dsl)
+    co1 = p_coeff_1_dsl.asnumpy()
+    co2 = p_coeff_2_dsl.asnumpy()
+    co3 = p_coeff_3_dsl.asnumpy()
+    co4 = p_coeff_4_dsl.asnumpy()
+    co5 = p_coeff_5_dsl.asnumpy()
+    co6 = p_coeff_6_dsl.asnumpy()
+    co7 = p_coeff_7_dsl.asnumpy()
+    co8 = p_coeff_8_dsl.asnumpy()
+    co9 = p_coeff_9_dsl.asnumpy()
+    co10 = p_coeff_10_dsl.asnumpy()
     assert np.allclose(ref_1, co1)
     assert np.allclose(ref_2, co2)
     assert np.allclose(ref_3, co3)

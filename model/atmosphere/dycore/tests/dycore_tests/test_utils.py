@@ -55,8 +55,8 @@ def test_caclulate_scal_divdamp_order_24():
         offset_provider={},
     )
 
-    ref = scal_divdamp_for_order_24_numpy(enh_divdamp_fac, divdamp_fac_o2, mean_cell_area)
-    assert dallclose(ref, np.asarray(out))
+    ref = scal_divdamp_for_order_24_numpy(enh_divdamp_fac.asnumpy(), divdamp_fac_o2, mean_cell_area)
+    assert dallclose(ref, out.asnumpy())
 
 
 def test_calculate_scal_divdamp_any_order():
@@ -75,7 +75,8 @@ def test_calculate_scal_divdamp_any_order():
         out=out,
         offset_provider={},
     )
-    assert dallclose(np.asarray(-enh_divdamp_fac * mean_cell_area**2), np.asarray(out))
+    enhanced_factor = -enh_divdamp_fac.asnumpy() * mean_cell_area**2
+    assert dallclose(enhanced_factor, out.asnumpy())
 
 
 def test_calculate_bdy_divdamp():
@@ -86,7 +87,7 @@ def test_calculate_bdy_divdamp():
     _calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp, coeff, constants.dbl_eps, out=out, offset_provider={}
     )
-    assert dallclose(out, bdy_divdamp_numpy(coeff, scal_divdamp.ndarray))
+    assert dallclose(out.asnumpy(), bdy_divdamp_numpy(coeff, scal_divdamp.asnumpy()))
 
 
 def test_calculate_divdamp_fields():
@@ -115,5 +116,5 @@ def test_calculate_divdamp_fields():
         out=(scal_divdamp, boundary_divdamp),
         offset_provider={},
     )
-    dallclose(scal_divdamp.ndarray, scaled_ref)
-    dallclose(boundary_divdamp.ndarray, boundary_ref)
+    dallclose(scal_divdamp.asnumpy(), scaled_ref)
+    dallclose(boundary_divdamp.asnumpy(), boundary_ref)

@@ -48,7 +48,6 @@ def upwind_hflux_miura3_stencil_01_numpy(
     p_mass_flx_e: np.array,
     cell_rel_idx_dsl: np.array,
 ) -> np.array:
-
     z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
     z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
     z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
@@ -130,7 +129,7 @@ def upwind_hflux_miura3_stencil_01_numpy(
     return p_out_e_miura3
 
 
-def test_upwind_hflux_miura3_stencil_01():
+def test_upwind_hflux_miura3_stencil_01(backend):
     grid = SimpleGrid()
 
     z_lsq_coeff_1 = random_field(grid, CellDim, KDim)
@@ -160,32 +159,32 @@ def test_upwind_hflux_miura3_stencil_01():
 
     ref = upwind_hflux_miura3_stencil_01_numpy(
         grid.connectivities[E2CDim],
-        np.asarray(z_lsq_coeff_1),
-        np.asarray(z_lsq_coeff_2),
-        np.asarray(z_lsq_coeff_3),
-        np.asarray(z_lsq_coeff_4),
-        np.asarray(z_lsq_coeff_5),
-        np.asarray(z_lsq_coeff_6),
-        np.asarray(z_lsq_coeff_7),
-        np.asarray(z_lsq_coeff_8),
-        np.asarray(z_lsq_coeff_9),
-        np.asarray(z_lsq_coeff_10),
-        np.asarray(z_quad_vector_sum_1),
-        np.asarray(z_quad_vector_sum_2),
-        np.asarray(z_quad_vector_sum_3),
-        np.asarray(z_quad_vector_sum_4),
-        np.asarray(z_quad_vector_sum_5),
-        np.asarray(z_quad_vector_sum_6),
-        np.asarray(z_quad_vector_sum_7),
-        np.asarray(z_quad_vector_sum_8),
-        np.asarray(z_quad_vector_sum_9),
-        np.asarray(z_quad_vector_sum_10),
-        np.asarray(z_dreg_area),
-        np.asarray(p_mass_flx_e),
-        np.asarray(cell_rel_idx_dsl),
+        z_lsq_coeff_1.asnumpy(),
+        z_lsq_coeff_2.asnumpy(),
+        z_lsq_coeff_3.asnumpy(),
+        z_lsq_coeff_4.asnumpy(),
+        z_lsq_coeff_5.asnumpy(),
+        z_lsq_coeff_6.asnumpy(),
+        z_lsq_coeff_7.asnumpy(),
+        z_lsq_coeff_8.asnumpy(),
+        z_lsq_coeff_9.asnumpy(),
+        z_lsq_coeff_10.asnumpy(),
+        z_quad_vector_sum_1.asnumpy(),
+        z_quad_vector_sum_2.asnumpy(),
+        z_quad_vector_sum_3.asnumpy(),
+        z_quad_vector_sum_4.asnumpy(),
+        z_quad_vector_sum_5.asnumpy(),
+        z_quad_vector_sum_6.asnumpy(),
+        z_quad_vector_sum_7.asnumpy(),
+        z_quad_vector_sum_8.asnumpy(),
+        z_quad_vector_sum_9.asnumpy(),
+        z_quad_vector_sum_10.asnumpy(),
+        z_dreg_area.asnumpy(),
+        p_mass_flx_e.asnumpy(),
+        cell_rel_idx_dsl.asnumpy(),
     )
 
-    upwind_hflux_miura3_stencil_01(
+    upwind_hflux_miura3_stencil_01.with_backend(backend)(
         z_lsq_coeff_1,
         z_lsq_coeff_2,
         z_lsq_coeff_3,
@@ -214,4 +213,4 @@ def test_upwind_hflux_miura3_stencil_01():
             "E2C": grid.get_offset_provider("E2C"),
         },
     )
-    assert np.allclose(np.asarray(p_out_e_miura3), ref)
+    assert np.allclose(p_out_e_miura3.asnumpy(), ref)

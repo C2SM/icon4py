@@ -16,10 +16,9 @@ from __future__ import annotations
 import functools
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Sequence
 
-import numpy as np
-from gt4py.next import Dimension
+from gt4py.next import Dimension, Field
 
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 
@@ -191,14 +190,14 @@ class GHexMultiNodeExchange:
         )
         return pattern
 
-    def exchange(self, dim: definitions.Dimension, *fields: tuple):
+    def exchange(self, dim: definitions.Dimension, *fields: Sequence[Field]):
         assert dim in [CellDim, EdgeDim, VertexDim]
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(unstructured.field_descriptor(domain_descriptor, np.asarray(f))) for f in fields
+            pattern(unstructured.field_descriptor(domain_descriptor, f.asnumpy())) for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
         log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
