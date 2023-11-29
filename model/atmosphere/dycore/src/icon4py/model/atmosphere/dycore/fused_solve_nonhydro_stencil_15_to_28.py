@@ -678,8 +678,8 @@ def fused_solve_nonhydro_stencil_15_to_28(
     # nflat_gradp: int32,
 ):
     _fused_solve_nonhydro_stencil_15_to_28(
-        geofac_grg_x=geofac_grg_x,
-        geofac_grg_y=geofac_grg_y,
+        geofac_grg_x,
+        geofac_grg_y,
         # p_vn=p_vn,
         # p_vt=p_vt,
         # pos_on_tplane_e_1=pos_on_tplane_e_1,
