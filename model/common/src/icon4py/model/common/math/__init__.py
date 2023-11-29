@@ -10,13 +10,3 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-from dataclasses import dataclass
-
-
-@dataclass
-class NHConstants:
-    wgt_nnow_rth: float
-    wgt_nnew_rth: float
-    wgt_nnow_vel: float
-    wgt_nnew_vel: float

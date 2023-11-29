@@ -13,13 +13,10 @@
 
 from dataclasses import dataclass
 
-import numpy as np
 from gt4py.next.common import Field
-from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.model.common.dimension import (
     C2E2CODim,
-    CECDim,
     CEDim,
     CellDim,
     E2C2EDim,
@@ -64,17 +61,3 @@ class InterpolationState:
     pos_on_tplane_e_1: Field[[ECDim], float]
     pos_on_tplane_e_2: Field[[ECDim], float]
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float]
-
-    @property
-    def geofac_n2s_c(self) -> Field[[CellDim], float]:
-        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
-
-    @property
-    def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
-        geofac_nbh_ar = np.asarray(self.geofac_n2s)[:, 1:]
-        old_shape = geofac_nbh_ar.shape
-        return np_as_located_field(CECDim)(
-            geofac_nbh_ar.reshape(
-                old_shape[0] * old_shape[1],
-            )
-        )
