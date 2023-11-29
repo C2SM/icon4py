@@ -53,7 +53,8 @@ def _calculate_nabla4(
     nabv_tang_wp, nabv_norm_wp = astype((nabv_tang_vp, nabv_norm_vp), wpfloat)
     z_nabla4_e2_wp = wpfloat("4.0") * (
         (nabv_norm_wp - wpfloat("2.0") * z_nabla2_e) * (inv_vert_vert_length * inv_vert_vert_length)
-        + (nabv_tang_wp - wpfloat("2.0") * z_nabla2_e) * (inv_primal_edge_length * inv_primal_edge_length)
+        + (nabv_tang_wp - wpfloat("2.0") * z_nabla2_e)
+        * (inv_primal_edge_length * inv_primal_edge_length)
     )
     return astype(z_nabla4_e2_wp, vpfloat)
 
