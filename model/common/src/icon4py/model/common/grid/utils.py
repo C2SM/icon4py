@@ -22,17 +22,3 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
 ):
     table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
     return NeighborTableOffsetProvider(table, origin_axis, neighbor_axis, table.shape[1])
-
-
-class ClassLevelCache:
-    _cache = {}
-
-    @staticmethod
-    def cache_method(method):
-        def wrapper(self, *args, **kwargs):
-            key = f"{self.__class__.__name__}_{method.__name__}_{args}_{kwargs}"
-            if key not in ClassLevelCache._cache:
-                ClassLevelCache._cache[key] = method(self, *args, **kwargs)
-            return ClassLevelCache._cache[key]
-
-        return wrapper

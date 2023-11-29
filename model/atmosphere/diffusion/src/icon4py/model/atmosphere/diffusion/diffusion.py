@@ -68,6 +68,7 @@ from icon4py.model.common.constants import (
     CPD,
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
+    dbl_eps,
 )
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
@@ -771,6 +772,7 @@ class Diffusion:
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
+            smallest_vpfloat=dbl_eps,
             kh_smag_e=self.kh_smag_e,
             horizontal_start=edge_start_nudging,
             horizontal_end=edge_end_halo,
