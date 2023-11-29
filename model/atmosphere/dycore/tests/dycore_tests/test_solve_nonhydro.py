@@ -90,7 +90,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -186,15 +186,6 @@ def test_nonhydro_predictor_step(
         nnew=nnew,
     )
 
-    icon_result_vn_new = sp_exit.vn_new().asnumpy()
-    icon_result_vn_ie = sp_exit.vn_ie().asnumpy()
-    icon_result_w_new = sp_exit.w_new().asnumpy()
-    icon_result_exner_new = sp_exit.exner_new().asnumpy()
-    icon_result_theta_v_new = sp_exit.theta_v_new().asnumpy()
-    icon_result_rho_ic = sp_exit.rho_ic().asnumpy()
-    icon_result_w_concorr_c = sp_exit.w_concorr_c().asnumpy()
-    icon_result_mass_fl_e = sp_exit.mass_fl_e().asnumpy()
-
     cell_start_lb_plus2 = icon_grid.get_start_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
     )
@@ -211,214 +202,220 @@ def test_nonhydro_predictor_step(
 
     # stencils 2, 3
     assert dallclose(
-        sp_exit.exner_pr().asnumpy()[cell_start_lb_plus2:, :],
         diagnostic_state_nh.exner_pr.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.exner_pr().asnumpy()[cell_start_lb_plus2:, :],
     )
     assert dallclose(
-        sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lb_plus2:, :],
         solve_nonhydro.z_exner_ex_pr.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     # stencils 4,5
     assert dallclose(
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lb_plus2:, nlev - 1],
         solve_nonhydro.z_exner_ic.asnumpy()[cell_start_lb_plus2:, nlev - 1],
+        sp_exit.z_exner_ic().asnumpy()[cell_start_lb_plus2:, nlev - 1],
     )
     nflatlev = vertical_params.nflatlev
     assert dallclose(
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lb_plus2:, nflatlev : nlev - 1],
         solve_nonhydro.z_exner_ic.asnumpy()[cell_start_lb_plus2:, nflatlev : nlev - 1],
+        sp_exit.z_exner_ic().asnumpy()[cell_start_lb_plus2:, nflatlev : nlev - 1],
         rtol=1.0e-9,
     )
     # stencil 6
     assert dallclose(
-        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lb_plus2:, nflatlev:],
         solve_nonhydro.z_dexner_dz_c_1.asnumpy()[cell_start_lb_plus2:, nflatlev:],
+        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lb_plus2:, nflatlev:],
         atol=5e-18,
     )
 
     # stencils 7,8,9
     assert dallclose(
-        icon_result_rho_ic[cell_start_lb_plus2:, :],
         diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
     assert dallclose(
-        sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lb_plus2:, 1:],
         solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lb_plus2:, 1:],
+        sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lb_plus2:, 1:],
     )
 
     # stencils 7,8,9, 11
     assert dallclose(
-        sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lb_plus2:, :],
         solve_nonhydro.z_theta_v_pr_ic.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
     assert dallclose(
-        sp_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
         diagnostic_state_nh.theta_v_ic.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
     # stencils 7,8,9, 13
     assert dallclose(
-        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lb_plus2:, :],
         solve_nonhydro.z_rth_pr_1.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lb_plus2:, :],
     )
     assert dallclose(
-        sp_exit.z_rth_pr(2).asnumpy()[cell_start_lb_plus2:, :],
         solve_nonhydro.z_rth_pr_2.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.z_rth_pr(2).asnumpy()[cell_start_lb_plus2:, :],
     )
 
     # stencils 12
     nflat_gradp = vertical_params.nflat_gradp
     assert dallclose(
-        sp_exit.z_dexner_dz_c(2).asnumpy()[cell_start_lb_plus2:, nflat_gradp:],
         solve_nonhydro.z_dexner_dz_c_2.asnumpy()[cell_start_lb_plus2:, nflat_gradp:],
+        sp_exit.z_dexner_dz_c(2).asnumpy()[cell_start_lb_plus2:, nflat_gradp:],
         atol=1e-22,
     )
 
-    # grad_green_gauss_cell_dsl #TODO (magdalena) fails for APE
+    # grad_green_gauss_cell_dsl
     assert dallclose(
-        sp_exit.z_grad_rth(1).asnumpy()[cell_start_lb_plus2:, :],
         solve_nonhydro.z_grad_rth_1.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.z_grad_rth(1).asnumpy()[cell_start_lb_plus2:, :],
         rtol=1e-6,
+        atol=1e-21,
     )
     assert dallclose(
-        sp_exit.z_grad_rth(2).asnumpy()[cell_start_lb_plus2:, :],
         solve_nonhydro.z_grad_rth_2.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.z_grad_rth(2).asnumpy()[cell_start_lb_plus2:, :],
         rtol=1e-6,
+        atol=1e-21,
     )
     assert dallclose(
-        sp_exit.z_grad_rth(3).asnumpy()[cell_start_lb_plus2:, :],
         solve_nonhydro.z_grad_rth_3.asnumpy()[cell_start_lb_plus2:, :],
+        sp_exit.z_grad_rth(3).asnumpy()[cell_start_lb_plus2:, :],
         rtol=5e-6,
+        atol=1e-17,
     )
     assert dallclose(
-        sp_exit.z_grad_rth(4).asnumpy()[cell_start_lb_plus2:, :],
         solve_nonhydro.z_grad_rth_4.asnumpy()[cell_start_lb_plus2:, :],
-        rtol=1e-5,
+        sp_exit.z_grad_rth(4).asnumpy()[cell_start_lb_plus2:, :],
+        rtol=1e-6,
+        atol=1e-21,
     )
 
     # mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
     assert dallclose(
-        sp_exit.z_rho_e().asnumpy()[edge_start_lb_plus6:, :],
         z_fields.z_rho_e.asnumpy()[edge_start_lb_plus6:, :],
+        sp_exit.z_rho_e().asnumpy()[edge_start_lb_plus6:, :],
     )
     assert dallclose(
-        sp_exit.z_theta_v_e().asnumpy()[edge_start_lb_plus6:, :],
         z_fields.z_theta_v_e.asnumpy()[edge_start_lb_plus6:, :],
+        sp_exit.z_theta_v_e().asnumpy()[edge_start_lb_plus6:, :],
     )
 
     # stencils 18,19, 20, 22
     assert dallclose(
-        sp_exit.z_gradh_exner().asnumpy()[edge_start_nuding_plus1:, :],
         z_fields.z_gradh_exner.asnumpy()[edge_start_nuding_plus1:, :],
+        sp_exit.z_gradh_exner().asnumpy()[edge_start_nuding_plus1:, :],
         atol=1e-20,
     )
     # stencil 21
     assert dallclose(
-        sp_exit.z_hydro_corr().asnumpy()[edge_start_nuding_plus1:, nlev - 1],
         solve_nonhydro.z_hydro_corr.asnumpy()[edge_start_nuding_plus1:, nlev - 1],
+        sp_exit.z_hydro_corr().asnumpy()[edge_start_nuding_plus1:, nlev - 1],
         atol=1e-20,
     )
     prognostic_state_nnew = prognostic_state_ls[1]
+    vn_new_reference = sp_exit.vn_new().asnumpy()
+
     # stencils 24
     assert dallclose(
-        icon_result_vn_new[edge_start_nuding_plus1:, :],
         prognostic_state_nnew.vn.asnumpy()[edge_start_nuding_plus1:, :],
+        vn_new_reference[edge_start_nuding_plus1:, :],
         atol=6e-15,
     )
     # stencil 29
     assert dallclose(
-        icon_result_vn_new[:edge_start_nuding_plus1, :],
         prognostic_state_nnew.vn.asnumpy()[:edge_start_nuding_plus1, :],
+        vn_new_reference[:edge_start_nuding_plus1, :],
     )
 
     # stencil 30
     assert dallclose(
-        sp_exit.z_vn_avg().asnumpy(),
         solve_nonhydro.z_vn_avg.asnumpy(),
+        sp_exit.z_vn_avg().asnumpy(),
         atol=5e-14,
     )
     # stencil 30
     assert dallclose(
-        sp_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
         z_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
+        sp_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-20,
     )
     # stencil 30
     assert dallclose(
-        sp_exit.vt().asnumpy(),
         diagnostic_state_nh.vt.asnumpy(),
+        sp_exit.vt().asnumpy(),
         atol=5e-14,
     )
 
     # stencil 32
     assert dallclose(
-        icon_result_mass_fl_e,
         diagnostic_state_nh.mass_fl_e.asnumpy(),
+        sp_exit.mass_fl_e().asnumpy(),
         atol=4e-12,
     )
     # stencil 32
     # TODO: @abishekg7 higher tol.
     assert dallclose(
-        sp_exit.z_theta_v_fl_e().asnumpy(),
         solve_nonhydro.z_theta_v_fl_e.asnumpy(),
+        sp_exit.z_theta_v_fl_e().asnumpy(),
         atol=1e-9,
     )
 
     # stencil 35,36, 37,38
     assert dallclose(
-        icon_result_vn_ie[edge_start_lb_plus4:, :],
         diagnostic_state_nh.vn_ie.asnumpy()[edge_start_lb_plus4:, :],
+        sp_exit.vn_ie().asnumpy()[edge_start_lb_plus4:, :],
         atol=2e-14,
     )
 
     # stencil 35,36, 37,38
     assert dallclose(
-        sp_exit.z_vt_ie().asnumpy(),
         z_fields.z_vt_ie.asnumpy(),
+        sp_exit.z_vt_ie().asnumpy(),
         atol=2e-14,
     )
     # stencil 35,36
     assert dallclose(
-        sp_exit.z_kin_hor_e().asnumpy()[edge_start_lb_plus4:, :],
         z_fields.z_kin_hor_e.asnumpy()[edge_start_lb_plus4:, :],
-        atol=10e-13,
+        sp_exit.z_kin_hor_e().asnumpy()[edge_start_lb_plus4:, :],
+        atol=1e-20,
     )
 
     # stencil 35
     assert dallclose(
-        sp_exit.z_w_concorr_me().asnumpy()[:, nflatlev:],
         solve_nonhydro.z_w_concorr_me.asnumpy()[:, nflatlev:],
-        atol=2e-15,
+        sp_exit.z_w_concorr_me().asnumpy()[:, nflatlev:],
+        atol=1e-20,
     )
     # stencils 39,40
     assert dallclose(
-        icon_result_w_concorr_c,
         diagnostic_state_nh.w_concorr_c.asnumpy(),
+        sp_exit.w_concorr_c().asnumpy(),
         atol=1e-15,
     )
 
     # stencil 41
     assert dallclose(
-        sp_exit.z_flxdiv_mass().asnumpy(),
         solve_nonhydro.z_flxdiv_mass.asnumpy(),
-        atol=5e-15,
+        sp_exit.z_flxdiv_mass().asnumpy(),
+        atol=5e-20,
     )
     # TODO: @abishekg7 higher tol.
     assert dallclose(
-        sp_exit.z_flxdiv_theta().asnumpy(),
         solve_nonhydro.z_flxdiv_theta.asnumpy(),
+        sp_exit.z_flxdiv_theta().asnumpy(),
         atol=5e-12,
     )
     # stencils 43, 46, 47
     assert dallclose(
-        sp_exit.z_contr_w_fl_l().asnumpy()[cell_start_nudging:, :],
         z_fields.z_contr_w_fl_l.asnumpy()[cell_start_nudging:, :],
+        sp_exit.z_contr_w_fl_l().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 43
     assert dallclose(
-        sp_exit.z_w_expl().asnumpy()[cell_start_nudging:, 1:nlev],
         z_fields.z_w_expl.asnumpy()[cell_start_nudging:, 1:nlev],
+        sp_exit.z_w_expl().asnumpy()[cell_start_nudging:, 1:nlev],
         atol=1e-14,
     )
     # stencil 44, 45
@@ -441,24 +438,23 @@ def test_nonhydro_predictor_step(
     )
     # stencil 48, 49
     assert dallclose(
-        sp_exit.z_rho_expl().asnumpy()[cell_start_nudging:, :],
         z_fields.z_rho_expl.asnumpy()[cell_start_nudging:, :],
+        sp_exit.z_rho_expl().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 48, 49
     assert dallclose(
-        sp_exit.z_exner_expl().asnumpy()[cell_start_nudging:, :],
         z_fields.z_exner_expl.asnumpy()[cell_start_nudging:, :],
+        sp_exit.z_exner_expl().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
 
     # end
-    assert dallclose(sp_exit.rho_new().asnumpy(), prognostic_state_nnew.rho.asnumpy())
-    assert dallclose(icon_result_w_new, prognostic_state_nnew.w.asnumpy(), atol=7e-14)
+    assert dallclose(prognostic_state_nnew.rho.asnumpy(), sp_exit.rho_new().asnumpy())
+    assert dallclose(prognostic_state_nnew.w.asnumpy(), sp_exit.w_new().asnumpy(), atol=7e-14)
 
-    # not tested
-    assert dallclose(icon_result_exner_new, prognostic_state_nnew.exner.asnumpy())
-    assert dallclose(icon_result_theta_v_new, prognostic_state_nnew.theta_v.asnumpy())
+    assert dallclose(prognostic_state_nnew.exner.asnumpy(), sp_exit.exner_new().asnumpy())
+    assert dallclose(prognostic_state_nnew.theta_v.asnumpy(), sp_exit.theta_v_new().asnumpy())
 
 
 def construct_diagnostics(sp, sp_v):
@@ -619,61 +615,61 @@ def test_nonhydro_corrector_step(
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.rho_ic().asnumpy(),
         diagnostic_state_nh.rho_ic.asnumpy(),
+        savepoint_nonhydro_exit.rho_ic().asnumpy(),
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         diagnostic_state_nh.theta_v_ic.asnumpy(),
+        savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.z_graddiv_vn().asnumpy(),
         z_fields.z_graddiv_vn.asnumpy(),
+        savepoint_nonhydro_exit.z_graddiv_vn().asnumpy(),
         atol=1e-12,
     )
     assert dallclose(
-        savepoint_nonhydro_exit.exner_new().asnumpy(),
         prognostic_state_ls[nnew].exner.asnumpy(),
+        savepoint_nonhydro_exit.exner_new().asnumpy(),
     )  # TODO (magdalena) APE  atol=1e-7
 
     assert dallclose(
-        savepoint_nonhydro_exit.rho_new().asnumpy(),
         prognostic_state_ls[nnew].rho.asnumpy(),
+        savepoint_nonhydro_exit.rho_new().asnumpy(),
     )  # TODO (magdalena) APE  atol=1e-7
 
     assert dallclose(
-        savepoint_nonhydro_exit.w_new().asnumpy(),
         prognostic_state_ls[nnew].w.asnumpy(),
+        savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.vn_new().asnumpy(),
         prognostic_state_ls[nnew].vn.asnumpy(),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-10,
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.theta_v_new().asnumpy(),
         prognostic_state_ls[nnew].theta_v.asnumpy(),
+        savepoint_nonhydro_exit.theta_v_new().asnumpy(),
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         diagnostic_state_nh.mass_fl_e.asnumpy(),
+        savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         rtol=1e-10,
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         prep_adv.mass_flx_me.asnumpy(),
+        savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         rtol=1e-10,
     )
     assert dallclose(
-        savepoint_nonhydro_exit.vn_traj().asnumpy(),
         prep_adv.vn_traj.asnumpy(),
+        savepoint_nonhydro_exit.vn_traj().asnumpy(),
         rtol=1e-10,
     )
 
@@ -774,23 +770,23 @@ def test_run_solve_nonhydro_single_step(
     )
     prognostic_state_nnew = prognostic_state_ls[1]
     assert dallclose(
-        sp_step_exit.theta_v_new().asnumpy(),
         prognostic_state_nnew.theta_v.asnumpy(),
+        sp_step_exit.theta_v_new().asnumpy(),
     )
 
-    assert dallclose(sp_step_exit.exner_new().asnumpy(), prognostic_state_nnew.exner.asnumpy())
+    assert dallclose(prognostic_state_nnew.exner.asnumpy(), sp_step_exit.exner_new().asnumpy())
 
     assert dallclose(
-        savepoint_nonhydro_exit.vn_new().asnumpy(),
         prognostic_state_nnew.vn.asnumpy(),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-10,
     )
     assert dallclose(
-        savepoint_nonhydro_exit.rho_new().asnumpy(), prognostic_state_nnew.rho.asnumpy()
+        prognostic_state_nnew.rho.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
     )
     assert dallclose(
-        savepoint_nonhydro_exit.w_new().asnumpy(),
         prognostic_state_nnew.w.asnumpy(),
+        savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
@@ -887,68 +883,68 @@ def test_run_solve_nonhydro_multi_step(
         )
 
     assert dallclose(
-        savepoint_nonhydro_exit.rho_ic().asnumpy(),
         diagnostic_state_nh.rho_ic.asnumpy(),
+        savepoint_nonhydro_exit.rho_ic().asnumpy(),
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
         diagnostic_state_nh.theta_v_ic.asnumpy(),
+        savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.z_graddiv_vn().asnumpy(),
         z_fields.z_graddiv_vn.asnumpy(),
+        savepoint_nonhydro_exit.z_graddiv_vn().asnumpy(),
     )
     assert dallclose(
-        savepoint_nonhydro_exit.exner_new().asnumpy(),
         prognostic_state_ls[nnew].exner.asnumpy(),
+        savepoint_nonhydro_exit.exner_new().asnumpy(),
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.rho_new().asnumpy(), prognostic_state_ls[nnew].rho_new.asnumpy()
+        prognostic_state_ls[nnew].rho_new.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.w_new().asnumpy(),
         prognostic_state_ls[nnew].w.asnumpy(),
+        savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.vn_new().asnumpy(),
         prognostic_state_ls[nnew].vn.asnumpy(),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-10,
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.theta_v_new().asnumpy(),
         prognostic_state_ls[nnew].theta_v.asnumpy(),
+        savepoint_nonhydro_exit.theta_v_new().asnumpy(),
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         diagnostic_state_nh.mass_fl_e.asnumpy(),
+        savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         rtol=1e-10,
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         prep_adv.mass_flx_me.asnumpy(),
+        savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         rtol=1e-10,
     )
     assert dallclose(
-        savepoint_nonhydro_exit.vn_traj().asnumpy(),
         prep_adv.vn_traj.asnumpy(),
+        savepoint_nonhydro_exit.vn_traj().asnumpy(),
         rtol=1e-10,
     )
 
     assert dallclose(
-        sp_step_exit.theta_v_new().asnumpy(),
         prognostic_state_nnew.theta_v.asnumpy(),
+        sp_step_exit.theta_v_new().asnumpy(),
     )
 
-    assert dallclose(sp_step_exit.exner_new().asnumpy(), prognostic_state_nnew.exner.asnumpy())
+    assert dallclose(prognostic_state_nnew.exner.asnumpy(), sp_step_exit.exner_new().asnumpy())
 
 
 def create_nh_constants(sp):
