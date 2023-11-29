@@ -64,7 +64,7 @@ def test_grid_size(grid_savepoint):
 )
 def test_kmoist_calculation(grid_savepoint, experiment, kmoist_level):
     threshold = 22500.0
-    vct_a = np.asarray(grid_savepoint.vct_a())
+    vct_a = grid_savepoint.vct_a().asnumpy()
     assert kmoist_level == VerticalModelParams._determine_kstart_moist(
         vct_a, threshold, nshift_total=0
     )

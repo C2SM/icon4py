@@ -274,7 +274,7 @@ def test_nonhydro_predictor_step(
         atol=1e-22,
     )
 
-    # grad_green_gauss_cell_dsl
+    # grad_green_gauss_cell_dsl #TODO (magdalena) fails for APE
     assert dallclose(
         sp_exit.z_grad_rth(1).asnumpy()[cell_start_lb_plus2:, :],
         solve_nonhydro.z_grad_rth_1.asnumpy()[cell_start_lb_plus2:, :],
@@ -520,7 +520,7 @@ def create_vertical_params(damping_height, grid_savepoint):
     "experiment,step_date_init, step_date_exit, damping_height",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_nonhydro_corrector_step(
@@ -684,7 +684,7 @@ def test_nonhydro_corrector_step(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_run_solve_nonhydro_single_step(
@@ -694,6 +694,8 @@ def test_run_solve_nonhydro_single_step(
     jstep_exit,
     step_date_init,
     step_date_exit,
+    experiment,
+    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
     damping_height,
