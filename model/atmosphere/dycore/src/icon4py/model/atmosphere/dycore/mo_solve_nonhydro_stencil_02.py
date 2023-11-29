@@ -47,7 +47,12 @@ def mo_solve_nonhydro_stencil_02(
     vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_02(
-        exner_exfac, exner, exner_ref_mc, exner_pr, out=(z_exner_ex_pr, exner_pr), domain={
+        exner_exfac,
+        exner,
+        exner_ref_mc,
+        exner_pr,
+        out=(z_exner_ex_pr, exner_pr),
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },

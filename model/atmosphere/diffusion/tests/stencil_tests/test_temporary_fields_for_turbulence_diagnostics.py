@@ -14,6 +14,7 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
+
 from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence_diagnostics import (
     temporary_fields_for_turbulence_diagnostics,
 )

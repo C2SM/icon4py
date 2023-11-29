@@ -47,7 +47,12 @@ def mo_solve_nonhydro_stencil_07(
     vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_07(
-        rho, rho_ref_mc, theta_v, theta_ref_mc, out=(z_rth_pr_1, z_rth_pr_2), domain={
+        rho,
+        rho_ref_mc,
+        theta_v,
+        theta_ref_mc,
+        out=(z_rth_pr_1, z_rth_pr_2),
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },

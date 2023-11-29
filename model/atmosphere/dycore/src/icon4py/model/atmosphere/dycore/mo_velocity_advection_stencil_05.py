@@ -47,7 +47,12 @@ def mo_velocity_advection_stencil_05(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_05(vn, vt, out=(vn_ie, z_vt_ie, z_kin_hor_e), domain={
+    _mo_velocity_advection_stencil_05(
+        vn,
+        vt,
+        out=(vn_ie, z_vt_ie, z_kin_hor_e),
+        domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        },)
+        },
+    )

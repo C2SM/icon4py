@@ -40,7 +40,11 @@ def mo_solve_nonhydro_stencil_47(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_47(w_concorr_c, out=(w_nnew, z_contr_w_fl_l), domain={
+    _mo_solve_nonhydro_stencil_47(
+        w_concorr_c,
+        out=(w_nnew, z_contr_w_fl_l),
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        },)
+        },
+    )

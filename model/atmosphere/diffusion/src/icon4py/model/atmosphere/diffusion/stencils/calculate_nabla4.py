@@ -89,5 +89,5 @@ def calculate_nabla4(
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        }
+        },
     )

@@ -90,7 +90,7 @@ def mo_advection_traj_btraj_compute_o1_dsl(
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
-    vertical_end: int32
+    vertical_end: int32,
 ):
     _mo_advection_traj_btraj_compute_o1_dsl(
         p_vn,

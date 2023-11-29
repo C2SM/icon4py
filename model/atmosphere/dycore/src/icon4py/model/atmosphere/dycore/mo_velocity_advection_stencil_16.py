@@ -49,7 +49,14 @@ def mo_velocity_advection_stencil_16(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_16(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz, out=ddt_w_adv, domain={
+    _mo_velocity_advection_stencil_16(
+        z_w_con_c,
+        w,
+        coeff1_dwdz,
+        coeff2_dwdz,
+        out=ddt_w_adv,
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        },)
+        },
+    )

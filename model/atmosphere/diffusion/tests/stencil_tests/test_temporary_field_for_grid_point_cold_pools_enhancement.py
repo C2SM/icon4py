@@ -14,6 +14,7 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
+
 from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_cold_pools_enhancement import (
     temporary_field_for_grid_point_cold_pools_enhancement,
 )

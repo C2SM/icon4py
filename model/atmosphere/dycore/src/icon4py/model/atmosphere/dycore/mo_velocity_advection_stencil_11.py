@@ -29,13 +29,18 @@ def _mo_velocity_advection_stencil_11(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_11(
-    w: Field[[CellDim, KDim], wpfloat], z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_w_con_c: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_11(w, out=z_w_con_c, domain={
+    _mo_velocity_advection_stencil_11(
+        w,
+        out=z_w_con_c,
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        },)
+        },
+    )

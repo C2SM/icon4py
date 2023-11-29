@@ -40,7 +40,14 @@ def apply_nabla2_to_vn_in_lateral_boundary(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _apply_nabla2_to_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v, out=vn, domain={
+    _apply_nabla2_to_vn_in_lateral_boundary(
+        z_nabla2_e,
+        area_edge,
+        vn,
+        fac_bdydiff_v,
+        out=vn,
+        domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

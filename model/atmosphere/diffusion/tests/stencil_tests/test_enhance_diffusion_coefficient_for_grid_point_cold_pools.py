@@ -11,9 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import math
-from gt4py.next.ffront.fbuiltins import int32
+
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
@@ -28,12 +29,7 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
     OUTPUTS = ("kh_smag_e",)
 
     @staticmethod
-    def reference(
-        grid,
-        kh_smag_e: np.array,
-        enh_diffu_3d: np.array,
-        **kwargs
-    ) -> np.array:
+    def reference(grid, kh_smag_e: np.array, enh_diffu_3d: np.array, **kwargs) -> np.array:
         e2c = grid.connectivities[E2CDim]
         kh_smag_e = np.maximum(
             kh_smag_e,

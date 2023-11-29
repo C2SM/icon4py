@@ -32,7 +32,10 @@ def mo_solve_nonhydro_stencil_45_b(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_45_b(out=z_q, domain={
+    _mo_solve_nonhydro_stencil_45_b(
+        out=z_q,
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        },)
+        },
+    )

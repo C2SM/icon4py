@@ -52,7 +52,8 @@ def mo_solve_nonhydro_stencil_11_upper(
         z_rth_pr,
         theta_ref_ic,
         z_theta_v_pr_ic,
-        out=(z_theta_v_pr_ic, theta_v_ic), domain={
+        out=(z_theta_v_pr_ic, theta_v_ic),
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },

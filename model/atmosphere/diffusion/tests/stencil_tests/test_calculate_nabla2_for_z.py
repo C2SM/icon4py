@@ -13,8 +13,9 @@
 
 import numpy as np
 import pytest
-from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
+
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
 )

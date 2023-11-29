@@ -38,7 +38,13 @@ def compute_airmass(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_airmass(rho_in, ddqz_z_full_in, deepatmo_t1mc_in, out=airmass_out, domain={
+    _compute_airmass(
+        rho_in,
+        ddqz_z_full_in,
+        deepatmo_t1mc_in,
+        out=airmass_out,
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        })
+        },
+    )

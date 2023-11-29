@@ -47,7 +47,12 @@ def mo_solve_nonhydro_stencil_37(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_37(vn, vt, out=(vn_ie, z_vt_ie, z_kin_hor_e), domain={
+    _mo_solve_nonhydro_stencil_37(
+        vn,
+        vt,
+        out=(vn_ie, z_vt_ie, z_kin_hor_e),
+        domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        },)
+        },
+    )

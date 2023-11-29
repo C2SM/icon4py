@@ -14,6 +14,7 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
+
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary,
 )

@@ -18,8 +18,8 @@ from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
     abs,
     astype,
     broadcast,
+    int32,
     where,
-    int32
 )
 
 from icon4py.model.common.dimension import CellDim, KDim

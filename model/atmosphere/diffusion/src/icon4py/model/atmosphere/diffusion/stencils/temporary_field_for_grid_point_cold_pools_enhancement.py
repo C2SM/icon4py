@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, neighbor_sum, where, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum, where
 
 from icon4py.model.common.dimension import C2E2C, C2E2CDim, CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -54,8 +54,13 @@ def temporary_field_for_grid_point_cold_pools_enhancement(
     vertical_end: int32,
 ):
     _temporary_field_for_grid_point_cold_pools_enhancement(
-        theta_v, theta_ref_mc, thresh_tdiff, smallest_vpfloat, out=enh_diffu_3d, domain={
+        theta_v,
+        theta_ref_mc,
+        thresh_tdiff,
+        smallest_vpfloat,
+        out=enh_diffu_3d,
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        }
+        },
     )

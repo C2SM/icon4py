@@ -41,7 +41,12 @@ def mo_velocity_advection_stencil_10(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_10(z_w_concorr_mc, wgtfac_c, out=w_concorr_c, domain={
+    _mo_velocity_advection_stencil_10(
+        z_w_concorr_mc,
+        wgtfac_c,
+        out=w_concorr_c,
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        },)
+        },
+    )

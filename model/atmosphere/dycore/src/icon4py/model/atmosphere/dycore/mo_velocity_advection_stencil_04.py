@@ -44,7 +44,14 @@ def mo_velocity_advection_stencil_04(
     vertical_end: int32,
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
 ):
-    _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt, out=z_w_concorr_me,  domain={
+    _mo_velocity_advection_stencil_04(
+        vn,
+        ddxn_z_full,
+        ddxt_z_full,
+        vt,
+        out=z_w_concorr_me,
+        domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        },)
+        },
+    )

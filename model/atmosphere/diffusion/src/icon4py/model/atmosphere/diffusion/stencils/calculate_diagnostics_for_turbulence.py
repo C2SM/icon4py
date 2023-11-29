@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import Field, astype
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -33,6 +33,7 @@ def _calculate_diagnostics_for_turbulence(
         astype(wgtfac_c * kh_c, wpfloat) + (wpfloat("1.0") - wgtfac_c_wp) * kh_c_wp(Koff[-1])
     ) ** 2
     return astype((div_ic_wp, hdef_ic_wp), vpfloat)
+
 
 # todo: either domain or slicing
 @program(grid_type=GridType.UNSTRUCTURED)

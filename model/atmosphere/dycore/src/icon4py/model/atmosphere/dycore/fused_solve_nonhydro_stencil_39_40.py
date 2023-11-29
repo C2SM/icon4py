@@ -69,5 +69,5 @@ def fused_solve_nonhydro_stencil_39_40(
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        }
+        },
     )

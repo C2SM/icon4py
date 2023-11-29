@@ -40,7 +40,13 @@ def mo_solve_nonhydro_stencil_62(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_62(w_now, grf_tend_w, dtime, out=w_new, domain={
+    _mo_solve_nonhydro_stencil_62(
+        w_now,
+        grf_tend_w,
+        dtime,
+        out=w_new,
+        domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
-        },)
+        },
+    )

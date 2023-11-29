@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, maximum, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, maximum
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat

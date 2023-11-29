@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, where, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
 
 from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
