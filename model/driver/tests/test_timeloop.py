@@ -319,7 +319,7 @@ def test_run_timeloop_single_step(
         printing(
             w_sp.asnumpy(),
             prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
-         "w",
+            "w",
         )
         printing(
             vn_sp.asnumpy(),

@@ -59,7 +59,6 @@ def test_nonhydro_params():
     )
 
 
-@pytest.mark.skip("TODO (magdalena) fix update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, istep_exit, step_date_init, step_date_exit",
@@ -355,7 +354,11 @@ def test_nonhydro_predictor_step(
         atol=5e-20,
     )
     # stencil 30
-    assert dallclose(sp_exit.vt().asnumpy(), diagnostic_state_nh.vt.asnumpy(), atol=5e-14)
+    assert dallclose(
+        sp_exit.vt().asnumpy(),
+        diagnostic_state_nh.vt.asnumpy(),
+        atol=5e-14,
+    )
 
     # stencil 32
     assert dallclose(
@@ -366,7 +369,9 @@ def test_nonhydro_predictor_step(
     # stencil 32
     # TODO: @abishekg7 higher tol.
     assert dallclose(
-        sp_exit.z_theta_v_fl_e().asnumpy(), solve_nonhydro.z_theta_v_fl_e.asnumpy(), atol=1e-9
+        sp_exit.z_theta_v_fl_e().asnumpy(),
+        solve_nonhydro.z_theta_v_fl_e.asnumpy(),
+        atol=1e-9,
     )
 
     # stencil 35,36, 37,38
@@ -377,7 +382,11 @@ def test_nonhydro_predictor_step(
     )
 
     # stencil 35,36, 37,38
-    assert dallclose(sp_exit.z_vt_ie().asnumpy(), z_fields.z_vt_ie.asnumpy(), atol=2e-14)
+    assert dallclose(
+        sp_exit.z_vt_ie().asnumpy(),
+        z_fields.z_vt_ie.asnumpy(),
+        atol=2e-14,
+    )
     # stencil 35,36
     assert dallclose(
         sp_exit.z_kin_hor_e().asnumpy()[edge_start_lb_plus4:, :],
@@ -445,13 +454,13 @@ def test_nonhydro_predictor_step(
         z_fields.z_q.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
-    # stencil 48, 49  #level 0 wrong
+    # stencil 48, 49
     assert dallclose(
         sp_exit.z_rho_expl().asnumpy()[cell_start_nudging:, :],
         z_fields.z_rho_expl.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
-
+    # stencil 48, 49 # TODO (magdalena) there is a problem at last  2 klevel=nlev-1,nlev-2
     assert dallclose(
         sp_exit.z_exner_expl().asnumpy()[cell_start_nudging:, :],
         z_fields.z_exner_expl.asnumpy()[cell_start_nudging:, :],
@@ -460,7 +469,7 @@ def test_nonhydro_predictor_step(
 
     # end
     assert dallclose(sp_exit.rho_new().asnumpy(), prognostic_state_nnew.rho.asnumpy())
-    assert dallclose(icon_result_w_new.asnumpy(), prognostic_state_nnew.w.asnumpy(), atol=7e-14)
+    assert dallclose(icon_result_w_new, prognostic_state_nnew.w.asnumpy(), atol=7e-14)
 
     # not tested
     assert dallclose(icon_result_exner_new, prognostic_state_nnew.exner.asnumpy())
@@ -676,11 +685,13 @@ def test_nonhydro_corrector_step(
     )
 
 
-@pytest.mark.skip("TODO (magdalena) fix update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init,  istep_exit, jstep_exit,step_date_exit",
-    [(1, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000")],
+    "istep_init, jstep_init, step_date_init,  istep_exit, jstep_exit,step_date_exit, vn_only",
+    [
+        (1, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000", False),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 0, "2021-06-20T12:00:20.000", True),
+    ],
 )
 def test_run_solve_nonhydro_single_step(
     istep_init,
@@ -859,14 +870,17 @@ def test_run_solve_nonhydro_single_step(
     assert dallclose(
         sp_exit.vn_new().asnumpy(),
         prognostic_state_nnew.vn.asnumpy(),
-        rtol=1e-10,
+        atol=5e-13,
     )
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit",
-    [(1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000")],
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
+    [
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
+    ],
 )
 def test_run_solve_nonhydro_multi_step(
     step_date_init,
@@ -984,68 +998,6 @@ def test_run_solve_nonhydro_multi_step(
         z=z,
     )
 
-    print('end_cell_end ', icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)))
-
-    print('start_cell_local_minus2 ', icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.local(CellDim) - 2
-    ))
-    print('end_cell_local_minus2 ', icon_grid.get_end_index(
-        CellDim, HorizontalMarkerIndex.local(CellDim) - 2
-    ))
-
-    from icon4py.model.common.dimension import VertexDim
-    print('start_vertex_lb_plus1 ', icon_grid.get_start_index(
-        VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
-    ))  # TODO: check
-    print('end_vertex_local_minus1 ', icon_grid.get_end_index(
-        VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
-    ))
-
-    print('start_cell_lb ', icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
-    ))
-    print('end_cell_nudging_minus1 ', icon_grid.get_end_index(
-        CellDim,
-        HorizontalMarkerIndex.nudging(CellDim) - 1,
-    ))
-
-    print('start_edge_lb_plus6 ', icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
-    ))
-    print('end_edge_local_minus1 ', icon_grid.get_end_index(
-        EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1
-    ))
-    print('end_edge_local ', icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim)))
-
-    print('start_edge_nudging_plus1 ', icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
-    ))
-    print('end_edge_end ', icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim)))
-
-    print('start_edge_lb ', icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim)
-    ))
-    print('end_edge_nudging ', icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim)))
-
-    print('start_edge_lb_plus4 ', icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
-    ))
-    print('end_edge_local_minus2 ', icon_grid.get_end_index(
-        EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
-    ))
-
-    print('start_cell_lb_plus2 ', icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
-    ))
-    print('end_cell_local_minus1 ', icon_grid.get_end_index(
-        CellDim, HorizontalMarkerIndex.local(CellDim) - 1
-    ))
-
-    print('start_cell_nudging ', icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.nudging(CellDim)
-    ))
-    print('end_cell_local ', icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim)))
-
     for i_substep in range(r_nsubsteps):
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -1079,8 +1031,8 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert dallclose(
-        savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:,:],
-        diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lb_plus2:,:],
+        savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
+        diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lb_plus2:, :],
     )
 
     assert dallclose(

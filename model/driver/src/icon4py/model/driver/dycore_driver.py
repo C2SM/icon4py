@@ -22,7 +22,6 @@ from gt4py.next import Field
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro,
 )

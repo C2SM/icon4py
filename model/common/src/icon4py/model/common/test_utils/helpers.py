@@ -19,7 +19,6 @@ import pytest
 from gt4py.next import as_field
 from gt4py.next import common as gt_common
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.iterator import embedded as it_embedded
 
 
 try:
@@ -53,7 +52,7 @@ def random_mask(
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> it_embedded.MutableLocatedField:
+) -> gt_common.Field:
     shape = _shape(grid, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
