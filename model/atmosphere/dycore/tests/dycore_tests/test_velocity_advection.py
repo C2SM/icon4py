@@ -16,7 +16,8 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.dimension import EdgeDim, CellDim
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
@@ -224,42 +225,52 @@ def test_velocity_predictor_step(
     # stencil 02,05
     assert dallclose(icon_result_vn_ie, diagnostic_state.vn_ie.asnumpy(), atol=1.0e-14)
     # stencil 07
+    start_edge_lateral_boundary_6 = icon_grid.get_start_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+    )
     assert dallclose(
-        icon_result_z_v_grad_w[3777:31558, :],
-        velocity_advection.z_v_grad_w.asnumpy()[3777:31558, :],
+        icon_result_z_v_grad_w[start_edge_lateral_boundary_6:, :],
+        velocity_advection.z_v_grad_w.asnumpy()[start_edge_lateral_boundary_6:, :],
         atol=1.0e-16,
     )
     # stencil 08
+    start_cell_nudging = icon_grid.get_start_index(
+        CellDim, HorizontalMarkerIndex.nudging(CellDim)
+    )  # 3316
     assert dallclose(
-        savepoint_velocity_exit.z_ekinh().asnumpy()[3316:20896, :],
-        velocity_advection.z_ekinh.asnumpy()[3316:20896, :],
+        savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
+        velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
     )
     # stencil 09
     assert dallclose(
-        icon_result_z_w_concorr_mc[3316:20896, vertical_params.nflatlev : icon_grid.num_levels],
+        icon_result_z_w_concorr_mc[
+            start_cell_nudging:, vertical_params.nflatlev : icon_grid.num_levels
+        ],
         velocity_advection.z_w_concorr_mc.asnumpy()[
-            3316:20896, vertical_params.nflatlev : icon_grid.num_levels
+            start_cell_nudging:, vertical_params.nflatlev : icon_grid.num_levels
         ],
         atol=1.0e-15,
     )
     # stencil 10
     assert dallclose(
-        icon_result_w_concorr_c[3316:20896, vertical_params.nflatlev + 1 : icon_grid.num_levels],
+        icon_result_w_concorr_c[
+            start_cell_nudging:, vertical_params.nflatlev + 1 : icon_grid.num_levels
+        ],
         diagnostic_state.w_concorr_c.asnumpy()[
-            3316:20896, vertical_params.nflatlev + 1 : icon_grid.num_levels
+            start_cell_nudging:, vertical_params.nflatlev + 1 : icon_grid.num_levels
         ],
         atol=1.0e-15,
     )
     # stencil 11,12,13,14
     assert dallclose(
-        savepoint_velocity_exit.z_w_con_c().asnumpy()[3316:20896, :],
-        velocity_advection.z_w_con_c.asnumpy()[3316:20896, :],
+        savepoint_velocity_exit.z_w_con_c().asnumpy()[start_cell_nudging:, :],
+        velocity_advection.z_w_con_c.asnumpy()[start_cell_nudging:, :],
         atol=1.0e-15,
     )
     # stencil 16
     assert dallclose(
-        icon_result_ddt_w_adv_pc[3316:20896, :],
-        diagnostic_state.ddt_w_adv_pc[ntnd - 1].asnumpy()[3316:20896, :],
+        icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
+        diagnostic_state.ddt_w_adv_pc[ntnd - 1].asnumpy()[start_cell_nudging:, :],
         atol=5.0e-16,
         rtol=1.0e-10,
     )
@@ -367,26 +378,30 @@ def test_velocity_corrector_step(
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
     # stencil 07
+    start_cells_lateral_boundary_d = icon_grid.get_start_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+    )
     assert dallclose(
-        icon_result_z_v_grad_w[3777:31558, :],
-        velocity_advection.z_v_grad_w.asnumpy()[3777:31558, :],
+        icon_result_z_v_grad_w[start_cells_lateral_boundary_d:, :],
+        velocity_advection.z_v_grad_w.asnumpy()[start_cells_lateral_boundary_d:, :],
         atol=1e-16,
     )
     # stencil 08
+    start_cell_nudging = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
     assert dallclose(
-        savepoint_velocity_exit.z_ekinh().asnumpy()[3316:20896, :],
-        velocity_advection.z_ekinh.asnumpy()[3316:20896, :],
+        savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
+        velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
     )
 
     # stencil 11,12,13,14
     assert dallclose(
-        savepoint_velocity_exit.z_w_con_c().asnumpy()[3316:20896, :],
-        velocity_advection.z_w_con_c.asnumpy()[3316:20896, :],
+        savepoint_velocity_exit.z_w_con_c().asnumpy()[start_cell_nudging:, :],
+        velocity_advection.z_w_con_c.asnumpy()[start_cell_nudging:, :],
     )
     # stencil 16
     assert dallclose(
-        icon_result_ddt_w_adv_pc[3316:20896, :],
-        diagnostic_state.ddt_w_adv_pc[ntnd - 1].asnumpy()[3316:20896, :],
+        icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
+        diagnostic_state.ddt_w_adv_pc[ntnd - 1].asnumpy()[start_cell_nudging:, :],
         atol=5.0e-16,
     )
     # stencil 19

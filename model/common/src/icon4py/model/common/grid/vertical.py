@@ -49,17 +49,16 @@ class VerticalModelParams:
     nflat_gradp: Final[int32] = None
 
     def __post_init__(self):
+        vct_a_array = self.vct_a.asnumpy()
         object.__setattr__(
             self,
             "index_of_damping_layer",
-            self._determine_damping_height_index(
-                self.vct_a.asnumpy(), self.rayleigh_damping_height
-            ),
+            self._determine_damping_height_index(vct_a_array, self.rayleigh_damping_height),
         )
         object.__setattr__(
             self,
             "_start_index_for_moist_physics",
-            self._determine_kstart_moist(np.asarray(self.vct_a), self.htop_moist_proc),
+            self._determine_kstart_moist(vct_a_array, self.htop_moist_proc),
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}"),
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
