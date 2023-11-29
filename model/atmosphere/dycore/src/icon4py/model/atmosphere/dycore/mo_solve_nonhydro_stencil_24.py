@@ -32,7 +32,7 @@ def _mo_solve_nonhydro_stencil_24(
     z_gradh_exner_wp = astype(z_gradh_exner, wpfloat)
 
     vn_nnew_wp = vn_nnow + dtime * (
-        astype(ddt_vn_apc_ntl1 + ddt_vn_phy, wpfloat) - cpd * z_theta_v_e * z_gradh_exner_wp
+        astype(ddt_vn_apc_ntl1, wpfloat)  - cpd * z_theta_v_e * z_gradh_exner_wp + astype(ddt_vn_phy, wpfloat)
     )
     return vn_nnew_wp
 

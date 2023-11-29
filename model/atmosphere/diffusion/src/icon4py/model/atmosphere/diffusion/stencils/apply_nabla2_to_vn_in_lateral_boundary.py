@@ -25,7 +25,7 @@ def _apply_nabla2_to_vn_in_lateral_boundary(
     vn: Field[[EdgeDim, KDim], wpfloat],
     fac_bdydiff_v: wpfloat,
 ) -> Field[[EdgeDim, KDim], wpfloat]:
-    vn_wp = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
+    vn_wp = vn + (area_edge * fac_bdydiff_v * z_nabla2_e)
     return vn_wp
 
 

@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, maximum
+from gt4py.next.ffront.fbuiltins import Field, broadcast, astype, maximum
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -32,10 +32,12 @@ def _apply_nabla2_and_nabla4_to_vn(
     kh_smag_e_wp, z_nabla4_e2_wp, nudgezone_diff_wp = astype(
         (kh_smag_e, z_nabla4_e2, nudgezone_diff), wpfloat
     )
+    area_edge_broadcast = broadcast(area_edge, (EdgeDim, KDim))
+
 
     vn_wp = vn + area_edge * (
         maximum(nudgezone_diff_wp * nudgecoeff_e, kh_smag_e_wp) * z_nabla2_e
-        - diff_multfac_vn * z_nabla4_e2_wp * area_edge
+        - area_edge_broadcast * diff_multfac_vn * z_nabla4_e2_wp
     )
     return vn_wp
 
