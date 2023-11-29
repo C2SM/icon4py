@@ -104,7 +104,7 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
+    _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance(
         area,
         geofac_n2s,
         geofac_grg_x,
