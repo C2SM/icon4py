@@ -55,7 +55,7 @@ def _mo_solve_nonhydro_stencil_21(
         * inv_dual_edge_length
         * (z_theta_1 - z_theta_0)
         * wpfloat("4.0")
-        / (z_theta_0 + z_theta_1) * (z_theta_0 + z_theta_1)
+        / ((z_theta_0 + z_theta_1) * (z_theta_0 + z_theta_1))
     )
 
     return astype(z_hydro_corr_wp, vpfloat)
