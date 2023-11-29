@@ -13,7 +13,7 @@
 
 import numpy as np
 import pytest
-
+from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary,
 )
@@ -37,11 +37,15 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
             z_nabla2_e=z_nabla2_e,
             area_edge=area_edge,
             vn=vn,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )
 
     @staticmethod
     def reference(
-        grid, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
+        grid, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v, **kwargs
     ) -> np.array:
         area_edge = np.expand_dims(area_edge, axis=-1)
         vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)

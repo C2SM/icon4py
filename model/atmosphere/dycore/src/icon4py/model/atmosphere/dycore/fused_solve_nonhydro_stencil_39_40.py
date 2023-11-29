@@ -65,7 +65,7 @@ def fused_solve_nonhydro_stencil_39_40(
         vert_idx,
         nlev,
         nflatlev,
-        out=w_concorr_c[:, -1:],
+        out=w_concorr_c,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

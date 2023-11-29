@@ -42,7 +42,7 @@ def mo_solve_nonhydro_stencil_04(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_04(wgtfacq_c, z_exner_ex_pr, out=z_exner_ic[:, 3:], domain={
+    _mo_solve_nonhydro_stencil_04(wgtfacq_c, z_exner_ex_pr, out=z_exner_ic, domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },)

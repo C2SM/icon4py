@@ -68,9 +68,9 @@ def mo_solve_nonhydro_stencil_51(
         z_exner_expl,
         dtime,
         cpd,
-        out=(z_q[:, 1:], w_nnew[:, 1:]),
+        out=(z_q, w_nnew),
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start + 1, vertical_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

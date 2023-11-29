@@ -62,7 +62,7 @@ def mo_solve_nonhydro_stencil_08(
         rho_ref_mc,
         theta_v,
         theta_ref_mc,
-        out=(rho_ic[:, 1:], z_rth_pr_1[:, 1:], z_rth_pr_2[:, 1:]),
+        out=(rho_ic, z_rth_pr_1, z_rth_pr_2),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

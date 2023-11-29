@@ -13,7 +13,7 @@
 
 import numpy as np
 import pytest
-
+from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_04 import (
     mo_velocity_advection_stencil_04,
 )
@@ -52,4 +52,8 @@ class TestMoVelocityAdvectionStencil04(StencilTest):
             ddxt_z_full=ddxt_z_full,
             vt=vt,
             z_w_concorr_me=z_w_concorr_me,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )
