@@ -184,8 +184,6 @@ def read_initial_state(
         wgt_nnew_rth=solve_nonhydro_init_savepoint.wgt_nnew_rth(),
         wgt_nnow_vel=solve_nonhydro_init_savepoint.wgt_nnow_vel(),
         wgt_nnew_vel=solve_nonhydro_init_savepoint.wgt_nnew_vel(),
-        scal_divdamp=solve_nonhydro_init_savepoint.scal_divdamp(),
-        scal_divdamp_o2=solve_nonhydro_init_savepoint.scal_divdamp_o2(),
     )
 
     prognostic_state_next = PrognosticState(
@@ -208,7 +206,7 @@ def read_initial_state(
         z_fields,
         nh_constants,
         prep_adv,
-        solve_nonhydro_init_savepoint.bdy_divdamp(),
+        solve_nonhydro_init_savepoint.divdamp_fac_o2(),
         prognostic_state_now,
         prognostic_state_next,
     )

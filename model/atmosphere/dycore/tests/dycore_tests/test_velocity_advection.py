@@ -252,7 +252,7 @@ def test_velocity_predictor_step(
         atol=5.0e-16,
         rtol=1.0e-10,
     )
-    # stencil 19:
+    # stencil 19
     assert dallclose(
         icon_result_ddt_vn_apc_pc,
         diagnostic_state.ddt_vn_apc_pc[ntnd - 1].asnumpy(),

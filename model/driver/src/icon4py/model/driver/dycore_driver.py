@@ -17,7 +17,6 @@ from typing import Callable
 
 import click
 from devtools import Timer
-from gt4py.next import Field
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
@@ -35,9 +34,7 @@ from icon4py.model.common.decomposition.definitions import (
     get_processor_properties,
     get_runtype,
 )
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.io_utils import (
     configure_logging,
@@ -151,7 +148,7 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         z_fields: ZFields,  # local constants in solve_nh
         nh_constants: NHConstants,
-        bdy_divdamp: Field[[KDim], float],
+        inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
 
@@ -196,7 +193,7 @@ class TimeLoop:
                 prep_adv,
                 z_fields,
                 nh_constants,
-                bdy_divdamp,
+                inital_divdamp_fac_o2,
                 do_prep_adv,
             )
             timer.capture()
@@ -217,7 +214,7 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         z_fields: ZFields,
         nh_constants: NHConstants,
-        bdy_divdamp: Field[[KDim], float],
+        inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
 
@@ -227,7 +224,7 @@ class TimeLoop:
             prep_adv,
             z_fields,
             nh_constants,
-            bdy_divdamp,
+            inital_divdamp_fac_o2,
             do_prep_adv,
         )
 
@@ -247,7 +244,7 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         z_fields: ZFields,
         nh_constants: NHConstants,
-        bdy_divdamp: Field[[KDim], float],
+        inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
 
@@ -265,7 +262,7 @@ class TimeLoop:
                 prep_adv=prep_adv,
                 z_fields=z_fields,
                 nh_constants=nh_constants,
-                bdy_divdamp=bdy_divdamp,
+                divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
                 idyn_timestep=dyn_substep,
                 l_recompute=do_recompute,
@@ -346,11 +343,6 @@ def initialize(file_path: Path, props: ProcessProperties):
 
     nonhydro_params = NonHydrostaticParams(config.solve_nonhydro_config)
 
-    enh_smag_fac = zero_field(icon_grid, KDim)
-    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
-
     solve_nonhydro = SolveNonhydro()
     solve_nonhydro.init(
         grid=icon_grid,
@@ -360,12 +352,8 @@ def initialize(file_path: Path, props: ProcessProperties):
         interpolation_state=solve_nonhydro_interpolation_state,
         vertical_params=vertical_geometry,
         edge_geometry=edge_geometry,
-        cell_areas=cell_geometry.area,
+        cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
-        a_vec=a_vec,
-        enh_smag_fac=enh_smag_fac,
-        fac=fac,
-        z=z,
     )
 
     (
@@ -374,7 +362,7 @@ def initialize(file_path: Path, props: ProcessProperties):
         z_fields,
         nh_constants,
         prep_adv,
-        bdy_divdamp,
+        inital_divdamp_fac_o2,
         prognostic_state_now,
         prognostic_state_next,
     ) = read_initial_state(file_path, rank=props.rank)
@@ -393,7 +381,7 @@ def initialize(file_path: Path, props: ProcessProperties):
         z_fields,
         nh_constants,
         prep_adv,
-        bdy_divdamp,
+        inital_divdamp_fac_o2,
     )
 
 
@@ -431,7 +419,7 @@ def main(input_path, run_path, mpi):
         z_fields,
         nh_constants,
         prep_adv,
-        bdy_divdamp,
+        inital_divdamp_fac_o2,
     ) = initialize(Path(input_path), parallel_props)
     configure_logging(run_path, timeloop.simulation_date, parallel_props)
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
@@ -451,7 +439,7 @@ def main(input_path, run_path, mpi):
         prep_adv,
         z_fields,
         nh_constants,
-        bdy_divdamp,
+        inital_divdamp_fac_o2,
         do_prep_adv=False,
     )
 

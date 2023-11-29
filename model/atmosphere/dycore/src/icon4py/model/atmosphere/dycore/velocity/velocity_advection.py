@@ -395,7 +395,6 @@ class VelocityAdvection:
                 },
             )
 
-        # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
         mo_velocity_advection_stencil_19.with_backend(backend)(
