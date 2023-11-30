@@ -173,7 +173,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
                 extra_diffu,
             )
 
-        return {"z_w_con_c_full": z_w_con_c_full, "ddt_w_adv": ddt_w_adv}
+        return dict(z_w_con_c_full=z_w_con_c_full, ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture
     def input_data(self, grid):
