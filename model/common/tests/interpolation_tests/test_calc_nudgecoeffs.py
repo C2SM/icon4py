@@ -49,15 +49,12 @@ def test_calc_nudgecoeffs_e(
     refin_ctrl = grid_savepoint.refin_ctrl(EdgeDim)
     grf_nudge_start_e = HorizontalMarkerIndex.nudging(EdgeDim)
     nudge_max_coeff = 0.075
-    lateral_boundary = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
-    )
+
     nudgecoeff_e = calc_nudgecoeffs(
         refin_ctrl,
         grf_nudge_start_e,
         nudge_max_coeff,
-        lateral_boundary,
+        offset_provider={},
     )
 
     assert np.allclose(nudgecoeff_e, nudgecoeff_e_ref.asnumpy())
