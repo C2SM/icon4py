@@ -34,7 +34,7 @@ class TestMoSolveNonhydro4thOrderDivdamp(StencilTest):
         z_graddiv2_vn: np.array,
         vn: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
         vn = vn + (scal_divdamp * z_graddiv2_vn)
         return dict(vn=vn)

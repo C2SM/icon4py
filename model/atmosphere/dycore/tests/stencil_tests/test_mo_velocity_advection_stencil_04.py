@@ -35,7 +35,7 @@ class TestMoVelocityAdvectionStencil04(StencilTest):
         ddxt_z_full: np.array,
         vt: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         z_w_concorr_me = vn * ddxn_z_full + vt * ddxt_z_full
         return dict(z_w_concorr_me=z_w_concorr_me)
 

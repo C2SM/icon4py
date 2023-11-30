@@ -38,7 +38,7 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
         tangent_orientation: np.array,
         z_w_v: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
         inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
         tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)

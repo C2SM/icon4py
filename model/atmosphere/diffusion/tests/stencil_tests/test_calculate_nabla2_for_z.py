@@ -35,7 +35,7 @@ class TestCalculateNabla2ForZ(StencilTest):
         inv_dual_edge_length: np.array,
         theta_v: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
         theta_v_e2c = theta_v[grid.connectivities[E2CDim]]

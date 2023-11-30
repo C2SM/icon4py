@@ -41,7 +41,7 @@ class TestCalculateNabla4(StencilTest):
         inv_vert_vert_length: np.array,
         inv_primal_edge_length: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         e2c2v = grid.connectivities[E2C2VDim]
         u_vert_e2c2v = u_vert[e2c2v]
         v_vert_e2c2v = v_vert[e2c2v]

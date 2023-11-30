@@ -28,7 +28,7 @@ class TestMoVelocityAdvectionStencil13(StencilTest):
     OUTPUTS = ("z_w_con_c",)
 
     @staticmethod
-    def reference(grid, w_concorr_c: np.array, z_w_con_c: np.array, **kwargs) -> np.array:
+    def reference(grid, w_concorr_c: np.array, z_w_con_c: np.array, **kwargs) -> dict:
         z_w_con_c = z_w_con_c - w_concorr_c
         return dict(z_w_con_c=z_w_con_c)
 

@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil62(StencilTest):
     OUTPUTS = ("w_new",)
 
     @staticmethod
-    def reference(grid, w_now: np.array, grf_tend_w: np.array, dtime: float, **kwargs) -> np.array:
+    def reference(grid, w_now: np.array, grf_tend_w: np.array, dtime: float, **kwargs) -> dict:
         w_new = w_now + dtime * grf_tend_w
         return dict(w_new=w_new)
 

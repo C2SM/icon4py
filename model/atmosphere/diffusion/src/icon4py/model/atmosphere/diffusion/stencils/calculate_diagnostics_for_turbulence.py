@@ -35,7 +35,6 @@ def _calculate_diagnostics_for_turbulence(
     return astype((div_ic_wp, hdef_ic_wp), vpfloat)
 
 
-# todo: either domain or slicing
 @program(grid_type=GridType.UNSTRUCTURED)
 def calculate_diagnostics_for_turbulence(
     div: Field[[CellDim, KDim], vpfloat],

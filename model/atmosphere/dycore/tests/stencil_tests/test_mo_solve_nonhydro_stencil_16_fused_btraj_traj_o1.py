@@ -40,7 +40,7 @@ class TestComputeBtraj(StencilTest):
         dual_normal_cell_2: np.array,
         p_dthalf: float,
         **kwargs,
-    ) -> np.array:
+    ) -> tuple[np.array, ...]:
         lvn_pos = np.where(p_vn > wpfloat("0.0"), True, False)
         pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
         pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)

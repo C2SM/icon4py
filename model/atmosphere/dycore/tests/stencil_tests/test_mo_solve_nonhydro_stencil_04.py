@@ -30,13 +30,13 @@ class TestMoSolveNonhydroStencil04(StencilTest):
     @staticmethod
     def reference(
         grid, z_exner_ex_pr: np.array, wgtfacq_c: np.array, z_exner_ic: np.array, **kwargs
-    ) -> np.array:
+    ) -> dict:
         z_exner_ic[:, 3:] = (
             np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_exner_ex_pr, shift=1, axis=1)
             + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_exner_ex_pr, shift=2, axis=1)
             + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_exner_ex_pr, shift=3, axis=1)
         )[:, 3:]
-        return {"z_exner_ic": z_exner_ic}
+        return dict(z_exner_ic=z_exner_ic)
 
     @pytest.fixture
     def input_data(self, grid):

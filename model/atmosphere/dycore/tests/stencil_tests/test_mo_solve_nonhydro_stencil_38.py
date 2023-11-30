@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil38(StencilTest):
     OUTPUTS = ("vn_ie",)
 
     @staticmethod
-    def reference(grid, vn: np.array, wgtfacq_e: np.array, **kwargs) -> np.array:
+    def reference(grid, vn: np.array, wgtfacq_e: np.array, **kwargs) -> dict:
         vn_ie = np.zeros_like(vn)
         vn_ie[:, -1] = (
             np.roll(wgtfacq_e, shift=1, axis=1) * np.roll(vn, shift=1, axis=1)

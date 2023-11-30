@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil11Lower(StencilTest):
     OUTPUTS = ("z_theta_v_pr_ic",)
 
     @staticmethod
-    def reference(grid, **kwargs) -> np.array:
+    def reference(grid, **kwargs) -> dict:
         z_theta_v_pr_ic = 0
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic)
 

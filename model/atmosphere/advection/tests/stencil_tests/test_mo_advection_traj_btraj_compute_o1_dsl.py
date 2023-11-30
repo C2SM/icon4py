@@ -47,7 +47,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         dual_normal_cell_2: np.array,
         p_dthalf: float,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         e2c = grid.connectivities[E2CDim]
         cell_idx = cell_idx.reshape(e2c.shape)
         cell_blk = cell_blk.reshape(e2c.shape)
