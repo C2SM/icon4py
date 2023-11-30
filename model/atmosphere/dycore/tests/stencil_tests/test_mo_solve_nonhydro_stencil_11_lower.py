@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
