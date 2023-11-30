@@ -41,7 +41,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
     )
 
     @staticmethod
-    def _fused_velocity_advection_stencil_16_to_18(
+    def _fused_velocity_advection_stencil_15_to_18(
         grid,
         z_w_con_c,
         w,
