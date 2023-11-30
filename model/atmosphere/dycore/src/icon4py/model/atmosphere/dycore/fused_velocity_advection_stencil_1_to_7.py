@@ -42,15 +42,9 @@ from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2C
 
 
 @field_operator
-def _fused_velocity_advection_stencil_1_to_6(
+def _compute_interface_vt_vn_and_kinetic_energy(
     vn: Field[[EdgeDim, KDim], float],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
     wgtfac_e: Field[[EdgeDim, KDim], float],
-    ddxn_z_full: Field[[EdgeDim, KDim], float],
-    ddxt_z_full: Field[[EdgeDim, KDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfacq_e: Field[[EdgeDim, KDim], float],
-    nflatlev: int32,
     z_vt_ie: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
@@ -62,14 +56,7 @@ def _fused_velocity_advection_stencil_1_to_6(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
 ]:
-    vt = where(
-        k < nlev,
-        _mo_velocity_advection_stencil_01(vn, rbf_vec_coeff_e),
-        vt,
-    )
-
     vn_ie, z_kin_hor_e = where(
         1 <= k < nlev,
         _mo_velocity_advection_stencil_02(wgtfac_e, vn, vt),
@@ -92,6 +79,42 @@ def _fused_velocity_advection_stencil_1_to_6(
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 
+    return vn_ie, z_vt_ie, z_kin_hor_e
+
+@field_operator
+def _fused_velocity_advection_stencil_1_to_6(
+    vn: Field[[EdgeDim, KDim], float],
+    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float],
+    wgtfac_e: Field[[EdgeDim, KDim], float],
+    ddxn_z_full: Field[[EdgeDim, KDim], float],
+    ddxt_z_full: Field[[EdgeDim, KDim], float],
+    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    wgtfacq_e: Field[[EdgeDim, KDim], float],
+    nflatlev: int32,
+    z_vt_ie: Field[[EdgeDim, KDim], float],
+    vt: Field[[EdgeDim, KDim], float],
+    vn_ie: Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], float],
+    k: Field[[KDim], int32],
+    nlev: int32,
+    lvn_only: bool,
+) -> tuple[
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], float],
+]:
+    vt = where(
+        k < nlev,
+        _mo_velocity_advection_stencil_01(vn, rbf_vec_coeff_e),
+        vt,
+    )
+
+    (vn_ie, z_vt_ie, z_kin_hor_e) =_compute_interface_vt_vn_and_kinetic_energy(
+        vn, wgtfac_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, lvn_only
+    )
+
     vn_ie = where(k == nlev, _mo_velocity_advection_stencil_06(wgtfacq_e, vn), vn_ie)
 
     z_w_concorr_me = where(
@@ -100,8 +123,7 @@ def _fused_velocity_advection_stencil_1_to_6(
         z_w_concorr_me,
     )
 
-    return vt, vn_ie, z_kin_hor_e, z_w_concorr_me
-
+    return vt, vn_ie, z_vt_ie, z_kin_hor_e, z_w_concorr_me
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7(
@@ -137,7 +159,7 @@ def _fused_velocity_advection_stencil_1_to_7(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-    vt, vn_ie, z_kin_hor_e, z_w_concorr_me = (
+    vt, vn_ie, z_vt_ie, z_kin_hor_e, z_w_concorr_me = (
         _fused_velocity_advection_stencil_1_to_6(
             vn,
             rbf_vec_coeff_e,
@@ -156,7 +178,7 @@ def _fused_velocity_advection_stencil_1_to_7(
             lvn_only,
         )
         if istep == 1
-        else (vt, vn_ie, z_kin_hor_e, z_w_concorr_me)
+        else (vt, vn_ie, z_vt_ie, z_kin_hor_e, z_w_concorr_me)
     )
 
     k = broadcast(k, (EdgeDim, KDim))
