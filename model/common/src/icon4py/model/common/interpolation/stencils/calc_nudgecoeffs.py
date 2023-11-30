@@ -13,24 +13,24 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, int32, exp, astype, where
 
-from icon4py.model.common.dimension import V2E, EdgeDim, KDim, V2EDim, VertexDim
+from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_intp_coeffs_nudgecoeff_e(
+def _calc_nudgecoeffs(
     refin_ctrl: Field[[EdgeDim], int32],
     grf_nudge_start_e: int32,
     nudge_max_coeffs: wpfloat,
 ) -> Field[[EdgeDim], wpfloat]:
 
-    return nudge_max_coeffs * EXP(-(refin_ctrl - grf_nudge_start_e)/ 4.0)
+    return where(refin_ctrl > 0 & refin_ctrl <= (grf_nudge_start_e + 9 ) ,nudge_max_coeffs * exp(-(astype(refin_ctrl - grf_nudge_start_e),wpfloat)/ 4.0),wpfloat(0))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_intp_coeffs_nudgecoeff_e(
+def calc_nudgecoeffs(
     refin_ctrl: Field[[EdgeDim], int32],
     grf_nudge_start_e: int32,
     nudge_max_coeffs: wpfloat,
@@ -38,7 +38,7 @@ def mo_intp_coeffs_nudgecoeff_e(
     horizontal_start: int32,
     horizontal_end: int32,
 ):
-    _mo_intp_coeffs_nudgecoeff_e(
+    _calc_nudgecoeffs(
         refin_ctrl,
         grf_nudge_start_e,
         nudge_max_coeffs,
