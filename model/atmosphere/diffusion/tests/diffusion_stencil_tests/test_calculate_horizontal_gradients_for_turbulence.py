@@ -40,7 +40,7 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
     @staticmethod
     def reference(
         grid, w: np.array, geofac_grg_x: np.array, geofac_grg_y: np.array, **kwargs
-    ) -> tuple[np.array]:
+   ) -> dict:
         dwdx, dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
             grid, w, geofac_grg_x, geofac_grg_y
         )
