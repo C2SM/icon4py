@@ -46,18 +46,17 @@ def test_calc_nudgecoeffs_e(
     grid_savepoint, interpolation_savepoint, icon_grid  # noqa: F811  # fixture
 ):
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
-    refin_ctrl = grid_savepoint.refin_ctr()
-    grf_nudge_start_e = HorizontalMarkerIndex.nudgeing(EdgeDim)
+    refin_ctrl = grid_savepoint.refin_ctrl(EdgeDim)
+    grf_nudge_start_e = HorizontalMarkerIndex.nudging(EdgeDim)
     nudge_max_coeff = 0.075
     lateral_boundary = icon_grid.get_start_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
     )
     nudgecoeff_e = calc_nudgecoeffs(
-        refin_ctrl.asnumpy(),
-        grf_nudge_start_e.asnumpy(),
+        refin_ctrl,
+        grf_nudge_start_e,
         nudge_max_coeff,
-        nudgecoeff_e,
         lateral_boundary,
     )
 

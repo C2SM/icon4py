@@ -26,7 +26,7 @@ def _calc_nudgecoeffs(
     nudge_max_coeffs: wpfloat,
 ) -> Field[[EdgeDim], wpfloat]:
 
-    return where(refin_ctrl > 0 & refin_ctrl <= (grf_nudge_start_e + 9 ) ,nudge_max_coeffs * exp(-(astype(refin_ctrl - grf_nudge_start_e),wpfloat)/ 4.0),wpfloat(0))
+    return where( ( (refin_ctrl > int32(0)) & (refin_ctrl <=  (grf_nudge_start_e + int32(9)) ) ) ,nudge_max_coeffs * exp(-(astype(refin_ctrl-grf_nudge_start_e,wpfloat)/ 4.0)),0.0)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
