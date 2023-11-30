@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from dataclasses import Field, dataclass, field
+from dataclasses import dataclass, field
 from typing import Final
 
 import numpy as np

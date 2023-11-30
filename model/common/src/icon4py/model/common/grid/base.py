@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import functools
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, Dict
