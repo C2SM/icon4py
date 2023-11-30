@@ -18,8 +18,6 @@ import serialbox
 import serialbox as ser
 from gt4py.next import as_field
 from gt4py.next.common import Dimension, DimensionKind, Field
-from gt4py.next import Field, as_field
-from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
@@ -311,7 +309,7 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self) -> IconGrid:
+    def construct_icon_grid(self, limited_area=True) -> IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -325,6 +323,7 @@ class IconGridSavepoint(IconSavepoint):
                 num_edges=self.num(EdgeDim),
             ),
             vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
+            limited_area=limited_area,
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()

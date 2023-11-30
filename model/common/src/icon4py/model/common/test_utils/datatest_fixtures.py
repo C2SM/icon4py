@@ -96,18 +96,18 @@ def grid_savepoint(data_provider):
     return data_provider.from_savepoint_grid()
 
 
-def limited_area():
-    return True
+def is_regional(experiment_name):
+    return experiment_name == REGIONAL_EXPERIMENT
 
 
 @pytest.fixture
-def icon_grid(grid_savepoint):
+def icon_grid(grid_savepoint, experiment):
     """
     Load the icon grid from an ICON savepoint.
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    return grid_savepoint.construct_icon_grid()
+    return grid_savepoint.construct_icon_grid(limited_area=is_regional(experiment))
 
 
 @pytest.fixture

@@ -888,9 +888,7 @@ class SolveNonhydro:
                 # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
                 # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
 
-                nhsolve_prog.mo_solve_nonhydro_stemass_fl_encil_16_fused_btraj_traj_o1.with_backend(
-                    backend
-                )(
+                nhsolve_prog.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1.with_backend(backend)(
                     p_vn=prognostic_state[nnow].vn,
                     p_vt=diagnostic_state_nh.vt,
                     pos_on_tplane_e_1=self.interpolation_state.pos_on_tplane_e_1,
@@ -974,7 +972,6 @@ class SolveNonhydro:
             )
         # compute hydrostatically approximated correction term that replaces downward extrapolation
         if self.config.igradp_method == 3:
-            # TODO @tehrengruber: fix power
             mo_solve_nonhydro_stencil_21.with_backend(backend)(
                 theta_v=prognostic_state[nnow].theta_v,
                 ikoffset=self.metric_state_nonhydro.vertoffset_gradp,
@@ -1086,7 +1083,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-        # TODO @tehrengruber: fix power for 36
+
         nhsolve_prog.predictor_stencils_35_36.with_backend(backend)(
             vn=prognostic_state[nnew].vn,
             ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,

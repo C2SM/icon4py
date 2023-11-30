@@ -29,7 +29,7 @@ def get_icon_grid():
     data_path = get_datapath_for_experiment(ranked_path)
     icon_data_provider = create_icon_serial_data_provider(data_path, processor_properties)
     grid_savepoint = icon_data_provider.from_savepoint_grid()
-    return grid_savepoint.construct_icon_grid()
+    return grid_savepoint.construct_icon_grid(limited_area=True)
 
 
 @pytest.fixture
