@@ -194,7 +194,6 @@ class NonHydrostaticConfig:
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
         divdamp_fac: float = 0.004,  # checked for corrector after serialization
-        divdamp_fac_o2: float = 0.032,  # checked for corrector after serialization
         max_nudging_coeff: float = 0.075,
         divdamp_fac2: float = 0.004,
         divdamp_fac3: float = 0.004,
@@ -222,7 +221,6 @@ class NonHydrostaticConfig:
         self.rhotheta_offctr: float = rhotheta_offctr
         self.veladv_offctr: float = veladv_offctr
         self.divdamp_fac: float = divdamp_fac
-        self.divdamp_fac_o2: float = divdamp_fac_o2
         self.nudge_max_coeff: float = max_nudging_coeff
 
         self.divdamp_fac2: float = divdamp_fac2
@@ -1515,10 +1513,7 @@ class SolveNonhydro:
                 )
 
             # TODO: this does not get accessed in FORTRAN
-            if (
-                self.config.divdamp_order == 24
-                and self.config.divdamp_fac_o2 <= 4 * self.config.divdamp_fac
-            ):
+            if self.config.divdamp_order == 24 and divdamp_fac_o2 <= 4 * self.config.divdamp_fac:
                 if self.grid.limited_area:
                     mo_solve_nonhydro_stencil_27.with_backend(backend)(
                         scal_divdamp=self.scal_divdamp,
