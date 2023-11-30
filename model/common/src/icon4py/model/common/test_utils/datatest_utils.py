@@ -28,6 +28,7 @@ DATA_URIS = {
     2: "https://polybox.ethz.ch/index.php/s/YyC5qDJWyC39y7u/download",
     4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }
+DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/SdlHTlsHCwcn5J5/download"}
 SER_DATA_BASEPATH = BASE_PATH.joinpath("ser_icondata")
 
 
@@ -39,7 +40,7 @@ def get_ranked_data_path(base_path, processor_properties):
     return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
 
 
-def get_datapath_for_ranked_data(ranked_base_path, experiment="mch_ch_r04b09_dsl"):
+def get_datapath_for_experiment(ranked_base_path, experiment="mch_ch_r04b09_dsl"):
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
