@@ -83,7 +83,7 @@ class TestCalculateNabla4(StencilTest):
         inv_vert_vert_length: np.array,
         inv_primal_edge_length: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         z_nabla4_e2 = calculate_nabla4_numpy(
             grid,
             u_vert,
