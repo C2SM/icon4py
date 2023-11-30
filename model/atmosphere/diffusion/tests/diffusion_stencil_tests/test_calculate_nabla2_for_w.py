@@ -36,7 +36,7 @@ class TestCalculateNabla2ForW(StencilTest):
     OUTPUTS = ("z_nabla2_c",)
 
     @staticmethod
-    def reference(grid, w: np.array, geofac_n2s: np.array, **kwargs) -> np.array:
+    def reference(grid, w: np.array, geofac_n2s: np.array, **kwargs) -> dict:
         z_nabla2_c = calculate_nabla2_for_w_numpy(grid, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)
 
