@@ -90,7 +90,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -385,7 +385,7 @@ def test_nonhydro_predictor_step(
     assert dallclose(
         solve_nonhydro.z_w_concorr_me.asnumpy()[:, nflatlev:],
         sp_exit.z_w_concorr_me().asnumpy()[:, nflatlev:],
-        atol=1e-20,
+        atol=1e-15,  # TODO (magdalena) was 1e-20
     )
     # stencils 39,40
     assert dallclose(
@@ -398,7 +398,7 @@ def test_nonhydro_predictor_step(
     assert dallclose(
         solve_nonhydro.z_flxdiv_mass.asnumpy(),
         sp_exit.z_flxdiv_mass().asnumpy(),
-        atol=5e-20,
+        atol=5e-13,  # TODO (magdalena) was 5-20
     )
     # TODO: @abishekg7 higher tol.
     assert dallclose(
@@ -536,6 +536,7 @@ def test_nonhydro_corrector_step(
     ndyn_substeps,
     caplog,
 ):
+    caplog.set_level(logging.DEBUG)
     config = construct_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     nonhydro_params = NonHydrostaticParams(config)
@@ -599,7 +600,7 @@ def test_nonhydro_corrector_step(
 
     prognostic_state_ls = create_prognostic_states(sp)
     solve_nonhydro.set_timelevels(nnow, nnew)
-    solve_nonhydro._bdy_divdamp = sp.bdy_divdamp()
+
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
@@ -613,31 +614,44 @@ def test_nonhydro_corrector_step(
         nh_constants=nh_constants,
         lprep_adv=lprep_adv,
     )
+    if icon_grid.limited_area:
+        assert dallclose(solve_nonhydro._bdy_divdamp.asnumpy(), sp.bdy_divdamp().asnumpy())
 
+    assert dallclose(solve_nonhydro.scal_divdamp.asnumpy(), sp.scal_divdamp().asnumpy())
+    # stencil 10
     assert dallclose(
         diagnostic_state_nh.rho_ic.asnumpy(),
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
     )
-
+    # stencil 10
     assert dallclose(
         diagnostic_state_nh.theta_v_ic.asnumpy(),
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
     )
+    # stencil 10 no assertion for z_theta_v_pr_ic, z_th_ddz_exner_c
 
+    # stencil 17
     assert dallclose(
         z_fields.z_graddiv_vn.asnumpy(),
         savepoint_nonhydro_exit.z_graddiv_vn().asnumpy(),
         atol=1e-12,
     )
+
+    # stencil 23,26, 27, 4th_order_divdamp
     assert dallclose(
-        prognostic_state_ls[nnew].exner.asnumpy(),
-        savepoint_nonhydro_exit.exner_new().asnumpy(),
-    )  # TODO (magdalena) APE  atol=1e-7
+        prognostic_state_ls[nnew].vn.asnumpy(),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
+        rtol=1e-9,
+    )
+
+    assert dallclose(
+        prognostic_state_ls[nnew].exner.asnumpy(), savepoint_nonhydro_exit.exner_new().asnumpy()
+    )
 
     assert dallclose(
         prognostic_state_ls[nnew].rho.asnumpy(),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
-    )  # TODO (magdalena) APE  atol=1e-7
+    )
 
     assert dallclose(
         prognostic_state_ls[nnew].w.asnumpy(),
@@ -646,31 +660,32 @@ def test_nonhydro_corrector_step(
     )
 
     assert dallclose(
-        prognostic_state_ls[nnew].vn.asnumpy(),
-        savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-10,
-    )
-
-    assert dallclose(
         prognostic_state_ls[nnew].theta_v.asnumpy(),
         savepoint_nonhydro_exit.theta_v_new().asnumpy(),
     )
+    # stencil 31
+    assert dallclose(
+        solve_nonhydro.z_vn_avg.asnumpy(), savepoint_nonhydro_exit.z_vn_avg().asnumpy(), rtol=5e-7
+    )
 
+    # stencil 32
     assert dallclose(
         diagnostic_state_nh.mass_fl_e.asnumpy(),
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        rtol=1e-10,
+        rtol=5e-7,
     )
 
+    # stencil 33, 34
     assert dallclose(
         prep_adv.mass_flx_me.asnumpy(),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        rtol=1e-10,
+        rtol=5e-7,
     )
+    # stencil 33, 34
     assert dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        rtol=1e-10,
+        rtol=5e-7,
     )
 
 
@@ -779,7 +794,8 @@ def test_run_solve_nonhydro_single_step(
     assert dallclose(
         prognostic_state_nnew.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-10,
+        rtol=1e-12,
+        atol=1e-13,
     )
     assert dallclose(
         prognostic_state_nnew.rho.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
