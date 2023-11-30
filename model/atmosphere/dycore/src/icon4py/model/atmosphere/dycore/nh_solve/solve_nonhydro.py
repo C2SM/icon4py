@@ -410,7 +410,7 @@ class SolveNonhydro:
         diagnostic_state_nh: DiagnosticStateNonHydro,
         prognostic_state_ls: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
+        z_fields: ZFields,  # TODO (Magdalena): move local fields to SolveNonHydro
         nh_constants: NHConstants,
         divdamp_fac_o2: float,
         dtime: float,
@@ -548,17 +548,17 @@ class SolveNonhydro:
             else:
                 lvn_only = False
 
-        self.velocity_advection.run_predictor_step(
-            vn_only=lvn_only,
-            diagnostic_state=diagnostic_state_nh,
-            prognostic_state=prognostic_state[nnow],
-            z_w_concorr_me=self.z_w_concorr_me,
-            z_kin_hor_e=z_fields.z_kin_hor_e,
-            z_vt_ie=z_fields.z_vt_ie,
-            dtime=dtime,
-            ntnd=self.ntl1,
-            cell_areas=self.cell_params.area,
-        )
+            self.velocity_advection.run_predictor_step(
+                vn_only=lvn_only,
+                diagnostic_state=diagnostic_state_nh,
+                prognostic_state=prognostic_state[nnow],
+                z_w_concorr_me=self.z_w_concorr_me,
+                z_kin_hor_e=z_fields.z_kin_hor_e,
+                z_vt_ie=z_fields.z_vt_ie,
+                dtime=dtime,
+                ntnd=self.ntl1,
+                cell_areas=self.cell_params.area,
+            )
 
         p_dthalf = 0.5 * dtime
 
@@ -1695,8 +1695,9 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if not self.config.l_open_ubc and not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(backend)(
+        # TODO (magdalena): delete NonHydrostaticConfig. l_open_ubc
+        if not (self.config.l_open_ubc and self.l_vert_nested):
+            mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
                 w_nnew=prognostic_state[nnew].w,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
