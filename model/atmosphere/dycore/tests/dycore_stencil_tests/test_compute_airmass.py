@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.compute_airmass import compute_airmass
 from icon4py.model.common.dimension import CellDim, KDim
@@ -42,4 +43,8 @@ class TestComputeAirmass(StencilTest):
             ddqz_z_full_in=ddqz_z_full_in,
             deepatmo_t1mc_in=deepatmo_t1mc_in,
             airmass_out=airmass_out,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )

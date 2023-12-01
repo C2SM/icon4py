@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
     mo_velocity_advection_stencil_17,
@@ -27,7 +28,8 @@ def mo_velocity_advection_stencil_17_numpy(
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
     ddt_w_adv = ddt_w_adv + np.sum(
-        z_v_grad_w[grid.connectivities[C2EDim]] * e_bln_c_s[grid.get_offset_provider("C2CE").table],
+        z_v_grad_w[grid.connectivities[C2EDim]]
+        * e_bln_c_s[grid.get_offset_provider("C2CE").table],
         axis=1,
     )
     return ddt_w_adv
@@ -54,4 +56,8 @@ class TestMoVelocityAdvectionStencil17(StencilTest):
             e_bln_c_s=e_bln_c_s,
             z_v_grad_w=z_v_grad_w,
             ddt_w_adv=ddt_w_adv,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )

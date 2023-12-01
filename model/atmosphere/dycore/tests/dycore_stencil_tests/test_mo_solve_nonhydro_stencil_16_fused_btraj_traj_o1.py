@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
@@ -39,7 +40,7 @@ class TestComputeBtraj(StencilTest):
         dual_normal_cell_2: np.array,
         p_dthalf: float,
         **kwargs,
-    ) -> np.array:
+    ) -> tuple[np.array, ...]:
         lvn_pos = np.where(p_vn > wpfloat("0.0"), True, False)
         pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
         pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
@@ -236,4 +237,8 @@ class TestComputeBtraj(StencilTest):
             z_rth_pr_2=z_rth_pr_2,
             z_rho_e=z_rho_e,
             z_theta_v_e=z_theta_v_e,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )

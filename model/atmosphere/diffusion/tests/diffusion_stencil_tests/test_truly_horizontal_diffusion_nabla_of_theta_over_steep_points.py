@@ -63,7 +63,8 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
                 ]
 
     sum_over = np.sum(
-        geofac_n2s_nbh * (vcoef * theta_v_at_zd_vertidx + (1.0 - vcoef) * theta_v_at_zd_vertidx_p1),
+        geofac_n2s_nbh
+        * (vcoef * theta_v_at_zd_vertidx + (1.0 - vcoef) * theta_v_at_zd_vertidx_p1),
         axis=1,
     )
 

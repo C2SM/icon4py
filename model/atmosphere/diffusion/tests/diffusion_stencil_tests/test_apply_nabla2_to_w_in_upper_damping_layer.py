@@ -64,7 +64,7 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
         cell_area: np.array,
         z_nabla2_c: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         w = apply_nabla2_to_w_in_upper_damping_layer_numpy(
             w, diff_multfac_n2w, cell_area, z_nabla2_c
         )

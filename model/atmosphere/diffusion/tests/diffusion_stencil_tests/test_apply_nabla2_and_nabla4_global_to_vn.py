@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_to_vn import (
     apply_nabla2_and_nabla4_global_to_vn,
@@ -51,11 +52,19 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
             z_nabla4_e2=z_nabla4_e2,
             diff_multfac_vn=diff_multfac_vn,
             vn=vn,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )
 
     @staticmethod
-    def reference(grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn):
+    def reference(
+        grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn, **kwargs
+    ):
         vn = apply_nabla2_and_nabla4_global_to_vn_numpy(
             grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
         )
-        return dict(vn=vn)
+        return dict(
+            vn=vn,
+        )
