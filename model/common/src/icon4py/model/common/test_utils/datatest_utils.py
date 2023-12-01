@@ -31,6 +31,9 @@ DATA_URIS = {
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/SdlHTlsHCwcn5J5/download"}
 SER_DATA_BASEPATH = BASE_PATH.joinpath("ser_icondata")
 
+REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
+GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
+
 
 def get_processor_properties_for_run(run_instance):
     return get_processor_properties(run_instance)

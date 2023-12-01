@@ -19,15 +19,13 @@ from .datatest_utils import (
     DATA_URIS,
     DATA_URIS_APE,
     SER_DATA_BASEPATH,
+    REGIONAL_EXPERIMENT,
+    GLOBAL_EXPERIMENT,
     create_icon_serial_data_provider,
     get_datapath_for_experiment,
     get_processor_properties_for_run,
     get_ranked_data_path,
 )
-
-
-REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
-GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 
 
 @pytest.fixture
@@ -59,7 +57,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
     """
     try:
         if not request.config.getoption("datatest"):
-            pytest.skip("not running datatest marked tests")
+            pytest.skip("not running datatest marked test")
     except ValueError:
         pass
 

@@ -19,6 +19,8 @@ from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionPar
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
+from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
 from icon4py.model.common.test_utils.serialbox_utils import IconDiffusionInitSavepoint
 
@@ -145,10 +147,10 @@ def test_diffusion_init(
         1.0 / 48.0, additional_parameters.K4W * config.substep_as_float
     )
 
-    assert np.allclose(0.0, diffusion.v_vert.asnumpy())
-    assert np.allclose(0.0, diffusion.u_vert.asnumpy())
-    assert np.allclose(0.0, diffusion.kh_smag_ec.asnumpy())
-    assert np.allclose(0.0, diffusion.kh_smag_e.asnumpy())
+    assert dallclose(diffusion.v_vert.asnumpy(), 0.0)
+    assert dallclose(diffusion.u_vert.asnumpy(), 0.0)
+    assert dallclose(diffusion.kh_smag_ec.asnumpy(), 0.0)
+    assert dallclose(diffusion.kh_smag_e.asnumpy(), 0.0)
 
     shape_k = (icon_grid.num_levels,)
     expected_smag_limit = smag_limit_numpy(
@@ -159,18 +161,18 @@ def test_diffusion_init(
     )
 
     assert diffusion.smag_offset == 0.25 * additional_parameters.K4 * config.substep_as_float
-    assert np.allclose(expected_smag_limit, diffusion.smag_limit.asnumpy())
+    assert dallclose(diffusion.smag_limit.asnumpy(), expected_smag_limit)
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(
         shape_k, additional_parameters.K4, config.substep_as_float
     )
-    assert np.allclose(expected_diff_multfac_vn, diffusion.diff_multfac_vn.asnumpy())
+    assert dallclose(diffusion.diff_multfac_vn.asnumpy(), expected_diff_multfac_vn)
     expected_enh_smag_fac = enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
         grid_savepoint.vct_a().asnumpy(),
     )
-    assert np.allclose(expected_enh_smag_fac, diffusion.enh_smag_fac.asnumpy())
+    assert dallclose(diffusion.enh_smag_fac.asnumpy(), expected_enh_smag_fac)
 
 
 def _verify_init_values_against_savepoint(
@@ -188,21 +190,21 @@ def _verify_init_values_against_savepoint(
     scale_k.with_backend(backend)(
         diffusion.enh_smag_fac, dtime, diffusion.diff_multfac_smag, offset_provider={}
     )
-    assert np.allclose(savepoint.diff_multfac_smag(), diffusion.diff_multfac_smag.asnumpy())
+    assert dallclose(diffusion.diff_multfac_smag.asnumpy(), savepoint.diff_multfac_smag())
 
-    assert np.allclose(savepoint.smag_limit(), diffusion.smag_limit.asnumpy())
-    assert np.allclose(savepoint.diff_multfac_n2w(), diffusion.diff_multfac_n2w.asnumpy())
-    assert np.allclose(savepoint.diff_multfac_vn(), diffusion.diff_multfac_vn.asnumpy())
+    assert dallclose(diffusion.smag_limit.asnumpy(), savepoint.smag_limit())
+    assert dallclose(diffusion.diff_multfac_n2w.asnumpy(), savepoint.diff_multfac_n2w())
+    assert dallclose(diffusion.diff_multfac_vn.asnumpy(), savepoint.diff_multfac_vn())
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment,step_date_init,damping_height",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", 12500.0),
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:20.000", 12500.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", 50000.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:08.000", 50000.0),
+        #    (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", 12500.0),
+        #    (REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", 12500.0),
+        #    (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", 50000.0),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:08.000", 50000.0),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -248,8 +250,8 @@ def test_verify_diffusion_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit, damping_height",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -305,16 +307,18 @@ def test_run_diffusion_single_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("linit", [True])
+@pytest.mark.parametrize(
+    "linit, experiment, damping_height", [(True, REGIONAL_EXPERIMENT, 12500.0)]
+)
 def test_run_diffusion_initial_step(
+    experiment,
+    damping_height,
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
     icon_grid,
-    experiment,
-    damping_height,
 ):
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()

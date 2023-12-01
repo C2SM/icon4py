@@ -118,15 +118,15 @@ def verify_diffusion_fields(
         ref_dwdy = diffusion_savepoint.dwdy().asnumpy()
         val_dwdy = diagnostic_state.dwdy.asnumpy()
 
-        assert dallclose(ref_div_ic, val_div_ic)
-        assert dallclose(ref_hdef_ic, val_hdef_ic)
-        assert np.allclose(ref_dwdx, val_dwdx)
-        assert np.allclose(ref_dwdy, val_dwdy)
+        assert dallclose(val_div_ic, ref_div_ic, atol=1e-16)
+        assert dallclose(val_hdef_ic, ref_hdef_ic, atol=1e-18)
+        assert dallclose(val_dwdx, ref_dwdx, atol=1e-18)
+        assert dallclose(val_dwdy, ref_dwdy, atol=1e-18)
 
-    assert dallclose(ref_vn, val_vn)
-    assert dallclose(ref_w, val_w)
-    assert dallclose(ref_theta_v, val_theta_v)
-    assert dallclose(ref_exner, val_exner)
+    assert dallclose(val_vn, ref_vn, atol=1e-15)
+    assert dallclose(val_w, ref_w, atol=1e-14)
+    assert dallclose(val_theta_v, ref_theta_v)
+    assert dallclose(val_exner, ref_exner)
 
 
 def smag_limit_numpy(func, *args):
