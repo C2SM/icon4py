@@ -42,7 +42,7 @@ pipeline {
                 agent { 
                     node {
                       label "${NODENAME}" 
-                      customWorkspace "jenkins/workspace/EXCLAIM/icon4py/icon4py-spack-PR-icon_${BUILD_NUMBER}"
+                      customWorkspace "workspace/EXCLAIM/icon4py/icon4py-spack-PR-icon_${BUILD_NUMBER}"
                     }
                 }
                 axes {
