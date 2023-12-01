@@ -15,7 +15,7 @@ import os
 
 import pytest
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
-from gt4py.next.program_processors.runners.roundtrip import executor
+from gt4py.next.program_processors.runners.roundtrip import executor as embedded_iterator_ir
 
 
 def pytest_configure(config):
@@ -87,7 +87,7 @@ def pytest_generate_tests(metafunc):
             params.append(run_gtfn)
             ids.append("backend=gtfn_cpu")
         elif backend_option == "embedded":
-            params.append(executor)
+            params.append(embedded_iterator_ir)
             ids.append("backend=embedded")
         elif backend_option == "gtfn_gpu":
             params.append(run_gtfn_gpu)

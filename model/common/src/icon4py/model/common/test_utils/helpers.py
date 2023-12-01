@@ -16,6 +16,10 @@ from typing import ClassVar, Optional
 import numpy as np
 import numpy.typing as npt
 import pytest
+
+from gt4py._core.definitions import is_scalar_type
+from gt4py.next.program_processors.runners.roundtrip import executor as embedded_iterator_ir
+from gt4py.next import constructors
 from gt4py.next import as_field
 from gt4py.next import common as gt_common
 from gt4py.next.ffront.decorator import Program
@@ -127,7 +131,6 @@ def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
-
 def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
@@ -136,6 +139,14 @@ def _test_validation(self, grid, backend, input_data):
             for k, v in input_data.items()
         },
     )
+
+    if backend != embedded_iterator_ir:
+        _allocate_field = constructors.as_field.partial(allocator=backend)
+        input_data = {
+            k: _allocate_field(v.domain.dims, v.ndarray) if not is_scalar_type(v) else v
+            for k, v in input_data.items()
+        }
+
     self.PROGRAM.with_backend(backend)(
         **input_data,
         offset_provider=grid.get_all_offset_providers(),
