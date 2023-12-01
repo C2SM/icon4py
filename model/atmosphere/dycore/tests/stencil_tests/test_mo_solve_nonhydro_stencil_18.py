@@ -28,9 +28,7 @@ class TestMoSolveNonhydroStencil18(StencilTest):
     OUTPUTS = ("z_gradh_exner",)
 
     @staticmethod
-    def reference(
-        grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs
-    ) -> np.array:
+    def reference(grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs) -> dict:
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
         z_exner_ex_pr_e2c = z_exner_ex_pr[grid.connectivities[E2CDim]]

@@ -28,7 +28,7 @@ class TestMoVelocityAdvectionStencil03(StencilTest):
     OUTPUTS = ("z_vt_ie",)
 
     @staticmethod
-    def reference(grid, wgtfac_e: np.array, vt: np.array, **kwargs) -> np.array:
+    def reference(grid, wgtfac_e: np.array, vt: np.array, **kwargs) -> dict:
         vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
         z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
         z_vt_ie[:, 0] = 0

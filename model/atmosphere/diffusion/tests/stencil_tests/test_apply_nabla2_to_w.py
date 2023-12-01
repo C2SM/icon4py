@@ -34,7 +34,7 @@ class TestMoApplyNabla2ToW(StencilTest):
         w: np.array,
         diff_multfac_w: float,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         c2e2cO = grid.connectivities[C2E2CODim]
         geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
         area = np.expand_dims(area, axis=-1)

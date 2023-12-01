@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -44,6 +44,10 @@ def apply_nabla2_and_nabla4_global_to_vn(
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
     diff_multfac_vn: Field[[KDim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _apply_nabla2_and_nabla4_global_to_vn(
         area_edge,
@@ -53,4 +57,8 @@ def apply_nabla2_and_nabla4_global_to_vn(
         diff_multfac_vn,
         vn,
         out=vn,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

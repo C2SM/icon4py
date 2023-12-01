@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence_diagnostics import (
     temporary_fields_for_turbulence_diagnostics,
@@ -72,4 +73,8 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
             diff_multfac_smag=diff_multfac_smag,
             kh_c=kh_c,
             div=div,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )

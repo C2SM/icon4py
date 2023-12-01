@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil25(StencilTest):
     OUTPUTS = ("z_graddiv2_vn",)
 
     @staticmethod
-    def reference(grid, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> np.array:
+    def reference(grid, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> dict:
         e2c2eO = grid.connectivities[E2C2EODim]
         geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
         z_graddiv2_vn = np.sum(
