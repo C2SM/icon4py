@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -44,5 +44,19 @@ def mo_velocity_advection_stencil_16(
     coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
     coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
     ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_16(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz, out=ddt_w_adv[:, 1:])
+    _mo_velocity_advection_stencil_16(
+        z_w_con_c,
+        w,
+        coeff1_dwdz,
+        coeff2_dwdz,
+        out=ddt_w_adv,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

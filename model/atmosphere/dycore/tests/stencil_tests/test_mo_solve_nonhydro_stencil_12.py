@@ -35,7 +35,7 @@ class TestMoSolveNonhydroStencil12(StencilTest):
         d2dexdz2_fac2_mc: np.array,
         z_rth_pr_2: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         z_theta_v_pr_ic_offset_1 = z_theta_v_pr_ic[:, 1:]
         z_dexner_dz_c_2 = -0.5 * (
             (z_theta_v_pr_ic[:, :-1] - z_theta_v_pr_ic_offset_1) * d2dexdz2_fac1_mc

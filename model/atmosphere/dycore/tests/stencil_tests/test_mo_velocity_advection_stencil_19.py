@@ -46,7 +46,7 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
         vn_ie: np.array,
         ddqz_z_full_e: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         e2c = grid.connectivities[E2CDim]
         z_ekinh_e2c = z_ekinh[e2c]
         coeff_gradekin = coeff_gradekin.reshape(e2c.shape)

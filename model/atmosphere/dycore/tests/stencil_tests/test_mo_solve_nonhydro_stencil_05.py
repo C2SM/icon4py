@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
     mo_solve_nonhydro_stencil_05,
@@ -27,7 +28,7 @@ class TestMoSolveNonhydroStencil05(StencilTest):
     OUTPUTS = ("z_exner_ic",)
 
     @staticmethod
-    def reference(grid, wgtfac_c: np.array, z_exner_ex_pr: np.array, **kwargs) -> np.array:
+    def reference(grid, wgtfac_c: np.array, z_exner_ex_pr: np.array, **kwargs) -> dict:
         z_exner_ex_pr_offset_1 = np.roll(z_exner_ex_pr, shift=1, axis=1)
         z_exner_ic = wgtfac_c * z_exner_ex_pr + (1.0 - wgtfac_c) * z_exner_ex_pr_offset_1
         z_exner_ic[:, 0] = 0
@@ -43,4 +44,8 @@ class TestMoSolveNonhydroStencil05(StencilTest):
             wgtfac_c=wgtfac_c,
             z_exner_ex_pr=z_exner_ex_pr,
             z_exner_ic=z_exner_ic,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(1),
+            vertical_end=int32(grid.num_levels),
         )

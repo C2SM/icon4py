@@ -39,7 +39,7 @@ class TestMoSolveNonhydroStencil65(StencilTest):
         mass_flx_ic: np.array,
         r_nsubsteps: float,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
         vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
         mass_flx_ic = mass_flx_ic + (

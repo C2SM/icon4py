@@ -28,7 +28,7 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
     OUTPUTS = ("rot_vec",)
 
     @staticmethod
-    def reference(grid, vec_e: np.array, geofac_rot: np.array, **kwargs) -> np.array:
+    def reference(grid, vec_e: np.array, geofac_rot: np.array, **kwargs) -> dict:
         v2e = grid.connectivities[V2EDim]
         geofac_rot = np.expand_dims(geofac_rot, axis=-1)
         rot_vec = np.sum(

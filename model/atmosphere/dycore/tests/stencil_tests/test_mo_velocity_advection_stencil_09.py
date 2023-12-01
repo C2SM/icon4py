@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_09 import (
     mo_velocity_advection_stencil_09,
@@ -32,7 +33,7 @@ class TestMoVelocityAdvectionStencil09(StencilTest):
     OUTPUTS = ("z_w_concorr_mc",)
 
     @staticmethod
-    def reference(grid, z_w_concorr_me: np.array, e_bln_c_s: np.array, **kwargs) -> np.array:
+    def reference(grid, z_w_concorr_me: np.array, e_bln_c_s: np.array, **kwargs) -> dict:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_w_concorr_mc = np.sum(
             z_w_concorr_me[grid.connectivities[C2EDim]]
@@ -51,4 +52,8 @@ class TestMoVelocityAdvectionStencil09(StencilTest):
             z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
             z_w_concorr_mc=z_w_concorr_mc,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )

@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, maximum
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, maximum
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -50,6 +50,10 @@ def apply_nabla2_and_nabla4_to_vn(
     nudgecoeff_e: Field[[EdgeDim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     nudgezone_diff: vpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _apply_nabla2_and_nabla4_to_vn(
         area_edge,
@@ -61,4 +65,8 @@ def apply_nabla2_and_nabla4_to_vn(
         vn,
         nudgezone_diff,
         out=vn,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
