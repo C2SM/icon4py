@@ -190,7 +190,10 @@ def _verify_init_values_against_savepoint(
     scale_k.with_backend(backend)(
         diffusion.enh_smag_fac, dtime, diffusion.diff_multfac_smag, offset_provider={}
     )
-    assert dallclose(diffusion.diff_multfac_smag.asnumpy(), savepoint.diff_multfac_smag())
+    assert dallclose(diffusion.enh_smag_fac.asnumpy(), savepoint.enh_smag_fac(), rtol=1e-7)
+    assert dallclose(
+        diffusion.diff_multfac_smag.asnumpy(), savepoint.diff_multfac_smag(), rtol=1e-7
+    )
 
     assert dallclose(diffusion.smag_limit.asnumpy(), savepoint.smag_limit())
     assert dallclose(diffusion.diff_multfac_n2w.asnumpy(), savepoint.diff_multfac_n2w())
