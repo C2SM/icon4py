@@ -33,7 +33,7 @@ class TestMoVelocityAdvectionStencil08(StencilTest):
     OUTPUTS = ("z_ekinh",)
 
     @staticmethod
-    def reference(grid, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> np.array:
+    def reference(grid, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> dict:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_ekinh = np.sum(
             z_kin_hor_e[grid.connectivities[C2EDim]]

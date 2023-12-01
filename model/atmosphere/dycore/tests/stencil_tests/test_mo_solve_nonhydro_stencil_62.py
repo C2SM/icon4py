@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
     mo_solve_nonhydro_stencil_62,
@@ -27,7 +28,7 @@ class TestMoSolveNonhydroStencil62(StencilTest):
     OUTPUTS = ("w_new",)
 
     @staticmethod
-    def reference(grid, w_now: np.array, grf_tend_w: np.array, dtime: float, **kwargs) -> np.array:
+    def reference(grid, w_now: np.array, grf_tend_w: np.array, dtime: float, **kwargs) -> dict:
         w_new = w_now + dtime * grf_tend_w
         return dict(w_new=w_new)
 
@@ -43,4 +44,8 @@ class TestMoSolveNonhydroStencil62(StencilTest):
             grf_tend_w=grf_tend_w,
             w_new=w_new,
             dtime=dtime,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )
