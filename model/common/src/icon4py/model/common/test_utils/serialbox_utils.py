@@ -309,7 +309,7 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self, limited_area=True) -> IconGrid:
+    def construct_icon_grid(self) -> IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -323,7 +323,7 @@ class IconGridSavepoint(IconSavepoint):
                 num_edges=self.num(EdgeDim),
             ),
             vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
-            limited_area=limited_area,
+            limited_area=self.get_metadata("limited_area").get("limited_area"),
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
@@ -696,6 +696,9 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
     def diff_multfac_smag(self):
         return np.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint))
+
+    def enh_smag_fac(self):
+        return np.squeeze(self.serializer.read("enh_smag_fac", self.savepoint))
 
     def smag_limit(self):
         return np.squeeze(self.serializer.read("smag_limit", self.savepoint))

@@ -103,7 +103,7 @@ def icon_grid(grid_savepoint, experiment):
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    return grid_savepoint.construct_icon_grid(limited_area=is_regional(experiment))
+    return grid_savepoint.construct_icon_grid()
 
 
 @pytest.fixture

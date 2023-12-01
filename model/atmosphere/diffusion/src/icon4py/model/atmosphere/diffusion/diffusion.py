@@ -201,7 +201,7 @@ class DiffusionConfig:
         self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
 
         #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
-        #: Called `hdiff_smag_fac` inmo_diffusion_nml.f90
+        #: Called `hdiff_smag_fac` in mo_diffusion_nml.f90
         self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
 
         #: If True, apply truly horizontal temperature diffusion over steep slopes
